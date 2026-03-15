@@ -1,0 +1,36 @@
+# WebsiteProfiling input file
+# Copy to input.txt and edit. Lines starting with # and blank lines are ignored.
+# Use key = value or key: value
+
+# ---- Crawl ----
+start_url = https://codefrydev.in
+max_pages = 100
+concurrency = 8
+timeout = 12
+ignore_robots = false
+allow_external = false
+max_depth = 6
+polite_delay = 0.2
+crawl_output = crawl_results.csv
+store_outlinks = true
+
+# ---- Report ----
+crawl_csv = crawl_results.csv
+edges_csv = edges.csv
+nodes_csv = nodes.csv
+report_output = index.html
+site_name = Codefrydev
+# site_name = My Website
+report_title = Codefrydev Report
+# report_title = SEO Report - My Website
+max_fetch_for_edges = 300
+same_domain_only = true
+max_nodes_plot = 400
+
+# ---- Plot ----
+plot_image_output = site_graph.svg
+
+# ---- Which steps to run (when using default "run all") ----
+run_crawl = true
+run_report = true
+run_plot = true

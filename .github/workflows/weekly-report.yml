@@ -1,0 +1,35 @@
+name: Weekly site report
+
+on:
+  schedule:
+    - cron: '0 0 * * 0'
+  push:
+    branches: [master]
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate report
+        run: python -m src
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: site-report-${{ github.run_number }}
+          path: |
+            index.html
+            crawl_results.csv
+            edges.csv
+            nodes.csv
+            site_graph.svg

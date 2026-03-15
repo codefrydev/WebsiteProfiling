@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Site Crawl Report</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Crawl analytics dashboard report">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="text/javascript" src="https://unpkg.com/vis-network@9.1.2/dist/vis-network.min.js"></script>
+  <link href="https://unpkg.com/vis-network@9.1.2/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['DM Sans', 'system-ui', 'sans-serif'] },
+          colors: {
+            dashboard: {
+              header: '#1e293b',
+              accent: '#0ea5e9',
+              surface: '#f8fafc',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    body { font-family: 'DM Sans', system-ui, sans-serif; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
+    .scorecard { border-left: 4px solid #0ea5e9; }
+    @media print {
+      .print\:hidden { display: none !important; }
+      body { background: #fff; }
+      #network { height: 500px !important; }
+      .card { box-shadow: none; border: 1px solid #e2e8f0; }
+      .print\:break-inside-avoid { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
+  <!-- Dashboard header -->
+  <header class="bg-[#1e293b] text-white px-4 py-3 md:px-6 print:bg-white print:text-gray-900 print:border-b">
+    <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-2">
+      <h1 id="summary" class="text-lg md:text-xl font-bold">Crawl Report</h1>
+      <div class="flex items-center gap-3">
+        <span class="text-slate-300 text-sm print:text-gray-600">{{ generated_time }}</span>
+        <span class="px-2 py-0.5 rounded text-xs font-medium bg-sky-500/30 text-sky-200 print:bg-gray-200 print:text-gray-700">Report</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Nav -->
+  <nav class="print:hidden bg-white border-b border-slate-200 px-4 md:px-6 py-2 sticky top-0 z-10 shadow-sm">
+    <div class="max-w-[1600px] mx-auto flex flex-wrap gap-2 text-sm">
+      <a href="#exec-summary" class="text-sky-600 hover:text-sky-800 font-medium">Summary</a>
+      <a href="#crawl-overview" class="text-slate-600 hover:text-slate-900">Crawl overview</a>
+      <a href="#seo-health" class="text-slate-600 hover:text-slate-900">SEO</a>
+      <a href="#issues-recs" class="text-slate-600 hover:text-slate-900">Issues</a>
+      <a href="#top-pages" class="text-slate-600 hover:text-slate-900">Top pages</a>
+      <a href="#charts" class="text-slate-600 hover:text-slate-900">Charts</a>
+      <a href="#graph" class="text-slate-600 hover:text-slate-900">Site graph</a>
+    </div>
+  </nav>
+
+  <main class="flex-1 p-4 md:p-6 max-w-[1600px] w-full mx-auto">
+    <!-- Scorecard row -->
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6" id="kpiGrid"></div>
+
+    <!-- Executive summary card -->
+    <section class="card p-5 mb-6" id="exec-summary">
+      <h2 class="text-lg font-semibold text-slate-900 mb-2 border-b border-slate-100 pb-2">Executive summary</h2>
+      <p class="text-slate-600 text-sm mb-4"><strong id="siteNameEl" class="text-slate-900">Site</strong> · {{ generated_time }}</p>
+      <h3 class="text-sm font-medium text-slate-700 mb-2">Key findings</h3>
+      <ul class="list-disc pl-5 space-y-1 text-slate-700 text-sm" id="keyFindings"></ul>
+    </section>
+
+    <!-- Crawl overview card -->
+    <section class="card p-5 mb-6" id="crawl-overview">
+      <h2 class="text-lg font-semibold text-slate-900 mb-3">Crawl overview</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" id="crawlKpis"></div>
+    </section>
+
+    <!-- SEO health card -->
+    <section id="seo-health" class="card p-5 mb-6 hidden">
+      <h2 class="text-lg font-semibold text-slate-900 mb-3">SEO health</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3" id="seoKpis"></div>
+    </section>
+
+    <!-- Issues and recommendations card -->
+    <section class="card p-5 mb-6" id="issues-recs">
+      <h2 class="text-lg font-semibold text-slate-900 mb-3">Issues and recommendations</h2>
+      <div id="issuesSection"></div>
+      <h3 class="text-sm font-medium text-slate-700 mt-4 mb-2">Recommendations</h3>
+      <ul class="list-disc pl-5 space-y-1 text-slate-700 text-sm" id="recsList"></ul>
+    </section>
+
+    <!-- Top pages card -->
+    <section class="card p-5 mb-6" id="top-pages">
+      <h2 class="text-lg font-semibold text-slate-900 mb-3">Top pages (by link importance)</h2>
+      <div id="topPagesWrap" class="overflow-x-auto rounded-lg border border-slate-200"></div>
+    </section>
+
+    <!-- Charts grid -->
+    <h2 id="charts" class="text-lg font-semibold text-slate-900 mb-4">Charts</h2>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <div class="card p-4 print:break-inside-avoid">
+        <h3 class="text-sm font-medium text-slate-700 mb-3">Status counts</h3>
+        <canvas id="statusChart"></canvas>
+      </div>
+      <div class="card p-4 print:break-inside-avoid">
+        <h3 class="text-sm font-medium text-slate-700 mb-3">Top content-types</h3>
+        <canvas id="mimeChart"></canvas>
+      </div>
+      <div class="card p-4 print:break-inside-avoid">
+        <h3 class="text-sm font-medium text-slate-700 mb-3">Outlinks distribution</h3>
+        <canvas id="outlinksChart"></canvas>
+      </div>
+      <div class="card p-4 print:break-inside-avoid">
+        <h3 class="text-sm font-medium text-slate-700 mb-3">Title length distribution</h3>
+        <canvas id="titleChart"></canvas>
+      </div>
+    </div>
+    <div class="card p-4 mb-6 print:break-inside-avoid">
+      <h3 class="text-sm font-medium text-slate-700 mb-3">Top domains discovered</h3>
+      <canvas id="domainChart"></canvas>
+    </div>
+
+    <!-- Site graph card -->
+    <h2 id="graph" class="text-lg font-semibold text-slate-900 mb-3">Interactive Site Graph</h2>
+    <p class="text-slate-500 text-sm mb-2">Double-click a node to open the page.</p>
+    <div class="card overflow-hidden">
+      <div id="network" class="w-full h-[700px] bg-white"></div>
+    </div>
+  </main>
+
+  <footer class="mt-auto py-3 px-4 md:px-6 border-t border-slate-200 bg-white text-slate-500 text-sm text-center print:py-2">
+    Generated by Website Profiling · {{ generated_time }}
+  </footer>
+
+  <script>
+    const data = {{ report_data }};
+    document.title = data.report_title || 'Site Crawl Report';
+    var summaryEl = document.querySelector('#summary');
+    if (summaryEl && data.site_name) summaryEl.textContent = data.site_name + ' — Crawl Report';
+
+    var kpiCls = 'card scorecard p-4 text-center';
+    var valCls = 'font-bold text-2xl text-slate-900 block mb-1';
+    var kpiClsSmall = 'card p-3 text-center';
+    var valClsSmall = 'font-bold text-lg text-slate-900 block mb-0.5';
+    var tblCls = 'w-full border-collapse text-sm';
+    var thCls = 'text-left p-2 md:p-3 border-b border-slate-200 bg-gray-100 font-medium text-slate-700';
+    var tdCls = 'p-2 md:p-3 border-b border-slate-100 text-slate-700 hover:bg-gray-50';
+    var mutedCls = 'text-slate-500 text-sm';
+    var linkCls = 'text-sky-600 hover:text-sky-800 hover:underline break-all';
+
+    (function(){
+      var s = data.summary || {};
+      var el = document.getElementById('siteNameEl');
+      if (el) el.textContent = data.site_name || 'Site';
+      var kpi = document.getElementById('kpiGrid');
+      if (kpi) {
+        kpi.innerHTML = '<div class="' + kpiCls + '"><span class="' + valCls + '">' + (s.total_urls || 0) + '</span><span class="text-slate-500 text-sm">Total URLs</span></div>' +
+          '<div class="' + kpiCls + '"><span class="' + valCls + '">' + (s.success_rate || 0) + '%</span><span class="text-slate-500 text-sm">Success (2xx)</span></div>' +
+          '<div class="' + kpiCls + '"><span class="' + valCls + '">' + (s.count_4xx || 0) + '</span><span class="text-slate-500 text-sm">4xx</span></div>' +
+          '<div class="' + kpiCls + '"><span class="' + valCls + '">' + (s.count_5xx || 0) + '</span><span class="text-slate-500 text-sm">5xx</span></div>' +
+          '<div class="' + kpiCls + '"><span class="' + valCls + '">' + (s.count_3xx || 0) + '</span><span class="text-slate-500 text-sm">Redirects</span></div>';
+      }
+      var findings = document.getElementById('keyFindings');
+      if (findings && data.recommendations && data.recommendations.length) {
+        data.recommendations.slice(0, 5).forEach(function(r){ var li = document.createElement('li'); li.textContent = r; findings.appendChild(li); });
+      } else if (findings) { var li = document.createElement('li'); li.textContent = 'No critical issues.'; findings.appendChild(li); }
+
+      var crawlKpis = document.getElementById('crawlKpis');
+      if (crawlKpis) {
+        crawlKpis.innerHTML = '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + (s.total_urls || 0) + '</span><span class="text-slate-500 text-xs">Pages</span></div>' +
+          '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + (s.avg_outlinks || 0) + '</span><span class="text-slate-500 text-xs">Avg outlinks</span></div>' +
+          '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + (s.avg_title_len || 0) + '</span><span class="text-slate-500 text-xs">Avg title len</span></div>' +
+          (s.crawl_time_s != null ? '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + s.crawl_time_s + 's</span><span class="text-slate-500 text-xs">Crawl time</span></div>' : '');
+      }
+
+      var sh = data.seo_health || {};
+      var seoKeys = Object.keys(sh);
+      var seoSection = document.getElementById('seo-health');
+      var seoKpis = document.getElementById('seoKpis');
+      if (seoSection && seoKpis && seoKeys.length) {
+        seoSection.classList.remove('hidden');
+        var seoHtml = '';
+        if (sh.missing_title !== undefined) seoHtml += '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + sh.missing_title + '</span><span class="text-slate-500 text-xs">Missing title</span></div>';
+        if (sh.title_ok !== undefined) seoHtml += '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + sh.title_ok + '</span><span class="text-slate-500 text-xs">Title OK</span></div>';
+        if (sh.missing_meta_desc !== undefined) seoHtml += '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + sh.missing_meta_desc + '</span><span class="text-slate-500 text-xs">Missing meta desc</span></div>';
+        if (sh.meta_desc_ok !== undefined) seoHtml += '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + sh.meta_desc_ok + '</span><span class="text-slate-500 text-xs">Meta desc OK</span></div>';
+        if (sh.h1_one !== undefined) seoHtml += '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + sh.h1_one + '</span><span class="text-slate-500 text-xs">Single H1</span></div>';
+        if (sh.thin_content !== undefined) seoHtml += '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + sh.thin_content + '</span><span class="text-slate-500 text-xs">Thin content</span></div>';
+        seoKpis.innerHTML = seoHtml;
+      }
+
+      var issuesSection = document.getElementById('issuesSection');
+      if (issuesSection && data.issues) {
+        var iss = data.issues;
+        var html = '';
+        if (iss.broken && iss.broken.length) {
+          html += '<h4 class="text-sm font-medium text-slate-700 mt-3 mb-1">Broken (' + iss.broken.length + ')</h4><table class="' + tblCls + '"><thead><tr><th class="' + thCls + '">URL</th><th class="' + thCls + '">Status</th></tr></thead><tbody>';
+          iss.broken.slice(0, 20).forEach(function(x){ html += '<tr><td class="' + tdCls + '"><a href="' + x.url + '" target="_blank" rel="noreferrer noopener" class="' + linkCls + '">' + x.url + '</a></td><td class="' + tdCls + '">' + x.status + '</td></tr>'; });
+          if (iss.broken.length > 20) html += '<tr><td colspan="2" class="' + tdCls + ' ' + mutedCls + '">... and ' + (iss.broken.length - 20) + ' more</td></tr>';
+          html += '</tbody></table>';
+        }
+        if (iss.redirects && iss.redirects.length) {
+          html += '<h4 class="text-sm font-medium text-slate-700 mt-3 mb-1">Redirects (' + iss.redirects.length + ')</h4><table class="' + tblCls + '"><thead><tr><th class="' + thCls + '">URL</th><th class="' + thCls + '">Status</th><th class="' + thCls + '">Final</th></tr></thead><tbody>';
+          iss.redirects.slice(0, 15).forEach(function(x){ html += '<tr><td class="' + tdCls + '"><a href="' + x.url + '" target="_blank" class="' + linkCls + '">' + x.url + '</a></td><td class="' + tdCls + '">' + x.status + '</td><td class="' + tdCls + '">' + (x.final_url || '') + '</td></tr>'; });
+          if (iss.redirects.length > 15) html += '<tr><td colspan="3" class="' + tdCls + ' ' + mutedCls + '">... and ' + (iss.redirects.length - 15) + ' more</td></tr>';
+          html += '</tbody></table>';
+        }
+        if (iss.seo && iss.seo.length) {
+          html += '<h4 class="text-sm font-medium text-slate-700 mt-3 mb-1">SEO issues (' + iss.seo.length + ')</h4><table class="' + tblCls + '"><thead><tr><th class="' + thCls + '">URL</th><th class="' + thCls + '">Issue</th></tr></thead><tbody>';
+          iss.seo.slice(0, 25).forEach(function(x){ html += '<tr><td class="' + tdCls + '"><a href="' + x.url + '" target="_blank" class="' + linkCls + '">' + x.url + '</a></td><td class="' + tdCls + '">' + (x.message || x.type) + '</td></tr>'; });
+          if (iss.seo.length > 25) html += '<tr><td colspan="2" class="' + tdCls + ' ' + mutedCls + '">... and ' + (iss.seo.length - 25) + ' more</td></tr>';
+          html += '</tbody></table>';
+        }
+        if (!html) html = '<p class="' + mutedCls + ' py-2">No issues recorded.</p>';
+        issuesSection.innerHTML = html;
+      }
+      var recsList = document.getElementById('recsList');
+      if (recsList && data.recommendations && data.recommendations.length) {
+        data.recommendations.forEach(function(r){ var li = document.createElement('li'); li.textContent = r; recsList.appendChild(li); });
+      } else if (recsList) { var li = document.createElement('li'); li.textContent = 'No recommendations.'; recsList.appendChild(li); }
+
+      var topPages = data.top_pages || [];
+      var topWrap = document.getElementById('topPagesWrap');
+      if (topWrap && topPages.length) {
+        var th = '<table class="' + tblCls + '"><thead><tr><th class="' + thCls + '">URL</th><th class="' + thCls + '">Title</th><th class="' + thCls + '">PageRank</th><th class="' + thCls + '">Degree</th></tr></thead><tbody>';
+        topPages.forEach(function(r){
+          th += '<tr><td class="' + tdCls + '"><a href="' + r.url + '" target="_blank" rel="noreferrer noopener" class="' + linkCls + '">' + r.url + '</a></td><td class="' + tdCls + '">' + (r.title || '').replace(/</g,'&lt;') + '</td><td class="' + tdCls + '">' + (r.pagerank != null ? Number(r.pagerank).toFixed(5) : '') + '</td><td class="' + tdCls + '">' + (r.degree != null ? r.degree : '') + '</td></tr>';
+        });
+        topWrap.innerHTML = th + '</tbody></table>';
+      } else if (topWrap) { topWrap.innerHTML = '<p class="' + mutedCls + ' p-4">No page data.</p>'; }
+    })();
+
+    (function setupCharts() {
+      var CHART_COLORS = ['#0ea5e9', '#64748b', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+      Chart.defaults.font.family = "'DM Sans', system-ui, sans-serif";
+      Chart.defaults.font.size = 12;
+      Chart.defaults.color = '#64748b';
+      var barOptions = {
+        responsive: true,
+        maintainAspectRatio: true,
+        aspectRatio: 1.4,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { display: false }, beginAtZero: true },
+          y: { grid: { color: '#f1f5f9' } }
+        }
+      };
+      var barOptionsY = {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: true,
+        aspectRatio: 1.2,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: '#f1f5f9' }, beginAtZero: true },
+          y: { grid: { display: false } }
+        }
+      };
+      function palette(len) {
+        var out = [];
+        for (var i = 0; i < len; i++) out.push(CHART_COLORS[i % CHART_COLORS.length]);
+        return out;
+      }
+      var statusLabels = Object.keys(data.status_counts);
+      var statusCounts = Object.values(data.status_counts);
+      new Chart(document.getElementById('statusChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: statusLabels,
+          datasets: [{ label: 'Pages', data: statusCounts, backgroundColor: palette(statusLabels.length) }]
+        },
+        options: barOptionsY
+      });
+      new Chart(document.getElementById('mimeChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: data.mime_labels,
+          datasets: [{ label: 'Count', data: data.mime_values, backgroundColor: palette(data.mime_labels.length) }]
+        },
+        options: barOptions
+      });
+      new Chart(document.getElementById('outlinksChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: data.outlink_labels,
+          datasets: [{ label: 'Pages', data: data.outlink_counts, backgroundColor: CHART_COLORS[0] }]
+        },
+        options: barOptions
+      });
+      new Chart(document.getElementById('titleChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: data.title_labels,
+          datasets: [{ label: 'Pages', data: data.title_counts, backgroundColor: CHART_COLORS[1] }]
+        },
+        options: barOptions
+      });
+      new Chart(document.getElementById('domainChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: data.domain_labels,
+          datasets: [{ label: 'Pages', data: data.domain_values, backgroundColor: palette(data.domain_labels.length) }]
+        },
+        options: Object.assign({}, barOptions, { aspectRatio: 2 })
+      });
+    })();
+    (function renderNetwork(){
+      if(!data.graph_nodes || data.graph_nodes.length===0 || !data.graph_edges || data.graph_edges.length===0){
+        document.getElementById('network').innerHTML = '<p class="p-5 text-slate-500 text-center">No edge data available.</p>';
+        return;
+      }
+      const nodeMap = new Map();
+      data.graph_nodes.forEach(function(u){ nodeMap.set(u, {id: u, label: u.split('/').slice(2).join('/'), title: u, value:1}); });
+      data.graph_edges.forEach(function(e){
+        if(!nodeMap.has(e.from)) nodeMap.set(e.from, {id:e.from,label:e.from,title:e.from});
+        if(!nodeMap.has(e.to)) nodeMap.set(e.to, {id:e.to,label:e.to,title:e.to});
+        if(nodeMap.get(e.from)) nodeMap.get(e.from).value = (nodeMap.get(e.from).value||1)+1;
+        if(nodeMap.get(e.to)) nodeMap.get(e.to).value = (nodeMap.get(e.to).value||1)+0.5;
+      });
+      const nodes = Array.from(nodeMap.values()).map(function(n){ return Object.assign({shape:'dot', scaling:{min:10,max:40}}, n); });
+      const edges = data.graph_edges.map(function(e){ return {from:e.from, to:e.to, arrows:'to'}; });
+      const container = document.getElementById('network');
+      const graphData = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
+      const options = { nodes: { shape: 'dot', scaling: { label: { min:8, max:24 } }, font: { size: 12, face: "'DM Sans', system-ui, sans-serif" } }, edges: { smooth: { type:'force' }, arrows: { to: {enabled:true, scaleFactor:0.6} } }, physics: { stabilization: true, barnesHut: { gravitationalConstant: -8000, springConstant: 0.001, springLength: 200 } }, interaction: { hover:true, navigationButtons:true, zoomView:true } };
+      const network = new vis.Network(container, graphData, options);
+      network.on('doubleClick', function(params){ if(params.nodes && params.nodes.length>0){ window.open(params.nodes[0], '_blank'); }});
+    })();
+  </script>
+</body>
+</html>
