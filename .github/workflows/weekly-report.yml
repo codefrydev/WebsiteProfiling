@@ -9,6 +9,8 @@ on:
 jobs:
   generate-report:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,6 +25,14 @@ jobs:
 
       - name: Generate report
         run: python -m src
+
+      - name: Commit and push report to repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git diff --staged --quiet || git commit -m "chore: update site report [skip ci]"
+          git push
 
       - uses: actions/upload-artifact@v4
         with:
