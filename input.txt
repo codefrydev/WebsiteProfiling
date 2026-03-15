@@ -11,13 +11,15 @@ ignore_robots = false
 allow_external = false
 max_depth = 6
 polite_delay = 0.2
-crawl_output = crawl_results.csv
+# Use .json for JSON output or .csv for CSV
+crawl_output = crawl_results.json
 store_outlinks = true
 
 # ---- Report ----
-crawl_csv = crawl_results.csv
-edges_csv = edges.csv
-nodes_csv = nodes.csv
+# crawl_csv, edges_csv, nodes_csv: use .json or .csv (report reads either)
+crawl_csv = crawl_results.json
+edges_csv = edges.json
+nodes_csv = nodes.json
 report_output = index.html
 site_name = Codefrydev
 # site_name = My Website

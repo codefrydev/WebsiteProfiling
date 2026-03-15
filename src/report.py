@@ -13,7 +13,15 @@ import requests
 from bs4 import BeautifulSoup
 from tqdm.auto import tqdm
 
-from .common import LINK_COLUMN_NAMES, normalize_link, parse_links_serialized
+from .common import (
+    LINK_COLUMN_NAMES,
+    load_dataframe,
+    load_edges,
+    normalize_link,
+    parse_links_serialized,
+    save_edges,
+)
+from .report_categories import build_categories
 from .templates import render_template
 
 TEMPLATE_SIMPLE = "site_report.html"
@@ -36,19 +44,15 @@ def build_edges_from_df(
     polite_delay: float,
 ) -> list[tuple[str, str]]:
     """Build or load edges; return list of (from, to) tuples."""
-    edges = []
-    if os.path.exists(edges_csv):
-        try:
-            edf = pd.read_csv(edges_csv)
-            if {"from", "to"}.issubset(edf.columns):
-                return [
-                    (str(a).rstrip("/"), str(b).rstrip("/"))
-                    for a, b in edf[["from", "to"]].values
-                ]
-        except Exception:
-            pass
+    edges = load_edges(edges_csv)
+    if edges:
+        return edges
 
-    candidate_cols = [c for c in df.columns if c.lower() in LINK_COLUMN_NAMES]
+    # Prefer columns that hold URL lists (e.g. outlink_targets); skip "outlinks" (numeric count)
+    candidate_cols = [
+        c for c in df.columns
+        if c.lower() in LINK_COLUMN_NAMES and c.lower() != "outlinks"
+    ]
     if candidate_cols:
         for col in candidate_cols:
             if df[col].notna().sum() == 0:
@@ -96,6 +100,37 @@ def build_edges_from_df(
             for t in outs:
                 edges.append((src, t))
     return edges
+
+
+def _fetch_site_level(start_url: str, timeout: int = 8) -> dict:
+    """Fetch robots.txt and sitemap.xml from start_url origin. Return site_level dict."""
+    parsed = urlparse(start_url)
+    if not parsed.scheme or not parsed.netloc:
+        return {"robots_present": False, "sitemap_present": False, "sitemap_valid": False}
+    base = f"{parsed.scheme}://{parsed.netloc}"
+    session = requests.Session()
+    session.headers.update({"User-Agent": "WebsiteProfiling/1.0"})
+    out = {"robots_present": False, "sitemap_present": False, "sitemap_valid": False}
+    try:
+        r = session.get(f"{base}/robots.txt", timeout=timeout)
+        if r.status_code == 200 and r.text:
+            out["robots_present"] = True
+            # Optional: parse robots for sitemap URL
+            for line in r.text.splitlines():
+                line = line.strip()
+                if line.lower().startswith("sitemap:"):
+                    break
+    except Exception:
+        pass
+    try:
+        r = session.get(f"{base}/sitemap.xml", timeout=timeout)
+        if r.status_code == 200 and r.text:
+            out["sitemap_present"] = True
+            # Basic XML check
+            out["sitemap_valid"] = "<" in r.text and ">" in r.text and ("urlset" in r.text or "sitemapindex" in r.text)
+    except Exception:
+        pass
+    return out
 
 
 def _compute_summary_seo_issues(df: pd.DataFrame) -> dict:
@@ -269,9 +304,9 @@ def run_simple_report(
 ) -> str:
     """Load crawl data, build edges if needed, write interactive HTML report from template. Returns output path."""
     if not os.path.exists(crawl_csv):
-        raise FileNotFoundError(f"Crawl CSV not found: {crawl_csv}")
+        raise FileNotFoundError(f"Crawl data not found: {crawl_csv}")
 
-    df = pd.read_csv(crawl_csv)
+    df = load_dataframe(crawl_csv)
     if "url" not in df.columns:
         raise ValueError("Crawl DataFrame missing required column 'url'")
 
@@ -285,9 +320,18 @@ def run_simple_report(
         df, edges_csv, same_domain_only, max_fetch_for_edges, concurrency, timeout, 0.12
     )
     if edges:
-        pd.DataFrame(edges, columns=["from", "to"]).to_csv(edges_csv, index=False)
+        save_edges(edges, edges_csv)
 
     summary_seo = _compute_summary_seo_issues(df)
+
+    site_level = _fetch_site_level(start_url or "", timeout=8)
+    categories = build_categories(
+        df, edges, summary_seo, site_level, start_url or ""
+    )
+    # Ensure categories are JSON-serializable (score may be None)
+    for cat in categories:
+        if "score" in cat and cat["score"] is not None and hasattr(cat["score"], "item"):
+            cat["score"] = int(cat["score"])
 
     df["status_str"] = df["status"].astype(str) if "status" in df.columns else "unknown"
     status_counts = df["status_str"].value_counts().to_dict()
@@ -373,6 +417,7 @@ def run_simple_report(
         "seo_health": summary_seo["seo_health"],
         "issues": summary_seo["issues"],
         "recommendations": summary_seo["recommendations"],
+        "categories": categories,
         "status_counts": status_counts,
         "mime_labels": top_mimes.index.tolist(),
         "mime_values": top_mimes.values.tolist(),

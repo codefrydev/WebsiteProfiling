@@ -13,9 +13,27 @@ import pandas as pd
 import requests
 from tqdm.auto import tqdm
 
-from .common import load_robots, normalize_link, parse_links, parse_seo
+from .common import (
+    load_robots,
+    normalize_link,
+    parse_links,
+    parse_resources,
+    parse_seo,
+    parse_seo_extended,
+)
 
 DEFAULT_USER_AGENT = "WebsiteProfilingCrawler/1.0"
+
+# Headers we store for caching and security
+HEADER_KEYS = (
+    "Cache-Control",
+    "ETag",
+    "X-Robots-Tag",
+    "Strict-Transport-Security",
+    "X-Content-Type-Options",
+    "X-Frame-Options",
+    "Content-Security-Policy",
+)
 
 
 class Crawler:
@@ -81,6 +99,10 @@ class Crawler:
             text = resp.text if is_html else None
             content_length = len(resp.content) if resp.content is not None else 0
             final_url = resp.url or url
+            redirect_chain_length = len(resp.history)
+            headers_dict = {
+                k: (resp.headers.get(k) or "") for k in HEADER_KEYS
+            }
             return (
                 resp.status_code,
                 ct,
@@ -88,12 +110,15 @@ class Crawler:
                 response_time_ms,
                 content_length,
                 final_url,
+                headers_dict,
+                redirect_chain_length,
             )
         except Exception:
-            return None, None, None, None, None, None
+            return None, None, None, None, None, None, {}, 0
 
-    def _empty_seo(self, url: str) -> dict:
+    def _empty_seo(self, url: str, headers_dict: Optional[dict] = None, redirect_chain_length: int = 0) -> dict:
         """Default SEO/performance fields when no HTML or error."""
+        h = headers_dict or {}
         return {
             "response_time_ms": "",
             "content_length": 0,
@@ -103,6 +128,29 @@ class Crawler:
             "h1": "",
             "h1_count": 0,
             "canonical_url": "",
+            "viewport_present": False,
+            "viewport_content": "",
+            "noindex": False,
+            "has_schema": False,
+            "heading_sequence": "",
+            "images_without_alt": 0,
+            "images_total": 0,
+            "img_without_lazy": 0,
+            "img_without_dimensions": 0,
+            "aria_count": 0,
+            "mixed_content_count": 0,
+            "redirect_chain_length": redirect_chain_length,
+            "cache_control": h.get("Cache-Control", ""),
+            "etag": h.get("ETag", ""),
+            "x_robots_tag": h.get("X-Robots-Tag", ""),
+            "strict_transport_security": h.get("Strict-Transport-Security", ""),
+            "x_content_type_options": h.get("X-Content-Type-Options", ""),
+            "x_frame_options": h.get("X-Frame-Options", ""),
+            "content_security_policy": h.get("Content-Security-Policy", ""),
+            "script_count": 0,
+            "link_stylesheet_count": 0,
+            "total_js_bytes": 0,
+            "total_css_bytes": 0,
         }
 
     def worker(self, url):
@@ -120,10 +168,14 @@ class Crawler:
             return out
 
         result = self.fetch(url)
-        status, ct, text = result[0], result[1], result[2]
+        status = result[0]
+        ct = result[1]
+        text = result[2]
         response_time_ms = result[3] if len(result) > 3 else None
         content_length = result[4] if len(result) > 4 else 0
         final_url = result[5] if len(result) > 5 else url
+        headers_dict = result[6] if len(result) > 6 else {}
+        redirect_chain_length = result[7] if len(result) > 7 else 0
 
         if status is None:
             out = {
@@ -132,7 +184,7 @@ class Crawler:
                 "content_type": "",
                 "title": "",
                 "outlinks": 0,
-                **self._empty_seo(url),
+                **self._empty_seo(url, headers_dict, redirect_chain_length),
             }
             if self.store_outlinks:
                 out["outlink_targets"] = "[]"
@@ -147,12 +199,30 @@ class Crawler:
         h1_count = 0
         canonical_url = ""
 
+        ext = self._empty_seo(url, headers_dict, redirect_chain_length)
         if text:
             title, links = parse_links(url, text)
             outlinks_count = len(links)
             meta_description, meta_description_len, h1_text, h1_count, canonical_url = (
                 parse_seo(url, text)
             )
+            seo_ext = parse_seo_extended(text, final_url or url)
+            ext["viewport_present"] = seo_ext.get("viewport_present", False)
+            ext["viewport_content"] = seo_ext.get("viewport_content", "")
+            ext["noindex"] = seo_ext.get("noindex", False)
+            if (headers_dict.get("X-Robots-Tag") or "").lower().find("noindex") >= 0:
+                ext["noindex"] = True
+            ext["has_schema"] = seo_ext.get("has_schema", False)
+            ext["heading_sequence"] = ",".join(seo_ext.get("heading_sequence") or [])
+            ext["images_without_alt"] = seo_ext.get("images_without_alt", 0)
+            ext["images_total"] = seo_ext.get("images_total", 0)
+            ext["img_without_lazy"] = seo_ext.get("img_without_lazy", 0)
+            ext["img_without_dimensions"] = seo_ext.get("img_without_dimensions", 0)
+            ext["aria_count"] = seo_ext.get("aria_count", 0)
+            ext["mixed_content_count"] = seo_ext.get("mixed_content_count", 0)
+            res_res = parse_resources(text, final_url or url)
+            ext["script_count"] = res_res.get("script_count", 0)
+            ext["link_stylesheet_count"] = res_res.get("link_stylesheet_count", 0)
             for link in links:
                 if not self.allow_external and not self.same_domain(link):
                     continue
@@ -170,6 +240,22 @@ class Crawler:
                 if self.store_outlinks:
                     outlink_list.append(link)
 
+        ext["response_time_ms"] = response_time_ms if response_time_ms is not None else ""
+        ext["content_length"] = content_length or 0
+        ext["final_url"] = final_url or url
+        ext["meta_description"] = meta_description
+        ext["meta_description_len"] = meta_description_len
+        ext["h1"] = h1_text
+        ext["h1_count"] = h1_count
+        ext["canonical_url"] = canonical_url
+        ext["cache_control"] = headers_dict.get("Cache-Control", "")
+        ext["etag"] = headers_dict.get("ETag", "")
+        ext["x_robots_tag"] = headers_dict.get("X-Robots-Tag", "")
+        ext["strict_transport_security"] = headers_dict.get("Strict-Transport-Security", "")
+        ext["x_content_type_options"] = headers_dict.get("X-Content-Type-Options", "")
+        ext["x_frame_options"] = headers_dict.get("X-Frame-Options", "")
+        ext["content_security_policy"] = headers_dict.get("Content-Security-Policy", "")
+
         if self.polite_delay:
             time.sleep(self.polite_delay)
 
@@ -179,14 +265,7 @@ class Crawler:
             "content_type": ct or "",
             "title": title,
             "outlinks": outlinks_count,
-            "response_time_ms": response_time_ms if response_time_ms is not None else "",
-            "content_length": content_length or 0,
-            "final_url": final_url or url,
-            "meta_description": meta_description,
-            "meta_description_len": meta_description_len,
-            "h1": h1_text,
-            "h1_count": h1_count,
-            "canonical_url": canonical_url,
+            **ext,
         }
         if self.store_outlinks:
             res["outlink_targets"] = json.dumps(list(outlink_list))
@@ -242,6 +321,29 @@ class Crawler:
                                 "h1": "",
                                 "h1_count": 0,
                                 "canonical_url": "",
+                                "viewport_present": False,
+                                "viewport_content": "",
+                                "noindex": False,
+                                "has_schema": False,
+                                "heading_sequence": "",
+                                "images_without_alt": 0,
+                                "images_total": 0,
+                                "img_without_lazy": 0,
+                                "img_without_dimensions": 0,
+                                "aria_count": 0,
+                                "mixed_content_count": 0,
+                                "redirect_chain_length": 0,
+                                "cache_control": "",
+                                "etag": "",
+                                "x_robots_tag": "",
+                                "strict_transport_security": "",
+                                "x_content_type_options": "",
+                                "x_frame_options": "",
+                                "content_security_policy": "",
+                                "script_count": 0,
+                                "link_stylesheet_count": 0,
+                                "total_js_bytes": 0,
+                                "total_css_bytes": 0,
                             }
                             if self.store_outlinks:
                                 res["outlink_targets"] = "[]"
@@ -273,6 +375,29 @@ class Crawler:
                 "h1",
                 "h1_count",
                 "canonical_url",
+                "viewport_present",
+                "viewport_content",
+                "noindex",
+                "has_schema",
+                "heading_sequence",
+                "images_without_alt",
+                "images_total",
+                "img_without_lazy",
+                "img_without_dimensions",
+                "aria_count",
+                "mixed_content_count",
+                "redirect_chain_length",
+                "cache_control",
+                "etag",
+                "x_robots_tag",
+                "strict_transport_security",
+                "x_content_type_options",
+                "x_frame_options",
+                "content_security_policy",
+                "script_count",
+                "link_stylesheet_count",
+                "total_js_bytes",
+                "total_css_bytes",
             ]
             if self.store_outlinks:
                 cols.append("outlink_targets")
@@ -308,5 +433,8 @@ def run_crawler(
     )
     df = crawler.crawl(show_progress=show_progress)
     if output_csv and not df.empty:
-        df.to_csv(output_csv, index=False)
+        if output_csv.lower().endswith(".json"):
+            df.to_json(output_csv, orient="records", indent=2, date_format="iso", default_handler=str)
+        else:
+            df.to_csv(output_csv, index=False)
     return df

@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
 
+from .common import load_dataframe, load_edges, save_dataframe, save_edges
 from .report import build_edges_from_df
 
 
@@ -30,9 +31,9 @@ def run_plot(
     Returns (edges_csv path, nodes_csv path).
     """
     if not os.path.exists(crawl_csv):
-        raise FileNotFoundError(f"Crawl CSV not found: {crawl_csv}")
+        raise FileNotFoundError(f"Crawl data not found: {crawl_csv}")
 
-    df = pd.read_csv(crawl_csv)
+    df = load_dataframe(crawl_csv)
     if "url" not in df.columns:
         raise ValueError("Crawl DataFrame missing 'url' column")
 
@@ -44,20 +45,14 @@ def run_plot(
     )
 
     if not edges:
-        if os.path.isfile(edges_csv):
-            try:
-                edf = pd.read_csv(edges_csv)
-                if {"from", "to"}.issubset(edf.columns):
-                    edges = [(str(a).rstrip("/"), str(b).rstrip("/")) for a, b in edf[["from", "to"]].values]
-            except Exception:
-                pass
+        edges = load_edges(edges_csv)
     if edges:
         edges_df = pd.DataFrame(edges, columns=["from", "to"])
-        edges_df.to_csv(edges_csv, index=False)
+        save_edges(edges, edges_csv)
         nodes = pd.Series(list(edges_df["from"]) + list(edges_df["to"]))
         nodes = nodes.value_counts().reset_index()
         nodes.columns = ["url", "count"]
-        nodes.to_csv(nodes_csv, index=False)
+        save_dataframe(nodes, nodes_csv)
     else:
         edges_df = pd.DataFrame(columns=["from", "to"])
         nodes = pd.DataFrame(columns=["url", "count"])

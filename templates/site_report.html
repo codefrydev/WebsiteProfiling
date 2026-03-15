@@ -58,6 +58,7 @@
     <div class="max-w-[1600px] mx-auto flex flex-wrap gap-2 text-sm">
       <a href="#exec-summary" class="text-sky-600 hover:text-sky-800 font-medium">Summary</a>
       <a href="#crawl-overview" class="text-slate-600 hover:text-slate-900">Crawl overview</a>
+      <a href="#category-scores" class="text-slate-600 hover:text-slate-900">Category scores</a>
       <a href="#seo-health" class="text-slate-600 hover:text-slate-900">SEO</a>
       <a href="#issues-recs" class="text-slate-600 hover:text-slate-900">Issues</a>
       <a href="#top-pages" class="text-slate-600 hover:text-slate-900">Top pages</a>
@@ -82,6 +83,13 @@
     <section class="card p-5 mb-6" id="crawl-overview">
       <h2 class="text-lg font-semibold text-slate-900 mb-3">Crawl overview</h2>
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" id="crawlKpis"></div>
+    </section>
+
+    <!-- Category scores: Technical SEO, Core Web Vitals, Performance, etc. -->
+    <section class="card p-5 mb-6 print:break-inside-avoid" id="category-scores">
+      <h2 class="text-lg font-semibold text-slate-900 mb-3">Health by category</h2>
+      <p class="text-slate-500 text-sm mb-4">Summary score per category, detected issues with priority, and recommended fixes.</p>
+      <div id="categoryCards"></div>
     </section>
 
     <!-- SEO health card -->
@@ -158,6 +166,7 @@
     var linkCls = 'text-sky-600 hover:text-sky-800 hover:underline break-all';
 
     (function(){
+      try {
       var s = data.summary || {};
       var el = document.getElementById('siteNameEl');
       if (el) el.textContent = data.site_name || 'Site';
@@ -237,6 +246,40 @@
         });
         topWrap.innerHTML = th + '</tbody></table>';
       } else if (topWrap) { topWrap.innerHTML = '<p class="' + mutedCls + ' p-4">No page data.</p>'; }
+
+      var categoryCards = document.getElementById('categoryCards');
+      if (categoryCards && data.categories && data.categories.length) {
+        var priorityCls = { Critical: 'bg-red-100 text-red-800', High: 'bg-amber-100 text-amber-800', Medium: 'bg-sky-100 text-sky-800', Low: 'bg-slate-100 text-slate-600' };
+        var html = '';
+        data.categories.forEach(function(cat) {
+          var scoreDisplay = cat.score != null ? (cat.score + '/100') : 'N/A';
+          var scoreCls = cat.score == null ? 'text-slate-500' : (cat.score >= 80 ? 'text-green-600' : (cat.score >= 50 ? 'text-amber-600' : 'text-red-600'));
+          html += '<div class="border border-slate-200 rounded-lg p-4 mb-4">';
+          html += '<div class="flex flex-wrap items-center justify-between gap-2 mb-2">';
+          html += '<h3 class="text-base font-semibold text-slate-800">' + (cat.name || cat.id || '').replace(/</g, '&lt;') + '</h3>';
+          html += '<span class="font-mono text-sm ' + scoreCls + '">' + scoreDisplay + '</span>';
+          html += '</div>';
+          if (cat.issues && cat.issues.length) {
+            html += '<table class="' + tblCls + ' mt-2"><thead><tr><th class="' + thCls + '">Issue</th><th class="' + thCls + '">URL</th><th class="' + thCls + '">Priority</th><th class="' + thCls + '">Fix</th></tr></thead><tbody>';
+            cat.issues.forEach(function(iss) {
+              var pCls = priorityCls[iss.priority] || priorityCls.Low;
+              var rawUrl = iss.url || '';
+              var hrefEsc = rawUrl.replace(/"/g, '&quot;').replace(/</g, '&lt;');
+              var urlCell = rawUrl ? ('<a href="' + hrefEsc + '" target="_blank" rel="noreferrer noopener" class="' + linkCls + ' break-all">' + (rawUrl.length > 50 ? rawUrl.slice(0, 47) + '…' : rawUrl) + '</a>') : '—';
+              html += '<tr><td class="' + tdCls + '">' + (iss.message || '').replace(/</g, '&lt;') + '</td><td class="' + tdCls + '">' + urlCell + '</td><td class="' + tdCls + '"><span class="px-1.5 py-0.5 rounded text-xs font-medium ' + pCls + '">' + (iss.priority || '') + '</span></td><td class="' + tdCls + ' text-sm">' + (iss.recommendation || '').replace(/</g, '&lt;') + '</td></tr>';
+            });
+            html += '</tbody></table>';
+          }
+          if (cat.recommendations && cat.recommendations.length) {
+            html += '<p class="text-sm font-medium text-slate-700 mt-3 mb-1">Recommended fixes</p><ul class="list-disc pl-5 text-sm text-slate-600">';
+            cat.recommendations.forEach(function(rec) { html += '<li>' + (rec || '').replace(/</g, '&lt;') + '</li>'; });
+            html += '</ul>';
+          }
+          html += '</div>';
+        });
+        categoryCards.innerHTML = html;
+      } else if (categoryCards) { categoryCards.innerHTML = '<p class="' + mutedCls + '">No category data.</p>'; }
+      } catch (err) { console.error('Report data binding error:', err); }
     })();
 
     (function setupCharts() {
@@ -314,25 +357,43 @@
       });
     })();
     (function renderNetwork(){
-      if(!data.graph_nodes || data.graph_nodes.length===0 || !data.graph_edges || data.graph_edges.length===0){
-        document.getElementById('network').innerHTML = '<p class="p-5 text-slate-500 text-center">No edge data available.</p>';
-        return;
+      try {
+        var container = document.getElementById('network');
+        if (!container) return;
+        if (!data || !data.graph_nodes || data.graph_nodes.length === 0 || !data.graph_edges || data.graph_edges.length === 0) {
+          container.innerHTML = '<p class="p-5 text-slate-500 text-center">No edge data available.</p>';
+          return;
+        }
+        var nodeMap = new Map();
+        data.graph_nodes.forEach(function(u){ nodeMap.set(u, {id: u, label: (typeof u === 'string' ? u.split('/').slice(2).join('/') : u), title: u, value: 1}); });
+        data.graph_edges.forEach(function(e){
+          var fromId = e['from'] != null ? e['from'] : e.from;
+          var toId = e['to'] != null ? e['to'] : e.to;
+          if (!fromId || !toId) return;
+          if (!nodeMap.has(fromId)) nodeMap.set(fromId, {id: fromId, label: (typeof fromId === 'string' ? fromId.split('/').slice(2).join('/') : fromId), title: fromId, value: 1});
+          if (!nodeMap.has(toId)) nodeMap.set(toId, {id: toId, label: (typeof toId === 'string' ? toId.split('/').slice(2).join('/') : toId), title: toId, value: 1});
+          if (nodeMap.get(fromId)) nodeMap.get(fromId).value = (nodeMap.get(fromId).value || 1) + 1;
+          if (nodeMap.get(toId)) nodeMap.get(toId).value = (nodeMap.get(toId).value || 1) + 0.5;
+        });
+        var nodes = Array.from(nodeMap.values()).map(function(n){ return Object.assign({shape: 'dot', scaling: {min: 10, max: 40}}, n); });
+        var edges = data.graph_edges.map(function(e){
+          var fromId = e['from'] != null ? e['from'] : e.from;
+          var toId = e['to'] != null ? e['to'] : e.to;
+          return fromId && toId ? {from: fromId, to: toId, arrows: 'to'} : null;
+        }).filter(Boolean);
+        if (nodes.length === 0 || edges.length === 0) {
+          container.innerHTML = '<p class="p-5 text-slate-500 text-center">No edge data available.</p>';
+          return;
+        }
+        var graphData = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
+        var options = { nodes: { shape: 'dot', scaling: { label: { min: 8, max: 24 } }, font: { size: 12, face: "'DM Sans', system-ui, sans-serif" } }, edges: { smooth: { type: 'force' }, arrows: { to: { enabled: true, scaleFactor: 0.6 } } }, physics: { stabilization: true, barnesHut: { gravitationalConstant: -8000, springConstant: 0.001, springLength: 200 } }, interaction: { hover: true, navigationButtons: true, zoomView: true } };
+        var network = new vis.Network(container, graphData, options);
+        network.on('doubleClick', function(params){ if (params.nodes && params.nodes.length > 0) { window.open(params.nodes[0], '_blank'); }});
+      } catch (err) {
+        var el = document.getElementById('network');
+        if (el) el.innerHTML = '<p class="p-5 text-red-600 text-center">Graph error: ' + (err && err.message ? err.message : String(err)) + '</p>';
+        console.error('Site graph error:', err);
       }
-      const nodeMap = new Map();
-      data.graph_nodes.forEach(function(u){ nodeMap.set(u, {id: u, label: u.split('/').slice(2).join('/'), title: u, value:1}); });
-      data.graph_edges.forEach(function(e){
-        if(!nodeMap.has(e.from)) nodeMap.set(e.from, {id:e.from,label:e.from,title:e.from});
-        if(!nodeMap.has(e.to)) nodeMap.set(e.to, {id:e.to,label:e.to,title:e.to});
-        if(nodeMap.get(e.from)) nodeMap.get(e.from).value = (nodeMap.get(e.from).value||1)+1;
-        if(nodeMap.get(e.to)) nodeMap.get(e.to).value = (nodeMap.get(e.to).value||1)+0.5;
-      });
-      const nodes = Array.from(nodeMap.values()).map(function(n){ return Object.assign({shape:'dot', scaling:{min:10,max:40}}, n); });
-      const edges = data.graph_edges.map(function(e){ return {from:e.from, to:e.to, arrows:'to'}; });
-      const container = document.getElementById('network');
-      const graphData = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
-      const options = { nodes: { shape: 'dot', scaling: { label: { min:8, max:24 } }, font: { size: 12, face: "'DM Sans', system-ui, sans-serif" } }, edges: { smooth: { type:'force' }, arrows: { to: {enabled:true, scaleFactor:0.6} } }, physics: { stabilization: true, barnesHut: { gravitationalConstant: -8000, springConstant: 0.001, springLength: 200 } }, interaction: { hover:true, navigationButtons:true, zoomView:true } };
-      const network = new vis.Network(container, graphData, options);
-      network.on('doubleClick', function(params){ if(params.nodes && params.nodes.length>0){ window.open(params.nodes[0], '_blank'); }});
     })();
   </script>
 </body>

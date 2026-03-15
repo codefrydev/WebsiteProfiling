@@ -7,8 +7,9 @@ A **console application** for website crawling, link-graph building, and SEO-sty
 - **src/** — Application code
   - **crawler.py** — Site crawler (threaded, robots.txt, optional outlink storage).
   - **report.py** — HTML report generation (loads data, builds edges, renders from templates).
+  - **report_categories.py** — Category scoring (Technical SEO, Performance, Accessibility, Link Health, Mobile, Security) with issues, priority, and recommendations.
   - **plot.py** — Link graph construction and matplotlib figure export.
-  - **common.py** — Shared helpers (URL normalization, link parsing, robots).
+  - **common.py** — Shared helpers (URL normalization, link parsing, robots, extended SEO/accessibility parsers).
   - **config.py** — Input file parser (key=value).
   - **templates.py** — Template loader; injects data via JSON for proper sanitization.
   - **cli.py** — CLI entry (crawl / report / plot from config).
@@ -18,7 +19,7 @@ A **console application** for website crawling, link-graph building, and SEO-sty
 ## What it does
 
 - **Crawl** a site from a start URL (respects robots.txt, configurable depth and concurrency).
-- **Report** — generate interactive HTML with executive summary, crawl overview, SEO health (titles, meta descriptions, H1s, thin content), issues and recommendations, top pages by importance, plus Chart.js and vis-network (status, content types, title lengths, outlinks, domains, site graph). Reports are print-friendly.
+- **Report** — generate interactive HTML with executive summary, crawl overview, **health by category** (Technical SEO, Core Web Vitals, Performance, HTML & Accessibility, Link Health, Mobile, Security) with per-category scores, detected issues (with priority: Critical/High/Medium/Low), and recommended fixes; SEO health (titles, meta descriptions, H1s, thin content); issues and recommendations; top pages by importance; plus Chart.js and vis-network (status, content types, title lengths, outlinks, domains, site graph). Reports are print-friendly.
 - **Plot** — build a link graph and draw it with matplotlib (edges.csv, nodes.csv, optional image file).
 
 All inputs are read from **one config file**. Edit the file, run the app, and it picks up the settings and runs.
@@ -85,12 +86,12 @@ Use a simple `key = value` (or `key: value`) format. Blank lines and lines start
 | allow_external | If true, follow links to other domains | false |
 | max_depth | Max depth from start URL (empty = no limit) | 6 |
 | polite_delay | Delay between requests in seconds | 0.2 |
-| crawl_output | Path for crawl CSV | crawl_results.csv |
-| store_outlinks | If true, store outlink URLs in crawl CSV (for reports) | true |
+| crawl_output | Path for crawl output; use `.json` or `.csv` | crawl_results.csv or crawl_results.json |
+| store_outlinks | If true, store outlink URLs in crawl output (for reports) | true |
 | **Report** | | |
-| crawl_csv | Path to crawl CSV | crawl_results.csv |
-| edges_csv | Path to edges CSV (built if missing) | edges.csv |
-| nodes_csv | Path to nodes CSV (used by plot) | nodes.csv |
+| crawl_csv | Path to crawl data (JSON or CSV) | crawl_results.csv |
+| edges_csv | Path to edges file (JSON or CSV; built if missing) | edges.csv or edges.json |
+| nodes_csv | Path to nodes file (JSON or CSV; used by plot) | nodes.csv or nodes.json |
 | report_output | Path for HTML report | site_report.html |
 | site_name | Optional site name for report title and summary (default: domain of start_url) | My Website |
 | report_title | Optional custom report title (default: site_name + report type) | SEO Report |
@@ -131,9 +132,9 @@ python -m src plot
 
 ## Outputs
 
-- **crawl_results.csv** — Per-URL: url, status, content_type, title, outlinks (and optionally outlink_targets if store_outlinks is true); response_time_ms, content_length, final_url, meta_description, meta_description_len, h1, h1_count, canonical_url (SEO/performance fields from crawler).
-- **edges.csv** — Link graph edges (from, to).
-- **nodes.csv** — Node list (from report/plot).
+- **crawl_results.csv** or **crawl_results.json** — Per-URL crawl data (url, status, content_type, title, outlinks, outlink_targets, response_time_ms, content_length, final_url, meta fields, viewport, noindex, has_schema, heading_sequence, image/aria counts, redirect_chain_length, cache/security headers, etc.). Use `.json` in config for JSON output.
+- **edges.csv** or **edges.json** — Link graph edges (from, to). Format is chosen by file extension.
+- **nodes.csv** or **nodes.json** — Node list (from report/plot). Format is chosen by file extension.
 - **site_report.html** — Interactive report: executive summary, crawl overview, SEO health, issues and recommendations, top pages, charts, and site graph. Print-friendly.
 - **site_graph.svg** — Matplotlib graph (if plot_image_output is set).
 
@@ -141,6 +142,7 @@ python -m src plot
 
 - **Executive summary** — Site name, crawl date, key KPIs (total URLs, success rate, 4xx/5xx/redirect counts), and top recommendations.
 - **Crawl overview** — Total pages, average outlinks, average title length, crawl duration.
+- **Health by category** — Summary score (0–100 or N/A) per category: Technical SEO (robots.txt, sitemap, canonicals, noindex, structured data), Core Web Vitals (LCP, FID, CLS — not measured; use Lighthouse), Performance (response time, images, caching), HTML & Accessibility (headings, alt text, ARIA; contrast not measured — use axe/DevTools), Link Health (broken links, redirects, internal linking), Mobile (viewport), Security (HTTPS, security headers, mixed content). Each category lists detected issues with priority (Critical/High/Medium/Low) and recommended fixes.
 - **SEO health** — Counts for missing/OK/short/long titles and meta descriptions, single/multiple H1s, thin content (when crawl data includes the SEO columns).
 - **Issues and recommendations** — Broken URLs (4xx/5xx), redirects (3xx), SEO issues (missing/short/long title or meta desc, H1 issues, thin content), plus actionable recommendation bullets.
 - **Top pages** — Pages ranked by link importance (PageRank/degree) for quick reference.
@@ -149,4 +151,4 @@ To save the report as PDF, open the HTML report in a browser and use **Print →
 
 ## Scope
 
-This tool focuses on **site structure and SEO-style health** (status codes, content types, titles, meta descriptions, H1s, outlinks, domains, link graph, PageRank/degree, response time, content length). It does not measure Core Web Vitals or run in-browser performance; for that, use Lighthouse or similar tools.
+This tool focuses on **site structure and SEO-style health** (status codes, content types, titles, meta descriptions, H1s, outlinks, domains, link graph, PageRank/degree, response time, content length), plus category-based checks (technical SEO, performance heuristics, accessibility, link health, mobile viewport, security headers). It does **not** measure Core Web Vitals (LCP, FID, CLS) or color contrast, which require a browser; use **Lighthouse** or **PageSpeed Insights** for Core Web Vitals, and **axe** or browser DevTools for contrast and full accessibility audits.

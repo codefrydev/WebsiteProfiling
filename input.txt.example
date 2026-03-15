@@ -11,10 +11,12 @@ ignore_robots = false
 allow_external = false
 max_depth = 6
 polite_delay = 0.2
+# Use .json for JSON output (e.g. crawl_results.json); .csv for CSV
 crawl_output = crawl_results.csv
 store_outlinks = true
 
 # ---- Report ----
+# crawl_csv, edges_csv, nodes_csv: use .json or .csv (report reads either)
 crawl_csv = crawl_results.csv
 edges_csv = edges.csv
 nodes_csv = nodes.csv
