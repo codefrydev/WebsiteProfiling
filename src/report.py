@@ -22,6 +22,7 @@ from .common import (
     save_edges,
 )
 from .report_categories import build_categories
+from .security_scanner import run_security_scan
 from .templates import render_template
 
 TEMPLATE_SIMPLE = "site_report.html"
@@ -301,6 +302,10 @@ def run_simple_report(
     site_name: Optional[str] = None,
     report_title: Optional[str] = None,
     start_url: Optional[str] = None,
+    run_security_scan_flag: bool = True,
+    security_scan_active: bool = False,
+    security_max_urls_probe: int = 20,
+    security_findings_output: Optional[str] = None,
 ) -> str:
     """Load crawl data, build edges if needed, write interactive HTML report from template. Returns output path."""
     if not os.path.exists(crawl_csv):
@@ -325,8 +330,24 @@ def run_simple_report(
     summary_seo = _compute_summary_seo_issues(df)
 
     site_level = _fetch_site_level(start_url or "", timeout=8)
+
+    security_findings: list = []
+    if run_security_scan_flag:
+        security_findings = run_security_scan(
+            df,
+            start_url=start_url or "",
+            run_active=security_scan_active,
+            max_urls_to_probe=security_max_urls_probe,
+            timeout=timeout,
+            polite_delay=0.2,
+        )
+        if security_findings_output:
+            with open(security_findings_output, "w", encoding="utf-8") as fh:
+                json.dump(security_findings, fh, indent=2, default=str)
+
     categories = build_categories(
-        df, edges, summary_seo, site_level, start_url or ""
+        df, edges, summary_seo, site_level, start_url or "",
+        security_findings=security_findings,
     )
     # Ensure categories are JSON-serializable (score may be None)
     for cat in categories:
@@ -541,6 +562,7 @@ def run_simple_report(
         "top_pages": top_pages,
         "links": links,
         "content_urls": content_urls,
+        "security_findings": security_findings,
     }
     report_data_json = json.dumps(report_data).replace("</", "<\\/")
     html = render_template(

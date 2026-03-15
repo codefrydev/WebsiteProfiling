@@ -411,8 +411,9 @@ def category_security(
     df: pd.DataFrame,
     site_level: dict,
     start_url: str,
+    security_findings: Optional[list[dict]] = None,
 ) -> dict:
-    """Security: HTTPS, security headers, mixed content."""
+    """Security: HTTPS, security headers, mixed content, and optional vulnerability scan findings."""
     issues = []
     deductions = []
     parsed = urlparse(start_url)
@@ -475,6 +476,20 @@ def category_security(
             ))
             deductions.append((15, True))
 
+    # Merge vulnerability scan findings (same format as issues: message, url, priority, recommendation)
+    if security_findings:
+        for f in security_findings:
+            severity = f.get("severity", "Medium")
+            issues.append(_issue(
+                f.get("message", ""),
+                url=f.get("url", ""),
+                priority=severity,
+                recommendation=f.get("recommendation", ""),
+            ))
+            # Deduct by severity: Critical 15, High 10, Medium 5, Low 2
+            ded = {"Critical": 15, "High": 10, "Medium": 5, "Low": 2}.get(severity, 2)
+            deductions.append((min(ded, 15), True))
+
     score = _score_deductions(100, deductions)
     return {
         "id": "security",
@@ -491,11 +506,13 @@ def build_categories(
     summary_seo: dict,
     site_level: dict,
     start_url: str,
+    security_findings: Optional[list[dict]] = None,
 ) -> list[dict]:
     """
     Build all category dicts with score, issues (with priority and recommendation), and recommendations.
     site_level should have: robots_present, sitemap_present, sitemap_valid (all optional).
     summary_seo should have: issues["broken"], issues["redirects"].
+    security_findings: optional list from security scanner (finding_type, severity, url, message, recommendation).
     """
     issues_broken = summary_seo.get("issues", {}).get("broken", [])
     issues_redirects = summary_seo.get("issues", {}).get("redirects", [])
@@ -507,6 +524,6 @@ def build_categories(
         category_html_accessibility(df),
         category_link_health(df, edges, issues_broken, issues_redirects),
         category_mobile(df),
-        category_security(df, site_level, start_url or ""),
+        category_security(df, site_level, start_url or "", security_findings=security_findings),
     ]
     return categories

@@ -90,6 +90,14 @@ def main() -> None:
         site_name = (cfg.get("site_name") or "").strip()
         report_title = (cfg.get("report_title") or "").strip()
         start_url = cfg.get("start_url", "https://codefrydev.in")
+        run_security_scan_flag = get_bool(cfg, "run_security_scan", True)
+        security_scan_active = get_bool(cfg, "security_scan_active", False)
+        security_max_urls_probe = get_int(cfg, "security_max_urls_probe", 20) or 20
+        security_findings_output = (cfg.get("security_findings_output") or "").strip()
+        if security_findings_output and not os.path.isabs(security_findings_output):
+            security_findings_output = os.path.join(cwd, security_findings_output)
+        elif not security_findings_output:
+            security_findings_output = None
         from .report import run_simple_report
         print("Generating report...")
         out = run_simple_report(
@@ -104,6 +112,10 @@ def main() -> None:
             site_name=site_name or None,
             report_title=report_title or None,
             start_url=start_url,
+            run_security_scan_flag=run_security_scan_flag,
+            security_scan_active=security_scan_active,
+            security_max_urls_probe=security_max_urls_probe,
+            security_findings_output=security_findings_output,
         )
         print(f"Report written: {out}")
 

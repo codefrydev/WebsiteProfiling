@@ -8,6 +8,7 @@ A **console application** for website crawling, link-graph building, and SEO-sty
   - **crawler.py** — Site crawler (threaded, robots.txt, optional outlink storage).
   - **report.py** — HTML report generation (loads data, builds edges, renders from templates).
   - **report_categories.py** — Category scoring (Technical SEO, Performance, Accessibility, Link Health, Mobile, Security) with issues, priority, and recommendations.
+  - **security_scanner.py** — Security and vulnerability scanner (passive checks from crawl data; optional re-fetch for forms/reflection; opt-in active checks for XSS, open redirect, SQLi).
   - **plot.py** — Link graph construction and matplotlib figure export.
   - **common.py** — Shared helpers (URL normalization, link parsing, robots, extended SEO/accessibility parsers).
   - **config.py** — Input file parser (key=value).
@@ -98,6 +99,10 @@ Use a simple `key = value` (or `key: value`) format. Blank lines and lines start
 | max_fetch_for_edges | Max URLs to fetch when building edges if not in CSV | 300 |
 | same_domain_only | Keep only same-domain edges in report/plot | true |
 | max_nodes_plot | Max nodes in report graph | 400 |
+| run_security_scan | Run security/vulnerability scan during report (passive + optional re-fetch) | true |
+| security_scan_active | Enable active checks (XSS/open redirect/SQLi probes); only on authorized sites | false |
+| security_max_urls_probe | Max URLs to re-fetch or probe for security (passive HTML and active checks) | 20 |
+| security_findings_output | Optional path to write findings JSON (e.g. security_findings.json) | — |
 | **Plot** | | |
 | plot_image_output | Path to save graph image (optional) | site_graph.svg |
 | plot_crawl_csv | Path to crawl CSV for plot (uses crawl_csv if not set) | — |
@@ -142,13 +147,23 @@ python -m src plot
 
 - **Executive summary** — Site name, crawl date, key KPIs (total URLs, success rate, 4xx/5xx/redirect counts), and top recommendations.
 - **Crawl overview** — Total pages, average outlinks, average title length, crawl duration.
-- **Health by category** — Summary score (0–100 or N/A) per category: Technical SEO (robots.txt, sitemap, canonicals, noindex, structured data), Core Web Vitals (LCP, FID, CLS — not measured; use Lighthouse), Performance (response time, images, caching), HTML & Accessibility (headings, alt text, ARIA; contrast not measured — use axe/DevTools), Link Health (broken links, redirects, internal linking), Mobile (viewport), Security (HTTPS, security headers, mixed content). Each category lists detected issues with priority (Critical/High/Medium/Low) and recommended fixes.
+- **Health by category** — Summary score (0–100 or N/A) per category: Technical SEO (robots.txt, sitemap, canonicals, noindex, structured data), Core Web Vitals (LCP, FID, CLS — not measured; use Lighthouse), Performance (response time, images, caching), HTML & Accessibility (headings, alt text, ARIA; contrast not measured — use axe/DevTools), Link Health (broken links, redirects, internal linking), Mobile (viewport), Security (HTTPS, security headers, mixed content, and vulnerability scan findings). Each category lists detected issues with priority (Critical/High/Medium/Low) and recommended fixes.
+- **Security & Vulnerabilities** — Dedicated view with all security findings (headers, HTTPS, open-redirect risk, mixed content, forms without CSRF, reflected params; optional active findings such as reflected XSS, open redirect, SQL error exposure). Filter by severity.
 - **SEO health** — Counts for missing/OK/short/long titles and meta descriptions, single/multiple H1s, thin content (when crawl data includes the SEO columns).
 - **Issues and recommendations** — Broken URLs (4xx/5xx), redirects (3xx), SEO issues (missing/short/long title or meta desc, H1 issues, thin content), plus actionable recommendation bullets.
 - **Top pages** — Pages ranked by link importance (PageRank/degree) for quick reference.
 
 To save the report as PDF, open the HTML report in a browser and use **Print → Save as PDF**.
 
+## Security scanning
+
+The report step can run a **security and vulnerability scan** on crawl data:
+
+- **Passive checks** (no extra requests, or a limited re-fetch): Missing or weak security headers (HSTS, X-Content-Type-Options, X-Frame-Options, CSP), HTTP URLs, mixed content, open-redirect risk from query parameters, and (when re-fetching a sample of URLs) forms without CSRF tokens and reflected query parameters in HTML.
+- **Active checks** (opt-in, `security_scan_active = true`): Controlled probes for reflected XSS, open redirect, and SQL error-based indicators. These send test requests to the site.
+
+**Ethical use:** Only run active scanning (`security_scan_active = true`) on sites you own or have explicit permission to test. Unauthorized testing may violate laws. The tool is intended for ethical security assessment and the user is responsible for compliance with authorization and applicable laws.
+
 ## Scope
 
-This tool focuses on **site structure and SEO-style health** (status codes, content types, titles, meta descriptions, H1s, outlinks, domains, link graph, PageRank/degree, response time, content length), plus category-based checks (technical SEO, performance heuristics, accessibility, link health, mobile viewport, security headers). It does **not** measure Core Web Vitals (LCP, FID, CLS) or color contrast, which require a browser; use **Lighthouse** or **PageSpeed Insights** for Core Web Vitals, and **axe** or browser DevTools for contrast and full accessibility audits.
+This tool focuses on **site structure and SEO-style health** (status codes, content types, titles, meta descriptions, H1s, outlinks, domains, link graph, PageRank/degree, response time, content length), plus category-based checks (technical SEO, performance heuristics, accessibility, link health, mobile viewport, security headers and vulnerability findings). It includes **passive and optional active security scanning** (headers, injection risk, open redirect, CSRF/form checks). It does **not** measure Core Web Vitals (LCP, FID, CLS) or color contrast, which require a browser; use **Lighthouse** or **PageSpeed Insights** for Core Web Vitals, and **axe** or browser DevTools for contrast and full accessibility audits.

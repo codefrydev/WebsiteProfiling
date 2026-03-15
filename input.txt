@@ -28,7 +28,13 @@ report_title = Codefrydev Report
 max_fetch_for_edges = 300
 same_domain_only = true
 max_nodes_plot = 400
-
+# Security scan (runs during report): passive checks use crawl data; optional re-fetch for forms/reflection
+run_security_scan = true
+# Active checks (XSS/open redirect/SQLi probes): only use on sites you are authorized to test
+security_scan_active = false
+security_max_urls_probe = 20
+# Optional: write findings to JSON file (e.g. for CI)
+# security_findings_output = security_findings.json
 # ---- Plot ----
 plot_image_output = site_graph.svg
 

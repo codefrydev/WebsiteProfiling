@@ -20,8 +20,7 @@
   </script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="text/javascript" src="https://unpkg.com/vis-network@9.1.2/dist/vis-network.min.js"></script>
-  <link href="https://unpkg.com/vis-network@9.1.2/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1/dist/3d-force-graph.min.js"></script>
   <style>
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #0B0F19; }
@@ -29,7 +28,7 @@
     ::-webkit-scrollbar-thumb:hover { background: #4B5563; }
     .fade-in { animation: fadeIn 0.3s ease-in-out; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-    .vis-network:focus { outline: none; }
+    #networkCanvas:focus { outline: none; }
     .tab-active { background-color: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: #60A5FA; }
     @media print {
       .print\\:hidden { display: none !important; }
@@ -87,6 +86,9 @@
       </button>
       <button type="button" data-view="content" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 transition-all">
         <i data-lucide="file-text" class="h-4 w-4"></i> On-Page Content
+      </button>
+      <button type="button" data-view="security" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 transition-all">
+        <i data-lucide="shield-alert" class="h-4 w-4"></i> Security & V <span class="ml-auto bg-amber-500/20 text-amber-400 py-0.5 px-2 rounded text-[10px]" id="securityBadge">0</span>
       </button>
       <div class="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 mt-6 px-2">Data Visualizations</div>
       <button type="button" data-view="chartjs" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 transition-all">
@@ -206,6 +208,41 @@
               <button type="button" onclick="changePage(1)" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 disabled:opacity-50" id="btnNextPage">Next</button>
             </div>
           </div>
+        </div>
+      </div>
+
+      <div id="view-security" class="view-panel p-6 lg:p-8 hidden fade-in">
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-white mb-2">Security & Vulnerabilities</h1>
+          <p class="text-slate-400">Findings from passive and optional active security scanning (headers, injection risk, open redirect, etc.).</p>
+        </div>
+        <div class="mb-4 flex flex-wrap gap-2 items-center">
+          <span class="text-sm text-slate-500">Filter by severity:</span>
+          <select id="securitySeverityFilter" class="bg-brand-800 border border-slate-700 text-sm rounded-lg px-3 py-2 text-slate-200 outline-none">
+            <option value="All">All</option>
+            <option value="Critical">Critical</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+            <option value="Info">Info</option>
+          </select>
+        </div>
+        <div class="bg-brand-800 border border-slate-700 rounded-xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-brand-900 text-slate-400 uppercase text-xs font-semibold">
+                <tr>
+                  <th class="px-6 py-4">Severity</th>
+                  <th class="px-6 py-4">Type</th>
+                  <th class="px-6 py-4">URL</th>
+                  <th class="px-6 py-4">Message</th>
+                  <th class="px-6 py-4">Recommendation</th>
+                </tr>
+              </thead>
+              <tbody id="securityFindingsTableBody" class="divide-y divide-slate-800/50"></tbody>
+            </table>
+          </div>
+          <p id="securityFindingsEmpty" class="p-6 text-center text-slate-500 hidden">No security findings.</p>
         </div>
       </div>
 
@@ -627,34 +664,33 @@
         var st = urlToStatus[u] || '';
         var isOk = /^2/.test(st);
         var color = /^[45]/.test(st) ? '#EF4444' : (isOk ? '#3B82F6' : '#64748b');
-        var border = /^[45]/.test(st) ? '#7F1D1D' : (isOk ? '#1E3A8A' : '#475569');
-        nodeMap.set(u, { id: u, label: (typeof u === 'string' ? u.replace(/^https?:\/\/[^/]+/, '') || '/' : u), title: u, value: 1, color: { background: color, border: border }, font: { color: '#94A3B8', size: 10 } });
+        nodeMap.set(u, { id: u, label: (typeof u === 'string' ? u.replace(/^https?:\/\/[^/]+/, '') || '/' : u), title: u, color: color });
       });
       data.graph_edges.forEach(function(e) {
         var fromId = e['from'] != null ? e['from'] : e.from;
         var toId = e['to'] != null ? e['to'] : e.to;
         if (!fromId || !toId) return;
-        if (!nodeMap.has(fromId)) { var st = urlToStatus[fromId] || ''; var color = /^[45]/.test(st) ? '#EF4444' : '#3B82F6'; nodeMap.set(fromId, { id: fromId, label: (typeof fromId === 'string' ? fromId.replace(/^https?:\/\/[^/]+/, '') || '/' : fromId), title: fromId, value: 1, color: { background: color, border: '#1E3A8A' }, font: { color: '#94A3B8', size: 10 } }); }
-        if (!nodeMap.has(toId)) { var st = urlToStatus[toId] || ''; var color = /^[45]/.test(st) ? '#EF4444' : '#3B82F6'; nodeMap.set(toId, { id: toId, label: (typeof toId === 'string' ? toId.replace(/^https?:\/\/[^/]+/, '') || '/' : toId), title: toId, value: 1, color: { background: color, border: '#1E3A8A' }, font: { color: '#94A3B8', size: 10 } }); }
+        if (!nodeMap.has(fromId)) { var st = urlToStatus[fromId] || ''; var color = /^[45]/.test(st) ? '#EF4444' : '#3B82F6'; nodeMap.set(fromId, { id: fromId, label: (typeof fromId === 'string' ? fromId.replace(/^https?:\/\/[^/]+/, '') || '/' : fromId), title: fromId, color: color }); }
+        if (!nodeMap.has(toId)) { var st = urlToStatus[toId] || ''; var color = /^[45]/.test(st) ? '#EF4444' : '#3B82F6'; nodeMap.set(toId, { id: toId, label: (typeof toId === 'string' ? toId.replace(/^https?:\/\/[^/]+/, '') || '/' : toId), title: toId, color: color }); }
       });
-      var nodes = Array.from(nodeMap.values()).map(function(n) { return Object.assign({ shape: 'dot', borderWidth: 2 }, n); });
-      var edges = (data.graph_edges || []).map(function(e) {
+      var nodes = Array.from(nodeMap.values());
+      var links = (data.graph_edges || []).map(function(e) {
         var fromId = e['from'] != null ? e['from'] : e.from;
         var toId = e['to'] != null ? e['to'] : e.to;
-        return fromId && toId ? { from: fromId, to: toId, color: { color: '#334155', opacity: 0.6 } } : null;
+        return fromId && toId ? { source: fromId, target: toId } : null;
       }).filter(Boolean);
-      if (nodes.length === 0 || edges.length === 0) {
+      if (nodes.length === 0 || links.length === 0) {
         container.innerHTML = '<p class="p-5 text-slate-500 text-center">No edge data available.</p>';
         STATE.networkRendered = true;
         return;
       }
-      var network = new vis.Network(container, { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) }, {
-        nodes: { shape: 'dot', borderWidth: 2, scaling: { min: 10, max: 40 } },
-        edges: { smooth: { type: 'continuous' } },
-        physics: { stabilization: { iterations: 100 }, barnesHut: { gravitationalConstant: -3000, springLength: 100 } }
-      });
-      network.on('doubleClick', function(params) { if (params.nodes && params.nodes.length > 0) window.open(params.nodes[0], '_blank'); });
-      STATE.networkInstance = network;
+      var graph = ForceGraph3D()(container)
+        .graphData({ nodes: nodes, links: links })
+        .nodeColor(function(node) { return node.color; })
+        .nodeLabel(function(node) { return node.title || node.id; })
+        .onNodeDoubleClick(function(node) { window.open(node.id, '_blank'); })
+        .backgroundColor('#05080f');
+      STATE.networkInstance = graph;
       STATE.networkRendered = true;
     }
 
@@ -664,7 +700,7 @@
       if (!container) return;
       var w = container.offsetWidth;
       var h = container.offsetHeight;
-      if (w && h) { STATE.networkInstance.setSize(w, h); STATE.networkInstance.redraw(); }
+      if (w && h) { STATE.networkInstance.width(w).height(h); }
     }
 
     function toggleNetworkFullscreen() {
@@ -724,6 +760,37 @@
       if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
+    function renderSecurityFindings() {
+      var list = data.security_findings || [];
+      var severityFilter = (document.getElementById('securitySeverityFilter') || {}).value || 'All';
+      if (severityFilter !== 'All') list = list.filter(function(f) { return (f.severity || '') === severityFilter; });
+      var tbody = document.getElementById('securityFindingsTableBody');
+      var emptyEl = document.getElementById('securityFindingsEmpty');
+      if (!tbody) return;
+      if (list.length === 0) {
+        tbody.innerHTML = '';
+        if (emptyEl) emptyEl.classList.remove('hidden');
+        return;
+      }
+      if (emptyEl) emptyEl.classList.add('hidden');
+      var sevClass = function(s) {
+        if (s === 'Critical') return 'bg-red-500/20 text-red-400 border border-red-500/30';
+        if (s === 'High') return 'bg-red-500/10 text-red-300 border border-red-500/20';
+        if (s === 'Medium') return 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30';
+        if (s === 'Low') return 'bg-slate-500/20 text-slate-400 border border-slate-500/30';
+        return 'bg-slate-600/20 text-slate-500 border border-slate-600/30';
+      };
+      tbody.innerHTML = list.map(function(f) {
+        var sev = f.severity || 'Info';
+        var typeStr = (f.finding_type || '').replace(/_/g, ' ');
+        var url = f.url || '';
+        var msg = f.message || '';
+        var rec = f.recommendation || '';
+        return '<tr class="hover:bg-brand-900/50"><td class="px-6 py-3"><span class="px-2 py-1 rounded text-xs font-bold ' + sevClass(sev) + '">' + escapeHtml(sev) + '</span></td><td class="px-6 py-3 text-slate-400 font-mono text-xs">' + escapeHtml(typeStr) + '</td><td class="px-6 py-3 font-mono text-blue-400 text-xs break-all"><a href="' + escapeHtml(url) + '" target="_blank" class="hover:underline">' + escapeHtml(url) + '</a></td><td class="px-6 py-3 text-slate-200">' + escapeHtml(msg) + '</td><td class="px-6 py-3 text-slate-400 text-sm">' + escapeHtml(rec) + '</td></tr>';
+      }).join('');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
     function switchTab(viewId) {
       document.querySelectorAll('.view-panel').forEach(function(el) { el.classList.add('hidden'); });
       document.querySelectorAll('.nav-btn').forEach(function(el) { el.classList.remove('tab-active'); });
@@ -739,11 +806,15 @@
       if (viewId === 'overview') renderOverview();
       if (viewId === 'issues') renderIssues();
       if (viewId === 'content' && STATE.contentFilter) renderContentList(STATE.contentFilter);
+      if (viewId === 'security') renderSecurityFindings();
       if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 
     document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('issuesBadge').textContent = getIssueCount();
+      var secFindings = data.security_findings || [];
+      var secBadge = document.getElementById('securityBadge');
+      if (secBadge) secBadge.textContent = secFindings.length;
       renderOverview();
       renderIssues();
       initContentFilters();
@@ -772,6 +843,11 @@
         STATE.links.filterInlinks = this.value;
         STATE.links.page = 1;
         updateLinksTable();
+      });
+
+      var securitySeverityFilter = document.getElementById('securitySeverityFilter');
+      if (securitySeverityFilter) securitySeverityFilter.addEventListener('change', function() {
+        if (STATE.currentView === 'security') renderSecurityFindings();
       });
 
       document.querySelectorAll('#view-links [data-sort]').forEach(function(th) {
