@@ -410,6 +410,112 @@ def run_simple_report(
                 "degree": int(row.get("outlinks", 0) or 0),
             })
 
+    # In-degree per URL for Link Explorer (number of edges pointing to this url)
+    in_degree: dict[str, int] = {}
+    for from_url, to_url in edges:
+        in_degree[to_url] = in_degree.get(to_url, 0) + 1
+
+    # Full links list: every crawled URL with url, status, inlinks, title, content_length, depth
+    links = []
+    for _, row in df.iterrows():
+        u = row.get("url")
+        if pd.isna(u) or not u:
+            continue
+        u = str(u).strip()
+        st = str(row.get("status", "")).strip()
+        title_val = row.get("title")
+        title_str = "" if pd.isna(title_val) else str(title_val).strip()
+        content_len = row.get("content_length")
+        if "content_length" in df.columns and content_len is not None and not pd.isna(content_len):
+            content_len = int(pd.to_numeric(content_len, errors="coerce") or 0)
+        else:
+            content_len = 0
+        depth_val = row.get("depth") if "depth" in df.columns else None
+        depth_int = None
+        if depth_val is not None and not pd.isna(depth_val):
+            try:
+                depth_int = int(pd.to_numeric(depth_val, errors="coerce") or 0)
+            except Exception:
+                depth_int = None
+        rec = {
+            "url": u,
+            "status": st,
+            "inlinks": in_degree.get(u, 0),
+            "title": title_str,
+            "content_length": content_len,
+        }
+        if depth_int is not None:
+            rec["depth"] = depth_int
+        links.append(rec)
+
+    # Content URL lists for On-Page Content view
+    missing_h1 = []
+    missing_title = []
+    multiple_h1 = []
+    if "h1_count" in df.columns:
+        h1c = pd.to_numeric(df["h1_count"], errors="coerce").fillna(-1).astype(int)
+        for i, row in df.iterrows():
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            u = str(u).strip()
+            t = row.get("title")
+            title_str = "" if pd.isna(t) else str(t).strip()
+            if h1c.iloc[i] == 0 or h1c.iloc[i] == -1:
+                missing_h1.append({"url": u, "title": title_str})
+            elif h1c.iloc[i] > 1:
+                multiple_h1.append({"url": u, "h1_count": int(h1c.iloc[i]), "title": title_str})
+    if "title" in df.columns:
+        titles = df["title"].fillna("").astype(str)
+        for i, row in df.iterrows():
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            u = str(u).strip()
+            if titles.iloc[i].strip() == "":
+                missing_title.append({"url": u})
+
+    missing_meta_desc = []
+    meta_desc_short = []
+    meta_desc_long = []
+    thin_content = []
+    if "meta_description_len" in df.columns:
+        md_len = pd.to_numeric(df["meta_description_len"], errors="coerce").fillna(0).astype(int)
+        for i, row in df.iterrows():
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            u = str(u).strip()
+            ml = md_len.iloc[i]
+            title_str = "" if pd.isna(row.get("title")) else str(row.get("title")).strip()
+            if ml == 0:
+                missing_meta_desc.append({"url": u, "title": title_str})
+            elif 0 < ml < META_DESC_LEN_MIN:
+                meta_desc_short.append({"url": u, "title": title_str, "meta_desc_len": int(ml)})
+            elif ml > META_DESC_LEN_MAX:
+                meta_desc_long.append({"url": u, "title": title_str, "meta_desc_len": int(ml)})
+    if "content_length" in df.columns:
+        cl = pd.to_numeric(df["content_length"], errors="coerce").fillna(0).astype(int)
+        for i, row in df.iterrows():
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            u = str(u).strip()
+            c = int(cl.iloc[i])
+            if 0 < c < THIN_CONTENT_CHARS:
+                title_str = "" if pd.isna(row.get("title")) else str(row.get("title")).strip()
+                thin_content.append({"url": u, "title": title_str, "content_length": c})
+
+    content_urls = {
+        "missing_h1": missing_h1,
+        "missing_title": missing_title,
+        "multiple_h1": multiple_h1,
+        "missing_meta_desc": missing_meta_desc,
+        "meta_desc_short": meta_desc_short,
+        "meta_desc_long": meta_desc_long,
+        "thin_content": thin_content,
+    }
+
     report_data = {
         "site_name": site_display,
         "report_title": report_display_title,
@@ -418,6 +524,9 @@ def run_simple_report(
         "issues": summary_seo["issues"],
         "recommendations": summary_seo["recommendations"],
         "categories": categories,
+        "site_level": site_level,
+        "redirects": summary_seo["issues"].get("redirects", []),
+        "orphan_urls": [rec["url"] for rec in links if rec.get("inlinks", 0) == 0],
         "status_counts": status_counts,
         "mime_labels": top_mimes.index.tolist(),
         "mime_values": top_mimes.values.tolist(),
@@ -430,6 +539,8 @@ def run_simple_report(
         "graph_nodes": graph_nodes,
         "graph_edges": graph_edges,
         "top_pages": top_pages,
+        "links": links,
+        "content_urls": content_urls,
     }
     report_data_json = json.dumps(report_data).replace("</", "<\\/")
     html = render_template(

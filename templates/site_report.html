@@ -1,400 +1,844 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Site Crawl Report</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Crawl analytics dashboard report">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SEO Deep Analysis Platform | Enterprise Edition</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="text/javascript" src="https://unpkg.com/vis-network@9.1.2/dist/vis-network.min.js"></script>
-  <link href="https://unpkg.com/vis-network@9.1.2/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
   <script>
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: { sans: ['DM Sans', 'system-ui', 'sans-serif'] },
-          colors: {
-            dashboard: {
-              header: '#1e293b',
-              accent: '#0ea5e9',
-              surface: '#f8fafc',
-            }
-          }
+          colors: { brand: { 900: '#0B0F19', 800: '#111827', 700: '#1F2937' } }
         }
       }
     };
   </script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script type="text/javascript" src="https://unpkg.com/vis-network@9.1.2/dist/vis-network.min.js"></script>
+  <link href="https://unpkg.com/vis-network@9.1.2/styles/vis-network.min.css" rel="stylesheet" type="text/css" />
   <style>
-    body { font-family: 'DM Sans', system-ui, sans-serif; }
-    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
-    .scorecard { border-left: 4px solid #0ea5e9; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0B0F19; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4B5563; }
+    .fade-in { animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    .vis-network:focus { outline: none; }
+    .tab-active { background-color: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: #60A5FA; }
     @media print {
-      .print\:hidden { display: none !important; }
-      body { background: #fff; }
-      #network { height: 500px !important; }
-      .card { box-shadow: none; border: 1px solid #e2e8f0; }
-      .print\:break-inside-avoid { break-inside: avoid; }
+      .print\\:hidden { display: none !important; }
+      body { background: #fff; color: #111; }
+      .view-panel { display: block !important; }
+      #viewContainer > .view-panel.hidden { display: none !important; }
+      .print\\:break-inside-avoid { break-inside: avoid; }
+      #networkCanvas { height: 500px !important; }
     }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
-  <!-- Dashboard header -->
-  <header class="bg-[#1e293b] text-white px-4 py-3 md:px-6 print:bg-white print:text-gray-900 print:border-b">
-    <div class="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-2">
-      <h1 id="summary" class="text-lg md:text-xl font-bold">Crawl Report</h1>
+<body class="min-h-screen flex bg-brand-900 text-slate-300 font-sans selection:bg-blue-500/30 overflow-hidden">
+
+  <div id="chartTooltip" class="pointer-events-none fixed z-[99999] hidden bg-slate-900 border border-slate-700 text-white px-3 py-2 rounded-lg shadow-xl text-xs font-semibold transform -translate-x-1/2 -translate-y-full mt-[-10px]">
+    <span id="tooltipContent"></span>
+    <div class="absolute bottom-[-5px] left-1/2 transform -translate-x-1/2 w-2 h-2 bg-slate-900 border-b border-r border-slate-700 rotate-45"></div>
+  </div>
+
+  <div id="inspectorModal" class="fixed inset-0 z-[9999] hidden flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm transition-opacity opacity-0 print:hidden">
+    <div class="bg-brand-800 border border-slate-700 rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] transform scale-95 transition-transform" id="modalContainer">
+      <div class="p-5 border-b border-slate-700 flex justify-between items-center bg-brand-900/50">
+        <h2 class="text-xl font-bold text-white flex items-center gap-2" id="modalTitle"><i data-lucide="microscope" class="text-blue-500"></i> Deep Element Inspector</h2>
+        <button type="button" onclick="closeModal()" class="text-slate-500 hover:text-white transition-colors"><i data-lucide="x"></i></button>
+      </div>
+      <div class="p-6 overflow-y-auto flex-1 space-y-6" id="modalBody"></div>
+      <div class="p-4 border-t border-slate-700 bg-brand-900/50 flex justify-end gap-3">
+        <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-lg text-sm font-medium border border-slate-700 hover:bg-slate-700 transition-colors">Close</button>
+        <button type="button" id="btnExportFixScript" class="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 hover:bg-blue-500 text-white transition-colors">Export Fix Script</button>
+      </div>
+    </div>
+  </div>
+
+  <aside class="w-64 bg-brand-800 border-r border-slate-800 flex flex-col h-screen shrink-0 z-20 shadow-xl hidden md:flex print:hidden">
+    <div class="h-16 flex items-center px-6 border-b border-slate-800 bg-brand-900/30">
+      <i data-lucide="radar" class="text-blue-500 mr-3 h-6 w-6"></i>
+      <div>
+        <div class="font-bold text-white leading-tight" id="sidebarSiteName">Site</div>
+        <div class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Enterprise Crawler</div>
+      </div>
+    </div>
+    <nav class="flex-1 overflow-y-auto p-4 space-y-1" id="mainNav">
+      <div class="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 mt-4 px-2">Dashboards</div>
+      <button type="button" data-view="overview" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 transition-all tab-active">
+        <i data-lucide="layout-dashboard" class="h-4 w-4"></i> Executive Summary
+      </button>
+      <button type="button" data-view="issues" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 transition-all">
+        <i data-lucide="alert-octagon" class="h-4 w-4"></i> Technical Issues <span class="ml-auto bg-red-500/20 text-red-400 py-0.5 px-2 rounded text-[10px]" id="issuesBadge">0</span>
+      </button>
+      <div class="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 mt-6 px-2">Deep Analysis</div>
+      <button type="button" data-view="links" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 transition-all">
+        <i data-lucide="link" class="h-4 w-4"></i> Link Explorer
+      </button>
+      <button type="button" data-view="redirects" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 transition-all">
+        <i data-lucide="repeat" class="h-4 w-4"></i> Redirects
+      </button>
+      <button type="button" data-view="content" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 transition-all">
+        <i data-lucide="file-text" class="h-4 w-4"></i> On-Page Content
+      </button>
+      <div class="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 mt-6 px-2">Data Visualizations</div>
+      <button type="button" data-view="chartjs" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 transition-all">
+        <i data-lucide="pie-chart" class="h-4 w-4"></i> Chart.js Analytics
+      </button>
+      <button type="button" data-view="network" class="nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 transition-all">
+        <i data-lucide="share-2" class="h-4 w-4"></i> Site Architecture
+      </button>
+    </nav>
+    <div class="p-4 border-t border-slate-800 bg-brand-900/30">
       <div class="flex items-center gap-3">
-        <span class="text-slate-300 text-sm print:text-gray-600">{{ generated_time }}</span>
-        <span class="px-2 py-0.5 rounded text-xs font-medium bg-sky-500/30 text-sky-200 print:bg-gray-200 print:text-gray-700">Report</span>
+        <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white text-xs" id="siteInitials">S</div>
+        <div class="text-xs">
+          <div class="text-white font-bold" id="footerSiteName">Site</div>
+          <div class="text-slate-500">Last Crawl: {{ generated_time }}</div>
+        </div>
       </div>
     </div>
-  </header>
+  </aside>
 
-  <!-- Nav -->
-  <nav class="print:hidden bg-white border-b border-slate-200 px-4 md:px-6 py-2 sticky top-0 z-10 shadow-sm">
-    <div class="max-w-[1600px] mx-auto flex flex-wrap gap-2 text-sm">
-      <a href="#exec-summary" class="text-sky-600 hover:text-sky-800 font-medium">Summary</a>
-      <a href="#crawl-overview" class="text-slate-600 hover:text-slate-900">Crawl overview</a>
-      <a href="#category-scores" class="text-slate-600 hover:text-slate-900">Category scores</a>
-      <a href="#seo-health" class="text-slate-600 hover:text-slate-900">SEO</a>
-      <a href="#issues-recs" class="text-slate-600 hover:text-slate-900">Issues</a>
-      <a href="#top-pages" class="text-slate-600 hover:text-slate-900">Top pages</a>
-      <a href="#charts" class="text-slate-600 hover:text-slate-900">Charts</a>
-      <a href="#graph" class="text-slate-600 hover:text-slate-900">Site graph</a>
-    </div>
-  </nav>
-
-  <main class="flex-1 p-4 md:p-6 max-w-[1600px] w-full mx-auto">
-    <!-- Scorecard row -->
-    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6" id="kpiGrid"></div>
-
-    <!-- Executive summary card -->
-    <section class="card p-5 mb-6" id="exec-summary">
-      <h2 class="text-lg font-semibold text-slate-900 mb-2 border-b border-slate-100 pb-2">Executive summary</h2>
-      <p class="text-slate-600 text-sm mb-4"><strong id="siteNameEl" class="text-slate-900">Site</strong> · {{ generated_time }}</p>
-      <h3 class="text-sm font-medium text-slate-700 mb-2">Key findings</h3>
-      <ul class="list-disc pl-5 space-y-1 text-slate-700 text-sm" id="keyFindings"></ul>
-    </section>
-
-    <!-- Crawl overview card -->
-    <section class="card p-5 mb-6" id="crawl-overview">
-      <h2 class="text-lg font-semibold text-slate-900 mb-3">Crawl overview</h2>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3" id="crawlKpis"></div>
-    </section>
-
-    <!-- Category scores: Technical SEO, Core Web Vitals, Performance, etc. -->
-    <section class="card p-5 mb-6 print:break-inside-avoid" id="category-scores">
-      <h2 class="text-lg font-semibold text-slate-900 mb-3">Health by category</h2>
-      <p class="text-slate-500 text-sm mb-4">Summary score per category, detected issues with priority, and recommended fixes.</p>
-      <div id="categoryCards"></div>
-    </section>
-
-    <!-- SEO health card -->
-    <section id="seo-health" class="card p-5 mb-6 hidden">
-      <h2 class="text-lg font-semibold text-slate-900 mb-3">SEO health</h2>
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3" id="seoKpis"></div>
-    </section>
-
-    <!-- Issues and recommendations card -->
-    <section class="card p-5 mb-6" id="issues-recs">
-      <h2 class="text-lg font-semibold text-slate-900 mb-3">Issues and recommendations</h2>
-      <div id="issuesSection"></div>
-      <h3 class="text-sm font-medium text-slate-700 mt-4 mb-2">Recommendations</h3>
-      <ul class="list-disc pl-5 space-y-1 text-slate-700 text-sm" id="recsList"></ul>
-    </section>
-
-    <!-- Top pages card -->
-    <section class="card p-5 mb-6" id="top-pages">
-      <h2 class="text-lg font-semibold text-slate-900 mb-3">Top pages (by link importance)</h2>
-      <div id="topPagesWrap" class="overflow-x-auto rounded-lg border border-slate-200"></div>
-    </section>
-
-    <!-- Charts grid -->
-    <h2 id="charts" class="text-lg font-semibold text-slate-900 mb-4">Charts</h2>
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-      <div class="card p-4 print:break-inside-avoid">
-        <h3 class="text-sm font-medium text-slate-700 mb-3">Status counts</h3>
-        <canvas id="statusChart"></canvas>
+  <main class="flex-1 flex flex-col h-screen overflow-hidden bg-brand-900 relative">
+    <header class="h-16 border-b border-slate-800 bg-brand-800/80 backdrop-blur-md flex items-center justify-between px-6 shrink-0 z-10 print:hidden">
+      <div class="flex-1 max-w-xl relative">
+        <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500"></i>
+        <input type="text" id="globalSearch" placeholder="Search URLs, issues..." class="w-full bg-brand-900 border border-slate-700 focus:border-blue-500 rounded-lg pl-10 pr-4 py-2 text-sm outline-none text-slate-200 transition-all">
       </div>
-      <div class="card p-4 print:break-inside-avoid">
-        <h3 class="text-sm font-medium text-slate-700 mb-3">Top content-types</h3>
-        <canvas id="mimeChart"></canvas>
+      <div class="flex items-center gap-4 ml-4">
+        <button type="button" id="btnExportData" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors"><i data-lucide="download" class="h-4 w-4"></i> Export Data</button>
       </div>
-      <div class="card p-4 print:break-inside-avoid">
-        <h3 class="text-sm font-medium text-slate-700 mb-3">Outlinks distribution</h3>
-        <canvas id="outlinksChart"></canvas>
-      </div>
-      <div class="card p-4 print:break-inside-avoid">
-        <h3 class="text-sm font-medium text-slate-700 mb-3">Title length distribution</h3>
-        <canvas id="titleChart"></canvas>
-      </div>
-    </div>
-    <div class="card p-4 mb-6 print:break-inside-avoid">
-      <h3 class="text-sm font-medium text-slate-700 mb-3">Top domains discovered</h3>
-      <canvas id="domainChart"></canvas>
-    </div>
+    </header>
 
-    <!-- Site graph card -->
-    <h2 id="graph" class="text-lg font-semibold text-slate-900 mb-3">Interactive Site Graph</h2>
-    <p class="text-slate-500 text-sm mb-2">Double-click a node to open the page.</p>
-    <div class="card overflow-hidden">
-      <div id="network" class="w-full h-[700px] bg-white"></div>
+    <div class="flex-1 overflow-y-auto relative" id="viewContainer">
+
+      <div id="view-overview" class="view-panel p-6 lg:p-8 fade-in block">
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-white mb-2">Executive Summary</h1>
+          <p class="text-slate-400">High-level crawl analytics for <span class="text-blue-400" id="overviewSiteName">Site</span>. <span id="overviewCrawlTime">Crawl completed.</span></p>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8" id="kpiGrid"></div>
+        <div id="siteLevelSummary" class="mb-8 hidden"></div>
+        <div id="recommendationsBlock" class="mb-8 hidden"></div>
+        <h2 class="text-xl font-bold text-white mb-4">Top Pages by Importance</h2>
+        <div id="topPagesBlock" class="mb-8"></div>
+        <h2 class="text-xl font-bold text-white mb-4">Health by Category</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8" id="categoryDonuts"></div>
+      </div>
+
+      <div id="view-issues" class="view-panel p-6 lg:p-8 hidden fade-in">
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-white mb-2">Technical Issues</h1>
+          <p class="text-slate-400">Prioritized list of actionable fixes based on crawl data.</p>
+        </div>
+        <div class="space-y-4" id="issuesListContainer"></div>
+      </div>
+
+      <div id="view-redirects" class="view-panel p-6 lg:p-8 hidden fade-in">
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-white mb-2">Redirects</h1>
+          <p class="text-slate-400">URLs that redirect to another location. From → To.</p>
+        </div>
+        <div class="bg-brand-800 border border-slate-700 rounded-xl overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-brand-900 text-slate-400 uppercase text-xs font-semibold">
+                <tr>
+                  <th class="px-6 py-4">From (requested URL)</th>
+                  <th class="px-6 py-4">Status</th>
+                  <th class="px-6 py-4">To (final URL)</th>
+                </tr>
+              </thead>
+              <tbody id="redirectsTableBody" class="divide-y divide-slate-800/50"></tbody>
+            </table>
+          </div>
+          <p id="redirectsEmpty" class="p-6 text-center text-slate-500 hidden">No redirects found.</p>
+        </div>
+      </div>
+
+      <div id="view-links" class="view-panel p-6 lg:p-8 hidden fade-in flex-col h-full">
+        <div class="mb-6 flex justify-between items-end shrink-0">
+          <div>
+            <h1 class="text-3xl font-bold text-white mb-2">Link Explorer</h1>
+            <p class="text-slate-400">Analyze discovered URLs. Showing <span id="linkCountDisplay" class="font-bold text-white">0</span> results.</p>
+          </div>
+          <div class="flex gap-2">
+            <select id="linkInlinksFilter" class="bg-brand-800 border border-slate-700 text-sm rounded-lg px-3 py-2 text-slate-200 outline-none">
+              <option value="All">All pages</option>
+              <option value="Orphans">Orphans (0 inlinks)</option>
+            </select>
+            <select id="linkStatusFilter" class="bg-brand-800 border border-slate-700 text-sm rounded-lg px-3 py-2 text-slate-200 outline-none">
+              <option value="All">All Status Codes</option>
+              <option value="200">200 OK</option>
+              <option value="404">404 Not Found</option>
+              <option value="301">301 Redirect</option>
+              <option value="302">302 Redirect</option>
+            </select>
+          </div>
+        </div>
+        <div class="bg-brand-800 border border-slate-700 rounded-xl overflow-hidden flex flex-col flex-1 min-h-[500px]">
+          <div class="overflow-x-auto flex-1">
+            <table class="w-full text-left text-sm whitespace-nowrap">
+              <thead class="bg-brand-900 text-slate-400 uppercase text-xs font-semibold sticky top-0 z-10 shadow-sm">
+                <tr>
+                  <th class="px-6 py-4 cursor-pointer hover:text-white" data-sort="url">URL Path <i data-lucide="chevrons-up-down" class="inline h-3 w-3"></i></th>
+                  <th class="px-6 py-4 cursor-pointer hover:text-white" data-sort="status">Status <i data-lucide="chevrons-up-down" class="inline h-3 w-3"></i></th>
+                  <th class="px-6 py-4 cursor-pointer hover:text-white" data-sort="inlinks">Inlinks <i data-lucide="chevrons-up-down" class="inline h-3 w-3"></i></th>
+                  <th class="px-6 py-4 cursor-pointer hover:text-white" data-sort="depth">Depth <i data-lucide="chevrons-up-down" class="inline h-3 w-3"></i></th>
+                  <th class="px-6 py-4 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="linksTableBody" class="divide-y divide-slate-800/50"></tbody>
+            </table>
+          </div>
+          <div class="p-4 border-t border-slate-700 bg-brand-900 flex justify-between items-center shrink-0">
+            <div class="text-sm text-slate-400">Page <span id="pageCurrent" class="font-bold text-white">1</span> of <span id="pageTotal" class="font-bold text-white">1</span></div>
+            <div class="flex gap-2">
+              <button type="button" onclick="changePage(-1)" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 disabled:opacity-50" id="btnPrevPage">Previous</button>
+              <button type="button" onclick="changePage(1)" class="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 disabled:opacity-50" id="btnNextPage">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-content" class="view-panel p-6 lg:p-8 hidden fade-in">
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-white mb-2">On-Page Content Analysis</h1>
+          <p class="text-slate-400">Review missing or duplicate Titles, Meta Descriptions, and H1 tags.</p>
+        </div>
+        <div class="bg-brand-800 border border-slate-700 rounded-xl overflow-hidden shadow-sm">
+          <div class="p-4 border-b border-slate-700 bg-brand-900/50 flex gap-4 flex-wrap">
+            <button type="button" data-content-filter="missing_h1" class="content-chip px-4 py-1.5 rounded-full text-sm font-bold border border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600" id="chipMissingH1">Missing H1 (0)</button>
+            <button type="button" data-content-filter="missing_title" class="content-chip px-4 py-1.5 rounded-full text-sm font-bold border border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600" id="chipMissingTitle">Missing Titles (0)</button>
+            <button type="button" data-content-filter="multiple_h1" class="content-chip px-4 py-1.5 rounded-full text-sm font-bold border border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600" id="chipMultipleH1">Multiple H1s (0)</button>
+            <button type="button" data-content-filter="missing_meta_desc" class="content-chip px-4 py-1.5 rounded-full text-sm font-bold border border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600" id="chipMissingMetaDesc">Missing Meta Desc (0)</button>
+            <button type="button" data-content-filter="meta_desc_short" class="content-chip px-4 py-1.5 rounded-full text-sm font-bold border border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600" id="chipMetaDescShort">Meta Desc Short (0)</button>
+            <button type="button" data-content-filter="meta_desc_long" class="content-chip px-4 py-1.5 rounded-full text-sm font-bold border border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600" id="chipMetaDescLong">Meta Desc Long (0)</button>
+            <button type="button" data-content-filter="thin_content" class="content-chip px-4 py-1.5 rounded-full text-sm font-bold border border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600" id="chipThinContent">Thin Content (0)</button>
+          </div>
+          <div id="contentListWrap" class="p-6">
+            <p class="text-center text-slate-500 py-8">Select a filter above to load URLs.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="view-chartjs" class="view-panel p-6 lg:p-8 hidden fade-in">
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold text-white mb-2">Chart.js Analytics Hub</h1>
+          <p class="text-slate-400">Status, content types, outlinks, title length, and domain distribution.</p>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div class="bg-brand-800 border border-slate-700 rounded-xl p-4 print:break-inside-avoid">
+            <h3 class="text-sm font-medium text-slate-200 mb-3">Status counts</h3>
+            <div class="h-64"><canvas id="statusChart"></canvas></div>
+          </div>
+          <div class="bg-brand-800 border border-slate-700 rounded-xl p-4 print:break-inside-avoid">
+            <h3 class="text-sm font-medium text-slate-200 mb-3">Top content-types</h3>
+            <div class="h-64"><canvas id="mimeChart"></canvas></div>
+          </div>
+          <div class="bg-brand-800 border border-slate-700 rounded-xl p-4 print:break-inside-avoid">
+            <h3 class="text-sm font-medium text-slate-200 mb-3">Outlinks distribution</h3>
+            <div class="h-64"><canvas id="outlinksChart"></canvas></div>
+          </div>
+          <div class="bg-brand-800 border border-slate-700 rounded-xl p-4 print:break-inside-avoid">
+            <h3 class="text-sm font-medium text-slate-200 mb-3">Title length distribution</h3>
+            <div class="h-64"><canvas id="titleChart"></canvas></div>
+          </div>
+        </div>
+        <div class="bg-brand-800 border border-slate-700 rounded-xl p-4 print:break-inside-avoid">
+          <h3 class="text-sm font-medium text-slate-200 mb-3">Top domains discovered</h3>
+          <div class="h-64"><canvas id="domainChart"></canvas></div>
+        </div>
+      </div>
+
+      <div id="view-network" class="view-panel p-6 lg:p-8 hidden fade-in flex-col h-full">
+        <div class="mb-4">
+          <h1 class="text-3xl font-bold text-white mb-2">Site Architecture Topology</h1>
+          <p class="text-slate-400">Physics-based simulation of internal linking. Red nodes indicate 4xx/5xx.</p>
+        </div>
+        <div id="networkContainer" class="flex-1 bg-brand-800 border border-slate-700 rounded-xl overflow-hidden shadow-lg relative min-h-[80vh]">
+          <div id="networkCanvas" class="absolute inset-0 w-full h-full bg-[#05080f]"></div>
+          <div class="absolute top-4 left-4 bg-brand-900/80 backdrop-blur border border-slate-700 p-3 rounded-lg text-xs space-y-2 z-10">
+            <div class="flex items-center gap-2 text-white"><div class="w-3 h-3 rounded-full bg-blue-500 border border-blue-400"></div> OK (2xx)</div>
+            <div class="flex items-center gap-2 text-white"><div class="w-3 h-3 rounded-full bg-red-500 border border-red-400"></div> Broken (4xx/5xx)</div>
+            <div class="flex items-center gap-2 text-white"><div class="w-4 h-0.5 bg-slate-600"></div> Internal Link</div>
+          </div>
+          <button type="button" id="networkFullscreenBtn" class="absolute top-4 right-4 z-10 px-3 py-2 rounded-lg bg-brand-900/80 backdrop-blur border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 text-sm font-medium flex items-center gap-2 transition-colors print:hidden" title="Full screen">
+            <i data-lucide="maximize" class="h-4 w-4"></i> Full screen
+          </button>
+          <button type="button" id="networkExitFullscreenBtn" class="absolute top-4 right-4 z-10 px-3 py-2 rounded-lg bg-brand-900/80 backdrop-blur border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-700 text-sm font-medium flex items-center gap-2 transition-colors hidden print:hidden" title="Exit full screen">
+            <i data-lucide="minimize" class="h-4 w-4"></i> Exit full screen
+          </button>
+        </div>
+      </div>
+
     </div>
   </main>
-
-  <footer class="mt-auto py-3 px-4 md:px-6 border-t border-slate-200 bg-white text-slate-500 text-sm text-center print:py-2">
-    Generated by Website Profiling · {{ generated_time }}
-  </footer>
 
   <script>
     const data = {{ report_data }};
     document.title = data.report_title || 'Site Crawl Report';
-    var summaryEl = document.querySelector('#summary');
-    if (summaryEl && data.site_name) summaryEl.textContent = data.site_name + ' — Crawl Report';
 
-    var kpiCls = 'card scorecard p-4 text-center';
-    var valCls = 'font-bold text-2xl text-slate-900 block mb-1';
-    var kpiClsSmall = 'card p-3 text-center';
-    var valClsSmall = 'font-bold text-lg text-slate-900 block mb-0.5';
-    var tblCls = 'w-full border-collapse text-sm';
-    var thCls = 'text-left p-2 md:p-3 border-b border-slate-200 bg-gray-100 font-medium text-slate-700';
-    var tdCls = 'p-2 md:p-3 border-b border-slate-100 text-slate-700 hover:bg-gray-50';
-    var mutedCls = 'text-slate-500 text-sm';
-    var linkCls = 'text-sky-600 hover:text-sky-800 hover:underline break-all';
+    var STATE = {
+      currentView: 'overview',
+      links: { data: data.links || [], filtered: [], page: 1, perPage: 50, sortBy: 'inlinks', sortDesc: true, filterStatus: 'All', filterInlinks: 'All' },
+      contentFilter: null,
+      chartsRendered: false,
+      networkRendered: false,
+      networkInstance: null,
+      chartInstances: [],
+      issuesFilteredList: [],
+      lastIssueIdx: -1
+    };
 
-    (function(){
-      try {
+    function escapeHtml(s) {
+      if (s == null) return '';
+      var div = document.createElement('div');
+      div.textContent = s;
+      return div.innerHTML;
+    }
+
+    function getIssueCount() {
+      var n = 0;
+      if (data.categories) data.categories.forEach(function(c){ n += (c.issues && c.issues.length) || 0; });
+      return n;
+    }
+
+    function renderOverview() {
       var s = data.summary || {};
-      var el = document.getElementById('siteNameEl');
-      if (el) el.textContent = data.site_name || 'Site';
-      var kpi = document.getElementById('kpiGrid');
-      if (kpi) {
-        kpi.innerHTML = '<div class="' + kpiCls + '"><span class="' + valCls + '">' + (s.total_urls || 0) + '</span><span class="text-slate-500 text-sm">Total URLs</span></div>' +
-          '<div class="' + kpiCls + '"><span class="' + valCls + '">' + (s.success_rate || 0) + '%</span><span class="text-slate-500 text-sm">Success (2xx)</span></div>' +
-          '<div class="' + kpiCls + '"><span class="' + valCls + '">' + (s.count_4xx || 0) + '</span><span class="text-slate-500 text-sm">4xx</span></div>' +
-          '<div class="' + kpiCls + '"><span class="' + valCls + '">' + (s.count_5xx || 0) + '</span><span class="text-slate-500 text-sm">5xx</span></div>' +
-          '<div class="' + kpiCls + '"><span class="' + valCls + '">' + (s.count_3xx || 0) + '</span><span class="text-slate-500 text-sm">Redirects</span></div>';
-      }
-      var findings = document.getElementById('keyFindings');
-      if (findings && data.recommendations && data.recommendations.length) {
-        data.recommendations.slice(0, 5).forEach(function(r){ var li = document.createElement('li'); li.textContent = r; findings.appendChild(li); });
-      } else if (findings) { var li = document.createElement('li'); li.textContent = 'No critical issues.'; findings.appendChild(li); }
+      var siteName = data.site_name || 'Site';
+      document.getElementById('overviewSiteName').textContent = siteName;
+      document.getElementById('overviewCrawlTime').textContent = (s.crawl_time_s != null) ? ('Crawl completed in ' + s.crawl_time_s + 's.') : 'Crawl completed.';
+      document.getElementById('sidebarSiteName').textContent = siteName;
+      document.getElementById('footerSiteName').textContent = siteName;
+      document.getElementById('siteInitials').textContent = siteName.charAt(0).toUpperCase();
 
-      var crawlKpis = document.getElementById('crawlKpis');
-      if (crawlKpis) {
-        crawlKpis.innerHTML = '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + (s.total_urls || 0) + '</span><span class="text-slate-500 text-xs">Pages</span></div>' +
-          '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + (s.avg_outlinks || 0) + '</span><span class="text-slate-500 text-xs">Avg outlinks</span></div>' +
-          '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + (s.avg_title_len || 0) + '</span><span class="text-slate-500 text-xs">Avg title len</span></div>' +
-          (s.crawl_time_s != null ? '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + s.crawl_time_s + 's</span><span class="text-slate-500 text-xs">Crawl time</span></div>' : '');
-      }
+      var kpiGrid = document.getElementById('kpiGrid');
+      var h1Zero = (data.seo_health && data.seo_health.h1_zero) || 0;
+      var brokenCount = (s.count_4xx || 0) + (s.count_5xx || 0);
+      kpiGrid.innerHTML =
+        '<div class="bg-brand-800 border border-slate-700 p-5 rounded-xl shadow-sm"><div class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2"><i data-lucide="globe" class="h-4 w-4"></i> Total URLs</div><div class="text-3xl font-bold text-white">' + (s.total_urls || 0).toLocaleString() + '</div><div class="text-xs text-slate-400 mt-2">' + (s.avg_outlinks || 0) + ' Avg Outlinks / Page</div></div>' +
+        '<div class="bg-brand-800 border border-slate-700 p-5 rounded-xl shadow-sm"><div class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2"><i data-lucide="check-circle" class="h-4 w-4 text-green-500"></i> Success Rate (2xx)</div><div class="text-3xl font-bold text-green-400">' + (s.success_rate || 0) + '%</div></div>' +
+        '<div class="bg-brand-800 border border-red-900/30 p-5 rounded-xl shadow-sm ring-1 ring-red-500/20"><div class="text-red-400/80 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2"><i data-lucide="alert-triangle" class="h-4 w-4"></i> Broken (4xx/5xx)</div><div class="text-3xl font-bold text-red-500">' + brokenCount + '</div><div class="text-xs text-slate-400 mt-2">' + (s.count_4xx || 0) + ' 4xx, ' + (s.count_5xx || 0) + ' 5xx</div></div>' +
+        '<div class="bg-brand-800 border border-slate-700 p-5 rounded-xl shadow-sm"><div class="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2"><i data-lucide="file-code" class="h-4 w-4"></i> Missing H1s</div><div class="text-3xl font-bold text-yellow-500">' + h1Zero + '</div></div>';
 
-      var sh = data.seo_health || {};
-      var seoKeys = Object.keys(sh);
-      var seoSection = document.getElementById('seo-health');
-      var seoKpis = document.getElementById('seoKpis');
-      if (seoSection && seoKpis && seoKeys.length) {
-        seoSection.classList.remove('hidden');
-        var seoHtml = '';
-        if (sh.missing_title !== undefined) seoHtml += '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + sh.missing_title + '</span><span class="text-slate-500 text-xs">Missing title</span></div>';
-        if (sh.title_ok !== undefined) seoHtml += '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + sh.title_ok + '</span><span class="text-slate-500 text-xs">Title OK</span></div>';
-        if (sh.missing_meta_desc !== undefined) seoHtml += '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + sh.missing_meta_desc + '</span><span class="text-slate-500 text-xs">Missing meta desc</span></div>';
-        if (sh.meta_desc_ok !== undefined) seoHtml += '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + sh.meta_desc_ok + '</span><span class="text-slate-500 text-xs">Meta desc OK</span></div>';
-        if (sh.h1_one !== undefined) seoHtml += '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + sh.h1_one + '</span><span class="text-slate-500 text-xs">Single H1</span></div>';
-        if (sh.thin_content !== undefined) seoHtml += '<div class="' + kpiClsSmall + '"><span class="' + valClsSmall + '">' + sh.thin_content + '</span><span class="text-slate-500 text-xs">Thin content</span></div>';
-        seoKpis.innerHTML = seoHtml;
+      var recBlock = document.getElementById('recommendationsBlock');
+      var recs = data.recommendations || [];
+      if (recs.length > 0) {
+        recBlock.classList.remove('hidden');
+        recBlock.innerHTML = '<h2 class="text-xl font-bold text-white mb-3">Recommendations</h2><ul class="list-disc list-inside text-slate-300 space-y-1">' + recs.map(function(r) { return '<li>' + escapeHtml(r) + '</li>'; }).join('') + '</ul>';
+      } else {
+        recBlock.classList.add('hidden');
       }
-
-      var issuesSection = document.getElementById('issuesSection');
-      if (issuesSection && data.issues) {
-        var iss = data.issues;
-        var html = '';
-        if (iss.broken && iss.broken.length) {
-          html += '<h4 class="text-sm font-medium text-slate-700 mt-3 mb-1">Broken (' + iss.broken.length + ')</h4><table class="' + tblCls + '"><thead><tr><th class="' + thCls + '">URL</th><th class="' + thCls + '">Status</th></tr></thead><tbody>';
-          iss.broken.slice(0, 20).forEach(function(x){ html += '<tr><td class="' + tdCls + '"><a href="' + x.url + '" target="_blank" rel="noreferrer noopener" class="' + linkCls + '">' + x.url + '</a></td><td class="' + tdCls + '">' + x.status + '</td></tr>'; });
-          if (iss.broken.length > 20) html += '<tr><td colspan="2" class="' + tdCls + ' ' + mutedCls + '">... and ' + (iss.broken.length - 20) + ' more</td></tr>';
-          html += '</tbody></table>';
-        }
-        if (iss.redirects && iss.redirects.length) {
-          html += '<h4 class="text-sm font-medium text-slate-700 mt-3 mb-1">Redirects (' + iss.redirects.length + ')</h4><table class="' + tblCls + '"><thead><tr><th class="' + thCls + '">URL</th><th class="' + thCls + '">Status</th><th class="' + thCls + '">Final</th></tr></thead><tbody>';
-          iss.redirects.slice(0, 15).forEach(function(x){ html += '<tr><td class="' + tdCls + '"><a href="' + x.url + '" target="_blank" class="' + linkCls + '">' + x.url + '</a></td><td class="' + tdCls + '">' + x.status + '</td><td class="' + tdCls + '">' + (x.final_url || '') + '</td></tr>'; });
-          if (iss.redirects.length > 15) html += '<tr><td colspan="3" class="' + tdCls + ' ' + mutedCls + '">... and ' + (iss.redirects.length - 15) + ' more</td></tr>';
-          html += '</tbody></table>';
-        }
-        if (iss.seo && iss.seo.length) {
-          html += '<h4 class="text-sm font-medium text-slate-700 mt-3 mb-1">SEO issues (' + iss.seo.length + ')</h4><table class="' + tblCls + '"><thead><tr><th class="' + thCls + '">URL</th><th class="' + thCls + '">Issue</th></tr></thead><tbody>';
-          iss.seo.slice(0, 25).forEach(function(x){ html += '<tr><td class="' + tdCls + '"><a href="' + x.url + '" target="_blank" class="' + linkCls + '">' + x.url + '</a></td><td class="' + tdCls + '">' + (x.message || x.type) + '</td></tr>'; });
-          if (iss.seo.length > 25) html += '<tr><td colspan="2" class="' + tdCls + ' ' + mutedCls + '">... and ' + (iss.seo.length - 25) + ' more</td></tr>';
-          html += '</tbody></table>';
-        }
-        if (!html) html = '<p class="' + mutedCls + ' py-2">No issues recorded.</p>';
-        issuesSection.innerHTML = html;
-      }
-      var recsList = document.getElementById('recsList');
-      if (recsList && data.recommendations && data.recommendations.length) {
-        data.recommendations.forEach(function(r){ var li = document.createElement('li'); li.textContent = r; recsList.appendChild(li); });
-      } else if (recsList) { var li = document.createElement('li'); li.textContent = 'No recommendations.'; recsList.appendChild(li); }
 
       var topPages = data.top_pages || [];
-      var topWrap = document.getElementById('topPagesWrap');
-      if (topWrap && topPages.length) {
-        var th = '<table class="' + tblCls + '"><thead><tr><th class="' + thCls + '">URL</th><th class="' + thCls + '">Title</th><th class="' + thCls + '">PageRank</th><th class="' + thCls + '">Degree</th></tr></thead><tbody>';
-        topPages.forEach(function(r){
-          th += '<tr><td class="' + tdCls + '"><a href="' + r.url + '" target="_blank" rel="noreferrer noopener" class="' + linkCls + '">' + r.url + '</a></td><td class="' + tdCls + '">' + (r.title || '').replace(/</g,'&lt;') + '</td><td class="' + tdCls + '">' + (r.pagerank != null ? Number(r.pagerank).toFixed(5) : '') + '</td><td class="' + tdCls + '">' + (r.degree != null ? r.degree : '') + '</td></tr>';
-        });
-        topWrap.innerHTML = th + '</tbody></table>';
-      } else if (topWrap) { topWrap.innerHTML = '<p class="' + mutedCls + ' p-4">No page data.</p>'; }
+      var topEl = document.getElementById('topPagesBlock');
+      if (topPages.length > 0) {
+        topEl.innerHTML = '<div class="bg-brand-800 border border-slate-700 rounded-xl overflow-hidden"><table class="w-full text-sm"><thead class="bg-brand-900 text-slate-400 uppercase text-xs font-semibold"><tr><th class="px-4 py-3 text-left">Page</th><th class="px-4 py-3 text-left">URL</th><th class="px-4 py-3 text-right">PageRank</th><th class="px-4 py-3 text-right">Degree</th></tr></thead><tbody class="divide-y divide-slate-800">' + topPages.map(function(p) { return '<tr class="hover:bg-brand-900/50"><td class="px-4 py-2 text-slate-200 font-medium">' + escapeHtml(p.title || p.url) + '</td><td class="px-4 py-2 font-mono text-blue-400 text-xs truncate max-w-xs"><a href="' + escapeHtml(p.url) + '" target="_blank" class="hover:underline">' + escapeHtml(p.url) + '</a></td><td class="px-4 py-2 text-right font-mono text-slate-400">' + (p.pagerank != null ? Number(p.pagerank).toFixed(5) : '—') + '</td><td class="px-4 py-2 text-right font-mono text-slate-400">' + (p.degree != null ? p.degree : (p.outlinks != null ? p.outlinks : '—')) + '</td></tr>'; }).join('') + '</tbody></table></div>';
+      } else {
+        topEl.innerHTML = '<p class="text-slate-500">No top pages data (crawl had no edges or outlinks).</p>';
+      }
 
-      var categoryCards = document.getElementById('categoryCards');
-      if (categoryCards && data.categories && data.categories.length) {
-        var priorityCls = { Critical: 'bg-red-100 text-red-800', High: 'bg-amber-100 text-amber-800', Medium: 'bg-sky-100 text-sky-800', Low: 'bg-slate-100 text-slate-600' };
-        var html = '';
+      var siteLevel = data.site_level || {};
+      var siteEl = document.getElementById('siteLevelSummary');
+      if (siteLevel.robots_present != null || siteLevel.sitemap_present != null) {
+        siteEl.classList.remove('hidden');
+        var robotsStr = siteLevel.robots_present === true ? 'Yes' : 'No';
+        var sitemapStr = siteLevel.sitemap_present === true ? 'Yes' : 'No';
+        var validStr = siteLevel.sitemap_valid === true ? ' (valid)' : (siteLevel.sitemap_present ? ' (invalid or unparsed)' : '');
+        siteEl.innerHTML = '<h2 class="text-xl font-bold text-white mb-3">Site Configuration</h2><div class="bg-brand-800 border border-slate-700 rounded-xl p-4 flex gap-6 flex-wrap"><div class="flex items-center gap-2"><span class="text-slate-500">robots.txt:</span><span class="font-semibold text-slate-200">' + robotsStr + '</span></div><div class="flex items-center gap-2"><span class="text-slate-500">sitemap.xml:</span><span class="font-semibold text-slate-200">' + sitemapStr + validStr + '</span></div></div>';
+      } else {
+        siteEl.classList.add('hidden');
+      }
+
+      var catDonuts = document.getElementById('categoryDonuts');
+      if (!data.categories || data.categories.length === 0) {
+        catDonuts.innerHTML = '<p class="text-slate-500">No category data.</p>';
+      } else {
+        catDonuts.innerHTML = data.categories.map(function(cat, i) {
+          var score = cat.score != null ? cat.score : 0;
+          var color = score >= 80 ? '#22C55E' : (score >= 50 ? '#EAB308' : '#EF4444');
+          var label = score >= 80 ? 'Good' : (score >= 50 ? 'Needs Improvement' : 'Critical');
+          var labelCls = score >= 80 ? 'text-green-400' : (score >= 50 ? 'text-yellow-400' : 'text-red-500');
+          return '<div class="bg-brand-800 border border-slate-700 p-5 rounded-xl flex items-center gap-6"><div class="w-20 h-20 relative"><canvas id="chart-cat-' + i + '"></canvas><div class="absolute inset-0 flex items-center justify-center text-xl font-bold text-white">' + (cat.score != null ? cat.score : 'N/A') + '</div></div><div><h3 class="text-lg font-bold text-slate-200">' + escapeHtml(cat.name || cat.id || '') + '</h3><p class="text-sm ' + labelCls + ' mt-1">' + label + '</p></div></div>';
+        }).join('');
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        data.categories.forEach(function(cat, i) {
+          var canvas = document.getElementById('chart-cat-' + i);
+          if (!canvas) return;
+          var score = cat.score != null ? Math.min(100, Math.max(0, cat.score)) : 0;
+          var color = score >= 80 ? '#22C55E' : (score >= 50 ? '#EAB308' : '#EF4444');
+          if (STATE.chartInstances[i]) STATE.chartInstances[i].destroy();
+          STATE.chartInstances[i] = new Chart(canvas.getContext('2d'), {
+            type: 'doughnut',
+            data: { datasets: [{ data: [score, 100 - score], backgroundColor: [color, '#1F2937'], borderWidth: 0, cutout: '80%' }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+          });
+        });
+      }
+    }
+
+    function renderIssues() {
+      var container = document.getElementById('issuesListContainer');
+      var list = [];
+      if (data.categories) {
         data.categories.forEach(function(cat) {
-          var scoreDisplay = cat.score != null ? (cat.score + '/100') : 'N/A';
-          var scoreCls = cat.score == null ? 'text-slate-500' : (cat.score >= 80 ? 'text-green-600' : (cat.score >= 50 ? 'text-amber-600' : 'text-red-600'));
-          html += '<div class="border border-slate-200 rounded-lg p-4 mb-4">';
-          html += '<div class="flex flex-wrap items-center justify-between gap-2 mb-2">';
-          html += '<h3 class="text-base font-semibold text-slate-800">' + (cat.name || cat.id || '').replace(/</g, '&lt;') + '</h3>';
-          html += '<span class="font-mono text-sm ' + scoreCls + '">' + scoreDisplay + '</span>';
-          html += '</div>';
           if (cat.issues && cat.issues.length) {
-            html += '<table class="' + tblCls + ' mt-2"><thead><tr><th class="' + thCls + '">Issue</th><th class="' + thCls + '">URL</th><th class="' + thCls + '">Priority</th><th class="' + thCls + '">Fix</th></tr></thead><tbody>';
             cat.issues.forEach(function(iss) {
-              var pCls = priorityCls[iss.priority] || priorityCls.Low;
-              var rawUrl = iss.url || '';
-              var hrefEsc = rawUrl.replace(/"/g, '&quot;').replace(/</g, '&lt;');
-              var urlCell = rawUrl ? ('<a href="' + hrefEsc + '" target="_blank" rel="noreferrer noopener" class="' + linkCls + ' break-all">' + (rawUrl.length > 50 ? rawUrl.slice(0, 47) + '…' : rawUrl) + '</a>') : '—';
-              html += '<tr><td class="' + tdCls + '">' + (iss.message || '').replace(/</g, '&lt;') + '</td><td class="' + tdCls + '">' + urlCell + '</td><td class="' + tdCls + '"><span class="px-1.5 py-0.5 rounded text-xs font-medium ' + pCls + '">' + (iss.priority || '') + '</span></td><td class="' + tdCls + ' text-sm">' + (iss.recommendation || '').replace(/</g, '&lt;') + '</td></tr>';
+              list.push({ category: cat.name || cat.id || '', issue: iss });
             });
-            html += '</tbody></table>';
           }
-          if (cat.recommendations && cat.recommendations.length) {
-            html += '<p class="text-sm font-medium text-slate-700 mt-3 mb-1">Recommended fixes</p><ul class="list-disc pl-5 text-sm text-slate-600">';
-            cat.recommendations.forEach(function(rec) { html += '<li>' + (rec || '').replace(/</g, '&lt;') + '</li>'; });
-            html += '</ul>';
-          }
-          html += '</div>';
         });
-        categoryCards.innerHTML = html;
-      } else if (categoryCards) { categoryCards.innerHTML = '<p class="' + mutedCls + '">No category data.</p>'; }
-      } catch (err) { console.error('Report data binding error:', err); }
-    })();
+      }
+      var search = (document.getElementById('globalSearch').value || '').toLowerCase();
+      if (search) {
+        list = list.filter(function(item) {
+          var msg = (item.issue.message || '').toLowerCase();
+          var url = (item.issue.url || '').toLowerCase();
+          var cat = (item.category || '').toLowerCase();
+          return msg.indexOf(search) !== -1 || url.indexOf(search) !== -1 || cat.indexOf(search) !== -1;
+        });
+      }
+      STATE.issuesFilteredList = list;
+      if (list.length === 0) {
+        container.innerHTML = '<p class="text-slate-500 py-4">No issues recorded.</p>';
+        return;
+      }
+      container.innerHTML = list.map(function(item, idx) {
+        var iss = item.issue;
+        var p = iss.priority || 'Medium';
+        var bColor = p === 'Critical' ? 'bg-red-500 text-white' : (p === 'High' ? 'bg-red-500/20 text-red-400 border border-red-500/30' : 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30');
+        return '<div class="bg-brand-800 border border-slate-700 rounded-lg p-5 flex flex-col md:flex-row gap-4 hover:border-slate-600 transition-colors cursor-pointer" data-issue-idx="' + idx + '" onclick="openIssueModal(' + idx + ')"><div class="flex-1"><div class="flex items-center gap-3 mb-2"><span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase ' + bColor + '">' + escapeHtml(p) + '</span><span class="text-xs font-semibold text-slate-500">' + escapeHtml(item.category) + '</span></div><h3 class="text-slate-200 font-medium text-sm">' + escapeHtml(iss.message || '') + '</h3></div><div class="flex-1 bg-brand-900 rounded p-3 border border-slate-800"><div class="text-[10px] text-blue-400 font-bold uppercase mb-1">Fix Recommendation</div><p class="text-slate-400 text-sm">' + escapeHtml(iss.recommendation || '') + '</p></div></div>';
+      }).join('');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
 
-    (function setupCharts() {
-      var CHART_COLORS = ['#0ea5e9', '#64748b', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
-      Chart.defaults.font.family = "'DM Sans', system-ui, sans-serif";
-      Chart.defaults.font.size = 12;
-      Chart.defaults.color = '#64748b';
-      var barOptions = {
-        responsive: true,
-        maintainAspectRatio: true,
-        aspectRatio: 1.4,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { grid: { display: false }, beginAtZero: true },
-          y: { grid: { color: '#f1f5f9' } }
-        }
-      };
-      var barOptionsY = {
-        indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: true,
-        aspectRatio: 1.2,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { grid: { color: '#f1f5f9' }, beginAtZero: true },
-          y: { grid: { display: false } }
-        }
-      };
-      function palette(len) {
-        var out = [];
-        for (var i = 0; i < len; i++) out.push(CHART_COLORS[i % CHART_COLORS.length]);
-        return out;
-      }
-      var statusLabels = Object.keys(data.status_counts);
-      var statusCounts = Object.values(data.status_counts);
-      new Chart(document.getElementById('statusChart').getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: statusLabels,
-          datasets: [{ label: 'Pages', data: statusCounts, backgroundColor: palette(statusLabels.length) }]
-        },
-        options: barOptionsY
-      });
-      new Chart(document.getElementById('mimeChart').getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: data.mime_labels,
-          datasets: [{ label: 'Count', data: data.mime_values, backgroundColor: palette(data.mime_labels.length) }]
-        },
-        options: barOptions
-      });
-      new Chart(document.getElementById('outlinksChart').getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: data.outlink_labels,
-          datasets: [{ label: 'Pages', data: data.outlink_counts, backgroundColor: CHART_COLORS[0] }]
-        },
-        options: barOptions
-      });
-      new Chart(document.getElementById('titleChart').getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: data.title_labels,
-          datasets: [{ label: 'Pages', data: data.title_counts, backgroundColor: CHART_COLORS[1] }]
-        },
-        options: barOptions
-      });
-      new Chart(document.getElementById('domainChart').getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels: data.domain_labels,
-          datasets: [{ label: 'Pages', data: data.domain_values, backgroundColor: palette(data.domain_labels.length) }]
-        },
-        options: Object.assign({}, barOptions, { aspectRatio: 2 })
-      });
-    })();
-    (function renderNetwork(){
-      try {
-        var container = document.getElementById('network');
-        if (!container) return;
-        if (!data || !data.graph_nodes || data.graph_nodes.length === 0 || !data.graph_edges || data.graph_edges.length === 0) {
-          container.innerHTML = '<p class="p-5 text-slate-500 text-center">No edge data available.</p>';
-          return;
-        }
-        var nodeMap = new Map();
-        data.graph_nodes.forEach(function(u){ nodeMap.set(u, {id: u, label: (typeof u === 'string' ? u.split('/').slice(2).join('/') : u), title: u, value: 1}); });
-        data.graph_edges.forEach(function(e){
-          var fromId = e['from'] != null ? e['from'] : e.from;
-          var toId = e['to'] != null ? e['to'] : e.to;
-          if (!fromId || !toId) return;
-          if (!nodeMap.has(fromId)) nodeMap.set(fromId, {id: fromId, label: (typeof fromId === 'string' ? fromId.split('/').slice(2).join('/') : fromId), title: fromId, value: 1});
-          if (!nodeMap.has(toId)) nodeMap.set(toId, {id: toId, label: (typeof toId === 'string' ? toId.split('/').slice(2).join('/') : toId), title: toId, value: 1});
-          if (nodeMap.get(fromId)) nodeMap.get(fromId).value = (nodeMap.get(fromId).value || 1) + 1;
-          if (nodeMap.get(toId)) nodeMap.get(toId).value = (nodeMap.get(toId).value || 1) + 0.5;
+    function getIssuesFlat() {
+      var list = [];
+      if (data.categories) {
+        data.categories.forEach(function(cat) {
+          if (cat.issues && cat.issues.length) {
+            cat.issues.forEach(function(iss) { list.push({ category: cat.name || cat.id || '', issue: iss }); });
+          }
         });
-        var nodes = Array.from(nodeMap.values()).map(function(n){ return Object.assign({shape: 'dot', scaling: {min: 10, max: 40}}, n); });
-        var edges = data.graph_edges.map(function(e){
-          var fromId = e['from'] != null ? e['from'] : e.from;
-          var toId = e['to'] != null ? e['to'] : e.to;
-          return fromId && toId ? {from: fromId, to: toId, arrows: 'to'} : null;
-        }).filter(Boolean);
-        if (nodes.length === 0 || edges.length === 0) {
-          container.innerHTML = '<p class="p-5 text-slate-500 text-center">No edge data available.</p>';
-          return;
-        }
-        var graphData = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
-        var options = { nodes: { shape: 'dot', scaling: { label: { min: 8, max: 24 } }, font: { size: 12, face: "'DM Sans', system-ui, sans-serif" } }, edges: { smooth: { type: 'force' }, arrows: { to: { enabled: true, scaleFactor: 0.6 } } }, physics: { stabilization: true, barnesHut: { gravitationalConstant: -8000, springConstant: 0.001, springLength: 200 } }, interaction: { hover: true, navigationButtons: true, zoomView: true } };
-        var network = new vis.Network(container, graphData, options);
-        network.on('doubleClick', function(params){ if (params.nodes && params.nodes.length > 0) { window.open(params.nodes[0], '_blank'); }});
-      } catch (err) {
-        var el = document.getElementById('network');
-        if (el) el.innerHTML = '<p class="p-5 text-red-600 text-center">Graph error: ' + (err && err.message ? err.message : String(err)) + '</p>';
-        console.error('Site graph error:', err);
       }
-    })();
+      return list;
+    }
+
+    window.openIssueModal = function(idx) {
+      var list = STATE.issuesFilteredList || getIssuesFlat();
+      if (idx < 0 || idx >= list.length) return;
+      STATE.lastIssueIdx = idx;
+      var item = list[idx];
+      var iss = item.issue;
+      document.getElementById('modalTitle').innerHTML = '<i data-lucide="alert-circle" class="text-yellow-500"></i> Issue: ' + escapeHtml(item.category);
+      document.getElementById('modalBody').innerHTML = '<div class="bg-brand-900 border border-slate-700 p-6 rounded-lg text-white"><h3 class="text-xl font-bold text-red-400 mb-2">' + escapeHtml(iss.message || '') + '</h3><p class="text-slate-400 mb-4">Severity: <span class="font-bold text-white uppercase">' + escapeHtml(iss.priority || '') + '</span></p>' + (iss.url ? '<p class="text-slate-400 mb-2">URL: <a href="' + escapeHtml(iss.url) + '" target="_blank" class="text-blue-400 hover:underline break-all">' + escapeHtml(iss.url) + '</a></p>' : '') + '<div class="p-4 bg-slate-800 border border-slate-600 rounded"><h4 class="text-blue-400 font-bold mb-1">Developer Resolution</h4><code class="text-sm text-green-400 font-mono">' + escapeHtml(iss.recommendation || '') + '</code></div></div>';
+      var modal = document.getElementById('inspectorModal');
+      var modalContainer = document.getElementById('modalContainer');
+      var fixBtn = document.getElementById('btnExportFixScript');
+      if (fixBtn) fixBtn.style.display = '';
+      modal.classList.remove('hidden');
+      setTimeout(function() { modal.classList.remove('opacity-0'); modalContainer.classList.remove('scale-95'); if (typeof lucide !== 'undefined') lucide.createIcons(); }, 10);
+    };
+
+    function updateLinksTable() {
+      STATE.links.data = data.links || [];
+      var search = (document.getElementById('globalSearch').value || '').toLowerCase();
+      var statusFilter = STATE.links.filterStatus;
+      var inlinksFilter = STATE.links.filterInlinks || 'All';
+      STATE.links.filtered = STATE.links.data.filter(function(l) {
+        if (statusFilter !== 'All' && String(l.status) !== statusFilter) return false;
+        if (inlinksFilter === 'Orphans' && (l.inlinks != null ? l.inlinks : 0) !== 0) return false;
+        if (search && l.url.toLowerCase().indexOf(search) === -1) return false;
+        return true;
+      });
+      var sortBy = STATE.links.sortBy;
+      var desc = STATE.links.sortDesc;
+      STATE.links.filtered.sort(function(a, b) {
+        var va = a[sortBy], vb = b[sortBy];
+        if (sortBy === 'depth') {
+          va = va != null ? va : -1;
+          vb = vb != null ? vb : -1;
+          if (va < vb) return desc ? 1 : -1;
+          if (va > vb) return desc ? -1 : 1;
+          return 0;
+        }
+        if (typeof va === 'string') { va = va.toLowerCase(); vb = (b[sortBy] || '').toLowerCase(); }
+        if (va < vb) return desc ? 1 : -1;
+        if (va > vb) return desc ? -1 : 1;
+        return 0;
+      });
+      var total = STATE.links.filtered.length;
+      var totalPages = Math.max(1, Math.ceil(total / STATE.links.perPage));
+      if (STATE.links.page > totalPages) STATE.links.page = totalPages;
+      var start = (STATE.links.page - 1) * STATE.links.perPage;
+      var pageData = STATE.links.filtered.slice(start, start + STATE.links.perPage);
+
+      document.getElementById('linkCountDisplay').textContent = total.toLocaleString();
+      document.getElementById('pageCurrent').textContent = STATE.links.page;
+      document.getElementById('pageTotal').textContent = totalPages;
+      document.getElementById('btnPrevPage').disabled = STATE.links.page === 1;
+      document.getElementById('btnNextPage').disabled = STATE.links.page === totalPages;
+
+      var tbody = document.getElementById('linksTableBody');
+      var depthVal = function(l) { return l.depth != null ? l.depth : '—'; };
+      tbody.innerHTML = pageData.map(function(l) {
+        var statusCls = String(l.status).match(/^2/) ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400';
+        return '<tr class="hover:bg-brand-900/50 transition-colors"><td class="px-6 py-3 font-mono text-blue-400 text-xs truncate max-w-[400px]" title="' + escapeHtml(l.url) + '">' + escapeHtml(l.url) + '</td><td class="px-6 py-3"><span class="px-2 py-1 rounded text-xs font-bold ' + statusCls + '">' + escapeHtml(String(l.status)) + '</span></td><td class="px-6 py-3 text-slate-300 font-mono text-xs">' + (l.inlinks != null ? l.inlinks : 0) + '</td><td class="px-6 py-3 text-slate-300 font-mono text-xs">' + depthVal(l) + '</td><td class="px-6 py-3 text-center"><button type="button" class="inspect-link-btn text-slate-500 hover:text-white bg-slate-800 px-2 py-1 rounded" data-url="' + escapeHtml(l.url) + '"><i data-lucide="search" class="h-3 w-3 inline"></i> Inspect</button></td></tr>';
+      }).join('');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    window.openLinkModal = function(url) {
+      STATE.lastIssueIdx = -1;
+      var link = (data.links || []).find(function(l) { return l.url === url; });
+      document.getElementById('modalTitle').innerHTML = '<i data-lucide="link" class="text-blue-500"></i> URL Inspector';
+      var indexability = 'Unknown';
+      if (link && String(link.status).match(/^2/)) indexability = 'Indexable';
+      else if (link && String(link.status).match(/^[45]/)) indexability = 'Not indexable';
+      var body = '<div class="space-y-4"><div class="bg-brand-900 border border-slate-700 p-4 rounded-lg break-all font-mono text-blue-400 text-sm">' + escapeHtml(url) + '</div><div class="grid grid-cols-3 gap-4">';
+      body += '<div class="bg-brand-900 p-4 rounded border border-slate-700"><div class="text-xs text-slate-500">Indexability</div><div class="text-lg font-bold text-green-400">' + escapeHtml(indexability) + '</div></div>';
+      body += '<div class="bg-brand-900 p-4 rounded border border-slate-700"><div class="text-xs text-slate-500">Inlinks</div><div class="text-lg font-bold text-white">' + (link && link.inlinks != null ? link.inlinks : '—') + '</div></div>';
+      body += '<div class="bg-brand-900 p-4 rounded border border-slate-700"><div class="text-xs text-slate-500">Word Count</div><div class="text-lg font-bold text-white">' + (link && link.content_length != null ? link.content_length.toLocaleString() : '—') + '</div></div></div>';
+      if (link && link.title) body += '<div class="bg-brand-900 p-4 rounded border border-slate-700"><div class="text-xs text-slate-500">Title</div><div class="text-slate-200">' + escapeHtml(link.title) + '</div></div>';
+      document.getElementById('modalBody').innerHTML = body;
+      var fixBtn = document.getElementById('btnExportFixScript');
+      if (fixBtn) fixBtn.style.display = 'none';
+      var modal = document.getElementById('inspectorModal');
+      var modalContainer = document.getElementById('modalContainer');
+      modal.classList.remove('hidden');
+      setTimeout(function() { modal.classList.remove('opacity-0'); modalContainer.classList.remove('scale-95'); if (typeof lucide !== 'undefined') lucide.createIcons(); }, 10);
+    };
+
+    window.closeModal = function() {
+      var modal = document.getElementById('inspectorModal');
+      var modalContainer = document.getElementById('modalContainer');
+      modal.classList.add('opacity-0');
+      modalContainer.classList.add('scale-95');
+      setTimeout(function() { modal.classList.add('hidden'); document.getElementById('modalBody').innerHTML = ''; }, 300);
+    };
+
+    function renderContentList(filterKey) {
+      var wrap = document.getElementById('contentListWrap');
+      var cu = data.content_urls || { missing_h1: [], missing_title: [], multiple_h1: [], missing_meta_desc: [], meta_desc_short: [], meta_desc_long: [], thin_content: [] };
+      var list = (cu[filterKey] || []).slice();
+      var search = (document.getElementById('globalSearch').value || '').toLowerCase();
+      if (search) list = list.filter(function(item) { return (item.url || '').toLowerCase().indexOf(search) !== -1; });
+      if (list.length === 0) {
+        wrap.innerHTML = '<p class="text-center text-slate-500 py-8">No URLs in this category.</p>';
+        return;
+      }
+      var headerMap = {
+        missing_h1: '<tr><th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">URL</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Title</th><th class="px-4 py-3 text-center text-xs font-semibold text-slate-400 uppercase">Actions</th></tr>',
+        missing_title: '<tr><th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">URL</th><th class="px-4 py-3 text-center text-xs font-semibold text-slate-400 uppercase">Actions</th></tr>',
+        multiple_h1: '<tr><th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">URL</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">H1 Count</th><th class="px-4 py-3 text-center text-xs font-semibold text-slate-400 uppercase">Actions</th></tr>',
+        missing_meta_desc: '<tr><th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">URL</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Title</th><th class="px-4 py-3 text-center text-xs font-semibold text-slate-400 uppercase">Actions</th></tr>',
+        meta_desc_short: '<tr><th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">URL</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Title</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Length</th><th class="px-4 py-3 text-center text-xs font-semibold text-slate-400 uppercase">Actions</th></tr>',
+        meta_desc_long: '<tr><th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">URL</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Title</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Length</th><th class="px-4 py-3 text-center text-xs font-semibold text-slate-400 uppercase">Actions</th></tr>',
+        thin_content: '<tr><th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">URL</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Title</th><th class="px-4 py-3 text-left text-xs font-semibold text-slate-400 uppercase">Chars</th><th class="px-4 py-3 text-center text-xs font-semibold text-slate-400 uppercase">Actions</th></tr>'
+      };
+      var headers = headerMap[filterKey] || headerMap.missing_h1;
+      var rows = list.map(function(item) {
+        var url = item.url || '';
+        var actionBtn = '<button type="button" class="inspect-link-btn text-blue-400 hover:underline text-sm" data-url="' + escapeHtml(url) + '">Inspect</button>';
+        if (filterKey === 'missing_h1') return '<tr class="border-t border-slate-700/50"><td class="px-4 py-3 font-mono text-blue-400 text-xs break-all"><a href="' + escapeHtml(url) + '" target="_blank" class="hover:underline">' + escapeHtml(url) + '</a></td><td class="px-4 py-3 text-slate-400 text-sm">' + escapeHtml(item.title || '') + '</td><td class="px-4 py-3 text-center">' + actionBtn + '</td></tr>';
+        if (filterKey === 'missing_title') return '<tr class="border-t border-slate-700/50"><td class="px-4 py-3 font-mono text-blue-400 text-xs break-all"><a href="' + escapeHtml(url) + '" target="_blank" class="hover:underline">' + escapeHtml(url) + '</a></td><td class="px-4 py-3 text-center">' + actionBtn + '</td></tr>';
+        if (filterKey === 'multiple_h1') return '<tr class="border-t border-slate-700/50"><td class="px-4 py-3 font-mono text-blue-400 text-xs break-all"><a href="' + escapeHtml(url) + '" target="_blank" class="hover:underline">' + escapeHtml(url) + '</a></td><td class="px-4 py-3 text-slate-300">' + (item.h1_count != null ? item.h1_count : '') + '</td><td class="px-4 py-3 text-center">' + actionBtn + '</td></tr>';
+        if (filterKey === 'missing_meta_desc') return '<tr class="border-t border-slate-700/50"><td class="px-4 py-3 font-mono text-blue-400 text-xs break-all"><a href="' + escapeHtml(url) + '" target="_blank" class="hover:underline">' + escapeHtml(url) + '</a></td><td class="px-4 py-3 text-slate-400 text-sm">' + escapeHtml(item.title || '') + '</td><td class="px-4 py-3 text-center">' + actionBtn + '</td></tr>';
+        if (filterKey === 'meta_desc_short' || filterKey === 'meta_desc_long') return '<tr class="border-t border-slate-700/50"><td class="px-4 py-3 font-mono text-blue-400 text-xs break-all"><a href="' + escapeHtml(url) + '" target="_blank" class="hover:underline">' + escapeHtml(url) + '</a></td><td class="px-4 py-3 text-slate-400 text-sm">' + escapeHtml(item.title || '') + '</td><td class="px-4 py-3 text-slate-300 font-mono">' + (item.meta_desc_len != null ? item.meta_desc_len : '') + '</td><td class="px-4 py-3 text-center">' + actionBtn + '</td></tr>';
+        if (filterKey === 'thin_content') return '<tr class="border-t border-slate-700/50"><td class="px-4 py-3 font-mono text-blue-400 text-xs break-all"><a href="' + escapeHtml(url) + '" target="_blank" class="hover:underline">' + escapeHtml(url) + '</a></td><td class="px-4 py-3 text-slate-400 text-sm">' + escapeHtml(item.title || '') + '</td><td class="px-4 py-3 text-slate-300 font-mono">' + (item.content_length != null ? item.content_length : '') + '</td><td class="px-4 py-3 text-center">' + actionBtn + '</td></tr>';
+        return '';
+      }).filter(Boolean).join('');
+      wrap.innerHTML = '<div class="overflow-x-auto"><table class="w-full text-sm"><thead>' + headers + '</thead><tbody>' + rows + '</tbody></table></div>';
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function initContentFilters() {
+      var cu = data.content_urls || { missing_h1: [], missing_title: [], multiple_h1: [], missing_meta_desc: [], meta_desc_short: [], meta_desc_long: [], thin_content: [] };
+      document.getElementById('chipMissingH1').textContent = 'Missing H1 (' + (cu.missing_h1 || []).length + ')';
+      document.getElementById('chipMissingTitle').textContent = 'Missing Titles (' + (cu.missing_title || []).length + ')';
+      document.getElementById('chipMultipleH1').textContent = 'Multiple H1s (' + (cu.multiple_h1 || []).length + ')';
+      document.getElementById('chipMissingMetaDesc').textContent = 'Missing Meta Desc (' + (cu.missing_meta_desc || []).length + ')';
+      document.getElementById('chipMetaDescShort').textContent = 'Meta Desc Short (' + (cu.meta_desc_short || []).length + ')';
+      document.getElementById('chipMetaDescLong').textContent = 'Meta Desc Long (' + (cu.meta_desc_long || []).length + ')';
+      document.getElementById('chipThinContent').textContent = 'Thin Content (' + (cu.thin_content || []).length + ')';
+      document.querySelectorAll('.content-chip').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          document.querySelectorAll('.content-chip').forEach(function(b) { b.classList.remove('bg-blue-500/20', 'text-blue-400', 'border-blue-500/30'); b.classList.add('bg-slate-800', 'text-slate-400', 'border-slate-700'); });
+          btn.classList.add('bg-blue-500/20', 'text-blue-400', 'border-blue-500/30');
+          btn.classList.remove('bg-slate-800', 'text-slate-400', 'border-slate-700');
+          STATE.contentFilter = btn.getAttribute('data-content-filter');
+          renderContentList(STATE.contentFilter);
+        });
+      });
+    }
+
+    window.changePage = function(delta) {
+      STATE.links.page += delta;
+      updateLinksTable();
+    };
+
+    function sortLinks(key) {
+      if (STATE.links.sortBy === key) STATE.links.sortDesc = !STATE.links.sortDesc;
+      else { STATE.links.sortBy = key; STATE.links.sortDesc = false; }
+      updateLinksTable();
+    }
+
+    function renderCharts() {
+      if (STATE.chartsRendered) return;
+      Chart.defaults.color = '#94a3b8';
+      Chart.defaults.font.family = "'DM Sans', sans-serif";
+      var gridColor = 'rgba(71, 85, 105, 0.5)';
+      var barOpts = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gridColor } }, y: { grid: { color: gridColor }, beginAtZero: true } } };
+      var barOptsY = { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: gridColor }, beginAtZero: true }, y: { grid: { color: gridColor } } } };
+      var palette = ['#3B82F6', '#64748b', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16'];
+      function pal(n) { var out = []; for (var i = 0; i < n; i++) out.push(palette[i % palette.length]); return out; }
+      var statusLabels = Object.keys(data.status_counts || {});
+      var statusVals = Object.values(data.status_counts || {});
+      new Chart(document.getElementById('statusChart').getContext('2d'), { type: 'bar', data: { labels: statusLabels, datasets: [{ data: statusVals, backgroundColor: pal(statusLabels.length) }] }, options: barOptsY });
+      new Chart(document.getElementById('mimeChart').getContext('2d'), { type: 'bar', data: { labels: data.mime_labels || [], datasets: [{ data: data.mime_values || [], backgroundColor: pal((data.mime_labels || []).length) }] }, options: barOpts });
+      new Chart(document.getElementById('outlinksChart').getContext('2d'), { type: 'bar', data: { labels: data.outlink_labels || [], datasets: [{ data: data.outlink_counts || [], backgroundColor: palette[0] }] }, options: barOpts });
+      new Chart(document.getElementById('titleChart').getContext('2d'), { type: 'bar', data: { labels: data.title_labels || [], datasets: [{ data: data.title_counts || [], backgroundColor: palette[1] }] }, options: barOpts });
+      new Chart(document.getElementById('domainChart').getContext('2d'), { type: 'bar', data: { labels: data.domain_labels || [], datasets: [{ data: data.domain_values || [], backgroundColor: pal((data.domain_labels || []).length) }] }, options: Object.assign({}, barOpts) });
+      STATE.chartsRendered = true;
+    }
+
+    function renderNetwork() {
+      if (STATE.networkRendered) return;
+      var container = document.getElementById('networkCanvas');
+      if (!container) return;
+      var urlToStatus = {};
+      (data.links || []).forEach(function(l) { urlToStatus[l.url] = String(l.status); });
+      if (!data.graph_nodes || data.graph_nodes.length === 0 || !data.graph_edges || data.graph_edges.length === 0) {
+        container.innerHTML = '<p class="p-5 text-slate-500 text-center">No edge data available.</p>';
+        STATE.networkRendered = true;
+        return;
+      }
+      var nodeMap = new Map();
+      data.graph_nodes.forEach(function(u) {
+        var st = urlToStatus[u] || '';
+        var isOk = /^2/.test(st);
+        var color = /^[45]/.test(st) ? '#EF4444' : (isOk ? '#3B82F6' : '#64748b');
+        var border = /^[45]/.test(st) ? '#7F1D1D' : (isOk ? '#1E3A8A' : '#475569');
+        nodeMap.set(u, { id: u, label: (typeof u === 'string' ? u.replace(/^https?:\/\/[^/]+/, '') || '/' : u), title: u, value: 1, color: { background: color, border: border }, font: { color: '#94A3B8', size: 10 } });
+      });
+      data.graph_edges.forEach(function(e) {
+        var fromId = e['from'] != null ? e['from'] : e.from;
+        var toId = e['to'] != null ? e['to'] : e.to;
+        if (!fromId || !toId) return;
+        if (!nodeMap.has(fromId)) { var st = urlToStatus[fromId] || ''; var color = /^[45]/.test(st) ? '#EF4444' : '#3B82F6'; nodeMap.set(fromId, { id: fromId, label: (typeof fromId === 'string' ? fromId.replace(/^https?:\/\/[^/]+/, '') || '/' : fromId), title: fromId, value: 1, color: { background: color, border: '#1E3A8A' }, font: { color: '#94A3B8', size: 10 } }); }
+        if (!nodeMap.has(toId)) { var st = urlToStatus[toId] || ''; var color = /^[45]/.test(st) ? '#EF4444' : '#3B82F6'; nodeMap.set(toId, { id: toId, label: (typeof toId === 'string' ? toId.replace(/^https?:\/\/[^/]+/, '') || '/' : toId), title: toId, value: 1, color: { background: color, border: '#1E3A8A' }, font: { color: '#94A3B8', size: 10 } }); }
+      });
+      var nodes = Array.from(nodeMap.values()).map(function(n) { return Object.assign({ shape: 'dot', borderWidth: 2 }, n); });
+      var edges = (data.graph_edges || []).map(function(e) {
+        var fromId = e['from'] != null ? e['from'] : e.from;
+        var toId = e['to'] != null ? e['to'] : e.to;
+        return fromId && toId ? { from: fromId, to: toId, color: { color: '#334155', opacity: 0.6 } } : null;
+      }).filter(Boolean);
+      if (nodes.length === 0 || edges.length === 0) {
+        container.innerHTML = '<p class="p-5 text-slate-500 text-center">No edge data available.</p>';
+        STATE.networkRendered = true;
+        return;
+      }
+      var network = new vis.Network(container, { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) }, {
+        nodes: { shape: 'dot', borderWidth: 2, scaling: { min: 10, max: 40 } },
+        edges: { smooth: { type: 'continuous' } },
+        physics: { stabilization: { iterations: 100 }, barnesHut: { gravitationalConstant: -3000, springLength: 100 } }
+      });
+      network.on('doubleClick', function(params) { if (params.nodes && params.nodes.length > 0) window.open(params.nodes[0], '_blank'); });
+      STATE.networkInstance = network;
+      STATE.networkRendered = true;
+    }
+
+    function resizeNetworkToContainer() {
+      if (!STATE.networkInstance) return;
+      var container = document.getElementById('networkCanvas');
+      if (!container) return;
+      var w = container.offsetWidth;
+      var h = container.offsetHeight;
+      if (w && h) { STATE.networkInstance.setSize(w, h); STATE.networkInstance.redraw(); }
+    }
+
+    function toggleNetworkFullscreen() {
+      var el = document.getElementById('networkContainer');
+      var btnIn = document.getElementById('networkFullscreenBtn');
+      var btnOut = document.getElementById('networkExitFullscreenBtn');
+      if (!el || !btnIn || !btnOut) return;
+      if (!document.fullscreenElement) {
+        el.requestFullscreen().then(function() {
+          btnIn.classList.add('hidden');
+          btnOut.classList.remove('hidden');
+          if (typeof lucide !== 'undefined') lucide.createIcons();
+          setTimeout(resizeNetworkToContainer, 100);
+        }).catch(function() {});
+      } else {
+        document.exitFullscreen().then(function() {
+          btnOut.classList.add('hidden');
+          btnIn.classList.remove('hidden');
+          if (typeof lucide !== 'undefined') lucide.createIcons();
+          setTimeout(resizeNetworkToContainer, 100);
+        }).catch(function() {});
+      }
+    }
+
+    function onNetworkFullscreenChange() {
+      var btnIn = document.getElementById('networkFullscreenBtn');
+      var btnOut = document.getElementById('networkExitFullscreenBtn');
+      if (!btnIn || !btnOut) return;
+      if (document.fullscreenElement) {
+        btnIn.classList.add('hidden');
+        btnOut.classList.remove('hidden');
+      } else {
+        btnOut.classList.add('hidden');
+        btnIn.classList.remove('hidden');
+      }
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+      setTimeout(resizeNetworkToContainer, 100);
+    }
+
+    function renderRedirects() {
+      var list = data.redirects || [];
+      var tbody = document.getElementById('redirectsTableBody');
+      var emptyEl = document.getElementById('redirectsEmpty');
+      if (!tbody) return;
+      if (list.length === 0) {
+        tbody.innerHTML = '';
+        if (emptyEl) { emptyEl.classList.remove('hidden'); }
+        return;
+      }
+      if (emptyEl) emptyEl.classList.add('hidden');
+      tbody.innerHTML = list.map(function(r) {
+        var fromUrl = r.url || '';
+        var toUrl = r.final_url || '';
+        var status = r.status || '';
+        return '<tr class="hover:bg-brand-900/50"><td class="px-6 py-3 font-mono text-blue-400 text-xs break-all"><a href="' + escapeHtml(fromUrl) + '" target="_blank" class="hover:underline">' + escapeHtml(fromUrl) + '</a></td><td class="px-6 py-3"><span class="px-2 py-1 rounded text-xs font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">' + escapeHtml(String(status)) + '</span></td><td class="px-6 py-3 font-mono text-slate-400 text-xs break-all"><a href="' + escapeHtml(toUrl) + '" target="_blank" class="hover:underline">' + escapeHtml(toUrl) + '</a></td></tr>';
+      }).join('');
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    function switchTab(viewId) {
+      document.querySelectorAll('.view-panel').forEach(function(el) { el.classList.add('hidden'); });
+      document.querySelectorAll('.nav-btn').forEach(function(el) { el.classList.remove('tab-active'); });
+      var panel = document.getElementById('view-' + viewId);
+      if (panel) panel.classList.remove('hidden');
+      var btn = document.querySelector('[data-view="' + viewId + '"]');
+      if (btn) btn.classList.add('tab-active');
+      STATE.currentView = viewId;
+      if (viewId === 'links') updateLinksTable();
+      if (viewId === 'redirects') renderRedirects();
+      if (viewId === 'chartjs') renderCharts();
+      if (viewId === 'network') renderNetwork();
+      if (viewId === 'overview') renderOverview();
+      if (viewId === 'issues') renderIssues();
+      if (viewId === 'content' && STATE.contentFilter) renderContentList(STATE.contentFilter);
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('issuesBadge').textContent = getIssueCount();
+      renderOverview();
+      renderIssues();
+      initContentFilters();
+      updateLinksTable();
+
+      document.querySelectorAll('.nav-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var view = btn.getAttribute('data-view');
+          if (view) switchTab(view);
+        });
+      });
+
+      document.getElementById('globalSearch').addEventListener('input', function() {
+        if (STATE.currentView === 'links') { STATE.links.page = 1; updateLinksTable(); }
+        if (STATE.currentView === 'issues') { renderIssues(); }
+        if (STATE.currentView === 'content' && STATE.contentFilter) renderContentList(STATE.contentFilter);
+      });
+
+      document.getElementById('linkStatusFilter').addEventListener('change', function() {
+        STATE.links.filterStatus = this.value;
+        STATE.links.page = 1;
+        updateLinksTable();
+      });
+
+      document.getElementById('linkInlinksFilter').addEventListener('change', function() {
+        STATE.links.filterInlinks = this.value;
+        STATE.links.page = 1;
+        updateLinksTable();
+      });
+
+      document.querySelectorAll('#view-links [data-sort]').forEach(function(th) {
+        th.addEventListener('click', function() { sortLinks(th.getAttribute('data-sort')); });
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeModal();
+      });
+
+      var networkFsBtn = document.getElementById('networkFullscreenBtn');
+      var networkExitFsBtn = document.getElementById('networkExitFullscreenBtn');
+      if (networkFsBtn) networkFsBtn.addEventListener('click', toggleNetworkFullscreen);
+      if (networkExitFsBtn) networkExitFsBtn.addEventListener('click', toggleNetworkFullscreen);
+      document.addEventListener('fullscreenchange', onNetworkFullscreenChange);
+
+      document.body.addEventListener('click', function(e) {
+        var btn = e.target && e.target.closest && e.target.closest('.inspect-link-btn');
+        if (btn && btn.getAttribute('data-url')) openLinkModal(btn.getAttribute('data-url'));
+      });
+
+      document.getElementById('btnExportData').addEventListener('click', function() {
+        var links = data.links || [];
+        var keys = ['url', 'status', 'inlinks', 'title', 'content_length', 'depth'];
+        var csv = keys.join(',') + '\n';
+        links.forEach(function(l) {
+          csv += keys.map(function(k) {
+            var v = l[k];
+            if (v == null) return '';
+            var s = String(v);
+            if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) return '"' + s.replace(/"/g, '""') + '"';
+            return s;
+          }).join(',') + '\n';
+        });
+        var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = (data.site_name || 'crawl') + '-links.csv';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+
+      document.getElementById('btnExportFixScript').addEventListener('click', function() {
+        if (STATE.lastIssueIdx < 0) return;
+        var list = STATE.issuesFilteredList && STATE.issuesFilteredList.length ? STATE.issuesFilteredList : getIssuesFlat();
+        if (STATE.lastIssueIdx >= list.length) return;
+        var item = list[STATE.lastIssueIdx];
+        var iss = item.issue;
+        var lines = [
+          '# Fix: ' + (iss.message || ''),
+          '# Category: ' + (item.category || ''),
+          '# Priority: ' + (iss.priority || ''),
+          '# URL: ' + (iss.url || ''),
+          '',
+          '# Recommendation:',
+          iss.recommendation || ''
+        ];
+        var blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'fix-' + (iss.url ? iss.url.replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40) : 'issue') + '.txt';
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
   </script>
 </body>
 </html>
