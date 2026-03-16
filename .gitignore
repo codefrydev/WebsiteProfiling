@@ -183,18 +183,13 @@ package-lock.json
 yarn.lock
 
 # WebsiteProfiling generated outputs
-crawl_results.json
-crawl_results.csv
-edges.json
-edges.csv
-nodes.csv
-lighthouse_summary.json
-lighthouse_*.json
-security_findings.json
-top_keywords.csv
-clusters.json
-keyword_crawl.json
-warnings_mapped.json
-site_graph.svg
+report.db
+report.db-journal
+nodes.json
+
+# React UI build (deployed by CI)
+UI/node_modules
+UI/dist
+
 # Optional: ignore local config (uncomment if input.txt has secrets)
 # input.txt

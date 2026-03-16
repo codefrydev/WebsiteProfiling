@@ -235,10 +235,11 @@ def main(
     iterations: int = 3,
     output_dir: str = ".",
     summary_path: str | None = None,
+    db_path: str | None = None,
 ) -> int:
     """
-    Run Lighthouse audit and write summary JSON. Returns 0 on success, non-zero on error.
-    If summary_path is None, writes to output_dir/lighthouse_summary.json.
+    Run Lighthouse audit and write summary to JSON file and/or SQLite. Returns 0 on success, non-zero on error.
+    If summary_path is None and not db_path, writes to output_dir/lighthouse_summary.json.
     """
     try:
         summary = run_lighthouse_audit(
@@ -251,9 +252,31 @@ def main(
         print(str(e), file=sys.stderr)
         return 1
 
-    out_file = summary_path or os.path.join(output_dir, "lighthouse_summary.json")
-    with open(out_file, "w", encoding="utf-8") as f:
-        json.dump(summary, f, indent=2, default=str)
-    print(summary.get("human_summary", ""))
-    print(f"Summary written to {out_file}")
+    if db_path:
+        from .db import get_connection, init_schema, write_lighthouse_summary, write_lighthouse_run
+        conn = get_connection(db_path)
+        init_schema(conn)
+        write_lighthouse_summary(conn, summary)
+        # Save each raw Lighthouse run report to DB, then delete the JSON file
+        for i, raw_path in enumerate(summary.get("raw_reports") or []):
+            if os.path.isfile(raw_path):
+                try:
+                    with open(raw_path, "r", encoding="utf-8") as f:
+                        run_data = json.load(f)
+                    write_lighthouse_run(conn, url, strategy, i + 1, run_data)
+                    try:
+                        os.remove(raw_path)
+                    except OSError:
+                        pass
+                except (OSError, json.JSONDecodeError):
+                    pass
+        conn.close()
+        print(summary.get("human_summary", ""))
+        print(f"Summary and run reports written to SQLite: {db_path}")
+    else:
+        out_file = summary_path or os.path.join(output_dir, "lighthouse_summary.json")
+        with open(out_file, "w", encoding="utf-8") as f:
+            json.dump(summary, f, indent=2, default=str)
+        print(summary.get("human_summary", ""))
+        print(f"Summary written to {out_file}")
     return 0

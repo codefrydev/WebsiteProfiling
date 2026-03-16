@@ -25,34 +25,61 @@ def run_plot(
     concurrency: int = 8,
     timeout: int = 10,
     polite_delay: float = 0.15,
+    db_path: Optional[str] = None,
 ) -> tuple[str, str]:
     """
-    Load crawl data, build edges (and nodes.csv), optionally draw graph to image.
+    Load crawl data, build edges (and nodes), optionally draw graph to image.
+    When db_path is set, reads crawl/edges from DB and writes edges/nodes to DB.
     Returns (edges_csv path, nodes_csv path).
     """
-    if not os.path.exists(crawl_csv):
-        raise FileNotFoundError(f"Crawl data not found: {crawl_csv}")
+    if db_path:
+        from .db import get_connection, init_schema, read_crawl, read_edges, write_edges, write_nodes
+        conn = get_connection(db_path)
+        init_schema(conn)
+        df = read_crawl(conn)
+        edges = read_edges(conn)
+        conn.close()
+        if df.empty and not edges:
+            raise FileNotFoundError(f"No crawl or edges data in DB: {db_path}")
+    else:
+        if not os.path.exists(crawl_csv):
+            raise FileNotFoundError(f"Crawl data not found: {crawl_csv}")
+        df = load_dataframe(crawl_csv)
+        edges = []
 
-    df = load_dataframe(crawl_csv)
-    if "url" not in df.columns:
+    if not df.empty and "url" not in df.columns:
         raise ValueError("Crawl DataFrame missing 'url' column")
 
-    df = df.copy()
-    df["url"] = df["url"].astype(str).str.rstrip("/")
+    if not df.empty:
+        df = df.copy()
+        df["url"] = df["url"].astype(str).str.rstrip("/")
 
-    edges = build_edges_from_df(
-        df, edges_csv, same_domain_only, max_fetch_for_edges, concurrency, timeout, polite_delay
-    )
+    if not edges and not df.empty:
+        edges = build_edges_from_df(
+            df, edges_csv, same_domain_only, max_fetch_for_edges, concurrency, timeout, polite_delay
+        )
 
-    if not edges:
+    if not edges and not db_path:
         edges = load_edges(edges_csv)
+
     if edges:
         edges_df = pd.DataFrame(edges, columns=["from", "to"])
-        save_edges(edges, edges_csv)
-        nodes = pd.Series(list(edges_df["from"]) + list(edges_df["to"]))
-        nodes = nodes.value_counts().reset_index()
-        nodes.columns = ["url", "count"]
-        save_dataframe(nodes, nodes_csv)
+        if db_path:
+            from .db import get_connection, init_schema, write_edges as db_write_edges, write_nodes as db_write_nodes
+            conn = get_connection(db_path)
+            init_schema(conn)
+            db_write_edges(conn, edges)
+            nodes = pd.Series(list(edges_df["from"]) + list(edges_df["to"]))
+            nodes = nodes.value_counts().reset_index()
+            nodes.columns = ["url", "count"]
+            db_write_nodes(conn, nodes)
+            conn.close()
+        else:
+            save_edges(edges, edges_csv)
+            nodes = pd.Series(list(edges_df["from"]) + list(edges_df["to"]))
+            nodes = nodes.value_counts().reset_index()
+            nodes.columns = ["url", "count"]
+            save_dataframe(nodes, nodes_csv)
     else:
         edges_df = pd.DataFrame(columns=["from", "to"])
         nodes = pd.DataFrame(columns=["url", "count"])

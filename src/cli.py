@@ -3,6 +3,7 @@ CLI: read config file and run crawl, report, or plot.
 """
 import argparse
 import os
+import shutil
 import sys
 
 from .config import get_bool, get_float, get_int, get_list, load_config
@@ -45,6 +46,10 @@ def main() -> None:
             p = os.path.join(cwd, p)
         return p
 
+    # When set, crawl/report/plot/lighthouse use SQLite instead of JSON/CSV
+    sqlite_db_raw = (cfg.get("sqlite_db") or "").strip()
+    db_path = path("sqlite_db", "report.db") if sqlite_db_raw else None
+
     # Single-command mode: lighthouse, keywords, warnings
     if args.command == "lighthouse":
         from .lighthouse_runner import main as lighthouse_main
@@ -56,7 +61,7 @@ def main() -> None:
         lh_out = cfg.get("lighthouse_output_dir", "").strip() or cwd
         if not os.path.isabs(lh_out):
             lh_out = os.path.join(cwd, lh_out)
-        sys.exit(lighthouse_main(url=lh_url, strategy=lh_strategy, iterations=lh_iterations, output_dir=lh_out))
+        sys.exit(lighthouse_main(url=lh_url, strategy=lh_strategy, iterations=lh_iterations, output_dir=lh_out, db_path=db_path))
     if args.command == "keywords":
         from .keyword_tool import main as keyword_main
         kw_url = cfg.get("start_url", "https://codefrydev.in")
@@ -106,11 +111,12 @@ def main() -> None:
             max_depth=max_depth,
             polite_delay=polite_delay,
             store_outlinks=store_outlinks,
-            output_csv=crawl_output,
+            output_csv=crawl_output if not db_path else None,
+            output_db=db_path,
             show_progress=True,
             exclude_urls=exclude_urls if exclude_urls else None,
         )
-        print(f"Crawl results: {crawl_output}")
+        print(f"Crawl results: {db_path or crawl_output}")
         crawl_csv = crawl_output
     else:
         crawl_csv = path("crawl_csv", "crawl_results.csv")
@@ -129,12 +135,15 @@ def main() -> None:
         lh_out = cfg.get("lighthouse_output_dir", "").strip() or cwd
         if not os.path.isabs(lh_out):
             lh_out = os.path.join(cwd, lh_out)
-        exit_code = lighthouse_main(url=lh_url, strategy=lh_strategy, iterations=lh_iterations, output_dir=lh_out)
+        exit_code = lighthouse_main(url=lh_url, strategy=lh_strategy, iterations=lh_iterations, output_dir=lh_out, db_path=db_path)
         if exit_code != 0:
             sys.exit(exit_code)
-        lighthouse_summary_path_for_report = os.path.join(lh_out, "lighthouse_summary.json")
+        lighthouse_summary_path_for_report = os.path.join(lh_out, "lighthouse_summary.json") if not db_path else None
 
     if run_report:
+        if not db_path:
+            print("Report requires sqlite_db. Set sqlite_db = report.db in input.txt. The React app in UI/ loads report.db.", file=sys.stderr)
+            sys.exit(1)
         report_output = path("report_output", "site_report.html")
         max_fetch = get_int(cfg, "max_fetch_for_edges", 300)
         same_domain = get_bool(cfg, "same_domain_only", True)
@@ -174,8 +183,18 @@ def main() -> None:
             security_max_urls_probe=security_max_urls_probe,
             security_findings_output=security_findings_output,
             lighthouse_summary_path=lighthouse_summary_path,
+            db_path=db_path,
         )
         print(f"Report written: {out}")
+        # Copy to UI/public so the React app can load it at /report.db
+        ui_public = os.path.join(cwd, "UI", "public")
+        if os.path.isdir(ui_public):
+            dest = os.path.join(ui_public, "report.db")
+            try:
+                shutil.copy2(out, dest)
+                print(f"Copied report DB to {dest} for UI.")
+            except OSError as e:
+                print(f"Warning: could not copy report DB to UI/public: {e}", file=sys.stderr)
 
     if run_plot:
         plot_image = cfg.get("plot_image_output")
@@ -194,6 +213,7 @@ def main() -> None:
             concurrency=8,
             timeout=10,
             polite_delay=0.15,
+            db_path=db_path,
         )
         print(f"Edges: {e}, Nodes: {n}")
         if plot_image:

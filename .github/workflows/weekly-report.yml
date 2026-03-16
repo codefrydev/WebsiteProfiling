@@ -1,3 +1,5 @@
+# Runs on schedule (and push to master): generates report, builds UI, commits index.html/report.db/assets to repo.
+# Separate from deploy-pages.yml, which deploys the React app to GitHub Pages.
 name: Monthly site report
 
 on:
@@ -31,11 +33,21 @@ jobs:
       - name: Generate report
         run: python -m src
 
+      - name: Build React UI
+        run: |
+          cd UI && npm ci && npm run build
+
+      - name: Copy report.db and build to root for deployment
+        run: |
+          cp report.db UI/dist/
+          cp -r UI/dist/index.html UI/dist/assets . 2>/dev/null || true
+          cp report.db .
+
       - name: Commit and push report to repo
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add index.html
+          git add -f index.html report.db assets
           git diff --staged --quiet || git commit -m "cron: monthly site report"
           git push
 
@@ -45,12 +57,7 @@ jobs:
           name: site-report-${{ github.run_number }}
           path: |
             index.html
-            crawl_results.json
-            crawl_results.csv
-            edges.json
-            edges.csv
-            nodes.json
-            nodes.csv
+            report.db
+            assets
             site_graph.svg
-            lighthouse_summary.json
           if-no-files-found: ignore

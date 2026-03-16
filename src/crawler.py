@@ -438,10 +438,11 @@ def run_crawler(
     polite_delay: float = 0.2,
     store_outlinks: bool = True,
     output_csv: Optional[str] = "crawl_results.csv",
+    output_db: Optional[str] = None,
     show_progress: bool = True,
     exclude_urls: Optional[list[str]] = None,
 ) -> pd.DataFrame:
-    """Run crawler and optionally save CSV. Returns DataFrame."""
+    """Run crawler and optionally save to CSV/JSON or SQLite. Returns DataFrame."""
     crawler = Crawler(
         start_url=start_url,
         max_pages=max_pages,
@@ -455,7 +456,14 @@ def run_crawler(
         exclude_urls=exclude_urls,
     )
     df = crawler.crawl(show_progress=show_progress)
-    if output_csv and not df.empty:
+    if output_db and not df.empty:
+        from .db import ensure_db_recreated, get_connection, init_schema, write_crawl
+        ensure_db_recreated(output_db)
+        conn = get_connection(output_db)
+        init_schema(conn)
+        write_crawl(conn, df)
+        conn.close()
+    elif output_csv and not df.empty:
         if output_csv.lower().endswith(".json"):
             df.to_json(output_csv, orient="records", indent=2, date_format="iso", default_handler=str)
         else:

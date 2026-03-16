@@ -25,7 +25,9 @@ ignore_robots = false
 allow_external = false
 store_outlinks = true
 
-# Output: use .json or .csv
+# Output: use .json, .csv, or .db (SQLite). When sqlite_db is set, crawl/report/plot/lighthouse use it.
+sqlite_db = report.db
+# Output: use .json or .csv when not using SQLite
 crawl_output = crawl_results.json
 
 # Exclude URLs from crawl (comma-separated prefixes or full URLs)
@@ -33,13 +35,12 @@ crawl_output = crawl_results.json
 crawl_exclude_urls = https://codefrydev.in/WebsiteProfiling/
 
 # -----------------------------------------------------------------------------
-# Report
+# Report (writes to sqlite_db only; React app in UI/ loads report.db)
 # -----------------------------------------------------------------------------
-# Inputs: use .json or .csv (report reads either)
+# Inputs: from DB when sqlite_db set, else .json/.csv
 crawl_csv = crawl_results.json
 edges_csv = edges.json
 nodes_csv = nodes.json
-report_output = index.html
 
 site_name = Codefrydev
 report_title = Codefrydev Report

@@ -1,5 +1,5 @@
 """
-Generate HTML reports from crawl data. Uses templates in templates/ for safe substitution.
+Generate report data from crawl and write to SQLite. UI is the React app in UI/ (loads report.db).
 """
 import json
 import os
@@ -23,9 +23,6 @@ from .common import (
 )
 from .report_categories import build_categories
 from .security_scanner import run_security_scan
-from .templates import render_template
-
-TEMPLATE_SIMPLE = "site_report.html"
 
 # SEO thresholds for recommendations
 TITLE_LEN_MIN = 30
@@ -307,26 +304,55 @@ def run_simple_report(
     security_max_urls_probe: int = 20,
     security_findings_output: Optional[str] = None,
     lighthouse_summary_path: Optional[str] = None,
+    db_path: Optional[str] = None,
 ) -> str:
-    """Load crawl data, build edges if needed, write interactive HTML report from template. Returns output path."""
-    if not os.path.exists(crawl_csv):
-        raise FileNotFoundError(f"Crawl data not found: {crawl_csv}")
+    """Load crawl data, build edges if needed, write report payload to SQLite. Returns db_path. Requires db_path (React app in UI/ loads report.db)."""
+    conn = None
+    if db_path:
+        from .db import (
+            get_connection,
+            init_schema,
+            read_crawl,
+            read_edges,
+            read_lighthouse_summary,
+            write_edges,
+            write_report_payload,
+        )
+        conn = get_connection(db_path)
+        init_schema(conn)
+        df = read_crawl(conn)
+        edges = read_edges(conn)
+        lighthouse_summary = read_lighthouse_summary(conn)
+        if df.empty and not edges:
+            conn.close()
+            raise FileNotFoundError(f"No crawl or edges data in DB: {db_path}")
+    else:
+        if not os.path.exists(crawl_csv):
+            raise FileNotFoundError(f"Crawl data not found: {crawl_csv}")
+        df = load_dataframe(crawl_csv)
+        edges = []
+        lighthouse_summary = None
 
-    df = load_dataframe(crawl_csv)
-    if "url" not in df.columns:
+    if "url" not in df.columns and not df.empty:
+        if conn:
+            conn.close()
         raise ValueError("Crawl DataFrame missing required column 'url'")
 
     df = df.copy()
-    df["url"] = df["url"].astype(str).str.rstrip("/")
+    if not df.empty:
+        df["url"] = df["url"].astype(str).str.rstrip("/")
 
     site_display = (site_name or "").strip() or (urlparse(start_url or "").netloc if start_url else "") or "Site"
     report_display_title = (report_title or "").strip() or f"{site_display} — Crawl Report"
 
-    edges = build_edges_from_df(
-        df, edges_csv, same_domain_only, max_fetch_for_edges, concurrency, timeout, 0.12
-    )
-    if edges:
-        save_edges(edges, edges_csv)
+    if not edges and not df.empty:
+        edges = build_edges_from_df(
+            df, edges_csv, same_domain_only, max_fetch_for_edges, concurrency, timeout, 0.12
+        )
+        if edges and db_path and conn:
+            write_edges(conn, edges)
+        elif edges and not db_path:
+            save_edges(edges, edges_csv)
 
     summary_seo = _compute_summary_seo_issues(df)
 
@@ -346,13 +372,14 @@ def run_simple_report(
             with open(security_findings_output, "w", encoding="utf-8") as fh:
                 json.dump(security_findings, fh, indent=2, default=str)
 
-    lighthouse_summary = None
-    if lighthouse_summary_path and os.path.isfile(lighthouse_summary_path):
-        try:
-            with open(lighthouse_summary_path, "r", encoding="utf-8") as fh:
-                lighthouse_summary = json.load(fh)
-        except (OSError, json.JSONDecodeError):
-            pass
+    if not db_path:
+        lighthouse_summary = None
+        if lighthouse_summary_path and os.path.isfile(lighthouse_summary_path):
+            try:
+                with open(lighthouse_summary_path, "r", encoding="utf-8") as fh:
+                    lighthouse_summary = json.load(fh)
+            except (OSError, json.JSONDecodeError):
+                pass
 
     categories = build_categories(
         df, edges, summary_seo, site_level, start_url or "",
@@ -574,13 +601,14 @@ def run_simple_report(
         "content_urls": content_urls,
         "security_findings": security_findings,
     }
-    report_data_json = json.dumps(report_data).replace("</", "<\\/")
-    html = render_template(
-        TEMPLATE_SIMPLE,
-        generated_time=time.strftime("%Y-%m-%d %H:%M:%S"),
-        report_data=report_data_json,
+    if db_path and conn:
+        from .db import write_report_payload as db_write_report_payload
+        db_write_report_payload(conn, report_data)
+        conn.close()
+        conn = None
+        return db_path
+    raise ValueError(
+        "Report requires sqlite_db. Set sqlite_db = report.db in your config; "
+        "the React app in UI/ loads report.db to display the report."
     )
-    with open(output_html, "w", encoding="utf-8") as fh:
-        fh.write(html)
-    return output_html
 
