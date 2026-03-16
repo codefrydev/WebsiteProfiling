@@ -49,3 +49,13 @@ def get_float(cfg: dict, key: str, default: float = 0.0) -> float:
         return float(raw)
     except ValueError:
         return default
+
+
+def get_list(cfg: dict, key: str, sep: str = ",", default: list[str] | None = None) -> list[str]:
+    """Return list of stripped non-empty strings from config value split by sep."""
+    if default is None:
+        default = []
+    raw = cfg.get(key)
+    if raw is None or raw == "":
+        return default
+    return [s.strip() for s in str(raw).split(sep) if s.strip()]

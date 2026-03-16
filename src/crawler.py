@@ -9,6 +9,20 @@ from queue import Queue
 from typing import Optional
 from urllib.parse import urlparse
 
+
+def _url_matches_exclude(url: str, exclude_urls: list[str]) -> bool:
+    """True if url equals or is under any exclude prefix (trailing-slash normalized)."""
+    if not exclude_urls:
+        return False
+    u = url.rstrip("/")
+    for prefix in exclude_urls:
+        p = prefix.strip().rstrip("/")
+        if not p:
+            continue
+        if u == p or u.startswith(p + "/"):
+            return True
+    return False
+
 import pandas as pd
 import requests
 from tqdm.auto import tqdm
@@ -49,6 +63,7 @@ class Crawler:
         user_agent: Optional[str] = None,
         polite_delay: float = 0.0,
         store_outlinks: bool = False,
+        exclude_urls: Optional[list[str]] = None,
     ):
         self.start_url = start_url.rstrip("/")
         self.start_netloc = urlparse(self.start_url).netloc
@@ -63,9 +78,11 @@ class Crawler:
         self.user_agent = user_agent or DEFAULT_USER_AGENT
         self.polite_delay = max(0.0, float(polite_delay))
         self.store_outlinks = store_outlinks
+        self.exclude_urls = list(exclude_urls) if exclude_urls else []
 
         self.queue = Queue()
-        self.queue.put(self.start_url)
+        if not _url_matches_exclude(self.start_url, self.exclude_urls):
+            self.queue.put(self.start_url)
         self.depths = {self.start_url: 0}
         self.visited = set()
         self.results = []
@@ -224,6 +241,8 @@ class Crawler:
             ext["script_count"] = res_res.get("script_count", 0)
             ext["link_stylesheet_count"] = res_res.get("link_stylesheet_count", 0)
             for link in links:
+                if _url_matches_exclude(link, self.exclude_urls):
+                    continue
                 if not self.allow_external and not self.same_domain(link):
                     continue
                 cur_depth = self.depths.get(url, 0)
@@ -295,6 +314,8 @@ class Crawler:
                     and len(self.results) + len(futures) < self.max_pages
                 ):
                     url = self.queue.get()
+                    if _url_matches_exclude(url, self.exclude_urls):
+                        continue
                     with self.lock:
                         if url in self.visited:
                             continue
@@ -418,6 +439,7 @@ def run_crawler(
     store_outlinks: bool = True,
     output_csv: Optional[str] = "crawl_results.csv",
     show_progress: bool = True,
+    exclude_urls: Optional[list[str]] = None,
 ) -> pd.DataFrame:
     """Run crawler and optionally save CSV. Returns DataFrame."""
     crawler = Crawler(
@@ -430,6 +452,7 @@ def run_crawler(
         max_depth=max_depth,
         polite_delay=polite_delay,
         store_outlinks=store_outlinks,
+        exclude_urls=exclude_urls,
     )
     df = crawler.crawl(show_progress=show_progress)
     if output_csv and not df.empty:

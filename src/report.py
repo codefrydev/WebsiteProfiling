@@ -306,6 +306,7 @@ def run_simple_report(
     security_scan_active: bool = False,
     security_max_urls_probe: int = 20,
     security_findings_output: Optional[str] = None,
+    lighthouse_summary_path: Optional[str] = None,
 ) -> str:
     """Load crawl data, build edges if needed, write interactive HTML report from template. Returns output path."""
     if not os.path.exists(crawl_csv):
@@ -345,9 +346,18 @@ def run_simple_report(
             with open(security_findings_output, "w", encoding="utf-8") as fh:
                 json.dump(security_findings, fh, indent=2, default=str)
 
+    lighthouse_summary = None
+    if lighthouse_summary_path and os.path.isfile(lighthouse_summary_path):
+        try:
+            with open(lighthouse_summary_path, "r", encoding="utf-8") as fh:
+                lighthouse_summary = json.load(fh)
+        except (OSError, json.JSONDecodeError):
+            pass
+
     categories = build_categories(
         df, edges, summary_seo, site_level, start_url or "",
         security_findings=security_findings,
+        lighthouse_summary=lighthouse_summary,
     )
     # Ensure categories are JSON-serializable (score may be None)
     for cat in categories:

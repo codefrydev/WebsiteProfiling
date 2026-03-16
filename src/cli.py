@@ -5,7 +5,7 @@ import argparse
 import os
 import sys
 
-from .config import get_bool, get_float, get_int, load_config
+from .config import get_bool, get_float, get_int, get_list, load_config
 
 
 def _config_path(default_name: str = "input.txt") -> str:
@@ -25,7 +25,7 @@ def main() -> None:
     parser.add_argument(
         "command",
         nargs="?",
-        choices=["crawl", "report", "plot"],
+        choices=["crawl", "report", "plot", "lighthouse", "keywords", "warnings"],
         help="Run only this step (default: run all steps according to config)",
     )
     args = parser.parse_args()
@@ -45,9 +45,42 @@ def main() -> None:
             p = os.path.join(cwd, p)
         return p
 
+    # Single-command mode: lighthouse, keywords, warnings
+    if args.command == "lighthouse":
+        from .lighthouse_runner import main as lighthouse_main
+        lh_url = cfg.get("lighthouse_url", cfg.get("start_url", "https://codefrydev.in"))
+        lh_strategy = (cfg.get("lighthouse_strategy") or "mobile").lower()
+        if lh_strategy not in ("mobile", "desktop"):
+            lh_strategy = "mobile"
+        lh_iterations = get_int(cfg, "lighthouse_iterations", 3) or 3
+        lh_out = cfg.get("lighthouse_output_dir", "").strip() or cwd
+        if not os.path.isabs(lh_out):
+            lh_out = os.path.join(cwd, lh_out)
+        sys.exit(lighthouse_main(url=lh_url, strategy=lh_strategy, iterations=lh_iterations, output_dir=lh_out))
+    if args.command == "keywords":
+        from .keyword_tool import main as keyword_main
+        kw_url = cfg.get("start_url", "https://codefrydev.in")
+        kw_out = cfg.get("keyword_output_dir", "").strip() or cwd
+        if not os.path.isabs(kw_out):
+            kw_out = os.path.join(cwd, kw_out)
+        kw_cfg = dict(cfg)
+        kw_cfg["_cwd"] = cwd
+        sys.exit(keyword_main(base_url=kw_url, output_dir=kw_out, config=kw_cfg))
+    if args.command == "warnings":
+        from .warning_mapper import main as warning_mapper_main
+        wm_input = cfg.get("warning_mapper_input", "").strip()
+        wm_type = (cfg.get("warning_mapper_input_type") or "lighthouse").lower()
+        wm_out = cfg.get("warning_mapper_output", "").strip()
+        if not wm_out:
+            wm_out = os.path.join(cwd, "warnings_mapped.json")
+        elif not os.path.isabs(wm_out):
+            wm_out = os.path.join(cwd, wm_out)
+        sys.exit(warning_mapper_main(input_path=wm_input, input_type=wm_type, output_path=wm_out))
+
     run_crawl = args.command == "crawl" or (args.command is None and get_bool(cfg, "run_crawl", True))
     run_report = args.command == "report" or (args.command is None and get_bool(cfg, "run_report", True))
     run_plot = args.command == "plot" or (args.command is None and get_bool(cfg, "run_plot", False))
+    run_lighthouse = args.command is None and get_bool(cfg, "run_lighthouse", False)
 
     if run_crawl:
         from .crawler import run_crawler
@@ -60,6 +93,7 @@ def main() -> None:
         max_depth = get_int(cfg, "max_depth")
         polite_delay = get_float(cfg, "polite_delay", 0.2)
         store_outlinks = get_bool(cfg, "store_outlinks", True)
+        exclude_urls = get_list(cfg, "crawl_exclude_urls", sep=",")
         crawl_output = path("crawl_output", "crawl_results.csv")
         print("Crawling...")
         run_crawler(
@@ -74,6 +108,7 @@ def main() -> None:
             store_outlinks=store_outlinks,
             output_csv=crawl_output,
             show_progress=True,
+            exclude_urls=exclude_urls if exclude_urls else None,
         )
         print(f"Crawl results: {crawl_output}")
         crawl_csv = crawl_output
@@ -81,6 +116,23 @@ def main() -> None:
         crawl_csv = path("crawl_csv", "crawl_results.csv")
     edges_csv = path("edges_csv", "edges.csv")
     nodes_csv = path("nodes_csv", "nodes.csv")
+
+    # Run Lighthouse before report when both enabled so the report can show Core Web Vitals
+    lighthouse_summary_path_for_report = None
+    if run_lighthouse:
+        from .lighthouse_runner import main as lighthouse_main
+        lh_url = cfg.get("lighthouse_url", cfg.get("start_url", "https://codefrydev.in"))
+        lh_strategy = (cfg.get("lighthouse_strategy") or "mobile").lower()
+        if lh_strategy not in ("mobile", "desktop"):
+            lh_strategy = "mobile"
+        lh_iterations = get_int(cfg, "lighthouse_iterations", 3) or 3
+        lh_out = cfg.get("lighthouse_output_dir", "").strip() or cwd
+        if not os.path.isabs(lh_out):
+            lh_out = os.path.join(cwd, lh_out)
+        exit_code = lighthouse_main(url=lh_url, strategy=lh_strategy, iterations=lh_iterations, output_dir=lh_out)
+        if exit_code != 0:
+            sys.exit(exit_code)
+        lighthouse_summary_path_for_report = os.path.join(lh_out, "lighthouse_summary.json")
 
     if run_report:
         report_output = path("report_output", "site_report.html")
@@ -98,6 +150,11 @@ def main() -> None:
             security_findings_output = os.path.join(cwd, security_findings_output)
         elif not security_findings_output:
             security_findings_output = None
+        lighthouse_summary_path = (cfg.get("lighthouse_summary_json") or "").strip()
+        if lighthouse_summary_path and not os.path.isabs(lighthouse_summary_path):
+            lighthouse_summary_path = os.path.join(cwd, lighthouse_summary_path)
+        if not lighthouse_summary_path:
+            lighthouse_summary_path = lighthouse_summary_path_for_report
         from .report import run_simple_report
         print("Generating report...")
         out = run_simple_report(
@@ -116,6 +173,7 @@ def main() -> None:
             security_scan_active=security_scan_active,
             security_max_urls_probe=security_max_urls_probe,
             security_findings_output=security_findings_output,
+            lighthouse_summary_path=lighthouse_summary_path,
         )
         print(f"Report written: {out}")
 

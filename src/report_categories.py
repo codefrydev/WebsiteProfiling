@@ -156,6 +156,34 @@ def category_core_web_vitals() -> dict:
     }
 
 
+def category_core_web_vitals_from_lighthouse(lighthouse_summary: dict) -> dict:
+    """Core Web Vitals from Lighthouse summary: score 0–100 from performance score, issues from top_failures."""
+    issues = []
+    recommendations = []
+    perf_score = None
+    mm = lighthouse_summary.get("median_metrics") or {}
+    if isinstance(mm.get("performance_score"), (int, float)):
+        perf_score = max(0, min(100, int(round(mm["performance_score"] * 100))))
+    for f in lighthouse_summary.get("top_failures") or []:
+        aid = f.get("id") or ""
+        help_text = (f.get("helpText") or "")[:200]
+        msg = f"{aid}: {help_text}" if aid else help_text or "Audit failed"
+        issues.append(_issue(
+            msg,
+            priority="High" if (f.get("score") or 0) < 0.5 else "Medium",
+            recommendation="See Lighthouse report for fix; run 'python -m src warnings' with the Lighthouse JSON for one-line fixes.",
+        ))
+    if not issues and perf_score is not None and perf_score < 80:
+        recommendations.append("Improve Core Web Vitals (LCP, CLS, TBT) per Lighthouse recommendations.")
+    return {
+        "id": "core_web_vitals",
+        "name": "Core Web Vitals",
+        "score": perf_score,
+        "issues": _sort_issues(issues),
+        "recommendations": recommendations or ["Core Web Vitals measured by Lighthouse; see median_metrics in lighthouse_summary.json."],
+    }
+
+
 def category_performance(df: pd.DataFrame) -> dict:
     """Performance: response time, JS/CSS size, images, lazy loading, caching."""
     issues = []
@@ -255,6 +283,7 @@ def category_html_accessibility(df: pd.DataFrame) -> dict:
             deductions.append((min(10, int(multi_h1) * 2), True))
 
     if "heading_sequence" in df.columns:
+        pages_with_skipped_heading = 0
         for _, row in success_df.iterrows():
             seq = row.get("heading_sequence")
             if pd.isna(seq) or not str(seq).strip():
@@ -265,14 +294,17 @@ def category_html_accessibility(df: pd.DataFrame) -> dict:
             levels = [int(h[1]) for h in parts if len(h) == 2 and h[0] == "h" and h[1] in "123456"]
             for i in range(1, len(levels)):
                 if levels[i] > levels[i - 1] + 1:
-                    issues.append(_issue(
-                        "Skipped heading level (e.g. H1 then H3).",
-                        url=str(row.get("url", "")),
-                        priority="Medium",
-                        recommendation="Use heading levels in order (H1, H2, H3) without skipping.",
-                    ))
-                    deductions.append((5, True))
+                    if pages_with_skipped_heading == 0:
+                        issues.append(_issue(
+                            "Skipped heading level (e.g. H1 then H3).",
+                            url=str(row.get("url", "")),
+                            priority="Medium",
+                            recommendation="Use heading levels in order (H1, H2, H3) without skipping.",
+                        ))
+                    pages_with_skipped_heading += 1
                     break
+        if pages_with_skipped_heading > 0:
+            deductions.append((min(15, pages_with_skipped_heading * 5), True))
 
     if "images_total" in df.columns and "images_without_alt" in df.columns:
         total = success_df["images_total"].fillna(0).astype(int).sum()
@@ -292,6 +324,10 @@ def category_html_accessibility(df: pd.DataFrame) -> dict:
     ))
 
     score = _score_deductions(100, deductions)
+    # Floor at 5 when we have successful pages so the category clearly shows a calculated score
+    if len(success_df) > 0 and score == 0:
+        score = 5
+    score = min(100, max(0, score))
     return {
         "id": "html_accessibility",
         "name": "HTML & Accessibility",
@@ -507,19 +543,26 @@ def build_categories(
     site_level: dict,
     start_url: str,
     security_findings: Optional[list[dict]] = None,
+    lighthouse_summary: Optional[dict] = None,
 ) -> list[dict]:
     """
     Build all category dicts with score, issues (with priority and recommendation), and recommendations.
     site_level should have: robots_present, sitemap_present, sitemap_valid (all optional).
     summary_seo should have: issues["broken"], issues["redirects"].
     security_findings: optional list from security scanner (finding_type, severity, url, message, recommendation).
+    lighthouse_summary: optional dict from lighthouse_runner (median_metrics, top_failures); when set, Core Web Vitals uses real data.
     """
     issues_broken = summary_seo.get("issues", {}).get("broken", [])
     issues_redirects = summary_seo.get("issues", {}).get("redirects", [])
 
+    cwv = (
+        category_core_web_vitals_from_lighthouse(lighthouse_summary)
+        if lighthouse_summary
+        else category_core_web_vitals()
+    )
     categories = [
         category_technical_seo(df, site_level),
-        category_core_web_vitals(),
+        cwv,
         category_performance(df),
         category_html_accessibility(df),
         category_link_health(df, edges, issues_broken, issues_redirects),

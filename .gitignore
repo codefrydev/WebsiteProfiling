@@ -173,5 +173,28 @@ poetry.toml
 # LSP config files
 pyrightconfig.json
 
-*.json*
-*.svg*
+# Node / npm (used for Lighthouse via npx)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+package-lock.json
+yarn.lock
+
+# WebsiteProfiling generated outputs
+crawl_results.json
+crawl_results.csv
+edges.json
+edges.csv
+nodes.csv
+lighthouse_summary.json
+lighthouse_*.json
+security_findings.json
+top_keywords.csv
+clusters.json
+keyword_crawl.json
+warnings_mapped.json
+site_graph.svg
+# Optional: ignore local config (uncomment if input.txt has secrets)
+# input.txt

@@ -1,8 +1,8 @@
-name: Weekly site report
+name: Monthly site report
 
 on:
   schedule:
-    - cron: '0 0 * * 0'
+    - cron: '0 0 1 * *'
   push:
     branches: [master]
 
@@ -20,7 +20,13 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
+      - name: Setup Node (for Lighthouse via npx)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Python dependencies
         run: pip install -r requirements.txt
 
       - name: Generate report
@@ -31,15 +37,21 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git diff --staged --quiet || git commit -m "cron: weekly site report"
+          git diff --staged --quiet || git commit -m "cron: monthly site report"
           git push
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload report artifacts
+        uses: actions/upload-artifact@v4
         with:
           name: site-report-${{ github.run_number }}
           path: |
             index.html
+            crawl_results.json
             crawl_results.csv
+            edges.json
             edges.csv
+            nodes.json
             nodes.csv
             site_graph.svg
+            lighthouse_summary.json
+          if-no-files-found: ignore

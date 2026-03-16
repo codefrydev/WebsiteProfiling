@@ -1,44 +1,96 @@
-# WebsiteProfiling input file
+# =============================================================================
+# WebsiteProfiling – input config
+# =============================================================================
 # Copy to input.txt and edit. Lines starting with # and blank lines are ignored.
 # Use key = value or key: value
+# Run: python -m src              (all steps) or
+#      python -m src crawl        (crawl only)
+#      python -m src report       (report only)
+#      python -m src plot         (plot only)
+#      python -m src lighthouse   (Lighthouse only)
+#      python -m src keywords     (keyword tool only)
+#      python -m src warnings     (warning mapper only)
+# =============================================================================
 
-# ---- Crawl ----
+# -----------------------------------------------------------------------------
+# Crawl
+# -----------------------------------------------------------------------------
 start_url = https://codefrydev.in
-max_pages = 2000
+max_pages = 100
 concurrency = 8
 timeout = 12
-ignore_robots = false
-allow_external = false
 max_depth = 6
 polite_delay = 0.2
-# Use .json for JSON output or .csv for CSV
-crawl_output = crawl_results.json
+ignore_robots = false
+allow_external = false
 store_outlinks = true
 
-# ---- Report ----
-# crawl_csv, edges_csv, nodes_csv: use .json or .csv (report reads either)
+# Output: use .json or .csv
+crawl_output = crawl_results.json
+
+# Exclude URLs from crawl (comma-separated prefixes or full URLs)
+# Example: do not crawl https://codefrydev.in/WebsiteProfiling/
+crawl_exclude_urls = https://codefrydev.in/WebsiteProfiling/
+
+# -----------------------------------------------------------------------------
+# Report
+# -----------------------------------------------------------------------------
+# Inputs: use .json or .csv (report reads either)
 crawl_csv = crawl_results.json
 edges_csv = edges.json
 nodes_csv = nodes.json
 report_output = index.html
+
 site_name = Codefrydev
-# site_name = My Website
 report_title = Codefrydev Report
-# report_title = SEO Report - My Website
+
 max_fetch_for_edges = 300
 same_domain_only = true
 max_nodes_plot = 400
-# Security scan (runs during report): passive checks use crawl data; optional re-fetch for forms/reflection
+
+# Security scan (passive = crawl data; active = XSS/redirect/SQLi probes – use only on authorized sites)
 run_security_scan = true
-# Active checks (XSS/open redirect/SQLi probes): only use on sites you are authorized to test
 security_scan_active = false
 security_max_urls_probe = 20
-# Optional: write findings to JSON file (e.g. for CI)
 # security_findings_output = security_findings.json
-# ---- Plot ----
+
+# -----------------------------------------------------------------------------
+# Plot
+# -----------------------------------------------------------------------------
 plot_image_output = site_graph.svg
 
-# ---- Which steps to run (when using default "run all") ----
+# -----------------------------------------------------------------------------
+# Lighthouse (Core Web Vitals)
+# -----------------------------------------------------------------------------
+# Run alone: python -m src lighthouse
+lighthouse_url = https://codefrydev.in
+lighthouse_strategy = mobile
+lighthouse_iterations = 3
+lighthouse_output_dir = .
+
+# Include Lighthouse in "run all" and show CWV in the report dashboard
+run_lighthouse = true
+# Optional: point report at a specific summary file (default: uses lighthouse_output_dir when run_lighthouse was true)
+# lighthouse_summary_json = lighthouse_summary.json
+
+# -----------------------------------------------------------------------------
+# Keyword tool
+# -----------------------------------------------------------------------------
+# Run alone: python -m src keywords
+keyword_output_dir = .
+keyword_max_pages = 200
+
+# -----------------------------------------------------------------------------
+# Warning mapper (Lighthouse / axe / plain list → diagnostics)
+# -----------------------------------------------------------------------------
+# Run alone: python -m src warnings
+warning_mapper_input = lighthouse_summary.json
+warning_mapper_input_type = lighthouse
+warning_mapper_output = warnings_mapped.json
+
+# -----------------------------------------------------------------------------
+# Pipeline – which steps run when you execute: python -m src
+# -----------------------------------------------------------------------------
 run_crawl = true
 run_report = true
 run_plot = true
