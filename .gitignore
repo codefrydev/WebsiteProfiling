@@ -179,7 +179,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .npm
-package-lock.json
 yarn.lock
 
 # WebsiteProfiling generated outputs

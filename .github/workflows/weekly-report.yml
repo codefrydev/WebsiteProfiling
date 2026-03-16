@@ -35,7 +35,7 @@ jobs:
 
       - name: Build React UI
         run: |
-          cd UI && npm ci && npm run build
+          cd UI && npm install && npm run build
 
       - name: Copy report.db and build to root for deployment
         run: |
