@@ -1,3 +1,5 @@
+# React / Vite / Node (UI folder only)
+
 # Logs
 logs
 *.log
@@ -10,6 +12,9 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.vite/
+.env.local
+.env.*.local
 *.local
 
 # Editor directories and files
