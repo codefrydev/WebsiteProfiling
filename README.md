@@ -2,29 +2,6 @@
 
 A **console application** for website crawling, link-graph building, and SEO-style site reports. It helps you profile site structure (status codes, content types, titles, outlinks, domains), collect SEO and performance-related data (meta descriptions, H1s, response time, content length, canonicals), and generate interactive HTML reports with executive summary, SEO health metrics, issues, and recommendations.
 
-## Project structure
-
-- **src/** — Application code
-  - **crawler.py** — Site crawler (threaded, robots.txt, optional outlink storage).
-  - **report.py** — HTML report generation (loads data, builds edges, renders from templates).
-  - **report_categories.py** — Category scoring (Technical SEO, Performance, Accessibility, Link Health, Mobile, Security) with issues, priority, and recommendations.
-  - **security_scanner.py** — Security and vulnerability scanner (passive checks from crawl data; optional re-fetch for forms/reflection; opt-in active checks for XSS, open redirect, SQLi).
-  - **plot.py** — Link graph construction and matplotlib figure export.
-  - **common.py** — Shared helpers (URL normalization, link parsing, robots, extended SEO/accessibility parsers).
-  - **config.py** — Input file parser (key=value).
-  - **templates.py** — Template loader; injects data via JSON for proper sanitization.
-  - **cli.py** — CLI entry (crawl / report / plot from config).
-- **templates/** — HTML report templates (placeholders `{{ generated_time }}`, `{{ report_data }}`); data is JSON-encoded for safe injection.
-- **input.txt.example** — Example config; copy to `input.txt` and edit.
-
-## What it does
-
-- **Crawl** a site from a start URL (respects robots.txt, configurable depth and concurrency).
-- **Report** — generate interactive HTML with executive summary, crawl overview, **health by category** (Technical SEO, Core Web Vitals, Performance, HTML & Accessibility, Link Health, Mobile, Security) with per-category scores, detected issues (with priority: Critical/High/Medium/Low), and recommended fixes; SEO health (titles, meta descriptions, H1s, thin content); issues and recommendations; top pages by importance; plus Chart.js and vis-network (status, content types, title lengths, outlinks, domains, site graph). Reports are print-friendly.
-- **Plot** — build a link graph and draw it with matplotlib (edges.csv, nodes.csv, optional image file).
-
-All inputs are read from **one config file**. Edit the file, run the app, and it picks up the settings and runs.
-
 ## Install
 
 ### Virtual environment (recommended)
@@ -45,7 +22,7 @@ venv\Scripts\activate.bat
 venv\Scripts\Activate.ps1
 ```
 
-Then install dependencies (see below). To leave the venv later, run `deactivate`.
+To leave the venv later, run `deactivate`.
 
 ### Install dependencies
 
@@ -63,55 +40,7 @@ pip install -e .
 
 ## Input file
 
-Copy the example and edit it:
-
-```bash
-cp input.txt.example input.txt
-# Edit input.txt with your URL and options
-```
-
-For the weekly GitHub Actions report (see `.github/workflows/weekly-report.yml`), commit `input.txt` so the workflow can run.
-
-### Input file format
-
-Use a simple `key = value` (or `key: value`) format. Blank lines and lines starting with `#` are ignored.
-
-| Key | Description | Example |
-|-----|-------------|---------|
-| **Crawl** | | |
-| start_url | URL to start crawling | https://codefrydev.in |
-| max_pages | Max pages to crawl (empty = no limit) | 1000 |
-| concurrency | Number of concurrent requests | 8 |
-| timeout | Request timeout (seconds) | 12 |
-| ignore_robots | If true, ignore robots.txt | false |
-| allow_external | If true, follow links to other domains | false |
-| max_depth | Max depth from start URL (empty = no limit) | 6 |
-| polite_delay | Delay between requests in seconds | 0.2 |
-| crawl_output | Path for crawl output; use `.json` or `.csv` | crawl_results.csv or crawl_results.json |
-| store_outlinks | If true, store outlink URLs in crawl output (for reports) | true |
-| **Report** | | |
-| crawl_csv | Path to crawl data (JSON or CSV) | crawl_results.csv |
-| edges_csv | Path to edges file (JSON or CSV; built if missing) | edges.csv or edges.json |
-| nodes_csv | Path to nodes file (JSON or CSV; used by plot) | nodes.csv or nodes.json |
-| report_output | Path for HTML report | site_report.html |
-| site_name | Optional site name for report title and summary (default: domain of start_url) | My Website |
-| report_title | Optional custom report title (default: site_name + report type) | SEO Report |
-| max_fetch_for_edges | Max URLs to fetch when building edges if not in CSV | 300 |
-| same_domain_only | Keep only same-domain edges in report/plot | true |
-| max_nodes_plot | Max nodes in report graph | 400 |
-| run_security_scan | Run security/vulnerability scan during report (passive + optional re-fetch) | true |
-| security_scan_active | Enable active checks (XSS/open redirect/SQLi probes); only on authorized sites | false |
-| security_max_urls_probe | Max URLs to re-fetch or probe for security (passive HTML and active checks) | 20 |
-| security_findings_output | Optional path to write findings JSON (e.g. security_findings.json) | — |
-| **Plot** | | |
-| plot_image_output | Path to save graph image (optional) | site_graph.svg |
-| plot_crawl_csv | Path to crawl CSV for plot (uses crawl_csv if not set) | — |
-| plot_edges_csv | Path to edges CSV (uses edges_csv if not set) | — |
-| plot_nodes_csv | Path to nodes CSV (uses nodes_csv if not set) | — |
-| **Run** | | |
-| run_crawl | Run crawl step | true |
-| run_report | Run report step | true |
-| run_plot | Run plot step | false |
+Update Input text file with your desired data.
 
 ## How to run
 
@@ -137,33 +66,18 @@ python -m src plot
 
 ## Outputs
 
-- **crawl_results.csv** or **crawl_results.json** — Per-URL crawl data (url, status, content_type, title, outlinks, outlink_targets, response_time_ms, content_length, final_url, meta fields, viewport, noindex, has_schema, heading_sequence, image/aria counts, redirect_chain_length, cache/security headers, etc.). Use `.json` in config for JSON output.
-- **edges.csv** or **edges.json** — Link graph edges (from, to). Format is chosen by file extension.
-- **nodes.csv** or **nodes.json** — Node list (from report/plot). Format is chosen by file extension.
+- **crawl_results.csv** or **crawl_results.json**
+- **edges.csv** or **edges.json** 
 - **site_report.html** — Interactive report: executive summary, crawl overview, SEO health, issues and recommendations, top pages, charts, and site graph. Print-friendly.
-- **site_graph.svg** — Matplotlib graph (if plot_image_output is set).
+- **site_graph.svg** 
 
-## Report sections
-
-- **Executive summary** — Site name, crawl date, key KPIs (total URLs, success rate, 4xx/5xx/redirect counts), and top recommendations.
-- **Crawl overview** — Total pages, average outlinks, average title length, crawl duration.
-- **Health by category** — Summary score (0–100 or N/A) per category: Technical SEO (robots.txt, sitemap, canonicals, noindex, structured data), Core Web Vitals (LCP, FID, CLS — not measured; use Lighthouse), Performance (response time, images, caching), HTML & Accessibility (headings, alt text, ARIA; contrast not measured — use axe/DevTools), Link Health (broken links, redirects, internal linking), Mobile (viewport), Security (HTTPS, security headers, mixed content, and vulnerability scan findings). Each category lists detected issues with priority (Critical/High/Medium/Low) and recommended fixes.
-- **Security & Vulnerabilities** — Dedicated view with all security findings (headers, HTTPS, open-redirect risk, mixed content, forms without CSRF, reflected params; optional active findings such as reflected XSS, open redirect, SQL error exposure). Filter by severity.
-- **SEO health** — Counts for missing/OK/short/long titles and meta descriptions, single/multiple H1s, thin content (when crawl data includes the SEO columns).
-- **Issues and recommendations** — Broken URLs (4xx/5xx), redirects (3xx), SEO issues (missing/short/long title or meta desc, H1 issues, thin content), plus actionable recommendation bullets.
-- **Top pages** — Pages ranked by link importance (PageRank/degree) for quick reference.
-
-To save the report as PDF, open the HTML report in a browser and use **Print → Save as PDF**.
-
-## Security scanning
-
-The report step can run a **security and vulnerability scan** on crawl data:
-
-- **Passive checks** (no extra requests, or a limited re-fetch): Missing or weak security headers (HSTS, X-Content-Type-Options, X-Frame-Options, CSP), HTTP URLs, mixed content, open-redirect risk from query parameters, and (when re-fetching a sample of URLs) forms without CSRF tokens and reflected query parameters in HTML.
-- **Active checks** (opt-in, `security_scan_active = true`): Controlled probes for reflected XSS, open redirect, and SQL error-based indicators. These send test requests to the site.
-
-**Ethical use:** Only run active scanning (`security_scan_active = true`) on sites you own or have explicit permission to test. Unauthorized testing may violate laws. The tool is intended for ethical security assessment and the user is responsible for compliance with authorization and applicable laws.
 
 ## Scope
 
-This tool focuses on **site structure and SEO-style health** (status codes, content types, titles, meta descriptions, H1s, outlinks, domains, link graph, PageRank/degree, response time, content length), plus category-based checks (technical SEO, performance heuristics, accessibility, link health, mobile viewport, security headers and vulnerability findings). It includes **passive and optional active security scanning** (headers, injection risk, open redirect, CSRF/form checks). It does **not** measure Core Web Vitals (LCP, FID, CLS) or color contrast, which require a browser; use **Lighthouse** or **PageSpeed Insights** for Core Web Vitals, and **axe** or browser DevTools for contrast and full accessibility audits.
+For now This tool focuses on **site structure and SEO-style health** (status codes, content types, titles, meta descriptions, H1s, outlinks, domains, link graph, PageRank/degree, response time, content length), plus category-based checks (technical SEO, performance heuristics, accessibility, link health, mobile viewport, security headers and vulnerability findings). It includes **passive and optional active security scanning** (headers, injection risk, open redirect, CSRF/form checks). 
+
+It does **not** measure Core Web Vitals (LCP, FID, CLS) or color contrast, which require a browser; use **Lighthouse** or **PageSpeed Insights** for Core Web Vitals, and **axe** or browser DevTools for contrast and full accessibility audits.
+
+Please feel free to Contribute or Fork this repo, change the source code based on your needs. At the End this tool is developed made public to help me and others folks like you.
+
+Thankyou ✌️
