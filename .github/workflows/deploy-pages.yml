@@ -38,7 +38,7 @@ jobs:
 
       - name: Ensure report.db in UI/public
         run: |
-          if [ -f report.db ] && [ ! -f UI/public/report.db ]; then
+          if [ -f report.db ]; then
             cp report.db UI/public/report.db
           fi
 
