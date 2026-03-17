@@ -52,17 +52,22 @@ def main() -> None:
 
     # Single-command mode: lighthouse, keywords, warnings
     if args.command == "lighthouse":
+        print("WebsiteProfiling: lighthouse only", flush=True)
         from .lighthouse_runner import main as lighthouse_main
         lh_url = cfg.get("lighthouse_url", cfg.get("start_url", "https://codefrydev.in"))
         lh_strategy = (cfg.get("lighthouse_strategy") or "mobile").lower()
         if lh_strategy not in ("mobile", "desktop"):
             lh_strategy = "mobile"
+        lh_mode = (cfg.get("lighthouse_mode") or "navigation").strip().lower() or "navigation"
+        lh_categories = cfg.get("lighthouse_categories", "").strip()
+        lh_categories = get_list(cfg, "lighthouse_categories", sep=",") if lh_categories else None
         lh_iterations = get_int(cfg, "lighthouse_iterations", 3) or 3
         lh_out = cfg.get("lighthouse_output_dir", "").strip() or cwd
         if not os.path.isabs(lh_out):
             lh_out = os.path.join(cwd, lh_out)
-        sys.exit(lighthouse_main(url=lh_url, strategy=lh_strategy, iterations=lh_iterations, output_dir=lh_out, db_path=db_path))
+        sys.exit(lighthouse_main(url=lh_url, strategy=lh_strategy, iterations=lh_iterations, output_dir=lh_out, db_path=db_path, mode=lh_mode, categories=lh_categories))
     if args.command == "keywords":
+        print("WebsiteProfiling: keywords only", flush=True)
         from .keyword_tool import main as keyword_main
         kw_url = cfg.get("start_url", "https://codefrydev.in")
         kw_out = cfg.get("keyword_output_dir", "").strip() or cwd
@@ -72,6 +77,7 @@ def main() -> None:
         kw_cfg["_cwd"] = cwd
         sys.exit(keyword_main(base_url=kw_url, output_dir=kw_out, config=kw_cfg))
     if args.command == "warnings":
+        print("WebsiteProfiling: warning mapper only", flush=True)
         from .warning_mapper import main as warning_mapper_main
         wm_input = cfg.get("warning_mapper_input", "").strip()
         wm_type = (cfg.get("warning_mapper_input_type") or "lighthouse").lower()
@@ -87,8 +93,21 @@ def main() -> None:
     run_plot = args.command == "plot" or (args.command is None and get_bool(cfg, "run_plot", False))
     run_lighthouse = args.command is None and get_bool(cfg, "run_lighthouse", False)
 
+    if args.command is None and (run_crawl or run_lighthouse or run_report or run_plot):
+        steps = []
+        if run_crawl:
+            steps.append("crawl")
+        if run_lighthouse:
+            steps.append("lighthouse")
+        if run_report:
+            steps.append("report")
+        if run_plot:
+            steps.append("plot")
+        print(f"WebsiteProfiling pipeline: {', '.join(steps)}", flush=True)
+
     if run_crawl:
         from .crawler import run_crawler
+        print("[Crawl] Starting...", flush=True)
         start_url = cfg.get("start_url", "https://codefrydev.in")
         max_pages = get_int(cfg, "max_pages")
         concurrency = get_int(cfg, "concurrency", 8)
@@ -116,6 +135,7 @@ def main() -> None:
             show_progress=True,
             exclude_urls=exclude_urls if exclude_urls else None,
         )
+        print("[Crawl] Done.", flush=True)
         print(f"Crawl results: {db_path or crawl_output}")
         crawl_csv = crawl_output
     else:
@@ -126,18 +146,22 @@ def main() -> None:
     # Run Lighthouse before report when both enabled so the report can show Core Web Vitals
     lighthouse_summary_path_for_report = None
     if run_lighthouse:
+        print("[Lighthouse] Starting...", flush=True)
         from .lighthouse_runner import main as lighthouse_main
         lh_url = cfg.get("lighthouse_url", cfg.get("start_url", "https://codefrydev.in"))
         lh_strategy = (cfg.get("lighthouse_strategy") or "mobile").lower()
         if lh_strategy not in ("mobile", "desktop"):
             lh_strategy = "mobile"
+        lh_mode = (cfg.get("lighthouse_mode") or "navigation").strip().lower() or "navigation"
+        lh_categories = get_list(cfg, "lighthouse_categories", sep=",")
         lh_iterations = get_int(cfg, "lighthouse_iterations", 3) or 3
         lh_out = cfg.get("lighthouse_output_dir", "").strip() or cwd
         if not os.path.isabs(lh_out):
             lh_out = os.path.join(cwd, lh_out)
-        exit_code = lighthouse_main(url=lh_url, strategy=lh_strategy, iterations=lh_iterations, output_dir=lh_out, db_path=db_path)
+        exit_code = lighthouse_main(url=lh_url, strategy=lh_strategy, iterations=lh_iterations, output_dir=lh_out, db_path=db_path, mode=lh_mode, categories=lh_categories if lh_categories else None)
         if exit_code != 0:
             sys.exit(exit_code)
+        print("[Lighthouse] Done.", flush=True)
         lighthouse_summary_path_for_report = os.path.join(lh_out, "lighthouse_summary.json") if not db_path else None
 
     if run_report:
@@ -165,7 +189,7 @@ def main() -> None:
         if not lighthouse_summary_path:
             lighthouse_summary_path = lighthouse_summary_path_for_report
         from .report import run_simple_report
-        print("Generating report...")
+        print("[Report] Starting...", flush=True)
         out = run_simple_report(
             crawl_csv=crawl_csv,
             edges_csv=edges_csv,
@@ -185,6 +209,7 @@ def main() -> None:
             lighthouse_summary_path=lighthouse_summary_path,
             db_path=db_path,
         )
+        print("[Report] Done.", flush=True)
         print(f"Report written: {out}")
         # Copy to UI/public so the React app can load it at /report.db
         ui_public = os.path.join(cwd, "UI", "public")
@@ -200,8 +225,8 @@ def main() -> None:
         plot_image = cfg.get("plot_image_output")
         if plot_image and not os.path.isabs(plot_image):
             plot_image = os.path.join(cwd, plot_image)
+        print("[Plot] Starting...", flush=True)
         from .plot import run_plot as do_plot
-        print("Building graph...")
         e, n = do_plot(
             crawl_csv=crawl_csv,
             edges_csv=edges_csv,
@@ -215,6 +240,7 @@ def main() -> None:
             polite_delay=0.15,
             db_path=db_path,
         )
+        print("[Plot] Done.", flush=True)
         print(f"Edges: {e}, Nodes: {n}")
         if plot_image:
             print(f"Graph image: {plot_image}")

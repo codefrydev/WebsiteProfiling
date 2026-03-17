@@ -265,10 +265,43 @@ def _build_output_item(
     return out
 
 
+def _evidence_from_audit_details(audit: dict[str, Any]) -> list[str]:
+    """Extract resource URLs or selectors from audit details for evidence."""
+    evidence: list[str] = []
+    details = audit.get("details")
+    if not details or not isinstance(details, dict):
+        return evidence
+    items = details.get("items") or details.get("nodes") or []
+    if not isinstance(items, list):
+        return evidence
+    for item in items[:10]:
+        if isinstance(item, dict):
+            url = item.get("url")
+            if url and isinstance(url, str) and not url.startswith("data:"):
+                evidence.append(url[:500])
+            selector = item.get("selector") or (item.get("node") or {}).get("selector")
+            if selector:
+                evidence.append(selector[:200])
+        elif isinstance(item, str):
+            evidence.append(item[:200])
+    return evidence[:20]
+
+
+def resolve_impact(audit_id: str, title: str | None, help_text: str | None) -> str:
+    """Return primary_impact for an audit (for use by lighthouse_runner)."""
+    entry = _resolve_entry(audit_id or "", title, help_text)
+    return str(entry.get("primary_impact") or "UX")
+
+
 def parse_lighthouse(path: str) -> list[dict[str, Any]]:
     """Parse Lighthouse JSON and return list of output items."""
     with open(path, "r", encoding="utf-8") as f:
         data = json.load(f)
+    return _parse_lighthouse_data(data)
+
+
+def _parse_lighthouse_data(data: dict[str, Any]) -> list[dict[str, Any]]:
+    """Parse Lighthouse result dict and return list of output items (no file I/O)."""
     lr = data.get("lighthouseResult") or data
     audits = lr.get("audits") or {}
     results: list[dict[str, Any]] = []
@@ -291,6 +324,65 @@ def parse_lighthouse(path: str) -> list[dict[str, Any]]:
                 refs["nodes"] = nodes[:10] if isinstance(nodes, list) else nodes
         results.append(_build_output_item(warning, entry, refs))
     return results
+
+
+def parse_lighthouse_to_diagnostics(data: dict[str, Any]) -> list[dict[str, Any]]:
+    """
+    Convert Lighthouse result dict to full diagnostics schema: warning, lighthouse_audit_id,
+    detection_method, primary_impact, secondary_impacts, evidence, severity, one_line_fix,
+    detailed_fix, estimated_impact, references.
+    """
+    lr = data.get("lighthouseResult") or data
+    audits = lr.get("audits") or {}
+    diagnostics: list[dict[str, Any]] = []
+    for audit_id, audit in audits.items():
+        if audit is None:
+            continue
+        score = audit.get("score")
+        if score is not None and score >= 1:
+            continue
+        title = audit.get("title") or audit_id
+        help_text = audit.get("helpText") or ""
+        warning = title if title else audit_id
+        if help_text:
+            warning = f"{title}: {help_text}"[:200]
+        entry = _resolve_entry(audit_id, title, help_text)
+        evidence = _evidence_from_audit_details(audit)
+        refs: dict[str, Any] = {"lighthouse_audit_id": audit_id}
+        if "details" in audit and isinstance(audit["details"], dict):
+            nodes = audit["details"].get("items") or audit["details"].get("nodes")
+            if nodes:
+                refs["nodes"] = nodes[:10] if isinstance(nodes, list) else nodes
+        det: dict[str, Any] = {
+            "warning": warning,
+            "lighthouse_audit_id": audit_id,
+            "detection_method": entry.get("detection", DEFAULT_ENTRY["detection"]),
+            "primary_impact": entry.get("primary_impact", "UX"),
+            "secondary_impacts": list(entry.get("secondary_impacts") or []),
+            "evidence": evidence,
+            "severity": entry.get("severity", "Medium"),
+            "one_line_fix": entry.get("one_line_fix", DEFAULT_ENTRY["one_line_fix"]),
+            "detailed_fix": (help_text or entry.get("explanation", ""))[:300].strip() or None,
+            "estimated_impact": _estimated_impact_placeholder(entry.get("primary_impact"), entry.get("severity")),
+            "references": refs,
+        }
+        diagnostics.append(det)
+    return diagnostics
+
+
+def _estimated_impact_placeholder(primary_impact: str | None, severity: str | None) -> str:
+    """Best-effort estimated impact string."""
+    if primary_impact == "LCP":
+        return "LCP reduction possible (preload/optimize LCP resource)."
+    if primary_impact == "CLS":
+        return "CLS reduction likely (reserve space for images/ads)."
+    if primary_impact == "FID":
+        return "TBT/FID improvement (reduce long tasks)."
+    if primary_impact == "Accessibility":
+        return "Accessibility score improvement."
+    if primary_impact == "SEO":
+        return "SEO score improvement."
+    return "UX improvement."
 
 
 def parse_axe(path: str) -> list[dict[str, Any]]:
@@ -374,7 +466,9 @@ def main(
     if not os.path.isabs(input_path):
         input_path = os.path.abspath(input_path)
     try:
+        print(f"  Reading input: {input_path} (type={input_type})...", flush=True)
         items = map_warnings(input_path, input_type)
+        print(f"  Mapped {len(items)} warnings.", flush=True)
     except FileNotFoundError as e:
         print(str(e), file=sys.stderr)
         return 1
@@ -382,10 +476,12 @@ def main(
         print(str(e), file=sys.stderr)
         return 1
 
+    print("  Building human summary...", flush=True)
     output = {
         "warnings": items,
         "human_summary": human_summary_paragraph(items, 5),
     }
+    print(f"  Writing output: {output_path}...", flush=True)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(output, f, indent=2, default=str)
     print(output["human_summary"])

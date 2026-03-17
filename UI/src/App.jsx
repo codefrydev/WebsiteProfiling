@@ -7,6 +7,7 @@ import {
   Repeat,
   FileText,
   ShieldAlert,
+  Gauge,
   PieChart,
   Share2,
   Search,
@@ -20,6 +21,7 @@ import Links from './views/Links';
 import Redirects from './views/Redirects';
 import Content from './views/Content';
 import Security from './views/Security';
+import Lighthouse from './views/Lighthouse';
 import Charts from './views/Charts';
 import Network from './views/Network';
 
@@ -29,6 +31,7 @@ const VIEWS = [
   { id: 'links', label: 'Link Explorer', component: Links, section: 'Deep Analysis', icon: LinkIcon },
   { id: 'redirects', label: 'Redirects', component: Redirects, section: 'Deep Analysis', icon: Repeat },
   { id: 'content', label: 'On-Page Content', component: Content, section: 'Deep Analysis', icon: FileText },
+  { id: 'lighthouse', label: 'Lighthouse', component: Lighthouse, section: 'Deep Analysis', icon: Gauge },
   { id: 'security', label: 'Security & V', component: Security, section: 'Deep Analysis', icon: ShieldAlert },
   { id: 'charts', label: 'Chart.js Analytics', component: Charts, section: 'Data Visualizations', icon: PieChart },
   { id: 'network', label: 'Site Architecture', component: Network, section: 'Data Visualizations', icon: Share2 },

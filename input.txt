@@ -16,7 +16,7 @@
 # Crawl
 # -----------------------------------------------------------------------------
 start_url = https://codefrydev.in
-max_pages = 100
+max_pages = 2000
 concurrency = 8
 timeout = 12
 max_depth = 6
@@ -65,7 +65,12 @@ plot_image_output = site_graph.svg
 # -----------------------------------------------------------------------------
 # Run alone: python -m src lighthouse
 lighthouse_url = https://codefrydev.in
+# Mode: navigation (default, full page load) | timespan | snapshot
+lighthouse_mode = navigation
+# Device: mobile | desktop
 lighthouse_strategy = mobile
+# Categories (comma-separated). Leave empty for all. Options: performance, accessibility, best-practices, seo, pwa
+lighthouse_categories = performance,accessibility,best-practices,seo
 lighthouse_iterations = 3
 lighthouse_output_dir = .
 
@@ -85,7 +90,8 @@ keyword_max_pages = 200
 # Warning mapper (Lighthouse / axe / plain list → diagnostics)
 # -----------------------------------------------------------------------------
 # Run alone: python -m src warnings
-warning_mapper_input = lighthouse_summary.json
+# Use full Lighthouse JSON (e.g. lighthouse.json or raw_runs/run-*.json), not lighthouse_summary.json
+warning_mapper_input = lighthouse.json
 warning_mapper_input_type = lighthouse
 warning_mapper_output = warnings_mapped.json
 

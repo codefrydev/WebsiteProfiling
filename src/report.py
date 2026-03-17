@@ -318,20 +318,24 @@ def run_simple_report(
             write_edges,
             write_report_payload,
         )
+        print("  Loading crawl data from DB...", flush=True)
         conn = get_connection(db_path)
         init_schema(conn)
         df = read_crawl(conn)
         edges = read_edges(conn)
         lighthouse_summary = read_lighthouse_summary(conn)
+        print(f"  Loaded {len(df)} URLs, {len(edges)} edges.", flush=True)
         if df.empty and not edges:
             conn.close()
             raise FileNotFoundError(f"No crawl or edges data in DB: {db_path}")
     else:
         if not os.path.exists(crawl_csv):
             raise FileNotFoundError(f"Crawl data not found: {crawl_csv}")
+        print("  Loading crawl data from file...", flush=True)
         df = load_dataframe(crawl_csv)
         edges = []
         lighthouse_summary = None
+        print(f"  Loaded {len(df)} URLs.", flush=True)
 
     if "url" not in df.columns and not df.empty:
         if conn:
@@ -346,20 +350,25 @@ def run_simple_report(
     report_display_title = (report_title or "").strip() or f"{site_display} — Crawl Report"
 
     if not edges and not df.empty:
+        print("  Building edges from crawl data...", flush=True)
         edges = build_edges_from_df(
             df, edges_csv, same_domain_only, max_fetch_for_edges, concurrency, timeout, 0.12
         )
+        print(f"  Edges: {len(edges)}.", flush=True)
         if edges and db_path and conn:
             write_edges(conn, edges)
         elif edges and not db_path:
             save_edges(edges, edges_csv)
 
+    print("  Computing SEO summary and issues...", flush=True)
     summary_seo = _compute_summary_seo_issues(df)
 
+    print("  Fetching site-level (robots.txt, sitemap)...", flush=True)
     site_level = _fetch_site_level(start_url or "", timeout=8)
 
     security_findings: list = []
     if run_security_scan_flag:
+        print("  Running security scan...", flush=True)
         security_findings = run_security_scan(
             df,
             start_url=start_url or "",
@@ -368,10 +377,12 @@ def run_simple_report(
             timeout=timeout,
             polite_delay=0.2,
         )
+        print(f"  Security scan: {len(security_findings)} findings.", flush=True)
         if security_findings_output:
             with open(security_findings_output, "w", encoding="utf-8") as fh:
                 json.dump(security_findings, fh, indent=2, default=str)
 
+    print("  Building report categories...", flush=True)
     if not db_path:
         lighthouse_summary = None
         if lighthouse_summary_path and os.path.isfile(lighthouse_summary_path):
@@ -601,7 +612,12 @@ def run_simple_report(
         "content_urls": content_urls,
         "security_findings": security_findings,
     }
+    if lighthouse_summary:
+        report_data["lighthouse_summary"] = lighthouse_summary
+        report_data["lighthouse_diagnostics"] = lighthouse_summary.get("diagnostics") or []
+        report_data["lighthouse_human_summary"] = lighthouse_summary.get("human_summary_full") or lighthouse_summary.get("human_summary") or ""
     if db_path and conn:
+        print("  Writing report payload to DB...", flush=True)
         from .db import write_report_payload as db_write_report_payload
         db_write_report_payload(conn, report_data)
         conn.close()
