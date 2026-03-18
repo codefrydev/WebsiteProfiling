@@ -1,10 +1,10 @@
-import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
+import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, BarElement, PointElement, Title, Tooltip, Legend } from 'chart.js';
+import { Bar, Bubble, Scatter } from 'react-chartjs-2';
 import { useReport } from '../context/useReport';
 import { PageLayout, PageHeader, Card } from '../components';
-import { palette, sortByValue } from '../utils/chartPalette';
+import { palette, sortByValue, PALETTE_CATEGORICAL } from '../utils/chartPalette';
 
-ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
+ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, PointElement, Title, Tooltip, Legend);
 
 // Global chart defaults (typography)
 if (typeof ChartJS.defaults?.font !== 'undefined') {
@@ -112,8 +112,8 @@ export default function Charts() {
   return (
     <PageLayout>
       <PageHeader
-        title="Chart.js Analytics Hub"
-        subtitle="Status, content types, outlinks, title length, and domain distribution."
+        title="Crawl Analytics"
+        subtitle="Status codes, content types, outlinks, title length, and domain distribution."
       />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <Card padding="tight" className="print:break-inside-avoid">
@@ -210,6 +210,151 @@ export default function Charts() {
           )}
         </div>
       </Card>
+
+      <h2 className="text-xl font-bold text-bright mt-10 mb-4">Performance & Depth Analytics</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {(() => {
+          const rtDist = data.response_time_stats?.distribution || {};
+          const rtLabels = Object.keys(rtDist);
+          const rtValues = Object.values(rtDist).map(Number);
+          const rts = data.response_time_stats || {};
+          return (
+            <Card padding="tight" className="print:break-inside-avoid">
+              <h3 className="text-sm font-bold text-slate-200 mb-1">Response Time Distribution</h3>
+              <div className="flex gap-4 text-xs text-slate-400 mb-3">
+                <span>p50: <span className="text-slate-200 font-semibold">{rts.p50 ?? '—'}ms</span></span>
+                <span>p75: <span className="text-slate-200 font-semibold">{rts.p75 ?? '—'}ms</span></span>
+                <span>p95: <span className="text-slate-200 font-semibold">{rts.p95 ?? '—'}ms</span></span>
+              </div>
+              <div className="h-64" role="img" aria-label="Response time histogram">
+                {rtLabels.length > 0 ? (
+                  <Bar
+                    data={{ labels: rtLabels, datasets: [{ data: rtValues, backgroundColor: palette(rtLabels.length) }] }}
+                    options={barOpts()}
+                    plugins={[barValueLabelsPlugin]}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+                )}
+              </div>
+            </Card>
+          );
+        })()}
+
+        {(() => {
+          const depthData = data.depth_distribution?.by_depth || {};
+          const depthLabels = Object.keys(depthData).sort((a, b) => Number(a) - Number(b));
+          const depthValues = depthLabels.map((k) => Number(depthData[k]));
+          const dd = data.depth_distribution || {};
+          return (
+            <Card padding="tight" className="print:break-inside-avoid">
+              <h3 className="text-sm font-bold text-slate-200 mb-1">Page Depth Distribution</h3>
+              <div className="flex gap-4 text-xs text-slate-400 mb-3">
+                <span>Max depth: <span className="text-slate-200 font-semibold">{dd.max_depth ?? '—'}</span></span>
+                <span>Avg depth: <span className="text-slate-200 font-semibold">{dd.avg_depth ?? '—'}</span></span>
+              </div>
+              <div className="h-64" role="img" aria-label="Depth distribution">
+                {depthLabels.length > 0 ? (
+                  <Bar
+                    data={{ labels: depthLabels.map((d) => `Depth ${d}`), datasets: [{ data: depthValues, backgroundColor: palette(1)[0] }] }}
+                    options={barOpts()}
+                    plugins={[barValueLabelsPlugin]}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+                )}
+              </div>
+            </Card>
+          );
+        })()}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {(() => {
+          const topPages = data.top_pages || [];
+          const links = data.links || [];
+          const inlinkMap = {};
+          links.forEach((l) => { inlinkMap[l.url] = l.inlinks || 0; });
+          const wordCountMap = {};
+          (data.links || []).forEach((l) => { wordCountMap[l.url] = l.word_count || 0; });
+          const bubbleData = topPages.slice(0, 40).map((p) => ({
+            x: inlinkMap[p.url] || p.degree || 0,
+            y: wordCountMap[p.url] || 0,
+            r: Math.max(3, Math.min(20, (p.pagerank || 0) * 3000)),
+            url: p.url,
+          })).filter((d) => d.x > 0 || d.y > 0);
+          return (
+            <Card padding="tight" className="print:break-inside-avoid">
+              <h3 className="text-sm font-bold text-slate-200 mb-1">PageRank vs Inlinks vs Word Count</h3>
+              <p className="text-xs text-slate-500 mb-3">Bubble size = PageRank weight</p>
+              <div className="h-72" role="img" aria-label="Bubble chart: inlinks vs word count">
+                {bubbleData.length > 0 ? (
+                  <Bubble
+                    data={{ datasets: [{ data: bubbleData, backgroundColor: 'rgba(76, 114, 176, 0.5)', borderColor: '#4C72B0', borderWidth: 1 }] }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                          callbacks: {
+                            label: (ctx) => {
+                              const d = ctx.raw;
+                              const u = d.url ? d.url.replace(/^https?:\/\//, '').slice(0, 50) : '';
+                              return [`${u}`, `Inlinks: ${d.x}`, `Words: ${d.y}`];
+                            },
+                          },
+                        },
+                      },
+                      scales: {
+                        x: { grid: { color: GRID_COLOR }, title: { display: true, text: 'Inlinks' } },
+                        y: { grid: { color: GRID_COLOR }, title: { display: true, text: 'Word Count' }, beginAtZero: true },
+                      },
+                    }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">Not enough data</div>
+                )}
+              </div>
+            </Card>
+          );
+        })()}
+
+        {(() => {
+          const links = data.links || [];
+          const scatterData = links
+            .filter((l) => l.word_count > 0 && l.response_time_ms > 0)
+            .slice(0, 200)
+            .map((l) => ({ x: l.word_count, y: l.response_time_ms }));
+          return (
+            <Card padding="tight" className="print:break-inside-avoid">
+              <h3 className="text-sm font-bold text-slate-200 mb-1">Word Count vs Response Time</h3>
+              <p className="text-xs text-slate-500 mb-3">Each dot is one page</p>
+              <div className="h-72" role="img" aria-label="Scatter chart: word count vs response time">
+                {scatterData.length > 0 ? (
+                  <Scatter
+                    data={{ datasets: [{ data: scatterData, backgroundColor: 'rgba(221, 132, 82, 0.5)', borderColor: '#DD8452', borderWidth: 1, pointRadius: 4 }] }}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (ctx) => `Words: ${ctx.raw.x}, Time: ${ctx.raw.y}ms` } },
+                      },
+                      scales: {
+                        x: { grid: { color: GRID_COLOR }, title: { display: true, text: 'Word Count' }, beginAtZero: true },
+                        y: { grid: { color: GRID_COLOR }, title: { display: true, text: 'Response Time (ms)' }, beginAtZero: true },
+                      },
+                    }}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">Not enough data</div>
+                )}
+              </div>
+            </Card>
+          );
+        })()}
+      </div>
     </PageLayout>
   );
 }

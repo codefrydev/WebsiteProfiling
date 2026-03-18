@@ -32,7 +32,7 @@ export default function ReportSelector() {
           setSelectedReportId(v === '' ? null : Number(v));
         }}
         disabled={loading || !!error}
-        className="bg-brand-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-blue-500 outline-none min-w-[180px]"
+        className="bg-brand-900 border border-default rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-blue-500 outline-none min-w-[180px]"
         title={reportList.length <= 1 ? 'Run more reports with preserve_crawl_history to see history here' : 'Load a previous report'}
       >
         <option value="">Latest</option>

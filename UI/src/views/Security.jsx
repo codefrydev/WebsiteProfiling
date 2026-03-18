@@ -1,8 +1,68 @@
 import { useState } from 'react';
+import { Shield, Flame, AlertTriangle, AlertCircle, Info, ExternalLink } from 'lucide-react';
 import { useReport } from '../context/useReport';
-import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, Badge } from '../components';
+import { PageLayout, PageHeader, Card, Badge } from '../components';
 
-const selectClass = 'bg-brand-800 border border-slate-700 text-sm rounded-lg px-3 py-2 text-slate-200 outline-none';
+const SEVERITY_CONFIG = {
+  Critical: {
+    icon: Flame,
+    text: 'text-red-400',
+    bg: 'bg-red-500/10',
+    border: 'border-red-500/40',
+    ring: 'ring-1 ring-red-500/20 border-red-900/30',
+    rowBorder: 'border-l-red-500',
+    recBg: 'bg-red-500/5 border-red-500/20',
+    order: 0,
+  },
+  High: {
+    icon: AlertTriangle,
+    text: 'text-orange-400',
+    bg: 'bg-orange-500/10',
+    border: 'border-orange-500/40',
+    ring: 'ring-1 ring-orange-500/20 border-orange-900/30',
+    rowBorder: 'border-l-orange-500',
+    recBg: 'bg-orange-500/5 border-orange-500/20',
+    order: 1,
+  },
+  Medium: {
+    icon: AlertCircle,
+    text: 'text-yellow-400',
+    bg: 'bg-yellow-500/10',
+    border: 'border-yellow-500/40',
+    ring: '',
+    rowBorder: 'border-l-yellow-500',
+    recBg: 'bg-yellow-500/5 border-yellow-500/20',
+    order: 2,
+  },
+  Low: {
+    icon: Info,
+    text: 'text-slate-400',
+    bg: 'bg-slate-500/10',
+    border: 'border-slate-500/40',
+    ring: '',
+    rowBorder: 'border-l-slate-500',
+    recBg: 'bg-slate-700/30 border-slate-600/30',
+    order: 3,
+  },
+  Info: {
+    icon: Info,
+    text: 'text-slate-500',
+    bg: 'bg-slate-600/10',
+    border: 'border-slate-600/30',
+    ring: '',
+    rowBorder: 'border-l-slate-600',
+    recBg: 'bg-slate-700/20 border-slate-700/30',
+    order: 4,
+  },
+};
+
+const SEVERITY_ORDER = ['Critical', 'High', 'Medium', 'Low', 'Info'];
+
+function toTitleCase(str) {
+  return (str || '')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 export default function Security() {
   const { data } = useReport();
@@ -10,68 +70,134 @@ export default function Security() {
 
   if (!data) return null;
 
-  let findings = data.security_findings || [];
+  const allFindings = data.security_findings || [];
+
+  const severityCounts = SEVERITY_ORDER.reduce((acc, s) => {
+    acc[s] = allFindings.filter((f) => (f.severity || 'Info') === s).length;
+    return acc;
+  }, {});
+
+  let findings = allFindings;
   if (severityFilter !== 'All') {
-    findings = findings.filter((f) => (f.severity || '') === severityFilter);
+    findings = findings.filter((f) => (f.severity || 'Info') === severityFilter);
   }
 
+  findings = [...findings].sort((a, b) => {
+    const ao = (SEVERITY_CONFIG[a.severity] || SEVERITY_CONFIG.Info).order;
+    const bo = (SEVERITY_CONFIG[b.severity] || SEVERITY_CONFIG.Info).order;
+    return ao - bo;
+  });
+
   return (
-    <PageLayout>
+    <PageLayout className="space-y-6">
       <PageHeader
-        title="Security & Vulnerabilities"
-        subtitle="Findings from passive and optional active security scanning (headers, injection risk, open redirect, etc.)."
+        title="Security & Headers"
+        subtitle={`HTTP security headers, injection risk, open redirect, and vulnerability findings. ${allFindings.length} finding${allFindings.length !== 1 ? 's' : ''} total.`}
       />
-      <div className="mb-4 flex flex-wrap gap-2 items-center">
-        <span className="text-sm text-slate-500">Filter by severity:</span>
-        <select
-          value={severityFilter}
-          onChange={(e) => setSeverityFilter(e.target.value)}
-          className={selectClass}
-        >
-          <option value="All">All</option>
-          <option value="Critical">Critical</option>
-          <option value="High">High</option>
-          <option value="Medium">Medium</option>
-          <option value="Low">Low</option>
-          <option value="Info">Info</option>
-        </select>
+
+      {/* Severity summary cards — act as filters */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {SEVERITY_ORDER.map((sev) => {
+          const cfg = SEVERITY_CONFIG[sev];
+          const Icon = cfg.icon;
+          const count = severityCounts[sev] || 0;
+          const isActive = severityFilter === sev;
+          return (
+            <Card
+              key={sev}
+              shadow
+              className={`cursor-pointer transition-all select-none ${
+                isActive
+                  ? `${cfg.ring || `ring-1 ring-slate-500/20`} ${cfg.border}`
+                  : 'hover:border-slate-600/60'
+              }`}
+              onClick={() => setSeverityFilter((prev) => (prev === sev ? 'All' : sev))}
+            >
+              <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${cfg.text}`}>
+                <Icon className="h-4 w-4" /> {sev}
+              </div>
+              <div className={`text-3xl font-bold ${count > 0 ? cfg.text : 'text-slate-600'}`}>{count}</div>
+            </Card>
+          );
+        })}
       </div>
-      <Card overflowHidden padding="none">
-        {findings.length > 0 ? (
-          <Table>
-            <TableHead>
-              <tr>
-                <TableHeadCell>Severity</TableHeadCell>
-                <TableHeadCell>Type</TableHeadCell>
-                <TableHeadCell>URL</TableHeadCell>
-                <TableHeadCell>Message</TableHeadCell>
-                <TableHeadCell>Recommendation</TableHeadCell>
-              </tr>
-            </TableHead>
-            <TableBody>
-              {findings.map((f, i) => (
-                <TableRow key={i}>
-                  <TableCell>
-                    <Badge value={f.severity || 'Info'} label={f.severity || 'Info'} />
-                  </TableCell>
-                  <TableCell className="text-slate-400 font-mono text-xs">
-                    {(f.finding_type || '').replace(/_/g, ' ')}
-                  </TableCell>
-                  <TableCell className="font-mono text-blue-400 text-xs break-all">
-                    <a href={f.url} target="_blank" rel="noreferrer" className="hover:underline">
-                      {f.url || '—'}
+
+      {/* "All" pill to reset filter */}
+      {severityFilter !== 'All' && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setSeverityFilter('All')}
+            className="text-xs text-slate-500 hover:text-slate-300 transition-colors border border-default rounded-full px-3 py-1"
+          >
+            ← Show all severities
+          </button>
+        </div>
+      )}
+
+      {/* Findings list */}
+      {findings.length === 0 ? (
+        <Card className="flex flex-col items-center justify-center py-20 gap-4">
+          <Shield className="h-14 w-14 text-green-600/60" />
+          <div className="text-center">
+            <p className="text-slate-300 font-semibold text-base">No security findings detected</p>
+            <p className="text-slate-500 text-sm mt-1">
+              {allFindings.length > 0
+                ? 'No findings match the current severity filter.'
+                : 'Run a crawl with security scanning enabled to see results here.'}
+            </p>
+          </div>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {findings.map((f, i) => {
+            const sev = f.severity || 'Info';
+            const cfg = SEVERITY_CONFIG[sev] || SEVERITY_CONFIG.Info;
+            const Icon = cfg.icon;
+            return (
+              <div
+                key={i}
+                className={`bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.rowBorder} p-5 flex flex-col gap-3 hover:border-slate-600/60 transition-colors`}
+              >
+                {/* Row header */}
+                <div className="flex flex-wrap items-start gap-3">
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <Icon className={`h-4 w-4 ${cfg.text}`} />
+                    <Badge value={sev} label={sev} />
+                  </div>
+                  <span className={`font-mono text-xs px-2 py-0.5 rounded ${cfg.bg} ${cfg.text} border ${cfg.border} select-all`}>
+                    {toTitleCase(f.finding_type)}
+                  </span>
+                  {f.url && (
+                    <a
+                      href={f.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-1 font-mono text-blue-400 text-xs hover:underline break-all min-w-0"
+                    >
+                      <span className="line-clamp-1">{f.url}</span>
+                      <ExternalLink className="h-3 w-3 flex-shrink-0" />
                     </a>
-                  </TableCell>
-                  <TableCell className="text-slate-200">{f.message || '—'}</TableCell>
-                  <TableCell className="text-slate-400 text-sm">{f.recommendation || '—'}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        ) : (
-          <p className="p-6 text-center text-slate-500">No security findings.</p>
-        )}
-      </Card>
+                  )}
+                </div>
+
+                {/* Message */}
+                <p className="text-slate-200 text-sm leading-snug">{f.message || '—'}</p>
+
+                {/* Recommendation */}
+                {f.recommendation && (
+                  <div className={`rounded-lg px-3 py-2.5 border text-sm text-slate-400 leading-relaxed ${cfg.recBg}`}>
+                    <span className="text-xs font-bold uppercase tracking-wide text-blue-400 block mb-1">
+                      Recommendation
+                    </span>
+                    {f.recommendation}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </PageLayout>
   );
 }

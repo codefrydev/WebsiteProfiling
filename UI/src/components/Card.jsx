@@ -14,7 +14,7 @@ export default function Card({
   const overflowClass = overflowHidden ? 'overflow-hidden' : '';
   return (
     <div
-      className={`bg-brand-800 border border-slate-700 rounded-xl ${paddingClass} ${shadowClass} ${overflowClass} ${className}`.trim()}
+      className={`bg-brand-800 border border-default rounded-xl ${paddingClass} ${shadowClass} ${overflowClass} ${className}`.trim()}
     >
       {children}
     </div>

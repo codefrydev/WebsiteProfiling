@@ -104,6 +104,7 @@ def init_schema(conn: sqlite3.Connection) -> None:
     """)
     conn.commit()
     _migrate_to_crawl_runs(conn)
+    _migrate_new_crawl_columns(conn)
 
 
 def _table_has_column(conn: sqlite3.Connection, table: str, column: str) -> bool:
@@ -113,6 +114,40 @@ def _table_has_column(conn: sqlite3.Connection, table: str, column: str) -> bool
         return any(row[1] == column for row in cur.fetchall())
     except Exception:
         return False
+
+
+_NEW_CRAWL_COLUMNS = [
+    ("word_count", "INTEGER DEFAULT 0"),
+    ("reading_level", "REAL DEFAULT 0"),
+    ("content_html_ratio", "REAL DEFAULT 0"),
+    ("top_keywords", "TEXT DEFAULT '[]'"),
+    ("og_title", "TEXT DEFAULT ''"),
+    ("og_description", "TEXT DEFAULT ''"),
+    ("og_image", "TEXT DEFAULT ''"),
+    ("og_type", "TEXT DEFAULT ''"),
+    ("twitter_card", "TEXT DEFAULT ''"),
+    ("twitter_title", "TEXT DEFAULT ''"),
+    ("twitter_image", "TEXT DEFAULT ''"),
+    ("tech_stack", "TEXT DEFAULT '[]'"),
+    ("depth", "INTEGER"),
+]
+
+
+def _migrate_new_crawl_columns(conn: sqlite3.Connection) -> None:
+    """Add new content/social/tech columns to crawl_results if they don't exist yet."""
+    try:
+        cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='crawl_results'")
+        if cur.fetchone() is None:
+            return
+    except Exception:
+        return
+    for col_name, col_def in _NEW_CRAWL_COLUMNS:
+        if not _table_has_column(conn, "crawl_results", col_name):
+            try:
+                conn.execute(f"ALTER TABLE crawl_results ADD COLUMN {col_name} {col_def}")
+            except Exception:
+                pass
+    conn.commit()
 
 
 def _migrate_to_crawl_runs(conn: sqlite3.Connection) -> None:

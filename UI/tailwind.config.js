@@ -16,6 +16,10 @@ export default {
           700: '#1F2937',
         },
       },
+      borderColor: {
+        default: 'rgba(255, 255, 255, 0.07)',
+        muted: 'rgba(255, 255, 255, 0.04)',
+      },
       borderRadius: {
         card: '0.75rem',
       },

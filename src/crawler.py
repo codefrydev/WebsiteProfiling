@@ -30,10 +30,13 @@ from tqdm.auto import tqdm
 from .common import (
     load_robots,
     normalize_link,
+    parse_content_text,
     parse_links,
     parse_resources,
     parse_seo,
     parse_seo_extended,
+    parse_social_meta,
+    parse_tech_stack,
 )
 
 DEFAULT_USER_AGENT = "WebsiteProfilingCrawler/1.0"
@@ -168,6 +171,19 @@ class Crawler:
             "link_stylesheet_count": 0,
             "total_js_bytes": 0,
             "total_css_bytes": 0,
+            "word_count": 0,
+            "reading_level": 0.0,
+            "content_html_ratio": 0.0,
+            "top_keywords": "[]",
+            "og_title": "",
+            "og_description": "",
+            "og_image": "",
+            "og_type": "",
+            "twitter_card": "",
+            "twitter_title": "",
+            "twitter_image": "",
+            "tech_stack": "[]",
+            "depth": None,
         }
 
     def worker(self, url):
@@ -240,6 +256,22 @@ class Crawler:
             res_res = parse_resources(text, final_url or url)
             ext["script_count"] = res_res.get("script_count", 0)
             ext["link_stylesheet_count"] = res_res.get("link_stylesheet_count", 0)
+            from bs4 import BeautifulSoup as _BS
+            _soup = _BS(text, "lxml")
+            ct_data = parse_content_text(_soup, text)
+            ext["word_count"] = ct_data.get("word_count", 0)
+            ext["reading_level"] = ct_data.get("reading_level", 0.0)
+            ext["content_html_ratio"] = ct_data.get("content_html_ratio", 0.0)
+            ext["top_keywords"] = ct_data.get("top_keywords", "[]")
+            social = parse_social_meta(_soup)
+            ext["og_title"] = social.get("og_title", "")
+            ext["og_description"] = social.get("og_description", "")
+            ext["og_image"] = social.get("og_image", "")
+            ext["og_type"] = social.get("og_type", "")
+            ext["twitter_card"] = social.get("twitter_card", "")
+            ext["twitter_title"] = social.get("twitter_title", "")
+            ext["twitter_image"] = social.get("twitter_image", "")
+            ext["tech_stack"] = parse_tech_stack(_soup, headers_dict, final_url or url)
             for link in links:
                 if _url_matches_exclude(link, self.exclude_urls):
                     continue
@@ -274,6 +306,8 @@ class Crawler:
         ext["x_content_type_options"] = headers_dict.get("X-Content-Type-Options", "")
         ext["x_frame_options"] = headers_dict.get("X-Frame-Options", "")
         ext["content_security_policy"] = headers_dict.get("Content-Security-Policy", "")
+
+        ext["depth"] = self.depths.get(url)
 
         if self.polite_delay:
             time.sleep(self.polite_delay)
@@ -365,6 +399,19 @@ class Crawler:
                                 "link_stylesheet_count": 0,
                                 "total_js_bytes": 0,
                                 "total_css_bytes": 0,
+                                "word_count": 0,
+                                "reading_level": 0.0,
+                                "content_html_ratio": 0.0,
+                                "top_keywords": "[]",
+                                "og_title": "",
+                                "og_description": "",
+                                "og_image": "",
+                                "og_type": "",
+                                "twitter_card": "",
+                                "twitter_title": "",
+                                "twitter_image": "",
+                                "tech_stack": "[]",
+                                "depth": None,
                             }
                             if self.store_outlinks:
                                 res["outlink_targets"] = "[]"
@@ -419,6 +466,19 @@ class Crawler:
                 "link_stylesheet_count",
                 "total_js_bytes",
                 "total_css_bytes",
+                "word_count",
+                "reading_level",
+                "content_html_ratio",
+                "top_keywords",
+                "og_title",
+                "og_description",
+                "og_image",
+                "og_type",
+                "twitter_card",
+                "twitter_title",
+                "twitter_image",
+                "tech_stack",
+                "depth",
             ]
             if self.store_outlinks:
                 cols.append("outlink_targets")

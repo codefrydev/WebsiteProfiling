@@ -97,8 +97,8 @@ export default function Network() {
   return (
     <PageLayout className="flex flex-col h-full">
       <PageHeader
-        title="Site Architecture Topology"
-        subtitle="Physics-based simulation of internal linking. Red nodes indicate 4xx/5xx."
+        title="Internal Linking Map"
+        subtitle="Physics-based graph of internal link structure. Red nodes indicate 4xx/5xx errors."
       />
       <Card
         overflowHidden
@@ -112,16 +112,16 @@ export default function Network() {
               className="absolute inset-0 w-full h-full bg-[#05080f]"
               style={{ outline: 'none' }}
             />
-            <div className="absolute top-4 left-4 bg-brand-900/80 backdrop-blur border border-slate-700 p-3 rounded-xl text-xs space-y-2 z-10">
-              <div className="flex items-center gap-2 text-white">
+            <div className="absolute top-4 left-4 bg-brand-900 border border-default p-3 rounded-xl text-xs space-y-2 z-10">
+              <div className="flex items-center gap-2 text-bright">
                 <div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-400" />
                 OK (2xx)
               </div>
-              <div className="flex items-center gap-2 text-white">
+              <div className="flex items-center gap-2 text-bright">
                 <div className="w-3 h-3 rounded-full bg-red-500 border border-red-400" />
                 Broken (4xx/5xx)
               </div>
-              <div className="flex items-center gap-2 text-white">
+              <div className="flex items-center gap-2 text-bright">
                 <div className="w-4 h-0.5 bg-slate-600" />
                 Internal Link
               </div>

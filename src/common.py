@@ -195,6 +195,158 @@ def parse_seo_extended(html_text: str, base_url: str) -> dict:
     return out
 
 
+_STOP_WORDS = frozenset({
+    "the", "and", "for", "that", "this", "with", "from", "your", "have", "are",
+    "was", "were", "been", "will", "would", "could", "should", "about", "which",
+    "their", "there", "what", "when", "where", "more", "some", "than", "them",
+    "other", "into", "over", "also", "just", "after", "before", "only", "then",
+    "very", "most", "each", "such", "like", "does", "here", "because", "being",
+    "well", "while", "these", "those", "both", "many", "much", "even", "back",
+    "through", "still", "between", "every", "under", "last", "long", "great",
+    "make", "same", "come", "take", "know", "they", "page", "site", "home",
+    "click", "read", "view", "next", "menu", "main", "skip", "content", "link",
+    "http", "https", "www", "html", "class", "none", "true", "false", "null",
+})
+
+
+def _count_syllables(word: str) -> int:
+    word = word.lower().strip()
+    if len(word) <= 3:
+        return 1
+    vowels = "aeiouy"
+    count = 0
+    prev_vowel = False
+    for ch in word:
+        is_vowel = ch in vowels
+        if is_vowel and not prev_vowel:
+            count += 1
+        prev_vowel = is_vowel
+    if word.endswith("e") and count > 1:
+        count -= 1
+    return max(1, count)
+
+
+def parse_content_text(soup, raw_html: str) -> dict:
+    """Extract content analytics: word count, reading level, content-to-HTML ratio, top keywords."""
+    import re
+    from collections import Counter
+
+    body = soup.find("body")
+    body_text = body.get_text(separator=" ", strip=True) if body else ""
+    words = [w for w in re.findall(r"[a-zA-Z]+", body_text) if len(w) >= 2]
+    word_count = len(words)
+
+    sentences = [s.strip() for s in re.split(r"[.!?]+", body_text) if len(s.strip()) > 5]
+    sentence_count = max(1, len(sentences))
+
+    total_syllables = sum(_count_syllables(w) for w in words) if words else 0
+
+    reading_level = 0.0
+    if word_count > 30:
+        reading_level = (
+            0.39 * (word_count / sentence_count)
+            + 11.8 * (total_syllables / max(1, word_count))
+            - 15.59
+        )
+        reading_level = max(0.0, min(18.0, round(reading_level, 1)))
+
+    html_len = max(1, len(raw_html))
+    content_html_ratio = round(len(body_text) / html_len * 100, 1)
+
+    keyword_words = [w.lower() for w in words if len(w) >= 4 and w.lower() not in _STOP_WORDS]
+    top_keywords = Counter(keyword_words).most_common(10)
+
+    return {
+        "word_count": word_count,
+        "reading_level": reading_level,
+        "content_html_ratio": content_html_ratio,
+        "top_keywords": json.dumps([{"word": w, "count": c} for w, c in top_keywords]),
+    }
+
+
+def parse_social_meta(soup) -> dict:
+    """Extract Open Graph and Twitter Card meta tags."""
+    def _meta_content(attrs: dict) -> str:
+        tag = soup.find("meta", attrs=attrs)
+        return (tag.get("content") or "").strip() if tag else ""
+
+    return {
+        "og_title": _meta_content({"property": "og:title"}),
+        "og_description": _meta_content({"property": "og:description"}),
+        "og_image": _meta_content({"property": "og:image"}),
+        "og_type": _meta_content({"property": "og:type"}),
+        "twitter_card": _meta_content({"name": "twitter:card"}),
+        "twitter_title": _meta_content({"name": "twitter:title"}),
+        "twitter_image": _meta_content({"name": "twitter:image"}),
+    }
+
+
+_TECH_PATTERNS = [
+    ("WordPress", "html", "/wp-content/"),
+    ("WordPress", "html", "/wp-includes/"),
+    ("Drupal", "meta_generator", "Drupal"),
+    ("Joomla", "meta_generator", "Joomla"),
+    ("Shopify", "html", "cdn.shopify.com"),
+    ("Squarespace", "html", "squarespace.com"),
+    ("Wix", "html", "wix.com"),
+    ("Next.js", "html", "__NEXT_DATA__"),
+    ("Next.js", "html", "_next/static"),
+    ("Nuxt.js", "html", "__NUXT__"),
+    ("Gatsby", "html", "gatsby-"),
+    ("React", "html", "data-reactroot"),
+    ("React", "html", "__REACT_DEVTOOLS"),
+    ("React", "html", "react.production.min"),
+    ("Vue.js", "html", "__vue"),
+    ("Vue.js", "html", "vue.min.js"),
+    ("Angular", "html", "ng-version"),
+    ("Angular", "html", "ng-app"),
+    ("Svelte", "html", "svelte"),
+    ("jQuery", "html", "jquery"),
+    ("Bootstrap", "html", "bootstrap"),
+    ("Tailwind CSS", "html", "tailwindcss"),
+    ("Google Analytics", "html", "google-analytics.com/analytics.js"),
+    ("Google Analytics", "html", "googletagmanager.com/gtag"),
+    ("Google Tag Manager", "html", "googletagmanager.com/gtm.js"),
+    ("Facebook Pixel", "html", "connect.facebook.net"),
+    ("Hotjar", "html", "hotjar.com"),
+    ("Google Fonts", "html", "fonts.googleapis.com"),
+    ("Font Awesome", "html", "fontawesome"),
+    ("Cloudflare", "header", "cf-ray"),
+    ("Nginx", "header_server", "nginx"),
+    ("Apache", "header_server", "apache"),
+    ("LiteSpeed", "header_server", "litespeed"),
+    ("Vercel", "header_server", "vercel"),
+    ("Netlify", "header_server", "netlify"),
+    ("Amazon CloudFront", "header", "x-amz-cf-id"),
+    ("AWS", "header_server", "amazons3"),
+]
+
+
+def parse_tech_stack(soup, headers: dict, url: str) -> str:
+    """Detect technologies from HTML patterns and HTTP headers. Returns JSON list of tech names."""
+    detected = set()
+    html_str = str(soup).lower()
+    meta_gen = soup.find("meta", attrs={"name": "generator"})
+    generator = (meta_gen.get("content") or "").strip().lower() if meta_gen else ""
+    server_header = (headers.get("Server") or headers.get("server") or "").lower()
+
+    for name, source, pattern in _TECH_PATTERNS:
+        pat = pattern.lower()
+        if source == "html" and pat in html_str:
+            detected.add(name)
+        elif source == "meta_generator" and pat in generator:
+            detected.add(name)
+        elif source == "header":
+            for v in headers.values():
+                if isinstance(v, str) and pat in v.lower():
+                    detected.add(name)
+                    break
+        elif source == "header_server" and pat in server_header:
+            detected.add(name)
+
+    return json.dumps(sorted(detected))
+
+
 def parse_resources(html_text: str, base_url: str) -> dict:
     """
     Extract script/link resource counts and total sizes (same-origin only, no fetch).

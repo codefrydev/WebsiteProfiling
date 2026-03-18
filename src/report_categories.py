@@ -120,6 +120,29 @@ def category_technical_seo(
             ))
             deductions.append((10, True))
 
+    # Social meta tags
+    if "og_title" in df.columns and len(success_df) > 0:
+        og_present = (success_df["og_title"].fillna("").astype(str).str.strip() != "").sum()
+        og_pct = og_present / len(success_df) if len(success_df) > 0 else 1
+        if og_pct < 0.5:
+            issues.append(_issue(
+                f"Open Graph tags missing on {int((1 - og_pct) * 100)}% of pages.",
+                priority="Medium",
+                recommendation="Add og:title, og:description, and og:image meta tags for social sharing.",
+            ))
+            deductions.append((5, True))
+
+    if "twitter_card" in df.columns and len(success_df) > 0:
+        tw_present = (success_df["twitter_card"].fillna("").astype(str).str.strip() != "").sum()
+        tw_pct = tw_present / len(success_df) if len(success_df) > 0 else 1
+        if tw_pct < 0.2:
+            issues.append(_issue(
+                f"Twitter Card tags missing on {int((1 - tw_pct) * 100)}% of pages.",
+                priority="Low",
+                recommendation="Add twitter:card meta tags for better Twitter/X sharing previews.",
+            ))
+            deductions.append((3, True))
+
     # Structured data
     if "has_schema" in df.columns and len(success_df) > 0:
         with_schema = int(success_df["has_schema"].astype(str).str.lower().isin(("true", "1", "yes")).sum())
@@ -202,6 +225,16 @@ def category_performance(df: pd.DataFrame) -> dict:
                 recommendation="Optimize server response time (TTFB): caching, CDN, or backend tuning.",
             ))
             deductions.append((min(20, int(slow) * 2), True))
+        valid_rt = rt[rt > 0]
+        if len(valid_rt) > 5:
+            p95 = float(valid_rt.quantile(0.95))
+            if p95 > 3000:
+                issues.append(_issue(
+                    f"95th percentile response time is {int(p95)}ms (over 3s).",
+                    priority="High",
+                    recommendation="Investigate slowest pages; consider CDN, server-side caching, or database optimization.",
+                ))
+                deductions.append((10, True))
 
     if "images_total" in success_df.columns:
         total_imgs = success_df["images_total"].fillna(0).astype(int).sum()
@@ -317,6 +350,28 @@ def category_html_accessibility(df: pd.DataFrame) -> dict:
             ))
             deductions.append((min(15, int(missing_alt) * 2), True))
 
+    if "word_count" in success_df.columns:
+        wc = pd.to_numeric(success_df["word_count"], errors="coerce").fillna(0).astype(int)
+        very_thin = int(((wc > 0) & (wc < 100)).sum())
+        if very_thin > 0:
+            issues.append(_issue(
+                f"{very_thin} page(s) with very thin content (under 100 words).",
+                priority="High",
+                recommendation="Expand thin pages with meaningful content (aim for 300+ words).",
+            ))
+            deductions.append((min(15, very_thin * 3), True))
+
+    if "reading_level" in success_df.columns:
+        rl = pd.to_numeric(success_df["reading_level"], errors="coerce").fillna(0)
+        complex_pages = int((rl > 14).sum())
+        if complex_pages > 0:
+            issues.append(_issue(
+                f"{complex_pages} page(s) have very complex content (reading level > 14).",
+                priority="Medium",
+                recommendation="Simplify language for broader audience accessibility (aim for grade 8-10).",
+            ))
+            deductions.append((min(10, complex_pages * 2), True))
+
     issues.append(_issue(
         "Color contrast is not measured by this tool.",
         priority="Low",
@@ -324,7 +379,6 @@ def category_html_accessibility(df: pd.DataFrame) -> dict:
     ))
 
     score = _score_deductions(100, deductions)
-    # Floor at 5 when we have successful pages so the category clearly shows a calculated score
     if len(success_df) > 0 and score == 0:
         score = 5
     score = min(100, max(0, score))

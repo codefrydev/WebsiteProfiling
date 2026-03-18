@@ -1,8 +1,113 @@
+import { useState } from 'react';
+import { AlertTriangle, AlertCircle, Info, ChevronDown, ChevronRight, ExternalLink, Flame } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { PageLayout, PageHeader, Card, Badge } from '../components';
 
+const PRIORITY_CONFIG = {
+  Critical: {
+    border: 'border-l-red-500',
+    bg: 'bg-red-500/10',
+    text: 'text-red-400',
+    ring: 'ring-1 ring-red-500/20 border-red-900/30',
+    icon: Flame,
+    order: 0,
+  },
+  High: {
+    border: 'border-l-orange-500',
+    bg: 'bg-orange-500/10',
+    text: 'text-orange-400',
+    ring: 'ring-1 ring-orange-500/20 border-orange-900/30',
+    icon: AlertTriangle,
+    order: 1,
+  },
+  Medium: {
+    border: 'border-l-yellow-500',
+    bg: 'bg-yellow-500/10',
+    text: 'text-yellow-400',
+    ring: '',
+    icon: AlertCircle,
+    order: 2,
+  },
+  Low: {
+    border: 'border-l-slate-500',
+    bg: 'bg-slate-500/10',
+    text: 'text-slate-400',
+    ring: '',
+    icon: Info,
+    order: 3,
+  },
+};
+
+const PRIORITY_ORDER = ['Critical', 'High', 'Medium', 'Low'];
+
+function CategorySection({ category, items, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-3 py-3 px-4 bg-brand-800 border border-default rounded-xl hover:border-slate-600/60 transition-colors text-left"
+      >
+        {open ? (
+          <ChevronDown className="h-4 w-4 text-slate-500 flex-shrink-0" />
+        ) : (
+          <ChevronRight className="h-4 w-4 text-slate-500 flex-shrink-0" />
+        )}
+        <span className="font-semibold text-slate-200 flex-1">{category}</span>
+        <span className="text-xs font-bold text-slate-500 bg-slate-700/60 rounded-full px-2.5 py-0.5">
+          {items.length} {items.length === 1 ? 'issue' : 'issues'}
+        </span>
+      </button>
+      {open && (
+        <div className="mt-2 space-y-3 pl-4">
+          {items.map((item, i) => {
+            const iss = item.issue;
+            const p = iss.priority || 'Medium';
+            const cfg = PRIORITY_CONFIG[p] || PRIORITY_CONFIG.Medium;
+            const Icon = cfg.icon;
+            return (
+              <div
+                key={i}
+                className={`bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.border} flex flex-col md:flex-row gap-4 p-5 hover:border-slate-600/60 transition-colors`}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Icon className={`h-4 w-4 flex-shrink-0 ${cfg.text}`} />
+                    <Badge value={p} />
+                    <span className="text-xs text-slate-500 font-medium">{item.category}</span>
+                  </div>
+                  <h3 className="text-slate-200 font-medium text-sm leading-snug">{iss.message || '—'}</h3>
+                  {iss.url && (
+                    <a
+                      href={iss.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 inline-flex items-center gap-1 font-mono text-blue-400 text-xs hover:underline break-all"
+                    >
+                      {iss.url}
+                      <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                    </a>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 bg-brand-900 rounded-lg p-3 border border-muted">
+                  <div className="text-xs text-blue-400 font-bold uppercase mb-1 tracking-wide">Fix Recommendation</div>
+                  <p className="text-slate-400 text-sm leading-relaxed">{iss.recommendation || '—'}</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Issues({ searchQuery = '' }) {
   const { data } = useReport();
+  const [priorityFilter, setPriorityFilter] = useState('All');
+  const [categoryFilter, setCategoryFilter] = useState('All');
+
   if (!data) return null;
 
   let list = [];
@@ -22,40 +127,124 @@ export default function Issues({ searchQuery = '' }) {
     });
   }
 
+  const priorityCounts = PRIORITY_ORDER.reduce((acc, p) => {
+    acc[p] = list.filter((item) => (item.issue.priority || 'Medium') === p).length;
+    return acc;
+  }, {});
+
+  const categories = [...new Set(list.map((item) => item.category))].filter(Boolean).sort();
+
+  let filtered = list;
+  if (priorityFilter !== 'All') {
+    filtered = filtered.filter((item) => (item.issue.priority || 'Medium') === priorityFilter);
+  }
+  if (categoryFilter !== 'All') {
+    filtered = filtered.filter((item) => item.category === categoryFilter);
+  }
+
+  filtered.sort((a, b) => {
+    const ao = (PRIORITY_CONFIG[a.issue.priority] || PRIORITY_CONFIG.Medium).order;
+    const bo = (PRIORITY_CONFIG[b.issue.priority] || PRIORITY_CONFIG.Medium).order;
+    return ao - bo;
+  });
+
+  const grouped = filtered.reduce((acc, item) => {
+    const cat = item.category || 'Uncategorized';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(item);
+    return acc;
+  }, {});
+
   return (
-    <PageLayout>
+    <PageLayout className="space-y-6">
       <PageHeader
-        title="Technical Issues"
-        subtitle="Prioritized list of actionable fixes based on crawl data."
+        title="Site Audit"
+        subtitle={`Prioritized issues impacting crawlability, indexing, and rankings. ${list.length} total issue${list.length !== 1 ? 's' : ''} found.`}
       />
-      <div className="space-y-4">
-        {list.length === 0 ? (
-          <p className="text-slate-500 py-4">No issues recorded.</p>
-        ) : (
-          list.map((item, i) => {
-            const iss = item.issue;
-            const p = iss.priority || 'Medium';
-            return (
-              <Card
-                key={i}
-                className="flex flex-col md:flex-row gap-4 hover:border-slate-600 transition-colors cursor-pointer"
-              >
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Badge value={p} />
-                    <span className="text-xs font-semibold text-slate-500">{item.category}</span>
-                  </div>
-                  <h3 className="text-slate-200 font-medium text-sm">{iss.message || '—'}</h3>
-                </div>
-                <div className="flex-1 bg-brand-900 rounded p-3 border border-slate-800">
-                  <div className="text-xs text-blue-400 font-bold uppercase mb-1">Fix Recommendation</div>
-                  <p className="text-slate-400 text-sm">{iss.recommendation || '—'}</p>
-                </div>
-              </Card>
-            );
-          })
+
+      {/* Priority summary cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {PRIORITY_ORDER.map((p) => {
+          const cfg = PRIORITY_CONFIG[p];
+          const Icon = cfg.icon;
+          const count = priorityCounts[p] || 0;
+          return (
+            <Card
+              key={p}
+              shadow
+              className={`cursor-pointer transition-all ${
+                priorityFilter === p ? `${cfg.ring || 'ring-1 ring-slate-500/30'} border-slate-600` : 'hover:border-slate-600'
+              }`}
+              onClick={() => setPriorityFilter((prev) => (prev === p ? 'All' : p))}
+            >
+              <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${cfg.text}`}>
+                <Icon className="h-4 w-4" /> {p}
+              </div>
+              <div className={`text-3xl font-bold ${count > 0 ? cfg.text : 'text-slate-500'}`}>{count}</div>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Filters row */}
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setPriorityFilter('All')}
+          className={`px-4 py-1.5 rounded-full text-sm font-bold border transition-colors ${
+            priorityFilter === 'All'
+              ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+              : 'border-default bg-slate-800 text-slate-400 hover:border-slate-600/60'
+          }`}
+        >
+          All Priorities
+        </button>
+        {PRIORITY_ORDER.map((p) => {
+          const cfg = PRIORITY_CONFIG[p];
+          const active = priorityFilter === p;
+          return (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setPriorityFilter((prev) => (prev === p ? 'All' : p))}
+              className={`px-4 py-1.5 rounded-full text-sm font-bold border transition-colors ${
+                active
+                  ? `${cfg.bg} ${cfg.text} border-current/30`
+                  : 'border-default bg-slate-800 text-slate-400 hover:border-slate-600/60'
+              }`}
+            >
+              {p}
+            </button>
+          );
+        })}
+
+        {categories.length > 1 && (
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="ml-auto bg-brand-800 border border-default text-sm rounded-lg px-3 py-2 text-slate-200 outline-none hover:border-slate-600/60 transition-colors"
+          >
+            <option value="All">All Categories</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
         )}
       </div>
+
+      {/* Issue list */}
+      {filtered.length === 0 ? (
+        <Card className="flex flex-col items-center justify-center py-16 gap-3">
+          <Info className="h-10 w-10 text-slate-600" />
+          <p className="text-slate-500 text-sm">No issues match the current filters.</p>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {Object.entries(grouped).map(([cat, items], idx) => (
+            <CategorySection key={cat} category={cat} items={items} defaultOpen={idx === 0} />
+          ))}
+        </div>
+      )}
     </PageLayout>
   );
 }

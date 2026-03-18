@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+@theme {
+  /* Soft borders for dark UI: light at low opacity so they blend, not harsh lines */
+  --border-color-default: rgba(255, 255, 255, 0.07);
+  --border-color-muted: rgba(255, 255, 255, 0.04);
+  /* Soft text for headings/emphasis (blends with dark UI, not pure white) */
+  --color-bright: #e2e8f0;
+  /* Soft dividers (same as border-muted, for divide-y etc.) */
+  --color-muted: rgba(255, 255, 255, 0.04);
+  /* Progress bar / track background (soft, not harsh gray) */
+  --color-track: rgba(255, 255, 255, 0.06);
+}
+
 :root {
   --text: #6b6375;
   --text-h: #08060d;
