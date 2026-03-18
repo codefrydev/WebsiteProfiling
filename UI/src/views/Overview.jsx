@@ -199,7 +199,7 @@ export default function Overview() {
                       {cat.score != null ? cat.score : 'N/A'}
                     </div>
                   </div>
-                  <div>
+                  <div className="min-w-0 break-words pr-1">
                     <h3 className="text-lg font-bold text-slate-200">{cat.name || cat.id || ''}</h3>
                     <p className={`text-sm mt-1 ${labelCls}`}>{label}</p>
                   </div>

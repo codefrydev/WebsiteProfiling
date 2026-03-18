@@ -38,9 +38,11 @@ jobs:
 
       - name: Ensure report.db in UI/public
         run: |
-          if [ -f report.db ]; then
-            cp report.db UI/public/report.db
+          if [ ! -f report.db ]; then
+            echo "::error::report.db not found after python -m src"
+            exit 1
           fi
+          cp report.db UI/public/report.db
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
