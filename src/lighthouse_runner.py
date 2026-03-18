@@ -406,6 +406,63 @@ def run_lighthouse_audit(
     return summary
 
 
+def run_lighthouse_on_pages(
+    urls: list[str],
+    strategy: str = "mobile",
+    iterations: int = 1,
+    output_dir: str = ".",
+    db_path: str | None = None,
+    mode: str = "navigation",
+    categories: str | list[str] | None = None,
+) -> None:
+    """
+    Run Lighthouse audit on each URL and store per-URL summary in DB.
+    Failures for a single URL are logged and do not stop the rest.
+    """
+    if not urls:
+        return
+    if not db_path:
+        raise ValueError("run_lighthouse_on_pages requires db_path")
+    if not is_lighthouse_available():
+        raise RuntimeError(
+            "Node/npm not found. Install Node.js (https://nodejs.org); then run: npm install -g lighthouse. "
+            "Chrome or Chromium is also required for headless mode."
+        )
+    from .db import get_connection, init_schema, write_lighthouse_page_summary
+
+    conn = get_connection(db_path)
+    init_schema(conn)
+    strategy = strategy.lower() if strategy else "mobile"
+    if strategy not in ("mobile", "desktop"):
+        strategy = "mobile"
+    iterations = max(1, int(iterations))
+    categories = _parse_categories(categories) if categories else None
+    total = len(urls)
+    for idx, url in enumerate(urls):
+        try:
+            print(f"[Lighthouse on pages] {idx + 1}/{total}: {url}", flush=True)
+            summary = run_lighthouse_audit(
+                url=url,
+                strategy=strategy,
+                iterations=iterations,
+                output_dir=output_dir,
+                mode=mode,
+                categories=categories,
+            )
+            write_lighthouse_page_summary(conn, url, summary)
+            # Delete raw run files after storing summary in DB (same as single-URL path)
+            for raw_path in summary.get("raw_reports") or []:
+                if os.path.isfile(raw_path):
+                    try:
+                        os.remove(raw_path)
+                    except OSError:
+                        pass
+        except Exception as e:
+            print(f"  Skipped (error): {e}", file=sys.stderr, flush=True)
+    conn.close()
+    print(f"[Lighthouse on pages] Done. Wrote {total} URL(s) to DB.", flush=True)
+
+
 def main(
     url: str,
     strategy: str = "mobile",

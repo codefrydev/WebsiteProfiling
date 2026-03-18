@@ -317,6 +317,7 @@ def run_simple_report(
             init_schema,
             read_crawl,
             read_edges,
+            read_lighthouse_page_summaries,
             read_lighthouse_summary,
             write_edges,
             write_report_payload,
@@ -328,6 +329,11 @@ def run_simple_report(
         df = read_crawl(conn, run_id)
         edges = read_edges(conn, run_id)
         lighthouse_summary = read_lighthouse_summary(conn)
+        lighthouse_by_url = read_lighthouse_page_summaries(conn)
+        if not lighthouse_summary and lighthouse_by_url:
+            first_url = next(iter(lighthouse_by_url), None)
+            if first_url is not None:
+                lighthouse_summary = lighthouse_by_url[first_url]
         print(f"  Loaded {len(df)} URLs, {len(edges)} edges.", flush=True)
         if df.empty and not edges:
             conn.close()
@@ -339,6 +345,7 @@ def run_simple_report(
         df = load_dataframe(crawl_csv)
         edges = []
         lighthouse_summary = None
+        lighthouse_by_url = {}
         print(f"  Loaded {len(df)} URLs.", flush=True)
 
     if "url" not in df.columns and not df.empty:
@@ -625,6 +632,7 @@ def run_simple_report(
         report_data["lighthouse_summary"] = lighthouse_summary
         report_data["lighthouse_diagnostics"] = lighthouse_summary.get("diagnostics") or []
         report_data["lighthouse_human_summary"] = lighthouse_summary.get("human_summary_full") or lighthouse_summary.get("human_summary") or ""
+    report_data["lighthouse_by_url"] = lighthouse_by_url
     if db_path and conn:
         print("  Writing report payload to DB...", flush=True)
         from .db import write_report_payload as db_write_report_payload

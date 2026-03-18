@@ -6,6 +6,8 @@ import os
 import shutil
 import sys
 
+import pandas as pd
+
 from .config import get_bool, get_float, get_int, get_list, load_config
 
 
@@ -92,12 +94,16 @@ def main() -> None:
     run_report = args.command == "report" or (args.command is None and get_bool(cfg, "run_report", True))
     run_plot = args.command == "plot" or (args.command is None and get_bool(cfg, "run_plot", False))
     run_lighthouse = args.command is None and get_bool(cfg, "run_lighthouse", False)
+    run_lighthouse_on_pages = args.command is None and get_bool(cfg, "run_lighthouse_on_pages", False)
+    lighthouse_max_pages = get_int(cfg, "lighthouse_max_pages", 20) or 20
 
-    if args.command is None and (run_crawl or run_lighthouse or run_report or run_plot):
+    if args.command is None and (run_crawl or run_lighthouse or run_lighthouse_on_pages or run_report or run_plot):
         steps = []
         if run_crawl:
             steps.append("crawl")
-        if run_lighthouse:
+        if run_lighthouse_on_pages:
+            steps.append("lighthouse-on-pages")
+        elif run_lighthouse:
             steps.append("lighthouse")
         if run_report:
             steps.append("report")
@@ -145,9 +151,46 @@ def main() -> None:
     edges_csv = path("edges_csv", "edges.csv")
     nodes_csv = path("nodes_csv", "nodes.csv")
 
-    # Run Lighthouse before report when both enabled so the report can show Core Web Vitals
+    # Run Lighthouse on every 200 OK page (when enabled); requires DB and crawl data
     lighthouse_summary_path_for_report = None
-    if run_lighthouse:
+    if run_lighthouse_on_pages and db_path:
+        from .db import get_connection, get_latest_crawl_run_id, init_schema, read_crawl
+        from .lighthouse_runner import run_lighthouse_on_pages as do_lighthouse_on_pages
+        print("[Lighthouse on pages] Starting...", flush=True)
+        conn = get_connection(db_path)
+        init_schema(conn)
+        run_id = get_latest_crawl_run_id(conn)
+        df = read_crawl(conn, run_id)
+        conn.close()
+        success_df = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns and not df.empty else pd.DataFrame()
+        urls_200 = success_df["url"].dropna().astype(str).str.strip().unique().tolist()[:lighthouse_max_pages]
+        if not urls_200:
+            print("[Lighthouse on pages] No 200 OK URLs in crawl. Skip.", flush=True)
+        else:
+            lh_strategy = (cfg.get("lighthouse_strategy") or "mobile").lower()
+            if lh_strategy not in ("mobile", "desktop"):
+                lh_strategy = "mobile"
+            lh_mode = (cfg.get("lighthouse_mode") or "navigation").strip().lower() or "navigation"
+            lh_categories = get_list(cfg, "lighthouse_categories", sep=",")
+            lh_iterations = get_int(cfg, "lighthouse_iterations", 3) or 3
+            if run_lighthouse_on_pages:
+                lh_iterations = 1
+            lh_out = cfg.get("lighthouse_output_dir", "").strip() or cwd
+            if not os.path.isabs(lh_out):
+                lh_out = os.path.join(cwd, lh_out)
+            do_lighthouse_on_pages(
+                urls=urls_200,
+                strategy=lh_strategy,
+                iterations=lh_iterations,
+                output_dir=lh_out,
+                db_path=db_path,
+                mode=lh_mode,
+                categories=lh_categories if lh_categories else None,
+            )
+        print("[Lighthouse on pages] Done.", flush=True)
+
+    # Run single-URL Lighthouse before report when enabled (and not running on all pages)
+    if run_lighthouse and not run_lighthouse_on_pages:
         print("[Lighthouse] Starting...", flush=True)
         from .lighthouse_runner import main as lighthouse_main
         lh_url = cfg.get("lighthouse_url", cfg.get("start_url", "https://codefrydev.in"))

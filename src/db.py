@@ -90,6 +90,12 @@ def init_schema(conn: sqlite3.Connection) -> None:
             data TEXT NOT NULL
         );
 
+        CREATE TABLE IF NOT EXISTS lighthouse_page_summaries (
+            url TEXT PRIMARY KEY,
+            created_at TEXT NOT NULL,
+            data TEXT NOT NULL
+        );
+
         CREATE TABLE IF NOT EXISTS report_payload (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             generated_at TEXT NOT NULL,
@@ -403,6 +409,41 @@ def write_lighthouse_run(
         (time.strftime("%Y-%m-%d %H:%M:%S"), url, strategy, run_index, json.dumps(_sanitize_for_json(data), default=str)),
     )
     conn.commit()
+
+
+def write_lighthouse_page_summary(
+    conn: sqlite3.Connection,
+    url: str,
+    summary: dict[str, Any],
+) -> None:
+    """Write or replace Lighthouse summary for a single URL (latest run wins)."""
+    conn.execute(
+        """INSERT OR REPLACE INTO lighthouse_page_summaries (url, created_at, data)
+           VALUES (?, ?, ?)""",
+        (
+            url,
+            time.strftime("%Y-%m-%d %H:%M:%S"),
+            json.dumps(_sanitize_for_json(summary), default=str),
+        ),
+    )
+    conn.commit()
+
+
+def read_lighthouse_page_summaries(conn: sqlite3.Connection) -> dict[str, Any]:
+    """Return dict mapping url -> summary dict for all per-URL Lighthouse summaries."""
+    out: dict[str, Any] = {}
+    try:
+        cur = conn.execute(
+            "SELECT url, data FROM lighthouse_page_summaries"
+        )
+        for row in cur.fetchall():
+            try:
+                out[str(row[0])] = json.loads(row[1])
+            except (TypeError, json.JSONDecodeError):
+                continue
+    except Exception:
+        pass
+    return out
 
 
 def write_report_payload(conn: sqlite3.Connection, report_data: dict[str, Any]) -> None:

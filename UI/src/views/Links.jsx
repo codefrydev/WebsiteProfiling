@@ -1,7 +1,20 @@
 import { useState, useMemo, useEffect } from 'react';
-import { Search, Link as LinkIcon, ArrowLeft } from 'lucide-react';
+import { Search, Link as LinkIcon, ArrowLeft, Gauge } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { PageLayout, Card, Badge, Button } from '../components';
+import { scoreBandColor } from '../utils/chartPalette';
+
+function formatLhMetric(key, value) {
+  if (value == null || value === '') return '—';
+  const v = Number(value);
+  if (key === 'cls') return v === 0 ? '0' : v.toFixed(2);
+  if (key === 'lcp_ms' || key === 'fcp_ms' || key === 'speed_index_ms') {
+    if (v >= 1000) return `${(v / 1000).toFixed(1)} s`;
+    return `${Math.round(v)} ms`;
+  }
+  if (key === 'tbt_ms') return `${Math.round(v)} ms`;
+  return String(value);
+}
 
 const selectClass = 'bg-brand-800 border border-slate-700 text-sm rounded-lg px-3 py-2 text-slate-200 outline-none';
 
@@ -339,6 +352,52 @@ export default function Links({ searchQuery = '' }) {
                   </div>
                 )}
               </div>
+
+              {data.lighthouse_by_url?.[inspectorUrl] && (() => {
+                const lh = data.lighthouse_by_url[inspectorUrl];
+                const cs = lh.category_scores || {};
+                const mm = lh.median_metrics || {};
+                const topFailures = lh.top_failures || [];
+                const categoryLabels = { performance: 'Performance', accessibility: 'Accessibility', 'best-practices': 'Best practices', seo: 'SEO', pwa: 'PWA' };
+                return (
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <Gauge className="h-4 w-4" /> Lighthouse
+                    </h2>
+                    <Card className="bg-brand-900/50 border border-slate-700 p-4">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                        {['performance', 'accessibility', 'best-practices', 'seo'].map((cat) => {
+                          const score = cs[cat] != null ? Number(cs[cat]) : null;
+                          const color = score != null ? scoreBandColor(score) : 'rgb(71, 85, 105)';
+                          return (
+                            <div key={cat} className="bg-brand-900 rounded-lg p-2 border border-slate-700">
+                              <div className="text-xs text-slate-500">{categoryLabels[cat] || cat}</div>
+                              <div className="text-lg font-bold" style={{ color }}>{score != null ? score : '—'}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div className="text-xs text-slate-500 mb-1">Core Web Vitals</div>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm">
+                        <div><span className="text-slate-500">LCP</span> <span className="text-slate-200 font-mono">{formatLhMetric('lcp_ms', mm.lcp_ms)}</span></div>
+                        <div><span className="text-slate-500">FCP</span> <span className="text-slate-200 font-mono">{formatLhMetric('fcp_ms', mm.fcp_ms)}</span></div>
+                        <div><span className="text-slate-500">TBT</span> <span className="text-slate-200 font-mono">{formatLhMetric('tbt_ms', mm.tbt_ms)}</span></div>
+                        <div><span className="text-slate-500">CLS</span> <span className="text-slate-200 font-mono">{formatLhMetric('cls', mm.cls)}</span></div>
+                      </div>
+                      {topFailures.length > 0 && (
+                        <>
+                          <div className="text-xs text-slate-500 mt-3 mb-1">Top issues</div>
+                          <ul className="list-none p-0 m-0 space-y-1 text-sm text-slate-300">
+                            {topFailures.slice(0, 5).map((f, i) => (
+                              <li key={i} className="truncate" title={f.helpText || f.id}>{f.helpText || f.id || f.id}</li>
+                            ))}
+                          </ul>
+                        </>
+                      )}
+                    </Card>
+                  </div>
+                );
+              })()}
 
               {inspectorDetails && (
                 <>
