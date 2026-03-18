@@ -1,5 +1,7 @@
 # WebsiteProfiling
 
+**GitHub:** [github.com/codefrydev/WebsiteProfiling](https://github.com/codefrydev/WebsiteProfiling)
+
 A **console application** for website crawling, link-graph building, and SEO-style site reports. It helps you profile site structure (status codes, content types, titles, outlinks, domains), collect SEO and performance-related data (meta descriptions, H1s, response time, content length, canonicals), and generate interactive HTML reports with executive summary, SEO health metrics, issues, and recommendations.
 
 ## Install

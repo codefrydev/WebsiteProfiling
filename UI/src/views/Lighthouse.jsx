@@ -122,7 +122,7 @@ export default function Lighthouse() {
   }
 
   return (
-    <PageLayout maxWidth>
+    <PageLayout>
       {/* ── Header ── */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-bright mb-2">Page Speed</h1>

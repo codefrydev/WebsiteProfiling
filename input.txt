@@ -35,7 +35,7 @@ plot_image_output = site_graph.svg
 # --- Lighthouse ---
 lighthouse_url = https://codefrydev.in
 lighthouse_mode = navigation
-lighthouse_strategy = mobile
+lighthouse_strategy = desktop
 lighthouse_categories = performance,accessibility,best-practices,seo
 lighthouse_iterations = 1
 lighthouse_output_dir = .
@@ -43,7 +43,7 @@ lighthouse_output_dir = .
 run_lighthouse = true
 # Run on every 200 OK page; results show in Link Explorer inspector
 run_lighthouse_on_pages = true
-lighthouse_max_pages = 5
+lighthouse_max_pages =20
 
 # --- Keywords (python -m src keywords) ---
 keyword_output_dir = .

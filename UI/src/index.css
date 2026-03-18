@@ -1,6 +1,11 @@
 @import "tailwindcss";
 
 @theme {
+  /* Brand palette (dark UI backgrounds) */
+  --color-brand-900: #0B0F19;
+  --color-brand-800: #111827;
+  --color-brand-700: #1F2937;
+
   /* Soft borders for dark UI: light at low opacity so they blend, not harsh lines */
   --border-color-default: rgba(255, 255, 255, 0.07);
   --border-color-muted: rgba(255, 255, 255, 0.04);
@@ -10,6 +15,14 @@
   --color-muted: rgba(255, 255, 255, 0.04);
   /* Progress bar / track background (soft, not harsh gray) */
   --color-track: rgba(255, 255, 255, 0.06);
+
+  /* Border radius */
+  --radius-card: 0.75rem;
+
+  /* Spacing */
+  --spacing-page-x: 1.5rem;
+  --spacing-page-y: 1.5rem;
+  --spacing-card: 1.25rem;
 }
 
 :root {

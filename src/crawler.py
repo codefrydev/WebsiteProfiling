@@ -523,11 +523,30 @@ def run_crawler(
     if output_db and not df.empty:
         import sys
         print("  Writing crawl results to DB...", flush=True)
-        from .db import create_crawl_run, ensure_db_recreated, get_connection, init_schema, write_crawl
+        from .db import backup_db_if_exists, create_crawl_run, ensure_db_recreated, get_connection, init_schema, read_historical_data, restore_historical_data, write_crawl
+        historical = {}
+        backup_path = None
         if not preserve_crawl_history:
+            historical = read_historical_data(output_db)
+            n_reports = len(historical.get("report_payload", []))
+            if n_reports:
+                print(f"  Preserving {n_reports} historical report(s) from existing DB...", flush=True)
+            backup_path = backup_db_if_exists(output_db)
+            if backup_path:
+                print(f"  Backed up existing DB to {backup_path}", flush=True)
             ensure_db_recreated(output_db)
         conn = get_connection(output_db)
         init_schema(conn)
+        if historical:
+            restore_historical_data(conn, historical)
+            if backup_path:
+                from pathlib import Path as _Path
+                for p in (backup_path, backup_path + "-journal"):
+                    try:
+                        _Path(p).unlink(missing_ok=True)
+                    except OSError:
+                        pass
+                print(f"  Removed temporary backup {backup_path}", flush=True)
         if preserve_crawl_history:
             run_id = create_crawl_run(conn, start_url)
             write_crawl(conn, df, crawl_run_id=run_id)

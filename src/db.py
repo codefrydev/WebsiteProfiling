@@ -3,6 +3,8 @@ SQLite data layer for WebsiteProfiling: single DB for crawl, edges, nodes, light
 """
 import json
 import math
+import os
+import shutil
 import sqlite3
 import time
 from pathlib import Path
@@ -35,6 +37,106 @@ def _sanitize_for_json(obj: Any) -> Any:
     if hasattr(obj, "isoformat"):  # datetime
         return obj.isoformat()
     return obj
+
+
+def backup_db_if_exists(db_path: str, skip_in_ci: bool = True) -> Optional[str]:
+    """Copy db_path to a timestamped backup file and return the backup path, or None.
+
+    Returns None without creating a backup when:
+    - skip_in_ci is True and the process is running in GitHub Actions or a generic CI environment.
+    - The db_path file does not exist.
+    """
+    if skip_in_ci and (
+        os.environ.get("GITHUB_ACTIONS") == "true" or os.environ.get("CI") == "true"
+    ):
+        return None
+    p = Path(db_path)
+    if not p.exists() or not p.is_file():
+        return None
+    suffix = time.strftime("%Y%m%d-%H%M%S")
+    backup = p.parent / f"{p.name}.backup-{suffix}"
+    shutil.copy2(str(p), str(backup))
+    journal = Path(str(p) + "-journal")
+    if journal.exists():
+        try:
+            shutil.copy2(str(journal), str(backup) + "-journal")
+        except OSError:
+            pass
+    return str(backup)
+
+
+def read_historical_data(db_path: str) -> dict[str, list]:
+    """Read rows from historical tables in an existing DB before it is overwritten.
+
+    Returns a dict mapping table name -> list of row dicts.
+    Tables captured: report_payload, lighthouse_summary, lighthouse_runs, lighthouse_page_summaries.
+    crawl_results / edges / nodes are intentionally excluded (they belong to the new crawl).
+    Returns empty lists for all tables when the DB file does not exist.
+    """
+    tables = ["report_payload", "lighthouse_summary", "lighthouse_runs", "lighthouse_page_summaries"]
+    result: dict[str, list] = {t: [] for t in tables}
+    p = Path(db_path)
+    if not p.exists() or not p.is_file():
+        return result
+    try:
+        conn = sqlite3.connect(db_path)
+        conn.row_factory = sqlite3.Row
+        for table in tables:
+            try:
+                cur = conn.execute(f"SELECT * FROM {table}")
+                result[table] = [dict(row) for row in cur.fetchall()]
+            except Exception:
+                pass
+        conn.close()
+    except Exception:
+        pass
+    return result
+
+
+def restore_historical_data(conn: sqlite3.Connection, data: dict[str, list]) -> None:
+    """Insert previously-read historical rows back into a freshly-created DB.
+
+    Uses INSERT OR IGNORE with explicit ids so rows are idempotent and the
+    original row ordering (and thus UI report list ordering) is preserved.
+    Silently skips any row that fails to insert.
+    """
+    for row in data.get("report_payload", []):
+        try:
+            conn.execute(
+                "INSERT OR IGNORE INTO report_payload (id, generated_at, data) VALUES (?, ?, ?)",
+                (row.get("id"), row.get("generated_at"), row.get("data")),
+            )
+        except Exception:
+            pass
+
+    for row in data.get("lighthouse_summary", []):
+        try:
+            conn.execute(
+                "INSERT OR IGNORE INTO lighthouse_summary (id, created_at, data) VALUES (?, ?, ?)",
+                (row.get("id"), row.get("created_at"), row.get("data")),
+            )
+        except Exception:
+            pass
+
+    for row in data.get("lighthouse_runs", []):
+        try:
+            conn.execute(
+                "INSERT OR IGNORE INTO lighthouse_runs (id, created_at, url, strategy, run_index, data) VALUES (?, ?, ?, ?, ?, ?)",
+                (row.get("id"), row.get("created_at"), row.get("url"), row.get("strategy"), row.get("run_index"), row.get("data")),
+            )
+        except Exception:
+            pass
+
+    for row in data.get("lighthouse_page_summaries", []):
+        try:
+            conn.execute(
+                "INSERT OR IGNORE INTO lighthouse_page_summaries (url, created_at, data) VALUES (?, ?, ?)",
+                (row.get("url"), row.get("created_at"), row.get("data")),
+            )
+        except Exception:
+            pass
+
+    conn.commit()
 
 
 def ensure_db_recreated(db_path: str) -> None:

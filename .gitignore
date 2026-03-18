@@ -2,6 +2,8 @@
 
 # WebsiteProfiling generated outputs
 report.db
+report.db.*
+
 report.db-journal
 nodes.json
 

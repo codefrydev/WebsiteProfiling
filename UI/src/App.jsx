@@ -16,6 +16,7 @@ import {
   Cpu,
   Menu,
   X,
+  Github,
 } from 'lucide-react';
 import { ReportProvider } from './context/ReportContext.jsx';
 import { useReport } from './context/useReport';
@@ -191,6 +192,15 @@ function AppContent() {
               <div className="text-slate-500">{lastCrawlText}</div>
             </div>
           </div>
+          <a
+            href="https://github.com/codefrydev/WebsiteProfiling"
+            target="_blank"
+            rel="noreferrer"
+            className="mt-3 flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+          >
+            <Github className="h-3.5 w-3.5 shrink-0" />
+            <span>codefrydev/WebsiteProfiling</span>
+          </a>
         </div>
       </aside>
 
