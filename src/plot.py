@@ -32,13 +32,15 @@ def run_plot(
     When db_path is set, reads crawl/edges from DB and writes edges/nodes to DB.
     Returns (edges_csv path, nodes_csv path).
     """
+    run_id = None
     if db_path:
         print("  Loading crawl and edges from DB...", flush=True)
-        from .db import get_connection, init_schema, read_crawl, read_edges, write_edges, write_nodes
+        from .db import get_connection, get_latest_crawl_run_id, init_schema, read_crawl, read_edges, write_edges, write_nodes
         conn = get_connection(db_path)
         init_schema(conn)
-        df = read_crawl(conn)
-        edges = read_edges(conn)
+        run_id = get_latest_crawl_run_id(conn)
+        df = read_crawl(conn, run_id)
+        edges = read_edges(conn, run_id)
         conn.close()
         print(f"  Loaded {len(df)} URLs, {len(edges)} edges.", flush=True)
         if df.empty and not edges:
@@ -72,14 +74,15 @@ def run_plot(
         edges_df = pd.DataFrame(edges, columns=["from", "to"])
         if db_path:
             print("  Writing edges and nodes to DB...", flush=True)
-            from .db import get_connection, init_schema, write_edges as db_write_edges, write_nodes as db_write_nodes
+            from .db import get_connection, get_latest_crawl_run_id, init_schema, write_edges as db_write_edges, write_nodes as db_write_nodes
             conn = get_connection(db_path)
             init_schema(conn)
-            db_write_edges(conn, edges)
+            rid = run_id if run_id is not None else get_latest_crawl_run_id(conn)
+            db_write_edges(conn, edges, rid)
             nodes = pd.Series(list(edges_df["from"]) + list(edges_df["to"]))
             nodes = nodes.value_counts().reset_index()
             nodes.columns = ["url", "count"]
-            db_write_nodes(conn, nodes)
+            db_write_nodes(conn, nodes, rid)
             conn.close()
         else:
             save_edges(edges, edges_csv)

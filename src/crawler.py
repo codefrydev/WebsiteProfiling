@@ -441,6 +441,7 @@ def run_crawler(
     output_db: Optional[str] = None,
     show_progress: bool = True,
     exclude_urls: Optional[list[str]] = None,
+    preserve_crawl_history: bool = False,
 ) -> pd.DataFrame:
     """Run crawler and optionally save to CSV/JSON or SQLite. Returns DataFrame."""
     import sys
@@ -462,11 +463,16 @@ def run_crawler(
     if output_db and not df.empty:
         import sys
         print("  Writing crawl results to DB...", flush=True)
-        from .db import ensure_db_recreated, get_connection, init_schema, write_crawl
-        ensure_db_recreated(output_db)
+        from .db import create_crawl_run, ensure_db_recreated, get_connection, init_schema, write_crawl
+        if not preserve_crawl_history:
+            ensure_db_recreated(output_db)
         conn = get_connection(output_db)
         init_schema(conn)
-        write_crawl(conn, df)
+        if preserve_crawl_history:
+            run_id = create_crawl_run(conn, start_url)
+            write_crawl(conn, df, crawl_run_id=run_id)
+        else:
+            write_crawl(conn, df)
         conn.close()
         print("  Crawl DB write complete.", flush=True)
     elif output_csv and not df.empty:

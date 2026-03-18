@@ -54,6 +54,9 @@
 
 body {
   margin: 0;
+  /* Report UI is dark; avoid light flash and match Tailwind brand/slate */
+  background: #0B0F19;
+  color: #cbd5e1;
 }
 
 /* Report layout: scrollbar and transitions (match original index.html) */

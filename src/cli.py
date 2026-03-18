@@ -118,6 +118,7 @@ def main() -> None:
         polite_delay = get_float(cfg, "polite_delay", 0.2)
         store_outlinks = get_bool(cfg, "store_outlinks", True)
         exclude_urls = get_list(cfg, "crawl_exclude_urls", sep=",")
+        preserve_crawl_history = get_bool(cfg, "preserve_crawl_history", False)
         crawl_output = path("crawl_output", "crawl_results.csv")
         print("Crawling...")
         run_crawler(
@@ -134,6 +135,7 @@ def main() -> None:
             output_db=db_path,
             show_progress=True,
             exclude_urls=exclude_urls if exclude_urls else None,
+            preserve_crawl_history=preserve_crawl_history,
         )
         print("[Crawl] Done.", flush=True)
         print(f"Crawl results: {db_path or crawl_output}")

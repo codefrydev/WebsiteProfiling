@@ -1,12 +1,14 @@
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip } from 'chart.js';
+import { Bar } from 'react-chartjs-2';
 import { useReport } from '../context/useReport';
+import { PageLayout, PageHeader, Card, Badge } from '../components';
+import { scoreBandColor } from '../utils/chartPalette';
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip);
 
 // Lighthouse score color: 0-49 red, 50-89 orange, 90-100 green
 function scoreColor(score) {
-  if (score == null) return 'rgb(71, 85, 105)'; // slate-500
-  const s = Number(score);
-  if (s >= 90) return 'rgb(34, 197, 94)';   // green-500
-  if (s >= 50) return 'rgb(234, 179, 8)';   // yellow-500
-  return 'rgb(239, 68, 68)';                 // red-500
+  return scoreBandColor(score);
 }
 
 function scoreRingColor(score) {
@@ -44,12 +46,6 @@ function metricTextClass(status) {
   if (status === 'warn') return 'text-yellow-400';
   if (status === 'poor') return 'text-red-400';
   return 'text-slate-400';
-}
-
-function severityClass(s) {
-  if (s === 'High') return 'bg-red-500/20 text-red-400 border border-red-500/30';
-  if (s === 'Medium') return 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30';
-  return 'bg-slate-500/20 text-slate-400 border border-slate-500/30';
 }
 
 const CATEGORIES = [
@@ -97,25 +93,33 @@ export default function Lighthouse() {
 
   if (!hasData) {
     return (
-      <div className="p-6 lg:p-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Lighthouse</h1>
-          <p className="text-slate-400">
-            Core Web Vitals and audit results from Lighthouse.
-          </p>
-        </div>
-        <div className="bg-brand-800 border border-slate-700 rounded-xl p-8 text-center">
+      <PageLayout>
+        <PageHeader
+          title="Lighthouse"
+          subtitle="Core Web Vitals and audit results from Lighthouse."
+        />
+        <Card className="p-8 text-center">
           <p className="text-slate-500">
             No Lighthouse data yet. Run <code className="bg-brand-900 px-2 py-1 rounded text-slate-300">python -m src lighthouse</code> and regenerate the report to see results here.
           </p>
-        </div>
-      </div>
+        </Card>
+      </PageLayout>
     );
   }
 
+  const diagnosticsList = diagnostics.length > 0
+    ? diagnostics
+    : topFailures.map((f) => ({
+        warning: f.helpText || f.id,
+        lighthouse_audit_id: f.id,
+        primary_impact: f.impact || 'UX',
+        severity: 'High',
+        one_line_fix: 'See Lighthouse report for fix.',
+        evidence: f.evidence || [],
+      }));
+
   return (
-    <div className="p-6 lg:p-8 max-w-6xl mx-auto">
-      {/* Header: URL + run info */}
+    <PageLayout maxWidth>
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">Lighthouse report</h1>
         {summary.url && (
@@ -123,8 +127,7 @@ export default function Lighthouse() {
             <a href={summary.url} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline break-all">{summary.url}</a>
           </p>
         )}
-        {/* Analysis settings: Mode, Device, Categories */}
-        <div className="mt-4 p-4 bg-brand-800 border border-slate-700 rounded-xl">
+        <Card padding="tight" className="mt-4">
           <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Analysis settings</h3>
           <div className="flex flex-wrap gap-6 text-sm">
             <div>
@@ -152,10 +155,9 @@ export default function Lighthouse() {
               {runTimestamp && <span className="ml-3">Generated: {new Date(runTimestamp).toLocaleString()}</span>}
             </p>
           )}
-        </div>
+        </Card>
       </div>
 
-      {/* Category score circles - like official Lighthouse */}
       <div className="mb-10">
         <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-4">Categories</h2>
         <div className="flex flex-wrap gap-6 justify-start items-center">
@@ -191,7 +193,6 @@ export default function Lighthouse() {
             );
           })}
         </div>
-        {/* Score legend */}
         <div className="flex flex-wrap gap-6 mt-4 text-xs text-slate-500">
           <span><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-1" />0–49 Poor</span>
           <span><span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-1" />50–89 Needs improvement</span>
@@ -199,13 +200,56 @@ export default function Lighthouse() {
         </div>
       </div>
 
-      {/* Metrics section - like official Lighthouse */}
+      <div className="mb-10">
+        <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Category scores</h2>
+        <p className="text-slate-500 text-sm mb-3">Ranked worst to best (Score 0–100)</p>
+        {(() => {
+          const withScores = CATEGORIES.map(({ id, label }) => ({
+            id,
+            label: categoryLabels[id] || label,
+            score: cs[id] != null ? Number(cs[id]) : null,
+          })).filter((c) => c.score != null);
+          const sorted = [...withScores].sort((a, b) => (a.score ?? 0) - (b.score ?? 0));
+          if (sorted.length === 0) return <Card className="p-4 text-slate-500 text-sm">No category scores</Card>;
+          const labels = sorted.map((c) => c.label);
+          const values = sorted.map((c) => c.score ?? 0);
+          const colors = sorted.map((c) => scoreBandColor(c.score));
+          return (
+            <Card padding="tight" className="print:break-inside-avoid">
+              <div className="h-48" role="img" aria-label={`Category scores: ${labels.map((l, i) => `${l} ${values[i]}`).join(', ')}`}>
+                <Bar
+                  data={{
+                    labels,
+                    datasets: [{ data: values, backgroundColor: colors, label: 'Score' }],
+                  }}
+                  options={{
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                      x: {
+                        min: 0,
+                        max: 100,
+                        grid: { color: 'rgba(71, 85, 105, 0.5)' },
+                        title: { display: true, text: 'Score (0–100)' },
+                      },
+                      y: { grid: { color: 'rgba(71, 85, 105, 0.5)' } },
+                    },
+                  }}
+                />
+              </div>
+            </Card>
+          );
+        })()}
+      </div>
+
       <div className="mb-10">
         <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Metrics</h2>
         <p className="text-slate-500 text-sm mb-4">
           Values are estimated and may vary. The performance score is calculated from these metrics. Medians from {iterations || 1} run(s).
         </p>
-        <div className="bg-brand-800 border border-slate-700 rounded-xl overflow-hidden">
+        <Card overflowHidden padding="none">
           <div className="divide-y divide-slate-700">
             {METRICS.map(({ key, label }) => {
               const value = mm[key];
@@ -219,58 +263,39 @@ export default function Lighthouse() {
               );
             })}
           </div>
-        </div>
+        </Card>
       </div>
 
-      {/* Human summary */}
       {humanSummary && (
-        <div className="mb-10 bg-brand-800 border border-slate-700 rounded-xl p-5">
-          <h2 className="text-slate-200 text-sm font-bold uppercase tracking-wider mb-3">Summary</h2>
-          <pre className="text-slate-400 text-sm whitespace-pre-wrap font-sans">{humanSummary}</pre>
+        <div className="mb-10">
+          <Card>
+            <h2 className="text-slate-200 text-sm font-bold uppercase tracking-wider mb-3">Summary</h2>
+            <pre className="text-slate-400 text-sm whitespace-pre-wrap font-sans">{humanSummary}</pre>
+          </Card>
         </div>
       )}
 
-      {/* Opportunities / Diagnostics - like Lighthouse's actionable section */}
       <div className="mb-8">
         <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">Diagnostics &amp; fixes</h2>
         <p className="text-slate-500 text-sm mb-4">
           Issues and recommendations with one-line fixes and evidence. Address these to improve scores.
         </p>
-        {(diagnostics.length > 0 ? diagnostics : topFailures.map((f) => ({
-          warning: f.helpText || f.id,
-          lighthouse_audit_id: f.id,
-          primary_impact: f.impact || 'UX',
-          severity: 'High',
-          one_line_fix: 'See Lighthouse report for fix.',
-          evidence: f.evidence || [],
-        }))).length === 0 ? (
-          <div className="bg-brand-800 border border-slate-700 rounded-xl p-6 text-center text-slate-500 text-sm">
+        {diagnosticsList.length === 0 ? (
+          <Card className="p-6 text-center text-slate-500 text-sm">
             No failing audits — all checks passed.
-          </div>
+          </Card>
         ) : (
           <div className="space-y-4">
-            {(diagnostics.length > 0 ? diagnostics : topFailures.map((f) => ({
-              warning: f.helpText || f.id,
-              lighthouse_audit_id: f.id,
-              primary_impact: f.impact || 'UX',
-              severity: 'High',
-              one_line_fix: 'See Lighthouse report for fix.',
-              evidence: f.evidence || [],
-            }))).slice(0, 20).map((d, i) => (
-              <div
-                key={i}
-                className="bg-brand-800 border border-slate-700 rounded-xl p-5 flex flex-col gap-3"
-              >
+            {diagnosticsList.slice(0, 20).map((d, i) => (
+              <Card key={i} className="flex flex-col gap-3">
                 <div className="flex items-center gap-3 flex-wrap">
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${severityClass(d.severity)}`}>
-                    {d.severity || 'Medium'}
-                  </span>
+                  <Badge value={d.severity} label={d.severity || 'Medium'} />
                   <span className="text-xs font-semibold text-blue-400">{d.lighthouse_audit_id || d.id}</span>
                   <span className="text-xs text-slate-500">{d.primary_impact || d.impact}</span>
                 </div>
                 <p className="text-slate-200 text-sm">{d.warning || d.helpText || '—'}</p>
                 <div className="bg-brand-900 rounded p-3 border border-slate-800">
-                  <div className="text-[10px] text-blue-400 font-bold uppercase mb-1">How to fix</div>
+                  <div className="text-xs text-blue-400 font-bold uppercase mb-1">How to fix</div>
                   <p className="text-slate-300 text-sm">{d.one_line_fix || '—'}</p>
                   {d.detailed_fix && (
                     <p className="text-slate-500 text-xs mt-2">{d.detailed_fix}</p>
@@ -289,11 +314,11 @@ export default function Lighthouse() {
                 {d.estimated_impact && (
                   <p className="text-slate-500 text-xs">Estimated impact: {d.estimated_impact}</p>
                 )}
-              </div>
+              </Card>
             ))}
           </div>
         )}
       </div>
-    </div>
+    </PageLayout>
   );
 }

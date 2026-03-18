@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { ReportProvider } from './context/ReportContext.jsx';
 import { useReport } from './context/useReport';
+import { Button, Badge, ReportSelector } from './components';
 import Overview from './views/Overview';
 import Issues from './views/Issues';
 import Links from './views/Links';
@@ -130,10 +131,10 @@ function AppContent() {
                     <Icon className="h-4 w-4 shrink-0" />
                     <span className="flex-1 text-left">{v.label}</span>
                     {v.id === 'issues' && issueCount > 0 && (
-                      <span className="bg-red-500/20 text-red-400 py-0.5 px-2 rounded text-[10px]">{issueCount}</span>
+                      <Badge variant="high" label={String(issueCount)} className="shrink-0" />
                     )}
                     {v.id === 'security' && securityCount > 0 && (
-                      <span className="bg-amber-500/20 text-amber-400 py-0.5 px-2 rounded text-[10px]">{securityCount}</span>
+                      <Badge variant="medium" label={String(securityCount)} className="shrink-0" />
                     )}
                   </button>
                 );
@@ -167,14 +168,11 @@ function AppContent() {
             />
           </div>
           <div className="flex items-center gap-4 ml-4">
-            <button
-              type="button"
-              onClick={handleExportData}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors"
-            >
+            <ReportSelector />
+            <Button variant="primary" onClick={handleExportData}>
               <Download className="h-4 w-4" />
               Export Data
-            </button>
+            </Button>
           </div>
         </header>
 

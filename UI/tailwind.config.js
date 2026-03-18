@@ -16,6 +16,14 @@ export default {
           700: '#1F2937',
         },
       },
+      borderRadius: {
+        card: '0.75rem',
+      },
+      spacing: {
+        'page-x': '1.5rem',
+        'page-y': '1.5rem',
+        'card': '1.25rem',
+      },
     },
   },
   plugins: [],

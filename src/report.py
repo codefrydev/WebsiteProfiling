@@ -308,9 +308,12 @@ def run_simple_report(
 ) -> str:
     """Load crawl data, build edges if needed, write report payload to SQLite. Returns db_path. Requires db_path (React app in UI/ loads report.db)."""
     conn = None
+    run_id = None
     if db_path:
         from .db import (
             get_connection,
+            get_crawl_run_info,
+            get_latest_crawl_run_id,
             init_schema,
             read_crawl,
             read_edges,
@@ -321,8 +324,9 @@ def run_simple_report(
         print("  Loading crawl data from DB...", flush=True)
         conn = get_connection(db_path)
         init_schema(conn)
-        df = read_crawl(conn)
-        edges = read_edges(conn)
+        run_id = get_latest_crawl_run_id(conn)
+        df = read_crawl(conn, run_id)
+        edges = read_edges(conn, run_id)
         lighthouse_summary = read_lighthouse_summary(conn)
         print(f"  Loaded {len(df)} URLs, {len(edges)} edges.", flush=True)
         if df.empty and not edges:
@@ -356,7 +360,7 @@ def run_simple_report(
         )
         print(f"  Edges: {len(edges)}.", flush=True)
         if edges and db_path and conn:
-            write_edges(conn, edges)
+            write_edges(conn, edges, run_id)
         elif edges and not db_path:
             save_edges(edges, edges_csv)
 
@@ -612,6 +616,11 @@ def run_simple_report(
         "content_urls": content_urls,
         "security_findings": security_findings,
     }
+    if db_path and conn and run_id is not None:
+        from .db import get_crawl_run_info as _get_crawl_run_info
+        info = _get_crawl_run_info(conn, run_id)
+        report_data["crawl_run_id"] = run_id
+        report_data["crawl_run_created_at"] = info["created_at"] if info else None
     if lighthouse_summary:
         report_data["lighthouse_summary"] = lighthouse_summary
         report_data["lighthouse_diagnostics"] = lighthouse_summary.get("diagnostics") or []
