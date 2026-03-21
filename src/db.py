@@ -604,3 +604,1073 @@ def read_report_payload(conn: sqlite3.Connection) -> Optional[dict[str, Any]]:
         return json.loads(row[0])
     except Exception:
         return None
+
+
+# ---------------------------------------------------------------------------
+# Extended schema for SEO platform modules
+# ---------------------------------------------------------------------------
+
+def init_extended_schema(conn: sqlite3.Connection) -> None:
+    """Create all extended SEO platform tables. Call after init_schema()."""
+    conn.executescript("""
+        CREATE TABLE IF NOT EXISTS projects (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            domain TEXT,
+            settings TEXT DEFAULT '{}',
+            created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS tracked_keywords (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            keyword TEXT NOT NULL,
+            location TEXT DEFAULT 'United States',
+            device TEXT DEFAULT 'desktop',
+            language TEXT DEFAULT 'en',
+            tags TEXT DEFAULT '[]',
+            is_active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT (datetime('now')),
+            UNIQUE(project_id, keyword, location, device)
+        );
+
+        CREATE TABLE IF NOT EXISTS rank_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tracked_keyword_id INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            position INTEGER,
+            previous_position INTEGER,
+            url TEXT,
+            serp_features TEXT DEFAULT '[]',
+            visibility_score REAL DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now')),
+            UNIQUE(tracked_keyword_id, date)
+        );
+
+        CREATE TABLE IF NOT EXISTS serp_snapshots (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            keyword TEXT NOT NULL,
+            location TEXT DEFAULT 'United States',
+            device TEXT DEFAULT 'desktop',
+            date TEXT NOT NULL,
+            results TEXT DEFAULT '[]',
+            features TEXT DEFAULT '[]',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS keywords_db (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            keyword TEXT NOT NULL UNIQUE,
+            volume INTEGER DEFAULT 0,
+            difficulty INTEGER DEFAULT 0,
+            cpc REAL DEFAULT 0,
+            trend_data TEXT DEFAULT '[]',
+            clicks_per_search REAL DEFAULT 1,
+            parent_topic TEXT DEFAULT '',
+            search_intent TEXT DEFAULT 'informational',
+            updated_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS keyword_clusters (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            name TEXT,
+            parent_keyword TEXT,
+            keywords TEXT DEFAULT '[]',
+            volume_total INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS domain_profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            domain TEXT NOT NULL,
+            domain_rating INTEGER DEFAULT 0,
+            organic_traffic_est INTEGER DEFAULT 0,
+            organic_keywords_count INTEGER DEFAULT 0,
+            referring_domains_count INTEGER DEFAULT 0,
+            backlinks_count INTEGER DEFAULT 0,
+            traffic_value_est REAL DEFAULT 0,
+            data TEXT DEFAULT '{}',
+            fetched_at TEXT DEFAULT (datetime('now')),
+            UNIQUE(domain)
+        );
+
+        CREATE TABLE IF NOT EXISTS backlinks (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            domain TEXT NOT NULL,
+            source_url TEXT NOT NULL,
+            target_url TEXT NOT NULL,
+            anchor_text TEXT DEFAULT '',
+            link_type TEXT DEFAULT 'text',
+            is_dofollow INTEGER DEFAULT 1,
+            domain_rating INTEGER DEFAULT 0,
+            first_seen TEXT,
+            last_seen TEXT,
+            is_broken INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS referring_domains (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            domain TEXT NOT NULL,
+            target_domain TEXT NOT NULL,
+            backlinks_count INTEGER DEFAULT 0,
+            domain_rating INTEGER DEFAULT 0,
+            first_seen TEXT,
+            last_seen TEXT,
+            created_at TEXT DEFAULT (datetime('now')),
+            UNIQUE(domain, target_domain)
+        );
+
+        CREATE TABLE IF NOT EXISTS organic_keywords (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            domain TEXT NOT NULL,
+            keyword TEXT NOT NULL,
+            position INTEGER DEFAULT 0,
+            volume INTEGER DEFAULT 0,
+            traffic_est INTEGER DEFAULT 0,
+            url TEXT,
+            serp_features TEXT DEFAULT '[]',
+            difficulty INTEGER DEFAULT 0,
+            search_intent TEXT DEFAULT 'informational',
+            fetched_at TEXT DEFAULT (datetime('now')),
+            UNIQUE(domain, keyword)
+        );
+
+        CREATE TABLE IF NOT EXISTS paid_keywords (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            domain TEXT NOT NULL,
+            keyword TEXT NOT NULL,
+            position INTEGER DEFAULT 0,
+            cpc REAL DEFAULT 0,
+            ad_copy TEXT DEFAULT '',
+            landing_page TEXT DEFAULT '',
+            fetched_at TEXT DEFAULT (datetime('now')),
+            UNIQUE(domain, keyword)
+        );
+
+        CREATE TABLE IF NOT EXISTS gsc_properties (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            site_url TEXT NOT NULL UNIQUE,
+            access_token TEXT,
+            refresh_token TEXT,
+            last_synced_at TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS gsc_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            property_id INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            query TEXT NOT NULL,
+            page TEXT,
+            clicks INTEGER DEFAULT 0,
+            impressions INTEGER DEFAULT 0,
+            ctr REAL DEFAULT 0,
+            position REAL DEFAULT 0,
+            device TEXT DEFAULT 'web',
+            country TEXT DEFAULT '',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS analytics_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            site_id TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            page_url TEXT,
+            referrer TEXT,
+            user_agent TEXT,
+            event_type TEXT DEFAULT 'pageview',
+            session_id TEXT,
+            country TEXT,
+            device TEXT,
+            browser TEXT,
+            is_bot INTEGER DEFAULT 0,
+            bot_name TEXT,
+            custom_data TEXT DEFAULT '{}',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS analytics_funnels (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            name TEXT NOT NULL,
+            steps TEXT DEFAULT '[]',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS content_index (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            url TEXT NOT NULL UNIQUE,
+            title TEXT,
+            domain TEXT,
+            published_at TEXT,
+            word_count INTEGER DEFAULT 0,
+            traffic_est INTEGER DEFAULT 0,
+            referring_domains_count INTEGER DEFAULT 0,
+            social_shares INTEGER DEFAULT 0,
+            language TEXT DEFAULT 'en',
+            data TEXT DEFAULT '{}',
+            indexed_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS content_scores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            url TEXT NOT NULL,
+            keyword TEXT NOT NULL,
+            score INTEGER DEFAULT 0,
+            details TEXT DEFAULT '{}',
+            recommendations TEXT DEFAULT '[]',
+            created_at TEXT DEFAULT (datetime('now')),
+            UNIQUE(url, keyword)
+        );
+
+        CREATE TABLE IF NOT EXISTS content_inventory (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            url TEXT NOT NULL,
+            title TEXT,
+            word_count INTEGER DEFAULT 0,
+            published_at TEXT,
+            last_updated TEXT,
+            traffic_trend TEXT DEFAULT '[]',
+            status TEXT DEFAULT 'published',
+            author TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS brand_mentions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            brand_name TEXT NOT NULL,
+            source_url TEXT NOT NULL,
+            date TEXT,
+            context_text TEXT,
+            sentiment TEXT DEFAULT 'neutral',
+            mention_type TEXT DEFAULT 'web',
+            is_linked INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS ai_citations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            brand_name TEXT NOT NULL,
+            llm_platform TEXT NOT NULL,
+            prompt TEXT,
+            date TEXT,
+            brand_mentioned INTEGER DEFAULT 0,
+            url_cited TEXT,
+            position INTEGER DEFAULT 0,
+            sentiment TEXT DEFAULT 'neutral',
+            response_text TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS domain_traffic (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            domain TEXT NOT NULL,
+            date TEXT NOT NULL,
+            visits_est INTEGER DEFAULT 0,
+            unique_visitors_est INTEGER DEFAULT 0,
+            pages_per_visit REAL DEFAULT 0,
+            bounce_rate REAL DEFAULT 0,
+            avg_duration INTEGER DEFAULT 0,
+            traffic_sources TEXT DEFAULT '{}',
+            geo_data TEXT DEFAULT '{}',
+            created_at TEXT DEFAULT (datetime('now')),
+            UNIQUE(domain, date)
+        );
+
+        CREATE TABLE IF NOT EXISTS market_segments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            name TEXT NOT NULL,
+            domains TEXT DEFAULT '[]',
+            metrics TEXT DEFAULT '{}',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS social_accounts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            platform TEXT NOT NULL,
+            access_token TEXT,
+            refresh_token TEXT,
+            profile_data TEXT DEFAULT '{}',
+            is_active INTEGER DEFAULT 1,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS social_posts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            account_ids TEXT DEFAULT '[]',
+            content TEXT,
+            media_urls TEXT DEFAULT '[]',
+            scheduled_at TEXT,
+            published_at TEXT,
+            status TEXT DEFAULT 'draft',
+            metrics TEXT DEFAULT '{}',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS social_metrics (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            post_id INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            likes INTEGER DEFAULT 0,
+            shares INTEGER DEFAULT 0,
+            comments INTEGER DEFAULT 0,
+            reach INTEGER DEFAULT 0,
+            impressions INTEGER DEFAULT 0,
+            clicks INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS ppc_keywords (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            keyword TEXT NOT NULL,
+            cpc REAL DEFAULT 0,
+            competition REAL DEFAULT 0,
+            volume INTEGER DEFAULT 0,
+            trend TEXT DEFAULT '[]',
+            ad_groups TEXT DEFAULT '[]',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS ad_intelligence (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            domain TEXT NOT NULL,
+            keyword TEXT NOT NULL,
+            ad_copy TEXT,
+            landing_page TEXT,
+            position INTEGER DEFAULT 0,
+            ad_type TEXT DEFAULT 'search',
+            first_seen TEXT,
+            last_seen TEXT,
+            data TEXT DEFAULT '{}',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS gbp_profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            google_place_id TEXT,
+            name TEXT NOT NULL,
+            address TEXT,
+            city TEXT,
+            state TEXT,
+            country TEXT,
+            postal_code TEXT,
+            phone TEXT,
+            website TEXT,
+            category TEXT,
+            categories TEXT DEFAULT '[]',
+            hours TEXT DEFAULT '{}',
+            metrics TEXT DEFAULT '{}',
+            completeness_score INTEGER DEFAULT 0,
+            last_synced_at TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS local_rank_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            keyword TEXT NOT NULL,
+            location TEXT,
+            lat REAL,
+            lng REAL,
+            date TEXT NOT NULL,
+            local_rank INTEGER,
+            organic_rank INTEGER,
+            competitor_data TEXT DEFAULT '[]',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            gbp_profile_id INTEGER,
+            reviewer_name TEXT,
+            rating INTEGER DEFAULT 0,
+            text TEXT,
+            published_at TEXT,
+            response TEXT,
+            response_at TEXT,
+            sentiment TEXT DEFAULT 'neutral',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS citations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            directory TEXT NOT NULL,
+            url TEXT,
+            nap_data TEXT DEFAULT '{}',
+            status TEXT DEFAULT 'found',
+            issues TEXT DEFAULT '[]',
+            last_checked_at TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS portfolios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            urls TEXT DEFAULT '[]',
+            settings TEXT DEFAULT '{}',
+            health_score INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS report_templates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            widgets TEXT DEFAULT '[]',
+            style TEXT DEFAULT '{}',
+            is_builtin INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS generated_reports (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            template_id INTEGER,
+            project_id INTEGER,
+            title TEXT,
+            data TEXT DEFAULT '{}',
+            file_path TEXT,
+            generated_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS alerts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            project_id INTEGER,
+            name TEXT NOT NULL,
+            type TEXT NOT NULL,
+            config TEXT DEFAULT '{}',
+            channels TEXT DEFAULT '{}',
+            is_active INTEGER DEFAULT 1,
+            last_triggered_at TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS alert_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            alert_id INTEGER NOT NULL,
+            triggered_at TEXT NOT NULL,
+            data TEXT DEFAULT '{}',
+            channels_sent TEXT DEFAULT '[]',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS app_settings (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            key TEXT NOT NULL UNIQUE,
+            value TEXT,
+            updated_at TEXT DEFAULT (datetime('now'))
+        );
+
+        CREATE TABLE IF NOT EXISTS audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            action TEXT NOT NULL,
+            resource_type TEXT,
+            resource_id TEXT,
+            details TEXT DEFAULT '{}',
+            created_at TEXT DEFAULT (datetime('now'))
+        );
+    """)
+    conn.commit()
+
+
+# ---------------------------------------------------------------------------
+# Extended helper functions
+# ---------------------------------------------------------------------------
+
+def _jdumps(obj: Any) -> str:
+    """JSON-serialize with sanitization."""
+    return json.dumps(_sanitize_for_json(obj), default=str)
+
+
+def write_tracked_keywords(conn: sqlite3.Connection, keywords: list[dict]) -> None:
+    """Insert or ignore tracked keywords into tracked_keywords table."""
+    init_extended_schema(conn)
+    for kw in keywords:
+        try:
+            conn.execute(
+                """INSERT OR IGNORE INTO tracked_keywords
+                   (project_id, keyword, location, device, language, tags)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    kw.get("project_id"),
+                    kw.get("keyword", ""),
+                    kw.get("location", "United States"),
+                    kw.get("device", "desktop"),
+                    kw.get("language", "en"),
+                    _jdumps(kw.get("tags", [])),
+                ),
+            )
+        except Exception:
+            pass
+    conn.commit()
+
+
+def read_tracked_keywords(conn: sqlite3.Connection, project_id: Optional[int] = None) -> list:
+    """Return list of active tracked keywords, optionally filtered by project_id."""
+    init_extended_schema(conn)
+    try:
+        if project_id is not None:
+            cur = conn.execute(
+                "SELECT * FROM tracked_keywords WHERE is_active=1 AND project_id=?",
+                (project_id,),
+            )
+        else:
+            cur = conn.execute("SELECT * FROM tracked_keywords WHERE is_active=1")
+        return [dict(r) for r in cur.fetchall()]
+    except Exception:
+        return []
+
+
+def write_rank_history(conn: sqlite3.Connection, entries: list[dict]) -> None:
+    """Insert or replace rank history entries."""
+    init_extended_schema(conn)
+    for e in entries:
+        try:
+            conn.execute(
+                """INSERT OR REPLACE INTO rank_history
+                   (tracked_keyword_id, date, position, previous_position, url, serp_features, visibility_score)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    e.get("tracked_keyword_id"),
+                    e.get("date"),
+                    e.get("position"),
+                    e.get("previous_position"),
+                    e.get("url", ""),
+                    _jdumps(e.get("serp_features", [])),
+                    e.get("visibility_score", 0),
+                ),
+            )
+        except Exception:
+            pass
+    conn.commit()
+
+
+def read_rank_history(
+    conn: sqlite3.Connection, keyword_id: Optional[int] = None, days: int = 30
+) -> list:
+    """Return rank history for a keyword (or all keywords) over the last N days."""
+    init_extended_schema(conn)
+    try:
+        if keyword_id is not None:
+            cur = conn.execute(
+                """SELECT * FROM rank_history
+                   WHERE tracked_keyword_id=?
+                     AND date >= date('now', ?)
+                   ORDER BY date DESC""",
+                (keyword_id, f"-{days} days"),
+            )
+        else:
+            cur = conn.execute(
+                """SELECT * FROM rank_history
+                   WHERE date >= date('now', ?)
+                   ORDER BY date DESC""",
+                (f"-{days} days",),
+            )
+        return [dict(r) for r in cur.fetchall()]
+    except Exception:
+        return []
+
+
+def write_domain_profile(conn: sqlite3.Connection, data: dict) -> None:
+    """Insert or replace a domain profile record."""
+    init_extended_schema(conn)
+    try:
+        conn.execute(
+            """INSERT OR REPLACE INTO domain_profiles
+               (domain, domain_rating, organic_traffic_est, organic_keywords_count,
+                referring_domains_count, backlinks_count, traffic_value_est, data, fetched_at)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))""",
+            (
+                data.get("domain", ""),
+                data.get("domain_rating", 0),
+                data.get("organic_traffic_est", 0),
+                data.get("organic_keywords_count", 0),
+                data.get("referring_domains_count", 0),
+                data.get("backlinks_count", 0),
+                data.get("traffic_value_est", 0),
+                _jdumps(data.get("data", {})),
+            ),
+        )
+        conn.commit()
+    except Exception:
+        pass
+
+
+def read_domain_profile(conn: sqlite3.Connection, domain: str) -> dict:
+    """Return domain profile dict for given domain, or empty dict."""
+    init_extended_schema(conn)
+    try:
+        cur = conn.execute("SELECT * FROM domain_profiles WHERE domain=?", (domain,))
+        row = cur.fetchone()
+        if row:
+            d = dict(row)
+            try:
+                d["data"] = json.loads(d.get("data") or "{}")
+            except Exception:
+                pass
+            return d
+    except Exception:
+        pass
+    return {}
+
+
+def write_backlinks(conn: sqlite3.Connection, domain: str, backlinks: list[dict]) -> None:
+    """Insert backlink records for a domain."""
+    init_extended_schema(conn)
+    for bl in backlinks:
+        try:
+            conn.execute(
+                """INSERT OR IGNORE INTO backlinks
+                   (domain, source_url, target_url, anchor_text, link_type,
+                    is_dofollow, domain_rating, first_seen, last_seen, is_broken)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    domain,
+                    bl.get("source_url", ""),
+                    bl.get("target_url", ""),
+                    bl.get("anchor_text", ""),
+                    bl.get("link_type", "text"),
+                    int(bl.get("is_dofollow", 1)),
+                    bl.get("domain_rating", 0),
+                    bl.get("first_seen"),
+                    bl.get("last_seen"),
+                    int(bl.get("is_broken", 0)),
+                ),
+            )
+        except Exception:
+            pass
+    conn.commit()
+
+
+def read_backlinks(conn: sqlite3.Connection, domain: str) -> list:
+    """Return all backlinks for a domain."""
+    init_extended_schema(conn)
+    try:
+        cur = conn.execute("SELECT * FROM backlinks WHERE domain=?", (domain,))
+        return [dict(r) for r in cur.fetchall()]
+    except Exception:
+        return []
+
+
+def write_organic_keywords(conn: sqlite3.Connection, domain: str, keywords: list[dict]) -> None:
+    """Insert or replace organic keyword records for a domain."""
+    init_extended_schema(conn)
+    for kw in keywords:
+        try:
+            conn.execute(
+                """INSERT OR REPLACE INTO organic_keywords
+                   (domain, keyword, position, volume, traffic_est, url,
+                    serp_features, difficulty, search_intent, fetched_at)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))""",
+                (
+                    domain,
+                    kw.get("keyword", ""),
+                    kw.get("position", 0),
+                    kw.get("volume", 0),
+                    kw.get("traffic_est", 0),
+                    kw.get("url", ""),
+                    _jdumps(kw.get("serp_features", [])),
+                    kw.get("difficulty", 0),
+                    kw.get("search_intent", "informational"),
+                ),
+            )
+        except Exception:
+            pass
+    conn.commit()
+
+
+def read_organic_keywords(conn: sqlite3.Connection, domain: str) -> list:
+    """Return organic keywords for a domain."""
+    init_extended_schema(conn)
+    try:
+        cur = conn.execute(
+            "SELECT * FROM organic_keywords WHERE domain=? ORDER BY position ASC",
+            (domain,),
+        )
+        return [dict(r) for r in cur.fetchall()]
+    except Exception:
+        return []
+
+
+def write_gsc_data(conn: sqlite3.Connection, property_id: int, rows: list[dict]) -> None:
+    """Insert GSC performance rows (ignore duplicates)."""
+    init_extended_schema(conn)
+    for row in rows:
+        try:
+            conn.execute(
+                """INSERT OR IGNORE INTO gsc_data
+                   (property_id, date, query, page, clicks, impressions, ctr, position, device, country)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    property_id,
+                    row.get("date", ""),
+                    row.get("query", ""),
+                    row.get("page", ""),
+                    row.get("clicks", 0),
+                    row.get("impressions", 0),
+                    row.get("ctr", 0),
+                    row.get("position", 0),
+                    row.get("device", "web"),
+                    row.get("country", ""),
+                ),
+            )
+        except Exception:
+            pass
+    conn.commit()
+
+
+def read_gsc_data(conn: sqlite3.Connection, property_id: int, days: int = 90) -> list:
+    """Return GSC data for a property over the last N days."""
+    init_extended_schema(conn)
+    try:
+        cur = conn.execute(
+            """SELECT * FROM gsc_data
+               WHERE property_id=?
+                 AND date >= date('now', ?)
+               ORDER BY date DESC""",
+            (property_id, f"-{days} days"),
+        )
+        return [dict(r) for r in cur.fetchall()]
+    except Exception:
+        return []
+
+
+def write_analytics_event(conn: sqlite3.Connection, event: dict) -> None:
+    """Insert a single analytics event."""
+    init_extended_schema(conn)
+    try:
+        conn.execute(
+            """INSERT INTO analytics_events
+               (site_id, timestamp, page_url, referrer, user_agent, event_type,
+                session_id, country, device, browser, is_bot, bot_name, custom_data)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            (
+                event.get("site_id", ""),
+                event.get("timestamp", time.strftime("%Y-%m-%d %H:%M:%S")),
+                event.get("page_url", ""),
+                event.get("referrer", ""),
+                event.get("user_agent", ""),
+                event.get("event_type", "pageview"),
+                event.get("session_id", ""),
+                event.get("country", ""),
+                event.get("device", ""),
+                event.get("browser", ""),
+                int(event.get("is_bot", 0)),
+                event.get("bot_name", ""),
+                _jdumps(event.get("custom_data", {})),
+            ),
+        )
+        conn.commit()
+    except Exception:
+        pass
+
+
+def read_analytics_summary(conn: sqlite3.Connection, site_id: str, days: int = 30) -> dict:
+    """Return aggregate analytics summary for a site over the last N days."""
+    init_extended_schema(conn)
+    try:
+        cur = conn.execute(
+            """SELECT
+                COUNT(*) as total_events,
+                SUM(CASE WHEN is_bot=0 THEN 1 ELSE 0 END) as human_events,
+                SUM(CASE WHEN is_bot=1 THEN 1 ELSE 0 END) as bot_events,
+                COUNT(DISTINCT session_id) as sessions,
+                COUNT(DISTINCT page_url) as unique_pages
+               FROM analytics_events
+               WHERE site_id=?
+                 AND timestamp >= datetime('now', ?)
+            """,
+            (site_id, f"-{days} days"),
+        )
+        row = cur.fetchone()
+        return dict(row) if row else {}
+    except Exception:
+        return {}
+
+
+def write_brand_mentions(conn: sqlite3.Connection, mentions: list[dict]) -> None:
+    """Insert brand mention records."""
+    init_extended_schema(conn)
+    for m in mentions:
+        try:
+            conn.execute(
+                """INSERT OR IGNORE INTO brand_mentions
+                   (project_id, brand_name, source_url, date, context_text,
+                    sentiment, mention_type, is_linked)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    m.get("project_id"),
+                    m.get("brand_name", ""),
+                    m.get("source_url", ""),
+                    m.get("date"),
+                    m.get("context_text", ""),
+                    m.get("sentiment", "neutral"),
+                    m.get("mention_type", "web"),
+                    int(m.get("is_linked", 0)),
+                ),
+            )
+        except Exception:
+            pass
+    conn.commit()
+
+
+def read_brand_mentions(conn: sqlite3.Connection, project_id: Optional[int] = None) -> list:
+    """Return brand mentions, optionally filtered by project_id."""
+    init_extended_schema(conn)
+    try:
+        if project_id is not None:
+            cur = conn.execute(
+                "SELECT * FROM brand_mentions WHERE project_id=? ORDER BY created_at DESC",
+                (project_id,),
+            )
+        else:
+            cur = conn.execute("SELECT * FROM brand_mentions ORDER BY created_at DESC")
+        return [dict(r) for r in cur.fetchall()]
+    except Exception:
+        return []
+
+
+def write_ai_citations(conn: sqlite3.Connection, citations: list[dict]) -> None:
+    """Insert AI citation records."""
+    init_extended_schema(conn)
+    for c in citations:
+        try:
+            conn.execute(
+                """INSERT INTO ai_citations
+                   (project_id, brand_name, llm_platform, prompt, date,
+                    brand_mentioned, url_cited, position, sentiment, response_text)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    c.get("project_id"),
+                    c.get("brand_name", ""),
+                    c.get("llm_platform", ""),
+                    c.get("prompt", ""),
+                    c.get("date"),
+                    int(c.get("brand_mentioned", 0)),
+                    c.get("url_cited", ""),
+                    c.get("position", 0),
+                    c.get("sentiment", "neutral"),
+                    c.get("response_text", ""),
+                ),
+            )
+        except Exception:
+            pass
+    conn.commit()
+
+
+def read_ai_citations(conn: sqlite3.Connection, project_id: Optional[int] = None) -> list:
+    """Return AI citation records, optionally filtered by project_id."""
+    init_extended_schema(conn)
+    try:
+        if project_id is not None:
+            cur = conn.execute(
+                "SELECT * FROM ai_citations WHERE project_id=? ORDER BY created_at DESC",
+                (project_id,),
+            )
+        else:
+            cur = conn.execute("SELECT * FROM ai_citations ORDER BY created_at DESC")
+        return [dict(r) for r in cur.fetchall()]
+    except Exception:
+        return []
+
+
+def write_portfolio(conn: sqlite3.Connection, portfolio: dict) -> int:
+    """Insert a portfolio record and return its id."""
+    init_extended_schema(conn)
+    try:
+        conn.execute(
+            """INSERT INTO portfolios (name, description, urls, settings, health_score)
+               VALUES (?, ?, ?, ?, ?)""",
+            (
+                portfolio.get("name", ""),
+                portfolio.get("description", ""),
+                _jdumps(portfolio.get("urls", [])),
+                _jdumps(portfolio.get("settings", {})),
+                portfolio.get("health_score", 0),
+            ),
+        )
+        conn.commit()
+        cur = conn.execute("SELECT last_insert_rowid()")
+        return int(cur.fetchone()[0])
+    except Exception:
+        return -1
+
+
+def read_portfolios(conn: sqlite3.Connection) -> list:
+    """Return all portfolios."""
+    init_extended_schema(conn)
+    try:
+        cur = conn.execute("SELECT * FROM portfolios ORDER BY created_at DESC")
+        rows = []
+        for r in cur.fetchall():
+            d = dict(r)
+            for field in ("urls", "settings"):
+                try:
+                    d[field] = json.loads(d.get(field) or "[]")
+                except Exception:
+                    pass
+            rows.append(d)
+        return rows
+    except Exception:
+        return []
+
+
+def write_alert(conn: sqlite3.Connection, alert: dict) -> int:
+    """Insert an alert record and return its id."""
+    init_extended_schema(conn)
+    try:
+        conn.execute(
+            """INSERT INTO alerts (project_id, name, type, config, channels, is_active)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (
+                alert.get("project_id"),
+                alert.get("name", ""),
+                alert.get("type", ""),
+                _jdumps(alert.get("config", {})),
+                _jdumps(alert.get("channels", {})),
+                int(alert.get("is_active", 1)),
+            ),
+        )
+        conn.commit()
+        cur = conn.execute("SELECT last_insert_rowid()")
+        return int(cur.fetchone()[0])
+    except Exception:
+        return -1
+
+
+def read_alerts(conn: sqlite3.Connection, project_id: Optional[int] = None) -> list:
+    """Return alerts, optionally filtered by project_id."""
+    init_extended_schema(conn)
+    try:
+        if project_id is not None:
+            cur = conn.execute(
+                "SELECT * FROM alerts WHERE is_active=1 AND project_id=?",
+                (project_id,),
+            )
+        else:
+            cur = conn.execute("SELECT * FROM alerts WHERE is_active=1")
+        rows = []
+        for r in cur.fetchall():
+            d = dict(r)
+            for field in ("config", "channels"):
+                try:
+                    d[field] = json.loads(d.get(field) or "{}")
+                except Exception:
+                    pass
+            rows.append(d)
+        return rows
+    except Exception:
+        return []
+
+
+def write_alert_history(conn: sqlite3.Connection, alert_id: int, data: dict) -> None:
+    """Insert an alert history record."""
+    init_extended_schema(conn)
+    try:
+        conn.execute(
+            """INSERT INTO alert_history (alert_id, triggered_at, data, channels_sent)
+               VALUES (?, datetime('now'), ?, ?)""",
+            (alert_id, _jdumps(data), _jdumps(data.get("channels_sent", []))),
+        )
+        conn.execute(
+            "UPDATE alerts SET last_triggered_at=datetime('now') WHERE id=?",
+            (alert_id,),
+        )
+        conn.commit()
+    except Exception:
+        pass
+
+
+def read_alert_history(
+    conn: sqlite3.Connection, alert_id: Optional[int] = None, days: int = 30
+) -> list:
+    """Return alert history, optionally filtered by alert_id, for the last N days."""
+    init_extended_schema(conn)
+    try:
+        if alert_id is not None:
+            cur = conn.execute(
+                """SELECT * FROM alert_history
+                   WHERE alert_id=? AND triggered_at >= datetime('now', ?)
+                   ORDER BY triggered_at DESC""",
+                (alert_id, f"-{days} days"),
+            )
+        else:
+            cur = conn.execute(
+                """SELECT * FROM alert_history
+                   WHERE triggered_at >= datetime('now', ?)
+                   ORDER BY triggered_at DESC""",
+                (f"-{days} days",),
+            )
+        return [dict(r) for r in cur.fetchall()]
+    except Exception:
+        return []
+
+
+def read_app_settings(conn: sqlite3.Connection) -> dict:
+    """Return all app settings as a key->value dict."""
+    init_extended_schema(conn)
+    try:
+        cur = conn.execute("SELECT key, value FROM app_settings")
+        return {r[0]: r[1] for r in cur.fetchall()}
+    except Exception:
+        return {}
+
+
+def write_app_setting(conn: sqlite3.Connection, key: str, value: str) -> None:
+    """Insert or replace a single app setting."""
+    init_extended_schema(conn)
+    try:
+        conn.execute(
+            """INSERT OR REPLACE INTO app_settings (key, value, updated_at)
+               VALUES (?, ?, datetime('now'))""",
+            (key, value),
+        )
+        conn.commit()
+    except Exception:
+        pass
+
+
+def write_audit_log(
+    conn: sqlite3.Connection,
+    action: str,
+    resource_type: str,
+    resource_id: str,
+    details: dict,
+) -> None:
+    """Append an audit log entry."""
+    init_extended_schema(conn)
+    try:
+        conn.execute(
+            """INSERT INTO audit_log (action, resource_type, resource_id, details)
+               VALUES (?, ?, ?, ?)""",
+            (action, resource_type, resource_id, _jdumps(details)),
+        )
+        conn.commit()
+    except Exception:
+        pass
+
+
+def read_audit_log(conn: sqlite3.Connection, limit: int = 100) -> list:
+    """Return the most recent audit log entries."""
+    init_extended_schema(conn)
+    try:
+        cur = conn.execute(
+            "SELECT * FROM audit_log ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        )
+        return [dict(r) for r in cur.fetchall()]
+    except Exception:
+        return []

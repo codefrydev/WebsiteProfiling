@@ -15,9 +15,49 @@ def _config_path(default_name: str = "input.txt") -> str:
     return os.path.join(os.getcwd(), default_name)
 
 
+_MODULE_COMMANDS = {
+    "rank-tracker": ("src.rank_tracker", "main"),
+    "keywords-explorer": ("src.keywords_explorer", "main"),
+    "site-explorer": ("src.site_explorer", "main"),
+    "gsc": ("src.gsc_integration", "main"),
+    "analytics": ("src.web_analytics", "main"),
+    "content": ("src.content_tools", "main"),
+    "brand-radar": ("src.brand_radar", "main"),
+    "competitive": ("src.competitive_intel", "main"),
+    "social": ("src.social_media", "main"),
+    "advertising": ("src.advertising", "main"),
+    "local-seo": ("src.local_seo", "main"),
+    "report-builder": ("src.report_builder", "main"),
+    "alerts": ("src.alerts", "main"),
+    "integrations": ("src.integrations", "main"),
+    "sitemap": ("src.sitemap_gen", "main"),
+    "log-analyzer": ("src.log_analyzer", "main"),
+    "ai": ("src.ai_tools", "main"),
+}
+
+
 def main() -> None:
+    # Dispatch to sub-module commands before the main config-based pipeline
+    if len(sys.argv) > 1 and sys.argv[1] in _MODULE_COMMANDS:
+        cmd = sys.argv[1]
+        module_path, func_name = _MODULE_COMMANDS[cmd]
+        import importlib
+        try:
+            mod = importlib.import_module(module_path)
+            fn = getattr(mod, func_name)
+            fn(sys.argv[2:])
+        except Exception as e:
+            print(f"Error running '{cmd}': {e}", file=sys.stderr)
+            sys.exit(1)
+        return
+
     parser = argparse.ArgumentParser(
-        description="WebsiteProfiling: crawl site, generate reports and link graph. All options read from config file."
+        description=(
+            "WebsiteProfiling: crawl site, generate reports and link graph. All options read from config file.\n\n"
+            "Additional commands (pass after 'websiteprofiling <command> -- --help' for subcommand help):\n"
+            + "\n".join(f"  {k}" for k in _MODULE_COMMANDS)
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         "--config",

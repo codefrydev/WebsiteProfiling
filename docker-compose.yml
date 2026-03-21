@@ -1,0 +1,82 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: websiteprofiling_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-websiteprofiling}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-websiteprofiling}
+      POSTGRES_DB: ${POSTGRES_DB:-websiteprofiling}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-websiteprofiling}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: websiteprofiling_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: websiteprofiling_backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-websiteprofiling}:${POSTGRES_PASSWORD:-websiteprofiling}@db:5432/${POSTGRES_DB:-websiteprofiling}
+      REDIS_URL: redis://redis:6379
+      DATAFORSEO_LOGIN: ${DATAFORSEO_LOGIN:-}
+      DATAFORSEO_PASSWORD: ${DATAFORSEO_PASSWORD:-}
+      SERP_API_KEY: ${SERP_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      SLACK_BOT_TOKEN: ${SLACK_BOT_TOKEN:-}
+      SMTP_HOST: ${SMTP_HOST:-smtp.gmail.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # UI at http://localhost:5173 — API calls use VITE_API_URL from the *browser* host (not the container).
+  # Default works when you open the app on the same machine as Docker. From another device on your LAN,
+  # set e.g. VITE_API_URL=http://192.168.1.10:8000/api/v1 in .env or override below.
+  frontend:
+    image: node:20-alpine
+    container_name: websiteprofiling_frontend
+    working_dir: /app
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api/v1}
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./UI:/app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:

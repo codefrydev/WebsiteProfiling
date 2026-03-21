@@ -10,3 +10,4 @@ nodes.json
 # Optional: uncomment if input.txt has secrets
 # input.txt
 site_graph.svg
+*__pycache__*

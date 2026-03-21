@@ -6,5 +6,44 @@ tqdm>=4.64.0
 networkx>=2.8.0
 matplotlib>=3.6.0
 
+# Google APIs
+google-auth>=2.0.0
+google-auth-oauthlib>=1.0.0
+google-api-python-client>=2.0.0
+
+# AI providers
+openai>=1.0.0
+anthropic>=0.25.0
+
+# Notifications
+slack-sdk>=3.0.0
+
+# HTTP
+httpx>=0.25.0
+
+# Config
+python-dotenv>=1.0.0
+
+# Scheduling
+apscheduler>=3.10.0
+schedule>=1.2.0
+
+# Content similarity
+simhash>=2.0.0
+
+# Image processing
+Pillow>=10.0.0
+
+# Excel/reporting
+openpyxl>=3.1.0
+jinja2>=3.1.0
+weasyprint>=60.0
+
+# Feed parsing
+feedparser>=6.0.0
+
+# Columnar data
+pyarrow>=14.0.0
+
 # Dev / test
 pytest>=7.0.0
