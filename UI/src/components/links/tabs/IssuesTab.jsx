@@ -1,8 +1,12 @@
 import { useState, useMemo } from 'react';
+import { Bar } from 'react-chartjs-2';
 import { Gauge, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import { SELECT_CLASS, SEO_ISSUE_RECOMMENDATIONS, severityBg } from '../../../utils/linkUtils';
 import { formatLhMetric } from '../../../utils/linkUtils';
-import { scoreBandColor } from '../../../utils/chartPalette';
+import { palette, scoreBandColor } from '../../../utils/chartPalette';
+import { registerChartJsBase, barOptionsHorizontal } from '../../../utils/chartJsDefaults';
+
+registerChartJsBase();
 
 export default function IssuesTab({ lhData, inspectorDetails }) {
   const [expandedIssue, setExpandedIssue] = useState(null);
@@ -36,6 +40,31 @@ export default function IssuesTab({ lhData, inspectorDetails }) {
     if (issueFilter === 'All') return allIssues;
     return allIssues.filter((i) => (i.severity || '').toLowerCase() === issueFilter.toLowerCase());
   }, [allIssues, issueFilter]);
+
+  const typeChart = useMemo(() => {
+    const order = ['broken', 'redirect', 'seo', 'content', 'category', 'security'];
+    const labels = ['Broken', 'Redirect', 'SEO', 'Content', 'Category', 'Security'];
+    const values = order.map((t) => allIssues.filter((i) => i.type === t).length);
+    return { labels, values };
+  }, [allIssues]);
+
+  const typeBarOpts = useMemo(() => {
+    const base = barOptionsHorizontal();
+    return {
+      ...base,
+      plugins: {
+        ...base.plugins,
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const n = Number(ctx.raw);
+              return ` ${n.toLocaleString()} issue${n !== 1 ? 's' : ''}`;
+            },
+          },
+        },
+      },
+    };
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -87,6 +116,20 @@ export default function IssuesTab({ lhData, inspectorDetails }) {
 
       {/* Issues list */}
       <div>
+        {allIssues.length > 0 && (
+          <div className="bg-brand-900 border border-default rounded-xl p-3 mb-4">
+            <div className="text-xs text-slate-500 mb-2">Issues by source for this URL</div>
+            <div className="h-36">
+              <Bar
+                data={{
+                  labels: typeChart.labels,
+                  datasets: [{ data: typeChart.values, backgroundColor: palette(typeChart.labels.length) }],
+                }}
+                options={typeBarOpts}
+              />
+            </div>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
             All Issues ({allIssues.length})

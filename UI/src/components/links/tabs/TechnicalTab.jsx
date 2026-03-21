@@ -1,6 +1,11 @@
+import { useMemo } from 'react';
+import { Bar, Doughnut } from 'react-chartjs-2';
 import { Shield, Zap, Image } from 'lucide-react';
 import SecHeaderRow from '../SecHeaderRow';
 import MiniBar from '../MiniBar';
+import { registerChartJsBase, barOptionsHorizontal, doughnutOptionsBottomLegend } from '../../../utils/chartJsDefaults';
+
+registerChartJsBase();
 
 const SEC_HEADERS = [
   {
@@ -25,12 +30,18 @@ const SEC_HEADERS = [
   },
 ];
 
+function headerPresent(val) {
+  if (val == null) return false;
+  if (typeof val === 'string') return val.trim().length > 0;
+  return Boolean(val);
+}
+
 export default function TechnicalTab({ link }) {
   const perfRows = [
     { label: 'Cache-Control', value: link.cache_control || 'Not set', mono: true },
-    { label: 'ETag',          value: link.etag ? 'Present' : 'Not set' },
-    { label: 'Scripts',       value: String(link.script_count ?? 0) },
-    { label: 'Stylesheets',   value: String(link.link_stylesheet_count ?? 0) },
+    { label: 'ETag', value: link.etag ? 'Present' : 'Not set' },
+    { label: 'Scripts', value: String(link.script_count ?? 0) },
+    { label: 'Stylesheets', value: String(link.link_stylesheet_count ?? 0) },
     {
       label: 'Mixed Content',
       value: link.mixed_content_count > 0 ? `${link.mixed_content_count} item(s)` : 'None',
@@ -40,6 +51,37 @@ export default function TechnicalTab({ link }) {
 
   const imgTotal = link.images_total || 0;
 
+  const securityHeaderCounts = useMemo(() => {
+    const present = SEC_HEADERS.filter((h) => headerPresent(link[h.field])).length;
+    const missing = SEC_HEADERS.length - present;
+    return { present, missing };
+  }, [link]);
+
+  const assetBar = useMemo(() => {
+    const scripts = Number(link.script_count) || 0;
+    const sheets = Number(link.link_stylesheet_count) || 0;
+    const images = Number(link.images_total) || 0;
+    return {
+      labels: ['Scripts', 'Stylesheets', 'Images'],
+      values: [scripts, sheets, images],
+    };
+  }, [link]);
+
+  const assetBarOpts = useMemo(() => {
+    const base = barOptionsHorizontal();
+    return {
+      ...base,
+      plugins: {
+        ...base.plugins,
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${Number(ctx.raw).toLocaleString()} items`,
+          },
+        },
+      },
+    };
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Security Headers */}
@@ -47,6 +89,44 @@ export default function TechnicalTab({ link }) {
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
           <Shield className="h-3.5 w-3.5" /> Security Headers
         </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+          <div className="bg-brand-900 border border-default rounded-xl p-3">
+            <div className="text-xs text-slate-500 mb-2">Headers present (of {SEC_HEADERS.length})</div>
+            <div className="h-40">
+              <Doughnut
+                data={{
+                  labels: ['Present', 'Missing'],
+                  datasets: [
+                    {
+                      data: [securityHeaderCounts.present, securityHeaderCounts.missing],
+                      backgroundColor: ['#22C55E', '#334155'],
+                      borderColor: 'rgba(15,23,42,0.8)',
+                      borderWidth: 2,
+                    },
+                  ],
+                }}
+                options={doughnutOptionsBottomLegend()}
+              />
+            </div>
+          </div>
+          <div className="bg-brand-900 border border-default rounded-xl p-3">
+            <div className="text-xs text-slate-500 mb-2">Scripts, stylesheets, images</div>
+            <div className="h-40">
+              <Bar
+                data={{
+                  labels: assetBar.labels,
+                  datasets: [
+                    {
+                      data: assetBar.values,
+                      backgroundColor: ['#4C72B0', '#DD8452', '#55A868'],
+                    },
+                  ],
+                }}
+                options={assetBarOpts}
+              />
+            </div>
+          </div>
+        </div>
         <div className="space-y-2">
           {SEC_HEADERS.map((h) => (
             <SecHeaderRow

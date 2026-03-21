@@ -428,7 +428,13 @@ def run_lighthouse_on_pages(
             "Node/npm not found. Install Node.js (https://nodejs.org); then run: npm install -g lighthouse. "
             "Chrome or Chromium is also required for headless mode."
         )
-    from .db import get_connection, init_schema, write_lighthouse_page_summary
+    from .db import (
+        get_connection,
+        init_schema,
+        write_lh_audits_from_run,
+        write_lighthouse_page_summary,
+        write_lighthouse_run,
+    )
 
     conn = get_connection(db_path)
     init_schema(conn)
@@ -450,6 +456,18 @@ def run_lighthouse_on_pages(
                 categories=categories,
             )
             write_lighthouse_page_summary(conn, url, summary)
+            lhr: dict[str, Any] | None = None
+            for raw_path in reversed(summary.get("raw_reports") or []):
+                if os.path.isfile(raw_path):
+                    try:
+                        with open(raw_path, "r", encoding="utf-8") as f:
+                            lhr = json.load(f)
+                        break
+                    except (OSError, json.JSONDecodeError):
+                        continue
+            if lhr is not None:
+                run_id = write_lighthouse_run(conn, url, strategy, 1, lhr)
+                write_lh_audits_from_run(conn, run_id, lhr)
             # Delete raw run files after storing summary in DB (same as single-URL path)
             for raw_path in summary.get("raw_reports") or []:
                 if os.path.isfile(raw_path):
@@ -496,7 +514,13 @@ def main(
 
     if db_path:
         # Persist everything to DB only (no artifact files on disk)
-        from .db import get_connection, init_schema, write_lighthouse_summary, write_lighthouse_run
+        from .db import (
+            get_connection,
+            init_schema,
+            write_lh_audits_from_run,
+            write_lighthouse_summary,
+            write_lighthouse_run,
+        )
         print("  Saving summary to DB...", flush=True)
         conn = get_connection(db_path)
         init_schema(conn)
@@ -508,7 +532,8 @@ def main(
                 try:
                     with open(raw_path, "r", encoding="utf-8") as f:
                         run_data = json.load(f)
-                    write_lighthouse_run(conn, url, strategy, i + 1, run_data)
+                    run_id = write_lighthouse_run(conn, url, strategy, i + 1, run_data)
+                    write_lh_audits_from_run(conn, run_id, run_data)
                     try:
                         os.remove(raw_path)
                     except OSError:

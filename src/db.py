@@ -69,11 +69,19 @@ def read_historical_data(db_path: str) -> dict[str, list]:
     """Read rows from historical tables in an existing DB before it is overwritten.
 
     Returns a dict mapping table name -> list of row dicts.
-    Tables captured: report_payload, lighthouse_summary, lighthouse_runs, lighthouse_page_summaries.
+    Tables captured: report_payload, lighthouse_summary, lighthouse_runs, lighthouse_page_summaries,
+    lh_audits, lh_audit_items.
     crawl_results / edges / nodes are intentionally excluded (they belong to the new crawl).
     Returns empty lists for all tables when the DB file does not exist.
     """
-    tables = ["report_payload", "lighthouse_summary", "lighthouse_runs", "lighthouse_page_summaries"]
+    tables = [
+        "report_payload",
+        "lighthouse_summary",
+        "lighthouse_runs",
+        "lighthouse_page_summaries",
+        "lh_audits",
+        "lh_audit_items",
+    ]
     result: dict[str, list] = {t: [] for t in tables}
     p = Path(db_path)
     if not p.exists() or not p.is_file():
@@ -136,6 +144,41 @@ def restore_historical_data(conn: sqlite3.Connection, data: dict[str, list]) -> 
         except Exception:
             pass
 
+    for row in data.get("lh_audits", []):
+        try:
+            conn.execute(
+                """INSERT OR IGNORE INTO lh_audits (id, run_id, audit_id, category_id, score, score_display_mode,
+                   title, description, display_value, numeric_value, help_text, details_type, details_headings, details_meta)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (
+                    row.get("id"),
+                    row.get("run_id"),
+                    row.get("audit_id"),
+                    row.get("category_id"),
+                    row.get("score"),
+                    row.get("score_display_mode"),
+                    row.get("title"),
+                    row.get("description"),
+                    row.get("display_value"),
+                    row.get("numeric_value"),
+                    row.get("help_text"),
+                    row.get("details_type"),
+                    row.get("details_headings"),
+                    row.get("details_meta"),
+                ),
+            )
+        except Exception:
+            pass
+
+    for row in data.get("lh_audit_items", []):
+        try:
+            conn.execute(
+                "INSERT OR IGNORE INTO lh_audit_items (id, audit_row_id, item_index, row_data) VALUES (?, ?, ?, ?)",
+                (row.get("id"), row.get("audit_row_id"), row.get("item_index"), row.get("row_data")),
+            )
+        except Exception:
+            pass
+
     conn.commit()
 
 
@@ -167,14 +210,17 @@ def init_schema(conn: sqlite3.Connection) -> None:
         );
 
         CREATE TABLE IF NOT EXISTS edges (
+            crawl_run_id INTEGER NOT NULL,
             from_url TEXT NOT NULL,
             to_url TEXT NOT NULL,
-            PRIMARY KEY (from_url, to_url)
+            PRIMARY KEY (crawl_run_id, from_url, to_url)
         );
 
         CREATE TABLE IF NOT EXISTS nodes (
-            url TEXT PRIMARY KEY,
-            count INTEGER NOT NULL
+            crawl_run_id INTEGER NOT NULL,
+            url TEXT NOT NULL,
+            count INTEGER NOT NULL,
+            PRIMARY KEY (crawl_run_id, url)
         );
 
         CREATE TABLE IF NOT EXISTS lighthouse_summary (
@@ -203,118 +249,50 @@ def init_schema(conn: sqlite3.Connection) -> None:
             generated_at TEXT NOT NULL,
             data TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS lh_audits (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            run_id INTEGER NOT NULL,
+            audit_id TEXT NOT NULL,
+            category_id TEXT,
+            score REAL,
+            score_display_mode TEXT,
+            title TEXT,
+            description TEXT,
+            display_value TEXT,
+            numeric_value REAL,
+            help_text TEXT,
+            details_type TEXT,
+            details_headings TEXT,
+            details_meta TEXT,
+            FOREIGN KEY (run_id) REFERENCES lighthouse_runs(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_lh_audits_run_id ON lh_audits(run_id);
+        CREATE INDEX IF NOT EXISTS idx_lh_audits_run_audit ON lh_audits(run_id, audit_id);
+        CREATE INDEX IF NOT EXISTS idx_lh_audits_audit_id ON lh_audits(audit_id);
+
+        CREATE TABLE IF NOT EXISTS lh_audit_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            audit_row_id INTEGER NOT NULL,
+            item_index INTEGER NOT NULL,
+            row_data TEXT NOT NULL,
+            FOREIGN KEY (audit_row_id) REFERENCES lh_audits(id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_lh_audit_items_audit_row ON lh_audit_items(audit_row_id);
     """)
     conn.commit()
-    _migrate_to_crawl_runs(conn)
-    _migrate_new_crawl_columns(conn)
 
 
-def _table_has_column(conn: sqlite3.Connection, table: str, column: str) -> bool:
-    """Return True if table has the given column."""
-    try:
-        cur = conn.execute(f"PRAGMA table_info({table})")
-        return any(row[1] == column for row in cur.fetchall())
-    except Exception:
-        return False
-
-
-_NEW_CRAWL_COLUMNS = [
-    ("word_count", "INTEGER DEFAULT 0"),
-    ("reading_level", "REAL DEFAULT 0"),
-    ("content_html_ratio", "REAL DEFAULT 0"),
-    ("top_keywords", "TEXT DEFAULT '[]'"),
-    ("og_title", "TEXT DEFAULT ''"),
-    ("og_description", "TEXT DEFAULT ''"),
-    ("og_image", "TEXT DEFAULT ''"),
-    ("og_type", "TEXT DEFAULT ''"),
-    ("twitter_card", "TEXT DEFAULT ''"),
-    ("twitter_title", "TEXT DEFAULT ''"),
-    ("twitter_image", "TEXT DEFAULT ''"),
-    ("tech_stack", "TEXT DEFAULT '[]'"),
-    ("depth", "INTEGER"),
-]
-
-
-def _migrate_new_crawl_columns(conn: sqlite3.Connection) -> None:
-    """Add new content/social/tech columns to crawl_results if they don't exist yet."""
+def _crawl_results_has_run_id(conn: sqlite3.Connection) -> bool:
+    """True if crawl_results exists and includes crawl_run_id (append-by-run crawls)."""
     try:
         cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='crawl_results'")
         if cur.fetchone() is None:
-            return
+            return False
+        cur = conn.execute("PRAGMA table_info(crawl_results)")
+        return any(row[1] == "crawl_run_id" for row in cur.fetchall())
     except Exception:
-        return
-    for col_name, col_def in _NEW_CRAWL_COLUMNS:
-        if not _table_has_column(conn, "crawl_results", col_name):
-            try:
-                conn.execute(f"ALTER TABLE crawl_results ADD COLUMN {col_name} {col_def}")
-            except Exception:
-                pass
-    conn.commit()
-
-
-def _migrate_to_crawl_runs(conn: sqlite3.Connection) -> None:
-    """If crawl_results or edges/nodes exist without crawl_run_id, add column and backfill run 1."""
-    try:
-        cur = conn.execute("SELECT COUNT(*) FROM crawl_runs")
-        if cur.fetchone()[0] > 0:
-            return
-    except Exception:
-        pass
-
-    run_migration = False
-    try:
-        cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='crawl_results'")
-        if cur.fetchone() is not None and not _table_has_column(conn, "crawl_results", "crawl_run_id"):
-            run_migration = True
-    except Exception:
-        pass
-
-    if not run_migration:
-        try:
-            cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='edges'")
-            if cur.fetchone() is not None and not _table_has_column(conn, "edges", "crawl_run_id"):
-                run_migration = True
-        except Exception:
-            pass
-
-    if not run_migration:
-        return
-
-    conn.execute(
-        "INSERT INTO crawl_runs (id, created_at, start_url) VALUES (1, datetime('now'), NULL)"
-    )
-    conn.commit()
-
-    if _table_has_column(conn, "crawl_results", "crawl_run_id"):
-        pass
-    else:
-        try:
-            conn.execute("ALTER TABLE crawl_results ADD COLUMN crawl_run_id INTEGER DEFAULT 1")
-            conn.execute("UPDATE crawl_results SET crawl_run_id = 1 WHERE crawl_run_id IS NULL")
-            conn.commit()
-        except Exception:
-            pass
-
-    for table, pk in [("edges", "crawl_run_id, from_url, to_url"), ("nodes", "crawl_run_id, url")]:
-        try:
-            if not _table_has_column(conn, table, "crawl_run_id"):
-                if table == "edges":
-                    conn.executescript("""
-                        CREATE TABLE edges_new (crawl_run_id INTEGER NOT NULL, from_url TEXT NOT NULL, to_url TEXT NOT NULL, PRIMARY KEY (crawl_run_id, from_url, to_url));
-                        INSERT INTO edges_new SELECT 1, from_url, to_url FROM edges;
-                        DROP TABLE edges;
-                        ALTER TABLE edges_new RENAME TO edges;
-                    """)
-                else:
-                    conn.executescript("""
-                        CREATE TABLE nodes_new (crawl_run_id INTEGER NOT NULL, url TEXT NOT NULL, count INTEGER NOT NULL, PRIMARY KEY (crawl_run_id, url));
-                        INSERT INTO nodes_new SELECT 1, url, count FROM nodes;
-                        DROP TABLE nodes;
-                        ALTER TABLE nodes_new RENAME TO nodes;
-                    """)
-                conn.commit()
-        except Exception:
-            pass
+        return False
 
 
 def create_crawl_run(conn: sqlite3.Connection, start_url: Optional[str] = None) -> int:
@@ -377,20 +355,18 @@ def write_crawl(conn: sqlite3.Connection, df: pd.DataFrame, crawl_run_id: Option
             df[col] = df[col].astype(int)
 
     if crawl_run_id is not None:
-        _migrate_to_crawl_runs(conn)
         df["crawl_run_id"] = crawl_run_id
         try:
             cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='crawl_results'")
-            if cur.fetchone() is None:
+            table_exists = cur.fetchone() is not None
+            if not table_exists or not _crawl_results_has_run_id(conn):
+                if table_exists:
+                    conn.execute("DROP TABLE crawl_results")
+                    conn.commit()
                 cols = ["crawl_run_id"] + [c for c in df.columns if c != "crawl_run_id"]
                 df[cols].to_sql("crawl_results", conn, index=False, if_exists="replace")
             else:
-                cur = conn.execute("PRAGMA table_info(crawl_results)")
-                table_cols = [row[1] for row in cur.fetchall()]
-                if table_cols[0] == "crawl_run_id":
-                    df.to_sql("crawl_results", conn, index=False, if_exists="append", method="multi")
-                else:
-                    df[table_cols].to_sql("crawl_results", conn, index=False, if_exists="append", method="multi")
+                df.to_sql("crawl_results", conn, index=False, if_exists="append", method="multi")
         finally:
             df.drop(columns=["crawl_run_id"], inplace=True, errors="ignore")
         conn.commit()
@@ -406,13 +382,12 @@ def read_crawl(conn: sqlite3.Connection, run_id: Optional[int] = None) -> pd.Dat
             run_id = get_latest_crawl_run_id(conn)
             if run_id is None:
                 df = pd.read_sql("SELECT * FROM crawl_results", conn)
+            elif _crawl_results_has_run_id(conn):
+                df = pd.read_sql("SELECT * FROM crawl_results WHERE crawl_run_id = ?", conn, params=(run_id,))
             else:
-                if _table_has_column(conn, "crawl_results", "crawl_run_id"):
-                    df = pd.read_sql("SELECT * FROM crawl_results WHERE crawl_run_id = ?", conn, params=(run_id,))
-                else:
-                    df = pd.read_sql("SELECT * FROM crawl_results", conn)
+                df = pd.read_sql("SELECT * FROM crawl_results", conn)
         else:
-            if _table_has_column(conn, "crawl_results", "crawl_run_id"):
+            if _crawl_results_has_run_id(conn):
                 df = pd.read_sql("SELECT * FROM crawl_results WHERE crawl_run_id = ?", conn, params=(run_id,))
             else:
                 df = pd.read_sql("SELECT * FROM crawl_results", conn)
@@ -432,26 +407,18 @@ def read_crawl(conn: sqlite3.Connection, run_id: Optional[int] = None) -> pd.Dat
 
 
 def write_edges(conn: sqlite3.Connection, edges: list[tuple[str, str]], crawl_run_id: Optional[int] = None) -> None:
-    """Write edges. If crawl_run_id is set, insert for that run; else replace (legacy or replace latest run)."""
+    """Write edges. If crawl_run_id is set, insert for that run; else replace edges for the latest crawl run."""
     if crawl_run_id is None:
         conn.execute("DELETE FROM edges")
         if edges:
-            if _table_has_column(conn, "edges", "crawl_run_id"):
-                rid = get_latest_crawl_run_id(conn)
-                if rid is not None:
-                    conn.execute("DELETE FROM edges WHERE crawl_run_id = ?", (rid,))
-                    conn.executemany(
-                        "INSERT INTO edges (crawl_run_id, from_url, to_url) VALUES (?, ?, ?)",
-                        [(rid, a.rstrip("/"), b.rstrip("/")) for a, b in edges],
-                    )
-            else:
+            rid = get_latest_crawl_run_id(conn)
+            if rid is not None:
                 conn.executemany(
-                    "INSERT INTO edges (from_url, to_url) VALUES (?, ?)",
-                    [(a.rstrip("/"), b.rstrip("/")) for a, b in edges],
+                    "INSERT INTO edges (crawl_run_id, from_url, to_url) VALUES (?, ?, ?)",
+                    [(rid, a.rstrip("/"), b.rstrip("/")) for a, b in edges],
                 )
         conn.commit()
         return
-    _migrate_to_crawl_runs(conn)
     conn.execute("DELETE FROM edges WHERE crawl_run_id = ?", (crawl_run_id,))
     if edges:
         conn.executemany(
@@ -466,10 +433,9 @@ def read_edges(conn: sqlite3.Connection, run_id: Optional[int] = None) -> list[t
     try:
         if run_id is None:
             run_id = get_latest_crawl_run_id(conn)
-        if run_id is not None and _table_has_column(conn, "edges", "crawl_run_id"):
-            cur = conn.execute("SELECT from_url, to_url FROM edges WHERE crawl_run_id = ?", (run_id,))
-        else:
-            cur = conn.execute("SELECT from_url, to_url FROM edges")
+        if run_id is None:
+            return []
+        cur = conn.execute("SELECT from_url, to_url FROM edges WHERE crawl_run_id = ?", (run_id,))
         return [tuple(row) for row in cur.fetchall()]
     except Exception:
         return []
@@ -480,6 +446,8 @@ def write_nodes(conn: sqlite3.Connection, df: pd.DataFrame, crawl_run_id: Option
     if df.empty:
         if crawl_run_id is None:
             conn.execute("DELETE FROM nodes")
+        else:
+            conn.execute("DELETE FROM nodes WHERE crawl_run_id = ?", (crawl_run_id,))
         conn.commit()
         return
     ndf = df.copy()
@@ -488,10 +456,16 @@ def write_nodes(conn: sqlite3.Connection, df: pd.DataFrame, crawl_run_id: Option
     if "url" not in ndf.columns or "count" not in ndf.columns:
         return
     if crawl_run_id is None:
-        ndf[["url", "count"]].to_sql("nodes", conn, index=False, if_exists="replace")
+        rid = get_latest_crawl_run_id(conn)
+        if rid is None:
+            conn.execute("DELETE FROM nodes")
+            conn.commit()
+            return
+        conn.execute("DELETE FROM nodes WHERE crawl_run_id = ?", (rid,))
+        ndf["crawl_run_id"] = rid
+        ndf[["crawl_run_id", "url", "count"]].to_sql("nodes", conn, index=False, if_exists="append", method="multi")
         conn.commit()
         return
-    _migrate_to_crawl_runs(conn)
     conn.execute("DELETE FROM nodes WHERE crawl_run_id = ?", (crawl_run_id,))
     ndf["crawl_run_id"] = crawl_run_id
     ndf[["crawl_run_id", "url", "count"]].to_sql("nodes", conn, index=False, if_exists="append", method="multi")
@@ -503,9 +477,9 @@ def read_nodes(conn: sqlite3.Connection, run_id: Optional[int] = None) -> pd.Dat
     try:
         if run_id is None:
             run_id = get_latest_crawl_run_id(conn)
-        if run_id is not None and _table_has_column(conn, "nodes", "crawl_run_id"):
-            return pd.read_sql("SELECT url, count FROM nodes WHERE crawl_run_id = ?", conn, params=(run_id,))
-        return pd.read_sql("SELECT * FROM nodes", conn)
+        if run_id is None:
+            return pd.DataFrame(columns=["url", "count"])
+        return pd.read_sql("SELECT url, count FROM nodes WHERE crawl_run_id = ?", conn, params=(run_id,))
     except Exception:
         return pd.DataFrame(columns=["url", "count"])
 
@@ -539,13 +513,141 @@ def write_lighthouse_run(
     strategy: str,
     run_index: int,
     data: dict[str, Any],
-) -> None:
-    """Append one raw Lighthouse run report (full JSON) to lighthouse_runs."""
+) -> int:
+    """Append one raw Lighthouse run report (full JSON) to lighthouse_runs. Returns new row id."""
     conn.execute(
         "INSERT INTO lighthouse_runs (created_at, url, strategy, run_index, data) VALUES (?, ?, ?, ?, ?)",
         (time.strftime("%Y-%m-%d %H:%M:%S"), url, strategy, run_index, json.dumps(_sanitize_for_json(data), default=str)),
     )
     conn.commit()
+    cur = conn.execute("SELECT last_insert_rowid()")
+    return int(cur.fetchone()[0])
+
+
+def write_lh_audits_from_run(conn: sqlite3.Connection, run_id: int, lhr_data: dict[str, Any]) -> None:
+    """Parse LHR and insert lh_audits + lh_audit_items for the given lighthouse_runs.id."""
+    from .lighthouse_schema import lhr_to_audit_rows
+
+    audit_rows, item_refs = lhr_to_audit_rows(lhr_data)
+    id_map: list[int] = []
+    for row in audit_rows:
+        conn.execute(
+            """INSERT INTO lh_audits (run_id, audit_id, category_id, score, score_display_mode,
+               title, description, display_value, numeric_value, help_text, details_type, details_headings, details_meta)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (
+                run_id,
+                row["audit_id"],
+                row["category_id"],
+                row["score"],
+                row["score_display_mode"],
+                row["title"],
+                row["description"],
+                row["display_value"],
+                row["numeric_value"],
+                row["help_text"],
+                row["details_type"],
+                row["details_headings"],
+                row["details_meta"],
+            ),
+        )
+        id_map.append(int(conn.execute("SELECT last_insert_rowid()").fetchone()[0]))
+    for audit_idx, item_index, rd in item_refs:
+        audit_row_id = id_map[audit_idx]
+        conn.execute(
+            "INSERT INTO lh_audit_items (audit_row_id, item_index, row_data) VALUES (?,?,?)",
+            (audit_row_id, item_index, json.dumps(_sanitize_for_json(rd), default=str)),
+        )
+    conn.commit()
+
+
+def read_lh_runs_by_url(conn: sqlite3.Connection) -> dict[str, list[int]]:
+    """Map url -> ordered list of lighthouse_runs.id (ascending by id)."""
+    out: dict[str, list[int]] = {}
+    try:
+        cur = conn.execute("SELECT id, url FROM lighthouse_runs ORDER BY id")
+        for row in cur.fetchall():
+            u = str(row[1]).strip().rstrip("/")
+            out.setdefault(u, []).append(int(row[0]))
+    except Exception:
+        pass
+    return out
+
+
+def read_lighthouse_run_json(conn: sqlite3.Connection, run_id: int) -> Optional[dict[str, Any]]:
+    """Return parsed LHR JSON for a lighthouse_runs row, or None."""
+    try:
+        cur = conn.execute("SELECT data FROM lighthouse_runs WHERE id = ?", (run_id,))
+        row = cur.fetchone()
+        if row is None:
+            return None
+        return json.loads(row[0])
+    except Exception:
+        return None
+
+
+def read_lh_audits_with_items(conn: sqlite3.Connection, run_id: int) -> list[dict[str, Any]]:
+    """Return audits in Lighthouse-like shape: id, title, score, details.items, etc."""
+    out: list[dict[str, Any]] = []
+    try:
+        cur = conn.execute(
+            "SELECT * FROM lh_audits WHERE run_id = ? ORDER BY id",
+            (run_id,),
+        )
+        for row in cur.fetchall():
+            d = dict(row)
+            aid = d.get("audit_id") or ""
+            headings = None
+            if d.get("details_headings"):
+                try:
+                    headings = json.loads(d["details_headings"])
+                except (TypeError, json.JSONDecodeError):
+                    headings = None
+            meta: dict[str, Any] = {}
+            if d.get("details_meta"):
+                try:
+                    raw_meta = json.loads(d["details_meta"])
+                    if isinstance(raw_meta, dict):
+                        meta = raw_meta
+                except (TypeError, json.JSONDecodeError):
+                    meta = {}
+
+            cur_items = conn.execute(
+                "SELECT row_data FROM lh_audit_items WHERE audit_row_id = ? ORDER BY item_index",
+                (d["id"],),
+            )
+            items: list[Any] = []
+            for (rd,) in cur_items.fetchall():
+                try:
+                    items.append(json.loads(rd))
+                except (TypeError, json.JSONDecodeError):
+                    items.append({})
+
+            details: dict[str, Any] = dict(meta)
+            if d.get("details_type"):
+                details["type"] = d["details_type"]
+            if headings is not None:
+                details["headings"] = headings
+            if items:
+                details["items"] = items
+
+            audit_obj: dict[str, Any] = {
+                "id": aid,
+                "category_id": d.get("category_id"),
+                "title": d.get("title"),
+                "description": d.get("description"),
+                "score": d.get("score"),
+                "scoreDisplayMode": d.get("score_display_mode"),
+                "displayValue": d.get("display_value"),
+                "numericValue": d.get("numeric_value"),
+                "helpText": d.get("help_text"),
+            }
+            if details:
+                audit_obj["details"] = details
+            out.append(audit_obj)
+    except Exception:
+        pass
+    return out
 
 
 def write_lighthouse_page_summary(

@@ -1,7 +1,12 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { Bar } from 'react-chartjs-2';
 import { Search, Link as LinkIcon, ArrowLeft } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { PageLayout, Card, Badge, Button } from '../components';
+import { palette } from '../utils/chartPalette';
+import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
+
+registerChartJsBase();
 import {
   SELECT_CLASS, CONTENT_URL_KEYS, CONTENT_LABELS, CONTENT_RECOMMENDATIONS,
   SEO_ISSUE_RECOMMENDATIONS, formatMs, rtColor,
@@ -50,8 +55,14 @@ export default function Links({ searchQuery = '' }) {
     if (wcFilter === 'Thin')   list = list.filter((l) => (l.word_count ?? 0) < 300);
     if (wcFilter === 'Medium') list = list.filter((l) => { const w = l.word_count ?? 0; return w >= 300 && w < 1000; });
     if (wcFilter === 'Long')   list = list.filter((l) => (l.word_count ?? 0) >= 1000);
-    const q = (searchQuery || '').toLowerCase();
-    if (q) list = list.filter((l) => (l.url || '').toLowerCase().includes(q));
+    const q = (searchQuery || '').toLowerCase().trim();
+    if (q) {
+      list = list.filter((l) => {
+        const url = (l.url || '').toLowerCase();
+        const title = (l.title || '').toLowerCase();
+        return url.includes(q) || title.includes(q) || String(l.status ?? '').includes(q);
+      });
+    }
     list.sort((a, b) => {
       let va = a[sortBy]; let vb = b[sortBy];
       if (sortBy === 'depth') { va = va != null ? va : -1; vb = vb != null ? vb : -1; return sortDesc ? vb - va : va - vb; }
@@ -105,6 +116,54 @@ export default function Links({ searchQuery = '' }) {
       left: Math.min(rect.left - containerRect.left, (containerRect.width || 800) - 290),
     });
     setHoveredRow(link.url);
+  }, []);
+
+  const exploreCharts = useMemo(() => {
+    if (links.length === 0) return null;
+    const statusMap = new Map();
+    links.forEach((l) => {
+      const s = String(l.status ?? '—');
+      statusMap.set(s, (statusMap.get(s) || 0) + 1);
+    });
+    const statusPairs = [...statusMap.entries()].sort((a, b) => b[1] - a[1]);
+    let thin = 0;
+    let medium = 0;
+    let long = 0;
+    let noData = 0;
+    links.forEach((l) => {
+      const w = l.word_count;
+      if (w == null || w === 0) {
+        noData += 1;
+        return;
+      }
+      if (w < 300) thin += 1;
+      else if (w < 1000) medium += 1;
+      else long += 1;
+    });
+    return {
+      statusLabels: statusPairs.map((p) => p[0]),
+      statusValues: statusPairs.map((p) => p[1]),
+      wcLabels: ['Thin (<300)', 'Medium (300–999)', 'Long (1000+)', 'No / zero words'],
+      wcValues: [thin, medium, long, noData],
+    };
+  }, [links]);
+
+  const exploreBarOpts = useMemo(() => {
+    const base = barOptionsHorizontal();
+    return {
+      ...base,
+      plugins: {
+        ...base.plugins,
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const n = Number(ctx.raw);
+              return ` ${n.toLocaleString()} URL${n !== 1 ? 's' : ''}`;
+            },
+          },
+        },
+      },
+    };
   }, []);
 
   if (!data) return null;
@@ -161,6 +220,37 @@ export default function Links({ searchQuery = '' }) {
               </select>
             </div>
           </div>
+
+          {exploreCharts && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4 shrink-0">
+              <Card padding="tight" shadow>
+                <h2 className="text-sm font-bold text-slate-200 mb-1">All crawled URLs by status</h2>
+                <p className="text-xs text-slate-500 mb-2">Full link list (ignores table filters)</p>
+                <div className="h-48">
+                  <Bar
+                    data={{
+                      labels: exploreCharts.statusLabels,
+                      datasets: [{ data: exploreCharts.statusValues, backgroundColor: palette(exploreCharts.statusLabels.length) }],
+                    }}
+                    options={exploreBarOpts}
+                  />
+                </div>
+              </Card>
+              <Card padding="tight" shadow>
+                <h2 className="text-sm font-bold text-slate-200 mb-1">Word count bands</h2>
+                <p className="text-xs text-slate-500 mb-2">Same buckets as the word-count filter</p>
+                <div className="h-48">
+                  <Bar
+                    data={{
+                      labels: exploreCharts.wcLabels,
+                      datasets: [{ data: exploreCharts.wcValues, backgroundColor: palette(exploreCharts.wcLabels.length) }],
+                    }}
+                    options={exploreBarOpts}
+                  />
+                </div>
+              </Card>
+            </div>
+          )}
 
           {/* ── Table ── */}
           <Card overflowHidden padding="none" className="flex flex-col flex-1 min-h-[500px]">

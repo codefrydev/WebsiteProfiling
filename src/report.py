@@ -3,9 +3,12 @@ Generate report data from crawl and write to SQLite. UI is the React app in UI/ 
 """
 import json
 import os
+import socket
+import ssl
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import Optional
+from datetime import datetime, timezone
+from typing import Any, Optional
 from urllib.parse import urlparse
 
 import pandas as pd
@@ -30,6 +33,130 @@ TITLE_LEN_MAX = 60
 META_DESC_LEN_MIN = 70
 META_DESC_LEN_MAX = 160
 THIN_CONTENT_CHARS = 300
+
+
+def fetch_site_ssl_expires_iso(hostname: str, timeout: float = 5.0) -> Optional[str]:
+    """Return certificate notAfter as ISO 8601 UTC, or None on failure."""
+    host = (hostname or "").strip().lower()
+    if not host:
+        return None
+    try:
+        ctx = ssl.create_default_context()
+        with socket.create_connection((host, 443), timeout=timeout) as sock:
+            with ctx.wrap_socket(sock, server_hostname=host) as ssock:
+                cert = ssock.getpeercert()
+        if not cert:
+            return None
+        na = cert.get("notAfter")
+        if not na:
+            return None
+        ts = ssl.cert_time_to_seconds(na)
+        return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
+    except Exception:
+        return None
+
+
+def build_lighthouse_by_url_for_report(conn: Any) -> dict[str, Any]:
+    """
+    Merge per-URL Lighthouse page summaries with latest lighthouse_runs row: full audits/items
+    from normalized tables, uncapped top_failures and diagnostics from stored LHR JSON.
+    """
+    from .db import (
+        read_lh_audits_with_items,
+        read_lh_runs_by_url,
+        read_lighthouse_page_summaries,
+        read_lighthouse_run_json,
+    )
+    from .lighthouse_runner import _evidence_from_audit, extract_from_lighthouse_json
+    from .warning_mapper import parse_lighthouse_to_diagnostics, resolve_impact
+
+    summaries = read_lighthouse_page_summaries(conn)
+    runs_map = read_lh_runs_by_url(conn)
+
+    summaries_norm: dict[str, Any] = {}
+    for k, v in summaries.items():
+        nk = str(k).strip().rstrip("/")
+        summaries_norm[nk] = v
+
+    all_urls = set(summaries_norm.keys()) | set(runs_map.keys())
+    out: dict[str, Any] = {}
+
+    for u in sorted(all_urls):
+        base: dict[str, Any] = dict(summaries_norm[u]) if u in summaries_norm else {}
+        run_ids = runs_map.get(u, [])
+        run_id = run_ids[-1] if run_ids else None
+
+        if run_id is not None:
+            raw = read_lighthouse_run_json(conn, run_id)
+            if not base and raw:
+                ex = extract_from_lighthouse_json(raw)
+                lr = raw.get("lighthouseResult") or raw
+                final_u = lr.get("finalUrl") or lr.get("requestedUrl") or u
+                base = {
+                    "url": str(final_u).strip().rstrip("/"),
+                    "median_metrics": {
+                        "lcp_ms": ex.get("lcp_ms"),
+                        "cls": ex.get("cls"),
+                        "tbt_ms": ex.get("tbt_ms"),
+                        "fcp_ms": ex.get("fcp_ms"),
+                        "speed_index_ms": ex.get("speed_index_ms"),
+                        "performance_score": ex.get("performance_score"),
+                        "accessibility_score": ex.get("accessibility_score"),
+                        "seo_score": ex.get("seo_score"),
+                        "best_practices_score": ex.get("best_practices_score"),
+                        "pwa_score": ex.get("pwa_score"),
+                    },
+                    "category_scores": dict(ex.get("category_scores") or {}),
+                    "strategy": "mobile",
+                    "device": "mobile",
+                    "mode": "navigation",
+                }
+            base["audits"] = read_lh_audits_with_items(conn, run_id)
+            if raw:
+                lr = raw.get("lighthouseResult") or raw
+                audits_map = lr.get("audits") or {}
+                failures: list[dict[str, Any]] = []
+                for aid, a in audits_map.items():
+                    if not isinstance(a, dict):
+                        continue
+                    score = a.get("score")
+                    if score is None or score >= 1:
+                        continue
+                    title = a.get("title") or aid
+                    help_text = a.get("helpText") or ""
+                    failures.append(
+                        {
+                            "id": aid,
+                            "score": score,
+                            "helpText": help_text,
+                            "impact": resolve_impact(aid, title, help_text),
+                            "evidence": _evidence_from_audit(a),
+                        }
+                    )
+                failures.sort(key=lambda x: (x["score"] or 0))
+                base["top_failures"] = failures
+                base["diagnostics"] = parse_lighthouse_to_diagnostics(raw, max_nodes_in_refs=None)
+        elif not base:
+            continue
+
+        if not base.get("url"):
+            base["url"] = u
+        out[u] = base
+
+    return out
+
+
+def lighthouse_for_url(lighthouse_by_url: dict[str, Any], url: str) -> Optional[dict[str, Any]]:
+    """Resolve Lighthouse summary for a crawled URL (trailing-slash tolerant)."""
+    if not lighthouse_by_url or not url:
+        return None
+    u = str(url).strip().rstrip("/")
+    if u in lighthouse_by_url:
+        return lighthouse_by_url[u]
+    for k, v in lighthouse_by_url.items():
+        if str(k).strip().rstrip("/") == u:
+            return v
+    return None
 
 
 def build_edges_from_df(
@@ -550,7 +677,6 @@ def run_simple_report(
             init_schema,
             read_crawl,
             read_edges,
-            read_lighthouse_page_summaries,
             read_lighthouse_summary,
             write_edges,
             write_report_payload,
@@ -562,7 +688,7 @@ def run_simple_report(
         df = read_crawl(conn, run_id)
         edges = read_edges(conn, run_id)
         lighthouse_summary = read_lighthouse_summary(conn)
-        lighthouse_by_url = read_lighthouse_page_summaries(conn)
+        lighthouse_by_url = build_lighthouse_by_url_for_report(conn)
         if not lighthouse_summary and lighthouse_by_url:
             first_url = next(iter(lighthouse_by_url), None)
             if first_url is not None:
@@ -609,6 +735,14 @@ def run_simple_report(
 
     print("  Fetching site-level (robots.txt, sitemap)...", flush=True)
     site_level = _fetch_site_level(start_url or "", timeout=8)
+
+    site_ssl_expires_at: Optional[str] = None
+    su = (start_url or "").strip()
+    if su.lower().startswith("https://"):
+        host = urlparse(su).hostname
+        if host:
+            print("  Checking TLS certificate expiry...", flush=True)
+            site_ssl_expires_at = fetch_site_ssl_expires_iso(host)
 
     security_findings: list = []
     if run_security_scan_flag:
@@ -851,6 +985,24 @@ def run_simple_report(
         # Tech stack
         rec["tech_stack"] = _str_col("tech_stack")
 
+        pa_obj: dict[str, Any] = {}
+        if "page_analysis" in df.columns:
+            raw_pa = row.get("page_analysis")
+            if raw_pa is not None and not (isinstance(raw_pa, float) and pd.isna(raw_pa)):
+                s = str(raw_pa).strip()
+                if s and s != "{}":
+                    try:
+                        pa_obj = json.loads(s)
+                    except json.JSONDecodeError:
+                        pa_obj = {}
+        if not isinstance(pa_obj, dict):
+            pa_obj = {}
+        rec["page_analysis"] = pa_obj
+        rec["internal_link_count"] = int(pa_obj.get("internal_link_count") or 0)
+        rec["external_link_count"] = int(pa_obj.get("external_link_count") or 0)
+
+        rec["lighthouse"] = lighthouse_for_url(lighthouse_by_url or {}, u)
+
         links.append(rec)
 
     # Content URL lists for On-Page Content view
@@ -931,6 +1083,8 @@ def run_simple_report(
     report_data = {
         "site_name": site_display,
         "report_title": report_display_title,
+        "report_generated_at": datetime.now(timezone.utc).isoformat(),
+        "site_ssl_expires_at": site_ssl_expires_at,
         "summary": summary_seo["summary"],
         "seo_health": summary_seo["seo_health"],
         "issues": summary_seo["issues"],

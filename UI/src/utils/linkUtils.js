@@ -83,8 +83,16 @@ export function parseKeywords(raw) {
  *   "word"             → { word: "word", count: null }
  */
 export function normaliseKw(kw) {
-  if (Array.isArray(kw))  return { word: String(kw[0] ?? ''), count: kw[1] ?? null };
-  if (kw && typeof kw === 'object') return { word: String(kw.word ?? kw.text ?? kw.term ?? ''), count: kw.count ?? kw.freq ?? null };
+  if (Array.isArray(kw)) {
+    return { word: String(kw[0] ?? ''), count: kw[1] ?? null, score: kw[2] ?? null };
+  }
+  if (kw && typeof kw === 'object') {
+    return {
+      word: String(kw.word ?? kw.text ?? kw.term ?? ''),
+      count: kw.count ?? kw.freq ?? null,
+      score: kw.score ?? null,
+    };
+  }
   return { word: String(kw ?? ''), count: null };
 }
 

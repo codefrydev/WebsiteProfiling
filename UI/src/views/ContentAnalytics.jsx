@@ -1,7 +1,22 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
-import { BookOpen, Globe, Twitter, FileText, AlertTriangle, BarChart2, Share2, ChevronDown, ChevronRight, ExternalLink, Tag, Layers } from 'lucide-react';
+import {
+  BookOpen,
+  Globe,
+  Twitter,
+  FileText,
+  AlertTriangle,
+  BarChart2,
+  Share2,
+  ChevronDown,
+  ChevronRight,
+  ExternalLink,
+  Tag,
+  Layers,
+  Activity,
+  ListChecks,
+} from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '../components';
 import { palette, PALETTE_CATEGORICAL } from '../utils/chartPalette';
@@ -86,6 +101,42 @@ function groupedBarOpts(yTitle = 'Pages') {
     },
   };
 }
+
+function stackedPercentBarOpts() {
+  return {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: true, labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 } },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ` ${ctx.dataset.label}: ${Number(ctx.raw).toFixed(1)}%`,
+        },
+      },
+    },
+    scales: {
+      x: {
+        stacked: true,
+        grid: { color: GRID_COLOR },
+        beginAtZero: true,
+        max: 100,
+        title: { display: true, text: '% of pages', color: '#64748b' },
+      },
+      y: { stacked: true, grid: { color: GRID_COLOR } },
+    },
+  };
+}
+
+const CONTENT_ISSUE_KEYS = [
+  { key: 'missing_h1', label: 'Missing H1' },
+  { key: 'missing_title', label: 'Missing title' },
+  { key: 'multiple_h1', label: 'Multiple H1s' },
+  { key: 'missing_meta_desc', label: 'Missing meta desc' },
+  { key: 'meta_desc_short', label: 'Meta too short' },
+  { key: 'meta_desc_long', label: 'Meta too long' },
+  { key: 'thin_content', label: 'Thin (body chars)' },
+];
 
 function qualityBarColors(labels) {
   return labels.map((l) => {
@@ -191,9 +242,41 @@ function ThinPagesSection({ pages }) {
   );
 }
 
-export default function ContentAnalytics() {
+export default function ContentAnalytics({ searchQuery = '' }) {
   const { data } = useReport();
+  const q = (searchQuery || '').toLowerCase().trim();
+
+  const thinPages = useMemo(() => {
+    const tp = data?.content_analytics?.thin_pages;
+    return Array.isArray(tp) ? tp : [];
+  }, [data?.content_analytics?.thin_pages]);
+
+  const thinPagesFiltered = useMemo(() => {
+    if (!q) return thinPages;
+    return thinPages.filter((p) => {
+      const url = typeof p === 'string' ? p : (p.url || '');
+      return String(url).toLowerCase().includes(q);
+    });
+  }, [thinPages, q]);
+
+  const missingOgFiltered = useMemo(() => {
+    const arr = data?.social_coverage?.missing_og || [];
+    if (!q) return arr;
+    return arr.filter((u) => String(u).toLowerCase().includes(q));
+  }, [data?.social_coverage?.missing_og, q]);
+
+  const missingTwitterFiltered = useMemo(() => {
+    const arr = data?.social_coverage?.missing_twitter || [];
+    if (!q) return arr;
+    return arr.filter((u) => String(u).toLowerCase().includes(q));
+  }, [data?.social_coverage?.missing_twitter, q]);
+
   if (!data) return null;
+
+  const summary = data.summary || {};
+  const rtStats = data.response_time_stats || {};
+  const rtDist = rtStats.distribution || {};
+  const contentUrls = data.content_urls || {};
 
   const ca = data.content_analytics || {};
   const sc = data.social_coverage || {};
@@ -204,7 +287,6 @@ export default function ContentAnalytics() {
   const rlDist = ca.reading_level_distribution || {};
   const crDist = ca.content_ratio_distribution || {};
   const topKw = ca.top_keywords_site || [];
-  const thinPages = ca.thin_pages || [];
 
   const wcLabels = Object.keys(wcDist);
   const wcValues = Object.values(wcDist).map(Number);
@@ -258,11 +340,59 @@ export default function ContentAnalytics() {
   const depthValues = Object.values(depthByDepth).map(Number);
   const hasDepthData = depthLabels.length > 0;
 
+  const statusDoughnut = (() => {
+    const parts = [
+      ['2xx OK', Number(summary.count_2xx) || 0],
+      ['3xx Redirect', Number(summary.count_3xx) || 0],
+      ['4xx Client error', Number(summary.count_4xx) || 0],
+      ['5xx Server error', Number(summary.count_5xx) || 0],
+      ['Error / blocked', Number(summary.count_error) || 0],
+    ].filter(([, n]) => n > 0);
+    return {
+      labels: parts.map((p) => p[0]),
+      values: parts.map((p) => p[1]),
+    };
+  })();
+  const hasStatusChart = statusDoughnut.values.length > 0 && (Number(summary.total_urls) || 0) > 0;
+
+  const rtLabels = Object.keys(rtDist);
+  const rtValues = rtLabels.map((k) => Number(rtDist[k]) || 0);
+  const hasRtDist = rtLabels.length > 0 && rtValues.some((v) => v > 0);
+
+  const issueBarLabels = CONTENT_ISSUE_KEYS.map((r) => r.label);
+  const issueBarValues = CONTENT_ISSUE_KEYS.map((r) => (contentUrls[r.key] || []).length);
+  const hasIssueBar = issueBarValues.some((v) => v > 0);
+
+  const titleTotal =
+    (seoHealth.missing_title || 0) +
+    (seoHealth.title_short || 0) +
+    (seoHealth.title_ok || 0) +
+    (seoHealth.title_long || 0);
+  const metaTotal =
+    (seoHealth.missing_meta_desc || 0) +
+    (seoHealth.meta_desc_short || 0) +
+    (seoHealth.meta_desc_ok || 0) +
+    (seoHealth.meta_desc_long || 0);
+  const h1Total = (seoHealth.h1_zero || 0) + (seoHealth.h1_one || 0) + (seoHealth.h1_multi || 0);
+  const titleOkPct = titleTotal > 0 ? (100 * (seoHealth.title_ok || 0)) / titleTotal : 0;
+  const metaOkPct = metaTotal > 0 ? (100 * (seoHealth.meta_desc_ok || 0)) / metaTotal : 0;
+  const h1OkPct = h1Total > 0 ? (100 * (seoHealth.h1_one || 0)) / h1Total : 0;
+  const hasSeoOptimalBar = titleTotal > 0 && metaTotal > 0 && h1Total > 0;
+
+  const thinByWords = thinPages.length;
+  const thinByChars = Number(seoHealth.thin_content) || 0;
+  const hasThinCompare = thinByWords > 0 || thinByChars > 0;
+
+  const wcPercLabels = ['Min', 'P25', 'Median', 'Mean', 'P75', 'Max'];
+  const wcPercRaw = [wcStats.min, wcStats.p25, wcStats.median, wcStats.mean, wcStats.p75, wcStats.max];
+  const wcPercValues = wcPercRaw.map((v) => (v != null && !Number.isNaN(Number(v)) ? Number(v) : null));
+  const hasWcPercBar = wcPercValues.every((v) => v != null) && wcStats.max > 0;
+
   return (
     <PageLayout className="space-y-8">
       <PageHeader
         title="Content Insights"
-        subtitle="Word count, readability, content-to-HTML ratio, top keywords, and social meta coverage."
+        subtitle="Word count, readability, content-to-HTML ratio, top keywords, social meta coverage, crawl health, and on-page flags."
       />
 
       {/* KPI stat cards */}
@@ -321,19 +451,210 @@ export default function ContentAnalytics() {
         </Card>
       </div>
 
+      {(hasStatusChart || hasRtDist) && (
+        <div className="space-y-6">
+          <SectionHeader
+            icon={Activity}
+            title="Crawl health & response times"
+            description="HTTP status mix for this crawl, plus response-time buckets (p50 / p95 noted). Helps relate content metrics to crawl success and speed."
+          />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {hasStatusChart && (
+              <Card padding="tight">
+                <h3 className="text-sm font-bold text-slate-200 mb-1">URLs by HTTP status</h3>
+                <p className="text-xs text-slate-500 mb-3">
+                  Total crawled:{' '}
+                  <span className="text-slate-300 font-semibold">{Number(summary.total_urls || 0).toLocaleString()}</span>
+                  {summary.success_rate != null && (
+                    <> · <span className="text-green-400 font-semibold">{summary.success_rate}%</span> returned 2xx
+                    </>
+                  )}
+                </p>
+                <div className="h-64 flex items-center justify-center">
+                  <div className="w-full max-w-[280px] h-56">
+                    <Doughnut
+                      data={{
+                        labels: statusDoughnut.labels,
+                        datasets: [
+                          {
+                            data: statusDoughnut.values,
+                            backgroundColor: palette(statusDoughnut.labels.length),
+                            borderColor: 'rgba(15,23,42,0.8)',
+                            borderWidth: 2,
+                          },
+                        ],
+                      }}
+                      options={{
+                        ...doughnutOpts(),
+                        plugins: {
+                          ...doughnutOpts().plugins,
+                          tooltip: {
+                            callbacks: {
+                              label: (ctx) => {
+                                const n = Number(ctx.raw);
+                                const sum = statusDoughnut.values.reduce((a, b) => a + b, 0);
+                                const pct = sum ? ((100 * n) / sum).toFixed(1) : '0';
+                                return ` ${ctx.label}: ${n.toLocaleString()} (${pct}%)`;
+                              },
+                            },
+                          },
+                        },
+                      }}
+                    />
+                  </div>
+                </div>
+              </Card>
+            )}
+            {hasRtDist && (
+              <Card padding="tight">
+                <h3 className="text-sm font-bold text-slate-200 mb-1">Response time distribution</h3>
+                <p className="text-xs text-slate-500 mb-3">
+                  Pages per latency band
+                  {rtStats.p50 != null && (
+                    <>
+                      {' '}
+                      · p50: <span className="text-slate-300 font-mono">{Math.round(rtStats.p50)}ms</span>
+                      {rtStats.p95 != null && (
+                        <>
+                          , p95: <span className="text-slate-300 font-mono">{Math.round(rtStats.p95)}ms</span>
+                        </>
+                      )}
+                    </>
+                  )}
+                </p>
+                <div className="h-64">
+                  <Bar
+                    data={{
+                      labels: rtLabels,
+                      datasets: [{ data: rtValues, backgroundColor: palette(rtLabels.length) }],
+                    }}
+                    options={{
+                      ...barOpts('Time bucket'),
+                      plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw?.toLocaleString()} URLs` } },
+                      },
+                    }}
+                    plugins={[barValueLabelsPlugin]}
+                  />
+                </div>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
+
+      {(hasIssueBar || hasSeoOptimalBar || hasThinCompare) && (
+        <div className="space-y-6">
+          <SectionHeader
+            icon={ListChecks}
+            title="On-page quality & thin content"
+            description="Flagged URL counts, share of pages in ideal title/meta/H1 ranges, and thin-content signals (words vs HTML body)."
+          />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {hasIssueBar && (
+              <Card padding="tight">
+                <h3 className="text-sm font-bold text-slate-200 mb-1">URLs flagged by issue type</h3>
+                <p className="text-xs text-slate-500 mb-3">Same buckets as the On-Page SEO report — how many URLs per issue</p>
+                <div className="h-80">
+                  <Bar
+                    data={{
+                      labels: issueBarLabels,
+                      datasets: [{ data: issueBarValues, backgroundColor: palette(issueBarLabels.length) }],
+                    }}
+                    options={{
+                      ...barOptsH(),
+                      plugins: {
+                        ...barOptsH().plugins,
+                        tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw?.toLocaleString()} URLs` } },
+                      },
+                    }}
+                    plugins={[barValueLabelsPlugin]}
+                  />
+                </div>
+              </Card>
+            )}
+            {hasSeoOptimalBar && (
+              <Card padding="tight">
+                <h3 className="text-sm font-bold text-slate-200 mb-1">Pages in “good” ranges</h3>
+                <p className="text-xs text-slate-500 mb-3">
+                  Title 30–60 chars, meta 70–160 chars, exactly one H1 — stacked % of all crawled HTML rows in the dataset
+                </p>
+                <div className="h-56">
+                  <Bar
+                    data={{
+                      labels: ['Title length', 'Meta description', 'H1 count'],
+                      datasets: [
+                        {
+                          label: 'In range / optimal',
+                          data: [titleOkPct, metaOkPct, h1OkPct],
+                          backgroundColor: '#22C55E',
+                        },
+                        {
+                          label: 'Needs attention',
+                          data: [100 - titleOkPct, 100 - metaOkPct, 100 - h1OkPct],
+                          backgroundColor: '#EF444466',
+                        },
+                      ],
+                    }}
+                    options={stackedPercentBarOpts()}
+                  />
+                </div>
+              </Card>
+            )}
+            {hasThinCompare && (
+              <Card padding="tight" className={hasIssueBar && hasSeoOptimalBar ? 'lg:col-span-2' : ''}>
+                <h3 className="text-sm font-bold text-slate-200 mb-1">Thin content signals</h3>
+                <p className="text-xs text-slate-500 mb-3">
+                  Under 300 words (content analytics) vs. small HTML body by character count (SEO health threshold)
+                </p>
+                <div className="h-48 max-w-md">
+                  <Bar
+                    data={{
+                      labels: ['Under 300 words', 'Small HTML body'],
+                      datasets: [
+                        {
+                          label: 'Page count',
+                          data: [thinByWords, thinByChars],
+                          backgroundColor: ['#F59E0B', '#DC2626'],
+                        },
+                      ],
+                    }}
+                    options={{
+                      ...barOpts('Pages'),
+                      plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw?.toLocaleString()} pages` } },
+                      },
+                    }}
+                    plugins={[barValueLabelsPlugin]}
+                  />
+                </div>
+              </Card>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Thin pages expandable list */}
       {hasThinPages && (
         <Card padding="default">
           <div className="flex items-center gap-2 mb-1">
             <AlertTriangle className="h-4 w-4 text-amber-400" />
             <span className="text-sm font-semibold text-amber-300">
-              {thinPages.length} page{thinPages.length !== 1 ? 's' : ''} have very little content
+              {q
+                ? `${thinPagesFiltered.length} of ${thinPages.length} thin page${thinPages.length !== 1 ? 's' : ''} match search`
+                : `${thinPages.length} page${thinPages.length !== 1 ? 's' : ''} have very little content`}
             </span>
           </div>
           <p className="text-xs text-slate-500 mb-2">
             Pages under ~300 words may be seen as low-value by search engines. Consider expanding or consolidating them.
           </p>
-          <ThinPagesSection pages={thinPages} />
+          {thinPagesFiltered.length > 0 ? (
+            <ThinPagesSection pages={thinPagesFiltered} />
+          ) : (
+            <p className="text-sm text-slate-500">No thin pages match your search.</p>
+          )}
         </Card>
       )}
 
@@ -411,6 +732,47 @@ export default function ContentAnalytics() {
               )}
             </div>
           </Card>
+
+          {hasWcPercBar && (
+            <Card padding="tight" className="lg:col-span-2">
+              <h3 className="text-sm font-bold text-slate-200 mb-1">Word count ladder (min → max)</h3>
+              <p className="text-xs text-slate-500 mb-3">Key percentiles and mean — same numbers as the architecture card, shown as bars</p>
+              <div className="h-56">
+                <Bar
+                  data={{
+                    labels: wcPercLabels,
+                    datasets: [
+                      {
+                        data: wcPercValues,
+                        backgroundColor: ['#64748B', '#EAB308', '#3B82F6', '#A855F7', '#22C55E', '#F97316'],
+                      },
+                    ],
+                  }}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: { display: false },
+                      tooltip: {
+                        callbacks: {
+                          label: (ctx) => ` ${Number(ctx.raw).toLocaleString()} words`,
+                        },
+                      },
+                    },
+                    scales: {
+                      x: { grid: { color: GRID_COLOR }, title: { display: true, text: 'Statistic', color: '#64748b' } },
+                      y: {
+                        grid: { color: GRID_COLOR },
+                        beginAtZero: true,
+                        title: { display: true, text: 'Words', color: '#64748b' },
+                      },
+                    },
+                  }}
+                  plugins={[barValueLabelsPlugin]}
+                />
+              </div>
+            </Card>
+          )}
         </div>
       </div>
 
@@ -594,10 +956,11 @@ export default function ContentAnalytics() {
                 <Globe className="h-4 w-4 text-blue-400" />
                 <h3 className="text-sm font-bold text-slate-200">Missing Open Graph Tags</h3>
                 <span className="ml-auto text-xs font-bold text-slate-500 bg-slate-700/60 rounded-full px-2.5 py-0.5">
-                  {sc.missing_og.length}
+                  {missingOgFiltered.length}
                 </span>
               </div>
               <div className="max-h-80 overflow-y-auto">
+                {missingOgFiltered.length > 0 ? (
                 <Table>
                   <TableHead sticky>
                     <tr>
@@ -607,7 +970,7 @@ export default function ContentAnalytics() {
                     </tr>
                   </TableHead>
                   <TableBody striped>
-                    {sc.missing_og.slice(0, 50).map((u, i) => (
+                    {missingOgFiltered.slice(0, 50).map((u, i) => (
                       <TableRow key={i} className="group">
                         <TableCell className="text-slate-600 text-xs font-mono text-center w-8">{i + 1}</TableCell>
                         <TableCell className="max-w-[360px]">
@@ -628,6 +991,9 @@ export default function ContentAnalytics() {
                     ))}
                   </TableBody>
                 </Table>
+                ) : (
+                  <p className="p-4 text-sm text-slate-500">No URLs match your search.</p>
+                )}
               </div>
             </Card>
           )}
@@ -638,10 +1004,11 @@ export default function ContentAnalytics() {
                 <Twitter className="h-4 w-4 text-sky-400" />
                 <h3 className="text-sm font-bold text-slate-200">Missing Twitter Card Tags</h3>
                 <span className="ml-auto text-xs font-bold text-slate-500 bg-slate-700/60 rounded-full px-2.5 py-0.5">
-                  {sc.missing_twitter.length}
+                  {missingTwitterFiltered.length}
                 </span>
               </div>
               <div className="max-h-80 overflow-y-auto">
+                {missingTwitterFiltered.length > 0 ? (
                 <Table>
                   <TableHead sticky>
                     <tr>
@@ -651,7 +1018,7 @@ export default function ContentAnalytics() {
                     </tr>
                   </TableHead>
                   <TableBody striped>
-                    {sc.missing_twitter.slice(0, 50).map((u, i) => (
+                    {missingTwitterFiltered.slice(0, 50).map((u, i) => (
                       <TableRow key={i} className="group">
                         <TableCell className="text-slate-600 text-xs font-mono text-center w-8">{i + 1}</TableCell>
                         <TableCell className="max-w-[360px]">
@@ -672,6 +1039,9 @@ export default function ContentAnalytics() {
                     ))}
                   </TableBody>
                 </Table>
+                ) : (
+                  <p className="p-4 text-sm text-slate-500">No URLs match your search.</p>
+                )}
               </div>
             </Card>
           )}

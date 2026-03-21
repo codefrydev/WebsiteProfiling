@@ -326,7 +326,11 @@ def _parse_lighthouse_data(data: dict[str, Any]) -> list[dict[str, Any]]:
     return results
 
 
-def parse_lighthouse_to_diagnostics(data: dict[str, Any]) -> list[dict[str, Any]]:
+def parse_lighthouse_to_diagnostics(
+    data: dict[str, Any],
+    *,
+    max_nodes_in_refs: int | None = 10,
+) -> list[dict[str, Any]]:
     """
     Convert Lighthouse result dict to full diagnostics schema: warning, lighthouse_audit_id,
     detection_method, primary_impact, secondary_impacts, evidence, severity, one_line_fix,
@@ -352,7 +356,12 @@ def parse_lighthouse_to_diagnostics(data: dict[str, Any]) -> list[dict[str, Any]
         if "details" in audit and isinstance(audit["details"], dict):
             nodes = audit["details"].get("items") or audit["details"].get("nodes")
             if nodes:
-                refs["nodes"] = nodes[:10] if isinstance(nodes, list) else nodes
+                if max_nodes_in_refs is None:
+                    refs["nodes"] = nodes if isinstance(nodes, list) else nodes
+                elif isinstance(nodes, list):
+                    refs["nodes"] = nodes[:max_nodes_in_refs]
+                else:
+                    refs["nodes"] = nodes
         det: dict[str, Any] = {
             "warning": warning,
             "lighthouse_audit_id": audit_id,

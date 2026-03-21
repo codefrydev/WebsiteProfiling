@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import LhDetailsTable from './LhDetailsTable';
 
 function severityBg(s) {
   if (!s) return 'bg-slate-700 text-slate-300';
@@ -83,6 +84,15 @@ export default function DiagnosticItem({ d }) {
               </code>
             </div>
           )}
+
+          {Array.isArray(d.references?.nodes) &&
+            d.references.nodes.length > 0 &&
+            typeof d.references.nodes[0] === 'object' && (
+              <div>
+                <div className="text-xs text-slate-500 font-semibold mb-2">Details</div>
+                <LhDetailsTable items={d.references.nodes} />
+              </div>
+            )}
         </div>
       )}
     </div>

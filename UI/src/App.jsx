@@ -11,16 +11,16 @@ import {
   PieChart,
   Share2,
   Search,
-  Download,
   BarChart2,
   Cpu,
   Menu,
   X,
   Github,
+  Images,
 } from 'lucide-react';
 import { ReportProvider } from './context/ReportContext.jsx';
 import { useReport } from './context/useReport';
-import { Button, Badge, ReportSelector } from './components';
+import { Badge, ReportSelector } from './components';
 import Overview from './views/Overview';
 import Issues from './views/Issues';
 import Links from './views/Links';
@@ -32,6 +32,7 @@ import Charts from './views/Charts';
 import Network from './views/Network';
 import ContentAnalytics from './views/ContentAnalytics';
 import TechStack from './views/TechStack';
+import Gallery from './views/Gallery';
 
 const VIEWS = [
   { id: 'overview', label: 'Dashboard', component: Overview, section: 'Audit Overview', icon: LayoutDashboard },
@@ -45,6 +46,7 @@ const VIEWS = [
   { id: 'tech-stack', label: 'Tech Detection', component: TechStack, section: 'Content & SEO', icon: Cpu },
   { id: 'charts', label: 'Crawl Analytics', component: Charts, section: 'Visualizations', icon: PieChart },
   { id: 'network', label: 'Internal Linking', component: Network, section: 'Visualizations', icon: Share2 },
+  { id: 'gallery', label: 'Gallery', component: Gallery, section: 'Visualizations', icon: Images },
 ];
 
 function AppContent() {
@@ -62,28 +64,6 @@ function AppContent() {
   const CurrentView = VIEWS.find((v) => v.id === view)?.component || Overview;
   const issueCount = data?.categories?.reduce((n, c) => n + (c.issues?.length || 0), 0) ?? 0;
   const securityCount = data?.security_findings?.length ?? 0;
-
-  const handleExportData = () => {
-    const links = data?.links || [];
-    const keys = ['url', 'status', 'inlinks', 'title', 'content_length', 'depth'];
-    const rows = [keys.join(',')];
-    links.forEach((l) => {
-      rows.push(keys.map((k) => {
-        const v = l[k];
-        if (v == null) return '';
-        const s = String(v);
-        if (s.indexOf(',') !== -1 || s.indexOf('"') !== -1 || s.indexOf('\n') !== -1) return '"' + s.replace(/"/g, '""') + '"';
-        return s;
-      }).join(','));
-    });
-    const csv = rows.join('\n');
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = (data?.site_name || 'crawl') + '-links.csv';
-    a.click();
-    URL.revokeObjectURL(a.href);
-  };
 
   if (loading) {
     return (
@@ -226,10 +206,6 @@ function AppContent() {
           </div>
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             <ReportSelector />
-            <Button variant="primary" onClick={handleExportData}>
-              <Download className="h-4 w-4" />
-              <span className="hidden sm:inline">Export Data</span>
-            </Button>
           </div>
         </header>
 

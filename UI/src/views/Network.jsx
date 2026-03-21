@@ -1,26 +1,26 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import ForceGraph3D from '3d-force-graph';
 import { Maximize, Minimize } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { PageLayout, PageHeader, Card, Button } from '../components';
 
-export default function Network() {
+export default function Network({ searchQuery = '' }) {
   const containerRef = useRef(null);
   const wrapperRef = useRef(null);
   const graphRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { data } = useReport();
 
-  useEffect(() => {
-    if (!data || !containerRef.current) return;
-
+  const graphPayload = useMemo(() => {
+    if (!data) return null;
+    const q = (searchQuery || '').toLowerCase().trim();
     const urlToStatus = {};
     (data.links || []).forEach((l) => { urlToStatus[l.url] = String(l.status); });
 
     const nodes = data.graph_nodes || [];
     const edges = data.graph_edges || [];
 
-    if (nodes.length === 0 && edges.length === 0) return;
+    if (nodes.length === 0 && edges.length === 0) return null;
 
     const nodeMap = new Map();
     nodes.forEach((u) => {
@@ -45,19 +45,38 @@ export default function Network() {
       }
     });
 
-    const graphData = {
-      nodes: Array.from(nodeMap.values()),
-      links: edges
-        .map((e) => {
-          const fromId = e.from ?? e['from'];
-          const toId = e.to ?? e['to'];
-          return fromId && toId ? { source: fromId, target: toId } : null;
-        })
-        .filter(Boolean),
+    let ids = Array.from(nodeMap.keys());
+    if (q) {
+      ids = ids.filter((id) => String(id).toLowerCase().includes(q));
+    }
+    const idSet = new Set(ids);
+    const graphNodes = ids.map((id) => nodeMap.get(id));
+    const graphLinks = edges
+      .map((e) => {
+        const fromId = e.from ?? e['from'];
+        const toId = e.to ?? e['to'];
+        return fromId && toId && idSet.has(fromId) && idSet.has(toId)
+          ? { source: fromId, target: toId }
+          : null;
+      })
+      .filter(Boolean);
+
+    return {
+      nodes: graphNodes,
+      links: graphLinks,
+      searchActive: !!q,
+      totalNodeCount: nodeMap.size,
     };
+  }, [data, searchQuery]);
+
+  useEffect(() => {
+    if (!data || !containerRef.current || !graphPayload || graphPayload.nodes.length === 0) {
+      graphRef.current = null;
+      return undefined;
+    }
 
     const graph = ForceGraph3D()(containerRef.current)
-      .graphData(graphData)
+      .graphData({ nodes: graphPayload.nodes, links: graphPayload.links })
       .nodeColor((node) => node.color)
       .nodeLabel((node) => node.title || node.id)
       .linkColor(() => 'rgba(148, 163, 184, 0.3)')
@@ -69,7 +88,7 @@ export default function Network() {
     return () => {
       graphRef.current = null;
     };
-  }, [data]);
+  }, [data, graphPayload]);
 
   useEffect(() => {
     const g = graphRef.current;
@@ -77,7 +96,7 @@ export default function Network() {
     const w = containerRef.current.offsetWidth;
     const h = containerRef.current.offsetHeight;
     if (w && h) g.width(w).height(h);
-  }, [isFullscreen]);
+  }, [isFullscreen, graphPayload]);
 
   const toggleFullscreen = () => {
     const el = wrapperRef.current;
@@ -94,12 +113,18 @@ export default function Network() {
   const hasGraph =
     (data.graph_nodes && data.graph_nodes.length > 0) || (data.graph_edges && data.graph_edges.length > 0);
 
+  const searchEmpty =
+    graphPayload?.searchActive &&
+    graphPayload.nodes.length === 0 &&
+    graphPayload.totalNodeCount > 0;
+
   return (
     <PageLayout className="flex flex-col h-full">
       <PageHeader
         title="Internal Linking Map"
         subtitle="Physics-based graph of internal link structure. Red nodes indicate 4xx/5xx errors."
       />
+      <div ref={wrapperRef} className="flex-1 flex flex-col min-h-[80vh]">
       <Card
         overflowHidden
         padding="none"
@@ -112,6 +137,11 @@ export default function Network() {
               className="absolute inset-0 w-full h-full bg-[#05080f]"
               style={{ outline: 'none' }}
             />
+            {searchEmpty && (
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#05080f]/90 text-slate-400 text-sm px-6 text-center">
+                No pages match your search.
+              </div>
+            )}
             <div className="absolute top-4 left-4 bg-brand-900 border border-default p-3 rounded-xl text-xs space-y-2 z-10">
               <div className="flex items-center gap-2 text-bright">
                 <div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-400" />
@@ -142,6 +172,7 @@ export default function Network() {
           </div>
         )}
       </Card>
+      </div>
     </PageLayout>
   );
 }

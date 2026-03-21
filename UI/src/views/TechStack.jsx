@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { useReport } from '../context/useReport';
@@ -46,12 +47,23 @@ function categorizeTech(name) {
   return 'Other';
 }
 
-export default function TechStack() {
+export default function TechStack({ searchQuery = '' }) {
   const { data } = useReport();
+  const q = (searchQuery || '').toLowerCase().trim();
+  const ts = data?.tech_stack_summary || {};
+  const techs = useMemo(() => {
+    const all = ts.technologies || [];
+    if (!q) return all;
+    return all.filter((t) => {
+      const name = (t.name || '').toLowerCase();
+      const cat = categorizeTech(t.name).toLowerCase();
+      const sampleHit = (t.sample_urls || []).some((u) => String(u).toLowerCase().includes(q));
+      return name.includes(q) || cat.includes(q) || sampleHit;
+    });
+  }, [ts.technologies, q]);
+
   if (!data) return null;
 
-  const ts = data.tech_stack_summary || {};
-  const techs = ts.technologies || [];
   const totalAnalyzed = ts.total_pages_analyzed || 0;
 
   const chartLabels = techs.map((t) => t.name);
@@ -102,6 +114,8 @@ export default function TechStack() {
               }}
               plugins={[barValueLabelsPlugin]}
             />
+          ) : (ts.technologies || []).length > 0 ? (
+            <div className="flex items-center justify-center h-full text-slate-500 text-sm">No technologies match your search.</div>
           ) : (
             <div className="flex items-center justify-center h-full text-slate-500 text-sm">No technology data. Run a crawl first.</div>
           )}

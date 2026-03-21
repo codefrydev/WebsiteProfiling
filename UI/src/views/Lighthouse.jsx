@@ -9,22 +9,43 @@ import {
   CATEGORIES, CATEGORY_LABELS, METRIC_THRESHOLDS, IMPACT_GROUPS, QUICK_WINS,
 } from '../utils/lighthouseUtils';
 import {
-  ScoreRing, ThresholdBar, DiagnosticGroup, QuickWinCard, MultiPageTable,
+  ScoreRing,
+  ThresholdBar,
+  DiagnosticGroup,
+  QuickWinCard,
+  MultiPageTable,
+  LhAuditExpandable,
 } from '../components/lighthouse';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip);
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-export default function Lighthouse() {
+export default function Lighthouse({ searchQuery = '' }) {
   const { data } = useReport();
   const detailRef = useRef(null);
 
   const byUrl = useMemo(() => data?.lighthouse_by_url || {}, [data]);
   const urlList = useMemo(() => Object.keys(byUrl), [byUrl]);
   const hasMulti = urlList.length >= 2;
+  const q = (searchQuery || '').toLowerCase().trim();
+  const urlPool = useMemo(() => {
+    if (!q) return urlList;
+    return urlList.filter((u) => u.toLowerCase().includes(q));
+  }, [urlList, q]);
+  const byUrlForTable = useMemo(() => {
+    const o = {};
+    urlPool.forEach((u) => {
+      if (byUrl[u]) o[u] = byUrl[u];
+    });
+    return o;
+  }, [urlPool, byUrl]);
 
   const [selectedUrl, setSelectedUrl] = useState(null);
-  const effectiveUrl = selectedUrl || urlList[0] || null;
+  const displayUrl = useMemo(() => {
+    if (urlPool.length === 0) return q ? null : (urlList[0] || null);
+    if (selectedUrl && urlPool.includes(selectedUrl)) return selectedUrl;
+    return urlPool[0];
+  }, [urlPool, q, urlList, selectedUrl]);
 
   const handleSelectUrl = (url) => {
     setSelectedUrl(url);
@@ -33,14 +54,15 @@ export default function Lighthouse() {
 
   // Active summary: per-URL when available, else global
   const summary = useMemo(() => {
-    if (effectiveUrl && byUrl[effectiveUrl]) return byUrl[effectiveUrl];
+    if (displayUrl && byUrl[displayUrl]) return byUrl[displayUrl];
     return data?.lighthouse_summary || {};
-  }, [effectiveUrl, byUrl, data]);
+  }, [displayUrl, byUrl, data]);
 
-  const diagnostics = useMemo(
-    () => data?.lighthouse_diagnostics || data?.lighthouse_summary?.diagnostics || [],
-    [data]
-  );
+  const diagnostics = useMemo(() => {
+    const perUrl = displayUrl && byUrl[displayUrl]?.diagnostics;
+    if (Array.isArray(perUrl) && perUrl.length > 0) return perUrl;
+    return data?.lighthouse_diagnostics || data?.lighthouse_summary?.diagnostics || [];
+  }, [data, displayUrl, byUrl]);
 
   const humanSummary = data?.lighthouse_human_summary || summary?.human_summary || '';
   const mm = summary?.median_metrics || {};
@@ -53,7 +75,27 @@ export default function Lighthouse() {
   const runTimestamp = summary?.run_timestamp || '';
   const iterations = summary?.iterations ?? 0;
 
-  const hasData = summary?.url || diagnostics.length > 0 || topFailures.length > 0;
+  const failingAuditsDetailed = useMemo(() => {
+    const audits = summary?.audits;
+    if (!Array.isArray(audits)) return [];
+    return audits.filter((a) => a?.score != null && a.score < 1);
+  }, [summary?.audits]);
+
+  const failingAuditsForDisplay = useMemo(() => {
+    if (!q) return failingAuditsDetailed;
+    return failingAuditsDetailed.filter((a) => {
+      const title = (a.title || '').toLowerCase();
+      const id = String(a.id || '').toLowerCase();
+      const desc = (a.description || '').toLowerCase();
+      return title.includes(q) || id.includes(q) || desc.includes(q);
+    });
+  }, [failingAuditsDetailed, q]);
+
+  const hasData =
+    summary?.url ||
+    diagnostics.length > 0 ||
+    topFailures.length > 0 ||
+    failingAuditsDetailed.length > 0;
 
   // Build flat diagnostics list
   const diagnosticsList = useMemo(() => {
@@ -68,11 +110,21 @@ export default function Lighthouse() {
     }));
   }, [diagnostics, topFailures]);
 
+  const diagnosticsForGroups = useMemo(() => {
+    if (!q) return diagnosticsList;
+    return diagnosticsList.filter((d) => {
+      const w = (d.warning || '').toLowerCase();
+      const id = String(d.lighthouse_audit_id || d.id || '').toLowerCase();
+      const fix = (d.one_line_fix || '').toLowerCase();
+      return w.includes(q) || id.includes(q) || fix.includes(q);
+    });
+  }, [diagnosticsList, q]);
+
   // Group diagnostics by primary_impact
   const groupedDiagnostics = useMemo(() => {
     const map = {};
     IMPACT_GROUPS.forEach((g) => { map[g.id] = []; });
-    diagnosticsList.forEach((d) => {
+    diagnosticsForGroups.forEach((d) => {
       const impact = (d.primary_impact || 'UX').trim();
       const grp = IMPACT_GROUPS.find((g) =>
         g.id === impact ||
@@ -84,7 +136,7 @@ export default function Lighthouse() {
       map[key].push(d);
     });
     return map;
-  }, [diagnosticsList]);
+  }, [diagnosticsForGroups]);
 
   // Default-open: group with most critical/high issues
   const mostCriticalGroup = useMemo(() => {
@@ -160,7 +212,7 @@ export default function Lighthouse() {
           <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Multi-page comparison</h2>
           <p className="text-slate-500 text-sm mb-3">Click any row to view its detailed breakdown below. Sort by any column.</p>
           <Card padding="none" overflowHidden>
-            <MultiPageTable byUrl={byUrl} selectedUrl={effectiveUrl} onSelect={handleSelectUrl} />
+            <MultiPageTable byUrl={byUrlForTable} selectedUrl={displayUrl} onSelect={handleSelectUrl} />
           </Card>
         </div>
       )}
@@ -171,17 +223,21 @@ export default function Lighthouse() {
           <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Detailed view</h2>
           <div className="flex items-center gap-3">
             <Globe className="h-4 w-4 text-slate-500 shrink-0" />
-            <select
-              value={effectiveUrl || ''}
-              onChange={(e) => setSelectedUrl(e.target.value)}
-              className="bg-brand-800 border border-default text-sm rounded-lg px-3 py-2 text-slate-200 outline-none flex-1 max-w-lg"
-            >
-              {urlList.map((url) => {
-                const sc = byUrl[url]?.category_scores?.performance;
-                const dot = sc != null ? (sc >= 90 ? '🟢' : sc >= 50 ? '🟡' : '🔴') : '⚪';
-                return <option key={url} value={url}>{dot} {url}</option>;
-              })}
-            </select>
+            {urlPool.length === 0 ? (
+              <p className="text-sm text-slate-500">No URLs match your search.</p>
+            ) : (
+              <select
+                value={displayUrl || ''}
+                onChange={(e) => setSelectedUrl(e.target.value)}
+                className="bg-brand-800 border border-default text-sm rounded-lg px-3 py-2 text-slate-200 outline-none flex-1 max-w-lg"
+              >
+                {urlPool.map((url) => {
+                  const sc = byUrl[url]?.category_scores?.performance;
+                  const dot = sc != null ? (sc >= 90 ? '🟢' : sc >= 50 ? '🟡' : '🔴') : '⚪';
+                  return <option key={url} value={url}>{dot} {url}</option>;
+                })}
+              </select>
+            )}
           </div>
         </div>
       )}
@@ -272,6 +328,25 @@ export default function Lighthouse() {
         </div>
       )}
 
+      {/* ── Failing audits with Lighthouse detail tables ── */}
+      {failingAuditsDetailed.length > 0 && (
+        <div className="mb-10">
+          <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Audit tables & previews</h2>
+          <p className="text-slate-500 text-sm mb-3">
+            Expand any row for full Lighthouse detail rows (thumbnails, resource URLs, DOM nodes).
+          </p>
+          {failingAuditsForDisplay.length > 0 ? (
+            <ul className="space-y-2">
+              {failingAuditsForDisplay.map((a) => (
+                <LhAuditExpandable key={a.id} audit={a} />
+              ))}
+            </ul>
+          ) : (
+            <Card className="p-4 text-slate-500 text-sm">No audits match your search.</Card>
+          )}
+        </div>
+      )}
+
       {/* ── Grouped Diagnostics ── */}
       <div className="mb-8">
         <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">Diagnostics & Fixes</h2>
@@ -281,6 +356,10 @@ export default function Lighthouse() {
         {diagnosticsList.length === 0 ? (
           <Card className="p-6 text-center text-slate-500 text-sm">
             No failing audits — all checks passed.
+          </Card>
+        ) : diagnosticsForGroups.length === 0 ? (
+          <Card className="p-6 text-center text-slate-500 text-sm">
+            No diagnostics match your search.
           </Card>
         ) : (
           <div className="space-y-3">

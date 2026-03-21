@@ -1,7 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { Bar } from 'react-chartjs-2';
 import { ExternalLink, CheckCircle2, FileText } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '../components';
+import { palette } from '../utils/chartPalette';
+import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
+
+registerChartJsBase();
 
 const CONTENT_FILTERS = [
   {
@@ -45,15 +50,46 @@ export default function Content({ searchQuery = '' }) {
   const { data } = useReport();
   const [filter, setFilter] = useState('missing_h1');
 
+  const contentUrls = useMemo(() => data?.content_urls ?? {}, [data?.content_urls]);
+
+  const issueBarData = useMemo(() => {
+    const labels = CONTENT_FILTERS.map((f) => f.label);
+    const values = CONTENT_FILTERS.map((f) => (contentUrls[f.key] || []).length);
+    return { labels, values };
+  }, [contentUrls]);
+
+  const issueBarOpts = useMemo(() => {
+    const base = barOptionsHorizontal();
+    return {
+      ...base,
+      plugins: {
+        ...base.plugins,
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const n = Number(ctx.raw);
+              return ` ${n.toLocaleString()} URL${n !== 1 ? 's' : ''}`;
+            },
+          },
+        },
+      },
+    };
+  }, []);
+
   if (!data) return null;
 
-  const contentUrls = data.content_urls || {};
   const getCount = (key) => (contentUrls[key] || []).length;
   const totalIssues = CONTENT_FILTERS.reduce((sum, f) => sum + getCount(f.key), 0);
 
   let list = contentUrls[filter] || [];
-  const q = (searchQuery || '').toLowerCase();
-  if (q) list = list.filter((item) => (item.url || '').toLowerCase().includes(q));
+  const q = (searchQuery || '').toLowerCase().trim();
+  if (q) {
+    list = list.filter((item) => {
+      const url = (item.url || '').toLowerCase();
+      const title = (item.title || '').toLowerCase();
+      return url.includes(q) || title.includes(q);
+    });
+  }
 
   const activeFilter = CONTENT_FILTERS.find((f) => f.key === filter);
 
@@ -63,6 +99,22 @@ export default function Content({ searchQuery = '' }) {
         title="On-Page SEO"
         subtitle={`Audit missing or duplicate titles, meta descriptions, and H1 tags. ${totalIssues} total issue${totalIssues !== 1 ? 's' : ''} detected.`}
       />
+
+      {totalIssues > 0 && (
+        <Card padding="tight" shadow>
+          <h2 className="text-sm font-bold text-slate-200 mb-1">Issues by type</h2>
+          <p className="text-xs text-slate-500 mb-3">URL count per on-page issue category</p>
+          <div className="h-[22rem]">
+            <Bar
+              data={{
+                labels: issueBarData.labels,
+                datasets: [{ data: issueBarData.values, backgroundColor: palette(issueBarData.labels.length) }],
+              }}
+              options={issueBarOpts}
+            />
+          </div>
+        </Card>
+      )}
 
       {/* Summary stat chips */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">

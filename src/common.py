@@ -255,12 +255,17 @@ def parse_content_text(soup, raw_html: str) -> dict:
 
     keyword_words = [w.lower() for w in words if len(w) >= 4 and w.lower() not in _STOP_WORDS]
     top_keywords = Counter(keyword_words).most_common(10)
+    max_kw = top_keywords[0][1] if top_keywords else 0
+    kw_rows = []
+    for w, c in top_keywords:
+        score = round(100 * c / max_kw) if max_kw else 0
+        kw_rows.append({"word": w, "count": c, "score": int(score)})
 
     return {
         "word_count": word_count,
         "reading_level": reading_level,
         "content_html_ratio": content_html_ratio,
-        "top_keywords": json.dumps([{"word": w, "count": c} for w, c in top_keywords]),
+        "top_keywords": json.dumps(kw_rows),
     }
 
 
@@ -320,6 +325,38 @@ _TECH_PATTERNS = [
     ("Amazon CloudFront", "header", "x-amz-cf-id"),
     ("AWS", "header_server", "amazons3"),
 ]
+
+# Module-level cache for Wappalyzer instance (avoids reloading technologies file per page).
+_wappalyzer_instance = None
+
+
+def detect_tech_wappalyzer(
+    url: str,
+    html: str,
+    headers: dict,
+    soup,
+    wappalyzer=None,
+) -> str:
+    """
+    Detect technologies using python-Wappalyzer from existing HTML and headers.
+    Returns JSON list of tech names. On any failure, falls back to parse_tech_stack(soup, headers, url).
+    """
+    global _wappalyzer_instance
+    try:
+        from Wappalyzer import Wappalyzer, WebPage
+    except ImportError:
+        return parse_tech_stack(soup, headers, url)
+    try:
+        instance = wappalyzer if wappalyzer is not None else _wappalyzer_instance
+        if instance is None:
+            instance = Wappalyzer.latest()
+            if wappalyzer is None:
+                _wappalyzer_instance = instance
+        webpage = WebPage(url, html=html, headers=headers)
+        detected = instance.analyze(webpage)
+        return json.dumps(sorted(detected))
+    except Exception:
+        return parse_tech_stack(soup, headers, url)
 
 
 def parse_tech_stack(soup, headers: dict, url: str) -> str:

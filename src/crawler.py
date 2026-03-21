@@ -28,6 +28,7 @@ import requests
 from tqdm.auto import tqdm
 
 from .common import (
+    detect_tech_wappalyzer,
     load_robots,
     normalize_link,
     parse_content_text,
@@ -38,6 +39,7 @@ from .common import (
     parse_social_meta,
     parse_tech_stack,
 )
+from .page_analysis import analyze_html
 
 DEFAULT_USER_AGENT = "WebsiteProfilingCrawler/1.0"
 
@@ -67,6 +69,7 @@ class Crawler:
         polite_delay: float = 0.0,
         store_outlinks: bool = False,
         exclude_urls: Optional[list[str]] = None,
+        use_wappalyzer: bool = True,
     ):
         self.start_url = start_url.rstrip("/")
         self.start_netloc = urlparse(self.start_url).netloc
@@ -82,6 +85,14 @@ class Crawler:
         self.polite_delay = max(0.0, float(polite_delay))
         self.store_outlinks = store_outlinks
         self.exclude_urls = list(exclude_urls) if exclude_urls else []
+        self.use_wappalyzer = use_wappalyzer
+        self._wappalyzer_instance = None
+        if use_wappalyzer:
+            try:
+                from Wappalyzer import Wappalyzer
+                self._wappalyzer_instance = Wappalyzer.latest()
+            except Exception:
+                pass
 
         self.queue = Queue()
         if not _url_matches_exclude(self.start_url, self.exclude_urls):
@@ -184,6 +195,7 @@ class Crawler:
             "twitter_image": "",
             "tech_stack": "[]",
             "depth": None,
+            "page_analysis": "{}",
         }
 
     def worker(self, url):
@@ -271,7 +283,15 @@ class Crawler:
             ext["twitter_card"] = social.get("twitter_card", "")
             ext["twitter_title"] = social.get("twitter_title", "")
             ext["twitter_image"] = social.get("twitter_image", "")
-            ext["tech_stack"] = parse_tech_stack(_soup, headers_dict, final_url or url)
+            if self.use_wappalyzer:
+                ext["tech_stack"] = detect_tech_wappalyzer(
+                    final_url or url, text, headers_dict, _soup, self._wappalyzer_instance
+                )
+            else:
+                ext["tech_stack"] = parse_tech_stack(_soup, headers_dict, final_url or url)
+            ext["page_analysis"] = json.dumps(
+                analyze_html(text, final_url or url, final_url or url, canonical_url)
+            )
             for link in links:
                 if _url_matches_exclude(link, self.exclude_urls):
                     continue
@@ -412,6 +432,7 @@ class Crawler:
                                 "twitter_image": "",
                                 "tech_stack": "[]",
                                 "depth": None,
+                                "page_analysis": "{}",
                             }
                             if self.store_outlinks:
                                 res["outlink_targets"] = "[]"
@@ -479,6 +500,7 @@ class Crawler:
                 "twitter_image",
                 "tech_stack",
                 "depth",
+                "page_analysis",
             ]
             if self.store_outlinks:
                 cols.append("outlink_targets")

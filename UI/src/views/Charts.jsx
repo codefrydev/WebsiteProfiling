@@ -74,11 +74,12 @@ function barOpts(ariaSummary) {
   };
 }
 
-export default function Charts() {
+export default function Charts({ searchQuery = '' }) {
   const { data } = useReport();
 
   if (!data) return null;
 
+  const q = (searchQuery || '').toLowerCase().trim();
   const totalUrls = (data.summary?.total_urls) ?? 0;
 
   let statusLabels = Object.keys(data.status_counts || {});
@@ -277,12 +278,21 @@ export default function Charts() {
           links.forEach((l) => { inlinkMap[l.url] = l.inlinks || 0; });
           const wordCountMap = {};
           (data.links || []).forEach((l) => { wordCountMap[l.url] = l.word_count || 0; });
-          const bubbleData = topPages.slice(0, 40).map((p) => ({
-            x: inlinkMap[p.url] || p.degree || 0,
-            y: wordCountMap[p.url] || 0,
-            r: Math.max(3, Math.min(20, (p.pagerank || 0) * 3000)),
-            url: p.url,
-          })).filter((d) => d.x > 0 || d.y > 0);
+          const bubbleData = topPages
+            .filter((p) => {
+              if (!q) return true;
+              const u = (p.url || '').toLowerCase();
+              const t = (p.title || '').toLowerCase();
+              return u.includes(q) || t.includes(q);
+            })
+            .slice(0, 40)
+            .map((p) => ({
+              x: inlinkMap[p.url] || p.degree || 0,
+              y: wordCountMap[p.url] || 0,
+              r: Math.max(3, Math.min(20, (p.pagerank || 0) * 3000)),
+              url: p.url,
+            }))
+            .filter((d) => d.x > 0 || d.y > 0);
           return (
             <Card padding="tight" className="print:break-inside-avoid">
               <h3 className="text-sm font-bold text-slate-200 mb-1">PageRank vs Inlinks vs Word Count</h3>
@@ -324,8 +334,14 @@ export default function Charts() {
           const links = data.links || [];
           const scatterData = links
             .filter((l) => l.word_count > 0 && l.response_time_ms > 0)
+            .filter((l) => {
+              if (!q) return true;
+              const u = (l.url || '').toLowerCase();
+              const t = (l.title || '').toLowerCase();
+              return u.includes(q) || t.includes(q);
+            })
             .slice(0, 200)
-            .map((l) => ({ x: l.word_count, y: l.response_time_ms }));
+            .map((l) => ({ x: l.word_count, y: l.response_time_ms, url: l.url }));
           return (
             <Card padding="tight" className="print:break-inside-avoid">
               <h3 className="text-sm font-bold text-slate-200 mb-1">Word Count vs Response Time</h3>
@@ -339,7 +355,17 @@ export default function Charts() {
                       maintainAspectRatio: false,
                       plugins: {
                         legend: { display: false },
-                        tooltip: { callbacks: { label: (ctx) => `Words: ${ctx.raw.x}, Time: ${ctx.raw.y}ms` } },
+                        tooltip: {
+                          callbacks: {
+                            label: (ctx) => {
+                              const r = ctx.raw;
+                              const u = r.url ? String(r.url).replace(/^https?:\/\//, '').slice(0, 48) : '';
+                              const lines = [`Words: ${r.x}, Time: ${r.y}ms`];
+                              if (u) lines.unshift(u);
+                              return lines;
+                            },
+                          },
+                        },
                       },
                       scales: {
                         x: { grid: { color: GRID_COLOR }, title: { display: true, text: 'Word Count' }, beginAtZero: true },

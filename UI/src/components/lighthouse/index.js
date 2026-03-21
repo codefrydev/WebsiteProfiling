@@ -4,3 +4,5 @@ export { default as DiagnosticItem } from './DiagnosticItem';
 export { default as DiagnosticGroup }from './DiagnosticGroup';
 export { default as QuickWinCard }   from './QuickWinCard';
 export { default as MultiPageTable } from './MultiPageTable';
+export { default as LhDetailsTable } from './LhDetailsTable';
+export { default as LhAuditExpandable } from './LhAuditExpandable';

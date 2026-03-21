@@ -1,7 +1,14 @@
-import { useState } from 'react';
-import { AlertTriangle, AlertCircle, Info, ChevronDown, ChevronRight, ExternalLink, Flame } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Bar, Doughnut } from 'react-chartjs-2';
+import { AlertTriangle, AlertCircle, Info, ChevronDown, ChevronRight, ExternalLink, Flame, BarChart2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { PageLayout, PageHeader, Card, Badge } from '../components';
+import { palette } from '../utils/chartPalette';
+import { registerChartJsBase, barOptionsHorizontal, doughnutOptionsBottomLegend } from '../utils/chartJsDefaults';
+
+registerChartJsBase();
+
+const MAX_CATEGORY_CHART = 12;
 
 const PRIORITY_CONFIG = {
   Critical: {
@@ -11,6 +18,7 @@ const PRIORITY_CONFIG = {
     ring: 'ring-1 ring-red-500/20 border-red-900/30',
     icon: Flame,
     order: 0,
+    chartColor: '#EF4444',
   },
   High: {
     border: 'border-l-orange-500',
@@ -19,6 +27,7 @@ const PRIORITY_CONFIG = {
     ring: 'ring-1 ring-orange-500/20 border-orange-900/30',
     icon: AlertTriangle,
     order: 1,
+    chartColor: '#F97316',
   },
   Medium: {
     border: 'border-l-yellow-500',
@@ -27,6 +36,7 @@ const PRIORITY_CONFIG = {
     ring: '',
     icon: AlertCircle,
     order: 2,
+    chartColor: '#EAB308',
   },
   Low: {
     border: 'border-l-slate-500',
@@ -35,6 +45,7 @@ const PRIORITY_CONFIG = {
     ring: '',
     icon: Info,
     order: 3,
+    chartColor: '#64748B',
   },
 };
 
@@ -108,24 +119,57 @@ export default function Issues({ searchQuery = '' }) {
   const [priorityFilter, setPriorityFilter] = useState('All');
   const [categoryFilter, setCategoryFilter] = useState('All');
 
-  if (!data) return null;
+  const q = (searchQuery || '').toLowerCase().trim();
 
-  let list = [];
-  (data.categories || []).forEach((cat) => {
-    (cat.issues || []).forEach((iss) => {
-      list.push({ category: cat.name || cat.id || '', issue: iss });
+  const list = useMemo(() => {
+    const acc = [];
+    (data?.categories || []).forEach((cat) => {
+      (cat.issues || []).forEach((iss) => {
+        acc.push({ category: cat.name || cat.id || '', issue: iss });
+      });
     });
-  });
-
-  const q = (searchQuery || '').toLowerCase();
-  if (q) {
-    list = list.filter((item) => {
+    if (!q) return acc;
+    return acc.filter((item) => {
       const msg = (item.issue.message || '').toLowerCase();
       const url = (item.issue.url || '').toLowerCase();
       const cat = (item.category || '').toLowerCase();
-      return msg.includes(q) || url.includes(q) || cat.includes(q);
+      const rec = (item.issue.recommendation || '').toLowerCase();
+      return msg.includes(q) || url.includes(q) || cat.includes(q) || rec.includes(q);
     });
-  }
+  }, [data, q]);
+
+  /** Chart slice: search + category dropdown only (not priority cards) — see plan */
+  const forCharts = useMemo(() => {
+    if (categoryFilter === 'All') return list;
+    return list.filter((item) => item.category === categoryFilter);
+  }, [list, categoryFilter]);
+
+  const { categoryChartLabels, categoryChartValues } = useMemo(() => {
+    const m = new Map();
+    forCharts.forEach((item) => {
+      const c = item.category || 'Uncategorized';
+      m.set(c, (m.get(c) || 0) + 1);
+    });
+    const pairs = [...m.entries()].sort((a, b) => b[1] - a[1]);
+    if (pairs.length <= MAX_CATEGORY_CHART) {
+      return {
+        categoryChartLabels: pairs.map((p) => p[0]),
+        categoryChartValues: pairs.map((p) => p[1]),
+      };
+    }
+    const top = pairs.slice(0, MAX_CATEGORY_CHART - 1);
+    const rest = pairs.slice(MAX_CATEGORY_CHART - 1).reduce((s, [, n]) => s + n, 0);
+    return {
+      categoryChartLabels: [...top.map((p) => p[0]), 'Other'],
+      categoryChartValues: [...top.map((p) => p[1]), rest],
+    };
+  }, [forCharts]);
+
+  const priorityChart = useMemo(() => {
+    const values = PRIORITY_ORDER.map((p) => forCharts.filter((item) => (item.issue.priority || 'Medium') === p).length);
+    const colors = PRIORITY_ORDER.map((p) => PRIORITY_CONFIG[p].chartColor);
+    return { values, colors };
+  }, [forCharts]);
 
   const priorityCounts = PRIORITY_ORDER.reduce((acc, p) => {
     acc[p] = list.filter((item) => (item.issue.priority || 'Medium') === p).length;
@@ -155,12 +199,98 @@ export default function Issues({ searchQuery = '' }) {
     return acc;
   }, {});
 
+  const categoryBarOpts = useMemo(() => {
+    const base = barOptionsHorizontal();
+    return {
+      ...base,
+      plugins: {
+        ...base.plugins,
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const n = Number(ctx.raw);
+              return ` ${n.toLocaleString()} issue${n !== 1 ? 's' : ''}`;
+            },
+          },
+        },
+      },
+    };
+  }, []);
+
+  if (!data) return null;
+
+  const showCharts = list.length > 0 && forCharts.length > 0;
+
   return (
     <PageLayout className="space-y-6">
       <PageHeader
         title="Site Audit"
         subtitle={`Prioritized issues impacting crawlability, indexing, and rankings. ${list.length} total issue${list.length !== 1 ? 's' : ''} found.`}
       />
+
+      {showCharts && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card padding="tight" shadow>
+            <div className="flex items-center gap-2 mb-1">
+              <BarChart2 className="h-4 w-4 text-blue-400" />
+              <h2 className="text-sm font-bold text-slate-200">Issues by category</h2>
+            </div>
+            <p className="text-xs text-slate-500 mb-2">
+              Reflects current search and category filter, not priority filter.
+            </p>
+            <div className="h-64">
+              <Bar
+                data={{
+                  labels: categoryChartLabels,
+                  datasets: [{ data: categoryChartValues, backgroundColor: palette(categoryChartLabels.length) }],
+                }}
+                options={categoryBarOpts}
+              />
+            </div>
+          </Card>
+          <Card padding="tight" shadow>
+            <div className="flex items-center gap-2 mb-1">
+              <BarChart2 className="h-4 w-4 text-blue-400" />
+              <h2 className="text-sm font-bold text-slate-200">Issues by priority</h2>
+            </div>
+            <p className="text-xs text-slate-500 mb-2">
+              Same slice as category chart (search + category filter only).
+            </p>
+            <div className="h-64 flex items-center justify-center">
+              <div className="w-full max-w-[280px] h-52">
+                <Doughnut
+                  data={{
+                    labels: PRIORITY_ORDER,
+                    datasets: [
+                      {
+                        data: priorityChart.values,
+                        backgroundColor: priorityChart.colors,
+                        borderColor: 'rgba(15,23,42,0.8)',
+                        borderWidth: 2,
+                      },
+                    ],
+                  }}
+                  options={{
+                    ...doughnutOptionsBottomLegend(),
+                    plugins: {
+                      ...doughnutOptionsBottomLegend().plugins,
+                      tooltip: {
+                        callbacks: {
+                          label: (ctx) => {
+                            const n = Number(ctx.raw);
+                            if (n === 0) return ` ${ctx.label}: 0`;
+                            return ` ${ctx.label}: ${n.toLocaleString()} issue${n !== 1 ? 's' : ''}`;
+                          },
+                        },
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </div>
+          </Card>
+        </div>
+      )}
 
       {/* Priority summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

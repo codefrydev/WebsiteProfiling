@@ -1,7 +1,12 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { Bar, Doughnut } from 'react-chartjs-2';
 import { Shield, Flame, AlertTriangle, AlertCircle, Info, ExternalLink } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { PageLayout, PageHeader, Card, Badge } from '../components';
+import { palette } from '../utils/chartPalette';
+import { registerChartJsBase, barOptionsHorizontal, doughnutOptionsBottomLegend } from '../utils/chartJsDefaults';
+
+registerChartJsBase();
 
 const SEVERITY_CONFIG = {
   Critical: {
@@ -13,6 +18,7 @@ const SEVERITY_CONFIG = {
     rowBorder: 'border-l-red-500',
     recBg: 'bg-red-500/5 border-red-500/20',
     order: 0,
+    chartColor: '#EF4444',
   },
   High: {
     icon: AlertTriangle,
@@ -23,6 +29,7 @@ const SEVERITY_CONFIG = {
     rowBorder: 'border-l-orange-500',
     recBg: 'bg-orange-500/5 border-orange-500/20',
     order: 1,
+    chartColor: '#F97316',
   },
   Medium: {
     icon: AlertCircle,
@@ -33,6 +40,7 @@ const SEVERITY_CONFIG = {
     rowBorder: 'border-l-yellow-500',
     recBg: 'bg-yellow-500/5 border-yellow-500/20',
     order: 2,
+    chartColor: '#EAB308',
   },
   Low: {
     icon: Info,
@@ -43,6 +51,7 @@ const SEVERITY_CONFIG = {
     rowBorder: 'border-l-slate-500',
     recBg: 'bg-slate-700/30 border-slate-600/30',
     order: 3,
+    chartColor: '#64748B',
   },
   Info: {
     icon: Info,
@@ -53,6 +62,7 @@ const SEVERITY_CONFIG = {
     rowBorder: 'border-l-slate-600',
     recBg: 'bg-slate-700/20 border-slate-700/30',
     order: 4,
+    chartColor: '#475569',
   },
 };
 
@@ -64,13 +74,57 @@ function toTitleCase(str) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export default function Security() {
+export default function Security({ searchQuery = '' }) {
   const { data } = useReport();
   const [severityFilter, setSeverityFilter] = useState('All');
 
-  if (!data) return null;
+  const q = (searchQuery || '').toLowerCase().trim();
 
-  const allFindings = data.security_findings || [];
+  const allFindings = useMemo(() => {
+    const raw = data?.security_findings;
+    return Array.isArray(raw) ? raw : [];
+  }, [data?.security_findings]);
+
+  const severityChart = useMemo(() => {
+    const counts = SEVERITY_ORDER.reduce((acc, s) => {
+      acc[s] = allFindings.filter((f) => (f.severity || 'Info') === s).length;
+      return acc;
+    }, {});
+    return {
+      values: SEVERITY_ORDER.map((s) => counts[s] || 0),
+      colors: SEVERITY_ORDER.map((s) => SEVERITY_CONFIG[s].chartColor),
+    };
+  }, [allFindings]);
+
+  const { typeLabels, typeValues } = useMemo(() => {
+    const m = new Map();
+    allFindings.forEach((f) => {
+      const t = toTitleCase(f.finding_type) || 'Unknown';
+      m.set(t, (m.get(t) || 0) + 1);
+    });
+    const pairs = [...m.entries()].sort((a, b) => b[1] - a[1]);
+    return { typeLabels: pairs.map((p) => p[0]), typeValues: pairs.map((p) => p[1]) };
+  }, [allFindings]);
+
+  const typeBarOpts = useMemo(() => {
+    const base = barOptionsHorizontal();
+    return {
+      ...base,
+      plugins: {
+        ...base.plugins,
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              const n = Number(ctx.raw);
+              return ` ${n.toLocaleString()} finding${n !== 1 ? 's' : ''}`;
+            },
+          },
+        },
+      },
+    };
+  }, []);
+
+  if (!data) return null;
 
   const severityCounts = SEVERITY_ORDER.reduce((acc, s) => {
     acc[s] = allFindings.filter((f) => (f.severity || 'Info') === s).length;
@@ -80,6 +134,15 @@ export default function Security() {
   let findings = allFindings;
   if (severityFilter !== 'All') {
     findings = findings.filter((f) => (f.severity || 'Info') === severityFilter);
+  }
+  if (q) {
+    findings = findings.filter((f) => {
+      const url = (f.url || '').toLowerCase();
+      const msg = (f.message || '').toLowerCase();
+      const rec = (f.recommendation || '').toLowerCase();
+      const typ = toTitleCase(f.finding_type).toLowerCase();
+      return url.includes(q) || msg.includes(q) || rec.includes(q) || typ.includes(q);
+    });
   }
 
   findings = [...findings].sort((a, b) => {
@@ -94,6 +157,62 @@ export default function Security() {
         title="Security & Headers"
         subtitle={`HTTP security headers, injection risk, open redirect, and vulnerability findings. ${allFindings.length} finding${allFindings.length !== 1 ? 's' : ''} total.`}
       />
+
+      {allFindings.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card padding="tight" shadow>
+            <h2 className="text-sm font-bold text-slate-200 mb-1">Findings by severity</h2>
+            <p className="text-xs text-slate-500 mb-3">All findings in this report</p>
+            <div className="h-56 flex items-center justify-center">
+              <div className="w-full max-w-[260px] h-48">
+                <Doughnut
+                  data={{
+                    labels: SEVERITY_ORDER,
+                    datasets: [
+                      {
+                        data: severityChart.values,
+                        backgroundColor: severityChart.colors,
+                        borderColor: 'rgba(15,23,42,0.8)',
+                        borderWidth: 2,
+                      },
+                    ],
+                  }}
+                  options={{
+                    ...doughnutOptionsBottomLegend(),
+                    plugins: {
+                      ...doughnutOptionsBottomLegend().plugins,
+                      tooltip: {
+                        callbacks: {
+                          label: (ctx) => {
+                            const n = Number(ctx.raw);
+                            if (n === 0) return ` ${ctx.label}: 0`;
+                            return ` ${ctx.label}: ${n.toLocaleString()}`;
+                          },
+                        },
+                      },
+                    },
+                  }}
+                />
+              </div>
+            </div>
+          </Card>
+          {typeLabels.length > 0 && (
+            <Card padding="tight" shadow>
+              <h2 className="text-sm font-bold text-slate-200 mb-1">Findings by type</h2>
+              <p className="text-xs text-slate-500 mb-3">Grouped by finding_type from the scanner</p>
+              <div className="h-56">
+                <Bar
+                  data={{
+                    labels: typeLabels,
+                    datasets: [{ data: typeValues, backgroundColor: palette(typeLabels.length) }],
+                  }}
+                  options={typeBarOpts}
+                />
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
 
       {/* Severity summary cards — act as filters */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -143,7 +262,7 @@ export default function Security() {
             <p className="text-slate-300 font-semibold text-base">No security findings detected</p>
             <p className="text-slate-500 text-sm mt-1">
               {allFindings.length > 0
-                ? 'No findings match the current severity filter.'
+                ? 'No findings match the current filters or search.'
                 : 'Run a crawl with security scanning enabled to see results here.'}
             </p>
           </div>
