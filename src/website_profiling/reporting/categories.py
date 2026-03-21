@@ -590,6 +590,68 @@ def category_security(
     }
 
 
+def category_intelligence(ml_bundle: Optional[dict] = None) -> dict:
+    """Content intelligence: duplicate clusters, anomalies, language mix from optional ML enrichment."""
+    issues: list[dict] = []
+    deductions: list[tuple[int, bool]] = []
+    ml_bundle = ml_bundle or {}
+
+    dups = ml_bundle.get("content_duplicates") or []
+    if dups:
+        big = [g for g in dups if (g.get("member_count") or len(g.get("member_urls") or [])) >= 3]
+        if big:
+            issues.append(_issue(
+                f"Near-duplicate content: {len(big)} cluster(s) with 3+ URLs (SimHash/fuzzy).",
+                priority="High",
+                recommendation="Consolidate or canonicalize duplicate pages; differentiate thin similar URLs.",
+            ))
+            deductions.append((min(20, 5 + len(big)), True))
+        elif dups:
+            issues.append(_issue(
+                f"Possible duplicate content: {len(dups)} pair/group(s) detected.",
+                priority="Medium",
+                recommendation="Review clusters and add canonicals or noindex where appropriate.",
+            ))
+            deductions.append((8, True))
+
+    anomalies = ml_bundle.get("anomalies") or []
+    if len(anomalies) >= 5:
+        issues.append(_issue(
+            f"Unusual pages (multivariate outlier): {len(anomalies)} URL(s) flagged.",
+            priority="Medium",
+            recommendation="Review anomalies for crawl noise, soft-404s, or template bugs.",
+        ))
+        deductions.append((min(15, 5 + len(anomalies) // 10), True))
+    elif anomalies:
+        issues.append(_issue(
+            f"{len(anomalies)} URL(s) look statistically unusual vs the rest of the crawl.",
+            priority="Low",
+            recommendation="Spot-check flagged URLs in Link Explorer (ml_anomaly).",
+        ))
+        deductions.append((3, True))
+
+    lang = ml_bundle.get("language_summary") or {}
+    if lang.get("mixed_site") and (lang.get("detected_pages") or 0) >= 10:
+        counts = lang.get("counts") or {}
+        top = sorted(counts.items(), key=lambda x: -x[1])[:3]
+        desc = ", ".join(f"{k}:{v}" for k, v in top) if top else "multiple"
+        issues.append(_issue(
+            f"Mixed languages detected across pages ({desc}).",
+            priority="Medium",
+            recommendation="Ensure hreflang and localized URLs match user intent; split sitemaps if needed.",
+        ))
+        deductions.append((5, True))
+
+    score = _score_deductions(100, deductions)
+    return {
+        "id": "intelligence",
+        "name": "Content intelligence",
+        "score": score,
+        "issues": _sort_issues(issues),
+        "recommendations": list({i["recommendation"] for i in issues if i["recommendation"]}),
+    }
+
+
 def build_categories(
     df: pd.DataFrame,
     edges: list[tuple[str, str]],
@@ -598,6 +660,7 @@ def build_categories(
     start_url: str,
     security_findings: Optional[list[dict]] = None,
     lighthouse_summary: Optional[dict] = None,
+    ml_bundle: Optional[dict] = None,
 ) -> list[dict]:
     """
     Build all category dicts with score, issues (with priority and recommendation), and recommendations.
@@ -605,6 +668,7 @@ def build_categories(
     summary_seo should have: issues["broken"], issues["redirects"].
     security_findings: optional list from security scanner (finding_type, severity, url, message, recommendation).
     lighthouse_summary: optional dict from lighthouse_runner (median_metrics, top_failures); when set, Core Web Vitals uses real data.
+    ml_bundle: optional dict from ml_enrich.run_ml_enrichment (duplicates, anomalies, language_summary, etc.) for Content intelligence category.
     """
     issues_broken = summary_seo.get("issues", {}).get("broken", [])
     issues_redirects = summary_seo.get("issues", {}).get("redirects", [])
@@ -622,5 +686,6 @@ def build_categories(
         category_link_health(df, edges, issues_broken, issues_redirects),
         category_mobile(df),
         category_security(df, site_level, start_url or "", security_findings=security_findings),
+        category_intelligence(ml_bundle),
     ]
     return categories

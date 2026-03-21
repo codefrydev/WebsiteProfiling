@@ -43,11 +43,30 @@ lighthouse_output_dir = .
 run_lighthouse = true
 # Run on every 200 OK page; results show in Link Explorer inspector
 run_lighthouse_on_pages = true
-lighthouse_max_pages =20
+lighthouse_max_pages = 20
 
 # --- Keywords (python -m src keywords) ---
 keyword_output_dir = .
 keyword_max_pages = 200
+
+# --- Optional ML (pip install -r requirements-ml.txt) ---
+# Merged into report when run_report runs; re-run ML only: python -m src enrich
+enable_duplicate_detection = true
+enable_anomaly_urls = true
+enable_language_detection = true
+enable_ner_spacy = true
+enable_semantic_similar_internal = true
+enable_semantic_keywords = true
+
+ml_sentence_model = all-MiniLM-L6-v2
+ml_max_pages_st = 400
+ml_similar_top_k = 5
+ml_fuzzy_threshold = 92
+ml_simhash_hamming = 0
+ml_dup_max_pages = 2000
+ml_ner_max_pages = 80
+ml_semantic_keyword_max = 200
+ml_keyword_cluster_sim = 75
 
 # --- Pipeline (python -m src) ---
 run_crawl = true

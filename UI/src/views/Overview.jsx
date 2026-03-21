@@ -1,7 +1,7 @@
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
-import { Globe, CheckCircle, AlertTriangle, FileCode, BookOpen, Share, Cpu, Timer, ExternalLink, TrendingUp, Link2, ChevronRight, Lightbulb, BarChart3 } from 'lucide-react';
-import { useMemo } from 'react';
+import { Globe, CheckCircle, AlertTriangle, FileCode, BookOpen, Share, Cpu, Timer, ExternalLink, TrendingUp, Link2, ChevronRight, ChevronDown, Lightbulb, BarChart3, Sparkles } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { useReport } from '../context/useReport';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '../components';
 import { palette, scoreBandColor, sortByValue, PALETTE_CATEGORICAL } from '../utils/chartPalette';
@@ -141,6 +141,8 @@ function sumObject(obj) {
 
 export default function Overview({ searchQuery = '' }) {
   const { data } = useReport();
+  const [mlErrOpen, setMlErrOpen] = useState(false);
+  const [anomOpen, setAnomOpen] = useState(false);
   const q = (searchQuery || '').toLowerCase().trim();
   const categoriesFiltered = useMemo(() => {
     const cats = data?.categories || [];
@@ -423,6 +425,27 @@ export default function Overview({ searchQuery = '' }) {
 
   return (
     <PageLayout className="space-y-8">
+      {data.ml_errors?.length > 0 && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-950/25 px-4 py-3">
+          <button
+            type="button"
+            onClick={() => setMlErrOpen((o) => !o)}
+            className="w-full flex items-center gap-2 text-left text-sm font-semibold text-amber-200 hover:text-amber-100"
+          >
+            {mlErrOpen ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
+            <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+            Optional ML reported {data.ml_errors.length} error{data.ml_errors.length !== 1 ? 's' : ''} (check requirements / models)
+          </button>
+          {mlErrOpen && (
+            <ul className="mt-2 space-y-1 text-xs font-mono text-amber-100/90 list-disc pl-5 max-h-48 overflow-y-auto">
+              {data.ml_errors.map((err, i) => (
+                <li key={i}>{String(err)}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       <PageHeader
         title="Dashboard"
         subtitle={
@@ -504,6 +527,115 @@ export default function Overview({ searchQuery = '' }) {
           </div>
         </Card>
       </div>
+
+      {(data.content_duplicates?.length > 0 ||
+        data.anomalies?.length > 0 ||
+        (data.language_summary?.counts && Object.keys(data.language_summary.counts).length > 0) ||
+        (data.semantic_keyword_clusters?.length > 0) ||
+        (data.ner_site_summary?.label_counts && Object.keys(data.ner_site_summary.label_counts).length > 0)) && (
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-bright mb-1 flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-violet-400" />
+            Content intelligence (ML)
+          </h2>
+          <p className="text-sm text-slate-500 mb-4 max-w-3xl">
+            Optional signals from Python (<code className="text-slate-400">requirements-ml.txt</code>) when enabled in config.
+            Use Link Explorer → Page analysis for per-URL detail and browser-side Transformers.js similarity.
+          </p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card shadow>
+              <div className="text-violet-400/80 text-xs font-bold uppercase tracking-wider mb-2">Duplicate groups</div>
+              <div className="text-3xl font-bold text-violet-300">{data.content_duplicates?.length ?? 0}</div>
+              <div className="text-xs text-slate-400 mt-2">SimHash / fuzzy clusters</div>
+            </Card>
+            <Card shadow>
+              <div className="text-amber-400/80 text-xs font-bold uppercase tracking-wider mb-2">Anomalies</div>
+              <div className="text-3xl font-bold text-amber-300">{data.anomalies?.length ?? 0}</div>
+              <div className="text-xs text-slate-400 mt-2">IsolationForest outliers</div>
+            </Card>
+            <Card shadow>
+              <div className="text-emerald-400/80 text-xs font-bold uppercase tracking-wider mb-2">Semantic keyword clusters</div>
+              <div className="text-3xl font-bold text-emerald-300">{data.semantic_keyword_clusters?.length ?? 0}</div>
+              <div className="text-xs text-slate-400 mt-2">embedding groups</div>
+            </Card>
+            <Card shadow>
+              <div className="text-cyan-400/80 text-xs font-bold uppercase tracking-wider mb-2">NER (spaCy)</div>
+              <div className="text-3xl font-bold text-cyan-300">
+                {data.ner_site_summary?.total_entities != null
+                  ? data.ner_site_summary.total_entities.toLocaleString()
+                  : '—'}
+              </div>
+              <div className="text-xs text-slate-400 mt-2">
+                {data.ner_site_summary?.pages_with_ner != null
+                  ? `${data.ner_site_summary.pages_with_ner} page(s) sampled`
+                  : 'entities sitewide'}
+              </div>
+            </Card>
+            <Card shadow className="col-span-2 lg:col-span-4">
+              <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">Languages (sampled)</div>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(data.language_summary?.counts || {})
+                  .slice(0, 8)
+                  .map(([lang, n]) => (
+                    <span
+                      key={lang}
+                      className="text-xs font-mono px-2 py-1 rounded-lg bg-brand-900 border border-default text-slate-300"
+                    >
+                      {lang}: {n}
+                    </span>
+                  ))}
+                {(!data.language_summary?.counts || Object.keys(data.language_summary.counts).length === 0) && (
+                  <span className="text-xs text-slate-500">—</span>
+                )}
+              </div>
+              {data.language_summary?.mixed_site && (
+                <p className="text-xs text-yellow-400/80 mt-2">Mixed-language site detected</p>
+              )}
+            </Card>
+          </div>
+
+          {data.anomalies?.length > 0 && (
+            <Card shadow className="mt-4">
+              <button
+                type="button"
+                onClick={() => setAnomOpen((o) => !o)}
+                className="w-full flex items-center gap-2 text-left text-sm font-bold text-amber-200/90 mb-2"
+              >
+                {anomOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                Anomaly URLs ({data.anomalies.length})
+              </button>
+              {anomOpen && (
+                <div className="max-h-72 overflow-auto rounded-lg border border-muted">
+                  <Table>
+                    <TableHead>
+                      <TableRow>
+                        <TableHeadCell>URL</TableHeadCell>
+                        <TableHeadCell>Score</TableHeadCell>
+                        <TableHeadCell>Reasons</TableHeadCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {data.anomalies.map((a, idx) => (
+                        <TableRow key={`${a.url}-${idx}`}>
+                          <TableCell className="font-mono text-xs max-w-[min(100vw,28rem)] break-all">
+                            <a href={a.url} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">
+                              {a.url}
+                            </a>
+                          </TableCell>
+                          <TableCell className="text-xs font-mono tabular-nums">{a.anomaly_score ?? '—'}</TableCell>
+                          <TableCell className="text-xs text-slate-400">
+                            {(a.reasons || []).join(', ') || '—'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </Card>
+          )}
+        </div>
+      )}
 
       {hasInsightCharts && (
         <div className="mb-8">

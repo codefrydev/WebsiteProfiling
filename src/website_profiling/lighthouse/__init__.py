@@ -1,0 +1,1 @@
+"""Lighthouse CLI integration."""

@@ -213,16 +213,16 @@ def run_keyword_pipeline(
     Returns summary dict with paths and human summary.
     """
     config = config or {}
-    from .config import get_list
+    from ..config import get_list
     exclude_urls = get_list(config, "crawl_exclude_urls", sep=",")
     os.makedirs(output_dir, exist_ok=True)
     cwd = os.getcwd()
 
     if crawl_csv_path and os.path.isfile(crawl_csv_path):
-        from .common import load_dataframe
+        from ..common import load_dataframe
         df = load_dataframe(crawl_csv_path)
     else:
-        from .crawler import run_crawler
+        from ..crawl.crawler import run_crawler
         crawl_out = os.path.join(output_dir, "keyword_crawl.json")
         run_crawler(
             start_url=base_url,
@@ -238,7 +238,7 @@ def run_keyword_pipeline(
             show_progress=True,
             exclude_urls=exclude_urls if exclude_urls else None,
         )
-        from .common import load_dataframe
+        from ..common import load_dataframe
         df = load_dataframe(crawl_out)
 
     if df.empty:
@@ -256,6 +256,18 @@ def run_keyword_pipeline(
     scored = score_keywords(candidates, weights=weights, corpus_size=corpus_size)
     clusters = cluster_keywords(scored)
 
+    semantic_clusters: list[dict[str, Any]] = []
+    from ..config import get_bool
+
+    if get_bool(config, "enable_semantic_keywords", False):
+        try:
+            from ..ml.enrich import cluster_keywords_semantic
+
+            top_kw = [s["keyword"] for s in scored[:200] if s.get("keyword")]
+            semantic_clusters = cluster_keywords_semantic(top_kw, config)
+        except ImportError as e:
+            print(f"Semantic keywords skipped: {e}", file=sys.stderr)
+
     ts = datetime.now(timezone.utc).isoformat()
     top_path = os.path.join(output_dir, "top_keywords.csv")
     clusters_path = os.path.join(output_dir, "clusters.json")
@@ -271,6 +283,7 @@ def run_keyword_pipeline(
         "timestamp": ts,
         "config": {"url": base_url, "weights": weights, "data_sources": ["site"]},
         "clusters": clusters,
+        "clusters_semantic": semantic_clusters,
     }
     with open(clusters_path, "w", encoding="utf-8") as f:
         json.dump(out_meta, f, indent=2, default=str)

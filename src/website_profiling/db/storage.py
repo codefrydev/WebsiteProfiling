@@ -1,16 +1,61 @@
 """
 SQLite data layer for WebsiteProfiling: single DB for crawl, edges, nodes, lighthouse, report payload.
+
+All DB access should go through :func:`db_session` so one connection at a time per database path
+(process-wide lock). That serializes writers like a single-slot queue and avoids lock/readonly issues
+on slow or synced volumes.
 """
 import json
 import math
 import os
 import shutil
 import sqlite3
+import threading
 import time
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Iterator, Optional
 
 import pandas as pd
+
+
+_db_path_locks: dict[str, threading.Lock] = {}
+_db_path_locks_guard = threading.Lock()
+
+
+def _normalize_db_path(db_path: str) -> str:
+    return os.path.normcase(os.path.abspath(db_path))
+
+
+def _lock_for_db_path(db_path: str) -> threading.Lock:
+    key = _normalize_db_path(db_path)
+    with _db_path_locks_guard:
+        if key not in _db_path_locks:
+            _db_path_locks[key] = threading.Lock()
+        return _db_path_locks[key]
+
+
+def _open_sqlite(db_path: str) -> sqlite3.Connection:
+    """Open SQLite without taking the process-wide DB lock (internal; use :func:`db_session`)."""
+    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(db_path, timeout=30.0)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+@contextmanager
+def db_session(db_path: str) -> Iterator[sqlite3.Connection]:
+    """Serialize access to ``db_path``: one connection at a time, then close (mutex per absolute path)."""
+    lock = _lock_for_db_path(db_path)
+    lock.acquire()
+    try:
+        conn = _open_sqlite(db_path)
+        try:
+            yield conn
+        finally:
+            conn.close()
+    finally:
+        lock.release()
 
 
 def _sanitize_for_json(obj: Any) -> Any:
@@ -87,15 +132,13 @@ def read_historical_data(db_path: str) -> dict[str, list]:
     if not p.exists() or not p.is_file():
         return result
     try:
-        conn = sqlite3.connect(db_path)
-        conn.row_factory = sqlite3.Row
-        for table in tables:
-            try:
-                cur = conn.execute(f"SELECT * FROM {table}")
-                result[table] = [dict(row) for row in cur.fetchall()]
-            except Exception:
-                pass
-        conn.close()
+        with db_session(db_path) as conn:
+            for table in tables:
+                try:
+                    cur = conn.execute(f"SELECT * FROM {table}")
+                    result[table] = [dict(row) for row in cur.fetchall()]
+                except Exception:
+                    pass
     except Exception:
         pass
     return result
@@ -183,7 +226,7 @@ def restore_historical_data(conn: sqlite3.Connection, data: dict[str, list]) -> 
 
 
 def ensure_db_recreated(db_path: str) -> None:
-    """Delete existing DB file (and journal) so the next get_connection creates a fresh DB."""
+    """Delete existing DB file (and journal) so the next :func:`db_session` creates a fresh DB."""
     for p in (db_path, db_path + "-journal"):
         if Path(p).exists():
             try:
@@ -193,11 +236,8 @@ def ensure_db_recreated(db_path: str) -> None:
 
 
 def get_connection(db_path: str) -> sqlite3.Connection:
-    """Open or create SQLite DB; return connection (no init_schema called)."""
-    Path(db_path).parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    return conn
+    """Open SQLite (no lock). Prefer :func:`db_session` so access is serialized per DB path."""
+    return _open_sqlite(db_path)
 
 
 def init_schema(conn: sqlite3.Connection) -> None:
@@ -526,7 +566,7 @@ def write_lighthouse_run(
 
 def write_lh_audits_from_run(conn: sqlite3.Connection, run_id: int, lhr_data: dict[str, Any]) -> None:
     """Parse LHR and insert lh_audits + lh_audit_items for the given lighthouse_runs.id."""
-    from .lighthouse_schema import lhr_to_audit_rows
+    from ..lighthouse.schema import lhr_to_audit_rows
 
     audit_rows, item_refs = lhr_to_audit_rows(lhr_data)
     id_map: list[int] = []

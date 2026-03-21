@@ -27,7 +27,7 @@ import pandas as pd
 import requests
 from tqdm.auto import tqdm
 
-from .common import (
+from ..common import (
     detect_tech_wappalyzer,
     load_robots,
     normalize_link,
@@ -39,7 +39,7 @@ from .common import (
     parse_social_meta,
     parse_tech_stack,
 )
-from .page_analysis import analyze_html
+from ..analysis.page import analyze_html
 
 DEFAULT_USER_AGENT = "WebsiteProfilingCrawler/1.0"
 
@@ -545,7 +545,7 @@ def run_crawler(
     if output_db and not df.empty:
         import sys
         print("  Writing crawl results to DB...", flush=True)
-        from .db import backup_db_if_exists, create_crawl_run, ensure_db_recreated, get_connection, init_schema, read_historical_data, restore_historical_data, write_crawl
+        from ..db import backup_db_if_exists, create_crawl_run, db_session, ensure_db_recreated, init_schema, read_historical_data, restore_historical_data, write_crawl
         historical = {}
         backup_path = None
         if not preserve_crawl_history:
@@ -557,24 +557,21 @@ def run_crawler(
             if backup_path:
                 print(f"  Backed up existing DB to {backup_path}", flush=True)
             ensure_db_recreated(output_db)
-        conn = get_connection(output_db)
-        init_schema(conn)
-        if historical:
-            restore_historical_data(conn, historical)
-            if backup_path:
-                from pathlib import Path as _Path
-                for p in (backup_path, backup_path + "-journal"):
-                    try:
-                        _Path(p).unlink(missing_ok=True)
-                    except OSError:
-                        pass
-                print(f"  Removed temporary backup {backup_path}", flush=True)
-        if preserve_crawl_history:
+        with db_session(output_db) as conn:
+            init_schema(conn)
+            if historical:
+                restore_historical_data(conn, historical)
+                if backup_path:
+                    from pathlib import Path as _Path
+                    for p in (backup_path, backup_path + "-journal"):
+                        try:
+                            _Path(p).unlink(missing_ok=True)
+                        except OSError:
+                            pass
+                    print(f"  Removed temporary backup {backup_path}", flush=True)
+            # Always record a crawl_run so edges/nodes can use crawl_run_id (see write_edges / read_edges).
             run_id = create_crawl_run(conn, start_url)
             write_crawl(conn, df, crawl_run_id=run_id)
-        else:
-            write_crawl(conn, df)
-        conn.close()
         print("  Crawl DB write complete.", flush=True)
     elif output_csv and not df.empty:
         if output_csv.lower().endswith(".json"):

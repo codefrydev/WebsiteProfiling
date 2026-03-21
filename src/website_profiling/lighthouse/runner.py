@@ -14,9 +14,6 @@ import sys
 from datetime import datetime, timezone
 from typing import Any
 
-from . import warning_mapper
-
-
 # Lighthouse "good" thresholds for human summary
 LCP_GOOD_MS = 2500
 CLS_GOOD = 0.1
@@ -222,7 +219,7 @@ def extract_from_lighthouse_json(data: dict) -> dict[str, Any]:
             out["category_scores"][cat_id] = round((s * 100)) if s is not None else None
 
     # Resolve impact from warning_mapper for each failure
-    from .warning_mapper import resolve_impact
+    from ..tools.warnings import resolve_impact
     failures = []
     for aid, a in audits.items():
         if a is None:
@@ -368,7 +365,7 @@ def run_lighthouse_audit(
         try:
             with open(first_raw, "r", encoding="utf-8") as f:
                 raw_data = json.load(f)
-            from .warning_mapper import parse_lighthouse_to_diagnostics
+            from ..tools.warnings import parse_lighthouse_to_diagnostics
             diagnostics = parse_lighthouse_to_diagnostics(raw_data)[:15]
         except Exception:
             pass
@@ -428,56 +425,55 @@ def run_lighthouse_on_pages(
             "Node/npm not found. Install Node.js (https://nodejs.org); then run: npm install -g lighthouse. "
             "Chrome or Chromium is also required for headless mode."
         )
-    from .db import (
-        get_connection,
+    from ..db import (
+        db_session,
         init_schema,
         write_lh_audits_from_run,
         write_lighthouse_page_summary,
         write_lighthouse_run,
     )
 
-    conn = get_connection(db_path)
-    init_schema(conn)
-    strategy = strategy.lower() if strategy else "mobile"
-    if strategy not in ("mobile", "desktop"):
-        strategy = "mobile"
-    iterations = max(1, int(iterations))
-    categories = _parse_categories(categories) if categories else None
-    total = len(urls)
-    for idx, url in enumerate(urls):
-        try:
-            print(f"[Lighthouse on pages] {idx + 1}/{total}: {url}", flush=True)
-            summary = run_lighthouse_audit(
-                url=url,
-                strategy=strategy,
-                iterations=iterations,
-                output_dir=output_dir,
-                mode=mode,
-                categories=categories,
-            )
-            write_lighthouse_page_summary(conn, url, summary)
-            lhr: dict[str, Any] | None = None
-            for raw_path in reversed(summary.get("raw_reports") or []):
-                if os.path.isfile(raw_path):
-                    try:
-                        with open(raw_path, "r", encoding="utf-8") as f:
-                            lhr = json.load(f)
-                        break
-                    except (OSError, json.JSONDecodeError):
-                        continue
-            if lhr is not None:
-                run_id = write_lighthouse_run(conn, url, strategy, 1, lhr)
-                write_lh_audits_from_run(conn, run_id, lhr)
-            # Delete raw run files after storing summary in DB (same as single-URL path)
-            for raw_path in summary.get("raw_reports") or []:
-                if os.path.isfile(raw_path):
-                    try:
-                        os.remove(raw_path)
-                    except OSError:
-                        pass
-        except Exception as e:
-            print(f"  Skipped (error): {e}", file=sys.stderr, flush=True)
-    conn.close()
+    with db_session(db_path) as conn:
+        init_schema(conn)
+        strategy = strategy.lower() if strategy else "mobile"
+        if strategy not in ("mobile", "desktop"):
+            strategy = "mobile"
+        iterations = max(1, int(iterations))
+        categories = _parse_categories(categories) if categories else None
+        total = len(urls)
+        for idx, url in enumerate(urls):
+            try:
+                print(f"[Lighthouse on pages] {idx + 1}/{total}: {url}", flush=True)
+                summary = run_lighthouse_audit(
+                    url=url,
+                    strategy=strategy,
+                    iterations=iterations,
+                    output_dir=output_dir,
+                    mode=mode,
+                    categories=categories,
+                )
+                write_lighthouse_page_summary(conn, url, summary)
+                lhr: dict[str, Any] | None = None
+                for raw_path in reversed(summary.get("raw_reports") or []):
+                    if os.path.isfile(raw_path):
+                        try:
+                            with open(raw_path, "r", encoding="utf-8") as f:
+                                lhr = json.load(f)
+                            break
+                        except (OSError, json.JSONDecodeError):
+                            continue
+                if lhr is not None:
+                    run_id = write_lighthouse_run(conn, url, strategy, 1, lhr)
+                    write_lh_audits_from_run(conn, run_id, lhr)
+                # Delete raw run files after storing summary in DB (same as single-URL path)
+                for raw_path in summary.get("raw_reports") or []:
+                    if os.path.isfile(raw_path):
+                        try:
+                            os.remove(raw_path)
+                        except OSError:
+                            pass
+            except Exception as e:
+                print(f"  Skipped (error): {e}", file=sys.stderr, flush=True)
     print(f"[Lighthouse on pages] Done. Wrote {total} URL(s) to DB.", flush=True)
 
 
@@ -514,33 +510,32 @@ def main(
 
     if db_path:
         # Persist everything to DB only (no artifact files on disk)
-        from .db import (
-            get_connection,
+        from ..db import (
+            db_session,
             init_schema,
             write_lh_audits_from_run,
             write_lighthouse_summary,
             write_lighthouse_run,
         )
         print("  Saving summary to DB...", flush=True)
-        conn = get_connection(db_path)
-        init_schema(conn)
-        write_lighthouse_summary(conn, summary)
-        raw_reports = summary.get("raw_reports") or []
-        for i, raw_path in enumerate(raw_reports):
-            if os.path.isfile(raw_path):
-                print(f"  Saving raw run {i + 1}/{len(raw_reports)} to DB...", flush=True)
-                try:
-                    with open(raw_path, "r", encoding="utf-8") as f:
-                        run_data = json.load(f)
-                    run_id = write_lighthouse_run(conn, url, strategy, i + 1, run_data)
-                    write_lh_audits_from_run(conn, run_id, run_data)
+        with db_session(db_path) as conn:
+            init_schema(conn)
+            write_lighthouse_summary(conn, summary)
+            raw_reports = summary.get("raw_reports") or []
+            for i, raw_path in enumerate(raw_reports):
+                if os.path.isfile(raw_path):
+                    print(f"  Saving raw run {i + 1}/{len(raw_reports)} to DB...", flush=True)
                     try:
-                        os.remove(raw_path)
-                    except OSError:
+                        with open(raw_path, "r", encoding="utf-8") as f:
+                            run_data = json.load(f)
+                        run_id = write_lighthouse_run(conn, url, strategy, i + 1, run_data)
+                        write_lh_audits_from_run(conn, run_id, run_data)
+                        try:
+                            os.remove(raw_path)
+                        except OSError:
+                            pass
+                    except (OSError, json.JSONDecodeError):
                         pass
-                except (OSError, json.JSONDecodeError):
-                    pass
-        conn.close()
         print("  Lighthouse DB write complete.", flush=True)
         print(summary.get("human_summary", ""))
         print(f"All Lighthouse data saved to SQLite: {db_path} (summary, diagnostics, human summary, report HTML, raw runs)")

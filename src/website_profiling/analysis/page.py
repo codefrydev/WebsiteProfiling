@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 
-from .common import normalize_link
+from ..common import normalize_link
 
 # Max URLs per resource list to limit SQLite / payload size
 LIST_CAP = 200

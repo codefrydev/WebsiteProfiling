@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
-import { ExternalLink, CheckCircle2, FileText } from 'lucide-react';
+import { ExternalLink, CheckCircle2, FileText, Copy } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '../components';
 import { palette } from '../utils/chartPalette';
@@ -99,6 +99,49 @@ export default function Content({ searchQuery = '' }) {
         title="On-Page SEO"
         subtitle={`Audit missing or duplicate titles, meta descriptions, and H1 tags. ${totalIssues} total issue${totalIssues !== 1 ? 's' : ''} detected.`}
       />
+
+      {data.content_duplicates?.length > 0 && (
+        <Card shadow>
+          <div className="flex items-center gap-2 mb-2">
+            <Copy className="h-4 w-4 text-violet-400" />
+            <h2 className="text-sm font-bold text-slate-200">Near-duplicate clusters (optional ML)</h2>
+          </div>
+          <p className="text-xs text-slate-500 mb-3">
+            From <code className="text-slate-400">enable_duplicate_detection</code>. Review canonicals and consolidation targets.
+          </p>
+          <div className="max-h-72 overflow-y-auto rounded-lg border border-muted">
+            <Table>
+              <TableHead sticky>
+                <tr>
+                  <TableHeadCell>Cluster</TableHeadCell>
+                  <TableHeadCell>Representative</TableHeadCell>
+                  <TableHeadCell className="text-right">URLs</TableHeadCell>
+                </tr>
+              </TableHead>
+              <TableBody striped>
+                {(data.content_duplicates || []).slice(0, 40).map((g) => (
+                  <TableRow key={g.id}>
+                    <TableCell className="font-mono text-xs text-violet-300">{g.id}</TableCell>
+                    <TableCell className="max-w-md">
+                      <a
+                        href={g.representative_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-blue-400 text-xs font-mono hover:underline break-all"
+                      >
+                        {g.representative_url}
+                      </a>
+                    </TableCell>
+                    <TableCell className="text-right text-slate-400 text-xs tabular-nums">
+                      {g.member_count ?? (g.member_urls || []).length}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      )}
 
       {totalIssues > 0 && (
         <Card padding="tight" shadow>

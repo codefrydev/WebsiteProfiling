@@ -16,6 +16,7 @@ import {
   Layers,
   Activity,
   ListChecks,
+  Sparkles,
 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '../components';
@@ -271,6 +272,31 @@ export default function ContentAnalytics({ searchQuery = '' }) {
     return arr.filter((u) => String(u).toLowerCase().includes(q));
   }, [data?.social_coverage?.missing_twitter, q]);
 
+  const languageMlChart = useMemo(() => {
+    const c = data?.language_summary?.counts || {};
+    const entries = Object.entries(c)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15);
+    if (entries.length === 0) return null;
+    return {
+      labels: entries.map((x) => x[0]),
+      values: entries.map((x) => Number(x[1])),
+    };
+  }, [data?.language_summary?.counts]);
+
+  const nerSiteChart = useMemo(() => {
+    const lc = data?.ner_site_summary?.label_counts;
+    if (!lc || typeof lc !== 'object') return null;
+    const entries = Object.entries(lc)
+      .sort((a, b) => Number(b[1]) - Number(a[1]))
+      .slice(0, 15);
+    if (entries.length === 0) return null;
+    return {
+      labels: entries.map((x) => x[0]),
+      values: entries.map((x) => Number(x[1])),
+    };
+  }, [data?.ner_site_summary?.label_counts]);
+
   if (!data) return null;
 
   const summary = data.summary || {};
@@ -450,6 +476,100 @@ export default function ContentAnalytics({ searchQuery = '' }) {
           <div className="text-xs text-slate-500 mt-1">under 300 words</div>
         </Card>
       </div>
+
+      {languageMlChart && (
+        <Card padding="tight" shadow>
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="h-4 w-4 text-violet-400" />
+            <h3 className="text-sm font-bold text-slate-200">Language mix (optional ML)</h3>
+          </div>
+          <p className="text-xs text-slate-500 mb-3">
+            From <code className="text-slate-400">enable_language_detection</code> during report. Sampled pages with enough text.
+          </p>
+          <div className="h-56">
+            <Bar
+              data={{
+                labels: languageMlChart.labels,
+                datasets: [
+                  {
+                    label: 'Pages',
+                    data: languageMlChart.values,
+                    backgroundColor: palette(languageMlChart.labels.length),
+                  },
+                ],
+              }}
+              options={barOpts('Pages')}
+            />
+          </div>
+        </Card>
+      )}
+
+      {nerSiteChart && (
+        <Card padding="tight" shadow>
+          <div className="flex items-center gap-2 mb-2">
+            <Tag className="h-4 w-4 text-cyan-400" />
+            <h3 className="text-sm font-bold text-slate-200">Entity labels (spaCy NER, sampled pages)</h3>
+          </div>
+          <p className="text-xs text-slate-500 mb-3">
+            Aggregated from <code className="text-slate-400">enable_ner_spacy</code>
+            {data.ner_site_summary?.pages_with_ner != null && (
+              <>
+                {' '}
+                · {data.ner_site_summary.pages_with_ner} page(s) · {data.ner_site_summary.total_entities ?? '—'} total entities
+              </>
+            )}
+          </p>
+          <div className="h-56">
+            <Bar
+              data={{
+                labels: nerSiteChart.labels,
+                datasets: [
+                  {
+                    label: 'Count',
+                    data: nerSiteChart.values,
+                    backgroundColor: palette(nerSiteChart.labels.length),
+                  },
+                ],
+              }}
+              options={barOptsH()}
+            />
+          </div>
+        </Card>
+      )}
+
+      {data.semantic_keyword_clusters?.length > 0 && (
+        <Card padding="tight" shadow>
+          <div className="flex items-center gap-2 mb-2">
+            <Layers className="h-4 w-4 text-emerald-400" />
+            <h3 className="text-sm font-bold text-slate-200">Semantic keyword clusters</h3>
+          </div>
+          <p className="text-xs text-slate-500 mb-3">
+            From <code className="text-slate-400">enable_semantic_keywords</code> — phrases grouped by sentence-transformer similarity (site-wide keyword rollup).
+          </p>
+          <div className="max-h-80 overflow-y-auto rounded-lg border border-muted">
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeadCell>Representative</TableHeadCell>
+                  <TableHeadCell>Cluster score</TableHeadCell>
+                  <TableHeadCell>Keywords</TableHeadCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {data.semantic_keyword_clusters.map((cl, idx) => (
+                  <TableRow key={`${cl.top_keyword}-${idx}`}>
+                    <TableCell className="font-medium text-slate-200">{cl.top_keyword}</TableCell>
+                    <TableCell className="font-mono text-xs text-slate-400">{cl.cluster_score ?? '—'}</TableCell>
+                    <TableCell className="text-xs text-slate-400">
+                      {Array.isArray(cl.keywords) ? cl.keywords.join(', ') : '—'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      )}
 
       {(hasStatusChart || hasRtDist) && (
         <div className="space-y-6">

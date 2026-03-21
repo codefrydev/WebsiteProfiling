@@ -10,8 +10,8 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import pandas as pd
 
-from .common import load_dataframe, load_edges, save_dataframe, save_edges
-from .report import build_edges_from_df
+from ..common import load_dataframe, load_edges, save_dataframe, save_edges
+from ..reporting.builder import build_edges_from_df
 
 
 def run_plot(
@@ -35,13 +35,12 @@ def run_plot(
     run_id = None
     if db_path:
         print("  Loading crawl and edges from DB...", flush=True)
-        from .db import get_connection, get_latest_crawl_run_id, init_schema, read_crawl, read_edges, write_edges, write_nodes
-        conn = get_connection(db_path)
-        init_schema(conn)
-        run_id = get_latest_crawl_run_id(conn)
-        df = read_crawl(conn, run_id)
-        edges = read_edges(conn, run_id)
-        conn.close()
+        from ..db import db_session, get_latest_crawl_run_id, init_schema, read_crawl, read_edges, write_edges, write_nodes
+        with db_session(db_path) as conn:
+            init_schema(conn)
+            run_id = get_latest_crawl_run_id(conn)
+            df = read_crawl(conn, run_id)
+            edges = read_edges(conn, run_id)
         print(f"  Loaded {len(df)} URLs, {len(edges)} edges.", flush=True)
         if df.empty and not edges:
             raise FileNotFoundError(f"No crawl or edges data in DB: {db_path}")
@@ -74,16 +73,15 @@ def run_plot(
         edges_df = pd.DataFrame(edges, columns=["from", "to"])
         if db_path:
             print("  Writing edges and nodes to DB...", flush=True)
-            from .db import get_connection, get_latest_crawl_run_id, init_schema, write_edges as db_write_edges, write_nodes as db_write_nodes
-            conn = get_connection(db_path)
-            init_schema(conn)
-            rid = run_id if run_id is not None else get_latest_crawl_run_id(conn)
-            db_write_edges(conn, edges, rid)
-            nodes = pd.Series(list(edges_df["from"]) + list(edges_df["to"]))
-            nodes = nodes.value_counts().reset_index()
-            nodes.columns = ["url", "count"]
-            db_write_nodes(conn, nodes, rid)
-            conn.close()
+            from ..db import db_session, get_latest_crawl_run_id, init_schema, write_edges as db_write_edges, write_nodes as db_write_nodes
+            with db_session(db_path) as conn:
+                init_schema(conn)
+                rid = run_id if run_id is not None else get_latest_crawl_run_id(conn)
+                db_write_edges(conn, edges, rid)
+                nodes = pd.Series(list(edges_df["from"]) + list(edges_df["to"]))
+                nodes = nodes.value_counts().reset_index()
+                nodes.columns = ["url", "count"]
+                db_write_nodes(conn, nodes, rid)
         else:
             save_edges(edges, edges_csv)
             nodes = pd.Series(list(edges_df["from"]) + list(edges_df["to"]))

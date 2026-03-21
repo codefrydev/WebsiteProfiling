@@ -7,8 +7,58 @@ import { palette, scoreBandColor } from '../../../utils/chartPalette';
 import { registerChartJsBase, GRID_COLOR, barOptionsHorizontal } from '../../../utils/chartJsDefaults';
 import { LhAuditExpandable } from '../../lighthouse';
 import OGPreview from '../OGPreview';
+import SimilarPagesTf from '../SimilarPagesTf';
 
 registerChartJsBase();
+
+/** @param {unknown} raw */
+function normalizeSimilarInternal(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item) => {
+      if (typeof item === 'string') return { url: item, score: null };
+      if (item && typeof item === 'object' && typeof item.url === 'string') {
+        const sc = item.score;
+        return {
+          url: item.url,
+          score: sc != null && sc !== '' ? Number(sc) : null,
+        };
+      }
+      return null;
+    })
+    .filter(Boolean);
+}
+
+/** @param {Record<string, unknown>|undefined} nlp */
+function NerBlock({ nlp }) {
+  if (!nlp || typeof nlp !== 'object') return null;
+  const count = nlp.entity_count;
+  const labels = Array.isArray(nlp.top_entity_labels) ? nlp.top_entity_labels : [];
+  if (count == null && labels.length === 0) return null;
+  return (
+    <div className="bg-brand-900 border border-default rounded-lg p-3 sm:col-span-2">
+      <div className="text-slate-500 mb-1">Named entities (spaCy)</div>
+      {count != null && <div className="text-slate-200 mb-2">Total entities: {Number(count).toLocaleString()}</div>}
+      {labels.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {labels.map((pair, i) => {
+            const label = Array.isArray(pair) ? pair[0] : pair;
+            const n = Array.isArray(pair) && pair.length > 1 ? pair[1] : null;
+            return (
+              <span
+                key={`${String(label)}-${i}`}
+                className="text-[11px] font-mono px-2 py-0.5 rounded bg-violet-950/50 border border-violet-500/20 text-violet-200"
+              >
+                {String(label)}
+                {n != null ? `: ${n}` : ''}
+              </span>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const RESOURCE_KEYS = [
   { key: 'internal_links', label: 'Internal links' },
@@ -127,6 +177,8 @@ export default function PageAnalysisTab({ link }) {
   const { data } = useReport();
   const pa = link.page_analysis && typeof link.page_analysis === 'object' ? link.page_analysis : {};
   const lh = link.lighthouse || null;
+  const nlpSignals = link.nlp_entities || pa?.signals?.nlp_entities;
+  const similarRows = useMemo(() => normalizeSimilarInternal(link.similar_internal), [link.similar_internal]);
 
   const [sevFilter, setSevFilter] = useState('All');
   const filteredWarnings = useMemo(() => {
@@ -261,6 +313,59 @@ export default function PageAnalysisTab({ link }) {
           )}
         </div>
       </div>
+
+      {(link.duplicate_group_id ||
+        similarRows.length > 0 ||
+        link.ml_anomaly ||
+        link.detected_language ||
+        pa?.signals?.language ||
+        (nlpSignals && (nlpSignals.entity_count != null || (nlpSignals.top_entity_labels && nlpSignals.top_entity_labels.length > 0)))) && (
+        <div className="border border-violet-500/20 rounded-xl p-4 bg-violet-950/20 space-y-3">
+          <h3 className="text-xs font-bold text-violet-400 uppercase tracking-wider">Intelligence (Python ML)</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-300">
+            {link.duplicate_group_id && (
+              <div className="bg-brand-900 border border-default rounded-lg p-3">
+                <div className="text-slate-500 mb-1">Duplicate cluster</div>
+                <div className="font-mono text-violet-300">{link.duplicate_group_id}</div>
+              </div>
+            )}
+            {link.detected_language && (
+              <div className="bg-brand-900 border border-default rounded-lg p-3">
+                <div className="text-slate-500 mb-1">Detected language</div>
+                <div className="font-mono text-slate-200">{link.detected_language}</div>
+              </div>
+            )}
+            <NerBlock nlp={nlpSignals} />
+            {link.ml_anomaly && (
+              <div className="bg-brand-900 border border-default rounded-lg p-3 sm:col-span-2">
+                <div className="text-slate-500 mb-1">Anomaly (IsolationForest)</div>
+                <div className="text-amber-400/90">
+                  score {link.ml_anomaly.anomaly_score} — {(link.ml_anomaly.reasons || []).join(', ')}
+                </div>
+              </div>
+            )}
+          </div>
+          {similarRows.length > 0 && (
+            <div>
+              <div className="text-xs text-slate-500 mb-2">Precomputed similar internal URLs (cosine vs site pages)</div>
+              <ul className="space-y-1 max-h-40 overflow-y-auto">
+                {similarRows.map((row) => (
+                  <li key={row.url} className="flex flex-wrap items-baseline gap-2 gap-y-0">
+                    {row.score != null && !Number.isNaN(row.score) && (
+                      <span className="text-[10px] font-mono text-emerald-400/90 shrink-0 w-14">{row.score.toFixed(4)}</span>
+                    )}
+                    <a href={row.url} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline font-mono text-xs break-all min-w-0">
+                      {row.url}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      <SimilarPagesTf link={link} allLinks={data?.links || []} />
 
       {/* Social previews */}
       <div>

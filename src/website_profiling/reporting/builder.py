@@ -16,7 +16,7 @@ import requests
 from bs4 import BeautifulSoup
 from tqdm.auto import tqdm
 
-from .common import (
+from ..common import (
     LINK_COLUMN_NAMES,
     load_dataframe,
     load_edges,
@@ -24,8 +24,10 @@ from .common import (
     parse_links_serialized,
     save_edges,
 )
-from .report_categories import build_categories
-from .security_scanner import run_security_scan
+from ..config import get_bool
+from ..ml.enrich import cluster_keywords_semantic, run_ml_enrichment
+from .categories import build_categories
+from ..security_scanner import run_security_scan
 
 # SEO thresholds for recommendations
 TITLE_LEN_MIN = 30
@@ -61,14 +63,14 @@ def build_lighthouse_by_url_for_report(conn: Any) -> dict[str, Any]:
     Merge per-URL Lighthouse page summaries with latest lighthouse_runs row: full audits/items
     from normalized tables, uncapped top_failures and diagnostics from stored LHR JSON.
     """
-    from .db import (
+    from ..db import (
         read_lh_audits_with_items,
         read_lh_runs_by_url,
         read_lighthouse_page_summaries,
         read_lighthouse_run_json,
     )
-    from .lighthouse_runner import _evidence_from_audit, extract_from_lighthouse_json
-    from .warning_mapper import parse_lighthouse_to_diagnostics, resolve_impact
+    from ..lighthouse.runner import _evidence_from_audit, extract_from_lighthouse_json
+    from ..tools.warnings import parse_lighthouse_to_diagnostics, resolve_impact
 
     summaries = read_lighthouse_page_summaries(conn)
     runs_map = read_lh_runs_by_url(conn)
@@ -665,13 +667,14 @@ def run_simple_report(
     security_findings_output: Optional[str] = None,
     lighthouse_summary_path: Optional[str] = None,
     db_path: Optional[str] = None,
+    config: Optional[dict[str, str]] = None,
 ) -> str:
     """Load crawl data, build edges if needed, write report payload to SQLite. Returns db_path. Requires db_path (React app in UI/ loads report.db)."""
-    conn = None
     run_id = None
+    crawl_run_created_at: Optional[str] = None
     if db_path:
-        from .db import (
-            get_connection,
+        from ..db import (
+            db_session,
             get_crawl_run_info,
             get_latest_crawl_run_id,
             init_schema,
@@ -679,24 +682,25 @@ def run_simple_report(
             read_edges,
             read_lighthouse_summary,
             write_edges,
-            write_report_payload,
         )
         print("  Loading crawl data from DB...", flush=True)
-        conn = get_connection(db_path)
-        init_schema(conn)
-        run_id = get_latest_crawl_run_id(conn)
-        df = read_crawl(conn, run_id)
-        edges = read_edges(conn, run_id)
-        lighthouse_summary = read_lighthouse_summary(conn)
-        lighthouse_by_url = build_lighthouse_by_url_for_report(conn)
-        if not lighthouse_summary and lighthouse_by_url:
-            first_url = next(iter(lighthouse_by_url), None)
-            if first_url is not None:
-                lighthouse_summary = lighthouse_by_url[first_url]
-        print(f"  Loaded {len(df)} URLs, {len(edges)} edges.", flush=True)
-        if df.empty and not edges:
-            conn.close()
-            raise FileNotFoundError(f"No crawl or edges data in DB: {db_path}")
+        with db_session(db_path) as conn:
+            init_schema(conn)
+            run_id = get_latest_crawl_run_id(conn)
+            if run_id is not None:
+                info = get_crawl_run_info(conn, run_id)
+                crawl_run_created_at = info["created_at"] if info else None
+            df = read_crawl(conn, run_id)
+            edges = read_edges(conn, run_id)
+            lighthouse_summary = read_lighthouse_summary(conn)
+            lighthouse_by_url = build_lighthouse_by_url_for_report(conn)
+            if not lighthouse_summary and lighthouse_by_url:
+                first_url = next(iter(lighthouse_by_url), None)
+                if first_url is not None:
+                    lighthouse_summary = lighthouse_by_url[first_url]
+            print(f"  Loaded {len(df)} URLs, {len(edges)} edges.", flush=True)
+            if df.empty and not edges:
+                raise FileNotFoundError(f"No crawl or edges data in DB: {db_path}")
     else:
         if not os.path.exists(crawl_csv):
             raise FileNotFoundError(f"Crawl data not found: {crawl_csv}")
@@ -708,8 +712,6 @@ def run_simple_report(
         print(f"  Loaded {len(df)} URLs.", flush=True)
 
     if "url" not in df.columns and not df.empty:
-        if conn:
-            conn.close()
         raise ValueError("Crawl DataFrame missing required column 'url'")
 
     df = df.copy()
@@ -725,10 +727,13 @@ def run_simple_report(
             df, edges_csv, same_domain_only, max_fetch_for_edges, concurrency, timeout, 0.12
         )
         print(f"  Edges: {len(edges)}.", flush=True)
-        if edges and db_path and conn:
-            write_edges(conn, edges, run_id)
+        if edges and db_path:
+            with db_session(db_path) as conn:
+                write_edges(conn, edges, run_id)
         elif edges and not db_path:
             save_edges(edges, edges_csv)
+
+    # Long report work (ML, graph, network) runs without a DB handle; payload write uses db_session again.
 
     print("  Computing SEO summary and issues...", flush=True)
     summary_seo = _compute_summary_seo_issues(df)
@@ -760,6 +765,9 @@ def run_simple_report(
             with open(security_findings_output, "w", encoding="utf-8") as fh:
                 json.dump(security_findings, fh, indent=2, default=str)
 
+    print("  ML enrichment (optional)...", flush=True)
+    ml_bundle = run_ml_enrichment(df, config)
+
     print("  Building report categories...", flush=True)
     if not db_path:
         lighthouse_summary = None
@@ -774,6 +782,7 @@ def run_simple_report(
         df, edges, summary_seo, site_level, start_url or "",
         security_findings=security_findings,
         lighthouse_summary=lighthouse_summary,
+        ml_bundle=ml_bundle,
     )
     # Ensure categories are JSON-serializable (score may be None)
     for cat in categories:
@@ -861,6 +870,13 @@ def run_simple_report(
     in_degree: dict[str, int] = {}
     for from_url, to_url in edges:
         in_degree[to_url] = in_degree.get(to_url, 0) + 1
+
+    dup_gid = ml_bundle.get("url_duplicate_group_id") or {}
+    sim_map = ml_bundle.get("similar_internal_by_url") or {}
+    lang_map = ml_bundle.get("language_by_url") or {}
+    spacy_map = ml_bundle.get("spacy_by_url") or {}
+    anomalies_list = ml_bundle.get("anomalies") or []
+    anomaly_by_url = {str(a.get("url") or "").strip().rstrip("/"): a for a in anomalies_list if a.get("url")}
 
     # Full links list: every crawled URL with url, status, inlinks, title, content_length, depth
     links = []
@@ -1003,6 +1019,24 @@ def run_simple_report(
 
         rec["lighthouse"] = lighthouse_for_url(lighthouse_by_url or {}, u)
 
+        uk = u.rstrip("/")
+        if isinstance(rec["page_analysis"], dict):
+            if uk in lang_map:
+                rec["page_analysis"].setdefault("signals", {})["language"] = lang_map[uk]
+            if uk in spacy_map:
+                rec["page_analysis"].setdefault("signals", {})["nlp_entities"] = spacy_map[uk]
+        if uk in dup_gid:
+            rec["duplicate_group_id"] = dup_gid[uk]
+        nei = sim_map.get(uk) or sim_map.get(u)
+        if nei:
+            rec["similar_internal"] = list(nei)
+        if uk in lang_map:
+            rec["detected_language"] = lang_map[uk]
+        if uk in spacy_map:
+            rec["nlp_entities"] = spacy_map[uk]
+        if uk in anomaly_by_url:
+            rec["ml_anomaly"] = anomaly_by_url[uk]
+
         links.append(rec)
 
     # Content URL lists for On-Page Content view
@@ -1075,6 +1109,13 @@ def run_simple_report(
 
     print("  Building content analytics...", flush=True)
     content_analytics = _build_content_analytics(df)
+    semantic_keyword_clusters: list[dict[str, Any]] = []
+    if get_bool(config, "enable_semantic_keywords", False):
+        try:
+            words = [x["word"] for x in (content_analytics.get("top_keywords_site") or []) if x.get("word")]
+            semantic_keyword_clusters = cluster_keywords_semantic(words, config)
+        except ImportError as e:
+            ml_bundle.setdefault("ml_errors", []).append(str(e))
     social_coverage = _build_social_coverage(df)
     tech_stack_summary = _build_tech_stack_summary(df)
     response_time_stats = _build_response_time_stats(df)
@@ -1113,23 +1154,27 @@ def run_simple_report(
         "tech_stack_summary": tech_stack_summary,
         "response_time_stats": response_time_stats,
         "depth_distribution": depth_distribution,
+        "content_duplicates": ml_bundle.get("content_duplicates") or [],
+        "anomalies": ml_bundle.get("anomalies") or [],
+        "language_summary": ml_bundle.get("language_summary") or {},
+        "ner_site_summary": ml_bundle.get("ner_site_summary") or {},
+        "semantic_keyword_clusters": semantic_keyword_clusters,
+        "ml_errors": ml_bundle.get("ml_errors") or [],
     }
-    if db_path and conn and run_id is not None:
-        from .db import get_crawl_run_info as _get_crawl_run_info
-        info = _get_crawl_run_info(conn, run_id)
+    if db_path and run_id is not None:
         report_data["crawl_run_id"] = run_id
-        report_data["crawl_run_created_at"] = info["created_at"] if info else None
+        report_data["crawl_run_created_at"] = crawl_run_created_at
     if lighthouse_summary:
         report_data["lighthouse_summary"] = lighthouse_summary
         report_data["lighthouse_diagnostics"] = lighthouse_summary.get("diagnostics") or []
         report_data["lighthouse_human_summary"] = lighthouse_summary.get("human_summary_full") or lighthouse_summary.get("human_summary") or ""
     report_data["lighthouse_by_url"] = lighthouse_by_url
-    if db_path and conn:
+    if db_path:
         print("  Writing report payload to DB...", flush=True)
-        from .db import write_report_payload as db_write_report_payload
-        db_write_report_payload(conn, report_data)
-        conn.close()
-        conn = None
+        from ..db import db_session as _db, init_schema as _init, write_report_payload as db_write_report_payload
+        with _db(db_path) as conn:
+            _init(conn)
+            db_write_report_payload(conn, report_data)
         return db_path
     raise ValueError(
         "Report requires sqlite_db. Set sqlite_db = report.db in your config; "

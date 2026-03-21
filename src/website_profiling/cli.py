@@ -28,7 +28,7 @@ def main() -> None:
     parser.add_argument(
         "command",
         nargs="?",
-        choices=["crawl", "report", "plot", "lighthouse", "keywords", "warnings"],
+        choices=["crawl", "report", "plot", "lighthouse", "keywords", "warnings", "enrich"],
         help="Run only this step (default: run all steps according to config)",
     )
     args = parser.parse_args()
@@ -55,7 +55,7 @@ def main() -> None:
     # Single-command mode: lighthouse, keywords, warnings
     if args.command == "lighthouse":
         print("WebsiteProfiling: lighthouse only", flush=True)
-        from .lighthouse_runner import main as lighthouse_main
+        from .lighthouse.runner import main as lighthouse_main
         lh_url = cfg.get("lighthouse_url", cfg.get("start_url", "https://codefrydev.in"))
         lh_strategy = (cfg.get("lighthouse_strategy") or "mobile").lower()
         if lh_strategy not in ("mobile", "desktop"):
@@ -70,7 +70,7 @@ def main() -> None:
         sys.exit(lighthouse_main(url=lh_url, strategy=lh_strategy, iterations=lh_iterations, output_dir=lh_out, db_path=db_path, mode=lh_mode, categories=lh_categories))
     if args.command == "keywords":
         print("WebsiteProfiling: keywords only", flush=True)
-        from .keyword_tool import main as keyword_main
+        from .tools.keywords import main as keyword_main
         kw_url = cfg.get("start_url", "https://codefrydev.in")
         kw_out = cfg.get("keyword_output_dir", "").strip() or cwd
         if not os.path.isabs(kw_out):
@@ -80,7 +80,7 @@ def main() -> None:
         sys.exit(keyword_main(base_url=kw_url, output_dir=kw_out, config=kw_cfg))
     if args.command == "warnings":
         print("WebsiteProfiling: warning mapper only", flush=True)
-        from .warning_mapper import main as warning_mapper_main
+        from .tools.warnings import main as warning_mapper_main
         wm_input = cfg.get("warning_mapper_input", "").strip()
         wm_type = (cfg.get("warning_mapper_input_type") or "lighthouse").lower()
         wm_out = cfg.get("warning_mapper_output", "").strip()
@@ -89,6 +89,28 @@ def main() -> None:
         elif not os.path.isabs(wm_out):
             wm_out = os.path.join(cwd, wm_out)
         sys.exit(warning_mapper_main(input_path=wm_input, input_type=wm_type, output_path=wm_out))
+
+    if args.command == "enrich":
+        if not db_path:
+            print("enrich requires sqlite_db in config.", file=sys.stderr)
+            sys.exit(1)
+        print("WebsiteProfiling: ML enrich only (updates latest report payload)...", flush=True)
+        from .db import db_session, get_latest_crawl_run_id, init_schema, read_crawl, read_report_payload, write_report_payload
+        from .ml.enrich import merge_ml_into_payload, run_ml_enrichment
+
+        with db_session(db_path) as conn:
+            init_schema(conn)
+            run_id = get_latest_crawl_run_id(conn)
+            df = read_crawl(conn, run_id)
+            payload = read_report_payload(conn)
+            if not payload:
+                print("No report_payload in DB. Run report first.", file=sys.stderr)
+                sys.exit(1)
+            ml_bundle = run_ml_enrichment(df, cfg)
+            merge_ml_into_payload(payload, ml_bundle)
+            write_report_payload(conn, payload)
+        print("Enrich done. New report_payload row written.", flush=True)
+        sys.exit(0)
 
     run_crawl = args.command == "crawl" or (args.command is None and get_bool(cfg, "run_crawl", True))
     run_report = args.command == "report" or (args.command is None and get_bool(cfg, "run_report", True))
@@ -112,7 +134,7 @@ def main() -> None:
         print(f"WebsiteProfiling pipeline: {', '.join(steps)}", flush=True)
 
     if run_crawl:
-        from .crawler import run_crawler
+        from .crawl.crawler import run_crawler
         print("[Crawl] Starting...", flush=True)
         start_url = cfg.get("start_url", "https://codefrydev.in")
         max_pages = get_int(cfg, "max_pages")
@@ -154,14 +176,13 @@ def main() -> None:
     # Run Lighthouse on every 200 OK page (when enabled); requires DB and crawl data
     lighthouse_summary_path_for_report = None
     if run_lighthouse_on_pages and db_path:
-        from .db import get_connection, get_latest_crawl_run_id, init_schema, read_crawl
-        from .lighthouse_runner import run_lighthouse_on_pages as do_lighthouse_on_pages
+        from .db import db_session, get_latest_crawl_run_id, init_schema, read_crawl
+        from .lighthouse.runner import run_lighthouse_on_pages as do_lighthouse_on_pages
         print("[Lighthouse on pages] Starting...", flush=True)
-        conn = get_connection(db_path)
-        init_schema(conn)
-        run_id = get_latest_crawl_run_id(conn)
-        df = read_crawl(conn, run_id)
-        conn.close()
+        with db_session(db_path) as conn:
+            init_schema(conn)
+            run_id = get_latest_crawl_run_id(conn)
+            df = read_crawl(conn, run_id)
         success_df = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns and not df.empty else pd.DataFrame()
         urls_200 = success_df["url"].dropna().astype(str).str.strip().unique().tolist()[:lighthouse_max_pages]
         if not urls_200:
@@ -192,7 +213,7 @@ def main() -> None:
     # Run single-URL Lighthouse before report when enabled (and not running on all pages)
     if run_lighthouse and not run_lighthouse_on_pages:
         print("[Lighthouse] Starting...", flush=True)
-        from .lighthouse_runner import main as lighthouse_main
+        from .lighthouse.runner import main as lighthouse_main
         lh_url = cfg.get("lighthouse_url", cfg.get("start_url", "https://codefrydev.in"))
         lh_strategy = (cfg.get("lighthouse_strategy") or "mobile").lower()
         if lh_strategy not in ("mobile", "desktop"):
@@ -233,7 +254,7 @@ def main() -> None:
             lighthouse_summary_path = os.path.join(cwd, lighthouse_summary_path)
         if not lighthouse_summary_path:
             lighthouse_summary_path = lighthouse_summary_path_for_report
-        from .report import run_simple_report
+        from .reporting.builder import run_simple_report
         print("[Report] Starting...", flush=True)
         out = run_simple_report(
             crawl_csv=crawl_csv,
@@ -253,6 +274,7 @@ def main() -> None:
             security_findings_output=security_findings_output,
             lighthouse_summary_path=lighthouse_summary_path,
             db_path=db_path,
+            config=cfg,
         )
         print("[Report] Done.", flush=True)
         print(f"Report written: {out}")
@@ -271,7 +293,7 @@ def main() -> None:
         if plot_image and not os.path.isabs(plot_image):
             plot_image = os.path.join(cwd, plot_image)
         print("[Plot] Starting...", flush=True)
-        from .plot import run_plot as do_plot
+        from .tools.plot import run_plot as do_plot
         e, n = do_plot(
             crawl_csv=crawl_csv,
             edges_csv=edges_csv,
