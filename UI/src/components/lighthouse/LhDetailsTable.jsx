@@ -202,7 +202,7 @@ function LhCell({ value, columnKey = '', valueType = '', row = null }) {
       return <span className="font-mono">{String(value.value)}</span>;
     }
     if (value.type === 'code' && value.value != null) {
-      return <code className="text-[10px] break-all text-amber-200/90">{String(value.value)}</code>;
+      return <code className="text-[10px] break-all text-amber-800 dark:text-amber-200/90">{String(value.value)}</code>;
     }
 
     const imgSrc = pickDataImageSrc(value);
@@ -247,7 +247,7 @@ function LhCell({ value, columnKey = '', valueType = '', row = null }) {
                 <HttpImageThumbOnly href={rowImageForNodeCol} />
               )}
               {label && <div className="text-foreground">{label}</div>}
-              {sel && <code className="block text-[10px] text-amber-200/90 break-all">{sel}</code>}
+              {sel && <code className="block text-[10px] text-amber-800 dark:text-amber-200/90 break-all">{sel}</code>}
               {snip && <div className="text-muted-foreground text-[10px] line-clamp-3 font-mono">{snip}</div>}
             </div>
           )}

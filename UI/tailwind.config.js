@@ -16,10 +16,7 @@ export default {
           700: '#1F2937',
         },
       },
-      borderColor: {
-        default: 'rgba(255, 255, 255, 0.07)',
-        muted: 'rgba(255, 255, 255, 0.04)',
-      },
+      /* Border colors: use @theme in src/index.css (Tailwind v4); avoid duplicating dark-only values here. */
       borderRadius: {
         card: '0.75rem',
       },

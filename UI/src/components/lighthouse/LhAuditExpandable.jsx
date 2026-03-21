@@ -21,7 +21,7 @@ export default function LhAuditExpandable({ audit }) {
           <div className="text-sm text-foreground font-medium">{title}</div>
           <div className="text-[10px] text-muted-foreground font-mono mt-0.5">{audit.id}</div>
           {audit.displayValue && (
-            <div className="text-xs text-amber-200/90 mt-1 font-mono">{audit.displayValue}</div>
+            <div className="text-xs text-amber-800 dark:text-amber-200/90 mt-1 font-mono">{audit.displayValue}</div>
           )}
         </div>
       </button>

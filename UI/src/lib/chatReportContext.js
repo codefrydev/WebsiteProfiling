@@ -1,4 +1,4 @@
-import { queryCrawlResults, queryEdgesSample } from './loadReportDb.js';
+import { formatDatabaseSchemaForPrompt, queryCrawlResults, queryEdgesSample } from './loadReportDb.js';
 
 /**
  * Shrink the report JSON to a chat-friendly shape (still large; further capped when stringified).
@@ -98,6 +98,16 @@ export function buildReportContextForChat({ sqlDb, data, maxChars = 3200 }) {
     push('\n');
   } catch {
     push('(Could not serialize report JSON.)\n\n');
+  }
+
+  if (sqlDb) {
+    push('### SQLite schema (tables, columns, row counts)\n');
+    push(
+      formatDatabaseSchemaForPrompt(sqlDb, {
+        maxChars: Math.min(2000, Math.floor(maxChars * 0.45)),
+      })
+    );
+    push('\n');
   }
 
   if (sqlDb) {

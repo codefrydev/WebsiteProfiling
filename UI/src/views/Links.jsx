@@ -285,7 +285,7 @@ export default function Links({ searchQuery = '' }) {
                       sortBy={sortBy}
                       sortDesc={sortDesc}
                       onSort={toggleSort}
-                      className="px-3 sm:px-6 sticky left-0 z-30 bg-brand-900 border-r border-white/10 shadow-[4px_0_16px_-8px_rgba(0,0,0,0.55)]"
+                      className="px-3 sm:px-6 sticky left-0 z-30 bg-brand-900 border-r border-default shadow-[4px_0_16px_-8px_rgba(0,0,0,0.55)]"
                     />
                     <SortTh label={vl.thStatus} field="status" sortBy={sortBy} sortDesc={sortDesc} onSort={toggleSort} />
                     <SortTh label={vl.thLinksIn} field="inlinks" sortBy={sortBy} sortDesc={sortDesc} onSort={toggleSort} />
@@ -310,7 +310,7 @@ export default function Links({ searchQuery = '' }) {
                   </tr>
                 </thead>
                 <tbody
-                  className="divide-y divide-muted [&>tr:nth-child(even)]:bg-brand-900/30 [&>tr>td:first-child]:sticky [&>tr>td:first-child]:left-0 [&>tr>td:first-child]:z-10 [&>tr>td:first-child]:bg-inherit [&>tr>td:first-child]:border-r [&>tr>td:first-child]:border-white/10 [&>tr>td:first-child]:shadow-[4px_0_16px_-8px_rgba(0,0,0,0.5)] [&>tr>td:first-child]:max-w-[min(280px,85vw)]"
+                  className="divide-y divide-muted [&>tr:nth-child(even)]:bg-brand-900/30 [&>tr>td:first-child]:sticky [&>tr>td:first-child]:left-0 [&>tr>td:first-child]:z-10 [&>tr>td:first-child]:bg-inherit [&>tr>td:first-child]:border-r [&>tr>td:first-child]:border-default [&>tr>td:first-child]:shadow-[4px_0_16px_-8px_rgba(0,0,0,0.5)] [&>tr>td:first-child]:max-w-[min(280px,85vw)]"
                 >
                   {pageLinks.map((link, i) => {
                     const inl = link.inlinks ?? 0;

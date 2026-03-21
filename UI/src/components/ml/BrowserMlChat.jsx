@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { Bot, Loader2, MessageCircle, Send, Sparkles, User, X } from 'lucide-react';
+import { Bot, Loader2, MessageCircle, Send, Settings, Sparkles, User, X } from 'lucide-react';
 import { strings } from '../../lib/strings';
 import { useReport } from '../../context/useReport';
 import { useBrowserAssistant } from '../../context/useBrowserAssistant.js';
@@ -29,11 +29,39 @@ function isLikelyOnnxWasmRangeError(e) {
 
 const URL_IN_TEXT = /(https?:\/\/[^\s]+)/g;
 
+const SYSTEM_PROMPT_STORAGE_KEY = 'browserMlChat_systemPromptBase_v1';
+
+function readStoredSystemPromptBase(fallback) {
+  try {
+    const v = localStorage.getItem(SYSTEM_PROMPT_STORAGE_KEY);
+    if (v !== null) return v;
+  } catch {
+    /* ignore */
+  }
+  return fallback;
+}
+
+function writeStoredSystemPromptBase(text) {
+  try {
+    localStorage.setItem(SYSTEM_PROMPT_STORAGE_KEY, text);
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearStoredSystemPromptBase() {
+  try {
+    localStorage.removeItem(SYSTEM_PROMPT_STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
 function MessageTextWithLinks({ text, variant }) {
   const linkClass =
     variant === 'user'
       ? 'text-white underline underline-offset-2 decoration-white/50 hover:decoration-white'
-      : 'text-emerald-300/95 underline underline-offset-2 decoration-emerald-400/40 hover:text-emerald-200 hover:decoration-emerald-300/70';
+      : 'text-emerald-700 underline underline-offset-2 decoration-emerald-500/45 hover:text-emerald-800 hover:decoration-emerald-600/55 dark:text-emerald-300/95 dark:decoration-emerald-400/40 dark:hover:text-emerald-200 dark:hover:decoration-emerald-300/70';
   const parts = String(text ?? '').split(URL_IN_TEXT);
   return (
     <>
@@ -55,7 +83,7 @@ function ProgressBubble({ overall, label, bytesLine, progressLabel }) {
   return (
     <div className="flex gap-2.5 max-w-[92%] items-end">
       <span
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-400/25 bg-amber-500/10 text-amber-200/90"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-amber-400/35 bg-amber-100/70 text-amber-900 dark:border-amber-400/25 dark:bg-amber-500/10 dark:text-amber-200/90"
         aria-hidden
       >
         <Bot className="h-4 w-4" strokeWidth={2} />
@@ -101,6 +129,11 @@ export default function BrowserMlChat() {
   const [draft, setDraft] = useState('');
   const [chatBusy, setChatBusy] = useState(false);
   const [chatThread, setChatThread] = useState([]);
+  const [systemPromptBase, setSystemPromptBase] = useState(() =>
+    readStoredSystemPromptBase(t.chatSystemPrompt)
+  );
+  const [systemPromptEditorOpen, setSystemPromptEditorOpen] = useState(false);
+  const [systemPromptJustSaved, setSystemPromptJustSaved] = useState(false);
 
   const appendMessage = useCallback((msg) => {
     setMessages((m) => [...m, { ...msg, id: msg.id || nextId() }]);
@@ -113,19 +146,36 @@ export default function BrowserMlChat() {
   }, [selectedReportId]);
 
   useEffect(() => {
+    if (!systemPromptJustSaved) return;
+    const id = setTimeout(() => setSystemPromptJustSaved(false), 2000);
+    return () => clearTimeout(id);
+  }, [systemPromptJustSaved]);
+
+  useEffect(() => {
     if (!panelOpen) return;
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, panelOpen]);
 
   useEffect(() => {
+    if (!panelOpen) {
+      setSystemPromptEditorOpen(false);
+    }
+  }, [panelOpen]);
+
+  useEffect(() => {
     if (!panelOpen) return;
     const onKey = (e) => {
-      if (e.key === 'Escape') closePanel();
+      if (e.key !== 'Escape') return;
+      if (systemPromptEditorOpen) {
+        setSystemPromptEditorOpen(false);
+        return;
+      }
+      closePanel();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [panelOpen, closePanel]);
+  }, [panelOpen, closePanel, systemPromptEditorOpen]);
 
   useEffect(() => {
     if (panelOpen && closeBtnRef.current) {
@@ -159,7 +209,7 @@ export default function BrowserMlChat() {
         return;
       }
 
-      const systemContent = `${t.chatSystemPrompt}\n\n${buildChatToolsPrompt()}\n\n--- Report data (from this audit’s JSON + SQLite) ---\n${reportContext}\n--- End report data ---`;
+      const systemContent = `${systemPromptBase}\n\n${buildChatToolsPrompt()}\n\n--- Report data (from this audit’s JSON + SQLite) ---\n${reportContext}\n--- End report data ---`;
 
       const nextThread =
         chatThread.length === 0
@@ -323,7 +373,7 @@ export default function BrowserMlChat() {
       chatThread,
       reportContext,
       appendMessage,
-      t.chatSystemPrompt,
+      systemPromptBase,
       t.chatEmptyReply,
       t.chatErrorGeneric,
       t.chatErrorRangeBuffer,
@@ -352,22 +402,19 @@ export default function BrowserMlChat() {
 
   return (
     <div className="fixed bottom-0 right-0 z-[60] flex flex-col items-end gap-2 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] pr-[max(1rem,env(safe-area-inset-right))] print:hidden pointer-events-none">
-      <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={descId}
-        className={`pointer-events-auto w-[min(100vw-2rem,24rem)] max-h-[min(72vh,640px)] flex flex-col rounded-[1.35rem] border border-default bg-brand-800 shadow-2xl backdrop-blur-md overflow-hidden transition-all duration-200 ease-out origin-bottom-right ${
-          panelOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none h-0 max-h-0 overflow-hidden border-0 p-0 m-0'
-        }`}
-      >
-        {panelOpen && (
-          <>
+      {panelOpen ? (
+        <div
+          ref={panelRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          aria-describedby={descId}
+          className="pointer-events-auto w-[min(100vw-2rem,24rem)] max-h-[min(72vh,640px)] flex flex-col rounded-[1.35rem] border border-default bg-brand-800 shadow-2xl backdrop-blur-md overflow-hidden transition-all duration-200 ease-out origin-bottom-right"
+        >
             <div className="shrink-0 flex items-center justify-between gap-3 border-b border-default bg-brand-700/35 px-4 py-3">
               <div className="min-w-0 flex items-center gap-2.5">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-violet-400/20 bg-gradient-to-br from-violet-500/25 to-fuchsia-500/15 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
-                  <Sparkles className="h-4 w-4 shrink-0 text-violet-200" strokeWidth={2} />
+                  <Sparkles className="h-4 w-4 shrink-0 text-violet-700 dark:text-violet-200" strokeWidth={2} />
                 </span>
                 <h2 id={titleId} className="text-sm font-semibold tracking-tight text-bright">
                   {t.panelTitle}
@@ -376,16 +423,71 @@ export default function BrowserMlChat() {
                   {t.welcome}
                 </span>
               </div>
-              <button
-                ref={closeBtnRef}
-                type="button"
-                onClick={closePanel}
-                className="shrink-0 rounded-xl border border-transparent p-2 text-muted-foreground transition-colors hover:border-default hover:bg-brand-700/50 hover:text-foreground"
-                aria-label={t.closeAria}
-              >
-                <X className="h-4 w-4" strokeWidth={2} />
-              </button>
+              <div className="flex shrink-0 items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setSystemPromptEditorOpen((o) => !o)}
+                  className={`rounded-xl border p-2 transition-colors ${
+                    systemPromptEditorOpen
+                      ? 'border-violet-400/40 bg-violet-200/55 text-violet-900 dark:bg-violet-500/15 dark:text-violet-100'
+                      : 'border-transparent text-muted-foreground hover:border-default hover:bg-brand-700/50 hover:text-foreground'
+                  }`}
+                  aria-expanded={systemPromptEditorOpen}
+                  aria-label={t.systemPromptToggleAria}
+                  title={t.systemPromptToggleAria}
+                >
+                  <Settings className="h-4 w-4" strokeWidth={2} />
+                </button>
+                <button
+                  ref={closeBtnRef}
+                  type="button"
+                  onClick={closePanel}
+                  className="rounded-xl border border-transparent p-2 text-muted-foreground transition-colors hover:border-default hover:bg-brand-700/50 hover:text-foreground"
+                  aria-label={t.closeAria}
+                >
+                  <X className="h-4 w-4" strokeWidth={2} />
+                </button>
+              </div>
             </div>
+
+            {systemPromptEditorOpen ? (
+              <div className="shrink-0 border-b border-default bg-brand-900/50 px-4 py-3 space-y-2">
+                <p className="text-[11px] leading-snug text-muted-foreground">{t.systemPromptHint}</p>
+                <textarea
+                  value={systemPromptBase}
+                  onChange={(e) => setSystemPromptBase(e.target.value)}
+                  rows={5}
+                  className="w-full resize-y rounded-lg border border-default bg-brand-900/80 px-3 py-2 text-[12px] leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-violet-500/60"
+                  spellCheck={false}
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      writeStoredSystemPromptBase(systemPromptBase);
+                      setSystemPromptJustSaved(true);
+                      setChatThread([]);
+                      setMessages([]);
+                    }}
+                    className="rounded-lg bg-violet-600/90 px-3 py-1.5 text-[11px] font-medium text-white hover:bg-violet-500"
+                  >
+                    {systemPromptJustSaved ? t.systemPromptSaved : t.systemPromptSave}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearStoredSystemPromptBase();
+                      setSystemPromptBase(t.chatSystemPrompt);
+                      setChatThread([]);
+                      setMessages([]);
+                    }}
+                    className="rounded-lg border border-default px-3 py-1.5 text-[11px] font-medium text-muted-foreground hover:bg-brand-800/80 hover:text-foreground"
+                  >
+                    {t.systemPromptReset}
+                  </button>
+                </div>
+              </div>
+            ) : null}
 
             <div
               ref={scrollRef}
@@ -411,7 +513,7 @@ export default function BrowserMlChat() {
                         <MessageTextWithLinks text={msg.text} variant="user" />
                       </div>
                       <span
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-sky-400/30 bg-sky-500/20 text-sky-100"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-sky-400/40 bg-sky-100/75 text-sky-900 dark:border-sky-400/30 dark:bg-sky-500/20 dark:text-sky-100"
                         aria-hidden
                       >
                         <User className="h-4 w-4" strokeWidth={2} />
@@ -423,7 +525,7 @@ export default function BrowserMlChat() {
                   return (
                     <div key={msg.id} className="flex items-end justify-start gap-2.5">
                       <span
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-emerald-500/25 bg-emerald-500/12 text-emerald-200/95"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-emerald-500/35 bg-emerald-100/70 text-emerald-900 dark:border-emerald-500/25 dark:bg-emerald-500/12 dark:text-emerald-200/95"
                         aria-hidden
                       >
                         <Bot className="h-4 w-4" strokeWidth={2} />
@@ -491,9 +593,8 @@ export default function BrowserMlChat() {
                 </div>
               </div>
             </div>
-          </>
-        )}
-      </div>
+        </div>
+      ) : null}
 
       <button
         type="button"

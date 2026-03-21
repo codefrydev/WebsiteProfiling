@@ -51,7 +51,7 @@ function NerBlock({ nlp }) {
             return (
               <span
                 key={`${String(label)}-${i}`}
-                className="text-[11px] font-mono px-2 py-0.5 rounded bg-violet-950/50 border border-violet-500/20 text-violet-200"
+                className="text-[11px] font-mono px-2 py-0.5 rounded bg-violet-200/70 border border-violet-400/35 text-violet-950 dark:bg-violet-950/50 dark:border-violet-500/20 dark:text-violet-200"
               >
                 {String(label)}
                 {n != null ? `: ${n}` : ''}
@@ -325,13 +325,13 @@ export default function PageAnalysisTab({ link }) {
         link.keyphrases?.phrases?.length > 0 ||
         pa?.signals?.language ||
         (nlpSignals && (nlpSignals.entity_count != null || (nlpSignals.top_entity_labels && nlpSignals.top_entity_labels.length > 0)))) && (
-        <div className="border border-violet-500/20 rounded-xl p-4 bg-violet-950/20 space-y-3">
-          <h3 className="text-xs font-bold text-violet-400 uppercase tracking-wider">{p.intelligenceMl}</h3>
+        <div className="border border-violet-400/30 dark:border-violet-500/20 rounded-xl p-4 bg-violet-100/45 dark:bg-violet-950/20 space-y-3">
+          <h3 className="text-xs font-bold text-violet-800 dark:text-violet-400 uppercase tracking-wider">{p.intelligenceMl}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-foreground">
             {link.duplicate_group_id && (
               <div className="bg-brand-900 border border-default rounded-lg p-3">
                 <div className="text-muted-foreground mb-1">{p.duplicateCluster}</div>
-                <div className="font-mono text-violet-300">{link.duplicate_group_id}</div>
+                <div className="font-mono text-violet-800 dark:text-violet-300">{link.duplicate_group_id}</div>
               </div>
             )}
             {link.detected_language && (
@@ -388,15 +388,15 @@ export default function PageAnalysisTab({ link }) {
         </div>
       )}
 
-      <div className="border border-cyan-500/25 rounded-xl p-4 bg-cyan-950/15">
-        <h3 className="text-xs font-bold text-cyan-400/90 uppercase tracking-wider mb-2 flex items-center gap-2">
+      <div className="border border-cyan-500/30 dark:border-cyan-500/25 rounded-xl p-4 bg-cyan-100/50 dark:bg-cyan-950/15">
+        <h3 className="text-xs font-bold text-cyan-800 dark:text-cyan-400/90 uppercase tracking-wider mb-2 flex items-center gap-2">
           {sp.sectionTitle}
         </h3>
         <p className="text-xs text-muted-foreground mb-3">{p.similarAssistantHint}</p>
         <button
           type="button"
           onClick={() => openAssistant(link)}
-          className="text-xs font-medium px-3 py-1.5 rounded-lg bg-cyan-900/50 text-cyan-200 border border-cyan-700/40 hover:bg-cyan-800/50"
+          className="text-xs font-medium px-3 py-1.5 rounded-lg bg-cyan-200/90 text-cyan-950 border border-cyan-600/45 hover:bg-cyan-300/90 dark:bg-cyan-900/50 dark:text-cyan-200 dark:border-cyan-700/40 dark:hover:bg-cyan-800/50"
         >
           {p.openSimilarAssistant}
         </button>

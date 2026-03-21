@@ -445,18 +445,18 @@ export default function Overview({ searchQuery = '' }) {
   return (
     <PageLayout className="space-y-8">
       {data.ml_errors?.length > 0 && (
-        <div className="rounded-xl border border-amber-500/40 bg-amber-950/25 px-4 py-3">
+        <div className="rounded-xl border border-amber-500/40 bg-amber-100/60 dark:bg-amber-950/25 px-4 py-3">
           <button
             type="button"
             onClick={() => setMlErrOpen((o) => !o)}
-            className="w-full flex items-center gap-2 text-left text-sm font-semibold text-amber-200 hover:text-amber-100"
+            className="w-full flex items-center gap-2 text-left text-sm font-semibold text-amber-900 hover:text-amber-950 dark:text-amber-200 dark:hover:text-amber-100"
           >
             {mlErrOpen ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
-            <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+            <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
             {format(vo.mlErrors, { count: data.ml_errors.length, plural: data.ml_errors.length !== 1 ? 's' : '' })}
           </button>
           {mlErrOpen && (
-            <ul className="mt-2 space-y-1 text-xs font-mono text-amber-100/90 list-disc pl-5 max-h-48 overflow-y-auto">
+            <ul className="mt-2 space-y-1 text-xs font-mono text-amber-900/90 dark:text-amber-100/90 list-disc pl-5 max-h-48 overflow-y-auto">
               {data.ml_errors.map((err, i) => (
                 <li key={i}>{String(err)}</li>
               ))}
@@ -469,7 +469,7 @@ export default function Overview({ searchQuery = '' }) {
         title={vo.dashboard}
         subtitle={
           <>
-            {vo.subtitleSiteHealth} <span className="text-blue-400">{siteName}</span>.{' '}
+            {vo.subtitleSiteHealth} <span className="text-blue-700 dark:text-blue-400">{siteName}</span>.{' '}
             {s.crawl_time_s != null ? format(vo.crawlDoneSeconds, { seconds: s.crawl_time_s }) : vo.crawlDone}
           </>
         }
@@ -548,9 +548,9 @@ export default function Overview({ searchQuery = '' }) {
       </div>
 
       {reportDiff && (
-        <Card shadow className="mb-8 border border-cyan-900/40 bg-cyan-950/10">
+        <Card shadow className="mb-8 border border-cyan-600/35 dark:border-cyan-900/40 bg-cyan-100/45 dark:bg-cyan-950/10">
           <div className="flex items-center gap-2 mb-2">
-            <ArrowLeftRight className="h-5 w-5 text-cyan-400" />
+            <ArrowLeftRight className="h-5 w-5 text-cyan-700 dark:text-cyan-400" />
             <h2 className="text-lg font-bold text-bright">{vo.reportComparison}</h2>
           </div>
           <p className="text-xs text-muted-foreground mb-4 max-w-3xl">
@@ -716,7 +716,7 @@ export default function Overview({ searchQuery = '' }) {
                 )}
               </div>
               {data.language_summary?.mixed_site && (
-                <p className="text-xs text-yellow-400/80 mt-2">{vo.mixedLanguage}</p>
+                <p className="text-xs text-amber-800 dark:text-yellow-400/80 mt-2">{vo.mixedLanguage}</p>
               )}
             </Card>
           </div>
@@ -726,7 +726,7 @@ export default function Overview({ searchQuery = '' }) {
               <button
                 type="button"
                 onClick={() => setAnomOpen((o) => !o)}
-                className="w-full flex items-center gap-2 text-left text-sm font-bold text-amber-200/90 mb-2"
+                className="w-full flex items-center gap-2 text-left text-sm font-bold text-amber-900 dark:text-amber-200/90 mb-2"
               >
                 {anomOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 {format(vo.anomalyUrlsTitle, { count: data.anomalies.length })}
@@ -745,7 +745,7 @@ export default function Overview({ searchQuery = '' }) {
                       {data.anomalies.map((a, idx) => (
                         <TableRow key={`${a.url}-${idx}`}>
                           <TableCell className="font-mono text-xs max-w-[min(100vw,28rem)] break-all">
-                            <a href={a.url} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">
+                            <a href={a.url} target="_blank" rel="noreferrer" className="text-blue-700 dark:text-blue-400 hover:underline">
                               {a.url}
                             </a>
                           </TableCell>
@@ -1025,10 +1025,10 @@ export default function Overview({ searchQuery = '' }) {
               <Table className="min-w-[420px]">
                 <TableHead sticky>
                   <tr>
-                    <TableHeadCell className="text-center sticky left-0 top-0 z-30 w-14 min-w-[3.5rem] bg-brand-900 border-r border-white/10 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.45)]">
+                    <TableHeadCell className="text-center sticky left-0 top-0 z-30 w-14 min-w-[3.5rem] bg-brand-900 border-r border-default shadow-[4px_0_12px_-4px_rgba(0,0,0,0.45)]">
                       {vo.thRank}
                     </TableHeadCell>
-                    <TableHeadCell className="text-left sticky left-14 top-0 z-30 min-w-[min(200px,55vw)] max-w-[min(280px,78vw)] bg-brand-900 border-r border-white/10 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.45)]">
+                    <TableHeadCell className="text-left sticky left-14 top-0 z-30 min-w-[min(200px,55vw)] max-w-[min(280px,78vw)] bg-brand-900 border-r border-default shadow-[4px_0_12px_-4px_rgba(0,0,0,0.45)]">
                       {vo.thPage}
                     </TableHeadCell>
                     <TableHeadCell className="text-right min-w-0">{vo.thImportance}</TableHeadCell>
@@ -1046,7 +1046,7 @@ export default function Overview({ searchQuery = '' }) {
                     const hrefLines = formatPageHrefLines(p.url);
                     return (
                       <TableRow key={i}>
-                        <TableCell className="text-center align-middle sticky left-0 z-20 w-14 min-w-[3.5rem] bg-inherit border-r border-white/10 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.35)]">
+                        <TableCell className="text-center align-middle sticky left-0 z-20 w-14 min-w-[3.5rem] bg-inherit border-r border-default shadow-[4px_0_12px_-4px_rgba(0,0,0,0.35)]">
                           <div className="inline-flex items-center justify-center gap-1">
                             {rankMedal != null && (
                               <Medal className={`h-4 w-4 shrink-0 ${rankMedal}`} aria-hidden />
@@ -1058,7 +1058,7 @@ export default function Overview({ searchQuery = '' }) {
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell className="min-w-0 sticky left-14 z-20 max-w-[min(280px,78vw)] bg-inherit border-r border-white/10 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.35)]">
+                        <TableCell className="min-w-0 sticky left-14 z-20 max-w-[min(280px,78vw)] bg-inherit border-r border-default shadow-[4px_0_12px_-4px_rgba(0,0,0,0.35)]">
                           <div className="min-w-0 flex flex-col gap-0.5">
                             <div
                               className="text-bright font-medium text-sm leading-snug line-clamp-2"

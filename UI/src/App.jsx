@@ -17,6 +17,8 @@ import {
   X,
   Github,
   Images,
+  Sparkles,
+  Database,
 } from 'lucide-react';
 import { ReportProvider } from './context/ReportContext.jsx';
 import { BrowserAssistantProvider } from './context/BrowserAssistantContext.jsx';
@@ -37,10 +39,14 @@ import Network from './views/Network';
 import ContentAnalytics from './views/ContentAnalytics';
 import TechStack from './views/TechStack';
 import Gallery from './views/Gallery';
+import ModelLoader from './views/ModelLoader.jsx';
+import SqlPlayground from './views/SqlPlayground.jsx';
 import BrowserMlChat from './components/ml/BrowserMlChat.jsx';
 
 const VIEW_CONFIG = [
   { id: 'overview', component: Overview, icon: LayoutDashboard },
+  { id: 'model-loader', component: ModelLoader, icon: Sparkles },
+  { id: 'sql-playground', component: SqlPlayground, icon: Database },
   { id: 'issues', component: Issues, icon: AlertOctagon },
   { id: 'links', component: Links, icon: LinkIcon },
   { id: 'redirects', component: Redirects, icon: Repeat },
@@ -73,6 +79,7 @@ function AppContent() {
   };
 
   const CurrentView = VIEWS.find((v) => v.id === view)?.component || Overview;
+  const isLabView = view === 'model-loader' || view === 'sql-playground';
   const issueCount = data?.categories?.reduce((n, c) => n + (c.issues?.length || 0), 0) ?? 0;
   const securityCount = data?.security_findings?.length ?? 0;
 
@@ -107,19 +114,23 @@ function AppContent() {
 
   return (
     <div className="min-h-screen flex bg-brand-900 text-foreground overflow-hidden">
-      {/* Mobile overlay when sidebar open */}
+      {/* Overlay when sidebar open (full-screen lab views; mobile-only on other views) */}
       {sidebarOpen && (
         <button
           type="button"
           aria-label={strings.app.ariaCloseMenu}
-          className="fixed inset-0 z-30 md:hidden print:hidden bg-[color:var(--app-overlay)]"
+          className={`fixed inset-0 z-30 print:hidden bg-[color:var(--app-overlay)] ${
+            isLabView ? '' : 'md:hidden'
+          }`}
           onClick={closeSidebar}
         />
       )}
 
       <aside
-        className={`fixed md:relative inset-y-0 left-0 w-64 bg-brand-800 border-r border-muted flex flex-col h-screen shrink-0 z-40 shadow-xl print:hidden transition-transform duration-200 ease-out ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        className={`inset-y-0 left-0 w-64 bg-brand-800 border-r border-muted flex flex-col h-screen shrink-0 z-40 shadow-xl print:hidden transition-transform duration-200 ease-out ${
+          isLabView
+            ? `fixed ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
+            : `fixed md:relative ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`
         }`}
       >
         <div className="h-16 flex items-center justify-between px-6 border-b border-muted bg-brand-900/30 shrink-0">
@@ -196,7 +207,21 @@ function AppContent() {
       </aside>
 
       <main className="flex-1 flex flex-col h-screen overflow-hidden bg-brand-900 relative min-w-0">
-        <header className="h-16 border-b border-muted bg-brand-800/80 backdrop-blur-md flex items-center justify-between gap-3 px-4 sm:px-6 shrink-0 z-10 print:hidden">
+        {isLabView ? (
+          <button
+            type="button"
+            aria-label={strings.app.ariaOpenMenu}
+            className="fixed left-3 top-3 z-20 flex items-center justify-center rounded-xl border border-default bg-brand-800/95 p-2.5 text-muted-foreground shadow-lg backdrop-blur-sm print:hidden hover:bg-brand-700/90 hover:text-foreground"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="h-5 w-5 shrink-0" />
+          </button>
+        ) : null}
+        <header
+          className={`h-16 border-b border-muted bg-brand-800/80 backdrop-blur-md flex items-center justify-between gap-3 px-4 sm:px-6 shrink-0 z-10 print:hidden ${
+            isLabView ? 'hidden' : ''
+          }`}
+        >
           <button
             type="button"
             aria-label={strings.app.ariaOpenMenu}
@@ -221,12 +246,15 @@ function AppContent() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto relative" id="viewContainer">
-          <div className="fade-in">
+        <div
+          className={`relative min-h-0 flex-1 ${isLabView ? 'flex flex-col overflow-hidden pt-12' : 'overflow-y-auto'}`}
+          id="viewContainer"
+        >
+          <div className={`fade-in ${isLabView ? 'flex min-h-0 flex-1 flex-col' : ''}`}>
             <CurrentView searchQuery={searchQuery} />
           </div>
         </div>
-        <BrowserMlChat />
+        {!isLabView ? <BrowserMlChat /> : null}
       </main>
     </div>
   );

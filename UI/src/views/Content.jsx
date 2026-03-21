@@ -245,10 +245,10 @@ export default function Content({ searchQuery = '' }) {
             <Table className={showMetricCol ? 'min-w-[480px]' : 'min-w-[340px]'}>
               <TableHead sticky>
                 <tr>
-                  <TableHeadCell className="text-center sticky left-0 top-0 z-30 w-14 min-w-[3.5rem] bg-brand-900 border-r border-white/10 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.45)] px-3 sm:px-4">
+                  <TableHeadCell className="text-center sticky left-0 top-0 z-30 w-14 min-w-[3.5rem] bg-brand-900 border-r border-default shadow-[4px_0_12px_-4px_rgba(0,0,0,0.45)] px-3 sm:px-4">
                     #
                   </TableHeadCell>
-                  <TableHeadCell className="text-left sticky left-14 top-0 z-30 min-w-0 bg-brand-900 border-r border-white/10 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.45)] px-3 sm:px-4">
+                  <TableHeadCell className="text-left sticky left-14 top-0 z-30 min-w-0 bg-brand-900 border-r border-default shadow-[4px_0_12px_-4px_rgba(0,0,0,0.45)] px-3 sm:px-4">
                     {vc.tablePage}
                   </TableHeadCell>
                   {(filter === 'meta_desc_short' || filter === 'meta_desc_long') && (
@@ -264,7 +264,7 @@ export default function Content({ searchQuery = '' }) {
               </TableHead>
               <TableBody
                 striped
-                className="[&>tr>td:nth-child(1)]:sticky [&>tr>td:nth-child(1)]:left-0 [&>tr>td:nth-child(1)]:z-20 [&>tr>td:nth-child(1)]:w-14 [&>tr>td:nth-child(1)]:min-w-[3.5rem] [&>tr>td:nth-child(1)]:bg-inherit [&>tr>td:nth-child(1)]:border-r [&>tr>td:nth-child(1)]:border-white/10 [&>tr>td:nth-child(1)]:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.35)] [&>tr>td:nth-child(2)]:sticky [&>tr>td:nth-child(2)]:left-14 [&>tr>td:nth-child(2)]:z-20 [&>tr>td:nth-child(2)]:min-w-0 [&>tr>td:nth-child(2)]:bg-inherit [&>tr>td:nth-child(2)]:border-r [&>tr>td:nth-child(2)]:border-white/10 [&>tr>td:nth-child(2)]:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.35)]"
+                className="[&>tr>td:nth-child(1)]:sticky [&>tr>td:nth-child(1)]:left-0 [&>tr>td:nth-child(1)]:z-20 [&>tr>td:nth-child(1)]:w-14 [&>tr>td:nth-child(1)]:min-w-[3.5rem] [&>tr>td:nth-child(1)]:bg-inherit [&>tr>td:nth-child(1)]:border-r [&>tr>td:nth-child(1)]:border-default [&>tr>td:nth-child(1)]:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.35)] [&>tr>td:nth-child(2)]:sticky [&>tr>td:nth-child(2)]:left-14 [&>tr>td:nth-child(2)]:z-20 [&>tr>td:nth-child(2)]:min-w-0 [&>tr>td:nth-child(2)]:bg-inherit [&>tr>td:nth-child(2)]:border-r [&>tr>td:nth-child(2)]:border-default [&>tr>td:nth-child(2)]:shadow-[4px_0_12px_-4px_rgba(0,0,0,0.35)]"
               >
                 {pageSlice.map((item, i) => {
                   const hrefLines = formatPageHrefLines(item.url);
