@@ -103,9 +103,16 @@ export function queryCrawlResults(db, limit = 500) {
     if (!info.length) return [];
     const colRows = info[0].values;
     const cols = colRows.map((r) => r[1]);
-    const want = ['url', 'title', 'h1', 'meta_description', 'status', 'word_count', 'content_length'].filter(
-      (c) => cols.includes(c)
-    );
+    const want = [
+      'url',
+      'title',
+      'h1',
+      'meta_description',
+      'content_excerpt',
+      'status',
+      'word_count',
+      'content_length',
+    ].filter((c) => cols.includes(c));
     if (!want.includes('url')) return [];
 
     const sql = `SELECT ${want.map((c) => `"${c}"`).join(', ')} FROM crawl_results LIMIT ?`;

@@ -2,7 +2,9 @@ import { useState, useMemo } from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { AlertTriangle, AlertCircle, Info, ChevronDown, ChevronRight, ExternalLink, Flame, BarChart2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Badge } from '../components';
+import BrowserMlPanel from '../components/ml/BrowserMlPanel';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal, doughnutOptionsBottomLegend } from '../utils/chartJsDefaults';
 
@@ -49,9 +51,7 @@ const PRIORITY_CONFIG = {
   },
 };
 
-const PRIORITY_ORDER = ['Critical', 'High', 'Medium', 'Low'];
-
-function CategorySection({ category, items, defaultOpen = false }) {
+function CategorySection({ category, items, defaultOpen = false, vi, emDash }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div>
@@ -67,7 +67,7 @@ function CategorySection({ category, items, defaultOpen = false }) {
         )}
         <span className="font-semibold text-slate-200 flex-1">{category}</span>
         <span className="text-xs font-bold text-slate-500 bg-slate-700/60 rounded-full px-2.5 py-0.5">
-          {items.length} {items.length === 1 ? 'issue' : 'issues'}
+          {items.length} {items.length === 1 ? vi.issueWord : vi.issuesWord}
         </span>
       </button>
       {open && (
@@ -88,7 +88,7 @@ function CategorySection({ category, items, defaultOpen = false }) {
                     <Badge value={p} />
                     <span className="text-xs text-slate-500 font-medium">{item.category}</span>
                   </div>
-                  <h3 className="text-slate-200 font-medium text-sm leading-snug">{iss.message || '—'}</h3>
+                  <h3 className="text-slate-200 font-medium text-sm leading-snug">{iss.message || emDash}</h3>
                   {iss.url && (
                     <a
                       href={iss.url}
@@ -102,8 +102,8 @@ function CategorySection({ category, items, defaultOpen = false }) {
                   )}
                 </div>
                 <div className="flex-1 min-w-0 bg-brand-900 rounded-lg p-3 border border-muted">
-                  <div className="text-xs text-blue-400 font-bold uppercase mb-1 tracking-wide">Fix Recommendation</div>
-                  <p className="text-slate-400 text-sm leading-relaxed">{iss.recommendation || '—'}</p>
+                  <div className="text-xs text-blue-400 font-bold uppercase mb-1 tracking-wide">{vi.fixRecommendation}</div>
+                  <p className="text-slate-400 text-sm leading-relaxed">{iss.recommendation || emDash}</p>
                 </div>
               </div>
             );
@@ -116,8 +116,11 @@ function CategorySection({ category, items, defaultOpen = false }) {
 
 export default function Issues({ searchQuery = '' }) {
   const { data } = useReport();
-  const [priorityFilter, setPriorityFilter] = useState('All');
-  const [categoryFilter, setCategoryFilter] = useState('All');
+  const vi = strings.views.issues;
+  const sj = strings.common;
+  const PRIORITY_ORDER = vi.priorityOrder;
+  const [priorityFilter, setPriorityFilter] = useState(sj.all);
+  const [categoryFilter, setCategoryFilter] = useState(sj.all);
 
   const q = (searchQuery || '').toLowerCase().trim();
 
@@ -138,16 +141,15 @@ export default function Issues({ searchQuery = '' }) {
     });
   }, [data, q]);
 
-  /** Chart slice: search + category dropdown only (not priority cards) — see plan */
   const forCharts = useMemo(() => {
-    if (categoryFilter === 'All') return list;
+    if (categoryFilter === sj.all) return list;
     return list.filter((item) => item.category === categoryFilter);
-  }, [list, categoryFilter]);
+  }, [list, categoryFilter, sj.all]);
 
   const { categoryChartLabels, categoryChartValues } = useMemo(() => {
     const m = new Map();
     forCharts.forEach((item) => {
-      const c = item.category || 'Uncategorized';
+      const c = item.category || sj.uncategorized;
       m.set(c, (m.get(c) || 0) + 1);
     });
     const pairs = [...m.entries()].sort((a, b) => b[1] - a[1]);
@@ -160,16 +162,16 @@ export default function Issues({ searchQuery = '' }) {
     const top = pairs.slice(0, MAX_CATEGORY_CHART - 1);
     const rest = pairs.slice(MAX_CATEGORY_CHART - 1).reduce((s, [, n]) => s + n, 0);
     return {
-      categoryChartLabels: [...top.map((p) => p[0]), 'Other'],
+      categoryChartLabels: [...top.map((p) => p[0]), sj.other],
       categoryChartValues: [...top.map((p) => p[1]), rest],
     };
-  }, [forCharts]);
+  }, [forCharts, sj]);
 
   const priorityChart = useMemo(() => {
     const values = PRIORITY_ORDER.map((p) => forCharts.filter((item) => (item.issue.priority || 'Medium') === p).length);
     const colors = PRIORITY_ORDER.map((p) => PRIORITY_CONFIG[p].chartColor);
     return { values, colors };
-  }, [forCharts]);
+  }, [forCharts, PRIORITY_ORDER]);
 
   const priorityCounts = PRIORITY_ORDER.reduce((acc, p) => {
     acc[p] = list.filter((item) => (item.issue.priority || 'Medium') === p).length;
@@ -179,10 +181,10 @@ export default function Issues({ searchQuery = '' }) {
   const categories = [...new Set(list.map((item) => item.category))].filter(Boolean).sort();
 
   let filtered = list;
-  if (priorityFilter !== 'All') {
+  if (priorityFilter !== sj.all) {
     filtered = filtered.filter((item) => (item.issue.priority || 'Medium') === priorityFilter);
   }
-  if (categoryFilter !== 'All') {
+  if (categoryFilter !== sj.all) {
     filtered = filtered.filter((item) => item.category === categoryFilter);
   }
 
@@ -193,7 +195,7 @@ export default function Issues({ searchQuery = '' }) {
   });
 
   const grouped = filtered.reduce((acc, item) => {
-    const cat = item.category || 'Uncategorized';
+    const cat = item.category || sj.uncategorized;
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(item);
     return acc;
@@ -209,35 +211,40 @@ export default function Issues({ searchQuery = '' }) {
           callbacks: {
             label: (ctx) => {
               const n = Number(ctx.raw);
-              return ` ${n.toLocaleString()} issue${n !== 1 ? 's' : ''}`;
+              return ` ${n.toLocaleString()} ${n !== 1 ? vi.issuesWord : vi.issueWord}`;
             },
           },
         },
       },
     };
-  }, []);
+  }, [vi]);
 
   if (!data) return null;
 
   const showCharts = list.length > 0 && forCharts.length > 0;
+  const subtitle = `${vi.subtitlePrefix} ${format(vi.subtitleTotal, {
+    count: list.length,
+    issuesWord: list.length === 1 ? vi.issueWord : vi.issuesWord,
+  })}`;
 
   return (
     <PageLayout className="space-y-6">
-      <PageHeader
-        title="Site Audit"
-        subtitle={`Prioritized issues impacting crawlability, indexing, and rankings. ${list.length} total issue${list.length !== 1 ? 's' : ''} found.`}
-      />
+      <PageHeader title={vi.title} subtitle={subtitle} />
+
+      {Array.isArray(data?.links) && data.links.length > 0 && (
+        <Card shadow>
+          <BrowserMlPanel links={data.links} compact />
+        </Card>
+      )}
 
       {showCharts && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card padding="tight" shadow>
             <div className="flex items-center gap-2 mb-1">
               <BarChart2 className="h-4 w-4 text-blue-400" />
-              <h2 className="text-sm font-bold text-slate-200">Issues by category</h2>
+              <h2 className="text-sm font-bold text-slate-200">{vi.issuesByCategory}</h2>
             </div>
-            <p className="text-xs text-slate-500 mb-2">
-              Reflects current search and category filter, not priority filter.
-            </p>
+            <p className="text-xs text-slate-500 mb-2">{vi.issuesByCategoryHint}</p>
             <div className="h-64">
               <Bar
                 data={{
@@ -251,11 +258,9 @@ export default function Issues({ searchQuery = '' }) {
           <Card padding="tight" shadow>
             <div className="flex items-center gap-2 mb-1">
               <BarChart2 className="h-4 w-4 text-blue-400" />
-              <h2 className="text-sm font-bold text-slate-200">Issues by priority</h2>
+              <h2 className="text-sm font-bold text-slate-200">{vi.issuesByPriority}</h2>
             </div>
-            <p className="text-xs text-slate-500 mb-2">
-              Same slice as category chart (search + category filter only).
-            </p>
+            <p className="text-xs text-slate-500 mb-2">{vi.issuesByPriorityHint}</p>
             <div className="h-64 flex items-center justify-center">
               <div className="w-full max-w-[280px] h-52">
                 <Doughnut
@@ -279,7 +284,7 @@ export default function Issues({ searchQuery = '' }) {
                           label: (ctx) => {
                             const n = Number(ctx.raw);
                             if (n === 0) return ` ${ctx.label}: 0`;
-                            return ` ${ctx.label}: ${n.toLocaleString()} issue${n !== 1 ? 's' : ''}`;
+                            return ` ${ctx.label}: ${n.toLocaleString()} ${n !== 1 ? vi.issuesWord : vi.issueWord}`;
                           },
                         },
                       },
@@ -292,7 +297,6 @@ export default function Issues({ searchQuery = '' }) {
         </div>
       )}
 
-      {/* Priority summary cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {PRIORITY_ORDER.map((p) => {
           const cfg = PRIORITY_CONFIG[p];
@@ -305,7 +309,7 @@ export default function Issues({ searchQuery = '' }) {
               className={`cursor-pointer transition-all ${
                 priorityFilter === p ? `${cfg.ring || 'ring-1 ring-slate-500/30'} border-slate-600` : 'hover:border-slate-600'
               }`}
-              onClick={() => setPriorityFilter((prev) => (prev === p ? 'All' : p))}
+              onClick={() => setPriorityFilter((prev) => (prev === p ? sj.all : p))}
             >
               <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${cfg.text}`}>
                 <Icon className="h-4 w-4" /> {p}
@@ -316,18 +320,17 @@ export default function Issues({ searchQuery = '' }) {
         })}
       </div>
 
-      {/* Filters row */}
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
-          onClick={() => setPriorityFilter('All')}
+          onClick={() => setPriorityFilter(sj.all)}
           className={`px-4 py-1.5 rounded-full text-sm font-bold border transition-colors ${
-            priorityFilter === 'All'
+            priorityFilter === sj.all
               ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
               : 'border-default bg-slate-800 text-slate-400 hover:border-slate-600/60'
           }`}
         >
-          All Priorities
+          {vi.allPriorities}
         </button>
         {PRIORITY_ORDER.map((p) => {
           const cfg = PRIORITY_CONFIG[p];
@@ -336,7 +339,7 @@ export default function Issues({ searchQuery = '' }) {
             <button
               key={p}
               type="button"
-              onClick={() => setPriorityFilter((prev) => (prev === p ? 'All' : p))}
+              onClick={() => setPriorityFilter((prev) => (prev === p ? sj.all : p))}
               className={`px-4 py-1.5 rounded-full text-sm font-bold border transition-colors ${
                 active
                   ? `${cfg.bg} ${cfg.text} border-current/30`
@@ -354,7 +357,7 @@ export default function Issues({ searchQuery = '' }) {
             onChange={(e) => setCategoryFilter(e.target.value)}
             className="ml-auto bg-brand-800 border border-default text-sm rounded-lg px-3 py-2 text-slate-200 outline-none hover:border-slate-600/60 transition-colors"
           >
-            <option value="All">All Categories</option>
+            <option value={sj.all}>{vi.allCategories}</option>
             {categories.map((cat) => (
               <option key={cat} value={cat}>{cat}</option>
             ))}
@@ -362,16 +365,22 @@ export default function Issues({ searchQuery = '' }) {
         )}
       </div>
 
-      {/* Issue list */}
       {filtered.length === 0 ? (
         <Card className="flex flex-col items-center justify-center py-16 gap-3">
           <Info className="h-10 w-10 text-slate-600" />
-          <p className="text-slate-500 text-sm">No issues match the current filters.</p>
+          <p className="text-slate-500 text-sm">{vi.noMatches}</p>
         </Card>
       ) : (
         <div className="space-y-3">
           {Object.entries(grouped).map(([cat, items], idx) => (
-            <CategorySection key={cat} category={cat} items={items} defaultOpen={idx === 0} />
+            <CategorySection
+              key={cat}
+              category={cat}
+              items={items}
+              defaultOpen={idx === 0}
+              vi={vi}
+              emDash={sj.emDash}
+            />
           ))}
         </div>
       )}

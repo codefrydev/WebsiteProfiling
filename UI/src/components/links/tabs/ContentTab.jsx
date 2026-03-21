@@ -7,14 +7,11 @@ import { Card } from '../../../components';
 import { wcLabel, readingLabel, parseKeywords, normaliseKw } from '../../../utils/linkUtils';
 import { palette, PALETTE_CATEGORICAL } from '../../../utils/chartPalette';
 import HeadingPills from '../HeadingPills';
+import { strings, format } from '../../../lib/strings';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
 const GRID_COLOR = 'rgba(71, 85, 105, 0.5)';
-
-const TITLE_QUAL_LABELS = ['Missing', 'Too Short (<30)', 'Optimal (30–60)', 'Too Long (>60)'];
-const META_QUAL_LABELS = ['Missing', 'Too Short (<70)', 'Optimal (70–160)', 'Too Long (>160)'];
-const H1_QUAL_LABELS = ['No H1', 'One H1', 'Multiple H1s'];
 
 const barValueLabelsPlugin = {
   id: 'contentTabBarLabels',
@@ -42,13 +39,24 @@ const barValueLabelsPlugin = {
   },
 };
 
-function barOpts(yTitle = 'Pages', xTitle) {
+function barOpts(yTitle, xTitle, tooltipUnit) {
+  const lc = strings.components.linkTabs.content;
+  const vca = strings.views.contentAnalytics;
   return {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
-      tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw?.toLocaleString() ?? ctx.raw} ${yTitle === 'Words' ? 'words' : 'pages'}` } },
+      tooltip: {
+        callbacks: {
+          label: (ctx) =>
+            ` ${
+              tooltipUnit === 'words'
+                ? format(lc.tooltipWords, { n: ctx.raw?.toLocaleString() ?? ctx.raw })
+                : format(vca.chartTooltipCount, { n: ctx.raw?.toLocaleString() ?? ctx.raw })
+            }`,
+        },
+      },
     },
     scales: {
       x: { grid: { color: GRID_COLOR }, ...(xTitle ? { title: { display: true, text: xTitle, color: '#64748b' } } : {}) },
@@ -57,7 +65,8 @@ function barOpts(yTitle = 'Pages', xTitle) {
   };
 }
 
-function barOptsH(tooltipUnit = '') {
+function barOptsH(suffixLabel) {
+  const sj = strings.common;
   return {
     indexAxis: 'y',
     responsive: true,
@@ -66,50 +75,88 @@ function barOptsH(tooltipUnit = '') {
       legend: { display: false },
       tooltip: {
         callbacks: {
-          label: (ctx) => ` ${ctx.raw?.toLocaleString() ?? ctx.raw}${tooltipUnit ? ` ${tooltipUnit}` : ''}`,
+          label: (ctx) =>
+            ` ${ctx.raw?.toLocaleString() ?? ctx.raw}${suffixLabel ? ` ${suffixLabel}` : ''}`,
         },
       },
     },
     scales: {
-      x: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: 'Count', color: '#64748b' } },
+      x: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: sj.count, color: '#64748b' } },
+      y: { grid: { color: GRID_COLOR } },
+    },
+  };
+}
+
+function barOptsReadingDist() {
+  const vca = strings.views.contentAnalytics;
+  return {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ` ${format(vca.chartTooltipCount, { n: ctx.raw?.toLocaleString() ?? ctx.raw })}`,
+        },
+      },
+    },
+    scales: {
+      x: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: vca.thPages, color: '#64748b' } },
       y: { grid: { color: GRID_COLOR } },
     },
   };
 }
 
 function barOptsCompare() {
+  const lc = strings.components.linkTabs.content;
+  const ch = strings.charts;
   return {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
-      tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw?.toLocaleString() ?? ctx.raw} words` } },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ` ${format(lc.tooltipWords, { n: ctx.raw?.toLocaleString() ?? ctx.raw })}`,
+        },
+      },
     },
     scales: {
       x: { grid: { color: GRID_COLOR } },
-      y: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: 'Words', color: '#64748b' } },
+      y: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: ch.words, color: '#64748b' } },
     },
   };
 }
 
 function doughnutPageOpts() {
+  const lc = strings.components.linkTabs.content;
   return {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 12 } },
-      tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.raw?.toLocaleString()}` } },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ` ${format(lc.tooltipDoughnut, { label: ctx.label, n: ctx.raw?.toLocaleString() })}`,
+        },
+      },
     },
   };
 }
 
 function groupedSocialOpts() {
+  const lc = strings.components.linkTabs.content;
   return {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: { display: true, labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 } },
-      tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw?.toFixed(0)}%` } },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ` ${format(lc.tooltipGroupedPct, { dataset: ctx.dataset.label, pct: ctx.raw?.toFixed(0) })}`,
+        },
+      },
     },
     scales: {
       x: { stacked: true, grid: { color: GRID_COLOR } },
@@ -118,7 +165,7 @@ function groupedSocialOpts() {
         grid: { color: GRID_COLOR },
         beginAtZero: true,
         max: 100,
-        title: { display: true, text: '%', color: '#64748b' },
+        title: { display: true, text: lc.axisPercent, color: '#64748b' },
       },
     },
   };
@@ -164,30 +211,34 @@ function oneHotDoughnut(labels, index, colors) {
   return { labels, datasets: [{ data, backgroundColor, borderColor: 'rgba(15,23,42,0.8)', borderWidth: 2 }] };
 }
 
-function wcBucketLabel(wc) {
+function wcBucketLabel(wc, buckets) {
   const w = Number(wc) || 0;
-  if (w <= 100) return '0-100';
-  if (w <= 300) return '101-300';
-  if (w <= 600) return '301-600';
-  if (w <= 1000) return '601-1000';
-  if (w <= 2000) return '1001-2000';
-  return '2001+';
+  const b = buckets;
+  if (!b?.length) return '';
+  if (w <= 100) return b[0];
+  if (w <= 300) return b[1];
+  if (w <= 600) return b[2];
+  if (w <= 1000) return b[3];
+  if (w <= 2000) return b[4];
+  return b[5];
 }
 
-function readingBandLabel(rl) {
+function readingBandLabel(rl, bands) {
   const r = Number(rl) || 0;
-  if (r <= 5) return 'Elementary (0-5)';
-  if (r <= 8) return 'Middle School (6-8)';
-  if (r <= 12) return 'High School (9-12)';
-  return 'College (13+)';
+  const b = bands;
+  if (!b?.length) return '';
+  if (r <= 5) return b[0];
+  if (r <= 8) return b[1];
+  if (r <= 12) return b[2];
+  return b[3];
 }
 
-function contentRatioBandLabel(pct) {
+function contentRatioBandLabel(pct, lc) {
   const p = Number(pct) || 0;
-  if (p <= 10) return '<10%';
-  if (p <= 20) return '10-20%';
-  if (p <= 40) return '20-40%';
-  return '>40%';
+  if (p <= 10) return lc.ratioLt10;
+  if (p <= 20) return lc.ratio1020;
+  if (p <= 40) return lc.ratio2040;
+  return lc.ratioGt40;
 }
 
 function SectionHeader({ icon, title, description }) {
@@ -205,6 +256,11 @@ function SectionHeader({ icon, title, description }) {
 }
 
 export default function ContentTab({ link }) {
+  const lc = strings.components.linkTabs.content;
+  const vca = strings.views.contentAnalytics;
+  const vo = strings.views.overview;
+  const sj = strings.common;
+  const lo = strings.components.linkTabs.overview;
   const { data } = useReport();
   const [kwHover, setKwHover] = useState(null);
 
@@ -251,94 +307,94 @@ export default function ContentTab({ link }) {
 
   const depthDist = data?.depth_distribution || {};
   const depthByDepth = depthDist.by_depth || {};
-  const depthLabels = Object.keys(depthByDepth).map((d) => `Depth ${d}`);
+  const depthLabels = Object.keys(depthByDepth).map((d) => format(lc.depthLabel, { n: d }));
   const depthValues = Object.values(depthByDepth).map(Number);
   const hasDepthData = depthLabels.length > 0;
 
+  const titleQualLabels = vca.titleQualLabels;
+  const metaQualLabels = vca.metaQualLabels;
+  const h1QualLabels = vca.h1Labels;
+
   const titleDoughnut = useMemo(
-    () => oneHotDoughnut(TITLE_QUAL_LABELS, titleIdx, qualityBarColors(TITLE_QUAL_LABELS)),
-    [titleIdx]
+    () => oneHotDoughnut(titleQualLabels, titleIdx, qualityBarColors(titleQualLabels)),
+    [titleIdx, titleQualLabels]
   );
   const metaDoughnut = useMemo(
-    () => oneHotDoughnut(META_QUAL_LABELS, metaIdx, qualityBarColors(META_QUAL_LABELS)),
-    [metaIdx]
+    () => oneHotDoughnut(metaQualLabels, metaIdx, qualityBarColors(metaQualLabels)),
+    [metaIdx, metaQualLabels]
   );
   const h1Doughnut = useMemo(() => {
     if (h1Idx == null) return null;
-    return oneHotDoughnut(H1_QUAL_LABELS, h1Idx, ['#EF4444', '#22C55E', '#DD8452']);
-  }, [h1Idx]);
+    return oneHotDoughnut(h1QualLabels, h1Idx, ['#EF4444', '#22C55E', '#DD8452']);
+  }, [h1Idx, h1QualLabels]);
 
   const compareBarData = useMemo(() => {
-    const labels = ['This page'];
+    const labels = [lc.labelThisPage];
     const values = [wc];
     const colors = ['#4C72B0'];
     if (meanW != null) {
-      labels.push('Site mean');
+      labels.push(lc.labelSiteMean);
       values.push(meanW);
       colors.push('#55A868');
     }
     if (medianW != null) {
-      labels.push('Site median');
+      labels.push(lc.labelSiteMedian);
       values.push(medianW);
       colors.push('#DD8452');
     }
     return { labels, values, colors };
-  }, [wc, meanW, medianW]);
+  }, [wc, meanW, medianW, lc.labelThisPage, lc.labelSiteMean, lc.labelSiteMedian]);
 
   return (
     <div className="space-y-8">
-      <p className="text-xs text-slate-500 -mt-2">
-        Content metrics for this URL, with the same chart styles as Content Insights. Site-wide charts help you see where this page sits in the crawl.
-      </p>
+      <p className="text-xs text-slate-500 -mt-2">{lc.intro}</p>
 
       {/* KPI row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <Card shadow className="!p-4">
           <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
-            <BookOpen className="h-3.5 w-3.5" /> Words
+            <BookOpen className="h-3.5 w-3.5" /> {lc.kpiWords}
           </div>
           <div className={`text-2xl font-bold tabular-nums ${wcInfo.color}`}>{wc.toLocaleString()}</div>
           <div className="text-[10px] text-slate-500 mt-0.5">{wcInfo.label}</div>
         </Card>
         <Card shadow className="!p-4">
           <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
-            <FileText className="h-3.5 w-3.5" /> Reading
+            <FileText className="h-3.5 w-3.5" /> {lc.kpiReading}
           </div>
-          <div className={`text-2xl font-bold tabular-nums ${rlInfo.color}`}>{rl > 0 ? `Grade ${rl}` : '—'}</div>
-          <div className="text-[10px] text-slate-500 mt-0.5">{rl > 0 ? rlInfo.label : 'Not enough text'}</div>
+          <div className={`text-2xl font-bold tabular-nums ${rlInfo.color}`}>
+            {rl > 0 ? format(lo.readingGrade, { n: rl }) : sj.emDash}
+          </div>
+          <div className="text-[10px] text-slate-500 mt-0.5">{rl > 0 ? rlInfo.label : lc.notEnoughText}</div>
         </Card>
         <Card shadow className="!p-4">
-          <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">Text / HTML</div>
+          <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">{lc.textHtml}</div>
           <div className="text-2xl font-bold text-bright tabular-nums">{ratioPct.toFixed(1)}%</div>
-          <div className="text-[10px] text-slate-500 mt-0.5">Body text share of HTML</div>
+          <div className="text-[10px] text-slate-500 mt-0.5">{lc.bodyTextShare}</div>
         </Card>
         <Card shadow className="!p-4">
           <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
-            <Layers className="h-3.5 w-3.5" /> Depth
+            <Layers className="h-3.5 w-3.5" /> {lc.kpiDepth}
           </div>
-          <div className="text-2xl font-bold text-bright tabular-nums">{link.depth != null ? link.depth : '—'}</div>
-          <div className="text-[10px] text-slate-500 mt-0.5">Crawl depth</div>
+          <div className="text-2xl font-bold text-bright tabular-nums">{link.depth != null ? link.depth : sj.emDash}</div>
+          <div className="text-[10px] text-slate-500 mt-0.5">{lc.crawlDepth}</div>
         </Card>
         <Card shadow className={`!p-4 ${wc < 300 && wc > 0 ? 'ring-1 ring-amber-500/30' : ''}`}>
-          <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">Thin?</div>
+          <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">{lc.thinQ}</div>
           <div className={`text-2xl font-bold tabular-nums ${wc < 300 ? 'text-amber-400' : 'text-green-400'}`}>
-            {wc <= 0 ? '—' : wc < 300 ? 'Yes' : 'No'}
+            {wc <= 0 ? sj.emDash : wc < 300 ? sj.yes : sj.no}
           </div>
-          <div className="text-[10px] text-slate-500 mt-0.5">&lt; 300 words</div>
+          <div className="text-[10px] text-slate-500 mt-0.5">{lc.under300Words}</div>
         </Card>
       </div>
 
       {/* This page vs site */}
       <div className="space-y-4">
-        <SectionHeader
-          icon={BarChart2}
-          title="This page vs site"
-          description="Compare word count to crawl-wide mean and median."
-        />
+        <SectionHeader icon={BarChart2} title={lc.vsSiteTitle} description={lc.vsSiteDesc} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">Word count comparison</h3>
-            <p className="text-xs text-slate-500 mb-2">This page versus site aggregates</p>
+            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.wordCountComparison}</h3>
+            <p className="text-xs text-slate-500 mb-2">{lc.vsSiteAggregates}</p>
             <div className="h-56">
               {compareBarData.values.length > 0 ? (
                 <Bar
@@ -350,17 +406,17 @@ export default function ContentTab({ link }) {
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
               )}
             </div>
           </Card>
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">Text vs markup (this page)</h3>
-            <p className="text-xs text-slate-500 mb-2">Share of visible text in the HTML document</p>
+            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.textVsMarkup}</h3>
+            <p className="text-xs text-slate-500 mb-2">{lc.textVsMarkupDesc}</p>
             <div className="h-56">
               <Doughnut
                 data={{
-                  labels: ['Body text', 'Other (markup, scripts, etc.)'],
+                  labels: [lc.doughnutBodyText, lc.doughnutOtherMarkup],
                   datasets: [
                     {
                       data: [ratioPct, Math.max(0, 100 - ratioPct)],
@@ -379,40 +435,37 @@ export default function ContentTab({ link }) {
 
       {/* Site distributions + where this page falls */}
       <div className="space-y-4">
-        <SectionHeader
-          icon={BarChart2}
-          title="Site distributions"
-          description="Same buckets as Content Insights. Caption shows where this page lands."
-        />
+        <SectionHeader icon={BarChart2} title={lc.siteDistTitle} description={lc.siteDistDesc} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">Word count distribution</h3>
+            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.wordCountDist}</h3>
             <p className="text-xs text-slate-500 mb-2">
-              This page ({wc.toLocaleString()} words):{' '}
-              <span className="text-blue-300 font-semibold">{wcBucketLabel(wc)}</span>
+              {format(lc.thisPageWords, { words: wc.toLocaleString() })}{' '}
+              <span className="text-blue-300 font-semibold">{wcBucketLabel(wc, vo.wcBuckets)}</span>
             </p>
             <div className="h-56">
               {wcLabels.length > 0 ? (
                 <Bar
                   data={{ labels: wcLabels, datasets: [{ data: wcValues, backgroundColor: palette(wcLabels.length) }] }}
-                  options={{ ...barOpts('Pages', 'Bucket'), plugins: { ...barOpts('Pages').plugins, tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw?.toLocaleString()} pages` } } } }}
+                  options={barOpts(vca.thPages, lc.axisBucket, 'pages')}
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
               )}
             </div>
           </Card>
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">Reading level distribution</h3>
+            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.readingLevelDist}</h3>
             <p className="text-xs text-slate-500 mb-2">
               {rl > 0 ? (
                 <>
-                  This page: <span className="text-blue-300 font-semibold">Grade {rl}</span> →{' '}
-                  <span className="text-slate-300">{readingBandLabel(rl)}</span>
+                  {lc.thisPageGrade}{' '}
+                  <span className="text-blue-300 font-semibold">{format(lo.readingGrade, { n: rl })}</span> {lc.gradeArrow}{' '}
+                  <span className="text-slate-300">{readingBandLabel(rl, vo.rlBuckets)}</span>
                 </>
               ) : (
-                'Not enough text for a reading level on this page.'
+                lc.notEnoughReading
               )}
             </p>
             <div className="h-56">
@@ -422,62 +475,50 @@ export default function ContentTab({ link }) {
                     labels: rlLabels,
                     datasets: [{ data: rlValues, backgroundColor: ['#22C55E', '#4C72B0', '#EAB308', '#EF4444'].slice(0, rlLabels.length) }],
                   }}
-                  options={{
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      legend: { display: false },
-                      tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw} pages` } },
-                    },
-                    scales: {
-                      x: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: 'Pages', color: '#64748b' } },
-                      y: { grid: { color: GRID_COLOR } },
-                    },
-                  }}
+                  options={barOptsReadingDist()}
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
               )}
             </div>
           </Card>
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">Content-to-HTML ratio</h3>
+            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.contentHtmlRatio}</h3>
             <p className="text-xs text-slate-500 mb-2">
-              This page: <span className="text-blue-300 font-semibold">{ratioPct.toFixed(1)}%</span> → bucket{' '}
-              <span className="text-slate-300">{contentRatioBandLabel(ratioPct)}</span>
+              {lc.thisPageRatio} <span className="text-blue-300 font-semibold">{ratioPct.toFixed(1)}%</span> {lc.ratioArrow}{' '}
+              <span className="text-slate-300">{contentRatioBandLabel(ratioPct, lc)}</span>
             </p>
             <div className="h-56">
               {crLabels.length > 0 ? (
                 <Bar
                   data={{ labels: crLabels, datasets: [{ data: crValues, backgroundColor: palette(crLabels.length) }] }}
-                  options={{ ...barOpts('Pages', 'Bucket'), plugins: { ...barOpts('Pages').plugins, tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw} pages` } } } }}
+                  options={barOpts(vca.thPages, lc.axisBucket, 'pages')}
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
               )}
             </div>
           </Card>
           {kwSorted.length > 0 ? (
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-slate-200 mb-1">Top keywords (this page)</h3>
-              <p className="text-xs text-slate-500 mb-2">Frequency on this URL only</p>
+              <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.topKeywordsPage}</h3>
+              <p className="text-xs text-slate-500 mb-2">{lc.freqThisUrl}</p>
               <div className="h-56">
                 <Bar
                   data={{
                     labels: kwSorted.map((k) => k.word),
                     datasets: [{ data: kwSorted.map((k) => Number(k.count) || 0), backgroundColor: PALETTE_CATEGORICAL[0] }],
                   }}
-                  options={barOptsH('occurrences')}
+                  options={barOptsH(lc.horizontalBarSuffix)}
                   plugins={[barValueLabelsPlugin]}
                 />
               </div>
             </Card>
           ) : (
             <Card padding="tight" className="flex items-center justify-center min-h-[14rem]">
-              <p className="text-sm text-slate-500">No keyword data for this page.</p>
+              <p className="text-sm text-slate-500">{lc.noKeywordPage}</p>
             </Card>
           )}
         </div>
@@ -485,55 +526,68 @@ export default function ContentTab({ link }) {
 
       {/* On-page SEO (this page) */}
       <div className="space-y-4">
-        <SectionHeader
-          icon={Tag}
-          title="On-page signals (this page)"
-          description="Title length, meta description, and H1 count — same categories as Content Insights."
-        />
+        <SectionHeader icon={Tag} title={lc.onPageSignalsTitle} description={lc.onPageSignalsDesc} />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">Title tag</h3>
-            <p className="text-xs text-slate-500 mb-2">{titleLen} characters</p>
+            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.titleTag}</h3>
+            <p className="text-xs text-slate-500 mb-2">{format(lc.characters, { n: titleLen })}</p>
             <div className="h-52">
               <Doughnut data={titleDoughnut} options={doughnutPageOpts()} />
             </div>
           </Card>
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">Meta description</h3>
-            <p className="text-xs text-slate-500 mb-2">{metaLen} characters</p>
+            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.metaDesc}</h3>
+            <p className="text-xs text-slate-500 mb-2">{format(lc.characters, { n: metaLen })}</p>
             <div className="h-52">
               <Doughnut data={metaDoughnut} options={doughnutPageOpts()} />
             </div>
           </Card>
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">H1 count</h3>
-            <p className="text-xs text-slate-500 mb-2">{h1c != null && !Number.isNaN(h1c) ? `${h1c} heading(s)` : '—'}</p>
+            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.h1Count}</h3>
+            <p className="text-xs text-slate-500 mb-2">
+              {h1c != null && !Number.isNaN(h1c) ? format(lc.headingCount, { n: h1c }) : sj.emDash}
+            </p>
             <div className="h-52">
               {h1Doughnut ? (
                 <Doughnut data={h1Doughnut} options={doughnutPageOpts()} />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">No H1 data</div>
+                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{lc.noH1Data}</div>
               )}
             </div>
           </Card>
         </div>
       </div>
 
+      {link.content_excerpt && String(link.content_excerpt).trim() && (
+        <div className="space-y-4">
+          <SectionHeader icon={FileText} title={lc.contentExcerpt} description={lc.contentExcerptHint} />
+          <Card padding="tight">
+            <p className="text-xs text-slate-300 whitespace-pre-wrap break-words max-h-72 overflow-y-auto leading-relaxed">
+              {String(link.content_excerpt).trim()}
+            </p>
+          </Card>
+        </div>
+      )}
+
       {/* Social meta (this page) */}
       <div className="space-y-4">
-        <SectionHeader
-          icon={Share2}
-          title="Social meta (this page)"
-          description="Open Graph, Twitter Card, and OG image presence on this URL."
-        />
+        <SectionHeader icon={Share2} title={lc.socialMetaTitle} description={lc.socialMetaDesc} />
         <Card padding="tight">
           <div className="h-56">
             <Bar
               data={{
-                labels: ['Open Graph', 'Twitter Card', 'OG Image'],
+                labels: [vca.openGraph, vca.twitterCard, vca.ogImage],
                 datasets: [
-                  { label: 'Present', data: [hasOg ? 100 : 0, hasTw ? 100 : 0, hasOgImg ? 100 : 0], backgroundColor: '#22C55E' },
-                  { label: 'Missing', data: [hasOg ? 0 : 100, hasTw ? 0 : 100, hasOgImg ? 0 : 100], backgroundColor: '#EF444466' },
+                  {
+                    label: lc.datasetPresent,
+                    data: [hasOg ? 100 : 0, hasTw ? 100 : 0, hasOgImg ? 100 : 0],
+                    backgroundColor: '#22C55E',
+                  },
+                  {
+                    label: lc.datasetMissing,
+                    data: [hasOg ? 0 : 100, hasTw ? 0 : 100, hasOgImg ? 0 : 100],
+                    backgroundColor: '#EF444466',
+                  },
                 ],
               }}
               options={groupedSocialOpts()}
@@ -545,16 +599,13 @@ export default function ContentTab({ link }) {
       {/* Crawl depth (site) + heading structure */}
       {hasDepthData && (
         <div className="space-y-4">
-          <SectionHeader
-            icon={Layers}
-            title="Site architecture context"
-            description="Crawl depth across the site. This page is at the depth shown in the KPI row above."
-          />
+          <SectionHeader icon={Layers} title={lc.siteArchTitle} description={lc.siteArchDesc} />
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">Crawl depth distribution</h3>
+            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.crawlDepthDist}</h3>
             {link.depth != null && (
               <p className="text-xs text-slate-500 mb-2">
-                This page: <span className="text-blue-300 font-semibold">Depth {link.depth}</span>
+                {lc.thisPageDepth}{' '}
+                <span className="text-blue-300 font-semibold">{format(lc.depthLabel, { n: link.depth })}</span>
               </p>
             )}
             <div className="h-56">
@@ -563,13 +614,7 @@ export default function ContentTab({ link }) {
                   labels: depthLabels,
                   datasets: [{ data: depthValues, backgroundColor: palette(depthLabels.length) }],
                 }}
-                options={{
-                  ...barOpts('Pages', 'Depth'),
-                  plugins: {
-                    legend: { display: false },
-                    tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw?.toLocaleString()} pages` } },
-                  },
-                }}
+                options={barOpts(vca.thPages, lc.axisDepth, 'pages')}
                 plugins={[barValueLabelsPlugin]}
               />
             </div>
@@ -580,14 +625,14 @@ export default function ContentTab({ link }) {
       {/* Heading sequence + keyword pills (detail) */}
       {link.heading_sequence && (
         <div className="bg-brand-900 border border-default rounded-xl p-4">
-          <div className="text-xs text-slate-500 mb-3">Heading structure</div>
+          <div className="text-xs text-slate-500 mb-3">{lc.headingStructure}</div>
           <HeadingPills sequence={link.heading_sequence} />
         </div>
       )}
 
       {keywords.length > 0 && (
         <div className="bg-brand-900 border border-default rounded-xl p-4">
-          <div className="text-xs text-slate-500 mb-3">Keywords (quick view)</div>
+          <div className="text-xs text-slate-500 mb-3">{lc.keywordsQuick}</div>
           <div className="flex flex-wrap gap-2">
             {keywords.map((kw, i) => {
               const { word, count } = normaliseKw(kw);
@@ -603,7 +648,7 @@ export default function ContentTab({ link }) {
                   </button>
                   {kwHover === i && count != null && (
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-slate-800 border border-default text-xs text-slate-300 px-2 py-1 rounded shadow-lg whitespace-nowrap z-50">
-                      {count} occurrences
+                      {format(lc.occurrences, { n: count })}
                     </div>
                   )}
                 </div>

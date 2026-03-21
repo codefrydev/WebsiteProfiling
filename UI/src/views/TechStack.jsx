@@ -2,8 +2,9 @@ import { useMemo } from 'react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { useReport } from '../context/useReport';
+import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '../components';
-import { palette, PALETTE_CATEGORICAL } from '../utils/chartPalette';
+import { palette } from '../utils/chartPalette';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -41,13 +42,15 @@ const TECH_CATEGORIES = {
 };
 
 function categorizeTech(name) {
+  const other = strings.views.techStack.categoryOther;
   for (const [cat, techs] of Object.entries(TECH_CATEGORIES)) {
     if (techs.includes(name)) return cat;
   }
-  return 'Other';
+  return other;
 }
 
 export default function TechStack({ searchQuery = '' }) {
+  const vr = strings.views.techStack;
   const { data } = useReport();
   const q = (searchQuery || '').toLowerCase().trim();
   const ts = data?.tech_stack_summary || {};
@@ -78,8 +81,8 @@ export default function TechStack({ searchQuery = '' }) {
   return (
     <PageLayout className="space-y-8">
       <PageHeader
-        title="Tech Detection"
-        subtitle={`Technologies detected across ${totalAnalyzed.toLocaleString()} analyzed pages.`}
+        title={vr.title}
+        subtitle={format(vr.subtitle, { count: totalAnalyzed.toLocaleString() })}
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
@@ -87,14 +90,14 @@ export default function TechStack({ searchQuery = '' }) {
           <Card key={cat} shadow>
             <div className="text-xs text-slate-500 uppercase font-bold mb-1">{cat}</div>
             <div className="text-2xl font-bold text-bright">{count}</div>
-            <div className="text-[10px] text-slate-500 mt-1">technologies detected</div>
+            <div className="text-[10px] text-slate-500 mt-1">{vr.techDetectedSuffix}</div>
           </Card>
         ))}
       </div>
 
       <Card padding="tight">
-        <h3 className="text-sm font-bold text-slate-200 mb-1">Detected Technologies</h3>
-        <p className="text-xs text-slate-500 mb-3">Number of pages where each technology was found</p>
+        <h3 className="text-sm font-bold text-slate-200 mb-1">{vr.cardDetected}</h3>
+        <p className="text-xs text-slate-500 mb-3">{vr.cardHint}</p>
         <div style={{ height: Math.max(200, techs.length * 28 + 40) }}>
           {chartLabels.length > 0 ? (
             <Bar
@@ -105,34 +108,38 @@ export default function TechStack({ searchQuery = '' }) {
                 maintainAspectRatio: false,
                 plugins: {
                   legend: { display: false },
-                  tooltip: { callbacks: { label: (ctx) => ` Found on ${ctx.raw.toLocaleString()} page(s)` } },
+                  tooltip: {
+                    callbacks: {
+                      label: (ctx) => format(vr.tooltipPages, { count: ctx.raw.toLocaleString() }),
+                    },
+                  },
                 },
                 scales: {
-                  x: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: 'Pages' } },
+                  x: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: vr.chartAxisPages } },
                   y: { grid: { color: GRID_COLOR } },
                 },
               }}
               plugins={[barValueLabelsPlugin]}
             />
           ) : (ts.technologies || []).length > 0 ? (
-            <div className="flex items-center justify-center h-full text-slate-500 text-sm">No technologies match your search.</div>
+            <div className="flex items-center justify-center h-full text-slate-500 text-sm">{vr.noSearchMatch}</div>
           ) : (
-            <div className="flex items-center justify-center h-full text-slate-500 text-sm">No technology data. Run a crawl first.</div>
+            <div className="flex items-center justify-center h-full text-slate-500 text-sm">{vr.noData}</div>
           )}
         </div>
       </Card>
 
       {techs.length > 0 && (
         <div>
-          <h2 className="text-xl font-bold text-bright mb-4">Technology Breakdown</h2>
+          <h2 className="text-xl font-bold text-bright mb-4">{vr.breakdownTitle}</h2>
           <Card overflowHidden padding="none">
             <Table>
               <TableHead>
                 <tr>
-                  <TableHeadCell className="text-left">Technology</TableHeadCell>
-                  <TableHeadCell className="text-left">Category</TableHeadCell>
-                  <TableHeadCell className="text-right">Pages</TableHeadCell>
-                  <TableHeadCell className="text-left">Sample URLs</TableHeadCell>
+                  <TableHeadCell className="text-left">{vr.colTechnology}</TableHeadCell>
+                  <TableHeadCell className="text-left">{vr.colCategory}</TableHeadCell>
+                  <TableHeadCell className="text-right">{vr.colPages}</TableHeadCell>
+                  <TableHeadCell className="text-left">{vr.colSampleUrls}</TableHeadCell>
                 </tr>
               </TableHead>
               <TableBody>

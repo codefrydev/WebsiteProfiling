@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   openReportDatabase,
   listReportsFromDatabase,
   readReportPayloadFromDatabase,
 } from '../lib/loadReportDb';
+import { computeReportFingerprintDiff } from '../lib/reportDiff';
 import { ReportContext } from './reportContext';
 
 export function ReportProvider({ children, dbUrl = '/report.db' }) {
@@ -12,6 +13,8 @@ export function ReportProvider({ children, dbUrl = '/report.db' }) {
   const [error, setError] = useState(null);
   const [reportList, setReportList] = useState([]);
   const [selectedReportId, setSelectedReportId] = useState(null);
+  const [compareReportId, setCompareReportId] = useState(null);
+  const [compareData, setCompareData] = useState(null);
   const [sqlDb, setSqlDb] = useState(null);
   const dbRef = useRef(null);
 
@@ -96,6 +99,24 @@ export function ReportProvider({ children, dbUrl = '/report.db' }) {
     applyPayload(selectedReportId);
   }, [sqlDb, selectedReportId, applyPayload]);
 
+  useEffect(() => {
+    const db = dbRef.current;
+    if (!db || compareReportId == null) {
+      setCompareData(null);
+      return;
+    }
+    try {
+      setCompareData(readReportPayloadFromDatabase(db, compareReportId));
+    } catch {
+      setCompareData(null);
+    }
+  }, [sqlDb, compareReportId]);
+
+  const reportDiff = useMemo(() => {
+    if (data == null || compareData == null) return null;
+    return computeReportFingerprintDiff(data, compareData);
+  }, [data, compareData]);
+
   return (
     <ReportContext.Provider
       value={{
@@ -105,6 +126,10 @@ export function ReportProvider({ children, dbUrl = '/report.db' }) {
         reportList,
         selectedReportId,
         setSelectedReportId,
+        compareReportId,
+        setCompareReportId,
+        compareData,
+        reportDiff,
         loadReport,
         sqlDb,
       }}

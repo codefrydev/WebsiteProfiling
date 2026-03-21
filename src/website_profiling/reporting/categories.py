@@ -29,6 +29,23 @@ def _sort_issues(issues: list[dict]) -> list[dict]:
     return sorted(issues, key=lambda x: PRIORITY_ORDER.get(x.get("priority", "Low"), 99))
 
 
+def _page_analysis_dict(row: pd.Series) -> dict:
+    """Parse page_analysis JSON cell from a crawl row."""
+    import json
+
+    raw = row.get("page_analysis")
+    if raw is None or (isinstance(raw, float) and pd.isna(raw)):
+        return {}
+    s = str(raw).strip()
+    if not s or s == "{}":
+        return {}
+    try:
+        o = json.loads(s)
+        return o if isinstance(o, dict) else {}
+    except json.JSONDecodeError:
+        return {}
+
+
 def _score_deductions(max_score: int, deductions: list[tuple[int, bool]]) -> int:
     """Return max(0, max_score - sum of deduction for each True)."""
     total = sum(d for d, apply in deductions if apply)
@@ -153,6 +170,23 @@ def category_technical_seo(
                 recommendation="Add schema.org markup (e.g. Organization, Article) for rich results.",
             ))
             deductions.append((5, True))
+
+    # Internationalization: <html lang> from page_analysis (re-crawl to populate)
+    if "page_analysis" in df.columns and len(success_df) > 0:
+        missing_lang = 0
+        for _, row in success_df.iterrows():
+            pa = _page_analysis_dict(row)
+            if not (pa.get("html_lang") or "").strip():
+                missing_lang += 1
+        if missing_lang > 0 and len(success_df) >= 3:
+            ratio = missing_lang / len(success_df)
+            if ratio > 0.1:
+                issues.append(_issue(
+                    f"{missing_lang} page(s) missing <html lang> (of {len(success_df)} OK responses).",
+                    priority="Medium" if ratio > 0.5 else "Low",
+                    recommendation="Add <html lang=\"...\"> matching the primary language of each page.",
+                ))
+                deductions.append((min(10, max(2, missing_lang // 5)), True))
 
     score = _score_deductions(100, deductions)
     return {

@@ -2,7 +2,9 @@ import { useState, useMemo } from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { Shield, Flame, AlertTriangle, AlertCircle, Info, ExternalLink } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Badge } from '../components';
+import BrowserMlPanel from '../components/ml/BrowserMlPanel';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal, doughnutOptionsBottomLegend } from '../utils/chartJsDefaults';
 
@@ -99,7 +101,7 @@ export default function Security({ searchQuery = '' }) {
   const { typeLabels, typeValues } = useMemo(() => {
     const m = new Map();
     allFindings.forEach((f) => {
-      const t = toTitleCase(f.finding_type) || 'Unknown';
+      const t = toTitleCase(f.finding_type) || strings.common.unknown;
       m.set(t, (m.get(t) || 0) + 1);
     });
     const pairs = [...m.entries()].sort((a, b) => b[1] - a[1]);
@@ -116,7 +118,8 @@ export default function Security({ searchQuery = '' }) {
           callbacks: {
             label: (ctx) => {
               const n = Number(ctx.raw);
-              return ` ${n.toLocaleString()} finding${n !== 1 ? 's' : ''}`;
+              const vs = strings.views.security;
+              return ` ${format(vs.findingTooltip, { n: n.toLocaleString(), s: n !== 1 ? 's' : '' })}`;
             },
           },
         },
@@ -151,18 +154,26 @@ export default function Security({ searchQuery = '' }) {
     return ao - bo;
   });
 
+  const vs = strings.views.security;
+
   return (
     <PageLayout className="space-y-6">
       <PageHeader
-        title="Security & Headers"
-        subtitle={`HTTP security headers, injection risk, open redirect, and vulnerability findings. ${allFindings.length} finding${allFindings.length !== 1 ? 's' : ''} total.`}
+        title={vs.title}
+        subtitle={`${vs.subtitlePrefix} ${format(vs.subtitleCount, { count: allFindings.length, s: allFindings.length !== 1 ? 's' : '' })}`}
       />
+
+      {Array.isArray(data?.links) && data.links.length > 0 && (
+        <Card shadow>
+          <BrowserMlPanel links={data.links} compact />
+        </Card>
+      )}
 
       {allFindings.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card padding="tight" shadow>
-            <h2 className="text-sm font-bold text-slate-200 mb-1">Findings by severity</h2>
-            <p className="text-xs text-slate-500 mb-3">All findings in this report</p>
+            <h2 className="text-sm font-bold text-slate-200 mb-1">{vs.findingsBySeverity}</h2>
+            <p className="text-xs text-slate-500 mb-3">{vs.findingsBySeverityHint}</p>
             <div className="h-56 flex items-center justify-center">
               <div className="w-full max-w-[260px] h-48">
                 <Doughnut
@@ -198,8 +209,8 @@ export default function Security({ searchQuery = '' }) {
           </Card>
           {typeLabels.length > 0 && (
             <Card padding="tight" shadow>
-              <h2 className="text-sm font-bold text-slate-200 mb-1">Findings by type</h2>
-              <p className="text-xs text-slate-500 mb-3">Grouped by finding_type from the scanner</p>
+              <h2 className="text-sm font-bold text-slate-200 mb-1">{vs.findingsByType}</h2>
+              <p className="text-xs text-slate-500 mb-3">{vs.findingsByTypeHint}</p>
               <div className="h-56">
                 <Bar
                   data={{
@@ -249,7 +260,7 @@ export default function Security({ searchQuery = '' }) {
             onClick={() => setSeverityFilter('All')}
             className="text-xs text-slate-500 hover:text-slate-300 transition-colors border border-default rounded-full px-3 py-1"
           >
-            ← Show all severities
+            {vs.showAllSeverities}
           </button>
         </div>
       )}
@@ -259,11 +270,9 @@ export default function Security({ searchQuery = '' }) {
         <Card className="flex flex-col items-center justify-center py-20 gap-4">
           <Shield className="h-14 w-14 text-green-600/60" />
           <div className="text-center">
-            <p className="text-slate-300 font-semibold text-base">No security findings detected</p>
+            <p className="text-slate-300 font-semibold text-base">{vs.emptyTitle}</p>
             <p className="text-slate-500 text-sm mt-1">
-              {allFindings.length > 0
-                ? 'No findings match the current filters or search.'
-                : 'Run a crawl with security scanning enabled to see results here.'}
+              {allFindings.length > 0 ? vs.emptyFiltered : vs.emptyNoScan}
             </p>
           </div>
         </Card>
@@ -301,13 +310,13 @@ export default function Security({ searchQuery = '' }) {
                 </div>
 
                 {/* Message */}
-                <p className="text-slate-200 text-sm leading-snug">{f.message || '—'}</p>
+                <p className="text-slate-200 text-sm leading-snug">{f.message || strings.common.emDash}</p>
 
                 {/* Recommendation */}
                 {f.recommendation && (
                   <div className={`rounded-lg px-3 py-2.5 border text-sm text-slate-400 leading-relaxed ${cfg.recBg}`}>
                     <span className="text-xs font-bold uppercase tracking-wide text-blue-400 block mb-1">
-                      Recommendation
+                      {vs.recommendation}
                     </span>
                     {f.recommendation}
                   </div>

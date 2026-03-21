@@ -2,9 +2,11 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import ForceGraph3D from '3d-force-graph';
 import { Maximize, Minimize } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Button } from '../components';
 
 export default function Network({ searchQuery = '' }) {
+  const vn = strings.views.network;
   const containerRef = useRef(null);
   const wrapperRef = useRef(null);
   const graphRef = useRef(null);
@@ -120,10 +122,7 @@ export default function Network({ searchQuery = '' }) {
 
   return (
     <PageLayout className="flex flex-col h-full">
-      <PageHeader
-        title="Internal Linking Map"
-        subtitle="Physics-based graph of internal link structure. Red nodes indicate 4xx/5xx errors."
-      />
+      <PageHeader title={vn.title} subtitle={vn.subtitle} />
       <div ref={wrapperRef} className="flex-1 flex flex-col min-h-[80vh]">
       <Card
         overflowHidden
@@ -139,36 +138,36 @@ export default function Network({ searchQuery = '' }) {
             />
             {searchEmpty && (
               <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#05080f]/90 text-slate-400 text-sm px-6 text-center">
-                No pages match your search.
+                {vn.searchEmpty}
               </div>
             )}
             <div className="absolute top-4 left-4 bg-brand-900 border border-default p-3 rounded-xl text-xs space-y-2 z-10">
               <div className="flex items-center gap-2 text-bright">
                 <div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-400" />
-                OK (2xx)
+                {vn.legendOk}
               </div>
               <div className="flex items-center gap-2 text-bright">
                 <div className="w-3 h-3 rounded-full bg-red-500 border border-red-400" />
-                Broken (4xx/5xx)
+                {vn.legendBroken}
               </div>
               <div className="flex items-center gap-2 text-bright">
                 <div className="w-4 h-0.5 bg-slate-600" />
-                Internal Link
+                {vn.legendLink}
               </div>
             </div>
             <Button
               variant="secondary"
               onClick={toggleFullscreen}
               className="absolute top-4 right-4 z-10 print:hidden"
-              title={isFullscreen ? 'Exit full screen' : 'Full screen'}
+              title={isFullscreen ? vn.titleExitFullscreen : vn.titleFullscreen}
             >
               {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-              {isFullscreen ? 'Exit full screen' : 'Full screen'}
+              {isFullscreen ? vn.exitFullscreen : vn.fullscreen}
             </Button>
           </>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center p-5 text-slate-500">
-            No edge data available.
+            {vn.noEdges}
           </div>
         )}
       </Card>

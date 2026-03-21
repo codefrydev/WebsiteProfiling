@@ -108,6 +108,8 @@ def analyze_html(
         "external_link_count": 0,
         "internal_links": [],
         "external_links": [],
+        "html_lang": "",
+        "hreflang_alternates": [],
         "script_urls": [],
         "stylesheet_urls": [],
         "image_urls": [],
@@ -121,6 +123,30 @@ def analyze_html(
         return out
 
     soup = BeautifulSoup(html, "lxml")
+
+    html_tag = soup.find("html")
+    if html_tag:
+        out["html_lang"] = (html_tag.get("lang") or "").strip()
+
+    # hreflang alternates (rel="alternate" hreflang="...")
+    hreflang_entries: list[dict[str, str]] = []
+    for link in soup.find_all("link", href=True):
+        rel = link.get("rel")
+        rel_parts: list[str] = []
+        if isinstance(rel, list):
+            rel_parts = [str(x).lower() for x in rel]
+        elif rel:
+            rel_parts = [str(rel).lower()]
+        if "alternate" not in rel_parts:
+            continue
+        hl = (link.get("hreflang") or "").strip()
+        href = link.get("href")
+        if not hl or not href:
+            continue
+        resolved = normalize_link(base_url, href)
+        if resolved:
+            hreflang_entries.append({"hreflang": hl.lower(), "href": resolved})
+    out["hreflang_alternates"] = hreflang_entries[:LIST_CAP]
 
     # Resource hints
     for link in soup.find_all("link", href=True):
@@ -168,6 +194,18 @@ def analyze_html(
     # Canonical
     if not (canonical_url or "").strip():
         warn("missing_canonical", "medium", "Missing canonical link", "Add a <link rel=\"canonical\"> pointing to the preferred URL.")
+
+    if not out["html_lang"]:
+        warn(
+            "missing_html_lang",
+            "low",
+            "Missing lang attribute on <html>",
+            "Add <html lang=\"...\"> matching the primary language of the page.",
+        )
+
+    x_default = [e for e in hreflang_entries if e.get("hreflang") == "x-default"]
+    if len(x_default) > 1:
+        warn("hreflang_multiple_x_default", "medium", "Multiple x-default hreflang entries", "Use a single x-default alternate URL.")
 
     # URL path
     path = parsed_page.path or "/"

@@ -1,6 +1,7 @@
 """
 Generate report data from crawl and write to SQLite. UI is the React app in UI/ (loads report.db).
 """
+import hashlib
 import json
 import os
 import socket
@@ -24,7 +25,8 @@ from ..common import (
     parse_links_serialized,
     save_edges,
 )
-from ..config import get_bool
+from ..tools.keywords import cluster_keywords, extract_candidates_from_df, score_keywords
+from ..config import get_bool, get_int
 from ..ml.enrich import cluster_keywords_semantic, run_ml_enrichment
 from .categories import build_categories
 from ..security_scanner import run_security_scan
@@ -649,6 +651,140 @@ def _build_depth_distribution(df: pd.DataFrame) -> dict:
     return result
 
 
+def _parse_page_analysis_cell(raw: object) -> dict[str, Any]:
+    if raw is None or (isinstance(raw, float) and pd.isna(raw)):
+        return {}
+    s = str(raw).strip()
+    if not s or s == "{}":
+        return {}
+    try:
+        o = json.loads(s)
+        return o if isinstance(o, dict) else {}
+    except json.JSONDecodeError:
+        return {}
+
+
+def _build_outbound_link_domains(
+    df: pd.DataFrame,
+    start_url: str,
+    max_rows: int,
+) -> list[dict[str, Any]]:
+    """Aggregate external hosts linked from crawled pages (outbound), not referring domains."""
+    site_host = urlparse((start_url or "").strip()).netloc.lower()
+    host_pages: dict[str, set[str]] = {}
+    host_link_count: dict[str, int] = {}
+    for _, row in df.iterrows():
+        st = str(row.get("status", "")).strip()
+        if st.startswith(("4", "5")):
+            continue
+        u = str(row.get("url") or "").strip().rstrip("/")
+        if not u:
+            continue
+        seen_on_page: set[str] = set()
+        pa = _parse_page_analysis_cell(row.get("page_analysis")) if "page_analysis" in df.columns else {}
+        for link in pa.get("external_links") or []:
+            if not isinstance(link, str):
+                continue
+            h = urlparse(link).netloc.lower()
+            if not h or h == site_host:
+                continue
+            host_pages.setdefault(h, set()).add(u)
+            host_link_count[h] = host_link_count.get(h, 0) + 1
+            seen_on_page.add(link)
+        if "outlink_targets" in df.columns:
+            for link in parse_links_serialized(row.get("outlink_targets")):
+                h = urlparse(link).netloc.lower()
+                if not h or h == site_host:
+                    continue
+                host_pages.setdefault(h, set()).add(u)
+                if link not in seen_on_page:
+                    host_link_count[h] = host_link_count.get(h, 0) + 1
+                    seen_on_page.add(link)
+    rows: list[dict[str, Any]] = []
+    for h in host_pages:
+        rows.append({
+            "host": h,
+            "page_count": len(host_pages[h]),
+            "link_count": host_link_count.get(h, 0),
+        })
+    rows.sort(key=lambda x: (-x["link_count"], -x["page_count"], x["host"]))
+    return rows[:max_rows]
+
+
+def _build_url_fingerprints(df: pd.DataFrame) -> list[dict[str, Any]]:
+    """Stable fingerprints for comparing page content/structure between report runs (no raw HTML stored)."""
+    out: list[dict[str, Any]] = []
+    for _, row in df.iterrows():
+        u = str(row.get("url") or "").strip().rstrip("/")
+        if not u:
+            continue
+        title = str(row.get("title") or "")
+        meta = str(row.get("meta_description") or "")
+        h1 = str(row.get("h1") or "")
+        headings = str(row.get("heading_sequence") or "")
+        wc = int(pd.to_numeric(row.get("word_count"), errors="coerce") or 0)
+        cl = int(pd.to_numeric(row.get("content_length"), errors="coerce") or 0)
+        h1c = int(pd.to_numeric(row.get("h1_count"), errors="coerce") or 0)
+        sc = int(pd.to_numeric(row.get("script_count"), errors="coerce") or 0)
+        lc = int(pd.to_numeric(row.get("link_stylesheet_count"), errors="coerce") or 0)
+        raw_c = "|".join([title, meta, h1, headings, str(wc), str(cl)]).encode("utf-8")
+        content_fp = hashlib.sha256(raw_c).hexdigest()
+        raw_s = "|".join([str(cl), str(sc), str(lc), str(h1c)]).encode("utf-8")
+        structure_fp = hashlib.sha256(raw_s).hexdigest()
+        out.append({
+            "url": u,
+            "content_fingerprint": content_fp,
+            "structure_fingerprint": structure_fp,
+        })
+    return out
+
+
+def _build_hreflang_summary(df: pd.DataFrame) -> dict[str, Any]:
+    total = 0
+    missing_lang = 0
+    with_hreflang = 0
+    for _, row in df.iterrows():
+        st = str(row.get("status", "")).strip()
+        if not st.startswith("2"):
+            continue
+        total += 1
+        pa = _parse_page_analysis_cell(row.get("page_analysis")) if "page_analysis" in df.columns else {}
+        if not (pa.get("html_lang") or "").strip():
+            missing_lang += 1
+        if pa.get("hreflang_alternates"):
+            with_hreflang += 1
+    return {
+        "pages_200": total,
+        "pages_missing_html_lang": missing_lang,
+        "pages_with_hreflang_links": with_hreflang,
+    }
+
+
+def _build_keyword_opportunities(df: pd.DataFrame, config: dict[str, str] | None) -> dict[str, Any]:
+    if not get_bool(config or {}, "include_keyword_opportunities", True):
+        return {}
+    if "status" not in df.columns or df.empty:
+        return {"quick_wins": [], "high_value": [], "token_topic_clusters": []}
+    success_df = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)]
+    if success_df.empty:
+        return {"quick_wins": [], "high_value": [], "token_topic_clusters": []}
+    candidates = extract_candidates_from_df(success_df)
+    if not candidates:
+        return {"quick_wins": [], "high_value": [], "token_topic_clusters": []}
+    corpus_size = len(success_df)
+    scored = score_keywords(candidates, corpus_size=corpus_size)
+    clusters = cluster_keywords(scored)
+    quick_wins = [s for s in scored if s.get("difficulty", 100) < 60][:10]
+    high_value = [s for s in scored if (s.get("volume") or 0) >= 0.5][:10]
+    if not high_value:
+        high_value = scored[:10]
+    return {
+        "quick_wins": quick_wins[:10],
+        "high_value": high_value[:10],
+        "token_topic_clusters": clusters[:50],
+    }
+
+
 def run_simple_report(
     crawl_csv: str,
     edges_csv: str = "edges.csv",
@@ -877,6 +1013,7 @@ def run_simple_report(
     spacy_map = ml_bundle.get("spacy_by_url") or {}
     anomalies_list = ml_bundle.get("anomalies") or []
     anomaly_by_url = {str(a.get("url") or "").strip().rstrip("/"): a for a in anomalies_list if a.get("url")}
+    kp_map = ml_bundle.get("keyphrases_by_url") or {}
 
     # Full links list: every crawled URL with url, status, inlinks, title, content_length, depth
     links = []
@@ -988,6 +1125,7 @@ def run_simple_report(
         rec["reading_level"] = round(float(pd.to_numeric(row.get("reading_level") if "reading_level" in df.columns else None, errors="coerce") or 0.0), 1)
         rec["content_html_ratio"] = round(float(pd.to_numeric(row.get("content_html_ratio") if "content_html_ratio" in df.columns else None, errors="coerce") or 0.0), 2)
         rec["top_keywords"] = _str_col("top_keywords")
+        rec["content_excerpt"] = _str_col("content_excerpt") if "content_excerpt" in df.columns else ""
 
         # Social / OG
         rec["og_title"] = _str_col("og_title")
@@ -1036,6 +1174,8 @@ def run_simple_report(
             rec["nlp_entities"] = spacy_map[uk]
         if uk in anomaly_by_url:
             rec["ml_anomaly"] = anomaly_by_url[uk]
+        if uk in kp_map:
+            rec["keyphrases"] = kp_map[uk]
 
         links.append(rec)
 
@@ -1110,12 +1250,17 @@ def run_simple_report(
     print("  Building content analytics...", flush=True)
     content_analytics = _build_content_analytics(df)
     semantic_keyword_clusters: list[dict[str, Any]] = []
-    if get_bool(config, "enable_semantic_keywords", False):
+    if get_bool(config or {}, "enable_semantic_keywords", False):
         try:
             words = [x["word"] for x in (content_analytics.get("top_keywords_site") or []) if x.get("word")]
-            semantic_keyword_clusters = cluster_keywords_semantic(words, config)
+            semantic_keyword_clusters = cluster_keywords_semantic(words, config or {})
         except ImportError as e:
             ml_bundle.setdefault("ml_errors", []).append(str(e))
+    outbound_max = get_int(config or {}, "outbound_domain_max_rows", 200) or 200
+    outbound_link_domains = _build_outbound_link_domains(df, start_url or "", outbound_max)
+    hreflang_summary = _build_hreflang_summary(df)
+    url_fingerprints = _build_url_fingerprints(df)
+    keyword_opportunities = _build_keyword_opportunities(df, config)
     social_coverage = _build_social_coverage(df)
     tech_stack_summary = _build_tech_stack_summary(df)
     response_time_stats = _build_response_time_stats(df)
@@ -1159,6 +1304,10 @@ def run_simple_report(
         "language_summary": ml_bundle.get("language_summary") or {},
         "ner_site_summary": ml_bundle.get("ner_site_summary") or {},
         "semantic_keyword_clusters": semantic_keyword_clusters,
+        "outbound_link_domains": outbound_link_domains,
+        "hreflang_summary": hreflang_summary,
+        "url_fingerprints": url_fingerprints,
+        "keyword_opportunities": keyword_opportunities,
         "ml_errors": ml_bundle.get("ml_errors") or [],
     }
     if db_path and run_id is not None:

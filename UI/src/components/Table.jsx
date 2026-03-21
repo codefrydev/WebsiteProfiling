@@ -2,9 +2,9 @@
  * Wrapper for consistent table styling: thead bg-brand-900, uppercase text-xs font-semibold text-slate-400.
  * Use `striped` on TableBody for alternating row backgrounds.
  */
-export default function Table({ children, className = '' }) {
+export default function Table({ children, className = '', wrapperClassName = '' }) {
   return (
-    <div className="overflow-x-auto w-full">
+    <div className={`overflow-x-auto w-full touch-pan-x overscroll-x-contain scroll-smooth ${wrapperClassName}`.trim()}>
       <table className={`w-full text-left text-sm ${className}`.trim()}>
         {children}
       </table>
@@ -22,8 +22,8 @@ export const TableHeadCell = ({ children, className = '' }) => (
   <th className={`px-4 py-3 whitespace-nowrap ${className}`.trim()}>{children}</th>
 );
 
-export const TableBody = ({ children, striped = false }) => (
-  <tbody className={`divide-y divide-muted ${striped ? '[&>tr:nth-child(even)]:bg-brand-900/30' : ''}`}>
+export const TableBody = ({ children, striped = false, className = '' }) => (
+  <tbody className={`divide-y divide-muted ${striped ? '[&>tr:nth-child(even)]:bg-brand-900/30' : ''} ${className}`.trim()}>
     {children}
   </tbody>
 );

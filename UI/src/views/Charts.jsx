@@ -1,20 +1,20 @@
 import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, BarElement, PointElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar, Bubble, Scatter } from 'react-chartjs-2';
 import { useReport } from '../context/useReport';
+import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card } from '../components';
-import { palette, sortByValue, PALETTE_CATEGORICAL } from '../utils/chartPalette';
+import BrowserMlPanel from '../components/ml/BrowserMlPanel';
+import { palette, sortByValue } from '../utils/chartPalette';
 
 ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, PointElement, Title, Tooltip, Legend);
 
-// Global chart defaults (typography)
 if (typeof ChartJS.defaults?.font !== 'undefined') {
   ChartJS.defaults.font.size = 11;
-  ChartJS.defaults.color = 'rgb(203, 213, 225)'; // slate-300
+  ChartJS.defaults.color = 'rgb(203, 213, 225)';
 }
 
 const GRID_COLOR = 'rgba(71, 85, 105, 0.5)';
 
-/** Plugin: draw value label at end of each bar */
 const barValueLabelsPlugin = {
   id: 'barValueLabels',
   afterDatasetsDraw(chart) {
@@ -41,41 +41,52 @@ const barValueLabelsPlugin = {
   },
 };
 
-function barOptsY(ariaSummary) {
-  return {
-    indexAxis: 'y',
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw?.toLocaleString() ?? ctx.raw} URLs` } },
-    },
-    scales: {
-      x: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: 'Count' } },
-      y: { grid: { color: GRID_COLOR } },
-    },
-    ...(ariaSummary && { aria: { description: ariaSummary } }),
-  };
-}
-
-function barOpts(ariaSummary) {
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw?.toLocaleString() ?? ctx.raw} URLs` } },
-    },
-    scales: {
-      x: { grid: { color: GRID_COLOR } },
-      y: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: 'Count' } },
-    },
-    ...(ariaSummary && { aria: { description: ariaSummary } }),
-  };
-}
-
 export default function Charts({ searchQuery = '' }) {
+  const vc = strings.views.charts;
+  const ch = strings.charts;
+  const sj = strings.common;
   const { data } = useReport();
+
+  function barOptsY(ariaSummary) {
+    return {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${ctx.raw?.toLocaleString() ?? ctx.raw} ${ch.axisUrls}`,
+          },
+        },
+      },
+      scales: {
+        x: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: ch.axisCount } },
+        y: { grid: { color: GRID_COLOR } },
+      },
+      ...(ariaSummary && { aria: { description: ariaSummary } }),
+    };
+  }
+
+  function barOpts(ariaSummary) {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ` ${ctx.raw?.toLocaleString() ?? ctx.raw} ${ch.axisUrls}`,
+          },
+        },
+      },
+      scales: {
+        x: { grid: { color: GRID_COLOR } },
+        y: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: ch.axisCount } },
+      },
+      ...(ariaSummary && { aria: { description: ariaSummary } }),
+    };
+  }
 
   if (!data) return null;
 
@@ -107,19 +118,24 @@ export default function Charts({ searchQuery = '' }) {
   domainValues = domainSorted.values.slice(0, 10);
 
   const statusAria = statusLabels.length
-    ? `Bar chart: status code distribution. ${statusLabels.map((l, i) => `${statusValues[i]} ${l}`).join(', ')}.`
-    : 'No status data';
+    ? `${vc.ariaStatusPrefix} ${statusLabels.map((l, i) => `${statusValues[i]} ${l}`).join(', ')}.`
+    : vc.ariaNoStatus;
 
   return (
     <PageLayout>
-      <PageHeader
-        title="Crawl Analytics"
-        subtitle="Status codes, content types, outlinks, title length, and domain distribution."
-      />
+      <PageHeader title={vc.title} subtitle={vc.subtitle} />
+      {Array.isArray(data?.links) && data.links.length > 0 && (
+        <Card shadow className="mb-6">
+          <BrowserMlPanel links={data.links} compact />
+        </Card>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <Card padding="tight" className="print:break-inside-avoid">
-          <h3 className="text-sm font-bold text-slate-200 mb-1">Status code distribution</h3>
-          <p className="text-xs text-slate-500 mb-3">Crawl response codes{totalUrls ? ` · ${totalUrls.toLocaleString()} URLs` : ''}</p>
+          <h3 className="text-sm font-bold text-slate-200 mb-1">{vc.statusDist}</h3>
+          <p className="text-xs text-slate-500 mb-3">
+            {vc.statusHintPrefix}
+            {totalUrls ? ` · ${totalUrls.toLocaleString()} ${ch.axisUrls}` : ''}
+          </p>
           <div className="h-64" role="img" aria-label={statusAria}>
             {statusLabels.length > 0 ? (
               <Bar
@@ -131,14 +147,14 @@ export default function Charts({ searchQuery = '' }) {
                 plugins={[barValueLabelsPlugin]}
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+              <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
             )}
           </div>
         </Card>
         <Card padding="tight" className="print:break-inside-avoid">
-          <h3 className="text-sm font-bold text-slate-200 mb-1">Top content-types</h3>
-          <p className="text-xs text-slate-500 mb-3">By URL count</p>
-          <div className="h-64" role="img" aria-label={mimeLabels.length ? `Bar chart: top content types. ${mimeLabels[0]}: ${mimeValues[0]}.` : 'No data'}>
+          <h3 className="text-sm font-bold text-slate-200 mb-1">{vc.topMime}</h3>
+          <p className="text-xs text-slate-500 mb-3">{vc.mimeByCount}</p>
+          <div className="h-64" role="img" aria-label={mimeLabels.length ? `${vc.ariaMime} ${mimeLabels[0]}: ${mimeValues[0]}.` : sj.noData}>
             {mimeLabels.length > 0 ? (
               <Bar
                 data={{
@@ -149,14 +165,14 @@ export default function Charts({ searchQuery = '' }) {
                 plugins={[barValueLabelsPlugin]}
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+              <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
             )}
           </div>
         </Card>
         <Card padding="tight" className="print:break-inside-avoid">
-          <h3 className="text-sm font-bold text-slate-200 mb-1">Outlinks per page</h3>
-          <p className="text-xs text-slate-500 mb-3">Bucket distribution</p>
-          <div className="h-64" role="img" aria-label={outlinkLabels.length ? 'Bar chart: outlinks distribution by bucket.' : 'No data'}>
+          <h3 className="text-sm font-bold text-slate-200 mb-1">{vc.outlinksTitle}</h3>
+          <p className="text-xs text-slate-500 mb-3">{vc.outlinksHint}</p>
+          <div className="h-64" role="img" aria-label={outlinkLabels.length ? vc.ariaOutlinks : sj.noData}>
             {outlinkLabels.length > 0 ? (
               <Bar
                 data={{
@@ -167,14 +183,14 @@ export default function Charts({ searchQuery = '' }) {
                 plugins={[barValueLabelsPlugin]}
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+              <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
             )}
           </div>
         </Card>
         <Card padding="tight" className="print:break-inside-avoid">
-          <h3 className="text-sm font-bold text-slate-200 mb-1">Title length (characters)</h3>
-          <p className="text-xs text-slate-500 mb-3">51–100 is ideal for SEO</p>
-          <div className="h-64" role="img" aria-label={titleLabels.length ? 'Bar chart: title length distribution by character bucket.' : 'No data'}>
+          <h3 className="text-sm font-bold text-slate-200 mb-1">{vc.titleLength}</h3>
+          <p className="text-xs text-slate-500 mb-3">{vc.titleLengthHint}</p>
+          <div className="h-64" role="img" aria-label={titleLabels.length ? vc.ariaTitleLen : sj.noData}>
             {titleLabels.length > 0 ? (
               <Bar
                 data={{
@@ -183,20 +199,26 @@ export default function Charts({ searchQuery = '' }) {
                 }}
                 options={(() => {
                   const opts = barOpts();
-                  return { ...opts, scales: { ...opts.scales, x: { ...opts.scales.x, title: { display: true, text: 'Character count' } } } };
+                  return {
+                    ...opts,
+                    scales: {
+                      ...opts.scales,
+                      x: { ...opts.scales.x, title: { display: true, text: ch.axisCharacterCount } },
+                    },
+                  };
                 })()}
                 plugins={[barValueLabelsPlugin]}
               />
             ) : (
-              <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+              <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
             )}
           </div>
         </Card>
       </div>
       <Card padding="tight" className="print:break-inside-avoid">
-        <h3 className="text-sm font-bold text-slate-200 mb-1">Top domains discovered</h3>
-        <p className="text-xs text-slate-500 mb-3">By URL count (ranking)</p>
-        <div className="h-64" role="img" aria-label={domainLabels.length ? `Bar chart: top domains. ${domainLabels[0]}: ${domainValues[0]}.` : 'No data'}>
+        <h3 className="text-sm font-bold text-slate-200 mb-1">{vc.topDomains}</h3>
+        <p className="text-xs text-slate-500 mb-3">{vc.topDomainsHint}</p>
+        <div className="h-64" role="img" aria-label={domainLabels.length ? `${vc.ariaDomainsPrefix} ${domainLabels[0]}: ${domainValues[0]}.` : sj.noData}>
           {domainLabels.length > 0 ? (
             <Bar
               data={{
@@ -207,12 +229,12 @@ export default function Charts({ searchQuery = '' }) {
               plugins={[barValueLabelsPlugin]}
             />
           ) : (
-            <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+            <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
           )}
         </div>
       </Card>
 
-      <h2 className="text-xl font-bold text-bright mt-10 mb-4">Performance & Depth Analytics</h2>
+      <h2 className="text-xl font-bold text-bright mt-10 mb-4">{vc.perfDepthTitle}</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {(() => {
           const rtDist = data.response_time_stats?.distribution || {};
@@ -221,13 +243,13 @@ export default function Charts({ searchQuery = '' }) {
           const rts = data.response_time_stats || {};
           return (
             <Card padding="tight" className="print:break-inside-avoid">
-              <h3 className="text-sm font-bold text-slate-200 mb-1">Response Time Distribution</h3>
+              <h3 className="text-sm font-bold text-slate-200 mb-1">{vc.rtDistTitle}</h3>
               <div className="flex gap-4 text-xs text-slate-400 mb-3">
-                <span>p50: <span className="text-slate-200 font-semibold">{rts.p50 ?? '—'}ms</span></span>
-                <span>p75: <span className="text-slate-200 font-semibold">{rts.p75 ?? '—'}ms</span></span>
-                <span>p95: <span className="text-slate-200 font-semibold">{rts.p95 ?? '—'}ms</span></span>
+                <span>{vc.rtP50} <span className="text-slate-200 font-semibold">{rts.p50 ?? sj.emDash}ms</span></span>
+                <span>{vc.rtP75} <span className="text-slate-200 font-semibold">{rts.p75 ?? sj.emDash}ms</span></span>
+                <span>{vc.rtP95} <span className="text-slate-200 font-semibold">{rts.p95 ?? sj.emDash}ms</span></span>
               </div>
-              <div className="h-64" role="img" aria-label="Response time histogram">
+              <div className="h-64" role="img" aria-label={vc.rtAria}>
                 {rtLabels.length > 0 ? (
                   <Bar
                     data={{ labels: rtLabels, datasets: [{ data: rtValues, backgroundColor: palette(rtLabels.length) }] }}
@@ -235,7 +257,7 @@ export default function Charts({ searchQuery = '' }) {
                     plugins={[barValueLabelsPlugin]}
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
                 )}
               </div>
             </Card>
@@ -249,20 +271,23 @@ export default function Charts({ searchQuery = '' }) {
           const dd = data.depth_distribution || {};
           return (
             <Card padding="tight" className="print:break-inside-avoid">
-              <h3 className="text-sm font-bold text-slate-200 mb-1">Page Depth Distribution</h3>
+              <h3 className="text-sm font-bold text-slate-200 mb-1">{vc.depthDistTitle}</h3>
               <div className="flex gap-4 text-xs text-slate-400 mb-3">
-                <span>Max depth: <span className="text-slate-200 font-semibold">{dd.max_depth ?? '—'}</span></span>
-                <span>Avg depth: <span className="text-slate-200 font-semibold">{dd.avg_depth ?? '—'}</span></span>
+                <span>{vc.maxDepth} <span className="text-slate-200 font-semibold">{dd.max_depth ?? sj.emDash}</span></span>
+                <span>{vc.avgDepth} <span className="text-slate-200 font-semibold">{dd.avg_depth ?? sj.emDash}</span></span>
               </div>
-              <div className="h-64" role="img" aria-label="Depth distribution">
+              <div className="h-64" role="img" aria-label={vc.depthAria}>
                 {depthLabels.length > 0 ? (
                   <Bar
-                    data={{ labels: depthLabels.map((d) => `Depth ${d}`), datasets: [{ data: depthValues, backgroundColor: palette(1)[0] }] }}
+                    data={{
+                      labels: depthLabels.map((d) => `Depth ${d}`),
+                      datasets: [{ data: depthValues, backgroundColor: palette(1)[0] }],
+                    }}
                     options={barOpts()}
                     plugins={[barValueLabelsPlugin]}
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
                 )}
               </div>
             </Card>
@@ -295,9 +320,9 @@ export default function Charts({ searchQuery = '' }) {
             .filter((d) => d.x > 0 || d.y > 0);
           return (
             <Card padding="tight" className="print:break-inside-avoid">
-              <h3 className="text-sm font-bold text-slate-200 mb-1">PageRank vs Inlinks vs Word Count</h3>
-              <p className="text-xs text-slate-500 mb-3">Bubble size = PageRank weight</p>
-              <div className="h-72" role="img" aria-label="Bubble chart: inlinks vs word count">
+              <h3 className="text-sm font-bold text-slate-200 mb-1">{vc.bubbleTitle}</h3>
+              <p className="text-xs text-slate-500 mb-3">{vc.bubbleHint}</p>
+              <div className="h-72" role="img" aria-label={vc.bubbleAria}>
                 {bubbleData.length > 0 ? (
                   <Bubble
                     data={{ datasets: [{ data: bubbleData, backgroundColor: 'rgba(76, 114, 176, 0.5)', borderColor: '#4C72B0', borderWidth: 1 }] }}
@@ -311,19 +336,19 @@ export default function Charts({ searchQuery = '' }) {
                             label: (ctx) => {
                               const d = ctx.raw;
                               const u = d.url ? d.url.replace(/^https?:\/\//, '').slice(0, 50) : '';
-                              return [`${u}`, `Inlinks: ${d.x}`, `Words: ${d.y}`];
+                              return [`${u}`, `${ch.axisInlinks}: ${d.x}`, `${ch.axisWordCount}: ${d.y}`];
                             },
                           },
                         },
                       },
                       scales: {
-                        x: { grid: { color: GRID_COLOR }, title: { display: true, text: 'Inlinks' } },
-                        y: { grid: { color: GRID_COLOR }, title: { display: true, text: 'Word Count' }, beginAtZero: true },
+                        x: { grid: { color: GRID_COLOR }, title: { display: true, text: ch.axisInlinks } },
+                        y: { grid: { color: GRID_COLOR }, title: { display: true, text: ch.axisWordCount }, beginAtZero: true },
                       },
                     }}
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">Not enough data</div>
+                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.notEnoughData}</div>
                 )}
               </div>
             </Card>
@@ -344,9 +369,9 @@ export default function Charts({ searchQuery = '' }) {
             .map((l) => ({ x: l.word_count, y: l.response_time_ms, url: l.url }));
           return (
             <Card padding="tight" className="print:break-inside-avoid">
-              <h3 className="text-sm font-bold text-slate-200 mb-1">Word Count vs Response Time</h3>
-              <p className="text-xs text-slate-500 mb-3">Each dot is one page</p>
-              <div className="h-72" role="img" aria-label="Scatter chart: word count vs response time">
+              <h3 className="text-sm font-bold text-slate-200 mb-1">{vc.scatterTitle}</h3>
+              <p className="text-xs text-slate-500 mb-3">{vc.scatterHint}</p>
+              <div className="h-72" role="img" aria-label={vc.scatterAria}>
                 {scatterData.length > 0 ? (
                   <Scatter
                     data={{ datasets: [{ data: scatterData, backgroundColor: 'rgba(221, 132, 82, 0.5)', borderColor: '#DD8452', borderWidth: 1, pointRadius: 4 }] }}
@@ -360,7 +385,7 @@ export default function Charts({ searchQuery = '' }) {
                             label: (ctx) => {
                               const r = ctx.raw;
                               const u = r.url ? String(r.url).replace(/^https?:\/\//, '').slice(0, 48) : '';
-                              const lines = [`Words: ${r.x}, Time: ${r.y}ms`];
+                              const lines = [`${ch.axisWordCount}: ${r.x}, ${ch.axisResponseTimeMs}: ${r.y}ms`];
                               if (u) lines.unshift(u);
                               return lines;
                             },
@@ -368,13 +393,13 @@ export default function Charts({ searchQuery = '' }) {
                         },
                       },
                       scales: {
-                        x: { grid: { color: GRID_COLOR }, title: { display: true, text: 'Word Count' }, beginAtZero: true },
-                        y: { grid: { color: GRID_COLOR }, title: { display: true, text: 'Response Time (ms)' }, beginAtZero: true },
+                        x: { grid: { color: GRID_COLOR }, title: { display: true, text: ch.axisWordCount }, beginAtZero: true },
+                        y: { grid: { color: GRID_COLOR }, title: { display: true, text: ch.axisResponseTimeMs }, beginAtZero: true },
                       },
                     }}
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">Not enough data</div>
+                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.notEnoughData}</div>
                 )}
               </div>
             </Card>

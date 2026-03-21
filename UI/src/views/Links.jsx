@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Bar } from 'react-chartjs-2';
-import { Search, Link as LinkIcon, ArrowLeft } from 'lucide-react';
+import { Search, Link as LinkIcon, ArrowLeft, ExternalLink, Link2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { strings } from '../lib/strings';
 import { PageLayout, Card, Badge, Button } from '../components';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
@@ -9,35 +10,32 @@ import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefau
 registerChartJsBase();
 import {
   SELECT_CLASS, CONTENT_URL_KEYS, CONTENT_LABELS, CONTENT_RECOMMENDATIONS,
-  SEO_ISSUE_RECOMMENDATIONS, formatMs, rtColor,
+  SEO_ISSUE_RECOMMENDATIONS, formatMs, rtColor, formatPageHrefLines,
 } from '../utils/linkUtils';
 import { SortTh, RowTooltip, InspectorTabs, CopyBtn } from '../components/links';
+import BrowserMlPanel from '../components/ml/BrowserMlPanel';
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 export default function Links({ searchQuery = '' }) {
+  const vl = strings.views.links;
+  const sj = strings.common;
   const { data } = useReport();
 
-  // Table state
   const [sortBy, setSortBy] = useState('inlinks');
   const [sortDesc, setSortDesc] = useState(true);
   const [page, setPage] = useState(1);
   const perPage = 50;
 
-  // Filter state
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [inlinksFilter, setInlinksFilter] = useState('All');
-  const [rtFilter, setRtFilter] = useState('All');
-  const [wcFilter, setWcFilter] = useState('All');
+  const [statusFilter, setStatusFilter] = useState(sj.all);
+  const [inlinksFilter, setInlinksFilter] = useState(sj.all);
+  const [rtFilter, setRtFilter] = useState(sj.all);
+  const [wcFilter, setWcFilter] = useState(sj.all);
 
-  // Inspector state
   const [inspectorUrl, setInspectorUrl] = useState(null);
 
-  // Hover tooltip state
   const [hoveredRow, setHoveredRow] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
   const tableRef = useRef(null);
 
-  // Escape key closes inspector
   useEffect(() => {
     const onKeyDown = (e) => { if (e.key === 'Escape') setInspectorUrl(null); };
     window.addEventListener('keydown', onKeyDown);
@@ -48,7 +46,7 @@ export default function Links({ searchQuery = '' }) {
 
   const filtered = useMemo(() => {
     let list = [...links];
-    if (statusFilter !== 'All') list = list.filter((l) => String(l.status) === statusFilter);
+    if (statusFilter !== sj.all) list = list.filter((l) => String(l.status) === statusFilter);
     if (inlinksFilter === 'Orphans') list = list.filter((l) => (l.inlinks ?? 0) === 0);
     if (rtFilter === 'Fast') list = list.filter((l) => (l.response_time_ms ?? 0) < 500);
     if (rtFilter === 'Slow') list = list.filter((l) => (l.response_time_ms ?? 0) > 2000);
@@ -71,7 +69,14 @@ export default function Links({ searchQuery = '' }) {
       return sortDesc ? -cmp : cmp;
     });
     return list;
-  }, [links, statusFilter, inlinksFilter, rtFilter, wcFilter, searchQuery, sortBy, sortDesc]);
+  }, [links, statusFilter, inlinksFilter, rtFilter, wcFilter, searchQuery, sortBy, sortDesc, sj.all]);
+
+  const maxInlinksInResults = useMemo(() => {
+    if (!filtered.length) return 1;
+    let m = 0;
+    for (const l of filtered) m = Math.max(m, l.inlinks ?? 0);
+    return Math.max(1, m);
+  }, [filtered]);
 
   const inspectorDetails = useMemo(() => {
     if (!inspectorUrl || !data) return null;
@@ -122,7 +127,7 @@ export default function Links({ searchQuery = '' }) {
     if (links.length === 0) return null;
     const statusMap = new Map();
     links.forEach((l) => {
-      const s = String(l.status ?? '—');
+      const s = String(l.status ?? sj.emDash);
       statusMap.set(s, (statusMap.get(s) || 0) + 1);
     });
     const statusPairs = [...statusMap.entries()].sort((a, b) => b[1] - a[1]);
@@ -143,10 +148,10 @@ export default function Links({ searchQuery = '' }) {
     return {
       statusLabels: statusPairs.map((p) => p[0]),
       statusValues: statusPairs.map((p) => p[1]),
-      wcLabels: ['Thin (<300)', 'Medium (300–999)', 'Long (1000+)', 'No / zero words'],
+      wcLabels: vl.wcBands,
       wcValues: [thin, medium, long, noData],
     };
-  }, [links]);
+  }, [links, vl.wcBands, sj.emDash]);
 
   const exploreBarOpts = useMemo(() => {
     const base = barOptionsHorizontal();
@@ -158,13 +163,13 @@ export default function Links({ searchQuery = '' }) {
           callbacks: {
             label: (ctx) => {
               const n = Number(ctx.raw);
-              return ` ${n.toLocaleString()} URL${n !== 1 ? 's' : ''}`;
+              return ` ${n.toLocaleString()} ${n !== 1 ? vl.urlMany : vl.urlOne}`;
             },
           },
         },
       },
     };
-  }, []);
+  }, [vl]);
 
   if (!data) return null;
 
@@ -186,46 +191,52 @@ export default function Links({ searchQuery = '' }) {
     <PageLayout className="flex flex-col h-full">
       {inspectorUrl == null ? (
         <>
-          {/* ── Header + Filters ── */}
           <div className="mb-6 flex justify-between items-end shrink-0 flex-wrap gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-bright mb-2">Link Explorer</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-bright mb-2">{vl.title}</h1>
               <p className="text-slate-400">
-                Analyze discovered URLs. Showing{' '}
-                <span className="font-bold text-bright">{filtered.length.toLocaleString()}</span> results.
+                {vl.showingResults}{' '}
+                <span className="font-bold text-bright">{filtered.length.toLocaleString()}</span> {vl.resultsSuffix}
               </p>
+              <p className="text-sm text-slate-500 mt-2 max-w-3xl leading-relaxed">{vl.explorerHint}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <select value={inlinksFilter} onChange={(e) => { setInlinksFilter(e.target.value); setPage(1); }} className={SELECT_CLASS}>
-                <option value="All">All pages</option>
-                <option value="Orphans">Orphans (0 inlinks)</option>
+                <option value={sj.all}>{vl.filterAllPages}</option>
+                <option value="Orphans">{vl.filterOrphans}</option>
               </select>
               <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className={SELECT_CLASS}>
-                <option value="All">All Status Codes</option>
-                <option value="200">200 OK</option>
-                <option value="404">404 Not Found</option>
-                <option value="301">301 Redirect</option>
-                <option value="302">302 Redirect</option>
+                <option value={sj.all}>{vl.filterAllStatus}</option>
+                <option value="200">{vl.status200}</option>
+                <option value="404">{vl.status404}</option>
+                <option value="301">{vl.status301}</option>
+                <option value="302">{vl.status302}</option>
               </select>
               <select value={rtFilter} onChange={(e) => { setRtFilter(e.target.value); setPage(1); }} className={SELECT_CLASS}>
-                <option value="All">All Response Times</option>
-                <option value="Fast">Fast (&lt;500ms)</option>
-                <option value="Slow">Slow (&gt;2s)</option>
+                <option value={sj.all}>{vl.filterAllRt}</option>
+                <option value="Fast">{vl.filterFast}</option>
+                <option value="Slow">{vl.filterSlow}</option>
               </select>
               <select value={wcFilter} onChange={(e) => { setWcFilter(e.target.value); setPage(1); }} className={SELECT_CLASS}>
-                <option value="All">All Word Counts</option>
-                <option value="Thin">Thin (&lt;300)</option>
-                <option value="Medium">Medium (300–1000)</option>
-                <option value="Long">Long (1000+)</option>
+                <option value={sj.all}>{vl.filterAllWc}</option>
+                <option value="Thin">{vl.filterThin}</option>
+                <option value="Medium">{vl.filterMedium}</option>
+                <option value="Long">{vl.filterLong}</option>
               </select>
             </div>
           </div>
 
+          {links.length > 0 && (
+            <Card shadow className="mb-4 shrink-0">
+              <BrowserMlPanel links={links} compact />
+            </Card>
+          )}
+
           {exploreCharts && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4 shrink-0">
               <Card padding="tight" shadow>
-                <h2 className="text-sm font-bold text-slate-200 mb-1">All crawled URLs by status</h2>
-                <p className="text-xs text-slate-500 mb-2">Full link list (ignores table filters)</p>
+                <h2 className="text-sm font-bold text-slate-200 mb-1">{vl.chartStatusTitle}</h2>
+                <p className="text-xs text-slate-500 mb-2">{vl.chartStatusHint}</p>
                 <div className="h-48">
                   <Bar
                     data={{
@@ -237,8 +248,8 @@ export default function Links({ searchQuery = '' }) {
                 </div>
               </Card>
               <Card padding="tight" shadow>
-                <h2 className="text-sm font-bold text-slate-200 mb-1">Word count bands</h2>
-                <p className="text-xs text-slate-500 mb-2">Same buckets as the word-count filter</p>
+                <h2 className="text-sm font-bold text-slate-200 mb-1">{vl.chartWcTitle}</h2>
+                <p className="text-xs text-slate-500 mb-2">{vl.chartWcHint}</p>
                 <div className="h-48">
                   <Bar
                     data={{
@@ -252,87 +263,174 @@ export default function Links({ searchQuery = '' }) {
             </div>
           )}
 
-          {/* ── Table ── */}
-          <Card overflowHidden padding="none" className="flex flex-col flex-1 min-h-[500px]">
-            <div className="overflow-x-auto flex-1 relative" ref={tableRef}>
+          <Card overflowHidden padding="none" className="flex flex-col flex-1 min-h-[min(500px,70vh)] sm:min-h-[500px]">
+            <div
+              className="overflow-x-auto overflow-y-visible touch-pan-x overscroll-x-contain flex-1 relative scroll-smooth"
+              ref={tableRef}
+            >
               {hoveredRow && (() => {
                 const link = links.find((l) => l.url === hoveredRow);
                 return link ? <RowTooltip link={link} style={{ position: 'absolute', top: tooltipPos.top, left: tooltipPos.left }} /> : null;
               })()}
 
-              <table className="w-full text-left text-sm whitespace-nowrap">
-                <thead className="bg-brand-900 uppercase text-xs font-semibold sticky top-0 z-10 shadow-sm">
+              <p className="sm:hidden text-xs text-slate-500 px-3 py-2 border-b border-muted bg-brand-900/40">{sj.tableSwipeHint}</p>
+
+              <table className="w-full min-w-[560px] text-left text-sm">
+                <thead className="bg-brand-900 uppercase text-xs font-semibold sticky top-0 z-20 shadow-sm">
                   <tr>
-                    <SortTh label="URL Path"    field="url"             sortBy={sortBy} sortDesc={sortDesc} onSort={toggleSort} className="px-6" />
-                    <SortTh label="Status"      field="status"          sortBy={sortBy} sortDesc={sortDesc} onSort={toggleSort} />
-                    <SortTh label="Inlinks"     field="inlinks"         sortBy={sortBy} sortDesc={sortDesc} onSort={toggleSort} />
-                    <SortTh label="Depth"       field="depth"           sortBy={sortBy} sortDesc={sortDesc} onSort={toggleSort} />
-                    <SortTh label="Resp. Time"  field="response_time_ms"sortBy={sortBy} sortDesc={sortDesc} onSort={toggleSort} />
-                    <SortTh label="Words"       field="word_count"      sortBy={sortBy} sortDesc={sortDesc} onSort={toggleSort} />
-                    <th className="px-4 py-4 text-center text-slate-400 uppercase text-xs">Actions</th>
+                    <SortTh
+                      label={vl.thPage}
+                      field="url"
+                      sortBy={sortBy}
+                      sortDesc={sortDesc}
+                      onSort={toggleSort}
+                      className="px-3 sm:px-6 sticky left-0 z-30 bg-brand-900 border-r border-white/10 shadow-[4px_0_16px_-8px_rgba(0,0,0,0.55)]"
+                    />
+                    <SortTh label={vl.thStatus} field="status" sortBy={sortBy} sortDesc={sortDesc} onSort={toggleSort} />
+                    <SortTh label={vl.thLinksIn} field="inlinks" sortBy={sortBy} sortDesc={sortDesc} onSort={toggleSort} />
+                    <SortTh
+                      label={vl.thCrawlDepth}
+                      field="depth"
+                      sortBy={sortBy}
+                      sortDesc={sortDesc}
+                      onSort={toggleSort}
+                      className="hidden md:table-cell"
+                    />
+                    <SortTh label={vl.thLoadTime} field="response_time_ms" sortBy={sortBy} sortDesc={sortDesc} onSort={toggleSort} />
+                    <SortTh
+                      label={vl.thWords}
+                      field="word_count"
+                      sortBy={sortBy}
+                      sortDesc={sortDesc}
+                      onSort={toggleSort}
+                      className="hidden md:table-cell"
+                    />
+                    <th className="px-3 sm:px-4 py-4 text-center text-slate-400 uppercase text-xs whitespace-nowrap">{vl.thActions}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-muted">
-                  {pageLinks.map((link, i) => (
+                <tbody
+                  className="divide-y divide-muted [&>tr:nth-child(even)]:bg-brand-900/30 [&>tr>td:first-child]:sticky [&>tr>td:first-child]:left-0 [&>tr>td:first-child]:z-10 [&>tr>td:first-child]:bg-inherit [&>tr>td:first-child]:border-r [&>tr>td:first-child]:border-white/10 [&>tr>td:first-child]:shadow-[4px_0_16px_-8px_rgba(0,0,0,0.5)] [&>tr>td:first-child]:max-w-[min(280px,85vw)]"
+                >
+                  {pageLinks.map((link, i) => {
+                    const inl = link.inlinks ?? 0;
+                    const inlPct = (inl / maxInlinksInResults) * 100;
+                    const hrefLines = formatPageHrefLines(link.url);
+                    return (
                     <tr
                       key={i}
-                      className="hover:bg-brand-800 transition-colors cursor-default"
+                      className="hover:bg-brand-800/80 transition-colors cursor-default"
                       onMouseEnter={(e) => handleRowMouseEnter(e, link)}
                       onMouseLeave={() => setHoveredRow(null)}
                     >
-                      <td className="px-6 py-3 font-mono text-blue-400 text-xs truncate max-w-[350px]" title={link.url}>
-                        <a href={link.url} target="_blank" rel="noreferrer" className="hover:underline">{link.url}</a>
+                      <td className="px-3 sm:px-6 py-3 align-top min-w-0">
+                        <div className="min-w-0 flex flex-col gap-0.5">
+                          <div
+                            className="text-slate-100 font-medium text-sm leading-snug line-clamp-2"
+                            title={link.title || undefined}
+                          >
+                            {link.title ? (
+                              link.title
+                            ) : (
+                              <span className="text-slate-500 italic font-normal">{vl.noTitle}</span>
+                            )}
+                          </div>
+                          <a
+                            href={link.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-400 group min-w-0"
+                            title={link.url}
+                          >
+                            <span className="truncate font-mono">{hrefLines.label}</span>
+                            <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" />
+                          </a>
+                          {(link.depth != null || (link.word_count ?? 0) > 0) && (
+                            <p className="mt-1 md:hidden text-[11px] text-slate-500 leading-snug">
+                              {link.depth != null && (
+                                <span>
+                                  {vl.thCrawlDepth}: {link.depth}
+                                </span>
+                              )}
+                              {link.depth != null && (link.word_count ?? 0) > 0 && <span className="mx-1.5 text-slate-600">·</span>}
+                              {(link.word_count ?? 0) > 0 && (
+                                <span>
+                                  {vl.thWords}: {link.word_count.toLocaleString()}
+                                </span>
+                              )}
+                            </p>
+                          )}
+                        </div>
                       </td>
-                      <td className="px-4 py-3"><Badge value={link.status ?? ''} /></td>
-                      <td className="px-4 py-3 text-slate-300 font-mono text-xs">{link.inlinks ?? 0}</td>
-                      <td className="px-4 py-3 text-slate-300 font-mono text-xs">{link.depth != null ? link.depth : '—'}</td>
-                      <td className={`px-4 py-3 font-mono text-xs font-semibold ${rtColor(link.response_time_ms)}`}>
+                      <td className="px-3 sm:px-4 py-3 whitespace-nowrap align-middle"><Badge value={link.status ?? ''} /></td>
+                      <td className="px-3 sm:px-4 py-3 text-right align-middle min-w-0">
+                        <div className="flex w-full min-w-0 flex-col items-stretch gap-1.5 sm:flex-row sm:items-center sm:justify-end sm:gap-2">
+                          <div className="order-2 sm:order-1 min-w-0 flex-1 bg-track rounded-full h-2 hidden sm:block">
+                            <div
+                              className="h-2 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-400 transition-all"
+                              style={{ width: `${inlPct}%` }}
+                            />
+                          </div>
+                          <span
+                            className="order-1 sm:order-2 shrink-0 inline-flex items-center justify-end gap-1.5 text-sm font-semibold text-slate-200 tabular-nums"
+                            title={
+                              maxInlinksInResults > 0
+                                ? `${Math.round(inlPct)}% of the strongest links-in count in your current results (${maxInlinksInResults}).`
+                                : undefined
+                            }
+                          >
+                            <Link2 className="h-3.5 w-3.5 text-slate-500 shrink-0 hidden sm:inline" aria-hidden />
+                            {inl}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="hidden md:table-cell px-4 py-3 text-slate-300 text-sm tabular-nums whitespace-nowrap align-middle">
+                        {link.depth != null ? link.depth : sj.emDash}
+                      </td>
+                      <td className={`px-3 sm:px-4 py-3 text-sm font-semibold tabular-nums whitespace-nowrap align-middle ${rtColor(link.response_time_ms)}`}>
                         {formatMs(link.response_time_ms)}
                       </td>
-                      <td className="px-4 py-3 font-mono text-xs text-slate-300">
-                        {link.word_count > 0 ? link.word_count.toLocaleString() : '—'}
+                      <td className="hidden md:table-cell px-4 py-3 text-sm text-slate-300 tabular-nums whitespace-nowrap align-middle">
+                        {link.word_count > 0 ? link.word_count.toLocaleString() : sj.emDash}
                       </td>
-                      <td className="px-4 py-3 text-center">
+                      <td className="px-3 sm:px-4 py-3 text-center whitespace-nowrap align-middle">
                         <button
                           type="button"
                           onClick={() => setInspectorUrl(link.url)}
-                          className="inline-flex items-center gap-1 text-slate-500 hover:text-bright bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded text-xs transition-colors"
+                          className="inline-flex items-center justify-center gap-1.5 min-h-11 min-w-[2.75rem] sm:min-h-0 sm:min-w-0 text-slate-500 hover:text-bright bg-slate-800 hover:bg-slate-700 px-3 py-2.5 sm:px-2 sm:py-1 rounded-lg sm:rounded text-xs font-medium transition-colors touch-manipulation"
                         >
-                          <Search className="h-3 w-3" /> Inspect
+                          <Search className="h-4 w-4 sm:h-3 sm:w-3 shrink-0" /> {vl.inspect}
                         </button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
 
-            {/* Pagination */}
             <div className="p-4 border-t border-muted bg-brand-900 flex justify-between items-center shrink-0">
               <div className="text-sm text-slate-400">
-                Page <span className="font-bold text-bright">{page}</span> of{' '}
+                {vl.pageOf} <span className="font-bold text-bright">{page}</span> {vl.of}{' '}
                 <span className="font-bold text-bright">{totalPages}</span>
               </div>
               <div className="flex gap-2">
-                <Button variant="secondary" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="px-3 py-1 text-slate-300">Previous</Button>
-                <Button variant="secondary" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-3 py-1 text-slate-300">Next</Button>
+                <Button variant="secondary" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="px-3 py-1 text-slate-300">{vl.previous}</Button>
+                <Button variant="secondary" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-3 py-1 text-slate-300">{vl.next}</Button>
               </div>
             </div>
           </Card>
         </>
       ) : (
         <>
-          {/* ── Inspector header ── */}
           <div className="mb-4 flex justify-between items-center shrink-0 flex-wrap gap-4">
             <Button variant="secondary" onClick={() => setInspectorUrl(null)} className="inline-flex items-center gap-2 text-slate-300">
-              <ArrowLeft className="h-4 w-4" /> Back to Link Explorer
+              <ArrowLeft className="h-4 w-4" /> {vl.backToExplorer}
             </Button>
             <h1 className="text-2xl font-bold text-bright flex items-center gap-2">
-              <LinkIcon className="h-6 w-6 text-blue-500 shrink-0" /> URL Inspector
+              <LinkIcon className="h-6 w-6 text-blue-500 shrink-0" /> {vl.urlInspector}
             </h1>
           </div>
 
-          {/* URL bar */}
           <div className="mb-4 shrink-0 flex items-center gap-2 bg-brand-900 border border-default p-3 rounded-xl">
             <span className="font-mono text-blue-400 text-sm break-all flex-1">{inspectorUrl}</span>
             <CopyBtn text={inspectorUrl} className="shrink-0" />
@@ -341,7 +439,6 @@ export default function Links({ searchQuery = '' }) {
             </a>
           </div>
 
-          {/* Tabbed Inspector */}
           <Card padding="none" overflowHidden className="flex flex-col flex-1 min-h-0">
             {linkForInspector ? (
               <InspectorTabs
@@ -350,7 +447,7 @@ export default function Links({ searchQuery = '' }) {
                 inspectorDetails={inspectorDetails}
               />
             ) : (
-              <div className="p-8 text-center text-slate-500">No data found for this URL.</div>
+              <div className="p-8 text-center text-slate-500">{vl.noUrlData}</div>
             )}
           </Card>
         </>

@@ -35,9 +35,41 @@ def _cfg_int(cfg: dict[str, str] | None, key: str, default: int) -> int:
         return default
 
 
+def _top_keywords_as_text(row: pd.Series, max_terms: int = 15) -> str:
+    if "top_keywords" not in row.index:
+        return ""
+    raw = row.get("top_keywords")
+    if raw is None or (isinstance(raw, float) and pd.isna(raw)):
+        return ""
+    s = str(raw).strip()
+    if not s or s == "[]":
+        return ""
+    try:
+        arr = json.loads(s)
+        if not isinstance(arr, list):
+            return ""
+        words: list[str] = []
+        for item in arr[:max_terms]:
+            if isinstance(item, dict) and item.get("word"):
+                words.append(str(item["word"]))
+        return " ".join(words)
+    except json.JSONDecodeError:
+        return ""
+
+
 def _normalize_fingerprint_text(row: pd.Series) -> str:
-    parts = []
-    for col in ("title", "h1", "meta_description", "heading_sequence"):
+    """Concatenate all available on-page text signals for ML (duplicates, ST, langdetect, spaCy)."""
+    parts: list[str] = []
+    for col in (
+        "title",
+        "h1",
+        "meta_description",
+        "heading_sequence",
+        "og_title",
+        "og_description",
+        "twitter_title",
+        "content_excerpt",
+    ):
         if col not in row.index:
             continue
         v = row.get(col)
@@ -46,9 +78,12 @@ def _normalize_fingerprint_text(row: pd.Series) -> str:
         s = str(v).strip()
         if s:
             parts.append(s)
+    kw_extra = _top_keywords_as_text(row)
+    if kw_extra:
+        parts.append(kw_extra)
     t = " ".join(parts).lower()
     t = re.sub(r"\s+", " ", t)
-    return t[:8000]
+    return t[:12000]
 
 
 def _tokenize_simhash(text: str) -> list[str]:
@@ -209,8 +244,36 @@ def compute_duplicate_groups(
                 if _hamming(h1, h2) <= hamming_max:
                     union(u1, u2)
 
+    # Optional: sentence-transformer cosine on fingerprint text — only merge fuzzy candidates above this similarity
+    embed_norm: dict[str, Any] = {}
+    if _cfg_bool(cfg, "enable_embedding_duplicate_refine", False) and len(urls) <= 600 and len(urls) >= 2:
+        try:
+            import numpy as np
+
+            ST = _import_sentence_transformers()
+            model_name = (cfg or {}).get("ml_sentence_model", "all-MiniLM-L6-v2").strip() or "all-MiniLM-L6-v2"
+            model = ST(model_name)
+            texts = [url_to_fp[u][:4000] for u in urls]
+            verbose = _cfg_bool(cfg, "ml_verbose", False)
+            emb = model.encode(
+                texts,
+                show_progress_bar=verbose,
+                batch_size=32,
+                convert_to_numpy=True,
+            )
+            norms = np.linalg.norm(emb, axis=1, keepdims=True)
+            norms[norms == 0] = 1e-12
+            e = emb / norms
+            for i, u in enumerate(urls):
+                embed_norm[u] = e[i]
+        except ImportError:
+            embed_norm = {}
+
     # Fuzzy title fingerprint merge (pairwise cap)
     if len(urls) <= 600:
+        import numpy as np
+
+        min_embed = float(_cfg_int(cfg, "ml_dup_embed_min_pct", 88) or 88) / 100.0
         for i, u1 in enumerate(urls):
             fp1 = url_to_fp.get(u1, "")
             for u2 in urls[i + 1 :]:
@@ -218,7 +281,13 @@ def compute_duplicate_groups(
                 if not fp1 or not fp2:
                     continue
                 if fuzz.token_set_ratio(fp1, fp2) >= fuzzy_threshold:
-                    union(u1, u2)
+                    if embed_norm:
+                        v1 = embed_norm.get(u1)
+                        v2 = embed_norm.get(u2)
+                        if v1 is not None and v2 is not None and float(np.dot(v1, v2)) >= min_embed:
+                            union(u1, u2)
+                    else:
+                        union(u1, u2)
 
     clusters: dict[str, list[str]] = defaultdict(list)
     for u in urls:
@@ -450,7 +519,8 @@ def compute_similar_internal(
     if len(urls) < 2:
         return {}
 
-    emb = model.encode(texts, show_progress_bar=False, batch_size=32, convert_to_numpy=True)
+    verbose = _cfg_bool(cfg, "ml_verbose", False)
+    emb = model.encode(texts, show_progress_bar=verbose, batch_size=32, convert_to_numpy=True)
     # cosine similarity via normalized vectors
     import numpy as np
 
@@ -468,6 +538,55 @@ def compute_similar_internal(
             {"url": urls[j], "score": round(float(s), 4)} for s, j in scores[:top_k]
         ]
     return result
+
+
+def compute_keyphrases_by_url(
+    df: pd.DataFrame,
+    cfg: dict[str, str] | None,
+) -> dict[str, dict[str, Any]]:
+    """KeyBERT keyphrases per URL (uses same SentenceTransformer as semantic features)."""
+    if df.empty or not _cfg_bool(cfg, "enable_keybert", False):
+        return {}
+    try:
+        from keybert import KeyBERT
+    except ImportError as e:
+        raise ImportError(f"{ML_INSTALL_HINT}\n({e})") from e
+
+    ST = _import_sentence_transformers()
+    model_name = (cfg or {}).get("ml_sentence_model", "all-MiniLM-L6-v2").strip() or "all-MiniLM-L6-v2"
+    st_model = ST(model_name)
+    kw_model = KeyBERT(model=st_model)
+    max_pages = _cfg_int(cfg, "ml_keybert_max_pages", 60) or 60
+    top_n = _cfg_int(cfg, "ml_keybert_top_n", 8) or 8
+
+    success = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns else df
+    if "content_type" in success.columns:
+        success = success[success["content_type"].fillna("").str.contains("text/html", case=False, na=False)]
+
+    out: dict[str, dict[str, Any]] = {}
+    n = 0
+    for _, row in success.iterrows():
+        if n >= max_pages:
+            break
+        u = str(row.get("url") or "").strip().rstrip("/")
+        text = _normalize_fingerprint_text(row)
+        if len(text) < 40:
+            continue
+        try:
+            kws = kw_model.extract_keywords(
+                text[:12000],
+                keyphrase_ngram_range=(1, 2),
+                stop_words="english",
+                top_n=top_n,
+                use_mmr=True,
+                diversity=0.5,
+            )
+        except Exception:
+            continue
+        pairs = [[str(k[0]), float(k[1])] for k in kws] if kws else []
+        out[u] = {"phrases": pairs}
+        n += 1
+    return out
 
 
 def merge_ml_into_payload(payload: dict[str, Any], ml_bundle: dict[str, Any]) -> None:
@@ -490,6 +609,7 @@ def merge_ml_into_payload(payload: dict[str, Any], ml_bundle: dict[str, Any]) ->
     sim_map = ml_bundle.get("similar_internal_by_url") or {}
     lang_map = ml_bundle.get("language_by_url") or {}
     spacy_map = ml_bundle.get("spacy_by_url") or {}
+    kp_map = ml_bundle.get("keyphrases_by_url") or {}
     anomalies_list = ml_bundle.get("anomalies") or []
     anomaly_by_url = {str(a.get("url") or "").strip().rstrip("/"): a for a in anomalies_list if a.get("url")}
 
@@ -503,6 +623,7 @@ def merge_ml_into_payload(payload: dict[str, Any], ml_bundle: dict[str, Any]) ->
         rec.pop("detected_language", None)
         rec.pop("nlp_entities", None)
         rec.pop("ml_anomaly", None)
+        rec.pop("keyphrases", None)
         if uk in dup_gid:
             rec["duplicate_group_id"] = dup_gid[uk]
         nei = sim_map.get(uk) or sim_map.get(u)
@@ -514,6 +635,8 @@ def merge_ml_into_payload(payload: dict[str, Any], ml_bundle: dict[str, Any]) ->
             rec["nlp_entities"] = spacy_map[uk]
         if uk in anomaly_by_url:
             rec["ml_anomaly"] = anomaly_by_url[uk]
+        if uk in kp_map:
+            rec["keyphrases"] = kp_map[uk]
         pa = rec.get("page_analysis")
         if isinstance(pa, dict):
             sig = pa.get("signals")
@@ -541,6 +664,7 @@ def run_ml_enrichment(df: pd.DataFrame, cfg: dict[str, str] | None) -> dict[str,
         "spacy_by_url": {},
         "similar_internal_by_url": {},
         "ner_site_summary": {},
+        "keyphrases_by_url": {},
     }
 
     if df.empty:
@@ -577,6 +701,11 @@ def run_ml_enrichment(df: pd.DataFrame, cfg: dict[str, str] | None) -> dict[str,
     except ImportError as e:
         bundle["ml_errors"] = bundle.get("ml_errors", []) + [str(e)]
 
+    try:
+        bundle["keyphrases_by_url"] = compute_keyphrases_by_url(df, cfg)
+    except ImportError as e:
+        bundle["ml_errors"] = bundle.get("ml_errors", []) + [str(e)]
+
     return bundle
 
 
@@ -598,7 +727,8 @@ def cluster_keywords_semantic(
 
     import numpy as np
 
-    emb = model.encode(kws, show_progress_bar=False, batch_size=64, convert_to_numpy=True)
+    verbose = _cfg_bool(cfg, "ml_verbose", False)
+    emb = model.encode(kws, show_progress_bar=verbose, batch_size=64, convert_to_numpy=True)
     norms = np.linalg.norm(emb, axis=1, keepdims=True)
     norms[norms == 0] = 1e-12
     e = emb / norms

@@ -10,12 +10,19 @@ polite_delay = 0.2
 ignore_robots = false
 allow_external = false
 store_outlinks = true
+# Optional: store truncated body text for ML / UI (larger DB & report JSON)
+store_content_excerpt = true
+content_excerpt_max_chars = 4096
 
 sqlite_db = report.db
 crawl_output = crawl_results.json
 crawl_exclude_urls = https://codefrydev.in/WebsiteProfiling/
 
 # --- Report ---
+# Optional: cap outbound-domain table rows in report JSON; keyword opportunities on by default
+outbound_domain_max_rows = 200
+include_keyword_opportunities = true
+
 crawl_csv = crawl_results.json
 edges_csv = edges.json
 nodes_csv = nodes.json
@@ -67,6 +74,15 @@ ml_dup_max_pages = 2000
 ml_ner_max_pages = 80
 ml_semantic_keyword_max = 200
 ml_keyword_cluster_sim = 75
+# Fuzzy duplicate merge must also exceed this embedding cosine (0–100) when enabled
+enable_embedding_duplicate_refine = true
+ml_dup_embed_min_pct = 88
+# KeyBERT phrases per page (uses sentence-transformers model)
+enable_keybert = true
+ml_keybert_max_pages = 60
+ml_keybert_top_n = 8
+# Progress bars for long ST.encode runs
+ml_verbose = true
 
 # --- Pipeline (python -m src) ---
 run_crawl = true

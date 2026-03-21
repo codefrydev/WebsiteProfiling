@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { useReport } from '../context/useReport';
+import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, Badge } from '../components';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
@@ -8,6 +9,7 @@ import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefau
 registerChartJsBase();
 
 export default function Redirects({ searchQuery = '' }) {
+  const vr = strings.views.redirects;
   const { data } = useReport();
   const q = (searchQuery || '').toLowerCase().trim();
   const redirects = useMemo(() => {
@@ -56,19 +58,16 @@ export default function Redirects({ searchQuery = '' }) {
 
   return (
     <PageLayout className="space-y-6">
-      <PageHeader
-        title="Redirects"
-        subtitle="URLs that redirect to another location. From → To."
-      />
+      <PageHeader title={vr.title} subtitle={vr.subtitle} />
       {redirects.length > 0 && statusLabels.length > 0 && (
         <Card padding="tight" shadow>
-          <h2 className="text-sm font-bold text-slate-200 mb-1">Redirects by status code</h2>
-          <p className="text-xs text-slate-500 mb-3">How many redirect responses use each HTTP status</p>
+          <h2 className="text-sm font-bold text-slate-200 mb-1">{vr.chartTitle}</h2>
+          <p className="text-xs text-slate-500 mb-3">{vr.chartHint}</p>
           <div className="h-48 max-w-xl">
             <Bar
               data={{
                 labels: statusLabels,
-                datasets: [{ data: statusValues, backgroundColor: palette(statusLabels.length), label: 'Redirects' }],
+                datasets: [{ data: statusValues, backgroundColor: palette(statusLabels.length), label: vr.datasetLabel }],
               }}
               options={barOpts}
             />
@@ -80,9 +79,9 @@ export default function Redirects({ searchQuery = '' }) {
           <Table>
             <TableHead>
               <tr>
-                <TableHeadCell>From (requested URL)</TableHeadCell>
-                <TableHeadCell>Status</TableHeadCell>
-                <TableHeadCell>To (final URL)</TableHeadCell>
+                <TableHeadCell>{vr.colFrom}</TableHeadCell>
+                <TableHeadCell>{vr.colStatus}</TableHeadCell>
+                <TableHeadCell>{vr.colTo}</TableHeadCell>
               </tr>
             </TableHead>
             <TableBody>
@@ -106,9 +105,9 @@ export default function Redirects({ searchQuery = '' }) {
             </TableBody>
           </Table>
         ) : (data.redirects || []).length > 0 ? (
-          <p className="p-6 text-center text-slate-500">No redirects match your search.</p>
+          <p className="p-6 text-center text-slate-500">{vr.noSearchMatch}</p>
         ) : (
-          <p className="p-6 text-center text-slate-500">No redirects found.</p>
+          <p className="p-6 text-center text-slate-500">{vr.noneFound}</p>
         )}
       </Card>
     </PageLayout>

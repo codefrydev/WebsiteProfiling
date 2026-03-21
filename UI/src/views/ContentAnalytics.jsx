@@ -17,93 +17,122 @@ import {
   Activity,
   ListChecks,
   Sparkles,
+  Link2,
 } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '../components';
+import BrowserMlPanel from '../components/ml/BrowserMlPanel';
 import { palette, PALETTE_CATEGORICAL } from '../utils/chartPalette';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
 const GRID_COLOR = 'rgba(71, 85, 105, 0.5)';
 
+/** Shared colors for title/meta bucket comparison (missing → long). */
+const COMPARE_BUCKET_COLORS = ['#EF4444', '#EAB308', '#22C55E', '#F97316'];
+
 const barValueLabelsPlugin = {
   id: 'caBarLabels',
   afterDatasetsDraw(chart) {
     const ctx = chart.ctx;
-    const meta = chart.getDatasetMeta(0);
-    if (!meta?.data?.length) return;
-    const dataset = chart.data.datasets?.[0];
-    if (!dataset?.data) return;
     const isHorizontal = chart.options.indexAxis === 'y';
     ctx.save();
     ctx.font = '11px system-ui, sans-serif';
     ctx.fillStyle = 'rgb(203, 213, 225)';
     ctx.textAlign = isHorizontal ? 'left' : 'center';
     ctx.textBaseline = 'middle';
-    meta.data.forEach((bar, i) => {
-      const value = dataset.data[i];
-      if (value == null || value === 0) return;
-      const label = Number(value).toLocaleString();
-      const x = isHorizontal ? bar.x + 6 : bar.x;
-      const y = isHorizontal ? bar.y : bar.y - 12;
-      ctx.fillText(label, x, y);
+    (chart.data.datasets || []).forEach((dataset, dsi) => {
+      const meta = chart.getDatasetMeta(dsi);
+      if (!meta?.data?.length || !dataset?.data) return;
+      meta.data.forEach((bar, i) => {
+        const value = dataset.data[i];
+        if (value == null || value === 0) return;
+        const label = Number(value).toLocaleString();
+        const x = isHorizontal ? bar.x + 6 : bar.x;
+        const y = isHorizontal ? bar.y : bar.y - 12;
+        ctx.fillText(label, x, y);
+      });
     });
     ctx.restore();
   },
 };
 
 function barOpts(xTitle) {
+  const vca = strings.views.contentAnalytics;
+  const pagesWord = strings.common.pages;
   return {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw?.toLocaleString() ?? ctx.raw} pages` } } },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ` ${format(vca.chartTooltipCount, { n: ctx.raw?.toLocaleString() ?? ctx.raw })}`,
+        },
+      },
+    },
     scales: {
       x: { grid: { color: GRID_COLOR }, ...(xTitle ? { title: { display: true, text: xTitle } } : {}) },
-      y: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: 'Pages' } },
+      y: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: pagesWord } },
     },
   };
 }
 
 function barOptsH() {
+  const freq = strings.charts.axisFrequency;
   return {
     indexAxis: 'y',
     responsive: true,
     maintainAspectRatio: false,
     plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw?.toLocaleString() ?? ctx.raw}` } } },
     scales: {
-      x: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: 'Frequency' } },
+      x: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: freq } },
       y: { grid: { color: GRID_COLOR } },
     },
   };
 }
 
 function doughnutOpts() {
+  const vca = strings.views.contentAnalytics;
   return {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 12 } },
-      tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.raw?.toLocaleString()} pages` } },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ` ${format(vca.chartTooltipDoughnut, { label: ctx.label, n: ctx.raw?.toLocaleString() })}`,
+        },
+      },
     },
   };
 }
 
-function groupedBarOpts(yTitle = 'Pages') {
+function groupedBarOpts(yTitle) {
+  const vca = strings.views.contentAnalytics;
+  const def = strings.common.pages;
   return {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
       legend: { display: true, labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 } },
-      tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw?.toLocaleString()} pages` } },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ` ${format(vca.chartTooltipGrouped, { dataset: ctx.dataset.label, n: ctx.raw?.toLocaleString() })}`,
+        },
+      },
     },
     scales: {
       x: { grid: { color: GRID_COLOR } },
-      y: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: yTitle, color: '#64748b' } },
+      y: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: yTitle ?? def, color: '#64748b' } },
     },
   };
 }
 
 function stackedPercentBarOpts() {
+  const vca = strings.views.contentAnalytics;
+  const pctAxis = strings.common.percentOfPages;
   return {
     indexAxis: 'y',
     responsive: true,
@@ -112,7 +141,7 @@ function stackedPercentBarOpts() {
       legend: { display: true, labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 } },
       tooltip: {
         callbacks: {
-          label: (ctx) => ` ${ctx.dataset.label}: ${Number(ctx.raw).toFixed(1)}%`,
+          label: (ctx) => ` ${format(vca.chartTooltipPercent, { dataset: ctx.dataset.label, pct: Number(ctx.raw).toFixed(1) })}`,
         },
       },
     },
@@ -122,22 +151,12 @@ function stackedPercentBarOpts() {
         grid: { color: GRID_COLOR },
         beginAtZero: true,
         max: 100,
-        title: { display: true, text: '% of pages', color: '#64748b' },
+        title: { display: true, text: pctAxis, color: '#64748b' },
       },
       y: { stacked: true, grid: { color: GRID_COLOR } },
     },
   };
 }
-
-const CONTENT_ISSUE_KEYS = [
-  { key: 'missing_h1', label: 'Missing H1' },
-  { key: 'missing_title', label: 'Missing title' },
-  { key: 'multiple_h1', label: 'Multiple H1s' },
-  { key: 'missing_meta_desc', label: 'Missing meta desc' },
-  { key: 'meta_desc_short', label: 'Meta too short' },
-  { key: 'meta_desc_long', label: 'Meta too long' },
-  { key: 'thin_content', label: 'Thin (body chars)' },
-];
 
 function qualityBarColors(labels) {
   return labels.map((l) => {
@@ -184,6 +203,8 @@ function CoverageBar({ label, pct, color }) {
 
 function ThinPagesSection({ pages }) {
   const [open, setOpen] = useState(false);
+  const vca = strings.views.contentAnalytics;
+  const sj = strings.common;
   if (!pages || pages.length === 0) return null;
   return (
     <div className="mt-4">
@@ -193,29 +214,29 @@ function ThinPagesSection({ pages }) {
         className="w-full flex items-center gap-2 text-sm font-semibold text-amber-400 hover:text-amber-300 transition-colors py-1"
       >
         {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        View {pages.length} thin page{pages.length !== 1 ? 's' : ''}
+        {format(vca.thinPagesView, { count: pages.length, s: pages.length !== 1 ? 's' : '' })}
       </button>
       {open && (
         <div className="mt-2 max-h-64 overflow-y-auto rounded-lg border border-muted">
           <Table>
             <TableHead sticky>
               <tr>
-                <TableHeadCell className="w-8 text-center">#</TableHeadCell>
-                <TableHeadCell className="min-w-[260px]">URL</TableHeadCell>
-                <TableHeadCell className="w-20 text-center">Words</TableHeadCell>
+                <TableHeadCell className="w-8 text-center">{vca.thThinHash}</TableHeadCell>
+                <TableHeadCell className="min-w-[260px]">{vca.thThinUrl}</TableHeadCell>
+                <TableHeadCell className="w-20 text-center">{vca.thThinWords}</TableHeadCell>
                 <TableHeadCell className="w-8" />
               </tr>
             </TableHead>
             <TableBody striped>
               {pages.map((p, i) => {
-                const url = typeof p === 'string' ? p : (p.url || '—');
+                const url = typeof p === 'string' ? p : (p.url || sj.emDash);
                 const wc = typeof p === 'object' ? p.word_count : null;
                 return (
                   <TableRow key={i} className="group">
                     <TableCell className="text-slate-600 text-xs font-mono text-center w-8">{i + 1}</TableCell>
                     <TableCell className="max-w-[360px]">
                       <a
-                        href={url !== '—' ? url : undefined}
+                        href={url !== sj.emDash ? url : undefined}
                         target="_blank"
                         rel="noreferrer"
                         title={url}
@@ -244,6 +265,9 @@ function ThinPagesSection({ pages }) {
 }
 
 export default function ContentAnalytics({ searchQuery = '' }) {
+  const vca = strings.views.contentAnalytics;
+  const sj = strings.common;
+  const ch = strings.charts;
   const { data } = useReport();
   const q = (searchQuery || '').toLowerCase().trim();
 
@@ -326,12 +350,12 @@ export default function ContentAnalytics({ searchQuery = '' }) {
   const hasThinPages = thinPages.length > 0;
 
   // --- H1 distribution ---
-  const h1Labels = ['No H1', 'One H1', 'Multiple H1s'];
+  const h1Labels = [...vca.h1Labels];
   const h1Values = [seoHealth.h1_zero || 0, seoHealth.h1_one || 0, seoHealth.h1_multi || 0];
   const hasH1Data = h1Values.some((v) => v > 0);
 
   // --- Title length quality ---
-  const titleQualLabels = ['Missing', 'Too Short (<30)', 'Optimal (30–60)', 'Too Long (>60)'];
+  const titleQualLabels = [...vca.titleQualLabels];
   const titleQualValues = [
     seoHealth.missing_title || 0,
     seoHealth.title_short || 0,
@@ -341,7 +365,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
   const hasTitleData = titleQualValues.some((v) => v > 0);
 
   // --- Meta description quality ---
-  const metaQualLabels = ['Missing', 'Too Short (<70)', 'Optimal (70–160)', 'Too Long (>160)'];
+  const metaQualLabels = [...vca.metaQualLabels];
   const metaQualValues = [
     seoHealth.missing_meta_desc || 0,
     seoHealth.meta_desc_short || 0,
@@ -385,8 +409,9 @@ export default function ContentAnalytics({ searchQuery = '' }) {
   const rtValues = rtLabels.map((k) => Number(rtDist[k]) || 0);
   const hasRtDist = rtLabels.length > 0 && rtValues.some((v) => v > 0);
 
-  const issueBarLabels = CONTENT_ISSUE_KEYS.map((r) => r.label);
-  const issueBarValues = CONTENT_ISSUE_KEYS.map((r) => (contentUrls[r.key] || []).length);
+  const issueKeys = vca.contentIssueKeys;
+  const issueBarLabels = issueKeys.map((r) => r.label);
+  const issueBarValues = issueKeys.map((r) => (contentUrls[r.key] || []).length);
   const hasIssueBar = issueBarValues.some((v) => v > 0);
 
   const titleTotal =
@@ -409,58 +434,81 @@ export default function ContentAnalytics({ searchQuery = '' }) {
   const thinByChars = Number(seoHealth.thin_content) || 0;
   const hasThinCompare = thinByWords > 0 || thinByChars > 0;
 
-  const wcPercLabels = ['Min', 'P25', 'Median', 'Mean', 'P75', 'Max'];
+  const titleBucketCounts = [
+    seoHealth.missing_title || 0,
+    seoHealth.title_short || 0,
+    seoHealth.title_ok || 0,
+    seoHealth.title_long || 0,
+  ];
+  const metaBucketCounts = [
+    seoHealth.missing_meta_desc || 0,
+    seoHealth.meta_desc_short || 0,
+    seoHealth.meta_desc_ok || 0,
+    seoHealth.meta_desc_long || 0,
+  ];
+  const hasTitleMetaCompare =
+    hasTitleData &&
+    hasMetaData &&
+    (titleBucketCounts.some((v) => v > 0) || metaBucketCounts.some((v) => v > 0));
+
+  const titleGapCount = titleTotal - (seoHealth.title_ok || 0);
+  const metaGapCount = metaTotal - (seoHealth.meta_desc_ok || 0);
+  const h1GapCount = h1Total - (seoHealth.h1_one || 0);
+  const hasSeoGapCountCompare = hasSeoOptimalBar;
+
+  const ogMissCount = (sc.missing_og || []).length;
+  const twMissCount = (sc.missing_twitter || []).length;
+  const hasSocialMissCompare = ogMissCount > 0 || twMissCount > 0;
+
+  const wcPercLabels = vca.wcPercLabels;
   const wcPercRaw = [wcStats.min, wcStats.p25, wcStats.median, wcStats.mean, wcStats.p75, wcStats.max];
   const wcPercValues = wcPercRaw.map((v) => (v != null && !Number.isNaN(Number(v)) ? Number(v) : null));
   const hasWcPercBar = wcPercValues.every((v) => v != null) && wcStats.max > 0;
 
   return (
     <PageLayout className="space-y-8">
-      <PageHeader
-        title="Content Insights"
-        subtitle="Word count, readability, content-to-HTML ratio, top keywords, social meta coverage, crawl health, and on-page flags."
-      />
+      <PageHeader title={vca.title} subtitle={vca.subtitle} />
 
       {/* KPI stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card shadow>
           <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <BookOpen className="h-4 w-4" /> Mean Words
+            <BookOpen className="h-4 w-4" /> {vca.meanWords}
           </div>
           <div className="text-3xl font-bold text-bright">
-            {wcStats.mean != null ? Math.round(wcStats.mean).toLocaleString() : '—'}
+            {wcStats.mean != null ? Math.round(wcStats.mean).toLocaleString() : sj.emDash}
           </div>
-          <div className="text-xs text-slate-500 mt-1">per page</div>
+          <div className="text-xs text-slate-500 mt-1">{vca.perPage}</div>
         </Card>
 
         <Card shadow>
           <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <FileText className="h-4 w-4" /> Median Words
+            <FileText className="h-4 w-4" /> {vca.medianWords}
           </div>
           <div className="text-3xl font-bold text-bright">
-            {wcStats.median != null ? Math.round(wcStats.median).toLocaleString() : '—'}
+            {wcStats.median != null ? Math.round(wcStats.median).toLocaleString() : sj.emDash}
           </div>
-          <div className="text-xs text-slate-500 mt-1">per page</div>
+          <div className="text-xs text-slate-500 mt-1">{vca.perPage}</div>
         </Card>
 
         <Card shadow>
           <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <Globe className="h-4 w-4 text-blue-400" /> OG Coverage
+            <Globe className="h-4 w-4 text-blue-400" /> {vca.ogCoverage}
           </div>
           <div className="text-3xl font-bold text-blue-400">
-            {sc.og_coverage_pct != null ? `${sc.og_coverage_pct}%` : '—'}
+            {sc.og_coverage_pct != null ? `${sc.og_coverage_pct}%` : sj.emDash}
           </div>
-          <div className="text-xs text-slate-500 mt-1">open graph tags</div>
+          <div className="text-xs text-slate-500 mt-1">{vca.ogTags}</div>
         </Card>
 
         <Card shadow>
           <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <Twitter className="h-4 w-4 text-sky-400" /> Twitter Coverage
+            <Twitter className="h-4 w-4 text-sky-400" /> {vca.twitterCoverage}
           </div>
           <div className="text-3xl font-bold text-sky-400">
-            {sc.twitter_coverage_pct != null ? `${sc.twitter_coverage_pct}%` : '—'}
+            {sc.twitter_coverage_pct != null ? `${sc.twitter_coverage_pct}%` : sj.emDash}
           </div>
-          <div className="text-xs text-slate-500 mt-1">twitter card tags</div>
+          <div className="text-xs text-slate-500 mt-1">{vca.twitterTags}</div>
         </Card>
 
         <Card
@@ -468,37 +516,95 @@ export default function ContentAnalytics({ searchQuery = '' }) {
           className={hasThinPages ? 'ring-1 ring-amber-500/20 border-amber-900/30' : ''}
         >
           <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${hasThinPages ? 'text-amber-400/80' : 'text-slate-500'}`}>
-            <AlertTriangle className={`h-4 w-4 ${hasThinPages ? 'text-amber-400' : ''}`} /> Thin Pages
+            <AlertTriangle className={`h-4 w-4 ${hasThinPages ? 'text-amber-400' : ''}`} /> {vca.thinPages}
           </div>
           <div className={`text-3xl font-bold ${hasThinPages ? 'text-amber-400' : 'text-slate-500'}`}>
             {thinPages.length}
           </div>
-          <div className="text-xs text-slate-500 mt-1">under 300 words</div>
+          <div className="text-xs text-slate-500 mt-1">{vca.under300}</div>
         </Card>
       </div>
 
+      {Array.isArray(data?.links) && data.links.length > 0 && (
+        <Card shadow>
+          <BrowserMlPanel links={data.links} />
+        </Card>
+      )}
+
+      {(data.hreflang_summary?.pages_200 > 0 || (data.outbound_link_domains?.length ?? 0) > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {data.hreflang_summary?.pages_200 > 0 && (
+            <Card padding="tight" shadow>
+              <div className="flex items-center gap-2 mb-3">
+                <Globe className="h-4 w-4 text-sky-400" />
+                <h3 className="text-sm font-bold text-slate-200">{vca.i18nTitle}</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="bg-brand-900 border border-default rounded-lg p-3">
+                  <div className="text-slate-500 text-xs uppercase tracking-wider">{vca.pages2xx}</div>
+                  <div className="text-xl font-bold text-slate-200">{data.hreflang_summary.pages_200}</div>
+                </div>
+                <div className="bg-brand-900 border border-default rounded-lg p-3">
+                  <div className="text-slate-500 text-xs uppercase tracking-wider">{vca.missingHtmlLang}</div>
+                  <div className="text-xl font-bold text-amber-400">{data.hreflang_summary.pages_missing_html_lang ?? sj.emDash}</div>
+                </div>
+                <div className="bg-brand-900 border border-default rounded-lg p-3 col-span-2">
+                  <div className="text-slate-500 text-xs uppercase tracking-wider">{vca.pagesHreflang}</div>
+                  <div className="text-xl font-bold text-sky-400">{data.hreflang_summary.pages_with_hreflang_links ?? sj.emDash}</div>
+                </div>
+              </div>
+            </Card>
+          )}
+          {(data.outbound_link_domains?.length ?? 0) > 0 && (
+            <Card padding="tight" shadow className={data.hreflang_summary?.pages_200 ? '' : 'lg:col-span-2'}>
+              <div className="flex items-center gap-2 mb-3">
+                <Link2 className="h-4 w-4 text-orange-400" />
+                <h3 className="text-sm font-bold text-slate-200">{vca.outboundDomains}</h3>
+              </div>
+              <div className="max-h-64 overflow-y-auto rounded-lg border border-muted">
+                <Table>
+                  <TableHead>
+                    <TableRow>
+                      <TableHeadCell>{vca.thHost}</TableHeadCell>
+                      <TableHeadCell className="text-right">{vca.thLinks}</TableHeadCell>
+                      <TableHeadCell className="text-right">{vca.thPages}</TableHeadCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {data.outbound_link_domains.map((row) => (
+                      <TableRow key={row.host}>
+                        <TableCell className="font-mono text-xs text-slate-300">{row.host}</TableCell>
+                        <TableCell className="text-right font-mono text-xs tabular-nums">{row.link_count ?? sj.emDash}</TableCell>
+                        <TableCell className="text-right font-mono text-xs tabular-nums">{row.page_count ?? sj.emDash}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
+          )}
+        </div>
+      )}
+
       {languageMlChart && (
         <Card padding="tight" shadow>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-3">
             <Sparkles className="h-4 w-4 text-violet-400" />
-            <h3 className="text-sm font-bold text-slate-200">Language mix (optional ML)</h3>
+            <h3 className="text-sm font-bold text-slate-200">{vca.languageMix}</h3>
           </div>
-          <p className="text-xs text-slate-500 mb-3">
-            From <code className="text-slate-400">enable_language_detection</code> during report. Sampled pages with enough text.
-          </p>
           <div className="h-56">
             <Bar
               data={{
                 labels: languageMlChart.labels,
                 datasets: [
                   {
-                    label: 'Pages',
+                    label: vca.thPages,
                     data: languageMlChart.values,
                     backgroundColor: palette(languageMlChart.labels.length),
                   },
                 ],
               }}
-              options={barOpts('Pages')}
+              options={barOpts(vca.thPages)}
             />
           </div>
         </Card>
@@ -506,26 +612,17 @@ export default function ContentAnalytics({ searchQuery = '' }) {
 
       {nerSiteChart && (
         <Card padding="tight" shadow>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-2 mb-3">
             <Tag className="h-4 w-4 text-cyan-400" />
-            <h3 className="text-sm font-bold text-slate-200">Entity labels (spaCy NER, sampled pages)</h3>
+            <h3 className="text-sm font-bold text-slate-200">{vca.entityLabels}</h3>
           </div>
-          <p className="text-xs text-slate-500 mb-3">
-            Aggregated from <code className="text-slate-400">enable_ner_spacy</code>
-            {data.ner_site_summary?.pages_with_ner != null && (
-              <>
-                {' '}
-                · {data.ner_site_summary.pages_with_ner} page(s) · {data.ner_site_summary.total_entities ?? '—'} total entities
-              </>
-            )}
-          </p>
           <div className="h-56">
             <Bar
               data={{
                 labels: nerSiteChart.labels,
                 datasets: [
                   {
-                    label: 'Count',
+                    label: vca.countAxis,
                     data: nerSiteChart.values,
                     backgroundColor: palette(nerSiteChart.labels.length),
                   },
@@ -537,31 +634,59 @@ export default function ContentAnalytics({ searchQuery = '' }) {
         </Card>
       )}
 
-      {data.semantic_keyword_clusters?.length > 0 && (
+      {data.keyword_opportunities?.token_topic_clusters?.length > 0 && (
         <Card padding="tight" shadow>
-          <div className="flex items-center gap-2 mb-2">
-            <Layers className="h-4 w-4 text-emerald-400" />
-            <h3 className="text-sm font-bold text-slate-200">Semantic keyword clusters</h3>
+          <div className="flex items-center gap-2 mb-3">
+            <Tag className="h-4 w-4 text-amber-400" />
+            <h3 className="text-sm font-bold text-slate-200">{vca.parentTopicsToken}</h3>
           </div>
-          <p className="text-xs text-slate-500 mb-3">
-            From <code className="text-slate-400">enable_semantic_keywords</code> — phrases grouped by sentence-transformer similarity (site-wide keyword rollup).
-          </p>
           <div className="max-h-80 overflow-y-auto rounded-lg border border-muted">
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableHeadCell>Representative</TableHeadCell>
-                  <TableHeadCell>Cluster score</TableHeadCell>
-                  <TableHeadCell>Keywords</TableHeadCell>
+                  <TableHeadCell>{vca.thRepresentative}</TableHeadCell>
+                  <TableHeadCell>{vca.thClusterScore}</TableHeadCell>
+                  <TableHeadCell>{vca.thKeywords}</TableHeadCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {data.keyword_opportunities.token_topic_clusters.map((cl, idx) => (
+                  <TableRow key={`tok-${cl.top_keyword}-${idx}`}>
+                    <TableCell className="font-medium text-slate-200">{cl.top_keyword}</TableCell>
+                    <TableCell className="font-mono text-xs text-slate-400">{cl.cluster_score ?? sj.emDash}</TableCell>
+                    <TableCell className="text-xs text-slate-400">
+                      {Array.isArray(cl.keywords) ? cl.keywords.join(', ') : sj.emDash}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      )}
+
+      {data.semantic_keyword_clusters?.length > 0 && (
+        <Card padding="tight" shadow>
+          <div className="flex items-center gap-2 mb-3">
+            <Layers className="h-4 w-4 text-emerald-400" />
+            <h3 className="text-sm font-bold text-slate-200">{vca.parentTopicsSemantic}</h3>
+          </div>
+          <div className="max-h-80 overflow-y-auto rounded-lg border border-muted">
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableHeadCell>{vca.thRepresentative}</TableHeadCell>
+                  <TableHeadCell>{vca.thClusterScore}</TableHeadCell>
+                  <TableHeadCell>{vca.thKeywords}</TableHeadCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {data.semantic_keyword_clusters.map((cl, idx) => (
                   <TableRow key={`${cl.top_keyword}-${idx}`}>
                     <TableCell className="font-medium text-slate-200">{cl.top_keyword}</TableCell>
-                    <TableCell className="font-mono text-xs text-slate-400">{cl.cluster_score ?? '—'}</TableCell>
+                    <TableCell className="font-mono text-xs text-slate-400">{cl.cluster_score ?? sj.emDash}</TableCell>
                     <TableCell className="text-xs text-slate-400">
-                      {Array.isArray(cl.keywords) ? cl.keywords.join(', ') : '—'}
+                      {Array.isArray(cl.keywords) ? cl.keywords.join(', ') : sj.emDash}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -573,20 +698,16 @@ export default function ContentAnalytics({ searchQuery = '' }) {
 
       {(hasStatusChart || hasRtDist) && (
         <div className="space-y-6">
-          <SectionHeader
-            icon={Activity}
-            title="Crawl health & response times"
-            description="HTTP status mix for this crawl, plus response-time buckets (p50 / p95 noted). Helps relate content metrics to crawl success and speed."
-          />
+          <SectionHeader icon={Activity} title={vca.crawlHealth} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {hasStatusChart && (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-slate-200 mb-1">URLs by HTTP status</h3>
+                <h3 className="text-sm font-bold text-slate-200 mb-1">{vca.urlsByStatus}</h3>
                 <p className="text-xs text-slate-500 mb-3">
-                  Total crawled:{' '}
+                  {vca.totalCrawled}{' '}
                   <span className="text-slate-300 font-semibold">{Number(summary.total_urls || 0).toLocaleString()}</span>
                   {summary.success_rate != null && (
-                    <> · <span className="text-green-400 font-semibold">{summary.success_rate}%</span> returned 2xx
+                    <> · <span className="text-green-400 font-semibold">{summary.success_rate}%</span> {vca.returned2xx}
                     </>
                   )}
                 </p>
@@ -627,7 +748,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
             )}
             {hasRtDist && (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-slate-200 mb-1">Response time distribution</h3>
+                <h3 className="text-sm font-bold text-slate-200 mb-1">{vca.responseTimeDist}</h3>
                 <p className="text-xs text-slate-500 mb-3">
                   Pages per latency band
                   {rtStats.p50 != null && (
@@ -649,7 +770,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                       datasets: [{ data: rtValues, backgroundColor: palette(rtLabels.length) }],
                     }}
                     options={{
-                      ...barOpts('Time bucket'),
+                      ...barOpts(ch.timeBucket),
                       plugins: {
                         legend: { display: false },
                         tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw?.toLocaleString()} URLs` } },
@@ -666,16 +787,11 @@ export default function ContentAnalytics({ searchQuery = '' }) {
 
       {(hasIssueBar || hasSeoOptimalBar || hasThinCompare) && (
         <div className="space-y-6">
-          <SectionHeader
-            icon={ListChecks}
-            title="On-page quality & thin content"
-            description="Flagged URL counts, share of pages in ideal title/meta/H1 ranges, and thin-content signals (words vs HTML body)."
-          />
+          <SectionHeader icon={ListChecks} title={vca.onPageQuality} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {hasIssueBar && (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-slate-200 mb-1">URLs flagged by issue type</h3>
-                <p className="text-xs text-slate-500 mb-3">Same buckets as the On-Page SEO report — how many URLs per issue</p>
+                <h3 className="text-sm font-bold text-slate-200 mb-3">URLs flagged by issue type</h3>
                 <div className="h-80">
                   <Bar
                     data={{
@@ -696,10 +812,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
             )}
             {hasSeoOptimalBar && (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-slate-200 mb-1">Pages in “good” ranges</h3>
-                <p className="text-xs text-slate-500 mb-3">
-                  Title 30–60 chars, meta 70–160 chars, exactly one H1 — stacked % of all crawled HTML rows in the dataset
-                </p>
+                <h3 className="text-sm font-bold text-slate-200 mb-3">Pages in “good” ranges</h3>
                 <div className="h-56">
                   <Bar
                     data={{
@@ -724,10 +837,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
             )}
             {hasThinCompare && (
               <Card padding="tight" className={hasIssueBar && hasSeoOptimalBar ? 'lg:col-span-2' : ''}>
-                <h3 className="text-sm font-bold text-slate-200 mb-1">Thin content signals</h3>
-                <p className="text-xs text-slate-500 mb-3">
-                  Under 300 words (content analytics) vs. small HTML body by character count (SEO health threshold)
-                </p>
+                <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.thinSignals}</h3>
                 <div className="h-48 max-w-md">
                   <Bar
                     data={{
@@ -741,7 +851,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                       ],
                     }}
                     options={{
-                      ...barOpts('Pages'),
+                      ...barOpts(vca.thPages),
                       plugins: {
                         legend: { display: false },
                         tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw?.toLocaleString()} pages` } },
@@ -759,7 +869,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
       {/* Thin pages expandable list */}
       {hasThinPages && (
         <Card padding="default">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-3">
             <AlertTriangle className="h-4 w-4 text-amber-400" />
             <span className="text-sm font-semibold text-amber-300">
               {q
@@ -767,44 +877,35 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                 : `${thinPages.length} page${thinPages.length !== 1 ? 's' : ''} have very little content`}
             </span>
           </div>
-          <p className="text-xs text-slate-500 mb-2">
-            Pages under ~300 words may be seen as low-value by search engines. Consider expanding or consolidating them.
-          </p>
           {thinPagesFiltered.length > 0 ? (
             <ThinPagesSection pages={thinPagesFiltered} />
           ) : (
-            <p className="text-sm text-slate-500">No thin pages match your search.</p>
+            <p className="text-sm text-slate-500">{vca.noThinSearch}</p>
           )}
         </Card>
       )}
 
       {/* Content Metrics section */}
       <div className="space-y-6">
-        <SectionHeader
-          icon={BarChart2}
-          title="Content Metrics"
-          description="Distribution of word count, reading level, and content ratio across all crawled pages."
-        />
+        <SectionHeader icon={BarChart2} title={vca.contentMetrics} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">Word Count Distribution</h3>
-            <p className="text-xs text-slate-500 mb-3">Pages grouped by word count bucket</p>
+            <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.wordCountDist}</h3>
             <div className="h-64">
               {wcLabels.length > 0 ? (
                 <Bar
                   data={{ labels: wcLabels, datasets: [{ data: wcValues, backgroundColor: palette(wcLabels.length) }] }}
-                  options={barOpts('Word Count')}
+                  options={barOpts(ch.axisWordCount)}
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
               )}
             </div>
           </Card>
 
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">Reading Level Distribution</h3>
-            <p className="text-xs text-slate-500 mb-3">Flesch-Kincaid grade level bands</p>
+            <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.readingLevelDist}</h3>
             <div className="h-64">
               {rlLabels.length > 0 ? (
                 <Bar
@@ -816,30 +917,28 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
               )}
             </div>
           </Card>
 
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">Content-to-HTML Ratio</h3>
-            <p className="text-xs text-slate-500 mb-3">Text content percentage of total HTML size</p>
+            <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.contentHtmlRatio}</h3>
             <div className="h-64">
               {crLabels.length > 0 ? (
                 <Bar
                   data={{ labels: crLabels, datasets: [{ data: crValues, backgroundColor: palette(crLabels.length) }] }}
-                  options={barOpts('Ratio')}
+                  options={barOpts(ch.ratio)}
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
               )}
             </div>
           </Card>
 
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">Top 30 Keywords (Site-Wide)</h3>
-            <p className="text-xs text-slate-500 mb-3">Most frequent meaningful words across all pages</p>
+            <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.topKeywords}</h3>
             <div className="h-[28rem]">
               {kwLabels.length > 0 ? (
                 <Bar
@@ -848,15 +947,14 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">No keyword data</div>
+                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{vca.noKeywordData}</div>
               )}
             </div>
           </Card>
 
           {hasWcPercBar && (
             <Card padding="tight" className="lg:col-span-2">
-              <h3 className="text-sm font-bold text-slate-200 mb-1">Word count ladder (min → max)</h3>
-              <p className="text-xs text-slate-500 mb-3">Key percentiles and mean — same numbers as the architecture card, shown as bars</p>
+              <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.wordCountLadder}</h3>
               <div className="h-56">
                 <Bar
                   data={{
@@ -899,16 +997,11 @@ export default function ContentAnalytics({ searchQuery = '' }) {
       {/* On-Page SEO Signals section */}
       {(hasH1Data || hasTitleData || hasMetaData) && (
         <div className="space-y-6">
-          <SectionHeader
-            icon={Tag}
-            title="On-Page SEO Signals"
-            description="H1 structure, title tag length, and meta description quality across all crawled pages."
-          />
+          <SectionHeader icon={Tag} title={vca.onPageSignals} />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* H1 Distribution Doughnut */}
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-slate-200 mb-1">H1 Tag Distribution</h3>
-              <p className="text-xs text-slate-500 mb-3">Pages by H1 heading count</p>
+              <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.h1Dist}</h3>
               <div className="h-56">
                 {hasH1Data ? (
                   <Doughnut
@@ -924,15 +1017,14 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                     options={doughnutOpts()}
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
                 )}
               </div>
             </Card>
 
             {/* Title Length Quality */}
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-slate-200 mb-1">Title Tag Length Quality</h3>
-              <p className="text-xs text-slate-500 mb-3">Optimal range: 30–60 characters</p>
+              <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.titleTagQuality}</h3>
               <div className="h-56">
                 {hasTitleData ? (
                   <Bar
@@ -941,21 +1033,20 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                       datasets: [{ data: titleQualValues, backgroundColor: qualityBarColors(titleQualLabels) }],
                     }}
                     options={{
-                      ...barOpts(''),
+                      ...barOpts(),
                       plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw?.toLocaleString()} pages` } } },
                     }}
                     plugins={[barValueLabelsPlugin]}
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
                 )}
               </div>
             </Card>
 
             {/* Meta Description Quality */}
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-slate-200 mb-1">Meta Description Quality</h3>
-              <p className="text-xs text-slate-500 mb-3">Optimal range: 70–160 characters</p>
+              <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.metaDescQuality}</h3>
               <div className="h-56">
                 {hasMetaData ? (
                   <Bar
@@ -964,37 +1055,90 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                       datasets: [{ data: metaQualValues, backgroundColor: qualityBarColors(metaQualLabels) }],
                     }}
                     options={{
-                      ...barOpts(''),
+                      ...barOpts(),
                       plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw?.toLocaleString()} pages` } } },
                     }}
                     plugins={[barValueLabelsPlugin]}
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">No data</div>
+                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
                 )}
               </div>
             </Card>
           </div>
+
+          {(hasTitleMetaCompare || hasSeoGapCountCompare) && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {hasTitleMetaCompare && (
+                <Card padding="tight">
+                  <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.titleVsMetaBuckets}</h3>
+                  <div className="h-64">
+                    <Bar
+                      data={{
+                        labels: vca.compareBuckets,
+                        datasets: [
+                          {
+                            label: vca.datasetTitleTags,
+                            data: titleBucketCounts,
+                            backgroundColor: COMPARE_BUCKET_COLORS,
+                          },
+                          {
+                            label: vca.datasetMetaTags,
+                            data: metaBucketCounts,
+                            backgroundColor: COMPARE_BUCKET_COLORS,
+                          },
+                        ],
+                      }}
+                      options={groupedBarOpts(sj.pages)}
+                      plugins={[barValueLabelsPlugin]}
+                    />
+                  </div>
+                </Card>
+              )}
+              {hasSeoGapCountCompare && (
+                <Card padding="tight">
+                  <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.seoOptimalVsGapCounts}</h3>
+                  <div className="h-64">
+                    <Bar
+                      data={{
+                        labels: [vca.seoTitle, vca.seoMeta, vca.seoH1],
+                        datasets: [
+                          {
+                            label: vca.stackedInRange,
+                            data: [seoHealth.title_ok || 0, seoHealth.meta_desc_ok || 0, seoHealth.h1_one || 0],
+                            backgroundColor: '#22C55E',
+                          },
+                          {
+                            label: vca.stackedNeeds,
+                            data: [titleGapCount, metaGapCount, h1GapCount],
+                            backgroundColor: 'rgba(239, 68, 68, 0.45)',
+                          },
+                        ],
+                      }}
+                      options={groupedBarOpts(sj.pages)}
+                      plugins={[barValueLabelsPlugin]}
+                    />
+                  </div>
+                </Card>
+              )}
+            </div>
+          )}
         </div>
       )}
 
       {/* Social Meta Coverage section */}
       <div className="space-y-6">
-        <SectionHeader
-          icon={Share2}
-          title="Social Meta Coverage"
-          description="Open Graph and Twitter Card tag coverage across all crawled pages."
-        />
+        <SectionHeader icon={Share2} title={vca.socialMetaCoverage} />
 
         {/* Coverage progress bars */}
         {(sc.og_coverage_pct != null || sc.twitter_coverage_pct != null) && (
           <Card shadow>
             <div className="space-y-4">
               {sc.og_coverage_pct != null && (
-                <CoverageBar label="Open Graph Coverage" pct={sc.og_coverage_pct} color="text-blue-400" />
+                <CoverageBar label={vca.ogProgress} pct={sc.og_coverage_pct} color="text-blue-400" />
               )}
               {sc.twitter_coverage_pct != null && (
-                <CoverageBar label="Twitter Card Coverage" pct={sc.twitter_coverage_pct} color="text-sky-400" />
+                <CoverageBar label={vca.twitterProgress} pct={sc.twitter_coverage_pct} color="text-sky-400" />
               )}
             </div>
           </Card>
@@ -1005,27 +1149,26 @@ export default function ContentAnalytics({ searchQuery = '' }) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Grouped bar: OG / Twitter / OG Image coverage */}
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-slate-200 mb-1">Social Meta Coverage Overview</h3>
-              <p className="text-xs text-slate-500 mb-3">% of pages with each social meta tag present</p>
+              <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.socialOverview}</h3>
               <div className="h-64">
                 <Bar
                   data={{
-                    labels: ['Open Graph', 'Twitter Card', 'OG Image'],
+                    labels: [vca.openGraph, vca.twitterCard, vca.ogImage],
                     datasets: [
                       {
-                        label: 'Has Tag',
+                        label: vca.datasetHasTag,
                         data: [ogPct, twPct, ogImgPct],
                         backgroundColor: '#22C55E',
                       },
                       {
-                        label: 'Missing',
+                        label: vca.datasetMissing,
                         data: [100 - ogPct, 100 - twPct, 100 - ogImgPct],
                         backgroundColor: '#EF444466',
                       },
                     ],
                   }}
                   options={{
-                    ...groupedBarOpts('%'),
+                    ...groupedBarOpts(),
                     scales: {
                       x: { stacked: true, grid: { color: GRID_COLOR } },
                       y: { stacked: true, grid: { color: GRID_COLOR }, beginAtZero: true, max: 100, title: { display: true, text: 'Coverage %', color: '#64748b' } },
@@ -1042,8 +1185,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
             {/* OG Image coverage doughnut */}
             {hasOgImgData && (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-slate-200 mb-1">OG Image Coverage</h3>
-                <p className="text-xs text-slate-500 mb-3">Pages with and without an Open Graph image</p>
+                <h3 className="text-sm font-bold text-slate-200 mb-3">OG Image Coverage</h3>
                 <div className="h-64">
                   <Doughnut
                     data={{
@@ -1067,6 +1209,47 @@ export default function ContentAnalytics({ searchQuery = '' }) {
               </Card>
             )}
           </div>
+        )}
+
+        {hasSocialMissCompare && (
+          <Card padding="tight" shadow>
+            <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.missingSocialUrlCompare}</h3>
+            <div className="h-56 max-w-lg">
+              <Bar
+                data={{
+                  labels: [vca.openGraph, vca.twitterCard],
+                  datasets: [
+                    {
+                      label: vca.datasetMissing,
+                      data: [ogMissCount, twMissCount],
+                      backgroundColor: ['#3B82F6', '#38BDF8'],
+                    },
+                  ],
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                      callbacks: {
+                        label: (ctx) => ` ${ctx.raw?.toLocaleString()} ${sj.urls}`,
+                      },
+                    },
+                  },
+                  scales: {
+                    x: { grid: { color: GRID_COLOR } },
+                    y: {
+                      grid: { color: GRID_COLOR },
+                      beginAtZero: true,
+                      title: { display: true, text: sj.urls, color: '#64748b' },
+                    },
+                  },
+                }}
+                plugins={[barValueLabelsPlugin]}
+              />
+            </div>
+          </Card>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1112,7 +1295,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                   </TableBody>
                 </Table>
                 ) : (
-                  <p className="p-4 text-sm text-slate-500">No URLs match your search.</p>
+                  <p className="p-4 text-sm text-slate-500">{vca.noUrlSearch}</p>
                 )}
               </div>
             </Card>
@@ -1160,7 +1343,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                   </TableBody>
                 </Table>
                 ) : (
-                  <p className="p-4 text-sm text-slate-500">No URLs match your search.</p>
+                  <p className="p-4 text-sm text-slate-500">{vca.noUrlSearch}</p>
                 )}
               </div>
             </Card>
@@ -1177,21 +1360,25 @@ export default function ContentAnalytics({ searchQuery = '' }) {
       {/* Site Architecture section */}
       {hasDepthData && (
         <div className="space-y-6">
-          <SectionHeader
-            icon={Layers}
-            title="Site Architecture"
-            description="Crawl depth distribution shows how many pages exist at each level from the root."
-          />
+          <SectionHeader icon={Layers} title={vca.siteArchitecture} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-slate-200 mb-1">Crawl Depth Distribution</h3>
-              <p className="text-xs text-slate-500 mb-3">
-                Pages per depth level — Depth 0 is the root, Depth 1 is one click away, etc.
-                {depthDist.max_depth != null && (
-                  <> Max depth: <span className="text-slate-300 font-semibold">{depthDist.max_depth}</span>
-                  {depthDist.avg_depth != null && <>, avg: <span className="text-slate-300 font-semibold">{depthDist.avg_depth}</span></>}.</>
-                )}
-              </p>
+              <h3 className="text-sm font-bold text-slate-200 mb-3">Crawl Depth Distribution</h3>
+              {(depthDist.max_depth != null || depthDist.avg_depth != null) && (
+                <p className="text-xs text-slate-500 mb-3">
+                  {depthDist.max_depth != null && (
+                    <>
+                      Max depth: <span className="text-slate-300 font-semibold">{depthDist.max_depth}</span>
+                    </>
+                  )}
+                  {depthDist.max_depth != null && depthDist.avg_depth != null && ' · '}
+                  {depthDist.avg_depth != null && (
+                    <>
+                      avg: <span className="text-slate-300 font-semibold">{depthDist.avg_depth}</span>
+                    </>
+                  )}
+                </p>
+              )}
               <div className="h-64">
                 <Bar
                   data={{
@@ -1199,7 +1386,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                     datasets: [{ data: depthValues, backgroundColor: palette(depthLabels.length) }],
                   }}
                   options={{
-                    ...barOpts('Depth'),
+                    ...barOpts(ch.depth),
                     plugins: {
                       legend: { display: false },
                       tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw?.toLocaleString()} pages` } },
@@ -1213,8 +1400,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
             {/* Word count percentile summary */}
             {wcStats.median != null && (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-slate-200 mb-1">Word Count Percentiles</h3>
-                <p className="text-xs text-slate-500 mb-4">Distribution of word counts across all pages</p>
+                <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.wordCountPercentiles}</h3>
                 <div className="space-y-3">
                   {[
                     { label: 'Min', value: wcStats.min, color: 'text-slate-400', barW: 0 },

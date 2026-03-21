@@ -1,34 +1,12 @@
 import { useMemo } from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import { Shield, Zap, Image } from 'lucide-react';
+import { strings, format } from '../../../lib/strings';
 import SecHeaderRow from '../SecHeaderRow';
 import MiniBar from '../MiniBar';
 import { registerChartJsBase, barOptionsHorizontal, doughnutOptionsBottomLegend } from '../../../utils/chartJsDefaults';
 
 registerChartJsBase();
-
-const SEC_HEADERS = [
-  {
-    label: 'Strict-Transport-Security',
-    field: 'strict_transport_security',
-    rec: 'Set HSTS with max-age of at least 31536000 to enforce HTTPS.',
-  },
-  {
-    label: 'X-Content-Type-Options',
-    field: 'x_content_type_options',
-    rec: 'Set to "nosniff" to prevent MIME-type sniffing attacks.',
-  },
-  {
-    label: 'X-Frame-Options',
-    field: 'x_frame_options',
-    rec: 'Set to "SAMEORIGIN" or "DENY" to prevent clickjacking.',
-  },
-  {
-    label: 'Content-Security-Policy',
-    field: 'content_security_policy',
-    rec: 'Define a strict CSP to reduce XSS attack surface.',
-  },
-];
 
 function headerPresent(val) {
   if (val == null) return false;
@@ -37,14 +15,20 @@ function headerPresent(val) {
 }
 
 export default function TechnicalTab({ link }) {
+  const lt = strings.components.linkTabs.technical;
+  const SEC_HEADERS = lt.securityRows;
+
   const perfRows = [
-    { label: 'Cache-Control', value: link.cache_control || 'Not set', mono: true },
-    { label: 'ETag', value: link.etag ? 'Present' : 'Not set' },
-    { label: 'Scripts', value: String(link.script_count ?? 0) },
-    { label: 'Stylesheets', value: String(link.link_stylesheet_count ?? 0) },
+    { label: lt.perfCacheControl, value: link.cache_control || lt.notSet, mono: true },
+    { label: lt.perfEtag, value: link.etag ? lt.etagPresent : lt.notSet },
+    { label: lt.perfScripts, value: String(link.script_count ?? 0) },
+    { label: lt.perfStylesheets, value: String(link.link_stylesheet_count ?? 0) },
     {
-      label: 'Mixed Content',
-      value: link.mixed_content_count > 0 ? `${link.mixed_content_count} item(s)` : 'None',
+      label: lt.perfMixedContent,
+      value:
+        link.mixed_content_count > 0
+          ? format(lt.mixedItems, { n: link.mixed_content_count })
+          : lt.mixedNone,
       warn: link.mixed_content_count > 0,
     },
   ];
@@ -55,17 +39,17 @@ export default function TechnicalTab({ link }) {
     const present = SEC_HEADERS.filter((h) => headerPresent(link[h.field])).length;
     const missing = SEC_HEADERS.length - present;
     return { present, missing };
-  }, [link]);
+  }, [link, SEC_HEADERS]);
 
   const assetBar = useMemo(() => {
     const scripts = Number(link.script_count) || 0;
     const sheets = Number(link.link_stylesheet_count) || 0;
     const images = Number(link.images_total) || 0;
     return {
-      labels: ['Scripts', 'Stylesheets', 'Images'],
+      labels: [...lt.assetBarLabels],
       values: [scripts, sheets, images],
     };
-  }, [link]);
+  }, [link, lt.assetBarLabels]);
 
   const assetBarOpts = useMemo(() => {
     const base = barOptionsHorizontal();
@@ -75,27 +59,26 @@ export default function TechnicalTab({ link }) {
         ...base.plugins,
         tooltip: {
           callbacks: {
-            label: (ctx) => ` ${Number(ctx.raw).toLocaleString()} items`,
+            label: (ctx) => ` ${format(lt.tooltipItems, { n: Number(ctx.raw).toLocaleString() })}`,
           },
         },
       },
     };
-  }, []);
+  }, [lt.tooltipItems]);
 
   return (
     <div className="space-y-6">
-      {/* Security Headers */}
       <div>
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-          <Shield className="h-3.5 w-3.5" /> Security Headers
+          <Shield className="h-3.5 w-3.5" /> {lt.securityHeaders}
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div className="bg-brand-900 border border-default rounded-xl p-3">
-            <div className="text-xs text-slate-500 mb-2">Headers present (of {SEC_HEADERS.length})</div>
+            <div className="text-xs text-slate-500 mb-2">{format(lt.headersPresentOf, { n: SEC_HEADERS.length })}</div>
             <div className="h-40">
               <Doughnut
                 data={{
-                  labels: ['Present', 'Missing'],
+                  labels: [lt.doughnutPresent, lt.doughnutMissing],
                   datasets: [
                     {
                       data: [securityHeaderCounts.present, securityHeaderCounts.missing],
@@ -110,7 +93,7 @@ export default function TechnicalTab({ link }) {
             </div>
           </div>
           <div className="bg-brand-900 border border-default rounded-xl p-3">
-            <div className="text-xs text-slate-500 mb-2">Scripts, stylesheets, images</div>
+            <div className="text-xs text-slate-500 mb-2">{lt.scriptsStylesImages}</div>
             <div className="h-40">
               <Bar
                 data={{
@@ -139,10 +122,9 @@ export default function TechnicalTab({ link }) {
         </div>
       </div>
 
-      {/* Performance & Caching */}
       <div>
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-          <Zap className="h-3.5 w-3.5" /> Performance & Caching
+          <Zap className="h-3.5 w-3.5" /> {lt.performanceCaching}
         </h3>
         <div className="space-y-2">
           {perfRows.map(({ label, value, mono, warn }) => (
@@ -159,32 +141,31 @@ export default function TechnicalTab({ link }) {
         </div>
       </div>
 
-      {/* Images & Accessibility */}
       <div>
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-          <Image className="h-3.5 w-3.5" /> Images & Accessibility
+          <Image className="h-3.5 w-3.5" /> {lt.imagesA11y}
         </h3>
         <div className="bg-brand-900 border border-default rounded-xl p-4 space-y-3">
           <MiniBar
             value={imgTotal}
             total={Math.max(imgTotal, 1)}
-            label="Total Images"
+            label={lt.totalImages}
             color="bg-blue-500"
           />
           <MiniBar
             value={link.images_without_alt || 0}
             total={Math.max(imgTotal, 1)}
-            label="Missing Alt"
+            label={lt.missingAlt}
             color={link.images_without_alt > 0 ? 'bg-red-500' : 'bg-green-500'}
           />
           <MiniBar
             value={link.img_without_lazy || 0}
             total={Math.max(imgTotal, 1)}
-            label="No Lazy Load"
+            label={lt.noLazyLoad}
             color={link.img_without_lazy > 0 ? 'bg-yellow-500' : 'bg-green-500'}
           />
           <div className="flex items-center justify-between pt-2 border-t border-muted">
-            <span className="text-sm text-slate-400">ARIA Elements</span>
+            <span className="text-sm text-slate-400">{lt.ariaElements}</span>
             <span className="text-sm text-slate-200 font-mono">{link.aria_count ?? 0}</span>
           </div>
         </div>

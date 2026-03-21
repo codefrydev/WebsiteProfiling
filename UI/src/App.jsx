@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { ReportProvider } from './context/ReportContext.jsx';
 import { useReport } from './context/useReport';
+import { strings, format } from './lib/strings';
 import { Badge, ReportSelector } from './components';
 import Overview from './views/Overview';
 import Issues from './views/Issues';
@@ -34,20 +35,26 @@ import ContentAnalytics from './views/ContentAnalytics';
 import TechStack from './views/TechStack';
 import Gallery from './views/Gallery';
 
-const VIEWS = [
-  { id: 'overview', label: 'Dashboard', component: Overview, section: 'Audit Overview', icon: LayoutDashboard },
-  { id: 'issues', label: 'Site Audit', component: Issues, section: 'Audit Overview', icon: AlertOctagon },
-  { id: 'links', label: 'Link Explorer', component: Links, section: 'Crawl Analysis', icon: LinkIcon },
-  { id: 'redirects', label: 'Redirects', component: Redirects, section: 'Crawl Analysis', icon: Repeat },
-  { id: 'content', label: 'On-Page SEO', component: Content, section: 'Crawl Analysis', icon: FileText },
-  { id: 'lighthouse', label: 'Page Speed', component: Lighthouse, section: 'Crawl Analysis', icon: Gauge },
-  { id: 'security', label: 'Security & Headers', component: Security, section: 'Crawl Analysis', icon: ShieldAlert },
-  { id: 'content-analytics', label: 'Content Insights', component: ContentAnalytics, section: 'Content & SEO', icon: BarChart2 },
-  { id: 'tech-stack', label: 'Tech Detection', component: TechStack, section: 'Content & SEO', icon: Cpu },
-  { id: 'charts', label: 'Crawl Analytics', component: Charts, section: 'Visualizations', icon: PieChart },
-  { id: 'network', label: 'Internal Linking', component: Network, section: 'Visualizations', icon: Share2 },
-  { id: 'gallery', label: 'Gallery', component: Gallery, section: 'Visualizations', icon: Images },
+const VIEW_CONFIG = [
+  { id: 'overview', component: Overview, icon: LayoutDashboard },
+  { id: 'issues', component: Issues, icon: AlertOctagon },
+  { id: 'links', component: Links, icon: LinkIcon },
+  { id: 'redirects', component: Redirects, icon: Repeat },
+  { id: 'content', component: Content, icon: FileText },
+  { id: 'lighthouse', component: Lighthouse, icon: Gauge },
+  { id: 'security', component: Security, icon: ShieldAlert },
+  { id: 'content-analytics', component: ContentAnalytics, icon: BarChart2 },
+  { id: 'tech-stack', component: TechStack, icon: Cpu },
+  { id: 'charts', component: Charts, icon: PieChart },
+  { id: 'network', component: Network, icon: Share2 },
+  { id: 'gallery', component: Gallery, icon: Images },
 ];
+
+const VIEWS = VIEW_CONFIG.map((v) => ({
+  ...v,
+  label: strings.nav[v.id].label,
+  section: strings.nav[v.id].section,
+}));
 
 function AppContent() {
   const [view, setView] = useState('overview');
@@ -68,7 +75,7 @@ function AppContent() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-brand-900 text-slate-300">
-        <p>Loading report data...</p>
+        <p>{strings.app.loading}</p>
       </div>
     );
   }
@@ -77,20 +84,20 @@ function AppContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-brand-900 text-slate-300 p-8">
         <div className="text-center max-w-md">
-          <p className="text-red-400 font-medium">Failed to load report</p>
+          <p className="text-red-400 font-medium">{strings.app.failedTitle}</p>
           <p className="text-slate-500 text-sm mt-2">{error}</p>
-          <p className="text-slate-500 text-sm mt-4">Run the report from the project root so report.db is copied to UI/public, then refresh. Or copy report.db to UI/public/report.db manually.</p>
+          <p className="text-slate-500 text-sm mt-4">{strings.app.failedHint}</p>
         </div>
       </div>
     );
   }
 
-  const siteName = data?.site_name || 'Site';
+  const siteName = data?.site_name || strings.app.defaultSiteName;
   const initials = siteName.charAt(0).toUpperCase();
   const crawlSummary = data?.summary;
   const lastCrawlText = crawlSummary?.crawl_time_s != null
-    ? `Crawl completed in ${crawlSummary.crawl_time_s}s`
-    : 'Crawl completed';
+    ? format(strings.app.crawlCompletedSeconds, { seconds: crawlSummary.crawl_time_s })
+    : strings.app.crawlCompleted;
 
   const sections = [...new Set(VIEWS.map((v) => v.section))];
 
@@ -100,7 +107,7 @@ function AppContent() {
       {sidebarOpen && (
         <button
           type="button"
-          aria-label="Close menu"
+          aria-label={strings.app.ariaCloseMenu}
           className="fixed inset-0 bg-black/60 z-30 md:hidden print:hidden"
           onClick={closeSidebar}
         />
@@ -116,12 +123,12 @@ function AppContent() {
             <Radar className="text-blue-500 mr-3 h-6 w-6 shrink-0" />
             <div className="min-w-0">
               <div className="font-bold text-bright leading-tight truncate">{siteName}</div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Site Audit Pro</div>
+              <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{strings.app.productSubtitle}</div>
             </div>
           </div>
           <button
             type="button"
-            aria-label="Close menu"
+            aria-label={strings.app.ariaCloseMenu}
             className="md:hidden p-2 -mr-2 text-slate-400 hover:text-bright rounded-lg"
             onClick={closeSidebar}
           >
@@ -179,7 +186,7 @@ function AppContent() {
             className="mt-3 flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
           >
             <Github className="h-3.5 w-3.5 shrink-0" />
-            <span>codefrydev/WebsiteProfiling</span>
+            <span>{strings.app.githubLinkLabel}</span>
           </a>
         </div>
       </aside>
@@ -188,7 +195,7 @@ function AppContent() {
         <header className="h-16 border-b border-muted bg-brand-800/80 backdrop-blur-md flex items-center justify-between gap-3 px-4 sm:px-6 shrink-0 z-10 print:hidden">
           <button
             type="button"
-            aria-label="Open menu"
+            aria-label={strings.app.ariaOpenMenu}
             className="md:hidden p-2 -ml-2 text-slate-400 hover:text-bright rounded-lg shrink-0"
             onClick={() => setSidebarOpen(true)}
           >
@@ -200,7 +207,7 @@ function AppContent() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search URLs, issues..."
+              placeholder={strings.app.searchPlaceholder}
               className="w-full bg-brand-900 border border-default focus:border-blue-500 rounded-lg pl-10 pr-4 py-2 text-sm outline-none text-slate-200 transition-all"
             />
           </div>

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Copy, Check } from 'lucide-react';
+import { strings } from '../../lib/strings';
 
 export default function CopyBtn({ text, className = '' }) {
+  const c = strings.components.copyBtn;
   const [copied, setCopied] = useState(false);
 
   const copy = () => {
@@ -16,7 +18,7 @@ export default function CopyBtn({ text, className = '' }) {
     <button
       type="button"
       onClick={copy}
-      title="Copy to clipboard"
+      title={c.title}
       className={`inline-flex items-center gap-1 text-slate-500 hover:text-bright transition-colors ${className}`}
     >
       {copied

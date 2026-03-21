@@ -1,44 +1,25 @@
 import { useMemo, useState, useCallback } from 'react';
 import { Sparkles, Loader2, ExternalLink } from 'lucide-react';
 import { useReport } from '../../context/useReport';
+import { strings, format } from '../../lib/strings';
 import { queryCrawlResults } from '../../lib/loadReportDb';
+import {
+  loadPipeline,
+  DEFAULT_EMBEDDING_MODEL,
+  createProgressAggregator,
+  combinePageText,
+  vecFromOutput,
+  cosineSim,
+} from '../../lib/transformersClient';
 
-function combineText(linkLike) {
-  const t = [linkLike.title, linkLike.h1, linkLike.meta_description].filter(Boolean).join(' ').trim();
-  return t.slice(0, 2000);
-}
-
-function vecFromOutput(out) {
-  if (!out) return null;
-  if (out.data) return Array.from(out.data);
-  if (out instanceof Float32Array) return Array.from(out);
-  if (Array.isArray(out)) return out;
-  return null;
-}
-
-function cosineSim(a, b) {
-  if (!a?.length || !b?.length) return 0;
-  let dot = 0;
-  let na = 0;
-  let nb = 0;
-  const n = Math.min(a.length, b.length);
-  for (let i = 0; i < n; i++) {
-    dot += a[i] * b[i];
-    na += a[i] * a[i];
-    nb += b[i] * b[i];
-  }
-  const d = Math.sqrt(na) * Math.sqrt(nb);
-  return d ? dot / d : 0;
-}
-
-/**
- * Optional Transformers.js similarity vs other crawled URLs (and optional SQL crawl rows).
- */
+/** Browser-side embedding similarity vs other crawled URLs (and optional SQL crawl rows). */
 export default function SimilarPagesTf({ link, allLinks = [] }) {
+  const sp = strings.components.similarPages;
   const { sqlDb } = useReport();
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState(null);
   const [rows, setRows] = useState([]);
+  const [loadProgress, setLoadProgress] = useState({ overall: 0, currentFile: '' });
 
   const candidates = useMemo(() => {
     const u = (link?.url || '').replace(/\/$/, '');
@@ -53,21 +34,24 @@ export default function SimilarPagesTf({ link, allLinks = [] }) {
     setBusy(true);
     setErr(null);
     setRows([]);
+    setLoadProgress({ overall: 0, currentFile: '' });
     try {
-      const { pipeline } = await import('@xenova/transformers');
-      const extractor = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', {
-        quantized: true,
+      const progressCallback = createProgressAggregator((u) =>
+        setLoadProgress({ overall: u.overall, currentFile: u.currentFile || '' })
+      );
+      const extractor = await loadPipeline('feature-extraction', DEFAULT_EMBEDDING_MODEL, {
+        progressCallback,
       });
-      const baseText = combineText(link);
+      const baseText = combinePageText(link, 4000);
       if (baseText.length < 8) {
-        setErr('Not enough text on this page to embed (add title/H1/description).');
+        setErr(sp.errNotEnoughText);
         setBusy(false);
         return;
       }
       const baseOut = await extractor(baseText, { pooling: 'mean', normalize: true });
       const baseVec = vecFromOutput(baseOut);
       if (!baseVec) {
-        setErr('Could not compute embedding for this page.');
+        setErr(sp.errNoEmbedding);
         setBusy(false);
         return;
       }
@@ -76,7 +60,7 @@ export default function SimilarPagesTf({ link, allLinks = [] }) {
       const seen = new Set([(link?.url || '').replace(/\/$/, '')]);
 
       for (const c of candidates) {
-        const t = combineText(c);
+        const t = combinePageText(c, 4000);
         if (t.length < 8) continue;
         const o = await extractor(t, { pooling: 'mean', normalize: true });
         const v = vecFromOutput(o);
@@ -90,7 +74,7 @@ export default function SimilarPagesTf({ link, allLinks = [] }) {
           const url = (row.url || '').replace(/\/$/, '');
           if (!url || seen.has(url)) continue;
           seen.add(url);
-          const t = [row.title, row.h1, row.meta_description].filter(Boolean).join(' ').trim().slice(0, 2000);
+          const t = combinePageText(row, 4000);
           if (t.length < 8) continue;
           const o = await extractor(t, { pooling: 'mean', normalize: true });
           const v = vecFromOutput(o);
@@ -105,17 +89,18 @@ export default function SimilarPagesTf({ link, allLinks = [] }) {
       setErr(e?.message || String(e));
     } finally {
       setBusy(false);
+      setLoadProgress((p) => ({ ...p, overall: 100 }));
     }
-  }, [link, candidates, sqlDb]);
+  }, [link, candidates, sqlDb, sp]);
 
   if (!link?.url) return null;
 
   return (
     <div className="border border-cyan-500/25 rounded-xl p-4 bg-cyan-950/15">
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <h3 className="text-xs font-bold text-cyan-400/90 uppercase tracking-wider flex items-center gap-2">
           <Sparkles className="h-3.5 w-3.5" />
-          Browser similarity (Transformers.js)
+          {sp.sectionTitle}
         </h3>
         <button
           type="button"
@@ -125,23 +110,34 @@ export default function SimilarPagesTf({ link, allLinks = [] }) {
         >
           {busy ? (
             <span className="inline-flex items-center gap-1">
-              <Loader2 className="h-3 w-3 animate-spin" /> Loading model…
+              <Loader2 className="h-3 w-3 animate-spin" /> {sp.loadingModel}
             </span>
           ) : (
-            'Find similar pages'
+            sp.findSimilar
           )}
         </button>
       </div>
-      <p className="text-xs text-slate-500 mb-3">
-        Runs <code className="text-slate-400">Xenova/all-MiniLM-L6-v2</code> in your browser.{' '}
-        <span className="text-slate-400">
-          First use usually downloads on the order of <strong className="text-slate-300">~25–90 MB</strong> of model
-          weights (then cached locally).
-        </span>{' '}
-        Compares this page to up to {candidates.length} URLs from the report payload
-        {sqlDb ? ' plus rows from crawl_results in report.db' : ''}. For full-site clustering, use Python{' '}
-        <code className="text-slate-400">enable_semantic_similar_internal</code>.
-      </p>
+      <p className="text-[11px] text-slate-500 mb-2 font-mono">{DEFAULT_EMBEDDING_MODEL}</p>
+      {busy && (
+        <div className="mb-3 space-y-1">
+          <div className="flex justify-between text-[10px] text-slate-500 font-mono">
+            <span>{strings.components.browserMl.progressLabel}</span>
+            <span>{loadProgress.overall}%</span>
+          </div>
+          <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-cyan-500 transition-all duration-300 rounded-full"
+              style={{ width: `${Math.min(100, loadProgress.overall)}%` }}
+            />
+          </div>
+          <p className="text-[10px] text-slate-500 truncate">
+            {format(sp.downloadProgress, {
+              pct: loadProgress.overall,
+              file: loadProgress.currentFile || '…',
+            })}
+          </p>
+        </div>
+      )}
       {err && <p className="text-xs text-red-400 mb-2">{err}</p>}
       {rows.length > 0 && (
         <ul className="space-y-2">
@@ -161,7 +157,7 @@ export default function SimilarPagesTf({ link, allLinks = [] }) {
                   <ExternalLink className="h-3 w-3 flex-shrink-0" />
                 </a>
                 {r.source === 'sql' && (
-                  <span className="ml-2 text-[10px] text-slate-500 uppercase">sql</span>
+                  <span className="ml-2 text-[10px] text-slate-500 uppercase">{sp.sqlBadge}</span>
                 )}
               </div>
               <span className="text-cyan-400 font-mono flex-shrink-0">{r.score.toFixed(3)}</span>

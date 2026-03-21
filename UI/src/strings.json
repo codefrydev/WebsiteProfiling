@@ -1,0 +1,1295 @@
+{
+  "app": {
+    "loading": "Loading report data...",
+    "failedTitle": "Failed to load report",
+    "failedHint": "Run the report from the project root so report.db is copied to UI/public, then refresh. Or copy report.db to UI/public/report.db manually.",
+    "defaultSiteName": "Site",
+    "crawlCompleted": "Crawl completed",
+    "crawlCompletedSeconds": "Crawl completed in {seconds}s",
+    "productSubtitle": "Site Audit Pro",
+    "ariaCloseMenu": "Close menu",
+    "ariaOpenMenu": "Open menu",
+    "githubLinkLabel": "codefrydev/WebsiteProfiling",
+    "searchPlaceholder": "Search URLs, issues..."
+  },
+  "nav": {
+    "overview": {
+      "label": "Dashboard",
+      "section": "Audit Overview"
+    },
+    "issues": {
+      "label": "Site Audit",
+      "section": "Audit Overview"
+    },
+    "links": {
+      "label": "Link Explorer",
+      "section": "Crawl Analysis"
+    },
+    "redirects": {
+      "label": "Redirects",
+      "section": "Crawl Analysis"
+    },
+    "content": {
+      "label": "On-Page SEO",
+      "section": "Crawl Analysis"
+    },
+    "lighthouse": {
+      "label": "Page Speed",
+      "section": "Crawl Analysis"
+    },
+    "security": {
+      "label": "Security & Headers",
+      "section": "Crawl Analysis"
+    },
+    "content-analytics": {
+      "label": "Content Insights",
+      "section": "Content & SEO"
+    },
+    "tech-stack": {
+      "label": "Tech Detection",
+      "section": "Content & SEO"
+    },
+    "charts": {
+      "label": "Crawl Analytics",
+      "section": "Visualizations"
+    },
+    "network": {
+      "label": "Internal Linking",
+      "section": "Visualizations"
+    },
+    "gallery": {
+      "label": "Gallery",
+      "section": "Visualizations"
+    }
+  },
+  "reportSelector": {
+    "reportLabel": "Report:",
+    "compareLabel": "Compare:",
+    "latestOption": "Latest",
+    "noneOption": "None",
+    "titleReportHistory": "Run more reports with preserve_crawl_history to see history here",
+    "titleLoadReport": "Load a previous report",
+    "titleCompareBaseline": "Baseline report for URL fingerprint diff (new / removed / changed pages)"
+  },
+  "common": {
+    "emDash": "—",
+    "all": "All",
+    "yes": "Yes",
+    "no": "No",
+    "noData": "No data",
+    "notEnoughData": "Not enough data",
+    "pages": "Pages",
+    "urls": "URLs",
+    "count": "Count",
+    "frequency": "Frequency",
+    "wordCount": "Word Count",
+    "score": "Score",
+    "percentOfPages": "% of pages",
+    "wcThin": "Thin",
+    "wcMedium": "Medium",
+    "wcLong": "Long",
+    "rlElementary": "Elementary",
+    "rlMiddle": "Middle",
+    "rlHighSchool": "High School",
+    "rlCollege": "College+",
+    "other": "Other",
+    "uncategorized": "Uncategorized",
+    "unknown": "Unknown",
+    "na": "N/A",
+    "tableSwipeHint": "Swipe sideways to see all columns."
+  },
+  "charts": {
+    "axisPages": "Pages",
+    "axisUrls": "URLs",
+    "axisCount": "Count",
+    "axisFrequency": "Frequency",
+    "axisWordCount": "Word Count",
+    "axisCharacterCount": "Character count",
+    "axisResponseTimeMs": "Response Time (ms)",
+    "axisInlinks": "Inlinks",
+    "axisScore0100": "Score (0–100)",
+    "percentOfPages": "% of pages",
+    "coveragePercent": "Coverage %",
+    "statistic": "Statistic",
+    "words": "Words",
+    "ratio": "Ratio",
+    "timeBucket": "Time bucket",
+    "depth": "Depth"
+  },
+  "lighthouse": {
+    "metricThresholds": {
+      "fcp_ms": {
+        "good": 1800,
+        "warn": 3000,
+        "label": "First Contentful Paint",
+        "desc": "Time until first text/image is painted. Aim for under 1.8 s."
+      },
+      "lcp_ms": {
+        "good": 2500,
+        "warn": 4000,
+        "label": "Largest Contentful Paint",
+        "desc": "Time for the largest visible element to render. Core Web Vital. Target ≤2.5 s."
+      },
+      "tbt_ms": {
+        "good": 200,
+        "warn": 600,
+        "label": "Total Blocking Time",
+        "desc": "Total time main thread was blocked during load. Target ≤200 ms."
+      },
+      "cls": {
+        "good": 0.1,
+        "warn": 0.25,
+        "label": "Cumulative Layout Shift",
+        "desc": "Measures visual stability — unexpected layout shifts. Target ≤0.1."
+      },
+      "speed_index_ms": {
+        "good": 3400,
+        "warn": 5800,
+        "label": "Speed Index",
+        "desc": "How quickly content visually appears during load. Target ≤3.4 s."
+      }
+    },
+    "categories": [
+      {
+        "id": "performance",
+        "label": "Performance"
+      },
+      {
+        "id": "accessibility",
+        "label": "Accessibility"
+      },
+      {
+        "id": "best-practices",
+        "label": "Best Practices"
+      },
+      {
+        "id": "seo",
+        "label": "SEO"
+      },
+      {
+        "id": "pwa",
+        "label": "PWA"
+      }
+    ],
+    "categoryLabels": {
+      "performance": "Performance",
+      "accessibility": "Accessibility",
+      "best-practices": "Best practices",
+      "seo": "SEO",
+      "pwa": "PWA"
+    },
+    "impactGroups": [
+      {
+        "id": "LCP",
+        "label": "LCP",
+        "color": "text-blue-400",
+        "border": "border-blue-700/40"
+      },
+      {
+        "id": "CLS",
+        "label": "CLS",
+        "color": "text-purple-400",
+        "border": "border-purple-700/40"
+      },
+      {
+        "id": "TBT",
+        "label": "TBT / FID",
+        "color": "text-yellow-400",
+        "border": "border-yellow-700/40"
+      },
+      {
+        "id": "Accessibility",
+        "label": "Accessibility",
+        "color": "text-teal-400",
+        "border": "border-teal-700/40"
+      },
+      {
+        "id": "SEO",
+        "label": "SEO",
+        "color": "text-green-400",
+        "border": "border-green-700/40"
+      },
+      {
+        "id": "UX",
+        "label": "Best Practices / UX",
+        "color": "text-orange-400",
+        "border": "border-orange-700/40"
+      }
+    ],
+    "quickWins": [
+      {
+        "id": "preload-lcp",
+        "iconKey": "Zap",
+        "title": "Preload LCP image",
+        "why": "Preloading the LCP image resource reduces render-blocking, shaving hundreds of ms from LCP.",
+        "how": "Add <link rel=\"preload\" as=\"image\" href=\"...\"> in <head> for the above-the-fold hero image.",
+        "impact": "High — directly improves LCP score",
+        "auditIds": [
+          "uses-rel-preload",
+          "prioritize-lcp-image"
+        ]
+      },
+      {
+        "id": "image-dims",
+        "iconKey": "Image",
+        "title": "Add width/height to images",
+        "why": "Missing dimensions cause the browser to reflow layout when images load, increasing CLS.",
+        "how": "Set explicit width and height attributes on all <img> elements.",
+        "impact": "High — directly reduces CLS",
+        "auditIds": [
+          "unsized-images"
+        ]
+      },
+      {
+        "id": "defer-js",
+        "iconKey": "Code2",
+        "title": "Defer non-critical JavaScript",
+        "why": "Render-blocking scripts delay FCP and LCP. Deferring them frees the main thread.",
+        "how": "Add defer or async attribute to <script> tags not needed for initial render.",
+        "impact": "High — reduces TBT and LCP",
+        "auditIds": [
+          "render-blocking-resources",
+          "unused-javascript"
+        ]
+      },
+      {
+        "id": "compress-images",
+        "iconKey": "Image",
+        "title": "Compress images to WebP/AVIF",
+        "why": "Modern formats are 25–50% smaller than JPEG/PNG with equal quality, reducing bytes downloaded.",
+        "how": "Convert images to WebP or AVIF using <picture> with srcset, or serve via CDN with format negotiation.",
+        "impact": "Medium — faster LCP and lower byte count",
+        "auditIds": [
+          "modern-image-formats",
+          "uses-optimized-images"
+        ]
+      },
+      {
+        "id": "cache-control",
+        "iconKey": "Clock",
+        "title": "Set Cache-Control headers",
+        "why": "Properly cached resources are served from disk on repeat visits, vastly reducing load time.",
+        "how": "Set Cache-Control: public, max-age=31536000, immutable for hashed assets; use short TTLs for HTML.",
+        "impact": "Medium — major speedup for repeat visitors",
+        "auditIds": [
+          "uses-long-cache-ttl"
+        ]
+      },
+      {
+        "id": "meta-desc",
+        "iconKey": "Search",
+        "title": "Add meta description",
+        "why": "Meta descriptions improve click-through rate from search results and are used by Lighthouse SEO.",
+        "how": "Add <meta name=\"description\" content=\"...\"> (70–160 chars) to every page.",
+        "impact": "Medium — SEO score improvement",
+        "auditIds": [
+          "meta-description"
+        ]
+      },
+      {
+        "id": "text-compression",
+        "iconKey": "Zap",
+        "title": "Enable text compression",
+        "why": "Gzip or Brotli can reduce HTML/CSS/JS byte sizes by 60–80%, speeding up downloads.",
+        "how": "Enable Gzip or Brotli compression on your server / CDN for text-based content types.",
+        "impact": "High — directly reduces FCP and LCP",
+        "auditIds": [
+          "uses-text-compression"
+        ]
+      },
+      {
+        "id": "unused-js",
+        "iconKey": "Code2",
+        "title": "Reduce unused JavaScript",
+        "why": "Unused code wastes bandwidth and parsing time, increasing TBT and FCP.",
+        "how": "Use tree-shaking in your bundler; split large bundles with dynamic import(); remove dead code.",
+        "impact": "Medium — reduces TBT",
+        "auditIds": [
+          "unused-javascript"
+        ]
+      },
+      {
+        "id": "minify-css",
+        "iconKey": "Code2",
+        "title": "Minify CSS",
+        "why": "Unminified CSS wastes bytes and can be render-blocking.",
+        "how": "Use a CSS minifier (e.g. cssnano, lightningcss) in your build pipeline.",
+        "impact": "Low–Medium — marginal FCP improvement",
+        "auditIds": [
+          "unminified-css"
+        ]
+      },
+      {
+        "id": "hsts",
+        "iconKey": "Shield",
+        "title": "Enable HSTS",
+        "why": "HSTS forces HTTPS connections and earns a Best Practices point in Lighthouse.",
+        "how": "Add Strict-Transport-Security: max-age=31536000; includeSubDomains to your server config.",
+        "impact": "Low — Best Practices score",
+        "auditIds": []
+      }
+    ]
+  },
+  "linkExplorer": {
+    "contentUrlKeys": [
+      "missing_h1",
+      "missing_title",
+      "multiple_h1",
+      "missing_meta_desc",
+      "meta_desc_short",
+      "meta_desc_long",
+      "thin_content"
+    ],
+    "contentLabels": {
+      "missing_h1": "Missing H1",
+      "missing_title": "Missing title",
+      "multiple_h1": "Multiple H1s",
+      "missing_meta_desc": "Missing meta description",
+      "meta_desc_short": "Meta description too short",
+      "meta_desc_long": "Meta description too long",
+      "thin_content": "Thin content"
+    },
+    "contentRecommendations": {
+      "missing_h1": "Add exactly one H1 per page.",
+      "missing_title": "Add a unique title (30–60 chars).",
+      "multiple_h1": "Use a single H1 per page.",
+      "missing_meta_desc": "Add a meta description (70–160 chars).",
+      "meta_desc_short": "Aim for 70–160 characters.",
+      "meta_desc_long": "Shorten to 70–160 characters.",
+      "thin_content": "Expand content to at least 300 characters."
+    },
+    "seoIssueRecommendations": {
+      "missing_title": "Add a unique title (30–60 chars).",
+      "title_short": "Aim for 30–60 characters.",
+      "title_long": "Shorten title to 30–60 characters.",
+      "meta_desc_short": "Aim for 70–160 characters.",
+      "meta_desc_long": "Shorten to 70–160 characters.",
+      "h1_missing": "Add exactly one H1 per page.",
+      "h1_multi": "Use a single H1 per page.",
+      "thin_content": "Expand content to at least 300 characters."
+    }
+  },
+  "views": {
+    "issues": {
+      "title": "Site Audit",
+      "subtitlePrefix": "Prioritized issues impacting crawlability, indexing, and rankings.",
+      "subtitleTotal": "{count} total {issuesWord} found.",
+      "issueWord": "issue",
+      "issuesWord": "issues",
+      "fixRecommendation": "Fix Recommendation",
+      "issuesByCategory": "Issues by category",
+      "issuesByCategoryHint": "Reflects current search and category filter, not priority filter.",
+      "issuesByPriority": "Issues by priority",
+      "issuesByPriorityHint": "Same slice as category chart (search + category filter only).",
+      "allPriorities": "All Priorities",
+      "allCategories": "All Categories",
+      "noMatches": "No issues match the current filters.",
+      "categoryOther": "Other",
+      "priorityOrder": [
+        "Critical",
+        "High",
+        "Medium",
+        "Low"
+      ]
+    },
+    "redirects": {
+      "title": "Redirects",
+      "subtitle": "URLs that redirect to another location. From → To.",
+      "chartTitle": "Redirects by status code",
+      "chartHint": "How many redirect responses use each HTTP status",
+      "colFrom": "From (requested URL)",
+      "colStatus": "Status",
+      "colTo": "To (final URL)",
+      "noSearchMatch": "No redirects match your search.",
+      "noneFound": "No redirects found.",
+      "datasetLabel": "Redirects"
+    },
+    "techStack": {
+      "title": "Tech Detection",
+      "subtitle": "Technologies detected across {count} analyzed pages.",
+      "techDetectedSuffix": "technologies detected",
+      "cardDetected": "Detected Technologies",
+      "cardHint": "Number of pages where each technology was found",
+      "chartAxisPages": "Pages",
+      "tooltipPages": " Found on {count} page(s)",
+      "categoryOther": "Other",
+      "noSearchMatch": "No technologies match your search.",
+      "noData": "No technology data. Run a crawl first.",
+      "breakdownTitle": "Technology Breakdown",
+      "colTechnology": "Technology",
+      "colCategory": "Category",
+      "colPages": "Pages",
+      "colSampleUrls": "Sample URLs"
+    },
+    "gallery": {
+      "title": "Gallery",
+      "subtitle": "Images discovered during the crawl: on-page assets, Open Graph, and Twitter images. Click any tile to enlarge.",
+      "filterSource": "Source",
+      "filterAll": "All",
+      "filterOnPage": "On-page",
+      "filterOg": "OG",
+      "filterTwitter": "Twitter",
+      "bySourceType": "By source type",
+      "layoutStyle": "Layout",
+      "titleLayoutGrid": "Uniform grid (fixed tile ratio)",
+      "titleLayoutMasonry": "Masonry (natural image heights)",
+      "grid": "Grid",
+      "titleDense": "Dense",
+      "titleBalanced": "Balanced",
+      "titleLarge": "Large",
+      "statUnique": "Unique images",
+      "statShown": "Shown (filtered)",
+      "helpBlurb": "Crawled pages with page_analysis.image_urls populate most tiles. OG and Twitter images are merged in when present. Use the header search to filter by page URL or image URL.",
+      "emptyNoImages": "No images found. Re-run the crawler with page analysis enabled so image URLs are captured per page.",
+      "emptyNoMatch": "No images match your filters or search.",
+      "previewUnavailable": "Preview unavailable",
+      "ariaImagePreview": "Image preview",
+      "ariaClose": "Close",
+      "foundOn": "Found on",
+      "kindLabels": {
+        "content": "On-page",
+        "og": "Open Graph",
+        "twitter": "Twitter / X"
+      },
+      "wcBreakdownLabels": [
+        "On-page",
+        "Open Graph",
+        "Twitter / X"
+      ]
+    },
+    "network": {
+      "title": "Internal Linking Map",
+      "subtitle": "Physics-based graph of internal link structure. Red nodes indicate 4xx/5xx errors.",
+      "searchEmpty": "No pages match your search.",
+      "legendOk": "OK (2xx)",
+      "legendBroken": "Broken (4xx/5xx)",
+      "legendLink": "Internal Link",
+      "fullscreen": "Full screen",
+      "exitFullscreen": "Exit full screen",
+      "titleFullscreen": "Full screen",
+      "titleExitFullscreen": "Exit full screen",
+      "noEdges": "No edge data available."
+    },
+    "charts": {
+      "title": "Crawl Analytics",
+      "subtitle": "Status codes, content types, outlinks, title length, and domain distribution.",
+      "statusDist": "Status code distribution",
+      "statusHintPrefix": "Crawl response codes",
+      "topMime": "Top content-types",
+      "mimeByCount": "By URL count",
+      "outlinksTitle": "Outlinks per page",
+      "outlinksHint": "Bucket distribution",
+      "titleLength": "Title length (characters)",
+      "titleLengthHint": "51–100 is ideal for SEO",
+      "topDomains": "Top domains discovered",
+      "topDomainsHint": "By URL count (ranking)",
+      "perfDepthTitle": "Performance & Depth Analytics",
+      "rtDistTitle": "Response Time Distribution",
+      "rtP50": "p50:",
+      "rtP75": "p75:",
+      "rtP95": "p95:",
+      "rtAria": "Response time histogram",
+      "depthDistTitle": "Page Depth Distribution",
+      "maxDepth": "Max depth:",
+      "avgDepth": "Avg depth:",
+      "depthAria": "Depth distribution",
+      "bubbleTitle": "PageRank vs Inlinks vs Word Count",
+      "bubbleHint": "Bubble size = PageRank weight",
+      "bubbleAria": "Bubble chart: inlinks vs word count",
+      "scatterTitle": "Word Count vs Response Time",
+      "scatterHint": "Each dot is one page",
+      "scatterAria": "Scatter chart: word count vs response time",
+      "tooltipUrls": " URLs",
+      "ariaStatusPrefix": "Bar chart: status code distribution.",
+      "ariaNoStatus": "No status data",
+      "ariaMime": "Bar chart: top content types.",
+      "ariaOutlinks": "Bar chart: outlinks distribution by bucket.",
+      "ariaTitleLen": "Bar chart: title length distribution by character bucket.",
+      "ariaDomainsPrefix": "Bar chart: top domains."
+    },
+    "content": {
+      "title": "On-Page SEO",
+      "subtitlePrefix": "Audit missing or duplicate titles, meta descriptions, and H1 tags.",
+      "subtitleIssues": "{count} total {word} detected.",
+      "issueWord": "issue",
+      "issuesWord": "issues",
+      "filters": [
+        {
+          "key": "missing_h1",
+          "label": "Missing H1",
+          "guidance": "Every page should have exactly one H1 tag that clearly describes the page content for both users and search engines."
+        },
+        {
+          "key": "missing_title",
+          "label": "Missing Title",
+          "guidance": "The <title> tag is a critical ranking signal. Missing titles result in poor click-through rates from search results."
+        },
+        {
+          "key": "multiple_h1",
+          "label": "Multiple H1s",
+          "guidance": "Having more than one H1 dilutes your heading hierarchy. Consolidate to a single, keyword-rich H1 per page."
+        },
+        {
+          "key": "missing_meta_desc",
+          "label": "Missing Meta Desc",
+          "guidance": "Meta descriptions influence click-through rates. Write a unique, compelling 120–160 character summary for each page."
+        },
+        {
+          "key": "meta_desc_short",
+          "label": "Meta Desc Short",
+          "guidance": "Meta descriptions under ~120 characters leave wasted SERP real estate. Expand them to be more descriptive and persuasive."
+        },
+        {
+          "key": "meta_desc_long",
+          "label": "Meta Desc Long",
+          "guidance": "Meta descriptions over ~160 characters get truncated in search results. Trim them down to the most impactful text."
+        },
+        {
+          "key": "thin_content",
+          "label": "Thin Content",
+          "guidance": "Pages with very little text (under ~300 words) are often low-value to search engines. Expand or consolidate thin pages."
+        }
+      ],
+      "dupClusters": "Near-duplicate clusters",
+      "colCluster": "Cluster",
+      "colRepresentative": "Representative",
+      "colUrls": "URLs",
+      "issuesByType": "Issues by type",
+      "issuesByTypeHint": "URL count per on-page issue category",
+      "emptyFilter": "No URLs affected by this issue.",
+      "emptyGreat": "Great job — nothing to fix here.",
+      "issueTableHint": "Rows are pages that match the selected issue. Swipe sideways on small screens if columns don’t all fit.",
+      "showingSlice": "Showing {from}–{to} of {total}",
+      "tablePage": "Page",
+      "noTitle": "No title",
+      "tableUrl": "URL",
+      "tablePageTitle": "Page Title",
+      "tableLength": "Length",
+      "tableH1Count": "H1 Count",
+      "tableChars": "Chars",
+      "urlOne": "URL",
+      "urlMany": "URLs"
+    },
+    "links": {
+      "title": "Link Explorer",
+      "showingResults": "Analyze discovered URLs. Showing",
+      "resultsSuffix": "results.",
+      "explorerHint": "Each row is a page from this crawl. Scan by title and path; “Links in” counts internal links pointing here (in this crawl). Sort columns or open Inspect for full details.",
+      "noTitle": "No title",
+      "filterAllPages": "All pages",
+      "filterOrphans": "Orphans (0 inlinks)",
+      "filterAllStatus": "All Status Codes",
+      "status200": "200 OK",
+      "status404": "404 Not Found",
+      "status301": "301 Redirect",
+      "status302": "302 Redirect",
+      "filterAllRt": "All Response Times",
+      "filterFast": "Fast (<500ms)",
+      "filterSlow": "Slow (>2s)",
+      "filterAllWc": "All Word Counts",
+      "filterThin": "Thin (<300)",
+      "filterMedium": "Medium (300–1000)",
+      "filterLong": "Long (1000+)",
+      "chartStatusTitle": "All crawled URLs by status",
+      "chartStatusHint": "Full link list (ignores table filters)",
+      "chartWcTitle": "Word count bands",
+      "chartWcHint": "Same buckets as the word-count filter",
+      "wcBands": [
+        "Thin (<300)",
+        "Medium (300–999)",
+        "Long (1000+)",
+        "No / zero words"
+      ],
+      "thPage": "Page",
+      "thStatus": "Status",
+      "thLinksIn": "Links in",
+      "thCrawlDepth": "Crawl depth",
+      "thLoadTime": "Load time",
+      "thWords": "Words",
+      "thActions": "Actions",
+      "inspect": "Inspect",
+      "pageOf": "Page",
+      "of": "of",
+      "previous": "Previous",
+      "next": "Next",
+      "backToExplorer": "Back to Link Explorer",
+      "urlInspector": "URL Inspector",
+      "noUrlData": "No data found for this URL.",
+      "urlOne": "URL",
+      "urlMany": "URLs"
+    },
+    "security": {
+      "title": "Security & Headers",
+      "subtitlePrefix": "HTTP security headers, injection risk, open redirect, and vulnerability findings.",
+      "subtitleCount": "{count} finding{s} total.",
+      "findingsBySeverity": "Findings by severity",
+      "findingsBySeverityHint": "All findings in this report",
+      "findingsByType": "Findings by type",
+      "findingsByTypeHint": "Grouped by finding_type from the scanner",
+      "showAllSeverities": "← Show all severities",
+      "emptyTitle": "No security findings detected",
+      "emptyFiltered": "No findings match the current filters or search.",
+      "emptyNoScan": "Run a crawl with security scanning enabled to see results here.",
+      "recommendation": "Recommendation",
+      "findingTooltip": "{n} finding{s}"
+    },
+    "lighthouse": {
+      "emptyTitle": "Page Speed",
+      "emptySubtitle": "Core Web Vitals and performance audit results.",
+      "emptyBodyBefore": "No Lighthouse data yet. Run",
+      "emptyBodyAfter": "and regenerate the report to see results here.",
+      "cmdSnippet": "python -m src lighthouse",
+      "pageSpeedTitle": "Page Speed",
+      "analysisSettings": "Analysis settings",
+      "mode": "Mode",
+      "device": "Device",
+      "categories": "Categories",
+      "categoriesFallback": "Performance, Accessibility, Best practices, SEO, PWA",
+      "runsMedians": "Runs:",
+      "mediansShown": "(medians shown)",
+      "runsMediansFull": "Runs: {n} (medians shown)",
+      "generated": "Generated:",
+      "multiCompare": "Multi-page comparison",
+      "multiCompareHint": "Click any row to view its detailed breakdown below. Sort by any column.",
+      "detailedView": "Detailed view",
+      "noUrlMatch": "No URLs match your search.",
+      "categoriesSection": "Categories",
+      "scorePoor": "0–49 Poor",
+      "scoreNeeds": "50–89 Needs improvement",
+      "scoreGood": "90–100 Good",
+      "categoryScores": "Category scores",
+      "categoryScoresHint": "Ranked worst to best (Score 0–100)",
+      "noCategoryScores": "No category scores",
+      "categoryScoresAriaPrefix": "Category scores:",
+      "scoreAxisTitle": "Score (0–100)",
+      "datasetScore": "Score",
+      "metrics": "Metrics",
+      "metricsHint": "Hover any metric for threshold details. Bars fill relative to the good threshold. Medians from {runs} run(s).",
+      "quickWins": "Quick Wins",
+      "quickWinsHint": "Click any card to see why it matters, how to fix it, and the estimated impact.",
+      "summary": "Summary",
+      "auditTables": "Audit tables & previews",
+      "auditTablesHint": "Expand any row for full Lighthouse detail rows (thumbnails, resource URLs, DOM nodes).",
+      "noAuditsSearch": "No audits match your search.",
+      "diagnostics": "Diagnostics & Fixes",
+      "diagnosticsHint": "Issues grouped by impact area. Click a group to expand. Click any issue for full detail and evidence.",
+      "allChecksPassed": "No failing audits — all checks passed.",
+      "noDiagnosticsSearch": "No diagnostics match your search.",
+      "defaultFix": "See Lighthouse report for fix."
+    },
+    "overview": {
+      "mlErrors": "ML enrichment reported {count} error{plural}",
+      "dashboard": "Dashboard",
+      "subtitleSiteHealth": "Site health summary for",
+      "crawlDone": "Crawl completed.",
+      "crawlDoneSeconds": "Crawl completed in {seconds}s.",
+      "totalUrls": "Total URLs",
+      "avgOutlinks": "Avg Outlinks / Page",
+      "successRate": "Success Rate (2xx)",
+      "broken": "Broken (4xx/5xx)",
+      "count4xx5xx": "{count4xx} 4xx, {count5xx} 5xx",
+      "missingH1s": "Missing H1s",
+      "medianWordCount": "Median Word Count",
+      "perPage2xx": "per page (2xx HTML)",
+      "ogCoverage": "OG Tag Coverage",
+      "ogPagesWith": "pages with og:title",
+      "technologies": "Technologies",
+      "techDetectedAcross": "detected across site",
+      "responseP50": "Response Time p50",
+      "p95Label": "p95:",
+      "reportComparison": "Report comparison",
+      "reportComparisonHint": "Differences vs the baseline report selected in the header. Uses compact fingerprints (title, meta, headings, word count, content length) — not a full HTML diff. New/removed URLs and pages whose primary text fingerprint changed between runs.",
+      "newUrls": "New URLs",
+      "removedUrls": "Removed URLs",
+      "contentChanged": "Content changed",
+      "structureChanged": "Structure changed",
+      "sampleNew": "Sample new",
+      "sampleRemoved": "Sample removed",
+      "sampleContentChanged": "Sample content changed",
+      "keywordOpportunities": "Keyword opportunities",
+      "keywordOpportunitiesHint": "On-site discovery from crawl copy (titles, headings, meta, slugs). Scores are heuristic — not Google search volume or difficulty.",
+      "quickWinsEase": "Quick wins (ease proxy)",
+      "highEmphasis": "High emphasis (frequency proxy)",
+      "contentIntelligence": "Content intelligence",
+      "duplicateGroups": "Duplicate groups",
+      "nearDuplicateGroups": "Near-duplicate groups",
+      "anomalies": "Anomalies",
+      "outliers": "Outliers",
+      "parentTopics": "Parent topics (semantic)",
+      "semanticGroups": "Semantic groups",
+      "namedEntities": "Named entities",
+      "pagesSampled": "{n} page(s) sampled",
+      "entitiesSitewide": "entities sitewide",
+      "languagesSampled": "Languages (sampled)",
+      "mixedLanguage": "Mixed-language site detected",
+      "anomalyUrls": "Anomaly URLs",
+      "thUrl": "URL",
+      "thScore": "Score",
+      "thReasons": "Reasons",
+      "insightsGlance": "Insights at a glance",
+      "insightsHint": "Distributions and coverage derived from this crawl: where content sits by length, how fast URLs responded, how deep the crawler reached, on-page metadata health, share-preview tags, and—when a Lighthouse run is attached—category scores.",
+      "contentDepth": "Content depth (word count)",
+      "contentDepthHint": "2xx HTML pages by word-count bucket. Heavy left skew often means thin or template-heavy indexable URLs.",
+      "serverLatency": "Server / fetch latency",
+      "serverLatencyHint": "All crawled URLs by response time. Tail in slower buckets flags pages to optimize or investigate.",
+      "crawlDepth": "Crawl depth from start URL",
+      "crawlDepthHint": "How discovered URLs spread by hop count. A sharp drop after depth 1–2 is common; spikes at high depth may mean long chains or deep archives.",
+      "maxDepth": "Max depth",
+      "avg": "avg",
+      "titleMetaHealth": "Title & meta description health",
+      "titleMetaHint": "Per-page checks across the crawl: missing, length outside recommended ranges, or within target bands (titles ~30–60 chars, descriptions ~70–160).",
+      "socialPreview": "Social preview coverage",
+      "socialPreviewHint": "Share of 2xx HTML pages with Open Graph / Twitter signals. Low og:image hurts link previews on social and chat apps.",
+      "readingLevel": "Reading level (estimated)",
+      "readingLevelHint": "Grade-level style buckets on 2xx pages. Use to sanity-check whether copy matches your audience.",
+      "topMime": "Top MIME types",
+      "topMimeHint": "What the crawler actually fetched. Large non-HTML counts can mean assets, feeds, or mis-linked URLs in scope.",
+      "lhCategoryScores": "Lighthouse category scores",
+      "lhCategoryHint": "From the attached Lighthouse summary (typically the audited landing or representative URL). Scores are 0–100; bars use the same good / needs work / poor coloring as elsewhere.",
+      "healthByCategory": "Health by Category",
+      "noCategorySearch": "No categories match your search.",
+      "noCategoryData": "No category data.",
+      "scoreGood": "Good",
+      "scoreNeeds": "Needs Improvement",
+      "scoreCritical": "Critical",
+      "statusBreakdown": "Status breakdown",
+      "siteConfiguration": "Site Configuration",
+      "robotsTxt": "robots.txt:",
+      "sitemapXml": "sitemap.xml:",
+      "sitemapValid": " (valid)",
+      "sitemapInvalid": " (invalid or unparsed)",
+      "recommendations": "Recommendations",
+      "noRecSearch": "No recommendations match your search.",
+      "topPagesTitle": "Most important pages",
+      "topPagesHint": "From your crawl’s internal link graph: importance is a PageRank-style score (relative to this site, not Google). Connections = edges touching this URL in the graph.",
+      "noTopSearch": "No top pages match your search.",
+      "thRank": "Rank",
+      "thPage": "Page",
+      "thImportance": "Importance",
+      "thConnections": "Connections",
+      "noTitle": "No title",
+      "noTopPagesData": "No top pages data (crawl had no edges or outlinks).",
+      "chartTitleTags": "Title tags",
+      "chartMetaDesc": "Meta descriptions",
+      "titleMetaLabels": [
+        "Missing",
+        "Too short",
+        "Too long",
+        "In range"
+      ],
+      "socialLabelsOg": "og:title",
+      "socialLabelsTwitter": "Twitter card",
+      "socialLabelsOgImage": "og:image",
+      "wcBuckets": [
+        "0-100",
+        "101-300",
+        "301-600",
+        "601-1000",
+        "1001-2000",
+        "2001+"
+      ],
+      "rtBuckets": [
+        "<200ms",
+        "200-500ms",
+        "500ms-1s",
+        "1-2s",
+        ">2s"
+      ],
+      "rlBuckets": [
+        "Elementary (0-5)",
+        "Middle School (6-8)",
+        "High School (9-12)",
+        "College (13+)"
+      ],
+      "depthLabel": "Depth {n}",
+      "chartPages": "Pages",
+      "chartUrls": "URLs",
+      "chartLighthouse": "Lighthouse",
+      "chartCoverage": "Coverage",
+      "groupedTitleMetaAria": "Grouped comparison of title tag and meta description length health across all crawled pages.",
+      "lighthouseCategoryLabels": {
+        "performance": "Performance",
+        "accessibility": "Accessibility",
+        "best-practices": "Best practices",
+        "seo": "SEO",
+        "pwa": "PWA"
+      },
+      "tooltipCountBar": "{count} pages",
+      "tooltipGroupedBar": "{dataset}: {count} pages",
+      "socialTooltipHtml": "{label}: {pct}% of HTML pages",
+      "lhTooltipNoScore": "No score",
+      "lhTooltipScore": "{score} / 100",
+      "anomalyUrlsTitle": "Anomaly URLs ({count})",
+      "categoryScoreAria": "{name}: {band}, score {score}",
+      "depthSummaryLine": "Max depth {maxDepth}, avg {avgDepth}",
+      "ariaWordCountIntro": "Word count buckets for successful HTML pages:",
+      "ariaResponseTimeIntro": "Response time buckets:",
+      "ariaDepthIntro": "URLs by crawl depth from start URL:",
+      "ariaReadingIntro": "Reading level (estimated) on 2xx pages:",
+      "ariaMimeIntro": "Top content types:",
+      "ariaLighthouseIntro": "Lighthouse category scores (0–100):",
+      "ariaSocialIntro": "Social preview coverage on HTML pages:",
+      "statusAriaIntro": "Status:"
+    },
+    "contentAnalytics": {
+      "title": "Content Insights",
+      "subtitle": "Word count, readability, content-to-HTML ratio, top keywords, social meta coverage, crawl health, and on-page flags.",
+      "meanWords": "Mean Words",
+      "medianWords": "Median Words",
+      "perPage": "per page",
+      "ogCoverage": "OG Coverage",
+      "ogTags": "open graph tags",
+      "twitterCoverage": "Twitter Coverage",
+      "twitterTags": "twitter card tags",
+      "thinPages": "Thin Pages",
+      "under300": "under 300 words",
+      "i18nTitle": "Internationalization (crawl)",
+      "pages2xx": "2xx pages",
+      "missingHtmlLang": "Missing <html lang>",
+      "pagesHreflang": "Pages with hreflang alternates",
+      "outboundDomains": "Outbound link domains",
+      "thHost": "Host",
+      "thLinks": "Links",
+      "languageMix": "Language mix",
+      "entityLabels": "Entity labels",
+      "countAxis": "Count",
+      "parentTopicsToken": "Parent topics (token overlap)",
+      "thRepresentative": "Representative",
+      "thClusterScore": "Cluster score",
+      "thKeywords": "Keywords",
+      "parentTopicsSemantic": "Parent topics (semantic similarity)",
+      "crawlHealth": "Crawl health & response times",
+      "urlsByStatus": "URLs by HTTP status",
+      "totalCrawled": "Total crawled:",
+      "returned2xx": "returned 2xx",
+      "responseTimeDist": "Response time distribution",
+      "pagesPerBand": "Pages per latency band",
+      "onPageQuality": "On-page quality & thin content",
+      "urlsByIssue": "URLs flagged by issue type",
+      "pagesGoodRanges": "Pages in “good” ranges",
+      "stackedInRange": "In range / optimal",
+      "stackedNeeds": "Needs attention",
+      "thinSignals": "Thin content signals",
+      "thinUnder300": "Under 300 words",
+      "thinSmallBody": "Small HTML body",
+      "thinMatchSearch": "{shown} of {total} thin page{plural} match search",
+      "thinHaveLittle": "{count} page{plural} have very little content",
+      "noThinSearch": "No thin pages match your search.",
+      "contentMetrics": "Content Metrics",
+      "wordCountDist": "Word Count Distribution",
+      "readingLevelDist": "Reading Level Distribution",
+      "contentHtmlRatio": "Content-to-HTML Ratio",
+      "topKeywords": "Top 30 Keywords (Site-Wide)",
+      "noKeywordData": "No keyword data",
+      "wordCountLadder": "Word count ladder (min → max)",
+      "onPageSignals": "On-Page SEO Signals",
+      "h1Dist": "H1 Tag Distribution",
+      "titleTagQuality": "Title Tag Length Quality",
+      "metaDescQuality": "Meta Description Quality",
+      "socialMetaCoverage": "Social Meta Coverage",
+      "ogProgress": "Open Graph Coverage",
+      "twitterProgress": "Twitter Card Coverage",
+      "socialOverview": "Social Meta Coverage Overview",
+      "datasetHasTag": "Has Tag",
+      "datasetMissing": "Missing",
+      "ogImageCov": "OG Image Coverage",
+      "hasOgImage": "Has OG Image",
+      "missingOgImage": "Missing OG Image",
+      "missingOgTags": "Missing Open Graph Tags",
+      "missingTwitterTags": "Missing Twitter Card Tags",
+      "socialAllGood": "All pages have social meta tags, or no data available yet. Run a crawl to populate.",
+      "siteArchitecture": "Site Architecture",
+      "crawlDepthDist": "Crawl Depth Distribution",
+      "maxDepth": "Max depth:",
+      "avgDepth": "avg:",
+      "wordCountPercentiles": "Word Count Percentiles",
+      "wcMin": "Min",
+      "wcP25": "25th Percentile (P25)",
+      "wcP50": "Median (P50)",
+      "wcMean": "Mean (Avg)",
+      "wcP75": "75th Percentile (P75)",
+      "wcMax": "Max",
+      "h1Labels": [
+        "No H1",
+        "One H1",
+        "Multiple H1s"
+      ],
+      "titleQualLabels": [
+        "Missing",
+        "Too Short (<30)",
+        "Optimal (30–60)",
+        "Too Long (>60)"
+      ],
+      "metaQualLabels": [
+        "Missing",
+        "Too Short (<70)",
+        "Optimal (70–160)",
+        "Too Long (>160)"
+      ],
+      "status2xx": "2xx OK",
+      "status3xx": "3xx Redirect",
+      "status4xx": "4xx Client error",
+      "status5xx": "5xx Server error",
+      "statusErr": "Error / blocked",
+      "openGraph": "Open Graph",
+      "twitterCard": "Twitter Card",
+      "ogImage": "OG Image",
+      "seoTitle": "Title length",
+      "seoMeta": "Meta description",
+      "seoH1": "H1 count",
+      "titleVsMetaBuckets": "Title vs meta description (pages per bucket)",
+      "compareBuckets": [
+        "Missing",
+        "Too short",
+        "Optimal",
+        "Too long"
+      ],
+      "datasetTitleTags": "Title tags",
+      "datasetMetaTags": "Meta descriptions",
+      "seoOptimalVsGapCounts": "Optimal vs needs work (page counts)",
+      "missingSocialUrlCompare": "URLs missing social tags (comparison)",
+      "noUrlSearch": "No URLs match your search.",
+      "thinPagesView": "View {count} thin page{s}",
+      "thThinHash": "#",
+      "thThinUrl": "URL",
+      "thThinWords": "Words",
+      "chartTooltipCount": "{n} pages",
+      "chartTooltipDoughnut": "{label}: {n} pages",
+      "chartTooltipGrouped": "{dataset}: {n} pages",
+      "chartTooltipPercent": "{dataset}: {pct}%",
+      "wcPercLabels": [
+        "Min",
+        "P25",
+        "Median",
+        "Mean",
+        "P75",
+        "Max"
+      ],
+      "thPages": "Pages",
+      "contentIssueKeys": [
+        {
+          "key": "missing_h1",
+          "label": "Missing H1"
+        },
+        {
+          "key": "missing_title",
+          "label": "Missing title"
+        },
+        {
+          "key": "multiple_h1",
+          "label": "Multiple H1s"
+        },
+        {
+          "key": "missing_meta_desc",
+          "label": "Missing meta desc"
+        },
+        {
+          "key": "meta_desc_short",
+          "label": "Meta too short"
+        },
+        {
+          "key": "meta_desc_long",
+          "label": "Meta too long"
+        },
+        {
+          "key": "thin_content",
+          "label": "Thin (body chars)"
+        }
+      ]
+    }
+  },
+  "components": {
+    "inspectorTabs": {
+      "overview": "Overview",
+      "pageAnalysis": "Page analysis",
+      "seoSocial": "SEO & Social",
+      "content": "Content",
+      "technical": "Technical",
+      "issues": "Issues",
+      "brokenMessage": "Broken / error response ({status})",
+      "redirectMessage": "Redirect {status}"
+    },
+    "copyBtn": {
+      "copy": "Copy",
+      "copied": "Copied!",
+      "title": "Copy to clipboard"
+    },
+    "similarPages": {
+      "title": "Similar pages (TF-IDF)",
+      "sectionTitle": "Browser similarity",
+      "loadingModel": "Loading model…",
+      "downloadProgress": "{pct}% — {file}",
+      "findSimilar": "Find similar pages",
+      "errNotEnoughText": "Not enough text on this page to embed (add title/H1/description).",
+      "errNoEmbedding": "Could not compute embedding for this page.",
+      "sqlBadge": "sql"
+    },
+    "browserMl": {
+      "panelTitle": "In-browser analysis",
+      "hintModels": "Runs on your device. Each model downloads once and stays cached in this browser; different tools may load different models.",
+      "noPages": "No successful HTML pages in this report to analyze.",
+      "progressLabel": "Download / load",
+      "zeroShotTitle": "Zero-shot page intent",
+      "zeroShotLabels": "Candidate labels (comma-separated)",
+      "zeroShotRun": "Classify sample pages",
+      "zeroShotBusy": "Loading model / classifying…",
+      "zeroShotNeedTwoLabels": "Enter at least two candidate labels.",
+      "sentimentTitle": "Snippet sentiment",
+      "sentimentDesc": "Binary sentiment on meta description, OG description, or title (first ~20 successful pages).",
+      "sentimentRun": "Run sentiment",
+      "sentimentBusy": "Loading model / scoring…"
+    },
+    "linkTabs": {
+      "overview": {
+        "statStatus": "Status",
+        "statResponseTime": "Response Time",
+        "statDepth": "Depth",
+        "statInlinks": "Inlinks",
+        "statOutlinks": "Outlinks",
+        "statWords": "Words",
+        "statReadingLevel": "Reading Level",
+        "statRedirects": "Redirects",
+        "readingGrade": "Grade {n}",
+        "contentType": "Content-Type",
+        "fieldTitle": "Title",
+        "fieldMetaDesc": "Meta Description",
+        "fieldH1": "H1",
+        "missing": "Missing",
+        "h1Count": "{n} H1{s}"
+      },
+      "seoSocial": {
+        "canonicalUrl": "Canonical URL",
+        "notSet": "Not set",
+        "flagNoindex": "Noindex",
+        "flagHasSchema": "Has Schema",
+        "flagViewport": "Viewport",
+        "openGraphHeading": "Open Graph",
+        "twitterCardHeading": "Twitter / X Card",
+        "detectedTech": "Detected Tech",
+        "missingValue": "Missing"
+      },
+      "pageAnalysis": {
+        "namedEntities": "Named entities",
+        "totalEntities": "Total entities: {count}",
+        "previewFailed": "Preview failed to load (hotlink or CORS). Open link below.",
+        "showLess": "Show less",
+        "showAll": "Show all {count}",
+        "reportTitle": "Page analysis report",
+        "summary": "Summary",
+        "totalWords": "Total words",
+        "internalLinks": "Internal links",
+        "externalLinks": "External links",
+        "images": "Images",
+        "scripts": "Scripts",
+        "stylesheets": "Stylesheets",
+        "preloadPreconnect": "Preload / preconnect",
+        "sslCertExpires": "SSL cert expires (site)",
+        "pageResourcesCaption": "Page resources (same as summary counts)",
+        "lhCategoryCaption": "Lighthouse category scores (0–100)",
+        "scoreAxis": "Score",
+        "intelligenceMl": "Intelligence (Python ML)",
+        "keyphrasesKeybert": "KeyBERT keyphrases",
+        "duplicateCluster": "Duplicate cluster",
+        "detectedLanguage": "Detected language",
+        "anomalyIsolation": "Anomaly (IsolationForest)",
+        "anomalyScorePrefix": "score",
+        "similarInternalCaption": "Precomputed similar internal URLs (cosine vs site pages)",
+        "socialPreviews": "Social previews",
+        "facebookOg": "Facebook / Open Graph",
+        "twitterX": "Twitter / X",
+        "webVitalsLighthouse": "Web vitals / Lighthouse",
+        "lhRecommendations": "Recommendations (Lighthouse)",
+        "failingAuditsCaption": "Failing audits — expand for tables, thumbnails, and DOM nodes ({count})",
+        "noLhData": "No Lighthouse data for this URL. Run a crawl with per-page Lighthouse enabled to see Core Web Vitals and performance recommendations here.",
+        "keywordAnalysis": "Keyword analysis",
+        "thKeyword": "Keyword",
+        "thCount": "Count",
+        "thScore": "Score",
+        "onPageWarnings": "On-page warnings ({count})",
+        "severityAll": "All severities",
+        "severityHigh": "High",
+        "severityMedium": "Medium",
+        "severityLow": "Low",
+        "noMatchingWarnings": "No matching warnings for this page.",
+        "resources": "Resources",
+        "resourceChartLabels": [
+          "Internal links",
+          "External links",
+          "Images",
+          "Scripts",
+          "Stylesheets"
+        ],
+        "resourceSections": [
+          {
+            "key": "internal_links",
+            "label": "Internal links"
+          },
+          {
+            "key": "external_links",
+            "label": "External links"
+          },
+          {
+            "key": "stylesheet_urls",
+            "label": "Stylesheets"
+          },
+          {
+            "key": "script_urls",
+            "label": "Scripts"
+          },
+          {
+            "key": "image_urls",
+            "label": "Images"
+          }
+        ]
+      },
+      "content": {
+        "intro": "Content metrics for this URL, with the same chart styles as Content Insights. Site-wide charts help you see where this page sits in the crawl.",
+        "kpiWords": "Words",
+        "kpiReading": "Reading",
+        "notEnoughText": "Not enough text",
+        "textHtml": "Text / HTML",
+        "bodyTextShare": "Body text share of HTML",
+        "kpiDepth": "Depth",
+        "crawlDepth": "Crawl depth",
+        "thinQ": "Thin?",
+        "under300Words": "< 300 words",
+        "vsSiteTitle": "This page vs site",
+        "vsSiteDesc": "Compare word count to crawl-wide mean and median.",
+        "wordCountComparison": "Word count comparison",
+        "vsSiteAggregates": "This page versus site aggregates",
+        "textVsMarkup": "Text vs markup (this page)",
+        "textVsMarkupDesc": "Share of visible text in the HTML document",
+        "doughnutBodyText": "Body text",
+        "doughnutOtherMarkup": "Other (markup, scripts, etc.)",
+        "siteDistTitle": "Site distributions",
+        "siteDistDesc": "Same buckets as Content Insights. Caption shows where this page lands.",
+        "wordCountDist": "Word count distribution",
+        "thisPageWords": "This page ({words} words):",
+        "readingLevelDist": "Reading level distribution",
+        "thisPageGrade": "This page:",
+        "gradeArrow": "→",
+        "notEnoughReading": "Not enough text for a reading level on this page.",
+        "contentHtmlRatio": "Content-to-HTML ratio",
+        "thisPageRatio": "This page:",
+        "ratioArrow": "→ bucket",
+        "topKeywordsPage": "Top keywords (this page)",
+        "freqThisUrl": "Frequency on this URL only",
+        "noKeywordPage": "No keyword data for this page.",
+        "onPageSignalsTitle": "On-page signals (this page)",
+        "onPageSignalsDesc": "Title length, meta description, and H1 count — same categories as Content Insights.",
+        "titleTag": "Title tag",
+        "characters": "{n} characters",
+        "metaDesc": "Meta description",
+        "h1Count": "H1 count",
+        "headingCount": "{n} heading(s)",
+        "noH1Data": "No H1 data",
+        "contentExcerpt": "Content excerpt (crawl)",
+        "contentExcerptHint": "Plain text from the page body when store_content_excerpt is enabled in the crawl config.",
+        "socialMetaTitle": "Social meta (this page)",
+        "socialMetaDesc": "Open Graph, Twitter Card, and OG image presence on this URL.",
+        "datasetPresent": "Present",
+        "datasetMissing": "Missing",
+        "siteArchTitle": "Site architecture context",
+        "siteArchDesc": "Crawl depth across the site. This page is at the depth shown in the KPI row above.",
+        "crawlDepthDist": "Crawl depth distribution",
+        "thisPageDepth": "This page:",
+        "depthLabel": "Depth {n}",
+        "headingStructure": "Heading structure",
+        "keywordsQuick": "Keywords (quick view)",
+        "occurrences": "{n} occurrences",
+        "labelThisPage": "This page",
+        "labelSiteMean": "Site mean",
+        "labelSiteMedian": "Site median",
+        "axisBucket": "Bucket",
+        "axisDepth": "Depth",
+        "tooltipWords": "{n} words",
+        "horizontalBarSuffix": "occurrences",
+        "tooltipPages": "{n} pages",
+        "tooltipDoughnut": "{label}: {n}",
+        "tooltipGroupedPct": "{dataset}: {pct}%",
+        "axisPercent": "%",
+        "occurrencesUnit": "occurrences",
+        "chartWords": "words",
+        "ratioLt10": "<10%",
+        "ratio1020": "10-20%",
+        "ratio2040": "20-40%",
+        "ratioGt40": ">40%"
+      },
+      "technical": {
+        "securityHeaders": "Security Headers",
+        "headersPresentOf": "Headers present (of {n})",
+        "scriptsStylesImages": "Scripts, stylesheets, images",
+        "performanceCaching": "Performance & Caching",
+        "imagesA11y": "Images & Accessibility",
+        "totalImages": "Total Images",
+        "missingAlt": "Missing Alt",
+        "noLazyLoad": "No Lazy Load",
+        "ariaElements": "ARIA Elements",
+        "assetBarLabels": [
+          "Scripts",
+          "Stylesheets",
+          "Images"
+        ],
+        "doughnutPresent": "Present",
+        "doughnutMissing": "Missing",
+        "tooltipItems": "{n} items",
+        "perfCacheControl": "Cache-Control",
+        "perfEtag": "ETag",
+        "perfScripts": "Scripts",
+        "perfStylesheets": "Stylesheets",
+        "perfMixedContent": "Mixed Content",
+        "etagPresent": "Present",
+        "notSet": "Not set",
+        "mixedNone": "None",
+        "mixedItems": "{n} item(s)",
+        "securityRows": [
+          {
+            "label": "Strict-Transport-Security",
+            "field": "strict_transport_security",
+            "rec": "Set HSTS with max-age of at least 31536000 to enforce HTTPS."
+          },
+          {
+            "label": "X-Content-Type-Options",
+            "field": "x_content_type_options",
+            "rec": "Set to \"nosniff\" to prevent MIME-type sniffing attacks."
+          },
+          {
+            "label": "X-Frame-Options",
+            "field": "x_frame_options",
+            "rec": "Set to \"SAMEORIGIN\" or \"DENY\" to prevent clickjacking."
+          },
+          {
+            "label": "Content-Security-Policy",
+            "field": "content_security_policy",
+            "rec": "Define a strict CSP to reduce XSS attack surface."
+          }
+        ]
+      },
+      "issues": {
+        "lighthouseScores": "Lighthouse Scores",
+        "lighthouseFailures": "Lighthouse failures",
+        "issuesBySource": "Issues by source for this URL",
+        "allIssues": "All Issues ({count})",
+        "filterAllSeverities": "All Severities",
+        "filterCritical": "Critical",
+        "filterHigh": "High",
+        "filterMedium": "Medium",
+        "filterLow": "Low",
+        "noIssues": "No issues found",
+        "noIssuesAtSeverity": " at {severity} severity.",
+        "recommendation": "Recommendation: ",
+        "whatToImprove": "What to improve",
+        "typeLabels": [
+          "Broken",
+          "Redirect",
+          "SEO",
+          "Content",
+          "Category",
+          "Security"
+        ],
+        "issueTooltip": "{n} issue{s}",
+        "redirectWithFinal": "Redirect {status} → {finalUrl}"
+      }
+    }
+  }
+}

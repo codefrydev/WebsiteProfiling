@@ -12,6 +12,9 @@ langdetect>=1.0.9
 # Heavy: PyTorch + models (semantic similarity & keyword clustering)
 sentence-transformers>=2.2.0
 
+# Optional: KeyBERT salient phrases (enable_keybert in input.txt)
+keybert>=0.8.0
+
 # NER — English model via official wheel (same as `python -m spacy download en_core_web_sm`)
 spacy>=3.7.0
 # Optional CPU inference without importing full PyTorch in custom scripts (advanced)

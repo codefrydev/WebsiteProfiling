@@ -8,6 +8,7 @@ import { registerChartJsBase, GRID_COLOR, barOptionsHorizontal } from '../../../
 import { LhAuditExpandable } from '../../lighthouse';
 import OGPreview from '../OGPreview';
 import SimilarPagesTf from '../SimilarPagesTf';
+import { strings, format } from '../../../lib/strings';
 
 registerChartJsBase();
 
@@ -31,14 +32,17 @@ function normalizeSimilarInternal(raw) {
 
 /** @param {Record<string, unknown>|undefined} nlp */
 function NerBlock({ nlp }) {
+  const p = strings.components.linkTabs.pageAnalysis;
   if (!nlp || typeof nlp !== 'object') return null;
   const count = nlp.entity_count;
   const labels = Array.isArray(nlp.top_entity_labels) ? nlp.top_entity_labels : [];
   if (count == null && labels.length === 0) return null;
   return (
     <div className="bg-brand-900 border border-default rounded-lg p-3 sm:col-span-2">
-      <div className="text-slate-500 mb-1">Named entities (spaCy)</div>
-      {count != null && <div className="text-slate-200 mb-2">Total entities: {Number(count).toLocaleString()}</div>}
+      <div className="text-slate-500 mb-1">{p.namedEntities}</div>
+      {count != null && (
+        <div className="text-slate-200 mb-2">{format(p.totalEntities, { count: Number(count).toLocaleString() })}</div>
+      )}
       {labels.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {labels.map((pair, i) => {
@@ -60,14 +64,6 @@ function NerBlock({ nlp }) {
   );
 }
 
-const RESOURCE_KEYS = [
-  { key: 'internal_links', label: 'Internal links' },
-  { key: 'external_links', label: 'External links' },
-  { key: 'stylesheet_urls', label: 'Stylesheets' },
-  { key: 'script_urls', label: 'Scripts' },
-  { key: 'image_urls', label: 'Images' },
-];
-
 function resolveResourceUrl(raw, pageUrl) {
   let s = (raw || '').trim();
   if (!s) return null;
@@ -82,6 +78,7 @@ function resolveResourceUrl(raw, pageUrl) {
 }
 
 function ImageUrlListItem({ rawUrl, pageUrl }) {
+  const p = strings.components.linkTabs.pageAnalysis;
   const [broken, setBroken] = useState(false);
   const href = resolveResourceUrl(rawUrl, pageUrl);
   if (!href) return null;
@@ -105,7 +102,7 @@ function ImageUrlListItem({ rawUrl, pageUrl }) {
         </div>
       ) : null}
       {showImg && broken ? (
-        <p className="text-[10px] text-slate-500 mb-1 italic">Preview failed to load (hotlink or CORS). Open link below.</p>
+        <p className="text-[10px] text-slate-500 mb-1 italic">{p.previewFailed}</p>
       ) : null}
       <a href={href} target="_blank" rel="noreferrer" className="text-xs font-mono text-blue-400/90 hover:underline break-all">
         {href}
@@ -115,6 +112,7 @@ function ImageUrlListItem({ rawUrl, pageUrl }) {
 }
 
 function ResourceSection({ title, urls, defaultOpen = false, variant = 'links', pageUrl = '' }) {
+  const p = strings.components.linkTabs.pageAnalysis;
   const [open, setOpen] = useState(defaultOpen);
   const [showAll, setShowAll] = useState(false);
   const list = Array.isArray(urls) ? urls : [];
@@ -164,7 +162,7 @@ function ResourceSection({ title, urls, defaultOpen = false, variant = 'links', 
               onClick={() => setShowAll(!showAll)}
               className="mt-2 text-xs text-slate-500 hover:text-bright"
             >
-              {showAll ? 'Show less' : `Show all ${list.length}`}
+              {showAll ? p.showLess : format(p.showAll, { count: list.length })}
             </button>
           )}
         </div>
@@ -174,6 +172,9 @@ function ResourceSection({ title, urls, defaultOpen = false, variant = 'links', 
 }
 
 export default function PageAnalysisTab({ link }) {
+  const p = strings.components.linkTabs.pageAnalysis;
+  const sj = strings.common;
+  const lhLabels = strings.lighthouse.categoryLabels;
   const { data } = useReport();
   const pa = link.page_analysis && typeof link.page_analysis === 'object' ? link.page_analysis : {};
   const lh = link.lighthouse || null;
@@ -205,10 +206,11 @@ export default function PageAnalysisTab({ link }) {
     const scriptsN = Number(link.script_count) || 0;
     const sheetsN = Number(link.link_stylesheet_count) || 0;
     return {
-      labels: ['Internal links', 'External links', 'Images', 'Scripts', 'Stylesheets'],
+      labels: [...p.resourceChartLabels],
       values: [internalN, externalN, imagesN, scriptsN, sheetsN],
     };
   }, [
+    p.resourceChartLabels,
     pa.internal_link_count,
     pa.external_link_count,
     link.internal_link_count,
@@ -232,19 +234,19 @@ export default function PageAnalysisTab({ link }) {
   const lhCategoryChart = useMemo(() => {
     if (!lh?.category_scores) return null;
     const keys = ['performance', 'accessibility', 'best-practices', 'seo'];
-    const labels = keys.map((k) => k.replace('-', ' '));
+    const labels = keys.map((k) => lhLabels[k] || k);
     const values = keys.map((k) => {
       const v = lh.category_scores[k];
       return v != null ? Number(v) : 0;
     });
     const colors = values.map((v) => scoreBandColor(v));
     return { labels, values, colors };
-  }, [lh]);
+  }, [lh, lhLabels]);
 
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-lg font-bold text-bright mb-1">Page analysis report</h2>
+        <h2 className="text-lg font-bold text-bright mb-1">{p.reportTitle}</h2>
         {link.title && <p className="text-sm text-slate-400 mb-1">{link.title}</p>}
         {reportAt && (
           <p className="text-xs text-slate-500 font-mono">{reportAt}</p>
@@ -253,17 +255,17 @@ export default function PageAnalysisTab({ link }) {
 
       {/* Summary */}
       <div>
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Summary</h3>
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">{p.summary}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {[
-            { label: 'Total words', value: link.word_count != null ? link.word_count.toLocaleString() : '—' },
-            { label: 'Internal links', value: pa.internal_link_count ?? link.internal_link_count ?? '—' },
-            { label: 'External links', value: pa.external_link_count ?? link.external_link_count ?? '—' },
-            { label: 'Images', value: link.images_total ?? '—' },
-            { label: 'Scripts', value: link.script_count ?? '—' },
-            { label: 'Stylesheets', value: link.link_stylesheet_count ?? '—' },
-            { label: 'Preload / preconnect', value: `${pa.preload_count ?? 0} / ${pa.preconnect_count ?? 0}` },
-            { label: 'SSL cert expires (site)', value: sslExp ? sslExp.slice(0, 10) : '—' },
+            { label: p.totalWords, value: link.word_count != null ? link.word_count.toLocaleString() : sj.emDash },
+            { label: p.internalLinks, value: pa.internal_link_count ?? link.internal_link_count ?? sj.emDash },
+            { label: p.externalLinks, value: pa.external_link_count ?? link.external_link_count ?? sj.emDash },
+            { label: p.images, value: link.images_total ?? sj.emDash },
+            { label: p.scripts, value: link.script_count ?? sj.emDash },
+            { label: p.stylesheets, value: link.link_stylesheet_count ?? sj.emDash },
+            { label: p.preloadPreconnect, value: `${pa.preload_count ?? 0} / ${pa.preconnect_count ?? 0}` },
+            { label: p.sslCertExpires, value: sslExp ? sslExp.slice(0, 10) : sj.emDash },
           ].map(({ label, value }) => (
             <div key={label} className="bg-brand-900 border border-default rounded-xl p-3">
               <div className="text-xs text-slate-500 mb-1">{label}</div>
@@ -273,7 +275,7 @@ export default function PageAnalysisTab({ link }) {
         </div>
         <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-brand-900 border border-default rounded-xl p-3">
-            <div className="text-xs text-slate-500 mb-2">Page resources (same as summary counts)</div>
+            <div className="text-xs text-slate-500 mb-2">{p.pageResourcesCaption}</div>
             <div className="h-48">
               <Bar
                 data={{
@@ -286,7 +288,7 @@ export default function PageAnalysisTab({ link }) {
           </div>
           {lhCategoryChart && (
             <div className="bg-brand-900 border border-default rounded-xl p-3">
-              <div className="text-xs text-slate-500 mb-2">Lighthouse category scores (0–100)</div>
+              <div className="text-xs text-slate-500 mb-2">{p.lhCategoryCaption}</div>
               <div className="h-48">
                 <Bar
                   data={{
@@ -303,7 +305,7 @@ export default function PageAnalysisTab({ link }) {
                         grid: { color: GRID_COLOR },
                         beginAtZero: true,
                         max: 100,
-                        title: { display: true, text: 'Score', color: '#64748b' },
+                        title: { display: true, text: sj.score, color: '#64748b' },
                       },
                     },
                   }}
@@ -318,36 +320,55 @@ export default function PageAnalysisTab({ link }) {
         similarRows.length > 0 ||
         link.ml_anomaly ||
         link.detected_language ||
+        link.keyphrases?.phrases?.length > 0 ||
         pa?.signals?.language ||
         (nlpSignals && (nlpSignals.entity_count != null || (nlpSignals.top_entity_labels && nlpSignals.top_entity_labels.length > 0)))) && (
         <div className="border border-violet-500/20 rounded-xl p-4 bg-violet-950/20 space-y-3">
-          <h3 className="text-xs font-bold text-violet-400 uppercase tracking-wider">Intelligence (Python ML)</h3>
+          <h3 className="text-xs font-bold text-violet-400 uppercase tracking-wider">{p.intelligenceMl}</h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-300">
             {link.duplicate_group_id && (
               <div className="bg-brand-900 border border-default rounded-lg p-3">
-                <div className="text-slate-500 mb-1">Duplicate cluster</div>
+                <div className="text-slate-500 mb-1">{p.duplicateCluster}</div>
                 <div className="font-mono text-violet-300">{link.duplicate_group_id}</div>
               </div>
             )}
             {link.detected_language && (
               <div className="bg-brand-900 border border-default rounded-lg p-3">
-                <div className="text-slate-500 mb-1">Detected language</div>
+                <div className="text-slate-500 mb-1">{p.detectedLanguage}</div>
                 <div className="font-mono text-slate-200">{link.detected_language}</div>
               </div>
             )}
             <NerBlock nlp={nlpSignals} />
+            {link.keyphrases?.phrases?.length > 0 && (
+              <div className="bg-brand-900 border border-default rounded-lg p-3 sm:col-span-2">
+                <div className="text-slate-500 mb-2">{p.keyphrasesKeybert}</div>
+                <ul className="flex flex-wrap gap-2">
+                  {link.keyphrases.phrases.map((pair, i) => (
+                    <li
+                      key={`${pair[0]}-${i}`}
+                      className="text-[11px] font-mono px-2 py-0.5 rounded bg-brand-800 border border-default text-emerald-300/90"
+                    >
+                      {pair[0]}
+                      {typeof pair[1] === 'number' && (
+                        <span className="text-slate-500 ml-1">({pair[1].toFixed(2)})</span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
             {link.ml_anomaly && (
               <div className="bg-brand-900 border border-default rounded-lg p-3 sm:col-span-2">
-                <div className="text-slate-500 mb-1">Anomaly (IsolationForest)</div>
+                <div className="text-slate-500 mb-1">{p.anomalyIsolation}</div>
                 <div className="text-amber-400/90">
-                  score {link.ml_anomaly.anomaly_score} — {(link.ml_anomaly.reasons || []).join(', ')}
+                  {p.anomalyScorePrefix} {link.ml_anomaly.anomaly_score} — {(link.ml_anomaly.reasons || []).join(', ')}
                 </div>
               </div>
             )}
           </div>
           {similarRows.length > 0 && (
             <div>
-              <div className="text-xs text-slate-500 mb-2">Precomputed similar internal URLs (cosine vs site pages)</div>
+              <div className="text-xs text-slate-500 mb-2">{p.similarInternalCaption}</div>
               <ul className="space-y-1 max-h-40 overflow-y-auto">
                 {similarRows.map((row) => (
                   <li key={row.url} className="flex flex-wrap items-baseline gap-2 gap-y-0">
@@ -369,10 +390,10 @@ export default function PageAnalysisTab({ link }) {
 
       {/* Social previews */}
       <div>
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Social previews</h3>
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">{p.socialPreviews}</h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
-            <div className="text-xs text-slate-500 mb-2">Facebook / Open Graph</div>
+            <div className="text-xs text-slate-500 mb-2">{p.facebookOg}</div>
             <OGPreview
               url={link.url}
               ogTitle={link.og_title}
@@ -381,9 +402,9 @@ export default function PageAnalysisTab({ link }) {
             />
           </div>
           <div className="bg-brand-900 border border-default rounded-xl p-4 space-y-2">
-            <div className="text-xs text-slate-500 mb-2">Twitter / X</div>
-            <div className="text-sm text-slate-200 font-medium">{link.twitter_title || link.title || '—'}</div>
-            <div className="text-xs text-slate-400 line-clamp-3">{link.og_description || link.meta_description || '—'}</div>
+            <div className="text-xs text-slate-500 mb-2">{p.twitterX}</div>
+            <div className="text-sm text-slate-200 font-medium">{link.twitter_title || link.title || sj.emDash}</div>
+            <div className="text-xs text-slate-400 line-clamp-3">{link.og_description || link.meta_description || sj.emDash}</div>
             <div className="text-xs text-slate-500 font-mono truncate">{link.url}</div>
           </div>
         </div>
@@ -392,7 +413,7 @@ export default function PageAnalysisTab({ link }) {
       {/* Lighthouse */}
       <div>
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-          <Gauge className="h-3.5 w-3.5" /> Web vitals / Lighthouse
+          <Gauge className="h-3.5 w-3.5" /> {p.webVitalsLighthouse}
         </h3>
         {lh ? (
           <>
@@ -403,8 +424,8 @@ export default function PageAnalysisTab({ link }) {
                 const color = score != null ? scoreBandColor(score) : 'rgb(71,85,105)';
                 return (
                   <div key={cat} className="bg-brand-900 rounded-xl p-3 border border-default text-center">
-                    <div className="text-xs text-slate-500 capitalize mb-1">{cat.replace('-', ' ')}</div>
-                    <div className="text-xl font-bold" style={{ color }}>{score != null ? score : '—'}</div>
+                    <div className="text-xs text-slate-500 capitalize mb-1">{lhLabels[cat] || cat.replace('-', ' ')}</div>
+                    <div className="text-xl font-bold" style={{ color }}>{score != null ? score : sj.emDash}</div>
                   </div>
                 );
               })}
@@ -422,7 +443,7 @@ export default function PageAnalysisTab({ link }) {
             </div>
             {(lh.top_failures || []).length > 0 && (
               <div className="space-y-2">
-                <div className="text-xs text-slate-500">Recommendations (Lighthouse)</div>
+                <div className="text-xs text-slate-500">{p.lhRecommendations}</div>
                 {(lh.top_failures || []).map((f, i) => (
                   <div key={i} className="bg-brand-800 border border-default rounded-lg px-3 py-2 text-xs text-slate-300">
                     <span className="text-slate-500 font-mono mr-2">{f.id}</span>
@@ -435,7 +456,7 @@ export default function PageAnalysisTab({ link }) {
             {failingLighthouseAudits.length > 0 && (
               <div className="mt-6 space-y-2">
                 <div className="text-xs text-slate-500">
-                  Failing audits — expand for tables, thumbnails, and DOM nodes ({failingLighthouseAudits.length})
+                  {format(p.failingAuditsCaption, { count: failingLighthouseAudits.length })}
                 </div>
                 <ul className="space-y-2">
                   {failingLighthouseAudits.map((a) => (
@@ -447,7 +468,7 @@ export default function PageAnalysisTab({ link }) {
           </>
         ) : (
           <p className="text-sm text-slate-500 bg-brand-900 border border-default rounded-xl p-4">
-            No Lighthouse data for this URL. Run a crawl with per-page Lighthouse enabled to see Core Web Vitals and performance recommendations here.
+            {p.noLhData}
           </p>
         )}
       </div>
@@ -455,14 +476,14 @@ export default function PageAnalysisTab({ link }) {
       {/* Keywords */}
       {keywords.length > 0 && (
         <div>
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Keyword analysis</h3>
+          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">{p.keywordAnalysis}</h3>
           <div className="border border-default rounded-xl overflow-hidden bg-brand-900">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-muted text-left text-xs text-slate-500 uppercase">
-                  <th className="px-4 py-2">Keyword</th>
-                  <th className="px-4 py-2 w-24">Count</th>
-                  <th className="px-4 py-2 w-24">Score</th>
+                  <th className="px-4 py-2">{p.thKeyword}</th>
+                  <th className="px-4 py-2 w-24">{p.thCount}</th>
+                  <th className="px-4 py-2 w-24">{p.thScore}</th>
                 </tr>
               </thead>
               <tbody>
@@ -471,8 +492,8 @@ export default function PageAnalysisTab({ link }) {
                   return (
                     <tr key={i} className="border-b border-muted/60 last:border-0">
                       <td className="px-4 py-2 font-mono text-slate-200">{word}</td>
-                      <td className="px-4 py-2 text-slate-400">{count ?? '—'}</td>
-                      <td className="px-4 py-2 text-slate-400">{score != null ? score : '—'}</td>
+                      <td className="px-4 py-2 text-slate-400">{count ?? sj.emDash}</td>
+                      <td className="px-4 py-2 text-slate-400">{score != null ? score : sj.emDash}</td>
                     </tr>
                   );
                 })}
@@ -486,21 +507,21 @@ export default function PageAnalysisTab({ link }) {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            On-page warnings ({filteredWarnings.length})
+            {format(p.onPageWarnings, { count: filteredWarnings.length })}
           </h3>
           <select
             value={sevFilter}
             onChange={(e) => setSevFilter(e.target.value)}
             className="bg-brand-800 border border-slate-700 text-xs rounded-lg px-2 py-1.5 text-slate-200 outline-none"
           >
-            <option value="All">All severities</option>
-            <option value="high">High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
+            <option value="All">{p.severityAll}</option>
+            <option value="high">{p.severityHigh}</option>
+            <option value="medium">{p.severityMedium}</option>
+            <option value="low">{p.severityLow}</option>
           </select>
         </div>
         {filteredWarnings.length === 0 ? (
-          <p className="text-sm text-slate-500">No matching warnings for this page.</p>
+          <p className="text-sm text-slate-500">{p.noMatchingWarnings}</p>
         ) : (
           <ul className="space-y-2">
             {filteredWarnings.map((w, i) => (
@@ -523,9 +544,9 @@ export default function PageAnalysisTab({ link }) {
 
       {/* Resources */}
       <div>
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Resources</h3>
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">{p.resources}</h3>
         <div className="space-y-2">
-          {RESOURCE_KEYS.map(({ key, label }) => (
+          {p.resourceSections.map(({ key, label }) => (
             <ResourceSection
               key={key}
               title={label}

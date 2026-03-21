@@ -147,6 +147,8 @@ def main() -> None:
         store_outlinks = get_bool(cfg, "store_outlinks", True)
         exclude_urls = get_list(cfg, "crawl_exclude_urls", sep=",")
         preserve_crawl_history = get_bool(cfg, "preserve_crawl_history", False)
+        store_content_excerpt = get_bool(cfg, "store_content_excerpt", False)
+        content_excerpt_max_chars = get_int(cfg, "content_excerpt_max_chars", 4096) or 4096
         crawl_output = path("crawl_output", "crawl_results.csv")
         print("Crawling...")
         run_crawler(
@@ -164,6 +166,8 @@ def main() -> None:
             show_progress=True,
             exclude_urls=exclude_urls if exclude_urls else None,
             preserve_crawl_history=preserve_crawl_history,
+            store_content_excerpt=store_content_excerpt,
+            content_excerpt_max_chars=content_excerpt_max_chars,
         )
         print("[Crawl] Done.", flush=True)
         print(f"Crawl results: {db_path or crawl_output}")

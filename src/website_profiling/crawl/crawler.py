@@ -70,6 +70,8 @@ class Crawler:
         store_outlinks: bool = False,
         exclude_urls: Optional[list[str]] = None,
         use_wappalyzer: bool = True,
+        store_content_excerpt: bool = False,
+        content_excerpt_max_chars: int = 4096,
     ):
         self.start_url = start_url.rstrip("/")
         self.start_netloc = urlparse(self.start_url).netloc
@@ -86,6 +88,8 @@ class Crawler:
         self.store_outlinks = store_outlinks
         self.exclude_urls = list(exclude_urls) if exclude_urls else []
         self.use_wappalyzer = use_wappalyzer
+        self.store_content_excerpt = bool(store_content_excerpt)
+        self.content_excerpt_max_chars = max(0, int(content_excerpt_max_chars or 0))
         self._wappalyzer_instance = None
         if use_wappalyzer:
             try:
@@ -186,6 +190,7 @@ class Crawler:
             "reading_level": 0.0,
             "content_html_ratio": 0.0,
             "top_keywords": "[]",
+            "content_excerpt": "",
             "og_title": "",
             "og_description": "",
             "og_image": "",
@@ -270,11 +275,13 @@ class Crawler:
             ext["link_stylesheet_count"] = res_res.get("link_stylesheet_count", 0)
             from bs4 import BeautifulSoup as _BS
             _soup = _BS(text, "lxml")
-            ct_data = parse_content_text(_soup, text)
+            excerpt_max = self.content_excerpt_max_chars if self.store_content_excerpt else 0
+            ct_data = parse_content_text(_soup, text, excerpt_max_chars=excerpt_max)
             ext["word_count"] = ct_data.get("word_count", 0)
             ext["reading_level"] = ct_data.get("reading_level", 0.0)
             ext["content_html_ratio"] = ct_data.get("content_html_ratio", 0.0)
             ext["top_keywords"] = ct_data.get("top_keywords", "[]")
+            ext["content_excerpt"] = ct_data.get("content_excerpt") or ""
             social = parse_social_meta(_soup)
             ext["og_title"] = social.get("og_title", "")
             ext["og_description"] = social.get("og_description", "")
@@ -423,6 +430,7 @@ class Crawler:
                                 "reading_level": 0.0,
                                 "content_html_ratio": 0.0,
                                 "top_keywords": "[]",
+                                "content_excerpt": "",
                                 "og_title": "",
                                 "og_description": "",
                                 "og_image": "",
@@ -491,6 +499,7 @@ class Crawler:
                 "reading_level",
                 "content_html_ratio",
                 "top_keywords",
+                "content_excerpt",
                 "og_title",
                 "og_description",
                 "og_image",
@@ -524,6 +533,8 @@ def run_crawler(
     show_progress: bool = True,
     exclude_urls: Optional[list[str]] = None,
     preserve_crawl_history: bool = False,
+    store_content_excerpt: bool = False,
+    content_excerpt_max_chars: int = 4096,
 ) -> pd.DataFrame:
     """Run crawler and optionally save to CSV/JSON or SQLite. Returns DataFrame."""
     import sys
@@ -540,6 +551,8 @@ def run_crawler(
         polite_delay=polite_delay,
         store_outlinks=store_outlinks,
         exclude_urls=exclude_urls,
+        store_content_excerpt=store_content_excerpt,
+        content_excerpt_max_chars=content_excerpt_max_chars,
     )
     df = crawler.crawl(show_progress=show_progress)
     if output_db and not df.empty:
