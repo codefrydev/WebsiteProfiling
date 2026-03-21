@@ -4,7 +4,6 @@ import { Shield, Flame, AlertTriangle, AlertCircle, Info, ExternalLink } from 'l
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Badge } from '../components';
-import BrowserMlPanel from '../components/ml/BrowserMlPanel';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal, doughnutOptionsBottomLegend } from '../utils/chartJsDefaults';
 
@@ -46,23 +45,23 @@ const SEVERITY_CONFIG = {
   },
   Low: {
     icon: Info,
-    text: 'text-slate-400',
-    bg: 'bg-slate-500/10',
-    border: 'border-slate-500/40',
+    text: 'text-muted-foreground',
+    bg: 'bg-brand-700/10',
+    border: 'border-brand-700/40',
     ring: '',
-    rowBorder: 'border-l-slate-500',
-    recBg: 'bg-slate-700/30 border-slate-600/30',
+    rowBorder: 'border-l-neutral-500',
+    recBg: 'bg-brand-700/30 border-brand-700/30',
     order: 3,
     chartColor: '#64748B',
   },
   Info: {
     icon: Info,
-    text: 'text-slate-500',
-    bg: 'bg-slate-600/10',
-    border: 'border-slate-600/30',
+    text: 'text-muted-foreground',
+    bg: 'bg-brand-700/10',
+    border: 'border-brand-700/30',
     ring: '',
-    rowBorder: 'border-l-slate-600',
-    recBg: 'bg-slate-700/20 border-slate-700/30',
+    rowBorder: 'border-l-neutral-600',
+    recBg: 'bg-brand-700/20 border-brand-700/30',
     order: 4,
     chartColor: '#475569',
   },
@@ -163,17 +162,11 @@ export default function Security({ searchQuery = '' }) {
         subtitle={`${vs.subtitlePrefix} ${format(vs.subtitleCount, { count: allFindings.length, s: allFindings.length !== 1 ? 's' : '' })}`}
       />
 
-      {Array.isArray(data?.links) && data.links.length > 0 && (
-        <Card shadow>
-          <BrowserMlPanel links={data.links} compact />
-        </Card>
-      )}
-
       {allFindings.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card padding="tight" shadow>
-            <h2 className="text-sm font-bold text-slate-200 mb-1">{vs.findingsBySeverity}</h2>
-            <p className="text-xs text-slate-500 mb-3">{vs.findingsBySeverityHint}</p>
+            <h2 className="text-sm font-bold text-foreground mb-1">{vs.findingsBySeverity}</h2>
+            <p className="text-xs text-muted-foreground mb-3">{vs.findingsBySeverityHint}</p>
             <div className="h-56 flex items-center justify-center">
               <div className="w-full max-w-[260px] h-48">
                 <Doughnut
@@ -209,8 +202,8 @@ export default function Security({ searchQuery = '' }) {
           </Card>
           {typeLabels.length > 0 && (
             <Card padding="tight" shadow>
-              <h2 className="text-sm font-bold text-slate-200 mb-1">{vs.findingsByType}</h2>
-              <p className="text-xs text-slate-500 mb-3">{vs.findingsByTypeHint}</p>
+              <h2 className="text-sm font-bold text-foreground mb-1">{vs.findingsByType}</h2>
+              <p className="text-xs text-muted-foreground mb-3">{vs.findingsByTypeHint}</p>
               <div className="h-56">
                 <Bar
                   data={{
@@ -238,15 +231,15 @@ export default function Security({ searchQuery = '' }) {
               shadow
               className={`cursor-pointer transition-all select-none ${
                 isActive
-                  ? `${cfg.ring || `ring-1 ring-slate-500/20`} ${cfg.border}`
-                  : 'hover:border-slate-600/60'
+                  ? `${cfg.ring || `ring-1 ring-neutral-500/20`} ${cfg.border}`
+                  : 'hover:border-brand-700/80'
               }`}
               onClick={() => setSeverityFilter((prev) => (prev === sev ? 'All' : sev))}
             >
               <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${cfg.text}`}>
                 <Icon className="h-4 w-4" /> {sev}
               </div>
-              <div className={`text-3xl font-bold ${count > 0 ? cfg.text : 'text-slate-600'}`}>{count}</div>
+              <div className={`text-3xl font-bold ${count > 0 ? cfg.text : 'text-muted-foreground'}`}>{count}</div>
             </Card>
           );
         })}
@@ -258,7 +251,7 @@ export default function Security({ searchQuery = '' }) {
           <button
             type="button"
             onClick={() => setSeverityFilter('All')}
-            className="text-xs text-slate-500 hover:text-slate-300 transition-colors border border-default rounded-full px-3 py-1"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors border border-default rounded-full px-3 py-1"
           >
             {vs.showAllSeverities}
           </button>
@@ -270,8 +263,8 @@ export default function Security({ searchQuery = '' }) {
         <Card className="flex flex-col items-center justify-center py-20 gap-4">
           <Shield className="h-14 w-14 text-green-600/60" />
           <div className="text-center">
-            <p className="text-slate-300 font-semibold text-base">{vs.emptyTitle}</p>
-            <p className="text-slate-500 text-sm mt-1">
+            <p className="text-foreground font-semibold text-base">{vs.emptyTitle}</p>
+            <p className="text-muted-foreground text-sm mt-1">
               {allFindings.length > 0 ? vs.emptyFiltered : vs.emptyNoScan}
             </p>
           </div>
@@ -285,7 +278,7 @@ export default function Security({ searchQuery = '' }) {
             return (
               <div
                 key={i}
-                className={`bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.rowBorder} p-5 flex flex-col gap-3 hover:border-slate-600/60 transition-colors`}
+                className={`bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.rowBorder} p-5 flex flex-col gap-3 hover:border-brand-700/80 transition-colors`}
               >
                 {/* Row header */}
                 <div className="flex flex-wrap items-start gap-3">
@@ -310,11 +303,11 @@ export default function Security({ searchQuery = '' }) {
                 </div>
 
                 {/* Message */}
-                <p className="text-slate-200 text-sm leading-snug">{f.message || strings.common.emDash}</p>
+                <p className="text-foreground text-sm leading-snug">{f.message || strings.common.emDash}</p>
 
                 {/* Recommendation */}
                 {f.recommendation && (
-                  <div className={`rounded-lg px-3 py-2.5 border text-sm text-slate-400 leading-relaxed ${cfg.recBg}`}>
+                  <div className={`rounded-lg px-3 py-2.5 border text-sm text-muted-foreground leading-relaxed ${cfg.recBg}`}>
                     <span className="text-xs font-bold uppercase tracking-wide text-blue-400 block mb-1">
                       {vs.recommendation}
                     </span>

@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { Search, Link as LinkIcon, ArrowLeft, ExternalLink, Link2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useBrowserAssistant } from '../context/useBrowserAssistant.js';
 import { strings } from '../lib/strings';
 import { PageLayout, Card, Badge, Button } from '../components';
 import { palette } from '../utils/chartPalette';
@@ -13,12 +14,12 @@ import {
   SEO_ISSUE_RECOMMENDATIONS, formatMs, rtColor, formatPageHrefLines,
 } from '../utils/linkUtils';
 import { SortTh, RowTooltip, InspectorTabs, CopyBtn } from '../components/links';
-import BrowserMlPanel from '../components/ml/BrowserMlPanel';
 
 export default function Links({ searchQuery = '' }) {
   const vl = strings.views.links;
   const sj = strings.common;
   const { data } = useReport();
+  const { setFocusLink } = useBrowserAssistant();
 
   const [sortBy, setSortBy] = useState('inlinks');
   const [sortDesc, setSortDesc] = useState(true);
@@ -41,6 +42,12 @@ export default function Links({ searchQuery = '' }) {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
+
+  useEffect(() => {
+    if (!inspectorUrl || !data?.links?.length) return;
+    const found = data.links.find((l) => l.url === inspectorUrl);
+    if (found) setFocusLink(found);
+  }, [inspectorUrl, data?.links, setFocusLink]);
 
   const links = useMemo(() => data?.links || [], [data]);
 
@@ -194,11 +201,11 @@ export default function Links({ searchQuery = '' }) {
           <div className="mb-6 flex justify-between items-end shrink-0 flex-wrap gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-bright mb-2">{vl.title}</h1>
-              <p className="text-slate-400">
+              <p className="text-muted-foreground">
                 {vl.showingResults}{' '}
                 <span className="font-bold text-bright">{filtered.length.toLocaleString()}</span> {vl.resultsSuffix}
               </p>
-              <p className="text-sm text-slate-500 mt-2 max-w-3xl leading-relaxed">{vl.explorerHint}</p>
+              <p className="text-sm text-muted-foreground mt-2 max-w-3xl leading-relaxed">{vl.explorerHint}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <select value={inlinksFilter} onChange={(e) => { setInlinksFilter(e.target.value); setPage(1); }} className={SELECT_CLASS}>
@@ -226,17 +233,11 @@ export default function Links({ searchQuery = '' }) {
             </div>
           </div>
 
-          {links.length > 0 && (
-            <Card shadow className="mb-4 shrink-0">
-              <BrowserMlPanel links={links} compact />
-            </Card>
-          )}
-
           {exploreCharts && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4 shrink-0">
               <Card padding="tight" shadow>
-                <h2 className="text-sm font-bold text-slate-200 mb-1">{vl.chartStatusTitle}</h2>
-                <p className="text-xs text-slate-500 mb-2">{vl.chartStatusHint}</p>
+                <h2 className="text-sm font-bold text-foreground mb-1">{vl.chartStatusTitle}</h2>
+                <p className="text-xs text-muted-foreground mb-2">{vl.chartStatusHint}</p>
                 <div className="h-48">
                   <Bar
                     data={{
@@ -248,8 +249,8 @@ export default function Links({ searchQuery = '' }) {
                 </div>
               </Card>
               <Card padding="tight" shadow>
-                <h2 className="text-sm font-bold text-slate-200 mb-1">{vl.chartWcTitle}</h2>
-                <p className="text-xs text-slate-500 mb-2">{vl.chartWcHint}</p>
+                <h2 className="text-sm font-bold text-foreground mb-1">{vl.chartWcTitle}</h2>
+                <p className="text-xs text-muted-foreground mb-2">{vl.chartWcHint}</p>
                 <div className="h-48">
                   <Bar
                     data={{
@@ -273,7 +274,7 @@ export default function Links({ searchQuery = '' }) {
                 return link ? <RowTooltip link={link} style={{ position: 'absolute', top: tooltipPos.top, left: tooltipPos.left }} /> : null;
               })()}
 
-              <p className="sm:hidden text-xs text-slate-500 px-3 py-2 border-b border-muted bg-brand-900/40">{sj.tableSwipeHint}</p>
+              <p className="sm:hidden text-xs text-muted-foreground px-3 py-2 border-b border-muted bg-brand-900/40">{sj.tableSwipeHint}</p>
 
               <table className="w-full min-w-[560px] text-left text-sm">
                 <thead className="bg-brand-900 uppercase text-xs font-semibold sticky top-0 z-20 shadow-sm">
@@ -305,7 +306,7 @@ export default function Links({ searchQuery = '' }) {
                       onSort={toggleSort}
                       className="hidden md:table-cell"
                     />
-                    <th className="px-3 sm:px-4 py-4 text-center text-slate-400 uppercase text-xs whitespace-nowrap">{vl.thActions}</th>
+                    <th className="px-3 sm:px-4 py-4 text-center text-muted-foreground uppercase text-xs whitespace-nowrap">{vl.thActions}</th>
                   </tr>
                 </thead>
                 <tbody
@@ -325,33 +326,33 @@ export default function Links({ searchQuery = '' }) {
                       <td className="px-3 sm:px-6 py-3 align-top min-w-0">
                         <div className="min-w-0 flex flex-col gap-0.5">
                           <div
-                            className="text-slate-100 font-medium text-sm leading-snug line-clamp-2"
+                            className="text-bright font-medium text-sm leading-snug line-clamp-2"
                             title={link.title || undefined}
                           >
                             {link.title ? (
                               link.title
                             ) : (
-                              <span className="text-slate-500 italic font-normal">{vl.noTitle}</span>
+                              <span className="text-muted-foreground italic font-normal">{vl.noTitle}</span>
                             )}
                           </div>
                           <a
                             href={link.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-400 group min-w-0"
+                            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-blue-400 group min-w-0"
                             title={link.url}
                           >
                             <span className="truncate font-mono">{hrefLines.label}</span>
                             <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" />
                           </a>
                           {(link.depth != null || (link.word_count ?? 0) > 0) && (
-                            <p className="mt-1 md:hidden text-[11px] text-slate-500 leading-snug">
+                            <p className="mt-1 md:hidden text-[11px] text-muted-foreground leading-snug">
                               {link.depth != null && (
                                 <span>
                                   {vl.thCrawlDepth}: {link.depth}
                                 </span>
                               )}
-                              {link.depth != null && (link.word_count ?? 0) > 0 && <span className="mx-1.5 text-slate-600">·</span>}
+                              {link.depth != null && (link.word_count ?? 0) > 0 && <span className="mx-1.5 text-muted-foreground">·</span>}
                               {(link.word_count ?? 0) > 0 && (
                                 <span>
                                   {vl.thWords}: {link.word_count.toLocaleString()}
@@ -371,32 +372,32 @@ export default function Links({ searchQuery = '' }) {
                             />
                           </div>
                           <span
-                            className="order-1 sm:order-2 shrink-0 inline-flex items-center justify-end gap-1.5 text-sm font-semibold text-slate-200 tabular-nums"
+                            className="order-1 sm:order-2 shrink-0 inline-flex items-center justify-end gap-1.5 text-sm font-semibold text-foreground tabular-nums"
                             title={
                               maxInlinksInResults > 0
                                 ? `${Math.round(inlPct)}% of the strongest links-in count in your current results (${maxInlinksInResults}).`
                                 : undefined
                             }
                           >
-                            <Link2 className="h-3.5 w-3.5 text-slate-500 shrink-0 hidden sm:inline" aria-hidden />
+                            <Link2 className="h-3.5 w-3.5 text-muted-foreground shrink-0 hidden sm:inline" aria-hidden />
                             {inl}
                           </span>
                         </div>
                       </td>
-                      <td className="hidden md:table-cell px-4 py-3 text-slate-300 text-sm tabular-nums whitespace-nowrap align-middle">
+                      <td className="hidden md:table-cell px-4 py-3 text-foreground text-sm tabular-nums whitespace-nowrap align-middle">
                         {link.depth != null ? link.depth : sj.emDash}
                       </td>
                       <td className={`px-3 sm:px-4 py-3 text-sm font-semibold tabular-nums whitespace-nowrap align-middle ${rtColor(link.response_time_ms)}`}>
                         {formatMs(link.response_time_ms)}
                       </td>
-                      <td className="hidden md:table-cell px-4 py-3 text-sm text-slate-300 tabular-nums whitespace-nowrap align-middle">
+                      <td className="hidden md:table-cell px-4 py-3 text-sm text-foreground tabular-nums whitespace-nowrap align-middle">
                         {link.word_count > 0 ? link.word_count.toLocaleString() : sj.emDash}
                       </td>
                       <td className="px-3 sm:px-4 py-3 text-center whitespace-nowrap align-middle">
                         <button
                           type="button"
                           onClick={() => setInspectorUrl(link.url)}
-                          className="inline-flex items-center justify-center gap-1.5 min-h-11 min-w-[2.75rem] sm:min-h-0 sm:min-w-0 text-slate-500 hover:text-bright bg-slate-800 hover:bg-slate-700 px-3 py-2.5 sm:px-2 sm:py-1 rounded-lg sm:rounded text-xs font-medium transition-colors touch-manipulation"
+                          className="inline-flex items-center justify-center gap-1.5 min-h-11 min-w-[2.75rem] sm:min-h-0 sm:min-w-0 text-muted-foreground hover:text-bright bg-brand-800 hover:bg-brand-700 px-3 py-2.5 sm:px-2 sm:py-1 rounded-lg sm:rounded text-xs font-medium transition-colors touch-manipulation"
                         >
                           <Search className="h-4 w-4 sm:h-3 sm:w-3 shrink-0" /> {vl.inspect}
                         </button>
@@ -409,13 +410,13 @@ export default function Links({ searchQuery = '' }) {
             </div>
 
             <div className="p-4 border-t border-muted bg-brand-900 flex justify-between items-center shrink-0">
-              <div className="text-sm text-slate-400">
+              <div className="text-sm text-muted-foreground">
                 {vl.pageOf} <span className="font-bold text-bright">{page}</span> {vl.of}{' '}
                 <span className="font-bold text-bright">{totalPages}</span>
               </div>
               <div className="flex gap-2">
-                <Button variant="secondary" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="px-3 py-1 text-slate-300">{vl.previous}</Button>
-                <Button variant="secondary" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-3 py-1 text-slate-300">{vl.next}</Button>
+                <Button variant="secondary" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="px-3 py-1 text-foreground">{vl.previous}</Button>
+                <Button variant="secondary" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-3 py-1 text-foreground">{vl.next}</Button>
               </div>
             </div>
           </Card>
@@ -423,7 +424,7 @@ export default function Links({ searchQuery = '' }) {
       ) : (
         <>
           <div className="mb-4 flex justify-between items-center shrink-0 flex-wrap gap-4">
-            <Button variant="secondary" onClick={() => setInspectorUrl(null)} className="inline-flex items-center gap-2 text-slate-300">
+            <Button variant="secondary" onClick={() => setInspectorUrl(null)} className="inline-flex items-center gap-2 text-foreground">
               <ArrowLeft className="h-4 w-4" /> {vl.backToExplorer}
             </Button>
             <h1 className="text-2xl font-bold text-bright flex items-center gap-2">
@@ -434,7 +435,7 @@ export default function Links({ searchQuery = '' }) {
           <div className="mb-4 shrink-0 flex items-center gap-2 bg-brand-900 border border-default p-3 rounded-xl">
             <span className="font-mono text-blue-400 text-sm break-all flex-1">{inspectorUrl}</span>
             <CopyBtn text={inspectorUrl} className="shrink-0" />
-            <a href={inspectorUrl} target="_blank" rel="noreferrer" className="text-slate-500 hover:text-bright transition-colors shrink-0">
+            <a href={inspectorUrl} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-bright transition-colors shrink-0">
               <LinkIcon className="h-4 w-4" />
             </a>
           </div>
@@ -447,7 +448,7 @@ export default function Links({ searchQuery = '' }) {
                 inspectorDetails={inspectorDetails}
               />
             ) : (
-              <div className="p-8 text-center text-slate-500">{vl.noUrlData}</div>
+              <div className="p-8 text-center text-muted-foreground">{vl.noUrlData}</div>
             )}
           </Card>
         </>

@@ -4,7 +4,7 @@
 export default function PageLayout({ children, className = '', maxWidth = false }) {
   const maxWidthClass = maxWidth ? 'max-w-6xl mx-auto' : '';
   return (
-    <div className={`p-6 lg:p-8 ${maxWidthClass} ${className}`.trim()}>
+    <div className={`px-5 pt-4 pb-6 sm:px-6 lg:px-8 lg:pt-5 lg:pb-8 ${maxWidthClass} ${className}`.trim()}>
       {children}
     </div>
   );

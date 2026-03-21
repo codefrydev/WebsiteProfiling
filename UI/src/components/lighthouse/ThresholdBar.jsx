@@ -15,8 +15,8 @@ export default function ThresholdBar({ metricKey, value }) {
   if (!t || value == null) {
     return (
       <div className="flex items-center justify-between px-5 py-4">
-        <span className="text-slate-300 text-sm">{t?.label || metricKey}</span>
-        <span className="text-slate-400 font-semibold text-sm">—</span>
+        <span className="text-foreground text-sm">{t?.label || metricKey}</span>
+        <span className="text-muted-foreground font-semibold text-sm">—</span>
       </div>
     );
   }
@@ -35,7 +35,7 @@ export default function ThresholdBar({ metricKey, value }) {
       onMouseLeave={() => setHovered(false)}
       ref={barRef}
     >
-      <span className="text-slate-300 text-sm w-44 shrink-0">{t.label}</span>
+      <span className="text-foreground text-sm w-44 shrink-0">{t.label}</span>
       <div className="flex-1 flex items-center gap-3">
         <div className="flex-1 bg-track rounded-full h-2.5 overflow-hidden">
           <div
@@ -44,7 +44,7 @@ export default function ThresholdBar({ metricKey, value }) {
           />
         </div>
         <div className="relative w-2 shrink-0">
-          <div className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-slate-500 rounded" style={{ left: 0 }} />
+          <div className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 bg-brand-700 rounded" style={{ left: 0 }} />
         </div>
         <span className={`font-semibold text-sm tabular-nums w-16 text-right ${textColor}`}>
           {formatMetric(metricKey, v)}
@@ -52,13 +52,13 @@ export default function ThresholdBar({ metricKey, value }) {
       </div>
 
       {hovered && (
-        <div className="absolute left-0 bottom-full mb-2 ml-4 z-50 bg-slate-800 border border-default rounded-xl shadow-2xl p-3 w-72 pointer-events-none">
+        <div className="absolute left-0 bottom-full mb-2 ml-4 z-50 bg-brand-800 border border-default rounded-xl shadow-2xl p-3 w-72 pointer-events-none">
           <div className="font-semibold text-bright text-sm mb-1">{t.label}</div>
-          <p className="text-xs text-slate-400 mb-2">{t.desc}</p>
+          <p className="text-xs text-muted-foreground mb-2">{t.desc}</p>
           <div className="flex gap-4 text-xs">
-            <span><span className="text-slate-500">Value:</span> <span className={textColor}>{formatMetric(metricKey, v)}</span></span>
-            <span><span className="text-slate-500">Good:</span> <span className="text-green-400">≤{formatMetric(metricKey, t.good)}</span></span>
-            <span><span className="text-slate-500">Warn:</span> <span className="text-yellow-400">≤{formatMetric(metricKey, t.warn)}</span></span>
+            <span><span className="text-muted-foreground">Value:</span> <span className={textColor}>{formatMetric(metricKey, v)}</span></span>
+            <span><span className="text-muted-foreground">Good:</span> <span className="text-green-400">≤{formatMetric(metricKey, t.good)}</span></span>
+            <span><span className="text-muted-foreground">Warn:</span> <span className="text-yellow-400">≤{formatMetric(metricKey, t.warn)}</span></span>
           </div>
           <div className={`mt-2 text-xs font-semibold ${textColor}`}>
             {status === 'good' ? '✓ Good' : status === 'warn' ? '⚠ Needs improvement' : '✕ Poor'}

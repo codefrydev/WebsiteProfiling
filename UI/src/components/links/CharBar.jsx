@@ -8,7 +8,7 @@ export default function CharBar({ len, max, colorFn }) {
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-xs text-slate-500 tabular-nums w-10 text-right">{len}/{max}</span>
+      <span className="text-xs text-muted-foreground tabular-nums w-10 text-right">{len}/{max}</span>
     </div>
   );
 }

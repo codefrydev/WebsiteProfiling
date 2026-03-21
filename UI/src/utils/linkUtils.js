@@ -38,7 +38,7 @@ export function formatPageHrefLines(url) {
 // ─── Color helpers ────────────────────────────────────────────────────────────
 
 export function rtColor(ms) {
-  if (ms == null || ms === 0) return 'text-slate-400';
+  if (ms == null || ms === 0) return 'text-muted-foreground';
   if (ms < 500) return 'text-green-400';
   if (ms <= 2000) return 'text-yellow-400';
   return 'text-red-400';
@@ -72,12 +72,12 @@ export function metaCharColor(len) {
 }
 
 export function severityBg(s) {
-  if (!s) return 'bg-slate-700 text-slate-300';
+  if (!s) return 'bg-brand-700 text-foreground';
   const sl = s.toLowerCase();
   if (sl === 'critical') return 'bg-red-500/20 text-red-300';
   if (sl === 'high') return 'bg-orange-500/20 text-orange-300';
   if (sl === 'medium') return 'bg-yellow-500/20 text-yellow-300';
-  return 'bg-slate-700/60 text-slate-400';
+  return 'bg-brand-700/60 text-muted-foreground';
 }
 
 // ─── JSON parsers ─────────────────────────────────────────────────────────────
@@ -114,7 +114,7 @@ export function normaliseKw(kw) {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-export const SELECT_CLASS = 'bg-brand-800 border border-slate-700 text-sm rounded-lg px-3 py-2 text-slate-200 outline-none';
+export const SELECT_CLASS = 'bg-brand-800 border border-brand-700 text-sm rounded-lg px-3 py-2 text-foreground outline-none';
 
 export const CONTENT_URL_KEYS = strings.linkExplorer.contentUrlKeys;
 

@@ -1,8 +1,35 @@
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 
-export const GRID_COLOR = 'rgba(71, 85, 105, 0.5)';
+function cssVar(name, fallback) {
+  if (typeof document === 'undefined') return fallback;
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
+/** Grid line color; reads `--chart-grid` from the active theme. */
+export function getGridColor() {
+  return cssVar('--chart-grid', 'rgba(100, 116, 139, 0.5)');
+}
+
+/** Axis / scale title color (theme-aware). */
+export function getChartTitleColor() {
+  return cssVar('--chart-title', '#64748b');
+}
+
+function chartLegendColor() {
+  return cssVar('--chart-legend', '#94a3b8');
+}
 
 let registered = false;
+
+/** Sync Chart.js default text color with `--app-text` after theme changes. */
+export function syncChartJsDefaultsColor() {
+  if (typeof document === 'undefined') return;
+  const c = getComputedStyle(document.documentElement).getPropertyValue('--app-text').trim();
+  if (c && typeof ChartJS !== 'undefined' && ChartJS.defaults) {
+    ChartJS.defaults.color = c;
+  }
+}
 
 /** Register once for Bar/Doughnut charts (Category + Linear scales, Bar + Arc elements). */
 export function registerChartJsBase() {
@@ -13,6 +40,8 @@ export function registerChartJsBase() {
 
 /** Horizontal bar defaults: frequency on X, labels on Y */
 export function barOptionsHorizontal(tooltipLabel) {
+  const grid = getGridColor();
+  const titleColor = getChartTitleColor();
   return {
     indexAxis: 'y',
     responsive: true,
@@ -26,18 +55,19 @@ export function barOptionsHorizontal(tooltipLabel) {
       },
     },
     scales: {
-      x: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: 'Count', color: '#64748b' } },
-      y: { grid: { color: GRID_COLOR } },
+      x: { grid: { color: grid }, beginAtZero: true, title: { display: true, text: 'Count', color: titleColor } },
+      y: { grid: { color: grid } },
     },
   };
 }
 
 export function doughnutOptionsBottomLegend(tooltipCb) {
+  const legendColor = chartLegendColor();
   return {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 12 } },
+      legend: { position: 'bottom', labels: { color: legendColor, font: { size: 11 }, padding: 12 } },
       tooltip: tooltipCb
         ? { callbacks: tooltipCb }
         : { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.raw?.toLocaleString()}` } },

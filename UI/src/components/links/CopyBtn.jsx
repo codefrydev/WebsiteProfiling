@@ -19,7 +19,7 @@ export default function CopyBtn({ text, className = '' }) {
       type="button"
       onClick={copy}
       title={c.title}
-      className={`inline-flex items-center gap-1 text-slate-500 hover:text-bright transition-colors ${className}`}
+      className={`inline-flex items-center gap-1 text-muted-foreground hover:text-bright transition-colors ${className}`}
     >
       {copied
         ? <Check className="h-3 w-3 text-green-400" />

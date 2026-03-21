@@ -1,5 +1,5 @@
 /**
- * Wrapper for consistent table styling: thead bg-brand-900, uppercase text-xs font-semibold text-slate-400.
+ * Wrapper for consistent table styling: thead bg-brand-900, uppercase text-xs font-semibold text-muted-foreground.
  * Use `striped` on TableBody for alternating row backgrounds.
  */
 export default function Table({ children, className = '', wrapperClassName = '' }) {
@@ -13,7 +13,7 @@ export default function Table({ children, className = '', wrapperClassName = '' 
 }
 
 export const TableHead = ({ children, sticky = false }) => (
-  <thead className={`bg-brand-900 text-slate-400 uppercase text-xs font-semibold ${sticky ? 'sticky top-0 z-10' : ''}`}>
+  <thead className={`bg-brand-900 text-muted-foreground uppercase text-xs font-semibold ${sticky ? 'sticky top-0 z-10' : ''}`}>
     {children}
   </thead>
 );

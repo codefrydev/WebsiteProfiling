@@ -10,7 +10,11 @@
     "ariaCloseMenu": "Close menu",
     "ariaOpenMenu": "Open menu",
     "githubLinkLabel": "codefrydev/WebsiteProfiling",
-    "searchPlaceholder": "Search URLs, issues..."
+    "searchPlaceholder": "Search URLs, issues...",
+    "themeLight": "Light theme",
+    "themeDark": "Dark theme",
+    "themeSystem": "Match system theme",
+    "themeGroupLabel": "Color theme"
   },
   "nav": {
     "overview": {
@@ -1028,16 +1032,22 @@
       "panelTitle": "In-browser analysis",
       "hintModels": "Runs on your device. Each model downloads once and stays cached in this browser; different tools may load different models.",
       "noPages": "No successful HTML pages in this report to analyze.",
-      "progressLabel": "Download / load",
-      "zeroShotTitle": "Zero-shot page intent",
-      "zeroShotLabels": "Candidate labels (comma-separated)",
-      "zeroShotRun": "Classify sample pages",
-      "zeroShotBusy": "Loading model / classifying…",
-      "zeroShotNeedTwoLabels": "Enter at least two candidate labels.",
-      "sentimentTitle": "Snippet sentiment",
-      "sentimentDesc": "Binary sentiment on meta description, OG description, or title (first ~20 successful pages).",
-      "sentimentRun": "Run sentiment",
-      "sentimentBusy": "Loading model / scoring…"
+      "progressLabel": "Download / load"
+    },
+    "browserMlChat": {
+      "panelTitle": "Assistant",
+      "launcherAria": "Open assistant",
+      "closeAria": "Close",
+      "welcome": "Hi! Ask me anything about this report—pages, issues, or what the numbers mean.",
+      "chatSystemPrompt": "You are a website audit assistant.\n\nONLY use the provided audit data (JSON report + crawl SQLite fields included in the conversation).\nDo NOT use outside knowledge.\n\nRules:\n- If an answer is NOT explicitly present in the data → reply: \"Not found in audit report.\"\n- Always cite exact URLs, paths, or fields from the data when answering.\n- Do NOT invent data, code, queries, or explanations.\n- Do NOT give tutorials or general advice.\n- Keep answers short and factual.\n\nScope restriction:\n- Only answer questions about this audit.\n- If the question is unrelated (e.g., programming help), reply:\n  \"I only interpret this audit data. Ask about a specific URL, issue, or field from the report.\"\n\nFormatting:\n- Use Markdown when helpful (bullets, tables, code blocks).\n- Prefer lists over paragraphs.\n\nAnswer style:\n- Direct\n- Minimal\n- Evidence-based (cite data)\n\nExamples of valid questions:\n- \"Which URLs returned 404?\"\n- \"Show pages with missing meta descriptions\"\n- \"What issues were found on /products page?\"\n\nExamples of invalid questions:\n- \"How to fix SEO?\"\n- \"Write SQL query\"\n- \"Explain crawling\"\n\nStay strictly within the audit data.",
+      "chatPlaceholder": "Ask about this report…",
+      "chatSend": "Send",
+      "chatSendAria": "Send message",
+      "chatBusy": "Sent",
+      "chatEmptyReply": "The model returned an empty reply. Try again or shorten your message.",
+      "chatErrorGeneric": "Something went wrong while generating a reply.",
+      "chatErrorRangeBuffer": "The on-device model failed. That usually means the browser ran out of memory for it, or a cached weight file is incomplete.\n\nTry: fewer other tabs, don’t run other large in-browser models in this tab, or clear this site’s storage and reload so files download again.\n\nBackground: https://github.com/huggingface/transformers.js/issues/806",
+      "toolUnknownCommand": "Unknown /tool command. Try /tool help for a list."
     },
     "linkTabs": {
       "overview": {
@@ -1094,6 +1104,8 @@
         "anomalyIsolation": "Anomaly (IsolationForest)",
         "anomalyScorePrefix": "score",
         "similarInternalCaption": "Precomputed similar internal URLs (cosine vs site pages)",
+        "similarAssistantHint": "Semantic similarity runs in the floating browser assistant (embeddings). Models download once per browser session.",
+        "openSimilarAssistant": "Open browser assistant",
         "socialPreviews": "Social previews",
         "facebookOg": "Facebook / Open Graph",
         "twitterX": "Twitter / X",

@@ -22,12 +22,10 @@ import {
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '../components';
-import BrowserMlPanel from '../components/ml/BrowserMlPanel';
 import { palette, PALETTE_CATEGORICAL } from '../utils/chartPalette';
+import { getGridColor, getChartTitleColor } from '../utils/chartJsDefaults';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
-
-const GRID_COLOR = 'rgba(71, 85, 105, 0.5)';
 
 /** Shared colors for title/meta bucket comparison (missing → long). */
 const COMPARE_BUCKET_COLORS = ['#EF4444', '#EAB308', '#22C55E', '#F97316'];
@@ -73,8 +71,8 @@ function barOpts(xTitle) {
       },
     },
     scales: {
-      x: { grid: { color: GRID_COLOR }, ...(xTitle ? { title: { display: true, text: xTitle } } : {}) },
-      y: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: pagesWord } },
+      x: { grid: { color: getGridColor() }, ...(xTitle ? { title: { display: true, text: xTitle } } : {}) },
+      y: { grid: { color: getGridColor() }, beginAtZero: true, title: { display: true, text: pagesWord } },
     },
   };
 }
@@ -87,8 +85,8 @@ function barOptsH() {
     maintainAspectRatio: false,
     plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx) => ` ${ctx.raw?.toLocaleString() ?? ctx.raw}` } } },
     scales: {
-      x: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: freq } },
-      y: { grid: { color: GRID_COLOR } },
+      x: { grid: { color: getGridColor() }, beginAtZero: true, title: { display: true, text: freq } },
+      y: { grid: { color: getGridColor() } },
     },
   };
 }
@@ -124,8 +122,8 @@ function groupedBarOpts(yTitle) {
       },
     },
     scales: {
-      x: { grid: { color: GRID_COLOR } },
-      y: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: yTitle ?? def, color: '#64748b' } },
+      x: { grid: { color: getGridColor() } },
+      y: { grid: { color: getGridColor() }, beginAtZero: true, title: { display: true, text: yTitle ?? def, color: getChartTitleColor() } },
     },
   };
 }
@@ -148,12 +146,12 @@ function stackedPercentBarOpts() {
     scales: {
       x: {
         stacked: true,
-        grid: { color: GRID_COLOR },
+        grid: { color: getGridColor() },
         beginAtZero: true,
         max: 100,
-        title: { display: true, text: pctAxis, color: '#64748b' },
+        title: { display: true, text: pctAxis, color: getChartTitleColor() },
       },
-      y: { stacked: true, grid: { color: GRID_COLOR } },
+      y: { stacked: true, grid: { color: getGridColor() } },
     },
   };
 }
@@ -177,7 +175,7 @@ function SectionHeader({ icon, title, description }) {
       </div>
       <div>
         <h2 className="text-lg font-bold text-bright">{title}</h2>
-        {description && <p className="text-sm text-slate-500 mt-0.5">{description}</p>}
+        {description && <p className="text-sm text-muted-foreground mt-0.5">{description}</p>}
       </div>
     </div>
   );
@@ -187,7 +185,7 @@ function CoverageBar({ label, pct, color }) {
   const safeP = Math.min(100, Math.max(0, pct ?? 0));
   return (
     <div className="space-y-1.5">
-      <div className="flex justify-between text-xs text-slate-400">
+      <div className="flex justify-between text-xs text-muted-foreground">
         <span className="font-medium">{label}</span>
         <span className={`font-bold ${color}`}>{safeP}%</span>
       </div>
@@ -233,7 +231,7 @@ function ThinPagesSection({ pages }) {
                 const wc = typeof p === 'object' ? p.word_count : null;
                 return (
                   <TableRow key={i} className="group">
-                    <TableCell className="text-slate-600 text-xs font-mono text-center w-8">{i + 1}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs font-mono text-center w-8">{i + 1}</TableCell>
                     <TableCell className="max-w-[360px]">
                       <a
                         href={url !== sj.emDash ? url : undefined}
@@ -251,7 +249,7 @@ function ThinPagesSection({ pages }) {
                       )}
                     </TableCell>
                     <TableCell className="w-8">
-                      <ExternalLink className="h-3.5 w-3.5 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                     </TableCell>
                   </TableRow>
                 );
@@ -472,64 +470,58 @@ export default function ContentAnalytics({ searchQuery = '' }) {
       {/* KPI stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card shadow>
-          <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+          <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
             <BookOpen className="h-4 w-4" /> {vca.meanWords}
           </div>
           <div className="text-3xl font-bold text-bright">
             {wcStats.mean != null ? Math.round(wcStats.mean).toLocaleString() : sj.emDash}
           </div>
-          <div className="text-xs text-slate-500 mt-1">{vca.perPage}</div>
+          <div className="text-xs text-muted-foreground mt-1">{vca.perPage}</div>
         </Card>
 
         <Card shadow>
-          <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+          <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
             <FileText className="h-4 w-4" /> {vca.medianWords}
           </div>
           <div className="text-3xl font-bold text-bright">
             {wcStats.median != null ? Math.round(wcStats.median).toLocaleString() : sj.emDash}
           </div>
-          <div className="text-xs text-slate-500 mt-1">{vca.perPage}</div>
+          <div className="text-xs text-muted-foreground mt-1">{vca.perPage}</div>
         </Card>
 
         <Card shadow>
-          <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+          <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
             <Globe className="h-4 w-4 text-blue-400" /> {vca.ogCoverage}
           </div>
           <div className="text-3xl font-bold text-blue-400">
             {sc.og_coverage_pct != null ? `${sc.og_coverage_pct}%` : sj.emDash}
           </div>
-          <div className="text-xs text-slate-500 mt-1">{vca.ogTags}</div>
+          <div className="text-xs text-muted-foreground mt-1">{vca.ogTags}</div>
         </Card>
 
         <Card shadow>
-          <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+          <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
             <Twitter className="h-4 w-4 text-sky-400" /> {vca.twitterCoverage}
           </div>
           <div className="text-3xl font-bold text-sky-400">
             {sc.twitter_coverage_pct != null ? `${sc.twitter_coverage_pct}%` : sj.emDash}
           </div>
-          <div className="text-xs text-slate-500 mt-1">{vca.twitterTags}</div>
+          <div className="text-xs text-muted-foreground mt-1">{vca.twitterTags}</div>
         </Card>
 
         <Card
           shadow
           className={hasThinPages ? 'ring-1 ring-amber-500/20 border-amber-900/30' : ''}
         >
-          <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${hasThinPages ? 'text-amber-400/80' : 'text-slate-500'}`}>
+          <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${hasThinPages ? 'text-amber-400/80' : 'text-muted-foreground'}`}>
             <AlertTriangle className={`h-4 w-4 ${hasThinPages ? 'text-amber-400' : ''}`} /> {vca.thinPages}
           </div>
-          <div className={`text-3xl font-bold ${hasThinPages ? 'text-amber-400' : 'text-slate-500'}`}>
+          <div className={`text-3xl font-bold ${hasThinPages ? 'text-amber-400' : 'text-muted-foreground'}`}>
             {thinPages.length}
           </div>
-          <div className="text-xs text-slate-500 mt-1">{vca.under300}</div>
+          <div className="text-xs text-muted-foreground mt-1">{vca.under300}</div>
         </Card>
       </div>
-
-      {Array.isArray(data?.links) && data.links.length > 0 && (
-        <Card shadow>
-          <BrowserMlPanel links={data.links} />
-        </Card>
-      )}
 
       {(data.hreflang_summary?.pages_200 > 0 || (data.outbound_link_domains?.length ?? 0) > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -537,19 +529,19 @@ export default function ContentAnalytics({ searchQuery = '' }) {
             <Card padding="tight" shadow>
               <div className="flex items-center gap-2 mb-3">
                 <Globe className="h-4 w-4 text-sky-400" />
-                <h3 className="text-sm font-bold text-slate-200">{vca.i18nTitle}</h3>
+                <h3 className="text-sm font-bold text-foreground">{vca.i18nTitle}</h3>
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div className="bg-brand-900 border border-default rounded-lg p-3">
-                  <div className="text-slate-500 text-xs uppercase tracking-wider">{vca.pages2xx}</div>
-                  <div className="text-xl font-bold text-slate-200">{data.hreflang_summary.pages_200}</div>
+                  <div className="text-muted-foreground text-xs uppercase tracking-wider">{vca.pages2xx}</div>
+                  <div className="text-xl font-bold text-foreground">{data.hreflang_summary.pages_200}</div>
                 </div>
                 <div className="bg-brand-900 border border-default rounded-lg p-3">
-                  <div className="text-slate-500 text-xs uppercase tracking-wider">{vca.missingHtmlLang}</div>
+                  <div className="text-muted-foreground text-xs uppercase tracking-wider">{vca.missingHtmlLang}</div>
                   <div className="text-xl font-bold text-amber-400">{data.hreflang_summary.pages_missing_html_lang ?? sj.emDash}</div>
                 </div>
                 <div className="bg-brand-900 border border-default rounded-lg p-3 col-span-2">
-                  <div className="text-slate-500 text-xs uppercase tracking-wider">{vca.pagesHreflang}</div>
+                  <div className="text-muted-foreground text-xs uppercase tracking-wider">{vca.pagesHreflang}</div>
                   <div className="text-xl font-bold text-sky-400">{data.hreflang_summary.pages_with_hreflang_links ?? sj.emDash}</div>
                 </div>
               </div>
@@ -559,7 +551,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
             <Card padding="tight" shadow className={data.hreflang_summary?.pages_200 ? '' : 'lg:col-span-2'}>
               <div className="flex items-center gap-2 mb-3">
                 <Link2 className="h-4 w-4 text-orange-400" />
-                <h3 className="text-sm font-bold text-slate-200">{vca.outboundDomains}</h3>
+                <h3 className="text-sm font-bold text-foreground">{vca.outboundDomains}</h3>
               </div>
               <div className="max-h-64 overflow-y-auto rounded-lg border border-muted">
                 <Table>
@@ -573,7 +565,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                   <TableBody>
                     {data.outbound_link_domains.map((row) => (
                       <TableRow key={row.host}>
-                        <TableCell className="font-mono text-xs text-slate-300">{row.host}</TableCell>
+                        <TableCell className="font-mono text-xs text-foreground">{row.host}</TableCell>
                         <TableCell className="text-right font-mono text-xs tabular-nums">{row.link_count ?? sj.emDash}</TableCell>
                         <TableCell className="text-right font-mono text-xs tabular-nums">{row.page_count ?? sj.emDash}</TableCell>
                       </TableRow>
@@ -590,7 +582,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
         <Card padding="tight" shadow>
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="h-4 w-4 text-violet-400" />
-            <h3 className="text-sm font-bold text-slate-200">{vca.languageMix}</h3>
+            <h3 className="text-sm font-bold text-foreground">{vca.languageMix}</h3>
           </div>
           <div className="h-56">
             <Bar
@@ -614,7 +606,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
         <Card padding="tight" shadow>
           <div className="flex items-center gap-2 mb-3">
             <Tag className="h-4 w-4 text-cyan-400" />
-            <h3 className="text-sm font-bold text-slate-200">{vca.entityLabels}</h3>
+            <h3 className="text-sm font-bold text-foreground">{vca.entityLabels}</h3>
           </div>
           <div className="h-56">
             <Bar
@@ -638,7 +630,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
         <Card padding="tight" shadow>
           <div className="flex items-center gap-2 mb-3">
             <Tag className="h-4 w-4 text-amber-400" />
-            <h3 className="text-sm font-bold text-slate-200">{vca.parentTopicsToken}</h3>
+            <h3 className="text-sm font-bold text-foreground">{vca.parentTopicsToken}</h3>
           </div>
           <div className="max-h-80 overflow-y-auto rounded-lg border border-muted">
             <Table>
@@ -652,9 +644,9 @@ export default function ContentAnalytics({ searchQuery = '' }) {
               <TableBody>
                 {data.keyword_opportunities.token_topic_clusters.map((cl, idx) => (
                   <TableRow key={`tok-${cl.top_keyword}-${idx}`}>
-                    <TableCell className="font-medium text-slate-200">{cl.top_keyword}</TableCell>
-                    <TableCell className="font-mono text-xs text-slate-400">{cl.cluster_score ?? sj.emDash}</TableCell>
-                    <TableCell className="text-xs text-slate-400">
+                    <TableCell className="font-medium text-foreground">{cl.top_keyword}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{cl.cluster_score ?? sj.emDash}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
                       {Array.isArray(cl.keywords) ? cl.keywords.join(', ') : sj.emDash}
                     </TableCell>
                   </TableRow>
@@ -669,7 +661,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
         <Card padding="tight" shadow>
           <div className="flex items-center gap-2 mb-3">
             <Layers className="h-4 w-4 text-emerald-400" />
-            <h3 className="text-sm font-bold text-slate-200">{vca.parentTopicsSemantic}</h3>
+            <h3 className="text-sm font-bold text-foreground">{vca.parentTopicsSemantic}</h3>
           </div>
           <div className="max-h-80 overflow-y-auto rounded-lg border border-muted">
             <Table>
@@ -683,9 +675,9 @@ export default function ContentAnalytics({ searchQuery = '' }) {
               <TableBody>
                 {data.semantic_keyword_clusters.map((cl, idx) => (
                   <TableRow key={`${cl.top_keyword}-${idx}`}>
-                    <TableCell className="font-medium text-slate-200">{cl.top_keyword}</TableCell>
-                    <TableCell className="font-mono text-xs text-slate-400">{cl.cluster_score ?? sj.emDash}</TableCell>
-                    <TableCell className="text-xs text-slate-400">
+                    <TableCell className="font-medium text-foreground">{cl.top_keyword}</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{cl.cluster_score ?? sj.emDash}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
                       {Array.isArray(cl.keywords) ? cl.keywords.join(', ') : sj.emDash}
                     </TableCell>
                   </TableRow>
@@ -702,10 +694,10 @@ export default function ContentAnalytics({ searchQuery = '' }) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {hasStatusChart && (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-slate-200 mb-1">{vca.urlsByStatus}</h3>
-                <p className="text-xs text-slate-500 mb-3">
+                <h3 className="text-sm font-bold text-foreground mb-1">{vca.urlsByStatus}</h3>
+                <p className="text-xs text-muted-foreground mb-3">
                   {vca.totalCrawled}{' '}
-                  <span className="text-slate-300 font-semibold">{Number(summary.total_urls || 0).toLocaleString()}</span>
+                  <span className="text-foreground font-semibold">{Number(summary.total_urls || 0).toLocaleString()}</span>
                   {summary.success_rate != null && (
                     <> · <span className="text-green-400 font-semibold">{summary.success_rate}%</span> {vca.returned2xx}
                     </>
@@ -748,16 +740,16 @@ export default function ContentAnalytics({ searchQuery = '' }) {
             )}
             {hasRtDist && (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-slate-200 mb-1">{vca.responseTimeDist}</h3>
-                <p className="text-xs text-slate-500 mb-3">
+                <h3 className="text-sm font-bold text-foreground mb-1">{vca.responseTimeDist}</h3>
+                <p className="text-xs text-muted-foreground mb-3">
                   Pages per latency band
                   {rtStats.p50 != null && (
                     <>
                       {' '}
-                      · p50: <span className="text-slate-300 font-mono">{Math.round(rtStats.p50)}ms</span>
+                      · p50: <span className="text-foreground font-mono">{Math.round(rtStats.p50)}ms</span>
                       {rtStats.p95 != null && (
                         <>
-                          , p95: <span className="text-slate-300 font-mono">{Math.round(rtStats.p95)}ms</span>
+                          , p95: <span className="text-foreground font-mono">{Math.round(rtStats.p95)}ms</span>
                         </>
                       )}
                     </>
@@ -791,7 +783,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {hasIssueBar && (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-slate-200 mb-3">URLs flagged by issue type</h3>
+                <h3 className="text-sm font-bold text-foreground mb-3">URLs flagged by issue type</h3>
                 <div className="h-80">
                   <Bar
                     data={{
@@ -812,7 +804,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
             )}
             {hasSeoOptimalBar && (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-slate-200 mb-3">Pages in “good” ranges</h3>
+                <h3 className="text-sm font-bold text-foreground mb-3">Pages in “good” ranges</h3>
                 <div className="h-56">
                   <Bar
                     data={{
@@ -837,7 +829,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
             )}
             {hasThinCompare && (
               <Card padding="tight" className={hasIssueBar && hasSeoOptimalBar ? 'lg:col-span-2' : ''}>
-                <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.thinSignals}</h3>
+                <h3 className="text-sm font-bold text-foreground mb-3">{vca.thinSignals}</h3>
                 <div className="h-48 max-w-md">
                   <Bar
                     data={{
@@ -880,7 +872,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
           {thinPagesFiltered.length > 0 ? (
             <ThinPagesSection pages={thinPagesFiltered} />
           ) : (
-            <p className="text-sm text-slate-500">{vca.noThinSearch}</p>
+            <p className="text-sm text-muted-foreground">{vca.noThinSearch}</p>
           )}
         </Card>
       )}
@@ -890,7 +882,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
         <SectionHeader icon={BarChart2} title={vca.contentMetrics} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.wordCountDist}</h3>
+            <h3 className="text-sm font-bold text-foreground mb-3">{vca.wordCountDist}</h3>
             <div className="h-64">
               {wcLabels.length > 0 ? (
                 <Bar
@@ -899,13 +891,13 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
               )}
             </div>
           </Card>
 
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.readingLevelDist}</h3>
+            <h3 className="text-sm font-bold text-foreground mb-3">{vca.readingLevelDist}</h3>
             <div className="h-64">
               {rlLabels.length > 0 ? (
                 <Bar
@@ -917,13 +909,13 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
               )}
             </div>
           </Card>
 
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.contentHtmlRatio}</h3>
+            <h3 className="text-sm font-bold text-foreground mb-3">{vca.contentHtmlRatio}</h3>
             <div className="h-64">
               {crLabels.length > 0 ? (
                 <Bar
@@ -932,13 +924,13 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
               )}
             </div>
           </Card>
 
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.topKeywords}</h3>
+            <h3 className="text-sm font-bold text-foreground mb-3">{vca.topKeywords}</h3>
             <div className="h-[28rem]">
               {kwLabels.length > 0 ? (
                 <Bar
@@ -947,14 +939,14 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{vca.noKeywordData}</div>
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{vca.noKeywordData}</div>
               )}
             </div>
           </Card>
 
           {hasWcPercBar && (
             <Card padding="tight" className="lg:col-span-2">
-              <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.wordCountLadder}</h3>
+              <h3 className="text-sm font-bold text-foreground mb-3">{vca.wordCountLadder}</h3>
               <div className="h-56">
                 <Bar
                   data={{
@@ -978,11 +970,11 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                       },
                     },
                     scales: {
-                      x: { grid: { color: GRID_COLOR }, title: { display: true, text: 'Statistic', color: '#64748b' } },
+                      x: { grid: { color: getGridColor() }, title: { display: true, text: 'Statistic', color: getChartTitleColor() } },
                       y: {
-                        grid: { color: GRID_COLOR },
+                        grid: { color: getGridColor() },
                         beginAtZero: true,
-                        title: { display: true, text: 'Words', color: '#64748b' },
+                        title: { display: true, text: 'Words', color: getChartTitleColor() },
                       },
                     },
                   }}
@@ -1001,7 +993,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* H1 Distribution Doughnut */}
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.h1Dist}</h3>
+              <h3 className="text-sm font-bold text-foreground mb-3">{vca.h1Dist}</h3>
               <div className="h-56">
                 {hasH1Data ? (
                   <Doughnut
@@ -1017,14 +1009,14 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                     options={doughnutOpts()}
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
+                  <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
                 )}
               </div>
             </Card>
 
             {/* Title Length Quality */}
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.titleTagQuality}</h3>
+              <h3 className="text-sm font-bold text-foreground mb-3">{vca.titleTagQuality}</h3>
               <div className="h-56">
                 {hasTitleData ? (
                   <Bar
@@ -1039,14 +1031,14 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                     plugins={[barValueLabelsPlugin]}
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
+                  <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
                 )}
               </div>
             </Card>
 
             {/* Meta Description Quality */}
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.metaDescQuality}</h3>
+              <h3 className="text-sm font-bold text-foreground mb-3">{vca.metaDescQuality}</h3>
               <div className="h-56">
                 {hasMetaData ? (
                   <Bar
@@ -1061,7 +1053,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                     plugins={[barValueLabelsPlugin]}
                   />
                 ) : (
-                  <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
+                  <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
                 )}
               </div>
             </Card>
@@ -1071,7 +1063,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {hasTitleMetaCompare && (
                 <Card padding="tight">
-                  <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.titleVsMetaBuckets}</h3>
+                  <h3 className="text-sm font-bold text-foreground mb-3">{vca.titleVsMetaBuckets}</h3>
                   <div className="h-64">
                     <Bar
                       data={{
@@ -1097,7 +1089,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
               )}
               {hasSeoGapCountCompare && (
                 <Card padding="tight">
-                  <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.seoOptimalVsGapCounts}</h3>
+                  <h3 className="text-sm font-bold text-foreground mb-3">{vca.seoOptimalVsGapCounts}</h3>
                   <div className="h-64">
                     <Bar
                       data={{
@@ -1149,7 +1141,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Grouped bar: OG / Twitter / OG Image coverage */}
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.socialOverview}</h3>
+              <h3 className="text-sm font-bold text-foreground mb-3">{vca.socialOverview}</h3>
               <div className="h-64">
                 <Bar
                   data={{
@@ -1170,8 +1162,8 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                   options={{
                     ...groupedBarOpts(),
                     scales: {
-                      x: { stacked: true, grid: { color: GRID_COLOR } },
-                      y: { stacked: true, grid: { color: GRID_COLOR }, beginAtZero: true, max: 100, title: { display: true, text: 'Coverage %', color: '#64748b' } },
+                      x: { stacked: true, grid: { color: getGridColor() } },
+                      y: { stacked: true, grid: { color: getGridColor() }, beginAtZero: true, max: 100, title: { display: true, text: 'Coverage %', color: getChartTitleColor() } },
                     },
                     plugins: {
                       legend: { display: true, labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 } },
@@ -1185,7 +1177,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
             {/* OG Image coverage doughnut */}
             {hasOgImgData && (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-slate-200 mb-3">OG Image Coverage</h3>
+                <h3 className="text-sm font-bold text-foreground mb-3">OG Image Coverage</h3>
                 <div className="h-64">
                   <Doughnut
                     data={{
@@ -1213,7 +1205,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
 
         {hasSocialMissCompare && (
           <Card padding="tight" shadow>
-            <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.missingSocialUrlCompare}</h3>
+            <h3 className="text-sm font-bold text-foreground mb-3">{vca.missingSocialUrlCompare}</h3>
             <div className="h-56 max-w-lg">
               <Bar
                 data={{
@@ -1238,11 +1230,11 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                     },
                   },
                   scales: {
-                    x: { grid: { color: GRID_COLOR } },
+                    x: { grid: { color: getGridColor() } },
                     y: {
-                      grid: { color: GRID_COLOR },
+                      grid: { color: getGridColor() },
                       beginAtZero: true,
-                      title: { display: true, text: sj.urls, color: '#64748b' },
+                      title: { display: true, text: sj.urls, color: getChartTitleColor() },
                     },
                   },
                 }}
@@ -1257,8 +1249,8 @@ export default function ContentAnalytics({ searchQuery = '' }) {
             <Card overflowHidden padding="none">
               <div className="px-4 py-3 border-b border-muted flex items-center gap-2">
                 <Globe className="h-4 w-4 text-blue-400" />
-                <h3 className="text-sm font-bold text-slate-200">Missing Open Graph Tags</h3>
-                <span className="ml-auto text-xs font-bold text-slate-500 bg-slate-700/60 rounded-full px-2.5 py-0.5">
+                <h3 className="text-sm font-bold text-foreground">Missing Open Graph Tags</h3>
+                <span className="ml-auto text-xs font-bold text-muted-foreground bg-brand-700/60 rounded-full px-2.5 py-0.5">
                   {missingOgFiltered.length}
                 </span>
               </div>
@@ -1275,7 +1267,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                   <TableBody striped>
                     {missingOgFiltered.slice(0, 50).map((u, i) => (
                       <TableRow key={i} className="group">
-                        <TableCell className="text-slate-600 text-xs font-mono text-center w-8">{i + 1}</TableCell>
+                        <TableCell className="text-muted-foreground text-xs font-mono text-center w-8">{i + 1}</TableCell>
                         <TableCell className="max-w-[360px]">
                           <a
                             href={u}
@@ -1288,14 +1280,14 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                           </a>
                         </TableCell>
                         <TableCell className="w-8">
-                          <ExternalLink className="h-3.5 w-3.5 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
                 ) : (
-                  <p className="p-4 text-sm text-slate-500">{vca.noUrlSearch}</p>
+                  <p className="p-4 text-sm text-muted-foreground">{vca.noUrlSearch}</p>
                 )}
               </div>
             </Card>
@@ -1305,8 +1297,8 @@ export default function ContentAnalytics({ searchQuery = '' }) {
             <Card overflowHidden padding="none">
               <div className="px-4 py-3 border-b border-muted flex items-center gap-2">
                 <Twitter className="h-4 w-4 text-sky-400" />
-                <h3 className="text-sm font-bold text-slate-200">Missing Twitter Card Tags</h3>
-                <span className="ml-auto text-xs font-bold text-slate-500 bg-slate-700/60 rounded-full px-2.5 py-0.5">
+                <h3 className="text-sm font-bold text-foreground">Missing Twitter Card Tags</h3>
+                <span className="ml-auto text-xs font-bold text-muted-foreground bg-brand-700/60 rounded-full px-2.5 py-0.5">
                   {missingTwitterFiltered.length}
                 </span>
               </div>
@@ -1323,7 +1315,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                   <TableBody striped>
                     {missingTwitterFiltered.slice(0, 50).map((u, i) => (
                       <TableRow key={i} className="group">
-                        <TableCell className="text-slate-600 text-xs font-mono text-center w-8">{i + 1}</TableCell>
+                        <TableCell className="text-muted-foreground text-xs font-mono text-center w-8">{i + 1}</TableCell>
                         <TableCell className="max-w-[360px]">
                           <a
                             href={u}
@@ -1336,14 +1328,14 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                           </a>
                         </TableCell>
                         <TableCell className="w-8">
-                          <ExternalLink className="h-3.5 w-3.5 text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                         </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
                 ) : (
-                  <p className="p-4 text-sm text-slate-500">{vca.noUrlSearch}</p>
+                  <p className="p-4 text-sm text-muted-foreground">{vca.noUrlSearch}</p>
                 )}
               </div>
             </Card>
@@ -1352,7 +1344,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
           {(sc.missing_og || []).length === 0 && (sc.missing_twitter || []).length === 0 && (
             <Card className="col-span-2 flex items-center gap-3 py-6">
               <Share2 className="h-8 w-8 text-green-500" />
-              <p className="text-slate-400 text-sm">All pages have social meta tags, or no data available yet. Run a crawl to populate.</p>
+              <p className="text-muted-foreground text-sm">All pages have social meta tags, or no data available yet. Run a crawl to populate.</p>
             </Card>
           )}
         </div>
@@ -1363,18 +1355,18 @@ export default function ContentAnalytics({ searchQuery = '' }) {
           <SectionHeader icon={Layers} title={vca.siteArchitecture} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-slate-200 mb-3">Crawl Depth Distribution</h3>
+              <h3 className="text-sm font-bold text-foreground mb-3">Crawl Depth Distribution</h3>
               {(depthDist.max_depth != null || depthDist.avg_depth != null) && (
-                <p className="text-xs text-slate-500 mb-3">
+                <p className="text-xs text-muted-foreground mb-3">
                   {depthDist.max_depth != null && (
                     <>
-                      Max depth: <span className="text-slate-300 font-semibold">{depthDist.max_depth}</span>
+                      Max depth: <span className="text-foreground font-semibold">{depthDist.max_depth}</span>
                     </>
                   )}
                   {depthDist.max_depth != null && depthDist.avg_depth != null && ' · '}
                   {depthDist.avg_depth != null && (
                     <>
-                      avg: <span className="text-slate-300 font-semibold">{depthDist.avg_depth}</span>
+                      avg: <span className="text-foreground font-semibold">{depthDist.avg_depth}</span>
                     </>
                   )}
                 </p>
@@ -1400,21 +1392,21 @@ export default function ContentAnalytics({ searchQuery = '' }) {
             {/* Word count percentile summary */}
             {wcStats.median != null && (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-slate-200 mb-3">{vca.wordCountPercentiles}</h3>
+                <h3 className="text-sm font-bold text-foreground mb-3">{vca.wordCountPercentiles}</h3>
                 <div className="space-y-3">
                   {[
-                    { label: 'Min', value: wcStats.min, color: 'text-slate-400', barW: 0 },
+                    { label: 'Min', value: wcStats.min, color: 'text-muted-foreground', barW: 0 },
                     { label: '25th Percentile (P25)', value: wcStats.p25, color: 'text-amber-400', barW: 25 },
                     { label: 'Median (P50)', value: wcStats.median, color: 'text-blue-400', barW: 50 },
                     { label: 'Mean (Avg)', value: wcStats.mean, color: 'text-purple-400', barW: null },
                     { label: '75th Percentile (P75)', value: wcStats.p75, color: 'text-green-400', barW: 75 },
-                    { label: 'Max', value: wcStats.max, color: 'text-slate-300', barW: 100 },
+                    { label: 'Max', value: wcStats.max, color: 'text-foreground', barW: 100 },
                   ].map(({ label, value, color, barW }) => {
                     const pct = barW != null ? barW : wcStats.max > 0 ? Math.min(100, (value / wcStats.max) * 100) : 0;
                     return (
                       <div key={label} className="space-y-0.5">
                         <div className="flex justify-between text-xs">
-                          <span className="text-slate-500">{label}</span>
+                          <span className="text-muted-foreground">{label}</span>
                           <span className={`font-bold tabular-nums ${color}`}>
                             {value != null ? Math.round(value).toLocaleString() : '—'}
                           </span>

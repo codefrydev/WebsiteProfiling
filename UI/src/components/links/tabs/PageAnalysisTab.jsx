@@ -2,12 +2,12 @@ import { useMemo, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { Gauge, ChevronDown, ChevronRight } from 'lucide-react';
 import { useReport } from '../../../context/useReport';
+import { useBrowserAssistant } from '../../../context/useBrowserAssistant.js';
 import { formatLhMetric, parseKeywords, normaliseKw, severityBg } from '../../../utils/linkUtils';
 import { palette, scoreBandColor } from '../../../utils/chartPalette';
-import { registerChartJsBase, GRID_COLOR, barOptionsHorizontal } from '../../../utils/chartJsDefaults';
+import { registerChartJsBase, getGridColor, barOptionsHorizontal } from '../../../utils/chartJsDefaults';
 import { LhAuditExpandable } from '../../lighthouse';
 import OGPreview from '../OGPreview';
-import SimilarPagesTf from '../SimilarPagesTf';
 import { strings, format } from '../../../lib/strings';
 
 registerChartJsBase();
@@ -39,9 +39,9 @@ function NerBlock({ nlp }) {
   if (count == null && labels.length === 0) return null;
   return (
     <div className="bg-brand-900 border border-default rounded-lg p-3 sm:col-span-2">
-      <div className="text-slate-500 mb-1">{p.namedEntities}</div>
+      <div className="text-muted-foreground mb-1">{p.namedEntities}</div>
       {count != null && (
-        <div className="text-slate-200 mb-2">{format(p.totalEntities, { count: Number(count).toLocaleString() })}</div>
+        <div className="text-foreground mb-2">{format(p.totalEntities, { count: Number(count).toLocaleString() })}</div>
       )}
       {labels.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
@@ -102,7 +102,7 @@ function ImageUrlListItem({ rawUrl, pageUrl }) {
         </div>
       ) : null}
       {showImg && broken ? (
-        <p className="text-[10px] text-slate-500 mb-1 italic">{p.previewFailed}</p>
+        <p className="text-[10px] text-muted-foreground mb-1 italic">{p.previewFailed}</p>
       ) : null}
       <a href={href} target="_blank" rel="noreferrer" className="text-xs font-mono text-blue-400/90 hover:underline break-all">
         {href}
@@ -128,11 +128,11 @@ function ResourceSection({ title, urls, defaultOpen = false, variant = 'links', 
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center gap-2 px-4 py-3 text-left text-sm font-medium text-slate-200 hover:bg-brand-800/80"
+        className="w-full flex items-center gap-2 px-4 py-3 text-left text-sm font-medium text-foreground hover:bg-brand-800/80"
       >
         {open ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
         <span>{title}</span>
-        <span className="text-xs text-slate-500 ml-auto font-mono">{list.length}</span>
+        <span className="text-xs text-muted-foreground ml-auto font-mono">{list.length}</span>
       </button>
       {open && (
         <div className={`px-4 pb-3 border-t border-muted ${scrollClass}`}>
@@ -160,7 +160,7 @@ function ResourceSection({ title, urls, defaultOpen = false, variant = 'links', 
             <button
               type="button"
               onClick={() => setShowAll(!showAll)}
-              className="mt-2 text-xs text-slate-500 hover:text-bright"
+              className="mt-2 text-xs text-muted-foreground hover:text-bright"
             >
               {showAll ? p.showLess : format(p.showAll, { count: list.length })}
             </button>
@@ -173,9 +173,11 @@ function ResourceSection({ title, urls, defaultOpen = false, variant = 'links', 
 
 export default function PageAnalysisTab({ link }) {
   const p = strings.components.linkTabs.pageAnalysis;
+  const sp = strings.components.similarPages;
   const sj = strings.common;
   const lhLabels = strings.lighthouse.categoryLabels;
   const { data } = useReport();
+  const { openAssistant } = useBrowserAssistant();
   const pa = link.page_analysis && typeof link.page_analysis === 'object' ? link.page_analysis : {};
   const lh = link.lighthouse || null;
   const nlpSignals = link.nlp_entities || pa?.signals?.nlp_entities;
@@ -247,15 +249,15 @@ export default function PageAnalysisTab({ link }) {
     <div className="space-y-8">
       <div>
         <h2 className="text-lg font-bold text-bright mb-1">{p.reportTitle}</h2>
-        {link.title && <p className="text-sm text-slate-400 mb-1">{link.title}</p>}
+        {link.title && <p className="text-sm text-muted-foreground mb-1">{link.title}</p>}
         {reportAt && (
-          <p className="text-xs text-slate-500 font-mono">{reportAt}</p>
+          <p className="text-xs text-muted-foreground font-mono">{reportAt}</p>
         )}
       </div>
 
       {/* Summary */}
       <div>
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">{p.summary}</h3>
+        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">{p.summary}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {[
             { label: p.totalWords, value: link.word_count != null ? link.word_count.toLocaleString() : sj.emDash },
@@ -268,14 +270,14 @@ export default function PageAnalysisTab({ link }) {
             { label: p.sslCertExpires, value: sslExp ? sslExp.slice(0, 10) : sj.emDash },
           ].map(({ label, value }) => (
             <div key={label} className="bg-brand-900 border border-default rounded-xl p-3">
-              <div className="text-xs text-slate-500 mb-1">{label}</div>
-              <div className="text-sm font-semibold text-slate-200">{value}</div>
+              <div className="text-xs text-muted-foreground mb-1">{label}</div>
+              <div className="text-sm font-semibold text-foreground">{value}</div>
             </div>
           ))}
         </div>
         <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-brand-900 border border-default rounded-xl p-3">
-            <div className="text-xs text-slate-500 mb-2">{p.pageResourcesCaption}</div>
+            <div className="text-xs text-muted-foreground mb-2">{p.pageResourcesCaption}</div>
             <div className="h-48">
               <Bar
                 data={{
@@ -288,7 +290,7 @@ export default function PageAnalysisTab({ link }) {
           </div>
           {lhCategoryChart && (
             <div className="bg-brand-900 border border-default rounded-xl p-3">
-              <div className="text-xs text-slate-500 mb-2">{p.lhCategoryCaption}</div>
+              <div className="text-xs text-muted-foreground mb-2">{p.lhCategoryCaption}</div>
               <div className="h-48">
                 <Bar
                   data={{
@@ -300,9 +302,9 @@ export default function PageAnalysisTab({ link }) {
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                      x: { grid: { color: GRID_COLOR } },
+                      x: { grid: { color: getGridColor() } },
                       y: {
-                        grid: { color: GRID_COLOR },
+                        grid: { color: getGridColor() },
                         beginAtZero: true,
                         max: 100,
                         title: { display: true, text: sj.score, color: '#64748b' },
@@ -325,23 +327,23 @@ export default function PageAnalysisTab({ link }) {
         (nlpSignals && (nlpSignals.entity_count != null || (nlpSignals.top_entity_labels && nlpSignals.top_entity_labels.length > 0)))) && (
         <div className="border border-violet-500/20 rounded-xl p-4 bg-violet-950/20 space-y-3">
           <h3 className="text-xs font-bold text-violet-400 uppercase tracking-wider">{p.intelligenceMl}</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-slate-300">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-foreground">
             {link.duplicate_group_id && (
               <div className="bg-brand-900 border border-default rounded-lg p-3">
-                <div className="text-slate-500 mb-1">{p.duplicateCluster}</div>
+                <div className="text-muted-foreground mb-1">{p.duplicateCluster}</div>
                 <div className="font-mono text-violet-300">{link.duplicate_group_id}</div>
               </div>
             )}
             {link.detected_language && (
               <div className="bg-brand-900 border border-default rounded-lg p-3">
-                <div className="text-slate-500 mb-1">{p.detectedLanguage}</div>
-                <div className="font-mono text-slate-200">{link.detected_language}</div>
+                <div className="text-muted-foreground mb-1">{p.detectedLanguage}</div>
+                <div className="font-mono text-foreground">{link.detected_language}</div>
               </div>
             )}
             <NerBlock nlp={nlpSignals} />
             {link.keyphrases?.phrases?.length > 0 && (
               <div className="bg-brand-900 border border-default rounded-lg p-3 sm:col-span-2">
-                <div className="text-slate-500 mb-2">{p.keyphrasesKeybert}</div>
+                <div className="text-muted-foreground mb-2">{p.keyphrasesKeybert}</div>
                 <ul className="flex flex-wrap gap-2">
                   {link.keyphrases.phrases.map((pair, i) => (
                     <li
@@ -350,7 +352,7 @@ export default function PageAnalysisTab({ link }) {
                     >
                       {pair[0]}
                       {typeof pair[1] === 'number' && (
-                        <span className="text-slate-500 ml-1">({pair[1].toFixed(2)})</span>
+                        <span className="text-muted-foreground ml-1">({pair[1].toFixed(2)})</span>
                       )}
                     </li>
                   ))}
@@ -359,7 +361,7 @@ export default function PageAnalysisTab({ link }) {
             )}
             {link.ml_anomaly && (
               <div className="bg-brand-900 border border-default rounded-lg p-3 sm:col-span-2">
-                <div className="text-slate-500 mb-1">{p.anomalyIsolation}</div>
+                <div className="text-muted-foreground mb-1">{p.anomalyIsolation}</div>
                 <div className="text-amber-400/90">
                   {p.anomalyScorePrefix} {link.ml_anomaly.anomaly_score} — {(link.ml_anomaly.reasons || []).join(', ')}
                 </div>
@@ -368,7 +370,7 @@ export default function PageAnalysisTab({ link }) {
           </div>
           {similarRows.length > 0 && (
             <div>
-              <div className="text-xs text-slate-500 mb-2">{p.similarInternalCaption}</div>
+              <div className="text-xs text-muted-foreground mb-2">{p.similarInternalCaption}</div>
               <ul className="space-y-1 max-h-40 overflow-y-auto">
                 {similarRows.map((row) => (
                   <li key={row.url} className="flex flex-wrap items-baseline gap-2 gap-y-0">
@@ -386,14 +388,26 @@ export default function PageAnalysisTab({ link }) {
         </div>
       )}
 
-      <SimilarPagesTf link={link} allLinks={data?.links || []} />
+      <div className="border border-cyan-500/25 rounded-xl p-4 bg-cyan-950/15">
+        <h3 className="text-xs font-bold text-cyan-400/90 uppercase tracking-wider mb-2 flex items-center gap-2">
+          {sp.sectionTitle}
+        </h3>
+        <p className="text-xs text-muted-foreground mb-3">{p.similarAssistantHint}</p>
+        <button
+          type="button"
+          onClick={() => openAssistant(link)}
+          className="text-xs font-medium px-3 py-1.5 rounded-lg bg-cyan-900/50 text-cyan-200 border border-cyan-700/40 hover:bg-cyan-800/50"
+        >
+          {p.openSimilarAssistant}
+        </button>
+      </div>
 
       {/* Social previews */}
       <div>
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">{p.socialPreviews}</h3>
+        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">{p.socialPreviews}</h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
-            <div className="text-xs text-slate-500 mb-2">{p.facebookOg}</div>
+            <div className="text-xs text-muted-foreground mb-2">{p.facebookOg}</div>
             <OGPreview
               url={link.url}
               ogTitle={link.og_title}
@@ -402,17 +416,17 @@ export default function PageAnalysisTab({ link }) {
             />
           </div>
           <div className="bg-brand-900 border border-default rounded-xl p-4 space-y-2">
-            <div className="text-xs text-slate-500 mb-2">{p.twitterX}</div>
-            <div className="text-sm text-slate-200 font-medium">{link.twitter_title || link.title || sj.emDash}</div>
-            <div className="text-xs text-slate-400 line-clamp-3">{link.og_description || link.meta_description || sj.emDash}</div>
-            <div className="text-xs text-slate-500 font-mono truncate">{link.url}</div>
+            <div className="text-xs text-muted-foreground mb-2">{p.twitterX}</div>
+            <div className="text-sm text-foreground font-medium">{link.twitter_title || link.title || sj.emDash}</div>
+            <div className="text-xs text-muted-foreground line-clamp-3">{link.og_description || link.meta_description || sj.emDash}</div>
+            <div className="text-xs text-muted-foreground font-mono truncate">{link.url}</div>
           </div>
         </div>
       </div>
 
       {/* Lighthouse */}
       <div>
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
           <Gauge className="h-3.5 w-3.5" /> {p.webVitalsLighthouse}
         </h3>
         {lh ? (
@@ -424,7 +438,7 @@ export default function PageAnalysisTab({ link }) {
                 const color = score != null ? scoreBandColor(score) : 'rgb(71,85,105)';
                 return (
                   <div key={cat} className="bg-brand-900 rounded-xl p-3 border border-default text-center">
-                    <div className="text-xs text-slate-500 capitalize mb-1">{lhLabels[cat] || cat.replace('-', ' ')}</div>
+                    <div className="text-xs text-muted-foreground capitalize mb-1">{lhLabels[cat] || cat.replace('-', ' ')}</div>
                     <div className="text-xl font-bold" style={{ color }}>{score != null ? score : sj.emDash}</div>
                   </div>
                 );
@@ -435,18 +449,18 @@ export default function PageAnalysisTab({ link }) {
                 const mm = lh.median_metrics || {};
                 return (
                   <div key={key}>
-                    <span className="text-slate-500">{label} </span>
-                    <span className="text-slate-200 font-mono">{formatLhMetric(key, mm[key])}</span>
+                    <span className="text-muted-foreground">{label} </span>
+                    <span className="text-foreground font-mono">{formatLhMetric(key, mm[key])}</span>
                   </div>
                 );
               })}
             </div>
             {(lh.top_failures || []).length > 0 && (
               <div className="space-y-2">
-                <div className="text-xs text-slate-500">{p.lhRecommendations}</div>
+                <div className="text-xs text-muted-foreground">{p.lhRecommendations}</div>
                 {(lh.top_failures || []).map((f, i) => (
-                  <div key={i} className="bg-brand-800 border border-default rounded-lg px-3 py-2 text-xs text-slate-300">
-                    <span className="text-slate-500 font-mono mr-2">{f.id}</span>
+                  <div key={i} className="bg-brand-800 border border-default rounded-lg px-3 py-2 text-xs text-foreground">
+                    <span className="text-muted-foreground font-mono mr-2">{f.id}</span>
                     {f.helpText || f.title || f.id}
                   </div>
                 ))}
@@ -455,7 +469,7 @@ export default function PageAnalysisTab({ link }) {
 
             {failingLighthouseAudits.length > 0 && (
               <div className="mt-6 space-y-2">
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-muted-foreground">
                   {format(p.failingAuditsCaption, { count: failingLighthouseAudits.length })}
                 </div>
                 <ul className="space-y-2">
@@ -467,7 +481,7 @@ export default function PageAnalysisTab({ link }) {
             )}
           </>
         ) : (
-          <p className="text-sm text-slate-500 bg-brand-900 border border-default rounded-xl p-4">
+          <p className="text-sm text-muted-foreground bg-brand-900 border border-default rounded-xl p-4">
             {p.noLhData}
           </p>
         )}
@@ -476,11 +490,11 @@ export default function PageAnalysisTab({ link }) {
       {/* Keywords */}
       {keywords.length > 0 && (
         <div>
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">{p.keywordAnalysis}</h3>
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">{p.keywordAnalysis}</h3>
           <div className="border border-default rounded-xl overflow-hidden bg-brand-900">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-muted text-left text-xs text-slate-500 uppercase">
+                <tr className="border-b border-muted text-left text-xs text-muted-foreground uppercase">
                   <th className="px-4 py-2">{p.thKeyword}</th>
                   <th className="px-4 py-2 w-24">{p.thCount}</th>
                   <th className="px-4 py-2 w-24">{p.thScore}</th>
@@ -491,9 +505,9 @@ export default function PageAnalysisTab({ link }) {
                   const { word, count, score } = normaliseKw(kw);
                   return (
                     <tr key={i} className="border-b border-muted/60 last:border-0">
-                      <td className="px-4 py-2 font-mono text-slate-200">{word}</td>
-                      <td className="px-4 py-2 text-slate-400">{count ?? sj.emDash}</td>
-                      <td className="px-4 py-2 text-slate-400">{score != null ? score : sj.emDash}</td>
+                      <td className="px-4 py-2 font-mono text-foreground">{word}</td>
+                      <td className="px-4 py-2 text-muted-foreground">{count ?? sj.emDash}</td>
+                      <td className="px-4 py-2 text-muted-foreground">{score != null ? score : sj.emDash}</td>
                     </tr>
                   );
                 })}
@@ -506,13 +520,13 @@ export default function PageAnalysisTab({ link }) {
       {/* Warnings */}
       <div>
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
             {format(p.onPageWarnings, { count: filteredWarnings.length })}
           </h3>
           <select
             value={sevFilter}
             onChange={(e) => setSevFilter(e.target.value)}
-            className="bg-brand-800 border border-slate-700 text-xs rounded-lg px-2 py-1.5 text-slate-200 outline-none"
+            className="bg-brand-800 border border-brand-700 text-xs rounded-lg px-2 py-1.5 text-foreground outline-none"
           >
             <option value="All">{p.severityAll}</option>
             <option value="high">{p.severityHigh}</option>
@@ -521,20 +535,20 @@ export default function PageAnalysisTab({ link }) {
           </select>
         </div>
         {filteredWarnings.length === 0 ? (
-          <p className="text-sm text-slate-500">{p.noMatchingWarnings}</p>
+          <p className="text-sm text-muted-foreground">{p.noMatchingWarnings}</p>
         ) : (
           <ul className="space-y-2">
             {filteredWarnings.map((w, i) => (
               <li
                 key={`${w.id}-${i}`}
-                className="bg-brand-900 border border-default rounded-lg px-3 py-2 text-sm text-slate-300"
+                className="bg-brand-900 border border-default rounded-lg px-3 py-2 text-sm text-foreground"
               >
                 <span className={`text-xs px-2 py-0.5 rounded mr-2 ${severityBg(w.severity)}`}>
                   {w.severity || 'info'}
                 </span>
                 {w.message}
                 {w.detail && (
-                  <div className="mt-1 text-xs text-slate-500 font-mono break-all">{w.detail}</div>
+                  <div className="mt-1 text-xs text-muted-foreground font-mono break-all">{w.detail}</div>
                 )}
               </li>
             ))}
@@ -544,7 +558,7 @@ export default function PageAnalysisTab({ link }) {
 
       {/* Resources */}
       <div>
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">{p.resources}</h3>
+        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">{p.resources}</h3>
         <div className="space-y-2">
           {p.resourceSections.map(({ key, label }) => (
             <ResourceSection

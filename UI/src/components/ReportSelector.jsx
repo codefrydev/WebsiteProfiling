@@ -33,7 +33,7 @@ export default function ReportSelector() {
   return (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
       <div className="flex items-center gap-2">
-        <label htmlFor="report-select" className="text-xs text-slate-500 whitespace-nowrap">
+        <label htmlFor="report-select" className="text-xs text-muted-foreground whitespace-nowrap">
           {strings.reportSelector.reportLabel}
         </label>
         <select
@@ -44,7 +44,7 @@ export default function ReportSelector() {
             setSelectedReportId(v === '' ? null : Number(v));
           }}
           disabled={loading || !!error}
-          className="bg-brand-900 border border-default rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-blue-500 outline-none min-w-[180px]"
+          className="bg-brand-900 border border-default rounded-lg px-3 py-2 text-sm text-foreground focus:border-blue-500 outline-none min-w-[180px]"
           title={reportList.length <= 1 ? strings.reportSelector.titleReportHistory : strings.reportSelector.titleLoadReport}
         >
           <option value="">{strings.reportSelector.latestOption}</option>
@@ -57,7 +57,7 @@ export default function ReportSelector() {
       </div>
       {reportList.length >= 2 && (
         <div className="flex items-center gap-2">
-          <label htmlFor="compare-select" className="text-xs text-slate-500 whitespace-nowrap">
+          <label htmlFor="compare-select" className="text-xs text-muted-foreground whitespace-nowrap">
             {strings.reportSelector.compareLabel}
           </label>
           <select
@@ -68,7 +68,7 @@ export default function ReportSelector() {
               setCompareReportId(v === '' ? null : Number(v));
             }}
             disabled={loading || !!error}
-            className="bg-brand-900 border border-default rounded-lg px-3 py-2 text-sm text-slate-200 focus:border-blue-500 outline-none min-w-[160px]"
+            className="bg-brand-900 border border-default rounded-lg px-3 py-2 text-sm text-foreground focus:border-blue-500 outline-none min-w-[160px]"
             title={strings.reportSelector.titleCompareBaseline}
           >
             <option value="">{strings.reportSelector.noneOption}</option>

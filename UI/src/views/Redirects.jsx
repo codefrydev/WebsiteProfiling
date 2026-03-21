@@ -61,8 +61,8 @@ export default function Redirects({ searchQuery = '' }) {
       <PageHeader title={vr.title} subtitle={vr.subtitle} />
       {redirects.length > 0 && statusLabels.length > 0 && (
         <Card padding="tight" shadow>
-          <h2 className="text-sm font-bold text-slate-200 mb-1">{vr.chartTitle}</h2>
-          <p className="text-xs text-slate-500 mb-3">{vr.chartHint}</p>
+          <h2 className="text-sm font-bold text-foreground mb-1">{vr.chartTitle}</h2>
+          <p className="text-xs text-muted-foreground mb-3">{vr.chartHint}</p>
           <div className="h-48 max-w-xl">
             <Bar
               data={{
@@ -95,7 +95,7 @@ export default function Redirects({ searchQuery = '' }) {
                   <TableCell className="py-3">
                     <Badge value={r.status || ''} />
                   </TableCell>
-                  <TableCell className="font-mono text-slate-400 text-xs break-all py-3">
+                  <TableCell className="font-mono text-muted-foreground text-xs break-all py-3">
                     <a href={r.final_url || r.to} target="_blank" rel="noreferrer" className="hover:underline">
                       {r.final_url || r.to}
                     </a>
@@ -105,9 +105,9 @@ export default function Redirects({ searchQuery = '' }) {
             </TableBody>
           </Table>
         ) : (data.redirects || []).length > 0 ? (
-          <p className="p-6 text-center text-slate-500">{vr.noSearchMatch}</p>
+          <p className="p-6 text-center text-muted-foreground">{vr.noSearchMatch}</p>
         ) : (
-          <p className="p-6 text-center text-slate-500">{vr.noneFound}</p>
+          <p className="p-6 text-center text-muted-foreground">{vr.noneFound}</p>
         )}
       </Card>
     </PageLayout>

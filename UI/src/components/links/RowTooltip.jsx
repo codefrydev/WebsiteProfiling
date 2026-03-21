@@ -6,14 +6,14 @@ export default function RowTooltip({ link, style }) {
 
   return (
     <div
-      className="absolute z-50 bg-slate-800 border border-default rounded-xl shadow-2xl p-4 w-72 pointer-events-none"
+      className="absolute z-50 bg-brand-800 border border-default rounded-xl shadow-2xl p-4 w-72 pointer-events-none"
       style={style}
     >
       <p className="text-xs font-semibold text-bright mb-1 truncate">{link.title || link.url}</p>
       {link.meta_description && (
-        <p className="text-xs text-slate-400 line-clamp-2 mb-2">{link.meta_description}</p>
+        <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{link.meta_description}</p>
       )}
-      <div className="flex gap-4 text-xs text-slate-500">
+      <div className="flex gap-4 text-xs text-muted-foreground">
         {link.reading_level > 0 && (
           <span>Grade <span className="text-bright">{link.reading_level}</span></span>
         )}

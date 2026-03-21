@@ -24,7 +24,7 @@ export default function QuickWinCard({ win, passed }) {
           <WinIcon iconKey={win.iconKey} />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-semibold text-slate-200">{win.title}</div>
+          <div className="text-sm font-semibold text-foreground">{win.title}</div>
           <div className={`text-xs mt-0.5 ${passed ? 'text-green-400' : 'text-amber-400'}`}>
             {passed ? 'Passing' : 'Needs attention'}
           </div>
@@ -34,23 +34,23 @@ export default function QuickWinCard({ win, passed }) {
             ? <CheckCircle className="h-5 w-5 text-green-400" />
             : <XCircle className="h-5 w-5 text-amber-400" />}
           {open
-            ? <ChevronUp className="h-4 w-4 text-slate-500" />
-            : <ChevronDown className="h-4 w-4 text-slate-500" />}
+            ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
+            : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
         </div>
       </button>
 
       {open && (
         <div className="border-t border-muted px-4 py-4 space-y-3 bg-brand-900">
           <div>
-            <div className="text-xs text-slate-500 font-semibold mb-1">Why it matters</div>
-            <p className="text-sm text-slate-300">{win.why}</p>
+            <div className="text-xs text-muted-foreground font-semibold mb-1">Why it matters</div>
+            <p className="text-sm text-foreground">{win.why}</p>
           </div>
           <div>
-            <div className="text-xs text-slate-500 font-semibold mb-1">How to fix</div>
-            <p className="text-sm text-slate-300">{win.how}</p>
+            <div className="text-xs text-muted-foreground font-semibold mb-1">How to fix</div>
+            <p className="text-sm text-foreground">{win.how}</p>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-500">Estimated impact:</span>
+            <span className="text-xs text-muted-foreground">Estimated impact:</span>
             <span className="text-xs text-blue-400 font-semibold">{win.impact}</span>
           </div>
         </div>

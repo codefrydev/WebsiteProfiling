@@ -8,6 +8,18 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
+    <script>
+      (function () {
+        try {
+          var v = localStorage.getItem('wp-theme');
+          var d = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var dark = v === 'dark' ? true : v === 'light' ? false : d;
+          if (dark) document.documentElement.classList.add('dark');
+          else document.documentElement.classList.remove('dark');
+          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body class="font-sans selection:bg-blue-500/30 overflow-hidden">
     <div id="root"></div>

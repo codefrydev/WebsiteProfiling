@@ -4,7 +4,6 @@ import { AlertTriangle, AlertCircle, Info, ChevronDown, ChevronRight, ExternalLi
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Badge } from '../components';
-import BrowserMlPanel from '../components/ml/BrowserMlPanel';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal, doughnutOptionsBottomLegend } from '../utils/chartJsDefaults';
 
@@ -41,9 +40,9 @@ const PRIORITY_CONFIG = {
     chartColor: '#EAB308',
   },
   Low: {
-    border: 'border-l-slate-500',
-    bg: 'bg-slate-500/10',
-    text: 'text-slate-400',
+    border: 'border-l-neutral-500',
+    bg: 'bg-brand-700/10',
+    text: 'text-muted-foreground',
     ring: '',
     icon: Info,
     order: 3,
@@ -58,15 +57,15 @@ function CategorySection({ category, items, defaultOpen = false, vi, emDash }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-3 py-3 px-4 bg-brand-800 border border-default rounded-xl hover:border-slate-600/60 transition-colors text-left"
+        className="w-full flex items-center gap-3 py-3 px-4 bg-brand-800 border border-default rounded-xl hover:border-brand-700/80 transition-colors text-left"
       >
         {open ? (
-          <ChevronDown className="h-4 w-4 text-slate-500 flex-shrink-0" />
+          <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         ) : (
-          <ChevronRight className="h-4 w-4 text-slate-500 flex-shrink-0" />
+          <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         )}
-        <span className="font-semibold text-slate-200 flex-1">{category}</span>
-        <span className="text-xs font-bold text-slate-500 bg-slate-700/60 rounded-full px-2.5 py-0.5">
+        <span className="font-semibold text-foreground flex-1">{category}</span>
+        <span className="text-xs font-bold text-muted-foreground bg-brand-700/60 rounded-full px-2.5 py-0.5">
           {items.length} {items.length === 1 ? vi.issueWord : vi.issuesWord}
         </span>
       </button>
@@ -80,15 +79,15 @@ function CategorySection({ category, items, defaultOpen = false, vi, emDash }) {
             return (
               <div
                 key={i}
-                className={`bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.border} flex flex-col md:flex-row gap-4 p-5 hover:border-slate-600/60 transition-colors`}
+                className={`bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.border} flex flex-col md:flex-row gap-4 p-5 hover:border-brand-700/80 transition-colors`}
               >
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
                     <Icon className={`h-4 w-4 flex-shrink-0 ${cfg.text}`} />
                     <Badge value={p} />
-                    <span className="text-xs text-slate-500 font-medium">{item.category}</span>
+                    <span className="text-xs text-muted-foreground font-medium">{item.category}</span>
                   </div>
-                  <h3 className="text-slate-200 font-medium text-sm leading-snug">{iss.message || emDash}</h3>
+                  <h3 className="text-foreground font-medium text-sm leading-snug">{iss.message || emDash}</h3>
                   {iss.url && (
                     <a
                       href={iss.url}
@@ -103,7 +102,7 @@ function CategorySection({ category, items, defaultOpen = false, vi, emDash }) {
                 </div>
                 <div className="flex-1 min-w-0 bg-brand-900 rounded-lg p-3 border border-muted">
                   <div className="text-xs text-blue-400 font-bold uppercase mb-1 tracking-wide">{vi.fixRecommendation}</div>
-                  <p className="text-slate-400 text-sm leading-relaxed">{iss.recommendation || emDash}</p>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{iss.recommendation || emDash}</p>
                 </div>
               </div>
             );
@@ -231,20 +230,14 @@ export default function Issues({ searchQuery = '' }) {
     <PageLayout className="space-y-6">
       <PageHeader title={vi.title} subtitle={subtitle} />
 
-      {Array.isArray(data?.links) && data.links.length > 0 && (
-        <Card shadow>
-          <BrowserMlPanel links={data.links} compact />
-        </Card>
-      )}
-
       {showCharts && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card padding="tight" shadow>
             <div className="flex items-center gap-2 mb-1">
               <BarChart2 className="h-4 w-4 text-blue-400" />
-              <h2 className="text-sm font-bold text-slate-200">{vi.issuesByCategory}</h2>
+              <h2 className="text-sm font-bold text-foreground">{vi.issuesByCategory}</h2>
             </div>
-            <p className="text-xs text-slate-500 mb-2">{vi.issuesByCategoryHint}</p>
+            <p className="text-xs text-muted-foreground mb-2">{vi.issuesByCategoryHint}</p>
             <div className="h-64">
               <Bar
                 data={{
@@ -258,9 +251,9 @@ export default function Issues({ searchQuery = '' }) {
           <Card padding="tight" shadow>
             <div className="flex items-center gap-2 mb-1">
               <BarChart2 className="h-4 w-4 text-blue-400" />
-              <h2 className="text-sm font-bold text-slate-200">{vi.issuesByPriority}</h2>
+              <h2 className="text-sm font-bold text-foreground">{vi.issuesByPriority}</h2>
             </div>
-            <p className="text-xs text-slate-500 mb-2">{vi.issuesByPriorityHint}</p>
+            <p className="text-xs text-muted-foreground mb-2">{vi.issuesByPriorityHint}</p>
             <div className="h-64 flex items-center justify-center">
               <div className="w-full max-w-[280px] h-52">
                 <Doughnut
@@ -307,14 +300,14 @@ export default function Issues({ searchQuery = '' }) {
               key={p}
               shadow
               className={`cursor-pointer transition-all ${
-                priorityFilter === p ? `${cfg.ring || 'ring-1 ring-slate-500/30'} border-slate-600` : 'hover:border-slate-600'
+                priorityFilter === p ? `${cfg.ring || 'ring-1 ring-brand-700/30'} border-brand-700` : 'hover:border-brand-700'
               }`}
               onClick={() => setPriorityFilter((prev) => (prev === p ? sj.all : p))}
             >
               <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${cfg.text}`}>
                 <Icon className="h-4 w-4" /> {p}
               </div>
-              <div className={`text-3xl font-bold ${count > 0 ? cfg.text : 'text-slate-500'}`}>{count}</div>
+              <div className={`text-3xl font-bold ${count > 0 ? cfg.text : 'text-muted-foreground'}`}>{count}</div>
             </Card>
           );
         })}
@@ -327,7 +320,7 @@ export default function Issues({ searchQuery = '' }) {
           className={`px-4 py-1.5 rounded-full text-sm font-bold border transition-colors ${
             priorityFilter === sj.all
               ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-              : 'border-default bg-slate-800 text-slate-400 hover:border-slate-600/60'
+              : 'border-default bg-brand-800 text-muted-foreground hover:border-brand-700/80'
           }`}
         >
           {vi.allPriorities}
@@ -343,7 +336,7 @@ export default function Issues({ searchQuery = '' }) {
               className={`px-4 py-1.5 rounded-full text-sm font-bold border transition-colors ${
                 active
                   ? `${cfg.bg} ${cfg.text} border-current/30`
-                  : 'border-default bg-slate-800 text-slate-400 hover:border-slate-600/60'
+                  : 'border-default bg-brand-800 text-muted-foreground hover:border-brand-700/80'
               }`}
             >
               {p}
@@ -355,7 +348,7 @@ export default function Issues({ searchQuery = '' }) {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="ml-auto bg-brand-800 border border-default text-sm rounded-lg px-3 py-2 text-slate-200 outline-none hover:border-slate-600/60 transition-colors"
+            className="ml-auto bg-brand-800 border border-default text-sm rounded-lg px-3 py-2 text-foreground outline-none hover:border-brand-700/80 transition-colors"
           >
             <option value={sj.all}>{vi.allCategories}</option>
             {categories.map((cat) => (
@@ -367,8 +360,8 @@ export default function Issues({ searchQuery = '' }) {
 
       {filtered.length === 0 ? (
         <Card className="flex flex-col items-center justify-center py-16 gap-3">
-          <Info className="h-10 w-10 text-slate-600" />
-          <p className="text-slate-500 text-sm">{vi.noMatches}</p>
+          <Info className="h-10 w-10 text-muted-foreground" />
+          <p className="text-muted-foreground text-sm">{vi.noMatches}</p>
         </Card>
       ) : (
         <div className="space-y-3">

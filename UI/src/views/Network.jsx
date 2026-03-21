@@ -137,7 +137,7 @@ export default function Network({ searchQuery = '' }) {
               style={{ outline: 'none' }}
             />
             {searchEmpty && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#05080f]/90 text-slate-400 text-sm px-6 text-center">
+              <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#05080f]/90 text-muted-foreground text-sm px-6 text-center">
                 {vn.searchEmpty}
               </div>
             )}
@@ -151,7 +151,7 @@ export default function Network({ searchQuery = '' }) {
                 {vn.legendBroken}
               </div>
               <div className="flex items-center gap-2 text-bright">
-                <div className="w-4 h-0.5 bg-slate-600" />
+                <div className="w-4 h-0.5 bg-brand-700" />
                 {vn.legendLink}
               </div>
             </div>
@@ -166,7 +166,7 @@ export default function Network({ searchQuery = '' }) {
             </Button>
           </>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center p-5 text-slate-500">
+          <div className="absolute inset-0 flex items-center justify-center p-5 text-muted-foreground">
             {vn.noEdges}
           </div>
         )}

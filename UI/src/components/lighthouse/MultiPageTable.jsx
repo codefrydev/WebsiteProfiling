@@ -62,7 +62,7 @@ export default function MultiPageTable({ byUrl, selectedUrl, onSelect }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
-        <thead className="bg-brand-900 text-xs uppercase text-slate-400">
+        <thead className="bg-brand-900 text-xs uppercase text-muted-foreground">
           <tr>
             <th className="px-4 py-3 text-left">URL</th>
             {COLS.map((c) => (
@@ -121,12 +121,12 @@ export default function MultiPageTable({ byUrl, selectedUrl, onSelect }) {
                           {val != null ? val : '—'}
                         </span>
                       ) : (
-                        <span className={`text-xs font-mono ${val != null ? metricColor : 'text-slate-500'}`}>
+                        <span className={`text-xs font-mono ${val != null ? metricColor : 'text-muted-foreground'}`}>
                           {val != null ? c.fmt(val) : '—'}
                         </span>
                       )}
                       {hoveredCell === cellId && c.isScore && val != null && (
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-slate-800 border border-default text-xs text-slate-300 px-2.5 py-1.5 rounded-lg shadow-lg whitespace-nowrap z-50 pointer-events-none">
+                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-brand-800 border border-default text-xs text-foreground px-2.5 py-1.5 rounded-lg shadow-lg whitespace-nowrap z-50 pointer-events-none">
                           {scoreTip(val)}
                         </div>
                       )}

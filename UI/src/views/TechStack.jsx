@@ -5,10 +5,9 @@ import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '../components';
 import { palette } from '../utils/chartPalette';
+import { getGridColor } from '../utils/chartJsDefaults';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
-
-const GRID_COLOR = 'rgba(71, 85, 105, 0.5)';
 
 const barValueLabelsPlugin = {
   id: 'tsBarLabels',
@@ -88,16 +87,16 @@ export default function TechStack({ searchQuery = '' }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         {Object.entries(categoryCounts).slice(0, 4).map(([cat, count]) => (
           <Card key={cat} shadow>
-            <div className="text-xs text-slate-500 uppercase font-bold mb-1">{cat}</div>
+            <div className="text-xs text-muted-foreground uppercase font-bold mb-1">{cat}</div>
             <div className="text-2xl font-bold text-bright">{count}</div>
-            <div className="text-[10px] text-slate-500 mt-1">{vr.techDetectedSuffix}</div>
+            <div className="text-[10px] text-muted-foreground mt-1">{vr.techDetectedSuffix}</div>
           </Card>
         ))}
       </div>
 
       <Card padding="tight">
-        <h3 className="text-sm font-bold text-slate-200 mb-1">{vr.cardDetected}</h3>
-        <p className="text-xs text-slate-500 mb-3">{vr.cardHint}</p>
+        <h3 className="text-sm font-bold text-foreground mb-1">{vr.cardDetected}</h3>
+        <p className="text-xs text-muted-foreground mb-3">{vr.cardHint}</p>
         <div style={{ height: Math.max(200, techs.length * 28 + 40) }}>
           {chartLabels.length > 0 ? (
             <Bar
@@ -115,16 +114,16 @@ export default function TechStack({ searchQuery = '' }) {
                   },
                 },
                 scales: {
-                  x: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: vr.chartAxisPages } },
-                  y: { grid: { color: GRID_COLOR } },
+                  x: { grid: { color: getGridColor() }, beginAtZero: true, title: { display: true, text: vr.chartAxisPages } },
+                  y: { grid: { color: getGridColor() } },
                 },
               }}
               plugins={[barValueLabelsPlugin]}
             />
           ) : (ts.technologies || []).length > 0 ? (
-            <div className="flex items-center justify-center h-full text-slate-500 text-sm">{vr.noSearchMatch}</div>
+            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{vr.noSearchMatch}</div>
           ) : (
-            <div className="flex items-center justify-center h-full text-slate-500 text-sm">{vr.noData}</div>
+            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{vr.noData}</div>
           )}
         </div>
       </Card>
@@ -145,9 +144,9 @@ export default function TechStack({ searchQuery = '' }) {
               <TableBody>
                 {techs.map((t, i) => (
                   <TableRow key={i}>
-                    <TableCell className="text-slate-200 font-medium">{t.name}</TableCell>
-                    <TableCell className="text-slate-400 text-xs">{categorizeTech(t.name)}</TableCell>
-                    <TableCell className="text-right font-mono text-slate-400">{t.count.toLocaleString()}</TableCell>
+                    <TableCell className="text-foreground font-medium">{t.name}</TableCell>
+                    <TableCell className="text-muted-foreground text-xs">{categorizeTech(t.name)}</TableCell>
+                    <TableCell className="text-right font-mono text-muted-foreground">{t.count.toLocaleString()}</TableCell>
                     <TableCell className="text-xs max-w-md">
                       {(t.sample_urls || []).map((u, j) => (
                         <a key={j} href={u} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline block truncate">

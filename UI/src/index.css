@@ -1,50 +1,101 @@
 @import "tailwindcss";
 
+/* Class-based dark mode (html.dark) — toggled by ThemeProvider + inline FOUC script */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Semantic palette: :root = light, html.dark = dark */
+:root {
+  color-scheme: light;
+  --app-bg: #f8fafc;
+  --app-bg-elevated: #ffffff;
+  --app-bg-muted: #f1f5f9;
+  --app-border: rgba(15, 23, 42, 0.1);
+  --app-border-muted: rgba(15, 23, 42, 0.06);
+  --app-text: #334155;
+  --app-text-heading: #0f172a;
+  --app-text-subtle: #64748b;
+  --app-input: #ffffff;
+  --app-track: rgba(15, 23, 42, 0.08);
+  --app-overlay: rgba(15, 23, 42, 0.45);
+  --scrollbar-track: #f1f5f9;
+  --scrollbar-thumb: #cbd5e1;
+  --chart-grid: rgba(148, 163, 184, 0.4);
+  --chart-legend: #64748b;
+  --chart-title: #64748b;
+  --code-bg: #f1f5f9;
+  --shadow-elevated:
+    rgba(15, 23, 42, 0.06) 0 10px 15px -3px, rgba(15, 23, 42, 0.04) 0 4px 6px -2px;
+
+  --text: var(--app-text);
+  --text-h: var(--app-text-heading);
+  --bg: var(--app-bg);
+  --border: var(--app-border);
+  --accent: #2563eb;
+  --accent-bg: rgba(37, 99, 235, 0.1);
+  --accent-border: rgba(37, 99, 235, 0.45);
+  --social-bg: rgba(241, 245, 249, 0.8);
+  --shadow: var(--shadow-elevated);
+}
+
+html.dark {
+  color-scheme: dark;
+  --app-bg: #0b0f19;
+  --app-bg-elevated: #111827;
+  --app-bg-muted: #1f2937;
+  --app-border: rgba(255, 255, 255, 0.07);
+  --app-border-muted: rgba(255, 255, 255, 0.04);
+  --app-text: #cbd5e1;
+  --app-text-heading: #e2e8f0;
+  --app-text-subtle: #64748b;
+  --app-input: #0b0f19;
+  --app-track: rgba(255, 255, 255, 0.06);
+  --app-overlay: rgba(0, 0, 0, 0.55);
+  --scrollbar-track: #0b0f19;
+  --scrollbar-thumb: #374151;
+  --chart-grid: rgba(100, 116, 139, 0.45);
+  --chart-legend: #94a3b8;
+  --chart-title: #94a3b8;
+  --code-bg: #1f2028;
+  --shadow-elevated:
+    rgba(0, 0, 0, 0.35) 0 10px 15px -3px, rgba(0, 0, 0, 0.22) 0 4px 6px -2px;
+
+  --text: var(--app-text);
+  --text-h: var(--app-text-heading);
+  --bg: var(--app-bg);
+  --border: var(--app-border);
+  --accent: #60a5fa;
+  --accent-bg: rgba(96, 165, 250, 0.12);
+  --accent-border: rgba(96, 165, 250, 0.45);
+  --social-bg: rgba(47, 48, 58, 0.5);
+  --shadow: var(--shadow-elevated);
+}
+
 @theme {
-  /* Brand palette (dark UI backgrounds) */
-  --color-brand-900: #0B0F19;
-  --color-brand-800: #111827;
-  --color-brand-700: #1F2937;
+  /* Map legacy brand scale to semantic surfaces (theme-aware) */
+  --color-brand-900: var(--app-bg);
+  --color-brand-800: var(--app-bg-elevated);
+  --color-brand-700: var(--app-bg-muted);
 
-  /* Soft borders for dark UI: light at low opacity so they blend, not harsh lines */
-  --border-color-default: rgba(255, 255, 255, 0.07);
-  --border-color-muted: rgba(255, 255, 255, 0.04);
-  /* Soft text for headings/emphasis (blends with dark UI, not pure white) */
-  --color-bright: #e2e8f0;
-  /* Soft dividers (same as border-muted, for divide-y etc.) */
-  --color-muted: rgba(255, 255, 255, 0.04);
-  /* Progress bar / track background (soft, not harsh gray) */
-  --color-track: rgba(255, 255, 255, 0.06);
+  --border-color-default: var(--app-border);
+  --border-color-muted: var(--app-border-muted);
 
-  /* Border radius */
+  --color-bright: var(--app-text-heading);
+  --color-foreground: var(--app-text);
+  --color-muted-foreground: var(--app-text-subtle);
+
+  --color-muted: var(--app-border-muted);
+  --color-track: var(--app-track);
+
   --radius-card: 0.75rem;
 
-  /* Spacing */
   --spacing-page-x: 1.5rem;
   --spacing-page-y: 1.5rem;
   --spacing-card: 1.25rem;
 }
 
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
+  font: 18px/145% var(--sans, system-ui, "Segoe UI", Roboto, sans-serif);
   letter-spacing: 0.18px;
-  color-scheme: light dark;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -57,48 +108,28 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
 body {
   margin: 0;
-  /* Report UI is dark; avoid light flash and match Tailwind brand/slate */
-  background: #0B0F19;
-  color: #cbd5e1;
+  background: var(--app-bg);
+  color: var(--app-text);
 }
 
-/* Report layout: scrollbar and transitions (match original index.html) */
+/* Report layout: scrollbar (theme-aware) */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0B0F19;
+  background: var(--scrollbar-track);
 }
 ::-webkit-scrollbar-thumb {
-  background: #374151;
+  background: var(--scrollbar-thumb);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4B5563;
+  filter: brightness(1.08);
 }
+
 .fade-in {
   animation: fadeIn 0.3s ease-in-out;
 }
@@ -112,10 +143,17 @@ body {
     transform: translateY(0);
   }
 }
+
 .tab-active {
+  background-color: rgba(37, 99, 235, 0.12);
+  border-color: rgba(37, 99, 235, 0.35);
+  color: #2563eb;
+}
+
+html.dark .tab-active {
   background-color: rgba(59, 130, 246, 0.1);
-  border-color: rgba(59, 130, 246, 0.3);
-  color: #60A5FA;
+  border-color: rgba(59, 130, 246, 0.25);
+  color: #60a5fa;
 }
 
 #root {
@@ -131,19 +169,16 @@ body {
 
 h1,
 h2 {
-  font-family: var(--heading);
+  font-family: var(--heading, system-ui, "Segoe UI", Roboto, sans-serif);
   font-weight: 500;
   color: var(--text-h);
 }
 
+/* Reset h1 — app views use Tailwind (text-3xl, mb-*, etc.). Legacy hero margins caused a huge gap under the top nav. */
 h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+  margin: 0;
+  font-size: inherit;
+  letter-spacing: inherit;
 }
 h2 {
   font-size: 24px;
@@ -160,7 +195,7 @@ p {
 
 code,
 .counter {
-  font-family: var(--mono);
+  font-family: var(--mono, ui-monospace, Consolas, monospace);
   display: inline-flex;
   border-radius: 4px;
   color: var(--text-h);
@@ -171,4 +206,14 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+/* Focus visibility for keyboard users */
+.nav-btn:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

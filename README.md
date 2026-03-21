@@ -10,24 +10,17 @@ Crawl a site, build a link graph, and produce SEO-style reports (console + optio
 pip install -r requirements.txt
 ```
 
-Optional ML: `pip install -r requirements-ml.txt`, then enable flags in `input.txt`. The **GitHub Pages** workflow installs both requirement files so CI builds include ML deps.
-
-**spaCy / NER:** installs are tested on **Python 3.12** (what CI uses). If `pip install` fails while building **`blis`** on **Python 3.13**, recreate your virtualenv with 3.12 (`python3.12 -m venv venv`) and reinstall, or set `enable_ner_spacy = false` in `input.txt` until you use 3.12.
+Optional ML: `pip install -r requirements-ml.txt`, then enable flags in `input.txt`.
 
 ### ML / crawl text options
 
-- **`store_content_excerpt` / `content_excerpt_max_chars`:** optional truncated plain text from each page body (crawl + report payload). Improves Python fingerprints and browser-side Transformers.js (`@xenova/transformers`). Larger SQLite rows and JSON.
-- **Semantic duplicate refinement:** `enable_embedding_duplicate_refine` requires a fuzzy duplicate candidate pair to also pass sentence-transformer cosine similarity (`ml_dup_embed_min_pct`).
-- **KeyBERT:** `enable_keybert` adds salient keyphrases per URL (uses the same `ml_sentence_model` as semantic similarity).
-- **`ml_verbose`:** tqdm-style progress during long `sentence_transformers` encode batches.
-
 ### Browser (React UI) Transformers.js
 
-The UI loads **Transformers.js** models on demand (cached in the browser). **Overview**, **Content Insights**, **Site audit**, **Link Explorer**, **On-page SEO**, **Page Speed** (Lighthouse), **Security**, and **Crawl analytics** include the same **Browser ML** block (zero-shot + sentiment, with download progress); **Link Explorer → Page analysis** adds embedding similarity with a **download progress** bar. Default embedding model: `Xenova/all-MiniLM-L6-v2` (aligned with `all-MiniLM-L6-v2` in Python). Zero-shot uses `Xenova/distilbert-base-uncased-mnli`; sentiment uses `Xenova/distilbert-base-uncased-finetuned-sst-2-english`.
+The UI loads **Transformers.js** models on demand (cached in the browser). A **floating browser assistant** (bottom-right) runs
 
 ## Run
 
-Edit **`input.txt`**, then from the **repository root**:
+Edit `**input.txt`**, then from the **repository root**:
 
 ```bash
 python -m src

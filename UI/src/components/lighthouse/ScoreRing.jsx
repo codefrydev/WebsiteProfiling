@@ -27,7 +27,7 @@ export default function ScoreRing({ label, score }) {
           <span className="text-xl font-bold text-bright">{displayScore}</span>
         </div>
       </div>
-      <span className="text-slate-400 text-xs font-medium mt-2 text-center">{label}</span>
+      <span className="text-muted-foreground text-xs font-medium mt-2 text-center">{label}</span>
     </div>
   );
 }

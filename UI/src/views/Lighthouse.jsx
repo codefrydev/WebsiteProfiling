@@ -5,7 +5,6 @@ import { Globe } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card } from '../components';
-import BrowserMlPanel from '../components/ml/BrowserMlPanel';
 import { scoreBandColor } from '../utils/chartPalette';
 import {
   CATEGORIES, CATEGORY_LABELS, METRIC_THRESHOLDS, IMPACT_GROUPS, QUICK_WINS,
@@ -167,9 +166,9 @@ export default function Lighthouse({ searchQuery = '' }) {
       <PageLayout>
         <PageHeader title={vlh.emptyTitle} subtitle={vlh.emptySubtitle} />
         <Card className="p-8 text-center">
-          <p className="text-slate-500">
+          <p className="text-muted-foreground">
             {vlh.emptyBodyBefore}{' '}
-            <code className="bg-brand-900 px-2 py-1 rounded text-slate-300">{vlh.cmdSnippet}</code>{' '}
+            <code className="bg-brand-900 px-2 py-1 rounded text-foreground">{vlh.cmdSnippet}</code>{' '}
             {vlh.emptyBodyAfter}
           </p>
         </Card>
@@ -183,26 +182,26 @@ export default function Lighthouse({ searchQuery = '' }) {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-bright mb-2">{vlh.pageSpeedTitle}</h1>
         {summary.url && (
-          <p className="text-slate-400 text-sm mb-1">
+          <p className="text-muted-foreground text-sm mb-1">
             <a href={summary.url} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline break-all">
               {summary.url}
             </a>
           </p>
         )}
         <Card padding="tight" className="mt-4">
-          <h3 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-3">{vlh.analysisSettings}</h3>
+          <h3 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-3">{vlh.analysisSettings}</h3>
           <div className="flex flex-wrap gap-6 text-sm">
-            <div><span className="text-slate-500 block text-xs mb-0.5">{vlh.mode}</span><span className="text-slate-200 font-medium capitalize">{mode}</span></div>
-            <div><span className="text-slate-500 block text-xs mb-0.5">{vlh.device}</span><span className="text-slate-200 font-medium capitalize">{device}</span></div>
+            <div><span className="text-muted-foreground block text-xs mb-0.5">{vlh.mode}</span><span className="text-foreground font-medium capitalize">{mode}</span></div>
+            <div><span className="text-muted-foreground block text-xs mb-0.5">{vlh.device}</span><span className="text-foreground font-medium capitalize">{device}</span></div>
             <div className="min-w-0">
-              <span className="text-slate-500 block text-xs mb-0.5">{vlh.categories}</span>
-              <span className="text-slate-200 font-medium">
+              <span className="text-muted-foreground block text-xs mb-0.5">{vlh.categories}</span>
+              <span className="text-foreground font-medium">
                 {Array.isArray(categories) ? categories.map((c) => CATEGORY_LABELS[c] || c).join(', ') : vlh.categoriesFallback}
               </span>
             </div>
           </div>
           {(runTimestamp || iterations) && (
-            <p className="text-slate-500 text-xs mt-3 pt-3 border-t border-muted">
+            <p className="text-muted-foreground text-xs mt-3 pt-3 border-t border-muted">
               {iterations > 0 && <span>{format(vlh.runsMediansFull, { n: iterations })}</span>}
               {runTimestamp && <span className="ml-3">{vlh.generated} {new Date(runTimestamp).toLocaleString()}</span>}
             </p>
@@ -210,17 +209,11 @@ export default function Lighthouse({ searchQuery = '' }) {
         </Card>
       </div>
 
-      {Array.isArray(data?.links) && data.links.length > 0 && (
-        <Card shadow className="mb-8">
-          <BrowserMlPanel links={data.links} compact />
-        </Card>
-      )}
-
       {/* ── Multi-page comparison ── */}
       {hasMulti && (
         <div className="mb-10">
-          <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">{vlh.multiCompare}</h2>
-          <p className="text-slate-500 text-sm mb-3">{vlh.multiCompareHint}</p>
+          <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vlh.multiCompare}</h2>
+          <p className="text-muted-foreground text-sm mb-3">{vlh.multiCompareHint}</p>
           <Card padding="none" overflowHidden>
             <MultiPageTable byUrl={byUrlForTable} selectedUrl={displayUrl} onSelect={handleSelectUrl} />
           </Card>
@@ -230,16 +223,16 @@ export default function Lighthouse({ searchQuery = '' }) {
       {/* ── URL selector ── */}
       {hasMulti && (
         <div className="mb-8" ref={detailRef}>
-          <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">{vlh.detailedView}</h2>
+          <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vlh.detailedView}</h2>
           <div className="flex items-center gap-3">
-            <Globe className="h-4 w-4 text-slate-500 shrink-0" />
+            <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
             {urlPool.length === 0 ? (
-              <p className="text-sm text-slate-500">{vlh.noUrlMatch}</p>
+              <p className="text-sm text-muted-foreground">{vlh.noUrlMatch}</p>
             ) : (
               <select
                 value={displayUrl || ''}
                 onChange={(e) => setSelectedUrl(e.target.value)}
-                className="bg-brand-800 border border-default text-sm rounded-lg px-3 py-2 text-slate-200 outline-none flex-1 max-w-lg"
+                className="bg-brand-800 border border-default text-sm rounded-lg px-3 py-2 text-foreground outline-none flex-1 max-w-lg"
               >
                 {urlPool.map((url) => {
                   const sc = byUrl[url]?.category_scores?.performance;
@@ -254,13 +247,13 @@ export default function Lighthouse({ searchQuery = '' }) {
 
       {/* ── Score Rings ── */}
       <div className="mb-10">
-        <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-4">{vlh.categoriesSection}</h2>
+        <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-4">{vlh.categoriesSection}</h2>
         <div className="flex flex-wrap gap-6 justify-start items-center">
           {CATEGORIES.map(({ id, label }) => (
             <ScoreRing key={id} label={label} score={cs[id] != null ? Number(cs[id]) : null} />
           ))}
         </div>
-        <div className="flex flex-wrap gap-6 mt-4 text-xs text-slate-500">
+        <div className="flex flex-wrap gap-6 mt-4 text-xs text-muted-foreground">
           <span><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-1" />{vlh.scorePoor}</span>
           <span><span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-1" />{vlh.scoreNeeds}</span>
           <span><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1" />{vlh.scoreGood}</span>
@@ -269,14 +262,14 @@ export default function Lighthouse({ searchQuery = '' }) {
 
       {/* ── Category scores bar chart ── */}
       <div className="mb-10">
-        <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">{vlh.categoryScores}</h2>
-        <p className="text-slate-500 text-sm mb-3">{vlh.categoryScoresHint}</p>
+        <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vlh.categoryScores}</h2>
+        <p className="text-muted-foreground text-sm mb-3">{vlh.categoryScoresHint}</p>
         {(() => {
           const withScores = CATEGORIES
             .map(({ id }) => ({ id, label: CATEGORY_LABELS[id] || id, score: cs[id] != null ? Number(cs[id]) : null }))
             .filter((c) => c.score != null)
             .sort((a, b) => (a.score ?? 0) - (b.score ?? 0));
-          if (withScores.length === 0) return <Card className="p-4 text-slate-500 text-sm">{vlh.noCategoryScores}</Card>;
+          if (withScores.length === 0) return <Card className="p-4 text-muted-foreground text-sm">{vlh.noCategoryScores}</Card>;
           return (
             <Card padding="tight" className="print:break-inside-avoid">
               <div className="h-48" role="img" aria-label={`${vlh.categoryScoresAriaPrefix} ${withScores.map((c) => `${c.label} ${c.score}`).join(', ')}`}>
@@ -302,8 +295,8 @@ export default function Lighthouse({ searchQuery = '' }) {
 
       {/* ── Metrics with threshold bars ── */}
       <div className="mb-10">
-        <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">{vlh.metrics}</h2>
-        <p className="text-slate-500 text-sm mb-4">
+        <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vlh.metrics}</h2>
+        <p className="text-muted-foreground text-sm mb-4">
           {format(vlh.metricsHint, { runs: iterations || 1 })}
         </p>
         <Card overflowHidden padding="none">
@@ -317,8 +310,8 @@ export default function Lighthouse({ searchQuery = '' }) {
 
       {/* ── Quick Wins ── */}
       <div className="mb-10">
-        <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">{vlh.quickWins}</h2>
-        <p className="text-slate-500 text-sm mb-4">
+        <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vlh.quickWins}</h2>
+        <p className="text-muted-foreground text-sm mb-4">
           {vlh.quickWinsHint}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -332,8 +325,8 @@ export default function Lighthouse({ searchQuery = '' }) {
       {humanSummary && (
         <div className="mb-10">
           <Card>
-            <h2 className="text-slate-200 text-sm font-bold uppercase tracking-wider mb-3">{vlh.summary}</h2>
-            <pre className="text-slate-400 text-sm whitespace-pre-wrap font-sans">{humanSummary}</pre>
+            <h2 className="text-foreground text-sm font-bold uppercase tracking-wider mb-3">{vlh.summary}</h2>
+            <pre className="text-muted-foreground text-sm whitespace-pre-wrap font-sans">{humanSummary}</pre>
           </Card>
         </div>
       )}
@@ -341,8 +334,8 @@ export default function Lighthouse({ searchQuery = '' }) {
       {/* ── Failing audits with Lighthouse detail tables ── */}
       {failingAuditsDetailed.length > 0 && (
         <div className="mb-10">
-          <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">{vlh.auditTables}</h2>
-          <p className="text-slate-500 text-sm mb-3">
+          <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vlh.auditTables}</h2>
+          <p className="text-muted-foreground text-sm mb-3">
             {vlh.auditTablesHint}
           </p>
           {failingAuditsForDisplay.length > 0 ? (
@@ -352,23 +345,23 @@ export default function Lighthouse({ searchQuery = '' }) {
               ))}
             </ul>
           ) : (
-            <Card className="p-4 text-slate-500 text-sm">{vlh.noAuditsSearch}</Card>
+            <Card className="p-4 text-muted-foreground text-sm">{vlh.noAuditsSearch}</Card>
           )}
         </div>
       )}
 
       {/* ── Grouped Diagnostics ── */}
       <div className="mb-8">
-        <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-2">{vlh.diagnostics}</h2>
-        <p className="text-slate-500 text-sm mb-4">
+        <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vlh.diagnostics}</h2>
+        <p className="text-muted-foreground text-sm mb-4">
           {vlh.diagnosticsHint}
         </p>
         {diagnosticsList.length === 0 ? (
-          <Card className="p-6 text-center text-slate-500 text-sm">
+          <Card className="p-6 text-center text-muted-foreground text-sm">
             {vlh.allChecksPassed}
           </Card>
         ) : diagnosticsForGroups.length === 0 ? (
-          <Card className="p-6 text-center text-slate-500 text-sm">
+          <Card className="p-6 text-center text-muted-foreground text-sm">
             {vlh.noDiagnosticsSearch}
           </Card>
         ) : (

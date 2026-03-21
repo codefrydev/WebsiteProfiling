@@ -16,10 +16,10 @@ export default function LhAuditExpandable({ audit }) {
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-start gap-2 px-3 py-2.5 text-left hover:bg-brand-800 transition-colors"
       >
-        {open ? <ChevronDown className="h-4 w-4 shrink-0 mt-0.5 text-slate-500" /> : <ChevronRight className="h-4 w-4 shrink-0 mt-0.5 text-slate-500" />}
+        {open ? <ChevronDown className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />}
         <div className="flex-1 min-w-0">
-          <div className="text-sm text-slate-200 font-medium">{title}</div>
-          <div className="text-[10px] text-slate-500 font-mono mt-0.5">{audit.id}</div>
+          <div className="text-sm text-foreground font-medium">{title}</div>
+          <div className="text-[10px] text-muted-foreground font-mono mt-0.5">{audit.id}</div>
           {audit.displayValue && (
             <div className="text-xs text-amber-200/90 mt-1 font-mono">{audit.displayValue}</div>
           )}
@@ -28,13 +28,13 @@ export default function LhAuditExpandable({ audit }) {
       {open && (
         <div className="px-3 pb-3 pt-1 border-t border-muted space-y-3">
           {audit.description && (
-            <p className="text-xs text-slate-400 whitespace-pre-wrap leading-relaxed">{audit.description}</p>
+            <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">{audit.description}</p>
           )}
           {audit.helpText && (
-            <p className="text-xs text-slate-500">{audit.helpText}</p>
+            <p className="text-xs text-muted-foreground">{audit.helpText}</p>
           )}
           {hasTable && <LhDetailsTable headings={headings} items={items} />}
-          {!hasTable && <p className="text-xs text-slate-600">No detail rows for this audit.</p>}
+          {!hasTable && <p className="text-xs text-muted-foreground">No detail rows for this audit.</p>}
         </div>
       )}
     </li>

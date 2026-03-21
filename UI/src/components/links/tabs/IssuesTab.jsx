@@ -100,7 +100,7 @@ export default function IssuesTab({ lhData, inspectorDetails }) {
         const topFailures = lhData.top_failures || [];
         return (
           <div>
-            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
               <Gauge className="h-3.5 w-3.5" /> {it.lighthouseScores}
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
@@ -109,7 +109,7 @@ export default function IssuesTab({ lhData, inspectorDetails }) {
                 const color = score != null ? scoreBandColor(score) : 'rgb(71,85,105)';
                 return (
                   <div key={cat} className="bg-brand-900 rounded-xl p-3 border border-default text-center">
-                    <div className="text-xs text-slate-500 capitalize mb-1">{cat.replace('-', ' ')}</div>
+                    <div className="text-xs text-muted-foreground capitalize mb-1">{cat.replace('-', ' ')}</div>
                     <div className="text-xl font-bold" style={{ color }}>{score != null ? score : sj.emDash}</div>
                   </div>
                 );
@@ -118,17 +118,17 @@ export default function IssuesTab({ lhData, inspectorDetails }) {
             <div className="bg-brand-900 border border-default rounded-xl p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-sm mb-4">
               {[['LCP', 'lcp_ms'], ['FCP', 'fcp_ms'], ['TBT', 'tbt_ms'], ['CLS', 'cls']].map(([label, key]) => (
                 <div key={key}>
-                  <span className="text-slate-500">{label} </span>
-                  <span className="text-slate-200 font-mono">{formatLhMetric(key, mm[key])}</span>
+                  <span className="text-muted-foreground">{label} </span>
+                  <span className="text-foreground font-mono">{formatLhMetric(key, mm[key])}</span>
                 </div>
               ))}
             </div>
             {topFailures.length > 0 && (
               <>
-                <div className="text-xs text-slate-500 mb-2">{it.lighthouseFailures}</div>
+                <div className="text-xs text-muted-foreground mb-2">{it.lighthouseFailures}</div>
                 <div className="space-y-2">
                   {topFailures.map((f, i) => (
-                    <div key={i} className="bg-brand-800 border border-default rounded-lg px-3 py-2 text-xs text-slate-300">
+                    <div key={i} className="bg-brand-800 border border-default rounded-lg px-3 py-2 text-xs text-foreground">
                       {f.helpText || f.id}
                     </div>
                   ))}
@@ -142,7 +142,7 @@ export default function IssuesTab({ lhData, inspectorDetails }) {
       <div>
         {allIssues.length > 0 && (
           <div className="bg-brand-900 border border-default rounded-xl p-3 mb-4">
-            <div className="text-xs text-slate-500 mb-2">{it.issuesBySource}</div>
+            <div className="text-xs text-muted-foreground mb-2">{it.issuesBySource}</div>
             <div className="h-36">
               <Bar
                 data={{
@@ -155,7 +155,7 @@ export default function IssuesTab({ lhData, inspectorDetails }) {
           </div>
         )}
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
             {format(it.allIssues, { count: allIssues.length })}
           </h3>
           <select
@@ -172,7 +172,7 @@ export default function IssuesTab({ lhData, inspectorDetails }) {
         </div>
 
         {filteredIssues.length === 0 ? (
-          <div className="text-slate-500 text-sm py-4 text-center">
+          <div className="text-muted-foreground text-sm py-4 text-center">
             {it.noIssues}
             {issueFilter !== 'All' ? format(it.noIssuesAtSeverity, { severity: issueFilter }) : '.'}
           </div>
@@ -188,17 +188,17 @@ export default function IssuesTab({ lhData, inspectorDetails }) {
                   <span className={`text-xs px-2 py-0.5 rounded font-semibold shrink-0 ${severityBg(issue.severity)}`}>
                     {issue.severity}
                   </span>
-                  <span className="text-sm text-slate-200 flex-1 min-w-0 truncate">{issue.message}</span>
+                  <span className="text-sm text-foreground flex-1 min-w-0 truncate">{issue.message}</span>
                   {expandedIssue === i ? (
-                    <ChevronUp className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                    <ChevronUp className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   ) : (
-                    <ChevronDown className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                    <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   )}
                 </button>
                 {expandedIssue === i && issue.recommendation && (
                   <div className="mx-2 border-x border-b border-default rounded-b-xl bg-brand-900 px-4 py-3">
                     <span className="text-xs text-blue-400 font-semibold">{it.recommendation}</span>
-                    <span className="text-xs text-slate-300">{issue.recommendation}</span>
+                    <span className="text-xs text-foreground">{issue.recommendation}</span>
                   </div>
                 )}
               </div>
@@ -209,7 +209,7 @@ export default function IssuesTab({ lhData, inspectorDetails }) {
 
       {inspectorDetails?.recommendations?.length > 0 && (
         <div>
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">{it.whatToImprove}</h3>
+          <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">{it.whatToImprove}</h3>
           <div className="space-y-2">
             {inspectorDetails.recommendations.map((rec, i) => (
               <div
@@ -217,7 +217,7 @@ export default function IssuesTab({ lhData, inspectorDetails }) {
                 className="flex items-start gap-2 bg-brand-800 border border-default rounded-lg px-4 py-2.5"
               >
                 <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0 mt-0.5" />
-                <span className="text-sm text-slate-300">{rec}</span>
+                <span className="text-sm text-foreground">{rec}</span>
               </div>
             ))}
           </div>

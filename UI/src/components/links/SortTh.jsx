@@ -4,7 +4,7 @@ export default function SortTh({ label, field, sortBy, sortDesc, onSort, classNa
   const active = sortBy === field;
   return (
     <th
-      className={`px-4 py-4 cursor-pointer select-none hover:text-bright transition-colors ${active ? 'text-bright' : 'text-slate-400'} ${className}`}
+      className={`px-4 py-4 cursor-pointer select-none hover:text-bright transition-colors ${active ? 'text-bright' : 'text-muted-foreground'} ${className}`}
       onClick={() => onSort(field)}
     >
       <div className="flex items-center gap-1">

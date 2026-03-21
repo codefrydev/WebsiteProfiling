@@ -65,7 +65,7 @@ export default function InspectorTabs({ link, lhData, inspectorDetails }) {
             className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium whitespace-nowrap transition-all border-b-2 -mb-px ${
               activeTab === t.id
                 ? 'text-bright border-blue-500'
-                : 'text-slate-400 border-transparent hover:text-slate-200 hover:border-slate-600/60'
+                : 'text-muted-foreground border-transparent hover:text-foreground hover:border-brand-700/80'
             }`}
           >
             {t.icon}

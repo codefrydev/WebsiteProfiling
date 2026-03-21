@@ -89,7 +89,7 @@ function HttpImagePreviewAndLink({ href }) {
         />
       )}
       {loadState === 'error' && (
-        <div className="text-[10px] text-slate-500 italic px-1 py-1.5 rounded border border-dashed border-slate-600/80 bg-brand-900/50">
+        <div className="text-[10px] text-muted-foreground italic px-1 py-1.5 rounded border border-dashed border-brand-700/80 bg-brand-900/50">
           Inline preview blocked or failed to load; use the link below (hotlink/CORS policies on the image host).
         </div>
       )}
@@ -136,7 +136,7 @@ function pickDataImageSrc(obj) {
 }
 
 function LhCell({ value, columnKey = '', valueType = '', row = null }) {
-  if (value == null || value === '') return <span className="text-slate-600">—</span>;
+  if (value == null || value === '') return <span className="text-muted-foreground">—</span>;
 
   if (typeof value === 'string') {
     if (isDataImageUrl(value) && !isTruncatedDataUriForPreview(value)) {
@@ -144,7 +144,7 @@ function LhCell({ value, columnKey = '', valueType = '', row = null }) {
     }
     if (isDataImageUrl(value) && isTruncatedDataUriForPreview(value)) {
       return (
-        <span className="text-[10px] text-slate-500 break-all" title={value}>
+        <span className="text-[10px] text-muted-foreground break-all" title={value}>
           Data URI truncated in Lighthouse JSON (preview unavailable).{' '}
           <a href={value} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">
             Open raw value
@@ -170,7 +170,7 @@ function LhCell({ value, columnKey = '', valueType = '', row = null }) {
   }
 
   if (Array.isArray(value)) {
-    return <span className="text-slate-500">{value.length} items</span>;
+    return <span className="text-muted-foreground">{value.length} items</span>;
   }
 
   if (typeof value === 'object') {
@@ -246,9 +246,9 @@ function LhCell({ value, columnKey = '', valueType = '', row = null }) {
               {rowImageForNodeCol && (
                 <HttpImageThumbOnly href={rowImageForNodeCol} />
               )}
-              {label && <div className="text-slate-200">{label}</div>}
+              {label && <div className="text-foreground">{label}</div>}
               {sel && <code className="block text-[10px] text-amber-200/90 break-all">{sel}</code>}
-              {snip && <div className="text-slate-500 text-[10px] line-clamp-3 font-mono">{snip}</div>}
+              {snip && <div className="text-muted-foreground text-[10px] line-clamp-3 font-mono">{snip}</div>}
             </div>
           )}
         </div>
@@ -260,7 +260,7 @@ function LhCell({ value, columnKey = '', valueType = '', row = null }) {
     }
 
     return (
-      <pre className="text-[10px] text-slate-500 overflow-auto max-w-md max-h-24 whitespace-pre-wrap">
+      <pre className="text-[10px] text-muted-foreground overflow-auto max-w-md max-h-24 whitespace-pre-wrap">
         {JSON.stringify(value, null, 0)}
       </pre>
     );
@@ -286,7 +286,7 @@ export default function LhDetailsTable({ headings, items, maxRows = 250 }) {
         <thead>
           <tr className="border-b border-muted bg-brand-900/80">
             {heads.map((h, hi) => (
-              <th key={h.key != null ? String(h.key) : `col-${hi}`} className="px-2 py-2 font-semibold text-slate-400 whitespace-nowrap">
+              <th key={h.key != null ? String(h.key) : `col-${hi}`} className="px-2 py-2 font-semibold text-muted-foreground whitespace-nowrap">
                 {typeof h.label === 'string' ? h.label : h.label?.formattedDefault || h.key}
               </th>
             ))}
@@ -310,7 +310,7 @@ export default function LhDetailsTable({ headings, items, maxRows = 250 }) {
         </tbody>
       </table>
       {items.length > maxRows && (
-        <div className="px-2 py-1.5 text-[10px] text-slate-500 border-t border-muted">
+        <div className="px-2 py-1.5 text-[10px] text-muted-foreground border-t border-muted">
           Showing {maxRows} of {items.length} rows
         </div>
       )}

@@ -65,7 +65,7 @@ export default function OverviewTab({ link }) {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {stats.map(({ label, value, raw }) => (
           <div key={label} className="bg-brand-900 border border-default rounded-xl p-3">
-            <div className="text-xs text-slate-500 mb-1">{label}</div>
+            <div className="text-xs text-muted-foreground mb-1">{label}</div>
             <div className="text-sm font-semibold">
               {raw ? value : <span className="text-bright">{value}</span>}
             </div>
@@ -75,17 +75,17 @@ export default function OverviewTab({ link }) {
 
       {link.content_type && (
         <div className="bg-brand-900 border border-default rounded-xl p-3">
-          <div className="text-xs text-slate-500 mb-1">{o.contentType}</div>
-          <div className="text-xs font-mono text-slate-300">{link.content_type}</div>
+          <div className="text-xs text-muted-foreground mb-1">{o.contentType}</div>
+          <div className="text-xs font-mono text-foreground">{link.content_type}</div>
         </div>
       )}
 
       <div className="bg-brand-900 border border-default rounded-xl p-4">
         <div className="flex items-center justify-between mb-1">
-          <div className="text-xs text-slate-500">{o.fieldTitle}</div>
+          <div className="text-xs text-muted-foreground">{o.fieldTitle}</div>
           <CopyBtn text={link.title} />
         </div>
-        <div className="text-sm text-slate-200">
+        <div className="text-sm text-foreground">
           {link.title || <span className="text-red-400">{o.missing}</span>}
         </div>
         <CharBar len={titleLen} max={60} colorFn={titleCharColor} />
@@ -93,10 +93,10 @@ export default function OverviewTab({ link }) {
 
       <div className="bg-brand-900 border border-default rounded-xl p-4">
         <div className="flex items-center justify-between mb-1">
-          <div className="text-xs text-slate-500">{o.fieldMetaDesc}</div>
+          <div className="text-xs text-muted-foreground">{o.fieldMetaDesc}</div>
           <CopyBtn text={link.meta_description} />
         </div>
-        <div className="text-sm text-slate-200">
+        <div className="text-sm text-foreground">
           {link.meta_description || <span className="text-red-400">{o.missing}</span>}
         </div>
         <CharBar len={metaLen} max={160} colorFn={metaCharColor} />
@@ -104,7 +104,7 @@ export default function OverviewTab({ link }) {
 
       <div className="bg-brand-900 border border-default rounded-xl p-4">
         <div className="flex items-center justify-between mb-1">
-          <div className="text-xs text-slate-500">{o.fieldH1}</div>
+          <div className="text-xs text-muted-foreground">{o.fieldH1}</div>
           <div className="flex items-center gap-2">
             <span
               className={`text-xs px-2 py-0.5 rounded ${
@@ -120,7 +120,7 @@ export default function OverviewTab({ link }) {
             <CopyBtn text={link.h1} />
           </div>
         </div>
-        <div className="text-sm text-slate-200">{link.h1 || <span className="text-slate-500">{sj.emDash}</span>}</div>
+        <div className="text-sm text-foreground">{link.h1 || <span className="text-muted-foreground">{sj.emDash}</span>}</div>
       </div>
     </div>
   );

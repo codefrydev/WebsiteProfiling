@@ -69,12 +69,12 @@ export default function TechnicalTab({ link }) {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
           <Shield className="h-3.5 w-3.5" /> {lt.securityHeaders}
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
           <div className="bg-brand-900 border border-default rounded-xl p-3">
-            <div className="text-xs text-slate-500 mb-2">{format(lt.headersPresentOf, { n: SEC_HEADERS.length })}</div>
+            <div className="text-xs text-muted-foreground mb-2">{format(lt.headersPresentOf, { n: SEC_HEADERS.length })}</div>
             <div className="h-40">
               <Doughnut
                 data={{
@@ -93,7 +93,7 @@ export default function TechnicalTab({ link }) {
             </div>
           </div>
           <div className="bg-brand-900 border border-default rounded-xl p-3">
-            <div className="text-xs text-slate-500 mb-2">{lt.scriptsStylesImages}</div>
+            <div className="text-xs text-muted-foreground mb-2">{lt.scriptsStylesImages}</div>
             <div className="h-40">
               <Bar
                 data={{
@@ -123,7 +123,7 @@ export default function TechnicalTab({ link }) {
       </div>
 
       <div>
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
           <Zap className="h-3.5 w-3.5" /> {lt.performanceCaching}
         </h3>
         <div className="space-y-2">
@@ -132,8 +132,8 @@ export default function TechnicalTab({ link }) {
               key={label}
               className="bg-brand-900 border border-default rounded-lg flex items-center justify-between px-4 py-2.5"
             >
-              <span className="text-sm text-slate-400">{label}</span>
-              <span className={`text-sm ${mono ? 'font-mono' : ''} ${warn ? 'text-red-400' : 'text-slate-200'}`}>
+              <span className="text-sm text-muted-foreground">{label}</span>
+              <span className={`text-sm ${mono ? 'font-mono' : ''} ${warn ? 'text-red-400' : 'text-foreground'}`}>
                 {value}
               </span>
             </div>
@@ -142,7 +142,7 @@ export default function TechnicalTab({ link }) {
       </div>
 
       <div>
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
           <Image className="h-3.5 w-3.5" /> {lt.imagesA11y}
         </h3>
         <div className="bg-brand-900 border border-default rounded-xl p-4 space-y-3">
@@ -165,8 +165,8 @@ export default function TechnicalTab({ link }) {
             color={link.img_without_lazy > 0 ? 'bg-yellow-500' : 'bg-green-500'}
           />
           <div className="flex items-center justify-between pt-2 border-t border-muted">
-            <span className="text-sm text-slate-400">{lt.ariaElements}</span>
-            <span className="text-sm text-slate-200 font-mono">{link.aria_count ?? 0}</span>
+            <span className="text-sm text-muted-foreground">{lt.ariaElements}</span>
+            <span className="text-sm text-foreground font-mono">{link.aria_count ?? 0}</span>
           </div>
         </div>
       </div>

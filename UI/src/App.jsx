@@ -19,9 +19,12 @@ import {
   Images,
 } from 'lucide-react';
 import { ReportProvider } from './context/ReportContext.jsx';
+import { BrowserAssistantProvider } from './context/BrowserAssistantContext.jsx';
+import { ThemeProvider } from './context/ThemeProvider.jsx';
 import { useReport } from './context/useReport';
 import { strings, format } from './lib/strings';
 import { Badge, ReportSelector } from './components';
+import ThemeToggle from './components/ThemeToggle.jsx';
 import Overview from './views/Overview';
 import Issues from './views/Issues';
 import Links from './views/Links';
@@ -34,6 +37,7 @@ import Network from './views/Network';
 import ContentAnalytics from './views/ContentAnalytics';
 import TechStack from './views/TechStack';
 import Gallery from './views/Gallery';
+import BrowserMlChat from './components/ml/BrowserMlChat.jsx';
 
 const VIEW_CONFIG = [
   { id: 'overview', component: Overview, icon: LayoutDashboard },
@@ -74,7 +78,7 @@ function AppContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-brand-900 text-slate-300">
+      <div className="min-h-screen flex items-center justify-center bg-brand-900 text-foreground">
         <p>{strings.app.loading}</p>
       </div>
     );
@@ -82,11 +86,11 @@ function AppContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-brand-900 text-slate-300 p-8">
+      <div className="min-h-screen flex items-center justify-center bg-brand-900 text-foreground p-8">
         <div className="text-center max-w-md">
           <p className="text-red-400 font-medium">{strings.app.failedTitle}</p>
-          <p className="text-slate-500 text-sm mt-2">{error}</p>
-          <p className="text-slate-500 text-sm mt-4">{strings.app.failedHint}</p>
+          <p className="text-muted-foreground text-sm mt-2">{error}</p>
+          <p className="text-muted-foreground text-sm mt-4">{strings.app.failedHint}</p>
         </div>
       </div>
     );
@@ -102,13 +106,13 @@ function AppContent() {
   const sections = [...new Set(VIEWS.map((v) => v.section))];
 
   return (
-    <div className="min-h-screen flex bg-brand-900 text-slate-300 overflow-hidden">
+    <div className="min-h-screen flex bg-brand-900 text-foreground overflow-hidden">
       {/* Mobile overlay when sidebar open */}
       {sidebarOpen && (
         <button
           type="button"
           aria-label={strings.app.ariaCloseMenu}
-          className="fixed inset-0 bg-black/60 z-30 md:hidden print:hidden"
+          className="fixed inset-0 z-30 md:hidden print:hidden bg-[color:var(--app-overlay)]"
           onClick={closeSidebar}
         />
       )}
@@ -123,13 +127,13 @@ function AppContent() {
             <Radar className="text-blue-500 mr-3 h-6 w-6 shrink-0" />
             <div className="min-w-0">
               <div className="font-bold text-bright leading-tight truncate">{siteName}</div>
-              <div className="text-[10px] text-slate-500 uppercase tracking-widest font-bold">{strings.app.productSubtitle}</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">{strings.app.productSubtitle}</div>
             </div>
           </div>
           <button
             type="button"
             aria-label={strings.app.ariaCloseMenu}
-            className="md:hidden p-2 -mr-2 text-slate-400 hover:text-bright rounded-lg"
+            className="md:hidden p-2 -mr-2 text-muted-foreground hover:text-bright rounded-lg"
             onClick={closeSidebar}
           >
             <X className="h-5 w-5" />
@@ -138,7 +142,7 @@ function AppContent() {
         <nav className="flex-1 overflow-y-auto p-4 space-y-1">
           {sections.map((section) => (
             <div key={section}>
-              <div className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-2 mt-4 px-2 first:mt-0">
+              <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 mt-4 px-2 first:mt-0">
                 {section}
               </div>
               {VIEWS.filter((v) => v.section === section).map((v) => {
@@ -152,7 +156,7 @@ function AppContent() {
                     className={`nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                       isActive
                         ? 'tab-active bg-blue-500/10 border border-blue-500/25 text-blue-400'
-                        : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/80'
+                        : 'text-muted-foreground hover:text-foreground hover:bg-brand-700/80'
                     }`}
                   >
                     <Icon className="h-4 w-4 shrink-0" />
@@ -176,14 +180,14 @@ function AppContent() {
             </div>
             <div className="text-xs min-w-0">
               <div className="text-bright font-bold truncate">{siteName}</div>
-              <div className="text-slate-500">{lastCrawlText}</div>
+              <div className="text-muted-foreground">{lastCrawlText}</div>
             </div>
           </div>
           <a
             href="https://github.com/codefrydev/WebsiteProfiling"
             target="_blank"
             rel="noreferrer"
-            className="mt-3 flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+            className="mt-3 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <Github className="h-3.5 w-3.5 shrink-0" />
             <span>{strings.app.githubLinkLabel}</span>
@@ -196,22 +200,23 @@ function AppContent() {
           <button
             type="button"
             aria-label={strings.app.ariaOpenMenu}
-            className="md:hidden p-2 -ml-2 text-slate-400 hover:text-bright rounded-lg shrink-0"
+            className="md:hidden p-2 -ml-2 text-muted-foreground hover:text-bright rounded-lg shrink-0"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-6 w-6" />
           </button>
           <div className="flex-1 min-w-0 max-w-xl relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={strings.app.searchPlaceholder}
-              className="w-full bg-brand-900 border border-default focus:border-blue-500 rounded-lg pl-10 pr-4 py-2 text-sm outline-none text-slate-200 transition-all"
+              className="w-full bg-brand-900 border border-default focus:border-blue-500 rounded-lg pl-10 pr-4 py-2 text-sm outline-none text-foreground transition-all"
             />
           </div>
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            <ThemeToggle />
             <ReportSelector />
           </div>
         </header>
@@ -221,6 +226,7 @@ function AppContent() {
             <CurrentView searchQuery={searchQuery} />
           </div>
         </div>
+        <BrowserMlChat />
       </main>
     </div>
   );
@@ -228,8 +234,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ReportProvider dbUrl={`${import.meta.env.BASE_URL}report.db`}>
-      <AppContent />
-    </ReportProvider>
+    <ThemeProvider>
+      <ReportProvider dbUrl={`${import.meta.env.BASE_URL}report.db`}>
+        <BrowserAssistantProvider>
+          <AppContent />
+        </BrowserAssistantProvider>
+      </ReportProvider>
+    </ThemeProvider>
   );
 }

@@ -8,10 +8,9 @@ import { wcLabel, readingLabel, parseKeywords, normaliseKw } from '../../../util
 import { palette, PALETTE_CATEGORICAL } from '../../../utils/chartPalette';
 import HeadingPills from '../HeadingPills';
 import { strings, format } from '../../../lib/strings';
+import { getGridColor, getChartTitleColor } from '../../../utils/chartJsDefaults';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
-
-const GRID_COLOR = 'rgba(71, 85, 105, 0.5)';
 
 const barValueLabelsPlugin = {
   id: 'contentTabBarLabels',
@@ -59,8 +58,8 @@ function barOpts(yTitle, xTitle, tooltipUnit) {
       },
     },
     scales: {
-      x: { grid: { color: GRID_COLOR }, ...(xTitle ? { title: { display: true, text: xTitle, color: '#64748b' } } : {}) },
-      y: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: yTitle, color: '#64748b' } },
+      x: { grid: { color: getGridColor() }, ...(xTitle ? { title: { display: true, text: xTitle, color: getChartTitleColor() } } : {}) },
+      y: { grid: { color: getGridColor() }, beginAtZero: true, title: { display: true, text: yTitle, color: getChartTitleColor() } },
     },
   };
 }
@@ -81,8 +80,8 @@ function barOptsH(suffixLabel) {
       },
     },
     scales: {
-      x: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: sj.count, color: '#64748b' } },
-      y: { grid: { color: GRID_COLOR } },
+      x: { grid: { color: getGridColor() }, beginAtZero: true, title: { display: true, text: sj.count, color: getChartTitleColor() } },
+      y: { grid: { color: getGridColor() } },
     },
   };
 }
@@ -102,8 +101,8 @@ function barOptsReadingDist() {
       },
     },
     scales: {
-      x: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: vca.thPages, color: '#64748b' } },
-      y: { grid: { color: GRID_COLOR } },
+      x: { grid: { color: getGridColor() }, beginAtZero: true, title: { display: true, text: vca.thPages, color: getChartTitleColor() } },
+      y: { grid: { color: getGridColor() } },
     },
   };
 }
@@ -123,8 +122,8 @@ function barOptsCompare() {
       },
     },
     scales: {
-      x: { grid: { color: GRID_COLOR } },
-      y: { grid: { color: GRID_COLOR }, beginAtZero: true, title: { display: true, text: ch.words, color: '#64748b' } },
+      x: { grid: { color: getGridColor() } },
+      y: { grid: { color: getGridColor() }, beginAtZero: true, title: { display: true, text: ch.words, color: getChartTitleColor() } },
     },
   };
 }
@@ -159,13 +158,13 @@ function groupedSocialOpts() {
       },
     },
     scales: {
-      x: { stacked: true, grid: { color: GRID_COLOR } },
+      x: { stacked: true, grid: { color: getGridColor() } },
       y: {
         stacked: true,
-        grid: { color: GRID_COLOR },
+        grid: { color: getGridColor() },
         beginAtZero: true,
         max: 100,
-        title: { display: true, text: lc.axisPercent, color: '#64748b' },
+        title: { display: true, text: lc.axisPercent, color: getChartTitleColor() },
       },
     },
   };
@@ -249,7 +248,7 @@ function SectionHeader({ icon, title, description }) {
       </div>
       <div className="min-w-0">
         <h2 className="text-base font-bold text-bright">{title}</h2>
-        {description && <p className="text-xs text-slate-500 mt-0.5">{description}</p>}
+        {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
       </div>
     </div>
   );
@@ -347,44 +346,44 @@ export default function ContentTab({ link }) {
 
   return (
     <div className="space-y-8">
-      <p className="text-xs text-slate-500 -mt-2">{lc.intro}</p>
+      <p className="text-xs text-muted-foreground -mt-2">{lc.intro}</p>
 
       {/* KPI row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <Card shadow className="!p-4">
-          <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+          <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
             <BookOpen className="h-3.5 w-3.5" /> {lc.kpiWords}
           </div>
           <div className={`text-2xl font-bold tabular-nums ${wcInfo.color}`}>{wc.toLocaleString()}</div>
-          <div className="text-[10px] text-slate-500 mt-0.5">{wcInfo.label}</div>
+          <div className="text-[10px] text-muted-foreground mt-0.5">{wcInfo.label}</div>
         </Card>
         <Card shadow className="!p-4">
-          <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+          <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
             <FileText className="h-3.5 w-3.5" /> {lc.kpiReading}
           </div>
           <div className={`text-2xl font-bold tabular-nums ${rlInfo.color}`}>
             {rl > 0 ? format(lo.readingGrade, { n: rl }) : sj.emDash}
           </div>
-          <div className="text-[10px] text-slate-500 mt-0.5">{rl > 0 ? rlInfo.label : lc.notEnoughText}</div>
+          <div className="text-[10px] text-muted-foreground mt-0.5">{rl > 0 ? rlInfo.label : lc.notEnoughText}</div>
         </Card>
         <Card shadow className="!p-4">
-          <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">{lc.textHtml}</div>
+          <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1">{lc.textHtml}</div>
           <div className="text-2xl font-bold text-bright tabular-nums">{ratioPct.toFixed(1)}%</div>
-          <div className="text-[10px] text-slate-500 mt-0.5">{lc.bodyTextShare}</div>
+          <div className="text-[10px] text-muted-foreground mt-0.5">{lc.bodyTextShare}</div>
         </Card>
         <Card shadow className="!p-4">
-          <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+          <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
             <Layers className="h-3.5 w-3.5" /> {lc.kpiDepth}
           </div>
           <div className="text-2xl font-bold text-bright tabular-nums">{link.depth != null ? link.depth : sj.emDash}</div>
-          <div className="text-[10px] text-slate-500 mt-0.5">{lc.crawlDepth}</div>
+          <div className="text-[10px] text-muted-foreground mt-0.5">{lc.crawlDepth}</div>
         </Card>
         <Card shadow className={`!p-4 ${wc < 300 && wc > 0 ? 'ring-1 ring-amber-500/30' : ''}`}>
-          <div className="text-slate-500 text-[10px] font-bold uppercase tracking-wider mb-1">{lc.thinQ}</div>
+          <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1">{lc.thinQ}</div>
           <div className={`text-2xl font-bold tabular-nums ${wc < 300 ? 'text-amber-400' : 'text-green-400'}`}>
             {wc <= 0 ? sj.emDash : wc < 300 ? sj.yes : sj.no}
           </div>
-          <div className="text-[10px] text-slate-500 mt-0.5">{lc.under300Words}</div>
+          <div className="text-[10px] text-muted-foreground mt-0.5">{lc.under300Words}</div>
         </Card>
       </div>
 
@@ -393,8 +392,8 @@ export default function ContentTab({ link }) {
         <SectionHeader icon={BarChart2} title={lc.vsSiteTitle} description={lc.vsSiteDesc} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.wordCountComparison}</h3>
-            <p className="text-xs text-slate-500 mb-2">{lc.vsSiteAggregates}</p>
+            <h3 className="text-sm font-bold text-foreground mb-1">{lc.wordCountComparison}</h3>
+            <p className="text-xs text-muted-foreground mb-2">{lc.vsSiteAggregates}</p>
             <div className="h-56">
               {compareBarData.values.length > 0 ? (
                 <Bar
@@ -406,13 +405,13 @@ export default function ContentTab({ link }) {
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
               )}
             </div>
           </Card>
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.textVsMarkup}</h3>
-            <p className="text-xs text-slate-500 mb-2">{lc.textVsMarkupDesc}</p>
+            <h3 className="text-sm font-bold text-foreground mb-1">{lc.textVsMarkup}</h3>
+            <p className="text-xs text-muted-foreground mb-2">{lc.textVsMarkupDesc}</p>
             <div className="h-56">
               <Doughnut
                 data={{
@@ -438,8 +437,8 @@ export default function ContentTab({ link }) {
         <SectionHeader icon={BarChart2} title={lc.siteDistTitle} description={lc.siteDistDesc} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.wordCountDist}</h3>
-            <p className="text-xs text-slate-500 mb-2">
+            <h3 className="text-sm font-bold text-foreground mb-1">{lc.wordCountDist}</h3>
+            <p className="text-xs text-muted-foreground mb-2">
               {format(lc.thisPageWords, { words: wc.toLocaleString() })}{' '}
               <span className="text-blue-300 font-semibold">{wcBucketLabel(wc, vo.wcBuckets)}</span>
             </p>
@@ -451,18 +450,18 @@ export default function ContentTab({ link }) {
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
               )}
             </div>
           </Card>
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.readingLevelDist}</h3>
-            <p className="text-xs text-slate-500 mb-2">
+            <h3 className="text-sm font-bold text-foreground mb-1">{lc.readingLevelDist}</h3>
+            <p className="text-xs text-muted-foreground mb-2">
               {rl > 0 ? (
                 <>
                   {lc.thisPageGrade}{' '}
                   <span className="text-blue-300 font-semibold">{format(lo.readingGrade, { n: rl })}</span> {lc.gradeArrow}{' '}
-                  <span className="text-slate-300">{readingBandLabel(rl, vo.rlBuckets)}</span>
+                  <span className="text-foreground">{readingBandLabel(rl, vo.rlBuckets)}</span>
                 </>
               ) : (
                 lc.notEnoughReading
@@ -479,15 +478,15 @@ export default function ContentTab({ link }) {
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
               )}
             </div>
           </Card>
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.contentHtmlRatio}</h3>
-            <p className="text-xs text-slate-500 mb-2">
+            <h3 className="text-sm font-bold text-foreground mb-1">{lc.contentHtmlRatio}</h3>
+            <p className="text-xs text-muted-foreground mb-2">
               {lc.thisPageRatio} <span className="text-blue-300 font-semibold">{ratioPct.toFixed(1)}%</span> {lc.ratioArrow}{' '}
-              <span className="text-slate-300">{contentRatioBandLabel(ratioPct, lc)}</span>
+              <span className="text-foreground">{contentRatioBandLabel(ratioPct, lc)}</span>
             </p>
             <div className="h-56">
               {crLabels.length > 0 ? (
@@ -497,14 +496,14 @@ export default function ContentTab({ link }) {
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{sj.noData}</div>
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
               )}
             </div>
           </Card>
           {kwSorted.length > 0 ? (
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.topKeywordsPage}</h3>
-              <p className="text-xs text-slate-500 mb-2">{lc.freqThisUrl}</p>
+              <h3 className="text-sm font-bold text-foreground mb-1">{lc.topKeywordsPage}</h3>
+              <p className="text-xs text-muted-foreground mb-2">{lc.freqThisUrl}</p>
               <div className="h-56">
                 <Bar
                   data={{
@@ -518,7 +517,7 @@ export default function ContentTab({ link }) {
             </Card>
           ) : (
             <Card padding="tight" className="flex items-center justify-center min-h-[14rem]">
-              <p className="text-sm text-slate-500">{lc.noKeywordPage}</p>
+              <p className="text-sm text-muted-foreground">{lc.noKeywordPage}</p>
             </Card>
           )}
         </div>
@@ -529,29 +528,29 @@ export default function ContentTab({ link }) {
         <SectionHeader icon={Tag} title={lc.onPageSignalsTitle} description={lc.onPageSignalsDesc} />
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.titleTag}</h3>
-            <p className="text-xs text-slate-500 mb-2">{format(lc.characters, { n: titleLen })}</p>
+            <h3 className="text-sm font-bold text-foreground mb-1">{lc.titleTag}</h3>
+            <p className="text-xs text-muted-foreground mb-2">{format(lc.characters, { n: titleLen })}</p>
             <div className="h-52">
               <Doughnut data={titleDoughnut} options={doughnutPageOpts()} />
             </div>
           </Card>
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.metaDesc}</h3>
-            <p className="text-xs text-slate-500 mb-2">{format(lc.characters, { n: metaLen })}</p>
+            <h3 className="text-sm font-bold text-foreground mb-1">{lc.metaDesc}</h3>
+            <p className="text-xs text-muted-foreground mb-2">{format(lc.characters, { n: metaLen })}</p>
             <div className="h-52">
               <Doughnut data={metaDoughnut} options={doughnutPageOpts()} />
             </div>
           </Card>
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.h1Count}</h3>
-            <p className="text-xs text-slate-500 mb-2">
+            <h3 className="text-sm font-bold text-foreground mb-1">{lc.h1Count}</h3>
+            <p className="text-xs text-muted-foreground mb-2">
               {h1c != null && !Number.isNaN(h1c) ? format(lc.headingCount, { n: h1c }) : sj.emDash}
             </p>
             <div className="h-52">
               {h1Doughnut ? (
                 <Doughnut data={h1Doughnut} options={doughnutPageOpts()} />
               ) : (
-                <div className="flex items-center justify-center h-full text-slate-500 text-sm">{lc.noH1Data}</div>
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{lc.noH1Data}</div>
               )}
             </div>
           </Card>
@@ -562,7 +561,7 @@ export default function ContentTab({ link }) {
         <div className="space-y-4">
           <SectionHeader icon={FileText} title={lc.contentExcerpt} description={lc.contentExcerptHint} />
           <Card padding="tight">
-            <p className="text-xs text-slate-300 whitespace-pre-wrap break-words max-h-72 overflow-y-auto leading-relaxed">
+            <p className="text-xs text-foreground whitespace-pre-wrap break-words max-h-72 overflow-y-auto leading-relaxed">
               {String(link.content_excerpt).trim()}
             </p>
           </Card>
@@ -601,9 +600,9 @@ export default function ContentTab({ link }) {
         <div className="space-y-4">
           <SectionHeader icon={Layers} title={lc.siteArchTitle} description={lc.siteArchDesc} />
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-slate-200 mb-1">{lc.crawlDepthDist}</h3>
+            <h3 className="text-sm font-bold text-foreground mb-1">{lc.crawlDepthDist}</h3>
             {link.depth != null && (
-              <p className="text-xs text-slate-500 mb-2">
+              <p className="text-xs text-muted-foreground mb-2">
                 {lc.thisPageDepth}{' '}
                 <span className="text-blue-300 font-semibold">{format(lc.depthLabel, { n: link.depth })}</span>
               </p>
@@ -625,14 +624,14 @@ export default function ContentTab({ link }) {
       {/* Heading sequence + keyword pills (detail) */}
       {link.heading_sequence && (
         <div className="bg-brand-900 border border-default rounded-xl p-4">
-          <div className="text-xs text-slate-500 mb-3">{lc.headingStructure}</div>
+          <div className="text-xs text-muted-foreground mb-3">{lc.headingStructure}</div>
           <HeadingPills sequence={link.heading_sequence} />
         </div>
       )}
 
       {keywords.length > 0 && (
         <div className="bg-brand-900 border border-default rounded-xl p-4">
-          <div className="text-xs text-slate-500 mb-3">{lc.keywordsQuick}</div>
+          <div className="text-xs text-muted-foreground mb-3">{lc.keywordsQuick}</div>
           <div className="flex flex-wrap gap-2">
             {keywords.map((kw, i) => {
               const { word, count } = normaliseKw(kw);
@@ -647,7 +646,7 @@ export default function ContentTab({ link }) {
                     {word}
                   </button>
                   {kwHover === i && count != null && (
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-slate-800 border border-default text-xs text-slate-300 px-2 py-1 rounded shadow-lg whitespace-nowrap z-50">
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-brand-800 border border-default text-xs text-foreground px-2 py-1 rounded shadow-lg whitespace-nowrap z-50">
                       {format(lc.occurrences, { n: count })}
                     </div>
                   )}

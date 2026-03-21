@@ -24,9 +24,9 @@ import { useMemo, useState } from 'react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '../components';
-import BrowserMlPanel from '../components/ml/BrowserMlPanel';
 import { palette, scoreBandColor, sortByValue, PALETTE_CATEGORICAL } from '../utils/chartPalette';
 import { formatPageHrefLines } from '../utils/linkUtils';
+import { getGridColor, getChartTitleColor } from '../utils/chartJsDefaults';
 
 const REC_COLORS = [
   { border: 'border-l-blue-500',   bg: 'bg-blue-500/10',   text: 'text-blue-400',   dot: 'bg-blue-500'   },
@@ -38,8 +38,6 @@ const REC_COLORS = [
 ];
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
-
-const GRID_COLOR = 'rgba(71, 85, 105, 0.5)';
 
 const LH_CAT_ORDER = ['performance', 'accessibility', 'best-practices', 'seo', 'pwa'];
 
@@ -58,11 +56,11 @@ function barOptsVertical(yTitle, ariaDescription) {
       tooltip: { callbacks: { label: (ctx) => ` ${format(o.tooltipCountBar, { count: Number(ctx.raw).toLocaleString() })}` } },
     },
     scales: {
-      x: { grid: { color: GRID_COLOR } },
+      x: { grid: { color: getGridColor() } },
       y: {
-        grid: { color: GRID_COLOR },
+        grid: { color: getGridColor() },
         beginAtZero: true,
-        title: { display: true, text: yTitle, color: '#64748b' },
+        title: { display: true, text: yTitle, color: getChartTitleColor() },
       },
     },
     ...(ariaDescription ? { aria: { description: ariaDescription } } : {}),
@@ -86,11 +84,11 @@ function barOptsGrouped(yTitle) {
       },
     },
     scales: {
-      x: { grid: { color: GRID_COLOR } },
+      x: { grid: { color: getGridColor() } },
       y: {
-        grid: { color: GRID_COLOR },
+        grid: { color: getGridColor() },
         beginAtZero: true,
-        title: { display: true, text: yTitle, color: '#64748b' },
+        title: { display: true, text: yTitle, color: getChartTitleColor() },
       },
     },
   };
@@ -113,12 +111,12 @@ function barOptsSocial() {
     },
     scales: {
       x: {
-        grid: { color: GRID_COLOR },
+        grid: { color: getGridColor() },
         beginAtZero: true,
         max: 100,
-        title: { display: true, text: pct, color: '#64748b' },
+        title: { display: true, text: pct, color: getChartTitleColor() },
       },
-      y: { grid: { color: GRID_COLOR } },
+      y: { grid: { color: getGridColor() } },
     },
   };
 }
@@ -143,12 +141,12 @@ function barOptsLighthouse() {
     },
     scales: {
       x: {
-        grid: { color: GRID_COLOR },
+        grid: { color: getGridColor() },
         beginAtZero: true,
         max: 100,
-        title: { display: true, text: scoreLbl, color: '#64748b' },
+        title: { display: true, text: scoreLbl, color: getChartTitleColor() },
       },
-      y: { grid: { color: GRID_COLOR } },
+      y: { grid: { color: getGridColor() } },
     },
   };
 }
@@ -479,14 +477,14 @@ export default function Overview({ searchQuery = '' }) {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card shadow>
-          <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+          <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
             <Globe className="h-4 w-4" /> {vo.totalUrls}
           </div>
           <div className="text-3xl font-bold text-bright">{(s.total_urls || 0).toLocaleString()}</div>
-          <div className="text-xs text-slate-400 mt-2">{s.avg_outlinks ?? 0} {vo.avgOutlinks}</div>
+          <div className="text-xs text-muted-foreground mt-2">{s.avg_outlinks ?? 0} {vo.avgOutlinks}</div>
         </Card>
         <Card shadow>
-          <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+          <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-green-500" /> {vo.successRate}
           </div>
           <div className="text-3xl font-bold text-green-400">{s.success_rate ?? 0}%</div>
@@ -496,10 +494,10 @@ export default function Overview({ searchQuery = '' }) {
             <AlertTriangle className="h-4 w-4" /> {vo.broken}
           </div>
           <div className="text-3xl font-bold text-red-500">{brokenCount}</div>
-          <div className="text-xs text-slate-400 mt-2">{format(vo.count4xx5xx, { count4xx: s.count_4xx ?? 0, count5xx: s.count_5xx ?? 0 })}</div>
+          <div className="text-xs text-muted-foreground mt-2">{format(vo.count4xx5xx, { count4xx: s.count_4xx ?? 0, count5xx: s.count_5xx ?? 0 })}</div>
         </Card>
         <Card shadow>
-          <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+          <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
             <FileCode className="h-4 w-4" /> {vo.missingH1s}
           </div>
           <div className="text-3xl font-bold text-yellow-500">{h1Zero}</div>
@@ -508,7 +506,7 @@ export default function Overview({ searchQuery = '' }) {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card shadow>
-          <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+          <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
             <BookOpen className="h-4 w-4" /> {vo.medianWordCount}
           </div>
           <div className="text-3xl font-bold text-bright">
@@ -516,34 +514,34 @@ export default function Overview({ searchQuery = '' }) {
               ? Math.round(data.content_analytics.word_count_stats.median).toLocaleString()
               : sj.emDash}
           </div>
-          <div className="text-xs text-slate-400 mt-2">{vo.perPage2xx}</div>
+          <div className="text-xs text-muted-foreground mt-2">{vo.perPage2xx}</div>
         </Card>
         <Card shadow>
-          <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+          <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
             <Share className="h-4 w-4 text-blue-400" /> {vo.ogCoverage}
           </div>
           <div className="text-3xl font-bold text-blue-400">
             {data.social_coverage?.og_coverage_pct != null ? `${data.social_coverage.og_coverage_pct}%` : sj.emDash}
           </div>
-          <div className="text-xs text-slate-400 mt-2">{vo.ogPagesWith}</div>
+          <div className="text-xs text-muted-foreground mt-2">{vo.ogPagesWith}</div>
         </Card>
         <Card shadow>
-          <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+          <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
             <Cpu className="h-4 w-4 text-purple-400" /> {vo.technologies}
           </div>
           <div className="text-3xl font-bold text-purple-400">
             {data.tech_stack_summary?.technologies?.length ?? sj.emDash}
           </div>
-          <div className="text-xs text-slate-400 mt-2">{vo.techDetectedAcross}</div>
+          <div className="text-xs text-muted-foreground mt-2">{vo.techDetectedAcross}</div>
         </Card>
         <Card shadow>
-          <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+          <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
             <Timer className="h-4 w-4 text-amber-400" /> {vo.responseP50}
           </div>
           <div className="text-3xl font-bold text-amber-400">
             {data.response_time_stats?.p50 != null ? `${Math.round(data.response_time_stats.p50)}ms` : sj.emDash}
           </div>
-          <div className="text-xs text-slate-400 mt-2">
+          <div className="text-xs text-muted-foreground mt-2">
             {vo.p95Label} {data.response_time_stats?.p95 != null ? `${Math.round(data.response_time_stats.p95)}ms` : sj.emDash}
           </div>
         </Card>
@@ -555,33 +553,33 @@ export default function Overview({ searchQuery = '' }) {
             <ArrowLeftRight className="h-5 w-5 text-cyan-400" />
             <h2 className="text-lg font-bold text-bright">{vo.reportComparison}</h2>
           </div>
-          <p className="text-xs text-slate-500 mb-4 max-w-3xl">
+          <p className="text-xs text-muted-foreground mb-4 max-w-3xl">
             {vo.reportComparisonHint}
           </p>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             <div className="bg-brand-900 rounded-lg p-3 border border-default">
-              <div className="text-slate-500 text-xs uppercase tracking-wider">{vo.newUrls}</div>
+              <div className="text-muted-foreground text-xs uppercase tracking-wider">{vo.newUrls}</div>
               <div className="text-2xl font-bold text-emerald-400">{reportDiff.newUrls.length}</div>
             </div>
             <div className="bg-brand-900 rounded-lg p-3 border border-default">
-              <div className="text-slate-500 text-xs uppercase tracking-wider">{vo.removedUrls}</div>
+              <div className="text-muted-foreground text-xs uppercase tracking-wider">{vo.removedUrls}</div>
               <div className="text-2xl font-bold text-rose-400">{reportDiff.removedUrls.length}</div>
             </div>
             <div className="bg-brand-900 rounded-lg p-3 border border-default">
-              <div className="text-slate-500 text-xs uppercase tracking-wider">{vo.contentChanged}</div>
+              <div className="text-muted-foreground text-xs uppercase tracking-wider">{vo.contentChanged}</div>
               <div className="text-2xl font-bold text-amber-400">{reportDiff.contentChanged.length}</div>
             </div>
             <div className="bg-brand-900 rounded-lg p-3 border border-default">
-              <div className="text-slate-500 text-xs uppercase tracking-wider">{vo.structureChanged}</div>
-              <div className="text-2xl font-bold text-slate-300">{reportDiff.structureChanged.length}</div>
+              <div className="text-muted-foreground text-xs uppercase tracking-wider">{vo.structureChanged}</div>
+              <div className="text-2xl font-bold text-foreground">{reportDiff.structureChanged.length}</div>
             </div>
           </div>
           {(reportDiff.newUrls.length > 0 || reportDiff.removedUrls.length > 0 || reportDiff.contentChanged.length > 0) && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 text-xs">
               {reportDiff.newUrls.length > 0 && (
                 <div>
-                  <div className="text-slate-500 font-semibold mb-1">{vo.sampleNew}</div>
-                  <ul className="space-y-1 font-mono text-slate-400 max-h-32 overflow-y-auto">
+                  <div className="text-muted-foreground font-semibold mb-1">{vo.sampleNew}</div>
+                  <ul className="space-y-1 font-mono text-muted-foreground max-h-32 overflow-y-auto">
                     {reportDiff.newUrls.slice(0, 12).map((u) => (
                       <li key={u} className="truncate" title={u}>
                         {u}
@@ -592,8 +590,8 @@ export default function Overview({ searchQuery = '' }) {
               )}
               {reportDiff.removedUrls.length > 0 && (
                 <div>
-                  <div className="text-slate-500 font-semibold mb-1">{vo.sampleRemoved}</div>
-                  <ul className="space-y-1 font-mono text-slate-400 max-h-32 overflow-y-auto">
+                  <div className="text-muted-foreground font-semibold mb-1">{vo.sampleRemoved}</div>
+                  <ul className="space-y-1 font-mono text-muted-foreground max-h-32 overflow-y-auto">
                     {reportDiff.removedUrls.slice(0, 12).map((u) => (
                       <li key={u} className="truncate" title={u}>
                         {u}
@@ -604,8 +602,8 @@ export default function Overview({ searchQuery = '' }) {
               )}
               {reportDiff.contentChanged.length > 0 && (
                 <div>
-                  <div className="text-slate-500 font-semibold mb-1">{vo.sampleContentChanged}</div>
-                  <ul className="space-y-1 font-mono text-slate-400 max-h-32 overflow-y-auto">
+                  <div className="text-muted-foreground font-semibold mb-1">{vo.sampleContentChanged}</div>
+                  <ul className="space-y-1 font-mono text-muted-foreground max-h-32 overflow-y-auto">
                     {reportDiff.contentChanged.slice(0, 12).map((u) => (
                       <li key={u} className="truncate" title={u}>
                         {u}
@@ -625,34 +623,34 @@ export default function Overview({ searchQuery = '' }) {
             <Lightbulb className="h-5 w-5 text-yellow-400" />
             <h2 className="text-lg font-bold text-bright">{vo.keywordOpportunities}</h2>
           </div>
-          <p className="text-xs text-slate-500 mb-4 max-w-3xl">
+          <p className="text-xs text-muted-foreground mb-4 max-w-3xl">
             {vo.keywordOpportunitiesHint}
           </p>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
-              <h3 className="text-sm font-semibold text-slate-300 mb-2">{vo.quickWinsEase}</h3>
+              <h3 className="text-sm font-semibold text-foreground mb-2">{vo.quickWinsEase}</h3>
               <ul className="space-y-2">
                 {(data.keyword_opportunities.quick_wins || []).slice(0, 8).map((k, idx) => (
                   <li
                     key={`qw-${k.keyword}-${idx}`}
                     className="flex justify-between gap-2 text-sm bg-brand-900 border border-default rounded-lg px-3 py-2"
                   >
-                    <span className="text-slate-200 font-medium truncate">{k.keyword}</span>
-                    <span className="text-xs text-slate-500 shrink-0">{k.recommended_action || sj.emDash}</span>
+                    <span className="text-foreground font-medium truncate">{k.keyword}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">{k.recommended_action || sj.emDash}</span>
                   </li>
                 ))}
               </ul>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-slate-300 mb-2">{vo.highEmphasis}</h3>
+              <h3 className="text-sm font-semibold text-foreground mb-2">{vo.highEmphasis}</h3>
               <ul className="space-y-2">
                 {(data.keyword_opportunities.high_value || []).slice(0, 8).map((k, idx) => (
                   <li
                     key={`hv-${k.keyword}-${idx}`}
                     className="flex justify-between gap-2 text-sm bg-brand-900 border border-default rounded-lg px-3 py-2"
                   >
-                    <span className="text-slate-200 font-medium truncate">{k.keyword}</span>
-                    <span className="text-xs font-mono text-slate-500 shrink-0">{k.score != null ? Number(k.score).toFixed(3) : sj.emDash}</span>
+                    <span className="text-foreground font-medium truncate">{k.keyword}</span>
+                    <span className="text-xs font-mono text-muted-foreground shrink-0">{k.score != null ? Number(k.score).toFixed(3) : sj.emDash}</span>
                   </li>
                 ))}
               </ul>
@@ -675,17 +673,17 @@ export default function Overview({ searchQuery = '' }) {
             <Card shadow>
               <div className="text-violet-400/80 text-xs font-bold uppercase tracking-wider mb-2">{vo.duplicateGroups}</div>
               <div className="text-3xl font-bold text-violet-300">{data.content_duplicates?.length ?? 0}</div>
-              <div className="text-xs text-slate-400 mt-2">{vo.nearDuplicateGroups}</div>
+              <div className="text-xs text-muted-foreground mt-2">{vo.nearDuplicateGroups}</div>
             </Card>
             <Card shadow>
               <div className="text-amber-400/80 text-xs font-bold uppercase tracking-wider mb-2">{vo.anomalies}</div>
               <div className="text-3xl font-bold text-amber-300">{data.anomalies?.length ?? 0}</div>
-              <div className="text-xs text-slate-400 mt-2">{vo.outliers}</div>
+              <div className="text-xs text-muted-foreground mt-2">{vo.outliers}</div>
             </Card>
             <Card shadow>
               <div className="text-emerald-400/80 text-xs font-bold uppercase tracking-wider mb-2">{vo.parentTopics}</div>
               <div className="text-3xl font-bold text-emerald-300">{data.semantic_keyword_clusters?.length ?? 0}</div>
-              <div className="text-xs text-slate-400 mt-2">{vo.semanticGroups}</div>
+              <div className="text-xs text-muted-foreground mt-2">{vo.semanticGroups}</div>
             </Card>
             <Card shadow>
               <div className="text-cyan-400/80 text-xs font-bold uppercase tracking-wider mb-2">{vo.namedEntities}</div>
@@ -694,27 +692,27 @@ export default function Overview({ searchQuery = '' }) {
                   ? data.ner_site_summary.total_entities.toLocaleString()
                   : sj.emDash}
               </div>
-              <div className="text-xs text-slate-400 mt-2">
+              <div className="text-xs text-muted-foreground mt-2">
                 {data.ner_site_summary?.pages_with_ner != null
                   ? format(vo.pagesSampled, { n: data.ner_site_summary.pages_with_ner })
                   : vo.entitiesSitewide}
               </div>
             </Card>
             <Card shadow className="col-span-2 lg:col-span-4">
-              <div className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-2">{vo.languagesSampled}</div>
+              <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vo.languagesSampled}</div>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(data.language_summary?.counts || {})
                   .slice(0, 8)
                   .map(([lang, n]) => (
                     <span
                       key={lang}
-                      className="text-xs font-mono px-2 py-1 rounded-lg bg-brand-900 border border-default text-slate-300"
+                      className="text-xs font-mono px-2 py-1 rounded-lg bg-brand-900 border border-default text-foreground"
                     >
                       {lang}: {n}
                     </span>
                   ))}
                 {(!data.language_summary?.counts || Object.keys(data.language_summary.counts).length === 0) && (
-                  <span className="text-xs text-slate-500">{sj.emDash}</span>
+                  <span className="text-xs text-muted-foreground">{sj.emDash}</span>
                 )}
               </div>
               {data.language_summary?.mixed_site && (
@@ -752,7 +750,7 @@ export default function Overview({ searchQuery = '' }) {
                             </a>
                           </TableCell>
                           <TableCell className="text-xs font-mono tabular-nums">{a.anomaly_score ?? sj.emDash}</TableCell>
-                          <TableCell className="text-xs text-slate-400">
+                          <TableCell className="text-xs text-muted-foreground">
                             {(a.reasons || []).join(', ') || sj.emDash}
                           </TableCell>
                         </TableRow>
@@ -766,26 +764,20 @@ export default function Overview({ searchQuery = '' }) {
         </div>
       )}
 
-      {Array.isArray(data?.links) && data.links.length > 0 && (
-        <Card shadow className="mb-8">
-          <BrowserMlPanel links={data.links} compact />
-        </Card>
-      )}
-
       {hasInsightCharts && (
         <div className="mb-8">
           <h2 className="text-xl font-bold text-bright mb-1 flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-slate-400" />
+            <BarChart3 className="h-5 w-5 text-muted-foreground" />
             {vo.insightsGlance}
           </h2>
-          <p className="text-sm text-slate-500 mb-6 max-w-3xl">
+          <p className="text-sm text-muted-foreground mb-6 max-w-3xl">
             {vo.insightsHint}
           </p>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {wordCountChart && (
               <Card shadow>
-                <h3 className="text-sm font-bold text-slate-200 mb-1">{vo.contentDepth}</h3>
-                <p className="text-xs text-slate-500 mb-3">
+                <h3 className="text-sm font-bold text-foreground mb-1">{vo.contentDepth}</h3>
+                <p className="text-xs text-muted-foreground mb-3">
                   {vo.contentDepthHint}
                 </p>
                 <div className="h-56" role="img" aria-label={wordCountChart.aria}>
@@ -795,8 +787,8 @@ export default function Overview({ searchQuery = '' }) {
             )}
             {responseTimeChart && (
               <Card shadow>
-                <h3 className="text-sm font-bold text-slate-200 mb-1">{vo.serverLatency}</h3>
-                <p className="text-xs text-slate-500 mb-3">
+                <h3 className="text-sm font-bold text-foreground mb-1">{vo.serverLatency}</h3>
+                <p className="text-xs text-muted-foreground mb-3">
                   {vo.serverLatencyHint}
                 </p>
                 <div className="h-56" role="img" aria-label={responseTimeChart.aria}>
@@ -806,11 +798,11 @@ export default function Overview({ searchQuery = '' }) {
             )}
             {depthChart && (
               <Card shadow>
-                <h3 className="text-sm font-bold text-slate-200 mb-1">{vo.crawlDepth}</h3>
-                <p className="text-xs text-slate-500 mb-3">
+                <h3 className="text-sm font-bold text-foreground mb-1">{vo.crawlDepth}</h3>
+                <p className="text-xs text-muted-foreground mb-3">
                   {vo.crawlDepthHint}
                 </p>
-                <div className="text-xs text-slate-500 mb-2 tabular-nums">
+                <div className="text-xs text-muted-foreground mb-2 tabular-nums">
                   {format(vo.depthSummaryLine, { maxDepth: depth.max_depth ?? sj.emDash, avgDepth: depth.avg_depth ?? sj.emDash })}
                 </div>
                 <div className="h-52" role="img" aria-label={depthChart.aria}>
@@ -820,8 +812,8 @@ export default function Overview({ searchQuery = '' }) {
             )}
             {titleMetaChart && (
               <Card shadow>
-                <h3 className="text-sm font-bold text-slate-200 mb-1">{vo.titleMetaHealth}</h3>
-                <p className="text-xs text-slate-500 mb-3">
+                <h3 className="text-sm font-bold text-foreground mb-1">{vo.titleMetaHealth}</h3>
+                <p className="text-xs text-muted-foreground mb-3">
                   {vo.titleMetaHint}
                 </p>
                 <div className="h-64" role="img" aria-label={titleMetaChart.aria}>
@@ -831,8 +823,8 @@ export default function Overview({ searchQuery = '' }) {
             )}
             {socialChart && (
               <Card shadow>
-                <h3 className="text-sm font-bold text-slate-200 mb-1">{vo.socialPreview}</h3>
-                <p className="text-xs text-slate-500 mb-3">
+                <h3 className="text-sm font-bold text-foreground mb-1">{vo.socialPreview}</h3>
+                <p className="text-xs text-muted-foreground mb-3">
                   {vo.socialPreviewHint}
                 </p>
                 <div className="h-44" role="img" aria-label={socialChart.aria}>
@@ -842,8 +834,8 @@ export default function Overview({ searchQuery = '' }) {
             )}
             {readingLevelChart && (
               <Card shadow>
-                <h3 className="text-sm font-bold text-slate-200 mb-1">{vo.readingLevel}</h3>
-                <p className="text-xs text-slate-500 mb-3">
+                <h3 className="text-sm font-bold text-foreground mb-1">{vo.readingLevel}</h3>
+                <p className="text-xs text-muted-foreground mb-3">
                   {vo.readingLevelHint}
                 </p>
                 <div className="h-56" role="img" aria-label={readingLevelChart.aria}>
@@ -853,8 +845,8 @@ export default function Overview({ searchQuery = '' }) {
             )}
             {mimeChart && (
               <Card shadow>
-                <h3 className="text-sm font-bold text-slate-200 mb-1">{vo.topMime}</h3>
-                <p className="text-xs text-slate-500 mb-3">
+                <h3 className="text-sm font-bold text-foreground mb-1">{vo.topMime}</h3>
+                <p className="text-xs text-muted-foreground mb-3">
                   {vo.topMimeHint}
                 </p>
                 <div className="h-56" role="img" aria-label={mimeChart.aria}>
@@ -864,8 +856,8 @@ export default function Overview({ searchQuery = '' }) {
             )}
             {lighthouseChart && (
               <Card shadow className="lg:col-span-2">
-                <h3 className="text-sm font-bold text-slate-200 mb-1">{vo.lhCategoryScores}</h3>
-                <p className="text-xs text-slate-500 mb-3">
+                <h3 className="text-sm font-bold text-foreground mb-1">{vo.lhCategoryScores}</h3>
+                <p className="text-xs text-muted-foreground mb-3">
                   {vo.lhCategoryHint}
                 </p>
                 <div className="h-48 max-w-2xl" role="img" aria-label={lighthouseChart.aria}>
@@ -922,7 +914,7 @@ export default function Overview({ searchQuery = '' }) {
                     </div>
                   </div>
                   <div className="min-w-0 break-words pr-1">
-                    <h3 className="text-lg font-bold text-slate-200">{cat.name || cat.id || ''}</h3>
+                    <h3 className="text-lg font-bold text-foreground">{cat.name || cat.id || ''}</h3>
                     <p className={`text-sm mt-1 ${labelCls}`}>{label}</p>
                   </div>
                 </Card>
@@ -930,10 +922,10 @@ export default function Overview({ searchQuery = '' }) {
             })}
           </div>
           ) : (
-            <p className="text-slate-500 mb-8">{vo.noCategorySearch}</p>
+            <p className="text-muted-foreground mb-8">{vo.noCategorySearch}</p>
           )
         ) : (
-          <p className="text-slate-500">{vo.noCategoryData}</p>
+          <p className="text-muted-foreground">{vo.noCategoryData}</p>
         )}
       </div>
 
@@ -975,12 +967,12 @@ export default function Overview({ searchQuery = '' }) {
           <h2 className="text-xl font-bold text-bright mb-3">{vo.siteConfiguration}</h2>
           <Card padding="tight" className="flex gap-6 flex-wrap">
             <div className="flex items-center gap-2">
-              <span className="text-slate-500">{vo.robotsTxt}</span>
-              <span className="font-semibold text-slate-200">{data.site_level.robots_present ? sj.yes : sj.no}</span>
+              <span className="text-muted-foreground">{vo.robotsTxt}</span>
+              <span className="font-semibold text-foreground">{data.site_level.robots_present ? sj.yes : sj.no}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-slate-500">{vo.sitemapXml}</span>
-              <span className="font-semibold text-slate-200">
+              <span className="text-muted-foreground">{vo.sitemapXml}</span>
+              <span className="font-semibold text-foreground">
                 {data.site_level.sitemap_present ? sj.yes : sj.no}
                 {data.site_level.sitemap_valid === true ? vo.sitemapValid : data.site_level.sitemap_present ? vo.sitemapInvalid : ''}
               </span>
@@ -1004,13 +996,13 @@ export default function Overview({ searchQuery = '' }) {
                   className={`flex items-start gap-3 border-l-4 ${c.border} ${c.bg} rounded-r-xl px-4 py-3`}
                 >
                   <ChevronRight className={`h-4 w-4 shrink-0 mt-0.5 ${c.text}`} />
-                  <span className="text-sm text-slate-200 leading-relaxed">{r}</span>
+                  <span className="text-sm text-foreground leading-relaxed">{r}</span>
                 </div>
               );
             })}
           </div>
           ) : (
-            <p className="text-slate-500 text-sm">{vo.noRecSearch}</p>
+            <p className="text-muted-foreground text-sm">{vo.noRecSearch}</p>
           )}
         </div>
       )}
@@ -1019,17 +1011,17 @@ export default function Overview({ searchQuery = '' }) {
         <h2 className="text-xl font-bold text-bright mb-2 flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-blue-400 shrink-0" /> {vo.topPagesTitle}
         </h2>
-        <p className="text-sm text-slate-500 mb-4 max-w-3xl leading-relaxed">{vo.topPagesHint}</p>
+        <p className="text-sm text-muted-foreground mb-4 max-w-3xl leading-relaxed">{vo.topPagesHint}</p>
         {(data.top_pages || []).length > 0 ? (() => {
           const pages = topPagesFiltered;
           if (pages.length === 0) {
-            return <p className="text-slate-500">{vo.noTopSearch}</p>;
+            return <p className="text-muted-foreground">{vo.noTopSearch}</p>;
           }
           const maxPR = Math.max(...pages.map((p) => p.pagerank != null ? Number(p.pagerank) : 0), 0.0001);
           const maxDeg = Math.max(...pages.map((p) => p.degree ?? p.outlinks ?? 0), 1);
           return (
             <Card overflowHidden padding="none">
-              <p className="sm:hidden text-xs text-slate-500 px-4 py-2 border-b border-muted bg-brand-900/40">{sj.tableSwipeHint}</p>
+              <p className="sm:hidden text-xs text-muted-foreground px-4 py-2 border-b border-muted bg-brand-900/40">{sj.tableSwipeHint}</p>
               <Table className="min-w-[420px]">
                 <TableHead sticky>
                   <tr>
@@ -1050,7 +1042,7 @@ export default function Overview({ searchQuery = '' }) {
                     const prPct = pr != null ? (pr / maxPR) * 100 : 0;
                     const degPct = deg != null ? (deg / maxDeg) * 100 : 0;
                     const rankMedal =
-                      i === 0 ? 'text-amber-400' : i === 1 ? 'text-slate-300' : i === 2 ? 'text-orange-400/90' : null;
+                      i === 0 ? 'text-amber-400' : i === 1 ? 'text-foreground' : i === 2 ? 'text-orange-400/90' : null;
                     const hrefLines = formatPageHrefLines(p.url);
                     return (
                       <TableRow key={i}>
@@ -1060,7 +1052,7 @@ export default function Overview({ searchQuery = '' }) {
                               <Medal className={`h-4 w-4 shrink-0 ${rankMedal}`} aria-hidden />
                             )}
                             <span
-                              className={`font-semibold tabular-nums ${rankMedal != null ? rankMedal : 'text-slate-500'}`}
+                              className={`font-semibold tabular-nums ${rankMedal != null ? rankMedal : 'text-muted-foreground'}`}
                             >
                               {i + 1}
                             </span>
@@ -1069,16 +1061,16 @@ export default function Overview({ searchQuery = '' }) {
                         <TableCell className="min-w-0 sticky left-14 z-20 max-w-[min(280px,78vw)] bg-inherit border-r border-white/10 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.35)]">
                           <div className="min-w-0 flex flex-col gap-0.5">
                             <div
-                              className="text-slate-100 font-medium text-sm leading-snug line-clamp-2"
+                              className="text-bright font-medium text-sm leading-snug line-clamp-2"
                               title={typeof p.title === 'string' ? p.title : undefined}
                             >
-                              {p.title || <span className="text-slate-500 italic font-normal">{vo.noTitle}</span>}
+                              {p.title || <span className="text-muted-foreground italic font-normal">{vo.noTitle}</span>}
                             </div>
                             <a
                               href={p.url}
                               target="_blank"
                               rel="noreferrer"
-                              className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-400 group min-w-0"
+                              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-blue-400 group min-w-0"
                               title={p.url}
                             >
                               <span className="truncate font-mono">{hrefLines.label}</span>
@@ -1095,7 +1087,7 @@ export default function Overview({ searchQuery = '' }) {
                               />
                             </div>
                             <span
-                              className="order-1 sm:order-2 shrink-0 text-sm font-semibold text-slate-200 tabular-nums"
+                              className="order-1 sm:order-2 shrink-0 text-sm font-semibold text-foreground tabular-nums"
                               title={
                                 pr != null
                                   ? `${vo.thImportance}: ${Math.round(prPct)}% of top page in this table. Raw PageRank ${pr}.`
@@ -1114,8 +1106,8 @@ export default function Overview({ searchQuery = '' }) {
                                 style={{ width: `${degPct}%` }}
                               />
                             </div>
-                            <span className="order-1 sm:order-2 shrink-0 inline-flex items-center gap-1.5 text-sm text-slate-200 tabular-nums">
-                              <Link2 className="h-3.5 w-3.5 text-slate-500 shrink-0 hidden sm:inline" aria-hidden />
+                            <span className="order-1 sm:order-2 shrink-0 inline-flex items-center gap-1.5 text-sm text-foreground tabular-nums">
+                              <Link2 className="h-3.5 w-3.5 text-muted-foreground shrink-0 hidden sm:inline" aria-hidden />
                               {deg ?? sj.emDash}
                             </span>
                           </div>
@@ -1128,7 +1120,7 @@ export default function Overview({ searchQuery = '' }) {
             </Card>
           );
         })() : (
-          <p className="text-slate-500">{vo.noTopPagesData}</p>
+          <p className="text-muted-foreground">{vo.noTopPagesData}</p>
         )}
       </div>
 

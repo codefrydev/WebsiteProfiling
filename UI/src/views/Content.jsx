@@ -4,7 +4,6 @@ import { ExternalLink, CheckCircle2, FileText, Copy } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, Button } from '../components';
-import BrowserMlPanel from '../components/ml/BrowserMlPanel';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
 import { formatPageHrefLines } from '../utils/linkUtils';
@@ -105,17 +104,11 @@ export default function Content({ searchQuery = '' }) {
     <PageLayout className="space-y-6">
       <PageHeader title={vc.title} subtitle={subtitle} />
 
-      {Array.isArray(data?.links) && data.links.length > 0 && (
-        <Card shadow>
-          <BrowserMlPanel links={data.links} compact />
-        </Card>
-      )}
-
       {data.content_duplicates?.length > 0 && (
         <Card shadow>
           <div className="flex items-center gap-2 mb-3">
             <Copy className="h-4 w-4 text-violet-400" />
-            <h2 className="text-sm font-bold text-slate-200">{vc.dupClusters}</h2>
+            <h2 className="text-sm font-bold text-foreground">{vc.dupClusters}</h2>
           </div>
           <div className="max-h-72 overflow-y-auto rounded-lg border border-muted">
             <Table>
@@ -140,7 +133,7 @@ export default function Content({ searchQuery = '' }) {
                         {g.representative_url}
                       </a>
                     </TableCell>
-                    <TableCell className="text-right text-slate-400 text-xs tabular-nums">
+                    <TableCell className="text-right text-muted-foreground text-xs tabular-nums">
                       {g.member_count ?? (g.member_urls || []).length}
                     </TableCell>
                   </TableRow>
@@ -153,8 +146,8 @@ export default function Content({ searchQuery = '' }) {
 
       {totalIssues > 0 && (
         <Card padding="tight" shadow>
-          <h2 className="text-sm font-bold text-slate-200 mb-1">{vc.issuesByType}</h2>
-          <p className="text-xs text-slate-500 mb-3">{vc.issuesByTypeHint}</p>
+          <h2 className="text-sm font-bold text-foreground mb-1">{vc.issuesByType}</h2>
+          <p className="text-xs text-muted-foreground mb-3">{vc.issuesByTypeHint}</p>
           <div className="h-[22rem]">
             <Bar
               data={{
@@ -184,13 +177,13 @@ export default function Content({ searchQuery = '' }) {
                     : 'bg-green-500/10 border-green-500/40 ring-1 ring-green-500/20'
                   : hasIssues
                   ? 'bg-brand-800 border-amber-700/40 hover:border-amber-600/60'
-                  : 'bg-brand-800 border-default hover:border-slate-600/60 opacity-60'
+                  : 'bg-brand-800 border-default hover:border-brand-700/80 opacity-60'
               }`}
             >
               <div className={`text-xl font-bold ${hasIssues ? (isActive ? 'text-red-400' : 'text-amber-400') : 'text-green-400'}`}>
                 {count}
               </div>
-              <div className="text-xs text-slate-400 mt-0.5 leading-tight">{label}</div>
+              <div className="text-xs text-muted-foreground mt-0.5 leading-tight">{label}</div>
             </button>
           );
         })}
@@ -211,14 +204,14 @@ export default function Content({ searchQuery = '' }) {
                   ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
                   : hasIssues
                   ? 'border-amber-700/50 bg-amber-500/10 text-amber-300 hover:border-amber-600/60'
-                  : 'border-default bg-slate-800 text-slate-500 hover:border-slate-600/60'
+                  : 'border-default bg-brand-800 text-muted-foreground hover:border-brand-700/80'
               }`}
             >
               {hasIssues && !isActive && (
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-400 flex-shrink-0" />
               )}
               {label}
-              <span className={`text-xs font-bold ${isActive ? 'text-blue-300' : hasIssues ? 'text-amber-400' : 'text-slate-600'}`}>
+              <span className={`text-xs font-bold ${isActive ? 'text-blue-300' : hasIssues ? 'text-amber-400' : 'text-muted-foreground'}`}>
                 ({count})
               </span>
             </button>
@@ -229,7 +222,7 @@ export default function Content({ searchQuery = '' }) {
       {activeFilter?.guidance && (
         <div className="flex items-start gap-3 bg-blue-500/5 border border-blue-500/20 rounded-xl px-4 py-3">
           <FileText className="h-4 w-4 text-blue-400 flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-slate-300 leading-relaxed">{activeFilter.guidance}</p>
+          <p className="text-sm text-foreground leading-relaxed">{activeFilter.guidance}</p>
         </div>
       )}
 
@@ -237,17 +230,17 @@ export default function Content({ searchQuery = '' }) {
         {list.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <CheckCircle2 className="h-10 w-10 text-green-600" />
-            <p className="text-slate-500 text-sm font-medium">{vc.emptyFilter}</p>
-            <p className="text-xs text-slate-600">{vc.emptyGreat}</p>
+            <p className="text-muted-foreground text-sm font-medium">{vc.emptyFilter}</p>
+            <p className="text-xs text-muted-foreground">{vc.emptyGreat}</p>
           </div>
         ) : (
           <>
             <div className="px-3 sm:px-4 py-3 border-b border-muted bg-brand-900/50 space-y-1.5 shrink-0">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{activeFilter?.label}</span>
-                <span className="text-xs text-slate-500 shrink-0">{urlCountLine}</span>
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{activeFilter?.label}</span>
+                <span className="text-xs text-muted-foreground shrink-0">{urlCountLine}</span>
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed">{vc.issueTableHint}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{vc.issueTableHint}</p>
             </div>
             <Table className={showMetricCol ? 'min-w-[480px]' : 'min-w-[340px]'}>
               <TableHead sticky>
@@ -278,19 +271,19 @@ export default function Content({ searchQuery = '' }) {
                   const rowNum = (page - 1) * perPage + i + 1;
                   return (
                   <TableRow key={`${item.url}-${rowNum}`} className="group">
-                    <TableCell className="text-slate-500 text-sm font-semibold tabular-nums text-center align-top pt-4 px-3 sm:px-4">
+                    <TableCell className="text-muted-foreground text-sm font-semibold tabular-nums text-center align-top pt-4 px-3 sm:px-4">
                       {rowNum}
                     </TableCell>
                     <TableCell className="min-w-0 align-top pt-3 px-3 sm:px-4">
                       <div className="min-w-0 flex flex-col gap-0.5">
                         <div
-                          className="text-slate-100 font-medium text-sm leading-snug line-clamp-2"
+                          className="text-bright font-medium text-sm leading-snug line-clamp-2"
                           title={item.title || undefined}
                         >
                           {item.title ? (
                             item.title
                           ) : (
-                            <span className="text-slate-500 italic font-normal">{vc.noTitle}</span>
+                            <span className="text-muted-foreground italic font-normal">{vc.noTitle}</span>
                           )}
                         </div>
                         <a
@@ -298,13 +291,13 @@ export default function Content({ searchQuery = '' }) {
                           target="_blank"
                           rel="noreferrer"
                           title={item.url}
-                          className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-400 group/link min-w-0"
+                          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-blue-400 group/link min-w-0"
                         >
                           <span className="truncate font-mono">{hrefLines.label}</span>
                           <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-70 group-hover/link:opacity-100 transition-opacity" />
                         </a>
                         {showMetricCol && (
-                          <p className="mt-1 md:hidden text-[11px] text-slate-500 leading-snug">
+                          <p className="mt-1 md:hidden text-[11px] text-muted-foreground leading-snug">
                             {(filter === 'meta_desc_short' || filter === 'meta_desc_long') && (
                               <span className={`font-semibold tabular-nums ${filter === 'meta_desc_short' ? 'text-amber-400' : 'text-red-400'}`}>
                                 {vc.tableLength}: {item.meta_desc_len ?? sj.emDash}
@@ -349,7 +342,7 @@ export default function Content({ searchQuery = '' }) {
               </TableBody>
             </Table>
             <div className="p-4 border-t border-muted bg-brand-900 flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center shrink-0">
-              <div className="text-sm text-slate-400 space-y-0.5">
+              <div className="text-sm text-muted-foreground space-y-0.5">
                 <div>{format(vc.showingSlice, { from: rowFrom, to: rowTo, total: list.length })}</div>
                 <div>
                   {vlp.pageOf} <span className="font-bold text-bright">{page}</span> {vlp.of}{' '}
@@ -361,7 +354,7 @@ export default function Content({ searchQuery = '' }) {
                   variant="secondary"
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
                   disabled={page <= 1}
-                  className="px-3 py-1 text-slate-300 touch-manipulation min-h-11 sm:min-h-0"
+                  className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
                 >
                   {vlp.previous}
                 </Button>
@@ -369,7 +362,7 @@ export default function Content({ searchQuery = '' }) {
                   variant="secondary"
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                   disabled={page >= totalPages}
-                  className="px-3 py-1 text-slate-300 touch-manipulation min-h-11 sm:min-h-0"
+                  className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
                 >
                   {vlp.next}
                 </Button>
