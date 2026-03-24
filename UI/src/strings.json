@@ -17,6 +17,10 @@
     "themeGroupLabel": "Color theme"
   },
   "nav": {
+    "home": {
+      "label": "Home",
+      "section": "Audit Overview"
+    },
     "overview": {
       "label": "Dashboard",
       "section": "Audit Overview"
@@ -839,6 +843,25 @@
       "ariaLighthouseIntro": "Lighthouse category scores (0–100):",
       "ariaSocialIntro": "Social preview coverage on HTML pages:",
       "statusAriaIntro": "Status:"
+    },
+    "home": {
+      "title": "Home",
+      "subtitle": "Choose a domain to open the full dashboard view.",
+      "unknownBrand": "Unknown Domain",
+      "searchPlaceholder": "Search Domain or crawl URLs...",
+      "totalBrandsLabel": "Domain",
+      "totalUrlsLabel": "Total URLs",
+      "avgHealthLabel": "Average Health",
+      "brandLabel": "Domain",
+      "crawlUrlLabel": "Crawling URL",
+      "urlCountLabel": "URLs",
+      "healthScoreLabel": "Health Score",
+      "lastCrawlLabel": "Last Crawl",
+      "statusBreakdownLabel": "Status Breakdown",
+      "otherStatusPill": "Other {count}",
+      "openBrandCta": "Open",
+      "noSearchResults": "No Domain match your search.",
+      "empty": "No crawl URLs available to group by domain yet."
     },
     "contentAnalytics": {
       "title": "Content Insights",

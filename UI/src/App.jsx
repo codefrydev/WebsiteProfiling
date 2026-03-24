@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import {
   Radar,
+  Home as HomeIcon,
   LayoutDashboard,
   AlertOctagon,
   Link as LinkIcon,
@@ -28,6 +29,7 @@ import { strings, format } from './lib/strings';
 import { Badge, ReportSelector } from './components';
 import ThemeToggle from './components/ThemeToggle.jsx';
 import Overview from './views/Overview';
+import Home from './views/Home';
 import Issues from './views/Issues';
 import Links from './views/Links';
 import Redirects from './views/Redirects';
@@ -44,6 +46,7 @@ import SqlPlayground from './views/SqlPlayground.jsx';
 import BrowserMlChat from './components/ml/BrowserMlChat.jsx';
 
 const VIEW_CONFIG = [
+  { id: 'home', component: Home, icon: HomeIcon },
   { id: 'overview', component: Overview, icon: LayoutDashboard },
   { id: 'model-loader', component: ModelLoader, icon: Sparkles },
   { id: 'sql-playground', component: SqlPlayground, icon: Database },
@@ -67,7 +70,7 @@ const VIEWS = VIEW_CONFIG.map((v) => ({
 }));
 
 function AppContent() {
-  const [view, setView] = useState('overview');
+  const [view, setView] = useState('home');
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { data, loading, error } = useReport();
@@ -78,8 +81,10 @@ function AppContent() {
     closeSidebar();
   };
 
-  const CurrentView = VIEWS.find((v) => v.id === view)?.component || Overview;
+  const CurrentView = VIEWS.find((v) => v.id === view)?.component || Home;
   const isLabView = view === 'model-loader' || view === 'sql-playground';
+  const isHomeView = view === 'home';
+  const showSidebar = !isHomeView;
   const issueCount = data?.categories?.reduce((n, c) => n + (c.issues?.length || 0), 0) ?? 0;
   const securityCount = data?.security_findings?.length ?? 0;
 
@@ -113,9 +118,9 @@ function AppContent() {
   const sections = [...new Set(VIEWS.map((v) => v.section))];
 
   return (
-    <div className="min-h-screen flex bg-brand-900 text-foreground overflow-hidden">
+    <div className={`min-h-screen bg-brand-900 text-foreground overflow-hidden ${showSidebar ? 'flex' : 'block'}`}>
       {/* Overlay when sidebar open (full-screen lab views; mobile-only on other views) */}
-      {sidebarOpen && (
+      {showSidebar && sidebarOpen && (
         <button
           type="button"
           aria-label={strings.app.ariaCloseMenu}
@@ -126,7 +131,7 @@ function AppContent() {
         />
       )}
 
-      <aside
+      {showSidebar && <aside
         className={`inset-y-0 left-0 w-64 bg-brand-800 border-r border-muted flex flex-col h-screen shrink-0 z-40 shadow-xl print:hidden transition-transform duration-200 ease-out ${
           isLabView
             ? `fixed ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`
@@ -204,10 +209,10 @@ function AppContent() {
             <span>{strings.app.githubLinkLabel}</span>
           </a>
         </div>
-      </aside>
+      </aside>}
 
       <main className="flex-1 flex flex-col h-screen overflow-hidden bg-brand-900 relative min-w-0">
-        {isLabView ? (
+        {showSidebar && isLabView ? (
           <button
             type="button"
             aria-label={strings.app.ariaOpenMenu}
@@ -219,18 +224,20 @@ function AppContent() {
         ) : null}
         <header
           className={`h-16 border-b border-muted bg-brand-800/80 backdrop-blur-md flex items-center justify-between gap-3 px-4 sm:px-6 shrink-0 z-10 print:hidden ${
-            isLabView ? 'hidden' : ''
+            isLabView || isHomeView ? 'hidden' : ''
           }`}
         >
-          <button
-            type="button"
-            aria-label={strings.app.ariaOpenMenu}
-            className="md:hidden p-2 -ml-2 text-muted-foreground hover:text-bright rounded-lg shrink-0"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu className="h-6 w-6" />
-          </button>
-          <div className="flex-1 min-w-0 max-w-xl relative">
+          {showSidebar ? (
+            <button
+              type="button"
+              aria-label={strings.app.ariaOpenMenu}
+              className="md:hidden p-2 -ml-2 text-muted-foreground hover:text-bright rounded-lg shrink-0"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="h-6 w-6" />
+            </button>
+          ) : null}
+          <div className={`min-w-0 relative ${showSidebar ? 'flex-1 max-w-xl' : 'flex-1 max-w-2xl mx-auto'}`}>
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <input
               type="text"
@@ -251,10 +258,10 @@ function AppContent() {
           id="viewContainer"
         >
           <div className={`fade-in ${isLabView ? 'flex min-h-0 flex-1 flex-col' : ''}`}>
-            <CurrentView searchQuery={searchQuery} />
+            <CurrentView searchQuery={searchQuery} onNavigate={selectView} />
           </div>
         </div>
-        {!isLabView ? <BrowserMlChat /> : null}
+        {!isLabView && !isHomeView ? <BrowserMlChat /> : null}
       </main>
     </div>
   );
