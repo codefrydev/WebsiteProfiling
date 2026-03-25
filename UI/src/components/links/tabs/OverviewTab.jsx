@@ -52,7 +52,7 @@ export default function OverviewTab({ link }) {
       label: o.statRedirects,
       value:
         link.redirect_chain_length > 0 ? (
-          <span className="text-yellow-400">{link.redirect_chain_length}</span>
+          <span className="text-yellow-800 dark:text-yellow-400">{link.redirect_chain_length}</span>
         ) : (
           '0'
         ),
@@ -86,7 +86,7 @@ export default function OverviewTab({ link }) {
           <CopyBtn text={link.title} />
         </div>
         <div className="text-sm text-foreground">
-          {link.title || <span className="text-red-400">{o.missing}</span>}
+          {link.title || <span className="text-red-600 dark:text-red-400">{o.missing}</span>}
         </div>
         <CharBar len={titleLen} max={60} colorFn={titleCharColor} />
       </div>
@@ -97,7 +97,7 @@ export default function OverviewTab({ link }) {
           <CopyBtn text={link.meta_description} />
         </div>
         <div className="text-sm text-foreground">
-          {link.meta_description || <span className="text-red-400">{o.missing}</span>}
+          {link.meta_description || <span className="text-red-600 dark:text-red-400">{o.missing}</span>}
         </div>
         <CharBar len={metaLen} max={160} colorFn={metaCharColor} />
       </div>
@@ -109,10 +109,10 @@ export default function OverviewTab({ link }) {
             <span
               className={`text-xs px-2 py-0.5 rounded ${
                 link.h1_count === 1
-                  ? 'bg-green-500/20 text-green-400'
+                  ? 'bg-green-500/20 text-green-700 dark:text-green-400'
                   : link.h1_count === 0
-                    ? 'bg-red-500/20 text-red-400'
-                    : 'bg-yellow-500/20 text-yellow-400'
+                    ? 'bg-red-500/20 text-red-600 dark:text-red-400'
+                    : 'bg-yellow-500/20 text-yellow-800 dark:text-yellow-400'
               }`}
             >
               {format(o.h1Count, { n: link.h1_count ?? 0, s: link.h1_count !== 1 ? 's' : '' })}

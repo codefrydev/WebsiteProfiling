@@ -90,7 +90,7 @@ export default function MultiPageTable({ byUrl, selectedUrl, onSelect }) {
                 onClick={() => onSelect(row.url)}
                 className={`cursor-pointer transition-colors ${scoreRowBg(row.performance)} ${isSelected ? 'ring-2 ring-inset ring-blue-500' : ''}`}
               >
-                <td className="px-4 py-3 font-mono text-blue-400 text-xs max-w-[250px] truncate" title={row.url}>
+                <td className="px-4 py-3 font-mono text-link text-xs max-w-[250px] truncate" title={row.url}>
                   <a
                     href={row.url}
                     target="_blank"
@@ -105,7 +105,12 @@ export default function MultiPageTable({ byUrl, selectedUrl, onSelect }) {
                   const val = row[c.id];
                   const cellId = `${i}-${c.id}`;
                   const mStatus = !c.isScore ? metricStatus(c.id, val) : null;
-                  const metricColor = mStatus === 'good' ? 'text-green-400' : mStatus === 'warn' ? 'text-yellow-400' : 'text-red-400';
+                  const metricColor =
+                    mStatus === 'good'
+                      ? 'text-green-700 dark:text-green-400'
+                      : mStatus === 'warn'
+                        ? 'text-yellow-800 dark:text-yellow-400'
+                        : 'text-red-600 dark:text-red-400';
                   return (
                     <td
                       key={c.id}

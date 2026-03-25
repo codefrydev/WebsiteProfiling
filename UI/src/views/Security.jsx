@@ -12,7 +12,7 @@ registerChartJsBase();
 const SEVERITY_CONFIG = {
   Critical: {
     icon: Flame,
-    text: 'text-red-400',
+    text: 'text-red-600 dark:text-red-400',
     bg: 'bg-red-500/10',
     border: 'border-red-500/40',
     ring: 'ring-1 ring-red-500/20 border-red-900/30',
@@ -23,7 +23,7 @@ const SEVERITY_CONFIG = {
   },
   High: {
     icon: AlertTriangle,
-    text: 'text-orange-400',
+    text: 'text-orange-600 dark:text-orange-400',
     bg: 'bg-orange-500/10',
     border: 'border-orange-500/40',
     ring: 'ring-1 ring-orange-500/20 border-orange-900/30',
@@ -34,7 +34,7 @@ const SEVERITY_CONFIG = {
   },
   Medium: {
     icon: AlertCircle,
-    text: 'text-yellow-400',
+    text: 'text-yellow-700 dark:text-yellow-400',
     bg: 'bg-yellow-500/10',
     border: 'border-yellow-500/40',
     ring: '',
@@ -294,7 +294,7 @@ export default function Security({ searchQuery = '' }) {
                       href={f.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex items-center gap-1 font-mono text-blue-400 text-xs hover:underline break-all min-w-0"
+                      className="flex items-center gap-1 font-mono text-link text-xs hover:underline break-all min-w-0"
                     >
                       <span className="line-clamp-1">{f.url}</span>
                       <ExternalLink className="h-3 w-3 flex-shrink-0" />
@@ -308,7 +308,7 @@ export default function Security({ searchQuery = '' }) {
                 {/* Recommendation */}
                 {f.recommendation && (
                   <div className={`rounded-lg px-3 py-2.5 border text-sm text-muted-foreground leading-relaxed ${cfg.recBg}`}>
-                    <span className="text-xs font-bold uppercase tracking-wide text-blue-400 block mb-1">
+                    <span className="text-xs font-bold uppercase tracking-wide text-link block mb-1">
                       {vs.recommendation}
                     </span>
                     {f.recommendation}

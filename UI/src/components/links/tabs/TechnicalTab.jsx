@@ -133,7 +133,7 @@ export default function TechnicalTab({ link }) {
               className="bg-brand-900 border border-default rounded-lg flex items-center justify-between px-4 py-2.5"
             >
               <span className="text-sm text-muted-foreground">{label}</span>
-              <span className={`text-sm ${mono ? 'font-mono' : ''} ${warn ? 'text-red-400' : 'text-foreground'}`}>
+              <span className={`text-sm ${mono ? 'font-mono' : ''} ${warn ? 'text-red-600 dark:text-red-400' : 'text-foreground'}`}>
                 {value}
               </span>
             </div>

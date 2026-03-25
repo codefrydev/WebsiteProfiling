@@ -93,7 +93,7 @@ function CategorySection({ category, items, defaultOpen = false, vi, emDash }) {
                       href={iss.url}
                       target="_blank"
                       rel="noreferrer"
-                      className="mt-2 inline-flex items-center gap-1 font-mono text-blue-400 text-xs hover:underline break-all"
+                      className="mt-2 inline-flex items-center gap-1 font-mono text-link text-xs hover:underline break-all"
                     >
                       {iss.url}
                       <ExternalLink className="h-3 w-3 flex-shrink-0" />
@@ -101,7 +101,7 @@ function CategorySection({ category, items, defaultOpen = false, vi, emDash }) {
                   )}
                 </div>
                 <div className="flex-1 min-w-0 bg-brand-900 rounded-lg p-3 border border-muted">
-                  <div className="text-xs text-blue-400 font-bold uppercase mb-1 tracking-wide">{vi.fixRecommendation}</div>
+                  <div className="text-xs text-link font-bold uppercase mb-1 tracking-wide">{vi.fixRecommendation}</div>
                   <p className="text-muted-foreground text-sm leading-relaxed">{iss.recommendation || emDash}</p>
                 </div>
               </div>
@@ -234,7 +234,7 @@ export default function Issues({ searchQuery = '' }) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card padding="tight" shadow>
             <div className="flex items-center gap-2 mb-1">
-              <BarChart2 className="h-4 w-4 text-blue-400" />
+              <BarChart2 className="h-4 w-4 text-link" />
               <h2 className="text-sm font-bold text-foreground">{vi.issuesByCategory}</h2>
             </div>
             <p className="text-xs text-muted-foreground mb-2">{vi.issuesByCategoryHint}</p>
@@ -250,7 +250,7 @@ export default function Issues({ searchQuery = '' }) {
           </Card>
           <Card padding="tight" shadow>
             <div className="flex items-center gap-2 mb-1">
-              <BarChart2 className="h-4 w-4 text-blue-400" />
+              <BarChart2 className="h-4 w-4 text-link" />
               <h2 className="text-sm font-bold text-foreground">{vi.issuesByPriority}</h2>
             </div>
             <p className="text-xs text-muted-foreground mb-2">{vi.issuesByPriorityHint}</p>
@@ -319,7 +319,7 @@ export default function Issues({ searchQuery = '' }) {
           onClick={() => setPriorityFilter(sj.all)}
           className={`px-4 py-1.5 rounded-full text-sm font-bold border transition-colors ${
             priorityFilter === sj.all
-              ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+              ? 'bg-blue-500/20 text-link border-blue-500/30'
               : 'border-default bg-brand-800 text-muted-foreground hover:border-brand-700/80'
           }`}
         >

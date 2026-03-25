@@ -128,7 +128,7 @@ export default function Content({ searchQuery = '' }) {
                         href={g.representative_url}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-blue-400 text-xs font-mono hover:underline break-all"
+                        className="text-link text-xs font-mono hover:underline break-all"
                       >
                         {g.representative_url}
                       </a>
@@ -180,7 +180,7 @@ export default function Content({ searchQuery = '' }) {
                   : 'bg-brand-800 border-default hover:border-brand-700/80 opacity-60'
               }`}
             >
-              <div className={`text-xl font-bold ${hasIssues ? (isActive ? 'text-red-400' : 'text-amber-400') : 'text-green-400'}`}>
+              <div className={`text-xl font-bold ${hasIssues ? (isActive ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400') : 'text-green-700 dark:text-green-400'}`}>
                 {count}
               </div>
               <div className="text-xs text-muted-foreground mt-0.5 leading-tight">{label}</div>
@@ -201,7 +201,7 @@ export default function Content({ searchQuery = '' }) {
               onClick={() => setFilter(key)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors ${
                 isActive
-                  ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                  ? 'bg-blue-500/20 text-link border-blue-500/30'
                   : hasIssues
                   ? 'border-amber-700/50 bg-amber-500/10 text-amber-300 hover:border-amber-600/60'
                   : 'border-default bg-brand-800 text-muted-foreground hover:border-brand-700/80'
@@ -211,7 +211,7 @@ export default function Content({ searchQuery = '' }) {
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-400 flex-shrink-0" />
               )}
               {label}
-              <span className={`text-xs font-bold ${isActive ? 'text-blue-300' : hasIssues ? 'text-amber-400' : 'text-muted-foreground'}`}>
+              <span className={`text-xs font-bold ${isActive ? 'text-link-soft' : hasIssues ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground'}`}>
                 ({count})
               </span>
             </button>
@@ -221,7 +221,7 @@ export default function Content({ searchQuery = '' }) {
 
       {activeFilter?.guidance && (
         <div className="flex items-start gap-3 bg-blue-500/5 border border-blue-500/20 rounded-xl px-4 py-3">
-          <FileText className="h-4 w-4 text-blue-400 flex-shrink-0 mt-0.5" />
+          <FileText className="h-4 w-4 text-link flex-shrink-0 mt-0.5" />
           <p className="text-sm text-foreground leading-relaxed">{activeFilter.guidance}</p>
         </div>
       )}
@@ -291,7 +291,7 @@ export default function Content({ searchQuery = '' }) {
                           target="_blank"
                           rel="noreferrer"
                           title={item.url}
-                          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-blue-400 group/link min-w-0"
+                          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-link group/link min-w-0"
                         >
                           <span className="truncate font-mono">{hrefLines.label}</span>
                           <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-70 group-hover/link:opacity-100 transition-opacity" />
@@ -299,17 +299,17 @@ export default function Content({ searchQuery = '' }) {
                         {showMetricCol && (
                           <p className="mt-1 md:hidden text-[11px] text-muted-foreground leading-snug">
                             {(filter === 'meta_desc_short' || filter === 'meta_desc_long') && (
-                              <span className={`font-semibold tabular-nums ${filter === 'meta_desc_short' ? 'text-amber-400' : 'text-red-400'}`}>
+                              <span className={`font-semibold tabular-nums ${filter === 'meta_desc_short' ? 'text-amber-700 dark:text-amber-400' : 'text-red-600 dark:text-red-400'}`}>
                                 {vc.tableLength}: {item.meta_desc_len ?? sj.emDash}
                               </span>
                             )}
                             {filter === 'multiple_h1' && (
-                              <span className="font-semibold tabular-nums text-red-400">
+                              <span className="font-semibold tabular-nums text-red-600 dark:text-red-400">
                                 {vc.tableH1Count}: {item.h1_count ?? sj.emDash}
                               </span>
                             )}
                             {filter === 'thin_content' && (
-                              <span className="font-semibold tabular-nums text-amber-400">
+                              <span className="font-semibold tabular-nums text-amber-700 dark:text-amber-400">
                                 {vc.tableChars}: {item.content_length ?? sj.emDash}
                               </span>
                             )}
@@ -320,7 +320,7 @@ export default function Content({ searchQuery = '' }) {
                     {(filter === 'meta_desc_short' || filter === 'meta_desc_long') && (
                       <TableCell className="hidden md:table-cell text-center align-middle px-3 sm:px-4">
                         <span className={`text-sm font-bold tabular-nums ${
-                          filter === 'meta_desc_short' ? 'text-amber-400' : 'text-red-400'
+                          filter === 'meta_desc_short' ? 'text-amber-700 dark:text-amber-400' : 'text-red-600 dark:text-red-400'
                         }`}>
                           {item.meta_desc_len ?? sj.emDash}
                         </span>
@@ -328,12 +328,12 @@ export default function Content({ searchQuery = '' }) {
                     )}
                     {filter === 'multiple_h1' && (
                       <TableCell className="hidden md:table-cell text-center align-middle px-3 sm:px-4">
-                        <span className="text-sm font-bold tabular-nums text-red-400">{item.h1_count ?? sj.emDash}</span>
+                        <span className="text-sm font-bold tabular-nums text-red-600 dark:text-red-400">{item.h1_count ?? sj.emDash}</span>
                       </TableCell>
                     )}
                     {filter === 'thin_content' && (
                       <TableCell className="hidden md:table-cell text-center align-middle px-3 sm:px-4">
-                        <span className="text-sm font-bold tabular-nums text-amber-400">{item.content_length ?? sj.emDash}</span>
+                        <span className="text-sm font-bold tabular-nums text-amber-700 dark:text-amber-400">{item.content_length ?? sj.emDash}</span>
                       </TableCell>
                     )}
                   </TableRow>

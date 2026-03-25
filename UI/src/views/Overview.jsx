@@ -26,15 +26,20 @@ import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '../components';
 import { palette, scoreBandColor, sortByValue, PALETTE_CATEGORICAL } from '../utils/chartPalette';
 import { formatPageHrefLines } from '../utils/linkUtils';
-import { getGridColor, getChartTitleColor } from '../utils/chartJsDefaults';
+import {
+  getGridColor,
+  getChartTitleColor,
+  getChartLegendLabelColor,
+  syncChartJsDefaultsColor,
+} from '../utils/chartJsDefaults';
 
 const REC_COLORS = [
-  { border: 'border-l-blue-500',   bg: 'bg-blue-500/10',   text: 'text-blue-400',   dot: 'bg-blue-500'   },
-  { border: 'border-l-amber-500',  bg: 'bg-amber-500/10',  text: 'text-amber-400',  dot: 'bg-amber-500'  },
-  { border: 'border-l-purple-500', bg: 'bg-purple-500/10', text: 'text-purple-400', dot: 'bg-purple-500' },
-  { border: 'border-l-green-500',  bg: 'bg-green-500/10',  text: 'text-green-400',  dot: 'bg-green-500'  },
-  { border: 'border-l-rose-500',   bg: 'bg-rose-500/10',   text: 'text-rose-400',   dot: 'bg-rose-500'   },
-  { border: 'border-l-cyan-500',   bg: 'bg-cyan-500/10',   text: 'text-cyan-400',   dot: 'bg-cyan-500'   },
+  { border: 'border-l-blue-500',   bg: 'bg-blue-500/10',   text: 'text-link',   dot: 'bg-blue-500'   },
+  { border: 'border-l-amber-500',  bg: 'bg-amber-500/10',  text: 'text-amber-700 dark:text-amber-400',  dot: 'bg-amber-500'  },
+  { border: 'border-l-purple-500', bg: 'bg-purple-500/10', text: 'text-purple-700 dark:text-purple-400', dot: 'bg-purple-500' },
+  { border: 'border-l-green-500',  bg: 'bg-green-500/10',  text: 'text-green-700 dark:text-green-400',  dot: 'bg-green-500'  },
+  { border: 'border-l-rose-500',   bg: 'bg-rose-500/10',   text: 'text-rose-700 dark:text-rose-400',   dot: 'bg-rose-500'   },
+  { border: 'border-l-cyan-500',   bg: 'bg-cyan-500/10',   text: 'text-cyan-700 dark:text-cyan-400',   dot: 'bg-cyan-500'   },
 ];
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
@@ -43,8 +48,8 @@ const LH_CAT_ORDER = ['performance', 'accessibility', 'best-practices', 'seo', '
 
 if (typeof ChartJS.defaults?.font !== 'undefined') {
   ChartJS.defaults.font.size = 11;
-  ChartJS.defaults.color = 'rgb(203, 213, 225)';
 }
+syncChartJsDefaultsColor();
 
 function barOptsVertical(yTitle, ariaDescription) {
   const o = strings.views.overview;
@@ -75,7 +80,7 @@ function barOptsGrouped(yTitle) {
     plugins: {
       legend: {
         position: 'bottom',
-        labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 },
+        labels: { color: getChartLegendLabelColor(), font: { size: 11 }, padding: 10 },
       },
       tooltip: {
         callbacks: {
@@ -469,7 +474,7 @@ export default function Overview({ searchQuery = '' }) {
         title={vo.dashboard}
         subtitle={
           <>
-            {vo.subtitleSiteHealth} <span className="text-blue-700 dark:text-blue-400">{siteName}</span>.{' '}
+            {vo.subtitleSiteHealth} <span className="text-link">{siteName}</span>.{' '}
             {s.crawl_time_s != null ? format(vo.crawlDoneSeconds, { seconds: s.crawl_time_s }) : vo.crawlDone}
           </>
         }
@@ -487,7 +492,7 @@ export default function Overview({ searchQuery = '' }) {
           <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
             <CheckCircle className="h-4 w-4 text-green-500" /> {vo.successRate}
           </div>
-          <div className="text-3xl font-bold text-green-400">{s.success_rate ?? 0}%</div>
+          <div className="text-3xl font-bold text-green-700 dark:text-green-400">{s.success_rate ?? 0}%</div>
         </Card>
         <Card shadow className="border-red-900/30 ring-1 ring-red-500/20">
           <div className="text-red-400/80 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
@@ -518,27 +523,27 @@ export default function Overview({ searchQuery = '' }) {
         </Card>
         <Card shadow>
           <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <Share className="h-4 w-4 text-blue-400" /> {vo.ogCoverage}
+            <Share className="h-4 w-4 text-link" /> {vo.ogCoverage}
           </div>
-          <div className="text-3xl font-bold text-blue-400">
+          <div className="text-3xl font-bold text-link">
             {data.social_coverage?.og_coverage_pct != null ? `${data.social_coverage.og_coverage_pct}%` : sj.emDash}
           </div>
           <div className="text-xs text-muted-foreground mt-2">{vo.ogPagesWith}</div>
         </Card>
         <Card shadow>
           <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <Cpu className="h-4 w-4 text-purple-400" /> {vo.technologies}
+            <Cpu className="h-4 w-4 text-purple-700 dark:text-purple-400" /> {vo.technologies}
           </div>
-          <div className="text-3xl font-bold text-purple-400">
+          <div className="text-3xl font-bold text-purple-700 dark:text-purple-400">
             {data.tech_stack_summary?.technologies?.length ?? sj.emDash}
           </div>
           <div className="text-xs text-muted-foreground mt-2">{vo.techDetectedAcross}</div>
         </Card>
         <Card shadow>
           <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <Timer className="h-4 w-4 text-amber-400" /> {vo.responseP50}
+            <Timer className="h-4 w-4 text-amber-700 dark:text-amber-400" /> {vo.responseP50}
           </div>
-          <div className="text-3xl font-bold text-amber-400">
+          <div className="text-3xl font-bold text-amber-700 dark:text-amber-400">
             {data.response_time_stats?.p50 != null ? `${Math.round(data.response_time_stats.p50)}ms` : sj.emDash}
           </div>
           <div className="text-xs text-muted-foreground mt-2">
@@ -559,15 +564,15 @@ export default function Overview({ searchQuery = '' }) {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             <div className="bg-brand-900 rounded-lg p-3 border border-default">
               <div className="text-muted-foreground text-xs uppercase tracking-wider">{vo.newUrls}</div>
-              <div className="text-2xl font-bold text-emerald-400">{reportDiff.newUrls.length}</div>
+              <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{reportDiff.newUrls.length}</div>
             </div>
             <div className="bg-brand-900 rounded-lg p-3 border border-default">
               <div className="text-muted-foreground text-xs uppercase tracking-wider">{vo.removedUrls}</div>
-              <div className="text-2xl font-bold text-rose-400">{reportDiff.removedUrls.length}</div>
+              <div className="text-2xl font-bold text-rose-700 dark:text-rose-400">{reportDiff.removedUrls.length}</div>
             </div>
             <div className="bg-brand-900 rounded-lg p-3 border border-default">
               <div className="text-muted-foreground text-xs uppercase tracking-wider">{vo.contentChanged}</div>
-              <div className="text-2xl font-bold text-amber-400">{reportDiff.contentChanged.length}</div>
+              <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">{reportDiff.contentChanged.length}</div>
             </div>
             <div className="bg-brand-900 rounded-lg p-3 border border-default">
               <div className="text-muted-foreground text-xs uppercase tracking-wider">{vo.structureChanged}</div>
@@ -620,7 +625,7 @@ export default function Overview({ searchQuery = '' }) {
       {(data.keyword_opportunities?.quick_wins?.length > 0 || data.keyword_opportunities?.high_value?.length > 0) && (
         <Card shadow className="mb-8">
           <div className="flex items-center gap-2 mb-2">
-            <Lightbulb className="h-5 w-5 text-yellow-400" />
+            <Lightbulb className="h-5 w-5 text-yellow-700 dark:text-yellow-400" />
             <h2 className="text-lg font-bold text-bright">{vo.keywordOpportunities}</h2>
           </div>
           <p className="text-xs text-muted-foreground mb-4 max-w-3xl">
@@ -666,28 +671,28 @@ export default function Overview({ searchQuery = '' }) {
         (data.ner_site_summary?.label_counts && Object.keys(data.ner_site_summary.label_counts).length > 0)) && (
         <div className="mb-8">
           <h2 className="text-xl font-bold text-bright mb-4 flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-violet-400" />
+            <Sparkles className="h-5 w-5 text-violet-700 dark:text-violet-400" />
             {vo.contentIntelligence}
           </h2>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <Card shadow>
-              <div className="text-violet-400/80 text-xs font-bold uppercase tracking-wider mb-2">{vo.duplicateGroups}</div>
-              <div className="text-3xl font-bold text-violet-300">{data.content_duplicates?.length ?? 0}</div>
+              <div className="text-violet-800/90 dark:text-violet-400/80 text-xs font-bold uppercase tracking-wider mb-2">{vo.duplicateGroups}</div>
+              <div className="text-3xl font-bold text-violet-800 dark:text-violet-300">{data.content_duplicates?.length ?? 0}</div>
               <div className="text-xs text-muted-foreground mt-2">{vo.nearDuplicateGroups}</div>
             </Card>
             <Card shadow>
-              <div className="text-amber-400/80 text-xs font-bold uppercase tracking-wider mb-2">{vo.anomalies}</div>
-              <div className="text-3xl font-bold text-amber-300">{data.anomalies?.length ?? 0}</div>
+              <div className="text-amber-800/90 dark:text-amber-400/80 text-xs font-bold uppercase tracking-wider mb-2">{vo.anomalies}</div>
+              <div className="text-3xl font-bold text-amber-800 dark:text-amber-300">{data.anomalies?.length ?? 0}</div>
               <div className="text-xs text-muted-foreground mt-2">{vo.outliers}</div>
             </Card>
             <Card shadow>
-              <div className="text-emerald-400/80 text-xs font-bold uppercase tracking-wider mb-2">{vo.parentTopics}</div>
-              <div className="text-3xl font-bold text-emerald-300">{data.semantic_keyword_clusters?.length ?? 0}</div>
+              <div className="text-emerald-800/90 dark:text-emerald-400/80 text-xs font-bold uppercase tracking-wider mb-2">{vo.parentTopics}</div>
+              <div className="text-3xl font-bold text-emerald-800 dark:text-emerald-300">{data.semantic_keyword_clusters?.length ?? 0}</div>
               <div className="text-xs text-muted-foreground mt-2">{vo.semanticGroups}</div>
             </Card>
             <Card shadow>
-              <div className="text-cyan-400/80 text-xs font-bold uppercase tracking-wider mb-2">{vo.namedEntities}</div>
-              <div className="text-3xl font-bold text-cyan-300">
+              <div className="text-cyan-800/90 dark:text-cyan-400/80 text-xs font-bold uppercase tracking-wider mb-2">{vo.namedEntities}</div>
+              <div className="text-3xl font-bold text-cyan-800 dark:text-cyan-300">
                 {data.ner_site_summary?.total_entities != null
                   ? data.ner_site_summary.total_entities.toLocaleString()
                   : sj.emDash}
@@ -745,7 +750,7 @@ export default function Overview({ searchQuery = '' }) {
                       {data.anomalies.map((a, idx) => (
                         <TableRow key={`${a.url}-${idx}`}>
                           <TableCell className="font-mono text-xs max-w-[min(100vw,28rem)] break-all">
-                            <a href={a.url} target="_blank" rel="noreferrer" className="text-blue-700 dark:text-blue-400 hover:underline">
+                            <a href={a.url} target="_blank" rel="noreferrer" className="text-link hover:underline">
                               {a.url}
                             </a>
                           </TableCell>
@@ -877,7 +882,7 @@ export default function Overview({ searchQuery = '' }) {
             {categoriesFiltered.map((cat, i) => {
               const score = cat.score != null ? Math.min(100, Math.max(0, cat.score)) : 0;
               const label = score >= 80 ? vo.scoreGood : score >= 50 ? vo.scoreNeeds : vo.scoreCritical;
-              const labelCls = score >= 80 ? 'text-green-400' : score >= 50 ? 'text-yellow-400' : 'text-red-500';
+              const labelCls = score >= 80 ? 'text-green-700 dark:text-green-400' : score >= 50 ? 'text-yellow-700 dark:text-yellow-400' : 'text-red-600 dark:text-red-500';
               const color = scoreBandColor(cat.score);
               const isCritical = score < 50;
               return (
@@ -984,7 +989,7 @@ export default function Overview({ searchQuery = '' }) {
       {(data.recommendations || []).length > 0 && (
         <div className="mb-8">
           <h2 className="text-xl font-bold text-bright mb-4 flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-amber-400" /> {vo.recommendations}
+            <Lightbulb className="h-5 w-5 text-amber-700 dark:text-amber-400" /> {vo.recommendations}
           </h2>
           {recommendationsFiltered.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1009,7 +1014,7 @@ export default function Overview({ searchQuery = '' }) {
 
       <div className="mb-8">
         <h2 className="text-xl font-bold text-bright mb-2 flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-blue-400 shrink-0" /> {vo.topPagesTitle}
+          <TrendingUp className="h-5 w-5 text-link shrink-0" /> {vo.topPagesTitle}
         </h2>
         <p className="text-sm text-muted-foreground mb-4 max-w-3xl leading-relaxed">{vo.topPagesHint}</p>
         {(data.top_pages || []).length > 0 ? (() => {
@@ -1042,7 +1047,7 @@ export default function Overview({ searchQuery = '' }) {
                     const prPct = pr != null ? (pr / maxPR) * 100 : 0;
                     const degPct = deg != null ? (deg / maxDeg) * 100 : 0;
                     const rankMedal =
-                      i === 0 ? 'text-amber-400' : i === 1 ? 'text-foreground' : i === 2 ? 'text-orange-400/90' : null;
+                      i === 0 ? 'text-amber-700 dark:text-amber-400' : i === 1 ? 'text-foreground' : i === 2 ? 'text-orange-700 dark:text-orange-400/90' : null;
                     const hrefLines = formatPageHrefLines(p.url);
                     return (
                       <TableRow key={i}>
@@ -1070,7 +1075,7 @@ export default function Overview({ searchQuery = '' }) {
                               href={p.url}
                               target="_blank"
                               rel="noreferrer"
-                              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-blue-400 group min-w-0"
+                              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-link group min-w-0"
                               title={p.url}
                             >
                               <span className="truncate font-mono">{hrefLines.label}</span>

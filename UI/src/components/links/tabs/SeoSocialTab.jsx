@@ -41,12 +41,12 @@ export default function SeoSocialTab({ link }) {
             href={link.canonical_url}
             target="_blank"
             rel="noreferrer"
-            className="text-xs font-mono text-blue-400 hover:underline break-all"
+            className="text-xs font-mono text-link hover:underline break-all"
           >
             {link.canonical_url}
           </a>
         ) : (
-          <span className="text-xs text-red-400">{s.notSet}</span>
+          <span className="text-xs text-red-600 dark:text-red-400">{s.notSet}</span>
         )}
       </div>
 
@@ -55,9 +55,9 @@ export default function SeoSocialTab({ link }) {
           <div key={label} className="bg-brand-900 border border-default rounded-xl p-3 flex flex-col items-center gap-2">
             <div className="text-xs text-muted-foreground">{label}</div>
             {value
-              ? bad ? <XCircle className="h-6 w-6 text-red-400" /> : <CheckCircle className="h-6 w-6 text-green-400" />
-              : bad ? <CheckCircle className="h-6 w-6 text-green-400" /> : <XCircle className="h-6 w-6 text-red-400" />}
-            <span className={`text-xs font-semibold ${value === bad ? 'text-red-400' : 'text-green-400'}`}>
+              ? bad ? <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" /> : <CheckCircle className="h-6 w-6 text-green-700 dark:text-green-400" />
+              : bad ? <CheckCircle className="h-6 w-6 text-green-700 dark:text-green-400" /> : <XCircle className="h-6 w-6 text-red-600 dark:text-red-400" />}
+            <span className={`text-xs font-semibold ${value === bad ? 'text-red-600 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}>
               {value ? sj.yes : sj.no}
             </span>
           </div>
@@ -80,7 +80,7 @@ export default function SeoSocialTab({ link }) {
                   <span className="text-xs font-mono text-muted-foreground">{label}</span>
                   {value && <CopyBtn text={value} />}
                 </div>
-                <span className={`text-xs ${value ? 'text-foreground' : 'text-red-400'}`}>
+                <span className={`text-xs ${value ? 'text-foreground' : 'text-red-600 dark:text-red-400'}`}>
                   {value || s.missingValue}
                 </span>
               </div>
@@ -99,8 +99,8 @@ export default function SeoSocialTab({ link }) {
             >
               <div className="text-xs font-mono text-muted-foreground mb-1">{label}</div>
               <div className="flex items-center gap-2">
-                {value ? <CheckCircle className="h-3.5 w-3.5 text-green-400 shrink-0" /> : <XCircle className="h-3.5 w-3.5 text-red-400 shrink-0" />}
-                <span className={`text-xs ${value ? 'text-foreground' : 'text-red-400'}`}>
+                {value ? <CheckCircle className="h-3.5 w-3.5 text-green-700 dark:text-green-400 shrink-0" /> : <XCircle className="h-3.5 w-3.5 text-red-600 dark:text-red-400 shrink-0" />}
+                <span className={`text-xs ${value ? 'text-foreground' : 'text-red-600 dark:text-red-400'}`}>
                   {value || s.missingValue}
                 </span>
               </div>

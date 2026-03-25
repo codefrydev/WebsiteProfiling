@@ -13,7 +13,7 @@ export default function ThemeToggle() {
 
   return (
     <div
-      className="flex items-center rounded-lg border border-default bg-brand-700/35 p-0.5 gap-0.5"
+      className="flex items-center rounded-lg border border-default bg-brand-700/55 dark:bg-brand-700/35 p-0.5 gap-0.5"
       role="group"
       aria-label={strings.app.themeGroupLabel}
     >

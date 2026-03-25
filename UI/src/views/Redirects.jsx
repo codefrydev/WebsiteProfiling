@@ -87,7 +87,7 @@ export default function Redirects({ searchQuery = '' }) {
             <TableBody>
               {redirects.map((r, i) => (
                 <TableRow key={i}>
-                  <TableCell className="font-mono text-blue-400 text-xs break-all py-3">
+                  <TableCell className="font-mono text-link text-xs break-all py-3">
                     <a href={r.url || r.from} target="_blank" rel="noreferrer" className="hover:underline">
                       {r.url || r.from}
                     </a>

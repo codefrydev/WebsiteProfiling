@@ -197,7 +197,7 @@ export default function IssuesTab({ lhData, inspectorDetails }) {
                 </button>
                 {expandedIssue === i && issue.recommendation && (
                   <div className="mx-2 border-x border-b border-default rounded-b-xl bg-brand-900 px-4 py-3">
-                    <span className="text-xs text-blue-400 font-semibold">{it.recommendation}</span>
+                    <span className="text-xs text-link font-semibold">{it.recommendation}</span>
                     <span className="text-xs text-foreground">{issue.recommendation}</span>
                   </div>
                 )}
@@ -216,7 +216,7 @@ export default function IssuesTab({ lhData, inspectorDetails }) {
                 key={i}
                 className="flex items-start gap-2 bg-brand-800 border border-default rounded-lg px-4 py-2.5"
               >
-                <ChevronRight className="h-3.5 w-3.5 text-blue-400 shrink-0 mt-0.5" />
+                <ChevronRight className="h-3.5 w-3.5 text-link shrink-0 mt-0.5" />
                 <span className="text-sm text-foreground">{rec}</span>
               </div>
             ))}

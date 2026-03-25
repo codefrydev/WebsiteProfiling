@@ -71,7 +71,7 @@ export default function InspectorTabs({ link, lhData, inspectorDetails }) {
             {t.icon}
             {t.label}
             {t.id === 'issues' && issueCount > 0 && (
-              <span className="ml-1 text-xs bg-red-500/20 text-red-300 rounded-full px-1.5 py-0.5 leading-none">
+              <span className="ml-1 text-xs bg-red-500/20 text-red-800 dark:text-red-300 rounded-full px-1.5 py-0.5 leading-none">
                 {issueCount}
               </span>
             )}

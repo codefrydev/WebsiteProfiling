@@ -8,7 +8,7 @@ import { wcLabel, readingLabel, parseKeywords, normaliseKw } from '../../../util
 import { palette, PALETTE_CATEGORICAL } from '../../../utils/chartPalette';
 import HeadingPills from '../HeadingPills';
 import { strings, format } from '../../../lib/strings';
-import { getGridColor, getChartTitleColor } from '../../../utils/chartJsDefaults';
+import { getGridColor, getChartTitleColor, getChartCanvasTextColor } from '../../../utils/chartJsDefaults';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
@@ -23,7 +23,7 @@ const barValueLabelsPlugin = {
     const isHorizontal = chart.options.indexAxis === 'y';
     ctx.save();
     ctx.font = '11px system-ui, sans-serif';
-    ctx.fillStyle = 'rgb(203, 213, 225)';
+    ctx.fillStyle = getChartCanvasTextColor();
     ctx.textAlign = isHorizontal ? 'left' : 'center';
     ctx.textBaseline = 'middle';
     meta.data.forEach((bar, i) => {
@@ -244,7 +244,7 @@ function SectionHeader({ icon, title, description }) {
   return (
     <div className="flex items-start gap-3 border-b border-muted pb-3 mb-1">
       <div className="p-2 bg-brand-800 border border-default rounded-lg shrink-0">
-        {createElement(icon, { className: 'h-4 w-4 text-blue-400' })}
+        {createElement(icon, { className: 'h-4 w-4 text-link' })}
       </div>
       <div className="min-w-0">
         <h2 className="text-base font-bold text-bright">{title}</h2>
@@ -380,7 +380,7 @@ export default function ContentTab({ link }) {
         </Card>
         <Card shadow className={`!p-4 ${wc < 300 && wc > 0 ? 'ring-1 ring-amber-500/30' : ''}`}>
           <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1">{lc.thinQ}</div>
-          <div className={`text-2xl font-bold tabular-nums ${wc < 300 ? 'text-amber-400' : 'text-green-400'}`}>
+          <div className={`text-2xl font-bold tabular-nums ${wc < 300 ? 'text-amber-700 dark:text-amber-400' : 'text-green-700 dark:text-green-400'}`}>
             {wc <= 0 ? sj.emDash : wc < 300 ? sj.yes : sj.no}
           </div>
           <div className="text-[10px] text-muted-foreground mt-0.5">{lc.under300Words}</div>
@@ -440,7 +440,7 @@ export default function ContentTab({ link }) {
             <h3 className="text-sm font-bold text-foreground mb-1">{lc.wordCountDist}</h3>
             <p className="text-xs text-muted-foreground mb-2">
               {format(lc.thisPageWords, { words: wc.toLocaleString() })}{' '}
-              <span className="text-blue-300 font-semibold">{wcBucketLabel(wc, vo.wcBuckets)}</span>
+              <span className="text-link-soft font-semibold">{wcBucketLabel(wc, vo.wcBuckets)}</span>
             </p>
             <div className="h-56">
               {wcLabels.length > 0 ? (
@@ -460,7 +460,7 @@ export default function ContentTab({ link }) {
               {rl > 0 ? (
                 <>
                   {lc.thisPageGrade}{' '}
-                  <span className="text-blue-300 font-semibold">{format(lo.readingGrade, { n: rl })}</span> {lc.gradeArrow}{' '}
+                  <span className="text-link-soft font-semibold">{format(lo.readingGrade, { n: rl })}</span> {lc.gradeArrow}{' '}
                   <span className="text-foreground">{readingBandLabel(rl, vo.rlBuckets)}</span>
                 </>
               ) : (
@@ -485,7 +485,7 @@ export default function ContentTab({ link }) {
           <Card padding="tight">
             <h3 className="text-sm font-bold text-foreground mb-1">{lc.contentHtmlRatio}</h3>
             <p className="text-xs text-muted-foreground mb-2">
-              {lc.thisPageRatio} <span className="text-blue-300 font-semibold">{ratioPct.toFixed(1)}%</span> {lc.ratioArrow}{' '}
+              {lc.thisPageRatio} <span className="text-link-soft font-semibold">{ratioPct.toFixed(1)}%</span> {lc.ratioArrow}{' '}
               <span className="text-foreground">{contentRatioBandLabel(ratioPct, lc)}</span>
             </p>
             <div className="h-56">
@@ -604,7 +604,7 @@ export default function ContentTab({ link }) {
             {link.depth != null && (
               <p className="text-xs text-muted-foreground mb-2">
                 {lc.thisPageDepth}{' '}
-                <span className="text-blue-300 font-semibold">{format(lc.depthLabel, { n: link.depth })}</span>
+                <span className="text-link-soft font-semibold">{format(lc.depthLabel, { n: link.depth })}</span>
               </p>
             )}
             <div className="h-56">
@@ -641,7 +641,7 @@ export default function ContentTab({ link }) {
                     type="button"
                     onMouseEnter={() => setKwHover(i)}
                     onMouseLeave={() => setKwHover(null)}
-                    className="text-xs bg-blue-500/10 text-blue-300 border border-blue-500/20 px-2.5 py-1 rounded-full font-mono hover:bg-blue-500/20 transition-colors"
+                    className="text-xs bg-blue-500/10 text-link-soft border border-blue-500/20 px-2.5 py-1 rounded-full font-mono hover:bg-blue-500/20 transition-colors"
                   >
                     {word}
                   </button>

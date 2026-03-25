@@ -217,7 +217,7 @@ export default function Home({ onNavigate }) {
                       target="_blank"
                       rel="noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="inline-flex max-w-full items-center gap-1 text-xs sm:text-sm text-blue-700 dark:text-blue-400 hover:underline"
+                      className="inline-flex max-w-full items-center gap-1 text-xs sm:text-sm text-link hover:underline"
                       title={group.crawlUrl}
                     >
                       <span className="truncate font-mono">{group.crawlUrl}</span>
@@ -241,7 +241,7 @@ export default function Home({ onNavigate }) {
                   <div className="rounded-md border border-default px-2 py-1.5">
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{vh.statusBreakdownLabel}</p>
-                      <div className="text-xs text-blue-700 dark:text-blue-300 flex items-center gap-1 font-medium">
+                      <div className="text-xs text-link-soft flex items-center gap-1 font-medium">
                         <Globe className="h-3.5 w-3.5" />
                         {vh.openBrandCta}
                         <ArrowRight className="h-3.5 w-3.5" />

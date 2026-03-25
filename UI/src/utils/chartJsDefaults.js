@@ -16,8 +16,17 @@ export function getChartTitleColor() {
   return cssVar('--chart-title', '#64748b');
 }
 
-function chartLegendColor() {
+/** Legend label color for Chart.js plugins (theme-aware). */
+export function getChartLegendLabelColor() {
   return cssVar('--chart-legend', '#94a3b8');
+}
+
+/** @deprecated Same as {@link getChartLegendLabelColor}; kept so stale bundles or imports do not throw. */
+export const chartLegendColor = getChartLegendLabelColor;
+
+/** Canvas `fillStyle` for custom Chart.js plugins — matches body text (`--app-text`). */
+export function getChartCanvasTextColor() {
+  return cssVar('--app-text', '#334155');
 }
 
 let registered = false;

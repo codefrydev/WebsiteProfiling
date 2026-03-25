@@ -507,7 +507,7 @@ export default function SqlPlayground() {
                   : 'bg-brand-800 border-default text-muted-foreground'
             }`}
           >
-            {statusChip.spin ? <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-700 dark:text-blue-400" /> : null}
+            {statusChip.spin ? <Loader2 className="h-3.5 w-3.5 animate-spin text-link" /> : null}
             <span>{statusChip.label}</span>
           </div>
           <Button type="button" variant="secondary" onClick={loadReportFromUrl} disabled={!engineReady || busy}>
@@ -535,7 +535,7 @@ export default function SqlPlayground() {
                 onClick={() => setSidebarTab('schema')}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-md transition-all ${
                   sidebarTab === 'schema'
-                    ? 'tab-active bg-blue-500/15 text-blue-400 border border-blue-500/25 shadow-sm'
+                    ? 'tab-active bg-blue-500/15 text-link border border-blue-500/25 shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -547,7 +547,7 @@ export default function SqlPlayground() {
                 onClick={() => setSidebarTab('examples')}
                 className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-semibold rounded-md transition-all ${
                   sidebarTab === 'examples'
-                    ? 'tab-active bg-blue-500/15 text-blue-400 border border-blue-500/25 shadow-sm'
+                    ? 'tab-active bg-blue-500/15 text-link border border-blue-500/25 shadow-sm'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
@@ -593,9 +593,9 @@ export default function SqlPlayground() {
                           <button
                             type="button"
                             onClick={() => insertSelectForTable(t.name)}
-                            className="font-semibold text-bright hover:text-blue-400 flex items-center gap-2 text-left w-full group transition-colors"
+                            className="font-semibold text-bright hover:text-link flex items-center gap-2 text-left w-full group transition-colors"
                           >
-                            <Table2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-blue-400 shrink-0" />
+                            <Table2 className="h-3.5 w-3.5 text-muted-foreground group-hover:text-link shrink-0" />
                             <span className="font-mono truncate">{t.name}</span>
                             <span className="text-xs font-normal text-muted-foreground shrink-0">{countLabel}</span>
                           </button>
@@ -607,12 +607,12 @@ export default function SqlPlayground() {
                                   key={c.name}
                                   type="button"
                                   onClick={() => insertColumnIdent(c.name)}
-                                  className="block w-full text-left text-xs text-muted-foreground hover:text-blue-400 hover:bg-brand-900/60 rounded px-1.5 py-0.5 -ml-1 transition-colors font-mono"
+                                  className="block w-full text-left text-xs text-muted-foreground hover:text-link hover:bg-brand-900/60 rounded px-1.5 py-0.5 -ml-1 transition-colors font-mono"
                                 >
                                   <span className="inline-block w-1 h-1 bg-muted-foreground/40 rounded-full mr-2 align-middle" />
                                   {c.name}
                                   {c.pk ? (
-                                    <span className="ml-1 text-[10px] text-blue-400 font-sans font-bold">{vr.pkBadge}</span>
+                                    <span className="ml-1 text-[10px] text-link font-sans font-bold">{vr.pkBadge}</span>
                                   ) : null}
                                 </button>
                               ))}
@@ -665,7 +665,7 @@ export default function SqlPlayground() {
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wide ${badge}`}>
                             {q.diff}
                           </span>
-                          <span className="font-semibold text-sm text-bright group-hover:text-blue-400 transition-colors truncate">
+                          <span className="font-semibold text-sm text-bright group-hover:text-link transition-colors truncate">
                             {q.title}
                           </span>
                         </div>

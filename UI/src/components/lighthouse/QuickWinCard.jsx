@@ -20,19 +20,19 @@ export default function QuickWinCard({ win, passed }) {
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center gap-3 p-4 text-left hover:opacity-90 transition-opacity"
       >
-        <div className={`shrink-0 p-2 rounded-lg ${passed ? 'bg-green-500/20 text-green-400' : 'bg-amber-500/20 text-amber-400'}`}>
+        <div className={`shrink-0 p-2 rounded-lg ${passed ? 'bg-green-500/20 text-green-700 dark:text-green-400' : 'bg-amber-500/20 text-amber-700 dark:text-amber-400'}`}>
           <WinIcon iconKey={win.iconKey} />
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-sm font-semibold text-foreground">{win.title}</div>
-          <div className={`text-xs mt-0.5 ${passed ? 'text-green-400' : 'text-amber-400'}`}>
+          <div className={`text-xs mt-0.5 ${passed ? 'text-green-700 dark:text-green-400' : 'text-amber-700 dark:text-amber-400'}`}>
             {passed ? 'Passing' : 'Needs attention'}
           </div>
         </div>
         <div className="shrink-0 flex items-center gap-2">
           {passed
-            ? <CheckCircle className="h-5 w-5 text-green-400" />
-            : <XCircle className="h-5 w-5 text-amber-400" />}
+            ? <CheckCircle className="h-5 w-5 text-green-700 dark:text-green-400" />
+            : <XCircle className="h-5 w-5 text-amber-700 dark:text-amber-400" />}
           {open
             ? <ChevronUp className="h-4 w-4 text-muted-foreground" />
             : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
@@ -51,7 +51,7 @@ export default function QuickWinCard({ win, passed }) {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Estimated impact:</span>
-            <span className="text-xs text-blue-400 font-semibold">{win.impact}</span>
+            <span className="text-xs text-link font-semibold">{win.impact}</span>
           </div>
         </div>
       )}

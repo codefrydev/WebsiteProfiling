@@ -88,8 +88,10 @@ function routerBasename() {
   return trimmed || '/';
 }
 
-/** Option B: add ?domain= (real hostname) when missing; legacy slug from site_name only if no URLs. */
+/** Option B: add ?domain= (real hostname) when missing; legacy slug from site_name only if no URLs.
+ *  Home portfolio intentionally has no ?domain= — full report list + clean URL. */
 function BrandUrlSync() {
+  const { slug } = useParams();
   const { data, loading, error, sqlDb } = useReport();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -114,6 +116,17 @@ function BrandUrlSync() {
   }, [sqlDb]);
 
   useEffect(() => {
+    if (slug !== 'home') return;
+    if (!searchParams.get('domain') && !searchParams.get('brand')) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete('domain');
+    next.delete('brand');
+    const q = next.toString();
+    navigate({ pathname: location.pathname, search: q ? `?${q}` : '' }, { replace: true });
+  }, [slug, searchParams, navigate, location.pathname]);
+
+  useEffect(() => {
+    if (slug === 'home') return;
     if (loading || error || !data) return;
     if (searchParams.get('domain') || searchParams.get('brand')) return;
     const host = canonicalDomainFromPayload(data, startUrlByRunId);
@@ -127,7 +140,7 @@ function BrandUrlSync() {
       { pathname: location.pathname, search: q ? `?${q}` : '' },
       { replace: true }
     );
-  }, [loading, error, data, searchParams, navigate, location.pathname, startUrlByRunId]);
+  }, [slug, loading, error, data, searchParams, navigate, location.pathname, startUrlByRunId]);
 
   return null;
 }
@@ -145,11 +158,13 @@ function AppContent() {
 
   /**
    * @param {string} id - view id
-   * @param {{ domain?: string, reportId?: number }} [opts] - Home portfolio: set ?domain= and optional report row
+   * @param {{ domain?: string, reportId?: number }} [opts] - Other views: set ?domain= and optional report; home clears query
    */
   const selectView = (id, opts) => {
     let search = location.search;
-    if (opts?.domain != null && opts.domain !== '') {
+    if (id === 'home') {
+      search = '';
+    } else if (opts?.domain != null && opts.domain !== '') {
       const p = new URLSearchParams(location.search);
       p.set('domain', opts.domain);
       const q = p.toString();
@@ -163,7 +178,7 @@ function AppContent() {
   };
 
   if (!view) {
-    return <Navigate to={{ pathname: '/home', search: location.search }} replace />;
+    return <Navigate to="/home" replace />;
   }
 
   const CurrentView = VIEWS.find((v) => v.id === view)?.component || Home;
@@ -255,12 +270,15 @@ function AppContent() {
                 return (
                   <NavLink
                     key={v.id}
-                    to={{ pathname: `/${viewIdToPathSlug(v.id)}`, search: location.search }}
+                    to={{
+                      pathname: `/${viewIdToPathSlug(v.id)}`,
+                      search: v.id === 'home' ? '' : location.search,
+                    }}
                     onClick={closeSidebar}
                     className={({ isActive }) =>
                       `nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                         isActive
-                          ? 'tab-active bg-blue-500/10 border border-blue-500/25 text-blue-400'
+                          ? 'tab-active bg-blue-500/10 border border-blue-500/25 text-link'
                           : 'text-muted-foreground hover:text-foreground hover:bg-brand-700/80'
                       }`
                     }

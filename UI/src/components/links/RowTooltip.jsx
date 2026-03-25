@@ -26,7 +26,7 @@ export default function RowTooltip({ link, style }) {
           {kws.map((kw, i) => {
             const { word } = normaliseKw(kw);
             return (
-              <span key={i} className="text-xs bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded font-mono">
+              <span key={i} className="text-xs bg-blue-500/20 text-link-soft px-1.5 py-0.5 rounded font-mono">
                 {word}
               </span>
             );

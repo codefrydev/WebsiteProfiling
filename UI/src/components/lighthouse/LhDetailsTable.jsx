@@ -97,7 +97,7 @@ function HttpImagePreviewAndLink({ href }) {
         href={href}
         target="_blank"
         rel="noreferrer"
-        className="text-blue-400 hover:underline break-all text-[11px] block"
+        className="text-link hover:underline break-all text-[11px] block"
       >
         {label}
       </a>
@@ -146,7 +146,7 @@ function LhCell({ value, columnKey = '', valueType = '', row = null }) {
       return (
         <span className="text-[10px] text-muted-foreground break-all" title={value}>
           Data URI truncated in Lighthouse JSON (preview unavailable).{' '}
-          <a href={value} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">
+          <a href={value} target="_blank" rel="noreferrer" className="text-link hover:underline">
             Open raw value
           </a>
         </span>
@@ -157,7 +157,7 @@ function LhCell({ value, columnKey = '', valueType = '', row = null }) {
         return <HttpImagePreviewAndLink href={value} />;
       }
       return (
-        <a href={value} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline break-all">
+        <a href={value} target="_blank" rel="noreferrer" className="text-link hover:underline break-all">
           {value.length > 120 ? `${value.slice(0, 117)}…` : value}
         </a>
       );
@@ -181,7 +181,7 @@ function LhCell({ value, columnKey = '', valueType = '', row = null }) {
       }
       if (u.startsWith('http://') || u.startsWith('https://')) {
         return (
-          <a href={u} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline break-all">
+          <a href={u} target="_blank" rel="noreferrer" className="text-link hover:underline break-all">
             {u.length > 120 ? `${u.slice(0, 117)}…` : u}
           </a>
         );
@@ -190,7 +190,7 @@ function LhCell({ value, columnKey = '', valueType = '', row = null }) {
     }
     if (value.type === 'link' && typeof value.url === 'string') {
       return (
-        <a href={value.url} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline break-all">
+        <a href={value.url} target="_blank" rel="noreferrer" className="text-link hover:underline break-all">
           {value.text || value.url}
         </a>
       );

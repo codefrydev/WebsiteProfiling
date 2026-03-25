@@ -4,15 +4,14 @@ import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card } from '../components';
 import { palette, sortByValue } from '../utils/chartPalette';
-import { getGridColor } from '../utils/chartJsDefaults';
+import { getGridColor, getChartCanvasTextColor, syncChartJsDefaultsColor } from '../utils/chartJsDefaults';
 
 ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, PointElement, Title, Tooltip, Legend);
 
 if (typeof ChartJS.defaults?.font !== 'undefined') {
   ChartJS.defaults.font.size = 11;
-  ChartJS.defaults.color = 'rgb(203, 213, 225)';
 }
-
+syncChartJsDefaultsColor();
 
 const barValueLabelsPlugin = {
   id: 'barValueLabels',
@@ -25,7 +24,7 @@ const barValueLabelsPlugin = {
     const isHorizontal = chart.options.indexAxis === 'y';
     ctx.save();
     ctx.font = '11px system-ui, sans-serif';
-    ctx.fillStyle = 'rgb(203, 213, 225)';
+    ctx.fillStyle = getChartCanvasTextColor();
     ctx.textAlign = isHorizontal ? 'left' : 'center';
     ctx.textBaseline = 'middle';
     meta.data.forEach((bar, i) => {

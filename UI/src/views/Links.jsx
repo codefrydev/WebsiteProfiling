@@ -339,7 +339,7 @@ export default function Links({ searchQuery = '' }) {
                             href={link.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-blue-400 group min-w-0"
+                            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-link group min-w-0"
                             title={link.url}
                           >
                             <span className="truncate font-mono">{hrefLines.label}</span>
@@ -433,7 +433,7 @@ export default function Links({ searchQuery = '' }) {
           </div>
 
           <div className="mb-4 shrink-0 flex items-center gap-2 bg-brand-900 border border-default p-3 rounded-xl">
-            <span className="font-mono text-blue-400 text-sm break-all flex-1">{inspectorUrl}</span>
+            <span className="font-mono text-link text-sm break-all flex-1">{inspectorUrl}</span>
             <CopyBtn text={inspectorUrl} className="shrink-0" />
             <a href={inspectorUrl} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-bright transition-colors shrink-0">
               <LinkIcon className="h-4 w-4" />

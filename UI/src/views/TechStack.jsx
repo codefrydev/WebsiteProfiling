@@ -5,7 +5,7 @@ import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '../components';
 import { palette } from '../utils/chartPalette';
-import { getGridColor } from '../utils/chartJsDefaults';
+import { getGridColor, getChartCanvasTextColor } from '../utils/chartJsDefaults';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -19,7 +19,7 @@ const barValueLabelsPlugin = {
     if (!dataset?.data) return;
     ctx.save();
     ctx.font = '11px system-ui, sans-serif';
-    ctx.fillStyle = 'rgb(203, 213, 225)';
+    ctx.fillStyle = getChartCanvasTextColor();
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
     meta.data.forEach((bar, i) => {
@@ -149,7 +149,7 @@ export default function TechStack({ searchQuery = '' }) {
                     <TableCell className="text-right font-mono text-muted-foreground">{t.count.toLocaleString()}</TableCell>
                     <TableCell className="text-xs max-w-md">
                       {(t.sample_urls || []).map((u, j) => (
-                        <a key={j} href={u} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline block truncate">
+                        <a key={j} href={u} target="_blank" rel="noreferrer" className="text-link hover:underline block truncate">
                           {u.replace(/^https?:\/\//, '').slice(0, 60)}
                         </a>
                       ))}

@@ -1599,7 +1599,7 @@ export default function ModelLoader() {
                   href="https://huggingface.co/models?library=transformers.js"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-blue-400 hover:text-blue-300 underline"
+                  className="text-xs text-link hover:text-link-soft underline"
                 >
                   {t.browser.hfModelsLink}
                 </a>

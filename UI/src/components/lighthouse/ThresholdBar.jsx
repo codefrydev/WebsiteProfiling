@@ -24,7 +24,12 @@ export default function ThresholdBar({ metricKey, value }) {
   const v = Number(value);
   const status = metricStatus(metricKey, v);
   const barColor = status === 'good' ? 'bg-green-500' : status === 'warn' ? 'bg-yellow-500' : 'bg-red-500';
-  const textColor = status === 'good' ? 'text-green-400' : status === 'warn' ? 'text-yellow-400' : 'text-red-400';
+  const textColor =
+    status === 'good'
+      ? 'text-green-700 dark:text-green-400'
+      : status === 'warn'
+        ? 'text-yellow-800 dark:text-yellow-400'
+        : 'text-red-600 dark:text-red-400';
   const refVal = t.good * 1.5;
   const pct = Math.min(100, (v / refVal) * 100);
 
@@ -57,8 +62,8 @@ export default function ThresholdBar({ metricKey, value }) {
           <p className="text-xs text-muted-foreground mb-2">{t.desc}</p>
           <div className="flex gap-4 text-xs">
             <span><span className="text-muted-foreground">Value:</span> <span className={textColor}>{formatMetric(metricKey, v)}</span></span>
-            <span><span className="text-muted-foreground">Good:</span> <span className="text-green-400">≤{formatMetric(metricKey, t.good)}</span></span>
-            <span><span className="text-muted-foreground">Warn:</span> <span className="text-yellow-400">≤{formatMetric(metricKey, t.warn)}</span></span>
+            <span><span className="text-muted-foreground">Good:</span> <span className="text-green-700 dark:text-green-400">≤{formatMetric(metricKey, t.good)}</span></span>
+            <span><span className="text-muted-foreground">Warn:</span> <span className="text-yellow-800 dark:text-yellow-400">≤{formatMetric(metricKey, t.warn)}</span></span>
           </div>
           <div className={`mt-2 text-xs font-semibold ${textColor}`}>
             {status === 'good' ? '✓ Good' : status === 'warn' ? '⚠ Needs improvement' : '✕ Poor'}

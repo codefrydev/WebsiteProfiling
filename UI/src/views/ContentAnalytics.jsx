@@ -23,7 +23,12 @@ import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '../components';
 import { palette, PALETTE_CATEGORICAL } from '../utils/chartPalette';
-import { getGridColor, getChartTitleColor } from '../utils/chartJsDefaults';
+import {
+  getGridColor,
+  getChartTitleColor,
+  getChartCanvasTextColor,
+  getChartLegendLabelColor,
+} from '../utils/chartJsDefaults';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
 
@@ -37,7 +42,7 @@ const barValueLabelsPlugin = {
     const isHorizontal = chart.options.indexAxis === 'y';
     ctx.save();
     ctx.font = '11px system-ui, sans-serif';
-    ctx.fillStyle = 'rgb(203, 213, 225)';
+    ctx.fillStyle = getChartCanvasTextColor();
     ctx.textAlign = isHorizontal ? 'left' : 'center';
     ctx.textBaseline = 'middle';
     (chart.data.datasets || []).forEach((dataset, dsi) => {
@@ -97,7 +102,7 @@ function doughnutOpts() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 12 } },
+      legend: { position: 'bottom', labels: { color: getChartLegendLabelColor(), font: { size: 11 }, padding: 12 } },
       tooltip: {
         callbacks: {
           label: (ctx) => ` ${format(vca.chartTooltipDoughnut, { label: ctx.label, n: ctx.raw?.toLocaleString() })}`,
@@ -114,7 +119,7 @@ function groupedBarOpts(yTitle) {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: true, labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 } },
+      legend: { display: true, labels: { color: getChartLegendLabelColor(), font: { size: 11 }, padding: 10 } },
       tooltip: {
         callbacks: {
           label: (ctx) => ` ${format(vca.chartTooltipGrouped, { dataset: ctx.dataset.label, n: ctx.raw?.toLocaleString() })}`,
@@ -136,7 +141,7 @@ function stackedPercentBarOpts() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { display: true, labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 } },
+      legend: { display: true, labels: { color: getChartLegendLabelColor(), font: { size: 11 }, padding: 10 } },
       tooltip: {
         callbacks: {
           label: (ctx) => ` ${format(vca.chartTooltipPercent, { dataset: ctx.dataset.label, pct: Number(ctx.raw).toFixed(1) })}`,
@@ -171,7 +176,7 @@ function SectionHeader({ icon, title, description }) {
   return (
     <div className="flex items-start gap-3 border-b border-muted pb-4">
       <div className="p-2 bg-brand-800 border border-default rounded-lg">
-        <Icon className="h-5 w-5 text-blue-400" />
+        <Icon className="h-5 w-5 text-link" />
       </div>
       <div>
         <h2 className="text-lg font-bold text-bright">{title}</h2>
@@ -209,7 +214,7 @@ function ThinPagesSection({ pages }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-2 text-sm font-semibold text-amber-400 hover:text-amber-300 transition-colors py-1"
+        className="w-full flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 transition-colors py-1"
       >
         {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
         {format(vca.thinPagesView, { count: pages.length, s: pages.length !== 1 ? 's' : '' })}
@@ -238,14 +243,14 @@ function ThinPagesSection({ pages }) {
                         target="_blank"
                         rel="noreferrer"
                         title={url}
-                        className="block font-mono text-blue-400 text-xs truncate hover:text-blue-300 hover:underline transition-colors"
+                        className="block font-mono text-link text-xs truncate hover:text-link-soft hover:underline transition-colors"
                       >
                         {url}
                       </a>
                     </TableCell>
                     <TableCell className="text-center w-20">
                       {wc != null && (
-                        <span className="font-mono text-amber-400 text-xs font-bold tabular-nums">{wc}</span>
+                        <span className="font-mono text-amber-700 dark:text-amber-400 text-xs font-bold tabular-nums">{wc}</span>
                       )}
                     </TableCell>
                     <TableCell className="w-8">
@@ -491,9 +496,9 @@ export default function ContentAnalytics({ searchQuery = '' }) {
 
         <Card shadow>
           <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <Globe className="h-4 w-4 text-blue-400" /> {vca.ogCoverage}
+            <Globe className="h-4 w-4 text-link" /> {vca.ogCoverage}
           </div>
-          <div className="text-3xl font-bold text-blue-400">
+          <div className="text-3xl font-bold text-link">
             {sc.og_coverage_pct != null ? `${sc.og_coverage_pct}%` : sj.emDash}
           </div>
           <div className="text-xs text-muted-foreground mt-1">{vca.ogTags}</div>
@@ -501,9 +506,9 @@ export default function ContentAnalytics({ searchQuery = '' }) {
 
         <Card shadow>
           <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <Twitter className="h-4 w-4 text-sky-400" /> {vca.twitterCoverage}
+            <Twitter className="h-4 w-4 text-sky-700 dark:text-sky-400" /> {vca.twitterCoverage}
           </div>
-          <div className="text-3xl font-bold text-sky-400">
+          <div className="text-3xl font-bold text-sky-700 dark:text-sky-400">
             {sc.twitter_coverage_pct != null ? `${sc.twitter_coverage_pct}%` : sj.emDash}
           </div>
           <div className="text-xs text-muted-foreground mt-1">{vca.twitterTags}</div>
@@ -513,10 +518,10 @@ export default function ContentAnalytics({ searchQuery = '' }) {
           shadow
           className={hasThinPages ? 'ring-1 ring-amber-500/20 border-amber-900/30' : ''}
         >
-          <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${hasThinPages ? 'text-amber-400/80' : 'text-muted-foreground'}`}>
-            <AlertTriangle className={`h-4 w-4 ${hasThinPages ? 'text-amber-400' : ''}`} /> {vca.thinPages}
+          <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${hasThinPages ? 'text-amber-800/90 dark:text-amber-400/80' : 'text-muted-foreground'}`}>
+            <AlertTriangle className={`h-4 w-4 ${hasThinPages ? 'text-amber-700 dark:text-amber-400' : ''}`} /> {vca.thinPages}
           </div>
-          <div className={`text-3xl font-bold ${hasThinPages ? 'text-amber-400' : 'text-muted-foreground'}`}>
+          <div className={`text-3xl font-bold ${hasThinPages ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground'}`}>
             {thinPages.length}
           </div>
           <div className="text-xs text-muted-foreground mt-1">{vca.under300}</div>
@@ -528,7 +533,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
           {data.hreflang_summary?.pages_200 > 0 && (
             <Card padding="tight" shadow>
               <div className="flex items-center gap-2 mb-3">
-                <Globe className="h-4 w-4 text-sky-400" />
+                <Globe className="h-4 w-4 text-sky-700 dark:text-sky-400" />
                 <h3 className="text-sm font-bold text-foreground">{vca.i18nTitle}</h3>
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
@@ -538,11 +543,11 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                 </div>
                 <div className="bg-brand-900 border border-default rounded-lg p-3">
                   <div className="text-muted-foreground text-xs uppercase tracking-wider">{vca.missingHtmlLang}</div>
-                  <div className="text-xl font-bold text-amber-400">{data.hreflang_summary.pages_missing_html_lang ?? sj.emDash}</div>
+                  <div className="text-xl font-bold text-amber-700 dark:text-amber-400">{data.hreflang_summary.pages_missing_html_lang ?? sj.emDash}</div>
                 </div>
                 <div className="bg-brand-900 border border-default rounded-lg p-3 col-span-2">
                   <div className="text-muted-foreground text-xs uppercase tracking-wider">{vca.pagesHreflang}</div>
-                  <div className="text-xl font-bold text-sky-400">{data.hreflang_summary.pages_with_hreflang_links ?? sj.emDash}</div>
+                  <div className="text-xl font-bold text-sky-700 dark:text-sky-400">{data.hreflang_summary.pages_with_hreflang_links ?? sj.emDash}</div>
                 </div>
               </div>
             </Card>
@@ -550,7 +555,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
           {(data.outbound_link_domains?.length ?? 0) > 0 && (
             <Card padding="tight" shadow className={data.hreflang_summary?.pages_200 ? '' : 'lg:col-span-2'}>
               <div className="flex items-center gap-2 mb-3">
-                <Link2 className="h-4 w-4 text-orange-400" />
+                <Link2 className="h-4 w-4 text-orange-700 dark:text-orange-400" />
                 <h3 className="text-sm font-bold text-foreground">{vca.outboundDomains}</h3>
               </div>
               <div className="max-h-64 overflow-y-auto rounded-lg border border-muted">
@@ -581,7 +586,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
       {languageMlChart && (
         <Card padding="tight" shadow>
           <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="h-4 w-4 text-violet-400" />
+            <Sparkles className="h-4 w-4 text-violet-700 dark:text-violet-400" />
             <h3 className="text-sm font-bold text-foreground">{vca.languageMix}</h3>
           </div>
           <div className="h-56">
@@ -605,7 +610,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
       {nerSiteChart && (
         <Card padding="tight" shadow>
           <div className="flex items-center gap-2 mb-3">
-            <Tag className="h-4 w-4 text-cyan-400" />
+            <Tag className="h-4 w-4 text-cyan-700 dark:text-cyan-400" />
             <h3 className="text-sm font-bold text-foreground">{vca.entityLabels}</h3>
           </div>
           <div className="h-56">
@@ -629,7 +634,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
       {data.keyword_opportunities?.token_topic_clusters?.length > 0 && (
         <Card padding="tight" shadow>
           <div className="flex items-center gap-2 mb-3">
-            <Tag className="h-4 w-4 text-amber-400" />
+            <Tag className="h-4 w-4 text-amber-700 dark:text-amber-400" />
             <h3 className="text-sm font-bold text-foreground">{vca.parentTopicsToken}</h3>
           </div>
           <div className="max-h-80 overflow-y-auto rounded-lg border border-muted">
@@ -660,7 +665,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
       {data.semantic_keyword_clusters?.length > 0 && (
         <Card padding="tight" shadow>
           <div className="flex items-center gap-2 mb-3">
-            <Layers className="h-4 w-4 text-emerald-400" />
+            <Layers className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
             <h3 className="text-sm font-bold text-foreground">{vca.parentTopicsSemantic}</h3>
           </div>
           <div className="max-h-80 overflow-y-auto rounded-lg border border-muted">
@@ -699,7 +704,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                   {vca.totalCrawled}{' '}
                   <span className="text-foreground font-semibold">{Number(summary.total_urls || 0).toLocaleString()}</span>
                   {summary.success_rate != null && (
-                    <> · <span className="text-green-400 font-semibold">{summary.success_rate}%</span> {vca.returned2xx}
+                    <> · <span className="text-green-700 dark:text-green-400 font-semibold">{summary.success_rate}%</span> {vca.returned2xx}
                     </>
                   )}
                 </p>
@@ -862,7 +867,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
       {hasThinPages && (
         <Card padding="default">
           <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle className="h-4 w-4 text-amber-400" />
+            <AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-400" />
             <span className="text-sm font-semibold text-amber-300">
               {q
                 ? `${thinPagesFiltered.length} of ${thinPages.length} thin page${thinPages.length !== 1 ? 's' : ''} match search`
@@ -1127,10 +1132,10 @@ export default function ContentAnalytics({ searchQuery = '' }) {
           <Card shadow>
             <div className="space-y-4">
               {sc.og_coverage_pct != null && (
-                <CoverageBar label={vca.ogProgress} pct={sc.og_coverage_pct} color="text-blue-400" />
+                <CoverageBar label={vca.ogProgress} pct={sc.og_coverage_pct} color="text-link" />
               )}
               {sc.twitter_coverage_pct != null && (
-                <CoverageBar label={vca.twitterProgress} pct={sc.twitter_coverage_pct} color="text-sky-400" />
+                <CoverageBar label={vca.twitterProgress} pct={sc.twitter_coverage_pct} color="text-sky-700 dark:text-sky-400" />
               )}
             </div>
           </Card>
@@ -1166,7 +1171,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                       y: { stacked: true, grid: { color: getGridColor() }, beginAtZero: true, max: 100, title: { display: true, text: 'Coverage %', color: getChartTitleColor() } },
                     },
                     plugins: {
-                      legend: { display: true, labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 } },
+                      legend: { display: true, labels: { color: getChartLegendLabelColor(), font: { size: 11 }, padding: 10 } },
                       tooltip: { callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw?.toFixed(1)}%` } },
                     },
                   }}
@@ -1248,7 +1253,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
           {(sc.missing_og || []).length > 0 && (
             <Card overflowHidden padding="none">
               <div className="px-4 py-3 border-b border-muted flex items-center gap-2">
-                <Globe className="h-4 w-4 text-blue-400" />
+                <Globe className="h-4 w-4 text-link" />
                 <h3 className="text-sm font-bold text-foreground">Missing Open Graph Tags</h3>
                 <span className="ml-auto text-xs font-bold text-muted-foreground bg-brand-700/60 rounded-full px-2.5 py-0.5">
                   {missingOgFiltered.length}
@@ -1274,7 +1279,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                             target="_blank"
                             rel="noreferrer"
                             title={u}
-                            className="block font-mono text-blue-400 text-xs truncate hover:text-blue-300 hover:underline transition-colors"
+                            className="block font-mono text-link text-xs truncate hover:text-link-soft hover:underline transition-colors"
                           >
                             {u}
                           </a>
@@ -1296,7 +1301,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
           {(sc.missing_twitter || []).length > 0 && (
             <Card overflowHidden padding="none">
               <div className="px-4 py-3 border-b border-muted flex items-center gap-2">
-                <Twitter className="h-4 w-4 text-sky-400" />
+                <Twitter className="h-4 w-4 text-sky-700 dark:text-sky-400" />
                 <h3 className="text-sm font-bold text-foreground">Missing Twitter Card Tags</h3>
                 <span className="ml-auto text-xs font-bold text-muted-foreground bg-brand-700/60 rounded-full px-2.5 py-0.5">
                   {missingTwitterFiltered.length}
@@ -1322,7 +1327,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                             target="_blank"
                             rel="noreferrer"
                             title={u}
-                            className="block font-mono text-blue-400 text-xs truncate hover:text-blue-300 hover:underline transition-colors"
+                            className="block font-mono text-link text-xs truncate hover:text-link-soft hover:underline transition-colors"
                           >
                             {u}
                           </a>
@@ -1396,10 +1401,10 @@ export default function ContentAnalytics({ searchQuery = '' }) {
                 <div className="space-y-3">
                   {[
                     { label: 'Min', value: wcStats.min, color: 'text-muted-foreground', barW: 0 },
-                    { label: '25th Percentile (P25)', value: wcStats.p25, color: 'text-amber-400', barW: 25 },
-                    { label: 'Median (P50)', value: wcStats.median, color: 'text-blue-400', barW: 50 },
-                    { label: 'Mean (Avg)', value: wcStats.mean, color: 'text-purple-400', barW: null },
-                    { label: '75th Percentile (P75)', value: wcStats.p75, color: 'text-green-400', barW: 75 },
+                    { label: '25th Percentile (P25)', value: wcStats.p25, color: 'text-amber-700 dark:text-amber-400', barW: 25 },
+                    { label: 'Median (P50)', value: wcStats.median, color: 'text-link', barW: 50 },
+                    { label: 'Mean (Avg)', value: wcStats.mean, color: 'text-purple-700 dark:text-purple-400', barW: null },
+                    { label: '75th Percentile (P75)', value: wcStats.p75, color: 'text-green-700 dark:text-green-400', barW: 75 },
                     { label: 'Max', value: wcStats.max, color: 'text-foreground', barW: 100 },
                   ].map(({ label, value, color, barW }) => {
                     const pct = barW != null ? barW : wcStats.max > 0 ? Math.min(100, (value / wcStats.max) * 100) : 0;

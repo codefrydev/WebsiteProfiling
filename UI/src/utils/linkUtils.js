@@ -39,22 +39,22 @@ export function formatPageHrefLines(url) {
 
 export function rtColor(ms) {
   if (ms == null || ms === 0) return 'text-muted-foreground';
-  if (ms < 500) return 'text-green-400';
-  if (ms <= 2000) return 'text-yellow-400';
-  return 'text-red-400';
+  if (ms < 500) return 'text-green-700 dark:text-green-400';
+  if (ms <= 2000) return 'text-yellow-800 dark:text-yellow-400';
+  return 'text-red-600 dark:text-red-400';
 }
 
 export function wcLabel(wc) {
-  if (wc < 300) return { label: strings.common.wcThin, color: 'text-red-400' };
-  if (wc < 1000) return { label: strings.common.wcMedium, color: 'text-yellow-400' };
-  return { label: strings.common.wcLong, color: 'text-green-400' };
+  if (wc < 300) return { label: strings.common.wcThin, color: 'text-red-600 dark:text-red-400' };
+  if (wc < 1000) return { label: strings.common.wcMedium, color: 'text-yellow-800 dark:text-yellow-400' };
+  return { label: strings.common.wcLong, color: 'text-green-700 dark:text-green-400' };
 }
 
 export function readingLabel(rl) {
-  if (rl <= 5) return { label: strings.common.rlElementary, color: 'text-green-400' };
-  if (rl <= 8) return { label: strings.common.rlMiddle, color: 'text-blue-400' };
-  if (rl <= 12) return { label: strings.common.rlHighSchool, color: 'text-yellow-400' };
-  return { label: strings.common.rlCollege, color: 'text-red-400' };
+  if (rl <= 5) return { label: strings.common.rlElementary, color: 'text-green-700 dark:text-green-400' };
+  if (rl <= 8) return { label: strings.common.rlMiddle, color: 'text-link' };
+  if (rl <= 12) return { label: strings.common.rlHighSchool, color: 'text-yellow-800 dark:text-yellow-400' };
+  return { label: strings.common.rlCollege, color: 'text-red-600 dark:text-red-400' };
 }
 
 export function titleCharColor(len) {
@@ -74,9 +74,9 @@ export function metaCharColor(len) {
 export function severityBg(s) {
   if (!s) return 'bg-brand-700 text-foreground';
   const sl = s.toLowerCase();
-  if (sl === 'critical') return 'bg-red-500/20 text-red-300';
-  if (sl === 'high') return 'bg-orange-500/20 text-orange-300';
-  if (sl === 'medium') return 'bg-yellow-500/20 text-yellow-300';
+  if (sl === 'critical') return 'bg-red-500/20 text-red-800 dark:text-red-300';
+  if (sl === 'high') return 'bg-orange-500/20 text-orange-800 dark:text-orange-300';
+  if (sl === 'medium') return 'bg-yellow-500/20 text-yellow-900 dark:text-yellow-300';
   return 'bg-brand-700/60 text-muted-foreground';
 }
 

@@ -5,9 +5,9 @@ import LhDetailsTable from './LhDetailsTable';
 function severityBg(s) {
   if (!s) return 'bg-brand-700 text-foreground';
   const sl = s.toLowerCase();
-  if (sl === 'critical') return 'bg-red-500/20 text-red-300';
-  if (sl === 'high') return 'bg-orange-500/20 text-orange-300';
-  if (sl === 'medium') return 'bg-yellow-500/20 text-yellow-300';
+  if (sl === 'critical') return 'bg-red-500/20 text-red-800 dark:text-red-300';
+  if (sl === 'high') return 'bg-orange-500/20 text-orange-800 dark:text-orange-300';
+  if (sl === 'medium') return 'bg-yellow-500/20 text-yellow-900 dark:text-yellow-300';
   return 'bg-brand-700/60 text-muted-foreground';
 }
 
@@ -27,7 +27,7 @@ export default function DiagnosticItem({ d }) {
         <div className="flex-1 min-w-0">
           <div className="text-sm text-foreground font-medium">{d.warning || d.helpText || '—'}</div>
           {d.one_line_fix && (
-            <div className="text-xs text-blue-400 mt-0.5 truncate">Fix: {d.one_line_fix}</div>
+            <div className="text-xs text-link mt-0.5 truncate">Fix: {d.one_line_fix}</div>
           )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -43,7 +43,7 @@ export default function DiagnosticItem({ d }) {
       {open && (
         <div className="px-4 py-4 space-y-3 bg-brand-900 border-t border-muted">
           <div className="bg-brand-900 border border-muted rounded-lg p-3">
-            <div className="text-xs text-blue-400 font-bold uppercase mb-1">How to fix</div>
+            <div className="text-xs text-link font-bold uppercase mb-1">How to fix</div>
             <p className="text-sm text-foreground">{d.one_line_fix || '—'}</p>
             {d.detailed_fix && (
               <p className="text-xs text-muted-foreground mt-2">{d.detailed_fix}</p>
@@ -63,7 +63,7 @@ export default function DiagnosticItem({ d }) {
                   return (
                     <li key={j} className="text-muted-foreground">
                       {isUrl ? (
-                        <a href={ev} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline break-all">
+                        <a href={ev} target="_blank" rel="noreferrer" className="text-link hover:underline break-all">
                           {ev}
                         </a>
                       ) : (

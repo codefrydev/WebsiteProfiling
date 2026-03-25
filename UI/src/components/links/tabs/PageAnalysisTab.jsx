@@ -104,7 +104,7 @@ function ImageUrlListItem({ rawUrl, pageUrl }) {
       {showImg && broken ? (
         <p className="text-[10px] text-muted-foreground mb-1 italic">{p.previewFailed}</p>
       ) : null}
-      <a href={href} target="_blank" rel="noreferrer" className="text-xs font-mono text-blue-400/90 hover:underline break-all">
+      <a href={href} target="_blank" rel="noreferrer" className="text-xs font-mono text-link/90 hover:underline break-all">
         {href}
       </a>
     </li>
@@ -147,7 +147,7 @@ function ResourceSection({ title, urls, defaultOpen = false, variant = 'links', 
               {shown.map((u, i) => {
                 const resolved = resolveResourceUrl(u, pageUrl) || u;
                 return (
-                  <li key={`${u}-${i}`} className="text-xs font-mono text-blue-400/90 break-all">
+                  <li key={`${u}-${i}`} className="text-xs font-mono text-link/90 break-all">
                     <a href={resolved} target="_blank" rel="noreferrer" className="hover:underline">
                       {resolved}
                     </a>
@@ -348,7 +348,7 @@ export default function PageAnalysisTab({ link }) {
                   {link.keyphrases.phrases.map((pair, i) => (
                     <li
                       key={`${pair[0]}-${i}`}
-                      className="text-[11px] font-mono px-2 py-0.5 rounded bg-brand-800 border border-default text-emerald-300/90"
+                      className="text-[11px] font-mono px-2 py-0.5 rounded bg-brand-800 border border-default text-emerald-800 dark:text-emerald-300/90"
                     >
                       {pair[0]}
                       {typeof pair[1] === 'number' && (
@@ -362,7 +362,7 @@ export default function PageAnalysisTab({ link }) {
             {link.ml_anomaly && (
               <div className="bg-brand-900 border border-default rounded-lg p-3 sm:col-span-2">
                 <div className="text-muted-foreground mb-1">{p.anomalyIsolation}</div>
-                <div className="text-amber-400/90">
+                <div className="text-amber-800 dark:text-amber-400/90">
                   {p.anomalyScorePrefix} {link.ml_anomaly.anomaly_score} — {(link.ml_anomaly.reasons || []).join(', ')}
                 </div>
               </div>
@@ -375,9 +375,9 @@ export default function PageAnalysisTab({ link }) {
                 {similarRows.map((row) => (
                   <li key={row.url} className="flex flex-wrap items-baseline gap-2 gap-y-0">
                     {row.score != null && !Number.isNaN(row.score) && (
-                      <span className="text-[10px] font-mono text-emerald-400/90 shrink-0 w-14">{row.score.toFixed(4)}</span>
+                      <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400/90 shrink-0 w-14">{row.score.toFixed(4)}</span>
                     )}
-                    <a href={row.url} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline font-mono text-xs break-all min-w-0">
+                    <a href={row.url} target="_blank" rel="noreferrer" className="text-link hover:underline font-mono text-xs break-all min-w-0">
                       {row.url}
                     </a>
                   </li>

@@ -183,7 +183,7 @@ export default function Lighthouse({ searchQuery = '' }) {
         <h1 className="text-3xl font-bold text-bright mb-2">{vlh.pageSpeedTitle}</h1>
         {summary.url && (
           <p className="text-muted-foreground text-sm mb-1">
-            <a href={summary.url} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline break-all">
+            <a href={summary.url} target="_blank" rel="noreferrer" className="text-link hover:underline break-all">
               {summary.url}
             </a>
           </p>

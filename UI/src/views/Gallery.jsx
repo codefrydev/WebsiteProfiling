@@ -1,6 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { Bar } from 'react-chartjs-2';
-import { Images, ExternalLink, Grid3X3, LayoutGrid, Maximize2, X, Filter, Columns } from 'lucide-react';
+import {
+  Images,
+  ExternalLink,
+  Grid3X3,
+  LayoutGrid,
+  Maximize2,
+  X,
+  Filter,
+  Columns,
+  Loader2,
+} from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card } from '../components';
@@ -116,13 +127,122 @@ function GalleryTile({ item, onOpen, masonry = false }) {
   );
 }
 
+const GRID_GAP_PX = 12;
+
+function getColumnCount(width, density) {
+  if (!width || width < 0) return 2;
+  if (density === 'sm') {
+    if (width >= 1280) return 6;
+    if (width >= 1024) return 5;
+    if (width >= 768) return 4;
+    if (width >= 640) return 3;
+    return 2;
+  }
+  if (density === 'lg') {
+    if (width >= 1024) return 3;
+    if (width >= 640) return 2;
+    return 1;
+  }
+  if (width >= 1024) return 4;
+  if (width >= 640) return 3;
+  return 2;
+}
+
+function VirtualGalleryGrid({ items, onOpen, density }) {
+  const parentRef = useRef(null);
+  const [layout, setLayout] = useState(() => ({
+    width: typeof window !== 'undefined' ? Math.min(window.innerWidth, 1400) : 800,
+    cols: 4,
+  }));
+
+  useEffect(() => {
+    const el = parentRef.current;
+    if (!el) return;
+    const update = () => {
+      const w = el.clientWidth;
+      setLayout({ width: w, cols: getColumnCount(w, density) });
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [density]);
+
+  const { cols, width } = layout;
+  const rowHeight = useMemo(() => {
+    if (cols < 1) return 200;
+    const cellW = (width - GRID_GAP_PX * (cols - 1)) / cols;
+    const cellH = cellW * (3 / 4);
+    return cellH + GRID_GAP_PX;
+  }, [width, cols]);
+
+  const rowCount = cols > 0 ? Math.ceil(items.length / cols) : 0;
+
+  const virtualizer = useVirtualizer({
+    count: rowCount,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => rowHeight,
+    overscan: 3,
+  });
+
+  if (items.length === 0) return null;
+
+  return (
+    <div
+      ref={parentRef}
+      className="overflow-auto max-h-[min(72vh,calc(100vh-13rem))] rounded-xl border border-default bg-brand-900/20 -mx-1 px-1"
+    >
+      <div
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          width: '100%',
+          position: 'relative',
+        }}
+      >
+        {virtualizer.getVirtualItems().map((vRow) => {
+          const start = vRow.index * cols;
+          const rowItems = items.slice(start, start + cols);
+          return (
+            <div
+              key={vRow.key}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: `${vRow.size}px`,
+                transform: `translateY(${vRow.start}px)`,
+              }}
+            >
+              <div
+                className="grid gap-3"
+                style={{
+                  gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+                }}
+              >
+                {rowItems.map((item) => (
+                  <GalleryTile key={item.src} item={item} onOpen={onOpen} masonry={false} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const MASONRY_CHUNK = 48;
+
 export default function Gallery({ searchQuery = '' }) {
   const vg = strings.views.gallery;
-  const { data } = useReport();
+  const { data, loading } = useReport();
   const [density, setDensity] = useState('md'); // sm | md | lg
   const [layoutMode, setLayoutMode] = useState('grid'); // grid | masonry
   const [kindFilter, setKindFilter] = useState('all'); // all | content | og | twitter
   const [lightbox, setLightbox] = useState(null);
+  const [masonryLimit, setMasonryLimit] = useState(MASONRY_CHUNK);
+  const masonrySentinelRef = useRef(null);
 
   const items = useMemo(() => collectFromLinks(data?.links), [data?.links]);
 
@@ -170,6 +290,28 @@ export default function Gallery({ searchQuery = '' }) {
     });
   }, [items, searchQuery, kindFilter]);
 
+  useLayoutEffect(() => {
+    setMasonryLimit(MASONRY_CHUNK);
+  }, [kindFilter, searchQuery, density, layoutMode, filtered.length]);
+
+  useEffect(() => {
+    if (layoutMode !== 'masonry') return undefined;
+    const sentinel = masonrySentinelRef.current;
+    if (!sentinel || filtered.length === 0) return undefined;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (!entries[0]?.isIntersecting) return;
+        setMasonryLimit((n) => {
+          if (n >= filtered.length) return n;
+          return Math.min(n + MASONRY_CHUNK, filtered.length);
+        });
+      },
+      { root: null, rootMargin: '600px', threshold: 0 },
+    );
+    io.observe(sentinel);
+    return () => io.disconnect();
+  }, [layoutMode, filtered.length]);
+
   const closeLightbox = useCallback(() => setLightbox(null), []);
 
   useEffect(() => {
@@ -186,12 +328,17 @@ export default function Gallery({ searchQuery = '' }) {
     };
   }, [lightbox, closeLightbox]);
 
-  const gridClass =
-    density === 'sm'
-      ? 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'
-      : density === 'lg'
-        ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3'
-        : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4';
+  if (loading) {
+    return (
+      <PageLayout className="space-y-8 pb-16">
+        <PageHeader title={vg.title} subtitle={vg.subtitle} />
+        <Card className="p-16 flex flex-col items-center justify-center gap-4 text-center border-dashed">
+          <Loader2 className="h-10 w-10 animate-spin text-link" aria-hidden />
+          <p className="text-muted-foreground">{strings.app.loading}</p>
+        </Card>
+      </PageLayout>
+    );
+  }
 
   const masonryColsClass =
     density === 'sm'
@@ -221,7 +368,7 @@ export default function Gallery({ searchQuery = '' }) {
               onClick={() => setKindFilter(id)}
               className={`text-xs px-3 py-1.5 rounded-lg border transition-colors ${
                 kindFilter === id
-                  ? 'bg-blue-500/15 border-blue-500/40 text-blue-300'
+                  ? 'bg-blue-500/15 border-blue-500/40 text-link-soft'
                   : 'border-default text-muted-foreground hover:text-foreground hover:bg-brand-800'
               }`}
             >
@@ -278,7 +425,7 @@ export default function Gallery({ searchQuery = '' }) {
                   type="button"
                   title={vg.titleDense}
                   onClick={() => setDensity('sm')}
-                  className={`p-2 ${density === 'sm' ? 'bg-blue-500/20 text-blue-300' : 'text-muted-foreground hover:bg-brand-800'}`}
+                  className={`p-2 ${density === 'sm' ? 'bg-blue-500/20 text-link-soft' : 'text-muted-foreground hover:bg-brand-800'}`}
                 >
                   <Grid3X3 className="h-4 w-4" />
                 </button>
@@ -286,7 +433,7 @@ export default function Gallery({ searchQuery = '' }) {
                   type="button"
                   title={vg.titleBalanced}
                   onClick={() => setDensity('md')}
-                  className={`p-2 border-l border-default ${density === 'md' ? 'bg-blue-500/20 text-blue-300' : 'text-muted-foreground hover:bg-brand-800'}`}
+                  className={`p-2 border-l border-default ${density === 'md' ? 'bg-blue-500/20 text-link-soft' : 'text-muted-foreground hover:bg-brand-800'}`}
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </button>
@@ -294,7 +441,7 @@ export default function Gallery({ searchQuery = '' }) {
                   type="button"
                   title={vg.titleLarge}
                   onClick={() => setDensity('lg')}
-                  className={`p-2 border-l border-default ${density === 'lg' ? 'bg-blue-500/20 text-blue-300' : 'text-muted-foreground hover:bg-brand-800'}`}
+                  className={`p-2 border-l border-default ${density === 'lg' ? 'bg-blue-500/20 text-link-soft' : 'text-muted-foreground hover:bg-brand-800'}`}
                 >
                   <Maximize2 className="h-4 w-4" />
                 </button>
@@ -323,23 +470,25 @@ export default function Gallery({ searchQuery = '' }) {
             {items.length === 0 ? vg.emptyNoImages : vg.emptyNoMatch}
           </p>
         </Card>
+      ) : layoutMode === 'grid' ? (
+        <VirtualGalleryGrid items={filtered} onOpen={setLightbox} density={density} />
       ) : (
-        <div
-          className={
-            layoutMode === 'masonry'
-              ? `${masonryColsClass} gap-3`
-              : `grid ${gridClass} gap-3`
-          }
-        >
-          {filtered.map((item) => (
-            <GalleryTile
-              key={item.src}
-              item={item}
-              onOpen={setLightbox}
-              masonry={layoutMode === 'masonry'}
-            />
-          ))}
-        </div>
+        <>
+          <div className={`${masonryColsClass} gap-3`}>
+            {filtered.slice(0, masonryLimit).map((item) => (
+              <GalleryTile key={item.src} item={item} onOpen={setLightbox} masonry />
+            ))}
+          </div>
+          {masonryLimit < filtered.length && (
+            <div
+              ref={masonrySentinelRef}
+              className="flex h-14 w-full items-center justify-center gap-2 py-2 text-muted-foreground"
+            >
+              <Loader2 className="h-5 w-5 shrink-0 animate-spin" aria-hidden />
+              <span className="text-xs">{vg.loadingMore}</span>
+            </div>
+          )}
+        </>
       )}
 
       {lightbox && (
@@ -374,7 +523,7 @@ export default function Gallery({ searchQuery = '' }) {
                 href={lightbox.src}
                 target="_blank"
                 rel="noreferrer"
-                className="text-sm text-blue-400 hover:underline break-all font-mono flex items-start gap-2"
+                className="text-sm text-link hover:underline break-all font-mono flex items-start gap-2"
               >
                 <ExternalLink className="h-4 w-4 shrink-0 mt-0.5" />
                 {lightbox.src}
@@ -383,7 +532,7 @@ export default function Gallery({ searchQuery = '' }) {
               <ul className="space-y-2 max-h-40 overflow-y-auto">
                 {lightbox.refs.map((r, i) => (
                   <li key={`${r.pageUrl}-${r.kind}-${i}`} className="flex flex-wrap items-center gap-2 text-sm">
-                    <a href={r.pageUrl} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline truncate max-w-full sm:max-w-md">
+                    <a href={r.pageUrl} target="_blank" rel="noreferrer" className="text-link hover:underline truncate max-w-full sm:max-w-md">
                       {r.pageUrl}
                     </a>
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-800 text-muted-foreground border border-default">
