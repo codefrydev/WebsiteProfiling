@@ -1,6 +1,28 @@
 import initSqlJs from 'sql.js';
+import { canonicalDomainFromPayload } from './domainSlug';
 
 const defaultLocateFile = (file) => `${import.meta.env.BASE_URL}${file}`;
+
+/**
+ * @param {import('sql.js').Database} db
+ * @returns {Map<number, string>}
+ */
+function crawlRunStartUrlsMap(db) {
+  const m = new Map();
+  try {
+    const runRows = db.exec('SELECT id, start_url FROM crawl_runs');
+    if (!runRows.length || !runRows[0].values.length) return m;
+    const cols = runRows[0].columns;
+    const idIdx = cols.indexOf('id');
+    const urlIdx = cols.indexOf('start_url');
+    for (const row of runRows[0].values) {
+      m.set(Number(row[idIdx]), String(row[urlIdx] || ''));
+    }
+  } catch {
+    /* crawl_runs may be missing */
+  }
+  return m;
+}
 
 /**
  * Fetch report.db and open an in-memory SQL.js database. Caller must db.close() when done.
@@ -229,16 +251,66 @@ export function queryNodesSample(db, limit = 40) {
 
 /**
  * @param {import('sql.js').Database} db
- * @returns {Array<{ id: number, generated_at: string }>}
+ * @returns {Array<{ id: number, generated_at: string, site_name: string, canonical_domain: string }>}
  */
 export function listReportsFromDatabase(db) {
+  const startUrlByRunId = crawlRunStartUrlsMap(db);
   try {
-    const res = db.exec('SELECT id, generated_at FROM report_payload ORDER BY id DESC');
+    const res = db.exec('SELECT id, generated_at, data FROM report_payload ORDER BY id DESC');
     if (!res.length || !res[0].values.length) return [];
     const cols = res[0].columns;
     const idIdx = cols.indexOf('id');
     const atIdx = cols.indexOf('generated_at');
-    return res[0].values.map((row) => ({ id: row[idIdx], generated_at: row[atIdx] }));
+    const dataIdx = cols.indexOf('data');
+    return res[0].values.map((row) => {
+      let parsed = {};
+      try {
+        parsed = JSON.parse(String(row[dataIdx] ?? '{}'));
+      } catch {
+        parsed = {};
+      }
+      const siteName = parsed?.site_name != null ? String(parsed.site_name) : '';
+      const canonical_domain = canonicalDomainFromPayload(parsed, startUrlByRunId);
+      return {
+        id: row[idIdx],
+        generated_at: row[atIdx],
+        site_name: siteName,
+        canonical_domain,
+      };
+    });
+  } catch {
+    return listReportsFromDatabaseFallback(db, startUrlByRunId);
+  }
+}
+
+/**
+ * @param {import('sql.js').Database} db
+ * @param {Map<number, string>} startUrlByRunId
+ * @returns {Array<{ id: number, generated_at: string, site_name: string, canonical_domain: string }>}
+ */
+function listReportsFromDatabaseFallback(db, startUrlByRunId) {
+  try {
+    const res = db.exec('SELECT id, generated_at, data FROM report_payload ORDER BY id DESC');
+    if (!res.length || !res[0].values.length) return [];
+    const cols = res[0].columns;
+    const idIdx = cols.indexOf('id');
+    const atIdx = cols.indexOf('generated_at');
+    const dataIdx = cols.indexOf('data');
+    return res[0].values.map((row) => {
+      let parsed = {};
+      try {
+        parsed = JSON.parse(String(row[dataIdx] ?? '{}'));
+      } catch {
+        parsed = {};
+      }
+      const siteName = parsed?.site_name != null ? String(parsed.site_name) : '';
+      return {
+        id: row[idIdx],
+        generated_at: row[atIdx],
+        site_name: siteName,
+        canonical_domain: canonicalDomainFromPayload(parsed, startUrlByRunId),
+      };
+    });
   } catch {
     return [];
   }
@@ -269,7 +341,7 @@ export function readReportPayloadFromDatabase(db, reportId = null) {
 /**
  * List report payload rows (id, generated_at) from report.db, newest first.
  * @param {string} dbUrl - URL to report.db
- * @returns {Promise<Array<{ id: number, generated_at: string }>>}
+ * @returns {Promise<Array<{ id: number, generated_at: string, site_name: string, canonical_domain: string }>>}
  */
 export function listReportsFromDb(dbUrl) {
   return openReportDatabase(dbUrl).then((db) => {

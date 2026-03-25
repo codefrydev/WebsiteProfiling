@@ -3,16 +3,8 @@ import { useMemo, useState } from 'react';
 import { PageLayout, Card } from '../components';
 import { useReport } from '../context/useReport';
 import { readReportPayloadFromDatabase } from '../lib/loadReportDb';
+import { canonicalDomainFromPayload, extractHostname, slugifyDomain } from '../lib/domainSlug';
 import { strings, format } from '../lib/strings';
-
-function extractHostname(url) {
-  if (!url || typeof url !== 'string') return '';
-  try {
-    return new URL(url).hostname.toLowerCase();
-  } catch {
-    return '';
-  }
-}
 
 function scoreFromCategories(categories = []) {
   const numeric = (categories || [])
@@ -37,7 +29,7 @@ function healthScoreClass(score) {
 }
 
 export default function Home({ onNavigate }) {
-  const { data, sqlDb, reportList, setSelectedReportId } = useReport();
+  const { data, sqlDb, reportList } = useReport();
   const vh = strings.views.home;
   const sj = strings.common;
   const [filterQuery, setFilterQuery] = useState('');
@@ -96,6 +88,9 @@ export default function Home({ onNavigate }) {
 
       const existing = brandMap.get(brandKey);
       if (!existing || generatedAtMs > existing.generatedAtMs) {
+        const canonicalHost =
+          canonicalDomainFromPayload(payload, startUrlByRunId) ||
+          slugifyDomain(String(payload?.site_name || ''));
         brandMap.set(brandKey, {
           domainName,
           crawlUrl: crawlUrl || sj.emDash,
@@ -105,6 +100,7 @@ export default function Home({ onNavigate }) {
           lastCrawl,
           reportId: r.id,
           generatedAtMs,
+          domainParam: canonicalHost,
         });
       }
     });
@@ -180,16 +176,19 @@ export default function Home({ onNavigate }) {
       </div>
 
       {filteredGroups.length > 0 ? (
-        <div className="max-w-3xl mx-auto grid grid-cols-[repeat(auto-fit,minmax(220px,260px))] justify-center gap-2 mt-2">
+        <div className="w-full mt-2">
+          <div className="flex w-full flex-row flex-wrap justify-center gap-3 items-stretch">
           {filteredGroups.map((group) => (
             <button
               key={group.domainName}
               type="button"
               onClick={() => {
-                if (group.reportId != null) setSelectedReportId(group.reportId);
-                onNavigate?.('overview');
+                onNavigate?.('overview', {
+                  domain: group.domainParam,
+                  reportId: group.reportId ?? undefined,
+                });
               }}
-              className="text-left w-full max-w-[260px]"
+              className="text-left w-[min(260px,100%)] max-w-[260px] min-w-0"
             >
               <Card
                 shadow
@@ -272,6 +271,7 @@ export default function Home({ onNavigate }) {
               </Card>
             </button>
           ))}
+          </div>
         </div>
       ) : (
         <Card>

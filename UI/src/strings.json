@@ -3,6 +3,8 @@
     "loading": "Loading report data...",
     "failedTitle": "Failed to load report",
     "failedHint": "Run the report from the project root so report.db is copied to UI/public, then refresh. Or copy report.db to UI/public/report.db manually.",
+    "noReportForDomain": "No report data for this domain. Check the ?domain= value or open Home without a domain to pick a site.",
+    "noReportForDomainTitle": "No report for this domain",
     "defaultSiteName": "Site",
     "crawlCompleted": "Crawl completed",
     "crawlCompletedSeconds": "Crawl completed in {seconds}s",
