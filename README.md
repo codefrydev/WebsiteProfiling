@@ -2,6 +2,26 @@
 
 **GitHub:** [github.com/codefrydev/WebsiteProfiling](https://github.com/codefrydev/WebsiteProfiling)
 
+## Which branch to use
+
+- **`Docker` branch — use this for the full server stack.** That line is the **Docker-based, server-oriented** project: containerized run, API/job flow, and the Next.js-style web app wired for server use. Clone or checkout **`Docker`** when you want to run the pipeline and browse reports through the hosted-style setup (see `Dockerfile`, `docker-compose.yml`, and `web/` on that branch).
+
+  **Clone the Docker branch and run with Compose** (from a directory where you want the repo):
+
+  ```bash
+  git clone -b Docker --single-branch https://github.com/codefrydev/WebsiteProfiling.git
+  cd WebsiteProfiling
+  docker compose up --build
+  ```
+
+  Run these from the **repository root** on the `Docker` branch (where `docker-compose.yml` lives). The first build can take a while; when the stack is healthy, use the URL or port printed in the compose logs (or any `web/README.md` on that branch) to open the app in your browser.
+
+- **`master` branch — statics only.** This branch is aimed at **static / offline** use: crawl locally, produce `report.db`, and optionally open the static React UI against that database. No Docker server story is the default here; it is the lightweight, file-based workflow.
+
+If you are unsure, prefer **`Docker`** for anything “run it like a service” and **`master`** for “run Python locally and open static assets.”
+
+---
+
 Crawl a site, build a link graph, and produce SEO-style reports (console + optional React UI over `report.db`).
 
 ## Setup
@@ -20,7 +40,7 @@ The UI loads **Transformers.js** models on demand (cached in the browser). A **f
 
 ## Run
 
-Edit `**input.txt`**, then from the **repository root**:
+Edit **`input.txt`**, then from the **repository root**:
 
 ```bash
 python -m src
