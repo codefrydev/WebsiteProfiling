@@ -8,7 +8,7 @@ From the **repository root**:
 docker compose up --build
 ```
 
-Open **http://localhost:3000/home**. 
+Open **http://localhost:3088/home**. 
 
 ## Run locally
 
@@ -42,7 +42,7 @@ npm install
 npm run dev
 ```
 
-Open **http://localhost:3000/home**.
+Open **http://localhost:3088/home**.
 
 
 **4. Legacy Vite UI** (`UI/`) — optional
