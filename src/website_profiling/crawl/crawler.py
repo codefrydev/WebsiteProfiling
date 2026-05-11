@@ -532,7 +532,7 @@ def run_crawler(
     output_db: Optional[str] = None,
     show_progress: bool = True,
     exclude_urls: Optional[list[str]] = None,
-    preserve_crawl_history: bool = False,
+    preserve_crawl_history: bool = True,
     store_content_excerpt: bool = False,
     content_excerpt_max_chars: int = 4096,
 ) -> pd.DataFrame:

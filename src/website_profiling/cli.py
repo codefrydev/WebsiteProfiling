@@ -51,6 +51,10 @@ def main() -> None:
     # When set, crawl/report/plot/lighthouse use SQLite instead of JSON/CSV
     sqlite_db_raw = (cfg.get("sqlite_db") or "").strip()
     db_path = path("sqlite_db", "report.db") if sqlite_db_raw else None
+    # Docker / hosting: Next.js uses REPORT_DB_PATH for the same DB; align pipeline writes with the UI reader
+    _env_db = (os.environ.get("REPORT_DB_PATH") or "").strip()
+    if _env_db and db_path is not None:
+        db_path = os.path.abspath(_env_db)
 
     # Single-command mode: lighthouse, keywords, warnings
     if args.command == "lighthouse":
@@ -146,7 +150,7 @@ def main() -> None:
         polite_delay = get_float(cfg, "polite_delay", 0.2)
         store_outlinks = get_bool(cfg, "store_outlinks", True)
         exclude_urls = get_list(cfg, "crawl_exclude_urls", sep=",")
-        preserve_crawl_history = get_bool(cfg, "preserve_crawl_history", False)
+        preserve_crawl_history = get_bool(cfg, "preserve_crawl_history", True)
         store_content_excerpt = get_bool(cfg, "store_content_excerpt", False)
         content_excerpt_max_chars = get_int(cfg, "content_excerpt_max_chars", 4096) or 4096
         crawl_output = path("crawl_output", "crawl_results.csv")
@@ -293,18 +297,13 @@ def main() -> None:
                 print(f"Warning: could not copy report DB to UI/public: {e}", file=sys.stderr)
 
     if run_plot:
-        plot_image = cfg.get("plot_image_output")
-        if plot_image and not os.path.isabs(plot_image):
-            plot_image = os.path.join(cwd, plot_image)
         print("[Plot] Starting...", flush=True)
         from .tools.plot import run_plot as do_plot
         e, n = do_plot(
             crawl_csv=crawl_csv,
             edges_csv=edges_csv,
             nodes_csv=nodes_csv,
-            image_output=plot_image or None,
             same_domain_only=get_bool(cfg, "same_domain_only", True),
-            max_nodes_plot=get_int(cfg, "max_nodes_plot", 200) or 200,
             max_fetch_for_edges=get_int(cfg, "max_fetch_for_edges", 500),
             concurrency=8,
             timeout=10,
@@ -313,5 +312,3 @@ def main() -> None:
         )
         print("[Plot] Done.", flush=True)
         print(f"Edges: {e}, Nodes: {n}")
-        if plot_image:
-            print(f"Graph image: {plot_image}")

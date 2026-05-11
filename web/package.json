@@ -1,0 +1,33 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@tanstack/react-virtual": "^3.13.23",
+    "3d-force-graph": "^1.79.1",
+    "chart.js": "^4.5.1",
+    "lucide-react": "^0.577.0",
+    "next": "15.5.14",
+    "react": "19.1.0",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "19.1.0",
+    "react-markdown": "^10.1.0",
+    "react-syntax-highlighter": "^16.1.1",
+    "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
+    "sql.js": "^1.14.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "eslint": "^9",
+    "eslint-config-next": "15.5.14",
+    "tailwindcss": "^4"
+  }
+}

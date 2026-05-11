@@ -1,0 +1,32 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: website-profiling:latest
+    ports:
+      - "3088:3088"
+    environment:
+      WEBSITE_PROFILING_ROOT: /app
+      REPORT_DB_PATH: /data/report.db
+      PYTHON: /opt/venv/bin/python
+      NODE_ENV: production
+      # Persist ML / HF downloads on the same volume as report.db (default ~/.cache is ephemeral in containers)
+      HF_HOME: /data/cache/huggingface
+      TRANSFORMERS_CACHE: /data/cache/huggingface/hub
+      TORCH_HOME: /data/cache/torch
+      SENTENCE_TRANSFORMERS_HOME: /data/cache/sentence-transformers
+      # Lighthouse in Docker: system Chromium + no-sandbox (Chrome requirement in containers)
+      CHROME_PATH: /usr/bin/chromium
+      LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
+    volumes:
+      - profiling-data:/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3088/home', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  profiling-data:

@@ -1,0 +1,39 @@
+{
+  "contentUrlKeys": [
+    "missing_h1",
+    "missing_title",
+    "multiple_h1",
+    "missing_meta_desc",
+    "meta_desc_short",
+    "meta_desc_long",
+    "thin_content"
+  ],
+  "contentLabels": {
+    "missing_h1": "Missing H1",
+    "missing_title": "Missing title",
+    "multiple_h1": "Multiple H1s",
+    "missing_meta_desc": "Missing meta description",
+    "meta_desc_short": "Meta description too short",
+    "meta_desc_long": "Meta description too long",
+    "thin_content": "Thin content"
+  },
+  "contentRecommendations": {
+    "missing_h1": "Add exactly one H1 per page.",
+    "missing_title": "Add a unique title (30–60 chars).",
+    "multiple_h1": "Use a single H1 per page.",
+    "missing_meta_desc": "Add a meta description (70–160 chars).",
+    "meta_desc_short": "Aim for 70–160 characters.",
+    "meta_desc_long": "Shorten to 70–160 characters.",
+    "thin_content": "Expand content to at least 300 characters."
+  },
+  "seoIssueRecommendations": {
+    "missing_title": "Add a unique title (30–60 chars).",
+    "title_short": "Aim for 30–60 characters.",
+    "title_long": "Shorten title to 30–60 characters.",
+    "meta_desc_short": "Aim for 70–160 characters.",
+    "meta_desc_long": "Shorten to 70–160 characters.",
+    "h1_missing": "Add exactly one H1 per page.",
+    "h1_multi": "Use a single H1 per page.",
+    "thin_content": "Expand content to at least 300 characters."
+  }
+}

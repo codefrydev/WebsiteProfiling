@@ -2,10 +2,9 @@
 const VIEW_IDS = new Set([
   'home',
   'overview',
-  'model-loader',
-  'sql-playground',
   'issues',
   'links',
+  'site-structure',
   'redirects',
   'content',
   'lighthouse',

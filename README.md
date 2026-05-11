@@ -1,51 +1,56 @@
 # WebsiteProfiling
 
-**GitHub:** [github.com/codefrydev/WebsiteProfiling](https://github.com/codefrydev/WebsiteProfiling)
+## Run with Docker
 
-Crawl a site, build a link graph, and produce SEO-style reports (console + optional React UI over `report.db`).
+From the **repository root**:
 
-## Setup
+```bash
+docker compose up --build
+```
+
+Open **http://localhost:3000/home**. 
+
+## Run locally
+
+**1. Python** (repo root)
+
+```bash
+python -m venv .venv
+```
+
+Activate `.venv`, then:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Optional ML: `pip install -r requirements-ml.txt`, then enable flags in `input.txt`.
+Optional ML: `pip install -r requirements-ml.txt`
 
-### ML / crawl text options
-
-### Browser (React UI) Transformers.js
-
-The UI loads **Transformers.js** models on demand (cached in the browser). A **floating browser assistant** (bottom-right) runs
-
-## Run
-
-Edit `**input.txt`**, then from the **repository root**:
+**2. Crawl / report** (creates `report.db` next to `input.txt`)
 
 ```bash
 python -m src
 ```
 
-Another config file:
+Edit `input.txt` first, or use `python -m src --config other.txt`. Steps: `crawl`, `report`, `plot`, `lighthouse`, `keywords`, `warnings`, `enrich` as extra args.
+
+**3. Next.js UI** (`web/`)
 
 ```bash
-python -m src --config myconfig.txt
+cd web
+npm install
+npm run dev
 ```
 
-Single steps: `python -m src crawl` | `report` | `plot` | `lighthouse` | `keywords` | `warnings` | `enrich`.
+Open **http://localhost:3000/home**.
 
-## What this tool is (and is not)
 
-**This is a crawl-first, offline report:** one site, one SQLite `report.db`, static React UI. The pipeline derives SEO signals from **your** pages (HTML, links, optional ML).
+**4. Legacy Vite UI** (`UI/`) — optional
 
-**Included without external APIs:** internal link graph, on-page technical SEO, Lighthouse (when run), optional duplicate detection / language / NER / semantic keyword clusters, **outbound domains** you link to, **hreflang / `<html lang>`** from HTML, **keyword topic clusters** and **opportunity heuristics** from on-site text, **URL fingerprints** for **compare-two-report** diffs in the UI.
+```bash
+cd UI
+npm install
+npm run dev
+```
 
-**Not included (needs third-party data):** backlinks and referring domains, “who links to you” authors, brand mentions across the web, keyword **search volume / difficulty / rank** by country, or competitor benchmarks like enterprise SEO suites. Those require Search Console, Ads, or paid SEO APIs and a backlink index — not this repo’s default scope.
-
-**Compare two crawls:** each `report` step appends a row to `report_payload`. Run the pipeline twice (or re-run report after a new crawl) so the UI header can pick a **Compare** baseline; fingerprints detect new/removed/changed URLs.
-
-## Contribute
-
-Fork and adapt as you like. Happy burning your website.
-
-Thankyou ✌️
+Open **`http://localhost:5173/WebsiteProfiling/`**

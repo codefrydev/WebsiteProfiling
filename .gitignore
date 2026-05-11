@@ -1,5 +1,10 @@
 # Project (root) only. Python: src/.gitignore. React: UI/.gitignore
 
+# Next.js UI: generated pipeline configs from the runner modal (repo root; must match Python cwd for paths)
+.website-profiling-ui-*.txt
+# Legacy: configs under subfolder broke sqlite_db = report.db vs Next (kept for ignore if present)
+.web-pipeline/
+
 # WebsiteProfiling generated outputs
 report.db
 report.db.*
@@ -9,4 +14,3 @@ nodes.json
 
 # Optional: uncomment if input.txt has secrets
 # input.txt
-site_graph.svg

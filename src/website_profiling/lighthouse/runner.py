@@ -20,6 +20,11 @@ CLS_GOOD = 0.1
 TBT_GOOD_MS = 200
 FCP_GOOD_MS = 1800
 
+_LIGHTHOUSE_INSTALL_MSG = (
+    "Lighthouse not found. Install Node/npm (https://nodejs.org), then run: npm install -g lighthouse. "
+    "Chrome or Chromium is also required for headless mode."
+)
+
 
 def _build_report_html_content(summary: dict[str, Any]) -> str:
     """Build report.html content (for DB or file). Returns HTML string."""
@@ -85,15 +90,14 @@ def _url_safe(s: str) -> str:
 
 
 def _lighthouse_cmd() -> list[str]:
-    """Return the command to run Lighthouse: [lighthouse] or [npx, -y, lighthouse]. Raises RuntimeError if neither is available."""
-    if shutil.which("lighthouse") is not None:
-        return ["lighthouse"]
-    if shutil.which("npx") is not None:
-        return ["npx", "-y", "lighthouse"]
-    raise RuntimeError(
-        "Lighthouse not found. Install Node/npm (https://nodejs.org), then run: npm install -g lighthouse. "
-        "Chrome or Chromium is also required for headless mode."
-    )
+    """Return argv prefix: [resolved lighthouse] or [resolved npx, -y, lighthouse]. Paths from shutil.which (portable)."""
+    lh = shutil.which("lighthouse")
+    if lh is not None:
+        return [lh]
+    npx = shutil.which("npx")
+    if npx is not None:
+        return [npx, "-y", "lighthouse"]
+    raise RuntimeError(_LIGHTHOUSE_INSTALL_MSG)
 
 
 def is_lighthouse_available() -> bool:
@@ -134,22 +138,26 @@ def run_lighthouse_once(
     """Run lighthouse CLI once; output JSON to output_path. strategy is 'mobile' or 'desktop'. categories: optional list for --only-categories."""
     base = _lighthouse_cmd()
     preset = _preset_for_strategy(strategy)
+    chrome_flags = (os.environ.get("LIGHTHOUSE_CHROME_FLAGS") or "").strip() or "--headless"
     cmd = base + [
         url,
         "--output=json",
         f"--output-path={output_path}",
-        "--chrome-flags=--headless",
+        f"--chrome-flags={chrome_flags}",
         f"--preset={preset}",
         "--quiet",
     ]
     if categories:
         cmd.append("--only-categories=" + ",".join(categories))
-    return subprocess.run(
-        cmd,
-        capture_output=True,
-        text=True,
-        timeout=300,
-    )
+    try:
+        return subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=300,
+        )
+    except FileNotFoundError as e:
+        raise RuntimeError(_LIGHTHOUSE_INSTALL_MSG) from e
 
 
 def _evidence_from_audit(audit: dict[str, Any]) -> list[str]:

@@ -14,15 +14,6 @@ export default {
     copied: 'Copied!',
     title: 'Copy to clipboard',
   },
-  similarPages: {
-    title: 'Similar pages (TF-IDF)',
-    sectionTitle: 'Browser similarity',
-    loadingModel: 'Loading model…',
-    findSimilar: 'Find similar pages',
-    errNotEnoughText: 'Not enough text on this page to embed (add title/H1/description).',
-    errNoEmbedding: 'Could not compute embedding for this page.',
-    sqlBadge: 'sql',
-  },
   linkTabs: {
     overview: {
       statStatus: 'Status',
@@ -241,32 +232,5 @@ export default {
       issueTooltip: '{n} issue{s}',
       redirectWithFinal: 'Redirect {status} → {finalUrl}',
     },
-  },
-  browserMlChat: {
-    panelTitle: 'Browser assistant',
-    welcome:
-      'Ask questions about this audit. The model runs in your browser; first load may download model files.',
-    chatSystemPrompt:
-      'You are a concise technical assistant helping the user understand an SEO / site crawl audit. Prefer short answers. When citing data, refer to the report sections provided. If the user asks for something not in the report, say you do not have that data.',
-    chatEmptyReply: '(No text returned from the model.)',
-    chatErrorGeneric: 'Something went wrong while generating a reply.',
-    chatErrorRangeBuffer:
-      'The in-browser model hit a memory or WASM limit. Try reloading the page, clearing site data, or using a smaller model.',
-    toolUnknownCommand: 'Unknown command. Type /help for available commands.',
-    closeAria: 'Close assistant',
-    launcherAria: 'Open browser assistant',
-    chatPlaceholder: 'Message… (Enter to send, Shift+Enter for newline)',
-    chatSendAria: 'Send message',
-    chatBusy: 'Thinking…',
-    chatSend: 'Send',
-    systemPromptToggleAria: 'Edit system prompt',
-    systemPromptHint:
-      'Instructions for the in-browser model. Tool usage rules and your audit data are still appended automatically after this text.',
-    systemPromptSave: 'Save',
-    systemPromptSaved: 'Saved',
-    systemPromptReset: 'Reset to default',
-  },
-  browserMl: {
-    progressLabel: 'Loading model',
   },
 };

@@ -2,7 +2,7 @@
 
 # --- Crawl ---
 start_url = https://codefrydev.in
-max_pages = 2000
+max_pages = 20
 concurrency = 8
 timeout = 12
 max_depth = 6
@@ -15,9 +15,9 @@ store_content_excerpt = true
 content_excerpt_max_chars = 4096
 
 sqlite_db = report.db
+# true = new crawl adds a run; false = delete report.db and recreate (keeps old report_payload rows only)
+preserve_crawl_history = true
 crawl_output = crawl_results.json
-crawl_exclude_urls = https://codefrydev.in/WebsiteProfiling/
-
 # --- Report ---
 # Optional: cap outbound-domain table rows in report JSON; keyword opportunities on by default
 outbound_domain_max_rows = 200
@@ -26,8 +26,8 @@ include_keyword_opportunities = true
 crawl_csv = crawl_results.json
 edges_csv = edges.json
 nodes_csv = nodes.json
-site_name = Codefrydev
-report_title = Codefrydev Report
+site_name = codefrydev.in
+report_title = codefrydev.in Report
 max_fetch_for_edges = 300
 same_domain_only = true
 max_nodes_plot = 400
@@ -35,9 +35,6 @@ max_nodes_plot = 400
 run_security_scan = true
 security_scan_active = false
 security_max_urls_probe = 20
-
-# --- Plot ---
-plot_image_output = site_graph.svg
 
 # --- Lighthouse ---
 lighthouse_url = https://codefrydev.in
@@ -50,7 +47,7 @@ lighthouse_output_dir = .
 run_lighthouse = true
 # Run on every 200 OK page; results show in Link Explorer inspector
 run_lighthouse_on_pages = true
-lighthouse_max_pages = 20
+lighthouse_max_pages = 2
 
 # --- Keywords (python -m src keywords) ---
 keyword_output_dir = .

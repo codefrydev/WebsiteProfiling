@@ -1,0 +1,25 @@
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4facfe"/>
+      <stop offset="100%" stop-color="#00f2fe"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Circle (search lens) -->
+  <circle cx="50" cy="50" r="30" stroke="url(#grad)" stroke-width="6" fill="none"/>
+
+  <!-- Handle -->
+  <line x1="72" y1="72" x2="100" y2="100" stroke="url(#grad)" stroke-width="6" stroke-linecap="round"/>
+
+  <!-- Growth Arrow -->
+  <polyline points="35,60 50,45 60,55 75,35" 
+            fill="none" 
+            stroke="#333" 
+            stroke-width="4" 
+            stroke-linecap="round" 
+            stroke-linejoin="round"/>
+
+  <!-- Arrow head -->
+  <polygon points="75,35 70,36 74,40" fill="#333"/>
+</svg>

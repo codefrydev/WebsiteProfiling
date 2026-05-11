@@ -1,0 +1,30 @@
+# Git / IDE
+.git
+.gitignore
+.cursor
+.agents
+**/.DS_Store
+
+# Python
+**/__pycache__
+**/*.pyc
+.venv
+venv
+.pytest_cache
+*.egg-info
+.mypy_cache
+
+# Node / Next
+web/node_modules
+web/.next
+UI/node_modules
+UI/dist
+
+# Generated / local data (mounted at runtime)
+report.db
+report.db.*
+*.backup-*
+
+# UI-generated configs
+.website-profiling-ui-*.txt
+.web-pipeline

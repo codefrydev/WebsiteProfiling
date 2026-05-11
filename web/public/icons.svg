@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="seo-icon" viewBox="0 0 20 20">
+  <!-- Magnifying glass -->
+  <circle cx="9" cy="9" r="4.5"
+          fill="none"
+          stroke="#aa3bff"
+          stroke-width="1.35"
+          stroke-linecap="round"
+          stroke-linejoin="round"/>
+
+  <line x1="12.5" y1="12.5" x2="16.5" y2="16.5"
+        stroke="#aa3bff"
+        stroke-width="1.35"
+        stroke-linecap="round"/>
+
+  <!-- Growth graph -->
+  <polyline points="5.5,10.5 7.5,8.5 9,10 12.5,6.5"
+            fill="none"
+            stroke="#aa3bff"
+            stroke-width="1.35"
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
+
+  <!-- Arrow head -->
+  <polyline points="11.5,6.5 12.5,6.5 12.5,7.5"
+            fill="none"
+            stroke="#aa3bff"
+            stroke-width="1.35"
+            stroke-linecap="round"
+            stroke-linejoin="round"/>
+</symbol>
+</svg>
