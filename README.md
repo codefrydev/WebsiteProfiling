@@ -2,13 +2,33 @@
 
 ## Run with Docker
 
-From the **repository root**:
+### Option A: Pull from Docker Hub (no clone required)
+
+Public image: [codefrydev/website-profiling](https://hub.docker.com/r/codefrydev/website-profiling)
+
+```bash
+docker pull codefrydev/website-profiling:latest
+
+docker run -d \
+  --name website-profiling \
+  -p 3088:3088 \
+  -v website-profiling-data:/data \
+  codefrydev/website-profiling:latest
+```
+
+Open **http://localhost:3088/home**.
+
+Data (`report.db`, ML caches) is stored in the `website-profiling-data` volume at `/data`.
+
+### Option B: Build from source
+
+Clone this repo, then from the **repository root**:
 
 ```bash
 docker compose up --build
 ```
 
-Open **http://localhost:3088/home**. 
+Open **http://localhost:3088/home**.
 
 ## Run locally
 
