@@ -1,5 +1,6 @@
 """
-Parse input.txt-style config file (key = value or key: value, # comments, blank lines).
+Parse key=value config files (key = value or key: value, # comments, blank lines).
+Also provides load_config_from_db to read pipeline settings from report.db.
 """
 import os
 
@@ -59,3 +60,23 @@ def get_list(cfg: dict, key: str, sep: str = ",", default: list[str] | None = No
     if raw is None or raw == "":
         return default
     return [s.strip() for s in str(raw).split(sep) if s.strip()]
+
+
+def load_config_from_db(db_path: str) -> dict[str, str]:
+    """
+    Load pipeline config from the pipeline_config table in report.db.
+    Returns a flat {key: value} dict (known keys only; unknown keys are not returned here
+    since cli.py consumes the result the same way it consumes load_config()).
+    Returns an empty dict if db_path does not exist, the table is missing, or the table is empty.
+    """
+    if not os.path.isfile(db_path):
+        return {}
+    try:
+        from .db import db_session, init_schema  # avoid circular at module level
+        with db_session(db_path) as conn:
+            init_schema(conn)
+            from .db.storage import read_pipeline_config
+            known, _unknown = read_pipeline_config(conn)
+            return known
+    except Exception:
+        return {}

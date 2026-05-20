@@ -14,7 +14,7 @@ export function extractHostname(url) {
  * Prefer crawl start URL hostname, else first crawled URL — same idea as Home portfolio cards.
  * @param {object} payload - report JSON
  * @param {Map<number, string> | null | undefined} startUrlByRunId - crawl_run id -> start_url
- * @returns {string} e.g. `codefrydev.in`, or '' if unknown
+ * @returns {string} e.g. `www.example.com`, or '' if unknown
  */
 export function canonicalDomainFromPayload(payload, startUrlByRunId) {
   if (!payload || typeof payload !== 'object') return '';
@@ -44,14 +44,55 @@ export function slugifyDomain(name) {
   return s || '';
 }
 
+/** Strip leading www. for host comparison. */
+function stripWww(host) {
+  const h = (host || '').trim().toLowerCase();
+  return h.startsWith('www.') ? h.slice(4) : h;
+}
+
+/** True when hostnames match exactly or differ only by www. prefix. */
+export function hostsMatch(a, b) {
+  if (!a || !b) return false;
+  const x = String(a).trim().toLowerCase();
+  const y = String(b).trim().toLowerCase();
+  return x === y || stripWww(x) === stripWww(y);
+}
+
+/**
+ * Keep only Lighthouse entries whose URL hostname matches expectedHost.
+ * @param {Record<string, unknown>} byUrl
+ * @param {string} expectedHost
+ */
+export function filterLighthouseByHost(byUrl, expectedHost) {
+  if (!byUrl || !expectedHost) return byUrl || {};
+  const out = {};
+  for (const [url, value] of Object.entries(byUrl)) {
+    if (hostsMatch(extractHostname(url), expectedHost)) {
+      out[url] = value;
+    }
+  }
+  return out;
+}
+
+/** True when global lighthouse_summary belongs to expectedHost (or host unknown). */
+export function lighthouseSummaryMatchesHost(summary, expectedHost) {
+  if (!summary || typeof summary !== 'object') return false;
+  if (!expectedHost) return true;
+  const url = summary.url != null ? String(summary.url) : '';
+  if (!url) return true;
+  return hostsMatch(extractHostname(url), expectedHost);
+}
+
 /** Decode and lowercase for comparison with `canonical_domain` / legacy slugs. */
 export function normalizeDomainQueryParam(param) {
   if (param == null || typeof param !== 'string') return '';
+  let s;
   try {
-    return decodeURIComponent(param.trim()).toLowerCase();
+    s = decodeURIComponent(param.trim()).toLowerCase();
   } catch {
-    return String(param).trim().toLowerCase();
+    s = String(param).trim().toLowerCase();
   }
+  return s.replace(/[,;.\s]+$/g, '');
 }
 
 /**

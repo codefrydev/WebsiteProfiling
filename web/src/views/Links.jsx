@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Bar } from 'react-chartjs-2';
-import { Search, Link as LinkIcon, ArrowLeft, ExternalLink, Link2 } from 'lucide-react';
+import { Search, Link as LinkIcon, ArrowLeft, ExternalLink, Link2, AlertTriangle } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
 import { PageLayout, Card, Badge, Button } from '../components';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
+import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 
 registerChartJsBase();
 import {
@@ -14,10 +15,22 @@ import {
 } from '../utils/linkUtils';
 import { SortTh, RowTooltip, InspectorTabs, CopyBtn } from '../components/links';
 
+function normalizeForCompare(url) {
+  try {
+    const u = new URL(url);
+    return `${u.hostname.replace(/^www\./, '').toLowerCase()}${u.pathname.replace(/\/$/, '') || '/'}`;
+  } catch {
+    return (url || '').toLowerCase().replace(/\/$/, '');
+  }
+}
+
 export default function Links({ searchQuery = '' }) {
   const vl = strings.views.links;
   const sj = strings.common;
   const { data } = useReport();
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const [sortBy, setSortBy] = useState('inlinks');
   const [sortDesc, setSortDesc] = useState(true);
@@ -30,18 +43,47 @@ export default function Links({ searchQuery = '' }) {
   const [wcFilter, setWcFilter] = useState(sj.all);
 
   const [inspectorUrl, setInspectorUrl] = useState(null);
+  const [inspectNotFound, setInspectNotFound] = useState(false);
 
   const [hoveredRow, setHoveredRow] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
   const tableRef = useRef(null);
 
   useEffect(() => {
-    const onKeyDown = (e) => { if (e.key === 'Escape') setInspectorUrl(null); };
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') { setInspectorUrl(null); setInspectNotFound(false); }
+    };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
   const links = useMemo(() => data?.links || [], [data]);
+
+  // Handle ?inspect=<url> deep-link from Traffic/Search Performance
+  useEffect(() => {
+    const inspectParam = searchParams.get('inspect');
+    if (!inspectParam || !links.length) return;
+
+    // Try exact match first, then normalize-equal match
+    const exact = links.find((l) => l.url === inspectParam);
+    const normTarget = normalizeForCompare(inspectParam);
+    const normMatch = exact || links.find((l) => normalizeForCompare(l.url) === normTarget);
+
+    if (normMatch) {
+      setInspectorUrl(normMatch.url);
+      setInspectNotFound(false);
+    } else {
+      setInspectorUrl(null);
+      setInspectNotFound(true);
+    }
+
+    // Clear the inspect param to avoid re-triggering on back navigation
+    const next = new URLSearchParams(searchParams.toString());
+    next.delete('inspect');
+    const q = next.toString();
+    router.replace(q ? `${pathname}?${q}` : pathname);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, links]);
 
   const filtered = useMemo(() => {
     let list = [...links];
@@ -188,6 +230,21 @@ export default function Links({ searchQuery = '' }) {
 
   return (
     <PageLayout className="flex flex-col h-full">
+      {inspectNotFound && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 flex gap-2 mb-4">
+          <AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
+          <p className="text-sm text-amber-800 dark:text-amber-300">
+            {strings.components?.urlGapLists?.notInCrawlBanner || 'This URL was reported by Google but isn\'t in the crawl. Inspector data is limited.'}
+          </p>
+          <button
+            type="button"
+            onClick={() => setInspectNotFound(false)}
+            className="ml-auto text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 text-xs"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       {inspectorUrl == null ? (
         <>
           <div className="mb-6 flex justify-between items-end shrink-0 flex-wrap gap-4">

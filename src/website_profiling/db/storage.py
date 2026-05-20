@@ -114,8 +114,8 @@ def read_historical_data(db_path: str) -> dict[str, list]:
     """Read rows from historical tables in an existing DB before it is overwritten.
 
     Returns a dict mapping table name -> list of row dicts.
-    Tables captured: report_payload, lighthouse_summary, lighthouse_runs, lighthouse_page_summaries,
-    lh_audits, lh_audit_items.
+    Tables captured: report_payload, lighthouse_*, google_data, keyword_data,
+    keyword_history, keyword_suggest_cache, crawl_runs.
     crawl_results / edges / nodes are intentionally excluded (they belong to the new crawl).
     Returns empty lists for all tables when the DB file does not exist.
     """
@@ -126,6 +126,11 @@ def read_historical_data(db_path: str) -> dict[str, list]:
         "lighthouse_page_summaries",
         "lh_audits",
         "lh_audit_items",
+        "google_data",
+        "keyword_data",
+        "keyword_history",
+        "keyword_suggest_cache",
+        "crawl_runs",
     ]
     result: dict[str, list] = {t: [] for t in tables}
     p = Path(db_path)
@@ -222,6 +227,61 @@ def restore_historical_data(conn: sqlite3.Connection, data: dict[str, list]) -> 
         except Exception:
             pass
 
+    for row in data.get("google_data", []):
+        try:
+            conn.execute(
+                "INSERT OR IGNORE INTO google_data (id, fetched_at, data) VALUES (?, ?, ?)",
+                (row.get("id"), row.get("fetched_at"), row.get("data")),
+            )
+        except Exception:
+            pass
+
+    for row in data.get("keyword_data", []):
+        try:
+            conn.execute(
+                "INSERT OR IGNORE INTO keyword_data (id, fetched_at, data) VALUES (?, ?, ?)",
+                (row.get("id"), row.get("fetched_at"), row.get("data")),
+            )
+        except Exception:
+            pass
+
+    for row in data.get("keyword_history", []):
+        try:
+            conn.execute(
+                "INSERT OR IGNORE INTO keyword_history "
+                "(id, keyword, fetched_at, position, clicks, impressions, ctr) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    row.get("id"),
+                    row.get("keyword"),
+                    row.get("fetched_at"),
+                    row.get("position"),
+                    row.get("clicks"),
+                    row.get("impressions"),
+                    row.get("ctr"),
+                ),
+            )
+        except Exception:
+            pass
+
+    for row in data.get("keyword_suggest_cache", []):
+        try:
+            conn.execute(
+                "INSERT OR IGNORE INTO keyword_suggest_cache (cache_key, fetched_at, data) VALUES (?, ?, ?)",
+                (row.get("cache_key"), row.get("fetched_at"), row.get("data")),
+            )
+        except Exception:
+            pass
+
+    for row in data.get("crawl_runs", []):
+        try:
+            conn.execute(
+                "INSERT OR IGNORE INTO crawl_runs (id, created_at, start_url) VALUES (?, ?, ?)",
+                (row.get("id"), row.get("created_at"), row.get("start_url")),
+            )
+        except Exception:
+            pass
+
     conn.commit()
 
 
@@ -290,6 +350,35 @@ def init_schema(conn: sqlite3.Connection) -> None:
             data TEXT NOT NULL
         );
 
+        CREATE TABLE IF NOT EXISTS google_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fetched_at TEXT NOT NULL,
+            data TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS keyword_data (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            fetched_at TEXT NOT NULL,
+            data TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS keyword_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            keyword TEXT NOT NULL,
+            fetched_at TEXT NOT NULL,
+            position REAL,
+            clicks INTEGER,
+            impressions INTEGER,
+            ctr REAL
+        );
+        CREATE INDEX IF NOT EXISTS idx_kw_history_keyword ON keyword_history(keyword);
+
+        CREATE TABLE IF NOT EXISTS keyword_suggest_cache (
+            cache_key TEXT PRIMARY KEY,
+            fetched_at TEXT NOT NULL,
+            data TEXT NOT NULL
+        );
+
         CREATE TABLE IF NOT EXISTS lh_audits (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             run_id INTEGER NOT NULL,
@@ -319,8 +408,70 @@ def init_schema(conn: sqlite3.Connection) -> None:
             FOREIGN KEY (audit_row_id) REFERENCES lh_audits(id)
         );
         CREATE INDEX IF NOT EXISTS idx_lh_audit_items_audit_row ON lh_audit_items(audit_row_id);
+
+        CREATE TABLE IF NOT EXISTS pipeline_config (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            is_unknown INTEGER NOT NULL DEFAULT 0,
+            updated_at TEXT NOT NULL
+        );
     """)
     conn.commit()
+
+
+def read_pipeline_config(conn: sqlite3.Connection) -> tuple[dict[str, str], list[dict[str, str]]]:
+    """
+    Return (known_entries, unknown_entries) from the pipeline_config table.
+    known_entries: {key: value} for is_unknown=0 rows.
+    unknown_entries: [{key, value}] for is_unknown=1 rows.
+    Returns ({}, []) if the table is empty or an error occurs.
+    """
+    try:
+        cur = conn.execute("SELECT key, value, is_unknown FROM pipeline_config ORDER BY key")
+        rows = cur.fetchall()
+        known: dict[str, str] = {}
+        unknown: list[dict[str, str]] = []
+        for row in rows:
+            k, v, is_unk = str(row["key"]), str(row["value"]), int(row["is_unknown"] or 0)
+            if is_unk:
+                unknown.append({"key": k, "value": v})
+            else:
+                known[k] = v
+        return known, unknown
+    except Exception:
+        return {}, []
+
+
+def write_pipeline_config(
+    conn: sqlite3.Connection,
+    entries: dict[str, str],
+    unknown_keys: list[dict[str, str]] | None = None,
+) -> None:
+    """
+    Atomically replace all pipeline_config rows with the provided entries.
+    entries: {key: value} — known schema keys (is_unknown=0).
+    unknown_keys: [{key, value}] — preserved verbatim (is_unknown=1).
+    """
+    now = time.strftime("%Y-%m-%d %H:%M:%S")
+    if unknown_keys is None:
+        unknown_keys = []
+    conn.execute("BEGIN")
+    try:
+        conn.execute("DELETE FROM pipeline_config")
+        for k, v in entries.items():
+            conn.execute(
+                "INSERT INTO pipeline_config (key, value, is_unknown, updated_at) VALUES (?, ?, 0, ?)",
+                (str(k), str(v), now),
+            )
+        for item in unknown_keys:
+            conn.execute(
+                "INSERT OR REPLACE INTO pipeline_config (key, value, is_unknown, updated_at) VALUES (?, ?, 1, ?)",
+                (str(item["key"]), str(item.get("value", "")), now),
+            )
+        conn.execute("COMMIT")
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
 
 
 def _crawl_results_has_run_id(conn: sqlite3.Connection) -> bool:

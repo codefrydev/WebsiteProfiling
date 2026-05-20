@@ -14,6 +14,9 @@ const VIEW_IDS = new Set([
   'charts',
   'network',
   'gallery',
+  'search-performance',
+  'traffic',
+  'keywords-explorer',
 ]);
 
 /**

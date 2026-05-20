@@ -107,7 +107,7 @@ export default function Content({ searchQuery = '' }) {
       {data.content_duplicates?.length > 0 && (
         <Card shadow>
           <div className="flex items-center gap-2 mb-3">
-            <Copy className="h-4 w-4 text-violet-400" />
+            <Copy className="h-4 w-4 text-violet-700 dark:text-violet-400" />
             <h2 className="text-sm font-bold text-foreground">{vc.dupClusters}</h2>
           </div>
           <div className="max-h-72 overflow-y-auto rounded-lg border border-muted">
@@ -122,7 +122,7 @@ export default function Content({ searchQuery = '' }) {
               <TableBody striped>
                 {(data.content_duplicates || []).slice(0, 40).map((g) => (
                   <TableRow key={g.id}>
-                    <TableCell className="font-mono text-xs text-violet-300">{g.id}</TableCell>
+                    <TableCell className="font-mono text-xs text-violet-800 dark:text-violet-300">{g.id}</TableCell>
                     <TableCell className="max-w-md">
                       <a
                         href={g.representative_url}
@@ -203,7 +203,7 @@ export default function Content({ searchQuery = '' }) {
                 isActive
                   ? 'bg-blue-500/20 text-link border-blue-500/30'
                   : hasIssues
-                  ? 'border-amber-700/50 bg-amber-500/10 text-amber-300 hover:border-amber-600/60'
+                  ? 'border-amber-700/50 bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:border-amber-600/60'
                   : 'border-default bg-brand-800 text-muted-foreground hover:border-brand-700/80'
               }`}
             >

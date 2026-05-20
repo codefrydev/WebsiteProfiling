@@ -1,0 +1,112 @@
+# Reference only — not loaded automatically. Use the web UI (Pipeline runner) to
+# save settings to report.db, or pass --config this-file for a one-off CLI run.
+# WebsiteProfiling config (key = value). Comment lines start with #.
+
+# --- Crawl ---
+start_url = 
+max_pages = 20
+concurrency = 8
+timeout = 12
+max_depth = 6
+polite_delay = 0.2
+ignore_robots = false
+allow_external = false
+store_outlinks = true
+# Optional: store truncated body text for ML / UI (larger DB & report JSON)
+store_content_excerpt = true
+content_excerpt_max_chars = 4096
+
+sqlite_db = report.db
+# true = append crawl runs; false = replace crawl tables but keep reports, Google, keyword history, and crawl_runs metadata
+preserve_crawl_history = true
+# enrich_keywords_after_report = true  # optional; when omitted, follows enable_google_search_console
+crawl_output = crawl_results.json
+# --- Report ---
+# Optional: cap outbound-domain table rows in report JSON; keyword opportunities on by default
+outbound_domain_max_rows = 200
+include_keyword_opportunities = true
+
+crawl_csv = crawl_results.json
+edges_csv = edges.json
+nodes_csv = nodes.json
+site_name = 
+report_title = SEO report
+max_fetch_for_edges = 300
+same_domain_only = true
+max_nodes_plot = 400
+
+run_security_scan = true
+security_scan_active = false
+security_max_urls_probe = 20
+
+# --- Lighthouse ---
+lighthouse_url = 
+lighthouse_mode = navigation
+lighthouse_strategy = desktop
+lighthouse_categories = performance,accessibility,best-practices,seo
+lighthouse_iterations = 1
+lighthouse_output_dir = .
+
+run_lighthouse = true
+# Run on every 200 OK page; results show in Link Explorer inspector
+run_lighthouse_on_pages = true
+lighthouse_max_pages = 2
+
+# --- Keywords (python -m src keywords) ---
+keyword_output_dir = .
+keyword_max_pages = 200
+
+# --- Optional ML (pip install -r requirements-ml.txt) ---
+# Merged into report when run_report runs; re-run ML only: python -m src enrich
+enable_duplicate_detection = true
+enable_anomaly_urls = true
+enable_language_detection = true
+enable_ner_spacy = true
+enable_semantic_similar_internal = true
+enable_semantic_keywords = true
+
+ml_sentence_model = all-MiniLM-L6-v2
+ml_max_pages_st = 400
+ml_similar_top_k = 5
+ml_fuzzy_threshold = 92
+ml_simhash_hamming = 0
+ml_dup_max_pages = 2000
+ml_ner_max_pages = 80
+ml_semantic_keyword_max = 200
+ml_keyword_cluster_sim = 75
+# Fuzzy duplicate merge must also exceed this embedding cosine (0–100) when enabled
+enable_embedding_duplicate_refine = true
+ml_dup_embed_min_pct = 88
+# KeyBERT phrases per page (uses sentence-transformers model)
+enable_keybert = true
+ml_keybert_max_pages = 60
+ml_keybert_top_n = 8
+# Progress bars for long ST.encode runs
+ml_verbose = true
+
+# --- Pipeline (python -m src) ---
+run_crawl = true
+run_report = true
+run_plot = true
+
+# --- Google Search Console + GA4 (python -m src google) ---
+# Credentials (gscSiteUrl, ga4PropertyId, client secret) are stored in .secrets/google.json
+# via the Integrations panel (gear icon in the UI). Never put secrets in this file.
+enable_google_search_console = false
+enable_google_analytics = false
+google_date_range_days = 28
+google_credentials_path = .secrets/google.json
+
+# --- Keywords Explorer (python -m src keywords --enrich-google) ---
+# All optional; off by default. Enable incrementally.
+enable_google_suggest = false
+enable_google_trends = false
+enable_wikipedia_topic = false
+enable_datamuse = false
+keyword_suggest_top_n = 20
+keyword_max_suggest_results = 8
+keyword_gsc_max_rows = 25000
+# Comma-separated seed keywords to always expand (optional)
+keyword_seeds =
+# Used to classify branded vs non-branded keywords
+brand_name =

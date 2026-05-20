@@ -60,7 +60,6 @@ RUN --mount=type=cache,target=/root/.npm \
 # Application source
 COPY src /app/src
 COPY web /app/web
-COPY input.txt /app/input.txt
 
 RUN cd /app/web && npm run build && npm prune --omit=dev
 
@@ -69,7 +68,7 @@ ENV NODE_ENV=production
 # Persisted DB directory (bind mount or volume in compose)
 RUN mkdir -p /data
 
-EXPOSE 3088
+EXPOSE 3000
 
 # Listen on all interfaces so the container is reachable from the host
-CMD ["sh", "-c", "cd /app/web && npm run start -- -H 0.0.0.0 -p 3088"]
+CMD ["sh", "-c", "cd /app/web && npm run start -- -H 0.0.0.0 -p 3000"]

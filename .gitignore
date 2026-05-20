@@ -1,4 +1,4 @@
-# Project (root) only. Python: src/.gitignore. React: UI/.gitignore
+# Project (root) only. Python: src/.gitignore. Next.js: web/.gitignore
 
 # Next.js UI: generated pipeline configs from the runner modal (repo root; must match Python cwd for paths)
 .website-profiling-ui-*.txt
@@ -12,5 +12,9 @@ report.db.*
 report.db-journal
 nodes.json
 
-# Optional: uncomment if input.txt has secrets
-# input.txt
+# Google integration secrets (never commit)
+.secrets/
+web/.env.local
+
+# Legacy local config file (use report.db / web UI instead)
+input.txt

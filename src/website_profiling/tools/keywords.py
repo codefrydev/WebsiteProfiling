@@ -298,6 +298,30 @@ def run_keyword_pipeline(
     ]
     human_summary = " ".join(summary_lines)
 
+    # Write scored keywords to keyword_data SQLite table (for Google enrichment merge)
+    if db_path := (config or {}).get("_db_path"):
+        try:
+            import sqlite3 as _sqlite
+            from ..db.storage import db_session as _db, init_schema as _init
+            from ..integrations.google.keyword_store import write_keyword_data, ensure_tables
+
+            rows_for_db = [
+                {**r, "sources": ["site"]}
+                for r in scored
+            ]
+            blob = {
+                "fetched_at": ts,
+                "total_keywords": len(rows_for_db),
+                "rows": rows_for_db,
+                "source": "site",
+            }
+            with _db(db_path) as conn:
+                _init(conn)
+                ensure_tables(conn)
+                write_keyword_data(conn, blob)
+        except Exception as e:
+            print(f"  Warning: could not write keyword_data to SQLite: {e}", file=sys.stderr)
+
     return {
         "top_keywords_path": top_path,
         "clusters_path": clusters_path,

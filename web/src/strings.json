@@ -2,14 +2,15 @@
   "app": {
     "loading": "Loading report data...",
     "failedTitle": "Failed to load report",
-    "failedHint": "Run the report from the project root so report.db is copied to UI/public, then refresh. Or copy report.db to UI/public/report.db manually.",
+    "failedHint": "Run the pipeline from the project root (python -m src) so report.db exists, save settings in the Pipeline runner UI, then refresh. In Docker, report.db is on the /data volume (REPORT_DB_PATH).",
     "defaultSiteName": "Site",
     "crawlCompleted": "Crawl completed",
     "crawlCompletedSeconds": "Crawl completed in {seconds}s",
-    "productSubtitle": "Audit",
+    "productName": "Profiling",
+    "productSubtitle": "Website Insights",
     "ariaCloseMenu": "Close menu",
     "ariaOpenMenu": "Open menu",
-    "githubLinkLabel": "codefrydev.in",
+    "viewSiteLabel": "View site",
     "searchPlaceholder": "Search URLs, issues...",
     "themeLight": "Light theme",
     "themeDark": "Dark theme",
@@ -72,6 +73,18 @@
     "gallery": {
       "label": "Gallery",
       "section": "Visualizations"
+    },
+    "search-performance": {
+      "label": "Search Performance",
+      "section": "Google Data"
+    },
+    "traffic": {
+      "label": "Traffic & Engagement",
+      "section": "Google Data"
+    },
+    "keywords-explorer": {
+      "label": "Keywords Explorer",
+      "section": "Google Data"
     }
   },
   "reportSelector": {
@@ -79,7 +92,8 @@
     "compareLabel": "Compare:",
     "latestOption": "Latest",
     "noneOption": "None",
-    "titleReportHistory": "Run more reports with preserve_crawl_history to see history here",
+    "titleReportHistory": "Run the full pipeline with Run report enabled (not crawl-only) to add report snapshots here",
+    "crawlOnlyNote": "Crawl only — run the full pipeline or the report command to add a new report snapshot.",
     "titleLoadReport": "Load a previous report",
     "titleCompareBaseline": "Baseline report for URL fingerprint diff (new / removed / changed pages)"
   },
@@ -200,31 +214,31 @@
       {
         "id": "CLS",
         "label": "CLS",
-        "color": "text-purple-400",
+        "color": "text-purple-700 dark:text-purple-400",
         "border": "border-purple-700/40"
       },
       {
         "id": "TBT",
         "label": "TBT / FID",
-        "color": "text-yellow-400",
+        "color": "text-yellow-800 dark:text-yellow-400",
         "border": "border-yellow-700/40"
       },
       {
         "id": "Accessibility",
         "label": "Accessibility",
-        "color": "text-teal-400",
+        "color": "text-teal-700 dark:text-teal-400",
         "border": "border-teal-700/40"
       },
       {
         "id": "SEO",
         "label": "SEO",
-        "color": "text-green-400",
+        "color": "text-green-700 dark:text-green-400",
         "border": "border-green-700/40"
       },
       {
         "id": "UX",
         "label": "Best Practices / UX",
-        "color": "text-orange-400",
+        "color": "text-orange-700 dark:text-orange-400",
         "border": "border-orange-700/40"
       }
     ],
@@ -730,6 +744,307 @@
       "noDiagnosticsSearch": "No diagnostics match your search.",
       "defaultFix": "See Lighthouse report for fix."
     },
+    "searchPerformance": {
+      "title": "Search Performance",
+      "subtitle": "Google Search Console queries, pages, and crawl alignment for {range}",
+      "subtitleNoRange": "Google Search Console queries, pages, and crawl alignment",
+      "fetchedAt": "Fetched {date}",
+      "emptyTitle": "No Search Console data yet",
+      "emptyBody": "Connect your Google account to see real search queries, impressions, and click data from Google Search Console.",
+      "emptyIntegrationsHint": "Open Integrations (gear icon in the top-right header) to connect Google Search Console.",
+      "tabs": {
+        "overview": "Overview",
+        "queries": "Queries",
+        "pages": "Pages",
+        "opportunities": "Opportunities",
+        "coverage": "Coverage"
+      },
+      "kpi": {
+        "clicks": "Total Clicks",
+        "impressions": "Impressions",
+        "ctr": "Avg. CTR",
+        "position": "Avg. Position"
+      },
+      "urlJoin": {
+        "matched": "Matched pages",
+        "matchedSub": "In both crawl + Google",
+        "crawlOnly": "Crawl only",
+        "crawlOnlySub": "Not in GSC/GA4",
+        "gscOnly": "GSC only",
+        "gscOnlySub": "Not in crawl",
+        "ga4Only": "GA4 only",
+        "ga4OnlySub": "Not in crawl"
+      },
+      "charts": {
+        "topQueriesTitle": "Top queries by clicks",
+        "topQueriesHint": "Top 10 search terms in the selected date range",
+        "topQueriesAria": "Bar chart: top queries by clicks",
+        "topPagesTitle": "Top pages by clicks",
+        "topPagesHint": "Top 10 landing pages in Search Console",
+        "topPagesAria": "Bar chart: top pages by clicks",
+        "positionTitle": "Query position distribution",
+        "positionHint": "How many queries rank in each average-position band",
+        "positionAria": "Bar chart: query count by average position band",
+        "positionBuckets": ["Pos 1–3", "Pos 4–10", "Pos 11–20", "Pos 21+"],
+        "coverageTitle": "URL coverage",
+        "coverageHint": "Overlap between crawl URLs and Google properties",
+        "coverageAria": "Doughnut chart: crawl vs GSC vs GA4 URL overlap",
+        "scatterTitle": "Impressions vs CTR",
+        "scatterHint": "Queries with high impressions but low CTR are prime title/meta targets",
+        "scatterAria": "Scatter chart: impressions versus CTR percent",
+        "dailyTitle": "Daily clicks & impressions",
+        "dailyHint": "Clicks (right axis) and impressions (left axis) over the selected date range",
+        "dailyAria": "Line chart: daily clicks and impressions from Search Console",
+        "axisClicks": "Clicks",
+        "axisImpressions": "Impressions",
+        "axisCtr": "CTR %",
+        "axisQueries": "Queries"
+      },
+      "insights": {
+        "topQuery": "Top query \"{query}\" drove {clicks} clicks ({impressions} impressions).",
+        "lowCtr": "{count} queries have 50+ impressions but under 3% CTR — review titles and meta descriptions.",
+        "gscOnly": "{count} page(s) rank in Search Console but were not found in the crawl (canonical, subdomain, or blocking)."
+      },
+      "queries": {
+        "title": "Top queries",
+        "searchPlaceholder": "Search queries…",
+        "exportCsv": "Export CSV"
+      },
+      "pages": {
+        "title": "Top pages",
+        "searchPlaceholder": "Search page URLs…",
+        "exportCsv": "Export CSV"
+      },
+      "opportunities": {
+        "title": "CTR opportunities",
+        "description": "Queries with 50+ impressions but under 3% CTR — improve title and meta description to increase clicks.",
+        "exportCsv": "Export CSV"
+      },
+      "coverage": {
+        "title": "Crawl vs Search Console",
+        "description": "Compares normalized URLs from your crawl with GSC pages and GA4 paths.",
+        "noData": "URL join stats are not available. Run a crawl with Google Search Console (and optionally GA4) enabled.",
+        "urlListNote": "Re-run the Google fetch (python -m src google) to populate URL gap lists."
+      },
+      "table": {
+        "query": "Query",
+        "page": "Page",
+        "clicks": "Clicks",
+        "impressions": "Impressions",
+        "ctr": "CTR %",
+        "position": "Avg. Position",
+        "noData": "No data for this view",
+        "showingSlice": "Showing {from}–{to} of {total}",
+        "pageOf": "Page",
+        "of": "of",
+        "previous": "Previous",
+        "next": "Next",
+        "rowsPerPage": "{n} per page"
+      },
+      "connectIntegrations": "Connect Google"
+    },
+    "traffic": {
+      "title": "Traffic & Engagement",
+      "subtitle": "Google Analytics 4 sessions and engagement for {range}",
+      "subtitleNoRange": "Google Analytics 4 sessions and engagement",
+      "subtitleProperty": "Property {id}",
+      "fetchedAt": "Fetched {date}",
+      "emptyTitle": "No GA4 data yet",
+      "emptyBody": "Connect your Google account to see real sessions, users, and page view data from Google Analytics 4.",
+      "emptyIntegrationsHint": "Open Integrations (gear icon in the top-right header) to connect GA4.",
+      "notConfigured": "GA4 data not configured. Open Integrations to set your Analytics property ID.",
+      "tabs": {
+        "overview": "Overview",
+        "pages": "Pages",
+        "engagement": "Engagement",
+        "coverage": "Coverage"
+      },
+      "kpi": {
+        "sessions": "Sessions",
+        "users": "Active Users",
+        "pageViews": "Page Views"
+      },
+      "urlJoin": {
+        "matched": "Matched pages",
+        "matchedSub": "In both crawl + Google",
+        "crawlOnly": "Crawl only",
+        "crawlOnlySub": "Not in GSC/GA4",
+        "gscOnly": "GSC only",
+        "gscOnlySub": "Not in crawl",
+        "ga4Only": "GA4 only",
+        "ga4OnlySub": "Not in crawl"
+      },
+      "charts": {
+        "topPagesTitle": "Top pages by sessions",
+        "topPagesHint": "Top 10 page paths in the selected date range",
+        "topPagesAria": "Bar chart: top pages by sessions",
+        "engagementTitle": "Engagement rate distribution",
+        "engagementHint": "How many pages fall in each engagement-rate band",
+        "engagementAria": "Bar chart: page count by engagement rate band",
+        "engagementBuckets": ["0–25%", "25–50%", "50–75%", "75–100%"],
+        "scatterTitle": "Sessions vs engagement rate",
+        "scatterHint": "High-traffic pages with low engagement may need better content or UX",
+        "scatterAria": "Scatter chart: sessions versus engagement rate percent",
+        "axisSessions": "Sessions",
+        "axisEngagement": "Engagement %",
+        "axisPages": "Pages",
+        "dailyTitle": "Daily sessions",
+        "dailyHint": "Sessions per day over the selected date range",
+        "dailyAria": "Line chart: daily sessions from GA4",
+        "channelTitle": "Sessions by channel",
+        "channelHint": "Traffic source breakdown (organic, direct, referral, etc.)",
+        "channelAria": "Doughnut chart: sessions by default channel group",
+        "deviceTitle": "Sessions by device",
+        "deviceHint": "Device category breakdown (desktop, mobile, tablet)",
+        "deviceAria": "Doughnut chart: sessions by device category"
+      },
+      "insights": {
+        "topPage": "Top path \"{path}\" — {sessions} sessions, {engagement}% engagement.",
+        "lowEngagement": "{count} pages have 50+ sessions but under 50% engagement — review content and UX.",
+        "ga4Only": "{count} page path(s) in GA4 were not found in the crawl."
+      },
+      "pages": {
+        "searchPlaceholder": "Search page paths…",
+        "exportCsv": "Export CSV"
+      },
+      "engagement": {
+        "description": "Pages with 50+ sessions and under 50% engagement rate — prioritize content and layout improvements.",
+        "exportCsv": "Export CSV"
+      },
+      "coverage": {
+        "title": "Crawl vs Google Analytics",
+        "description": "Compares normalized URLs from your crawl with GA4 paths and Search Console pages.",
+        "noData": "URL join stats are not available. Run a crawl with GA4 (and optionally Search Console) enabled.",
+        "urlListNote": "Re-run the Google fetch (python -m src google) to populate URL gap lists."
+      },
+      "table": {
+        "path": "Page path",
+        "sessions": "Sessions",
+        "users": "Users",
+        "pageViews": "Page Views",
+        "engagement": "Engagement",
+        "avgDuration": "Avg. duration",
+        "noData": "No data for this view",
+        "showingSlice": "Showing {from}–{to} of {total}",
+        "pageOf": "Page",
+        "of": "of",
+        "previous": "Previous",
+        "next": "Next",
+        "rowsPerPage": "{n} per page"
+      }
+    },
+    "keywordsExplorer": {
+      "title": "Keywords Explorer",
+      "subtitle": "Keyword opportunities from crawl, GSC, and expansion sources",
+      "subtitleWithDate": "Enriched {date}",
+      "emptyTitle": "No keyword data yet",
+      "emptyBody": "Run the keywords pipeline, then enrich with Google Search Console for real rankings and opportunity scores.",
+      "emptyHint": "python -m src keywords  then  python -m src keywords --enrich-google",
+      "connectGoogle": "Connect Google",
+      "expandSeeds": "Expand seeds",
+      "exportCsv": "Export CSV",
+      "brandScopeBanner": "Questions and Opportunities are filtered to keywords related to your brand ({brand}). Turn off “Brand-related only” to see all expansion suggestions.",
+      "brandScopeToggle": "Brand-related only",
+      "gscBanner": "Position, clicks, impressions, and CTR come from Google Search Console. KD, +Clicks@#3, and Lost Clicks use CTR models on GSC data.",
+      "noGscBanner": "No GSC in this report. Run python -m src google then python -m src keywords --enrich-google for real rankings.",
+      "connectBanner": "Connect Google Search Console to enrich keywords with real position, impressions, and CTR.",
+      "tabs": {
+        "overview": "Overview",
+        "all": "All keywords",
+        "questions": "Questions",
+        "quickwins": "Quick wins",
+        "lostclicks": "Lost clicks",
+        "opportunities": "Opportunities",
+        "cannib": "Cannibalisation",
+        "bypage": "By page"
+      },
+      "kpi": {
+        "total": "Total keywords",
+        "totalSub": "from {n} sources",
+        "gsc": "GSC keywords",
+        "gscSub": "real ranking data",
+        "quickWins": "Quick wins",
+        "quickWinsSub": "position 4–20, high opportunity",
+        "cannib": "Cannibalisation",
+        "cannibSub": "queries on multiple pages"
+      },
+      "charts": {
+        "intentTitle": "Intent mix",
+        "intentHint": "Share of keywords by search intent",
+        "intentAria": "Bar chart: keyword count by intent",
+        "sourceTitle": "Source mix",
+        "sourceHint": "Where keywords were discovered",
+        "sourceAria": "Doughnut chart: keywords by data source"
+      },
+      "insights": {
+        "title": "Insights",
+        "topOpportunity": "Top opportunity: \"{keyword}\" — +{clicks} est. clicks if moved to position 3.",
+        "quickWins": "{count} quick-win keywords in positions 4–20.",
+        "lostClicks": "{count} keywords lost clicks vs. prior period.",
+        "cannib": "{count} cannibalisation issues — same query ranking on multiple URLs.",
+        "noGsc": "Connect GSC to unlock position history and CTR-based opportunity scores."
+      },
+      "filters": {
+        "searchPlaceholder": "Search keywords…",
+        "allIntents": "All intents",
+        "allBranded": "All (branded + non-branded)",
+        "brandedOnly": "Branded only",
+        "nonBranded": "Non-branded only",
+        "allSources": "All sources",
+        "clear": "Clear filters",
+        "count": "{count} keywords"
+      },
+      "table": {
+        "keyword": "Keyword",
+        "sources": "Sources",
+        "intent": "Intent",
+        "parentTopic": "Parent topic",
+        "kd": "KD (est.)",
+        "position": "Position",
+        "impressions": "Impr.",
+        "clicks": "Clicks",
+        "ctr": "CTR (GSC)",
+        "trafficPotential": "Impr. potential",
+        "opportunityClicks": "+Clicks@#3 (est.)",
+        "trend": "Trend",
+        "action": "Action",
+        "brand": "brand",
+        "question": "Q",
+        "noData": "No keywords in this view",
+        "showingSlice": "Showing {from}–{to} of {total}",
+        "pageOf": "Page",
+        "of": "of",
+        "previous": "Previous",
+        "next": "Next",
+        "rowsPerPage": "{n} per page"
+      },
+      "cannib": {
+        "empty": "No cannibalisation detected. Each keyword appears to rank from a unique page.",
+        "intro": "{count} keyword(s) rank from multiple pages. Consolidate content or add canonical tags.",
+        "clicks": "{n} clicks"
+      },
+      "byPage": {
+        "empty": "No page-level GSC data. Run keywords with Google connected.",
+        "selectPage": "Select a page to view its keywords",
+        "loading": "Loading…",
+        "keywordCount": "{count} keywords for this page",
+        "cannibWarning": "{count} cannibalisation issue(s) on this page",
+        "sidebarKw": "{kw} kw · {impr} impr."
+      },
+      "seeds": {
+        "title": "Bulk seed expansion",
+        "hint": "Paste keywords (one per line) for a live Google Suggest preview before running full enrichment.",
+        "placeholder": "seo audit\nsite speed\nkeyword research",
+        "expand": "Expand from these seeds",
+        "expanding": "Expanding…",
+        "noResults": "No results"
+      },
+      "footer": {
+        "lastEnrichment": "Last enrichment: {date}",
+        "suggestCount": " · {n} from Google Suggest",
+        "cannibCount": " · {n} cannibalisation issues"
+      }
+    },
     "overview": {
       "mlErrors": "ML enrichment reported {count} error{plural}",
       "dashboard": "Dashboard",
@@ -1041,6 +1356,22 @@
     }
   },
   "components": {
+    "urlGapLists": {
+      "gscOnly": "GSC only",
+      "ga4Only": "GA4 only",
+      "crawlOnly": "Crawl only",
+      "columnUrl": "URL",
+      "columnImpressions": "Impressions",
+      "columnClicks": "Clicks",
+      "columnSessions": "Sessions",
+      "openInLinks": "Open in Link Explorer",
+      "searchPlaceholder": "Search URLs…",
+      "exportCsv": "Export CSV",
+      "truncatedHint": "Showing top {limit} of {total} URLs.",
+      "noResults": "No URLs match your search.",
+      "noData": "No URLs in this category.",
+      "notInCrawlBanner": "This URL was reported by Google but isn't in the crawl. Inspector data is limited."
+    },
     "inspectorTabs": {
       "overview": "Overview",
       "pageAnalysis": "Page analysis",

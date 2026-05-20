@@ -116,6 +116,61 @@ function listReportsFromDatabaseFallback(db, startUrlByRunId) {
 }
 
 /**
+ * Latest google_data row, payload-safe (no gsc_full / ga4_full blobs).
+ * @param {import('sql.js').Database} db
+ * @returns {object | null}
+ */
+export function readLatestGooglePayload(db) {
+  try {
+    const res = db.exec('SELECT data FROM google_data ORDER BY id DESC LIMIT 1');
+    if (!res.length || !res[0].values.length) return null;
+    const raw = JSON.parse(String(res[0].values[0][0] ?? '{}'));
+    if (!raw || typeof raw !== 'object') return null;
+    const { gsc_full: _gscFull, ga4_full: _ga4Full, ...payload } = raw;
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Latest keyword_data snapshot for report payload merge.
+ * @param {import('sql.js').Database} db
+ * @returns {object | null}
+ */
+export function readLatestKeywordPayload(db) {
+  try {
+    const res = db.exec('SELECT data FROM keyword_data ORDER BY id DESC LIMIT 1');
+    if (!res.length || !res[0].values.length) return null;
+    const raw = JSON.parse(String(res[0].values[0][0] ?? '{}'));
+    if (!raw || typeof raw !== 'object') return null;
+    const rows = Array.isArray(raw.rows) ? raw.rows : [];
+    if (rows.length > 1000) {
+      return { ...raw, rows: rows.slice(0, 1000) };
+    }
+    return raw;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Overlay latest sidecar tables onto a report payload (google fetch / keywords
+ * update the dedicated tables without rebuilding report_payload).
+ * @param {import('sql.js').Database} db
+ * @param {object} payload
+ * @returns {object}
+ */
+export function mergeSidecarPayloadData(db, payload) {
+  const merged = { ...payload };
+  const google = readLatestGooglePayload(db);
+  if (google) merged.google = google;
+  const keywords = readLatestKeywordPayload(db);
+  if (keywords) merged.keywords = keywords;
+  return merged;
+}
+
+/**
  * @param {import('sql.js').Database} db
  * @param {number|null} reportId
  * @returns {object}
@@ -134,5 +189,6 @@ export function readReportPayloadFromDatabase(db, reportId = null) {
   if (dataJson == null) {
     throw new Error(reportId != null ? 'Report not found' : 'No report_payload in DB');
   }
-  return JSON.parse(dataJson);
+  const payload = JSON.parse(dataJson);
+  return mergeSidecarPayloadData(db, payload);
 }

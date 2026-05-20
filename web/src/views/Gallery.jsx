@@ -404,7 +404,7 @@ export default function Gallery({ searchQuery = '' }) {
                   type="button"
                   title={vg.titleLayoutGrid}
                   onClick={() => setLayoutMode('grid')}
-                  className={`p-2 ${layoutMode === 'grid' ? 'bg-violet-500/20 text-violet-300' : 'text-muted-foreground hover:bg-brand-800'}`}
+                  className={`p-2 ${layoutMode === 'grid' ? 'bg-violet-500/20 text-violet-700 dark:text-violet-300' : 'text-muted-foreground hover:bg-brand-800'}`}
                 >
                   <LayoutGrid className="h-4 w-4" />
                 </button>
@@ -412,7 +412,7 @@ export default function Gallery({ searchQuery = '' }) {
                   type="button"
                   title={vg.titleLayoutMasonry}
                   onClick={() => setLayoutMode('masonry')}
-                  className={`p-2 border-l border-default ${layoutMode === 'masonry' ? 'bg-violet-500/20 text-violet-300' : 'text-muted-foreground hover:bg-brand-800'}`}
+                  className={`p-2 border-l border-default ${layoutMode === 'masonry' ? 'bg-violet-500/20 text-violet-700 dark:text-violet-300' : 'text-muted-foreground hover:bg-brand-800'}`}
                 >
                   <Columns className="h-4 w-4" />
                 </button>

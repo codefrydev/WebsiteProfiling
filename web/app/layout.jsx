@@ -11,8 +11,8 @@ const dmSans = DM_Sans({
 });
 
 export const metadata = {
-  title: 'SEO Deep Analysis Platform | Enterprise Edition',
-  description: 'Website profiling and crawl reports',
+  title: 'Website Profiling',
+  description: 'Website crawl and SEO audit reports',
   icons: { icon: '/favicon.svg' },
 };
 

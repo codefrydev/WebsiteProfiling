@@ -3,16 +3,82 @@ CLI: read config file and run crawl, report, or plot.
 """
 import argparse
 import os
-import shutil
 import sys
 
 import pandas as pd
 
-from .config import get_bool, get_float, get_int, get_list, load_config
+from .config import get_bool, get_float, get_int, get_list, load_config, load_config_from_db
 
 
-def _config_path(default_name: str = "input.txt") -> str:
-    return os.path.join(os.getcwd(), default_name)
+def _default_db_path() -> str:
+    """report.db path: REPORT_DB_PATH env, else report.db in cwd."""
+    env = (os.environ.get("REPORT_DB_PATH") or "").strip()
+    if env:
+        return os.path.abspath(env)
+    return os.path.abspath(os.path.join(os.getcwd(), "report.db"))
+
+
+def _shadow_config_path(db_path: str) -> str:
+    return os.path.join(os.path.dirname(db_path) or os.getcwd(), "pipeline-config.txt")
+
+
+def _google_db_has_gsc(db_path: str) -> bool:
+    """True when the latest google_data row contains usable Search Console query data."""
+    import json
+
+    from .db import db_session, init_schema
+
+    try:
+        with db_session(db_path) as conn:
+            init_schema(conn)
+            cur = conn.execute("SELECT data FROM google_data ORDER BY id DESC LIMIT 1")
+            row = cur.fetchone()
+            if not row:
+                return False
+            data = json.loads(row[0])
+            gsc = data.get("gsc_full") or {}
+            return bool(gsc.get("top_queries") or gsc.get("by_page"))
+    except Exception:
+        return False
+
+
+def _should_enrich_keywords_after_report(cfg: dict) -> bool:
+    """Default follows enable_google_search_console when enrich_keywords_after_report is omitted."""
+    if "enrich_keywords_after_report" in cfg:
+        return get_bool(cfg, "enrich_keywords_after_report", False)
+    return get_bool(cfg, "enable_google_search_console", False)
+
+
+def _resolved_start_url(cfg: dict) -> str:
+    return (cfg.get("start_url") or "").strip()
+
+
+def _resolved_lighthouse_url(cfg: dict) -> str:
+    return (cfg.get("lighthouse_url") or "").strip() or _resolved_start_url(cfg)
+
+
+def _require_start_url(cfg: dict, *, for_step: str) -> str:
+    url = _resolved_start_url(cfg)
+    if not url:
+        print(
+            f"Error: start_url is required for {for_step}. "
+            "Set it in the Pipeline runner UI (Start URL) or pipeline-config.txt.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return url
+
+
+def _require_lighthouse_url(cfg: dict) -> str:
+    url = _resolved_lighthouse_url(cfg)
+    if not url:
+        print(
+            "Error: lighthouse_url or start_url is required for Lighthouse. "
+            "Set Start URL in the Pipeline runner UI.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+    return url
 
 
 def main() -> None:
@@ -22,25 +88,78 @@ def main() -> None:
     parser.add_argument(
         "--config",
         "-c",
-        default=_config_path(),
-        help="Path to input config file (default: input.txt in current directory)",
+        default=None,
+        help="Optional key=value config file (default: pipeline_config in report.db)",
     )
     parser.add_argument(
         "command",
         nargs="?",
-        choices=["crawl", "report", "plot", "lighthouse", "keywords", "warnings", "enrich"],
+        choices=["crawl", "report", "plot", "lighthouse", "keywords", "warnings", "enrich", "google"],
         help="Run only this step (default: run all steps according to config)",
+    )
+    parser.add_argument(
+        "--test",
+        action="store_true",
+        help="For 'google' command: validate credentials and API access without storing data.",
+    )
+    parser.add_argument(
+        "--list-properties",
+        action="store_true",
+        dest="list_properties",
+        help="For 'google' command: print accessible GSC sites and GA4 properties as JSON.",
+    )
+    parser.add_argument(
+        "--enrich-google",
+        action="store_true",
+        dest="enrich_google",
+        help="For 'keywords' command: run Google enrichment (Suggest, GSC merge, Datamuse, etc.) without re-running the crawl.",
+    )
+    parser.add_argument(
+        "--expand-only",
+        action="store_true",
+        dest="expand_only",
+        help="For 'keywords' command: only run Suggest expansion and print JSON to stdout.",
     )
     args = parser.parse_args()
 
-    cfg_path = os.path.abspath(args.config)
-    if not os.path.isfile(cfg_path):
-        print(f"Config file not found: {cfg_path}", file=sys.stderr)
-        print("Copy input.txt.example to input.txt and edit it, or pass --config path.", file=sys.stderr)
-        sys.exit(1)
+    # --- Config resolution order ---
+    # 1. --config path: load that file (CLI override).
+    # 2. pipeline_config table in report.db (UI-managed; REPORT_DB_PATH or cwd/report.db).
+    # 3. Shadow pipeline-config.txt next to report.db.
+    # 4. Error with hint to save settings in the web UI.
 
-    cfg = load_config(cfg_path)
-    cwd = os.path.dirname(cfg_path) or os.getcwd()
+    cfg: dict[str, str] = {}
+    cwd: str = os.getcwd()
+
+    if args.config:
+        cfg_path = os.path.abspath(args.config)
+        if not os.path.isfile(cfg_path):
+            print(f"Config file not found: {cfg_path}", file=sys.stderr)
+            sys.exit(1)
+        cfg = load_config(cfg_path)
+        cwd = os.path.dirname(cfg_path) or os.getcwd()
+    else:
+        db_path = _default_db_path()
+        cfg = load_config_from_db(db_path)
+        cwd = os.path.dirname(db_path) or os.getcwd()
+        if cfg:
+            print(
+                f"[Config] Loaded from report.db pipeline_config table ({db_path})",
+                flush=True,
+            )
+        else:
+            shadow = _shadow_config_path(db_path)
+            if os.path.isfile(shadow):
+                cfg = load_config(shadow)
+                cwd = os.path.dirname(shadow) or os.getcwd()
+                print(f"[Config] Loaded from shadow file ({shadow})", flush=True)
+            else:
+                print(
+                    "No pipeline config found. Open the web UI (Pipeline runner), "
+                    "configure settings, and click Save — or pass --config path.",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
 
     def path(key: str, default: str) -> str:
         p = cfg.get(key, default)
@@ -60,7 +179,7 @@ def main() -> None:
     if args.command == "lighthouse":
         print("WebsiteProfiling: lighthouse only", flush=True)
         from .lighthouse.runner import main as lighthouse_main
-        lh_url = cfg.get("lighthouse_url", cfg.get("start_url", "https://codefrydev.in"))
+        lh_url = _require_lighthouse_url(cfg)
         lh_strategy = (cfg.get("lighthouse_strategy") or "mobile").lower()
         if lh_strategy not in ("mobile", "desktop"):
             lh_strategy = "mobile"
@@ -73,15 +192,57 @@ def main() -> None:
             lh_out = os.path.join(cwd, lh_out)
         sys.exit(lighthouse_main(url=lh_url, strategy=lh_strategy, iterations=lh_iterations, output_dir=lh_out, db_path=db_path, mode=lh_mode, categories=lh_categories))
     if args.command == "keywords":
+        # --expand-only: just run Suggest expansion and print JSON to stdout
+        if getattr(args, "expand_only", False):
+            import json as _json
+            from .integrations.google.suggest import batch_expand as _expand
+            seeds_raw = (cfg.get("keyword_seeds") or "").strip()
+            seeds = [s.strip() for s in seeds_raw.split(",") if s.strip()]
+            if not seeds:
+                print(_json.dumps({"error": "No keyword_seeds configured"}))
+                sys.exit(1)
+            result = _expand(seeds, sources=("web", "youtube", "questions"))
+            print(_json.dumps(result, ensure_ascii=False), flush=True)
+            sys.exit(0)
+
+        # --enrich-google: skip crawl-based extraction, go straight to enrichment
+        if getattr(args, "enrich_google", False):
+            if not db_path:
+                print("keywords --enrich-google requires sqlite_db in config.", file=sys.stderr)
+                sys.exit(1)
+            print("WebsiteProfiling: keywords Google enrichment only...", flush=True)
+            from .integrations.google.keyword_enrich import run_enrichment
+            try:
+                run_enrichment(db_path, cfg)
+                print("Keywords enrichment done.", flush=True)
+                sys.exit(0)
+            except Exception as e:
+                print(f"Keywords enrichment error: {e}", file=sys.stderr)
+                sys.exit(1)
+
         print("WebsiteProfiling: keywords only", flush=True)
         from .tools.keywords import main as keyword_main
-        kw_url = cfg.get("start_url", "https://codefrydev.in")
+        kw_url = _require_start_url(cfg, for_step="keywords")
         kw_out = cfg.get("keyword_output_dir", "").strip() or cwd
         if not os.path.isabs(kw_out):
             kw_out = os.path.join(cwd, kw_out)
         kw_cfg = dict(cfg)
         kw_cfg["_cwd"] = cwd
-        sys.exit(keyword_main(base_url=kw_url, output_dir=kw_out, config=kw_cfg))
+        # Pass db_path so keywords.py can write to keyword_data table
+        if db_path:
+            kw_cfg["_db_path"] = db_path
+        rc = keyword_main(base_url=kw_url, output_dir=kw_out, config=kw_cfg)
+        # Auto-run Google enrichment if configured
+        if rc == 0 and db_path and (
+            get_bool(cfg, "enable_google_suggest", False) or _google_db_has_gsc(db_path)
+        ):
+            print("  Running Google keyword enrichment...", flush=True)
+            from .integrations.google.keyword_enrich import run_enrichment
+            try:
+                run_enrichment(db_path, cfg)
+            except Exception as e:
+                print(f"  Warning: Google enrichment error (non-fatal): {e}", file=sys.stderr)
+        sys.exit(rc)
     if args.command == "warnings":
         print("WebsiteProfiling: warning mapper only", flush=True)
         from .tools.warnings import main as warning_mapper_main
@@ -116,6 +277,183 @@ def main() -> None:
         print("Enrich done. New report_payload row written.", flush=True)
         sys.exit(0)
 
+    if args.command == "google":
+        from .integrations.google.auth import build_credentials, read_secrets
+        from .integrations.google.fetch import fetch_google_data, list_properties
+
+        credentials_path = cfg.get("google_credentials_path", "").strip()
+        if credentials_path and not os.path.isabs(credentials_path):
+            credentials_path = os.path.join(cwd, credentials_path)
+
+        # --list-properties: print GSC sites + GA4 properties as JSON and exit
+        if getattr(args, "list_properties", False):
+            try:
+                props = list_properties(credentials_path or None)
+                import json as _json
+                print(_json.dumps(props), flush=True)
+                sys.exit(0)
+            except Exception as e:
+                print(f"Error listing properties: {e}", file=sys.stderr)
+                sys.exit(1)
+
+        # --test: validate credentials + API access without storing data
+        if getattr(args, "test", False):
+            print("WebsiteProfiling: Google credentials test...", flush=True)
+            warnings: list[str] = []
+            try:
+                import google.auth.exceptions as _gae
+                creds = build_credentials(credentials_path or None)
+                print("  Google credentials: OK (token refreshed)", flush=True)
+
+                secrets = read_secrets(credentials_path or None)
+                gsc_site_url = secrets.get("gscSiteUrl", "")
+                ga4_property_id = secrets.get("ga4PropertyId", "")
+
+                if gsc_site_url:
+                    from .integrations.google.gsc import (
+                        describe_gsc_site_mismatch,
+                        list_gsc_sites,
+                        probe_gsc_site,
+                        resolve_gsc_site_url,
+                    )
+                    sites = list_gsc_sites(creds)
+                    print(f"  GSC: found {len(sites)} accessible site(s): {sites}", flush=True)
+                    resolved, site_error = resolve_gsc_site_url(gsc_site_url, sites)
+                    if resolved:
+                        if resolved != gsc_site_url:
+                            print(
+                                f"  GSC: NOTE -- Configured '{gsc_site_url}' will use '{resolved}' "
+                                "(Search Console requires an exact property URL). "
+                                "Save the exact URL from 'Load from account' to avoid this note.",
+                                flush=True,
+                            )
+                        ok, probe_msg = probe_gsc_site(creds, resolved)
+                        if ok:
+                            print(f"  GSC: OK -- {probe_msg}", flush=True)
+                        else:
+                            print(f"  GSC: ERROR -- {probe_msg}", flush=True)
+                            warnings.append(probe_msg)
+                    else:
+                        detail = site_error or describe_gsc_site_mismatch(gsc_site_url, sites)
+                        print(f"  GSC: ERROR -- {detail}", flush=True)
+                        warnings.append(detail)
+                else:
+                    print(
+                        "  GSC: skipped (no gscSiteUrl configured — set Website in Search Console in Integrations)",
+                        flush=True,
+                    )
+                    warnings.append("GSC site URL is not configured.")
+
+                if ga4_property_id:
+                    from .integrations.google.ga4 import list_ga4_properties, probe_ga4_property
+                    props, list_error = list_ga4_properties(creds)
+                    if list_error:
+                        print(f"  GA4: NOTE -- {list_error}", flush=True)
+                    elif props:
+                        names = [f"{p['displayName']} ({p['id']})" for p in props]
+                        print(f"  GA4: found {len(props)} accessible propert(ies): {names}", flush=True)
+                    ok, probe_msg = probe_ga4_property(creds, ga4_property_id)
+                    if ok:
+                        print(f"  GA4: OK -- {probe_msg}", flush=True)
+                        if props and ga4_property_id not in [p["id"] for p in props]:
+                            msg = (
+                                f"Property {ga4_property_id} works via Data API but was not in the "
+                                "account property list (listing may be incomplete)."
+                            )
+                            print(f"  GA4: NOTE -- {msg}", flush=True)
+                    else:
+                        print(f"  GA4: ERROR -- {probe_msg}", flush=True)
+                        warnings.append(probe_msg)
+                else:
+                    print(
+                        "  GA4: skipped (no ga4PropertyId configured — set Analytics property in Integrations)",
+                        flush=True,
+                    )
+                    warnings.append("GA4 property ID is not configured.")
+
+                if warnings:
+                    print("", flush=True)
+                    print("Google test completed with issues:", flush=True)
+                    for i, w in enumerate(warnings, 1):
+                        print(f"  {i}. {w}", flush=True)
+                    print("", flush=True)
+                    print(
+                        "Data fetch will fail or return empty until these are fixed. "
+                        "In Integrations: click 'Load from account', pick exact GSC site + GA4 property, Save, then Test again.",
+                        flush=True,
+                    )
+                    sys.exit(1)
+
+                print("Google test passed — GSC and GA4 are configured and reachable.", flush=True)
+                sys.exit(0)
+            except _gae.RefreshError:
+                print(
+                    "Google connection expired -- reconnect in Integrations.",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            except Exception as e:
+                print(f"Google test failed: {e}", file=sys.stderr)
+                sys.exit(1)
+
+        # Full fetch: requires sqlite_db
+        if not db_path:
+            print("google command requires sqlite_db in config.", file=sys.stderr)
+            sys.exit(1)
+
+        print("WebsiteProfiling: Google fetch...", flush=True)
+
+        from .db import db_session, get_latest_crawl_run_id, init_schema, read_crawl
+        from .integrations.google.store import write_google_data
+
+        date_range_days = get_int(cfg, "google_date_range_days", 28) or 28
+
+        # Read crawl URLs for join stats
+        crawl_urls: list[str] = []
+        start_url_for_join = cfg.get("start_url", "")
+        try:
+            with db_session(db_path) as conn:
+                init_schema(conn)
+                run_id = get_latest_crawl_run_id(conn)
+                if run_id is not None:
+                    df = read_crawl(conn, run_id)
+                    if "url" in df.columns:
+                        crawl_urls = df["url"].dropna().astype(str).str.strip().tolist()
+        except Exception as e:
+            print(f"  Warning: could not read crawl URLs for join stats: {e}", flush=True)
+
+        try:
+            import google.auth.exceptions as _gae
+            google_data = fetch_google_data(
+                credentials_path=credentials_path or None,
+                date_range_days=date_range_days,
+                crawl_urls=crawl_urls,
+                start_url=start_url_for_join,
+                config=cfg,
+            )
+        except _gae.RefreshError:
+            print(
+                "Google connection expired -- reconnect in Integrations.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        except RuntimeError as e:
+            print(f"Google fetch error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+        # Store in google_data table
+        with db_session(db_path) as conn:
+            init_schema(conn)
+            write_google_data(conn, google_data)
+
+        if google_data.get("errors"):
+            print("  Partial errors:", flush=True)
+            for err in google_data["errors"]:
+                print(f"    - {err}", flush=True)
+
+        print("Google fetch done. Data stored in google_data table.", flush=True)
+        sys.exit(0)
+
     run_crawl = args.command == "crawl" or (args.command is None and get_bool(cfg, "run_crawl", True))
     run_report = args.command == "report" or (args.command is None and get_bool(cfg, "run_report", True))
     run_plot = args.command == "plot" or (args.command is None and get_bool(cfg, "run_plot", False))
@@ -140,7 +478,7 @@ def main() -> None:
     if run_crawl:
         from .crawl.crawler import run_crawler
         print("[Crawl] Starting...", flush=True)
-        start_url = cfg.get("start_url", "https://codefrydev.in")
+        start_url = _require_start_url(cfg, for_step="crawl")
         max_pages = get_int(cfg, "max_pages")
         concurrency = get_int(cfg, "concurrency", 8)
         timeout = get_int(cfg, "timeout", 12)
@@ -222,7 +560,7 @@ def main() -> None:
     if run_lighthouse and not run_lighthouse_on_pages:
         print("[Lighthouse] Starting...", flush=True)
         from .lighthouse.runner import main as lighthouse_main
-        lh_url = cfg.get("lighthouse_url", cfg.get("start_url", "https://codefrydev.in"))
+        lh_url = _require_lighthouse_url(cfg)
         lh_strategy = (cfg.get("lighthouse_strategy") or "mobile").lower()
         if lh_strategy not in ("mobile", "desktop"):
             lh_strategy = "mobile"
@@ -240,7 +578,11 @@ def main() -> None:
 
     if run_report:
         if not db_path:
-            print("Report requires sqlite_db. Set sqlite_db = report.db in input.txt. The React app in UI/ loads report.db.", file=sys.stderr)
+            print(
+                "Report requires sqlite_db. Set sqlite_db = report.db in pipeline config "
+                "(web UI → Pipeline runner → Save). The Next.js UI reads report.db via /api/report/*.",
+                file=sys.stderr,
+            )
             sys.exit(1)
         report_output = path("report_output", "site_report.html")
         max_fetch = get_int(cfg, "max_fetch_for_edges", 300)
@@ -248,7 +590,7 @@ def main() -> None:
         max_nodes = get_int(cfg, "max_nodes_plot", 400)
         site_name = (cfg.get("site_name") or "").strip()
         report_title = (cfg.get("report_title") or "").strip()
-        start_url = cfg.get("start_url", "https://codefrydev.in")
+        start_url = _require_start_url(cfg, for_step="report")
         run_security_scan_flag = get_bool(cfg, "run_security_scan", True)
         security_scan_active = get_bool(cfg, "security_scan_active", False)
         security_max_urls_probe = get_int(cfg, "security_max_urls_probe", 20) or 20
@@ -286,15 +628,16 @@ def main() -> None:
         )
         print("[Report] Done.", flush=True)
         print(f"Report written: {out}")
-        # Copy to UI/public so the React app can load it at /report.db
-        ui_public = os.path.join(cwd, "UI", "public")
-        if os.path.isdir(ui_public):
-            dest = os.path.join(ui_public, "report.db")
+
+        if _should_enrich_keywords_after_report(cfg) and _google_db_has_gsc(db_path):
+            print("[Keywords] Post-report enrichment (GSC data found)...", flush=True)
+            from .integrations.google.keyword_enrich import run_enrichment
+
             try:
-                shutil.copy2(out, dest)
-                print(f"Copied report DB to {dest} for UI.")
-            except OSError as e:
-                print(f"Warning: could not copy report DB to UI/public: {e}", file=sys.stderr)
+                run_enrichment(db_path, cfg)
+                print("[Keywords] Post-report enrichment done.", flush=True)
+            except Exception as e:
+                print(f"Warning: post-report keyword enrichment failed: {e}", file=sys.stderr)
 
     if run_plot:
         print("[Plot] Starting...", flush=True)

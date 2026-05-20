@@ -1,8 +1,16 @@
 import { useState, useMemo, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { Globe } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import {
+  canonicalDomainFromPayload,
+  filterLighthouseByHost,
+  hostsMatch,
+  lighthouseSummaryMatchesHost,
+  normalizeDomainQueryParam,
+} from '../lib/domainSlug';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card } from '../components';
 import { scoreBandColor } from '../utils/chartPalette';
@@ -22,10 +30,23 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip);
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function Lighthouse({ searchQuery = '' }) {
-  const { data } = useReport();
+  const { data, startUrlByRunId } = useReport();
+  const searchParams = useSearchParams();
   const detailRef = useRef(null);
 
-  const byUrl = useMemo(() => data?.lighthouse_by_url || {}, [data]);
+  const expectedHost = useMemo(() => {
+    const fromPayload = canonicalDomainFromPayload(data, startUrlByRunId);
+    const fromQuery = normalizeDomainQueryParam(
+      searchParams.get('domain') ?? searchParams.get('brand') ?? '',
+    );
+    if (fromPayload && fromQuery && !hostsMatch(fromPayload, fromQuery)) return fromPayload;
+    return fromPayload || fromQuery;
+  }, [data, startUrlByRunId, searchParams]);
+
+  const byUrl = useMemo(() => {
+    const raw = data?.lighthouse_by_url || {};
+    return filterLighthouseByHost(raw, expectedHost);
+  }, [data, expectedHost]);
   const urlList = useMemo(() => Object.keys(byUrl), [byUrl]);
   const hasMulti = urlList.length >= 2;
   const q = (searchQuery || '').toLowerCase().trim();
@@ -53,19 +74,31 @@ export default function Lighthouse({ searchQuery = '' }) {
     setTimeout(() => detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
 
-  // Active summary: per-URL when available, else global
+  // Active summary: per-URL when available, else global (only if hostname matches)
   const summary = useMemo(() => {
     if (displayUrl && byUrl[displayUrl]) return byUrl[displayUrl];
-    return data?.lighthouse_summary || {};
-  }, [displayUrl, byUrl, data]);
+    const global = data?.lighthouse_summary;
+    if (global && lighthouseSummaryMatchesHost(global, expectedHost)) return global;
+    return {};
+  }, [displayUrl, byUrl, data, expectedHost]);
 
   const diagnostics = useMemo(() => {
     const perUrl = displayUrl && byUrl[displayUrl]?.diagnostics;
     if (Array.isArray(perUrl) && perUrl.length > 0) return perUrl;
-    return data?.lighthouse_diagnostics || data?.lighthouse_summary?.diagnostics || [];
-  }, [data, displayUrl, byUrl]);
+    if (lighthouseSummaryMatchesHost(data?.lighthouse_summary, expectedHost)) {
+      return data?.lighthouse_diagnostics || data?.lighthouse_summary?.diagnostics || [];
+    }
+    return [];
+  }, [data, displayUrl, byUrl, expectedHost]);
 
-  const humanSummary = data?.lighthouse_human_summary || summary?.human_summary || '';
+  const humanSummary = useMemo(() => {
+    const fromPage = summary?.human_summary_full || summary?.human_summary;
+    if (fromPage) return fromPage;
+    if (lighthouseSummaryMatchesHost(data?.lighthouse_summary, expectedHost)) {
+      return data?.lighthouse_human_summary || '';
+    }
+    return '';
+  }, [summary, data, expectedHost]);
   const mm = summary?.median_metrics || {};
   const cs = summary?.category_scores || {};
   const topFailures = useMemo(() => summary?.top_failures || [], [summary?.top_failures]);

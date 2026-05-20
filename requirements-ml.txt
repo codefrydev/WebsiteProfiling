@@ -1,5 +1,5 @@
 # Optional ML/NLP stack for WebsiteProfiling (pip install -r requirements-ml.txt)
-# Enable features via input.txt flags: enable_duplicate_detection, enable_anomaly_urls, etc.
+# Enable features via pipeline config flags: enable_duplicate_detection, enable_anomaly_urls, etc.
 #
 # Python version: use 3.12.x (matches .github/workflows/deploy-pages.yml).
 # On Python 3.13, pip may compile blis (spaCy → thinc) from source and fail with C/API errors.
@@ -12,7 +12,7 @@ langdetect>=1.0.9
 # Heavy: PyTorch + models (semantic similarity & keyword clustering)
 sentence-transformers>=2.2.0
 
-# Optional: KeyBERT salient phrases (enable_keybert in input.txt)
+# Optional: KeyBERT salient phrases (enable_keybert in pipeline config)
 keybert>=0.8.0
 
 # NER — English model via official wheel (same as `python -m spacy download en_core_web_sm`)

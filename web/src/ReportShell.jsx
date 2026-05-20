@@ -24,7 +24,11 @@ import {
   ExternalLink,
   Images,
   FolderTree,
+  Settings2,
+  TrendingUp,
+  Key,
 } from 'lucide-react';
+import IntegrationsModal from './components/IntegrationsModal.jsx';
 import { ReportProvider } from './context/ReportContext.jsx';
 import { useReport } from './context/useReport';
 import { strings, format } from './lib/strings';
@@ -57,6 +61,9 @@ const Network = dynamic(() => import('./views/Network'), {
 import ContentAnalytics from './views/ContentAnalytics';
 import TechStack from './views/TechStack';
 import Gallery from './views/Gallery';
+import SearchPerformance from './views/SearchPerformance';
+import Traffic from './views/Traffic';
+import KeywordsExplorer from './views/KeywordsExplorer';
 
 const VIEW_CONFIG = [
   { id: 'home', component: Home, icon: HomeIcon },
@@ -73,6 +80,9 @@ const VIEW_CONFIG = [
   { id: 'charts', component: Charts, icon: PieChart },
   { id: 'network', component: Network, icon: Share2 },
   { id: 'gallery', component: Gallery, icon: Images },
+  { id: 'search-performance', component: SearchPerformance, icon: TrendingUp },
+  { id: 'traffic', component: Traffic, icon: BarChart2 },
+  { id: 'keywords-explorer', component: KeywordsExplorer, icon: Key },
 ];
 
 const VIEWS = VIEW_CONFIG.map((v) => ({
@@ -123,7 +133,35 @@ function AppContent({ slug }) {
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { data, loading, error, setSelectedReportId } = useReport();
+  const [integrationsOpen, setIntegrationsOpen] = useState(false);
+  const [integrationsToast, setIntegrationsToast] = useState(null);
+  const { data, loading, error, setSelectedReportId, startUrlByRunId } = useReport();
+
+  // Auto-open Integrations modal after OAuth callback (?integrations=open&auth=...)
+  useEffect(() => {
+    const intParam = searchParams.get('integrations');
+    const authParam = searchParams.get('auth');
+    const reasonParam = searchParams.get('reason');
+    if (intParam === 'open') {
+      setIntegrationsOpen(true);
+      if (authParam === 'success') {
+        setIntegrationsToast({ type: 'success', message: 'Google account connected successfully.' });
+      } else if (authParam === 'error') {
+        setIntegrationsToast({
+          type: 'error',
+          message: reasonParam ? decodeURIComponent(reasonParam) : 'Google connection failed.',
+        });
+      }
+      // Clean up the query params
+      const next = new URLSearchParams(searchParams.toString());
+      next.delete('integrations');
+      next.delete('auth');
+      next.delete('reason');
+      const q = next.toString();
+      router.replace(q ? `${pathname}?${q}` : pathname);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const view = pathSlugToViewId(slug ?? '');
   const closeSidebar = () => setSidebarOpen(false);
@@ -169,34 +207,69 @@ function AppContent({ slug }) {
   }
 
   const CurrentView = VIEWS.find((v) => v.id === view)?.component || Home;
-  const isHomeView = view === 'home';
-  const showSidebar = !isHomeView;
+  const showSidebar = view !== 'home';
+  const openIntegrations = () => {
+    setIntegrationsToast(null);
+    setIntegrationsOpen(true);
+  };
   const issueCount = data?.categories?.reduce((n, c) => n + (c.issues?.length || 0), 0) ?? 0;
   const securityCount = data?.security_findings?.length ?? 0;
 
   if (loading) {
-    return <ReportShellSkeleton variant={isHomeView ? 'home' : 'dashboard'} />;
+    return <ReportShellSkeleton variant={view === 'home' ? 'home' : 'dashboard'} />;
   }
 
   if (error) {
     const isDomainError = error === strings.app.noReportForDomain;
     return (
-      <div className="min-h-screen flex items-center justify-center bg-brand-900 text-foreground p-8">
-        <div className="text-center max-w-md">
-          <p className="text-red-400 font-medium">
-            {isDomainError ? strings.app.noReportForDomainTitle : strings.app.failedTitle}
-          </p>
-          <p className="text-muted-foreground text-sm mt-2">{error}</p>
-          {!isDomainError ? (
-            <p className="text-muted-foreground text-sm mt-4">{strings.app.failedHint}</p>
-          ) : null}
+      <div className="min-h-screen bg-brand-900 text-foreground flex flex-col">
+        <header className="h-16 border-b border-muted bg-brand-800/80 backdrop-blur-md flex items-center justify-end gap-2 px-4 sm:px-6 shrink-0 print:hidden">
+          <button
+            type="button"
+            title="Integrations (Google Search Console & GA4)"
+            aria-label="Open Integrations"
+            onClick={openIntegrations}
+            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-brand-700 transition-colors"
+          >
+            <Settings2 className="h-4 w-4" />
+          </button>
+          <ThemeToggle />
+        </header>
+        <IntegrationsModal
+          open={integrationsOpen}
+          onClose={() => setIntegrationsOpen(false)}
+          initialToast={integrationsToast}
+        />
+        <div className="flex-1 flex items-center justify-center p-8">
+          <div className="text-center max-w-md">
+            <p className="text-red-700 dark:text-red-400 font-medium">
+              {isDomainError ? strings.app.noReportForDomainTitle : strings.app.failedTitle}
+            </p>
+            <p className="text-muted-foreground text-sm mt-2">{error}</p>
+            {!isDomainError ? (
+              <p className="text-muted-foreground text-sm mt-4">{strings.app.failedHint}</p>
+            ) : null}
+            <button
+              type="button"
+              onClick={openIntegrations}
+              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 transition-colors"
+            >
+              <Settings2 className="h-4 w-4" />
+              Set up Google (GSC &amp; GA4)
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  const siteName = data?.site_name || strings.app.defaultSiteName;
-  const initials = siteName.charAt(0).toUpperCase();
+  const auditedHost =
+    canonicalDomainFromPayload(data, startUrlByRunId) || strings.app.defaultSiteName;
+  const runId = data?.crawl_run_id != null ? Number(data.crawl_run_id) : null;
+  const auditedStartUrl =
+    (runId != null ? startUrlByRunId?.get(runId) : null) ||
+    (auditedHost ? `https://${auditedHost}` : '');
+  const auditedInitials = auditedHost.charAt(0).toUpperCase() || 'S';
   const crawlSummary = data?.summary;
   const lastCrawlText =
     crawlSummary?.crawl_time_s != null
@@ -226,10 +299,10 @@ function AppContent({ slug }) {
             <div className="flex items-center min-w-0">
               <Radar className="text-blue-500 mr-3 h-6 w-6 shrink-0" />
               <div className="min-w-0">
-                <div className="font-bold text-bright leading-tight truncate">{siteName}</div>
-                <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-                  {strings.app.productSubtitle}
+                <div className="font-bold text-bright leading-tight truncate">
+                  {strings.app.productName}
                 </div>
+                <div className="text-[11px] text-muted-foreground">{strings.app.productSubtitle}</div>
               </div>
             </div>
             <button
@@ -280,33 +353,33 @@ function AppContent({ slug }) {
           <div className="p-4 border-t border-muted bg-brand-900/30">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white text-xs shrink-0">
-                {initials}
+                {auditedInitials}
               </div>
               <div className="text-xs min-w-0">
-                <div className="text-bright font-bold truncate">{siteName}</div>
+                <div className="text-bright font-bold truncate">{auditedHost}</div>
                 <div className="text-muted-foreground">{lastCrawlText}</div>
               </div>
             </div>
-            <a
-              href="https://codefrydev.in/"
-              target="_blank"
-              rel="noreferrer"
-              className="mt-3 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-              <span>{strings.app.githubLinkLabel}</span>
-            </a>
+            {auditedStartUrl ? (
+              <a
+                href={auditedStartUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                <span>{strings.app.viewSiteLabel}</span>
+              </a>
+            ) : null}
           </div>
         </aside>
       )}
 
       <main className="flex-1 flex flex-col h-screen overflow-hidden bg-brand-900 relative min-w-0">
-        <header
-          className={`h-16 border-b border-muted bg-brand-800/80 backdrop-blur-md flex items-center justify-between gap-3 px-4 sm:px-6 shrink-0 z-10 print:hidden ${
-            isHomeView ? 'hidden' : ''
-          }`}
-        >
-          {showSidebar ? (
+        {showSidebar ? (
+          <header
+            className="h-16 border-b border-muted bg-brand-800/80 backdrop-blur-md flex items-center justify-between gap-3 px-4 sm:px-6 shrink-0 z-10 print:hidden"
+          >
             <button
               type="button"
               aria-label={strings.app.ariaOpenMenu}
@@ -315,26 +388,45 @@ function AppContent({ slug }) {
             >
               <Menu className="h-6 w-6" />
             </button>
-          ) : null}
-          <div className={`min-w-0 relative ${showSidebar ? 'flex-1 max-w-xl' : 'flex-1 max-w-2xl mx-auto'}`}>
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={strings.app.searchPlaceholder}
-              className="w-full bg-brand-900 border border-default focus:border-blue-500 rounded-lg pl-10 pr-4 py-2 text-sm outline-none text-foreground transition-all"
-            />
-          </div>
-          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-            <ThemeToggle />
-            <ReportSelector />
-          </div>
-        </header>
+            <div className="min-w-0 relative flex-1 max-w-xl">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={strings.app.searchPlaceholder}
+                className="w-full bg-brand-900 border border-default focus:border-blue-500 rounded-lg pl-10 pr-4 py-2 text-sm outline-none text-foreground transition-all"
+              />
+            </div>
+            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+              <button
+                type="button"
+                title="Integrations (Google Search Console & GA4)"
+                aria-label="Open Integrations"
+                onClick={openIntegrations}
+                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-brand-700 transition-colors"
+              >
+                <Settings2 className="h-4 w-4" />
+              </button>
+              <ThemeToggle />
+              <ReportSelector />
+            </div>
+          </header>
+        ) : null}
+
+        <IntegrationsModal
+          open={integrationsOpen}
+          onClose={() => setIntegrationsOpen(false)}
+          initialToast={integrationsToast}
+        />
 
         <div className="relative min-h-0 flex-1 overflow-y-auto" id="viewContainer">
           <div className="fade-in">
-            <CurrentView searchQuery={searchQuery} onNavigate={selectView} />
+            <CurrentView
+              searchQuery={searchQuery}
+              onNavigate={selectView}
+              onOpenIntegrations={openIntegrations}
+            />
           </div>
         </div>
       </main>

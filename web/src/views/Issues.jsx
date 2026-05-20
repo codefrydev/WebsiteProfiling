@@ -15,7 +15,7 @@ const PRIORITY_CONFIG = {
   Critical: {
     border: 'border-l-red-500',
     bg: 'bg-red-500/10',
-    text: 'text-red-400',
+    text: 'text-red-700 dark:text-red-400',
     ring: 'ring-1 ring-red-500/20 border-red-900/30',
     icon: Flame,
     order: 0,
@@ -24,7 +24,7 @@ const PRIORITY_CONFIG = {
   High: {
     border: 'border-l-orange-500',
     bg: 'bg-orange-500/10',
-    text: 'text-orange-400',
+    text: 'text-orange-700 dark:text-orange-400',
     ring: 'ring-1 ring-orange-500/20 border-orange-900/30',
     icon: AlertTriangle,
     order: 1,
@@ -33,7 +33,7 @@ const PRIORITY_CONFIG = {
   Medium: {
     border: 'border-l-yellow-500',
     bg: 'bg-yellow-500/10',
-    text: 'text-yellow-400',
+    text: 'text-yellow-800 dark:text-yellow-400',
     ring: '',
     icon: AlertCircle,
     order: 2,

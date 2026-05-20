@@ -1,4 +1,4 @@
-import { Building2, ExternalLink, Globe, ArrowRight, Search } from 'lucide-react';
+import { Building2, ExternalLink, Globe, ArrowRight, Search, Settings2 } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { PageLayout, Card } from '../components';
 import { Skeleton, SkeletonDomainCard } from '../components/Skeleton.jsx';
@@ -28,7 +28,7 @@ function healthScoreClass(score) {
   return 'text-rose-700 dark:text-rose-400';
 }
 
-export default function Home({ onNavigate }) {
+export default function Home({ onNavigate, onOpenIntegrations }) {
   const { data, reportList } = useReport();
   const vh = strings.views.home;
   const sj = strings.common;
@@ -97,6 +97,17 @@ export default function Home({ onNavigate }) {
         <div className="max-w-2xl mx-auto text-center w-full">
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">{vh.title}</h1>
         <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">{vh.subtitle}</p>
+
+        {onOpenIntegrations ? (
+          <button
+            type="button"
+            onClick={onOpenIntegrations}
+            className="mt-3 inline-flex items-center gap-2 rounded-lg border border-default bg-brand-900/40 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-brand-800 transition-colors"
+          >
+            <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
+            Configure Google (GSC &amp; GA4)
+          </button>
+        ) : null}
 
         <div className="mt-2.5 relative">
           <Search className="h-3.5 w-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />

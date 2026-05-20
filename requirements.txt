@@ -6,5 +6,17 @@ tqdm>=4.64.0
 networkx>=2.8.0
 python-Wappalyzer>=0.3.1
 
+# Google Search Console + GA4 integration (optional; required for `python -m src google`)
+google-auth>=2.0.0
+google-auth-oauthlib>=1.0.0
+google-api-python-client>=2.0.0
+google-analytics-data>=0.18.0
+google-analytics-admin>=0.22.0
+
+# Keywords Explorer — Google Suggest + Wikipedia + Datamuse (all free, no auth needed)
+# requests already listed above
+# pytrends is OPTIONAL and frequently rate-limited — uncomment only if you need trend direction
+# pytrends>=4.9,<5
+
 # Dev / test
 pytest>=7.0.0

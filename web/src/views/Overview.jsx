@@ -21,7 +21,15 @@ import {
   ArrowLeftRight,
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useReport } from '../context/useReport';
+import {
+  canonicalDomainFromPayload,
+  filterLighthouseByHost,
+  hostsMatch,
+  lighthouseSummaryMatchesHost,
+  normalizeDomainQueryParam,
+} from '../lib/domainSlug';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '../components';
 import { palette, scoreBandColor, sortByValue, PALETTE_CATEGORICAL } from '../utils/chartPalette';
@@ -162,12 +170,23 @@ function sumObject(obj) {
 }
 
 export default function Overview({ searchQuery = '' }) {
-  const { data, reportDiff } = useReport();
+  const { data, reportDiff, startUrlByRunId } = useReport();
+  const searchParams = useSearchParams();
   const [mlErrOpen, setMlErrOpen] = useState(false);
   const [anomOpen, setAnomOpen] = useState(false);
   const vo = strings.views.overview;
   const sj = strings.common;
   const q = (searchQuery || '').toLowerCase().trim();
+
+  const expectedHost = useMemo(() => {
+    const fromPayload = canonicalDomainFromPayload(data, startUrlByRunId);
+    const fromQuery = normalizeDomainQueryParam(
+      searchParams.get('domain') ?? searchParams.get('brand') ?? '',
+    );
+    if (fromPayload && fromQuery && !hostsMatch(fromPayload, fromQuery)) return fromPayload;
+    return fromPayload || fromQuery;
+  }, [data, startUrlByRunId, searchParams]);
+
   const categoriesFiltered = useMemo(() => {
     const cats = data?.categories || [];
     if (!q) return cats;
@@ -400,7 +419,16 @@ export default function Overview({ searchQuery = '' }) {
   }, [data?.mime_labels, data?.mime_values, vo]);
 
   const lighthouseChart = useMemo(() => {
-    const cs = data?.lighthouse_summary?.category_scores;
+    let cs = null;
+    const summary = data?.lighthouse_summary;
+    if (lighthouseSummaryMatchesHost(summary, expectedHost)) {
+      cs = summary?.category_scores;
+    }
+    if (!cs || typeof cs !== 'object') {
+      const byUrl = filterLighthouseByHost(data?.lighthouse_by_url || {}, expectedHost);
+      const first = Object.values(byUrl)[0];
+      cs = first?.category_scores;
+    }
     if (!cs || typeof cs !== 'object') return null;
     const labels = [];
     const values = [];
@@ -427,7 +455,7 @@ export default function Overview({ searchQuery = '' }) {
       },
       aria: `${vo.ariaLighthouseIntro} ${labels.map((l, i) => `${l} ${values[i]}`).join(', ')}.`,
     };
-  }, [data?.lighthouse_summary?.category_scores, vo]);
+  }, [data?.lighthouse_summary, data?.lighthouse_by_url, expectedHost, vo]);
 
   if (!data) return null;
 
@@ -447,8 +475,60 @@ export default function Overview({ searchQuery = '' }) {
     mimeChart ||
     lighthouseChart;
 
+  const googleData = data?.google;
+  const googleIsStale =
+    googleData?.fetched_at &&
+    Date.now() - new Date(googleData.fetched_at).getTime() > 7 * 24 * 60 * 60 * 1000;
+
   return (
     <PageLayout className="space-y-8">
+      {/* Google integration banner */}
+      {!googleData ? (
+        <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 px-4 py-3 flex items-start gap-3">
+          <TrendingUp className="h-4 w-4 text-link shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm text-foreground font-medium">
+              Connect Google for real search and traffic data
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Get Search Console clicks, impressions, and GA4 sessions. Click the gear icon (⚙) in the header.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {googleData.gsc && (
+            <>
+              <div className="bg-brand-800 border border-default rounded-xl p-4">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">GSC Clicks</p>
+                <p className="text-2xl font-bold text-bright">{googleData.gsc.summary?.clicks?.toLocaleString() ?? '—'}</p>
+              </div>
+              <div className="bg-brand-800 border border-default rounded-xl p-4">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">Impressions</p>
+                <p className="text-2xl font-bold text-bright">{googleData.gsc.summary?.impressions?.toLocaleString() ?? '—'}</p>
+              </div>
+            </>
+          )}
+          {googleData.ga4 && (
+            <>
+              <div className="bg-brand-800 border border-default rounded-xl p-4">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">Sessions</p>
+                <p className="text-2xl font-bold text-bright">{googleData.ga4.summary?.sessions?.toLocaleString() ?? '—'}</p>
+              </div>
+              <div className="bg-brand-800 border border-default rounded-xl p-4">
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">Active Users</p>
+                <p className="text-2xl font-bold text-bright">{googleData.ga4.summary?.activeUsers?.toLocaleString() ?? '—'}</p>
+              </div>
+            </>
+          )}
+          {googleIsStale && (
+            <div className="col-span-2 sm:col-span-4 text-xs text-amber-700 dark:text-amber-400">
+              Data is more than 7 days old — run <code className="font-mono">python -m src google</code> or use Fetch in Integrations.
+            </div>
+          )}
+        </div>
+      )}
+
       {data.ml_errors?.length > 0 && (
         <div className="rounded-xl border border-amber-500/40 bg-amber-100/60 dark:bg-amber-950/25 px-4 py-3">
           <button
@@ -495,7 +575,7 @@ export default function Overview({ searchQuery = '' }) {
           <div className="text-3xl font-bold text-green-700 dark:text-green-400">{s.success_rate ?? 0}%</div>
         </Card>
         <Card shadow className="border-red-900/30 ring-1 ring-red-500/20">
-          <div className="text-red-400/80 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+          <div className="text-red-700 dark:text-red-400/90 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" /> {vo.broken}
           </div>
           <div className="text-3xl font-bold text-red-500">{brokenCount}</div>

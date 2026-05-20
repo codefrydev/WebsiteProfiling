@@ -867,7 +867,7 @@ export default function ContentAnalytics({ searchQuery = '' }) {
         <Card padding="default">
           <div className="flex items-center gap-2 mb-3">
             <AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-400" />
-            <span className="text-sm font-semibold text-amber-300">
+            <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">
               {q
                 ? `${thinPagesFiltered.length} of ${thinPages.length} thin page${thinPages.length !== 1 ? 's' : ''} match search`
                 : `${thinPages.length} page${thinPages.length !== 1 ? 's' : ''} have very little content`}

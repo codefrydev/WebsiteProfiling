@@ -1,5 +1,5 @@
 """
-Generate report data from crawl and write to SQLite. UI is the React app in UI/ (loads report.db).
+Generate report data from crawl and write to SQLite. The Next.js UI in web/ reads report.db via /api/report/*.
 """
 import hashlib
 import json
@@ -58,6 +58,67 @@ def fetch_site_ssl_expires_iso(hostname: str, timeout: float = 5.0) -> Optional[
         return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
     except Exception:
         return None
+
+
+def _strip_www(host: str) -> str:
+    h = (host or "").strip().lower()
+    return h[4:] if h.startswith("www.") else h
+
+
+def _url_hostname(url: str) -> str:
+    if not url:
+        return ""
+    try:
+        return (urlparse(str(url).strip()).hostname or "").lower()
+    except Exception:
+        return ""
+
+
+def _hosts_match(a: str, b: str) -> bool:
+    if not a or not b:
+        return False
+    a, b = a.lower(), b.lower()
+    return a == b or _strip_www(a) == _strip_www(b)
+
+
+def filter_lighthouse_by_host(by_url: dict[str, Any], expected_host: str) -> dict[str, Any]:
+    """Keep only Lighthouse entries whose URL hostname matches expected_host (www.-tolerant)."""
+    if not by_url or not expected_host:
+        return by_url or {}
+    return {u: v for u, v in by_url.items() if _hosts_match(_url_hostname(u), expected_host)}
+
+
+def _derive_expected_host(start_url: str, df: pd.DataFrame) -> str:
+    host = _url_hostname(start_url)
+    if host:
+        return host
+    if df is not None and not df.empty and "url" in df.columns:
+        for u in df["url"]:
+            h = _url_hostname(str(u))
+            if h:
+                return h
+    return ""
+
+
+def _pick_lighthouse_summary(
+    lighthouse_by_url: dict[str, Any],
+    start_url: str,
+    global_summary: Optional[dict[str, Any]],
+    expected_host: str,
+) -> Optional[dict[str, Any]]:
+    """Prefer per-URL summary for this crawl; only use global summary if hostname matches."""
+    if lighthouse_by_url and start_url:
+        match = lighthouse_for_url(lighthouse_by_url, start_url)
+        if match:
+            return match
+    if lighthouse_by_url:
+        first_key = next(iter(lighthouse_by_url), None)
+        if first_key is not None:
+            return lighthouse_by_url[first_key]
+    if global_summary:
+        if not expected_host or _hosts_match(_url_hostname(str(global_summary.get("url") or "")), expected_host):
+            return global_summary
+    return None
 
 
 def build_lighthouse_by_url_for_report(conn: Any) -> dict[str, Any]:
@@ -805,7 +866,7 @@ def run_simple_report(
     db_path: Optional[str] = None,
     config: Optional[dict[str, str]] = None,
 ) -> str:
-    """Load crawl data, build edges if needed, write report payload to SQLite. Returns db_path. Requires db_path (React app in UI/ loads report.db)."""
+    """Load crawl data, build edges if needed, write report payload to SQLite. Returns db_path. Requires db_path (Next.js UI in web/ reads via /api/report/*)."""
     run_id = None
     crawl_run_created_at: Optional[str] = None
     if db_path:
@@ -828,12 +889,9 @@ def run_simple_report(
                 crawl_run_created_at = info["created_at"] if info else None
             df = read_crawl(conn, run_id)
             edges = read_edges(conn, run_id)
-            lighthouse_summary = read_lighthouse_summary(conn)
+            global_lighthouse_summary = read_lighthouse_summary(conn)
             lighthouse_by_url = build_lighthouse_by_url_for_report(conn)
-            if not lighthouse_summary and lighthouse_by_url:
-                first_url = next(iter(lighthouse_by_url), None)
-                if first_url is not None:
-                    lighthouse_summary = lighthouse_by_url[first_url]
+            lighthouse_summary = global_lighthouse_summary
             print(f"  Loaded {len(df)} URLs, {len(edges)} edges.", flush=True)
             if df.empty and not edges:
                 raise FileNotFoundError(f"No crawl or edges data in DB: {db_path}")
@@ -845,6 +903,7 @@ def run_simple_report(
         edges = []
         lighthouse_summary = None
         lighthouse_by_url = {}
+        global_lighthouse_summary = None
         print(f"  Loaded {len(df)} URLs.", flush=True)
 
     if "url" not in df.columns and not df.empty:
@@ -853,6 +912,17 @@ def run_simple_report(
     df = df.copy()
     if not df.empty:
         df["url"] = df["url"].astype(str).str.rstrip("/")
+
+    expected_host = _derive_expected_host(start_url or "", df)
+    if lighthouse_by_url and expected_host:
+        lighthouse_by_url = filter_lighthouse_by_host(lighthouse_by_url, expected_host)
+    if db_path:
+        lighthouse_summary = _pick_lighthouse_summary(
+            lighthouse_by_url,
+            start_url or "",
+            global_lighthouse_summary,
+            expected_host,
+        )
 
     site_display = (site_name or "").strip() or (urlparse(start_url or "").netloc if start_url else "") or "Site"
     report_display_title = (report_title or "").strip() or f"{site_display} — Crawl Report"
@@ -911,6 +981,12 @@ def run_simple_report(
             try:
                 with open(lighthouse_summary_path, "r", encoding="utf-8") as fh:
                     lighthouse_summary = json.load(fh)
+                if lighthouse_summary and expected_host:
+                    if not _hosts_match(
+                        _url_hostname(str(lighthouse_summary.get("url") or "")),
+                        expected_host,
+                    ):
+                        lighthouse_summary = None
             except (OSError, json.JSONDecodeError):
                 pass
 
@@ -1323,10 +1399,31 @@ def run_simple_report(
         from ..db import db_session as _db, init_schema as _init, write_report_payload as db_write_report_payload
         with _db(db_path) as conn:
             _init(conn)
+            # Carry forward Google data from dedicated table so report rebuilds preserve it
+            try:
+                from ..integrations.google.store import read_latest_google_data
+                google_data = read_latest_google_data(conn)
+                if google_data:
+                    report_data["google"] = google_data
+            except Exception:
+                pass
+            # Carry forward enriched keyword data (cap at top 500 by traffic potential)
+            try:
+                from ..integrations.google.keyword_store import read_latest_keyword_data
+                kw_data = read_latest_keyword_data(conn)
+                if kw_data:
+                    # Cap rows to keep payload lean
+                    rows = kw_data.get("rows") or []
+                    if len(rows) > 500:
+                        rows = rows[:500]
+                        kw_data = {**kw_data, "rows": rows}
+                    report_data["keywords"] = kw_data
+            except Exception:
+                pass
             db_write_report_payload(conn, report_data)
         return db_path
     raise ValueError(
         "Report requires sqlite_db. Set sqlite_db = report.db in your config; "
-        "the React app in UI/ loads report.db to display the report."
+        "the Next.js UI in web/ reads report.db via /api/report/*."
     )
 

@@ -2,6 +2,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { randomUUID } from 'crypto';
+import { getReportDbPath } from '@/server/pipelineConfig';
 
 const WEB_CWD = process.cwd();
 const DEFAULT_REPO_ROOT = process.env.WEBSITE_PROFILING_ROOT || path.resolve(WEB_CWD, '..');
@@ -16,8 +17,10 @@ const ALLOWED_COMMANDS = new Set([
   'plot',
   'lighthouse',
   'keywords',
+  'keywords --enrich-google',
   'warnings',
   'enrich',
+  'google',
 ]);
 
 const STORE_KEY = '__websiteProfilingPipelineJobs';
@@ -71,48 +74,39 @@ function resolveRepoRoot(override) {
 }
 
 /**
- * @param {string | undefined} configRelative
+ * Resolve and validate an absolute config file path.
+ *
+ * Allowed locations:
+ *   - Under repoRoot (always)
+ *   - Under dirname(REPORT_DB_PATH) — the data volume (/data) in Docker
+ *
+ * @param {string} absPath – already-absolute path to validate
  * @param {string} repoRoot
+ * @returns {string} validated absolute path
  */
-function resolveConfigPath(configRelative, repoRoot) {
-  const rel = (configRelative || 'input.txt').replace(/\\/g, '/').replace(/^\/+/, '');
-  if (rel.includes('..')) throw new Error('Invalid config path');
-  const abs = path.resolve(repoRoot, rel);
-  const normalizedRoot = path.resolve(repoRoot);
-  if (!abs.startsWith(normalizedRoot)) throw new Error('Config must stay under repo root');
-  return abs;
-}
+function validateConfigPath(absPath, repoRoot) {
+  const normalized = path.resolve(absPath);
 
-const MAX_INLINE_CONFIG_BYTES = 512 * 1024;
+  if (normalized.startsWith(path.resolve(repoRoot))) return normalized;
 
-/**
- * @param {string} repoRoot
- * @param {string} content
- * @returns {string} absolute path to written file
- */
-function writeInlineConfigFile(repoRoot, content) {
-  // Python CLI resolves relative paths (e.g. sqlite_db = report.db) against the config file's
-  // directory (see cli.py: cwd = dirname(cfg_path)). Config must live at repo root so report.db
-  // matches REPORT_DB_PATH / Next.js reader (repo/report.db), not .web-pipeline/report.db.
-  const name = `.website-profiling-ui-${Date.now()}-${randomUUID().slice(0, 8)}.txt`;
-  const abs = path.join(repoRoot, name);
-  const buf = Buffer.from(String(content), 'utf8');
-  if (buf.length > MAX_INLINE_CONFIG_BYTES) {
-    throw new Error('Config content too large');
-  }
-  if (buf.includes(0)) {
-    throw new Error('Invalid config content');
-  }
-  fs.writeFileSync(abs, buf, { encoding: 'utf8' });
-  return abs;
+  const dbPath = (process.env.REPORT_DB_PATH || '').trim();
+  if (dbPath && normalized.startsWith(path.resolve(path.dirname(dbPath)))) return normalized;
+
+  throw new Error(`Config path not in an allowed directory: ${normalized}`);
 }
 
 /**
+ * Start a pipeline job. When configAbsPath is omitted (the normal UI flow),
+ * Python picks up settings from the pipeline_config table in report.db via
+ * the REPORT_DB_PATH environment variable. Pass configAbsPath only for an
+ * explicit CLI-override scenario.
+ *
  * @param {string | null | undefined} command
- * @param {string | undefined} configRelative
- * @param {{ python?: string, repoRoot?: string, configContent?: string }} [options]
+ * @param {string | null | undefined} configAbsPath – optional; when absent Python uses DB
+ * @param {{ python?: string, repoRoot?: string }} [options]
+ * @returns {string} job id
  */
-export function startPipelineJob(command, configRelative, options = {}) {
+export function startPipelineJob(command, configAbsPath, options = {}) {
   if (command != null && command !== '' && !ALLOWED_COMMANDS.has(command)) {
     throw new Error('Invalid command');
   }
@@ -123,15 +117,14 @@ export function startPipelineJob(command, configRelative, options = {}) {
 
   const repoRoot = resolveRepoRoot(options.repoRoot);
   const pythonExe = sanitizePython(options.python);
-  const inline =
-    options.configContent != null && String(options.configContent).trim() !== ''
-      ? String(options.configContent)
-      : null;
-  const cfgPath = inline
-    ? writeInlineConfigFile(repoRoot, inline)
-    : resolveConfigPath(configRelative, repoRoot);
-  if (!inline && !fs.existsSync(cfgPath)) {
-    throw new Error(`Config file not found: ${cfgPath}`);
+
+  // Validate config path only when explicitly provided
+  let cfgPath = null;
+  if (configAbsPath != null && String(configAbsPath).trim() !== '') {
+    cfgPath = validateConfigPath(String(configAbsPath), repoRoot);
+    if (!fs.existsSync(cfgPath)) {
+      throw new Error(`Config file not found: ${cfgPath}`);
+    }
   }
 
   const id = randomUUID();
@@ -139,12 +132,19 @@ export function startPipelineJob(command, configRelative, options = {}) {
   store.jobs.set(id, entry);
   store.running = true;
 
-  const args = ['-m', 'src', '--config', cfgPath];
-  if (command) args.push(command);
+  // When no explicit config path is given, Python reads from report.db via REPORT_DB_PATH env.
+  const args = ['-m', 'src'];
+  if (cfgPath) args.push('--config', cfgPath);
+  // Support multi-word commands like "keywords --enrich-google"
+  if (command) args.push(...command.split(/\s+/).filter(Boolean));
 
   const proc = spawn(pythonExe, args, {
     cwd: repoRoot,
-    env: { ...process.env },
+    env: {
+      ...process.env,
+      WEBSITE_PROFILING_ROOT: repoRoot,
+      REPORT_DB_PATH: getReportDbPath(),
+    },
     shell: false,
   });
 
