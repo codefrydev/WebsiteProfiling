@@ -11,10 +11,6 @@ services:
       REPORT_DB_PATH: /data/report.db
       PYTHON: /opt/venv/bin/python
       NODE_ENV: production
-      HF_HOME: /data/cache/huggingface
-      TRANSFORMERS_CACHE: /data/cache/huggingface/hub
-      TORCH_HOME: /data/cache/torch
-      SENTENCE_TRANSFORMERS_HOME: /data/cache/sentence-transformers
       GOOGLE_SECRETS_PATH: /data/.secrets/google.json
       # Lighthouse in Docker: system Chromium + no-sandbox (Chrome requirement in containers)
       CHROME_PATH: /usr/bin/chromium

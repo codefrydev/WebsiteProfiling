@@ -11,6 +11,10 @@ import {
   buildInitialPipelineConfigState,
   validatePipelineRun,
 } from '@/lib/pipelineConfigSchema';
+import {
+  LLM_CONFIG_SECTIONS,
+  buildInitialLlmConfigState,
+} from '@/lib/llmConfigSchema';
 
 const COMMANDS = [
   { value: '', label: 'Full pipeline (per form config)' },
@@ -20,15 +24,16 @@ const COMMANDS = [
   { value: 'lighthouse', label: 'lighthouse' },
   { value: 'keywords', label: 'keywords' },
   { value: 'warnings', label: 'warnings' },
-  { value: 'enrich', label: 'enrich' },
+  { value: 'enrich', label: 'enrich (analysis + AI)' },
   { value: 'google', label: 'google (fetch GSC & GA4)' },
   { value: 'keywords --enrich-google', label: 'keywords --enrich-google (Keywords Explorer)' },
 ];
 
 const TAB_RUN = 'run';
+const TAB_AI = 'ai';
 const TAB_OTHER = 'other';
 
-// Build tab list: de-dupe section ids (safety), then append run
+// Build tab list: de-dupe section ids (safety), AI tab, then Run
 function buildMainTabs(unknownKeys) {
   const seen = new Set();
   const tabs = [];
@@ -38,6 +43,7 @@ function buildMainTabs(unknownKeys) {
       tabs.push({ id: s.id, label: s.label });
     }
   }
+  tabs.push({ id: TAB_AI, label: 'AI' });
   tabs.push({ id: TAB_RUN, label: 'Run' });
   if (unknownKeys.length > 0) {
     tabs.push({ id: TAB_OTHER, label: 'Other' });
@@ -54,6 +60,54 @@ function ConfigField({ field: f, value, disabled, onChange }) {
   const helpEl = f.help ? (
     <p className="mt-1 text-xs text-muted-foreground">{f.help}</p>
   ) : null;
+
+  if (f.type === 'select') {
+    const strVal = value == null ? String(f.defaultValue ?? '') : String(value);
+    return (
+      <div className="min-w-0 sm:col-span-2">
+        <label htmlFor={id} className="mb-1 block text-xs font-medium text-muted-foreground">
+          {f.label}
+        </label>
+        <select
+          id={id}
+          value={strVal}
+          disabled={disabled}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 text-sm text-foreground"
+        >
+          {(f.options || []).map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        {helpEl}
+      </div>
+    );
+  }
+
+  if (f.type === 'secret') {
+    const strVal = value == null ? '' : String(value);
+    const placeholder = strVal.startsWith('••••') ? strVal : 'Paste API key (optional if env var set)';
+    return (
+      <div className="min-w-0 sm:col-span-2">
+        <label htmlFor={id} className="mb-1 block text-xs font-medium text-muted-foreground">
+          {f.label}
+        </label>
+        <input
+          id={id}
+          type="password"
+          autoComplete="off"
+          placeholder={placeholder}
+          value={strVal.startsWith('••••') ? '' : strVal}
+          disabled={disabled}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 text-sm text-foreground font-mono"
+        />
+        {helpEl}
+      </div>
+    );
+  }
 
   if (f.type === 'bool') {
     const checked = value === true;
@@ -158,6 +212,8 @@ export default function PipelineRunnerFab() {
   const [minimized, setMinimized] = useState(false);
   const [activeTab, setActiveTab] = useState(PIPELINE_CONFIG_SECTIONS[0].id);
   const [configState, setConfigState] = useState(buildInitialPipelineConfigState);
+  const [llmConfigState, setLlmConfigState] = useState(buildInitialLlmConfigState);
+  const [llmConfigMasked, setLlmConfigMasked] = useState({});
   const [unknownKeys, setUnknownKeys] = useState([]);
   const [configPath, setConfigPath] = useState('');
   const [configSource, setConfigSource] = useState(null); // 'store'|'legacy'|'defaults'
@@ -241,17 +297,33 @@ export default function PipelineRunnerFab() {
     setLoading(true);
     setLoadError('');
     try {
-      const res = await fetch(apiUrl('/pipeline-config'));
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || res.statusText);
+      const [pipeRes, llmRes] = await Promise.all([
+        fetch(apiUrl('/pipeline-config')),
+        fetch(apiUrl('/llm-config')),
+      ]);
+      const data = await pipeRes.json().catch(() => ({}));
+      const llmData = await llmRes.json().catch(() => ({}));
+      if (!pipeRes.ok) throw new Error(data.error || pipeRes.statusText);
       setConfigState(data.state || buildInitialPipelineConfigState());
       setUnknownKeys(Array.isArray(data.unknownKeys) ? data.unknownKeys : []);
       setConfigPath(data.dbPath || data.configPath || '');
       setConfigSource(data.source || 'defaults');
+      if (llmRes.ok && llmData.state) {
+        setLlmConfigState(llmData.state);
+        const masked = {};
+        for (const [k, v] of Object.entries(llmData.state)) {
+          if (k.endsWith('_masked')) masked[k] = v;
+        }
+        setLlmConfigMasked(masked);
+      } else {
+        setLlmConfigState(buildInitialLlmConfigState());
+        setLlmConfigMasked({});
+      }
       setLegacyBannerDismissed(false);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : String(e));
       setConfigState(buildInitialPipelineConfigState());
+      setLlmConfigState(buildInitialLlmConfigState());
     } finally {
       setLoading(false);
     }
@@ -269,6 +341,44 @@ export default function PipelineRunnerFab() {
     }
   }, [showModal, minimized]);
 
+  const setLlmField = useCallback((key, v) => {
+    setLlmConfigState((prev) => ({ ...prev, [key]: v }));
+    if (key === 'llm_api_key') {
+      setLlmConfigMasked((prev) => {
+        const next = { ...prev };
+        delete next.llm_api_key_masked;
+        return next;
+      });
+    }
+  }, []);
+
+  const buildLlmPayload = useCallback(() => ({ ...llmConfigState, ...llmConfigMasked }), [llmConfigState, llmConfigMasked]);
+
+  const saveLlmSettings = useCallback(async () => {
+    setSaving(true);
+    setSaveMsg('');
+    try {
+      const res = await fetch(apiUrl('/llm-config'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: buildLlmPayload() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      setSaveMsg('AI settings saved.');
+      setTimeout(() => setSaveMsg(''), 3000);
+      const reload = await fetch(apiUrl('/llm-config'));
+      const reloaded = await reload.json().catch(() => ({}));
+      if (reload.ok && reloaded.state) {
+        setLlmConfigState(reloaded.state);
+      }
+    } catch (e) {
+      setSaveMsg(`Save failed: ${e instanceof Error ? e.message : String(e)}`);
+    } finally {
+      setSaving(false);
+    }
+  }, [buildLlmPayload]);
+
   const setField = useCallback((key, v) => {
     setConfigState((prev) => ({ ...prev, [key]: v }));
   }, []);
@@ -278,7 +388,7 @@ export default function PipelineRunnerFab() {
     setSaveMsg('');
   }, []);
 
-  // Save settings to report.db pipeline_config table + shadow file (PUT)
+  // Save pipeline + AI settings to report.db (PUT)
   const saveSettings = useCallback(async () => {
     setSaving(true);
     setSaveMsg('');
@@ -290,7 +400,14 @@ export default function PipelineRunnerFab() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || res.statusText);
-      setConfigPath(data.configPath || configPath);
+      const llmRes = await fetch(apiUrl('/llm-config'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: buildLlmPayload() }),
+      });
+      const llmData = await llmRes.json().catch(() => ({}));
+      if (!llmRes.ok) throw new Error(llmData.error || llmRes.statusText);
+      setConfigPath(data.configPath || data.dbPath || configPath);
       setConfigSource('store');
       setSaveMsg('Saved.');
       setTimeout(() => setSaveMsg(''), 3000);
@@ -299,7 +416,7 @@ export default function PipelineRunnerFab() {
     } finally {
       setSaving(false);
     }
-  }, [configState, unknownKeys, configPath]);
+  }, [configState, unknownKeys, configPath, buildLlmPayload]);
 
   // Run pipeline (save first, then spawn)
   const run = useCallback(async () => {
@@ -321,6 +438,7 @@ export default function PipelineRunnerFab() {
           command: command || null,
           state: configState,
           unknownKeys,
+          llmState: buildLlmPayload(),
           python: pythonExe.trim() || undefined,
           repoRoot: repoRoot.trim() || undefined,
         }),
@@ -338,7 +456,7 @@ export default function PipelineRunnerFab() {
       setLog(e instanceof Error ? e.message : String(e));
       setBusy(false);
     }
-  }, [command, configState, unknownKeys, pythonExe, repoRoot, stopPoll, watchJob]);
+  }, [command, configState, unknownKeys, buildLlmPayload, pythonExe, repoRoot, stopPoll, watchJob]);
 
   const openFab = () => {
     if (minimized && !showModal) {
@@ -617,6 +735,46 @@ export default function PipelineRunnerFab() {
                       Reset form defaults
                     </button>
                   </div>
+                </div>
+              ) : activeTab === TAB_AI ? (
+                <div
+                  id={`pipe-tab-${TAB_AI}`}
+                  role="tabpanel"
+                  aria-labelledby={`pipe-tab-btn-${TAB_AI}`}
+                  className="space-y-6"
+                >
+                  <p className="text-xs text-muted-foreground">
+                    AI enrichment settings are stored only in{' '}
+                    <code className="text-[10px]">report.db</code> (llm_config) — never in
+                    pipeline-config.txt. Configure provider and tasks here before running report.
+                  </p>
+                  {LLM_CONFIG_SECTIONS.map((section) => (
+                    <div key={section.id}>
+                      <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        {section.label}
+                      </h3>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {section.fields.map((f) => (
+                          <ConfigField
+                            key={f.key}
+                            field={f}
+                            value={llmConfigState[f.key]}
+                            disabled={busy}
+                            onChange={(v) => setLlmField(f.key, v)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={saveLlmSettings}
+                    disabled={busy || saving || loading}
+                    className="flex items-center gap-1.5 rounded-lg border border-default bg-brand-900 px-4 py-2.5 text-sm font-medium text-foreground hover:bg-brand-700 disabled:opacity-50"
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                    {saving ? 'Saving…' : 'Save AI settings'}
+                  </button>
                 </div>
               ) : activeTab === TAB_OTHER ? (
                 <div

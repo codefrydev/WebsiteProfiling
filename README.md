@@ -24,7 +24,7 @@ Activate `.venv`, then:
 pip install -r requirements.txt
 ```
 
-Optional ML: `pip install -r requirements-ml.txt`
+Optional LLM enrichment: `pip install -r requirements-llm.txt` — configure in the web UI **AI** tab only (not via `pipeline-config.txt`).
 
 **2. Configure & run the pipeline**
 
@@ -33,6 +33,7 @@ The easiest way is via the **web UI** (terminal icon, bottom-right corner at `ht
 - A shadow `pipeline-config.txt` is auto-written next to `report.db` on every Save/Run (safe to delete; regenerated automatically).
 - On first open, if the table is empty, the UI imports from shadow `pipeline-config.txt` (if present).
 - Click **Save settings** to persist, or **Run pipeline** to save + run immediately.
+- **AI enrichment** (OpenAI, Gemini, Claude, Ollama): use the **AI** tab in the pipeline runner — settings are stored in `llm_config` inside `report.db` only (not in `pipeline-config.txt`).
 
 To run from the CLI instead:
 

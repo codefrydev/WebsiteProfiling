@@ -47,9 +47,11 @@ export async function PUT(request) {
     return NextResponse.json({ error: 'Missing state object' }, { status: 400 });
   }
 
-  // Coerce each key to its declared type; ignore keys not in schema
+  // Coerce each key to its declared type; ignore keys not in schema.
+  // LLM keys are UI-only (llm_config table) — never persist via pipeline-config.
   const state = {};
   for (const [key, rawValue] of Object.entries(rawState)) {
+    if (key.startsWith('llm_')) continue;
     if (!ALL_SCHEMA_KEYS.has(key)) continue;
     const field = getFieldByKey(key);
     if (!field) continue;
@@ -66,9 +68,16 @@ export async function PUT(request) {
     }
   }
 
-  // Validate unknownKeys shape
+  // Validate unknownKeys shape; drop llm_* (UI-only) and legacy ml_* keys
   const safeUnknownKeys = Array.isArray(unknownKeys)
-    ? unknownKeys.filter((u) => u && typeof u.key === 'string' && typeof u.value === 'string')
+    ? unknownKeys.filter(
+        (u) =>
+          u &&
+          typeof u.key === 'string' &&
+          typeof u.value === 'string' &&
+          !u.key.startsWith('llm_') &&
+          !u.key.startsWith('ml_'),
+      )
     : [];
 
   try {

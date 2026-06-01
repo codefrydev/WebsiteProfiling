@@ -52,28 +52,12 @@ lighthouse_max_pages = 2
 keyword_output_dir = .
 keyword_max_pages = 200
 
-# --- ML ---
+# --- Content analysis (local; no PyTorch) ---
 enable_duplicate_detection = true
-enable_anomaly_urls = true
 enable_language_detection = true
-enable_ner_spacy = true
-enable_semantic_similar_internal = true
-enable_semantic_keywords = true
-ml_sentence_model = all-MiniLM-L6-v2
-ml_max_pages_st = 400
-ml_similar_top_k = 5
-ml_fuzzy_threshold = 92
-ml_simhash_hamming = 0
-ml_dup_max_pages = 2000
-ml_ner_max_pages = 80
-ml_semantic_keyword_max = 200
-ml_keyword_cluster_sim = 75
-enable_embedding_duplicate_refine = true
-ml_dup_embed_min_pct = 88
-enable_keybert = true
-ml_keybert_max_pages = 60
-ml_keybert_top_n = 8
-ml_verbose = true
+analysis_fuzzy_threshold = 92
+analysis_simhash_hamming = 0
+analysis_dup_max_pages = 2000
 
 # --- Pipeline ---
 run_crawl = true

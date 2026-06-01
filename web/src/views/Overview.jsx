@@ -173,7 +173,6 @@ export default function Overview({ searchQuery = '' }) {
   const { data, reportDiff, startUrlByRunId } = useReport();
   const searchParams = useSearchParams();
   const [mlErrOpen, setMlErrOpen] = useState(false);
-  const [anomOpen, setAnomOpen] = useState(false);
   const vo = strings.views.overview;
   const sj = strings.common;
   const q = (searchQuery || '').toLowerCase().trim();
@@ -745,7 +744,6 @@ export default function Overview({ searchQuery = '' }) {
       )}
 
       {(data.content_duplicates?.length > 0 ||
-        data.anomalies?.length > 0 ||
         (data.language_summary?.counts && Object.keys(data.language_summary.counts).length > 0) ||
         (data.semantic_keyword_clusters?.length > 0) ||
         (data.ner_site_summary?.label_counts && Object.keys(data.ner_site_summary.label_counts).length > 0)) && (
@@ -754,16 +752,11 @@ export default function Overview({ searchQuery = '' }) {
             <Sparkles className="h-5 w-5 text-violet-700 dark:text-violet-400" />
             {vo.contentIntelligence}
           </h2>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <Card shadow>
               <div className="text-violet-800/90 dark:text-violet-400/80 text-xs font-bold uppercase tracking-wider mb-2">{vo.duplicateGroups}</div>
               <div className="text-3xl font-bold text-violet-800 dark:text-violet-300">{data.content_duplicates?.length ?? 0}</div>
               <div className="text-xs text-muted-foreground mt-2">{vo.nearDuplicateGroups}</div>
-            </Card>
-            <Card shadow>
-              <div className="text-amber-800/90 dark:text-amber-400/80 text-xs font-bold uppercase tracking-wider mb-2">{vo.anomalies}</div>
-              <div className="text-3xl font-bold text-amber-800 dark:text-amber-300">{data.anomalies?.length ?? 0}</div>
-              <div className="text-xs text-muted-foreground mt-2">{vo.outliers}</div>
             </Card>
             <Card shadow>
               <div className="text-emerald-800/90 dark:text-emerald-400/80 text-xs font-bold uppercase tracking-wider mb-2">{vo.parentTopics}</div>
@@ -783,7 +776,7 @@ export default function Overview({ searchQuery = '' }) {
                   : vo.entitiesSitewide}
               </div>
             </Card>
-            <Card shadow className="col-span-2 lg:col-span-4">
+            <Card shadow className="col-span-2 lg:col-span-3">
               <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vo.languagesSampled}</div>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(data.language_summary?.counts || {})
@@ -805,47 +798,6 @@ export default function Overview({ searchQuery = '' }) {
               )}
             </Card>
           </div>
-
-          {data.anomalies?.length > 0 && (
-            <Card shadow className="mt-4">
-              <button
-                type="button"
-                onClick={() => setAnomOpen((o) => !o)}
-                className="w-full flex items-center gap-2 text-left text-sm font-bold text-amber-900 dark:text-amber-200/90 mb-2"
-              >
-                {anomOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-                {format(vo.anomalyUrlsTitle, { count: data.anomalies.length })}
-              </button>
-              {anomOpen && (
-                <div className="max-h-72 overflow-auto rounded-lg border border-muted">
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableHeadCell>{vo.thUrl}</TableHeadCell>
-                        <TableHeadCell>{vo.thScore}</TableHeadCell>
-                        <TableHeadCell>{vo.thReasons}</TableHeadCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {data.anomalies.map((a, idx) => (
-                        <TableRow key={`${a.url}-${idx}`}>
-                          <TableCell className="font-mono text-xs max-w-[min(100vw,28rem)] break-all">
-                            <a href={a.url} target="_blank" rel="noreferrer" className="text-link hover:underline">
-                              {a.url}
-                            </a>
-                          </TableCell>
-                          <TableCell className="text-xs font-mono tabular-nums">{a.anomaly_score ?? sj.emDash}</TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {(a.reasons || []).join(', ') || sj.emDash}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </Card>
-          )}
         </div>
       )}
 

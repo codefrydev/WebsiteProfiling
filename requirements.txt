@@ -6,6 +6,10 @@ tqdm>=4.64.0
 networkx>=2.8.0
 python-Wappalyzer>=0.3.1
 
+# Local content analysis (duplicates, language)
+rapidfuzz>=3.0.0
+langdetect>=1.0.9
+
 # Google Search Console + GA4 integration (optional; required for `python -m src google`)
 google-auth>=2.0.0
 google-auth-oauthlib>=1.0.0

@@ -18,3 +18,4 @@ web/.env.local
 
 # Legacy local config file (use report.db / web UI instead)
 input.txt
+*__pycache__*

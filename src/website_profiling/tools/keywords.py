@@ -257,16 +257,28 @@ def run_keyword_pipeline(
     clusters = cluster_keywords(scored)
 
     semantic_clusters: list[dict[str, Any]] = []
-    from ..config import get_bool
+    llm_cfg: dict[str, str] = {}
+    db_raw = (config.get("sqlite_db") or "").strip()
+    if db_raw:
+        db_path = db_raw if os.path.isabs(db_raw) else os.path.join(output_dir, db_raw)
+        env_db = (os.environ.get("REPORT_DB_PATH") or "").strip()
+        if env_db:
+            db_path = os.path.abspath(env_db)
+        from ..llm_config import load_llm_config_from_db, llm_is_enabled
 
-    if get_bool(config, "enable_semantic_keywords", False):
-        try:
-            from ..ml.enrich import cluster_keywords_semantic
+        llm_cfg = load_llm_config_from_db(db_path)
+        if llm_is_enabled(llm_cfg) and str(llm_cfg.get("llm_enable_keyword_clusters", "")).lower() in (
+            "true",
+            "1",
+            "yes",
+        ):
+            try:
+                from ..llm.enrich import cluster_keywords_llm
 
-            top_kw = [s["keyword"] for s in scored[:200] if s.get("keyword")]
-            semantic_clusters = cluster_keywords_semantic(top_kw, config)
-        except ImportError as e:
-            print(f"Semantic keywords skipped: {e}", file=sys.stderr)
+                top_kw = [s["keyword"] for s in scored[:200] if s.get("keyword")]
+                semantic_clusters = cluster_keywords_llm(top_kw, llm_cfg, db_path=db_path)
+            except Exception as e:
+                print(f"Semantic keywords skipped: {e}", file=sys.stderr)
 
     ts = datetime.now(timezone.utc).isoformat()
     top_path = os.path.join(output_dir, "top_keywords.csv")

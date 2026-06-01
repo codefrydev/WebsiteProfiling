@@ -5,7 +5,7 @@
 
 FROM node:20-bookworm-slim AS base
 
-# Python venv + Chromium + build tools (ML stack may compile native wheels on some platforms)
+# Python venv + Chromium + build tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     python3 \
@@ -38,15 +38,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHON=/opt/venv/bin/python \
     CHROME_PATH=/usr/bin/chromium
 
-# Python: base requirements, then ML/NLP (sentence-transformers, spaCy, KeyBERT, scikit-learn, …)
+# Python: base requirements + optional LLM API clients
 COPY requirements.txt /app/requirements.txt
-COPY requirements-ml.txt /app/requirements-ml.txt
+COPY requirements-llm.txt /app/requirements-llm.txt
 RUN --mount=type=cache,target=/root/.cache/pip \
     python3 -m venv /opt/venv \
   && /opt/venv/bin/pip install --upgrade pip \
   && /opt/venv/bin/pip install -r /app/requirements.txt \
-  && /opt/venv/bin/pip install -r /app/requirements-ml.txt \
-  && /opt/venv/bin/python -m spacy download en_core_web_sm \
+  && /opt/venv/bin/pip install -r /app/requirements-llm.txt \
   && ln -sf /opt/venv/bin/python /usr/local/bin/python \
   && ln -sf /opt/venv/bin/python /usr/local/bin/python3
 

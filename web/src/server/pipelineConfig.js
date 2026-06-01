@@ -214,6 +214,14 @@ function writeShadowFile(state, unknownKeys) {
 
 // ─── DB read helpers ──────────────────────────────────────────────────────────
 
+function isLegacyOrLlmKey(key) {
+  return key.startsWith('llm_') || key.startsWith('ml_');
+}
+
+function filterUnknownKeys(list) {
+  return (list || []).filter((u) => u && !isLegacyOrLlmKey(u.key));
+}
+
 /**
  * Read all rows from the pipeline_config table.
  * @param {import('sql.js').Database} db
@@ -264,7 +272,7 @@ export async function loadPipelineConfig() {
     if (Object.keys(known).length > 0 || unknown.length > 0) {
       const { state, unknownKeys: schemaUnknown } = applySchemaDefaults(known);
       // Merge DB unknown rows with any schema-unknown keys from known map
-      const allUnknown = [...unknown, ...schemaUnknown];
+      const allUnknown = filterUnknownKeys([...unknown, ...schemaUnknown]);
       return { state, unknownKeys: allUnknown, source: 'store', dbPath };
     }
 
@@ -276,7 +284,7 @@ export async function loadPipelineConfig() {
         const parsed = parseInputTxt(raw);
         if (Object.keys(parsed).length > 0) {
           const { state, unknownKeys } = applySchemaDefaults(parsed);
-          return { state, unknownKeys, source: 'legacy', dbPath };
+          return { state, unknownKeys: filterUnknownKeys(unknownKeys), source: 'legacy', dbPath };
         }
       } catch {
         // fall through

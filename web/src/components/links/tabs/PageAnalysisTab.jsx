@@ -317,7 +317,6 @@ export default function PageAnalysisTab({ link }) {
 
       {(link.duplicate_group_id ||
         similarRows.length > 0 ||
-        link.ml_anomaly ||
         link.detected_language ||
         link.keyphrases?.phrases?.length > 0 ||
         pa?.signals?.language ||
@@ -354,14 +353,6 @@ export default function PageAnalysisTab({ link }) {
                     </li>
                   ))}
                 </ul>
-              </div>
-            )}
-            {link.ml_anomaly && (
-              <div className="bg-brand-900 border border-default rounded-lg p-3 sm:col-span-2">
-                <div className="text-muted-foreground mb-1">{p.anomalyIsolation}</div>
-                <div className="text-amber-800 dark:text-amber-400/90">
-                  {p.anomalyScorePrefix} {link.ml_anomaly.anomaly_score} — {(link.ml_anomaly.reasons || []).join(', ')}
-                </div>
               </div>
             )}
           </div>

@@ -27,7 +27,9 @@ from ..common import (
 )
 from ..tools.keywords import cluster_keywords, extract_candidates_from_df, score_keywords
 from ..config import get_bool, get_int
-from ..ml.enrich import cluster_keywords_semantic, run_ml_enrichment
+from ..analysis import merge_bundles, run_local_enrichment
+from ..llm.enrich import cluster_keywords_llm, run_llm_enrichment
+from ..llm_config import load_llm_config_from_db, llm_is_enabled
 from .categories import build_categories
 from ..security_scanner import run_security_scan
 
@@ -971,8 +973,11 @@ def run_simple_report(
             with open(security_findings_output, "w", encoding="utf-8") as fh:
                 json.dump(security_findings, fh, indent=2, default=str)
 
-    print("  ML enrichment (optional)...", flush=True)
-    ml_bundle = run_ml_enrichment(df, config)
+    print("  Content analysis (local + optional LLM)...", flush=True)
+    local_bundle = run_local_enrichment(df, config)
+    llm_cfg = load_llm_config_from_db(db_path) if db_path else {}
+    llm_bundle = run_llm_enrichment(df, llm_cfg, db_path=db_path) if llm_is_enabled(llm_cfg) else {}
+    ml_bundle = merge_bundles(local_bundle, llm_bundle)
 
     print("  Building report categories...", flush=True)
     if not db_path:
@@ -1087,8 +1092,6 @@ def run_simple_report(
     sim_map = ml_bundle.get("similar_internal_by_url") or {}
     lang_map = ml_bundle.get("language_by_url") or {}
     spacy_map = ml_bundle.get("spacy_by_url") or {}
-    anomalies_list = ml_bundle.get("anomalies") or []
-    anomaly_by_url = {str(a.get("url") or "").strip().rstrip("/"): a for a in anomalies_list if a.get("url")}
     kp_map = ml_bundle.get("keyphrases_by_url") or {}
 
     # Full links list: every crawled URL with url, status, inlinks, title, content_length, depth
@@ -1248,8 +1251,6 @@ def run_simple_report(
             rec["detected_language"] = lang_map[uk]
         if uk in spacy_map:
             rec["nlp_entities"] = spacy_map[uk]
-        if uk in anomaly_by_url:
-            rec["ml_anomaly"] = anomaly_by_url[uk]
         if uk in kp_map:
             rec["keyphrases"] = kp_map[uk]
 
@@ -1326,11 +1327,14 @@ def run_simple_report(
     print("  Building content analytics...", flush=True)
     content_analytics = _build_content_analytics(df)
     semantic_keyword_clusters: list[dict[str, Any]] = []
-    if get_bool(config or {}, "enable_semantic_keywords", False):
+    llm_cfg_for_clusters = load_llm_config_from_db(db_path) if db_path else {}
+    if db_path and llm_is_enabled(llm_cfg_for_clusters):
         try:
-            words = [x["word"] for x in (content_analytics.get("top_keywords_site") or []) if x.get("word")]
-            semantic_keyword_clusters = cluster_keywords_semantic(words, config or {})
-        except ImportError as e:
+            llm_cfg = llm_cfg_for_clusters
+            if str(llm_cfg.get("llm_enable_keyword_clusters", "")).lower() in ("true", "1", "yes"):
+                words = [x["word"] for x in (content_analytics.get("top_keywords_site") or []) if x.get("word")]
+                semantic_keyword_clusters = cluster_keywords_llm(words, llm_cfg, db_path=db_path)
+        except Exception as e:
             ml_bundle.setdefault("ml_errors", []).append(str(e))
     outbound_max = get_int(config or {}, "outbound_domain_max_rows", 200) or 200
     outbound_link_domains = _build_outbound_link_domains(df, start_url or "", outbound_max)
@@ -1376,7 +1380,6 @@ def run_simple_report(
         "response_time_stats": response_time_stats,
         "depth_distribution": depth_distribution,
         "content_duplicates": ml_bundle.get("content_duplicates") or [],
-        "anomalies": ml_bundle.get("anomalies") or [],
         "language_summary": ml_bundle.get("language_summary") or {},
         "ner_site_summary": ml_bundle.get("ner_site_summary") or {},
         "semantic_keyword_clusters": semantic_keyword_clusters,

@@ -230,7 +230,7 @@ def parse_content_text(soup, raw_html: str, excerpt_max_chars: int = 0) -> dict:
     """Extract content analytics: word count, reading level, content-to-HTML ratio, top keywords.
 
     excerpt_max_chars: when > 0, strip script/style from body and store a whitespace-normalized
-    plain-text excerpt (truncated) in ``content_excerpt`` for ML / UI.
+    plain-text excerpt (truncated) in ``content_excerpt`` for analysis / AI / UI.
     """
     import re
     from collections import Counter

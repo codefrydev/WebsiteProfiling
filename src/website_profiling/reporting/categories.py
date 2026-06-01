@@ -625,7 +625,7 @@ def category_security(
 
 
 def category_intelligence(ml_bundle: Optional[dict] = None) -> dict:
-    """Content intelligence: duplicate clusters, anomalies, language mix from optional ML enrichment."""
+    """Content intelligence: duplicate clusters and language mix from local + optional AI enrichment."""
     issues: list[dict] = []
     deductions: list[tuple[int, bool]] = []
     ml_bundle = ml_bundle or {}
@@ -647,22 +647,6 @@ def category_intelligence(ml_bundle: Optional[dict] = None) -> dict:
                 recommendation="Review clusters and add canonicals or noindex where appropriate.",
             ))
             deductions.append((8, True))
-
-    anomalies = ml_bundle.get("anomalies") or []
-    if len(anomalies) >= 5:
-        issues.append(_issue(
-            f"Unusual pages (multivariate outlier): {len(anomalies)} URL(s) flagged.",
-            priority="Medium",
-            recommendation="Review anomalies for crawl noise, soft-404s, or template bugs.",
-        ))
-        deductions.append((min(15, 5 + len(anomalies) // 10), True))
-    elif anomalies:
-        issues.append(_issue(
-            f"{len(anomalies)} URL(s) look statistically unusual vs the rest of the crawl.",
-            priority="Low",
-            recommendation="Spot-check flagged URLs in Link Explorer (ml_anomaly).",
-        ))
-        deductions.append((3, True))
 
     lang = ml_bundle.get("language_summary") or {}
     if lang.get("mixed_site") and (lang.get("detected_pages") or 0) >= 10:
@@ -702,7 +686,7 @@ def build_categories(
     summary_seo should have: issues["broken"], issues["redirects"].
     security_findings: optional list from security scanner (finding_type, severity, url, message, recommendation).
     lighthouse_summary: optional dict from lighthouse_runner (median_metrics, top_failures); when set, Core Web Vitals uses real data.
-    ml_bundle: optional dict from ml_enrich.run_ml_enrichment (duplicates, anomalies, language_summary, etc.) for Content intelligence category.
+    ml_bundle: optional dict from analysis + LLM enrichment (duplicates, language_summary, etc.) for Content intelligence category.
     """
     issues_broken = summary_seo.get("issues", {}).get("broken", [])
     issues_redirects = summary_seo.get("issues", {}).get("redirects", [])

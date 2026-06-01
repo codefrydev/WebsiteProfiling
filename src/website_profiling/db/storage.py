@@ -415,6 +415,19 @@ def init_schema(conn: sqlite3.Connection) -> None:
             is_unknown INTEGER NOT NULL DEFAULT 0,
             updated_at TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS llm_config (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            is_secret INTEGER NOT NULL DEFAULT 0,
+            updated_at TEXT NOT NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS llm_cache (
+            cache_key TEXT PRIMARY KEY,
+            response_json TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        );
     """)
     conn.commit()
 
@@ -472,6 +485,52 @@ def write_pipeline_config(
     except Exception:
         conn.execute("ROLLBACK")
         raise
+
+
+def read_llm_config(conn: sqlite3.Connection) -> dict[str, str]:
+    """Return {key: value} from llm_config table (includes secrets)."""
+    try:
+        cur = conn.execute("SELECT key, value FROM llm_config ORDER BY key")
+        return {str(row["key"]): str(row["value"]) for row in cur.fetchall()}
+    except Exception:
+        return {}
+
+
+def write_llm_config(conn: sqlite3.Connection, entries: dict[str, str], secret_keys: set[str] | None = None) -> None:
+    """Replace all llm_config rows. secret_keys marks keys stored with is_secret=1."""
+    now = time.strftime("%Y-%m-%d %H:%M:%S")
+    secret_keys = secret_keys or set()
+    conn.execute("BEGIN")
+    try:
+        conn.execute("DELETE FROM llm_config")
+        for k, v in entries.items():
+            is_secret = 1 if k in secret_keys else 0
+            conn.execute(
+                "INSERT INTO llm_config (key, value, is_secret, updated_at) VALUES (?, ?, ?, ?)",
+                (str(k), str(v), is_secret, now),
+            )
+        conn.execute("COMMIT")
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
+
+
+def read_llm_cache(conn: sqlite3.Connection, cache_key: str) -> Optional[str]:
+    try:
+        cur = conn.execute("SELECT response_json FROM llm_cache WHERE cache_key = ?", (cache_key,))
+        row = cur.fetchone()
+        return str(row["response_json"]) if row else None
+    except Exception:
+        return None
+
+
+def write_llm_cache(conn: sqlite3.Connection, cache_key: str, response_json: str) -> None:
+    now = time.strftime("%Y-%m-%d %H:%M:%S")
+    conn.execute(
+        "INSERT OR REPLACE INTO llm_cache (cache_key, response_json, created_at) VALUES (?, ?, ?)",
+        (cache_key, response_json, now),
+    )
+    conn.commit()
 
 
 def _crawl_results_has_run_id(conn: sqlite3.Connection) -> bool:

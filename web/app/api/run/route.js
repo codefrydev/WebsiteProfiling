@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { startPipelineJob } from '@/server/pipelineJobs';
 import { loadPipelineConfig, savePipelineConfig } from '@/server/pipelineConfig';
+import { saveLlmConfig } from '@/server/llmConfig';
+import { ALL_LLM_SCHEMA_KEYS, getLlmFieldByKey } from '@/lib/llmConfigSchema';
 import { ALL_SCHEMA_KEYS, getFieldByKey, validatePipelineRun } from '@/lib/pipelineConfigSchema';
 
 export const runtime = 'nodejs';
@@ -32,7 +34,7 @@ export async function POST(request) {
     body = {};
   }
 
-  const { command = null, state: rawState, unknownKeys = [], python, repoRoot } = body;
+  const { command = null, state: rawState, unknownKeys = [], llmState: rawLlmState, python, repoRoot } = body;
 
   let resolvedState = rawState;
   let resolvedUnknownKeys = unknownKeys;
@@ -56,6 +58,7 @@ export async function POST(request) {
   // Coerce state per field type
   const state = {};
   for (const [key, rawValue] of Object.entries(resolvedState)) {
+    if (key.startsWith('llm_')) continue;
     if (!ALL_SCHEMA_KEYS.has(key)) continue;
     const field = getFieldByKey(key);
     if (!field) continue;
@@ -73,7 +76,14 @@ export async function POST(request) {
   }
 
   const safeUnknownKeys = Array.isArray(resolvedUnknownKeys)
-    ? resolvedUnknownKeys.filter((u) => u && typeof u.key === 'string' && typeof u.value === 'string')
+    ? resolvedUnknownKeys.filter(
+        (u) =>
+          u &&
+          typeof u.key === 'string' &&
+          typeof u.value === 'string' &&
+          !u.key.startsWith('llm_') &&
+          !u.key.startsWith('ml_'),
+      )
     : [];
 
   const validationErrors = validatePipelineRun({ state, command: command || null });
@@ -86,6 +96,30 @@ export async function POST(request) {
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return NextResponse.json({ error: `Failed to save config: ${msg}` }, { status: 500 });
+  }
+
+  if (rawLlmState && typeof rawLlmState === 'object') {
+    const llmCoerced = {};
+    for (const [key, rawValue] of Object.entries(rawLlmState)) {
+      if (!ALL_LLM_SCHEMA_KEYS.has(key)) continue;
+      if (key.endsWith('_masked')) continue;
+      const field = getLlmFieldByKey(key);
+      if (!field) continue;
+      if (field.type === 'bool') {
+        llmCoerced[key] = rawValue === true || rawValue === 'true';
+      } else {
+        llmCoerced[key] = rawValue == null ? '' : String(rawValue);
+        if (rawLlmState[`${key}_masked`] === true) {
+          llmCoerced[`${key}_masked`] = true;
+        }
+      }
+    }
+    try {
+      await saveLlmConfig(llmCoerced);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      return NextResponse.json({ error: `Failed to save LLM config: ${msg}` }, { status: 500 });
+    }
   }
 
   try {

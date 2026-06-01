@@ -259,9 +259,11 @@ def main() -> None:
         if not db_path:
             print("enrich requires sqlite_db in config.", file=sys.stderr)
             sys.exit(1)
-        print("WebsiteProfiling: ML enrich only (updates latest report payload)...", flush=True)
+        print("WebsiteProfiling: enrich only (updates latest report payload)...", flush=True)
         from .db import db_session, get_latest_crawl_run_id, init_schema, read_crawl, read_report_payload, write_report_payload
-        from .ml.enrich import merge_ml_into_payload, run_ml_enrichment
+        from .analysis import merge_analysis_into_payload, merge_bundles, run_local_enrichment
+        from .llm.enrich import run_llm_enrichment
+        from .llm_config import load_llm_config_from_db, llm_is_enabled
 
         with db_session(db_path) as conn:
             init_schema(conn)
@@ -271,8 +273,11 @@ def main() -> None:
             if not payload:
                 print("No report_payload in DB. Run report first.", file=sys.stderr)
                 sys.exit(1)
-            ml_bundle = run_ml_enrichment(df, cfg)
-            merge_ml_into_payload(payload, ml_bundle)
+            local_bundle = run_local_enrichment(df, cfg)
+            llm_cfg = load_llm_config_from_db(db_path)
+            llm_bundle = run_llm_enrichment(df, llm_cfg, db_path=db_path) if llm_is_enabled(llm_cfg) else {}
+            bundle = merge_bundles(local_bundle, llm_bundle)
+            merge_analysis_into_payload(payload, bundle)
             write_report_payload(conn, payload)
         print("Enrich done. New report_payload row written.", flush=True)
         sys.exit(0)
