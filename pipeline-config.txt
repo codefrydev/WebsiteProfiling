@@ -1,4 +1,4 @@
-# WebsiteProfiling config (shadow of report.db pipeline_config table)
+# WebsiteProfiling config (shadow of pipeline_config table in PostgreSQL)
 # Regenerated automatically by the web UI on every Save/Run.
 # To use for CLI: python -m src --config pipeline-config.txt
 
@@ -14,28 +14,21 @@ allow_external = false
 store_outlinks = true
 store_content_excerpt = true
 content_excerpt_max_chars = 4096
-sqlite_db = report.db
 preserve_crawl_history = true
-crawl_output = crawl_results.json
 crawl_exclude_urls = 
 
 # --- Report ---
+# Crawl, edges, nodes, and report payload live in PostgreSQL (no JSON/CSV files).
 outbound_domain_max_rows = 200
 include_keyword_opportunities = true
-crawl_csv = crawl_results.json
-edges_csv = edges.json
-nodes_csv = nodes.json
 site_name = 
 report_title = SEO report
-report_output = site_report.html
 max_fetch_for_edges = 300
 same_domain_only = true
 max_nodes_plot = 400
 run_security_scan = true
 security_scan_active = false
 security_max_urls_probe = 20
-security_findings_output = 
-lighthouse_summary_json = 
 
 # --- Lighthouse ---
 lighthouse_url = 
@@ -43,13 +36,11 @@ lighthouse_mode = navigation
 lighthouse_strategy = desktop
 lighthouse_categories = performance,accessibility,best-practices,seo
 lighthouse_iterations = 1
-lighthouse_output_dir = .
 run_lighthouse = true
 run_lighthouse_on_pages = true
 lighthouse_max_pages = 2
 
-# --- Keywords ---
-keyword_output_dir = .
+# --- Keywords (stored in PostgreSQL keyword_data) ---
 keyword_max_pages = 200
 
 # --- Content analysis (local; no PyTorch) ---
@@ -82,7 +73,7 @@ keyword_gsc_max_rows = 25000
 keyword_seeds = 
 brand_name = 
 
-# --- Advanced ---
-warning_mapper_input = 
+# --- Advanced (warnings command: PostgreSQL by default) ---
+# Leave warning_mapper_input blank to map the latest Lighthouse run from DB.
+warning_mapper_input =
 warning_mapper_input_type = lighthouse
-warning_mapper_output =

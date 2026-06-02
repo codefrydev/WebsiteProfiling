@@ -1,0 +1,379 @@
+'use client';
+
+import {
+  createContext,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+  type ReactNode,
+} from 'react';
+import { domainQueryMatchesRow } from '../lib/domainSlug';
+import { computeReportFingerprintDiff } from '../lib/reportDiff';
+import { buildReportCompareSummary } from '../lib/reportCompare';
+import { strings } from '../lib/strings';
+import { reportApi } from '../lib/publicBase';
+import type { ReportContextValue } from './reportContextTypes';
+import type {
+  CrawlRunRow,
+  ReportListRow,
+  ReportMetaResponse,
+  ReportPayload,
+} from '@/types/report';
+
+export const ReportContext = createContext<ReportContextValue | null>(null);
+
+interface PayloadApiResponse {
+  payload?: ReportPayload;
+  error?: string;
+}
+
+interface MetaApiResponse extends Partial<ReportMetaResponse> {
+  error?: string;
+}
+
+function filterReportsByDomain(
+  full: ReportListRow[],
+  domainSlug: string | null | undefined,
+): ReportListRow[] {
+  if (domainSlug == null || domainSlug === '') return full;
+  return full.filter((r) => domainQueryMatchesRow(r, domainSlug));
+}
+
+function crawlMaps(crawlRuns: CrawlRunRow[]): {
+  startUrlByRunId: Map<number, string>;
+  runCreatedAtByRunId: Map<number, string>;
+} {
+  const startUrlByRunId = new Map<number, string>();
+  const runCreatedAtByRunId = new Map<number, string>();
+  for (const cr of crawlRuns) {
+    startUrlByRunId.set(cr.id, cr.start_url || '');
+    runCreatedAtByRunId.set(cr.id, cr.created_at || '');
+  }
+  return { startUrlByRunId, runCreatedAtByRunId };
+}
+
+export interface ReportProviderProps {
+  children: ReactNode;
+  domainSlug?: string | null;
+}
+
+export function ReportProvider({ children, domainSlug = null }: ReportProviderProps) {
+  const [data, setData] = useState<ReportPayload | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [reportListFull, setReportListFull] = useState<ReportListRow[]>([]);
+  const [crawlRuns, setCrawlRuns] = useState<CrawlRunRow[]>([]);
+  const [selectedReportId, setSelectedReportId] = useState<number | null>(null);
+  const [compareReportId, setCompareReportId] = useState<number | null>(null);
+  const [compareData, setCompareData] = useState<ReportPayload | null>(null);
+  const [crawlPreviewRunId, setCrawlPreviewRunId] = useState<number | null>(null);
+  const domainSlugRef = useRef(domainSlug);
+  domainSlugRef.current = domainSlug;
+
+  const { startUrlByRunId } = useMemo(() => crawlMaps(crawlRuns), [crawlRuns]);
+
+  const scopedList = useMemo(
+    () => filterReportsByDomain(reportListFull, domainSlug),
+    [reportListFull, domainSlug],
+  );
+
+  const reportList = useMemo(() => {
+    if (domainSlug == null || domainSlug === '') return reportListFull;
+    return scopedList;
+  }, [domainSlug, reportListFull, scopedList]);
+
+  const applyPayload = useCallback(async (reportId: number | null) => {
+    const scoped = domainSlugRef.current;
+    setLoading(true);
+    setError(null);
+    try {
+      const url =
+        reportId != null
+          ? reportApi(`/payload?reportId=${encodeURIComponent(String(reportId))}`)
+          : reportApi('/payload');
+      const res = await fetch(url);
+      const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
+      if (!res.ok) throw new Error(body.error || res.statusText);
+      setData(body.payload ?? null);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const allowGlobalFallback =
+        msg === 'Report not found' &&
+        reportId != null &&
+        (scoped == null || scoped === '');
+      if (allowGlobalFallback) {
+        setSelectedReportId(null);
+        try {
+          const res = await fetch(reportApi('/payload'));
+          const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
+          if (!res.ok) throw new Error(body.error || res.statusText);
+          setData(body.payload ?? null);
+        } catch (e2) {
+          setError(e2 instanceof Error ? e2.message : String(e2));
+        }
+      } else {
+        setError(msg);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const refreshReports = useCallback(async () => {
+    const scoped = domainSlugRef.current;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(reportApi('/meta'));
+      const body = (await res.json().catch(() => ({}))) as MetaApiResponse;
+      if (!res.ok) throw new Error(body.error || res.statusText);
+
+      const reps = Array.isArray(body.reports) ? body.reports : [];
+      const cr = Array.isArray(body.crawlRuns) ? body.crawlRuns : [];
+      setReportListFull(reps);
+      setCrawlRuns(cr);
+
+      setCrawlPreviewRunId(null);
+
+      if (reps.length === 0) {
+        setData(null);
+        setError((prev) => (
+          prev === 'No report_payload in DB' || prev === strings.app.noReportForDomain ? null : prev
+        ));
+        setLoading(false);
+        return;
+      }
+
+      const list = scoped ? filterReportsByDomain(reps, scoped) : reps;
+      if (scoped && list.length === 0) {
+        setError(strings.app.noReportForDomain);
+        setData(null);
+        setLoading(false);
+        return;
+      }
+
+      setError((prev) => (prev === strings.app.noReportForDomain ? null : prev));
+
+      const latestId = list[0]?.id ?? null;
+      if (latestId != null) {
+        setSelectedReportId(latestId);
+      }
+      await applyPayload(latestId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setLoading(false);
+    }
+  }, [applyPayload]);
+
+  const loadReport = refreshReports;
+
+  const loadCrawlPreview = useCallback(async (crawlRunId: number | null): Promise<boolean> => {
+    if (crawlRunId == null || !Number.isFinite(Number(crawlRunId))) return false;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        reportApi(`/crawl-payload?crawlRunId=${encodeURIComponent(String(crawlRunId))}`),
+      );
+      const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
+      if (!res.ok) throw new Error(body.error || res.statusText);
+      setData(body.payload ?? null);
+      setSelectedReportId(null);
+      setCrawlPreviewRunId(Number(crawlRunId));
+      setCompareReportId(null);
+      setCompareData(null);
+      return true;
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    setData(null);
+    setReportListFull([]);
+    setCrawlRuns([]);
+
+    fetch(reportApi('/meta'))
+      .then((res) => res.json())
+      .then((body: MetaApiResponse) => {
+        if (cancelled) return;
+        if (body.error) {
+          setError(String(body.error));
+          setLoading(false);
+          return;
+        }
+        const reps = Array.isArray(body.reports) ? body.reports : [];
+        const cr = Array.isArray(body.crawlRuns) ? body.crawlRuns : [];
+        setReportListFull(reps);
+        setCrawlRuns(cr);
+        if (reps.length === 0) setLoading(false);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : String(e));
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (crawlPreviewRunId != null) return;
+    if (!reportListFull.length && !crawlRuns.length) return;
+    if (!reportListFull.length) {
+      setLoading(false);
+      return;
+    }
+
+    if (domainSlug && scopedList.length === 0) {
+      setError(strings.app.noReportForDomain);
+      setData(null);
+      setLoading(false);
+      return;
+    }
+
+    setError((prev) => (prev === strings.app.noReportForDomain ? null : prev));
+
+    const list = domainSlug ? scopedList : reportListFull;
+    const allowedIds = new Set(list.map((r) => r.id));
+    let id = selectedReportId;
+    if (id == null || !allowedIds.has(id)) {
+      id = list[0]?.id ?? null;
+      if (id != null && id !== selectedReportId) {
+        setSelectedReportId(id);
+        return;
+      }
+    }
+    if (id == null) {
+      applyPayload(null);
+      return;
+    }
+    applyPayload(id);
+  }, [reportListFull, crawlRuns, domainSlug, scopedList, selectedReportId, applyPayload, crawlPreviewRunId]);
+
+  const setSelectedReportIdWrapped = useCallback((id: number | null) => {
+    setCrawlPreviewRunId(null);
+    setSelectedReportId(id);
+  }, []);
+
+  useEffect(() => {
+    if (compareReportId == null) {
+      setCompareData(null);
+      return;
+    }
+    const list = domainSlug ? scopedList : reportListFull;
+    const allowed = new Set(list.map((r) => r.id));
+    if (!allowed.has(compareReportId)) {
+      setCompareData(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(reportApi(`/payload?reportId=${encodeURIComponent(String(compareReportId))}`))
+      .then(async (res) => {
+        const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
+        if (!cancelled && res.ok && body.payload != null) setCompareData(body.payload);
+        else if (!cancelled) setCompareData(null);
+      })
+      .catch(() => {
+        if (!cancelled) setCompareData(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [compareReportId, domainSlug, scopedList, reportListFull]);
+
+  useEffect(() => {
+    const list = domainSlug ? scopedList : reportListFull;
+    const allowed = new Set(list.map((r) => r.id));
+    if (compareReportId != null && !allowed.has(compareReportId)) {
+      setCompareReportId(null);
+    }
+  }, [domainSlug, scopedList, reportListFull, compareReportId]);
+
+  const reportDiff = useMemo(() => {
+    if (data == null || compareData == null) return null;
+    return computeReportFingerprintDiff(data, compareData);
+  }, [data, compareData]);
+
+  const reportCompare = useMemo(() => {
+    if (data == null || compareData == null) return null;
+    const vo = strings.views.overview;
+    const c = strings.views.compare;
+    const m = c.metrics;
+    return buildReportCompareSummary(
+      data,
+      compareData,
+      {
+        totalUrls: vo.totalUrls,
+        successRate: vo.successRate,
+        count4xx: vo.broken,
+        count5xx: m.count5xx,
+        healthScore: m.healthScore,
+        auditIssues: m.auditIssues,
+        securityFindings: m.securityFindings,
+        avgPerformance: m.avgPerformance,
+        avgSeoScore: m.avgSeoScore,
+      },
+      {
+        linkMetrics: c.linkMetrics,
+        content: c.contentMetrics,
+        google: c.googleMetrics,
+      },
+    );
+  }, [data, compareData]);
+
+  const contextValue = useMemo<ReportContextValue>(
+    () => ({
+      data,
+      loading,
+      error,
+      reportList,
+      selectedReportId,
+      setSelectedReportId: setSelectedReportIdWrapped,
+      compareReportId,
+      setCompareReportId,
+      compareData,
+      reportDiff,
+      reportCompare,
+      loadReport,
+      refreshReports,
+      loadCrawlPreview,
+      crawlRuns,
+      startUrlByRunId,
+    }),
+    [
+      data,
+      loading,
+      error,
+      reportList,
+      selectedReportId,
+      setSelectedReportIdWrapped,
+      compareReportId,
+      compareData,
+      reportDiff,
+      reportCompare,
+      loadReport,
+      refreshReports,
+      loadCrawlPreview,
+      crawlRuns,
+      startUrlByRunId,
+    ],
+  );
+
+  return (
+    <ReportContext.Provider value={contextValue}>
+      {children}
+    </ReportContext.Provider>
+  );
+}

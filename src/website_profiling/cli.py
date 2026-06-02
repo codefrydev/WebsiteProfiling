@@ -3,39 +3,53 @@ CLI: read config file and run crawl, report, or plot.
 """
 import argparse
 import os
+import shutil
 import sys
+import tempfile
 
 import pandas as pd
 
 from .config import get_bool, get_float, get_int, get_list, load_config, load_config_from_db
 
 
-def _default_db_path() -> str:
-    """report.db path: REPORT_DB_PATH env, else report.db in cwd."""
-    env = (os.environ.get("REPORT_DB_PATH") or "").strip()
-    if env:
-        return os.path.abspath(env)
-    return os.path.abspath(os.path.join(os.getcwd(), "report.db"))
+def _shadow_config_path() -> str:
+    from .db.storage import get_data_dir
+    return os.path.join(get_data_dir(), "pipeline-config.txt")
 
 
-def _shadow_config_path(db_path: str) -> str:
-    return os.path.join(os.path.dirname(db_path) or os.getcwd(), "pipeline-config.txt")
+def _require_database_url() -> None:
+    from .db.storage import get_database_url
+    get_database_url()
 
 
-def _google_db_has_gsc(db_path: str) -> bool:
+def _lighthouse_work_dir() -> str:
+    """Ephemeral directory for Lighthouse CLI JSON; deleted after PostgreSQL write."""
+    return tempfile.mkdtemp(prefix="wp-lighthouse-")
+
+
+def _cleanup_lighthouse_work_dir(work_dir: str) -> None:
+    if not work_dir:
+        return
+    tmp_root = os.path.realpath(tempfile.gettempdir())
+    if os.path.realpath(work_dir).startswith(tmp_root):
+        shutil.rmtree(work_dir, ignore_errors=True)
+
+
+def _google_db_has_gsc() -> bool:
     """True when the latest google_data row contains usable Search Console query data."""
-    import json
+    from .db.storage import _parse_json_field
 
-    from .db import db_session, init_schema
+    from .db import db_session
 
     try:
-        with db_session(db_path) as conn:
-            init_schema(conn)
+        with db_session() as conn:
             cur = conn.execute("SELECT data FROM google_data ORDER BY id DESC LIMIT 1")
             row = cur.fetchone()
             if not row:
                 return False
-            data = json.loads(row[0])
+            data = _parse_json_field(row["data"])
+            if not isinstance(data, dict):
+                return False
             gsc = data.get("gsc_full") or {}
             return bool(gsc.get("top_queries") or gsc.get("by_page"))
     except Exception:
@@ -89,7 +103,7 @@ def main() -> None:
         "--config",
         "-c",
         default=None,
-        help="Optional key=value config file (default: pipeline_config in report.db)",
+        help="Optional key=value config file (default: pipeline_config in PostgreSQL)",
     )
     parser.add_argument(
         "command",
@@ -124,8 +138,8 @@ def main() -> None:
 
     # --- Config resolution order ---
     # 1. --config path: load that file (CLI override).
-    # 2. pipeline_config table in report.db (UI-managed; REPORT_DB_PATH or cwd/report.db).
-    # 3. Shadow pipeline-config.txt next to report.db.
+    # 2. pipeline_config table in PostgreSQL (UI-managed; DATABASE_URL).
+    # 3. Shadow pipeline-config.txt in DATA_DIR.
     # 4. Error with hint to save settings in the web UI.
 
     cfg: dict[str, str] = {}
@@ -139,16 +153,18 @@ def main() -> None:
         cfg = load_config(cfg_path)
         cwd = os.path.dirname(cfg_path) or os.getcwd()
     else:
-        db_path = _default_db_path()
-        cfg = load_config_from_db(db_path)
-        cwd = os.path.dirname(db_path) or os.getcwd()
+        try:
+            _require_database_url()
+        except RuntimeError as e:
+            print(str(e), file=sys.stderr)
+            sys.exit(1)
+        cfg = load_config_from_db()
+        from .db.storage import get_data_dir
+        cwd = get_data_dir()
         if cfg:
-            print(
-                f"[Config] Loaded from report.db pipeline_config table ({db_path})",
-                flush=True,
-            )
+            print("[Config] Loaded from pipeline_config table (PostgreSQL)", flush=True)
         else:
-            shadow = _shadow_config_path(db_path)
+            shadow = _shadow_config_path()
             if os.path.isfile(shadow):
                 cfg = load_config(shadow)
                 cwd = os.path.dirname(shadow) or os.getcwd()
@@ -167,13 +183,7 @@ def main() -> None:
             p = os.path.join(cwd, p)
         return p
 
-    # When set, crawl/report/plot/lighthouse use SQLite instead of JSON/CSV
-    sqlite_db_raw = (cfg.get("sqlite_db") or "").strip()
-    db_path = path("sqlite_db", "report.db") if sqlite_db_raw else None
-    # Docker / hosting: Next.js uses REPORT_DB_PATH for the same DB; align pipeline writes with the UI reader
-    _env_db = (os.environ.get("REPORT_DB_PATH") or "").strip()
-    if _env_db and db_path is not None:
-        db_path = os.path.abspath(_env_db)
+    use_database = True
 
     # Single-command mode: lighthouse, keywords, warnings
     if args.command == "lighthouse":
@@ -187,10 +197,21 @@ def main() -> None:
         lh_categories = cfg.get("lighthouse_categories", "").strip()
         lh_categories = get_list(cfg, "lighthouse_categories", sep=",") if lh_categories else None
         lh_iterations = get_int(cfg, "lighthouse_iterations", 3) or 3
-        lh_out = cfg.get("lighthouse_output_dir", "").strip() or cwd
-        if not os.path.isabs(lh_out):
-            lh_out = os.path.join(cwd, lh_out)
-        sys.exit(lighthouse_main(url=lh_url, strategy=lh_strategy, iterations=lh_iterations, output_dir=lh_out, db_path=db_path, mode=lh_mode, categories=lh_categories))
+        lh_out = _lighthouse_work_dir()
+        try:
+            sys.exit(
+                lighthouse_main(
+                    url=lh_url,
+                    strategy=lh_strategy,
+                    iterations=lh_iterations,
+                    output_dir=lh_out,
+                    use_database=use_database,
+                    mode=lh_mode,
+                    categories=lh_categories,
+                )
+            )
+        finally:
+            _cleanup_lighthouse_work_dir(lh_out)
     if args.command == "keywords":
         # --expand-only: just run Suggest expansion and print JSON to stdout
         if getattr(args, "expand_only", False):
@@ -207,13 +228,10 @@ def main() -> None:
 
         # --enrich-google: skip crawl-based extraction, go straight to enrichment
         if getattr(args, "enrich_google", False):
-            if not db_path:
-                print("keywords --enrich-google requires sqlite_db in config.", file=sys.stderr)
-                sys.exit(1)
             print("WebsiteProfiling: keywords Google enrichment only...", flush=True)
             from .integrations.google.keyword_enrich import run_enrichment
             try:
-                run_enrichment(db_path, cfg)
+                run_enrichment(cfg)
                 print("Keywords enrichment done.", flush=True)
                 sys.exit(0)
             except Exception as e:
@@ -223,23 +241,15 @@ def main() -> None:
         print("WebsiteProfiling: keywords only", flush=True)
         from .tools.keywords import main as keyword_main
         kw_url = _require_start_url(cfg, for_step="keywords")
-        kw_out = cfg.get("keyword_output_dir", "").strip() or cwd
-        if not os.path.isabs(kw_out):
-            kw_out = os.path.join(cwd, kw_out)
         kw_cfg = dict(cfg)
-        kw_cfg["_cwd"] = cwd
-        # Pass db_path so keywords.py can write to keyword_data table
-        if db_path:
-            kw_cfg["_db_path"] = db_path
-        rc = keyword_main(base_url=kw_url, output_dir=kw_out, config=kw_cfg)
-        # Auto-run Google enrichment if configured
-        if rc == 0 and db_path and (
-            get_bool(cfg, "enable_google_suggest", False) or _google_db_has_gsc(db_path)
+        rc = keyword_main(base_url=kw_url, config=kw_cfg)
+        if rc == 0 and (
+            get_bool(cfg, "enable_google_suggest", False) or _google_db_has_gsc()
         ):
             print("  Running Google keyword enrichment...", flush=True)
             from .integrations.google.keyword_enrich import run_enrichment
             try:
-                run_enrichment(db_path, cfg)
+                run_enrichment(cfg)
             except Exception as e:
                 print(f"  Warning: Google enrichment error (non-fatal): {e}", file=sys.stderr)
         sys.exit(rc)
@@ -248,25 +258,18 @@ def main() -> None:
         from .tools.warnings import main as warning_mapper_main
         wm_input = cfg.get("warning_mapper_input", "").strip()
         wm_type = (cfg.get("warning_mapper_input_type") or "lighthouse").lower()
-        wm_out = cfg.get("warning_mapper_output", "").strip()
-        if not wm_out:
-            wm_out = os.path.join(cwd, "warnings_mapped.json")
-        elif not os.path.isabs(wm_out):
-            wm_out = os.path.join(cwd, wm_out)
-        sys.exit(warning_mapper_main(input_path=wm_input, input_type=wm_type, output_path=wm_out))
+        if wm_input and not os.path.isabs(wm_input):
+            wm_input = os.path.join(cwd, wm_input)
+        sys.exit(warning_mapper_main(input_path=wm_input or None, input_type=wm_type))
 
     if args.command == "enrich":
-        if not db_path:
-            print("enrich requires sqlite_db in config.", file=sys.stderr)
-            sys.exit(1)
         print("WebsiteProfiling: enrich only (updates latest report payload)...", flush=True)
-        from .db import db_session, get_latest_crawl_run_id, init_schema, read_crawl, read_report_payload, write_report_payload
+        from .db import db_session, get_latest_crawl_run_id, read_crawl, read_report_payload, write_report_payload
         from .analysis import merge_analysis_into_payload, merge_bundles, run_local_enrichment
         from .llm.enrich import run_llm_enrichment
         from .llm_config import load_llm_config_from_db, llm_is_enabled
 
-        with db_session(db_path) as conn:
-            init_schema(conn)
+        with db_session() as conn:
             run_id = get_latest_crawl_run_id(conn)
             df = read_crawl(conn, run_id)
             payload = read_report_payload(conn)
@@ -274,8 +277,8 @@ def main() -> None:
                 print("No report_payload in DB. Run report first.", file=sys.stderr)
                 sys.exit(1)
             local_bundle = run_local_enrichment(df, cfg)
-            llm_cfg = load_llm_config_from_db(db_path)
-            llm_bundle = run_llm_enrichment(df, llm_cfg, db_path=db_path) if llm_is_enabled(llm_cfg) else {}
+            llm_cfg = load_llm_config_from_db()
+            llm_bundle = run_llm_enrichment(df, llm_cfg) if llm_is_enabled(llm_cfg) else {}
             bundle = merge_bundles(local_bundle, llm_bundle)
             merge_analysis_into_payload(payload, bundle)
             write_report_payload(conn, payload)
@@ -401,24 +404,18 @@ def main() -> None:
                 print(f"Google test failed: {e}", file=sys.stderr)
                 sys.exit(1)
 
-        # Full fetch: requires sqlite_db
-        if not db_path:
-            print("google command requires sqlite_db in config.", file=sys.stderr)
-            sys.exit(1)
-
+        # Full fetch
         print("WebsiteProfiling: Google fetch...", flush=True)
 
-        from .db import db_session, get_latest_crawl_run_id, init_schema, read_crawl
+        from .db import db_session, get_latest_crawl_run_id, read_crawl
         from .integrations.google.store import write_google_data
 
         date_range_days = get_int(cfg, "google_date_range_days", 28) or 28
 
-        # Read crawl URLs for join stats
         crawl_urls: list[str] = []
         start_url_for_join = cfg.get("start_url", "")
         try:
-            with db_session(db_path) as conn:
-                init_schema(conn)
+            with db_session() as conn:
                 run_id = get_latest_crawl_run_id(conn)
                 if run_id is not None:
                     df = read_crawl(conn, run_id)
@@ -447,8 +444,7 @@ def main() -> None:
             sys.exit(1)
 
         # Store in google_data table
-        with db_session(db_path) as conn:
-            init_schema(conn)
+        with db_session() as conn:
             write_google_data(conn, google_data)
 
         if google_data.get("errors"):
@@ -496,7 +492,7 @@ def main() -> None:
         preserve_crawl_history = get_bool(cfg, "preserve_crawl_history", True)
         store_content_excerpt = get_bool(cfg, "store_content_excerpt", False)
         content_excerpt_max_chars = get_int(cfg, "content_excerpt_max_chars", 4096) or 4096
-        crawl_output = path("crawl_output", "crawl_results.csv")
+        crawl_stream_to_db = get_bool(cfg, "crawl_stream_to_db", False)
         print("Crawling...")
         run_crawler(
             start_url=start_url,
@@ -508,30 +504,25 @@ def main() -> None:
             max_depth=max_depth,
             polite_delay=polite_delay,
             store_outlinks=store_outlinks,
-            output_csv=crawl_output if not db_path else None,
-            output_db=db_path,
+            output_csv=None,
+            output_db=use_database,
             show_progress=True,
             exclude_urls=exclude_urls if exclude_urls else None,
             preserve_crawl_history=preserve_crawl_history,
             store_content_excerpt=store_content_excerpt,
             content_excerpt_max_chars=content_excerpt_max_chars,
+            crawl_stream_to_db=crawl_stream_to_db,
         )
         print("[Crawl] Done.", flush=True)
-        print(f"Crawl results: {db_path or crawl_output}")
-        crawl_csv = crawl_output
-    else:
-        crawl_csv = path("crawl_csv", "crawl_results.csv")
-    edges_csv = path("edges_csv", "edges.csv")
-    nodes_csv = path("nodes_csv", "nodes.csv")
+        print("Crawl results: PostgreSQL")
 
     # Run Lighthouse on every 200 OK page (when enabled); requires DB and crawl data
     lighthouse_summary_path_for_report = None
-    if run_lighthouse_on_pages and db_path:
-        from .db import db_session, get_latest_crawl_run_id, init_schema, read_crawl
+    if run_lighthouse_on_pages and use_database:
+        from .db import db_session, get_latest_crawl_run_id, read_crawl
         from .lighthouse.runner import run_lighthouse_on_pages as do_lighthouse_on_pages
         print("[Lighthouse on pages] Starting...", flush=True)
-        with db_session(db_path) as conn:
-            init_schema(conn)
+        with db_session() as conn:
             run_id = get_latest_crawl_run_id(conn)
             df = read_crawl(conn, run_id)
         success_df = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns and not df.empty else pd.DataFrame()
@@ -547,18 +538,19 @@ def main() -> None:
             lh_iterations = get_int(cfg, "lighthouse_iterations", 3) or 3
             if run_lighthouse_on_pages:
                 lh_iterations = 1
-            lh_out = cfg.get("lighthouse_output_dir", "").strip() or cwd
-            if not os.path.isabs(lh_out):
-                lh_out = os.path.join(cwd, lh_out)
-            do_lighthouse_on_pages(
-                urls=urls_200,
-                strategy=lh_strategy,
-                iterations=lh_iterations,
-                output_dir=lh_out,
-                db_path=db_path,
-                mode=lh_mode,
-                categories=lh_categories if lh_categories else None,
-            )
+            lh_out = _lighthouse_work_dir()
+            try:
+                do_lighthouse_on_pages(
+                    urls=urls_200,
+                    strategy=lh_strategy,
+                    iterations=lh_iterations,
+                    output_dir=lh_out,
+                    mode=lh_mode,
+                    categories=lh_categories if lh_categories else None,
+                    concurrency=get_int(cfg, "lighthouse_concurrency", 2) or 2,
+                )
+            finally:
+                _cleanup_lighthouse_work_dir(lh_out)
         print("[Lighthouse on pages] Done.", flush=True)
 
     # Run single-URL Lighthouse before report when enabled (and not running on all pages)
@@ -572,24 +564,25 @@ def main() -> None:
         lh_mode = (cfg.get("lighthouse_mode") or "navigation").strip().lower() or "navigation"
         lh_categories = get_list(cfg, "lighthouse_categories", sep=",")
         lh_iterations = get_int(cfg, "lighthouse_iterations", 3) or 3
-        lh_out = cfg.get("lighthouse_output_dir", "").strip() or cwd
-        if not os.path.isabs(lh_out):
-            lh_out = os.path.join(cwd, lh_out)
-        exit_code = lighthouse_main(url=lh_url, strategy=lh_strategy, iterations=lh_iterations, output_dir=lh_out, db_path=db_path, mode=lh_mode, categories=lh_categories if lh_categories else None)
+        lh_out = _lighthouse_work_dir()
+        try:
+            exit_code = lighthouse_main(
+                url=lh_url,
+                strategy=lh_strategy,
+                iterations=lh_iterations,
+                output_dir=lh_out,
+                use_database=use_database,
+                mode=lh_mode,
+                categories=lh_categories if lh_categories else None,
+            )
+        finally:
+            _cleanup_lighthouse_work_dir(lh_out)
         if exit_code != 0:
             sys.exit(exit_code)
         print("[Lighthouse] Done.", flush=True)
-        lighthouse_summary_path_for_report = os.path.join(lh_out, "lighthouse_summary.json") if not db_path else None
+        lighthouse_summary_path_for_report = None
 
     if run_report:
-        if not db_path:
-            print(
-                "Report requires sqlite_db. Set sqlite_db = report.db in pipeline config "
-                "(web UI → Pipeline runner → Save). The Next.js UI reads report.db via /api/report/*.",
-                file=sys.stderr,
-            )
-            sys.exit(1)
-        report_output = path("report_output", "site_report.html")
         max_fetch = get_int(cfg, "max_fetch_for_edges", 300)
         same_domain = get_bool(cfg, "same_domain_only", True)
         max_nodes = get_int(cfg, "max_nodes_plot", 400)
@@ -599,22 +592,9 @@ def main() -> None:
         run_security_scan_flag = get_bool(cfg, "run_security_scan", True)
         security_scan_active = get_bool(cfg, "security_scan_active", False)
         security_max_urls_probe = get_int(cfg, "security_max_urls_probe", 20) or 20
-        security_findings_output = (cfg.get("security_findings_output") or "").strip()
-        if security_findings_output and not os.path.isabs(security_findings_output):
-            security_findings_output = os.path.join(cwd, security_findings_output)
-        elif not security_findings_output:
-            security_findings_output = None
-        lighthouse_summary_path = (cfg.get("lighthouse_summary_json") or "").strip()
-        if lighthouse_summary_path and not os.path.isabs(lighthouse_summary_path):
-            lighthouse_summary_path = os.path.join(cwd, lighthouse_summary_path)
-        if not lighthouse_summary_path:
-            lighthouse_summary_path = lighthouse_summary_path_for_report
         from .reporting.builder import run_simple_report
         print("[Report] Starting...", flush=True)
         out = run_simple_report(
-            crawl_csv=crawl_csv,
-            edges_csv=edges_csv,
-            output_html=report_output,
             max_fetch_for_edges=max_fetch,
             concurrency=6,
             timeout=8,
@@ -626,20 +606,19 @@ def main() -> None:
             run_security_scan_flag=run_security_scan_flag,
             security_scan_active=security_scan_active,
             security_max_urls_probe=security_max_urls_probe,
-            security_findings_output=security_findings_output,
-            lighthouse_summary_path=lighthouse_summary_path,
-            db_path=db_path,
+            lighthouse_summary_path=lighthouse_summary_path_for_report,
+            use_database=use_database,
             config=cfg,
         )
         print("[Report] Done.", flush=True)
         print(f"Report written: {out}")
 
-        if _should_enrich_keywords_after_report(cfg) and _google_db_has_gsc(db_path):
+        if _should_enrich_keywords_after_report(cfg) and _google_db_has_gsc():
             print("[Keywords] Post-report enrichment (GSC data found)...", flush=True)
             from .integrations.google.keyword_enrich import run_enrichment
 
             try:
-                run_enrichment(db_path, cfg)
+                run_enrichment(cfg)
                 print("[Keywords] Post-report enrichment done.", flush=True)
             except Exception as e:
                 print(f"Warning: post-report keyword enrichment failed: {e}", file=sys.stderr)
@@ -647,16 +626,13 @@ def main() -> None:
     if run_plot:
         print("[Plot] Starting...", flush=True)
         from .tools.plot import run_plot as do_plot
-        e, n = do_plot(
-            crawl_csv=crawl_csv,
-            edges_csv=edges_csv,
-            nodes_csv=nodes_csv,
+        e = do_plot(
             same_domain_only=get_bool(cfg, "same_domain_only", True),
             max_fetch_for_edges=get_int(cfg, "max_fetch_for_edges", 500),
             concurrency=8,
             timeout=10,
             polite_delay=0.15,
-            db_path=db_path,
+            use_database=use_database,
         )
         print("[Plot] Done.", flush=True)
-        print(f"Edges: {e}, Nodes: {n}")
+        print(f"Plot data: {e}")

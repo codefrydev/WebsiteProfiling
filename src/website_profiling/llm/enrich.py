@@ -6,7 +6,8 @@ import json
 import os
 import re
 from collections import Counter
-from typing import Any, Optional
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Any, Callable, Optional
 
 import pandas as pd
 
@@ -65,15 +66,12 @@ def _cache_key(task: str, model: str, payload: str) -> str:
     return h
 
 
-def _read_cache(db_path: Optional[str], key: str) -> Optional[dict[str, Any]]:
-    if not db_path or not os.path.isfile(db_path):
-        return None
+def _read_cache(key: str) -> Optional[dict[str, Any]]:
     try:
-        from ..db import db_session, init_schema
+        from ..db import db_session
         from ..db.storage import read_llm_cache
 
-        with db_session(db_path) as conn:
-            init_schema(conn)
+        with db_session() as conn:
             raw = read_llm_cache(conn, key)
             if raw:
                 return json.loads(raw)
@@ -82,18 +80,82 @@ def _read_cache(db_path: Optional[str], key: str) -> Optional[dict[str, Any]]:
     return None
 
 
-def _write_cache(db_path: Optional[str], key: str, data: dict[str, Any]) -> None:
-    if not db_path:
-        return
+def _write_cache(key: str, data: dict[str, Any]) -> None:
     try:
-        from ..db import db_session, init_schema
+        from ..db import db_session
         from ..db.storage import write_llm_cache
 
-        with db_session(db_path) as conn:
-            init_schema(conn)
+        with db_session() as conn:
             write_llm_cache(conn, key, json.dumps(data))
     except Exception:
         pass
+
+
+def _llm_concurrency(cfg: dict[str, str]) -> int:
+    return max(1, min(_cfg_int(cfg, "llm_concurrency", 2) or 2, 8))
+
+
+def _run_llm_batches(
+    client: Any,
+    task: str,
+    system: str,
+    batches: list[dict[str, Any]],
+    cfg: dict[str, str],
+    apply_batch: Callable[[dict[str, Any], dict[str, Any]], None],
+) -> None:
+    """Run LLM batches with batched cache lookup and optional parallel API calls."""
+    if not batches:
+        return
+    model = (cfg.get("llm_model") or cfg.get("llm_provider") or "").strip()
+    keyed: list[tuple[str, dict[str, Any], str]] = []
+    for payload in batches:
+        payload_str = json.dumps(payload, sort_keys=True)
+        ck = _cache_key(task, model, payload_str)
+        keyed.append((ck, payload, payload_str))
+
+    cached_map: dict[str, dict[str, Any]] = {}
+    try:
+        from ..db import db_session
+        from ..db.storage import read_llm_cache_batch
+
+        with db_session() as conn:
+            cached_map = read_llm_cache_batch(conn, [k for k, _, _ in keyed])
+    except Exception:
+        pass
+
+    pending: list[tuple[str, dict[str, Any]]] = []
+    for ck, payload, _ in keyed:
+        hit = cached_map.get(ck)
+        if hit is not None:
+            apply_batch(payload, hit)
+        else:
+            pending.append((ck, payload))
+
+    if not pending:
+        return
+
+    workers = _llm_concurrency(cfg)
+
+    def _one(item: tuple[str, dict[str, Any]]) -> tuple[str, dict[str, Any], dict[str, Any]]:
+        ck, payload = item
+        result = client.complete_json(system, json.dumps(payload))
+        _write_cache(ck, result)
+        return ck, payload, result
+
+    if workers <= 1 or len(pending) <= 1:
+        for item in pending:
+            _, payload, result = _one(item)
+            apply_batch(payload, result)
+        return
+
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = [pool.submit(_one, item) for item in pending]
+        for future in as_completed(futures):
+            try:
+                _, payload, result = future.result()
+                apply_batch(payload, result)
+            except Exception:
+                pass
 
 
 def _call_cached(
@@ -102,16 +164,15 @@ def _call_cached(
     system: str,
     user_payload: dict[str, Any],
     cfg: dict[str, str],
-    db_path: Optional[str],
 ) -> dict[str, Any]:
     model = (cfg.get("llm_model") or cfg.get("llm_provider") or "").strip()
     payload_str = json.dumps(user_payload, sort_keys=True)
     ck = _cache_key(task, model, payload_str)
-    cached = _read_cache(db_path, ck)
+    cached = _read_cache(ck)
     if cached is not None:
         return cached
     result = client.complete_json(system, json.dumps(user_payload))
-    _write_cache(db_path, ck, result)
+    _write_cache(ck, result)
     return result
 
 
@@ -136,13 +197,12 @@ def _run_ner(
     client: Any,
     items: list[dict[str, str]],
     cfg: dict[str, str],
-    db_path: Optional[str],
 ) -> dict[str, dict[str, Any]]:
     batch_size = max(1, _cfg_int(cfg, "llm_batch_size", 5))
     out: dict[str, dict[str, Any]] = {}
-    for i in range(0, len(items), batch_size):
-        batch = items[i : i + batch_size]
-        data = _call_cached(client, "ner", NER_SYSTEM, {"pages": batch}, cfg, db_path)
+    batches = [{"pages": items[i : i + batch_size]} for i in range(0, len(items), batch_size)]
+
+    def apply_batch(_payload: dict[str, Any], data: dict[str, Any]) -> None:
         for p in data.get("pages") or []:
             u = str(p.get("url") or "").strip().rstrip("/")
             if not u:
@@ -152,6 +212,8 @@ def _run_ner(
                 "entity_count": int(p.get("entity_count") or 0),
                 "top_entity_labels": labels,
             }
+
+    _run_llm_batches(client, "ner", NER_SYSTEM, batches, cfg, apply_batch)
     return out
 
 
@@ -159,13 +221,12 @@ def _run_keyphrases(
     client: Any,
     items: list[dict[str, str]],
     cfg: dict[str, str],
-    db_path: Optional[str],
 ) -> dict[str, dict[str, Any]]:
     batch_size = max(1, _cfg_int(cfg, "llm_batch_size", 5))
     out: dict[str, dict[str, Any]] = {}
-    for i in range(0, len(items), batch_size):
-        batch = items[i : i + batch_size]
-        data = _call_cached(client, "keyphrases", KEYPHRASES_SYSTEM, {"pages": batch}, cfg, db_path)
+    batches = [{"pages": items[i : i + batch_size]} for i in range(0, len(items), batch_size)]
+
+    def apply_batch(_payload: dict[str, Any], data: dict[str, Any]) -> None:
         for p in data.get("pages") or []:
             u = str(p.get("url") or "").strip().rstrip("/")
             if not u:
@@ -173,6 +234,8 @@ def _run_keyphrases(
             phrases = p.get("phrases") or []
             pairs = [[str(x[0]), float(x[1])] for x in phrases if isinstance(x, (list, tuple)) and len(x) >= 2]
             out[u] = {"phrases": pairs}
+
+    _run_llm_batches(client, "keyphrases", KEYPHRASES_SYSTEM, batches, cfg, apply_batch)
     return out
 
 
@@ -180,20 +243,17 @@ def _run_similar_internal(
     client: Any,
     items: list[dict[str, str]],
     cfg: dict[str, str],
-    db_path: Optional[str],
 ) -> dict[str, list[dict[str, Any]]]:
     top_k = min(_cfg_int(cfg, "llm_similar_top_k", 5) or 5, 15)
     all_urls = [x["url"] for x in items]
     out: dict[str, list[dict[str, Any]]] = {}
     batch_size = max(1, min(_cfg_int(cfg, "llm_batch_size", 5), 3))
-    for i in range(0, len(items), batch_size):
-        batch = items[i : i + batch_size]
-        payload = {
-            "pages": batch,
-            "candidate_urls": all_urls[:80],
-            "top_k": top_k,
-        }
-        data = _call_cached(client, "similar", SIMILAR_SYSTEM, payload, cfg, db_path)
+    batches = [
+        {"pages": items[i : i + batch_size], "candidate_urls": all_urls[:80], "top_k": top_k}
+        for i in range(0, len(items), batch_size)
+    ]
+
+    def apply_batch(_payload: dict[str, Any], data: dict[str, Any]) -> None:
         for p in data.get("pages") or []:
             u = str(p.get("url") or "").strip().rstrip("/")
             if not u:
@@ -204,13 +264,14 @@ def _run_similar_internal(
                     sim.append({"url": str(s["url"]), "score": round(float(s.get("score") or 0), 4)})
             if sim:
                 out[u] = sim
+
+    _run_llm_batches(client, "similar", SIMILAR_SYSTEM, batches, cfg, apply_batch)
     return out
 
 
 def cluster_keywords_llm(
     keywords: list[str],
     cfg: dict[str, str] | None,
-    db_path: Optional[str] = None,
 ) -> list[dict[str, Any]]:
     if not keywords or not cfg or not llm_is_enabled(cfg):
         return []
@@ -227,7 +288,6 @@ def cluster_keywords_llm(
             KEYWORD_CLUSTER_SYSTEM,
             {"keywords": kws},
             cfg,
-            db_path,
         )
         clusters = data.get("clusters") or []
         out: list[dict[str, Any]] = []
@@ -253,7 +313,6 @@ def cluster_keywords_llm(
 def run_llm_enrichment(
     df: pd.DataFrame,
     cfg: dict[str, str] | None,
-    db_path: Optional[str] = None,
 ) -> dict[str, Any]:
     bundle: dict[str, Any] = {
         "spacy_by_url": {},
@@ -278,19 +337,19 @@ def run_llm_enrichment(
 
     if _cfg_bool(cfg, "llm_enable_ner", True):
         try:
-            bundle["spacy_by_url"] = _run_ner(client, items, cfg, db_path)
+            bundle["spacy_by_url"] = _run_ner(client, items, cfg)
         except Exception as e:
             bundle["ml_errors"].append(f"LLM NER: {e}")
 
     if _cfg_bool(cfg, "llm_enable_keyphrases", True):
         try:
-            bundle["keyphrases_by_url"] = _run_keyphrases(client, items, cfg, db_path)
+            bundle["keyphrases_by_url"] = _run_keyphrases(client, items, cfg)
         except Exception as e:
             bundle["ml_errors"].append(f"LLM keyphrases: {e}")
 
     if _cfg_bool(cfg, "llm_enable_similar_internal", True):
         try:
-            bundle["similar_internal_by_url"] = _run_similar_internal(client, items, cfg, db_path)
+            bundle["similar_internal_by_url"] = _run_similar_internal(client, items, cfg)
         except Exception as e:
             bundle["ml_errors"].append(f"LLM similar pages: {e}")
 

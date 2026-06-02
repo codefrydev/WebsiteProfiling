@@ -1,7 +1,7 @@
 """
 Run Lighthouse locally via CLI for a given URL; return machine-readable summary with median metrics.
 Writes raw_runs/, summary.json, diagnostics.json, human_summary.txt, and optionally report.html.
-Uses global lighthouse if on PATH, otherwise runs via npx (which will install it automatically).
+Uses global lighthouse if on PATH (or LIGHTHOUSE_PATH), otherwise runs via npx (serialized to avoid cache races).
 Requires: Node + npm, Chrome/Chromium.
 """
 import json
@@ -11,6 +11,7 @@ import shutil
 import statistics
 import subprocess
 import sys
+import threading
 from datetime import datetime, timezone
 from typing import Any
 
@@ -24,6 +25,9 @@ _LIGHTHOUSE_INSTALL_MSG = (
     "Lighthouse not found. Install Node/npm (https://nodejs.org), then run: npm install -g lighthouse. "
     "Chrome or Chromium is also required for headless mode."
 )
+
+# Serialise npx-on-demand installs — parallel npx runs corrupt /root/.npm/_npx cache in Docker.
+_NPX_LIGHTHOUSE_LOCK = threading.Lock()
 
 
 def _build_report_html_content(summary: dict[str, Any]) -> str:
@@ -91,6 +95,9 @@ def _url_safe(s: str) -> str:
 
 def _lighthouse_cmd() -> list[str]:
     """Return argv prefix: [resolved lighthouse] or [resolved npx, -y, lighthouse]. Paths from shutil.which (portable)."""
+    explicit = (os.environ.get("LIGHTHOUSE_PATH") or os.environ.get("LIGHTHOUSE_BIN") or "").strip()
+    if explicit and os.path.isfile(explicit) and os.access(explicit, os.X_OK):
+        return [explicit]
     lh = shutil.which("lighthouse")
     if lh is not None:
         return [lh]
@@ -100,9 +107,18 @@ def _lighthouse_cmd() -> list[str]:
     raise RuntimeError(_LIGHTHOUSE_INSTALL_MSG)
 
 
+def _uses_npx(cmd: list[str]) -> bool:
+    base = os.path.basename(cmd[0]).lower()
+    return base in ("npx", "npx.cmd")
+
+
 def is_lighthouse_available() -> bool:
     """Return True if lighthouse or npx is on PATH (so we can run Lighthouse)."""
-    return shutil.which("lighthouse") is not None or shutil.which("npx") is not None
+    try:
+        _lighthouse_cmd()
+        return True
+    except RuntimeError:
+        return False
 
 
 def _preset_for_strategy(strategy: str) -> str:
@@ -150,6 +166,14 @@ def run_lighthouse_once(
     if categories:
         cmd.append("--only-categories=" + ",".join(categories))
     try:
+        if _uses_npx(base):
+            with _NPX_LIGHTHOUSE_LOCK:
+                return subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=300,
+                )
         return subprocess.run(
             cmd,
             capture_output=True,
@@ -416,72 +440,86 @@ def run_lighthouse_on_pages(
     strategy: str = "mobile",
     iterations: int = 1,
     output_dir: str = ".",
-    db_path: str | None = None,
     mode: str = "navigation",
     categories: str | list[str] | None = None,
+    concurrency: int = 2,
 ) -> None:
     """
-    Run Lighthouse audit on each URL and store per-URL summary in DB.
+    Run Lighthouse audit on each URL and store per-URL summary in PostgreSQL.
     Failures for a single URL are logged and do not stop the rest.
     """
     if not urls:
         return
-    if not db_path:
-        raise ValueError("run_lighthouse_on_pages requires db_path")
     if not is_lighthouse_available():
         raise RuntimeError(
             "Node/npm not found. Install Node.js (https://nodejs.org); then run: npm install -g lighthouse. "
             "Chrome or Chromium is also required for headless mode."
         )
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
     from ..db import (
         db_session,
-        init_schema,
         write_lh_audits_from_run,
         write_lighthouse_page_summary,
         write_lighthouse_run,
     )
 
-    with db_session(db_path) as conn:
-        init_schema(conn)
-        strategy = strategy.lower() if strategy else "mobile"
-        if strategy not in ("mobile", "desktop"):
-            strategy = "mobile"
-        iterations = max(1, int(iterations))
-        categories = _parse_categories(categories) if categories else None
-        total = len(urls)
+    strategy = strategy.lower() if strategy else "mobile"
+    if strategy not in ("mobile", "desktop"):
+        strategy = "mobile"
+    iterations = max(1, int(iterations))
+    categories = _parse_categories(categories) if categories else None
+    total = len(urls)
+    workers = max(1, min(int(concurrency or 2), 8))
+
+    def _audit_one(url: str) -> None:
+        print(f"[Lighthouse on pages] {url}", flush=True)
+        summary = run_lighthouse_audit(
+            url=url,
+            strategy=strategy,
+            iterations=iterations,
+            output_dir=output_dir,
+            mode=mode,
+            categories=categories,
+        )
+        lhr: dict[str, Any] | None = None
+        for raw_path in reversed(summary.get("raw_reports") or []):
+            if os.path.isfile(raw_path):
+                try:
+                    with open(raw_path, "r", encoding="utf-8") as f:
+                        lhr = json.load(f)
+                    break
+                except (OSError, json.JSONDecodeError):
+                    continue
+        with db_session() as conn:
+            write_lighthouse_page_summary(conn, url, summary)
+            if lhr is not None:
+                run_id = write_lighthouse_run(conn, url, strategy, 1, lhr)
+                write_lh_audits_from_run(conn, run_id, lhr)
+        for raw_path in summary.get("raw_reports") or []:
+            if os.path.isfile(raw_path):
+                try:
+                    os.remove(raw_path)
+                except OSError:
+                    pass
+
+    if workers == 1:
         for idx, url in enumerate(urls):
             try:
                 print(f"[Lighthouse on pages] {idx + 1}/{total}: {url}", flush=True)
-                summary = run_lighthouse_audit(
-                    url=url,
-                    strategy=strategy,
-                    iterations=iterations,
-                    output_dir=output_dir,
-                    mode=mode,
-                    categories=categories,
-                )
-                write_lighthouse_page_summary(conn, url, summary)
-                lhr: dict[str, Any] | None = None
-                for raw_path in reversed(summary.get("raw_reports") or []):
-                    if os.path.isfile(raw_path):
-                        try:
-                            with open(raw_path, "r", encoding="utf-8") as f:
-                                lhr = json.load(f)
-                            break
-                        except (OSError, json.JSONDecodeError):
-                            continue
-                if lhr is not None:
-                    run_id = write_lighthouse_run(conn, url, strategy, 1, lhr)
-                    write_lh_audits_from_run(conn, run_id, lhr)
-                # Delete raw run files after storing summary in DB (same as single-URL path)
-                for raw_path in summary.get("raw_reports") or []:
-                    if os.path.isfile(raw_path):
-                        try:
-                            os.remove(raw_path)
-                        except OSError:
-                            pass
+                _audit_one(url)
             except Exception as e:
                 print(f"  Skipped (error): {e}", file=sys.stderr, flush=True)
+    else:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = {pool.submit(_audit_one, url): url for url in urls}
+            for future in as_completed(futures):
+                url = futures[future]
+                try:
+                    future.result()
+                except Exception as e:
+                    print(f"  Skipped {url} (error): {e}", file=sys.stderr, flush=True)
+
     print(f"[Lighthouse on pages] Done. Wrote {total} URL(s) to DB.", flush=True)
 
 
@@ -491,13 +529,12 @@ def main(
     iterations: int = 3,
     output_dir: str = ".",
     summary_path: str | None = None,
-    db_path: str | None = None,
+    use_database: bool = True,
     mode: str = "navigation",
     categories: str | list[str] | None = None,
 ) -> int:
     """
-    Run Lighthouse audit and write summary to JSON file and/or SQLite. Returns 0 on success, non-zero on error.
-    mode: 'navigation' (default), 'timespan', or 'snapshot'. categories: optional for --only-categories.
+    Run Lighthouse audit and write summary to JSON file and/or PostgreSQL. Returns 0 on success, non-zero on error.
     """
     try:
         summary = run_lighthouse_audit(
@@ -512,22 +549,19 @@ def main(
         print(str(e), file=sys.stderr)
         return 1
 
-    # Store report HTML in summary so it is saved to DB when db_path is set
+    # Store report HTML in summary so it is saved to PostgreSQL when DATABASE_URL is set
     print("  Building report HTML...", flush=True)
     summary["report_html"] = _build_report_html_content(summary)
 
-    if db_path:
-        # Persist everything to DB only (no artifact files on disk)
+    if use_database:
         from ..db import (
             db_session,
-            init_schema,
             write_lh_audits_from_run,
             write_lighthouse_summary,
             write_lighthouse_run,
         )
         print("  Saving summary to DB...", flush=True)
-        with db_session(db_path) as conn:
-            init_schema(conn)
+        with db_session() as conn:
             write_lighthouse_summary(conn, summary)
             raw_reports = summary.get("raw_reports") or []
             for i, raw_path in enumerate(raw_reports):
@@ -546,7 +580,7 @@ def main(
                         pass
         print("  Lighthouse DB write complete.", flush=True)
         print(summary.get("human_summary", ""))
-        print(f"All Lighthouse data saved to SQLite: {db_path} (summary, diagnostics, human summary, report HTML, raw runs)")
+        print(f"All Lighthouse data saved to PostgreSQL (summary, diagnostics, human summary, report HTML, raw runs)")
     else:
         # No DB: write all artifacts to output_dir
         print("  Writing summary.json...", flush=True)

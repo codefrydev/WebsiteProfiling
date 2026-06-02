@@ -10,9 +10,31 @@ docker compose up --build
 
 Open **http://localhost:3000/home**. Use **`http://localhost:3000`**
 
+Docker Compose starts **PostgreSQL** and the web app. Data persists in Docker volumes (`pg-data` for the database, `profiling-data` for secrets and shadow config).
+
 ## Run locally
 
-**1. Python** (repo root)
+**1. PostgreSQL**
+
+```bash
+docker run -d --name wp-pg \
+  -e POSTGRES_PASSWORD=dev \
+  -e POSTGRES_DB=website_profiling \
+  -p 5432:5432 postgres:16-alpine
+
+export DATABASE_URL=postgres://postgres:dev@localhost:5432/website_profiling
+export DATA_DIR=$(pwd)/data
+mkdir -p "$DATA_DIR"
+```
+
+Apply schema:
+
+```bash
+pip install -r requirements.txt
+alembic upgrade head
+```
+
+**2. Python** (repo root)
 
 ```bash
 python -m venv .venv
@@ -24,36 +46,60 @@ Activate `.venv`, then:
 pip install -r requirements.txt
 ```
 
-Optional LLM enrichment: `pip install -r requirements-llm.txt` — configure in the web UI **AI** tab only (not via `pipeline-config.txt`).
+Optional LLM enrichment: `pip install -r requirements-llm.txt` — configure in the web UI **AI** tab only.
 
-**2. Configure & run the pipeline**
+**3. Configure & run the pipeline**
 
 The easiest way is via the **web UI** (terminal icon, bottom-right corner at `http://localhost:3000`):
-- Settings are stored in `report.db` (`pipeline_config` table) — the same database used for crawl data. Back up the whole pipeline by copying one file.
-- A shadow `pipeline-config.txt` is auto-written next to `report.db` on every Save/Run (safe to delete; regenerated automatically).
+- Settings are stored in PostgreSQL (`pipeline_config` table).
+- A shadow `pipeline-config.txt` is auto-written to `DATA_DIR` on every Save/Run.
 - On first open, if the table is empty, the UI imports from shadow `pipeline-config.txt` (if present).
-- Click **Save settings** to persist, or **Run pipeline** to save + run immediately.
-- **AI enrichment** (OpenAI, Gemini, Claude, Ollama): use the **AI** tab in the pipeline runner — settings are stored in `llm_config` inside `report.db` only (not in `pipeline-config.txt`).
+- **AI enrichment**: use the **AI** tab — settings live in `llm_config` in PostgreSQL only.
 
-To run from the CLI instead:
+To run from the CLI:
 
 ```bash
+export DATABASE_URL=postgres://postgres:dev@localhost:5432/website_profiling
 python -m src
 ```
 
-Python reads settings from `report.db` (`pipeline_config` table) by default — use the web UI to configure, or set `REPORT_DB_PATH` to point at your database (Docker sets this automatically). If the table is empty, the CLI falls back to shadow `pipeline-config.txt` next to `report.db`. Override with `--config path` for a custom key=value file. Steps: `crawl`, `report`, `plot`, `lighthouse`, `keywords`, `warnings`, `enrich` as extra args.
-
-> **Reference:** `input.txt.example` shows all config keys in the legacy file format (optional; not loaded automatically).
-
-**3. Next.js UI** (`web/`)
+**4. Next.js UI** (`web/`)
 
 ```bash
 cd web
 npm install
+export DATABASE_URL=postgres://postgres:dev@localhost:5432/website_profiling
+export DATA_DIR=../data
 npm run dev
 ```
 
 Open **http://localhost:3000/home**.
+
+If pipeline runs fail with `spawn python ENOENT`, macOS often has no `python` on PATH (only `python3`). The server auto-resolves `.venv/bin/python` or `python3`; you can also set `export PYTHON="$(pwd)/.venv/bin/python"` before `npm run dev`, or set **Python executable** under Pipeline → Advanced.
+
+### PostgreSQL performance tuning
+
+Optional environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DB_POOL_MIN` | 2 | Python pipeline minimum pool connections |
+| `DB_POOL_MAX` | 20 | Python pipeline maximum pool connections |
+| `PGPOOL_MAX` | 20 | Next.js `pg` pool size |
+
+Pipeline config (web UI or shadow file):
+
+- **`crawl_stream_to_db`** — batch-write crawl rows during fetch (auto-enabled when `max_pages > 100`).
+- **`lighthouse_concurrency`** — parallel Lighthouse URL audits (default 2).
+- **`llm_concurrency`** (AI tab) — parallel LLM API batches (default 2).
+
+Benchmark crawl writes: `python scripts/bench_crawl_write.py -n 1000` (requires `DATABASE_URL`).
+
+### Backup
+
+```bash
+pg_dump -Fc "$DATABASE_URL" -f backup.dump
+```
 
 ---
 
@@ -81,7 +127,7 @@ Pull real search and traffic data into your reports.
 ### CLI usage
 
 ```bash
-# Fetch GSC + GA4 data and store in report.db (uses pipeline_config in report.db)
+# Fetch GSC + GA4 data and store in PostgreSQL
 python -m src google
 
 # Validate credentials only (does not store data)

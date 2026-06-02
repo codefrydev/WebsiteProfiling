@@ -1,0 +1,473 @@
+'use client';
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+import { useRouter } from 'next/navigation';
+import type { PipelineConfigSource, PipelineJobStatus, PipelineUnknownKey } from '@/types/api';
+import type { LlmConfigState, PipelineConfigState } from '@/types/api';
+import { apiUrl } from '@/lib/publicBase';
+import { PIPELINE_JOB_STARTED, pollPipelineJob } from '@/lib/pipelineJobEvents';
+import { formatPipelineJobLog, logPipelineFailure } from '@/lib/pipelineDebug';
+import { currentPathForReturn, readPipelineReturnPath, storePipelineReturnPath, buildPipelineHref } from '@/lib/pipelineReturn';
+import { deriveSiteNameFromStartUrl } from '@/lib/domainSlug';
+import { useOptionalReport } from '@/context/useReport';
+import { strings, format } from '@/lib/strings';
+import {
+  buildInitialPipelineConfigState,
+  validatePipelineRun,
+  validateRequiredPipelineFields,
+} from '@/lib/pipelineConfigSchema';
+import { buildInitialLlmConfigState } from '@/lib/llmConfigSchema';
+import {
+  applyPreset,
+  commandToPresetId,
+  DEFAULT_PRESET_ID,
+  getPresetById,
+  type PipelinePresetId,
+} from '@/components/pipeline/pipelinePresets';
+
+const s = strings.pipelineRunner;
+
+export type PipelineTab = 'run' | 'settings';
+
+export interface PipelineContextValue {
+  presetId: PipelinePresetId;
+  customCommand: string;
+  configState: PipelineConfigState;
+  llmConfigState: LlmConfigState;
+  unknownKeys: PipelineUnknownKey[];
+  configSource: PipelineConfigSource | null;
+  legacyBannerDismissed: boolean;
+  loadError: string;
+  loading: boolean;
+  saving: boolean;
+  saveMsg: string;
+  pythonExe: string;
+  repoRoot: string;
+  busy: boolean;
+  log: string;
+  status: PipelineJobStatus | '';
+  backgroundMode: boolean;
+  startUrl: string;
+  setPresetId: (id: PipelinePresetId) => void;
+  setCustomCommand: (value: string) => void;
+  setField: (key: string, value: string | boolean) => void;
+  setLlmField: (key: string, value: string | boolean) => void;
+  setPythonExe: (value: string) => void;
+  setRepoRoot: (value: string) => void;
+  handleStartUrlChange: (value: string) => void;
+  handlePresetChange: (id: PipelinePresetId) => void;
+  resetConfig: () => void;
+  dismissLegacyBanner: () => void;
+  loadConfig: () => Promise<void>;
+  saveSettings: () => Promise<boolean>;
+  run: () => Promise<void>;
+  continueInBackground: () => void;
+  openPipelinePage: (tab?: PipelineTab) => void;
+}
+
+const PipelineContext = createContext<PipelineContextValue | null>(null);
+
+export function usePipeline(): PipelineContextValue {
+  const ctx = useContext(PipelineContext);
+  if (!ctx) {
+    throw new Error('usePipeline must be used within PipelineProvider');
+  }
+  return ctx;
+}
+
+export function PipelineProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const report = useOptionalReport();
+  const [presetId, setPresetId] = useState<PipelinePresetId>(DEFAULT_PRESET_ID);
+  const [customCommand, setCustomCommand] = useState('');
+  const [configState, setConfigState] = useState(buildInitialPipelineConfigState);
+  const [llmConfigState, setLlmConfigState] = useState(buildInitialLlmConfigState);
+  const [llmConfigMasked, setLlmConfigMasked] = useState<Record<string, boolean>>({});
+  const [unknownKeys, setUnknownKeys] = useState<PipelineUnknownKey[]>([]);
+  const [configPath, setConfigPath] = useState('');
+  const [configSource, setConfigSource] = useState<PipelineConfigSource | null>(null);
+  const [legacyBannerDismissed, setLegacyBannerDismissed] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState('');
+  const [pythonExe, setPythonExe] = useState('python3');
+  const [repoRoot, setRepoRoot] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [log, setLog] = useState('');
+  const [status, setStatus] = useState<PipelineJobStatus | ''>('');
+  const [backgroundMode, setBackgroundMode] = useState(false);
+  const [configLoaded, setConfigLoaded] = useState(false);
+  const pollStopRef = useRef<(() => void) | null>(null);
+
+  const effectiveCommand = customCommand.trim() || getPresetById(presetId).command;
+
+  const stopPoll = useCallback(() => {
+    if (pollStopRef.current) {
+      pollStopRef.current();
+      pollStopRef.current = null;
+    }
+  }, []);
+
+  const openPipelinePage = useCallback(
+    (tab: PipelineTab = 'run') => {
+      setBackgroundMode(false);
+      router.push(buildPipelineHref({ tab }));
+    },
+    [router],
+  );
+
+  const watchJob = useCallback(
+    (
+      jobId: string,
+      {
+        navigate = false,
+        jobCommand = '',
+      }: {
+        navigate?: boolean;
+        jobCommand?: string;
+      } = {},
+    ) => {
+      if (!jobId) return;
+      stopPoll();
+      setBusy(true);
+      setLog('');
+      setStatus('running');
+      setBackgroundMode(false);
+      if (jobCommand) {
+        const matched = getPresetById(commandToPresetId(jobCommand));
+        if (matched.command === jobCommand) {
+          setPresetId(matched.id);
+          setCustomCommand('');
+        } else {
+          setCustomCommand(jobCommand);
+        }
+      }
+      if (navigate) {
+        storePipelineReturnPath(currentPathForReturn());
+        router.push('/pipeline');
+      }
+
+      pollStopRef.current = pollPipelineJob(jobId, (job) => {
+        const displayLog = formatPipelineJobLog(job.log, job.error);
+        setLog(displayLog);
+        setStatus(job.status);
+        if (job.status === 'success' || job.status === 'error') {
+          stopPoll();
+          setBusy(false);
+          if (job.status === 'error') {
+            logPipelineFailure('Job finished with error', {
+              jobId,
+              command: jobCommand || null,
+              error: job.error,
+              logLength: job.log?.length ?? 0,
+              log: job.log || displayLog,
+            });
+          } else {
+            report?.refreshReports();
+          }
+        }
+      });
+    },
+    [stopPoll, report, router],
+  );
+
+  useEffect(() => {
+    const onJobStarted = (event: Event) => {
+      const detail =
+        (event as CustomEvent<{ jobId?: string; openRunner?: boolean; command?: string }>).detail ||
+        {};
+      if (!detail.jobId) return;
+      watchJob(detail.jobId, {
+        navigate: detail.openRunner !== false,
+        jobCommand: detail.command || '',
+      });
+    };
+    window.addEventListener(PIPELINE_JOB_STARTED, onJobStarted);
+    return () => window.removeEventListener(PIPELINE_JOB_STARTED, onJobStarted);
+  }, [watchJob]);
+
+  useEffect(() => () => stopPoll(), [stopPoll]);
+
+  const loadConfig = useCallback(async () => {
+    setLoading(true);
+    setLoadError('');
+    try {
+      const [pipeRes, llmRes] = await Promise.all([
+        fetch(apiUrl('/pipeline-config')),
+        fetch(apiUrl('/llm-config')),
+      ]);
+      const data = await pipeRes.json().catch(() => ({}));
+      const llmData = await llmRes.json().catch(() => ({}));
+      if (!pipeRes.ok) throw new Error(data.error || pipeRes.statusText);
+      const loaded = data.state || buildInitialPipelineConfigState();
+      const siteName = String(loaded.site_name ?? '').trim();
+      const startUrl = String(loaded.start_url ?? '').trim();
+      if (!siteName && startUrl) {
+        loaded.site_name = deriveSiteNameFromStartUrl(startUrl);
+      } else if (!siteName) {
+        loaded.site_name = 'Site';
+      }
+      setConfigState(loaded);
+      setUnknownKeys(Array.isArray(data.unknownKeys) ? data.unknownKeys : []);
+      setConfigPath(data.dbPath || data.configPath || '');
+      setConfigSource(data.source || 'defaults');
+      if (llmRes.ok && llmData.state) {
+        setLlmConfigState(llmData.state);
+        const masked: Record<string, boolean> = {};
+        for (const [k, v] of Object.entries(llmData.state as Record<string, unknown>)) {
+          if (k.endsWith('_masked')) masked[k] = Boolean(v);
+        }
+        setLlmConfigMasked(masked);
+      } else {
+        setLlmConfigState(buildInitialLlmConfigState());
+        setLlmConfigMasked({});
+      }
+      setLegacyBannerDismissed(false);
+      setConfigLoaded(true);
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : String(e));
+      setConfigState(buildInitialPipelineConfigState());
+      setLlmConfigState(buildInitialLlmConfigState());
+      setConfigLoaded(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!configLoaded) {
+      void loadConfig();
+    }
+  }, [configLoaded, loadConfig]);
+
+  const setLlmField = useCallback((key: string, v: string | boolean) => {
+    setLlmConfigState((prev) => ({ ...prev, [key]: v }));
+    if (key === 'llm_api_key') {
+      setLlmConfigMasked((prev) => {
+        const next = { ...prev };
+        delete next.llm_api_key_masked;
+        return next;
+      });
+    }
+  }, []);
+
+  const buildLlmPayload = useCallback(
+    () => ({ ...llmConfigState, ...llmConfigMasked }),
+    [llmConfigState, llmConfigMasked],
+  );
+
+  const setField = useCallback((key: string, v: string | boolean) => {
+    setConfigState((prev) => ({ ...prev, [key]: v }));
+  }, []);
+
+  const handlePresetChange = useCallback((id: PipelinePresetId) => {
+    setPresetId(id);
+    setCustomCommand('');
+    setConfigState((prev) => {
+      const { configState: next } = applyPreset(id, prev);
+      return next;
+    });
+  }, []);
+
+  const handleStartUrlChange = useCallback((value: string) => {
+    setConfigState((prev) => {
+      const currentSiteName = String(prev.site_name ?? '').trim();
+      const previousDerived = deriveSiteNameFromStartUrl(String(prev.start_url ?? ''));
+      const shouldSyncSiteName =
+        !currentSiteName ||
+        currentSiteName === 'Site' ||
+        currentSiteName === previousDerived;
+      if (shouldSyncSiteName) {
+        return {
+          ...prev,
+          start_url: value,
+          site_name: deriveSiteNameFromStartUrl(value),
+        };
+      }
+      return { ...prev, start_url: value };
+    });
+  }, []);
+
+  const resetConfig = useCallback(() => {
+    setConfigState(buildInitialPipelineConfigState());
+    setSaveMsg('');
+  }, []);
+
+  const saveSettings = useCallback(async (): Promise<boolean> => {
+    const requiredErrors = validateRequiredPipelineFields(configState);
+    if (requiredErrors.length > 0) {
+      setSaveMsg(requiredErrors.join(' '));
+      return false;
+    }
+    setSaving(true);
+    setSaveMsg('');
+    try {
+      const res = await fetch(apiUrl('/pipeline-config'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: configState, unknownKeys }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      const llmRes = await fetch(apiUrl('/llm-config'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: buildLlmPayload() }),
+      });
+      const llmData = await llmRes.json().catch(() => ({}));
+      if (!llmRes.ok) throw new Error(llmData.error || llmRes.statusText);
+      setConfigPath(data.configPath || data.dbPath || configPath);
+      setConfigSource('store');
+      setSaveMsg(s.saved);
+      setTimeout(() => setSaveMsg(''), 3000);
+      return true;
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setSaveMsg(format(s.saveFailed, { message }));
+      return false;
+    } finally {
+      setSaving(false);
+    }
+  }, [configState, unknownKeys, configPath, buildLlmPayload]);
+
+  const run = useCallback(async () => {
+    const command = effectiveCommand || null;
+    const validationErrors = validatePipelineRun({ state: configState, command });
+    if (validationErrors.length > 0) {
+      const message = validationErrors.join(' ');
+      logPipelineFailure('Run validation failed', { command, errors: validationErrors });
+      setStatus('error');
+      setLog(message);
+      return;
+    }
+    stopPoll();
+    setBusy(true);
+    setLog('');
+    setStatus('starting');
+    setBackgroundMode(false);
+    try {
+      const res = await fetch(apiUrl('/run'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          command,
+          state: configState,
+          unknownKeys,
+          llmState: buildLlmPayload(),
+          python: pythonExe.trim() || undefined,
+          repoRoot: repoRoot.trim() || undefined,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      const jobId = data.jobId;
+      if (typeof jobId !== 'string' || !jobId.trim()) {
+        throw new Error('Server did not return a job id');
+      }
+      setConfigSource('store');
+      watchJob(jobId);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      logPipelineFailure('Failed to start job', {
+        command,
+        message,
+        error: e,
+      });
+      setStatus('error');
+      setLog(message);
+      setBusy(false);
+    }
+  }, [
+    effectiveCommand,
+    configState,
+    unknownKeys,
+    buildLlmPayload,
+    pythonExe,
+    repoRoot,
+    stopPoll,
+    watchJob,
+  ]);
+
+  const continueInBackground = useCallback(() => {
+    setBackgroundMode(true);
+    router.push(readPipelineReturnPath());
+  }, [router]);
+
+  const value = useMemo<PipelineContextValue>(
+    () => ({
+      presetId,
+      customCommand,
+      configState,
+      llmConfigState,
+      unknownKeys,
+      configSource,
+      legacyBannerDismissed,
+      loadError,
+      loading,
+      saving,
+      saveMsg,
+      pythonExe,
+      repoRoot,
+      busy,
+      log,
+      status,
+      backgroundMode,
+      startUrl: String(configState.start_url ?? ''),
+      setPresetId,
+      setCustomCommand,
+      setField,
+      setLlmField,
+      setPythonExe,
+      setRepoRoot,
+      handleStartUrlChange,
+      handlePresetChange,
+      resetConfig,
+      dismissLegacyBanner: () => setLegacyBannerDismissed(true),
+      loadConfig,
+      saveSettings,
+      run,
+      continueInBackground,
+      openPipelinePage,
+    }),
+    [
+      presetId,
+      customCommand,
+      configState,
+      llmConfigState,
+      unknownKeys,
+      configSource,
+      legacyBannerDismissed,
+      loadError,
+      loading,
+      saving,
+      saveMsg,
+      pythonExe,
+      repoRoot,
+      busy,
+      log,
+      status,
+      backgroundMode,
+      setLlmField,
+      handleStartUrlChange,
+      handlePresetChange,
+      resetConfig,
+      loadConfig,
+      saveSettings,
+      run,
+      continueInBackground,
+      openPipelinePage,
+    ],
+  );
+
+  return <PipelineContext.Provider value={value}>{children}</PipelineContext.Provider>;
+}

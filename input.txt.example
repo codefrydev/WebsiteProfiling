@@ -1,5 +1,6 @@
 # Reference only — not loaded automatically. Use the web UI (Pipeline runner) to
-# save settings to report.db, or pass --config this-file for a one-off CLI run.
+# save settings via the web UI (Pipeline runner), or pass --config this-file for a one-off CLI run.
+# Requires DATABASE_URL (PostgreSQL). Shadow file is written to DATA_DIR by the UI.
 # WebsiteProfiling config (key = value). Comment lines start with #.
 
 # --- Crawl ---
@@ -16,19 +17,16 @@ store_outlinks = true
 store_content_excerpt = true
 content_excerpt_max_chars = 4096
 
-sqlite_db = report.db
 # true = append crawl runs; false = replace crawl tables but keep reports, Google, keyword history, and crawl_runs metadata
 preserve_crawl_history = true
+# crawl_stream_to_db = false  # batch-write pages during crawl (auto when max_pages > 100)
 # enrich_keywords_after_report = true  # optional; when omitted, follows enable_google_search_console
-crawl_output = crawl_results.json
+# Crawl, edges, nodes, and report payload are stored in PostgreSQL (no JSON/CSV export).
 # --- Report ---
 # Optional: cap outbound-domain table rows in report JSON; keyword opportunities on by default
 outbound_domain_max_rows = 200
 include_keyword_opportunities = true
 
-crawl_csv = crawl_results.json
-edges_csv = edges.json
-nodes_csv = nodes.json
 site_name = 
 report_title = SEO report
 max_fetch_for_edges = 300
@@ -45,15 +43,14 @@ lighthouse_mode = navigation
 lighthouse_strategy = desktop
 lighthouse_categories = performance,accessibility,best-practices,seo
 lighthouse_iterations = 1
-lighthouse_output_dir = .
 
 run_lighthouse = true
 # Run on every 200 OK page; results show in Link Explorer inspector
 run_lighthouse_on_pages = true
 lighthouse_max_pages = 2
+lighthouse_concurrency = 2
 
-# --- Keywords (python -m src keywords) ---
-keyword_output_dir = .
+# --- Keywords (python -m src keywords; stored in PostgreSQL) ---
 keyword_max_pages = 200
 
 # --- Content analysis (local; pip install covers rapidfuzz, langdetect) ---

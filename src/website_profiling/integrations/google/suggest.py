@@ -8,14 +8,13 @@ Endpoints:
 Also performs question-prefixed expansion (who/what/why/when/where/how/can/should/vs)
 to surface People-Also-Ask-style queries without SERP scraping.
 
-Caches results in keyword_suggest_cache SQLite table (TTL-based).
+Caches results in keyword_suggest_cache table (TTL-based).
 Uses ThreadPoolExecutor for concurrency (default 4 workers).
 """
 from __future__ import annotations
 
 import json
 import random
-import sqlite3
 import time
 import urllib.parse
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -23,6 +22,10 @@ from datetime import datetime, timezone
 from typing import Any
 
 import requests
+from psycopg import Connection
+from psycopg.types.json import Json
+
+from ...db.storage import _parse_json_field
 
 SUGGEST_URL = "https://suggestqueries.google.com/complete/search"
 USER_AGENT = (
@@ -120,13 +123,13 @@ def batch_expand(
     country: str = "us",
     sources: tuple[str, ...] = ("web", "youtube", "questions"),
     max_workers: int = 4,
-    cache_conn: sqlite3.Connection | None = None,
+    cache_conn: Connection | None = None,
     cache_ttl_days: int = 7,
 ) -> dict[str, dict[str, list[str]]]:
     """
     Expand a list of seed keywords using Google Suggest.
     Returns { seed: { "web": [...], "youtube": [...], "questions": [...] } }
-    Uses concurrent requests and SQLite cache.
+    Uses concurrent requests and PostgreSQL cache (keyword_suggest_cache).
     """
     result: dict[str, dict[str, list[str]]] = {
         seed: {s: [] for s in sources} for seed in seeds
@@ -149,6 +152,7 @@ def batch_expand(
     if not tasks_to_fetch:
         return result
 
+    pending_cache: list[tuple[str, str, list[str]]] = []
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
         futures = {pool.submit(_fetch_one, task): task for task in tasks_to_fetch}
         for future in as_completed(futures):
@@ -157,27 +161,17 @@ def batch_expand(
                 if seed in result:
                     result[seed][source] = suggestions
                     if cache_conn is not None:
-                        _write_cache(cache_conn, seed, source, suggestions)
+                        pending_cache.append((seed, source, suggestions))
             except Exception:
                 pass
+
+    if cache_conn is not None and pending_cache:
+        flush_suggest_cache(cache_conn, pending_cache)
 
     return result
 
 
 # ─── Cache helpers ────────────────────────────────────────────────────────────
-
-_CACHE_DDL = """
-CREATE TABLE IF NOT EXISTS keyword_suggest_cache (
-    cache_key TEXT PRIMARY KEY,
-    fetched_at TEXT NOT NULL,
-    data TEXT NOT NULL
-);
-"""
-
-
-def ensure_cache_table(conn: sqlite3.Connection) -> None:
-    conn.execute(_CACHE_DDL)
-    conn.commit()
 
 
 def _cache_key(seed: str, source: str) -> str:
@@ -185,45 +179,54 @@ def _cache_key(seed: str, source: str) -> str:
 
 
 def _read_cache(
-    conn: sqlite3.Connection,
+    conn: Connection,
     seed: str,
     source: str,
     ttl_days: int = 7,
 ) -> list[str] | None:
     try:
-        ensure_cache_table(conn)
         cur = conn.execute(
-            "SELECT fetched_at, data FROM keyword_suggest_cache WHERE cache_key = ?",
+            "SELECT fetched_at, data FROM keyword_suggest_cache WHERE cache_key = %s",
             (_cache_key(seed, source),),
         )
         row = cur.fetchone()
         if row is None:
             return None
-        fetched_at = datetime.fromisoformat(row[0].replace("Z", "+00:00"))
+        fetched_raw = row["fetched_at"]
+        if hasattr(fetched_raw, "isoformat"):
+            fetched_at = fetched_raw if fetched_raw.tzinfo else fetched_raw.replace(tzinfo=timezone.utc)
+        else:
+            fetched_at = datetime.fromisoformat(str(fetched_raw).replace("Z", "+00:00"))
         age_days = (datetime.now(timezone.utc) - fetched_at).total_seconds() / 86400
         if age_days > ttl_days:
             return None
-        return json.loads(row[1])
+        data = _parse_json_field(row["data"])
+        return data if isinstance(data, list) else json.loads(data) if isinstance(data, str) else None
     except Exception:
         return None
 
 
-def _write_cache(
-    conn: sqlite3.Connection,
-    seed: str,
-    source: str,
-    data: list[str],
+def flush_suggest_cache(
+    conn: Connection,
+    entries: list[tuple[str, str, list[str]]],
 ) -> None:
+    """Bulk-write suggest cache rows (main thread only — safe with one connection)."""
+    if not entries:
+        return
+    now = datetime.now(timezone.utc).isoformat()
+    rows = [
+        (_cache_key(seed, source), now, Json(data))
+        for seed, source, data in entries
+    ]
     try:
-        ensure_cache_table(conn)
-        conn.execute(
-            "INSERT OR REPLACE INTO keyword_suggest_cache (cache_key, fetched_at, data) VALUES (?, ?, ?)",
-            (
-                _cache_key(seed, source),
-                datetime.now(timezone.utc).isoformat(),
-                json.dumps(data),
-            ),
-        )
+        with conn.cursor() as cur:
+            for i in range(0, len(rows), 500):
+                cur.executemany(
+                    """INSERT INTO keyword_suggest_cache (cache_key, fetched_at, data)
+                       VALUES (%s, %s, %s)
+                       ON CONFLICT (cache_key) DO UPDATE SET fetched_at = EXCLUDED.fetched_at, data = EXCLUDED.data""",
+                    rows[i : i + 500],
+                )
         conn.commit()
     except Exception:
         pass

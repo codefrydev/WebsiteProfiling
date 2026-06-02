@@ -1,6 +1,6 @@
 """
 Orchestrate GSC + GA4 fetching. Returns a structured google_data dict
-suitable for storage in the google_data SQLite table and merging into report_payload.
+suitable for storage in the google_data table and merging into report_payload.
 """
 from __future__ import annotations
 
@@ -161,9 +161,9 @@ def fetch_google_data(
         "fetched_at": datetime.now(timezone.utc).isoformat(),
         "date_range": {"start": date_start, "end": date_end},
         "gsc": gsc_payload,
-        "gsc_full": gsc_data,      # full data incl. by_page -- stored in SQLite only
+        "gsc_full": gsc_data,      # full data incl. by_page -- stored in google_data only
         "ga4": ga4_payload,
-        "ga4_full": ga4_data,      # full data incl. by_path -- stored in SQLite only
+        "ga4_full": ga4_data,      # full data incl. by_path -- stored in google_data only
         "url_join": url_join,
         "errors": errors,
     }

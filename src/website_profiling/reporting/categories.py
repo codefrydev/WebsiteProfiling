@@ -228,7 +228,7 @@ def category_core_web_vitals_from_lighthouse(lighthouse_summary: dict) -> dict:
         issues.append(_issue(
             msg,
             priority="High" if (f.get("score") or 0) < 0.5 else "Medium",
-            recommendation="See Lighthouse report for fix; run 'python -m src warnings' with the Lighthouse JSON for one-line fixes.",
+            recommendation="See Lighthouse diagnostics in the report, or run 'python -m src warnings' to refresh mapped fixes in PostgreSQL.",
         ))
     if not issues and perf_score is not None and perf_score < 80:
         recommendations.append("Improve Core Web Vitals (LCP, CLS, TBT) per Lighthouse recommendations.")

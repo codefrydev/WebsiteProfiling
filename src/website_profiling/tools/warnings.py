@@ -1,6 +1,7 @@
 """
 Map site warnings (Lighthouse, axe, or plain list) to detection method, affected metrics,
-severity, and one-line actionable fix. Outputs JSON mapping and human summary.
+severity, and one-line actionable fix. Default path: read Lighthouse from PostgreSQL,
+write mapped warnings to report_payload.warnings_mapped.
 """
 import json
 import os
@@ -425,6 +426,42 @@ def parse_plain_list(path: str) -> list[dict[str, Any]]:
     return results
 
 
+def map_warnings_from_data(
+    data: dict[str, Any],
+    input_type: str,
+) -> list[dict[str, Any]]:
+    """Map warnings from in-memory Lighthouse, axe, or plain-line list data."""
+    input_type = (input_type or "lighthouse").lower()
+    if input_type == "lighthouse":
+        return _parse_lighthouse_data(data)
+    if input_type == "axe":
+        violations = data.get("violations") or []
+        results: list[dict[str, Any]] = []
+        for v in violations:
+            rule_id = v.get("id") or ""
+            help_text = v.get("help") or ""
+            desc = v.get("description") or ""
+            warning = f"{help_text}: {desc}"[:200]
+            entry = _resolve_entry(rule_id, help_text, desc)
+            refs: dict[str, Any] = {"lighthouse_audit_id": rule_id}
+            nodes = v.get("nodes") or []
+            if nodes:
+                refs["nodes"] = [n.get("target") or n.get("html") for n in nodes[:10]]
+            results.append(_build_output_item(warning, entry, refs))
+        return results
+    if input_type in ("list", "plain", "text"):
+        lines = data.get("lines") or []
+        results = []
+        for line in lines:
+            line = str(line).strip()
+            if not line:
+                continue
+            entry = _resolve_entry("", line, line)
+            results.append(_build_output_item(line, entry, None))
+        return results
+    raise ValueError(f"Unknown input_type: {input_type}. Use lighthouse, axe, or list.")
+
+
 def map_warnings(
     input_path: str,
     input_type: str,
@@ -460,23 +497,43 @@ def human_summary_paragraph(items: list[dict[str, Any]], top_n: int = 5) -> str:
 
 
 def main(
-    input_path: str,
+    input_path: str | None = None,
     input_type: str = "lighthouse",
-    output_path: str = "warnings_mapped.json",
 ) -> int:
     """
-    Run warning mapper and write JSON + print human summary.
-    Returns 0 on success, non-zero on error.
+    Map Lighthouse/axe/list warnings to actionable fixes.
+    Default: read latest Lighthouse run from PostgreSQL, write to report_payload.
+    Optional input_path overrides with a local file (axe/list or external Lighthouse JSON).
     """
-    if not input_path or not input_path.strip():
-        print("warning_mapper_input is required. Set it in config or pass the Lighthouse/axe/list file path.", file=sys.stderr)
-        return 1
-    input_path = input_path.strip()
-    if not os.path.isabs(input_path):
-        input_path = os.path.abspath(input_path)
+    input_type = (input_type or "lighthouse").lower()
+    input_path = (input_path or "").strip()
+
     try:
-        print(f"  Reading input: {input_path} (type={input_type})...", flush=True)
-        items = map_warnings(input_path, input_type)
+        if input_path:
+            print(f"  Reading input file: {input_path} (type={input_type})...", flush=True)
+            items = map_warnings(input_path, input_type)
+        else:
+            from ..db import db_session, read_latest_lighthouse_run_json
+
+            print("  Loading latest Lighthouse run from PostgreSQL...", flush=True)
+            with db_session() as conn:
+                if input_type == "lighthouse":
+                    data = read_latest_lighthouse_run_json(conn)
+                    if not data:
+                        print(
+                            "No Lighthouse runs in PostgreSQL. Run lighthouse first, "
+                            "or set warning_mapper_input to a JSON file path.",
+                            file=sys.stderr,
+                        )
+                        return 1
+                    items = map_warnings_from_data(data, input_type)
+                else:
+                    print(
+                        "warning_mapper_input is required for axe/list types. "
+                        "Set a file path in config or use input_type=lighthouse for DB mode.",
+                        file=sys.stderr,
+                    )
+                    return 1
         print(f"  Mapped {len(items)} warnings.", flush=True)
     except FileNotFoundError as e:
         print(str(e), file=sys.stderr)
@@ -490,9 +547,13 @@ def main(
         "warnings": items,
         "human_summary": human_summary_paragraph(items, 5),
     }
-    print(f"  Writing output: {output_path}...", flush=True)
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(output, f, indent=2, default=str)
+
+    from ..db import db_session, read_report_payload, write_report_payload
+
+    with db_session() as conn:
+        payload = read_report_payload(conn) or {}
+        payload["warnings_mapped"] = output
+        write_report_payload(conn, payload)
+    print("  Warnings stored in PostgreSQL (report_payload.warnings_mapped).", flush=True)
     print(output["human_summary"])
-    print(f"Written to {output_path}")
     return 0

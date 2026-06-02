@@ -1,5 +1,5 @@
 """
-Load LLM settings from report.db llm_config table only (UI-managed).
+Load LLM settings from llm_config table only (UI-managed).
 Not read from pipeline-config.txt or --config files.
 """
 from __future__ import annotations
@@ -14,15 +14,12 @@ _ENV_KEY_BY_PROVIDER = {
 }
 
 
-def load_llm_config_from_db(db_path: str) -> dict[str, str]:
-    if not db_path or not os.path.isfile(db_path):
-        return {}
+def load_llm_config_from_db() -> dict[str, str]:
     try:
-        from .db import db_session, init_schema
+        from .db import db_session
         from .db.storage import read_llm_config
 
-        with db_session(db_path) as conn:
-            init_schema(conn)
+        with db_session() as conn:
             cfg = read_llm_config(conn)
     except Exception:
         return {}

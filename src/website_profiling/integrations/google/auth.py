@@ -5,7 +5,7 @@ Uses atomic file writes to avoid corruption from concurrent access.
 
 Path resolution order:
   1. $GOOGLE_SECRETS_PATH env var
-  2. dirname($REPORT_DB_PATH)/.secrets/google.json
+  2. $DATA_DIR/.secrets/google.json
   3. dirname(credentials_path from config) -- falls back to repo root
 """
 from __future__ import annotations
@@ -29,10 +29,10 @@ def _resolve_secrets_path(credentials_path: str | None = None) -> str:
     if explicit:
         return os.path.abspath(explicit)
 
-    # 2. Sibling to REPORT_DB_PATH (Docker volume)
-    db_env = os.environ.get("REPORT_DB_PATH", "").strip()
-    if db_env:
-        return os.path.join(os.path.dirname(os.path.abspath(db_env)), ".secrets", "google.json")
+    # 2. DATA_DIR (Docker volume /data)
+    data_dir = os.environ.get("DATA_DIR", "").strip()
+    if data_dir:
+        return os.path.join(os.path.abspath(data_dir), ".secrets", "google.json")
 
     # 3. Relative to credentials_path config key, or repo root
     if credentials_path and credentials_path.strip():
