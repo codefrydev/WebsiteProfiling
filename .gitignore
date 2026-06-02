@@ -5,6 +5,14 @@
 # Legacy UI pipeline configs under subfolder (kept for ignore if present)
 .web-pipeline/
 
+# Local runtime data (shadow config, secrets volume mount)
+data/*
+!data/.gitkeep
+
+# Python virtual environments (README recommends .venv; ignore both names at repo root)
+.venv/
+venv/
+
 # Legacy SQLite outputs (if present locally)
 report.db
 report.db.*
@@ -17,4 +25,6 @@ web/.env.local
 
 # Legacy local config file (use PostgreSQL pipeline_config / web UI instead)
 input.txt
+# Runtime shadow written to DATA_DIR by the web UI (not the committed example)
+pipeline-config.txt
 *__pycache__*

@@ -92,7 +92,8 @@ export const PUT: ApiRouteHandler = async (request: NextRequest): Promise<Respon
   }
 
   try {
-    return NextResponse.json({ ok: true, dbPath });
+    const configPath = await savePipelineConfig(state, { unknownKeys: safeUnknownKeys });
+    return NextResponse.json({ ok: true, configPath, source: 'store' });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return NextResponse.json({ error: msg }, { status: 500 });

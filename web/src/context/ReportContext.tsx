@@ -9,6 +9,7 @@ import {
   useRef,
   type ReactNode,
 } from 'react';
+import { usePathname } from 'next/navigation';
 import { domainQueryMatchesRow } from '../lib/domainSlug';
 import { computeReportFingerprintDiff } from '../lib/reportDiff';
 import { buildReportCompareSummary } from '../lib/reportCompare';
@@ -20,13 +21,25 @@ import type {
   ReportListRow,
   ReportMetaResponse,
   ReportPayload,
+  ReportFingerprintDiff,
 } from '@/types/report';
+import type { ReportCompareSummary } from '@/lib/reportCompare';
 
 export const ReportContext = createContext<ReportContextValue | null>(null);
 
 interface PayloadApiResponse {
   payload?: ReportPayload;
   error?: string;
+}
+
+interface CompareApiResponse {
+  summary?: ReportCompareSummary;
+  reportDiff?: ReportFingerprintDiff;
+  error?: string;
+}
+
+function viewNeedsFullComparePayload(pathname: string): boolean {
+  return pathname.includes('compare') || pathname.includes('site-structure');
 }
 
 interface MetaApiResponse extends Partial<ReportMetaResponse> {
@@ -60,6 +73,7 @@ export interface ReportProviderProps {
 }
 
 export function ReportProvider({ children, domainSlug = null }: ReportProviderProps) {
+  const pathname = usePathname();
   const [data, setData] = useState<ReportPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +82,12 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
   const [selectedReportId, setSelectedReportId] = useState<number | null>(null);
   const [compareReportId, setCompareReportId] = useState<number | null>(null);
   const [compareData, setCompareData] = useState<ReportPayload | null>(null);
+  const [compareDataLoading, setCompareDataLoading] = useState(false);
+  const [compareSummary, setCompareSummary] = useState<ReportCompareSummary | null>(null);
+  const [compareSummaryLoading, setCompareSummaryLoading] = useState(false);
+  const [serverReportDiff, setServerReportDiff] = useState<ReportFingerprintDiff | null>(null);
   const [crawlPreviewRunId, setCrawlPreviewRunId] = useState<number | null>(null);
+  const compareSummaryKeyRef = useRef<string>('');
   const domainSlugRef = useRef(domainSlug);
   domainSlugRef.current = domainSlug;
 
@@ -184,6 +203,8 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       setCrawlPreviewRunId(Number(crawlRunId));
       setCompareReportId(null);
       setCompareData(null);
+      setCompareSummary(null);
+      setServerReportDiff(null);
       return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -267,9 +288,74 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     setSelectedReportId(id);
   }, []);
 
+  const effectiveReportId = useMemo(() => {
+    const list = domainSlug ? scopedList : reportListFull;
+    const allowedIds = new Set(list.map((r) => r.id));
+    let id = selectedReportId;
+    if (id == null || !allowedIds.has(id)) {
+      id = list[0]?.id ?? null;
+    }
+    return id;
+  }, [domainSlug, scopedList, reportListFull, selectedReportId]);
+
   useEffect(() => {
-    if (compareReportId == null) {
+    if (compareReportId == null || effectiveReportId == null) {
+      setCompareSummary(null);
+      setServerReportDiff(null);
+      compareSummaryKeyRef.current = '';
+      return;
+    }
+    const list = domainSlug ? scopedList : reportListFull;
+    const allowed = new Set(list.map((r) => r.id));
+    if (!allowed.has(compareReportId)) {
+      setCompareSummary(null);
+      setServerReportDiff(null);
+      return;
+    }
+
+    const key = `${effectiveReportId}:${compareReportId}`;
+    if (compareSummaryKeyRef.current === key) {
+      return;
+    }
+    compareSummaryKeyRef.current = key;
+
+    let cancelled = false;
+    setCompareSummaryLoading(true);
+    const url = reportApi(
+      `/compare?reportId=${encodeURIComponent(String(effectiveReportId))}&baselineId=${encodeURIComponent(String(compareReportId))}`,
+    );
+    fetch(url)
+      .then(async (res) => {
+        const body = (await res.json().catch(() => ({}))) as CompareApiResponse;
+        if (!cancelled && res.ok && body.summary) {
+          setCompareSummary(body.summary);
+          setServerReportDiff(body.reportDiff ?? null);
+        } else if (!cancelled) {
+          setCompareSummary(null);
+          setServerReportDiff(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setCompareSummary(null);
+          setServerReportDiff(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setCompareSummaryLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [compareReportId, effectiveReportId, domainSlug, scopedList, reportListFull]);
+
+  const needsFullComparePayload = viewNeedsFullComparePayload(pathname);
+
+  useEffect(() => {
+    if (!needsFullComparePayload || compareReportId == null) {
       setCompareData(null);
+      setCompareDataLoading(false);
       return;
     }
     const list = domainSlug ? scopedList : reportListFull;
@@ -279,6 +365,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       return;
     }
     let cancelled = false;
+    setCompareDataLoading(true);
     fetch(reportApi(`/payload?reportId=${encodeURIComponent(String(compareReportId))}`))
       .then(async (res) => {
         const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
@@ -287,11 +374,14 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       })
       .catch(() => {
         if (!cancelled) setCompareData(null);
+      })
+      .finally(() => {
+        if (!cancelled) setCompareDataLoading(false);
       });
     return () => {
       cancelled = true;
     };
-  }, [compareReportId, domainSlug, scopedList, reportListFull]);
+  }, [needsFullComparePayload, compareReportId, domainSlug, scopedList, reportListFull]);
 
   useEffect(() => {
     const list = domainSlug ? scopedList : reportListFull;
@@ -302,11 +392,13 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
   }, [domainSlug, scopedList, reportListFull, compareReportId]);
 
   const reportDiff = useMemo(() => {
+    if (serverReportDiff) return serverReportDiff;
     if (data == null || compareData == null) return null;
     return computeReportFingerprintDiff(data, compareData);
-  }, [data, compareData]);
+  }, [serverReportDiff, data, compareData]);
 
   const reportCompare = useMemo(() => {
+    if (compareSummary) return compareSummary;
     if (data == null || compareData == null) return null;
     const vo = strings.views.overview;
     const c = strings.views.compare;
@@ -331,7 +423,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
         google: c.googleMetrics,
       },
     );
-  }, [data, compareData]);
+  }, [compareSummary, data, compareData]);
 
   const contextValue = useMemo<ReportContextValue>(
     () => ({
@@ -344,8 +436,10 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       compareReportId,
       setCompareReportId,
       compareData,
+      compareDataLoading,
       reportDiff,
       reportCompare,
+      compareSummaryLoading,
       loadReport,
       refreshReports,
       loadCrawlPreview,
@@ -361,8 +455,10 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       setSelectedReportIdWrapped,
       compareReportId,
       compareData,
+      compareDataLoading,
       reportDiff,
       reportCompare,
+      compareSummaryLoading,
       loadReport,
       refreshReports,
       loadCrawlPreview,

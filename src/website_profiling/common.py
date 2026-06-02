@@ -3,6 +3,7 @@ Shared helpers for crawler and report/plot scripts.
 """
 import json
 import os
+import warnings
 from urllib.parse import urljoin, urldefrag, urlparse
 import urllib.robotparser as robotparser
 import ast
@@ -342,6 +343,12 @@ _TECH_PATTERNS = [
 
 # Module-level cache for Wappalyzer instance (avoids reloading technologies file per page).
 _wappalyzer_instance = None
+_wappalyzer_disabled = False
+
+
+def _is_wappalyzer_regex_warning(msg: str) -> bool:
+    lower = msg.lower()
+    return "compiling regex" in lower and "unbalanced parenthesis" in lower
 
 
 def detect_tech_wappalyzer(
@@ -355,19 +362,27 @@ def detect_tech_wappalyzer(
     Detect technologies using python-Wappalyzer from existing HTML and headers.
     Returns JSON list of tech names. On any failure, falls back to parse_tech_stack(soup, headers, url).
     """
-    global _wappalyzer_instance
+    global _wappalyzer_instance, _wappalyzer_disabled
+    if _wappalyzer_disabled:
+        return parse_tech_stack(soup, headers, url)
     try:
         from Wappalyzer import Wappalyzer, WebPage
     except ImportError:
         return parse_tech_stack(soup, headers, url)
     try:
-        instance = wappalyzer if wappalyzer is not None else _wappalyzer_instance
-        if instance is None:
-            instance = Wappalyzer.latest()
-            if wappalyzer is None:
-                _wappalyzer_instance = instance
-        webpage = WebPage(url, html=html, headers=headers)
-        detected = instance.analyze(webpage)
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            instance = wappalyzer if wappalyzer is not None else _wappalyzer_instance
+            if instance is None:
+                instance = Wappalyzer.latest()
+                if wappalyzer is None:
+                    _wappalyzer_instance = instance
+            webpage = WebPage(url, html=html, headers=headers)
+            detected = instance.analyze(webpage)
+        if any(_is_wappalyzer_regex_warning(str(w.message)) for w in caught):
+            _wappalyzer_disabled = True
+            _wappalyzer_instance = None
+            return parse_tech_stack(soup, headers, url)
         return json.dumps(sorted(detected))
     except Exception:
         return parse_tech_stack(soup, headers, url)

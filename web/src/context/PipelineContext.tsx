@@ -33,6 +33,7 @@ import {
   getPresetById,
   type PipelinePresetId,
 } from '@/components/pipeline/pipelinePresets';
+import { loadPipelineRunnerPrefs, savePipelineRunnerPrefs } from '@/lib/pipelineRunnerPrefs';
 
 const s = strings.pipelineRunner;
 
@@ -100,14 +101,18 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
-  const [pythonExe, setPythonExe] = useState('python3');
-  const [repoRoot, setRepoRoot] = useState('');
+  const [pythonExe, setPythonExe] = useState(() => loadPipelineRunnerPrefs().pythonExe);
+  const [repoRoot, setRepoRoot] = useState(() => loadPipelineRunnerPrefs().repoRoot);
   const [busy, setBusy] = useState(false);
   const [log, setLog] = useState('');
   const [status, setStatus] = useState<PipelineJobStatus | ''>('');
   const [backgroundMode, setBackgroundMode] = useState(false);
   const [configLoaded, setConfigLoaded] = useState(false);
   const pollStopRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    savePipelineRunnerPrefs({ pythonExe, repoRoot });
+  }, [pythonExe, repoRoot]);
 
   const effectiveCommand = customCommand.trim() || getPresetById(presetId).command;
 

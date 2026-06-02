@@ -8,9 +8,16 @@ From the **repository root**:
 docker compose up --build
 ```
 
-Open **http://localhost:3000/home**. Use **`http://localhost:3000`**
+Open **http://localhost:3000/home** (the site root `http://localhost:3000` redirects to `/home`).
 
 Docker Compose starts **PostgreSQL** and the web app. Data persists in Docker volumes (`pg-data` for the database, `profiling-data` for secrets and shadow config).
+
+### PostgreSQL credentials
+
+| Environment | `DATABASE_URL` |
+|-------------|----------------|
+| Docker Compose | `postgres://profiling:profiling@postgres:5432/website_profiling` (set in `docker-compose.yml`) |
+| Local dev (example below) | `postgres://postgres:dev@localhost:5432/website_profiling` |
 
 ## Run locally
 
@@ -75,7 +82,13 @@ npm run dev
 
 Open **http://localhost:3000/home**.
 
-If pipeline runs fail with `spawn python ENOENT`, macOS often has no `python` on PATH (only `python3`). The server auto-resolves `.venv/bin/python` or `python3`; you can also set `export PYTHON="$(pwd)/.venv/bin/python"` before `npm run dev`, or set **Python executable** under Pipeline → Advanced.
+If pipeline runs fail with `spawn python ENOENT`, macOS often has no `python` on PATH (only `python3`). The server auto-resolves `.venv/bin/python` or `python3` (see `web/src/server/resolvePython.ts`). You can also:
+
+- Set `export PYTHON="$(pwd)/.venv/bin/python"` before `npm run dev`, or
+- Set **Python executable** under **Pipeline → Settings → Advanced** (persisted in the browser), or
+- Set optional **Repo root** there if the app cannot find `src/__main__.py`.
+
+Pipeline job status is in-memory only and is cleared when the Next.js server restarts.
 
 ### PostgreSQL performance tuning
 

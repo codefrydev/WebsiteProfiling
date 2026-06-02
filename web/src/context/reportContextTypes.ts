@@ -16,9 +16,12 @@ export interface ReportContextValue {
   setSelectedReportId: (id: number | null) => void;
   compareReportId: number | null;
   setCompareReportId: Dispatch<SetStateAction<number | null>>;
+  /** Full baseline payload; loaded only on views that need row-level compare data. */
   compareData: ReportPayload | null;
+  compareDataLoading: boolean;
   reportDiff: ReportFingerprintDiff | null;
   reportCompare: ReportCompareSummary | null;
+  compareSummaryLoading: boolean;
   loadReport: () => Promise<void>;
   refreshReports: () => Promise<void>;
   loadCrawlPreview: (crawlRunId: number | null) => Promise<boolean>;

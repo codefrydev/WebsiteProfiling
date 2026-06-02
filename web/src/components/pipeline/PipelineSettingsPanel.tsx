@@ -330,6 +330,12 @@ export default function PipelineSettingsPanel({
             </p>
           ) : null}
 
+          {group.id === 'google' ? (
+            <p className="rounded-lg border border-default bg-brand-900/50 px-4 py-3 text-xs text-muted-foreground">
+              {s.googleGroupHint}
+            </p>
+          ) : null}
+
           {useSectionTabs ? (
             <>
               <PipelineSettingsSectionTabs

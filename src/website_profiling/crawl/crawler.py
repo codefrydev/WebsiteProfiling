@@ -91,12 +91,6 @@ class Crawler:
         self.store_content_excerpt = bool(store_content_excerpt)
         self.content_excerpt_max_chars = max(0, int(content_excerpt_max_chars or 0))
         self._wappalyzer_instance = None
-        if use_wappalyzer:
-            try:
-                from Wappalyzer import Wappalyzer
-                self._wappalyzer_instance = Wappalyzer.latest()
-            except Exception:
-                pass
 
         self.queue = Queue()
         if not _url_matches_exclude(self.start_url, self.exclude_urls):
@@ -551,7 +545,7 @@ class _CrawlDbWriter(threading.Thread):
 
     def run(self) -> None:
         from ..db import db_session
-        from ..db.storage import _crawl_rows_from_df, write_crawl_batch
+        from ..db.crawl_store import _crawl_rows_from_df, write_crawl_batch
 
         buffer: list[dict] = []
         try:

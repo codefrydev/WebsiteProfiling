@@ -165,7 +165,7 @@
     "legacyBanner": "Settings were imported from an older config file — click Save settings to store them in the app.",
     "loadError": "Could not load saved config: {message}. Showing defaults.",
     "openIntegrations": "Open Google Integrations",
-    "googleGroupHint": "Connect Search Console and GA4 in Integrations before running Google sync.",
+    "googleGroupHint": "OAuth credentials and GSC/GA4 property IDs are configured in Integrations (header gear icon), not in the toggles below.",
     "contentAiHint": "AI enrichment runs during report generation when enabled.",
     "settingsSectionTabsLabel": "Settings sections",
     "settingsTabIntegrations": "Integrations",
