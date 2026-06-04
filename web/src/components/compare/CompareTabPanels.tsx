@@ -486,7 +486,7 @@ export function CompareGooglePanel({ compare, vc, emptyLabel }: PanelProps) {
       <Card shadow>
         <p className="text-sm text-muted-foreground">{emptyLabel}</p>
         <p className="text-xs text-muted-foreground mt-2">
-          Connect Google in Integrations and run reports that include Search Console / GA4 data.
+          {vc.googleConnectHint}
         </p>
       </Card>
     );

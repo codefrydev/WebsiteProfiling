@@ -8,6 +8,7 @@ import { PageLayout, PageHeader, Card, Badge } from '../components';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal, doughnutOptionsBottomLegend } from '../utils/chartJsDefaults';
 import type { SecurityFinding, ViewProps } from '@/types';
+import { securityFindingLabel } from '@/lib/securityFindingLabels';
 
 registerChartJsBase();
 
@@ -83,12 +84,6 @@ const SEVERITY_CONFIG: Record<SeverityKey, {
 
 const SEVERITY_ORDER: SeverityKey[] = ['Critical', 'High', 'Medium', 'Low', 'Info'];
 
-function toTitleCase(str: string | null | undefined): string {
-  return (str || '')
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c: string) => c.toUpperCase());
-}
-
 export default function Security({ searchQuery = '' }: ViewProps) {
   const { data } = useReport();
   const [severityFilter, setSeverityFilter] = useState('All');
@@ -114,7 +109,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
   const { typeLabels, typeValues } = useMemo(() => {
     const m = new Map();
     allFindings.forEach((f) => {
-      const t = toTitleCase(f.finding_type) || strings.common.unknown;
+      const t = securityFindingLabel(f.finding_type) || strings.common.unknown;
       m.set(t, (m.get(t) || 0) + 1);
     });
     const pairs = [...m.entries()].sort((a, b) => b[1] - a[1]);
@@ -156,7 +151,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
       const url = (f.url || '').toLowerCase();
       const msg = (f.message || '').toLowerCase();
       const rec = (f.recommendation || '').toLowerCase();
-      const typ = toTitleCase(f.finding_type).toLowerCase();
+      const typ = securityFindingLabel(f.finding_type).toLowerCase();
       return url.includes(q) || msg.includes(q) || rec.includes(q) || typ.includes(q);
     });
   }
@@ -301,7 +296,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
                     <Badge value={sev} label={sev} />
                   </div>
                   <span className={`font-mono text-xs px-2 py-0.5 rounded ${cfg.bg} ${cfg.text} border ${cfg.border} select-all`}>
-                    {toTitleCase(f.finding_type)}
+                    {securityFindingLabel(f.finding_type)}
                   </span>
                   {f.url && (
                     <a

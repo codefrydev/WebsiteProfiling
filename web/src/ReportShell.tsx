@@ -22,6 +22,7 @@ import {
   TrendingUp,
   Key,
   ArrowLeftRight,
+  FileDown,
 } from 'lucide-react';
 import AppShell from './components/AppShell';
 import { useReport } from './context/useReport';
@@ -63,6 +64,7 @@ const Gallery = dynamic(() => import('./views/Gallery'), { loading: () => viewLo
 const SearchPerformance = dynamic(() => import('./views/SearchPerformance'), { loading: () => viewLoading() });
 const Traffic = dynamic(() => import('./views/Traffic'), { loading: () => viewLoading() });
 const KeywordsExplorer = dynamic(() => import('./views/KeywordsExplorer'), { loading: () => viewLoading() });
+const ExportReport = dynamic(() => import('./views/ExportReport'), { loading: () => viewLoading() });
 
 interface ReportShellReportContext {
   data: ReportPayload | null;
@@ -97,6 +99,7 @@ const VIEW_CONFIG: ViewConfigEntry[] = [
   { id: 'home', component: Home as ComponentType<CurrentViewProps>, icon: HomeIcon },
   { id: 'overview', component: Overview as ComponentType<CurrentViewProps>, icon: LayoutDashboard },
   { id: 'compare', component: CompareReports as ComponentType<CurrentViewProps>, icon: ArrowLeftRight },
+  { id: 'export', component: ExportReport as ComponentType<CurrentViewProps>, icon: FileDown },
   { id: 'issues', component: Issues as ComponentType<CurrentViewProps>, icon: AlertOctagon },
   { id: 'links', component: Links as ComponentType<CurrentViewProps>, icon: LinkIcon },
   { id: 'site-structure', component: SiteStructure as ComponentType<CurrentViewProps>, icon: FolderTree },
@@ -190,6 +193,7 @@ function AppContent({ slug }: SlugProps): ReactNode {
 
   const CurrentView = VIEWS.find((v) => v.id === view)?.component || Home;
   const showSidebar = view !== 'home';
+  const showSearch = showSidebar && view !== 'export';
 
   if (loading) {
     return <ReportShellSkeleton variant={view === 'home' ? 'home' : 'dashboard'} />;
@@ -212,7 +216,7 @@ function AppContent({ slug }: SlugProps): ReactNode {
               href="/pipeline"
               className="mt-6 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 transition-colors"
             >
-              Open Pipeline
+              {strings.app.openRunAudit}
             </Link>
           </div>
         </div>
@@ -223,7 +227,7 @@ function AppContent({ slug }: SlugProps): ReactNode {
   return (
     <AppShell
       showSidebar={showSidebar}
-      showSearch={showSidebar}
+      showSearch={showSearch}
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
     >

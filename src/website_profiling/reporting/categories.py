@@ -1,12 +1,22 @@
 """
-Report categories: Technical SEO, Core Web Vitals, Performance, HTML/Accessibility,
-Link Health, Mobile, Security. Each category has a score (0-100 or N/A), issues with
-priority and recommended fixes, and category-level recommendations.
+Report categories for site audits: Technical SEO, Core Web Vitals, Performance,
+Accessibility & markup, Links, Mobile SEO, Security, Content quality.
 """
 from typing import Any, Optional
 from urllib.parse import urlparse
 
 import pandas as pd
+
+from .terminology import (
+    CATEGORY_ACCESSIBILITY,
+    CATEGORY_CONTENT_QUALITY,
+    CATEGORY_CORE_WEB_VITALS,
+    CATEGORY_LINKS,
+    CATEGORY_MOBILE,
+    CATEGORY_PERFORMANCE,
+    CATEGORY_SECURITY,
+    CATEGORY_TECHNICAL_SEO,
+)
 
 # Priority order for sorting
 PRIORITY_ORDER = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
@@ -191,7 +201,7 @@ def category_technical_seo(
     score = _score_deductions(100, deductions)
     return {
         "id": "technical_seo",
-        "name": "Technical SEO",
+        "name": CATEGORY_TECHNICAL_SEO,
         "score": score,
         "issues": _sort_issues(issues),
         "recommendations": list({i["recommendation"] for i in issues if i["recommendation"]}),
@@ -202,14 +212,14 @@ def category_core_web_vitals() -> dict:
     """Core Web Vitals: not measured; recommend Lighthouse."""
     return {
         "id": "core_web_vitals",
-        "name": "Core Web Vitals",
+        "name": CATEGORY_CORE_WEB_VITALS,
         "score": None,
         "issues": [_issue(
-            "LCP, FID, and CLS are not measured by this tool.",
+            "LCP, INP, and CLS are not measured by this crawl.",
             priority="Medium",
-            recommendation="Use Lighthouse or PageSpeed Insights to measure LCP, FID, and CLS.",
+            recommendation="Run Lighthouse (PageSpeed Insights) from Run audit to measure Core Web Vitals.",
         )],
-        "recommendations": ["Use Lighthouse or PageSpeed Insights to measure LCP, FID, and CLS."],
+        "recommendations": ["Run Lighthouse from Run audit to measure LCP, INP, and CLS."],
     }
 
 
@@ -228,13 +238,13 @@ def category_core_web_vitals_from_lighthouse(lighthouse_summary: dict) -> dict:
         issues.append(_issue(
             msg,
             priority="High" if (f.get("score") or 0) < 0.5 else "Medium",
-            recommendation="See Lighthouse diagnostics in the report, or run 'python -m src warnings' to refresh mapped fixes in PostgreSQL.",
+            recommendation="See Performance (Core Web Vitals) in this audit, or re-run Lighthouse from Run audit.",
         ))
     if not issues and perf_score is not None and perf_score < 80:
         recommendations.append("Improve Core Web Vitals (LCP, CLS, TBT) per Lighthouse recommendations.")
     return {
         "id": "core_web_vitals",
-        "name": "Core Web Vitals",
+        "name": CATEGORY_CORE_WEB_VITALS,
         "score": perf_score,
         "issues": _sort_issues(issues),
         "recommendations": recommendations or ["Core Web Vitals measured by Lighthouse; see median_metrics in lighthouse_summary.json."],
@@ -247,7 +257,7 @@ def category_performance(df: pd.DataFrame) -> dict:
     deductions = []
     success_df = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns else pd.DataFrame()
     if len(success_df) == 0:
-        return {"id": "performance", "name": "Performance", "score": 0, "issues": [], "recommendations": []}
+        return {"id": "performance", "name": CATEGORY_PERFORMANCE, "score": 0, "issues": [], "recommendations": []}
 
     if "response_time_ms" in success_df.columns:
         rt = pd.to_numeric(success_df["response_time_ms"], errors="coerce").fillna(0)
@@ -315,7 +325,7 @@ def category_performance(df: pd.DataFrame) -> dict:
     score = _score_deductions(100, deductions)
     return {
         "id": "performance",
-        "name": "Performance",
+        "name": CATEGORY_PERFORMANCE,
         "score": score,
         "issues": _sort_issues(issues),
         "recommendations": list({i["recommendation"] for i in issues if i["recommendation"]}),
@@ -328,7 +338,7 @@ def category_html_accessibility(df: pd.DataFrame) -> dict:
     deductions = []
     success_df = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns else pd.DataFrame()
     if len(success_df) == 0:
-        return {"id": "html_accessibility", "name": "HTML & Accessibility", "score": 0, "issues": [], "recommendations": []}
+        return {"id": "html_accessibility", "name": CATEGORY_ACCESSIBILITY, "score": 0, "issues": [], "recommendations": []}
 
     if "h1_count" in df.columns:
         h1c = pd.to_numeric(success_df["h1_count"], errors="coerce").fillna(-1).astype(int)
@@ -418,7 +428,7 @@ def category_html_accessibility(df: pd.DataFrame) -> dict:
     score = min(100, max(0, score))
     return {
         "id": "html_accessibility",
-        "name": "HTML & Accessibility",
+        "name": CATEGORY_ACCESSIBILITY,
         "score": score,
         "issues": _sort_issues(issues),
         "recommendations": list({i["recommendation"] for i in issues if i["recommendation"]}),
@@ -478,14 +488,14 @@ def category_link_health(
             issues.append(_issue(
                 f"Many pages have no internal links pointing to them ({len(orphans)}).",
                 priority="Low",
-                recommendation="Add internal links to important pages to improve crawlability and PageRank.",
+                recommendation="Add internal links to important pages to improve crawlability and internal link equity.",
             ))
             deductions.append((5, True))
 
     score = _score_deductions(100, deductions)
     return {
         "id": "link_health",
-        "name": "Link Health",
+        "name": CATEGORY_LINKS,
         "score": score,
         "issues": _sort_issues(issues),
         "recommendations": list({i["recommendation"] for i in issues if i["recommendation"]}),
@@ -498,7 +508,7 @@ def category_mobile(df: pd.DataFrame) -> dict:
     deductions = []
     success_df = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns else pd.DataFrame()
     if len(success_df) == 0:
-        return {"id": "mobile", "name": "Mobile Optimization", "score": 0, "issues": [], "recommendations": []}
+        return {"id": "mobile", "name": CATEGORY_MOBILE, "score": 0, "issues": [], "recommendations": []}
 
     if "viewport_present" in df.columns:
         viewport_ok = success_df["viewport_present"].astype(str).str.lower().isin(("true", "1", "yes"))
@@ -524,7 +534,7 @@ def category_mobile(df: pd.DataFrame) -> dict:
     score = _score_deductions(100, deductions)
     return {
         "id": "mobile",
-        "name": "Mobile Optimization",
+        "name": CATEGORY_MOBILE,
         "score": score,
         "issues": _sort_issues(issues),
         "recommendations": list({i["recommendation"] for i in issues if i["recommendation"]}),
@@ -617,7 +627,7 @@ def category_security(
     score = _score_deductions(100, deductions)
     return {
         "id": "security",
-        "name": "Security",
+        "name": CATEGORY_SECURITY,
         "score": score,
         "issues": _sort_issues(issues),
         "recommendations": list({i["recommendation"] for i in issues if i["recommendation"]}),
@@ -625,7 +635,7 @@ def category_security(
 
 
 def category_intelligence(ml_bundle: Optional[dict] = None) -> dict:
-    """Content intelligence: duplicate clusters and language mix from local + optional AI enrichment."""
+    """Content quality: duplicate clusters and language mix from crawl analysis and optional AI insights."""
     issues: list[dict] = []
     deductions: list[tuple[int, bool]] = []
     ml_bundle = ml_bundle or {}
@@ -635,7 +645,7 @@ def category_intelligence(ml_bundle: Optional[dict] = None) -> dict:
         big = [g for g in dups if (g.get("member_count") or len(g.get("member_urls") or [])) >= 3]
         if big:
             issues.append(_issue(
-                f"Near-duplicate content: {len(big)} cluster(s) with 3+ URLs (SimHash/fuzzy).",
+                f"Near-duplicate content: {len(big)} group(s) with 3+ URLs.",
                 priority="High",
                 recommendation="Consolidate or canonicalize duplicate pages; differentiate thin similar URLs.",
             ))
@@ -663,7 +673,7 @@ def category_intelligence(ml_bundle: Optional[dict] = None) -> dict:
     score = _score_deductions(100, deductions)
     return {
         "id": "intelligence",
-        "name": "Content intelligence",
+        "name": CATEGORY_CONTENT_QUALITY,
         "score": score,
         "issues": _sort_issues(issues),
         "recommendations": list({i["recommendation"] for i in issues if i["recommendation"]}),
@@ -686,7 +696,7 @@ def build_categories(
     summary_seo should have: issues["broken"], issues["redirects"].
     security_findings: optional list from security scanner (finding_type, severity, url, message, recommendation).
     lighthouse_summary: optional dict from lighthouse_runner (median_metrics, top_failures); when set, Core Web Vitals uses real data.
-    ml_bundle: optional dict from analysis + LLM enrichment (duplicates, language_summary, etc.) for Content intelligence category.
+    ml_bundle: optional dict from analysis + AI insights (duplicates, language_summary, etc.) for Content quality category.
     """
     issues_broken = summary_seo.get("issues", {}).get("broken", [])
     issues_redirects = summary_seo.get("issues", {}).get("redirects", [])

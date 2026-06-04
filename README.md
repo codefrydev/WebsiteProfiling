@@ -1,153 +1,60 @@
-# WebsiteProfiling
+# Site Audit
 
-## Run with Docker
+Open-source technical SEO crawl and audit UI (Next.js + Python + PostgreSQL).
 
-From the **repository root**:
+## Overview
+
+**Why this project** — Most site-audit and SEO tools are paid, limited, or built to upsell: paywalls, capped crawls, teaser scores, and “subscribe to see how to fix this.” Many free options give shallow or unreliable reports that push you toward a paid plan instead of real answers.
+
+**Goal** — A free, self-hosted audit you control: crawl your sites, see honest technical SEO issues, connect Search Console and Analytics when you want, and export reports for clients — without a vendor sitting between you and the data.
+
+## Quick start
+
+**Docker**
 
 ```bash
 docker compose up --build
 ```
 
-Open **http://localhost:3000/home** (the site root `http://localhost:3000` redirects to `/home`).
+Open [http://localhost:3000/home](http://localhost:3000/home).
 
-Docker Compose starts **PostgreSQL** and the web app. Data persists in Docker volumes (`pg-data` for the database, `profiling-data` for secrets and shadow config).
-
-### PostgreSQL credentials
-
-| Environment | `DATABASE_URL` |
-|-------------|----------------|
-| Docker Compose | `postgres://profiling:profiling@postgres:5432/website_profiling` (set in `docker-compose.yml`) |
-| Local dev (example below) | `postgres://postgres:dev@localhost:5432/website_profiling` |
-
-## Run locally
-
-**1. PostgreSQL**
+**Local dev**
 
 ```bash
-docker run -d --name wp-pg \
-  -e POSTGRES_PASSWORD=dev \
-  -e POSTGRES_DB=website_profiling \
-  -p 5432:5432 postgres:16-alpine
-
-export DATABASE_URL=postgres://postgres:dev@localhost:5432/website_profiling
-export DATA_DIR=$(pwd)/data
-mkdir -p "$DATA_DIR"
+./local-run setup   # first time: Postgres, Python venv, migrations, npm deps
+./local-run         # daily: start DB + Next.js dev server → http://localhost:3000/home
+./local-run db      # Postgres only (no app)
+./local-run migrate # apply Alembic migrations only
+./local-run stop    # stop Postgres container
 ```
 
-Apply schema:
+**Tests**
 
 ```bash
-pip install -r requirements.txt
-alembic upgrade head
+./local-test              # before push: full CI parity (DB + pytest + web)
+./local-test python         # backend only: pytest + CLI smoke
+./local-test web            # frontend only: typecheck, lint, vitest
+./local-test quick          # fast loop: skip Docker start; needs DB already up
+./local-test all --no-cov   # full run without pytest coverage gate
 ```
 
-**2. Python** (repo root)
+## Contributing
 
-```bash
-python -m venv .venv
-```
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and pull request guidelines.
 
-Activate `.venv`, then:
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — community standards
+- [SECURITY.md](SECURITY.md) — report vulnerabilities privately
 
-```bash
-pip install -r requirements.txt
-```
+## Docs
 
-Optional LLM enrichment: `pip install -r requirements-llm.txt` — configure in the web UI **AI** tab only.
+- [AGENT.md](AGENT.md) — repo layout and dev commands
+- [docs/GLOSSARY.md](docs/GLOSSARY.md) — UI terminology
+- [docs/COMPANY_STANDARDS.md](docs/COMPANY_STANDARDS.md) — data and security policy
 
-**3. Configure & run the pipeline**
+Google Search Console / Analytics: connect via **Integrations** (gear icon) in the app.
 
-The easiest way is via the **web UI** (terminal icon, bottom-right corner at `http://localhost:3000`):
-- Settings are stored in PostgreSQL (`pipeline_config` table).
-- A shadow `pipeline-config.txt` is auto-written to `DATA_DIR` on every Save/Run.
-- On first open, if the table is empty, the UI imports from shadow `pipeline-config.txt` (if present).
-- **AI enrichment**: use the **AI** tab — settings live in `llm_config` in PostgreSQL only.
+Production: `docker-compose.prod.yml` (set `POSTGRES_PASSWORD`, `AUTH_SECRET`).
 
-To run from the CLI:
+## License
 
-```bash
-export DATABASE_URL=postgres://postgres:dev@localhost:5432/website_profiling
-python -m src
-```
-
-**4. Next.js UI** (`web/`)
-
-```bash
-cd web
-npm install
-export DATABASE_URL=postgres://postgres:dev@localhost:5432/website_profiling
-export DATA_DIR=../data
-npm run dev
-```
-
-Open **http://localhost:3000/home**.
-
-If pipeline runs fail with `spawn python ENOENT`, macOS often has no `python` on PATH (only `python3`). The server auto-resolves `.venv/bin/python` or `python3` (see `web/src/server/resolvePython.ts`). You can also:
-
-- Set `export PYTHON="$(pwd)/.venv/bin/python"` before `npm run dev`, or
-- Set **Python executable** under **Pipeline → Settings → Advanced** (persisted in the browser), or
-- Set optional **Repo root** there if the app cannot find `src/__main__.py`.
-
-Pipeline job status is in-memory only and is cleared when the Next.js server restarts.
-
-### PostgreSQL performance tuning
-
-Optional environment variables:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DB_POOL_MIN` | 2 | Python pipeline minimum pool connections |
-| `DB_POOL_MAX` | 20 | Python pipeline maximum pool connections |
-| `PGPOOL_MAX` | 20 | Next.js `pg` pool size |
-
-Pipeline config (web UI or shadow file):
-
-- **`crawl_stream_to_db`** — batch-write crawl rows during fetch (auto-enabled when `max_pages > 100`).
-- **`lighthouse_concurrency`** — parallel Lighthouse URL audits (default 2).
-- **`llm_concurrency`** (AI tab) — parallel LLM API batches (default 2).
-
-Benchmark crawl writes: `python scripts/bench_crawl_write.py -n 1000` (requires `DATABASE_URL`).
-
-### Backup
-
-```bash
-pg_dump -Fc "$DATABASE_URL" -f backup.dump
-```
-
----
-
-## Google Search Console + GA4 Integration
-
-Pull real search and traffic data into your reports.
-
-### Prerequisites
-
-1. Create a [Google Cloud project](https://console.cloud.google.com/).
-2. Enable two APIs: **Google Search Console API** and **Google Analytics Data API**.
-3. Create an **OAuth 2.0 Client ID** (type: *Web application* or *Desktop app*).
-4. Add `http://localhost:3000/api/integrations/google/callback` as an **Authorised redirect URI**.
-5. Note your **Client ID** and **Client Secret**.
-
-### In-app setup
-
-1. Open **http://localhost:3000** (gear in the header on every page, or **Configure Google** on home).
-2. Click the **gear icon (⚙)** → **Google Integrations**.
-3. **Step 1:** Paste your Client ID and Client Secret → **Save**.
-4. **Step 2:** Click **Connect with Google** → authorise in the browser → you're redirected back.
-5. Pick your **Search Console site** and **GA4 property** from the dropdowns (or paste IDs manually).
-6. Click **Test connection** to verify, then **Fetch data now** to pull the first snapshot.
-
-### CLI usage
-
-```bash
-# Fetch GSC + GA4 data and store in PostgreSQL
-python -m src google
-
-# Validate credentials only (does not store data)
-python -m src google --test
-
-# List accessible properties (prints JSON)
-python -m src google --list-properties
-```
-
-Running `python -m src report` will automatically carry forward the latest Google data snapshot into the new payload — no re-fetch needed.
+Copyright (c) 2026 [codefrydev](https://github.com/codefrydev). Released under the **MIT License** — see [LICENSE](LICENSE). Issues and pull requests: [codefrydev/WebsiteProfiling](https://github.com/codefrydev/WebsiteProfiling).

@@ -11,7 +11,7 @@ from ..llm_config import load_llm_config_from_db, llm_is_enabled
 
 
 def run(cfg: dict, args: argparse.Namespace) -> None:
-    print("WebsiteProfiling: enrich only (updates latest report payload)...", flush=True)
+    print("Site Audit: content analysis only (updates latest audit payload)...", flush=True)
 
     with db_session() as conn:
         run_id = get_latest_crawl_run_id(conn)

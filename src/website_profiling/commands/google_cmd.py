@@ -32,7 +32,7 @@ def run(cfg: dict, cwd: str, path: PathFn, args: argparse.Namespace) -> None:
         _run_google_test(credentials_path)
         return
 
-    print("WebsiteProfiling: Google fetch...", flush=True)
+    print("Site Audit: Google fetch...", flush=True)
     from ..db import db_session, get_latest_crawl_run_id, read_crawl
     from ..integrations.google.store import write_google_data
 
@@ -83,7 +83,7 @@ def run(cfg: dict, cwd: str, path: PathFn, args: argparse.Namespace) -> None:
 
 
 def _run_google_test(credentials_path: str | None) -> None:
-    print("WebsiteProfiling: Google credentials test...", flush=True)
+    print("Site Audit: Google credentials test...", flush=True)
     from ..integrations.google.auth import build_credentials, read_secrets
 
     warnings: list[str] = []

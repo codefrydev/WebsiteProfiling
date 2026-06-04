@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import type { PipelineJobStatus } from '@/types/api';
+import { strings } from '@/lib/strings';
 import {
   filterPipelineLogLines,
   getPipelineLogStats,
@@ -410,7 +411,7 @@ export default function PipelineLogViewer({
         <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" aria-hidden onClick={() => setExpanded(false)} />
         <div className={shellClass}>
           <div className="flex items-center justify-between border-b border-default px-4 py-3">
-            <span className="text-sm font-semibold text-foreground">Pipeline output</span>
+            <span className="text-sm font-semibold text-foreground">{strings.pipelineRunner.outputTitle}</span>
             <button
               type="button"
               onClick={() => setExpanded(false)}

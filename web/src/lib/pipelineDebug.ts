@@ -3,7 +3,7 @@ export function logPipelineFailure(
   context: string,
   details: Record<string, unknown>,
 ): void {
-  console.error(`[WebsiteProfiling Pipeline] ${context}`, details);
+  console.error(`[Site Audit run] ${context}`, details);
 }
 
 export function formatPipelineJobLog(log: string | undefined, error: string | null | undefined): string {

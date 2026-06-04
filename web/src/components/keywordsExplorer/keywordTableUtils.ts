@@ -9,13 +9,15 @@ export const INTENT_COLORS: Record<string, string> = {
 };
 
 export const SOURCE_CONFIG: Record<string, { label: string; color: string }> = {
-  site: { label: 'site', color: 'bg-sky-500/20 text-sky-700 dark:text-sky-300' },
-  gsc: { label: 'GSC', color: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' },
-  suggest: { label: 'suggest', color: 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-300' },
-  youtube: { label: 'youtube', color: 'bg-red-500/20 text-red-700 dark:text-red-300' },
-  questions: { label: 'Q&A', color: 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-300' },
-  datamuse: { label: 'semantic', color: 'bg-pink-500/20 text-pink-700 dark:text-pink-300' },
-  wiki: { label: 'wiki', color: 'bg-gray-500/20 text-gray-700 dark:text-gray-300' },
+  site: { label: 'Crawl', color: 'bg-sky-500/20 text-sky-700 dark:text-sky-300' },
+  'site+gsc': { label: 'Crawl + Search Console', color: 'bg-teal-500/20 text-teal-800 dark:text-teal-300' },
+  gsc: { label: 'Search Console', color: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300' },
+  crawl_heuristic: { label: 'Estimated (crawl)', color: 'bg-orange-500/20 text-orange-800 dark:text-orange-300' },
+  suggest: { label: 'Google Suggest', color: 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-300' },
+  youtube: { label: 'YouTube', color: 'bg-red-500/20 text-red-700 dark:text-red-300' },
+  questions: { label: 'Questions', color: 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-300' },
+  datamuse: { label: 'Related terms', color: 'bg-pink-500/20 text-pink-700 dark:text-pink-300' },
+  wiki: { label: 'Wikipedia', color: 'bg-gray-500/20 text-gray-700 dark:text-gray-300' },
 };
 
 export type IntentCounts = Record<KeywordIntent, number>;

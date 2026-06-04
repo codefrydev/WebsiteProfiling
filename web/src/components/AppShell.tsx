@@ -250,7 +250,7 @@ export default function AppShell({
               {headerExtra}
               <button
                 type="button"
-                title="Integrations (Google Search Console & GA4)"
+                title="Integrations (Search Console & Analytics 4)"
                 aria-label="Open Integrations"
                 onClick={openIntegrations}
                 className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-brand-700 transition-colors"

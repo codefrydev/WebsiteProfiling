@@ -134,11 +134,13 @@ def score_keywords(
             "score": round(score, 4),
             "volume": round(volume, 4),
             "difficulty": difficulty,
+            "difficulty_estimated": True,
             "relevance": round(relevance, 4),
             "ctr_est": round(ctr_est, 4),
             "current_rank": current_rank,
             "recommended_action": action,
             "source": "site",
+            "data_source": "crawl_heuristic",
             "sources_count": len(data.get("sources") or []),
         })
     results.sort(key=lambda x: -x["score"])

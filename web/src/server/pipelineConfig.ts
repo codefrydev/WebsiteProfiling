@@ -95,7 +95,7 @@ export function serializeConfig(
   unknownKeys: PipelineUnknownKey[] = [],
 ): string {
   const lines = [
-    '# WebsiteProfiling config (shadow of pipeline_config table)',
+    '# Site Audit config (shadow of pipeline_config table)',
     '# Regenerated automatically by the web UI on every Save/Run.',
     '# To use for CLI: python -m src --config pipeline-config.txt',
     '',

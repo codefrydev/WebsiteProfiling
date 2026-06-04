@@ -59,7 +59,7 @@ export interface SeoHealthDeltaRow {
 
 export interface ReportCompareSummary {
   fingerprint: ReportFingerprintDiff;
-  fingerprintsAvailable: boolean;
+  urlChangeListsAvailable: boolean;
   metrics: CompareMetricRow[];
   categoryScores: CategoryScoreRow[];
   seoHealth: SeoHealthDeltaRow[];
@@ -279,7 +279,7 @@ export function buildReportCompareSummary(
       contentChanged: [],
       structureChanged: [],
     },
-    fingerprintsAvailable: fingerprint != null,
+    urlChangeListsAvailable: fingerprint != null,
     metrics,
     categoryScores: buildCategoryScores(current, baseline),
     seoHealth: buildSeoHealthDeltas(current, baseline),

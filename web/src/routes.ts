@@ -17,7 +17,8 @@ export type ViewId =
   | 'search-performance'
   | 'traffic'
   | 'keywords-explorer'
-  | 'compare';
+  | 'compare'
+  | 'export';
 
 const VIEW_IDS = new Set<string>([
   'home',
@@ -38,15 +39,18 @@ const VIEW_IDS = new Set<string>([
   'traffic',
   'keywords-explorer',
   'compare',
+  'export',
 ]);
 
 export function viewIdToPathSlug(viewId: string): string {
   if (viewId === 'overview') return 'dashboard';
+  if (viewId === 'keywords-explorer') return 'keywords';
   return viewId;
 }
 
 export function pathSlugToViewId(slug: string | null | undefined): ViewId | null {
   if (!slug || typeof slug !== 'string') return null;
   if (slug === 'dashboard') return 'overview';
+  if (slug === 'keywords') return 'keywords-explorer';
   return VIEW_IDS.has(slug) ? (slug as ViewId) : null;
 }

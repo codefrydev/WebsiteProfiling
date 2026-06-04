@@ -85,6 +85,7 @@ export async function computeDomainGroups(
         statusCounts,
         lastCrawl,
         reportId: r.id,
+        crawlRunId: runId ?? undefined,
         generatedAtMs,
         domainParam: canonicalHost,
       });
@@ -108,10 +109,18 @@ export function computeCrawlOnlyGroups(
       .map((g) => (g.domainParam || slugifyDomain(g.domainName || '')).toLowerCase())
       .filter(Boolean),
   );
+  const coveredCrawlRunIds = new Set(
+    reportGroups
+      .map((g) => g.crawlRunId)
+      .filter((id): id is number => id != null && Number.isFinite(id)),
+  );
 
   const brandMap = new Map<string, PortfolioGroup>();
 
   for (const row of crawlSummaries) {
+    const crawlRunId = Number(row.crawl_run_id);
+    if (Number.isFinite(crawlRunId) && coveredCrawlRunIds.has(crawlRunId)) continue;
+
     const startUrl = String(row.start_url || '').trim();
     const domainName = extractHostname(startUrl) || unknownBrand;
     const domainKey = slugifyDomain(domainName).toLowerCase();

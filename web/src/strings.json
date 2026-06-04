@@ -2,12 +2,12 @@
   "app": {
     "loading": "Loading…",
     "failedTitle": "Failed to load report",
-    "failedHint": "Open Pipeline (button bottom-right) and run a full site audit for this URL. If loading still fails, check that the database service is running.",
+    "failedHint": "Open Run audit (button bottom-right) and run a full site audit for this URL. If loading still fails, check that the database service is running.",
     "defaultSiteName": "Site",
     "crawlCompleted": "Crawl completed",
     "crawlCompletedSeconds": "Crawl completed in {seconds}s",
-    "productName": "Profiling",
-    "productSubtitle": "Website Insights",
+    "productName": "Site Audit",
+    "productSubtitle": "SEO & technical analysis",
     "ariaCloseMenu": "Close menu",
     "ariaOpenMenu": "Open menu",
     "viewSiteLabel": "View site",
@@ -16,141 +16,150 @@
     "themeDark": "Dark theme",
     "themeSystem": "Match system theme",
     "themeGroupLabel": "Color theme",
-    "noReportForDomain": "No report found for this domain. Run the pipeline for this site or choose another domain from Home.",
-    "noReportForDomainTitle": "No report for this domain"
+    "noReportForDomain": "No audit found for this property. Run an audit for this site or choose another property from Properties.",
+    "noReportForDomainTitle": "No audit for this property",
+    "openRunAudit": "Run audit",
+    "goToProperties": "Properties"
   },
   "nav": {
     "home": {
-      "label": "Home",
-      "section": "Audit Overview"
+      "label": "Properties",
+      "section": "Overview"
     },
     "overview": {
-      "label": "Dashboard",
-      "section": "Audit Overview"
+      "label": "Overview",
+      "section": "Overview"
     },
     "compare": {
-      "label": "Compare reports",
-      "section": "Audit Overview"
+      "label": "Compare audits",
+      "section": "Overview"
+    },
+    "export": {
+      "label": "Export report",
+      "section": "Overview"
     },
     "pipeline": {
-      "label": "Pipeline",
-      "section": "Audit Overview"
+      "label": "Run audit",
+      "section": "Overview"
     },
     "issues": {
-      "label": "Site Audit",
-      "section": "Audit Overview"
+      "label": "Issues",
+      "section": "Overview"
     },
     "links": {
-      "label": "Link Explorer",
-      "section": "Crawl Analysis"
+      "label": "All URLs",
+      "section": "Site crawl"
     },
     "site-structure": {
-      "label": "Site structure",
-      "section": "Crawl Analysis"
+      "label": "URL structure",
+      "section": "Site crawl"
     },
     "redirects": {
-      "label": "Redirects",
-      "section": "Crawl Analysis"
+      "label": "Redirects & chains",
+      "section": "Site crawl"
     },
     "content": {
-      "label": "On-Page SEO",
-      "section": "Crawl Analysis"
+      "label": "On-page SEO",
+      "section": "Site crawl"
     },
     "lighthouse": {
-      "label": "Page Speed",
-      "section": "Crawl Analysis"
+      "label": "Performance (Core Web Vitals)",
+      "section": "Site crawl"
     },
     "security": {
-      "label": "Security & Headers",
-      "section": "Crawl Analysis"
+      "label": "Security",
+      "section": "Site crawl"
     },
     "content-analytics": {
-      "label": "Content Insights",
-      "section": "Content & SEO"
+      "label": "Content quality",
+      "section": "On-page & content"
     },
     "tech-stack": {
-      "label": "Tech Detection",
-      "section": "Content & SEO"
+      "label": "Technologies",
+      "section": "On-page & content"
     },
     "charts": {
-      "label": "Crawl Analytics",
-      "section": "Visualizations"
+      "label": "Crawl summary",
+      "section": "Explore"
     },
     "network": {
-      "label": "Internal Linking",
-      "section": "Visualizations"
+      "label": "Internal links",
+      "section": "Explore"
     },
     "gallery": {
-      "label": "Gallery",
-      "section": "Visualizations"
+      "label": "Page previews",
+      "section": "Explore"
     },
     "search-performance": {
-      "label": "Search Performance",
-      "section": "Google Data"
+      "label": "Search Console",
+      "section": "Search & analytics"
     },
     "traffic": {
-      "label": "Traffic & Engagement",
-      "section": "Google Data"
+      "label": "Analytics (GA4)",
+      "section": "Search & analytics"
     },
     "keywords-explorer": {
-      "label": "Keywords Explorer",
-      "section": "Google Data"
+      "label": "Keywords",
+      "section": "Search & analytics"
     }
   },
   "reportSelector": {
-    "reportLabel": "Report:",
+    "reportLabel": "Audit:",
     "compareLabel": "Compare:",
     "latestOption": "Latest",
     "noneOption": "None",
-    "titleReportHistory": "Run a full site audit (not crawl-only) to add report snapshots here",
-    "crawlOnlyNote": "Crawl only — run Full site audit or Report only in Pipeline to add a new report snapshot.",
-    "titleLoadReport": "Load a previous report",
-    "titleCompareBaseline": "Baseline report for URL fingerprint diff (new / removed / changed pages)"
+    "titleReportHistory": "Run a full site audit (not crawl-only) to add audit snapshots here",
+    "crawlOnlyNote": "Crawl without audit — run a full site audit or regenerate the audit from this crawl to save a snapshot.",
+    "titleLoadReport": "Load a previous audit",
+    "titleCompareBaseline": "Older audit to compare against (new, removed, and changed URLs)"
   },
   "pipelineRunner": {
-    "fabTitle": "Run pipeline",
-    "fabAriaOpen": "Open Pipeline",
-    "fabAriaExpand": "Expand Pipeline",
-    "dockTitle": "Pipeline",
+    "fabTitle": "Run audit",
+    "fabAriaOpen": "Open Run audit",
+    "fabAriaExpand": "Expand Run audit",
+    "dockTitle": "Run audit",
     "dockRunning": "Running in background…",
     "dockFailed": "Failed — expand for details",
-    "dockExpand": "Expand pipeline window",
-    "runTitle": "Run pipeline",
-    "runSubtitle": "Analyze a site and refresh this report.",
+    "dockExpand": "Show run progress",
+    "runTitle": "Run audit",
+    "runSubtitle": "Analyze a property and refresh this audit.",
     "startUrlLabel": "Site URL",
     "startUrlPlaceholder": "https://example.com",
     "presetsLabel": "What to run",
     "runButton": "Run",
-    "runActionLabel": "Selected workflow",
+    "runActionLabel": "Audit type",
     "runningButton": "Running…",
-    "openSettings": "Pipeline settings",
+    "openSettings": "Audit settings",
     "wizardStepUrl": "Site URL",
-    "wizardStepWorkflow": "Workflow",
+    "wizardStepWorkflow": "Audit type",
     "wizardStepReview": "Review & run",
     "wizardNext": "Continue",
     "wizardBack": "Back",
     "wizardEdit": "Edit",
     "wizardReviewTitle": "Ready to run",
-    "wizardReviewHint": "Confirm your choices, then start the pipeline.",
+    "wizardReviewHint": "Confirm your choices, then start the audit.",
     "wizardAdvancedSettings": "Advanced settings",
     "wizardUrlHint": "Enter the site you want to analyze.",
-    "wizardWorkflowHint": "Choose what the pipeline should do.",
-    "pageTitle": "Pipeline",
-    "pageTabsLabel": "Pipeline sections",
+    "wizardWorkflowHint": "Choose what to include: full site audit, crawl only, Lighthouse, Google data, or keywords.",
+    "pageTitle": "Run audit",
+    "pageTabsLabel": "Run audit sections",
     "tabRun": "Run",
     "tabSettings": "Settings",
     "sidebarRunSection": "Run",
     "sidebarSettingsSection": "Advanced settings",
-    "backToReports": "Back to reports",
+    "backToReports": "Back to audits",
     "continueInBackground": "Continue in background",
-    "outputLabel": "Output",
+    "outputLabel": "Audit run log",
+    "outputTitle": "Audit run log",
+    "setupStepsAria": "Run audit setup steps",
+    "consoleFilterHint": "Site Audit run",
     "statusLabel": "Status",
     "minimize": "Minimize",
     "minimizeAria": "Minimize and continue in background",
     "close": "Close",
     "loadingSettings": "Loading settings…",
-    "settingsTitle": "Pipeline settings",
-    "settingsSubtitle": "Fine-tune crawl, report, Lighthouse, keywords, and AI options.",
+    "settingsTitle": "Audit settings",
+    "settingsSubtitle": "Fine-tune crawl, audit report, Lighthouse, keywords, and AI options.",
     "saveSettings": "Save settings",
     "saveAndClose": "Save & close",
     "saving": "Saving…",
@@ -164,12 +173,12 @@
     "unknownKeysHelp": "These keys are not in the UI schema but were found in your config. They are preserved on save.",
     "legacyBanner": "Settings were imported from an older config file — click Save settings to store them in the app.",
     "loadError": "Could not load saved config: {message}. Showing defaults.",
-    "openIntegrations": "Open Google Integrations",
-    "googleGroupHint": "OAuth credentials and GSC/GA4 property IDs are configured in Integrations (header gear icon), not in the toggles below.",
-    "contentAiHint": "AI enrichment runs during report generation when enabled.",
+    "openIntegrations": "Connect Search Console & Analytics",
+    "googleGroupHint": "OAuth credentials and Search Console / Analytics 4 property IDs are configured in Integrations (header gear icon), not in the toggles below.",
+    "contentAiHint": "AI insights run when the audit report is built (optional).",
     "settingsSectionTabsLabel": "Settings sections",
     "settingsTabIntegrations": "Integrations",
-    "settingsTabRunner": "Runner",
+    "settingsTabRunner": "Run options",
     "presets": {
       "fullAudit": {
         "label": "Full site audit",
@@ -177,32 +186,69 @@
       },
       "crawlOnly": {
         "label": "Crawl only",
-        "description": "Fetch pages without building a report"
+        "description": "Spider URLs without building a site audit report"
       },
       "reportOnly": {
-        "label": "Report only",
-        "description": "Build report from existing crawl data"
+        "label": "Regenerate audit from crawl",
+        "description": "Build a new site audit from the latest crawl data"
       },
       "lighthouse": {
-        "label": "Lighthouse",
-        "description": "Performance and SEO scores"
+        "label": "Performance (Lighthouse)",
+        "description": "Core Web Vitals and Lighthouse category scores"
       },
       "googleSync": {
-        "label": "Google sync",
-        "description": "Fetch Search Console and GA4 data"
+        "label": "Search Console & Analytics",
+        "description": "Refresh Google Search Console and Analytics 4 data"
       },
       "keywordsExplorer": {
-        "label": "Keywords Explorer",
+        "label": "Keywords",
         "description": "Expand and enrich keyword data"
       }
     },
     "settingsGroups": {
-      "crawlReport": "Crawl & report",
-      "lighthouse": "Lighthouse & performance",
+      "crawlReport": "Crawl & audit",
+      "lighthouse": "Performance (Lighthouse)",
       "keywords": "Keywords",
-      "google": "Google (GSC & GA4)",
-      "contentAi": "Content & AI",
+      "google": "Search Console & Analytics",
+      "contentAi": "Content quality & AI insights",
       "advanced": "Advanced"
+    },
+    "crawlPresets": {
+      "small": { "label": "Small site", "maxPages": "50" },
+      "medium": { "label": "Medium site", "maxPages": "500" },
+      "large": { "label": "Large site", "maxPages": "5000", "stream": true }
+    }
+  },
+  "dataProvenance": {
+    "crawl": {
+      "label": "Crawl",
+      "shortLabel": "Crawl",
+      "className": "bg-sky-500/15 text-sky-800 dark:text-sky-300 border-sky-500/30"
+    },
+    "lighthouse": {
+      "label": "Lighthouse",
+      "shortLabel": "Lighthouse",
+      "className": "bg-violet-500/15 text-violet-800 dark:text-violet-300 border-violet-500/30"
+    },
+    "search_console": {
+      "label": "Google Search Console",
+      "shortLabel": "Search Console",
+      "className": "bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/30"
+    },
+    "analytics": {
+      "label": "Google Analytics 4",
+      "shortLabel": "Analytics 4",
+      "className": "bg-amber-500/15 text-amber-900 dark:text-amber-200 border-amber-500/30"
+    },
+    "estimated": {
+      "label": "Estimated",
+      "shortLabel": "Est.",
+      "className": "bg-orange-500/15 text-orange-800 dark:text-orange-300 border-orange-500/30"
+    },
+    "ai": {
+      "label": "AI insights",
+      "shortLabel": "AI",
+      "className": "bg-fuchsia-500/15 text-fuchsia-800 dark:text-fuchsia-300 border-fuchsia-500/30"
     }
   },
   "common": {
@@ -505,30 +551,30 @@
   },
   "views": {
     "home": {
-      "title": "Audit portfolio",
-      "subtitle": "Sites in your portfolio from crawls and reports. Search by domain or start URL.",
-      "unknownBrand": "Unknown site",
+      "title": "Properties",
+      "subtitle": "Client sites from crawls and audit runs. Search by domain or start URL.",
+      "unknownBrand": "Unknown property",
       "searchPlaceholder": "Filter by domain or URL…",
-      "totalBrandsLabel": "Sites",
+      "totalBrandsLabel": "Properties",
       "totalUrlsLabel": "URLs crawled",
-      "avgHealthLabel": "Avg health",
-      "brandLabel": "Site",
-      "healthScoreLabel": "Health",
-      "crawlUrlLabel": "Start URL",
+      "avgHealthLabel": "Avg site health",
+      "brandLabel": "Property",
+      "healthScoreLabel": "Site health",
+      "crawlUrlLabel": "Site URL",
       "urlCountLabel": "URLs",
       "lastCrawlLabel": "Last crawl",
       "statusBreakdownLabel": "Status mix",
-      "openBrandCta": "Open dashboard",
+      "openBrandCta": "Open overview",
       "otherStatusPill": "Other {count}",
-      "noSearchResults": "No sites match your search.",
-      "empty": "No sites in your portfolio yet. Open Pipeline and run a full site audit to get started.",
-      "crawlOnlyBadge": "Crawl only",
+      "noSearchResults": "No properties match your search.",
+      "empty": "No properties yet. Open Run audit and run a full site audit to get started.",
+      "crawlOnlyBadge": "Crawl only (no audit)",
       "viewUrlsCta": "View {count} URLs",
-      "runReportCta": "Run full audit in Pipeline",
-      "crawlOnlyHint": "This crawl has no report yet. Run Report only or Full site audit in Pipeline to unlock the dashboard."
+      "runReportCta": "Run full site audit",
+      "crawlOnlyHint": "No site audit yet. Regenerate audit from crawl or run a full site audit to unlock Overview and Issues."
     },
     "issues": {
-      "title": "Site Audit",
+      "title": "Issues",
       "subtitlePrefix": "Prioritized issues impacting crawlability, indexing, and rankings.",
       "subtitleTotal": "{count} total {issuesWord} found.",
       "issueWord": "issue",
@@ -571,7 +617,7 @@
       "collapseDefault": "Reset expansion",
       "toggleChartsShow": "Show compare bars",
       "toggleChartsHide": "Hide compare bars",
-      "empty": "No crawl URLs to show. Run a crawl from Pipeline, then build or refresh the report.",
+      "empty": "No crawl URLs to show. Run a crawl from Run audit, then build or refresh the site audit.",
       "emptyFilter": "No URLs match the current search. Clear the header search or try another term."
     },
     "redirects": {
@@ -596,7 +642,7 @@
       "tooltipPages": " Found on {count} page(s)",
       "categoryOther": "Other",
       "noSearchMatch": "No technologies match your search.",
-      "noData": "No technology data yet. Run a crawl from Pipeline first.",
+      "noData": "No technology data yet. Run a crawl from Run audit first.",
       "breakdownTitle": "Technology Breakdown",
       "colTechnology": "Technology",
       "colCategory": "Category",
@@ -672,8 +718,8 @@
       "maxDepth": "Max depth:",
       "avgDepth": "Avg depth:",
       "depthAria": "Depth distribution",
-      "bubbleTitle": "PageRank vs Inlinks vs Word Count",
-      "bubbleHint": "Bubble size = PageRank weight",
+      "bubbleTitle": "Internal link score vs inlinks vs word count",
+      "bubbleHint": "Bubble size = internal link importance (this site only)",
       "bubbleAria": "Bubble chart: inlinks vs word count",
       "scatterTitle": "Word Count vs Response Time",
       "scatterHint": "Each dot is one page",
@@ -750,11 +796,11 @@
       "urlMany": "URLs"
     },
     "links": {
-      "title": "Link Explorer",
-      "crawlPreviewBanner": "Crawl preview only — run Report only or Full site audit in Pipeline for issues, Lighthouse, and SEO scores.",
+      "title": "All URLs",
+      "crawlPreviewBanner": "Crawl only — run Regenerate audit from crawl or Full site audit for Issues, Core Web Vitals, and site health scores.",
       "showingResults": "Analyze discovered URLs. Showing",
       "resultsSuffix": "results.",
-      "explorerHint": "Each row is a page from this crawl. Scan by title and path; \"Links in\" counts internal links pointing here (in this crawl). Sort columns or open Inspect for full details.",
+      "explorerHint": "Each row is a crawled URL. \"Inlinks\" is how many internal links point to this page in this crawl. Sort columns or open URL details for the full breakdown.",
       "noTitle": "No title",
       "filterAllPages": "All pages",
       "filterOrphans": "Orphans (0 inlinks)",
@@ -793,31 +839,31 @@
       "previous": "Previous",
       "next": "Next",
       "backToExplorer": "Back to Link Explorer",
-      "urlInspector": "URL Inspector",
+      "urlInspector": "URL details",
       "noUrlData": "No data found for this URL.",
       "urlOne": "URL",
       "urlMany": "URLs"
     },
     "security": {
       "title": "Security & Headers",
-      "subtitlePrefix": "HTTP security headers, injection risk, open redirect, and vulnerability findings.",
+      "subtitlePrefix": "Security headers, injection risks, open redirects, and vulnerability findings from the crawl.",
       "subtitleCount": "{count} finding{s} total.",
       "findingsBySeverity": "Findings by severity",
       "findingsBySeverityHint": "All findings in this report",
       "findingsByType": "Findings by type",
-      "findingsByTypeHint": "Grouped by finding_type from the scanner",
+      "findingsByTypeHint": "Grouped by finding type",
       "showAllSeverities": "← Show all severities",
       "emptyTitle": "No security findings detected",
       "emptyFiltered": "No findings match the current filters or search.",
-      "emptyNoScan": "No security findings yet. Enable security scanning in Pipeline settings, then run a crawl.",
+      "emptyNoScan": "No security findings yet. Enable security checks in audit settings, then run a crawl.",
       "recommendation": "Recommendation",
       "findingTooltip": "{n} finding{s}"
     },
     "lighthouse": {
       "emptyTitle": "Page Speed",
       "emptySubtitle": "Core Web Vitals and performance audit results.",
-      "emptyBody": "No Lighthouse data in this report yet. Run a Lighthouse audit from the Pipeline, then refresh or reopen this report to see scores and diagnostics here.",
-      "runInPipeline": "Run Lighthouse in Pipeline",
+      "emptyBody": "No Core Web Vitals / Lighthouse data in this audit yet. Run a Lighthouse audit from Run audit, then reload this audit.",
+      "runInPipeline": "Run Lighthouse audit",
       "pageSpeedTitle": "Page Speed",
       "analysisSettings": "Analysis settings",
       "mode": "Mode",
@@ -881,10 +927,10 @@
         "matched": "Matched pages",
         "matchedSub": "In both crawl + Google",
         "crawlOnly": "Crawl only",
-        "crawlOnlySub": "Not in GSC/GA4",
-        "gscOnly": "GSC only",
+        "crawlOnlySub": "Not in Search Console or Analytics",
+        "gscOnly": "Search Console only",
         "gscOnlySub": "Not in crawl",
-        "ga4Only": "GA4 only",
+        "ga4Only": "Analytics only",
         "ga4OnlySub": "Not in crawl"
       },
       "charts": {
@@ -900,7 +946,7 @@
         "positionBuckets": ["Pos 1–3", "Pos 4–10", "Pos 11–20", "Pos 21+"],
         "coverageTitle": "URL coverage",
         "coverageHint": "Overlap between crawl URLs and Google properties",
-        "coverageAria": "Doughnut chart: crawl vs GSC vs GA4 URL overlap",
+        "coverageAria": "Doughnut chart: crawl vs Search Console vs Analytics URL overlap",
         "scatterTitle": "Impressions vs CTR",
         "scatterHint": "Queries with high impressions but low CTR are prime title/meta targets",
         "scatterAria": "Scatter chart: impressions versus CTR percent",
@@ -934,9 +980,9 @@
       },
       "coverage": {
         "title": "Crawl vs Search Console",
-        "description": "Compares normalized URLs from your crawl with GSC pages and GA4 paths.",
-        "noData": "URL join stats are not available. Enable Google in Pipeline settings and run Google sync (or a full audit with Google enabled).",
-        "urlListNote": "Re-run Google sync from the Pipeline (Google sync preset, or Fetch in Integrations) to populate URL gap lists."
+        "description": "Compares normalized URLs from your crawl with Search Console pages and Analytics paths.",
+        "noData": "URL join stats are not available. Connect Google Search Console & Analytics in Integrations and run a Google sync (or a full site audit with Google enabled).",
+        "urlListNote": "Re-run Google sync from Run audit (Search Console & Analytics preset) or Fetch in Integrations to populate URL gap lists."
       },
       "table": {
         "query": "Query",
@@ -961,10 +1007,10 @@
       "subtitleNoRange": "Google Analytics 4 sessions and engagement",
       "subtitleProperty": "Property {id}",
       "fetchedAt": "Fetched {date}",
-      "emptyTitle": "No GA4 data yet",
+      "emptyTitle": "No Analytics data yet",
       "emptyBody": "Connect your Google account to see real sessions, users, and page view data from Google Analytics 4.",
-      "emptyIntegrationsHint": "Open Integrations from the top-right header to connect GA4.",
-      "notConfigured": "GA4 data not configured. Open Integrations to set your Analytics property ID.",
+      "emptyIntegrationsHint": "Open Integrations from the top-right header to connect Google Analytics 4.",
+      "notConfigured": "Analytics data not configured. Open Integrations to set your Analytics property ID.",
       "tabs": {
         "overview": "Overview",
         "pages": "Pages",
@@ -980,10 +1026,10 @@
         "matched": "Matched pages",
         "matchedSub": "In both crawl + Google",
         "crawlOnly": "Crawl only",
-        "crawlOnlySub": "Not in GSC/GA4",
-        "gscOnly": "GSC only",
+        "crawlOnlySub": "Not in Search Console or Analytics",
+        "gscOnly": "Search Console only",
         "gscOnlySub": "Not in crawl",
-        "ga4Only": "GA4 only",
+        "ga4Only": "Analytics only",
         "ga4OnlySub": "Not in crawl"
       },
       "charts": {
@@ -1002,7 +1048,7 @@
         "axisPages": "Pages",
         "dailyTitle": "Daily sessions",
         "dailyHint": "Sessions per day over the selected date range",
-        "dailyAria": "Line chart: daily sessions from GA4",
+        "dailyAria": "Line chart: daily sessions from Google Analytics 4",
         "channelTitle": "Sessions by channel",
         "channelHint": "Traffic source breakdown (organic, direct, referral, etc.)",
         "channelAria": "Doughnut chart: sessions by default channel group",
@@ -1013,7 +1059,7 @@
       "insights": {
         "topPage": "Top path \"{path}\" — {sessions} sessions, {engagement}% engagement.",
         "lowEngagement": "{count} pages have 50+ sessions but under 50% engagement — review content and UX.",
-        "ga4Only": "{count} page path(s) in GA4 were not found in the crawl."
+        "ga4Only": "{count} page path(s) in Analytics were not found in the crawl."
       },
       "pages": {
         "searchPlaceholder": "Search page paths…",
@@ -1025,9 +1071,9 @@
       },
       "coverage": {
         "title": "Crawl vs Google Analytics",
-        "description": "Compares normalized URLs from your crawl with GA4 paths and Search Console pages.",
-        "noData": "URL join stats are not available. Enable Google in Pipeline settings and run Google sync (or a full audit with GA4 enabled).",
-        "urlListNote": "Re-run Google sync from the Pipeline (Google sync preset, or Fetch in Integrations) to populate URL gap lists."
+        "description": "Compares normalized URLs from your crawl with Analytics paths and Search Console pages.",
+        "noData": "URL join stats are not available. Connect Google Analytics 4 in Integrations and run a Google sync (or a full site audit with Analytics enabled).",
+        "urlListNote": "Re-run Google sync from Run audit (Search Console & Analytics preset) or Fetch in Integrations to populate URL gap lists."
       },
       "table": {
         "path": "Page path",
@@ -1046,21 +1092,21 @@
       }
     },
     "keywordsExplorer": {
-      "title": "Keywords Explorer",
-      "subtitle": "Keyword opportunities from crawl, GSC, and expansion sources",
+      "title": "Keywords",
+      "subtitle": "Keyword opportunities from crawl, Search Console, and expansion sources",
       "subtitleWithDate": "Enriched {date}",
       "emptyTitle": "No keyword data yet",
-      "emptyBody": "No keyword data in this report yet. Connect Google in Integrations, then run Keywords Explorer from Pipeline.",
-      "emptyHint": "In Pipeline, run Google sync if needed, then Keywords Explorer—or run a full site audit that includes keyword enrichment.",
-      "runInPipeline": "Open Pipeline",
-      "connectGoogle": "Connect Google",
+      "emptyBody": "No keyword data in this audit yet. Connect Search Console & Analytics, then run Keywords from Run audit.",
+      "emptyHint": "Sync Google Search Console & Analytics if needed, then Keywords—or run a full site audit that includes keyword research.",
+      "runInPipeline": "Open Run audit",
+      "connectGoogle": "Connect Search Console",
       "expandSeeds": "Expand seeds",
       "exportCsv": "Export CSV",
       "brandScopeBanner": "Questions and Opportunities are filtered to keywords related to your brand ({brand}). Turn off “Brand-related only” to see all expansion suggestions.",
       "brandScopeToggle": "Brand-related only",
-      "gscBanner": "Position, clicks, impressions, and CTR come from Google Search Console. KD, +Clicks@#3, and Lost Clicks use CTR models on GSC data.",
-      "noGscBanner": "No GSC in this report. Connect Google in Integrations, sync Google data from the Pipeline, then run Keywords Explorer for real rankings.",
-      "connectBanner": "Connect Google Search Console to enrich keywords with real position, impressions, and CTR.",
+      "gscBanner": "Position, clicks, impressions, and CTR come from Google Search Console. KD, +Clicks@#3, and Lost Clicks use CTR models on Search Console data.",
+      "noGscBanner": "No Search Console data in this audit. Connect in Integrations, sync Search Console & Analytics, then run Keywords for real rankings.",
+      "connectBanner": "Connect Google Search Console to enrich keywords with position, impressions, and CTR.",
       "tabs": {
         "overview": "Overview",
         "all": "All keywords",
@@ -1074,8 +1120,8 @@
       "kpi": {
         "total": "Total keywords",
         "totalSub": "from {n} sources",
-        "gsc": "GSC keywords",
-        "gscSub": "real ranking data",
+        "gsc": "Search Console keywords",
+        "gscSub": "Measured ranking data",
         "quickWins": "Quick wins",
         "quickWinsSub": "position 4–20, high opportunity",
         "cannib": "Cannibalisation",
@@ -1095,7 +1141,7 @@
         "quickWins": "{count} quick-win keywords in positions 4–20.",
         "lostClicks": "{count} keywords lost clicks vs. prior period.",
         "cannib": "{count} cannibalisation issues — same query ranking on multiple URLs.",
-        "noGsc": "Connect GSC to unlock position history and CTR-based opportunity scores."
+        "noGsc": "Connect Search Console to unlock position history and CTR-based opportunity scores."
       },
       "filters": {
         "searchPlaceholder": "Search keywords…",
@@ -1112,11 +1158,13 @@
         "sources": "Sources",
         "intent": "Intent",
         "parentTopic": "Parent topic",
-        "kd": "KD (est.)",
-        "position": "Position",
-        "impressions": "Impr.",
+        "kd": "Difficulty",
+        "kdEstimated": "Difficulty (est.)",
+        "onSiteFrequency": "On-site frequency",
+        "position": "Avg. position",
+        "impressions": "Impressions",
         "clicks": "Clicks",
-        "ctr": "CTR (GSC)",
+        "ctr": "CTR",
         "trafficPotential": "Impr. potential",
         "opportunityClicks": "+Clicks@#3 (est.)",
         "trend": "Trend",
@@ -1137,7 +1185,7 @@
         "clicks": "{n} clicks"
       },
       "byPage": {
-        "empty": "No page-level GSC data. Run keywords with Google connected.",
+        "empty": "No page-level Search Console data. Run keywords with Google connected.",
         "selectPage": "Select a page to view its keywords",
         "loading": "Loading…",
         "keywordCount": "{count} keywords for this page",
@@ -1146,29 +1194,29 @@
       },
       "seeds": {
         "title": "Bulk seed expansion",
-        "hint": "Paste keywords (one per line) for a live Google Suggest preview before running full enrichment.",
+        "hint": "Paste keywords (one per line) for a live Google Suggest preview before running full keyword expansion.",
         "placeholder": "seo audit\nsite speed\nkeyword research",
         "expand": "Expand from these seeds",
         "expanding": "Expanding…",
         "noResults": "No results"
       },
       "footer": {
-        "lastEnrichment": "Last enrichment: {date}",
+        "lastEnrichment": "Last keyword run: {date}",
         "suggestCount": " · {n} from Google Suggest",
         "cannibCount": " · {n} cannibalisation issues"
       }
     },
     "compare": {
-      "title": "Compare reports",
-      "subtitle": "Diff crawl snapshots across URLs, issues, performance, content, links, security, tech stack, and Google data.",
+      "title": "Compare audits",
+      "subtitle": "Compare two site audits: URL changes, issues, Core Web Vitals, content, links, security, technologies, and Google data.",
       "selectReports": "Choose reports",
       "newerLabel": "Newer report",
       "baselineLabel": "Baseline (older)",
       "needTwoReports": "Run at least two full site audits (not crawl-only) for this domain to compare snapshots.",
       "pickBaseline": "Select a baseline report to compare against the current report.",
-      "noDifferences": "No URL fingerprint differences between these two reports.",
+      "noDifferences": "No URL-level changes between these two audits.",
       "noneInCategory": "None in this category.",
-      "fingerprintsUnavailable": "Per-URL fingerprint lists are missing from one or both reports. Site-wide metrics below may still apply. Run a full site audit to enable URL-level diffs.",
+      "urlChangeListsUnavailable": "Per-URL change lists are missing from one or both audits. Site-wide metrics below may still apply. Run a full site audit to enable URL-level comparison.",
       "siteStructureHint": "Path-level page and inlink deltas are available on Site structure when a baseline is selected.",
       "openSiteStructure": "Open Site structure",
       "tabOverview": "Overview",
@@ -1187,14 +1235,15 @@
       "chartSiteMetrics": "Site metrics",
       "chartStatusMix": "HTTP status mix",
       "chartIssuesPriority": "Audit issues by priority",
-      "chartUrlChanges": "URL fingerprint changes",
-      "chartUrlChangesHint": "Counts from comparing fingerprints between the two runs.",
+      "chartUrlChanges": "URL changes",
+      "chartUrlChangesHint": "New, removed, and changed URLs between the two audit runs.",
       "chartContent": "Content & social signals",
       "chartPerformance": "Performance & timing",
-      "chartGscClicks": "GSC clicks (daily)",
-      "chartGscImpressions": "GSC impressions (daily)",
-      "chartGa4Sessions": "GA4 sessions (daily)",
-      "googleDateNote": "Google metrics use each report’s fetched date range — runs may cover different periods.",
+      "chartGscClicks": "Search Console clicks (daily)",
+      "chartGscImpressions": "Search Console impressions (daily)",
+      "chartGa4Sessions": "Analytics sessions (daily)",
+      "googleDateNote": "Google metrics use each audit’s date range — runs may cover different periods.",
+      "googleConnectHint": "Connect Google Search Console and Google Analytics 4 in Integrations, then run an audit that includes Google data.",
       "newIssues": "New audit issues",
       "resolvedIssues": "Resolved issues",
       "priorityMix": "Issues by priority",
@@ -1235,14 +1284,14 @@
         "avgOutlinks": "Avg outlinks per page"
       },
       "googleMetrics": {
-        "gscClicks": "GSC clicks",
-        "gscImpressions": "GSC impressions",
-        "gscCtr": "GSC CTR",
-        "gscPosition": "GSC avg position",
-        "ga4Sessions": "GA4 sessions",
-        "ga4Users": "GA4 active users",
-        "ga4PageViews": "GA4 page views",
-        "ga4Engagement": "GA4 engagement rate"
+        "gscClicks": "Search Console clicks",
+        "gscImpressions": "Search Console impressions",
+        "gscCtr": "Search Console CTR",
+        "gscPosition": "Search Console avg position",
+        "ga4Sessions": "Analytics sessions",
+        "ga4Users": "Analytics active users",
+        "ga4PageViews": "Analytics page views",
+        "ga4Engagement": "Analytics engagement rate"
       },
       "siteMetrics": "Site-wide changes",
       "siteMetricsHint": "Current (newer) run vs baseline. Green ↓ on issues means fewer problems.",
@@ -1271,9 +1320,38 @@
         "structure": "Structure changed"
       }
     },
+    "exportReport": {
+      "title": "Export report",
+      "description": "Preview the client-ready audit summary below. Print or save as PDF from the toolbar, or download structured CSV/JSON for spreadsheets and integrations.",
+      "generatedLabel": "Generated",
+      "previewTitle": "Audit report preview",
+      "previewError": "Could not load report preview.",
+      "print": "Print",
+      "downloadPdf": "Download PDF",
+      "downloadCsv": "Download CSV",
+      "downloadJson": "Download JSON"
+    },
     "overview": {
-      "mlErrors": "AI enrichment reported {count} error{plural}",
-      "dashboard": "Dashboard",
+      "openExportPage": "Export report",
+      "dataSourcesLabel": "Data sources",
+      "crawlScope": {
+        "title": "Crawl scope",
+        "pagesLine": "{pages} URLs crawled (limit {max}).",
+        "limitedNote": "The crawl limit was reached; this is not a full-site audit unless the limit covers your site.",
+        "robotsLine": "{count} URLs blocked by robots.txt.",
+        "staticHtmlNote": "Static HTML only — links rendered only by JavaScript may be missing."
+      },
+      "googleStaleWarning": "Search Console & Analytics data is older than 7 days. Refresh from Integrations.",
+      "googlePartialWarning": "Search Console or Analytics data is missing from the last sync.",
+      "mlErrors": "AI insights reported {count} error{plural}",
+      "googleConnectTitle": "Connect Google Search Console & Analytics",
+      "googleConnectBody": "Add real query, click, and traffic data to this audit.",
+      "googleConnectSubtitle": "Sync clicks, impressions, average position, and Analytics sessions. Open Integrations (gear icon, top right).",
+      "gscClicksCard": "Search Console clicks",
+      "gscImpressionsCard": "Impressions",
+      "ga4SessionsCard": "Analytics sessions",
+      "ga4UsersCard": "Active users",
+      "dashboard": "Overview",
       "subtitleSiteHealth": "Site health summary for",
       "crawlDone": "Crawl completed.",
       "crawlDoneSeconds": "Crawl completed in {seconds}s.",
@@ -1293,7 +1371,7 @@
       "p95Label": "p95:",
       "reportComparison": "Report comparison",
       "reportComparisonTeaser": "Compare two crawl snapshots to see new, removed, and changed URLs.",
-      "reportComparisonHint": "Differences vs the baseline report you pick on Compare reports. Uses compact fingerprints (title, meta, headings, word count, content length) — not a full HTML diff. New/removed URLs and pages whose primary text fingerprint changed between runs.",
+      "reportComparisonHint": "Changes vs the baseline audit you select on Compare audits. Compares title, meta description, headings, and word count — not a full HTML diff. Shows new and removed URLs and pages where on-page content changed.",
       "newUrls": "New URLs",
       "removedUrls": "Removed URLs",
       "contentChanged": "Content changed",
@@ -1302,10 +1380,10 @@
       "sampleRemoved": "Sample removed",
       "sampleContentChanged": "Sample content changed",
       "keywordOpportunities": "Keyword opportunities",
-      "keywordOpportunitiesHint": "On-site discovery from crawl copy (titles, headings, meta, slugs). Scores are heuristic — not Google search volume or difficulty.",
+      "keywordOpportunitiesHint": "Keywords found in crawl copy (titles, headings, meta, URLs). Frequency is estimated from this site — not Google search volume or Keyword Planner data.",
       "quickWinsEase": "Quick wins (ease proxy)",
       "highEmphasis": "High emphasis (frequency proxy)",
-      "contentIntelligence": "Content intelligence",
+      "contentIntelligence": "Content quality",
       "duplicateGroups": "Duplicate groups",
       "nearDuplicateGroups": "Near-duplicate groups",
       "anomalies": "Anomalies",
@@ -1356,12 +1434,13 @@
       "recommendations": "Recommendations",
       "noRecSearch": "No recommendations match your search.",
       "topPagesTitle": "Most important pages",
-      "topPagesHint": "From your crawl's internal link graph: importance is a PageRank-style score (relative to this site, not Google). Connections = edges touching this URL in the graph.",
+      "topPagesHint": "Ranked by internal link score from this crawl (like Screaming Frog link score — not Google ranking or backlinks). Connections = internal links to and from the URL.",
       "noTopSearch": "No top pages match your search.",
       "thRank": "Rank",
       "thPage": "Page",
-      "thImportance": "Importance",
-      "thConnections": "Connections",
+      "thImportance": "Link score",
+      "thConnections": "Inlinks + outlinks",
+      "importanceTooltip": "{label}: {pct}% of top page in this table. Internal link score {score} (this crawl only, not Google ranking).",
       "noTitle": "No title",
       "noTopPagesData": "No top pages data (crawl had no edges or outlinks).",
       "chartTitleTags": "Title tags",
@@ -1492,7 +1571,7 @@
       "missingOgImage": "Missing OG Image",
       "missingOgTags": "Missing Open Graph Tags",
       "missingTwitterTags": "Missing Twitter Card Tags",
-      "socialAllGood": "All pages have social meta tags, or no data available yet. Run a crawl from Pipeline to populate.",
+      "socialAllGood": "All pages have social meta tags, or no data available yet. Run a crawl from Run audit to populate.",
       "siteArchitecture": "Site Architecture",
       "crawlDepthDist": "Crawl Depth Distribution",
       "maxDepth": "Max depth:",
@@ -1589,9 +1668,17 @@
     }
   },
   "components": {
+    "llmDisclosure": {
+      "prefix": "AI insight ·",
+      "promptVersion": "prompt"
+    },
+    "crawlAuthorize": {
+      "label": "I confirm we are authorized to crawl and audit this property",
+      "required": "Authorization is required before running an audit"
+    },
     "urlGapLists": {
-      "gscOnly": "GSC only",
-      "ga4Only": "GA4 only",
+      "gscOnly": "Search Console only",
+      "ga4Only": "Analytics only",
       "crawlOnly": "Crawl only",
       "columnUrl": "URL",
       "columnImpressions": "Impressions",
@@ -1603,7 +1690,7 @@
       "truncatedHint": "Showing top {limit} of {total} URLs.",
       "noResults": "No URLs match your search.",
       "noData": "No URLs in this category.",
-      "notInCrawlBanner": "This URL was reported by Google but isn't in the crawl. Inspector data is limited."
+      "notInCrawlBanner": "This URL appears in Google Search Console but was not crawled. URL details are limited."
     },
     "inspectorTabs": {
       "overview": "Overview",
@@ -1668,20 +1755,20 @@
         "pageResourcesCaption": "Page resources (same as summary counts)",
         "lhCategoryCaption": "Lighthouse category scores (0–100)",
         "scoreAxis": "Score",
-        "intelligenceMl": "AI enrichment",
-        "keyphrasesKeybert": "Keyphrases",
+        "intelligenceMl": "AI insights",
+        "keyphrasesKeybert": "Keyphrases (AI)",
         "duplicateCluster": "Duplicate cluster",
         "detectedLanguage": "Detected language",
-        "anomalyIsolation": "Anomaly (IsolationForest)",
+        "anomalyIsolation": "Content anomaly score",
         "anomalyScorePrefix": "score",
-        "similarInternalCaption": "Similar internal URLs (AI-ranked)",
+        "similarInternalCaption": "Similar internal URLs (AI-suggested)",
         "socialPreviews": "Social previews",
         "facebookOg": "Facebook / Open Graph",
         "twitterX": "Twitter / X",
         "webVitalsLighthouse": "Web vitals / Lighthouse",
         "lhRecommendations": "Recommendations (Lighthouse)",
         "failingAuditsCaption": "Failing audits — expand for tables, thumbnails, and DOM nodes ({count})",
-        "noLhData": "No Lighthouse data for this URL. Enable per-page Lighthouse in Pipeline settings and run a Lighthouse audit (or full site audit).",
+        "noLhData": "No Lighthouse data for this URL. Enable per-page Lighthouse in audit settings and run a Lighthouse or full site audit.",
         "keywordAnalysis": "Keyword analysis",
         "thKeyword": "Keyword",
         "thCount": "Count",

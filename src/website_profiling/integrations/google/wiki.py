@@ -17,7 +17,7 @@ import requests
 
 WIKI_API_BASE = "https://en.wikipedia.org/api/rest_v1"
 WIKI_SEARCH_API = "https://en.wikipedia.org/w/api.php"
-USER_AGENT = "WebsiteProfilingKeywordEnricher/1.0 (https://github.com/WebsiteProfiling)"
+USER_AGENT = "WebsiteProfilingKeywordEnricher/1.0 (https://github.com/codefrydev/WebsiteProfiling)"
 
 _SKIP_CATEGORIES = {
     "articles", "pages", "stubs", "disambiguation", "redirects",

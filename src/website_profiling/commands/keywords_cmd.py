@@ -24,29 +24,29 @@ def run(cfg: dict, args: argparse.Namespace) -> None:
         sys.exit(0)
 
     if getattr(args, "enrich_google", False):
-        print("WebsiteProfiling: keywords Google enrichment only...", flush=True)
+        print("Site Audit: keyword research (Google Search Console) only...", flush=True)
         from ..integrations.google.keyword_enrich import run_enrichment
 
         try:
             run_enrichment(cfg)
-            print("Keywords enrichment done.", flush=True)
+            print("Keyword research done.", flush=True)
             sys.exit(0)
         except Exception as e:
-            print(f"Keywords enrichment error: {e}", file=sys.stderr)
+            print(f"Keyword research error: {e}", file=sys.stderr)
             sys.exit(1)
 
-    print("WebsiteProfiling: keywords only", flush=True)
+    print("Site Audit: keywords only", flush=True)
     from ..tools.keywords import main as keyword_main
 
     kw_url = require_start_url(cfg, for_step="keywords")
     kw_cfg = dict(cfg)
     rc = keyword_main(base_url=kw_url, config=kw_cfg)
     if rc == 0 and (get_bool(cfg, "enable_google_suggest", False) or google_db_has_gsc()):
-        print("  Running Google keyword enrichment...", flush=True)
+        print("  Running Google keyword research...", flush=True)
         from ..integrations.google.keyword_enrich import run_enrichment
 
         try:
             run_enrichment(cfg)
         except Exception as e:
-            print(f"  Warning: Google enrichment error (non-fatal): {e}", file=sys.stderr)
+            print(f"  Warning: Google keyword research error (non-fatal): {e}", file=sys.stderr)
     sys.exit(rc)

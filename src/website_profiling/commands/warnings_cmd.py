@@ -9,7 +9,7 @@ from .config_resolve import PathFn
 
 
 def run(cfg: dict, cwd: str, path: PathFn, args: argparse.Namespace) -> None:
-    print("WebsiteProfiling: warning mapper only", flush=True)
+    print("Site Audit: issue mapper only", flush=True)
     from ..tools.warnings import main as warning_mapper_main
 
     wm_input = cfg.get("warning_mapper_input", "").strip()

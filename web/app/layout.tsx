@@ -12,8 +12,8 @@ const dmSans = DM_Sans({
 });
 
 export const metadata = {
-  title: 'Website Profiling',
-  description: 'Website crawl and SEO audit reports',
+  title: 'Site Audit',
+  description: 'Technical SEO site crawl and audit reports',
   icons: { icon: '/favicon.svg' },
 };
 

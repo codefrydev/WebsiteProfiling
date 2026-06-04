@@ -35,6 +35,15 @@ jobs:
         run: alembic upgrade head
       - name: Pytest
         run: pytest tests/ -q
+      - name: CLI smoke
+        run: python -m src --help
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build image
+        run: docker build -t website-profiling:ci .
 
   web:
     runs-on: ubuntu-latest

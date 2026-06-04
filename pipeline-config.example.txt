@@ -1,5 +1,5 @@
-# WebsiteProfiling pipeline config — REFERENCE ONLY (not auto-loaded).
-# Source of truth: PostgreSQL pipeline_config table (web UI Pipeline settings).
+# Site Audit config — REFERENCE ONLY (not auto-loaded).
+# Source of truth: PostgreSQL pipeline_config table (web UI Audit settings).
 # Runtime shadow: DATA_DIR/pipeline-config.txt (regenerated on Save/Run).
 # CLI override: python -m src --config path/to/file.txt
 # See also: input.txt.example (same keys, more comments).

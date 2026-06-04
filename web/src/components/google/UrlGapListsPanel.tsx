@@ -46,7 +46,7 @@ export default function UrlGapListsPanel({
     if (showGsc && lists.gsc_only) {
       out.push({
         key: 'gsc_only',
-        label: cg.gscOnly || 'GSC only',
+        label: cg.gscOnly || 'Search Console only',
         rows: lists.gsc_only,
         total: totals.gsc_only || lists.gsc_only.length,
       });
@@ -54,7 +54,7 @@ export default function UrlGapListsPanel({
     if (showGa4 && lists.ga4_only) {
       out.push({
         key: 'ga4_only',
-        label: cg.ga4Only || 'GA4 only',
+        label: cg.ga4Only || 'Analytics only',
         rows: lists.ga4_only,
         total: totals.ga4_only || lists.ga4_only.length,
       });

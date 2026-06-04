@@ -5,6 +5,15 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_BASE_PATH: '',
   },
+  async redirects() {
+    return [
+      {
+        source: '/keywords-explorer',
+        destination: '/keywords',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

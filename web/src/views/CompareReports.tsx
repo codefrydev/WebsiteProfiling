@@ -292,9 +292,9 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
 
       {reportCompare && compareReportId != null ? (
         <>
-          {!reportCompare.fingerprintsAvailable ? (
+          {!reportCompare.urlChangeListsAvailable ? (
             <p className="text-xs text-amber-800 dark:text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-2">
-              {vc.fingerprintsUnavailable}
+              {vc.urlChangeListsUnavailable}
             </p>
           ) : null}
 
@@ -571,7 +571,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
 
       {!loading && !error && reportList.length >= 2 && compareReportId != null && !reportCompare ? (
         <Card shadow>
-          <p className="text-sm text-muted-foreground">{vc.fingerprintsUnavailable}</p>
+          <p className="text-sm text-muted-foreground">{vc.urlChangeListsUnavailable}</p>
         </Card>
       ) : null}
     </PageLayout>

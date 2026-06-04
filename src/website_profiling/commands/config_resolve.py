@@ -73,7 +73,7 @@ def require_start_url(cfg: dict, *, for_step: str) -> str:
     if not url:
         print(
             f"Error: start_url is required for {for_step}. "
-            "Set it in the Pipeline runner UI (Start URL) or pipeline-config.txt.",
+            "Set it in Run audit (Site URL) or saved audit settings.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -85,7 +85,7 @@ def require_lighthouse_url(cfg: dict) -> str:
     if not url:
         print(
             "Error: lighthouse_url or start_url is required for Lighthouse. "
-            "Set Start URL in the Pipeline runner UI.",
+            "Set Site URL in Run audit.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -136,7 +136,7 @@ def resolve_config(args: argparse.Namespace) -> tuple[dict[str, str], str]:
                 print(f"[Config] Loaded from shadow file ({shadow})", flush=True)
             else:
                 print(
-                    "No pipeline config found. Open the web UI (Pipeline runner), "
+                    "No audit settings found. Open Run audit in the web app, "
                     "configure settings, and click Save — or pass --config path.",
                     file=sys.stderr,
                 )
@@ -147,7 +147,7 @@ def resolve_config(args: argparse.Namespace) -> tuple[dict[str, str], str]:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="WebsiteProfiling: crawl site, generate reports and link graph. All options read from config file."
+        description="Site Audit CLI: crawl a property, build site audit reports, and sync Google data. Settings from Run audit or --config."
     )
     parser.add_argument(
         "--config",
@@ -176,7 +176,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--enrich-google",
         action="store_true",
         dest="enrich_google",
-        help="For 'keywords' command: run Google enrichment (Suggest, GSC merge, Datamuse, etc.) without re-running the crawl.",
+        help="For 'keywords' command: run keyword research (Suggest, Search Console merge, Datamuse) without re-crawling.",
     )
     parser.add_argument(
         "--expand-only",

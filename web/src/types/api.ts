@@ -58,6 +58,7 @@ export interface RunPostBody {
   llmState?: LlmConfigState;
   python?: string;
   repoRoot?: string;
+  propertyId?: number | null;
 }
 
 export interface PipelineConfigPutBody {

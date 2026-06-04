@@ -1,5 +1,5 @@
 # Reference only — not loaded automatically.
-# Configure via web UI (Pipeline → Settings) or: python -m src --config input.txt.example
+# Configure via web UI (Run audit → Settings) or: python -m src --config input.txt.example
 # Requires DATABASE_URL (PostgreSQL). UI writes shadow file to DATA_DIR/pipeline-config.txt.
 # Keys match web/src/lib/pipelineConfigSchema.ts (ALL_SCHEMA_KEYS).
 
@@ -49,7 +49,7 @@ analysis_fuzzy_threshold = 92
 analysis_simhash_hamming = 0
 analysis_dup_max_pages = 2000
 
-# --- Pipeline ---
+# --- Audit steps ---
 run_crawl = true
 run_report = true
 run_plot = true
@@ -81,4 +81,4 @@ keyword_max_suggest_results = 8
 warning_mapper_input = 
 warning_mapper_input_type = lighthouse
 
-# AI enrichment (OpenAI, Gemini, Claude, Ollama): web UI Pipeline → AI tab only (llm_config table).
+# AI insights (OpenAI, Gemini, Claude, Ollama): web UI Run audit → AI tab only (llm_config table).

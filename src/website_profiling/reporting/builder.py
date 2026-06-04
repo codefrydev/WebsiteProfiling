@@ -821,6 +821,71 @@ def _build_hreflang_summary(df: pd.DataFrame) -> dict[str, Any]:
     }
 
 
+def _build_report_metadata(
+    df: pd.DataFrame,
+    config: Optional[dict[str, str]],
+    lighthouse_summary: Optional[dict[str, Any]],
+    google_data: Optional[dict[str, Any]],
+    keywords_data: Optional[dict[str, Any]],
+    ml_bundle: dict[str, Any],
+    run_id: Optional[int],
+    crawl_run_created_at: Optional[str],
+) -> dict[str, Any]:
+    """Provenance and crawl scope for agency-facing audits."""
+    sources: list[str] = ["crawl"]
+    if lighthouse_summary:
+        sources.append("lighthouse")
+    if google_data:
+        if google_data.get("gsc") or google_data.get("gsc_summary"):
+            sources.append("search_console")
+        if google_data.get("ga4") or google_data.get("ga4_summary"):
+            sources.append("analytics")
+    llm_meta = ml_bundle.get("llm_meta")
+    if isinstance(llm_meta, dict) and llm_meta.get("model"):
+        sources.append("ai")
+    kw_rows = (keywords_data or {}).get("rows") or []
+    has_gsc_kw = any(
+        (r.get("gsc_impressions") or r.get("gsc_clicks")) and r.get("source") in ("gsc", "site+gsc", None)
+        for r in kw_rows[:500]
+        if isinstance(r, dict)
+    )
+    if kw_rows and not has_gsc_kw and "estimated" not in sources:
+        sources.append("estimated")
+
+    max_pages_cfg = get_int(config or {}, "max_pages", 0) or 0
+    pages_crawled = len(df)
+    blocked = 0
+    if not df.empty and "status" in df.columns:
+        blocked = int((df["status"].astype(str) == "blocked_by_robots").sum())
+
+    meta: dict[str, Any] = {
+        "data_sources": sources,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "crawl_scope": {
+            "pages_crawled": pages_crawled,
+            "max_pages_configured": max_pages_cfg or pages_crawled,
+            "robots_blocked_count": blocked,
+            "static_html_only": True,
+            "crawl_limited": bool(max_pages_cfg and pages_crawled >= max_pages_cfg),
+        },
+    }
+    if run_id is not None:
+        meta["crawl_run_id"] = run_id
+    if crawl_run_created_at:
+        meta["crawl_run_created_at"] = crawl_run_created_at
+    if google_data:
+        meta["google_fetched_at"] = google_data.get("fetched_at")
+        meta["google_date_range_days"] = google_data.get("date_range_days")
+        gsc = google_data.get("gsc") or {}
+        if isinstance(gsc, dict) and gsc.get("row_count") is not None:
+            meta["gsc_row_count"] = gsc.get("row_count")
+    if keywords_data:
+        meta["keywords_enriched_at"] = keywords_data.get("enriched_at") or keywords_data.get("fetched_at")
+    if isinstance(llm_meta, dict):
+        meta["llm"] = llm_meta
+    return meta
+
+
 def _build_keyword_opportunities(df: pd.DataFrame, config: dict[str, str] | None) -> dict[str, Any]:
     if not get_bool(config or {}, "include_keyword_opportunities", True):
         return {}
@@ -951,7 +1016,7 @@ def run_simple_report(
         )
         print(f"  Security scan: {len(security_findings)} findings.", flush=True)
 
-    print("  Content analysis (local + optional LLM)...", flush=True)
+    print("  Content analysis (crawl + optional AI insights)...", flush=True)
     local_bundle = run_local_enrichment(df, config)
     llm_cfg = load_llm_config_from_db()
     llm_bundle = run_llm_enrichment(df, llm_cfg) if llm_is_enabled(llm_cfg) else {}
@@ -1025,14 +1090,16 @@ def run_simple_report(
             small_edges = edf[edf["from"].isin(top_nodes) | edf["to"].isin(top_nodes)].copy()
         graph_nodes = list(top_nodes)
         graph_edges = small_edges.to_dict(orient="records")
-        # Top pages by PageRank for simple report (top 15)
+        # Top pages by internal link score (PageRank on crawl graph; not Google ranking)
         rank_rows = [{"url": n, "pagerank": pr.get(n, 0), "degree": deg.get(n, 0)} for n in G.nodes()]
         rank_df = pd.DataFrame(rank_rows).sort_values("pagerank", ascending=False).head(15)
         merge_cols = ["url"] + [c for c in ["title"] if c in df.columns]
         top_pages = rank_df.merge(df[merge_cols].drop_duplicates("url"), on="url", how="left").to_dict(orient="records")
         for r in top_pages:
             r["title"] = r.get("title") or r["url"]
-            r["pagerank"] = round(float(r.get("pagerank", 0)), 5)
+            score = round(float(r.get("pagerank", 0)), 5)
+            r["pagerank"] = score
+            r["internal_link_score"] = score
     else:
         # No edges: top pages by outlinks
         out_ser = pd.to_numeric(df["outlinks"], errors="coerce").fillna(0)
@@ -1364,6 +1431,8 @@ def run_simple_report(
     print("  Writing report payload to DB...", flush=True)
     from ..db import db_session as _db, write_report_payload as db_write_report_payload
     with _db() as conn:
+        google_data: Optional[dict[str, Any]] = None
+        kw_data: Optional[dict[str, Any]] = None
         try:
             from ..integrations.google.store import read_latest_google_data
             google_data = read_latest_google_data(conn)
@@ -1382,6 +1451,16 @@ def run_simple_report(
                 report_data["keywords"] = kw_data
         except Exception:
             pass
+        report_data["report_meta"] = _build_report_metadata(
+            df,
+            config,
+            lighthouse_summary,
+            google_data,
+            kw_data,
+            ml_bundle,
+            run_id,
+            crawl_run_created_at,
+        )
         db_write_report_payload(conn, report_data)
     return "postgresql"
 

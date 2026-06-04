@@ -13,7 +13,7 @@ from .config_resolve import (
 
 
 def run(cfg: dict, args: argparse.Namespace) -> None:
-    print("WebsiteProfiling: lighthouse only", flush=True)
+    print("Site Audit: Lighthouse only", flush=True)
     from ..lighthouse.runner import main as lighthouse_main
 
     lh_url = require_lighthouse_url(cfg)

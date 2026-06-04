@@ -43,6 +43,14 @@ import {
   syncChartJsDefaultsColor,
 } from '../utils/chartJsDefaults';
 import type { ReportCategory, ViewProps } from '@/types';
+import CrawlScopeBanner from '../components/CrawlScopeBanner';
+import { DataSourceBadgeRow } from '../components/DataSourceBadge';
+import type { DataSourceId } from '@/lib/dataProvenance';
+import { googleSnapshotStatus } from '@/lib/googleSnapshot';
+import { categoryDisplayName } from '@/lib/categoryDisplayNames';
+import { FileDown } from 'lucide-react';
+import { viewIdToPathSlug } from '@/routes';
+import LlmDisclosure from '../components/LlmDisclosure';
 
 const REC_COLORS = [
   { border: 'border-l-blue-500',   bg: 'bg-blue-500/10',   text: 'text-link',   dot: 'bg-blue-500'   },
@@ -483,22 +491,61 @@ export default function Overview({ searchQuery = '' }: ViewProps) {
     lighthouseChart;
 
   const googleData = data?.google;
-  const googleIsStale =
-    googleData?.fetched_at &&
-    Date.now() - new Date(String(googleData.fetched_at)).getTime() > 7 * 24 * 60 * 60 * 1000;
+  const googleSnap = googleSnapshotStatus(googleData);
+  const metaSources = (data?.report_meta?.data_sources || []) as string[];
+  const provenanceSources: DataSourceId[] = metaSources
+    .map((s) => {
+      if (s === 'search_console') return 'search_console';
+      if (s === 'analytics') return 'analytics';
+      if (s === 'lighthouse') return 'lighthouse';
+      if (s === 'estimated') return 'estimated';
+      if (s === 'ai') return 'ai';
+      return 'crawl';
+    })
+    .filter((v, i, a) => a.indexOf(v) === i) as DataSourceId[];
+
+  const exportPath = `/${viewIdToPathSlug('export')}`;
+  const exportHref = searchParams.toString() ? `${exportPath}?${searchParams.toString()}` : exportPath;
 
   return (
     <PageLayout className="space-y-8">
+      <CrawlScopeBanner data={data} />
+      {provenanceSources.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-muted-foreground">{vo.dataSourcesLabel}:</span>
+          <DataSourceBadgeRow sources={provenanceSources} />
+          <LlmDisclosure llmMeta={data?.report_meta?.llm} />
+        </div>
+      ) : null}
+      {googleSnap.stale && googleData ? (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-900 dark:text-amber-100">
+          {vo.googleStaleWarning}
+        </div>
+      ) : null}
+      {googleSnap.partial && googleData ? (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-900 dark:text-amber-100">
+          {vo.googlePartialWarning}
+        </div>
+      ) : null}
+      <div className="print:hidden">
+        <Link
+          href={exportHref}
+          className="inline-flex items-center gap-2 text-sm font-medium text-link hover:underline"
+        >
+          <FileDown className="h-4 w-4" />
+          {vo.openExportPage}
+        </Link>
+      </div>
       {/* Google integration banner */}
       {!googleData ? (
         <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 px-4 py-3 flex items-start gap-3">
           <TrendingUp className="h-4 w-4 text-link shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
             <p className="text-sm text-foreground font-medium">
-              Connect Google for real search and traffic data
+              {vo.googleConnectTitle}
             </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Get Search Console clicks, impressions, and GA4 sessions. Open Integrations from the header (top right).
+              {vo.googleConnectSubtitle}
             </p>
           </div>
         </div>
@@ -507,11 +554,11 @@ export default function Overview({ searchQuery = '' }: ViewProps) {
           {googleData.gsc ? (
             <>
               <div className="bg-brand-800 border border-default rounded-xl p-4">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">GSC Clicks</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">{vo.gscClicksCard}</p>
                 <p className="text-2xl font-bold text-bright">{googleData.gsc.summary?.clicks?.toLocaleString() ?? '—'}</p>
               </div>
               <div className="bg-brand-800 border border-default rounded-xl p-4">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">Impressions</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">{vo.gscImpressionsCard}</p>
                 <p className="text-2xl font-bold text-bright">{googleData.gsc.summary?.impressions?.toLocaleString() ?? '—'}</p>
               </div>
             </>
@@ -519,20 +566,15 @@ export default function Overview({ searchQuery = '' }: ViewProps) {
           {googleData.ga4 ? (
             <>
               <div className="bg-brand-800 border border-default rounded-xl p-4">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">Sessions</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">{vo.ga4SessionsCard}</p>
                 <p className="text-2xl font-bold text-bright">{googleData.ga4.summary?.sessions?.toLocaleString() ?? '—'}</p>
               </div>
               <div className="bg-brand-800 border border-default rounded-xl p-4">
-                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">Active Users</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-1">{vo.ga4UsersCard}</p>
                 <p className="text-2xl font-bold text-bright">{googleData.ga4.summary?.activeUsers?.toLocaleString() ?? '—'}</p>
               </div>
             </>
           ) : null}
-          {googleIsStale && (
-            <div className="col-span-2 sm:col-span-4 text-xs text-amber-700 dark:text-amber-400">
-              Data is more than 7 days old — refresh it from Integrations (Fetch) or run Google sync in the Pipeline.
-            </div>
-          )}
         </div>
       )}
 
@@ -910,7 +952,7 @@ export default function Overview({ searchQuery = '' }: ViewProps) {
                     </div>
                   </div>
                   <div className="min-w-0 break-words pr-1">
-                    <h3 className="text-lg font-bold text-foreground">{String(cat.name ?? cat.id ?? '')}</h3>
+                    <h3 className="text-lg font-bold text-foreground">{categoryDisplayName(String(cat.name ?? cat.id ?? ''))}</h3>
                     <p className={`text-sm mt-1 ${labelCls}`}>{label}</p>
                   </div>
                 </Card>
@@ -1086,7 +1128,11 @@ export default function Overview({ searchQuery = '' }: ViewProps) {
                               className="order-1 sm:order-2 shrink-0 text-sm font-semibold text-foreground tabular-nums"
                               title={
                                 pr != null
-                                  ? `${vo.thImportance}: ${Math.round(prPct)}% of top page in this table. Raw PageRank ${pr}.`
+                                  ? format(vo.importanceTooltip, {
+                                      label: vo.thImportance,
+                                      pct: String(Math.round(prPct)),
+                                      score: String(pr),
+                                    })
                                   : undefined
                               }
                             >

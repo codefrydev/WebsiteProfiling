@@ -339,19 +339,24 @@ def run_llm_enrichment(
         try:
             bundle["spacy_by_url"] = _run_ner(client, items, cfg)
         except Exception as e:
-            bundle["ml_errors"].append(f"LLM NER: {e}")
+            bundle["ml_errors"].append(f"AI insights (entities): {e}")
 
     if _cfg_bool(cfg, "llm_enable_keyphrases", True):
         try:
             bundle["keyphrases_by_url"] = _run_keyphrases(client, items, cfg)
         except Exception as e:
-            bundle["ml_errors"].append(f"LLM keyphrases: {e}")
+            bundle["ml_errors"].append(f"AI insights (keyphrases): {e}")
 
     if _cfg_bool(cfg, "llm_enable_similar_internal", True):
         try:
             bundle["similar_internal_by_url"] = _run_similar_internal(client, items, cfg)
         except Exception as e:
-            bundle["ml_errors"].append(f"LLM similar pages: {e}")
+            bundle["ml_errors"].append(f"AI insights (similar pages): {e}")
 
     bundle["ner_site_summary"] = aggregate_ner_site_summary(bundle.get("spacy_by_url") or {})
+    bundle["llm_meta"] = {
+        "model": str(cfg.get("llm_model") or "").strip() or "unknown",
+        "prompt_version": PROMPT_VERSION,
+        "generated_at": pd.Timestamp.now(tz="UTC").isoformat(),
+    }
     return bundle

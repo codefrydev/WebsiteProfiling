@@ -1,6 +1,6 @@
 /**
- * LLM / AI enrichment settings — stored only in PostgreSQL (llm_config table).
- * Not part of pipeline-config.txt or CLI --config files.
+ * AI insights settings — stored only in PostgreSQL (llm_config table).
+ * Not part of audit settings files or CLI --config.
  */
 import type { LlmConfigState } from '@/types/api';
 
@@ -11,7 +11,7 @@ export const LLM_CONFIG_SECTIONS = [
     fields: [
       {
         key: 'llm_enabled',
-        label: 'Enable AI enrichment',
+        label: 'Enable AI insights',
         type: 'bool',
         defaultValue: false,
         help: 'Uses the provider below during report generation. Configure API keys here or via environment variables.',
@@ -49,7 +49,7 @@ export const LLM_CONFIG_SECTIONS = [
         label: 'API key',
         type: 'secret',
         defaultValue: '',
-        help: 'Optional when OPENAI_API_KEY, GEMINI_API_KEY, or ANTHROPIC_API_KEY is set in the environment. Stored only in the database, not in pipeline-config.txt.',
+        help: 'Optional when OPENAI_API_KEY, GEMINI_API_KEY, or ANTHROPIC_API_KEY is set in the environment. Stored only in the database, not in saved audit settings files.',
       },
     ],
   },
@@ -57,19 +57,19 @@ export const LLM_CONFIG_SECTIONS = [
     id: 'llm_tasks',
     label: 'Tasks',
     fields: [
-      { key: 'llm_enable_ner', label: 'Named entities (NER)', type: 'bool', defaultValue: true },
+      { key: 'llm_enable_ner', label: 'Named entities', type: 'bool', defaultValue: true },
       { key: 'llm_enable_keyphrases', label: 'Keyphrases', type: 'bool', defaultValue: true },
       { key: 'llm_enable_similar_internal', label: 'Similar internal pages', type: 'bool', defaultValue: true },
-      { key: 'llm_enable_keyword_clusters', label: 'Semantic keyword clusters', type: 'bool', defaultValue: true },
+      { key: 'llm_enable_keyword_clusters', label: 'Topic clusters (AI)', type: 'bool', defaultValue: true },
     ],
   },
   {
     id: 'llm_limits',
     label: 'Limits',
     fields: [
-      { key: 'llm_max_pages', label: 'Max pages (LLM tasks)', type: 'number', defaultValue: '60' },
+      { key: 'llm_max_pages', label: 'Max pages (AI tasks)', type: 'number', defaultValue: '60' },
       { key: 'llm_batch_size', label: 'Pages per API batch', type: 'number', defaultValue: '5' },
-      { key: 'llm_concurrency', label: 'Parallel LLM batches', type: 'number', defaultValue: '2' },
+      { key: 'llm_concurrency', label: 'Parallel AI batches', type: 'number', defaultValue: '2' },
       { key: 'llm_timeout_s', label: 'Request timeout (s)', type: 'number', defaultValue: '120' },
       { key: 'llm_similar_top_k', label: 'Similar pages top K', type: 'number', defaultValue: '5' },
     ],

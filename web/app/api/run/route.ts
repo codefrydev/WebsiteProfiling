@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
-import { startPipelineJob } from '@/server/pipelineJobs';
+import { assertNoRunningJob, startPipelineJob } from '@/server/pipelineJobs';
+import { requireApiAuth } from '@/server/auth';
+import { writeAuditLog } from '@/server/pipelineJobsDb';
 import { loadPipelineConfig, savePipelineConfig } from '@/server/pipelineConfig';
 import { saveLlmConfig } from '@/server/llmConfig';
 import { ALL_LLM_SCHEMA_KEYS, getLlmFieldByKey } from '@/lib/llmConfigSchema';
@@ -35,6 +37,8 @@ function isUnknownKeyEntry(value: unknown): value is PipelineUnknownKey {
 export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Response> => {
   const denied = forbiddenIfNotLocal(request);
   if (denied) return denied;
+  const authDenied = requireApiAuth(request);
+  if (authDenied) return authDenied;
 
   let body: RunPostBody;
   try {
@@ -130,8 +134,12 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
   }
 
   try {
-    // No config path needed — Python reads from PostgreSQL via DATABASE_URL.
+    await assertNoRunningJob();
     const id = startPipelineJob(command ?? null, null, { python, repoRoot });
+    void writeAuditLog('audit_run_started', null, body.propertyId ?? null, {
+      command: command ?? null,
+      jobId: id,
+    }).catch(() => {});
     return NextResponse.json({ jobId: id });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

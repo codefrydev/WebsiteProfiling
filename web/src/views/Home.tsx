@@ -126,7 +126,7 @@ export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
             className="mt-3 inline-flex items-center gap-2 rounded-lg border border-default bg-brand-900/40 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-brand-800 transition-colors"
           >
             <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
-            Configure Google (GSC &amp; GA4)
+            Configure Google (Search Console &amp; Analytics)
           </button>
         ) : null}
 
@@ -186,7 +186,7 @@ export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
           <div className="flex w-full flex-row flex-wrap justify-center gap-3 items-stretch">
           {filteredGroups.map((group) => (
             <button
-              key={`${group.domainName}-${group.crawlRunId ?? group.reportId ?? 'x'}`}
+              key={`${group.domainParam}-${group.crawlOnly ? 'crawl' : 'report'}-${group.reportId ?? 'nr'}-${group.crawlRunId ?? 'nc'}-${group.generatedAtMs}`}
               type="button"
               disabled={openingCrawlId === group.crawlRunId}
               onClick={() => { void openSite(group); }}

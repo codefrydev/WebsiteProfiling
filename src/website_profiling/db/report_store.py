@@ -47,9 +47,15 @@ def write_report_payload(conn: Connection, report_data: dict[str, Any]) -> None:
     conn.commit()
 
 
-def read_report_payload(conn: Connection) -> Optional[dict[str, Any]]:
+def read_report_payload(conn: Connection, report_id: Optional[int] = None) -> Optional[dict[str, Any]]:
     try:
-        cur = conn.execute("SELECT data FROM report_payload ORDER BY id DESC LIMIT 1")
+        if report_id is not None:
+            cur = conn.execute(
+                "SELECT data FROM report_payload WHERE id = %s",
+                (int(report_id),),
+            )
+        else:
+            cur = conn.execute("SELECT data FROM report_payload ORDER BY id DESC LIMIT 1")
         row = cur.fetchone()
         if row is None:
             return None

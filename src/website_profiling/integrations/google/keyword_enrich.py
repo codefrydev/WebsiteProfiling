@@ -236,7 +236,7 @@ def run_enrichment(
     user_seeds_raw = (cfg.get("keyword_seeds") or "").strip()
     user_seeds = [s.strip() for s in user_seeds_raw.split(",") if s.strip()]
 
-    print("  [Keywords] Running enrichment pipeline...", flush=True)
+    print("  [Keywords] Running keyword research...", flush=True)
 
     with db_session() as conn:
         # 1. Load existing GSC data from google_data table

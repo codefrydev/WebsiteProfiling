@@ -25,7 +25,7 @@ export default function PipelineWizardProgress({
   onStepClick,
 }: PipelineWizardProgressProps) {
   return (
-    <nav aria-label="Pipeline setup steps" className="mb-8">
+    <nav aria-label={s.setupStepsAria} className="mb-8">
       <ol className="flex items-center gap-2 sm:gap-0">
         {STEPS.map((step, index) => {
           const done = step.id < currentStep;

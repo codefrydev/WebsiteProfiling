@@ -331,7 +331,7 @@ export default function GoogleIntegrationsPanel({
             : 'Connection test failed — see log below.',
         });
       } else {
-        setToast({ type: 'success', message: 'Connection test passed — GSC and GA4 are reachable.' });
+        setToast({ type: 'success', message: 'Connection test passed — Search Console and Analytics are reachable.' });
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -421,9 +421,9 @@ export default function GoogleIntegrationsPanel({
               <GoogleMark className="h-5 w-5" />
             </span>
             <div className="min-w-0">
-              <h2 className="text-base font-semibold text-foreground">Google Integrations</h2>
+              <h2 className="text-base font-semibold text-foreground">Connect Search Console & Analytics</h2>
               <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                Connect Search Console and GA4, then choose properties to sync with your reports.
+                Connect Search Console and Analytics 4, then choose properties to sync with your reports.
               </p>
             </div>
           </div>
@@ -553,7 +553,7 @@ export default function GoogleIntegrationsPanel({
             <SetupStep
               step={3}
               title="Properties & sync"
-              description="Choose GSC site and GA4 property, then test or fetch data."
+              description="Choose Search Console site and Analytics property, then test or fetch data."
               done={Boolean(gscSiteUrl && ga4PropertyId)}
               icon={BarChart3}
             >

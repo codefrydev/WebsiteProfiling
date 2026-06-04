@@ -8,6 +8,7 @@ import { PageLayout, PageHeader, Card, Badge } from '../components';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal, doughnutOptionsBottomLegend } from '../utils/chartJsDefaults';
 import type { ReportIssue, ViewProps } from '@/types';
+import { categoryDisplayName } from '@/lib/categoryDisplayNames';
 
 registerChartJsBase();
 
@@ -89,7 +90,7 @@ function CategorySection({ category, items, defaultOpen = false, vi, emDash }: C
         ) : (
           <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
         )}
-        <span className="font-semibold text-foreground flex-1">{category}</span>
+        <span className="font-semibold text-foreground flex-1">{categoryDisplayName(category)}</span>
         <span className="text-xs font-bold text-muted-foreground bg-brand-700/60 rounded-full px-2.5 py-0.5">
           {items.length} {items.length === 1 ? vi.issueWord : vi.issuesWord}
         </span>
@@ -110,7 +111,7 @@ function CategorySection({ category, items, defaultOpen = false, vi, emDash }: C
                   <div className="flex items-center gap-2 mb-2">
                     <Icon className={`h-4 w-4 flex-shrink-0 ${cfg.text}`} />
                     <Badge value={p} />
-                    <span className="text-xs text-muted-foreground font-medium">{item.category}</span>
+                    <span className="text-xs text-muted-foreground font-medium">{categoryDisplayName(item.category)}</span>
                   </div>
                   <h3 className="text-foreground font-medium text-sm leading-snug">{iss.message || emDash}</h3>
                   {iss.url && (
@@ -179,14 +180,14 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
     const pairs = [...m.entries()].sort((a, b) => b[1] - a[1]);
     if (pairs.length <= MAX_CATEGORY_CHART) {
       return {
-        categoryChartLabels: pairs.map((p) => p[0]),
+        categoryChartLabels: pairs.map((p) => categoryDisplayName(p[0])),
         categoryChartValues: pairs.map((p) => p[1]),
       };
     }
     const top = pairs.slice(0, MAX_CATEGORY_CHART - 1);
     const rest = pairs.slice(MAX_CATEGORY_CHART - 1).reduce((s, [, n]) => s + n, 0);
     return {
-      categoryChartLabels: [...top.map((p) => p[0]), sj.other],
+      categoryChartLabels: [...top.map((p) => categoryDisplayName(p[0])), sj.other],
       categoryChartValues: [...top.map((p) => p[1]), rest],
     };
   }, [forCharts, sj]);

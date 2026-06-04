@@ -347,6 +347,22 @@ export interface ReportPayload {
   crawl_run_created_at?: string;
   crawl_only_preview?: boolean;
   report_generated_at?: string;
+  report_meta?: {
+    data_sources?: string[];
+    generated_at?: string;
+    crawl_run_id?: number;
+    crawl_run_created_at?: string;
+    crawl_scope?: {
+      pages_crawled?: number;
+      max_pages_configured?: number;
+      robots_blocked_count?: number;
+      static_html_only?: boolean;
+      crawl_limited?: boolean;
+    };
+    google_fetched_at?: string;
+    google_date_range_days?: number;
+    llm?: { model?: string; prompt_version?: string; generated_at?: string };
+  };
   links?: ReportLink[];
   top_pages?: ReportTopPage[];
   summary?: ReportSummary;

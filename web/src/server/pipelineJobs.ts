@@ -4,7 +4,18 @@ import fs from 'fs';
 import { randomUUID } from 'crypto';
 import { getPipelineSpawnEnv } from '@/server/pipelineSpawnEnv';
 import { formatPythonSpawnError, resolvePythonExecutable } from '@/server/resolvePython';
+import {
+  appendPipelineJobLog,
+  finishPipelineJob,
+  getPipelineJobFromDb,
+  insertPipelineJob,
+  isAnyPipelineJobRunning,
+} from '@/server/pipelineJobsDb';
 import type { PipelineJob, PipelineJobStore } from '@/types/api';
+
+function useDbJobs(): boolean {
+  return Boolean((process.env.DATABASE_URL || '').trim());
+}
 
 const WEB_CWD = process.cwd();
 const DEFAULT_REPO_ROOT = process.env.WEBSITE_PROFILING_ROOT || path.resolve(WEB_CWD, '..');
@@ -82,12 +93,25 @@ function validateConfigPath(absPath: string, repoRoot: string): string {
 export interface StartPipelineJobOptions {
   python?: string;
   repoRoot?: string;
+  propertyId?: number | null;
 }
 
 /**
  * Start a pipeline job. When configAbsPath is omitted (the normal UI flow),
  * Python picks up settings from the pipeline_config table via DATABASE_URL.
  */
+export async function assertNoRunningJob(): Promise<void> {
+  if (useDbJobs()) {
+    if (await isAnyPipelineJobRunning()) {
+      throw new Error('An audit job is already running');
+    }
+    return;
+  }
+  if (getStore().running) {
+    throw new Error('An audit job is already running');
+  }
+}
+
 export function startPipelineJob(
   command: string | null | undefined,
   configAbsPath: string | null | undefined,
@@ -97,8 +121,8 @@ export function startPipelineJob(
     throw new Error('Invalid command');
   }
   const store = getStore();
-  if (store.running) {
-    throw new Error('A pipeline job is already running');
+  if (!useDbJobs() && store.running) {
+    throw new Error('An audit job is already running');
   }
 
   const repoRoot = resolveRepoRoot(options.repoRoot);
@@ -122,6 +146,11 @@ export function startPipelineJob(
   store.jobs.set(id, entry);
   store.running = true;
 
+  const jobType = command?.split(/\s+/)[0] || 'full';
+  if (useDbJobs()) {
+    void insertPipelineJob(id, jobType, options.propertyId ?? null, null).catch(() => {});
+  }
+
   // When no explicit config path is given, Python reads from PostgreSQL via DATABASE_URL.
   const args = ['-m', 'src'];
   if (cfgPath) args.push('--config', cfgPath);
@@ -135,9 +164,13 @@ export function startPipelineJob(
   });
 
   const append = (chunk: Buffer | string): void => {
-    entry.log += chunk.toString();
+    const text = chunk.toString();
+    entry.log += text;
     if (entry.log.length > 256_000) {
       entry.log = entry.log.slice(-200_000);
+    }
+    if (useDbJobs()) {
+      void appendPipelineJobLog(id, text).catch(() => {});
     }
   };
 
@@ -149,6 +182,9 @@ export function startPipelineJob(
     entry.error = formatPythonSpawnError(err, pythonExe, repoRoot);
     entry.exitCode = -1;
     store.running = false;
+    if (useDbJobs()) {
+      void finishPipelineJob(id, 'error', -1, entry.error).catch(() => {});
+    }
   });
 
   proc.on('close', (code: number | null) => {
@@ -161,11 +197,23 @@ export function startPipelineJob(
         : `Process exited with code ${code ?? 'unknown'} (no output captured)`;
     }
     store.running = false;
+    if (useDbJobs()) {
+      void finishPipelineJob(id, entry.status, code, entry.error).catch(() => {});
+    }
   });
 
   return id;
 }
 
-export function getJob(id: string): PipelineJob | null {
+export async function getJob(id: string): Promise<PipelineJob | null> {
+  if (useDbJobs()) {
+    const fromDb = await getPipelineJobFromDb(id);
+    if (fromDb) return fromDb;
+  }
+  return getStore().jobs.get(id) ?? null;
+}
+
+/** Sync read from in-memory cache only (legacy). */
+export function getJobSync(id: string): PipelineJob | null {
   return getStore().jobs.get(id) ?? null;
 }

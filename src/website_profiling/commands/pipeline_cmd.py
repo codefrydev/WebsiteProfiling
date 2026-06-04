@@ -60,7 +60,7 @@ def run(cfg: dict, args: argparse.Namespace) -> None:
             steps.append("report")
         if run_plot:
             steps.append("plot")
-        print(f"WebsiteProfiling pipeline: {', '.join(steps)}", flush=True)
+        print(f"Site Audit: {', '.join(steps)}", flush=True)
 
     if run_crawl:
         _run_crawl(cfg, use_database)
@@ -216,14 +216,14 @@ def _run_report(cfg: dict, use_database: bool) -> None:
     print(f"Report written: {out}")
 
     if should_enrich_keywords_after_report(cfg) and google_db_has_gsc():
-        print("[Keywords] Post-report enrichment (GSC data found)...", flush=True)
+        print("[Keywords] Post-audit keyword research (Search Console data found)...", flush=True)
         from ..integrations.google.keyword_enrich import run_enrichment
 
         try:
             run_enrichment(cfg)
-            print("[Keywords] Post-report enrichment done.", flush=True)
+            print("[Keywords] Post-audit keyword research done.", flush=True)
         except Exception as e:
-            print(f"Warning: post-report keyword enrichment failed: {e}", file=sys.stderr)
+            print(f"Warning: post-audit keyword research failed: {e}", file=sys.stderr)
 
 
 def _run_plot(cfg: dict, use_database: bool) -> None:

@@ -24,8 +24,10 @@ import {
 import { PIPELINE_PRESETS } from './pipelinePresets';
 import PipelineWizardProgress, { type WizardStep } from './PipelineWizardProgress';
 import PipelineLogViewer from './PipelineLogViewer';
+import CrawlAuthorizeCheckbox from './CrawlAuthorizeCheckbox';
 
 const s = strings.pipelineRunner;
+const crawlPresets = s.crawlPresets as Record<string, { label: string; maxPages: string; stream?: boolean }>;
 
 function isValidUrl(value: string): boolean {
   const trimmed = value.trim();
@@ -55,9 +57,12 @@ export default function PipelineRunPanel() {
     presetId,
     handleStartUrlChange,
     handlePresetChange,
+    setField,
     run,
     continueInBackground,
   } = usePipeline();
+
+  const [crawlAuthorized, setCrawlAuthorized] = useState(false);
 
   const urlInputRef = useRef<HTMLInputElement>(null);
   const [step, setStep] = useState<WizardStep>(1);
@@ -180,6 +185,27 @@ export default function PipelineRunPanel() {
             placeholder={s.startUrlPlaceholder}
             className="mt-4 w-full rounded-lg border border-default bg-brand-900 px-3 py-3 text-sm text-foreground transition focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="w-full text-xs text-muted-foreground font-medium">Crawl size preset</span>
+            {(['small', 'medium', 'large'] as const).map((key) => {
+              const preset = crawlPresets[key];
+              if (!preset) return null;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => {
+                    setField('max_pages', preset.maxPages);
+                    if (preset.stream) setField('crawl_stream_to_db', true);
+                  }}
+                  className="rounded-lg border border-default bg-brand-900/80 px-3 py-1.5 text-xs font-medium text-foreground hover:border-blue-500/40 transition"
+                >
+                  {preset.label} ({preset.maxPages} URLs)
+                </button>
+              );
+            })}
+          </div>
           <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
             <Button
               variant="primary"
@@ -284,6 +310,10 @@ export default function PipelineRunPanel() {
               </div>
             </dl>
 
+            <div className="mt-5">
+              <CrawlAuthorizeCheckbox checked={crawlAuthorized} onChange={setCrawlAuthorized} />
+            </div>
+
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-muted pt-5">
               <div>
                 {!busy ? (
@@ -302,8 +332,9 @@ export default function PipelineRunPanel() {
                 <Button
                   variant="primary"
                   onClick={() => void run()}
-                  disabled={disabled || !urlValid}
+                  disabled={disabled || !urlValid || !crawlAuthorized}
                   className="min-w-[8.5rem] px-6 py-2.5"
+                  title={!crawlAuthorized ? strings.components.crawlAuthorize.required : undefined}
                 >
                   {busy ? (
                     <>
@@ -357,7 +388,7 @@ export default function PipelineRunPanel() {
               ) : status === 'error' ? (
                 <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-800 dark:text-red-300">
                   No log output was returned. Open the browser developer console for the full error
-                  (filter by <span className="font-mono">WebsiteProfiling Pipeline</span>).
+                  (filter by <span className="font-mono">{strings.pipelineRunner.consoleFilterHint}</span>).
                 </p>
               ) : busy ? (
                 <div className="flex items-center gap-2 rounded-lg border border-dashed border-default bg-brand-900/50 px-4 py-6 text-sm text-muted-foreground">

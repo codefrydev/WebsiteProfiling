@@ -21,7 +21,7 @@ def test_cli_exits_when_no_config_and_empty_db(tmp_path, monkeypatch):
     )
     assert proc.returncode != 0
     combined = proc.stderr + proc.stdout
-    assert "No pipeline config found" in combined or "Could not load pipeline_config" in combined
+    assert "No audit settings found" in combined or "Could not load pipeline_config" in combined
 
 
 def test_cli_loads_config_file_override(tmp_path):
@@ -40,4 +40,4 @@ def test_cli_loads_config_file_override(tmp_path):
     # Should get past config load; may fail on crawl/network but not on missing config
     combined = proc.stderr + proc.stdout
     assert "Config file not found" not in combined
-    assert "No pipeline config found" not in combined
+    assert "No audit settings found" not in combined

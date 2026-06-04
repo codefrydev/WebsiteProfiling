@@ -29,11 +29,11 @@ export interface PipelineLogGroup {
 const ANSI_RE = /\x1b\[[0-9;]*m/g;
 
 const PHASE_LABELS: Record<PipelinePhase, string> = {
-  config: 'Config',
+  config: 'Settings',
   crawl: 'Crawl',
   lighthouse: 'Lighthouse',
-  report: 'Report',
-  plot: 'Plot',
+  report: 'Site audit',
+  plot: 'Charts',
   other: 'Output',
 };
 
@@ -64,7 +64,7 @@ function classifyLine(line: string): PipelineLogLineKind {
   if (/^\[[\w\s]+\]/.test(t)) return 'section';
   if (/\bDone\.?\s*$/i.test(t) || /\bcomplete\.?\s*$/i.test(t) || /written:/i.test(t)) return 'success';
   if (/warning/i.test(t)) return 'warning';
-  if (/^\[Config\]/i.test(t) || /^WebsiteProfiling pipeline:/i.test(t)) return 'info';
+  if (/^\[Config\]/i.test(t) || /^Site Audit:/i.test(t) || /^WebsiteProfiling pipeline:/i.test(t)) return 'info';
   if (/\d+%\|/.test(t) || /^Pages:\s*\d+%/.test(t)) return 'progress';
   return 'plain';
 }

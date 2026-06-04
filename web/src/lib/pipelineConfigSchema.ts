@@ -42,32 +42,32 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
     fields: [
       {
         key: 'start_url',
-        label: 'Start URL',
+        label: 'Site URL',
         type: 'url',
         defaultValue: '',
         placeholder: 'https://example.com',
-        help: 'Required before running a crawl or report. Enter the site to analyze.',
+        help: 'Required before running a crawl or audit. Enter the property site to analyze.',
       },
-      { key: 'max_pages', label: 'Max pages', type: 'number', defaultValue: '20' },
-      { key: 'concurrency', label: 'Concurrency', type: 'number', defaultValue: '8' },
+      { key: 'max_pages', label: 'Crawl limit (URLs)', type: 'number', defaultValue: '20' },
+      { key: 'concurrency', label: 'Concurrent requests', type: 'number', defaultValue: '8' },
       { key: 'timeout', label: 'Timeout (s)', type: 'number', defaultValue: '12' },
-      { key: 'max_depth', label: 'Max depth', type: 'number', defaultValue: '6' },
-      { key: 'polite_delay', label: 'Polite delay (s)', type: 'float', defaultValue: '0.2' },
+      { key: 'max_depth', label: 'Crawl depth', type: 'number', defaultValue: '6' },
+      { key: 'polite_delay', label: 'Crawl delay (seconds)', type: 'float', defaultValue: '0.2' },
       { key: 'ignore_robots', label: 'Ignore robots.txt', type: 'bool', defaultValue: false },
       { key: 'allow_external', label: 'Allow external links', type: 'bool', defaultValue: false },
-      { key: 'store_outlinks', label: 'Store outlinks', type: 'bool', defaultValue: true },
-      { key: 'store_content_excerpt', label: 'Store content excerpt', type: 'bool', defaultValue: true },
+      { key: 'store_outlinks', label: 'Store external links', type: 'bool', defaultValue: true },
+      { key: 'store_content_excerpt', label: 'Store page text excerpt', type: 'bool', defaultValue: true },
       { key: 'content_excerpt_max_chars', label: 'Excerpt max chars', type: 'number', defaultValue: '4096' },
       {
         key: 'preserve_crawl_history',
-        label: 'Append crawls (do not wipe crawl tables)',
+        label: 'Keep crawl history',
         type: 'bool',
         defaultValue: true,
         help: 'When true, new crawls append to the database. When false, crawl tables are replaced but reports, Google, and keyword history are preserved.',
       },
       {
         key: 'crawl_stream_to_db',
-        label: 'Stream crawl rows to PostgreSQL during fetch',
+        label: 'Stream crawl to database while running',
         type: 'bool',
         defaultValue: false,
         help: 'When true (or when max_pages > 100), pages are batch-written during the crawl instead of at the end.',
@@ -83,35 +83,41 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
   },
   {
     id: 'report',
-    label: 'Report',
+    label: 'Audit report',
     fields: [
       { key: 'outbound_domain_max_rows', label: 'Outbound domain max rows', type: 'number', defaultValue: '200' },
       { key: 'include_keyword_opportunities', label: 'Include keyword opportunities', type: 'bool', defaultValue: true },
       {
         key: 'site_name',
-        label: 'Site name',
+        label: 'Property / client name',
         type: 'text',
         required: true,
         defaultValue: 'Site',
         placeholder: 'example.com',
-        help: 'Required. Shown in report titles; auto-filled from Start URL when you set it.',
+        help: 'Required. Shown in audit titles and exports; auto-filled from Site URL when you set it.',
       },
-      { key: 'report_title', label: 'Report title', type: 'text', defaultValue: 'SEO report' },
-      { key: 'max_fetch_for_edges', label: 'Max fetch for edges', type: 'number', defaultValue: '300' },
+      { key: 'report_title', label: 'Audit title', type: 'text', defaultValue: 'SEO audit' },
+      { key: 'max_fetch_for_edges', label: 'Max URLs for link graph', type: 'number', defaultValue: '300' },
       { key: 'same_domain_only', label: 'Same domain only', type: 'bool', defaultValue: true },
       { key: 'max_nodes_plot', label: 'Max nodes (plot)', type: 'number', defaultValue: '400' },
-      { key: 'run_security_scan', label: 'Run security scan', type: 'bool', defaultValue: true },
-      { key: 'security_scan_active', label: 'Security scan active (probes)', type: 'bool', defaultValue: false },
+      { key: 'run_security_scan', label: 'Security checks (headers)', type: 'bool', defaultValue: true },
+      {
+        key: 'security_scan_active',
+        label: 'Active security probes',
+        type: 'bool',
+        defaultValue: false,
+        help: 'Authorized testing only. Sends controlled probes beyond passive header checks.',
+      },
       { key: 'security_max_urls_probe', label: 'Security max URLs to probe', type: 'number', defaultValue: '20' },
     ],
   },
   {
     id: 'lighthouse',
-    label: 'Lighthouse',
+    label: 'Performance (Lighthouse)',
     fields: [
       {
         key: 'lighthouse_url',
-        label: 'Lighthouse URL',
+        label: 'Lighthouse test URL',
         type: 'url',
         defaultValue: '',
         placeholder: 'https://example.com',
@@ -156,7 +162,7 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
       { key: 'lighthouse_iterations', label: 'Iterations', type: 'number', defaultValue: '1' },
       { key: 'run_lighthouse', label: 'Run single-URL Lighthouse', type: 'bool', defaultValue: true },
       { key: 'run_lighthouse_on_pages', label: 'Run Lighthouse on crawled pages', type: 'bool', defaultValue: true },
-      { key: 'lighthouse_max_pages', label: 'Lighthouse max pages', type: 'number', defaultValue: '2' },
+      { key: 'lighthouse_max_pages', label: 'Performance sample size (URLs)', type: 'number', defaultValue: '2' },
       { key: 'lighthouse_concurrency', label: 'Lighthouse parallel URLs', type: 'number', defaultValue: '2' },
     ],
   },
@@ -164,29 +170,29 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
     id: 'analysis',
     label: 'Content analysis',
     fields: [
-      { key: 'enable_duplicate_detection', label: 'Duplicate detection (SimHash/fuzzy)', type: 'bool', defaultValue: true },
+      { key: 'enable_duplicate_detection', label: 'Near-duplicate detection', type: 'bool', defaultValue: true },
       { key: 'enable_language_detection', label: 'Language detection', type: 'bool', defaultValue: true },
-      { key: 'analysis_fuzzy_threshold', label: 'Fuzzy threshold', type: 'number', defaultValue: '92' },
-      { key: 'analysis_simhash_hamming', label: 'Simhash Hamming', type: 'number', defaultValue: '0' },
-      { key: 'analysis_dup_max_pages', label: 'Dup max pages', type: 'number', defaultValue: '2000' },
+      { key: 'analysis_fuzzy_threshold', label: 'Near-duplicate similarity (%)', type: 'number', defaultValue: '92' },
+      { key: 'analysis_simhash_hamming', label: 'Near-duplicate hash distance', type: 'number', defaultValue: '0' },
+      { key: 'analysis_dup_max_pages', label: 'Max pages for duplicate scan', type: 'number', defaultValue: '2000' },
     ],
   },
   {
     id: 'pipeline',
-    label: 'Pipeline',
+    label: 'Audit steps',
     fields: [
       { key: 'run_crawl', label: 'Run crawl', type: 'bool', defaultValue: true },
-      { key: 'run_report', label: 'Run report', type: 'bool', defaultValue: true },
-      { key: 'run_plot', label: 'Run plot', type: 'bool', defaultValue: true },
+      { key: 'run_report', label: 'Build site audit', type: 'bool', defaultValue: true },
+      { key: 'run_plot', label: 'Build crawl charts', type: 'bool', defaultValue: true },
     ],
   },
   {
     id: 'google',
-    label: 'Google (GSC & GA4)',
+    label: 'Search Console & Analytics',
     fields: [
       {
         key: 'enable_google_search_console',
-        label: 'Enable Search Console fetch',
+        label: 'Fetch Google Search Console',
         type: 'bool',
         span: 1 as const,
         defaultValue: false,
@@ -194,7 +200,7 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
       },
       {
         key: 'enable_google_analytics',
-        label: 'Enable GA4 fetch',
+        label: 'Fetch Google Analytics 4',
         type: 'bool',
         span: 1 as const,
         defaultValue: false,
@@ -213,11 +219,11 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
         defaultValue: '200',
         placeholder: '200',
         unit: 'rows',
-        help: 'Maximum rows shown for each gap list (pages only in crawl, only in GSC, or only in GA4).',
+        help: 'Maximum rows shown for each gap list (pages only in crawl, only in Search Console, or only in Analytics).',
       },
       {
         key: 'enrich_keywords_after_report',
-        label: 'Enrich keywords after report',
+        label: 'Run keyword research after audit',
         type: 'tristate',
         defaultValue: 'auto',
         options: [
@@ -239,11 +245,11 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
         type: 'number',
         defaultValue: '200',
         unit: 'pages',
-        help: 'Max crawled pages used when extracting on-page keywords during the pipeline.',
+        help: 'Max crawled pages used when extracting on-site keywords during the audit.',
       },
       {
         key: 'keyword_gsc_max_rows',
-        label: 'GSC max rows',
+        label: 'Search Console max rows',
         type: 'number',
         defaultValue: '25000',
         unit: 'rows',
@@ -251,7 +257,7 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
       },
       {
         key: 'brand_name',
-        label: 'Brand name',
+        label: 'Brand / client name',
         type: 'text',
         span: 2 as const,
         defaultValue: '',
@@ -383,7 +389,7 @@ export function validateRequiredPipelineFields(state: PipelineConfigState): stri
       const raw = state[f.key];
       const value = raw == null ? '' : String(raw).trim();
       if (!value) {
-        errors.push(`${f.label} is required. Enter it in Pipeline settings before continuing.`);
+        errors.push(`${f.label} is required. Enter it in Audit settings before continuing.`);
       }
     }
   }
@@ -415,7 +421,7 @@ export function validatePipelineRun({ state, command = null }: ValidatePipelineR
     (!command && isTruthyPipelineBool(state?.run_lighthouse, false) && !isTruthyPipelineBool(state?.run_lighthouse_on_pages, false));
 
   if (needsStartUrl && !startUrl) {
-    errors.push('Start URL is required. Enter the site URL in Pipeline settings before running.');
+    errors.push('Start URL is required. Enter the site URL in Run audit before running.');
   }
   if (needsReportFields) {
     errors.push(...validateRequiredPipelineFields(state));
@@ -453,7 +459,7 @@ export function buildInitialPipelineConfigState(): PipelineConfigState {
  */
 export function serializePipelineConfig(state: PipelineConfigState): string {
   const lines = [
-    '# WebsiteProfiling config (managed by web UI)',
+    '# Site Audit config (managed by web UI)',
     '# key = value; comments start with #.',
     '',
   ];
