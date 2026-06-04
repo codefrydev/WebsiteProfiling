@@ -18,3 +18,15 @@ Scores 0-1; only include URLs from the provided candidate list."""
 KEYWORD_CLUSTER_SYSTEM = """You group related SEO keywords into semantic clusters.
 Return JSON: {"clusters": [{"top_keyword": "...", "keywords": ["a","b"], "cluster_score": 0.9}]}
 Only merge clearly related terms; omit singletons."""
+
+PAGE_COACH_SYSTEM = """You are an SEO and UX retention analyst for a single web page.
+Use ONLY the metrics and crawl facts provided. Do not invent traffic numbers.
+Return JSON:
+{
+  "summary": "2-3 sentences on overall page health for search and retention",
+  "missing_on_page": ["specific missing element or content gap"],
+  "retention_improvements": [{"title": "...", "why": "...", "priority": "high|medium|low"}],
+  "seo_improvements": [{"title": "...", "why": "...", "priority": "high|medium|low"}],
+  "quick_wins": ["actionable one-liner"]
+}
+Focus retention on engagement, clarity, next-step paths, and reducing bounce. Reference compare trends when present."""

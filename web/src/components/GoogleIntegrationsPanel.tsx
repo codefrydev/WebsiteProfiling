@@ -14,12 +14,15 @@ import {
 } from 'lucide-react';
 import type { GooglePropertiesResponse, GoogleStatusResponse, IntegrationToast } from '@/types/api';
 import { apiUrl } from '@/lib/publicBase';
+import { strings, format } from '@/lib/strings';
 import { dispatchPipelineJobStarted, pollPipelineJob } from '@/lib/pipelineJobEvents';
 import { useOptionalReport } from '@/context/useReport';
 import Button from '@/components/Button';
 
 const GCP_GUIDE_URL =
   'https://developers.google.com/workspace/guides/get-started';
+
+const s = strings.pipelineRunner;
 
 function StatusPill({ connected }: { connected?: boolean }) {
   if (connected) {
@@ -95,6 +98,78 @@ function selectClassName() {
   return 'w-full rounded-lg border border-default bg-brand-900 px-3 py-2.5 text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20';
 }
 
+type PropertiesSaveState =
+  | { phase: 'idle' }
+  | { phase: 'saving' }
+  | { phase: 'saved'; auto: boolean; savedAt: number }
+  | { phase: 'error'; message: string };
+
+function PropertiesSaveFeedback({
+  state,
+  dirty,
+}: {
+  state: PropertiesSaveState;
+  dirty: boolean;
+}) {
+  if (state.phase === 'saving') {
+    return (
+      <p
+        className="flex items-center gap-2 text-sm text-link"
+        role="status"
+        aria-live="polite"
+      >
+        <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+        {s.googlePropertiesSaving}
+      </p>
+    );
+  }
+  if (state.phase === 'error') {
+    return (
+      <p
+        className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400"
+        role="alert"
+        aria-live="assertive"
+      >
+        <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
+        {state.message}
+      </p>
+    );
+  }
+  if (state.phase === 'saved') {
+    const label = state.auto ? s.googlePropertiesSavedAuto : s.googlePropertiesSaved;
+    const time = new Date(state.savedAt).toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    return (
+      <p
+        className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-green-700 dark:text-green-400"
+        role="status"
+        aria-live="polite"
+      >
+        <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
+        <span>{label}</span>
+        <span className="text-xs text-green-700/80 dark:text-green-400/80">
+          {format(s.googlePropertiesSavedAt, { time })}
+        </span>
+      </p>
+    );
+  }
+  if (dirty) {
+    return (
+      <p
+        className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300"
+        role="status"
+        aria-live="polite"
+      >
+        <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
+        {s.googlePropertiesUnsaved}
+      </p>
+    );
+  }
+  return null;
+}
+
 function InputField({
   label,
   id,
@@ -160,6 +235,14 @@ export default function GoogleIntegrationsPanel({
   const [ga4PropertyId, setGa4PropertyId] = useState('');
   const [dateRangeDays, setDateRangeDays] = useState('28');
   const [savingProps, setSavingProps] = useState(false);
+  const [propertiesSaveState, setPropertiesSaveState] = useState<PropertiesSaveState>({
+    phase: 'idle',
+  });
+  const [savedPropertiesSnapshot, setSavedPropertiesSnapshot] = useState<{
+    gsc: string;
+    ga4: string;
+    days: string;
+  } | null>(null);
 
   // Properties dropdowns
   const [properties, setProperties] = useState<GooglePropertiesResponse | null>(null);
@@ -188,9 +271,13 @@ export default function GoogleIntegrationsPanel({
       if (res.ok) {
         const data = (await res.json()) as GoogleStatusResponse;
         setStatus(data);
-        if (data.gscSiteUrl) setGscSiteUrl(data.gscSiteUrl);
-        if (data.ga4PropertyId) setGa4PropertyId(data.ga4PropertyId);
-        if (data.dateRangeDays) setDateRangeDays(String(data.dateRangeDays));
+        const gsc = data.gscSiteUrl ?? '';
+        const ga4 = data.ga4PropertyId ?? '';
+        const days = data.dateRangeDays ? String(data.dateRangeDays) : '28';
+        setGscSiteUrl(gsc);
+        setGa4PropertyId(ga4);
+        setDateRangeDays(days);
+        setSavedPropertiesSnapshot({ gsc, ga4, days });
       }
     } catch {
       // ignore
@@ -256,39 +343,94 @@ export default function GoogleIntegrationsPanel({
     }
   };
 
-  const handleSaveProperties = async () => {
-    if (ga4PropertyId && !/^\d+$/.test(ga4PropertyId.trim())) {
-      setToast({
-        type: 'error',
-        message:
-          'Analytics property ID must be a numeric ID (e.g. 123456789). The G-XXXXXXX code is a Measurement ID -- find the numeric ID in GA4 Admin > Property Settings.',
-      });
-      return;
-    }
-    setSavingProps(true);
-    try {
-      const res = await fetch(apiUrl('/integrations/google/credentials'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gscSiteUrl: gscSiteUrl.trim() || null,
-          ga4PropertyId: ga4PropertyId.trim() || null,
-          dateRangeDays: Number(dateRangeDays) || 28,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setToast({ type: 'error', message: data.error || 'Save failed' });
-      } else {
-        setStatus(data.status);
-        setToast({ type: 'success', message: 'Settings saved.' });
+  const propertiesDirty =
+    savedPropertiesSnapshot !== null &&
+    (gscSiteUrl !== savedPropertiesSnapshot.gsc ||
+      ga4PropertyId !== savedPropertiesSnapshot.ga4 ||
+      dateRangeDays !== savedPropertiesSnapshot.days);
+
+  const handleSaveProperties = useCallback(
+    async (options?: { auto?: boolean }): Promise<boolean> => {
+      if (ga4PropertyId && !/^\d+$/.test(ga4PropertyId.trim())) {
+        const msg =
+          'Analytics property ID must be a numeric ID (e.g. 123456789). The G-XXXXXXX code is a Measurement ID — find the numeric ID in GA4 Admin > Property Settings.';
+        setPropertiesSaveState({ phase: 'error', message: msg });
+        setToast({ type: 'error', message: msg });
+        return false;
       }
-    } catch (e) {
-      setToast({ type: 'error', message: e instanceof Error ? e.message : String(e) });
-    } finally {
-      setSavingProps(false);
+      setSavingProps(true);
+      setPropertiesSaveState({ phase: 'saving' });
+      try {
+        const res = await fetch(apiUrl('/integrations/google/credentials'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gscSiteUrl: gscSiteUrl.trim() || null,
+            ga4PropertyId: ga4PropertyId.trim() || null,
+            dateRangeDays: Number(dateRangeDays) || 28,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          const msg = data.error || s.googlePropertiesSaveFailed;
+          setPropertiesSaveState({ phase: 'error', message: msg });
+          setToast({ type: 'error', message: msg });
+          return false;
+        }
+        setStatus(data.status);
+        const gsc = data.status?.gscSiteUrl ?? '';
+        const ga4 = data.status?.ga4PropertyId ?? '';
+        const days = String(data.status?.dateRangeDays ?? dateRangeDays);
+        setGscSiteUrl(gsc);
+        setGa4PropertyId(ga4);
+        setDateRangeDays(days);
+        setSavedPropertiesSnapshot({ gsc, ga4, days });
+        const savedAt = Date.now();
+        setPropertiesSaveState({ phase: 'saved', auto: !!options?.auto, savedAt });
+        setToast({
+          type: 'success',
+          message: options?.auto ? s.googlePropertiesSavedAuto : s.googlePropertiesSaved,
+        });
+        return true;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : s.googlePropertiesSaveFailed;
+        setPropertiesSaveState({ phase: 'error', message: msg });
+        setToast({ type: 'error', message: msg });
+        return false;
+      } finally {
+        setSavingProps(false);
+      }
+    },
+    [gscSiteUrl, ga4PropertyId, dateRangeDays],
+  );
+
+  const handlePropertiesBlur = useCallback(() => {
+    if (!status?.connected || savingProps) return;
+    if (!gscSiteUrl.trim() && !ga4PropertyId.trim()) return;
+    if (!propertiesDirty) return;
+    void handleSaveProperties({ auto: true });
+  }, [
+    status?.connected,
+    savingProps,
+    gscSiteUrl,
+    ga4PropertyId,
+    propertiesDirty,
+    handleSaveProperties,
+  ]);
+
+  useEffect(() => {
+    if (propertiesDirty && propertiesSaveState.phase === 'saved') {
+      setPropertiesSaveState({ phase: 'idle' });
     }
-  };
+  }, [propertiesDirty, propertiesSaveState.phase]);
+
+  useEffect(() => {
+    if (propertiesSaveState.phase !== 'saved') return;
+    const t = setTimeout(() => {
+      setPropertiesSaveState((prev) => (prev.phase === 'saved' ? { phase: 'idle' } : prev));
+    }, 12000);
+    return () => clearTimeout(t);
+  }, [propertiesSaveState]);
 
   const handleSaveRefreshToken = async () => {
     if (!refreshToken.trim()) return;
@@ -557,6 +699,10 @@ export default function GoogleIntegrationsPanel({
               done={Boolean(gscSiteUrl && ga4PropertyId)}
               icon={BarChart3}
             >
+              <p className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-950 dark:text-amber-100/90">
+                {s.googleSavePropertiesHint}
+              </p>
+
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs text-muted-foreground">Load sites from your connected account.</p>
                 <Button variant="secondary" onClick={() => void loadProperties()} disabled={loadingProps} className="py-2">
@@ -575,9 +721,13 @@ export default function GoogleIntegrationsPanel({
                       id="gscSiteUrl"
                       value={gscSiteUrl}
                       onChange={(e) => setGscSiteUrl(e.target.value)}
+                      onBlur={() => handlePropertiesBlur()}
                       className={selectClassName()}
                     >
                       <option value="">Select site…</option>
+                      {gscSiteUrl && !properties.gscSites.includes(gscSiteUrl) ? (
+                        <option value={gscSiteUrl}>{gscSiteUrl} (saved)</option>
+                      ) : null}
                       {properties.gscSites.map((site: string) => (
                         <option key={site} value={site}>
                           {site}
@@ -590,6 +740,7 @@ export default function GoogleIntegrationsPanel({
                       type="text"
                       value={gscSiteUrl}
                       onChange={(e) => setGscSiteUrl(e.target.value)}
+                      onBlur={() => handlePropertiesBlur()}
                       placeholder="https://www.example.com/"
                       className={`${selectClassName()} font-mono`}
                     />
@@ -605,9 +756,14 @@ export default function GoogleIntegrationsPanel({
                       id="ga4PropertyId"
                       value={ga4PropertyId}
                       onChange={(e) => setGa4PropertyId(e.target.value)}
+                      onBlur={() => handlePropertiesBlur()}
                       className={selectClassName()}
                     >
                       <option value="">Select property…</option>
+                      {ga4PropertyId &&
+                      !properties.ga4Properties.some((p) => p.id === ga4PropertyId) ? (
+                        <option value={ga4PropertyId}>{ga4PropertyId} (saved)</option>
+                      ) : null}
                       {properties.ga4Properties.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.displayName} ({p.id})
@@ -620,6 +776,7 @@ export default function GoogleIntegrationsPanel({
                       type="text"
                       value={ga4PropertyId}
                       onChange={(e) => setGa4PropertyId(e.target.value)}
+                      onBlur={() => handlePropertiesBlur()}
                       placeholder="123456789"
                       className={`${selectClassName()} font-mono`}
                     />
@@ -639,6 +796,7 @@ export default function GoogleIntegrationsPanel({
                     id="dateRange"
                     value={dateRangeDays}
                     onChange={(e) => setDateRangeDays(e.target.value)}
+                    onBlur={() => handlePropertiesBlur()}
                     className={selectClassName()}
                   >
                     <option value="7">Last 7 days</option>
@@ -654,10 +812,16 @@ export default function GoogleIntegrationsPanel({
                 </p>
               ) : null}
 
-              <div className="flex flex-wrap items-center gap-2 border-t border-muted/60 pt-4">
-                <Button variant="primary" onClick={() => void handleSaveProperties()} disabled={savingProps}>
+              <div className="space-y-3 border-t border-muted/60 pt-4">
+                <PropertiesSaveFeedback state={propertiesSaveState} dirty={propertiesDirty} />
+                <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="primary"
+                  onClick={() => void handleSaveProperties()}
+                  disabled={savingProps || !status?.connected}
+                >
                   {savingProps ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-                  Save properties
+                  {savingProps ? s.googlePropertiesSaving : 'Save properties'}
                 </Button>
                 <Button variant="secondary" onClick={() => void handleTest()} disabled={testing}>
                   {testing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
@@ -672,6 +836,7 @@ export default function GoogleIntegrationsPanel({
                   {fetching ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
                   Fetch data now
                 </Button>
+                </div>
               </div>
 
               {testLog ? (

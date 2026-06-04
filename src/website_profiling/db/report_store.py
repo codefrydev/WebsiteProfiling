@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 from psycopg import Connection
 
-from ._common import _json_val, _now_iso, _parse_json_field
+from ._common import _json_val, _now_iso, _parse_row_json
 from .crawl_store import get_crawl_run_info
 
 
@@ -59,7 +59,7 @@ def read_report_payload(conn: Connection, report_id: Optional[int] = None) -> Op
         row = cur.fetchone()
         if row is None:
             return None
-        data = _parse_json_field(row["data"])
+        data = _parse_row_json(row)
         return data if isinstance(data, dict) else None
     except Exception:
         return None

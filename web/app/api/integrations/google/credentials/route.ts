@@ -26,11 +26,14 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
       patch.refreshToken = body.refreshToken.trim() || null;
       if (patch.refreshToken) patch.authMode = 'oauth';
     }
-    if (typeof body.gscSiteUrl === 'string') {
-      patch.gscSiteUrl = body.gscSiteUrl.trim() || null;
+    if ('gscSiteUrl' in body) {
+      patch.gscSiteUrl =
+        typeof body.gscSiteUrl === 'string' && body.gscSiteUrl.trim()
+          ? body.gscSiteUrl.trim()
+          : null;
     }
-    if (typeof body.ga4PropertyId === 'string') {
-      const v = body.ga4PropertyId.trim();
+    if ('ga4PropertyId' in body) {
+      const v = typeof body.ga4PropertyId === 'string' ? body.ga4PropertyId.trim() : '';
       if (v && !/^\d+$/.test(v)) {
         return NextResponse.json(
           {

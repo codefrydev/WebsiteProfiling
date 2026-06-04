@@ -216,7 +216,7 @@ def run_enrichment(
     computes all derived metrics, writes to keyword_data + keyword_history.
     Returns the enriched data dict.
     """
-    from ...db.storage import db_session
+    from ...db.storage import _parse_row_json, db_session
     from .keyword_store import (
         write_keyword_data,
         append_keyword_history,
@@ -256,8 +256,8 @@ def run_enrichment(
             )
             row = cur.fetchone()
             if row:
-                full_google = json.loads(row[0])
-                gsc_full = full_google.get("gsc_full") or {}
+                full_google = _parse_row_json(row) or {}
+                gsc_full = full_google.get("gsc_full") or full_google.get("gsc") or {}
                 raw_gsc_full = gsc_full
                 by_page = gsc_full.get("by_page") or {}
                 gsc_by_page = by_page
@@ -291,7 +291,7 @@ def run_enrichment(
             )
             row = cur.fetchone()
             if row:
-                prev = json.loads(row[0])
+                prev = _parse_row_json(row) or {}
                 for r in prev.get("rows") or []:
                     nk = _normalize_kw(r.get("keyword") or "")
                     if nk:

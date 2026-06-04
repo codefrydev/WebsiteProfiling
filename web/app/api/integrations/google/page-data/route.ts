@@ -1,27 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
 import { withDb } from '@/server/db';
+import { loadGoogleDataRow, sliceFromGoogleRow } from '@/server/pageGoogleData';
 import type { ApiRouteHandler } from '@/types/api';
 import type { PoolClient } from 'pg';
 
 export const runtime = 'nodejs';
 
-function parseJsonField(val: unknown): Record<string, unknown> | null {
-  if (val == null) return null;
-  if (typeof val === 'object' && !Array.isArray(val)) return val as Record<string, unknown>;
-  try {
-    const parsed: unknown = JSON.parse(String(val));
-    if (parsed != null && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return parsed as Record<string, unknown>;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
 /**
- * GET /api/integrations/google/page-data?url=https://example.com/path
+ * GET /api/integrations/google/page-data?url=...&googleSnapshotId=...
  */
 export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Response> => {
   const denied = forbiddenIfNotLocal(request);
@@ -32,28 +19,33 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
     return NextResponse.json({ error: 'url parameter required' }, { status: 400 });
   }
 
+  const snapParam = request.nextUrl.searchParams.get('googleSnapshotId');
+  const googleSnapshotId = snapParam ? parseInt(snapParam, 10) : null;
+
   try {
     return await withDb(async (client: PoolClient) => {
-      const { rows } = await client.query(
-        'SELECT data FROM google_data ORDER BY id DESC LIMIT 1',
+      const row = await loadGoogleDataRow(
+        client,
+        googleSnapshotId != null && Number.isFinite(googleSnapshotId) ? googleSnapshotId : null,
       );
-      if (!rows.length) {
-        return NextResponse.json({ gsc: null, ga4: null });
+      if (!row) {
+        return NextResponse.json({
+          source: 'snapshot',
+          snapshotId: null,
+          gsc: null,
+          ga4: null,
+          coverage: { inCrawl: false, inGsc: false, inGa4: false },
+          siteBenchmarks: { gsc: null, ga4: null },
+          dateRange: {},
+          fetchedAt: null,
+        });
       }
-      const raw = parseJsonField(rows[0].data);
-      const gsc = raw?.gsc as Record<string, unknown> | undefined;
-      const ga4 = raw?.ga4 as Record<string, unknown> | undefined;
-      const byPage = (gsc?.by_page as Record<string, unknown> | undefined) || {};
-      const byPath = (ga4?.by_path as Record<string, unknown> | undefined) || {};
 
-      let urlPath = url;
-      try {
-        urlPath = new URL(url).pathname;
-      } catch { /* keep original url */ }
-
+      const slice = sliceFromGoogleRow(row.raw, url);
       return NextResponse.json({
-        gsc: byPage[url] ?? null,
-        ga4: byPath[urlPath] ?? byPath[url] ?? null,
+        ...slice,
+        snapshotId: row.id,
+        fetchedAt: row.fetchedAt ?? slice.fetchedAt,
       });
     });
   } catch (e) {

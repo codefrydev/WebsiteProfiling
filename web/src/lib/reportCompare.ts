@@ -32,6 +32,8 @@ export interface CompareMetricRow {
   /** When true, a positive delta is shown as improvement (green). */
   higherIsBetter: boolean;
   format?: 'percent' | 'score' | 'count';
+  /** Optional percent change vs baseline. */
+  deltaPct?: number | null;
 }
 
 export interface CategoryScoreRow {

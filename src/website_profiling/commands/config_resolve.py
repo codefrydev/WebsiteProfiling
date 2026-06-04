@@ -37,7 +37,7 @@ def cleanup_lighthouse_work_dir(work_dir: str) -> None:
 
 def google_db_has_gsc() -> bool:
     from ..db import db_session
-    from ..db.storage import _parse_json_field
+    from ..db.storage import _parse_row_json
 
     try:
         with db_session() as conn:
@@ -45,10 +45,10 @@ def google_db_has_gsc() -> bool:
             row = cur.fetchone()
             if not row:
                 return False
-            data = _parse_json_field(row["data"])
+            data = _parse_row_json(row)
             if not isinstance(data, dict):
                 return False
-            gsc = data.get("gsc_full") or {}
+            gsc = data.get("gsc_full") or data.get("gsc") or {}
             return bool(gsc.get("top_queries") or gsc.get("by_page"))
     except Exception:
         return False
@@ -158,8 +158,41 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "command",
         nargs="?",
-        choices=["crawl", "report", "plot", "lighthouse", "keywords", "warnings", "enrich", "google"],
+        choices=[
+            "crawl",
+            "report",
+            "plot",
+            "lighthouse",
+            "keywords",
+            "warnings",
+            "enrich",
+            "google",
+            "page-live",
+            "page-coach",
+        ],
         help="Run only this step (default: run all steps according to config)",
+    )
+    parser.add_argument(
+        "--url",
+        default=None,
+        help="Page URL for page-live / page-coach commands.",
+    )
+    parser.add_argument(
+        "--no-persist",
+        action="store_true",
+        dest="no_persist",
+        help="For page-live: do not write to page_google_snapshots.",
+    )
+    parser.add_argument(
+        "--refresh",
+        action="store_true",
+        help="For page-coach: bypass LLM cache.",
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="as_json",
+        help="Emit JSON only (page-coach).",
     )
     parser.add_argument(
         "--test",

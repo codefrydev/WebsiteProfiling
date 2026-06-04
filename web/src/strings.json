@@ -174,7 +174,14 @@
     "legacyBanner": "Settings were imported from an older config file — click Save settings to store them in the app.",
     "loadError": "Could not load saved config: {message}. Showing defaults.",
     "openIntegrations": "Connect Search Console & Analytics",
-    "googleGroupHint": "OAuth credentials and Search Console / Analytics 4 property IDs are configured in Integrations (header gear icon), not in the toggles below.",
+    "googleGroupHint": "Search Console site and Analytics property IDs are saved with Save properties in Step 3 (Integrations tab). The footer Save settings button only saves pipeline toggles in the other tabs, not these fields.",
+    "googleSavePropertiesHint": "Click Save properties, or tab out of a field to auto-save. The page footer Save settings does not store Search Console or Analytics values.",
+    "googlePropertiesSaving": "Saving properties…",
+    "googlePropertiesSaved": "Properties saved to disk.",
+    "googlePropertiesSavedAuto": "Properties auto-saved.",
+    "googlePropertiesSaveFailed": "Could not save properties.",
+    "googlePropertiesUnsaved": "Unsaved changes — click Save properties or tab out of a field.",
+    "googlePropertiesSavedAt": "Saved {time}",
     "contentAiHint": "AI insights run when the audit report is built (optional).",
     "settingsSectionTabsLabel": "Settings sections",
     "settingsTabIntegrations": "Integrations",
@@ -1102,6 +1109,16 @@
       "connectGoogle": "Connect Search Console",
       "expandSeeds": "Expand seeds",
       "exportCsv": "Export CSV",
+      "header": {
+        "enrichedBadge": "Enriched {date}",
+        "actionsLabel": "Keyword actions"
+      },
+      "dataStatus": {
+        "gscTitle": "Search Console data in this audit",
+        "gscDetail": "Position, clicks, impressions, and CTR are from Google Search Console. Estimated difficulty, +Clicks@#3, and lost clicks use CTR models on that data.",
+        "noGscTitle": "No Search Console data in this audit",
+        "noGscDetail": "Connect Search Console in Integrations, sync, then run Keywords (or a full audit) to unlock rankings, CTR, and opportunity scores."
+      },
       "brandScopeBanner": "Questions and Opportunities are filtered to keywords related to your brand ({brand}). Turn off “Brand-related only” to see all expansion suggestions.",
       "brandScopeToggle": "Brand-related only",
       "gscBanner": "Position, clicks, impressions, and CTR come from Google Search Console. KD, +Clicks@#3, and Lost Clicks use CTR models on Search Console data.",
@@ -1117,7 +1134,35 @@
         "cannib": "Cannibalisation",
         "bypage": "By page"
       },
+      "tabHelp": {
+        "overview": "High-level mix, top opportunities, and shortcuts to every keyword view.",
+        "all": "Full keyword list with Search Console metrics, intent, and sources.",
+        "questions": "Question-style queries (who, what, how, etc.) — useful for FAQ and content ideas.",
+        "quickwins": "Keywords ranking positions 4–20 with meaningful click upside if you improve to top 3.",
+        "lostclicks": "Queries that lost clicks compared to the prior period — investigate ranking or CTR drops.",
+        "opportunities": "Keywords discovered from expansion but not yet ranking in Search Console.",
+        "cannib": "Same query ranking on multiple URLs — consolidate or canonicalise to one primary page.",
+        "bypage": "Browse ranking queries grouped by landing page URL from Search Console."
+      },
+      "overview": {
+        "exploreTitle": "Jump to a view",
+        "topQuickWins": "Top quick wins",
+        "topOpportunities": "Top opportunities",
+        "viewAll": "View all"
+      },
+      "tabEmpty": {
+        "filteredTitle": "No keywords match your filters",
+        "filteredDescription": "Try clearing search or filters, or switch to another tab.",
+        "filteredHint": "Filters apply to the current tab only.",
+        "all": "No keywords in this audit.",
+        "questions": "No question-style keywords in this dataset.",
+        "quickwins": "No quick-win keywords (position 4–20 with meaningful opportunity).",
+        "lostclicks": "No keywords with lost clicks in the comparison period.",
+        "opportunities": "No expansion-only opportunities — most keywords already have GSC positions."
+      },
       "kpi": {
+        "sectionTitle": "Summary — click to open a view",
+        "viewHint": "Open this keyword view",
         "total": "Total keywords",
         "totalSub": "from {n} sources",
         "gsc": "Search Console keywords",
@@ -1125,7 +1170,11 @@
         "quickWins": "Quick wins",
         "quickWinsSub": "position 4–20, high opportunity",
         "cannib": "Cannibalisation",
-        "cannibSub": "queries on multiple pages"
+        "cannibSub": "queries on multiple pages",
+        "lostClicks": "Lost clicks",
+        "lostClicksSub": "vs. prior period",
+        "questions": "Questions",
+        "questionsSub": "who / what / how queries"
       },
       "charts": {
         "intentTitle": "Intent mix",
@@ -1137,6 +1186,7 @@
       },
       "insights": {
         "title": "Insights",
+        "viewByPage": "Explore keywords by page",
         "topOpportunity": "Top opportunity: \"{keyword}\" — +{clicks} est. clicks if moved to position 3.",
         "quickWins": "{count} quick-win keywords in positions 4–20.",
         "lostClicks": "{count} keywords lost clicks vs. prior period.",
@@ -1146,6 +1196,10 @@
       "filters": {
         "searchPlaceholder": "Search keywords…",
         "allIntents": "All intents",
+        "intentInformational": "Informational",
+        "intentCommercial": "Commercial",
+        "intentTransactional": "Transactional",
+        "intentNavigational": "Navigational",
         "allBranded": "All (branded + non-branded)",
         "brandedOnly": "Branded only",
         "nonBranded": "Non-branded only",
@@ -1181,16 +1235,32 @@
       },
       "cannib": {
         "empty": "No cannibalisation detected. Each keyword appears to rank from a unique page.",
+        "emptyFiltered": "No cannibalisation issues match your search.",
         "intro": "{count} keyword(s) rank from multiple pages. Consolidate content or add canonical tags.",
-        "clicks": "{n} clicks"
+        "clicks": "{n} clicks",
+        "searchPlaceholder": "Search queries…",
+        "sortQuery": "Sort: query A–Z",
+        "sortPages": "Sort: most pages",
+        "showingCount": "Showing {count} of {total}"
       },
       "byPage": {
         "empty": "No page-level Search Console data. Run keywords with Google connected.",
-        "selectPage": "Select a page to view its keywords",
-        "loading": "Loading…",
-        "keywordCount": "{count} keywords for this page",
+        "selectPage": "Choose a page from the list to see its ranking queries.",
+        "loading": "Loading keywords for this page…",
+        "keywordCount": "{count} ranking queries",
         "cannibWarning": "{count} cannibalisation issue(s) on this page",
-        "sidebarKw": "{kw} kw · {impr} impr."
+        "sidebarTitle": "Pages",
+        "sidebarCount": "{count} URLs with Search Console data",
+        "searchPlaceholder": "Filter by path or URL…",
+        "noFilterMatch": "No pages match your filter.",
+        "sortImpressions": "Sort: impressions",
+        "sortKeywords": "Sort: keyword count",
+        "sortPath": "Sort: path A–Z",
+        "openUrl": "Open page",
+        "inspectUrl": "Inspect in Link Explorer",
+        "copyUrl": "Copy URL",
+        "totalImpressions": "{n} total impressions",
+        "keywordsBadge": "{n} kw"
       },
       "seeds": {
         "title": "Bulk seed expansion",
@@ -1699,6 +1769,7 @@
       "content": "Content",
       "technical": "Technical",
       "issues": "Issues",
+      "searchRetention": "Search & retention",
       "brokenMessage": "Broken / error response ({status})",
       "redirectMessage": "Redirect {status}"
     },
@@ -1932,6 +2003,54 @@
             "rec": "Define a strict CSP to reduce XSS attack surface."
           }
         ]
+      },
+      "searchRetention": {
+        "loading": "Loading search and analytics…",
+        "badgeSnapshot": "Site snapshot",
+        "badgeLive": "Live fetch",
+        "fetchedAt": "As of {when}",
+        "fetchLive": "Fetch live data",
+        "revertSnapshot": "View latest site snapshot",
+        "compareTo": "Compare to",
+        "compareDefault": "Previous period (auto)",
+        "compareLiveOption": "Earlier live · {when}",
+        "compareSiteOption": "Site snapshot · {when}",
+        "compareLoading": "Loading comparison…",
+        "compareHeading": "Change vs baseline",
+        "compareCaption": "Compared to {baselineType} from {when}",
+        "emptyNoData": "No Search Console or GA4 data for this URL yet.",
+        "emptyPrereq": "Connect Google in Settings, run a site-wide fetch, or use Fetch live data for this page.",
+        "liveFetchFailed": "Live fetch failed",
+        "gscHeading": "Search Console",
+        "ga4Heading": "Google Analytics",
+        "clicks": "Clicks",
+        "impressions": "Impressions",
+        "ctr": "CTR",
+        "position": "Avg position",
+        "sessions": "Sessions",
+        "pageViews": "Page views",
+        "engagement": "Engagement rate",
+        "avgDuration": "Avg session",
+        "noGsc": "No GSC metrics for this URL in the selected period.",
+        "noGa4": "No GA4 metrics for this path.",
+        "topQueries": "Top queries",
+        "queryCol": "Query",
+        "quickWinsHeading": "Quick wins",
+        "noHints": "No rule-based suggestions for current metrics.",
+        "historyHeading": "View historical fetch",
+        "historyLiveRow": "Live #{id} · {when}",
+        "historySiteRow": "Site snapshot #{id} · {when}",
+        "coachHeading": "AI retention coach",
+        "coachGenerate": "Generate AI suggestions",
+        "coachRegenerate": "Regenerate",
+        "coachHint": "Runs on demand only. Uses crawl facts, metrics, and comparison when selected.",
+        "coachFailed": "Page coach failed",
+        "coachCached": "Showing cached coach output.",
+        "coachMissing": "Missing on page",
+        "coachRetention": "Retention improvements",
+        "coachSeo": "SEO improvements",
+        "coachQuickWins": "AI quick wins",
+        "coachCopyJson": "Copy coach JSON"
       },
       "issues": {
         "lighthouseScores": "Lighthouse Scores",

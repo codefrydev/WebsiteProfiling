@@ -11,7 +11,7 @@ from typing import Any, Optional
 from psycopg import Connection
 from psycopg.types.json import Json
 
-from ...db.storage import _parse_json_field, _sanitize_for_json
+from ...db.storage import _parse_row_json, _sanitize_for_json
 
 
 def write_google_data(conn: Connection, data: dict[str, Any]) -> None:
@@ -34,7 +34,7 @@ def read_latest_google_data(conn: Connection) -> Optional[dict[str, Any]]:
         row = cur.fetchone()
         if row is None:
             return None
-        data = _parse_json_field(row["data"])
+        data = _parse_row_json(row)
         if not isinstance(data, dict):
             return None
         return _to_payload_shape(data)

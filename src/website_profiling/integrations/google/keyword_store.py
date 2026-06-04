@@ -9,7 +9,7 @@ from typing import Any
 from psycopg import Connection
 from psycopg.types.json import Json
 
-from ...db.storage import _parse_json_field, _sanitize_for_json
+from ...db.storage import _parse_row_json, _sanitize_for_json
 
 
 def write_keyword_data(conn: Connection, data: dict[str, Any]) -> None:
@@ -29,7 +29,7 @@ def read_latest_keyword_data(conn: Connection) -> dict[str, Any] | None:
         row = cur.fetchone()
         if row is None:
             return None
-        data = _parse_json_field(row["data"])
+        data = _parse_row_json(row)
         if not isinstance(data, dict):
             return None
         if isinstance(data.get("rows"), list) and len(data["rows"]) > 1000:
@@ -42,22 +42,26 @@ def read_latest_keyword_data(conn: Connection) -> dict[str, Any] | None:
 def append_keyword_history(conn: Connection, rows: list[dict[str, Any]]) -> None:
     """Append per-keyword time-series rows for position tracking."""
     fetched_at = datetime.now(timezone.utc).isoformat()
-    conn.executemany(
-        """INSERT INTO keyword_history (keyword, fetched_at, position, clicks, impressions, ctr)
-           VALUES (%s, %s, %s, %s, %s, %s)""",
-        [
-            (
-                r.get("keyword", ""),
-                r.get("fetched_at", fetched_at),
-                r.get("position"),
-                r.get("clicks"),
-                r.get("impressions"),
-                r.get("ctr"),
-            )
-            for r in rows
-            if r.get("keyword")
-        ],
-    )
+    params = [
+        (
+            r.get("keyword", ""),
+            r.get("fetched_at", fetched_at),
+            r.get("position"),
+            r.get("clicks"),
+            r.get("impressions"),
+            r.get("ctr"),
+        )
+        for r in rows
+        if r.get("keyword")
+    ]
+    if not params:
+        return
+    with conn.cursor() as cur:
+        cur.executemany(
+            """INSERT INTO keyword_history (keyword, fetched_at, position, clicks, impressions, ctr)
+               VALUES (%s, %s, %s, %s, %s, %s)""",
+            params,
+        )
     conn.commit()
 
 

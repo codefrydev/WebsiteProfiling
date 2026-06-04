@@ -1,24 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
 import { withDb } from '@/server/db';
+import { parseJsonField } from '@/server/pageGoogleData';
 import type { ApiRouteHandler } from '@/types/api';
 import type { PoolClient } from 'pg';
 
 export const runtime = 'nodejs';
-
-function parseJsonField(val: unknown): Record<string, unknown> | null {
-  if (val == null) return null;
-  if (typeof val === 'object' && !Array.isArray(val)) return val as Record<string, unknown>;
-  try {
-    const parsed: unknown = JSON.parse(String(val));
-    if (parsed != null && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return parsed as Record<string, unknown>;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
 
 interface KeywordRow {
   gsc_url?: string;

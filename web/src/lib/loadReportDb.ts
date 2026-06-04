@@ -75,9 +75,12 @@ export async function getCrawlRunSummaries(client: PoolClient): Promise<CrawlRun
 
 function parseJsonField(val: unknown): Record<string, unknown> {
   if (val == null) return {};
-  if (typeof val === 'object' && !Array.isArray(val)) return val as Record<string, unknown>;
+  if (typeof val === 'object' && !Array.isArray(val)) {
+    return val as Record<string, unknown>;
+  }
+  if (typeof val !== 'string') return {};
   try {
-    const parsed: unknown = JSON.parse(String(val));
+    const parsed: unknown = JSON.parse(val);
     if (parsed != null && typeof parsed === 'object' && !Array.isArray(parsed)) {
       return parsed as Record<string, unknown>;
     }

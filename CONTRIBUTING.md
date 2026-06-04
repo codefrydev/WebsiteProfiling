@@ -48,6 +48,27 @@ CI runs Python tests (PostgreSQL + Alembic), web typecheck/lint/vitest, CLI smok
 - [ ] User-facing text uses industry terms from the glossary (not internal codenames like “pipeline” in the UI)
 - [ ] Database changes include an Alembic migration in `alembic/versions/`
 
+## Link Explorer: Search & retention
+
+Per-URL GSC/GA4 in Link Explorer uses two histories:
+
+| Store | How it is created | Compare |
+|-------|-------------------|---------|
+| `google_data` | Site-wide **Fetch data now** in Google integrations | Pick an older site snapshot in the tab |
+| `page_google_snapshots` | **Fetch live data** on the Search & retention tab | Defaults to previous live fetch for the same URL |
+
+**Prerequisites:** Google connected with GSC site URL and GA4 property saved; at least one site-wide fetch for snapshot defaults; two or more live fetches on the same URL to compare live periods. AI page coach requires **Enable AI insights** and **Link Explorer page coach** in Pipeline → Content & AI.
+
+Apply migration `004_page_google_snapshots` (`alembic upgrade head`) before using live fetch.
+
+### PostgreSQL JSONB rows
+
+The connection pool uses psycopg `dict_row`. When reading JSON/JSONB columns:
+
+- Use **`_parse_row_json(row)`** (Python) or **`parseJsonField(row.data)`** (Node) — not `json.loads(row[0])` or `row[0]`.
+- JSONB values may already be objects; stringifying them breaks parsing.
+- For GSC blobs, prefer **`gsc_full` with fallback to `gsc`**.
+
 ## Code style
 
 | Area | Guidance |

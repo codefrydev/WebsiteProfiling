@@ -17,6 +17,7 @@ from ._common import (
     _json_val,
     _now_iso,
     _parse_json_field,
+    _parse_row_json,
     _sanitize_for_json,
 )
 from .pool import db_session, get_data_dir, get_database_url
@@ -185,7 +186,7 @@ def read_crawl(conn: Connection, run_id: Optional[int] = None) -> pd.DataFrame:
         records = []
         for row in rows:
             rec = {"url": row["url"]}
-            data = _parse_json_field(row["data"]) or {}
+            data = _parse_row_json(row) or {}
             if isinstance(data, dict):
                 rec.update(data)
             records.append(rec)

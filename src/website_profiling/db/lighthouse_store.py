@@ -17,6 +17,7 @@ from ._common import (
     _json_val,
     _now_iso,
     _parse_json_field,
+    _parse_row_json,
     _sanitize_for_json,
 )
 from .pool import db_session, get_data_dir, get_database_url
@@ -35,7 +36,7 @@ def read_lighthouse_summary(conn: Connection) -> Optional[dict[str, Any]]:
         row = cur.fetchone()
         if row is None:
             return None
-        data = _parse_json_field(row["data"])
+        data = _parse_row_json(row)
         return data if isinstance(data, dict) else None
     except Exception:
         return None
@@ -144,7 +145,7 @@ def read_lighthouse_run_json(conn: Connection, run_id: int) -> Optional[dict[str
         row = cur.fetchone()
         if row is None:
             return None
-        data = _parse_json_field(row["data"])
+        data = _parse_row_json(row)
         return data if isinstance(data, dict) else None
     except Exception:
         return None
@@ -157,7 +158,7 @@ def read_latest_lighthouse_run_json(conn: Connection) -> Optional[dict[str, Any]
         row = cur.fetchone()
         if row is None:
             return None
-        data = _parse_json_field(row["data"])
+        data = _parse_row_json(row)
         return data if isinstance(data, dict) else None
     except Exception:
         return None
@@ -225,7 +226,7 @@ def read_lighthouse_page_summaries(conn: Connection) -> dict[str, Any]:
     try:
         cur = conn.execute("SELECT url, data FROM lighthouse_page_summaries")
         for row in cur.fetchall():
-            data = _parse_json_field(row["data"])
+            data = _parse_row_json(row)
             if isinstance(data, dict):
                 out[str(row["url"])] = data
     except Exception:

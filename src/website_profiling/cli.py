@@ -9,6 +9,8 @@ from .commands import (
     google_cmd,
     keywords_cmd,
     lighthouse_cmd,
+    page_coach_cmd,
+    page_live_cmd,
     pipeline_cmd,
     warnings_cmd,
 )
@@ -31,6 +33,10 @@ def main() -> None:
         enrich_cmd.run(cfg, args)
     elif args.command == "google":
         google_cmd.run(cfg, cwd, path, args)
+    elif args.command == "page-live":
+        page_live_cmd.run(cfg, cwd, args)
+    elif args.command == "page-coach":
+        page_coach_cmd.run(cfg, cwd, args)
     else:
         pipeline_cmd.run(cfg, args)
 
