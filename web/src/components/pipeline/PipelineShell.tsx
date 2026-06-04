@@ -2,7 +2,8 @@
 
 import { useState, type ReactNode } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Menu, Play, Radar, X } from 'lucide-react';
+import { ArrowLeft, Menu, Play, X } from 'lucide-react';
+import AppLogo from '@/components/AppLogo';
 import ThemeToggle from '@/components/ThemeToggle';
 import { strings } from '@/lib/strings';
 import { readPipelineReturnPath } from '@/lib/pipelineReturn';
@@ -75,7 +76,7 @@ export default function PipelineShell({
             onClick={closeSidebar}
             className="flex min-w-0 items-center gap-3"
           >
-            <Radar className="h-6 w-6 shrink-0 text-blue-500" aria-hidden />
+            <AppLogo />
             <div className="min-w-0">
               <div className="truncate font-bold leading-tight text-bright">{strings.app.productName}</div>
               <div className="truncate text-[11px] text-muted-foreground">{s.pageTitle}</div>

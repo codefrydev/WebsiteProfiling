@@ -13,7 +13,7 @@ import {
 } from '@/server/pipelineJobsDb';
 import type { PipelineJob, PipelineJobStore } from '@/types/api';
 
-function useDbJobs(): boolean {
+function isDbJobsEnabled(): boolean {
   return Boolean((process.env.DATABASE_URL || '').trim());
 }
 
@@ -101,7 +101,7 @@ export interface StartPipelineJobOptions {
  * Python picks up settings from the pipeline_config table via DATABASE_URL.
  */
 export async function assertNoRunningJob(): Promise<void> {
-  if (useDbJobs()) {
+  if (isDbJobsEnabled()) {
     if (await isAnyPipelineJobRunning()) {
       throw new Error('An audit job is already running');
     }
@@ -121,7 +121,7 @@ export function startPipelineJob(
     throw new Error('Invalid command');
   }
   const store = getStore();
-  if (!useDbJobs() && store.running) {
+  if (!isDbJobsEnabled() && store.running) {
     throw new Error('An audit job is already running');
   }
 
@@ -147,7 +147,7 @@ export function startPipelineJob(
   store.running = true;
 
   const jobType = command?.split(/\s+/)[0] || 'full';
-  if (useDbJobs()) {
+  if (isDbJobsEnabled()) {
     void insertPipelineJob(id, jobType, options.propertyId ?? null, null).catch(() => {});
   }
 
@@ -169,7 +169,7 @@ export function startPipelineJob(
     if (entry.log.length > 256_000) {
       entry.log = entry.log.slice(-200_000);
     }
-    if (useDbJobs()) {
+    if (isDbJobsEnabled()) {
       void appendPipelineJobLog(id, text).catch(() => {});
     }
   };
@@ -182,7 +182,7 @@ export function startPipelineJob(
     entry.error = formatPythonSpawnError(err, pythonExe, repoRoot);
     entry.exitCode = -1;
     store.running = false;
-    if (useDbJobs()) {
+    if (isDbJobsEnabled()) {
       void finishPipelineJob(id, 'error', -1, entry.error).catch(() => {});
     }
   });
@@ -197,7 +197,7 @@ export function startPipelineJob(
         : `Process exited with code ${code ?? 'unknown'} (no output captured)`;
     }
     store.running = false;
-    if (useDbJobs()) {
+    if (isDbJobsEnabled()) {
       void finishPipelineJob(id, entry.status, code, entry.error).catch(() => {});
     }
   });
@@ -206,7 +206,7 @@ export function startPipelineJob(
 }
 
 export async function getJob(id: string): Promise<PipelineJob | null> {
-  if (useDbJobs()) {
+  if (isDbJobsEnabled()) {
     const fromDb = await getPipelineJobFromDb(id);
     if (fromDb) return fromDb;
   }

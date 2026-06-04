@@ -14,7 +14,10 @@ const dmSans = DM_Sans({
 export const metadata = {
   title: 'Site Audit',
   description: 'Technical SEO site crawl and audit reports',
-  icons: { icon: '/favicon.svg' },
+  icons: {
+    icon: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 const themeInit = `(function(){try{var v=localStorage.getItem('wp-theme');var d=window.matchMedia('(prefers-color-scheme: dark)').matches;var dark=v==='dark'?true:v==='light'?false:d;if(dark)document.documentElement.classList.add('dark');else document.documentElement.classList.remove('dark');document.documentElement.style.colorScheme=dark?'dark':'light';}catch(e){}})()`;

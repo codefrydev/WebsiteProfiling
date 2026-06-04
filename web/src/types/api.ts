@@ -182,6 +182,5 @@ export interface AuditSqlExample {
 }
 
 declare global {
-  // eslint-disable-next-line no-var
   var __websiteProfilingPipelineJobs: PipelineJobStore | undefined;
 }

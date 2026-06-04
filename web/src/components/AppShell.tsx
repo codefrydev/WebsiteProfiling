@@ -6,11 +6,11 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
   ExternalLink,
   Menu,
-  Radar,
   Search,
   Settings2,
   X,
 } from 'lucide-react';
+import AppLogo from '@/components/AppLogo';
 import IntegrationsModal from '@/components/IntegrationsModal';
 import { Badge, ReportSelector } from '@/components';
 import ThemeToggle from '@/components/ThemeToggle';
@@ -142,7 +142,7 @@ export default function AppShell({
         >
           <div className="h-16 flex items-center justify-between px-6 border-b border-muted bg-brand-900/30 shrink-0">
             <Link href="/home" className="flex items-center min-w-0" onClick={closeSidebar}>
-              <Radar className="text-blue-500 mr-3 h-6 w-6 shrink-0" />
+              <AppLogo className="mr-3" />
               <div className="min-w-0">
                 <div className="font-bold text-bright leading-tight truncate">
                   {strings.app.productName}

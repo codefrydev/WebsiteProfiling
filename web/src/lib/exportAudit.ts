@@ -1,4 +1,4 @@
-import { apiUrl } from '@/lib/publicBase';
+import { reportApi } from '@/lib/publicBase';
 
 export type AuditExportFormat = 'html' | 'pdf' | 'csv' | 'json';
 
@@ -10,5 +10,5 @@ export function buildAuditExportUrl(
   const q = new URLSearchParams({ format });
   if (reportId != null) q.set('reportId', String(reportId));
   if (options?.inline) q.set('disposition', 'inline');
-  return apiUrl(`/api/report/export?${q.toString()}`);
+  return reportApi(`/export?${q.toString()}`);
 }

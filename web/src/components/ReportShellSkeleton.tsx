@@ -1,6 +1,7 @@
 'use client';
 
-import { Radar, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
+import AppLogo from './AppLogo';
 import { Skeleton, SkeletonDomainCard } from './Skeleton';
 import { strings } from '@/lib/strings';
 import ThemeToggle from './ThemeToggle';
@@ -59,7 +60,7 @@ export default function ReportShellSkeleton({ variant }: ReportShellSkeletonProp
       <span className="sr-only">{loadingLabel}</span>
       <aside className="hidden md:flex w-64 bg-brand-800 border-r border-muted flex-col h-screen shrink-0">
         <div className="h-16 flex items-center gap-3 px-6 border-b border-muted bg-brand-900/30 shrink-0">
-          <Radar className="text-blue-500 h-6 w-6 shrink-0 opacity-60" aria-hidden />
+          <AppLogo className="opacity-60" />
           <div className="min-w-0 flex-1 space-y-2">
             <Skeleton className="h-4 w-[70%]" />
             <Skeleton className="h-2.5 w-24" />

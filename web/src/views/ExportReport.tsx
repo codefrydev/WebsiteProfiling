@@ -71,15 +71,15 @@ export default function ExportReport(_props: ViewProps) {
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 flex flex-col bg-white dark:bg-zinc-100">
+      <div className="flex-1 min-h-0 flex flex-col bg-slate-200/80 dark:bg-zinc-200 p-3 sm:p-4 print:p-0 print:bg-white">
         {previewError ? (
-          <p className="p-6 text-red-700 text-sm">{previewError}</p>
+          <p className="p-6 text-red-700 text-sm bg-white rounded-xl">{previewError}</p>
         ) : (
           <iframe
             ref={iframeRef}
             title={ve.previewTitle}
             src={previewUrl}
-            className="w-full flex-1 min-h-[480px] border-0"
+            className="w-full flex-1 min-h-[480px] border-0 rounded-xl shadow-lg bg-white print:rounded-none print:shadow-none"
             onLoad={() => setPreviewError(null)}
             onError={() => setPreviewError(ve.previewError)}
           />
