@@ -3,7 +3,7 @@ Keyword enrichment pipeline.
 
 Merges data from:
   - Site crawl keywords (from tools/keywords.py)
-  - GSC queries (from google_data SQLite table -- no extra API calls)
+  - GSC queries (from google_data table -- no extra API calls)
   - Google Suggest: web + YouTube + question-prefixed
   - Datamuse (optional): semantic expansion
   - Wikipedia (optional): parent topic
@@ -22,7 +22,6 @@ from __future__ import annotations
 
 import json
 import re
-import sqlite3
 from datetime import datetime, timezone
 from typing import Any
 
@@ -210,7 +209,6 @@ def compute_traffic_potential(
 # ── Main enrichment ───────────────────────────────────────────────────────────
 
 def run_enrichment(
-    db_path: str,
     cfg: dict[str, Any],
 ) -> dict[str, Any]:
     """
@@ -218,12 +216,10 @@ def run_enrichment(
     computes all derived metrics, writes to keyword_data + keyword_history.
     Returns the enriched data dict.
     """
-    import sqlite3 as _sqlite3
-    from ...db.storage import db_session, init_schema
+    from ...db.storage import db_session
     from .keyword_store import (
         write_keyword_data,
         append_keyword_history,
-        ensure_tables,
     )
     from .store import read_latest_google_data
     from ..google.suggest import batch_expand
@@ -240,12 +236,9 @@ def run_enrichment(
     user_seeds_raw = (cfg.get("keyword_seeds") or "").strip()
     user_seeds = [s.strip() for s in user_seeds_raw.split(",") if s.strip()]
 
-    print("  [Keywords] Running enrichment pipeline...", flush=True)
+    print("  [Keywords] Running keyword research...", flush=True)
 
-    with db_session(db_path) as conn:
-        init_schema(conn)
-        ensure_tables(conn)
-
+    with db_session() as conn:
         # 1. Load existing GSC data from google_data table
         gsc_queries: dict[str, dict] = {}  # normalized_kw -> {position, impressions, clicks, ctr, url}
         gsc_by_page: dict[str, dict] = {}  # url -> page data

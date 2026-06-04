@@ -1,5 +1,5 @@
 """
-Generate report data from crawl and write to SQLite. The Next.js UI in web/ reads report.db via /api/report/*.
+Generate report data from crawl and write to PostgreSQL. The Next.js UI in web/ reads via /api/report/*.
 """
 import hashlib
 import json
@@ -19,15 +19,15 @@ from tqdm.auto import tqdm
 
 from ..common import (
     LINK_COLUMN_NAMES,
-    load_dataframe,
     load_edges,
     normalize_link,
     parse_links_serialized,
-    save_edges,
 )
 from ..tools.keywords import cluster_keywords, extract_candidates_from_df, score_keywords
 from ..config import get_bool, get_int
-from ..ml.enrich import cluster_keywords_semantic, run_ml_enrichment
+from ..analysis import merge_bundles, run_local_enrichment
+from ..llm.enrich import cluster_keywords_llm, run_llm_enrichment
+from ..llm_config import load_llm_config_from_db, llm_is_enabled
 from .categories import build_categories
 from ..security_scanner import run_security_scan
 
@@ -234,7 +234,7 @@ def build_edges_from_df(
     polite_delay: float,
 ) -> list[tuple[str, str]]:
     """Build or load edges; return list of (from, to) tuples."""
-    edges = load_edges(edges_csv)
+    edges = load_edges(edges_csv) if (edges_csv or "").strip() else []
     if edges:
         return edges
 
@@ -821,6 +821,71 @@ def _build_hreflang_summary(df: pd.DataFrame) -> dict[str, Any]:
     }
 
 
+def _build_report_metadata(
+    df: pd.DataFrame,
+    config: Optional[dict[str, str]],
+    lighthouse_summary: Optional[dict[str, Any]],
+    google_data: Optional[dict[str, Any]],
+    keywords_data: Optional[dict[str, Any]],
+    ml_bundle: dict[str, Any],
+    run_id: Optional[int],
+    crawl_run_created_at: Optional[str],
+) -> dict[str, Any]:
+    """Provenance and crawl scope for agency-facing audits."""
+    sources: list[str] = ["crawl"]
+    if lighthouse_summary:
+        sources.append("lighthouse")
+    if google_data:
+        if google_data.get("gsc") or google_data.get("gsc_summary"):
+            sources.append("search_console")
+        if google_data.get("ga4") or google_data.get("ga4_summary"):
+            sources.append("analytics")
+    llm_meta = ml_bundle.get("llm_meta")
+    if isinstance(llm_meta, dict) and llm_meta.get("model"):
+        sources.append("ai")
+    kw_rows = (keywords_data or {}).get("rows") or []
+    has_gsc_kw = any(
+        (r.get("gsc_impressions") or r.get("gsc_clicks")) and r.get("source") in ("gsc", "site+gsc", None)
+        for r in kw_rows[:500]
+        if isinstance(r, dict)
+    )
+    if kw_rows and not has_gsc_kw and "estimated" not in sources:
+        sources.append("estimated")
+
+    max_pages_cfg = get_int(config or {}, "max_pages", 0) or 0
+    pages_crawled = len(df)
+    blocked = 0
+    if not df.empty and "status" in df.columns:
+        blocked = int((df["status"].astype(str) == "blocked_by_robots").sum())
+
+    meta: dict[str, Any] = {
+        "data_sources": sources,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "crawl_scope": {
+            "pages_crawled": pages_crawled,
+            "max_pages_configured": max_pages_cfg or pages_crawled,
+            "robots_blocked_count": blocked,
+            "static_html_only": True,
+            "crawl_limited": bool(max_pages_cfg and pages_crawled >= max_pages_cfg),
+        },
+    }
+    if run_id is not None:
+        meta["crawl_run_id"] = run_id
+    if crawl_run_created_at:
+        meta["crawl_run_created_at"] = crawl_run_created_at
+    if google_data:
+        meta["google_fetched_at"] = google_data.get("fetched_at")
+        meta["google_date_range_days"] = google_data.get("date_range_days")
+        gsc = google_data.get("gsc") or {}
+        if isinstance(gsc, dict) and gsc.get("row_count") is not None:
+            meta["gsc_row_count"] = gsc.get("row_count")
+    if keywords_data:
+        meta["keywords_enriched_at"] = keywords_data.get("enriched_at") or keywords_data.get("fetched_at")
+    if isinstance(llm_meta, dict):
+        meta["llm"] = llm_meta
+    return meta
+
+
 def _build_keyword_opportunities(df: pd.DataFrame, config: dict[str, str] | None) -> dict[str, Any]:
     if not get_bool(config or {}, "include_keyword_opportunities", True):
         return {}
@@ -847,9 +912,6 @@ def _build_keyword_opportunities(df: pd.DataFrame, config: dict[str, str] | None
 
 
 def run_simple_report(
-    crawl_csv: str,
-    edges_csv: str = "edges.csv",
-    output_html: str = "site_report.html",
     max_fetch_for_edges: int = 300,
     concurrency: int = 6,
     timeout: int = 8,
@@ -861,50 +923,39 @@ def run_simple_report(
     run_security_scan_flag: bool = True,
     security_scan_active: bool = False,
     security_max_urls_probe: int = 20,
-    security_findings_output: Optional[str] = None,
     lighthouse_summary_path: Optional[str] = None,
-    db_path: Optional[str] = None,
     config: Optional[dict[str, str]] = None,
+    use_database: bool = True,
 ) -> str:
-    """Load crawl data, build edges if needed, write report payload to SQLite. Returns db_path. Requires db_path (Next.js UI in web/ reads via /api/report/*)."""
+    """Load crawl data from PostgreSQL, build report payload, write to report_payload."""
+    if not use_database:
+        raise ValueError("Report requires DATABASE_URL (PostgreSQL). Configure via Docker or local Postgres.")
+
+    from ..db import (
+        db_session,
+        get_crawl_run_info,
+        get_latest_crawl_run_id,
+        read_crawl,
+        read_edges,
+        read_lighthouse_summary,
+        write_edges,
+    )
     run_id = None
     crawl_run_created_at: Optional[str] = None
-    if db_path:
-        from ..db import (
-            db_session,
-            get_crawl_run_info,
-            get_latest_crawl_run_id,
-            init_schema,
-            read_crawl,
-            read_edges,
-            read_lighthouse_summary,
-            write_edges,
-        )
-        print("  Loading crawl data from DB...", flush=True)
-        with db_session(db_path) as conn:
-            init_schema(conn)
-            run_id = get_latest_crawl_run_id(conn)
-            if run_id is not None:
-                info = get_crawl_run_info(conn, run_id)
-                crawl_run_created_at = info["created_at"] if info else None
-            df = read_crawl(conn, run_id)
-            edges = read_edges(conn, run_id)
-            global_lighthouse_summary = read_lighthouse_summary(conn)
-            lighthouse_by_url = build_lighthouse_by_url_for_report(conn)
-            lighthouse_summary = global_lighthouse_summary
-            print(f"  Loaded {len(df)} URLs, {len(edges)} edges.", flush=True)
-            if df.empty and not edges:
-                raise FileNotFoundError(f"No crawl or edges data in DB: {db_path}")
-    else:
-        if not os.path.exists(crawl_csv):
-            raise FileNotFoundError(f"Crawl data not found: {crawl_csv}")
-        print("  Loading crawl data from file...", flush=True)
-        df = load_dataframe(crawl_csv)
-        edges = []
-        lighthouse_summary = None
-        lighthouse_by_url = {}
-        global_lighthouse_summary = None
-        print(f"  Loaded {len(df)} URLs.", flush=True)
+    print("  Loading crawl data from DB...", flush=True)
+    with db_session() as conn:
+        run_id = get_latest_crawl_run_id(conn)
+        if run_id is not None:
+            info = get_crawl_run_info(conn, run_id)
+            crawl_run_created_at = info["created_at"] if info else None
+        df = read_crawl(conn, run_id)
+        edges = read_edges(conn, run_id)
+        global_lighthouse_summary = read_lighthouse_summary(conn)
+        lighthouse_by_url = build_lighthouse_by_url_for_report(conn)
+        lighthouse_summary = global_lighthouse_summary
+        print(f"  Loaded {len(df)} URLs, {len(edges)} edges.", flush=True)
+        if df.empty and not edges:
+            raise FileNotFoundError("No crawl or edges data in database. Run crawl first.")
 
     if "url" not in df.columns and not df.empty:
         raise ValueError("Crawl DataFrame missing required column 'url'")
@@ -916,13 +967,12 @@ def run_simple_report(
     expected_host = _derive_expected_host(start_url or "", df)
     if lighthouse_by_url and expected_host:
         lighthouse_by_url = filter_lighthouse_by_host(lighthouse_by_url, expected_host)
-    if db_path:
-        lighthouse_summary = _pick_lighthouse_summary(
-            lighthouse_by_url,
-            start_url or "",
-            global_lighthouse_summary,
-            expected_host,
-        )
+    lighthouse_summary = _pick_lighthouse_summary(
+        lighthouse_by_url,
+        start_url or "",
+        global_lighthouse_summary,
+        expected_host,
+    )
 
     site_display = (site_name or "").strip() or (urlparse(start_url or "").netloc if start_url else "") or "Site"
     report_display_title = (report_title or "").strip() or f"{site_display} — Crawl Report"
@@ -930,14 +980,12 @@ def run_simple_report(
     if not edges and not df.empty:
         print("  Building edges from crawl data...", flush=True)
         edges = build_edges_from_df(
-            df, edges_csv, same_domain_only, max_fetch_for_edges, concurrency, timeout, 0.12
+            df, "", same_domain_only, max_fetch_for_edges, concurrency, timeout, 0.12
         )
         print(f"  Edges: {len(edges)}.", flush=True)
-        if edges and db_path:
-            with db_session(db_path) as conn:
+        if edges:
+            with db_session() as conn:
                 write_edges(conn, edges, run_id)
-        elif edges and not db_path:
-            save_edges(edges, edges_csv)
 
     # Long report work (ML, graph, network) runs without a DB handle; payload write uses db_session again.
 
@@ -967,28 +1015,14 @@ def run_simple_report(
             polite_delay=0.2,
         )
         print(f"  Security scan: {len(security_findings)} findings.", flush=True)
-        if security_findings_output:
-            with open(security_findings_output, "w", encoding="utf-8") as fh:
-                json.dump(security_findings, fh, indent=2, default=str)
 
-    print("  ML enrichment (optional)...", flush=True)
-    ml_bundle = run_ml_enrichment(df, config)
+    print("  Content analysis (crawl + optional AI insights)...", flush=True)
+    local_bundle = run_local_enrichment(df, config)
+    llm_cfg = load_llm_config_from_db()
+    llm_bundle = run_llm_enrichment(df, llm_cfg) if llm_is_enabled(llm_cfg) else {}
+    ml_bundle = merge_bundles(local_bundle, llm_bundle)
 
     print("  Building report categories...", flush=True)
-    if not db_path:
-        lighthouse_summary = None
-        if lighthouse_summary_path and os.path.isfile(lighthouse_summary_path):
-            try:
-                with open(lighthouse_summary_path, "r", encoding="utf-8") as fh:
-                    lighthouse_summary = json.load(fh)
-                if lighthouse_summary and expected_host:
-                    if not _hosts_match(
-                        _url_hostname(str(lighthouse_summary.get("url") or "")),
-                        expected_host,
-                    ):
-                        lighthouse_summary = None
-            except (OSError, json.JSONDecodeError):
-                pass
 
     categories = build_categories(
         df, edges, summary_seo, site_level, start_url or "",
@@ -1056,14 +1090,16 @@ def run_simple_report(
             small_edges = edf[edf["from"].isin(top_nodes) | edf["to"].isin(top_nodes)].copy()
         graph_nodes = list(top_nodes)
         graph_edges = small_edges.to_dict(orient="records")
-        # Top pages by PageRank for simple report (top 15)
+        # Top pages by internal link score (PageRank on crawl graph; not Google ranking)
         rank_rows = [{"url": n, "pagerank": pr.get(n, 0), "degree": deg.get(n, 0)} for n in G.nodes()]
         rank_df = pd.DataFrame(rank_rows).sort_values("pagerank", ascending=False).head(15)
         merge_cols = ["url"] + [c for c in ["title"] if c in df.columns]
         top_pages = rank_df.merge(df[merge_cols].drop_duplicates("url"), on="url", how="left").to_dict(orient="records")
         for r in top_pages:
             r["title"] = r.get("title") or r["url"]
-            r["pagerank"] = round(float(r.get("pagerank", 0)), 5)
+            score = round(float(r.get("pagerank", 0)), 5)
+            r["pagerank"] = score
+            r["internal_link_score"] = score
     else:
         # No edges: top pages by outlinks
         out_ser = pd.to_numeric(df["outlinks"], errors="coerce").fillna(0)
@@ -1087,8 +1123,6 @@ def run_simple_report(
     sim_map = ml_bundle.get("similar_internal_by_url") or {}
     lang_map = ml_bundle.get("language_by_url") or {}
     spacy_map = ml_bundle.get("spacy_by_url") or {}
-    anomalies_list = ml_bundle.get("anomalies") or []
-    anomaly_by_url = {str(a.get("url") or "").strip().rstrip("/"): a for a in anomalies_list if a.get("url")}
     kp_map = ml_bundle.get("keyphrases_by_url") or {}
 
     # Full links list: every crawled URL with url, status, inlinks, title, content_length, depth
@@ -1248,8 +1282,6 @@ def run_simple_report(
             rec["detected_language"] = lang_map[uk]
         if uk in spacy_map:
             rec["nlp_entities"] = spacy_map[uk]
-        if uk in anomaly_by_url:
-            rec["ml_anomaly"] = anomaly_by_url[uk]
         if uk in kp_map:
             rec["keyphrases"] = kp_map[uk]
 
@@ -1326,11 +1358,14 @@ def run_simple_report(
     print("  Building content analytics...", flush=True)
     content_analytics = _build_content_analytics(df)
     semantic_keyword_clusters: list[dict[str, Any]] = []
-    if get_bool(config or {}, "enable_semantic_keywords", False):
+    llm_cfg_for_clusters = load_llm_config_from_db()
+    if llm_is_enabled(llm_cfg_for_clusters):
         try:
-            words = [x["word"] for x in (content_analytics.get("top_keywords_site") or []) if x.get("word")]
-            semantic_keyword_clusters = cluster_keywords_semantic(words, config or {})
-        except ImportError as e:
+            llm_cfg = llm_cfg_for_clusters
+            if str(llm_cfg.get("llm_enable_keyword_clusters", "")).lower() in ("true", "1", "yes"):
+                words = [x["word"] for x in (content_analytics.get("top_keywords_site") or []) if x.get("word")]
+                semantic_keyword_clusters = cluster_keywords_llm(words, llm_cfg)
+        except Exception as e:
             ml_bundle.setdefault("ml_errors", []).append(str(e))
     outbound_max = get_int(config or {}, "outbound_domain_max_rows", 200) or 200
     outbound_link_domains = _build_outbound_link_domains(df, start_url or "", outbound_max)
@@ -1376,7 +1411,6 @@ def run_simple_report(
         "response_time_stats": response_time_stats,
         "depth_distribution": depth_distribution,
         "content_duplicates": ml_bundle.get("content_duplicates") or [],
-        "anomalies": ml_bundle.get("anomalies") or [],
         "language_summary": ml_bundle.get("language_summary") or {},
         "ner_site_summary": ml_bundle.get("ner_site_summary") or {},
         "semantic_keyword_clusters": semantic_keyword_clusters,
@@ -1386,7 +1420,7 @@ def run_simple_report(
         "keyword_opportunities": keyword_opportunities,
         "ml_errors": ml_bundle.get("ml_errors") or [],
     }
-    if db_path and run_id is not None:
+    if run_id is not None:
         report_data["crawl_run_id"] = run_id
         report_data["crawl_run_created_at"] = crawl_run_created_at
     if lighthouse_summary:
@@ -1394,36 +1428,39 @@ def run_simple_report(
         report_data["lighthouse_diagnostics"] = lighthouse_summary.get("diagnostics") or []
         report_data["lighthouse_human_summary"] = lighthouse_summary.get("human_summary_full") or lighthouse_summary.get("human_summary") or ""
     report_data["lighthouse_by_url"] = lighthouse_by_url
-    if db_path:
-        print("  Writing report payload to DB...", flush=True)
-        from ..db import db_session as _db, init_schema as _init, write_report_payload as db_write_report_payload
-        with _db(db_path) as conn:
-            _init(conn)
-            # Carry forward Google data from dedicated table so report rebuilds preserve it
-            try:
-                from ..integrations.google.store import read_latest_google_data
-                google_data = read_latest_google_data(conn)
-                if google_data:
-                    report_data["google"] = google_data
-            except Exception:
-                pass
-            # Carry forward enriched keyword data (cap at top 500 by traffic potential)
-            try:
-                from ..integrations.google.keyword_store import read_latest_keyword_data
-                kw_data = read_latest_keyword_data(conn)
-                if kw_data:
-                    # Cap rows to keep payload lean
-                    rows = kw_data.get("rows") or []
-                    if len(rows) > 500:
-                        rows = rows[:500]
-                        kw_data = {**kw_data, "rows": rows}
-                    report_data["keywords"] = kw_data
-            except Exception:
-                pass
-            db_write_report_payload(conn, report_data)
-        return db_path
-    raise ValueError(
-        "Report requires sqlite_db. Set sqlite_db = report.db in your config; "
-        "the Next.js UI in web/ reads report.db via /api/report/*."
-    )
+    print("  Writing report payload to DB...", flush=True)
+    from ..db import db_session as _db, write_report_payload as db_write_report_payload
+    with _db() as conn:
+        google_data: Optional[dict[str, Any]] = None
+        kw_data: Optional[dict[str, Any]] = None
+        try:
+            from ..integrations.google.store import read_latest_google_data
+            google_data = read_latest_google_data(conn)
+            if google_data:
+                report_data["google"] = google_data
+        except Exception:
+            pass
+        try:
+            from ..integrations.google.keyword_store import read_latest_keyword_data
+            kw_data = read_latest_keyword_data(conn)
+            if kw_data:
+                rows = kw_data.get("rows") or []
+                if len(rows) > 500:
+                    rows = rows[:500]
+                    kw_data = {**kw_data, "rows": rows}
+                report_data["keywords"] = kw_data
+        except Exception:
+            pass
+        report_data["report_meta"] = _build_report_metadata(
+            df,
+            config,
+            lighthouse_summary,
+            google_data,
+            kw_data,
+            ml_bundle,
+            run_id,
+            crawl_run_created_at,
+        )
+        db_write_report_payload(conn, report_data)
+    return "postgresql"
 

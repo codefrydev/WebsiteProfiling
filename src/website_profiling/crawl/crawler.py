@@ -91,12 +91,6 @@ class Crawler:
         self.store_content_excerpt = bool(store_content_excerpt)
         self.content_excerpt_max_chars = max(0, int(content_excerpt_max_chars or 0))
         self._wappalyzer_instance = None
-        if use_wappalyzer:
-            try:
-                from Wappalyzer import Wappalyzer
-                self._wappalyzer_instance = Wappalyzer.latest()
-            except Exception:
-                pass
 
         self.queue = Queue()
         if not _url_matches_exclude(self.start_url, self.exclude_urls):
@@ -357,9 +351,18 @@ class Crawler:
         except Exception:
             return False
 
-    def crawl(self, show_progress: bool = True):
+    def crawl(
+        self,
+        show_progress: bool = True,
+        stream_crawl_run_id: Optional[int] = None,
+        stream_batch_size: int = 500,
+    ):
         start_time = time.time()
         futures = []
+        db_writer: Optional[_CrawlDbWriter] = None
+        if stream_crawl_run_id is not None:
+            db_writer = _CrawlDbWriter(stream_crawl_run_id, stream_batch_size)
+            db_writer.start()
         pbar = tqdm(
             total=None if self.max_pages == float("inf") else int(self.max_pages),
             desc="Pages",
@@ -445,6 +448,8 @@ class Crawler:
                             if self.store_outlinks:
                                 res["outlink_targets"] = "[]"
                         self.results.append(res)
+                        if db_writer is not None and res.get("url"):
+                            db_writer.enqueue(res)
                         pbar.update(1)
                     else:
                         remaining.append(f)
@@ -455,6 +460,10 @@ class Crawler:
                     break
 
         pbar.close()
+        if db_writer is not None:
+            db_writer.finish()
+            db_writer.join()
+            db_writer.raise_if_failed()
         elapsed = time.time() - start_time
         df = pd.DataFrame(self.results)
         if df.empty:
@@ -518,6 +527,52 @@ class Crawler:
         return df
 
 
+class _CrawlDbWriter(threading.Thread):
+    """Background thread: batch-insert crawl rows via PostgreSQL connection pool."""
+
+    def __init__(self, crawl_run_id: int, batch_size: int = 500) -> None:
+        super().__init__(daemon=True)
+        self.crawl_run_id = crawl_run_id
+        self.batch_size = max(50, batch_size)
+        self._queue: Queue = Queue()
+        self._error: Optional[BaseException] = None
+
+    def enqueue(self, record: dict) -> None:
+        self._queue.put(record)
+
+    def finish(self) -> None:
+        self._queue.put(None)
+
+    def run(self) -> None:
+        from ..db import db_session
+        from ..db.crawl_store import _crawl_rows_from_df, write_crawl_batch
+
+        buffer: list[dict] = []
+        try:
+            while True:
+                item = self._queue.get()
+                if item is None:
+                    if buffer:
+                        chunk = pd.DataFrame(buffer)
+                        with db_session() as conn:
+                            rows = _crawl_rows_from_df(chunk, self.crawl_run_id)
+                            write_crawl_batch(conn, rows, self.crawl_run_id, commit=True)
+                    break
+                buffer.append(item)
+                if len(buffer) >= self.batch_size:
+                    chunk = pd.DataFrame(buffer)
+                    buffer = []
+                    with db_session() as conn:
+                        rows = _crawl_rows_from_df(chunk, self.crawl_run_id)
+                        write_crawl_batch(conn, rows, self.crawl_run_id, commit=True)
+        except BaseException as e:
+            self._error = e
+
+    def raise_if_failed(self) -> None:
+        if self._error is not None:
+            raise self._error
+
+
 def run_crawler(
     start_url: str,
     max_pages: Optional[int] = None,
@@ -529,14 +584,15 @@ def run_crawler(
     polite_delay: float = 0.2,
     store_outlinks: bool = True,
     output_csv: Optional[str] = "crawl_results.csv",
-    output_db: Optional[str] = None,
+    output_db: bool = False,
     show_progress: bool = True,
     exclude_urls: Optional[list[str]] = None,
     preserve_crawl_history: bool = True,
     store_content_excerpt: bool = False,
     content_excerpt_max_chars: int = 4096,
+    crawl_stream_to_db: bool = False,
 ) -> pd.DataFrame:
-    """Run crawler and optionally save to CSV/JSON or SQLite. Returns DataFrame."""
+    """Run crawler and optionally save to CSV/JSON or PostgreSQL. Returns DataFrame."""
     import sys
     max_p = max_pages if max_pages is not None else 0
     print(f"  Crawling {start_url} (max_pages={max_p or 'unlimited'}, concurrency={concurrency})...", flush=True)
@@ -554,38 +610,56 @@ def run_crawler(
         store_content_excerpt=store_content_excerpt,
         content_excerpt_max_chars=content_excerpt_max_chars,
     )
-    df = crawler.crawl(show_progress=show_progress)
-    if output_db and not df.empty:
+    stream_run_id: Optional[int] = None
+    if output_db:
+        use_stream = crawl_stream_to_db or (max_pages is not None and max_pages > 100)
+        if use_stream:
+            from ..db import backup_db_if_exists, create_crawl_run, db_session, read_historical_data, restore_historical_data
+            from ..db.storage import ensure_crawl_tables_cleared
+
+            historical = {}
+            if not preserve_crawl_history:
+                historical = read_historical_data()
+                backup_path = backup_db_if_exists()
+                if backup_path:
+                    print(f"  Backed up existing DB to {backup_path}", flush=True)
+            with db_session() as conn:
+                if not preserve_crawl_history:
+                    ensure_crawl_tables_cleared(conn)
+                if historical:
+                    restore_historical_data(conn, historical)
+                stream_run_id = create_crawl_run(conn, start_url)
+            print(f"  Streaming crawl results to DB (run_id={stream_run_id})...", flush=True)
+
+    df = crawler.crawl(
+        show_progress=show_progress,
+        stream_crawl_run_id=stream_run_id,
+    )
+    if output_db and not df.empty and stream_run_id is None:
         import sys
         print("  Writing crawl results to DB...", flush=True)
-        from ..db import backup_db_if_exists, create_crawl_run, db_session, ensure_db_recreated, init_schema, read_historical_data, restore_historical_data, write_crawl
+        from ..db import backup_db_if_exists, create_crawl_run, db_session, read_historical_data, restore_historical_data, write_crawl
+        from ..db.storage import ensure_crawl_tables_cleared
         historical = {}
         backup_path = None
         if not preserve_crawl_history:
-            historical = read_historical_data(output_db)
+            historical = read_historical_data()
             n_reports = len(historical.get("report_payload", []))
             if n_reports:
                 print(f"  Preserving {n_reports} historical report(s) from existing DB...", flush=True)
-            backup_path = backup_db_if_exists(output_db)
+            backup_path = backup_db_if_exists()
             if backup_path:
                 print(f"  Backed up existing DB to {backup_path}", flush=True)
-            ensure_db_recreated(output_db)
-        with db_session(output_db) as conn:
-            init_schema(conn)
+        with db_session() as conn:
+            if not preserve_crawl_history:
+                ensure_crawl_tables_cleared(conn)
             if historical:
                 restore_historical_data(conn, historical)
-                if backup_path:
-                    from pathlib import Path as _Path
-                    for p in (backup_path, backup_path + "-journal"):
-                        try:
-                            _Path(p).unlink(missing_ok=True)
-                        except OSError:
-                            pass
-                    print(f"  Removed temporary backup {backup_path}", flush=True)
-            # Always record a crawl_run so edges/nodes can use crawl_run_id (see write_edges / read_edges).
             run_id = create_crawl_run(conn, start_url)
             write_crawl(conn, df, crawl_run_id=run_id)
         print("  Crawl DB write complete.", flush=True)
+    elif output_db and stream_run_id is not None:
+        print("  Crawl streamed to DB during fetch.", flush=True)
     elif output_csv and not df.empty:
         if output_csv.lower().endswith(".json"):
             df.to_json(output_csv, orient="records", indent=2, date_format="iso", default_handler=str)

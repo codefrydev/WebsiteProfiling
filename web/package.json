@@ -2,11 +2,15 @@
   "name": "web",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "typecheck:strict": "tsc --noEmit -p tsconfig.strict.json"
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.13.23",
@@ -14,20 +18,26 @@
     "chart.js": "^4.5.1",
     "lucide-react": "^0.577.0",
     "next": "15.5.14",
+    "pg": "^8.21.0",
     "react": "19.1.0",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "19.1.0",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^16.1.1",
     "remark-breaks": "^4.0.0",
-    "remark-gfm": "^4.0.1",
-    "sql.js": "^1.14.1"
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/node": "^25.9.1",
+    "@types/pg": "^8.20.0",
+    "@types/react": "^19.2.16",
+    "@types/react-dom": "^19.2.3",
     "eslint": "^9",
     "eslint-config-next": "15.5.14",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "typescript": "^6.0.3",
+    "vitest": "^3.2.6"
   }
 }

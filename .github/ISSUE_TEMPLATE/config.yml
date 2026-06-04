@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Contributing guide
+    url: https://github.com/codefrydev/WebsiteProfiling/blob/master/CONTRIBUTING.md
+    about: Setup, tests, and pull request expectations
+  - name: Code of Conduct
+    url: https://github.com/codefrydev/WebsiteProfiling/blob/master/CODE_OF_CONDUCT.md
+    about: Community standards

@@ -1,23 +1,37 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: website_profiling
+      POSTGRES_USER: profiling
+      POSTGRES_PASSWORD: profiling
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U profiling -d website_profiling"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   web:
     build:
       context: .
       dockerfile: Dockerfile
     image: website-profiling:latest
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "3000:3000"
     environment:
       WEBSITE_PROFILING_ROOT: /app
-      REPORT_DB_PATH: /data/report.db
+      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
+      DATA_DIR: /data
       PYTHON: /opt/venv/bin/python
       NODE_ENV: production
-      HF_HOME: /data/cache/huggingface
-      TRANSFORMERS_CACHE: /data/cache/huggingface/hub
-      TORCH_HOME: /data/cache/torch
-      SENTENCE_TRANSFORMERS_HOME: /data/cache/sentence-transformers
       GOOGLE_SECRETS_PATH: /data/.secrets/google.json
-      # Lighthouse in Docker: system Chromium + no-sandbox (Chrome requirement in containers)
       CHROME_PATH: /usr/bin/chromium
+      LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
       LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
     volumes:
       - profiling-data:/data
@@ -29,4 +43,5 @@ services:
       start_period: 15s
 
 volumes:
+  pg-data:
   profiling-data:

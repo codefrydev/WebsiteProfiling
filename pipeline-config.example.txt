@@ -1,0 +1,82 @@
+# Site Audit config — REFERENCE ONLY (not auto-loaded).
+# Source of truth: PostgreSQL pipeline_config table (web UI Audit settings).
+# Runtime shadow: DATA_DIR/pipeline-config.txt (regenerated on Save/Run).
+# CLI override: python -m src --config path/to/file.txt
+# See also: input.txt.example (same keys, more comments).
+
+# --- Crawl ---
+start_url = 
+max_pages = 20
+concurrency = 8
+timeout = 12
+max_depth = 6
+polite_delay = 0.2
+ignore_robots = false
+allow_external = false
+store_outlinks = true
+store_content_excerpt = true
+content_excerpt_max_chars = 4096
+preserve_crawl_history = true
+crawl_stream_to_db = false
+crawl_exclude_urls = 
+
+# --- Report ---
+outbound_domain_max_rows = 200
+include_keyword_opportunities = true
+site_name = Site
+report_title = SEO report
+max_fetch_for_edges = 300
+same_domain_only = true
+max_nodes_plot = 400
+run_security_scan = true
+security_scan_active = false
+security_max_urls_probe = 20
+
+# --- Lighthouse ---
+lighthouse_url = 
+lighthouse_mode = navigation
+lighthouse_strategy = desktop
+lighthouse_categories = performance,accessibility,best-practices,seo
+lighthouse_iterations = 1
+run_lighthouse = true
+run_lighthouse_on_pages = true
+lighthouse_max_pages = 2
+lighthouse_concurrency = 2
+
+# --- Content analysis ---
+enable_duplicate_detection = true
+enable_language_detection = true
+analysis_fuzzy_threshold = 92
+analysis_simhash_hamming = 0
+analysis_dup_max_pages = 2000
+
+# --- Pipeline ---
+run_crawl = true
+run_report = true
+run_plot = true
+
+# --- Google (GSC & GA4) ---
+# Credentials and property IDs: web UI Integrations (gear icon), not this file.
+enable_google_search_console = false
+enable_google_analytics = false
+google_date_range_days = 28
+google_url_gap_list_limit = 200
+# enrich_keywords_after_report omitted = auto (follows enable_google_search_console)
+
+# --- Basics ---
+keyword_max_pages = 200
+keyword_gsc_max_rows = 25000
+brand_name = 
+keyword_seeds = 
+
+# --- Expansion ---
+enable_google_suggest = false
+enable_google_trends = false
+enable_wikipedia_topic = false
+enable_datamuse = false
+keyword_suggest_top_n = 20
+keyword_max_suggest_results = 8
+
+# --- Advanced ---
+warning_mapper_input = 
+warning_mapper_input_type = lighthouse

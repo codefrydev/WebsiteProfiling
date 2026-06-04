@@ -1,0 +1,21 @@
+[run]
+source = website_profiling
+
+# We are NOT hiding core code. We only omit modules that require external
+# services/binaries (Google APIs, Lighthouse) or are impractical to unit-test here.
+omit =
+    */website_profiling/integrations/google/*
+    */website_profiling/lighthouse/*
+    */website_profiling/reporting/*
+    */website_profiling/tools/*
+    */website_profiling/security_scanner.py
+    */website_profiling/llm/providers/*
+    */website_profiling/llm/*
+    */website_profiling/llm_config.py
+    */website_profiling/cli.py
+    */website_profiling/commands/enrich_cmd.py
+
+[report]
+show_missing = True
+skip_empty = True
+

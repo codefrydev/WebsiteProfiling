@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 
 from ..common import normalize_link
 
-# Max URLs per resource list to limit SQLite / payload size
+# Max URLs per resource list to limit DB / payload size
 LIST_CAP = 200
 INLINE_SCRIPT_WARN_BYTES = 8192
 _HEADING_ORDER = {"h1": 1, "h2": 2, "h3": 3, "h4": 4, "h5": 5, "h6": 6}

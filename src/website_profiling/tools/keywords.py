@@ -1,11 +1,8 @@
 """
-SEO keyword discovery and scoring from on-site content. Crawls site (or uses existing crawl),
-extracts candidate keywords from titles, headings, meta, URL slugs; scores and clusters them;
-outputs ranked CSV, clusters JSON, and human summary.
+SEO keyword discovery and scoring from on-site content. Uses PostgreSQL crawl data,
+extracts candidate keywords, scores and clusters them, and writes to keyword_data.
 """
-import csv
 import json
-import os
 import re
 import sys
 from datetime import datetime, timezone
@@ -48,7 +45,6 @@ def _slug_tokens(url: str) -> list[str]:
     segments = [s for s in path.split("/") if s and s not in ("html", "php", "asp", "aspx", "jsp")]
     out = []
     for seg in segments:
-        # Split on hyphen/underscore and clean
         words = re.findall(r"\b[\w']+\b", seg.replace("-", " ").replace("_", " ").lower())
         out.extend(words)
     return out
@@ -92,11 +88,9 @@ def _relevance_tfidf(candidates: dict[str, dict], corpus_size: int) -> dict[str,
     """Simple TF-IDF style: relevance = (count / total_docs) * log(corpus_size / doc_freq)."""
     total_docs = corpus_size or 1
     doc_freq = {k: len(v["sources"]) for k, v in candidates.items()}
-    max_df = max(doc_freq.values()) or 1
     scores: dict[str, float] = {}
     for kw, data in candidates.items():
         df = doc_freq.get(kw, 1)
-        # Higher when term is repeated but not everywhere (idf)
         idf = 1.0 + (total_docs / max(df, 1)) ** 0.5
         tf = min(1.0, (data["count"] or 0) / max(total_docs, 1))
         scores[kw] = min(1.0, (tf * idf) / 10.0)
@@ -110,16 +104,14 @@ def score_keywords(
 ) -> list[dict[str, Any]]:
     """
     Score each candidate. Without external data: search_volume and difficulty are estimated;
-    relevance from TF-IDF; ctr_est placeholder. Composite = volume*w_v + relevance*w_r + ctr_est*w_c + (1-difficulty)*w_e.
+    relevance from TF-IDF; ctr_est placeholder.
     """
     weights = weights or DEFAULT_WEIGHTS
     relevance_scores = _relevance_tfidf(candidates, corpus_size or len(candidates))
     results: list[dict[str, Any]] = []
     for kw, data in candidates.items():
-        # Estimate volume: no API -> use frequency on site as proxy (normalized 0..1)
         raw_vol = (data.get("count") or 0) / max(corpus_size or 1, 1) * 100
         volume = min(1.0, raw_vol)
-        # Difficulty: no API -> middle default so ease = 0.5
         difficulty = 50.0
         ease = 1.0 - (difficulty / 100.0)
         relevance = relevance_scores.get(kw, 0.5)
@@ -131,7 +123,6 @@ def score_keywords(
             + weights.get("ctr_est", 0.15) * ctr_est
             + weights.get("ease", 0.15) * ease
         )
-        # recommended_action: heuristic
         if len(data.get("sources") or []) > 1:
             action = "internal link"
         elif relevance > 0.7:
@@ -143,11 +134,13 @@ def score_keywords(
             "score": round(score, 4),
             "volume": round(volume, 4),
             "difficulty": difficulty,
+            "difficulty_estimated": True,
             "relevance": round(relevance, 4),
             "ctr_est": round(ctr_est, 4),
             "current_rank": current_rank,
             "recommended_action": action,
             "source": "site",
+            "data_source": "crawl_heuristic",
             "sources_count": len(data.get("sources") or []),
         })
     results.sort(key=lambda x: -x["score"])
@@ -155,13 +148,9 @@ def score_keywords(
 
 
 def cluster_keywords(scored: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """
-    Group similar keywords by shared tokens (simple overlap). Each cluster has
-    top keyword (by score), cluster score (average of keyword scores), and list of keywords.
-    """
+    """Group similar keywords by shared tokens (simple overlap)."""
     if not scored:
         return []
-    # Build clusters: keywords that share at least one token go together (greedy).
     clusters: list[set[str]] = []
     kw_to_tokens: dict[str, set[str]] = {}
     for s in scored:
@@ -201,29 +190,32 @@ def cluster_keywords(scored: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
+def _load_crawl_from_db() -> pd.DataFrame:
+    from ..db import db_session, get_latest_crawl_run_id, read_crawl
+
+    with db_session() as conn:
+        run_id = get_latest_crawl_run_id(conn)
+        return read_crawl(conn, run_id)
+
+
 def run_keyword_pipeline(
     base_url: str,
-    output_dir: str,
     config: dict[str, str] | None = None,
-    crawl_csv_path: str | None = None,
     max_pages: int = 200,
 ) -> dict[str, Any]:
     """
-    Run crawl (or load existing crawl), extract and score keywords, cluster, write CSV and JSON.
-    Returns summary dict with paths and human summary.
+    Run crawl (or load latest from PostgreSQL), extract and score keywords, cluster.
+    Writes keyword_data to PostgreSQL. Returns summary dict.
     """
     config = config or {}
     from ..config import get_list
-    exclude_urls = get_list(config, "crawl_exclude_urls", sep=",")
-    os.makedirs(output_dir, exist_ok=True)
-    cwd = os.getcwd()
 
-    if crawl_csv_path and os.path.isfile(crawl_csv_path):
-        from ..common import load_dataframe
-        df = load_dataframe(crawl_csv_path)
-    else:
+    exclude_urls = get_list(config, "crawl_exclude_urls", sep=",")
+    df = _load_crawl_from_db()
+
+    if df.empty:
         from ..crawl.crawler import run_crawler
-        crawl_out = os.path.join(output_dir, "keyword_crawl.json")
+
         run_crawler(
             start_url=base_url,
             max_pages=max_pages,
@@ -234,17 +226,15 @@ def run_keyword_pipeline(
             max_depth=6,
             polite_delay=0.2,
             store_outlinks=False,
-            output_csv=crawl_out,
+            output_csv=None,
+            output_db=True,
             show_progress=True,
             exclude_urls=exclude_urls if exclude_urls else None,
         )
-        from ..common import load_dataframe
-        df = load_dataframe(crawl_out)
+        df = _load_crawl_from_db()
 
     if df.empty:
         return {
-            "top_keywords_path": None,
-            "clusters_path": None,
             "human_summary": "No crawl data; no keywords extracted.",
             "quick_wins": [],
             "high_value": [],
@@ -257,36 +247,26 @@ def run_keyword_pipeline(
     clusters = cluster_keywords(scored)
 
     semantic_clusters: list[dict[str, Any]] = []
-    from ..config import get_bool
+    try:
+        from ..llm_config import load_llm_config_from_db, llm_is_enabled
 
-    if get_bool(config, "enable_semantic_keywords", False):
-        try:
-            from ..ml.enrich import cluster_keywords_semantic
+        llm_cfg = load_llm_config_from_db()
+        if llm_is_enabled(llm_cfg) and str(llm_cfg.get("llm_enable_keyword_clusters", "")).lower() in (
+            "true",
+            "1",
+            "yes",
+        ):
+            try:
+                from ..llm.enrich import cluster_keywords_llm
 
-            top_kw = [s["keyword"] for s in scored[:200] if s.get("keyword")]
-            semantic_clusters = cluster_keywords_semantic(top_kw, config)
-        except ImportError as e:
-            print(f"Semantic keywords skipped: {e}", file=sys.stderr)
+                top_kw = [s["keyword"] for s in scored[:200] if s.get("keyword")]
+                semantic_clusters = cluster_keywords_llm(top_kw, llm_cfg)
+            except Exception as e:
+                print(f"Semantic keywords skipped: {e}", file=sys.stderr)
+    except Exception:
+        pass
 
     ts = datetime.now(timezone.utc).isoformat()
-    top_path = os.path.join(output_dir, "top_keywords.csv")
-    clusters_path = os.path.join(output_dir, "clusters.json")
-
-    with open(top_path, "w", newline="", encoding="utf-8") as f:
-        cols = ["keyword", "score", "volume", "difficulty", "relevance", "ctr_est", "current_rank", "recommended_action", "source"]
-        w = csv.DictWriter(f, fieldnames=cols, extrasaction="ignore")
-        w.writeheader()
-        for row in scored:
-            w.writerow({k: row.get(k) for k in cols})
-
-    out_meta = {
-        "timestamp": ts,
-        "config": {"url": base_url, "weights": weights, "data_sources": ["site"]},
-        "clusters": clusters,
-        "clusters_semantic": semantic_clusters,
-    }
-    with open(clusters_path, "w", encoding="utf-8") as f:
-        json.dump(out_meta, f, indent=2, default=str)
 
     quick_wins = [s for s in scored if s.get("difficulty", 100) < 60][:10]
     high_value = [s for s in scored if (s.get("volume") or 0) >= 0.5][:10]
@@ -298,33 +278,27 @@ def run_keyword_pipeline(
     ]
     human_summary = " ".join(summary_lines)
 
-    # Write scored keywords to keyword_data SQLite table (for Google enrichment merge)
-    if db_path := (config or {}).get("_db_path"):
-        try:
-            import sqlite3 as _sqlite
-            from ..db.storage import db_session as _db, init_schema as _init
-            from ..integrations.google.keyword_store import write_keyword_data, ensure_tables
+    try:
+        from ..db.storage import db_session as _db
+        from ..integrations.google.keyword_store import write_keyword_data
 
-            rows_for_db = [
-                {**r, "sources": ["site"]}
-                for r in scored
-            ]
-            blob = {
-                "fetched_at": ts,
-                "total_keywords": len(rows_for_db),
-                "rows": rows_for_db,
-                "source": "site",
-            }
-            with _db(db_path) as conn:
-                _init(conn)
-                ensure_tables(conn)
-                write_keyword_data(conn, blob)
-        except Exception as e:
-            print(f"  Warning: could not write keyword_data to SQLite: {e}", file=sys.stderr)
+        rows_for_db = [{**r, "sources": ["site"]} for r in scored]
+        blob = {
+            "fetched_at": ts,
+            "total_keywords": len(rows_for_db),
+            "rows": rows_for_db,
+            "source": "site",
+            "clusters": clusters,
+            "clusters_semantic": semantic_clusters,
+            "config": {"url": base_url, "weights": weights, "data_sources": ["site"]},
+        }
+        with _db() as conn:
+            write_keyword_data(conn, blob)
+        print("  Keywords stored in PostgreSQL (keyword_data).", flush=True)
+    except Exception as e:
+        print(f"  Warning: could not write keyword_data to database: {e}", file=sys.stderr)
 
     return {
-        "top_keywords_path": top_path,
-        "clusters_path": clusters_path,
         "human_summary": human_summary,
         "quick_wins": quick_wins[:10],
         "high_value": high_value[:10],
@@ -334,31 +308,19 @@ def run_keyword_pipeline(
 
 def main(
     base_url: str,
-    output_dir: str,
     config: dict[str, str] | None = None,
 ) -> int:
-    """
-    Run keyword pipeline and print summary. Returns 0 on success.
-    """
+    """Run keyword pipeline and print summary. Returns 0 on success."""
+    config = config or {}
     try:
-        crawl_csv = (config or {}).get("crawl_csv", "").strip()
-        cwd = (config or {}).get("_cwd") or os.getcwd()
-        if crawl_csv and not os.path.isabs(crawl_csv):
-            crawl_csv = os.path.join(cwd, crawl_csv)
         max_pages = int((config or {}).get("keyword_max_pages") or 0) or 200
         summary = run_keyword_pipeline(
             base_url=base_url,
-            output_dir=output_dir,
             config=config,
-            crawl_csv_path=crawl_csv if os.path.isfile(crawl_csv) else None,
             max_pages=max_pages,
         )
     except Exception as e:
         print(str(e), file=sys.stderr)
         return 1
     print(summary.get("human_summary", ""))
-    if summary.get("top_keywords_path"):
-        print(f"top_keywords.csv: {summary['top_keywords_path']}")
-    if summary.get("clusters_path"):
-        print(f"clusters.json: {summary['clusters_path']}")
     return 0

@@ -1,8 +1,9 @@
 """
 Parse key=value config files (key = value or key: value, # comments, blank lines).
-Also provides load_config_from_db to read pipeline settings from report.db.
+Also provides load_config_from_db to read pipeline settings from PostgreSQL.
 """
 import os
+import sys
 
 
 def load_config(path: str) -> dict[str, str]:
@@ -62,21 +63,35 @@ def get_list(cfg: dict, key: str, sep: str = ",", default: list[str] | None = No
     return [s.strip() for s in str(raw).split(sep) if s.strip()]
 
 
-def load_config_from_db(db_path: str) -> dict[str, str]:
+def load_config_from_db() -> dict[str, str]:
     """
-    Load pipeline config from the pipeline_config table in report.db.
-    Returns a flat {key: value} dict (known keys only; unknown keys are not returned here
-    since cli.py consumes the result the same way it consumes load_config()).
-    Returns an empty dict if db_path does not exist, the table is missing, or the table is empty.
+    Load pipeline config from the pipeline_config table.
+    Returns a flat {key: value} dict (known keys only).
+    Returns an empty dict if the table is missing or empty.
+    Logs a warning to stderr on connection/query errors so callers can fall back to shadow file.
     """
-    if not os.path.isfile(db_path):
+    from .db.storage import get_database_url
+
+    if not (os.environ.get("DATABASE_URL") or "").strip():
         return {}
+
     try:
-        from .db import db_session, init_schema  # avoid circular at module level
-        with db_session(db_path) as conn:
-            init_schema(conn)
-            from .db.storage import read_pipeline_config
+        get_database_url()
+    except RuntimeError as e:
+        print(f"[Config] {e}", file=sys.stderr)
+        return {}
+
+    try:
+        from .db import db_session  # avoid circular at module level
+        from .db.storage import read_pipeline_config
+
+        with db_session() as conn:
             known, _unknown = read_pipeline_config(conn)
             return known
-    except Exception:
+    except Exception as e:
+        print(
+            f"[Config] Could not load pipeline_config from PostgreSQL ({e}); "
+            "will try shadow file if present.",
+            file=sys.stderr,
+        )
         return {}

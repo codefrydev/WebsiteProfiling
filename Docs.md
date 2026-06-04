@@ -1,6 +1,8 @@
 # Crawl overview
 
-**What it does:** Starts from `start_url` in **pipeline config** (`report.db` / web UI), fetches HTML with HTTP GET, parses `<a href>` with BeautifulSoup (static HTML only—no JS execution), normalizes links, filters (same-site, robots, depth, excludes), and queues until `max_pages` or the queue is empty.
+**Config load order (CLI):** `--config` file → PostgreSQL `pipeline_config` → shadow `DATA_DIR/pipeline-config.txt` (see `src/website_profiling/cli.py`).
+
+**What it does:** Starts from `start_url` in **audit settings** (PostgreSQL / Run audit in the web UI), fetches HTML with HTTP GET, parses `<a href>` with BeautifulSoup (static HTML only—no JS execution), normalizes links, filters (same-site, robots, depth, excludes), and queues until `max_pages` or the queue is empty.
 
 **Main code:** `src/website_profiling/crawl/crawler.py`, `src/website_profiling/common.py`.
 

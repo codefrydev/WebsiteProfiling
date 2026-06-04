@@ -5,8 +5,15 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_BASE_PATH: '',
   },
-  /** sql.js loads native wasm from its package on the server */
-  serverExternalPackages: ['sql.js'],
+  async redirects() {
+    return [
+      {
+        source: '/keywords-explorer',
+        destination: '/keywords',
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

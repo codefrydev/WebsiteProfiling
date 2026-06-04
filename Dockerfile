@@ -5,7 +5,7 @@
 
 FROM node:20-bookworm-slim AS base
 
-# Python venv + Chromium + build tools (ML stack may compile native wheels on some platforms)
+# Python venv + Chromium + build tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     python3 \
@@ -34,21 +34,29 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     NEXT_TELEMETRY_DISABLED=1 \
     WEBSITE_PROFILING_ROOT=/app \
-    REPORT_DB_PATH=/data/report.db \
+    DATABASE_URL=postgres://profiling:profiling@postgres:5432/website_profiling \
+    DATA_DIR=/data \
     PYTHON=/opt/venv/bin/python \
-    CHROME_PATH=/usr/bin/chromium
+    CHROME_PATH=/usr/bin/chromium \
+    LIGHTHOUSE_PATH=/usr/local/bin/lighthouse
 
-# Python: base requirements, then ML/NLP (sentence-transformers, spaCy, KeyBERT, scikit-learn, …)
+# Python: base requirements + optional LLM API clients
 COPY requirements.txt /app/requirements.txt
-COPY requirements-ml.txt /app/requirements-ml.txt
+COPY requirements-llm.txt /app/requirements-llm.txt
+COPY alembic.ini /app/alembic.ini
+COPY alembic /app/alembic
 RUN --mount=type=cache,target=/root/.cache/pip \
     python3 -m venv /opt/venv \
   && /opt/venv/bin/pip install --upgrade pip \
   && /opt/venv/bin/pip install -r /app/requirements.txt \
-  && /opt/venv/bin/pip install -r /app/requirements-ml.txt \
-  && /opt/venv/bin/python -m spacy download en_core_web_sm \
+  && /opt/venv/bin/pip install -r /app/requirements-llm.txt \
   && ln -sf /opt/venv/bin/python /usr/local/bin/python \
   && ln -sf /opt/venv/bin/python /usr/local/bin/python3
+
+# Pre-install Lighthouse CLI (avoid flaky parallel `npx -y lighthouse` at runtime).
+RUN --mount=type=cache,target=/root/.npm \
+    npm install -g lighthouse@12.6.0 \
+  && lighthouse --version
 
 WORKDIR /app
 
@@ -60,15 +68,17 @@ RUN --mount=type=cache,target=/root/.npm \
 # Application source
 COPY src /app/src
 COPY web /app/web
+COPY alembic /app/alembic
+COPY alembic.ini /app/alembic.ini
+COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 
 RUN cd /app/web && npm run build && npm prune --omit=dev
 
 ENV NODE_ENV=production
 
-# Persisted DB directory (bind mount or volume in compose)
-RUN mkdir -p /data
+# Persisted data directory (secrets + shadow config)
+RUN mkdir -p /data && chmod +x /app/docker-entrypoint.sh
 
 EXPOSE 3000
 
-# Listen on all interfaces so the container is reachable from the host
-CMD ["sh", "-c", "cd /app/web && npm run start -- -H 0.0.0.0 -p 3000"]
+CMD ["/app/docker-entrypoint.sh"]

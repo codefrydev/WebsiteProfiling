@@ -1,93 +1,60 @@
-# WebsiteProfiling
+# Site Audit
 
-## Run with Docker
+Open-source technical SEO crawl and audit UI (Next.js + Python + PostgreSQL).
 
-From the **repository root**:
+## Overview
+
+**Why this project** — Most site-audit and SEO tools are paid, limited, or built to upsell: paywalls, capped crawls, teaser scores, and “subscribe to see how to fix this.” Many free options give shallow or unreliable reports that push you toward a paid plan instead of real answers.
+
+**Goal** — A free, self-hosted audit you control: crawl your sites, see honest technical SEO issues, connect Search Console and Analytics when you want, and export reports for clients — without a vendor sitting between you and the data.
+
+## Quick start
+
+**Docker**
 
 ```bash
 docker compose up --build
 ```
 
-Open **http://localhost:3000/home**. Use **`http://localhost:3000`**
+Open [http://localhost:3000/home](http://localhost:3000/home).
 
-## Run locally
-
-**1. Python** (repo root)
+**Local dev**
 
 ```bash
-python -m venv .venv
+./local-run setup   # first time: Postgres, Python venv, migrations, npm deps
+./local-run         # daily: start DB + Next.js dev server → http://localhost:3000/home
+./local-run db      # Postgres only (no app)
+./local-run migrate # apply Alembic migrations only
+./local-run stop    # stop Postgres container
 ```
 
-Activate `.venv`, then:
+**Tests**
 
 ```bash
-pip install -r requirements.txt
+./local-test              # before push: full CI parity (DB + pytest + web)
+./local-test python         # backend only: pytest + CLI smoke
+./local-test web            # frontend only: typecheck, lint, vitest
+./local-test quick          # fast loop: skip Docker start; needs DB already up
+./local-test all --no-cov   # full run without pytest coverage gate
 ```
 
-Optional ML: `pip install -r requirements-ml.txt`
+## Contributing
 
-**2. Configure & run the pipeline**
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and pull request guidelines.
 
-The easiest way is via the **web UI** (terminal icon, bottom-right corner at `http://localhost:3000`):
-- Settings are stored in `report.db` (`pipeline_config` table) — the same database used for crawl data. Back up the whole pipeline by copying one file.
-- A shadow `pipeline-config.txt` is auto-written next to `report.db` on every Save/Run (safe to delete; regenerated automatically).
-- On first open, if the table is empty, the UI imports from shadow `pipeline-config.txt` (if present).
-- Click **Save settings** to persist, or **Run pipeline** to save + run immediately.
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — community standards
+- [SECURITY.md](SECURITY.md) — report vulnerabilities privately
 
-To run from the CLI instead:
+## Docs
 
-```bash
-python -m src
-```
+- [AGENT.md](AGENT.md) — repo layout and dev commands
+- [docs/GLOSSARY.md](docs/GLOSSARY.md) — UI terminology
+- [docs/COMPANY_STANDARDS.md](docs/COMPANY_STANDARDS.md) — data and security policy
 
-Python reads settings from `report.db` (`pipeline_config` table) by default — use the web UI to configure, or set `REPORT_DB_PATH` to point at your database (Docker sets this automatically). If the table is empty, the CLI falls back to shadow `pipeline-config.txt` next to `report.db`. Override with `--config path` for a custom key=value file. Steps: `crawl`, `report`, `plot`, `lighthouse`, `keywords`, `warnings`, `enrich` as extra args.
+Google Search Console / Analytics: connect via **Integrations** (gear icon) in the app.
 
-> **Reference:** `input.txt.example` shows all config keys in the legacy file format (optional; not loaded automatically).
+Production: `docker-compose.prod.yml` (set `POSTGRES_PASSWORD`, `AUTH_SECRET`).
 
-**3. Next.js UI** (`web/`)
+## License
 
-```bash
-cd web
-npm install
-npm run dev
-```
-
-Open **http://localhost:3000/home**.
-
----
-
-## Google Search Console + GA4 Integration
-
-Pull real search and traffic data into your reports.
-
-### Prerequisites
-
-1. Create a [Google Cloud project](https://console.cloud.google.com/).
-2. Enable two APIs: **Google Search Console API** and **Google Analytics Data API**.
-3. Create an **OAuth 2.0 Client ID** (type: *Web application* or *Desktop app*).
-4. Add `http://localhost:3000/api/integrations/google/callback` as an **Authorised redirect URI**.
-5. Note your **Client ID** and **Client Secret**.
-
-### In-app setup
-
-1. Open **http://localhost:3000** (gear in the header on every page, or **Configure Google** on home).
-2. Click the **gear icon (⚙)** → **Google Integrations**.
-3. **Step 1:** Paste your Client ID and Client Secret → **Save**.
-4. **Step 2:** Click **Connect with Google** → authorise in the browser → you're redirected back.
-5. Pick your **Search Console site** and **GA4 property** from the dropdowns (or paste IDs manually).
-6. Click **Test connection** to verify, then **Fetch data now** to pull the first snapshot.
-
-### CLI usage
-
-```bash
-# Fetch GSC + GA4 data and store in report.db (uses pipeline_config in report.db)
-python -m src google
-
-# Validate credentials only (does not store data)
-python -m src google --test
-
-# List accessible properties (prints JSON)
-python -m src google --list-properties
-```
-
-Running `python -m src report` will automatically carry forward the latest Google data snapshot into the new payload — no re-fetch needed.
+Copyright (c) 2026 [codefrydev](https://github.com/codefrydev). Released under the **MIT License** — see [LICENSE](LICENSE). Issues and pull requests: [codefrydev/WebsiteProfiling](https://github.com/codefrydev/WebsiteProfiling).
