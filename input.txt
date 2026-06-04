@@ -2,7 +2,7 @@
 
 # --- Crawl ---
 start_url = https://codefrydev.in
-max_pages = 2000
+max_pages = 3000
 concurrency = 8
 timeout = 12
 max_depth = 6
