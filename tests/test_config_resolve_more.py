@@ -36,11 +36,135 @@ def test_resolved_lighthouse_url_falls_back_to_start_url() -> None:
     assert resolved_lighthouse_url({"lighthouse_url": "https://lh.com", "start_url": "https://x.com"}) == "https://lh.com"
 
 
+def test_active_property_id_from_env(monkeypatch) -> None:
+    from website_profiling.commands import config_resolve
+
+    monkeypatch.delenv("WP_PROPERTY_ID", raising=False)
+    monkeypatch.setenv("WP_PROPERTY_ID", "12")
+    assert config_resolve.active_property_id_from_cfg({}) == 12
+    assert config_resolve.active_property_id_from_cfg({"active_property_id": "3"}) == 3
+    assert config_resolve.active_property_id_from_cfg({"active_property_id": "bad"}) is None
+    assert config_resolve.active_property_id_from_cfg({"active_property_id": "0"}) is None
+
+
+def test_resolve_property_id_from_cfg_no_start_url() -> None:
+    from website_profiling.commands import config_resolve
+
+    assert config_resolve.resolve_property_id_from_cfg({"start_url": ""}) is None
+
+
+def test_require_lighthouse_url_exits_when_missing() -> None:
+    from website_profiling.commands import config_resolve
+
+    with pytest.raises(SystemExit) as e:
+        config_resolve.require_lighthouse_url({})
+    assert e.value.code == 1
+
+
+def test_require_start_url_exits_when_missing() -> None:
+    from website_profiling.commands import config_resolve
+
+    with pytest.raises(SystemExit) as e:
+        config_resolve.require_start_url({}, for_step="crawl")
+    assert e.value.code == 1
+
+
+def test_google_db_has_gsc_false_on_db_error(monkeypatch) -> None:
+    from website_profiling.commands import config_resolve
+
+    def _boom():
+        raise OSError("no db")
+
+    monkeypatch.setattr("website_profiling.db.db_session", _boom)
+    assert config_resolve.google_db_has_gsc({}) is False
+
+
 def test_resolve_property_id_from_cfg_prefers_active_id(monkeypatch) -> None:
     from website_profiling.commands import config_resolve
 
     monkeypatch.delenv("WP_PROPERTY_ID", raising=False)
     assert config_resolve.resolve_property_id_from_cfg({"active_property_id": "7", "start_url": "https://a.com"}) == 7
+
+
+def test_resolve_property_id_from_cfg_opens_db_session(monkeypatch) -> None:
+    from website_profiling.commands import config_resolve
+
+    monkeypatch.delenv("WP_PROPERTY_ID", raising=False)
+
+    class _Ctx:
+        def __enter__(self):
+            return object()
+
+        def __exit__(self, _t, _v, _tb):
+            return False
+
+    monkeypatch.setattr("website_profiling.db.db_session", lambda: _Ctx())
+    monkeypatch.setattr(
+        "website_profiling.db.property_store.get_property_by_domain",
+        lambda _c, domain: {"id": 11} if domain == "a.com" else None,
+    )
+    pid = config_resolve.resolve_property_id_from_cfg({"start_url": "https://a.com"})
+    assert pid == 11
+
+
+def test_google_db_has_gsc_false_when_missing_or_empty(monkeypatch) -> None:
+    from tests.db_test_fakes import FakeConn, FakeCursor
+    from website_profiling.commands import config_resolve
+
+    holder: dict = {"conn": FakeConn()}
+    holder["conn"].set_next_cursor(FakeCursor(fetchone_value=None))
+
+    class _Ctx:
+        def __enter__(self):
+            return holder["conn"]
+
+        def __exit__(self, _t, _v, _tb):
+            return False
+
+    monkeypatch.setattr("website_profiling.db.db_session", lambda: _Ctx())
+    assert config_resolve.google_db_has_gsc({}) is False
+
+    holder["conn"] = FakeConn()
+    holder["conn"].set_next_cursor(FakeCursor(fetchone_value={"data": {"gsc": {}}}))
+    assert config_resolve.google_db_has_gsc({}) is False
+
+
+def test_google_db_has_gsc_true_when_by_page_present(monkeypatch) -> None:
+    from tests.db_test_fakes import FakeConn, FakeCursor
+    from website_profiling.commands import config_resolve
+
+    class _Ctx:
+        def __enter__(self):
+            return conn
+
+        def __exit__(self, _t, _v, _tb):
+            return False
+
+    conn = FakeConn()
+    conn.set_next_cursor(
+        FakeCursor(fetchone_value={"data": {"gsc_full": {"by_page": {"https://x/": {}}}}})
+    )
+    monkeypatch.setattr("website_profiling.db.db_session", lambda: _Ctx())
+    assert config_resolve.google_db_has_gsc({}) is True
+
+
+def test_google_db_has_gsc_true_when_queries_present(monkeypatch) -> None:
+    from tests.db_test_fakes import FakeConn, FakeCursor
+    from website_profiling.commands import config_resolve
+
+    class _Ctx:
+        def __enter__(self):
+            return conn
+
+        def __exit__(self, _t, _v, _tb):
+            return False
+
+    conn = FakeConn()
+    conn.set_next_cursor(
+        FakeCursor(fetchone_value={"data": {"gsc": {"top_queries": [{"q": "x"}]}}})
+    )
+    monkeypatch.setattr("website_profiling.db.db_session", lambda: _Ctx())
+    assert config_resolve.google_db_has_gsc({"active_property_id": "3"}) is True
 
 
 def test_resolve_property_id_from_cfg_uses_start_url_domain(monkeypatch) -> None:

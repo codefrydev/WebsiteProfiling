@@ -143,6 +143,7 @@ def test_google_run_runtimeerror_branch(monkeypatch):
 
     import website_profiling.db as db
 
+    monkeypatch.setattr(google_cmd, "resolve_property_id_from_cfg", lambda _cfg: 1)
     monkeypatch.setattr(db, "db_session", lambda: Ctx())
     monkeypatch.setattr(db, "get_latest_crawl_run_id", lambda _c: None)
     monkeypatch.setattr(db, "read_crawl", lambda *_a, **_k: pd.DataFrame())

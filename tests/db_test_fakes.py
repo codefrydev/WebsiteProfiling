@@ -31,17 +31,21 @@ class FakeConn:
         self.executed: list[tuple[str, tuple[Any, ...] | None]] = []
         self.commits = 0
         self._next_cursor: FakeCursor | None = None
+        self._cursor_queue: list[FakeCursor] = []
 
     def set_next_cursor(self, cur: FakeCursor) -> None:
-        self._next_cursor = cur
+        """Queue cursors returned from successive execute() calls."""
+        self._cursor_queue.append(cur)
 
     def execute(self, sql: str, params: tuple[Any, ...] | None = None) -> FakeCursor:
         self.executed.append((sql, params))
-        if self._next_cursor is None:
-            return FakeCursor()
-        cur = self._next_cursor
-        self._next_cursor = None
-        return cur
+        if self._cursor_queue:
+            return self._cursor_queue.pop(0)
+        if self._next_cursor is not None:
+            cur = self._next_cursor
+            self._next_cursor = None
+            return cur
+        return FakeCursor()
 
     @contextmanager
     def cursor(self) -> Iterator[FakeCursor]:

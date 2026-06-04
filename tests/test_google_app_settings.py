@@ -36,6 +36,62 @@ def test_read_google_app_settings_dict_row():
     assert row["default_date_range_days"] == 90
 
 
+def test_read_google_app_settings_without_conn(monkeypatch) -> None:
+    from tests.db_test_fakes import FakeConn, FakeCursor
+
+    class _Ctx:
+        def __enter__(self):
+            return conn
+
+        def __exit__(self, _t, _v, _tb):
+            return False
+
+    conn = FakeConn()
+    conn.set_next_cursor(
+        FakeCursor(
+            fetchone_value={
+                "id": 1,
+                "client_id": "cid",
+                "client_secret": "sec",
+                "service_account_json": None,
+                "default_date_range_days": 14,
+                "updated_at": None,
+            }
+        )
+    )
+    monkeypatch.setattr("website_profiling.db.pool.db_session", lambda: _Ctx())
+    row = google_app_store.read_google_app_settings()
+    assert row["client_id"] == "cid"
+    assert row["default_date_range_days"] == 14
+
+
+def test_save_google_app_settings_noop_on_empty_patch() -> None:
+    conn = MagicMock()
+    google_app_store.save_google_app_settings(conn, {})
+    conn.execute.assert_not_called()
+
+
+def test_save_google_app_settings_service_account_json() -> None:
+    conn = MagicMock()
+    google_app_store.save_google_app_settings(
+        conn,
+        {"service_account_json": {"type": "service_account", "project_id": "p"}},
+    )
+    conn.execute.assert_called_once()
+    assert "service_account_json" in conn.execute.call_args[0][0]
+
+
+def test_has_service_account_and_default_date_range_days() -> None:
+    assert google_app_store.has_service_account({"service_account_json": {"k": 1}}) is True
+    assert google_app_store.has_service_account({"service_account_json": None}) is False
+    assert google_app_store.default_date_range_days({"default_date_range_days": 90}) == 90
+
+
+def test_build_service_account_credentials_requires_json() -> None:
+    with pytest.raises(RuntimeError, match="No service account"):
+        google_app_store.build_service_account_credentials({"service_account_json": "not-a-dict"})
+
+
 def test_save_google_app_settings_updates_fields():
     conn = MagicMock()
     google_app_store.save_google_app_settings(

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { ALL_SCHEMA_KEYS } from '@/lib/pipelineConfigSchema';
+import { ALL_SCHEMA_KEYS, INTERNAL_PIPELINE_KEYS } from '@/lib/pipelineConfigSchema';
 
 function parseConfigKeys(raw: string): Set<string> {
   const keys = new Set<string>();
@@ -22,7 +22,10 @@ describe('pipelineConfigSchema', () => {
     const root = join(__dirname, '..', '..', '..');
     const example = readFileSync(join(root, 'pipeline-config.example.txt'), 'utf8');
     const exampleKeys = parseConfigKeys(example);
-    const optionalOmitted = new Set(['enrich_keywords_after_report']);
+    const optionalOmitted = new Set([
+      'enrich_keywords_after_report',
+      ...INTERNAL_PIPELINE_KEYS,
+    ]);
     for (const key of ALL_SCHEMA_KEYS) {
       if (optionalOmitted.has(key)) continue;
       expect(exampleKeys.has(key)).toBe(true);
