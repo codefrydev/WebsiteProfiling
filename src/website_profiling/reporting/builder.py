@@ -1434,15 +1434,18 @@ def run_simple_report(
         google_data: Optional[dict[str, Any]] = None
         kw_data: Optional[dict[str, Any]] = None
         try:
+            from ..commands.config_resolve import resolve_property_id_from_cfg
             from ..integrations.google.store import read_latest_google_data
-            google_data = read_latest_google_data(conn)
+
+            property_id = resolve_property_id_from_cfg(config, conn)
+            google_data = read_latest_google_data(conn, property_id=property_id)
             if google_data:
                 report_data["google"] = google_data
         except Exception:
             pass
         try:
             from ..integrations.google.keyword_store import read_latest_keyword_data
-            kw_data = read_latest_keyword_data(conn)
+            kw_data = read_latest_keyword_data(conn, property_id)
             if kw_data:
                 rows = kw_data.get("rows") or []
                 if len(rows) > 500:

@@ -292,8 +292,16 @@ def run_keyword_pipeline(
             "clusters_semantic": semantic_clusters,
             "config": {"url": base_url, "weights": weights, "data_sources": ["site"]},
         }
+        from ..commands.config_resolve import resolve_property_id_from_cfg
+
         with _db() as conn:
-            write_keyword_data(conn, blob)
+            property_id = resolve_property_id_from_cfg(config, conn)
+            if property_id is None:
+                raise RuntimeError(
+                    "property_id required for keyword_data. Set start_url in pipeline config."
+                )
+            blob["property_id"] = property_id
+            write_keyword_data(conn, blob, property_id=property_id)
         print("  Keywords stored in PostgreSQL (keyword_data).", flush=True)
     except Exception as e:
         print(f"  Warning: could not write keyword_data to database: {e}", file=sys.stderr)

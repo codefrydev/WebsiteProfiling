@@ -244,16 +244,30 @@ def run_enrichment(
         gsc_by_page: dict[str, dict] = {}  # url -> page data
         raw_gsc_full: dict = {}
 
-        google_raw = read_latest_google_data(conn)
-        if google_raw:
-            # read_latest strips gsc_full/ga4_full -- we need full, so re-read from DB
-            pass
+        from ...commands.config_resolve import resolve_property_id_from_cfg
+        from .keyword_store import read_latest_keyword_data
 
-        # Re-read with full data
-        try:
-            cur = conn.execute(
-                "SELECT data FROM google_data ORDER BY id DESC LIMIT 1"
+        property_id = resolve_property_id_from_cfg(cfg, conn)
+        if property_id is None:
+            raise RuntimeError(
+                "No property for keyword enrichment. Set Site URL and active_property_id in pipeline settings."
             )
+
+        # Re-read with full data (scoped to active property)
+        try:
+            if property_id is not None:
+                cur = conn.execute(
+                    """
+                    SELECT data FROM google_data
+                    WHERE property_id = %s
+                    ORDER BY id DESC LIMIT 1
+                    """,
+                    (property_id,),
+                )
+            else:
+                cur = conn.execute(
+                    "SELECT data FROM google_data ORDER BY id DESC LIMIT 1"
+                )
             row = cur.fetchone()
             if row:
                 full_google = _parse_row_json(row) or {}
@@ -283,15 +297,11 @@ def run_enrichment(
         except Exception as e:
             print(f"  [Keywords] Warning: could not load GSC data: {e}", flush=True)
 
-        # 2. Load existing site keywords from keyword pipeline
+        # 2. Load existing site keywords for this property only
         site_keywords: dict[str, dict] = {}
         try:
-            cur = conn.execute(
-                "SELECT data FROM keyword_data ORDER BY id DESC LIMIT 1"
-            )
-            row = cur.fetchone()
-            if row:
-                prev = _parse_row_json(row) or {}
+            prev = read_latest_keyword_data(conn, property_id)
+            if prev:
                 for r in prev.get("rows") or []:
                     nk = _normalize_kw(r.get("keyword") or "")
                     if nk:
@@ -537,6 +547,7 @@ def run_enrichment(
 
         data_blob = {
             "fetched_at": fetched_at,
+            "property_id": property_id,
             "brand_name": brand_name,
             "total_keywords": len(rows),
             "gsc_keyword_count": sum(1 for r in rows if "gsc" in (r.get("sources") or [])),
@@ -546,9 +557,9 @@ def run_enrichment(
             "rows": rows,
         }
 
-        write_keyword_data(conn, data_blob)
+        write_keyword_data(conn, data_blob, property_id=property_id)
         if history_rows:
-            append_keyword_history(conn, history_rows)
+            append_keyword_history(conn, history_rows, property_id=property_id)
 
         print(
             f"  [Keywords] Enrichment done: {len(rows)} keywords "

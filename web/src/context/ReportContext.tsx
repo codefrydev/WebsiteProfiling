@@ -11,6 +11,12 @@ import {
 } from 'react';
 import { usePathname } from 'next/navigation';
 import { domainQueryMatchesRow } from '../lib/domainSlug';
+import {
+  filterKeywordRowsForDomain,
+  keywordsPayloadMatchesDomain,
+} from '../lib/filterKeywordsForDomain';
+import { stripGoogleIfDomainMismatch } from '../lib/filterGoogleForDomain';
+import type { KeywordRow } from '@/types';
 import { computeReportFingerprintDiff } from '../lib/reportDiff';
 import { buildReportCompareSummary } from '../lib/reportCompare';
 import { strings } from '../lib/strings';
@@ -52,6 +58,34 @@ function filterReportsByDomain(
 ): ReportListRow[] {
   if (domainSlug == null || domainSlug === '') return full;
   return full.filter((r) => domainQueryMatchesRow(r, domainSlug));
+}
+
+function sanitizePayloadForDomain(
+  payload: ReportPayload | null,
+  domainSlug: string | null | undefined,
+): ReportPayload | null {
+  if (!payload || !domainSlug) return payload;
+  let next = stripGoogleIfDomainMismatch(payload, domainSlug);
+  const kw = next.keywords;
+  if (!kw || !Array.isArray(kw.rows) || kw.rows.length === 0) return next;
+  const rows = kw.rows as KeywordRow[];
+  if (keywordsPayloadMatchesDomain(rows, domainSlug)) {
+    const filtered = filterKeywordRowsForDomain(rows, domainSlug);
+    if (filtered.length === rows.length) return next;
+    return {
+      ...next,
+      keywords: { ...kw, rows: filtered },
+    };
+  }
+  const filtered = filterKeywordRowsForDomain(rows, domainSlug);
+  return {
+    ...next,
+    keywords: {
+      ...kw,
+      rows: filtered,
+      cannibalisation: Array.isArray(kw.cannibalisation) ? kw.cannibalisation : [],
+    },
+  };
 }
 
 function crawlMaps(crawlRuns: CrawlRunRow[]): {
@@ -108,14 +142,18 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     setLoading(true);
     setError(null);
     try {
+      const domainQ =
+        scoped != null && scoped !== ''
+          ? `&domain=${encodeURIComponent(scoped)}`
+          : '';
       const url =
         reportId != null
-          ? reportApi(`/payload?reportId=${encodeURIComponent(String(reportId))}`)
-          : reportApi('/payload');
+          ? reportApi(`/payload?reportId=${encodeURIComponent(String(reportId))}${domainQ}`)
+          : reportApi(scoped ? `/payload?domain=${encodeURIComponent(scoped)}` : '/payload');
       const res = await fetch(url);
       const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
       if (!res.ok) throw new Error(body.error || res.statusText);
-      setData(body.payload ?? null);
+      setData(sanitizePayloadForDomain(body.payload ?? null, scoped));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       const allowGlobalFallback =
@@ -125,10 +163,14 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       if (allowGlobalFallback) {
         setSelectedReportId(null);
         try {
-          const res = await fetch(reportApi('/payload'));
+          const res = await fetch(
+            scoped
+              ? reportApi(`/payload?domain=${encodeURIComponent(scoped)}`)
+              : reportApi('/payload'),
+          );
           const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
           if (!res.ok) throw new Error(body.error || res.statusText);
-          setData(body.payload ?? null);
+          setData(sanitizePayloadForDomain(body.payload ?? null, scoped));
         } catch (e2) {
           setError(e2 instanceof Error ? e2.message : String(e2));
         }
@@ -445,6 +487,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       loadCrawlPreview,
       crawlRuns,
       startUrlByRunId,
+      domainSlug: domainSlug ?? null,
     }),
     [
       data,
@@ -464,6 +507,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       loadCrawlPreview,
       crawlRuns,
       startUrlByRunId,
+      domainSlug,
     ],
   );
 

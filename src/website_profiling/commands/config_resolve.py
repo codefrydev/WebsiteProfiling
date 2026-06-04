@@ -35,13 +35,67 @@ def cleanup_lighthouse_work_dir(work_dir: str) -> None:
         shutil.rmtree(work_dir, ignore_errors=True)
 
 
-def google_db_has_gsc() -> bool:
+def active_property_id_from_cfg(cfg: dict | None = None) -> int | None:
+    """Resolve active property from pipeline config or WP_PROPERTY_ID env."""
+    import os
+
+    raw = ""
+    if cfg:
+        raw = str(cfg.get("active_property_id") or "").strip()
+    if not raw:
+        raw = os.environ.get("WP_PROPERTY_ID", "").strip()
+    if not raw:
+        return None
+    try:
+        pid = int(raw)
+        return pid if pid > 0 else None
+    except ValueError:
+        return None
+
+
+def resolve_property_id_from_cfg(cfg: dict | None = None, conn=None) -> int | None:
+    """active_property_id, then property row for start_url domain."""
+    pid = active_property_id_from_cfg(cfg)
+    if pid is not None:
+        return pid
+    if not cfg:
+        return None
+    from ..db.property_store import canonical_domain_from_start_url, get_property_by_domain
+
+    domain = canonical_domain_from_start_url(str(cfg.get("start_url") or ""))
+    if not domain:
+        return None
+
+    def _lookup(c):
+        prop = get_property_by_domain(c, domain)
+        return int(prop["id"]) if prop else None
+
+    if conn is not None:
+        return _lookup(conn)
+    from ..db import db_session
+
+    with db_session() as c:
+        return _lookup(c)
+
+
+def google_db_has_gsc(cfg: dict | None = None) -> bool:
     from ..db import db_session
     from ..db.storage import _parse_row_json
 
+    property_id = active_property_id_from_cfg(cfg)
     try:
         with db_session() as conn:
-            cur = conn.execute("SELECT data FROM google_data ORDER BY id DESC LIMIT 1")
+            if property_id is not None:
+                cur = conn.execute(
+                    """
+                    SELECT data FROM google_data
+                    WHERE property_id = %s
+                    ORDER BY id DESC LIMIT 1
+                    """,
+                    (property_id,),
+                )
+            else:
+                cur = conn.execute("SELECT data FROM google_data ORDER BY id DESC LIMIT 1")
             row = cur.fetchone()
             if not row:
                 return False
@@ -204,6 +258,13 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         dest="list_properties",
         help="For 'google' command: print accessible GSC sites and GA4 properties as JSON.",
+    )
+    parser.add_argument(
+        "--property-id",
+        type=int,
+        default=None,
+        dest="property_id",
+        help="WebsiteProfiling property id for per-site Google credentials.",
     )
     parser.add_argument(
         "--enrich-google",

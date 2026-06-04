@@ -171,6 +171,23 @@ export interface KeywordHistoryBatchBody {
 export interface KeywordExpandPostBody {
   seeds?: unknown;
   sources?: unknown;
+  propertyId?: number;
+  domain?: string;
+}
+
+export interface PropertyListItem {
+  id: number;
+  name: string;
+  canonical_domain: string;
+  site_url: string | null;
+  gsc_site_url: string | null;
+  ga4_property_id: string | null;
+  google_connected?: boolean;
+  google_connected_email?: string | null;
+}
+
+export interface PropertiesListResponse {
+  properties: PropertyListItem[];
 }
 
 export interface AuditSqlExample {

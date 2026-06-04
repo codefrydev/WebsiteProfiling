@@ -134,9 +134,10 @@ export function CannibalisationPanel({ items }: CannibalisationPanelProps) {
 interface ByPagePanelProps {
   rows: KeywordRow[];
   ke: typeof strings.views.keywordsExplorer;
+  brandQuery?: string | null;
 }
 
-export function ByPagePanel({ rows, ke }: ByPagePanelProps) {
+export function ByPagePanel({ rows, ke, brandQuery = null }: ByPagePanelProps) {
   const bp = ke.byPage;
   const searchParams = useSearchParams();
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
@@ -162,7 +163,10 @@ export function ByPagePanel({ rows, ke }: ByPagePanelProps) {
     setLoading(true);
     setPageKws(null);
     try {
-      const res = await fetch(apiUrl(`/integrations/google/keywords/by-page?url=${encodeURIComponent(url)}`));
+      const domainParam = brandQuery ? `&domain=${encodeURIComponent(brandQuery)}` : '';
+      const res = await fetch(
+        apiUrl(`/integrations/google/keywords/by-page?url=${encodeURIComponent(url)}${domainParam}`),
+      );
       const data = (await res.json()) as KeywordByPageResponse;
       setPageKws(data);
     } catch {
@@ -170,7 +174,7 @@ export function ByPagePanel({ rows, ke }: ByPagePanelProps) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [brandQuery]);
 
   useEffect(() => {
     if (pages.length === 0) {
@@ -381,7 +385,7 @@ export function ByPagePanel({ rows, ke }: ByPagePanelProps) {
   );
 }
 
-export function BulkSeedPanel() {
+export function BulkSeedPanel({ brandQuery = null }: { brandQuery?: string | null }) {
   const s = strings.views.keywordsExplorer.seeds;
   const [seeds, setSeeds] = useState('');
   const [preview, setPreview] = useState<KeywordExpandResult | null>(null);
@@ -397,7 +401,11 @@ export function BulkSeedPanel() {
       const res = await fetch(apiUrl('/integrations/google/keywords/expand'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ seeds: seedList, sources: ['web', 'youtube', 'questions'] }),
+        body: JSON.stringify({
+          seeds: seedList,
+          sources: ['web', 'youtube', 'questions'],
+          ...(brandQuery ? { domain: brandQuery } : {}),
+        }),
       });
       const data = (await res.json()) as { error?: string; results?: KeywordExpandResult };
       if (data.error) throw new Error(data.error);

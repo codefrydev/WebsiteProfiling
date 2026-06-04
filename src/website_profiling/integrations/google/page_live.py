@@ -7,7 +7,7 @@ from datetime import date, timedelta
 from typing import Any
 
 from ...config import get_int
-from .auth import build_credentials, read_secrets
+from .auth import build_credentials
 from .gsc import _build_service as gsc_build_service, _call_with_retry as gsc_call_with_retry, resolve_gsc_site_url, list_gsc_sites
 from .normalize import normalize_url, url_to_path
 from .page_lookup import _public_ga4_page, _public_gsc_page
@@ -182,18 +182,19 @@ def fetch_page_live(
     config: dict[str, Any] | None = None,
     *,
     persist: bool = True,
-    credentials_path: str | None = None,
+    property_id: int | None = None,
 ) -> dict[str, Any]:
     """Fetch live GSC/GA4 for one URL; optionally persist to page_google_snapshots."""
+    from ...commands.config_resolve import resolve_property_id_from_cfg
+    from .auth import resolve_google_targets
+
     cfg = config or {}
-    secrets = read_secrets(credentials_path)
-    date_range_days = int(secrets.get("dateRangeDays") or get_int(cfg, "google_date_range_days", 28) or 28)
-    gsc_site = (secrets.get("gscSiteUrl") or "").strip()
-    ga4_property = (secrets.get("ga4PropertyId") or "").strip()
+    pid = property_id if property_id is not None else resolve_property_id_from_cfg(cfg)
+    gsc_site, ga4_property, date_range_days = resolve_google_targets(property_id=pid)
     start_url = (cfg.get("start_url") or "").strip()
 
     errors: list[str] = []
-    creds = build_credentials(credentials_path)
+    creds = build_credentials(property_id=pid)
 
     gsc_data = None
     ga4_data = None

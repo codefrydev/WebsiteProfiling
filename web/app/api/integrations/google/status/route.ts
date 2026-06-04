@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
-import { getPublicStatus } from '@/server/googleSecrets';
+import { getGoogleAppPublicStatus } from '@/server/googleAppSettings';
 import { withDb } from '@/server/db';
 import type { ApiRouteHandler } from '@/types/api';
 import type { PoolClient } from 'pg';
@@ -24,7 +24,7 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
   const denied = forbiddenIfNotLocal(request);
   if (denied) return denied;
 
-  const status = getPublicStatus();
+  const status = await getGoogleAppPublicStatus();
   const lastFetchedAt = await getLastFetchedAt();
 
   return NextResponse.json({ ...status, lastFetchedAt });

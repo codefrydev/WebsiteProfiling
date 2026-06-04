@@ -3,6 +3,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
 import { formatPythonSpawnError, resolvePythonExecutable } from '@/server/resolvePython';
+import { resolvePropertyIdFromRequest } from '@/server/resolvePropertyId';
 import type { ApiRouteHandler, KeywordExpandPostBody } from '@/types/api';
 
 export const runtime = 'nodejs';
@@ -19,11 +20,22 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
   const guard = forbiddenIfNotLocal(request);
   if (guard) return guard;
 
-  let body: KeywordExpandPostBody;
+  let body: KeywordExpandPostBody & { propertyId?: number; domain?: string };
   try {
-    body = (await request.json()) as KeywordExpandPostBody;
+    body = (await request.json()) as KeywordExpandPostBody & {
+      propertyId?: number;
+      domain?: string;
+    };
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const { propertyId, error: propError } = await resolvePropertyIdFromRequest(
+    body.propertyId != null ? String(body.propertyId) : null,
+    body.domain ?? null,
+  );
+  if (propError || propertyId == null) {
+    return NextResponse.json({ error: propError || 'propertyId or domain required' }, { status: 400 });
   }
 
   const seeds = Array.isArray(body?.seeds)
@@ -53,7 +65,7 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
   return new Promise<Response>((resolve) => {
     const proc = spawn(pythonExe, ['-c', pyScript], {
       cwd: repoRoot,
-      env: { ...process.env },
+      env: { ...process.env, WP_PROPERTY_ID: String(propertyId) },
       shell: false,
     });
 

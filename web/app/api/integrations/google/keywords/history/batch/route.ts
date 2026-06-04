@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
 import { withDb } from '@/server/db';
+import { resolvePropertyIdFromRequest } from '@/server/resolvePropertyId';
 import type { ApiRouteHandler, KeywordHistoryBatchBody, KeywordHistoryRow } from '@/types/api';
 import type { PoolClient } from 'pg';
 
@@ -11,17 +12,28 @@ const MAX_LIMIT_PER_KEYWORD = 90;
 
 /**
  * POST /api/integrations/google/keywords/history/batch
- * Body: { keywords: string[], limit?: number }
+ * Body: { keywords: string[], limit?: number, propertyId?: number, domain?: string }
  */
 export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Response> => {
   const guard = forbiddenIfNotLocal(request);
   if (guard) return guard;
 
-  let body: KeywordHistoryBatchBody;
+  let body: KeywordHistoryBatchBody & { propertyId?: number; domain?: string };
   try {
-    body = (await request.json()) as KeywordHistoryBatchBody;
+    body = (await request.json()) as KeywordHistoryBatchBody & {
+      propertyId?: number;
+      domain?: string;
+    };
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const { propertyId, error } = await resolvePropertyIdFromRequest(
+    body.propertyId != null ? String(body.propertyId) : null,
+    body.domain ?? null,
+  );
+  if (error || propertyId == null) {
+    return NextResponse.json({ error: error || 'propertyId or domain required' }, { status: 400 });
   }
 
   const rawKeywords: unknown[] = Array.isArray(body?.keywords) ? body.keywords : [];
@@ -38,7 +50,7 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
   );
 
   if (!keywords.length) {
-    return NextResponse.json({ histories: {} });
+    return NextResponse.json({ histories: {}, propertyId });
   }
 
   try {
@@ -51,9 +63,9 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
         const res = await client.query(
           `SELECT keyword, fetched_at, position, clicks, impressions, ctr
            FROM keyword_history
-           WHERE keyword = ANY($1::text[])
+           WHERE property_id = $1 AND keyword = ANY($2::text[])
            ORDER BY keyword, id DESC`,
-          [keywords],
+          [propertyId, keywords],
         );
 
         const buckets: Record<string, KeywordHistoryRow[]> = Object.fromEntries(
@@ -79,7 +91,7 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
         /* keyword_history table may not exist yet */
       }
 
-      return NextResponse.json({ histories });
+      return NextResponse.json({ histories, propertyId });
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

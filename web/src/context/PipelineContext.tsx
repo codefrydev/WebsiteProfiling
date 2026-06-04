@@ -85,6 +85,10 @@ export function usePipeline(): PipelineContextValue {
   return ctx;
 }
 
+export function useOptionalPipeline(): PipelineContextValue | null {
+  return useContext(PipelineContext);
+}
+
 export function PipelineProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const report = useOptionalReport();

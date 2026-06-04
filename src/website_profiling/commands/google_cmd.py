@@ -2,24 +2,26 @@
 from __future__ import annotations
 
 import argparse
-import os
 import sys
 
 from ..config import get_int
-from .config_resolve import PathFn
+from .config_resolve import PathFn, resolve_property_id_from_cfg
+
+
+def _resolved_property_id(cfg: dict, args: argparse.Namespace) -> int | None:
+    if getattr(args, "property_id", None):
+        return int(args.property_id)
+    return resolve_property_id_from_cfg(cfg)
 
 
 def run(cfg: dict, cwd: str, path: PathFn, args: argparse.Namespace) -> None:
-    from ..integrations.google.auth import build_credentials, read_secrets
     from ..integrations.google.fetch import fetch_google_data, list_properties
 
-    credentials_path = cfg.get("google_credentials_path", "").strip()
-    if credentials_path and not os.path.isabs(credentials_path):
-        credentials_path = os.path.join(cwd, credentials_path)
+    property_id = _resolved_property_id(cfg, args)
 
     if getattr(args, "list_properties", False):
         try:
-            props = list_properties(credentials_path or None)
+            props = list_properties(property_id=property_id)
             import json as _json
 
             print(_json.dumps(props), flush=True)
@@ -29,7 +31,7 @@ def run(cfg: dict, cwd: str, path: PathFn, args: argparse.Namespace) -> None:
             sys.exit(1)
 
     if getattr(args, "test", False):
-        _run_google_test(credentials_path)
+        _run_google_test(property_id)
         return
 
     print("Site Audit: Google fetch...", flush=True)
@@ -54,15 +56,15 @@ def run(cfg: dict, cwd: str, path: PathFn, args: argparse.Namespace) -> None:
         import google.auth.exceptions as _gae
 
         google_data = fetch_google_data(
-            credentials_path=credentials_path or None,
             date_range_days=date_range_days,
             crawl_urls=crawl_urls,
             start_url=start_url_for_join,
             config=cfg,
+            property_id=property_id,
         )
     except _gae.RefreshError:
         print(
-            "Google connection expired -- reconnect in Integrations.",
+            "Google connection expired -- reconnect Google for this site.",
             file=sys.stderr,
         )
         sys.exit(1)
@@ -71,7 +73,7 @@ def run(cfg: dict, cwd: str, path: PathFn, args: argparse.Namespace) -> None:
         sys.exit(1)
 
     with db_session() as conn:
-        write_google_data(conn, google_data)
+        write_google_data(conn, google_data, property_id=property_id)
 
     if google_data.get("errors"):
         print("  Partial errors:", flush=True)
@@ -82,20 +84,20 @@ def run(cfg: dict, cwd: str, path: PathFn, args: argparse.Namespace) -> None:
     sys.exit(0)
 
 
-def _run_google_test(credentials_path: str | None) -> None:
+def _run_google_test(property_id: int | None) -> None:
     print("Site Audit: Google credentials test...", flush=True)
-    from ..integrations.google.auth import build_credentials, read_secrets
+    from ..integrations.google.auth import build_credentials, resolve_google_targets
 
     warnings: list[str] = []
     try:
         import google.auth.exceptions as _gae
 
-        creds = build_credentials(credentials_path or None)
+        creds = build_credentials(property_id=property_id)
         print("  Google credentials: OK (token refreshed)", flush=True)
 
-        secrets = read_secrets(credentials_path or None)
-        gsc_site_url = secrets.get("gscSiteUrl", "")
-        ga4_property_id = secrets.get("ga4PropertyId", "")
+        gsc_site_url, ga4_property_id, _days = resolve_google_targets(
+            property_id=property_id
+        )
 
         if gsc_site_url:
             from ..integrations.google.gsc import (
@@ -128,7 +130,7 @@ def _run_google_test(credentials_path: str | None) -> None:
                 warnings.append(detail)
         else:
             print(
-                "  GSC: skipped (no gscSiteUrl configured — set Website in Search Console in Integrations)",
+                "  GSC: skipped (no GSC site configured for this property)",
                 flush=True,
             )
             warnings.append("GSC site URL is not configured.")
@@ -156,7 +158,7 @@ def _run_google_test(credentials_path: str | None) -> None:
                 warnings.append(probe_msg)
         else:
             print(
-                "  GA4: skipped (no ga4PropertyId configured — set Analytics property in Integrations)",
+                "  GA4: skipped (no GA4 property ID configured for this property)",
                 flush=True,
             )
             warnings.append("GA4 property ID is not configured.")
@@ -169,7 +171,7 @@ def _run_google_test(credentials_path: str | None) -> None:
             print("", flush=True)
             print(
                 "Data fetch will fail or return empty until these are fixed. "
-                "In Integrations: click 'Load from account', pick exact GSC site + GA4 property, Save, then Test again.",
+                "Connect Google for this site, pick GSC + GA4, save, then Test again.",
                 flush=True,
             )
             sys.exit(1)
@@ -178,7 +180,7 @@ def _run_google_test(credentials_path: str | None) -> None:
         sys.exit(0)
     except _gae.RefreshError:
         print(
-            "Google connection expired -- reconnect in Integrations.",
+            "Google connection expired -- reconnect Google for this site.",
             file=sys.stderr,
         )
         sys.exit(1)

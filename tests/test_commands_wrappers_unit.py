@@ -8,7 +8,10 @@ def test_google_cmd_list_properties(monkeypatch, capsys) -> None:
     from website_profiling.commands import google_cmd
 
     # Fake integrations.google.fetch.list_properties
-    fake_fetch = types.SimpleNamespace(list_properties=lambda _p=None: {"ok": True}, fetch_google_data=None)
+    fake_fetch = types.SimpleNamespace(
+        list_properties=lambda *, property_id=None: {"ok": True},
+        fetch_google_data=None,
+    )
     fake_auth = types.SimpleNamespace(build_credentials=None, read_secrets=None)
     monkeypatch.setitem(
         __import__("sys").modules,

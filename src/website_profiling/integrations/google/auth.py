@@ -1,18 +1,8 @@
 """
-Load Google credentials from .secrets/google.json.
-Supports OAuth (refresh_token) and service account.
-Uses atomic file writes to avoid corruption from concurrent access.
-
-Path resolution order:
-  1. $GOOGLE_SECRETS_PATH env var
-  2. $DATA_DIR/.secrets/google.json
-  3. dirname(credentials_path from config) -- falls back to repo root
+Google credentials from PostgreSQL (google_app_settings + properties).
 """
 from __future__ import annotations
 
-import json
-import os
-import tempfile
 from typing import Any
 
 INSTALL_HINT = (
@@ -22,109 +12,109 @@ INSTALL_HINT = (
 )
 
 
-def _resolve_secrets_path(credentials_path: str | None = None) -> str:
-    """Return the absolute path to .secrets/google.json using the same resolution logic as googleSecrets.js."""
-    # 1. Explicit env override
-    explicit = os.environ.get("GOOGLE_SECRETS_PATH", "").strip()
-    if explicit:
-        return os.path.abspath(explicit)
+def read_secrets() -> dict[str, Any]:
+    """Compat shim: app settings from DB in camelCase shape (no global refresh token)."""
+    from ...db.google_app_store import read_google_app_settings
 
-    # 2. DATA_DIR (Docker volume /data)
-    data_dir = os.environ.get("DATA_DIR", "").strip()
-    if data_dir:
-        return os.path.join(os.path.abspath(data_dir), ".secrets", "google.json")
-
-    # 3. Relative to credentials_path config key, or repo root
-    if credentials_path and credentials_path.strip():
-        return os.path.abspath(credentials_path.strip())
-
-    # Fallback: look upward from this file to find repo root (contains src/__main__.py)
-    here = os.path.dirname(os.path.abspath(__file__))
-    candidate = here
-    for _ in range(8):
-        if os.path.isfile(os.path.join(candidate, "src", "__main__.py")):
-            return os.path.join(candidate, ".secrets", "google.json")
-        parent = os.path.dirname(candidate)
-        if parent == candidate:
-            break
-        candidate = parent
-    return os.path.join(here, ".secrets", "google.json")
+    row = read_google_app_settings()
+    sa = row.get("service_account_json")
+    return {
+        "clientId": row.get("client_id") or "",
+        "clientSecret": row.get("client_secret") or "",
+        "dateRangeDays": row.get("default_date_range_days") or 28,
+        "serviceAccount": sa,
+        "authMode": "service_account" if sa else None,
+        "refreshToken": None,
+        "gscSiteUrl": None,
+        "ga4PropertyId": None,
+    }
 
 
-def read_secrets(credentials_path: str | None = None) -> dict[str, Any]:
-    """Read and return the secrets file. Returns {} if missing or invalid."""
-    p = _resolve_secrets_path(credentials_path)
-    try:
-        with open(p, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
+def _app_client_credentials() -> tuple[str, str]:
+    from ...db.google_app_store import app_client_credentials
+
+    return app_client_credentials()
 
 
-def write_secrets_atomic(data: dict[str, Any], credentials_path: str | None = None) -> None:
-    """Atomically write data to the secrets file."""
-    p = _resolve_secrets_path(credentials_path)
-    os.makedirs(os.path.dirname(p), exist_ok=True)
-    tmp_fd, tmp_path = tempfile.mkstemp(dir=os.path.dirname(p), suffix=".tmp")
-    try:
-        with os.fdopen(tmp_fd, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
-        os.replace(tmp_path, p)
-    except Exception:
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
-        raise
+def _property_refresh_token(property_id: int) -> tuple[str, str | None]:
+    from ...db import db_session
+    from ...db.property_store import get_property_by_id
+
+    with db_session() as conn:
+        prop = get_property_by_id(conn, property_id)
+    if not prop:
+        raise RuntimeError(f"Property id {property_id} not found.")
+    domain = prop.get("canonical_domain") or "this site"
+    token = (prop.get("google_refresh_token") or "").strip()
+    if not token:
+        raise RuntimeError(
+            f"Google not connected for {domain}. "
+            "Set Site URL, open Integrations, and click Connect with Google for this site."
+        )
+    return token, prop.get("google_auth_mode")
 
 
-def build_credentials(credentials_path: str | None = None):
+def build_credentials(property_id: int | None = None):
     """
-    Load Google OAuth2 credentials from the secrets file.
-    Returns a google.oauth2.credentials.Credentials object (OAuth)
-    or google.oauth2.service_account.Credentials (service account).
-    Raises RuntimeError with a user-friendly message if not configured.
-    Raises google.auth.exceptions.RefreshError if the refresh token is revoked.
+    Load Google OAuth2 credentials.
+    property_id is required for OAuth user tokens.
+    Service account uses google_app_settings.service_account_json when property_id is None.
     """
     try:
         from google.oauth2.credentials import Credentials
-        from google.oauth2.service_account import Credentials as SACredentials
         from google.auth.transport.requests import Request
     except ImportError as e:
         raise ImportError(f"{INSTALL_HINT}\n({e})") from e
 
-    secrets = read_secrets(credentials_path)
-    auth_mode = secrets.get("authMode")
-
-    if auth_mode == "service_account" and secrets.get("serviceAccount"):
-        sa = secrets["serviceAccount"]
-        scopes = [
-            "https://www.googleapis.com/auth/webmasters.readonly",
-            "https://www.googleapis.com/auth/analytics.readonly",
-        ]
-        creds = SACredentials.from_service_account_info(sa, scopes=scopes)
+    if property_id is not None:
+        refresh_token, prop_auth_mode = _property_refresh_token(property_id)
+        if prop_auth_mode == "service_account":
+            raise RuntimeError(
+                "Per-property service account is not implemented yet. Use OAuth Connect."
+            )
+        client_id, client_secret = _app_client_credentials()
+        creds = Credentials(
+            token=None,
+            refresh_token=refresh_token,
+            token_uri="https://oauth2.googleapis.com/token",
+            client_id=client_id,
+            client_secret=client_secret,
+        )
+        creds.refresh(Request())
         return creds
 
-    refresh_token = secrets.get("refreshToken")
-    client_id = secrets.get("clientId") or os.environ.get("GOOGLE_CLIENT_ID", "")
-    client_secret = secrets.get("clientSecret") or os.environ.get("GOOGLE_CLIENT_SECRET", "")
+    from ...db.google_app_store import has_service_account, build_service_account_credentials
 
-    if not refresh_token:
-        raise RuntimeError(
-            "Google not connected. Open Integrations in the UI and click 'Connect with Google'."
-        )
-    if not client_id or not client_secret:
-        raise RuntimeError(
-            "Google Client ID or Secret missing. Complete Step 1 in Integrations."
-        )
+    if has_service_account():
+        return build_service_account_credentials()
 
-    creds = Credentials(
-        token=None,
-        refresh_token=refresh_token,
-        token_uri="https://oauth2.googleapis.com/token",
-        client_id=client_id,
-        client_secret=client_secret,
+    raise RuntimeError(
+        "Google API access requires a property context. "
+        "Set Site URL in audit settings, connect Google for that site, then run fetch again."
     )
-    # Refresh immediately to get a valid access token and catch revoked tokens early
-    creds.refresh(Request())
-    return creds
+
+
+def resolve_google_targets(
+    property_id: int | None = None,
+) -> tuple[str, str, int]:
+    """Return (gsc_site_url, ga4_property_id, date_range_days) for fetch."""
+    from ...db.google_app_store import default_date_range_days
+
+    default_days = default_date_range_days()
+
+    if property_id is None:
+        raise RuntimeError(
+            "No property selected for Google fetch. Set Site URL and run audit again."
+        )
+
+    from ...db import db_session
+    from ...db.property_store import get_property_google_config
+
+    with db_session() as conn:
+        cfg = get_property_google_config(conn, property_id)
+    days = cfg.get("date_range_days") or default_days
+    return (
+        cfg.get("gsc_site_url") or "",
+        cfg.get("ga4_property_id") or "",
+        int(days) if days else default_days,
+    )

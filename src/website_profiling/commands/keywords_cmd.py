@@ -41,7 +41,7 @@ def run(cfg: dict, args: argparse.Namespace) -> None:
     kw_url = require_start_url(cfg, for_step="keywords")
     kw_cfg = dict(cfg)
     rc = keyword_main(base_url=kw_url, config=kw_cfg)
-    if rc == 0 and (get_bool(cfg, "enable_google_suggest", False) or google_db_has_gsc()):
+    if rc == 0 and (get_bool(cfg, "enable_google_suggest", False) or google_db_has_gsc(cfg)):
         print("  Running Google keyword research...", flush=True)
         from ..integrations.google.keyword_enrich import run_enrichment
 

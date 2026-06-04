@@ -6,6 +6,8 @@ import type { CannibalisationItem, KeywordHistoryMap } from '@/types/components'
 import { Key, Settings2, Play } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useReport } from '../context/useReport';
+import { useKeywordBrandQuery } from '@/hooks/useKeywordBrandQuery';
+import { filterKeywordRowsForDomain } from '@/lib/filterKeywordsForDomain';
 import { apiUrl } from '../lib/publicBase';
 import { goToPipeline } from '../lib/pipelineReturn';
 import { strings, format } from '../lib/strings';
@@ -47,8 +49,13 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
   const router = useRouter();
   const { data, startUrlByRunId, selectedReportId } = useReport();
   const ke = strings.views.keywordsExplorer;
+  const brandQuery = useKeywordBrandQuery();
   const kwData: KeywordReportData | undefined = data?.keywords;
-  const rows: KeywordRow[] = Array.isArray(kwData?.rows) ? kwData.rows : EMPTY_ROWS;
+  const rawRows: KeywordRow[] = Array.isArray(kwData?.rows) ? kwData.rows : EMPTY_ROWS;
+  const rows = useMemo(
+    () => filterKeywordRowsForDomain(rawRows, brandQuery),
+    [rawRows, brandQuery],
+  );
 
   const startUrl =
     (selectedReportId != null ? startUrlByRunId.get(selectedReportId) : undefined) ||
@@ -169,7 +176,11 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
     fetch(apiUrl('/integrations/google/keywords/history/batch'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ keywords: gscKeywordsForHistory, limit: 30 }),
+      body: JSON.stringify({
+        keywords: gscKeywordsForHistory,
+        limit: 30,
+        ...(brandQuery ? { domain: brandQuery } : {}),
+      }),
     })
       .then((res) => res.json())
       .then((payload) => {
@@ -181,7 +192,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
     return () => {
       cancelled = true;
     };
-  }, [gscKeywordsForHistory]);
+  }, [gscKeywordsForHistory, brandQuery]);
 
   const columns = useMemo(
     () => buildKeywordColumns(showParentTopic, showTrend, historyByKeyword, ke),
@@ -300,7 +311,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
           </Card>
         )}
         <div className="mt-8 max-w-3xl mx-auto">
-          <BulkSeedPanel />
+          <BulkSeedPanel brandQuery={brandQuery} />
         </div>
       </PageLayout>
     );
@@ -332,7 +343,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
         }}
       />
 
-      {showSeedExpander && <BulkSeedPanel />}
+      {showSeedExpander && <BulkSeedPanel brandQuery={brandQuery} />}
 
       {showBrandScopeUi && (
         <p className="text-xs rounded-lg px-3 py-2 mb-4 border border-accent/30 bg-accent/5 text-muted-foreground">
@@ -417,7 +428,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
           {activeTab === 'cannib' ? (
             <CannibalisationPanel items={cannibItems} />
           ) : activeTab === 'bypage' ? (
-            <ByPagePanel rows={rows} ke={ke} />
+            <ByPagePanel rows={rows} ke={ke} brandQuery={brandQuery} />
           ) : tableEmptyContent ? (
             tableEmptyContent
           ) : (

@@ -1,49 +1,37 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
-import { writeSecrets, getPublicStatus } from '@/server/googleSecrets';
-import type { ApiRouteHandler, GoogleCredentialsPostBody, GoogleSecrets } from '@/types/api';
+import {
+  getGoogleAppPublicStatus,
+  saveGoogleAppSettings,
+} from '@/server/googleAppSettings';
+import type { ApiRouteHandler, GoogleCredentialsPostBody } from '@/types/api';
 
 export const runtime = 'nodejs';
 
-/** POST /api/integrations/google/credentials
- *  Body: { clientId?, clientSecret?, refreshToken?, gscSiteUrl?, ga4PropertyId?, dateRangeDays? }
- *  Merges into existing .secrets/google.json (atomic write).
- */
+const PROPERTY_ONLY_MSG =
+  'Per-site settings (GSC, GA4, refresh token) must be saved via property Integrations when a Site URL is set.';
+
+/** POST /api/integrations/google/credentials — save OAuth app Client ID/Secret to database. */
 export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Response> => {
   const denied = forbiddenIfNotLocal(request);
   if (denied) return denied;
   try {
     const body = (await request.json().catch(() => ({}))) as GoogleCredentialsPostBody;
-    const patch: Partial<GoogleSecrets> = {};
 
+    if (
+      'refreshToken' in body ||
+      'gscSiteUrl' in body ||
+      'ga4PropertyId' in body
+    ) {
+      return NextResponse.json({ error: PROPERTY_ONLY_MSG }, { status: 400 });
+    }
+
+    const patch: Parameters<typeof saveGoogleAppSettings>[0] = {};
     if (typeof body.clientId === 'string' && body.clientId.trim()) {
       patch.clientId = body.clientId.trim();
     }
     if (typeof body.clientSecret === 'string' && body.clientSecret.trim()) {
       patch.clientSecret = body.clientSecret.trim();
-    }
-    if (typeof body.refreshToken === 'string') {
-      patch.refreshToken = body.refreshToken.trim() || null;
-      if (patch.refreshToken) patch.authMode = 'oauth';
-    }
-    if ('gscSiteUrl' in body) {
-      patch.gscSiteUrl =
-        typeof body.gscSiteUrl === 'string' && body.gscSiteUrl.trim()
-          ? body.gscSiteUrl.trim()
-          : null;
-    }
-    if ('ga4PropertyId' in body) {
-      const v = typeof body.ga4PropertyId === 'string' ? body.ga4PropertyId.trim() : '';
-      if (v && !/^\d+$/.test(v)) {
-        return NextResponse.json(
-          {
-            error:
-              'Analytics property ID must be a numeric ID (e.g. 123456789). The G-XXXXXXX code is a Measurement ID — find the numeric ID in GA4 Admin > Property Settings.',
-          },
-          { status: 400 },
-        );
-      }
-      patch.ga4PropertyId = v || null;
     }
     if (typeof body.dateRangeDays === 'number' && body.dateRangeDays > 0) {
       patch.dateRangeDays = body.dateRangeDays;
@@ -53,8 +41,9 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
       return NextResponse.json({ error: 'No valid fields provided' }, { status: 400 });
     }
 
-    writeSecrets(patch);
-    return NextResponse.json({ ok: true, status: getPublicStatus() });
+    await saveGoogleAppSettings(patch);
+    const status = await getGoogleAppPublicStatus();
+    return NextResponse.json({ ok: true, status });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return NextResponse.json({ error: msg }, { status: 500 });

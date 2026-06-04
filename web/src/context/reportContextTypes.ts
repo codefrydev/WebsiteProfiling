@@ -27,4 +27,6 @@ export interface ReportContextValue {
   loadCrawlPreview: (crawlRunId: number | null) => Promise<boolean>;
   crawlRuns: CrawlRunRow[];
   startUrlByRunId: Map<number, string>;
+  /** From ?domain= query when viewing a single-brand portfolio. */
+  domainSlug: string | null;
 }

@@ -23,18 +23,21 @@ def _find_link(links: list[dict], page_url: str) -> dict[str, Any] | None:
     return None
 
 
-def _keywords_for_page(page_url: str) -> dict[str, Any]:
+def _keywords_for_page(page_url: str, property_id: int | None = None) -> dict[str, Any]:
     from ..db import db_session
-    from ..db.storage import _parse_row_json
+    from ..integrations.google.keyword_store import read_latest_keyword_data
 
     norm = page_url.lower().rstrip("/")
     try:
         with db_session() as conn:
-            cur = conn.execute("SELECT data FROM keyword_data ORDER BY id DESC LIMIT 1")
-            row = cur.fetchone()
-            if not row:
+            if property_id is None:
+                from ..commands.config_resolve import load_config_from_db, resolve_property_id_from_cfg
+
+                cfg = load_config_from_db()
+                property_id = resolve_property_id_from_cfg(cfg, conn)
+            data = read_latest_keyword_data(conn, property_id)
+            if not data:
                 return {"keywords": [], "cannibalisation": []}
-            data = _parse_row_json(row) or {}
             rows = data.get("rows") if isinstance(data.get("rows"), list) else []
             page_kws = [
                 r

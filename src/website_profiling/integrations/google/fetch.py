@@ -8,18 +8,18 @@ import json
 from datetime import datetime, timezone
 from typing import Any
 
-from .auth import build_credentials, read_secrets
+from .auth import build_credentials, resolve_google_targets
 from .gsc import fetch_gsc_data, list_gsc_sites, resolve_gsc_site_url
 from .ga4 import fetch_ga4_data, list_ga4_properties, probe_ga4_property
 from .normalize import compute_url_join
 
 
 def fetch_google_data(
-    credentials_path: str | None = None,
     date_range_days: int = 28,
     crawl_urls: list[str] | None = None,
     start_url: str = "",
     config: dict[str, Any] | None = None,
+    property_id: int | None = None,
 ) -> dict[str, Any]:
     """
     Fetch GSC and GA4 data. Each API is independent: if one fails, the other's
@@ -27,18 +27,17 @@ def fetch_google_data(
 
     Returns a dict matching the report payload google schema.
     """
-    secrets = read_secrets(credentials_path)
-    gsc_site_url = secrets.get("gscSiteUrl") or ""
-    ga4_property_id = secrets.get("ga4PropertyId") or ""
+    gsc_site_url, ga4_property_id, resolved_days = resolve_google_targets(
+        property_id=property_id
+    )
     if not date_range_days:
-        date_range_days = int(secrets.get("dateRangeDays") or 28)
+        date_range_days = resolved_days
 
     errors: list[str] = []
     gsc_data: dict[str, Any] | None = None
     ga4_data: dict[str, Any] | None = None
 
-    # Build credentials once (may raise if not connected)
-    creds = build_credentials(credentials_path)
+    creds = build_credentials(property_id=property_id)
 
     # Fetch GSC
     if gsc_site_url:
@@ -169,9 +168,9 @@ def fetch_google_data(
     }
 
 
-def list_properties(credentials_path: str | None = None) -> dict[str, Any]:
-    """List accessible GSC sites and GA4 properties. Used by /api/integrations/google/properties."""
-    creds = build_credentials(credentials_path)
+def list_properties(property_id: int | None = None) -> dict[str, Any]:
+    """List accessible GSC sites and GA4 properties."""
+    creds = build_credentials(property_id=property_id)
     gsc_sites = list_gsc_sites(creds)
     ga4_properties, ga4_list_error = list_ga4_properties(creds)
     result: dict[str, Any] = {"gscSites": gsc_sites, "ga4Properties": ga4_properties}

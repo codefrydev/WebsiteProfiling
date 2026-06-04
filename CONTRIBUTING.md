@@ -54,7 +54,9 @@ Per-URL GSC/GA4 in Link Explorer uses two histories:
 
 | Store | How it is created | Compare |
 |-------|-------------------|---------|
-| `google_data` | Site-wide **Fetch data now** in Google integrations | Pick an older site snapshot in the tab |
+| `google_data` | Site-wide **Fetch data now** (scoped to the `properties` row for the audit Site URL) | Pick an older site snapshot in the tab |
+
+**Google OAuth:** App Client ID/Secret and optional service account JSON live in PostgreSQL (`google_app_settings`, migration `006_google_app_settings`). Each **property** (domain) has its own refresh token and GSC/GA4 IDs on the `properties` table. Set a Site URL, then connect Google from Pipeline → Integrations. Configure via the UI or `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` env vars for bootstrap only.
 | `page_google_snapshots` | **Fetch live data** on the Search & retention tab | Defaults to previous live fetch for the same URL |
 
 **Prerequisites:** Google connected with GSC site URL and GA4 property saved; at least one site-wide fetch for snapshot defaults; two or more live fetches on the same URL to compare live periods. AI page coach requires **Enable AI insights** and **Link Explorer page coach** in Pipeline → Content & AI.

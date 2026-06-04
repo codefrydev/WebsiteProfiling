@@ -25,10 +25,14 @@ from .pool import db_session, get_data_dir, get_database_url
 _BOOL_COLS = ("viewport_present", "noindex", "has_schema")
 _CRAWL_BATCH_SIZE = 1000
 
-def create_crawl_run(conn: Connection, start_url: Optional[str] = None) -> int:
+def create_crawl_run(
+    conn: Connection,
+    start_url: Optional[str] = None,
+    property_id: Optional[int] = None,
+) -> int:
     cur = conn.execute(
-        "INSERT INTO crawl_runs (created_at, start_url) VALUES (%s, %s) RETURNING id",
-        (_now_iso(), start_url),
+        "INSERT INTO crawl_runs (created_at, start_url, property_id) VALUES (%s, %s, %s) RETURNING id",
+        (_now_iso(), start_url, property_id),
     )
     row = cur.fetchone()
     conn.commit()
