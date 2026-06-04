@@ -1,3 +1,4 @@
+import path from 'path';
 import pg from 'pg';
 import type { Pool, PoolClient } from 'pg';
 
@@ -35,6 +36,12 @@ export async function withDb<T>(fn: (client: PoolClient) => Promise<T>): Promise
   }
 }
 
+/** Data volume for secrets and shadow pipeline config (default: <repo>/data). */
 export function getDataDir(): string {
-  return (process.env.DATA_DIR || process.cwd()).trim() || process.cwd();
+  const explicit = (process.env.DATA_DIR || '').trim();
+  if (explicit) return explicit;
+  const repoRoot =
+    (process.env.WEBSITE_PROFILING_ROOT || '').trim() ||
+    path.resolve(process.cwd(), '..');
+  return path.join(repoRoot, 'data');
 }

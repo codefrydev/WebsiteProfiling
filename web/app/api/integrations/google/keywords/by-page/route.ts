@@ -1,24 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
 import { withDb } from '@/server/db';
+import { parseJsonField } from '@/server/pageGoogleData';
+import { resolvePropertyIdFromRequest } from '@/server/resolvePropertyId';
 import type { ApiRouteHandler } from '@/types/api';
 import type { PoolClient } from 'pg';
 
 export const runtime = 'nodejs';
-
-function parseJsonField(val: unknown): Record<string, unknown> | null {
-  if (val == null) return null;
-  if (typeof val === 'object' && !Array.isArray(val)) return val as Record<string, unknown>;
-  try {
-    const parsed: unknown = JSON.parse(String(val));
-    if (parsed != null && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return parsed as Record<string, unknown>;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
 
 interface KeywordRow {
   gsc_url?: string;
@@ -31,7 +19,7 @@ interface CannibalisationEntry {
 }
 
 /**
- * GET /api/integrations/google/keywords/by-page?url=https://example.com/page
+ * GET /api/integrations/google/keywords/by-page?url=...&propertyId=|domain=
  */
 export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Response> => {
   const guard = forbiddenIfNotLocal(request);
@@ -39,15 +27,25 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
 
   const { searchParams } = new URL(request.url);
   const pageUrl = (searchParams.get('url') || '').trim();
+  const { propertyId, error } = await resolvePropertyIdFromRequest(
+    searchParams.get('propertyId'),
+    searchParams.get('domain'),
+  );
 
   if (!pageUrl) {
     return NextResponse.json({ error: 'url parameter is required' }, { status: 400 });
+  }
+  if (error || propertyId == null) {
+    return NextResponse.json({ error: error || 'propertyId or domain required' }, { status: 400 });
   }
 
   try {
     return await withDb(async (client: PoolClient) => {
       const { rows } = await client.query(
-        'SELECT data FROM keyword_data ORDER BY id DESC LIMIT 1',
+        `SELECT data FROM keyword_data
+         WHERE property_id = $1
+         ORDER BY id DESC LIMIT 1`,
+        [propertyId],
       );
       if (!rows.length) {
         return NextResponse.json({ keywords: [], cannibalisation: [] });
@@ -72,6 +70,7 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
 
       return NextResponse.json({
         url: pageUrl,
+        propertyId,
         keyword_count: pageKeywords.length,
         keywords: pageKeywords,
         cannibalisation: cannib,

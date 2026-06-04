@@ -8,7 +8,7 @@ Implementation is split across ``db.*_store`` modules; this module re-exports th
 """
 from __future__ import annotations
 
-from ._common import _parse_json_field, _sanitize_for_json
+from ._common import _parse_json_field, _parse_row_json, _row_field, _sanitize_for_json
 from .config_store import read_llm_config, read_pipeline_config, write_llm_config, write_pipeline_config
 from .crawl_store import (
     create_crawl_run,
@@ -41,6 +41,8 @@ from .report_store import read_report_payload, write_report_payload
 
 __all__ = [
     "_parse_json_field",
+    "_parse_row_json",
+    "_row_field",
     "_sanitize_for_json",
     "backup_db_if_exists",
     "close_db_pool",

@@ -3,6 +3,7 @@
 import { Settings2, X } from 'lucide-react';
 import type { IntegrationToast } from '@/types/api';
 import GoogleIntegrationsPanel from './GoogleIntegrationsPanel';
+import { useOptionalReport } from '@/context/useReport';
 
 export interface IntegrationsModalProps {
   open: boolean;
@@ -12,6 +13,11 @@ export interface IntegrationsModalProps {
 
 /** Modal wrapper around {@link GoogleIntegrationsPanel} for report views. */
 export default function IntegrationsModal({ open, onClose, initialToast }: IntegrationsModalProps) {
+  const report = useOptionalReport();
+  const startUrl = String(
+    report?.data?.start_url || report?.data?.google?.gsc?.site_url || '',
+  ).trim();
+
   if (!open) return null;
 
   return (
@@ -35,7 +41,11 @@ export default function IntegrationsModal({ open, onClose, initialToast }: Integ
           </button>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
-          <GoogleIntegrationsPanel initialToast={initialToast} showTitle={false} />
+          <GoogleIntegrationsPanel
+            initialToast={initialToast}
+            showTitle={false}
+            startUrl={startUrl}
+          />
         </div>
       </div>
     </div>

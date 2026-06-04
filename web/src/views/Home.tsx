@@ -1,10 +1,10 @@
-import { Building2, ExternalLink, Globe, ArrowRight, Search, Settings2 } from 'lucide-react';
+import { Building2, ExternalLink, Globe, ArrowRight, Search, Settings2, Trash2 } from 'lucide-react';
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { PageLayout, Card } from '../components';
 import { Skeleton, SkeletonDomainCard } from '../components/Skeleton';
 import { useReport } from '../context/useReport';
 import { format, strings } from '../lib/strings';
-import { reportApi } from '../lib/publicBase';
+import { apiUrl, reportApi } from '../lib/publicBase';
 import type { PortfolioGroup, ReportCategory, ViewProps } from '@/types';
 
 function scoreFromCategories(categories: ReportCategory[] = []): number | null {
@@ -30,13 +30,19 @@ function healthScoreClass(score: number): string {
 }
 
 export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
-  const { reportList, crawlRuns, loadCrawlPreview } = useReport();
+  const { reportList, crawlRuns, loadCrawlPreview, refreshReports } = useReport();
   const vh = strings.views.home;
   const sj = strings.common;
   const [filterQuery, setFilterQuery] = useState('');
   const [domainGroups, setDomainGroups] = useState<PortfolioGroup[]>([]);
   const [portfolioLoading, setPortfolioLoading] = useState(false);
   const [openingCrawlId, setOpeningCrawlId] = useState<number | null>(null);
+  const [pendingDeleteKey, setPendingDeleteKey] = useState<string | null>(null);
+  const [deletingKey, setDeletingKey] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const portfolioCardKey = (group: PortfolioGroup) =>
+    `${group.domainParam}-${group.crawlOnly ? 'crawl' : 'report'}-${group.reportId ?? 'nr'}-${group.crawlRunId ?? 'nc'}-${group.generatedAtMs}`;
 
   const openSite = useCallback(async (group: PortfolioGroup) => {
     if (group.crawlOnly && group.crawlRunId != null) {
@@ -53,6 +59,37 @@ export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
       reportId: group.reportId ?? undefined,
     });
   }, [loadCrawlPreview, onNavigate]);
+
+  const handleDeletePortfolioItem = useCallback(
+    async (group: PortfolioGroup) => {
+      const key = portfolioCardKey(group);
+      setDeletingKey(key);
+      setDeleteError(null);
+      try {
+        const res = await fetch(apiUrl('/portfolio/delete'), {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            reportId: group.reportId,
+            crawlRunId: group.crawlRunId ?? null,
+          }),
+        });
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        if (!res.ok) {
+          setDeleteError(data.error || vh.deleteFailed);
+          return;
+        }
+        setPendingDeleteKey(null);
+        setDomainGroups((prev) => prev.filter((g) => portfolioCardKey(g) !== key));
+        await refreshReports();
+      } catch {
+        setDeleteError(vh.deleteFailed);
+      } finally {
+        setDeletingKey(null);
+      }
+    },
+    [refreshReports, vh.deleteFailed],
+  );
 
   useEffect(() => {
     if (!reportList.length && !crawlRuns.length) {
@@ -172,6 +209,12 @@ export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
         </div>
       </div>
 
+      {deleteError ? (
+        <p className="mt-2 text-center text-sm text-red-700 dark:text-red-400" role="alert">
+          {deleteError}
+        </p>
+      ) : null}
+
       {portfolioLoading ? (
         <div className="w-full mt-2" role="status" aria-busy="true" aria-label={strings.app.loading}>
           <span className="sr-only">{strings.app.loading}</span>
@@ -184,21 +227,28 @@ export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
       ) : filteredGroups.length > 0 ? (
         <div className="w-full mt-2">
           <div className="flex w-full flex-row flex-wrap justify-center gap-3 items-stretch">
-          {filteredGroups.map((group) => (
-            <button
-              key={`${group.domainParam}-${group.crawlOnly ? 'crawl' : 'report'}-${group.reportId ?? 'nr'}-${group.crawlRunId ?? 'nc'}-${group.generatedAtMs}`}
-              type="button"
-              disabled={openingCrawlId === group.crawlRunId}
-              onClick={() => { void openSite(group); }}
-              className="text-left w-[min(260px,100%)] max-w-[260px] min-w-0"
+          {filteredGroups.map((group) => {
+            const cardKey = portfolioCardKey(group);
+            const confirmOpen = pendingDeleteKey === cardKey;
+            const isDeleting = deletingKey === cardKey;
+            return (
+            <div
+              key={cardKey}
+              className="text-left w-[min(260px,100%)] max-w-[260px] min-w-0 relative"
             >
               <Card
                 shadow
                 padding="none"
-                className="group border-default/90 hover:border-blue-500/45 transition-all duration-200 hover:-translate-y-0.5 cursor-pointer h-full p-2"
+                className="group border-default/90 hover:border-blue-500/45 transition-all duration-200 h-full p-2"
               >
                 <div className="space-y-1.5">
-                  <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <button
+                      type="button"
+                      disabled={openingCrawlId === group.crawlRunId || isDeleting}
+                      onClick={() => { void openSite(group); }}
+                      className="min-w-0 flex-1 flex items-start justify-between gap-3 text-left rounded-md -m-1 p-1 hover:bg-brand-900/40 transition-colors disabled:opacity-60"
+                    >
                     <div className="min-w-0">
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                         <Building2 className="h-3 w-3" />
@@ -215,7 +265,59 @@ export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{vh.healthScoreLabel}</p>
                       <p className={`text-base font-bold tabular-nums ${healthScoreClass(group.healthScore)}`}>{group.healthScore}</p>
                     </div>
+                    </button>
+                    <button
+                      type="button"
+                      title={vh.deleteProperty}
+                      aria-label={vh.deleteProperty}
+                      disabled={isDeleting}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteError(null);
+                        setPendingDeleteKey(confirmOpen ? null : cardKey);
+                      }}
+                      className="shrink-0 rounded-md p-1.5 text-muted-foreground hover:text-red-700 hover:bg-red-500/10 dark:hover:text-red-400 transition-colors disabled:opacity-50"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
+
+                  {confirmOpen ? (
+                    <div
+                      className="rounded-md border border-red-500/30 bg-red-500/5 px-2 py-2 space-y-2"
+                      role="alertdialog"
+                      aria-labelledby={`delete-title-${cardKey}`}
+                    >
+                      <p id={`delete-title-${cardKey}`} className="text-xs font-medium text-foreground">
+                        {vh.deleteConfirmTitle}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground leading-snug">
+                        {group.crawlOnly
+                          ? format(vh.deleteConfirmCrawlOnly, {
+                              name: group.domainName,
+                              count: group.urlCount.toLocaleString(),
+                            })
+                          : format(vh.deleteConfirmBody, { name: group.domainName })}
+                      </p>
+                      <div className="flex gap-2 justify-end">
+                        <button
+                          type="button"
+                          className="px-2 py-1 text-[11px] rounded-md border border-default text-muted-foreground hover:text-foreground"
+                          onClick={() => setPendingDeleteKey(null)}
+                        >
+                          {vh.deleteCancel}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={isDeleting}
+                          className="px-2 py-1 text-[11px] rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+                          onClick={() => { void handleDeletePortfolioItem(group); }}
+                        >
+                          {isDeleting ? vh.deleting : vh.deleteConfirm}
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
 
                   <div className="rounded-md border border-default bg-brand-900/35 px-2 py-1.5">
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">{vh.crawlUrlLabel}</p>
@@ -245,7 +347,12 @@ export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
                     </div>
                   </div>
 
-                  <div className="rounded-md border border-default px-2 py-1.5">
+                  <button
+                    type="button"
+                    disabled={openingCrawlId === group.crawlRunId || isDeleting}
+                    onClick={() => { void openSite(group); }}
+                    className="w-full rounded-md border border-default px-2 py-1.5 text-left hover:bg-brand-900/40 transition-colors disabled:opacity-60"
+                  >
                     <div className="flex items-center justify-between gap-2">
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{vh.statusBreakdownLabel}</p>
                       <div className="text-xs text-link-soft flex items-center gap-1 font-medium">
@@ -275,11 +382,12 @@ export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
                         </span>
                       )}
                     </div>
-                  </div>
+                  </button>
                 </div>
               </Card>
-            </button>
-          ))}
+            </div>
+          );
+          })}
           </div>
         </div>
       ) : (

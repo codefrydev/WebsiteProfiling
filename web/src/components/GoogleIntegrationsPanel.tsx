@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from 'react';
 import {
   CheckCircle2,
   AlertCircle,
@@ -14,12 +14,21 @@ import {
 } from 'lucide-react';
 import type { GooglePropertiesResponse, GoogleStatusResponse, IntegrationToast } from '@/types/api';
 import { apiUrl } from '@/lib/publicBase';
+import { strings, format } from '@/lib/strings';
 import { dispatchPipelineJobStarted, pollPipelineJob } from '@/lib/pipelineJobEvents';
 import { useOptionalReport } from '@/context/useReport';
+import { useOptionalPipeline } from '@/context/PipelineContext';
+import { useResolvedPropertyId } from '@/hooks/useResolvedPropertyId';
+import { googlePropertyEndpoints } from '@/lib/googlePropertyEndpoints';
+import { pickInitialPropertyId, siteUrlFromProperty } from '@/lib/googlePropertySelection';
+import { deriveSiteNameFromStartUrl } from '@/lib/domainSlug';
+import type { PropertyListItem } from '@/types/api';
 import Button from '@/components/Button';
 
 const GCP_GUIDE_URL =
   'https://developers.google.com/workspace/guides/get-started';
+
+const s = strings.pipelineRunner;
 
 function StatusPill({ connected }: { connected?: boolean }) {
   if (connected) {
@@ -95,6 +104,78 @@ function selectClassName() {
   return 'w-full rounded-lg border border-default bg-brand-900 px-3 py-2.5 text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20';
 }
 
+type PropertiesSaveState =
+  | { phase: 'idle' }
+  | { phase: 'saving' }
+  | { phase: 'saved'; auto: boolean; savedAt: number }
+  | { phase: 'error'; message: string };
+
+function PropertiesSaveFeedback({
+  state,
+  dirty,
+}: {
+  state: PropertiesSaveState;
+  dirty: boolean;
+}) {
+  if (state.phase === 'saving') {
+    return (
+      <p
+        className="flex items-center gap-2 text-sm text-link"
+        role="status"
+        aria-live="polite"
+      >
+        <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+        {s.googlePropertiesSaving}
+      </p>
+    );
+  }
+  if (state.phase === 'error') {
+    return (
+      <p
+        className="flex items-center gap-2 text-sm text-red-700 dark:text-red-400"
+        role="alert"
+        aria-live="assertive"
+      >
+        <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
+        {state.message}
+      </p>
+    );
+  }
+  if (state.phase === 'saved') {
+    const label = state.auto ? s.googlePropertiesSavedAuto : s.googlePropertiesSaved;
+    const time = new Date(state.savedAt).toLocaleTimeString(undefined, {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+    return (
+      <p
+        className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm text-green-700 dark:text-green-400"
+        role="status"
+        aria-live="polite"
+      >
+        <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
+        <span>{label}</span>
+        <span className="text-xs text-green-700/80 dark:text-green-400/80">
+          {format(s.googlePropertiesSavedAt, { time })}
+        </span>
+      </p>
+    );
+  }
+  if (dirty) {
+    return (
+      <p
+        className="flex items-center gap-2 text-sm text-amber-800 dark:text-amber-300"
+        role="status"
+        aria-live="polite"
+      >
+        <AlertCircle className="h-4 w-4 shrink-0" aria-hidden />
+        {s.googlePropertiesUnsaved}
+      </p>
+    );
+  }
+  return null;
+}
+
 function InputField({
   label,
   id,
@@ -137,6 +218,10 @@ function InputField({
 export interface GoogleIntegrationsPanelProps {
   initialToast?: IntegrationToast | null;
   showTitle?: boolean;
+  /** When omitted, resolved from pipeline/report Site URL. */
+  propertyId?: number | null;
+  /** Site URL used to resolve the property row when propertyId is omitted. */
+  startUrl?: string;
 }
 
 /**
@@ -145,8 +230,102 @@ export interface GoogleIntegrationsPanelProps {
 export default function GoogleIntegrationsPanel({
   initialToast,
   showTitle = true,
+  propertyId: propertyIdProp,
+  startUrl: startUrlProp = '',
 }: GoogleIntegrationsPanelProps) {
   const report = useOptionalReport();
+  const pipeline = useOptionalPipeline();
+  const startUrl =
+    startUrlProp.trim() ||
+    String(pipeline?.configState.start_url || report?.data?.start_url || report?.data?.links?.[0]?.url || '');
+  const resolvedFromUrl = useResolvedPropertyId(propertyIdProp, startUrl);
+  const [propertyRows, setPropertyRows] = useState<PropertyListItem[]>([]);
+  const [loadingPropertyRows, setLoadingPropertyRows] = useState(true);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<number | null>(null);
+  const [syncingProperty, setSyncingProperty] = useState(false);
+
+  const effectivePropertyId = useMemo(() => {
+    if (selectedPropertyId != null && Number.isFinite(selectedPropertyId)) {
+      return selectedPropertyId;
+    }
+    if (resolvedFromUrl != null && Number.isFinite(resolvedFromUrl)) {
+      return resolvedFromUrl;
+    }
+    if (propertyIdProp != null && Number.isFinite(propertyIdProp)) {
+      return propertyIdProp;
+    }
+    return null;
+  }, [selectedPropertyId, resolvedFromUrl, propertyIdProp]);
+
+  const selectedProperty = useMemo(
+    () => propertyRows.find((p) => p.id === effectivePropertyId) ?? null,
+    [propertyRows, effectivePropertyId],
+  );
+  const endpoints = googlePropertyEndpoints(effectivePropertyId);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      setLoadingPropertyRows(true);
+      try {
+        const res = await fetch(apiUrl('/properties'));
+        if (!res.ok) return;
+        const data = (await res.json()) as { properties?: PropertyListItem[] };
+        if (!cancelled) setPropertyRows(data.properties ?? []);
+      } catch {
+        if (!cancelled) setPropertyRows([]);
+      } finally {
+        if (!cancelled) setLoadingPropertyRows(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (propertyRows.length === 0) {
+      if (resolvedFromUrl != null) {
+        setSelectedPropertyId(resolvedFromUrl);
+      }
+      return;
+    }
+    const next = pickInitialPropertyId(propertyRows, {
+      explicitId: propertyIdProp ?? resolvedFromUrl,
+      startUrl: String(pipeline?.configState.start_url || startUrl),
+      activePropertyId: String(pipeline?.configState.active_property_id || ''),
+    });
+    setSelectedPropertyId((prev) => {
+      if (prev != null && propertyRows.some((p) => p.id === prev)) return prev;
+      return next;
+    });
+  }, [
+    propertyRows,
+    propertyIdProp,
+    resolvedFromUrl,
+    startUrl,
+    pipeline?.configState.start_url,
+    pipeline?.configState.active_property_id,
+  ]);
+
+  const handlePropertySelect = useCallback(
+    async (id: number) => {
+      setSelectedPropertyId(id);
+      const row = propertyRows.find((p) => p.id === id);
+      if (!row || !pipeline) return;
+      setSyncingProperty(true);
+      try {
+        const url = siteUrlFromProperty(row);
+        pipeline.setField('start_url', url);
+        pipeline.setField('active_property_id', String(id));
+        pipeline.setField('site_name', deriveSiteNameFromStartUrl(url));
+        await pipeline.saveSettings();
+      } finally {
+        setSyncingProperty(false);
+      }
+    },
+    [propertyRows, pipeline],
+  );
   const [status, setStatus] = useState<GoogleStatusResponse | null>(null);
   const [loadingStatus, setLoadingStatus] = useState(false);
 
@@ -160,10 +339,18 @@ export default function GoogleIntegrationsPanel({
   const [ga4PropertyId, setGa4PropertyId] = useState('');
   const [dateRangeDays, setDateRangeDays] = useState('28');
   const [savingProps, setSavingProps] = useState(false);
+  const [propertiesSaveState, setPropertiesSaveState] = useState<PropertiesSaveState>({
+    phase: 'idle',
+  });
+  const [savedPropertiesSnapshot, setSavedPropertiesSnapshot] = useState<{
+    gsc: string;
+    ga4: string;
+    days: string;
+  } | null>(null);
 
-  // Properties dropdowns
-  const [properties, setProperties] = useState<GooglePropertiesResponse | null>(null);
-  const [loadingProps, setLoadingProps] = useState(false);
+  // GSC / GA4 list from Google APIs
+  const [googleLists, setGoogleLists] = useState<GooglePropertiesResponse | null>(null);
+  const [loadingGoogleLists, setLoadingGoogleLists] = useState(false);
 
   // Test / Fetch
   const [testLog, setTestLog] = useState('');
@@ -181,23 +368,59 @@ export default function GoogleIntegrationsPanel({
   // Toast from OAuth callback
   const [toast, setToast] = useState<IntegrationToast | null>(initialToast || null);
 
+  const ensurePropertyIdForOAuth = useCallback(async (): Promise<number | null> => {
+    if (effectivePropertyId != null) return effectivePropertyId;
+    const url = startUrl.trim();
+    if (!url) return null;
+    try {
+      const res = await fetch(apiUrl(`/properties/resolve?startUrl=${encodeURIComponent(url)}`));
+      if (!res.ok) return null;
+      const data = (await res.json()) as { id?: number };
+      if (data.id == null || !Number.isFinite(data.id)) return null;
+      setSelectedPropertyId(data.id);
+      return data.id;
+    } catch {
+      return null;
+    }
+  }, [effectivePropertyId, startUrl]);
+
   const fetchStatus = useCallback(async () => {
+    if (effectivePropertyId == null) return;
     setLoadingStatus(true);
     try {
-      const res = await fetch(apiUrl('/integrations/google/status'));
+      const res = await fetch(endpoints.status);
       if (res.ok) {
-        const data = (await res.json()) as GoogleStatusResponse;
-        setStatus(data);
-        if (data.gscSiteUrl) setGscSiteUrl(data.gscSiteUrl);
-        if (data.ga4PropertyId) setGa4PropertyId(data.ga4PropertyId);
-        if (data.dateRangeDays) setDateRangeDays(String(data.dateRangeDays));
+        const data = (await res.json()) as GoogleStatusResponse & {
+          connected?: boolean;
+          connectedEmail?: string | null;
+          gscSiteUrl?: string | null;
+          ga4PropertyId?: string | null;
+        };
+        const mapped: GoogleStatusResponse & { connectedEmail?: string | null } = {
+          connected: Boolean(data.connected),
+          hasClientId: data.hasClientId ?? true,
+          gscSiteUrl: data.gscSiteUrl ?? null,
+          ga4PropertyId: data.ga4PropertyId ?? null,
+          dateRangeDays: data.dateRangeDays ?? 28,
+          authMode: data.authMode ?? null,
+          lastFetchedAt: data.lastFetchedAt ?? null,
+          connectedEmail: data.connectedEmail ?? null,
+        };
+        setStatus(mapped);
+        const gsc = mapped.gscSiteUrl ?? '';
+        const ga4 = mapped.ga4PropertyId ?? '';
+        const days = mapped.dateRangeDays ? String(mapped.dateRangeDays) : '28';
+        setGscSiteUrl(gsc);
+        setGa4PropertyId(ga4);
+        setDateRangeDays(days);
+        setSavedPropertiesSnapshot({ gsc, ga4, days });
       }
     } catch {
       // ignore
     } finally {
       setLoadingStatus(false);
     }
-  }, []);
+  }, [endpoints.status, effectivePropertyId]);
 
   useEffect(() => {
     void fetchStatus();
@@ -214,13 +437,13 @@ export default function GoogleIntegrationsPanel({
     return () => clearTimeout(t);
   }, [toast]);
 
-  const loadProperties = async () => {
-    setLoadingProps(true);
+  const loadGoogleLists = async () => {
+    setLoadingGoogleLists(true);
     try {
-      const res = await fetch(apiUrl('/integrations/google/properties'));
+      const res = await fetch(endpoints.listProperties);
       if (res.ok) {
         const data = (await res.json()) as GooglePropertiesResponse;
-        setProperties(data);
+        setGoogleLists(data);
         if (data.ga4ListError) {
           setToast({ type: 'error', message: data.ga4ListError });
         }
@@ -228,7 +451,7 @@ export default function GoogleIntegrationsPanel({
     } catch {
       // ignore
     } finally {
-      setLoadingProps(false);
+      setLoadingGoogleLists(false);
     }
   };
 
@@ -256,45 +479,101 @@ export default function GoogleIntegrationsPanel({
     }
   };
 
-  const handleSaveProperties = async () => {
-    if (ga4PropertyId && !/^\d+$/.test(ga4PropertyId.trim())) {
-      setToast({
-        type: 'error',
-        message:
-          'Analytics property ID must be a numeric ID (e.g. 123456789). The G-XXXXXXX code is a Measurement ID -- find the numeric ID in GA4 Admin > Property Settings.',
-      });
-      return;
-    }
-    setSavingProps(true);
-    try {
-      const res = await fetch(apiUrl('/integrations/google/credentials'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          gscSiteUrl: gscSiteUrl.trim() || null,
-          ga4PropertyId: ga4PropertyId.trim() || null,
-          dateRangeDays: Number(dateRangeDays) || 28,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setToast({ type: 'error', message: data.error || 'Save failed' });
-      } else {
-        setStatus(data.status);
-        setToast({ type: 'success', message: 'Settings saved.' });
+  const propertiesDirty =
+    savedPropertiesSnapshot !== null &&
+    (gscSiteUrl !== savedPropertiesSnapshot.gsc ||
+      ga4PropertyId !== savedPropertiesSnapshot.ga4 ||
+      dateRangeDays !== savedPropertiesSnapshot.days);
+
+  const handleSaveProperties = useCallback(
+    async (options?: { auto?: boolean }): Promise<boolean> => {
+      if (ga4PropertyId && !/^\d+$/.test(ga4PropertyId.trim())) {
+        const msg =
+          'Analytics property ID must be a numeric ID (e.g. 123456789). The G-XXXXXXX code is a Measurement ID — find the numeric ID in GA4 Admin > Property Settings.';
+        setPropertiesSaveState({ phase: 'error', message: msg });
+        setToast({ type: 'error', message: msg });
+        return false;
       }
-    } catch (e) {
-      setToast({ type: 'error', message: e instanceof Error ? e.message : String(e) });
-    } finally {
-      setSavingProps(false);
+      setSavingProps(true);
+      setPropertiesSaveState({ phase: 'saving' });
+      try {
+        const res = await fetch(endpoints.credentials, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gscSiteUrl: gscSiteUrl.trim() || null,
+            ga4PropertyId: ga4PropertyId.trim() || null,
+            dateRangeDays: Number(dateRangeDays) || 28,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          const msg = data.error || s.googlePropertiesSaveFailed;
+          setPropertiesSaveState({ phase: 'error', message: msg });
+          setToast({ type: 'error', message: msg });
+          return false;
+        }
+        if (data.status) setStatus(data.status);
+        else await fetchStatus();
+        const gsc = data.status?.gscSiteUrl ?? '';
+        const ga4 = data.status?.ga4PropertyId ?? '';
+        const days = String(data.status?.dateRangeDays ?? dateRangeDays);
+        setGscSiteUrl(gsc);
+        setGa4PropertyId(ga4);
+        setDateRangeDays(days);
+        setSavedPropertiesSnapshot({ gsc, ga4, days });
+        const savedAt = Date.now();
+        setPropertiesSaveState({ phase: 'saved', auto: !!options?.auto, savedAt });
+        setToast({
+          type: 'success',
+          message: options?.auto ? s.googlePropertiesSavedAuto : s.googlePropertiesSaved,
+        });
+        return true;
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : s.googlePropertiesSaveFailed;
+        setPropertiesSaveState({ phase: 'error', message: msg });
+        setToast({ type: 'error', message: msg });
+        return false;
+      } finally {
+        setSavingProps(false);
+      }
+    },
+    [gscSiteUrl, ga4PropertyId, dateRangeDays, endpoints.credentials, fetchStatus],
+  );
+
+  const handlePropertiesBlur = useCallback(() => {
+    if (!status?.connected || savingProps) return;
+    if (!gscSiteUrl.trim() && !ga4PropertyId.trim()) return;
+    if (!propertiesDirty) return;
+    void handleSaveProperties({ auto: true });
+  }, [
+    status?.connected,
+    savingProps,
+    gscSiteUrl,
+    ga4PropertyId,
+    propertiesDirty,
+    handleSaveProperties,
+  ]);
+
+  useEffect(() => {
+    if (propertiesDirty && propertiesSaveState.phase === 'saved') {
+      setPropertiesSaveState({ phase: 'idle' });
     }
-  };
+  }, [propertiesDirty, propertiesSaveState.phase]);
+
+  useEffect(() => {
+    if (propertiesSaveState.phase !== 'saved') return;
+    const t = setTimeout(() => {
+      setPropertiesSaveState((prev) => (prev.phase === 'saved' ? { phase: 'idle' } : prev));
+    }, 12000);
+    return () => clearTimeout(t);
+  }, [propertiesSaveState]);
 
   const handleSaveRefreshToken = async () => {
-    if (!refreshToken.trim()) return;
+    if (!refreshToken.trim() || effectivePropertyId == null) return;
     setSavingToken(true);
     try {
-      const res = await fetch(apiUrl('/integrations/google/credentials'), {
+      const res = await fetch(endpoints.credentials, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken: refreshToken.trim() }),
@@ -318,7 +597,7 @@ export default function GoogleIntegrationsPanel({
     setTesting(true);
     setTestLog('');
     try {
-      const res = await fetch(apiUrl('/integrations/google/test'), { method: 'POST' });
+      const res = await fetch(endpoints.test, { method: 'POST' });
       const data = await res.json();
       const log = data.log || (data.ok ? 'Test passed.' : 'Test failed.');
       setTestLog(log);
@@ -359,7 +638,11 @@ export default function GoogleIntegrationsPanel({
       const res = await fetch(apiUrl('/run'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command: 'google' }),
+        body: JSON.stringify({
+          command: 'google',
+          propertyId: effectivePropertyId ?? undefined,
+          state: startUrl.trim() ? { start_url: startUrl.trim() } : undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -399,7 +682,7 @@ export default function GoogleIntegrationsPanel({
 
   const handleDisconnect = async () => {
     try {
-      await fetch(apiUrl('/integrations/google/disconnect'), { method: 'POST' });
+      await fetch(endpoints.disconnect, { method: 'POST' });
       await fetchStatus();
       setToast({ type: 'success', message: 'Disconnected.' });
     } catch (e) {
@@ -412,8 +695,100 @@ export default function GoogleIntegrationsPanel({
   const step1Done = Boolean(hasClientId);
   const step2Done = Boolean(connected);
 
+  const needsProperty = effectivePropertyId == null && !startUrl.trim();
+
   return (
     <div className="space-y-4">
+      <p className="rounded-lg border border-default bg-brand-800/50 px-4 py-2.5 text-xs text-muted-foreground">
+        Google Client ID/Secret and service account keys are stored in the database. Each site keeps its own
+        OAuth connection and Search Console / Analytics property IDs.
+      </p>
+
+      <div className="rounded-xl border border-default bg-brand-800/60 px-4 py-4 sm:px-5 space-y-3">
+        <label htmlFor="googlePropertySelect" className="block text-xs font-medium text-muted-foreground">
+          {s.googlePropertySelectorLabel}
+        </label>
+        <p className="text-xs text-muted-foreground">{s.googlePropertySelectorHint}</p>
+        {loadingPropertyRows ? (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading sites…
+          </div>
+        ) : propertyRows.length === 0 && effectivePropertyId == null ? (
+          <p className="text-sm text-amber-800 dark:text-amber-200">{s.googlePropertySelectorEmpty}</p>
+        ) : propertyRows.length === 0 && startUrl.trim() ? (
+          <p className="text-sm text-muted-foreground">
+            Site: <span className="font-mono text-foreground">{startUrl.trim()}</span>
+            {' — '}
+            Connect will register this site automatically.
+          </p>
+        ) : (
+          <select
+            id="googlePropertySelect"
+            value={String(selectedPropertyId ?? effectivePropertyId ?? '')}
+            onChange={(e) => {
+              const id = parseInt(e.target.value, 10);
+              if (Number.isFinite(id)) void handlePropertySelect(id);
+            }}
+            disabled={syncingProperty}
+            className={selectClassName()}
+          >
+            {propertyRows.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name} ({p.canonical_domain})
+                {p.google_connected ? ` — ${s.googlePropertyConnected}` : ` — ${s.googlePropertyNotConnected}`}
+              </option>
+            ))}
+          </select>
+        )}
+        {syncingProperty ? (
+          <p className="text-xs text-muted-foreground flex items-center gap-2">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            {s.googlePropertySyncSaving}
+          </p>
+        ) : null}
+        {selectedProperty && status ? (
+          <div className="rounded-lg border border-muted/60 bg-brand-900/40 px-3 py-2.5 text-xs space-y-1">
+            <p className="font-medium text-foreground">
+              {format(s.googlePropertyContextTitle, { name: selectedProperty.name })}
+            </p>
+            <p className="text-muted-foreground">
+              {format(s.googlePropertyContextDomain, { domain: selectedProperty.canonical_domain })}
+            </p>
+            {status.connected &&
+            (status as GoogleStatusResponse & { connectedEmail?: string | null }).connectedEmail ? (
+              <p className="text-green-700 dark:text-green-400">
+                {format(s.googlePropertyContextEmail, {
+                  email: String(
+                    (status as GoogleStatusResponse & { connectedEmail?: string | null }).connectedEmail,
+                  ),
+                })}
+              </p>
+            ) : status.connected && selectedProperty.google_connected_email ? (
+              <p className="text-green-700 dark:text-green-400">
+                {format(s.googlePropertyContextEmail, {
+                  email: selectedProperty.google_connected_email,
+                })}
+              </p>
+            ) : (
+              <p className="text-muted-foreground">{s.googlePropertyNotConnected}</p>
+            )}
+            <p className="text-muted-foreground">
+              {format(s.googlePropertyGscGa4, {
+                gsc: status.gscSiteUrl || '—',
+                ga4: status.ga4PropertyId || '—',
+              })}
+            </p>
+          </div>
+        ) : null}
+      </div>
+
+      {needsProperty ? (
+        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
+          Set a Site URL under Crawl settings so this audit can link Google Search Console and Analytics to the
+          correct domain.
+        </p>
+      ) : null}
       {showTitle ? (
         <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-default bg-brand-800/60 px-4 py-4 sm:px-5">
           <div className="flex min-w-0 items-start gap-3">
@@ -531,14 +906,21 @@ export default function GoogleIntegrationsPanel({
                 )}
                 <Button
                   variant="primary"
-                  disabled={!hasClientId}
+                  disabled={!hasClientId || needsProperty}
                   onClick={() => {
-                    const returnTo = encodeURIComponent(
-                      window.location.pathname + window.location.search,
-                    );
-                    window.location.href = apiUrl(
-                      `/integrations/google/auth?returnTo=${returnTo}`,
-                    );
+                    void (async () => {
+                      const pid = await ensurePropertyIdForOAuth();
+                      if (pid == null) {
+                        setToast({
+                          type: 'error',
+                          message:
+                            'Set a Site URL under Crawl settings (or pick a site above), then try Connect again.',
+                        });
+                        return;
+                      }
+                      const returnTo = window.location.pathname + window.location.search;
+                      window.location.href = googlePropertyEndpoints(pid).auth(returnTo);
+                    })();
                   }}
                   className="shrink-0 px-5 py-2.5"
                 >
@@ -557,10 +939,14 @@ export default function GoogleIntegrationsPanel({
               done={Boolean(gscSiteUrl && ga4PropertyId)}
               icon={BarChart3}
             >
+              <p className="rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-950 dark:text-amber-100/90">
+                {s.googleSavePropertiesHint}
+              </p>
+
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-xs text-muted-foreground">Load sites from your connected account.</p>
-                <Button variant="secondary" onClick={() => void loadProperties()} disabled={loadingProps} className="py-2">
-                  {loadingProps ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+                <Button variant="secondary" onClick={() => void loadGoogleLists()} disabled={loadingGoogleLists} className="py-2">
+                  {loadingGoogleLists ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
                   Load properties
                 </Button>
               </div>
@@ -570,15 +956,19 @@ export default function GoogleIntegrationsPanel({
                   <label htmlFor="gscSiteUrl" className="mb-1.5 block text-xs font-medium text-muted-foreground">
                     Search Console site
                   </label>
-                  {properties?.gscSites && properties.gscSites.length > 0 ? (
+                  {googleLists?.gscSites && googleLists.gscSites.length > 0 ? (
                     <select
                       id="gscSiteUrl"
                       value={gscSiteUrl}
                       onChange={(e) => setGscSiteUrl(e.target.value)}
+                      onBlur={() => handlePropertiesBlur()}
                       className={selectClassName()}
                     >
                       <option value="">Select site…</option>
-                      {properties.gscSites.map((site: string) => (
+                      {gscSiteUrl && !googleLists.gscSites.includes(gscSiteUrl) ? (
+                        <option value={gscSiteUrl}>{gscSiteUrl} (saved)</option>
+                      ) : null}
+                      {googleLists.gscSites.map((site: string) => (
                         <option key={site} value={site}>
                           {site}
                         </option>
@@ -590,6 +980,7 @@ export default function GoogleIntegrationsPanel({
                       type="text"
                       value={gscSiteUrl}
                       onChange={(e) => setGscSiteUrl(e.target.value)}
+                      onBlur={() => handlePropertiesBlur()}
                       placeholder="https://www.example.com/"
                       className={`${selectClassName()} font-mono`}
                     />
@@ -600,15 +991,20 @@ export default function GoogleIntegrationsPanel({
                   <label htmlFor="ga4PropertyId" className="mb-1.5 block text-xs font-medium text-muted-foreground">
                     GA4 property ID
                   </label>
-                  {properties?.ga4Properties && properties.ga4Properties.length > 0 ? (
+                  {googleLists?.ga4Properties && googleLists.ga4Properties.length > 0 ? (
                     <select
                       id="ga4PropertyId"
                       value={ga4PropertyId}
                       onChange={(e) => setGa4PropertyId(e.target.value)}
+                      onBlur={() => handlePropertiesBlur()}
                       className={selectClassName()}
                     >
                       <option value="">Select property…</option>
-                      {properties.ga4Properties.map((p) => (
+                      {ga4PropertyId &&
+                      !googleLists.ga4Properties.some((p) => p.id === ga4PropertyId) ? (
+                        <option value={ga4PropertyId}>{ga4PropertyId} (saved)</option>
+                      ) : null}
+                      {googleLists.ga4Properties.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.displayName} ({p.id})
                         </option>
@@ -620,12 +1016,13 @@ export default function GoogleIntegrationsPanel({
                       type="text"
                       value={ga4PropertyId}
                       onChange={(e) => setGa4PropertyId(e.target.value)}
+                      onBlur={() => handlePropertiesBlur()}
                       placeholder="123456789"
                       className={`${selectClassName()} font-mono`}
                     />
                   )}
-                  {properties?.ga4ListError ? (
-                    <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">{properties.ga4ListError}</p>
+                  {googleLists?.ga4ListError ? (
+                    <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">{googleLists.ga4ListError}</p>
                   ) : (
                     <p className="mt-1 text-xs text-muted-foreground">Numeric ID from GA4 Admin → Property settings.</p>
                   )}
@@ -639,6 +1036,7 @@ export default function GoogleIntegrationsPanel({
                     id="dateRange"
                     value={dateRangeDays}
                     onChange={(e) => setDateRangeDays(e.target.value)}
+                    onBlur={() => handlePropertiesBlur()}
                     className={selectClassName()}
                   >
                     <option value="7">Last 7 days</option>
@@ -654,10 +1052,16 @@ export default function GoogleIntegrationsPanel({
                 </p>
               ) : null}
 
-              <div className="flex flex-wrap items-center gap-2 border-t border-muted/60 pt-4">
-                <Button variant="primary" onClick={() => void handleSaveProperties()} disabled={savingProps}>
+              <div className="space-y-3 border-t border-muted/60 pt-4">
+                <PropertiesSaveFeedback state={propertiesSaveState} dirty={propertiesDirty} />
+                <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="primary"
+                  onClick={() => void handleSaveProperties()}
+                  disabled={savingProps || !status?.connected}
+                >
                   {savingProps ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-                  Save properties
+                  {savingProps ? s.googlePropertiesSaving : 'Save properties'}
                 </Button>
                 <Button variant="secondary" onClick={() => void handleTest()} disabled={testing}>
                   {testing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
@@ -672,6 +1076,7 @@ export default function GoogleIntegrationsPanel({
                   {fetching ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
                   Fetch data now
                 </Button>
+                </div>
               </div>
 
               {testLog ? (
@@ -709,34 +1114,40 @@ export default function GoogleIntegrationsPanel({
             </SetupStep>
           ) : null}
 
-          <div className="overflow-hidden rounded-xl border border-default bg-brand-800/40">
-            <button
-              type="button"
-              onClick={() => setShowAdvanced((v) => !v)}
-              className="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-muted-foreground transition-colors hover:bg-brand-900/30 hover:text-foreground sm:px-5"
-              aria-expanded={showAdvanced}
-            >
-              <span>Advanced: paste connection token</span>
-              {showAdvanced ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
-            </button>
-            {showAdvanced ? (
-              <div className="space-y-3 border-t border-muted/60 px-4 py-4 sm:px-5">
-                <InputField
-                  id="refreshToken"
-                  label="Refresh token"
-                  value={refreshToken}
-                  onChange={setRefreshToken}
-                  placeholder="1//0g..."
-                  helper="For tokens obtained outside this app (e.g. another OAuth tool)."
-                  disabled={savingToken}
-                />
-                <Button variant="secondary" onClick={() => void handleSaveRefreshToken()} disabled={savingToken || !refreshToken.trim()}>
-                  {savingToken ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-                  Save token
-                </Button>
-              </div>
-            ) : null}
-          </div>
+          {effectivePropertyId != null ? (
+            <div className="overflow-hidden rounded-xl border border-default bg-brand-800/40">
+              <button
+                type="button"
+                onClick={() => setShowAdvanced((v) => !v)}
+                className="flex w-full items-center justify-between px-4 py-3 text-left text-sm text-muted-foreground transition-colors hover:bg-brand-900/30 hover:text-foreground sm:px-5"
+                aria-expanded={showAdvanced}
+              >
+                <span>Advanced: paste connection token for this site</span>
+                {showAdvanced ? <ChevronUp className="h-4 w-4 shrink-0" /> : <ChevronDown className="h-4 w-4 shrink-0" />}
+              </button>
+              {showAdvanced ? (
+                <div className="space-y-3 border-t border-muted/60 px-4 py-4 sm:px-5">
+                  <InputField
+                    id="refreshToken"
+                    label="Refresh token"
+                    value={refreshToken}
+                    onChange={setRefreshToken}
+                    placeholder="1//0g..."
+                    helper="For tokens obtained outside this app (e.g. another OAuth tool). Saved on this property only."
+                    disabled={savingToken}
+                  />
+                  <Button
+                    variant="secondary"
+                    onClick={() => void handleSaveRefreshToken()}
+                    disabled={savingToken || !refreshToken.trim()}
+                  >
+                    {savingToken ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+                    Save token
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </>
       )}
     </div>

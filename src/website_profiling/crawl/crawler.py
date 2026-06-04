@@ -591,6 +591,7 @@ def run_crawler(
     store_content_excerpt: bool = False,
     content_excerpt_max_chars: int = 4096,
     crawl_stream_to_db: bool = False,
+    property_id: Optional[int] = None,
 ) -> pd.DataFrame:
     """Run crawler and optionally save to CSV/JSON or PostgreSQL. Returns DataFrame."""
     import sys
@@ -628,7 +629,7 @@ def run_crawler(
                     ensure_crawl_tables_cleared(conn)
                 if historical:
                     restore_historical_data(conn, historical)
-                stream_run_id = create_crawl_run(conn, start_url)
+                stream_run_id = create_crawl_run(conn, start_url, property_id=property_id)
             print(f"  Streaming crawl results to DB (run_id={stream_run_id})...", flush=True)
 
     df = crawler.crawl(
@@ -655,7 +656,7 @@ def run_crawler(
                 ensure_crawl_tables_cleared(conn)
             if historical:
                 restore_historical_data(conn, historical)
-            run_id = create_crawl_run(conn, start_url)
+            run_id = create_crawl_run(conn, start_url, property_id=property_id)
             write_crawl(conn, df, crawl_run_id=run_id)
         print("  Crawl DB write complete.", flush=True)
     elif output_db and stream_run_id is not None:

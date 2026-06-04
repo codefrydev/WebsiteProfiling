@@ -1,7 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
 import { loadPipelineConfig, savePipelineConfig } from '@/server/pipelineConfig';
-import { ALL_SCHEMA_KEYS, getFieldByKey, validateRequiredPipelineFields } from '@/lib/pipelineConfigSchema';
+import {
+  ALL_SCHEMA_KEYS,
+  INTERNAL_PIPELINE_KEYS,
+  getFieldByKey,
+  validateRequiredPipelineFields,
+} from '@/lib/pipelineConfigSchema';
+import { resolvePropertyIdFromStartUrl } from '@/server/propertiesDb';
 import type {
   ApiRouteHandler,
   PipelineConfigPutBody,
@@ -58,23 +64,34 @@ export const PUT: ApiRouteHandler = async (request: NextRequest): Promise<Respon
     return NextResponse.json({ error: 'Missing state object' }, { status: 400 });
   }
 
+  const internalKeySet = new Set<string>(INTERNAL_PIPELINE_KEYS);
   const state: PipelineConfigState = {};
   for (const [key, rawValue] of Object.entries(rawState)) {
     if (key.startsWith('llm_')) continue;
     if (!ALL_SCHEMA_KEYS.has(key)) continue;
     const field = getFieldByKey(key);
-    if (!field) continue;
-
-    if (field.type === 'bool') {
-      state[key] = rawValue === true || rawValue === 'true';
-    } else if (field.type === 'tristate') {
-      const s = String(rawValue ?? 'auto').toLowerCase();
-      if (s === 'true') state[key] = 'true';
-      else if (s === 'false') state[key] = 'false';
-      else state[key] = 'auto';
-    } else {
+    if (field) {
+      if (field.type === 'bool') {
+        state[key] = rawValue === true || rawValue === 'true';
+      } else if (field.type === 'tristate') {
+        const s = String(rawValue ?? 'auto').toLowerCase();
+        if (s === 'true') state[key] = 'true';
+        else if (s === 'false') state[key] = 'false';
+        else state[key] = 'auto';
+      } else {
+        state[key] = rawValue == null ? '' : String(rawValue);
+      }
+      continue;
+    }
+    if (internalKeySet.has(key)) {
       state[key] = rawValue == null ? '' : String(rawValue);
     }
+  }
+
+  const startUrl = String(state.start_url || '').trim();
+  if (startUrl) {
+    const resolvedPropertyId = await resolvePropertyIdFromStartUrl(startUrl);
+    state.active_property_id = String(resolvedPropertyId);
   }
 
   const safeUnknownKeys: PipelineUnknownKey[] = Array.isArray(unknownKeys)

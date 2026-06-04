@@ -159,7 +159,7 @@ export function startPipelineJob(
 
   const proc = spawn(pythonExe, args, {
     cwd: repoRoot,
-    env: getPipelineSpawnEnv(repoRoot),
+    env: getPipelineSpawnEnv(repoRoot, options.propertyId ?? null),
     shell: false,
   });
 

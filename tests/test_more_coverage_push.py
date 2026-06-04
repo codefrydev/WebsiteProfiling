@@ -122,7 +122,7 @@ def test_keywords_main_flow_enrichment_triggered(monkeypatch):
 
     called = {"enrich": 0}
     monkeypatch.setattr(keywords_cmd, "require_start_url", lambda *_a, **_k: "https://a.com")
-    monkeypatch.setattr(keywords_cmd, "google_db_has_gsc", lambda: True)
+    monkeypatch.setattr(keywords_cmd, "google_db_has_gsc", lambda _cfg=None: True)
     monkeypatch.setitem(
         __import__("sys").modules,
         "website_profiling.tools.keywords",
@@ -157,7 +157,7 @@ def test_google_db_has_gsc_true_and_false(monkeypatch):
     monkeypatch.setitem(
         __import__("sys").modules,
         "website_profiling.db.storage",
-        types.SimpleNamespace(_parse_json_field=lambda v: v),
+        types.SimpleNamespace(_parse_row_json=lambda row: row.get("data") if isinstance(row, dict) else row),
     )
     assert config_resolve.google_db_has_gsc() is True
 
@@ -405,12 +405,12 @@ def test_google_run_google_test_paths(monkeypatch):
         "website_profiling.integrations.google.auth",
         _types.SimpleNamespace(
             build_credentials=lambda *_a, **_k: object(),
-            read_secrets=lambda *_a, **_k: {"gscSiteUrl": "", "ga4PropertyId": ""},
+            resolve_google_targets=lambda *, property_id=None: ("", "", 28),
         ),
     )
     # no ids configured => warnings => exit 1
     with pytest.raises(SystemExit) as e:
-        google_cmd._run_google_test(None)
+        google_cmd._run_google_test(1)
     assert e.value.code == 1
 
 

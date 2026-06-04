@@ -126,7 +126,12 @@ export default function PipelineSettingsPanel({
       panels.push({
         id: 'integrations',
         label: s.settingsTabIntegrations,
-        content: <GoogleIntegrationsPanel initialToast={googleIntegrationsToast} />,
+        content: (
+          <GoogleIntegrationsPanel
+            initialToast={googleIntegrationsToast}
+            startUrl={String(configState.start_url || '')}
+          />
+        ),
       });
     }
 

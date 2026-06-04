@@ -8,6 +8,7 @@ import pandas as pd
 
 from ..config import get_bool, get_float, get_int, get_list
 from .config_resolve import (
+    active_property_id_from_cfg,
     cleanup_lighthouse_work_dir,
     google_db_has_gsc,
     lighthouse_work_dir,
@@ -96,6 +97,7 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
     store_content_excerpt = get_bool(cfg, "store_content_excerpt", False)
     content_excerpt_max_chars = get_int(cfg, "content_excerpt_max_chars", 4096) or 4096
     crawl_stream_to_db = get_bool(cfg, "crawl_stream_to_db", False)
+    property_id = active_property_id_from_cfg(cfg)
     print("Crawling...")
     run_crawler(
         start_url=start_url,
@@ -115,6 +117,7 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
         store_content_excerpt=store_content_excerpt,
         content_excerpt_max_chars=content_excerpt_max_chars,
         crawl_stream_to_db=crawl_stream_to_db,
+        property_id=property_id,
     )
     print("[Crawl] Done.", flush=True)
     print("Crawl results: PostgreSQL")
@@ -215,7 +218,7 @@ def _run_report(cfg: dict, use_database: bool) -> None:
     print("[Report] Done.", flush=True)
     print(f"Report written: {out}")
 
-    if should_enrich_keywords_after_report(cfg) and google_db_has_gsc():
+    if should_enrich_keywords_after_report(cfg) and google_db_has_gsc(cfg):
         print("[Keywords] Post-audit keyword research (Search Console data found)...", flush=True)
         from ..integrations.google.keyword_enrich import run_enrichment
 

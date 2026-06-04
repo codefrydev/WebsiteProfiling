@@ -1,45 +1,61 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { KeywordRow, KeywordReportData, ViewProps } from '@/types';
-import type { CannibalisationItem } from '@/types/components';
-import { Key, Search, AlertCircle, Download, Settings2, Play } from 'lucide-react';
+import type { CannibalisationItem, KeywordHistoryMap } from '@/types/components';
+import { Key, Settings2, Play } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useReport } from '../context/useReport';
+import { useKeywordBrandQuery } from '@/hooks/useKeywordBrandQuery';
+import { filterKeywordRowsForDomain } from '@/lib/filterKeywordsForDomain';
 import { apiUrl } from '../lib/publicBase';
 import { goToPipeline } from '../lib/pipelineReturn';
 import { strings, format } from '../lib/strings';
 import { PageLayout, Card, Button } from '../components';
-import SummaryCard from '../components/google/SummaryCard';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import { filterBySearch } from '../components/google/tableUtils';
 import { syncChartJsDefaultsColor } from '../utils/chartJsDefaults';
-import { IntentMixChart, SourceMixChart } from '../components/keywordsExplorer/KeywordCharts';
 import { buildKeywordColumns } from '../components/keywordsExplorer/KeywordTableColumns';
 import {
-  SOURCE_CONFIG,
   deriveBrandFromUrl,
   exportKeywordCsv,
-  filterRowsByTab,
 } from '../components/keywordsExplorer/keywordTableUtils';
 import {
   CannibalisationPanel,
   ByPagePanel,
   BulkSeedPanel,
 } from '../components/keywordsExplorer/KeywordPanels';
+import KeywordOverviewPanel from '../components/keywordsExplorer/KeywordOverviewPanel';
+import KeywordTabBanner from '../components/keywordsExplorer/KeywordTabBanner';
+import KeywordFiltersBar from '../components/keywordsExplorer/KeywordFiltersBar';
+import KeywordEmptyState from '../components/keywordsExplorer/KeywordEmptyState';
+import KeywordExplorerChrome from '../components/keywordsExplorer/KeywordExplorerChrome';
+import {
+  type KeywordTabId,
+  type KeywordTableTabId,
+  KEYWORD_TABLE_TAB_IDS,
+  tabRowCount,
+  defaultSortForTab,
+  baseRowsForTab,
+  isTableTab,
+} from '../components/keywordsExplorer/keywordTabMeta';
 
-const TAB_IDS = ['overview', 'all', 'questions', 'quickwins', 'lostclicks', 'opportunities', 'cannib', 'bypage'] as const;
-type KeywordTabId = (typeof TAB_IDS)[number];
+const TAB_IDS: KeywordTabId[] = ['overview', ...KEYWORD_TABLE_TAB_IDS, 'cannib', 'bypage'];
 
 const EMPTY_ROWS: KeywordRow[] = [];
-const EMPTY_HISTORY: Record<string, unknown> = {};
+const EMPTY_HISTORY: KeywordHistoryMap = {};
 
 export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
   const router = useRouter();
   const { data, startUrlByRunId, selectedReportId } = useReport();
   const ke = strings.views.keywordsExplorer;
+  const brandQuery = useKeywordBrandQuery();
   const kwData: KeywordReportData | undefined = data?.keywords;
-  const rows: KeywordRow[] = Array.isArray(kwData?.rows) ? kwData.rows : EMPTY_ROWS;
+  const rawRows: KeywordRow[] = Array.isArray(kwData?.rows) ? kwData.rows : EMPTY_ROWS;
+  const rows = useMemo(
+    () => filterKeywordRowsForDomain(rawRows, brandQuery),
+    [rawRows, brandQuery],
+  );
 
   const startUrl =
     (selectedReportId != null ? startUrlByRunId.get(selectedReportId) : undefined) ||
@@ -54,7 +70,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [brandScopedExpansion, setBrandScopedExpansion] = useState(true);
   const [showSeedExpander, setShowSeedExpander] = useState(false);
-  const [historyByKeyword, setHistoryByKeyword] = useState({});
+  const [historyByKeyword, setHistoryByKeyword] = useState<KeywordHistoryMap>({});
 
   const tabFilterOptions = useMemo(
     () => ({ brandName, brandScoped: brandScopedExpansion }),
@@ -80,20 +96,43 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
   );
   const lostClickCount = useMemo(() => rows.filter((r) => r.lost_clicks).length, [rows]);
   const questionCount = useMemo(
-    () => filterRowsByTab(rows, 'questions', tabFilterOptions).length,
+    () => baseRowsForTab('questions', rows, tabFilterOptions).length,
     [rows, tabFilterOptions],
   );
   const opportunityCount = useMemo(
-    () => filterRowsByTab(rows, 'opportunities', tabFilterOptions).length,
+    () => baseRowsForTab('opportunities', rows, tabFilterOptions).length,
     [rows, tabFilterOptions],
   );
   const cannibItems: CannibalisationItem[] = (kwData?.cannibalisation as CannibalisationItem[] | undefined) ?? [];
 
+  const tabCounts = useMemo(
+    () => ({
+      questions: questionCount,
+      quickwins: quickWinCount,
+      lostclicks: lostClickCount,
+      opportunities: opportunityCount,
+      cannib: cannibItems.length,
+      pages: new Set(rows.map((r) => r.gsc_url).filter(Boolean)).size,
+    }),
+    [questionCount, quickWinCount, lostClickCount, opportunityCount, cannibItems.length, rows],
+  );
+
+  const hasActiveFilters = !!(searchQuery || intentFilter || brandedFilter || sourceFilter);
+
+  const clearFilters = useCallback(() => {
+    setSearchQuery('');
+    setIntentFilter('');
+    setBrandedFilter('');
+    setSourceFilter('');
+  }, []);
+
   const filteredRows = useMemo(() => {
-    let base =
-      activeTab === 'overview' || activeTab === 'all'
-        ? rows
-        : filterRowsByTab(rows, activeTab, tabFilterOptions);
+    let base: KeywordRow[];
+    if (activeTab === 'overview' || !isTableTab(activeTab)) {
+      base = rows;
+    } else {
+      base = baseRowsForTab(activeTab, rows, tabFilterOptions);
+    }
 
     base = filterBySearch(base, searchQuery, 'keyword');
     if (intentFilter) base = base.filter((r) => r.intent === intentFilter);
@@ -105,13 +144,18 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
   }, [rows, activeTab, tabFilterOptions, searchQuery, intentFilter, brandedFilter, sourceFilter]);
 
   const tableRows = useMemo(() => {
-    if (['overview', 'cannib', 'bypage'].includes(activeTab)) return [];
+    if (!isTableTab(activeTab)) return [];
     return filteredRows;
   }, [activeTab, filteredRows]);
 
+  const tabBaseCount = useMemo(() => {
+    if (!isTableTab(activeTab)) return 0;
+    return baseRowsForTab(activeTab, rows, tabFilterOptions).length;
+  }, [activeTab, rows, tabFilterOptions]);
+
   const gscKeywordsForHistory = useMemo(() => {
-    const seen = new Set();
-    const list = [];
+    const seen = new Set<string>();
+    const list: string[] = [];
     for (const r of tableRows) {
       if (r.gsc_position == null) continue;
       const kw = String(r.keyword || '').trim();
@@ -132,11 +176,15 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
     fetch(apiUrl('/integrations/google/keywords/history/batch'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ keywords: gscKeywordsForHistory, limit: 30 }),
+      body: JSON.stringify({
+        keywords: gscKeywordsForHistory,
+        limit: 30,
+        ...(brandQuery ? { domain: brandQuery } : {}),
+      }),
     })
       .then((res) => res.json())
       .then((payload) => {
-        if (!cancelled) setHistoryByKeyword(payload.histories || {});
+        if (!cancelled) setHistoryByKeyword((payload.histories || {}) as KeywordHistoryMap);
       })
       .catch(() => {
         if (!cancelled) setHistoryByKeyword(EMPTY_HISTORY);
@@ -144,17 +192,15 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
     return () => {
       cancelled = true;
     };
-  }, [gscKeywordsForHistory]);
+  }, [gscKeywordsForHistory, brandQuery]);
 
   const columns = useMemo(
     () => buildKeywordColumns(showParentTopic, showTrend, historyByKeyword, ke),
     [showParentTopic, showTrend, historyByKeyword, ke],
   );
 
-  const paginationLabels = ke.table;
-
   const insights = useMemo(() => {
-    const bullets = [];
+    const bullets: string[] = [];
     const topOpp = [...rows]
       .filter((r) => (r.opportunity_clicks || 0) > 0)
       .sort((a, b) => (b.opportunity_clicks || 0) - (a.opportunity_clicks || 0))[0];
@@ -178,27 +224,55 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
     [rows],
   );
 
-  const headerMeta = kwData?.fetched_at ? (
-    <span>
-      {' '}
-      &middot; {format(ke.subtitleWithDate, { date: new Date(String(kwData.fetched_at)).toLocaleString() })}
-    </span>
-  ) : null;
+  const enrichedAtLabel = kwData?.fetched_at
+    ? new Date(String(kwData.fetched_at)).toLocaleString()
+    : null;
 
-  const tabBadges: Partial<Record<KeywordTabId, number | null>> = {
-    questions: questionCount || null,
-    quickwins: quickWinCount || null,
-    lostclicks: lostClickCount || null,
-    opportunities: opportunityCount || null,
-    cannib: cannibItems.length || null,
-  };
+  const tabBadges = useMemo(() => {
+    const badges: Partial<Record<KeywordTabId, number | null>> = {};
+    for (const id of TAB_IDS) {
+      badges[id] = tabRowCount(id, rows, tabFilterOptions, tabCounts);
+    }
+    return badges;
+  }, [rows, tabFilterOptions, tabCounts]);
 
   const showBrandScopeUi =
     brandName && ['questions', 'opportunities'].includes(activeTab);
 
-  const showFilters = !['cannib', 'bypage', 'overview'].includes(activeTab);
-  const defaultSort =
-    activeTab === 'quickwins' ? 'opportunity_clicks' : activeTab === 'lostclicks' ? 'lost_clicks' : 'traffic_potential';
+  const bannerCount = useMemo(() => {
+    if (activeTab === 'cannib') return cannibItems.length;
+    if (activeTab === 'bypage') return tabCounts.pages;
+    if (isTableTab(activeTab)) return tableRows.length;
+    return null;
+  }, [activeTab, cannibItems.length, tabCounts.pages, tableRows.length]);
+
+  const navigateTab = useCallback((tab: KeywordTabId) => setActiveTab(tab), []);
+
+  const tableEmptyContent = useMemo(() => {
+    if (!isTableTab(activeTab) || tableRows.length > 0) return null;
+    const te = ke.tabEmpty as Record<string, string> & {
+      filteredTitle: string;
+      filteredDescription: string;
+      filteredHint: string;
+    };
+    if (hasActiveFilters && tabBaseCount > 0) {
+      return (
+        <KeywordEmptyState
+          title={te.filteredTitle}
+          description={te.filteredDescription}
+          hint={te.filteredHint}
+          action={{ label: ke.filters.clear, onClick: clearFilters }}
+        />
+      );
+    }
+    const tabKey = activeTab as KeywordTableTabId;
+    return (
+      <KeywordEmptyState
+        title={ke.table.noData}
+        description={te[tabKey] || te.all}
+      />
+    );
+  }, [activeTab, tableRows.length, hasActiveFilters, tabBaseCount, ke, clearFilters]);
 
   if (!kwData || rows.length === 0) {
     return (
@@ -237,7 +311,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
           </Card>
         )}
         <div className="mt-8 max-w-3xl mx-auto">
-          <BulkSeedPanel />
+          <BulkSeedPanel brandQuery={brandQuery} />
         </div>
       </PageLayout>
     );
@@ -245,94 +319,31 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
 
   return (
     <PageLayout>
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-bright mb-2 flex items-center gap-2">
-            <Key className="h-7 w-7 text-link shrink-0" />
-            {ke.title}
-          </h1>
-          <p className="text-muted-foreground">
-            {ke.subtitle}
-            {headerMeta}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {!hasGscConnected && onOpenIntegrations && (
-            <button
-              type="button"
-              onClick={onOpenIntegrations}
-              className="px-3 py-1.5 text-xs border border-blue-500/50 text-link rounded-lg hover:bg-blue-500/10 flex items-center gap-1"
-            >
-              <Settings2 className="w-3.5 h-3.5" />
-              {ke.connectGoogle}
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => setShowSeedExpander((v) => !v)}
-            className={`px-3 py-1.5 text-xs border rounded-lg flex items-center gap-1 transition-colors ${
-              showSeedExpander
-                ? 'border-accent bg-accent/10 text-accent'
-                : 'border-default text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <Search className="w-3.5 h-3.5" />
-            {ke.expandSeeds}
-          </button>
-          <button
-            type="button"
-            onClick={() => exportKeywordCsv(tableRows.length ? tableRows : filteredRows)}
-            className="px-3 py-1.5 text-xs bg-brand-800 border border-default rounded-lg text-muted-foreground hover:text-foreground flex items-center gap-1"
-          >
-            <Download className="w-3.5 h-3.5" />
-            {ke.exportCsv}
-          </button>
-        </div>
-      </div>
+      <KeywordExplorerChrome
+        title={ke.title}
+        subtitle={ke.subtitle}
+        enrichedAt={enrichedAtLabel}
+        siteUrl={String(data?.google?.gsc?.site_url || startUrl || '').trim() || undefined}
+        hasGscConnected={hasGscConnected}
+        showSeedExpander={showSeedExpander}
+        onToggleSeeds={() => setShowSeedExpander((v) => !v)}
+        onExportCsv={() => exportKeywordCsv(tableRows.length ? tableRows : filteredRows)}
+        onOpenIntegrations={onOpenIntegrations}
+        activeTab={activeTab}
+        onNavigateTab={navigateTab}
+        kpis={{
+          total: rows.length,
+          totalDisplay: (kwData.total_keywords || rows.length).toLocaleString(),
+          sourceCount,
+          gscCount: kwData.gsc_keyword_count || 0,
+          quickWins: quickWinCount,
+          cannib: cannibItems.length,
+          lostClicks: lostClickCount,
+          questions: questionCount,
+        }}
+      />
 
-      <p
-        className={`text-xs rounded-lg px-3 py-2 mb-6 border ${
-          hasGscConnected
-            ? 'text-muted-foreground border-emerald-500/30 bg-emerald-500/5'
-            : 'text-amber-800 dark:text-amber-300 border-amber-500/30 bg-amber-500/10'
-        }`}
-      >
-        {hasGscConnected ? ke.gscBanner : ke.noGscBanner}
-      </p>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <SummaryCard
-          label={ke.kpi.total}
-          value={(kwData.total_keywords || rows.length).toLocaleString()}
-          sub={format(ke.kpi.totalSub, { n: sourceCount })}
-        />
-        <SummaryCard
-          label={ke.kpi.gsc}
-          value={(kwData.gsc_keyword_count || 0).toLocaleString()}
-          sub={ke.kpi.gscSub}
-        />
-        <SummaryCard label={ke.kpi.quickWins} value={quickWinCount.toLocaleString()} sub={ke.kpi.quickWinsSub} />
-        <SummaryCard label={ke.kpi.cannib} value={cannibItems.length.toLocaleString()} sub={ke.kpi.cannibSub} />
-      </div>
-
-      {!hasGscConnected && (
-        <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-center gap-3 text-sm mb-6">
-          <AlertCircle className="w-4 h-4 text-link shrink-0" />
-          <span className="text-foreground flex-1">{ke.connectBanner}</span>
-          {onOpenIntegrations && (
-            <button
-              type="button"
-              onClick={onOpenIntegrations}
-              className="px-3 py-1.5 bg-accent text-white text-xs rounded-lg hover:bg-accent/90 whitespace-nowrap flex items-center gap-1.5 shrink-0"
-            >
-              <Settings2 className="w-3.5 h-3.5" />
-              {ke.connectGoogle}
-            </button>
-          )}
-        </div>
-      )}
-
-      {showSeedExpander && <BulkSeedPanel />}
+      {showSeedExpander && <BulkSeedPanel brandQuery={brandQuery} />}
 
       {showBrandScopeUi && (
         <p className="text-xs rounded-lg px-3 py-2 mb-4 border border-accent/30 bg-accent/5 text-muted-foreground">
@@ -343,7 +354,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
       <div className="border-b border-default mb-6" role="tablist" aria-label={ke.title}>
         <div className="flex gap-0 overflow-x-auto">
           {TAB_IDS.map((id) => {
-            const badge = tabBadges[id as KeywordTabId];
+            const badge = tabBadges[id];
             return (
               <button
                 key={id}
@@ -359,7 +370,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
                     : 'border-transparent text-muted-foreground hover:text-foreground'
                 }`}
               >
-                {tabLabels[id as KeywordTabId]}
+                {tabLabels[id]}
                 {(badge ?? 0) > 0 && (
                   <span
                     className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold tabular-nums ${
@@ -376,124 +387,65 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
       </div>
 
       {activeTab === 'overview' && (
-        <div id="kw-tab-overview" role="tabpanel" className="space-y-6 mb-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <IntentMixChart rows={rows} />
-            <SourceMixChart rows={rows} />
-          </div>
-          {insights.length > 0 && (
-            <Card>
-              <h3 className="text-sm font-bold text-foreground mb-3">{ke.insights.title}</h3>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                {insights.map((line, i) => (
-                  <li key={i} className="flex gap-2">
-                    <span className="text-link shrink-0">•</span>
-                    <span>{line}</span>
-                  </li>
-                ))}
-              </ul>
-            </Card>
-          )}
-        </div>
+        <KeywordOverviewPanel
+          rows={rows}
+          insights={insights}
+          pageCount={tabCounts.pages}
+          counts={{
+            total: rows.length,
+            quickwins: quickWinCount,
+            lostclicks: lostClickCount,
+            questions: questionCount,
+            opportunities: opportunityCount,
+            cannib: cannibItems.length,
+          }}
+          onNavigate={navigateTab}
+        />
       )}
 
-      {showFilters && (
-        <div className="flex flex-wrap gap-2 items-center mb-4">
-          {showBrandScopeUi && (
-            <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={brandScopedExpansion}
-                onChange={(e) => setBrandScopedExpansion(e.target.checked)}
-                className="rounded border-default"
+      {activeTab !== 'overview' && (
+        <div id={`kw-tab-${activeTab}`} role="tabpanel" className="mb-6">
+        <Card padding="none" className="overflow-hidden">
+          <KeywordTabBanner tab={activeTab} count={bannerCount} />
+
+          {isTableTab(activeTab) && (
+            <KeywordFiltersBar
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              intentFilter={intentFilter}
+              onIntentChange={setIntentFilter}
+              brandedFilter={brandedFilter}
+              onBrandedChange={setBrandedFilter}
+              sourceFilter={sourceFilter}
+              onSourceChange={setSourceFilter}
+              resultCount={tableRows.length}
+              showBrandScope={!!showBrandScopeUi}
+              brandScoped={brandScopedExpansion}
+              onBrandScopedChange={setBrandScopedExpansion}
+            />
+          )}
+
+          {activeTab === 'cannib' ? (
+            <CannibalisationPanel items={cannibItems} />
+          ) : activeTab === 'bypage' ? (
+            <ByPagePanel rows={rows} ke={ke} brandQuery={brandQuery} />
+          ) : tableEmptyContent ? (
+            tableEmptyContent
+          ) : (
+            <div className="p-4">
+              <SortablePaginatedTable
+                columns={columns}
+                rows={tableRows}
+                defaultSort={defaultSortForTab(activeTab)}
+                rowKeyField="keyword"
+                emptyMessage={ke.table.noData}
+                paginationLabels={ke.table}
               />
-              {ke.brandScopeToggle}
-            </label>
+            </div>
           )}
-          <div className="flex items-center gap-1.5 bg-brand-800 border border-default rounded-lg px-2.5 py-1.5">
-            <Search className="w-3.5 h-3.5 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder={ke.filters.searchPlaceholder}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent text-sm text-foreground placeholder-muted-foreground focus:outline-none w-48 sm:w-56"
-            />
-          </div>
-          <select
-            value={intentFilter}
-            onChange={(e) => setIntentFilter(e.target.value)}
-            className="bg-brand-800 border border-default rounded-lg px-2.5 py-1.5 text-sm text-foreground focus:outline-none cursor-pointer"
-          >
-            <option value="">{ke.filters.allIntents}</option>
-            <option value="informational">Informational</option>
-            <option value="commercial">Commercial</option>
-            <option value="transactional">Transactional</option>
-            <option value="navigational">Navigational</option>
-          </select>
-          <select
-            value={brandedFilter}
-            onChange={(e) => setBrandedFilter(e.target.value)}
-            className="bg-brand-800 border border-default rounded-lg px-2.5 py-1.5 text-sm text-foreground focus:outline-none cursor-pointer"
-          >
-            <option value="">{ke.filters.allBranded}</option>
-            <option value="branded">{ke.filters.brandedOnly}</option>
-            <option value="nonbranded">{ke.filters.nonBranded}</option>
-          </select>
-          <select
-            value={sourceFilter}
-            onChange={(e) => setSourceFilter(e.target.value)}
-            className="bg-brand-800 border border-default rounded-lg px-2.5 py-1.5 text-sm text-foreground focus:outline-none cursor-pointer"
-          >
-            <option value="">{ke.filters.allSources}</option>
-            {Object.entries(SOURCE_CONFIG).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v.label}
-              </option>
-            ))}
-          </select>
-          {(searchQuery || intentFilter || brandedFilter || sourceFilter) && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('');
-                setIntentFilter('');
-                setBrandedFilter('');
-                setSourceFilter('');
-              }}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              {ke.filters.clear}
-            </button>
-          )}
-          <span className="ml-auto text-xs text-muted-foreground tabular-nums">
-            {format(ke.filters.count, { count: tableRows.length })}
-          </span>
+        </Card>
         </div>
       )}
-
-      <Card padding="none" className="overflow-hidden mb-6">
-        {activeTab === 'cannib' ? (
-          <CannibalisationPanel items={cannibItems} />
-        ) : activeTab === 'bypage' ? (
-          <ByPagePanel rows={rows} ke={ke} />
-        ) : activeTab === 'overview' ? (
-          <div className="p-6 text-center text-sm text-muted-foreground">
-            {format(ke.filters.count, { count: rows.length })} — use the tabs above to explore keyword lists.
-          </div>
-        ) : (
-          <div className="p-4">
-            <SortablePaginatedTable
-              columns={columns}
-              rows={tableRows}
-              defaultSort={defaultSort}
-              rowKeyField="keyword"
-              emptyMessage={ke.table.noData}
-              paginationLabels={paginationLabels}
-            />
-          </div>
-        )}
-      </Card>
 
       {kwData.fetched_at && (
         <p className="text-xs text-muted-foreground">

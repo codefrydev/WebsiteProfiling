@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
-import { writeSecrets, getPublicStatus } from '@/server/googleSecrets';
+import {
+  getGoogleAppPublicStatus,
+  saveGoogleAppSettings,
+} from '@/server/googleAppSettings';
 import type { ApiRouteHandler, GoogleCredentialsUploadBody, GoogleServiceAccount } from '@/types/api';
 
 export const runtime = 'nodejs';
@@ -15,10 +18,6 @@ function isServiceAccount(value: unknown): value is GoogleServiceAccount {
   );
 }
 
-/**
- * POST /api/integrations/google/credentials/upload
- * Accepts a JSON body with { fileContent: "<stringified service account JSON>" }
- */
 export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Response> => {
   const denied = forbiddenIfNotLocal(request);
   if (denied) return denied;
@@ -49,8 +48,9 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
       );
     }
 
-    writeSecrets({ authMode: 'service_account', serviceAccount: parsed });
-    return NextResponse.json({ ok: true, status: getPublicStatus() });
+    await saveGoogleAppSettings({ serviceAccount: parsed });
+    const status = await getGoogleAppPublicStatus();
+    return NextResponse.json({ ok: true, status });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return NextResponse.json({ error: msg }, { status: 500 });

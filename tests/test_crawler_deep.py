@@ -134,7 +134,7 @@ def test_run_crawler_streaming_db_path(monkeypatch):
     monkeypatch.setattr(mod, "Crawler", FakeCrawler)
     fake_db = types.SimpleNamespace(
         backup_db_if_exists=lambda: None,
-        create_crawl_run=lambda _c, _u: 10,
+        create_crawl_run=lambda _c, _u, property_id=None: 10,
         db_session=lambda: _Ctx(),
         read_historical_data=lambda: {},
         restore_historical_data=lambda *_a, **_k: None,

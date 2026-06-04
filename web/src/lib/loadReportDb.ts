@@ -6,6 +6,8 @@ import type {
   ReportLink,
   ReportPayload,
 } from '@/types/report';
+import { normalizeDomainQueryParam } from '@/lib/domainSlug';
+import { googlePayloadMatchesDomain, stripGoogleIfDomainMismatch } from '@/lib/filterGoogleForDomain';
 
 async function crawlRunStartUrlsMap(client: PoolClient): Promise<Map<number, string>> {
   const m = new Map<number, string>();
@@ -75,9 +77,12 @@ export async function getCrawlRunSummaries(client: PoolClient): Promise<CrawlRun
 
 function parseJsonField(val: unknown): Record<string, unknown> {
   if (val == null) return {};
-  if (typeof val === 'object' && !Array.isArray(val)) return val as Record<string, unknown>;
+  if (typeof val === 'object' && !Array.isArray(val)) {
+    return val as Record<string, unknown>;
+  }
+  if (typeof val !== 'string') return {};
   try {
-    const parsed: unknown = JSON.parse(String(val));
+    const parsed: unknown = JSON.parse(val);
     if (parsed != null && typeof parsed === 'object' && !Array.isArray(parsed)) {
       return parsed as Record<string, unknown>;
     }
@@ -112,11 +117,17 @@ export async function listReportsFromDatabase(client: PoolClient): Promise<Repor
 /** Latest google_data row, payload-safe (no gsc_full / ga4_full blobs). */
 export async function readLatestGooglePayload(
   client: PoolClient,
+  propertyId: number | null = null,
 ): Promise<Record<string, unknown> | null> {
   try {
-    const { rows } = await client.query(
-      'SELECT data FROM google_data ORDER BY id DESC LIMIT 1',
-    );
+    const { rows } =
+      propertyId != null
+        ? await client.query(
+            `SELECT data FROM google_data
+             WHERE property_id = $1 ORDER BY id DESC LIMIT 1`,
+            [propertyId],
+          )
+        : { rows: [] as { data: unknown }[] };
     if (!rows.length) return null;
     const raw = parseJsonField(rows[0].data);
     if (!raw || typeof raw !== 'object') return null;
@@ -129,10 +140,14 @@ export async function readLatestGooglePayload(
 
 export async function readLatestKeywordPayload(
   client: PoolClient,
+  propertyId: number | null = null,
 ): Promise<Record<string, unknown> | null> {
+  if (propertyId == null) return null;
   try {
     const { rows } = await client.query(
-      'SELECT data FROM keyword_data ORDER BY id DESC LIMIT 1',
+      `SELECT data FROM keyword_data
+       WHERE property_id = $1 ORDER BY id DESC LIMIT 1`,
+      [propertyId],
     );
     if (!rows.length) return null;
     const raw = parseJsonField(rows[0].data);
@@ -147,21 +162,80 @@ export async function readLatestKeywordPayload(
   }
 }
 
+async function lookupPropertyIdByDomain(
+  client: PoolClient,
+  domainRaw: string,
+): Promise<number | null> {
+  const normalized = normalizeDomainQueryParam(domainRaw);
+  if (!normalized) return null;
+  const candidates = [
+    normalized,
+    normalized.startsWith('www.') ? normalized.slice(4) : `www.${normalized}`,
+  ];
+  try {
+    for (const domain of candidates) {
+      const { rows } = await client.query<{ id: string }>(
+        'SELECT id FROM properties WHERE canonical_domain = $1',
+        [domain],
+      );
+      const id = rows[0]?.id;
+      if (id != null) return Number(id);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function propertyIdForPayload(
+  client: PoolClient,
+  payload: ReportPayload,
+  domainSlug?: string | null,
+): Promise<number | null> {
+  const fromQuery = domainSlug ? await lookupPropertyIdByDomain(client, domainSlug) : null;
+  if (fromQuery != null) return fromQuery;
+
+  const domain = String(
+    (payload as ReportPayload & { canonical_domain?: string }).canonical_domain || '',
+  )
+    .trim()
+    .toLowerCase();
+  if (!domain) return null;
+  return lookupPropertyIdByDomain(client, domain);
+}
+
 export async function mergeSidecarPayloadData(
   client: PoolClient,
   payload: ReportPayload,
+  domainSlug?: string | null,
 ): Promise<ReportPayload> {
-  const merged: ReportPayload = { ...payload };
-  const google = await readLatestGooglePayload(client);
-  if (google) merged.google = google;
-  const keywords = await readLatestKeywordPayload(client);
-  if (keywords) merged.keywords = keywords;
+  let merged: ReportPayload = { ...payload };
+  const payloadDomain = (payload as ReportPayload & { canonical_domain?: string }).canonical_domain;
+  const scopedDomain =
+    domainSlug ?? (payloadDomain != null ? String(payloadDomain) : null);
+  const propertyId = await propertyIdForPayload(client, payload, domainSlug);
+
+  const google = await readLatestGooglePayload(client, propertyId);
+  if (google) {
+    merged.google = google as ReportPayload['google'];
+  } else if (scopedDomain && merged.google && !googlePayloadMatchesDomain(merged.google, scopedDomain)) {
+    const { google: _drop, ...rest } = merged;
+    merged = rest as ReportPayload;
+  }
+
+  const keywords = await readLatestKeywordPayload(client, propertyId);
+  if (keywords) merged.keywords = keywords as ReportPayload['keywords'];
+
+  if (scopedDomain) {
+    merged = stripGoogleIfDomainMismatch(merged, scopedDomain);
+  }
   return merged;
 }
 
 export async function readReportPayloadFromDatabase(
   client: PoolClient,
   reportId: number | null = null,
+  domainSlug?: string | null,
 ): Promise<ReportPayload> {
   let row;
   if (reportId != null) {
@@ -177,7 +251,7 @@ export async function readReportPayloadFromDatabase(
     throw new Error(reportId != null ? 'Report not found' : 'No report_payload in DB');
   }
   const payload = parseJsonField(row.data) as ReportPayload;
-  return mergeSidecarPayloadData(client, payload);
+  return mergeSidecarPayloadData(client, payload, domainSlug);
 }
 
 type StatusBucketKey = 's2xx' | 's3xx' | 's4xx' | 's5xx' | 'other';
@@ -283,6 +357,61 @@ export async function readCrawlPreviewPayload(
     },
     categories: [],
   };
+}
+
+export interface DeletePortfolioItemOptions {
+  reportId?: number | null;
+  crawlRunId?: number | null;
+}
+
+export interface DeletePortfolioItemResult {
+  deletedReport: boolean;
+  deletedCrawl: boolean;
+}
+
+/** Remove an audit snapshot and/or its crawl run (used from Properties home cards). */
+export async function deletePortfolioItem(
+  client: PoolClient,
+  opts: DeletePortfolioItemOptions,
+): Promise<DeletePortfolioItemResult> {
+  let deletedReport = false;
+  let deletedCrawl = false;
+  let crawlId =
+    opts.crawlRunId != null && Number.isFinite(Number(opts.crawlRunId))
+      ? Number(opts.crawlRunId)
+      : null;
+
+  if (opts.reportId != null && Number.isFinite(Number(opts.reportId))) {
+    const reportId = Number(opts.reportId);
+    const existing = await client.query<{ data: unknown }>(
+      'SELECT data FROM report_payload WHERE id = $1',
+      [reportId],
+    );
+    if (existing.rows[0] && crawlId == null) {
+      const data = parseJsonField(existing.rows[0].data);
+      const fromPayload = data?.crawl_run_id;
+      if (fromPayload != null && Number.isFinite(Number(fromPayload))) {
+        crawlId = Number(fromPayload);
+      }
+    }
+    const del = await client.query('DELETE FROM report_payload WHERE id = $1', [reportId]);
+    deletedReport = (del.rowCount ?? 0) > 0;
+  }
+
+  if (crawlId != null) {
+    const stillReferenced = await client.query(
+      `SELECT 1 FROM report_payload
+       WHERE (data->>'crawl_run_id')::bigint = $1
+       LIMIT 1`,
+      [crawlId],
+    );
+    if (stillReferenced.rows.length === 0) {
+      const delCrawl = await client.query('DELETE FROM crawl_runs WHERE id = $1', [crawlId]);
+      deletedCrawl = (delCrawl.rowCount ?? 0) > 0;
+    }
+  }
+
+  return { deletedReport, deletedCrawl };
 }
 
 // Exported for potential reuse; currently internal-only helper.

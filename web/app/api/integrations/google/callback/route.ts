@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
-import { readSecrets, writeSecrets } from '@/server/googleSecrets';
+import {
+  getClientIdForOAuth,
+  getClientSecretForOAuth,
+  loadGoogleAppSettings,
+} from '@/server/googleAppSettings';
+import { setPropertyGoogleCredentials } from '@/server/propertiesDb';
 import {
   GOOGLE_OAUTH_RETURN_COOKIE,
   oauthRedirectUrl,
@@ -36,16 +41,14 @@ function oauthErrorRedirect(
   );
 }
 
+const OAUTH_PROPERTY_COOKIE = 'google_oauth_property_id';
+
 function clearOAuthCookies(response: NextResponse): void {
   response.cookies.set('google_oauth_state', '', { maxAge: 0, path: '/' });
   response.cookies.set(GOOGLE_OAUTH_RETURN_COOKIE, '', { maxAge: 0, path: '/' });
+  response.cookies.set(OAUTH_PROPERTY_COOKIE, '', { maxAge: 0, path: '/' });
 }
 
-/**
- * GET /api/integrations/google/callback
- * Validates CSRF state, exchanges code for tokens, stores refresh token.
- * Redirects to stored return path with integrations=open&auth=success|error.
- */
 export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Response> => {
   const denied = forbiddenIfNotLocal(request);
   if (denied) return denied;
@@ -87,9 +90,21 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
     return response;
   }
 
-  const secrets = readSecrets() || {};
-  const clientId = secrets.clientId || process.env.GOOGLE_CLIENT_ID || '';
-  const clientSecret = secrets.clientSecret || process.env.GOOGLE_CLIENT_SECRET || '';
+  const propertyCookie = request.cookies.get(OAUTH_PROPERTY_COOKIE)?.value;
+  const propertyId = propertyCookie ? parseInt(propertyCookie, 10) : NaN;
+  if (!Number.isFinite(propertyId) || propertyId <= 0) {
+    const response = oauthErrorRedirect(
+      appBase,
+      returnPath,
+      'Missing property context. Set Site URL and connect Google from Integrations again.',
+    );
+    clearOAuthCookies(response);
+    return response;
+  }
+
+  const appRow = await loadGoogleAppSettings();
+  const clientId = getClientIdForOAuth(appRow);
+  const clientSecret = getClientSecretForOAuth(appRow);
   const redirectUri =
     process.env.GOOGLE_REDIRECT_URI ||
     `http://localhost:3000/api/integrations/google/callback`;
@@ -125,7 +140,10 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
       return response;
     }
 
-    writeSecrets({ authMode: 'oauth', refreshToken: tokenData.refresh_token });
+    await setPropertyGoogleCredentials(propertyId, {
+      refreshToken: tokenData.refresh_token,
+      authMode: 'oauth',
+    });
 
     const response = NextResponse.redirect(
       oauthRedirectUrl(appBase, returnPath, {

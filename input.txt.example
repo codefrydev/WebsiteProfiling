@@ -55,13 +55,13 @@ run_report = true
 run_plot = true
 
 # --- Google (GSC & GA4) ---
-# OAuth credentials and property IDs: Integrations panel (gear icon) → .secrets/google.json
+# Google OAuth: Integrations panel (gear icon) → saved in PostgreSQL (google_app_settings + properties)
 enable_google_search_console = false
 enable_google_analytics = false
 google_date_range_days = 28
 google_url_gap_list_limit = 200
 # enrich_keywords_after_report: omit for auto, or set true/false to override Search Console toggle
-# google_credentials_path: CLI/env legacy only (ignored when DATA_DIR or GOOGLE_SECRETS_PATH is set)
+# google_credentials_path: removed — use Integrations UI and PostgreSQL only
 
 # --- Basics ---
 keyword_max_pages = 200

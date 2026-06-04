@@ -8,11 +8,16 @@ export function getRepoRoot(): string {
 /** Env for spawning `python -m src` so CLI loads config from PostgreSQL. */
 export function getPipelineSpawnEnv(
   repoRootOverride?: string,
+  propertyId?: number | null,
 ): NodeJS.ProcessEnv {
   const repoRoot = repoRootOverride || getRepoRoot();
-  return {
+  const env: NodeJS.ProcessEnv = {
     ...process.env,
     WEBSITE_PROFILING_ROOT: repoRoot,
     DATA_DIR: getDataDir(),
   };
+  if (propertyId != null && Number.isFinite(propertyId)) {
+    env.WP_PROPERTY_ID = String(propertyId);
+  }
+  return env;
 }

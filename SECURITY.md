@@ -25,4 +25,4 @@ If you find a vulnerability **in Site Audit itself** (e.g. remote code execution
 ## Safe defaults
 
 - Run production deployments with strong `POSTGRES_PASSWORD` and `AUTH_SECRET` (see `docker-compose.prod.yml`).
-- Do not commit `.env`, `data/.secrets/`, or OAuth client secrets.
+- Do not commit `.env`, `.secrets/`, or OAuth client secrets. Google credentials are stored in PostgreSQL (`google_app_settings` and per-property columns on `properties`).

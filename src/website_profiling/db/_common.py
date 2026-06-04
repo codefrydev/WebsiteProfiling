@@ -31,6 +31,30 @@ def _parse_json_field(val: Any) -> Any:
     return val
 
 
+def _row_field(row: Any, column: str, *, index: int | None = None) -> Any:
+    """
+    Read a column from a psycopg dict_row or legacy tuple row.
+
+    Avoids KeyError from row[0] when the pool uses dict_row, and AttributeError
+    from row["data"] on tuple rows in tests.
+    """
+    if row is None:
+        return None
+    if isinstance(row, dict):
+        return row.get(column)
+    if index is not None:
+        try:
+            return row[index]
+        except (IndexError, TypeError, KeyError):
+            return None
+    return None
+
+
+def _parse_row_json(row: Any, column: str = "data", *, index: int | None = None) -> Any:
+    """_row_field + _parse_json_field for JSON/JSONB columns."""
+    return _parse_json_field(_row_field(row, column, index=index))
+
+
 def _sanitize_for_json(obj: Any) -> Any:
     """Recursively replace NaN/Inf and numpy types so JSON is valid."""
     if obj is None:

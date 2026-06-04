@@ -61,6 +61,13 @@ export const LLM_CONFIG_SECTIONS = [
       { key: 'llm_enable_keyphrases', label: 'Keyphrases', type: 'bool', defaultValue: true },
       { key: 'llm_enable_similar_internal', label: 'Similar internal pages', type: 'bool', defaultValue: true },
       { key: 'llm_enable_keyword_clusters', label: 'Topic clusters (AI)', type: 'bool', defaultValue: true },
+      {
+        key: 'llm_enable_page_coach',
+        label: 'Link Explorer page coach',
+        type: 'bool',
+        defaultValue: true,
+        help: 'On-demand retention and SEO suggestions when inspecting a URL in Link Explorer.',
+      },
     ],
   },
   {

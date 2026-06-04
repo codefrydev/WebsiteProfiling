@@ -25,7 +25,7 @@ import requests
 from psycopg import Connection
 from psycopg.types.json import Json
 
-from ...db.storage import _parse_json_field
+from ...db.storage import _parse_json_field, _row_field
 
 SUGGEST_URL = "https://suggestqueries.google.com/complete/search"
 USER_AGENT = (
@@ -200,8 +200,10 @@ def _read_cache(
         age_days = (datetime.now(timezone.utc) - fetched_at).total_seconds() / 86400
         if age_days > ttl_days:
             return None
-        data = _parse_json_field(row["data"])
-        return data if isinstance(data, list) else json.loads(data) if isinstance(data, str) else None
+        data = _parse_json_field(_row_field(row, "data"))
+        if isinstance(data, list):
+            return data
+        return None
     except Exception:
         return None
 

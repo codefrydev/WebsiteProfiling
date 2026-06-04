@@ -143,6 +143,7 @@ def test_google_run_runtimeerror_branch(monkeypatch):
 
     import website_profiling.db as db
 
+    monkeypatch.setattr(google_cmd, "resolve_property_id_from_cfg", lambda _cfg: 1)
     monkeypatch.setattr(db, "db_session", lambda: Ctx())
     monkeypatch.setattr(db, "get_latest_crawl_run_id", lambda _c: None)
     monkeypatch.setattr(db, "read_crawl", lambda *_a, **_k: pd.DataFrame())
@@ -173,7 +174,7 @@ def test_google_run_google_test_success_branch(monkeypatch):
         "website_profiling.integrations.google.auth",
         _types.SimpleNamespace(
             build_credentials=lambda *_a, **_k: object(),
-            read_secrets=lambda *_a, **_k: {"gscSiteUrl": "https://prop/", "ga4PropertyId": "123"},
+            resolve_google_targets=lambda *, property_id=None: ("https://prop/", "123", 28),
         ),
     )
     monkeypatch.setitem(
@@ -196,7 +197,7 @@ def test_google_run_google_test_success_branch(monkeypatch):
     )
 
     with pytest.raises(SystemExit) as e:
-        google_cmd._run_google_test(None)
+        google_cmd._run_google_test(1)
     assert e.value.code == 0
 
 
@@ -240,7 +241,7 @@ def test_google_run_google_test_error_branches(monkeypatch):
         "website_profiling.integrations.google.auth",
         _types.SimpleNamespace(
             build_credentials=lambda *_a, **_k: object(),
-            read_secrets=lambda *_a, **_k: {"gscSiteUrl": "https://bad/", "ga4PropertyId": "999"},
+            resolve_google_targets=lambda *, property_id=None: ("https://bad/", "999", 28),
         ),
     )
     monkeypatch.setitem(
@@ -262,6 +263,6 @@ def test_google_run_google_test_error_branches(monkeypatch):
         ),
     )
     with pytest.raises(SystemExit) as e:
-        google_cmd._run_google_test(None)
+        google_cmd._run_google_test(1)
     assert e.value.code == 1
 

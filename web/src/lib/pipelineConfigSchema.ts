@@ -348,10 +348,14 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
 
 // ─── Derived helpers ──────────────────────────────────────────────────────────
 
+/** Written by the server on audit run; not shown in the settings UI. */
+export const INTERNAL_PIPELINE_KEYS: readonly string[] = ['active_property_id'];
+
 /** Set of all schema-defined keys (for validation / unknown-key detection). */
-export const ALL_SCHEMA_KEYS = new Set(
-  PIPELINE_CONFIG_SECTIONS.flatMap((s) => s.fields.map((f) => f.key))
-);
+export const ALL_SCHEMA_KEYS = new Set([
+  ...PIPELINE_CONFIG_SECTIONS.flatMap((s) => s.fields.map((f) => f.key)),
+  ...INTERNAL_PIPELINE_KEYS,
+]);
 
 /**
  * Look up a field descriptor by key.

@@ -4,7 +4,7 @@ UI terms agencies recognize, mapped to internal keys and data sources.
 
 | UI term | Internal key / table | Data source | Similar tools |
 |---------|----------------------|-------------|---------------|
-| Properties | Home portfolio, `properties` | User-defined | GA4 Property, GSC property |
+| Properties | Home portfolio, `properties` | User-defined; one Google OAuth + GSC/GA4 mapping per row | GA4 Property, GSC property |
 | Audit run | `report_payload`, report list | Crawl + report build | Semrush Site Audit run |
 | Overview | `overview` view | Report payload | Site Audit dashboard |
 | Issues | `issues` view, `categories[].issues` | Rule engine on crawl + Lighthouse | Semrush Issues, SF errors |
@@ -19,8 +19,8 @@ UI terms agencies recognize, mapped to internal keys and data sources.
 | Crawl summary | `charts` | Crawl aggregates | SF overview |
 | Internal links | `network` | Link graph | Ahrefs Internal Links |
 | Page previews | `gallery` | Crawl excerpts | Visual QA |
-| Search Console | `search-performance`, `google_data` | GSC API | Google Search Console |
-| Analytics (GA4) | `traffic`, `google_data` | GA4 API | Google Analytics |
+| Search Console | `search-performance`, `google_data` (scoped by `property_id`) | GSC API per property | Google Search Console |
+| Analytics (GA4) | `traffic`, `google_data` (scoped by `property_id`) | GA4 API per property | Google Analytics |
 | Keywords | `keywords-explorer`, `keyword_data` | Crawl + Search Console + research | Keyword tools (site-scoped) |
 | Compare audits | `compare` | Two report payloads | Historical comparison |
 | Run audit | Pipeline / `python -m src` | User-triggered job | Start site audit |

@@ -65,6 +65,7 @@ SCHEMA_KEYS = {
     "keyword_max_suggest_results",
     "warning_mapper_input",
     "warning_mapper_input_type",
+    "active_property_id",
 }
 
 
@@ -83,6 +84,6 @@ def test_pipeline_example_keys_are_subset_of_schema():
 def test_schema_keys_documented_or_optional_in_example():
     keys = parse_config_keys(REPO_ROOT / "pipeline-config.example.txt")
     # Tristate 'auto' keys may be omitted from static examples (UI omits them when auto).
-    optional_omitted = {"enrich_keywords_after_report"}
+    optional_omitted = {"enrich_keywords_after_report", "active_property_id"}
     missing = SCHEMA_KEYS - keys - optional_omitted
     assert not missing, f"pipeline-config.example.txt missing keys: {sorted(missing)}"

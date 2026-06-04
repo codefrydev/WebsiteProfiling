@@ -74,7 +74,10 @@ def _read_cache(key: str) -> Optional[dict[str, Any]]:
         with db_session() as conn:
             raw = read_llm_cache(conn, key)
             if raw:
-                return json.loads(raw)
+                from ..db.storage import _parse_json_field
+
+                parsed = _parse_json_field(raw)
+                return parsed if isinstance(parsed, dict) else None
     except Exception:
         pass
     return None

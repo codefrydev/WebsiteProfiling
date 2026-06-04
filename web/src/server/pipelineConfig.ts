@@ -7,7 +7,12 @@
 import fs from 'fs';
 import path from 'path';
 import type { PoolClient } from 'pg';
-import { PIPELINE_CONFIG_SECTIONS, ALL_SCHEMA_KEYS, getFieldByKey } from '@/lib/pipelineConfigSchema';
+import {
+  PIPELINE_CONFIG_SECTIONS,
+  ALL_SCHEMA_KEYS,
+  INTERNAL_PIPELINE_KEYS,
+  getFieldByKey,
+} from '@/lib/pipelineConfigSchema';
 import { getDataDir, withDb } from '@/server/db';
 import type {
   PipelineConfigLoadResult,
@@ -118,6 +123,12 @@ export function serializeConfig(
     }
     lines.push('');
   }
+  for (const key of INTERNAL_PIPELINE_KEYS) {
+    const v = state[key];
+    if (v != null && String(v).trim() !== '') {
+      lines.push(`${key} = ${String(v)}`);
+    }
+  }
   if (unknownKeys.length > 0) {
     lines.push('# --- custom ---');
     for (const { key, value } of unknownKeys) {
@@ -218,6 +229,11 @@ export async function savePipelineConfig(
         entries[f.key] = v == null ? '' : String(v);
       }
     }
+  }
+  for (const key of INTERNAL_PIPELINE_KEYS) {
+    const v = state[key];
+    if (v == null || String(v).trim() === '') continue;
+    entries[key] = String(v);
   }
 
   const now = new Date().toISOString().slice(0, 19).replace('T', ' ');

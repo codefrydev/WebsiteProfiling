@@ -29,7 +29,6 @@ services:
       DATA_DIR: /data
       PYTHON: /opt/venv/bin/python
       NODE_ENV: production
-      GOOGLE_SECRETS_PATH: /data/.secrets/google.json
       CHROME_PATH: /usr/bin/chromium
       LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
       LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
