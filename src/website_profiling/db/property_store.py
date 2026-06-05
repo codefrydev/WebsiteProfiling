@@ -56,7 +56,7 @@ def upsert_property_by_domain(
     )
     row = cur.fetchone()
     conn.commit()
-    return int(row[0])
+    return int(_row_field(row, "id", index=0))
 
 
 def resolve_property_id_from_start_url(conn: Connection, start_url: str) -> int | None:
@@ -189,20 +189,20 @@ def list_properties_public(conn: Connection) -> list[dict[str, Any]]:
     )
     out: list[dict[str, Any]] = []
     for row in cur.fetchall():
-        connected_at = row[7]
-        crawl_auth = row[10]
+        connected_at = _row_field(row, "google_connected_at", index=7)
+        crawl_auth = _row_field(row, "crawl_authorized_at", index=10)
         out.append({
-            "id": int(row[0]),
-            "name": row[1],
-            "canonical_domain": row[2],
-            "site_url": row[3],
-            "gsc_site_url": row[4],
-            "ga4_property_id": row[5],
-            "google_auth_mode": row[6],
+            "id": int(_row_field(row, "id", index=0)),
+            "name": _row_field(row, "name", index=1),
+            "canonical_domain": _row_field(row, "canonical_domain", index=2),
+            "site_url": _row_field(row, "site_url", index=3),
+            "gsc_site_url": _row_field(row, "gsc_site_url", index=4),
+            "ga4_property_id": _row_field(row, "ga4_property_id", index=5),
+            "google_auth_mode": _row_field(row, "google_auth_mode", index=6),
             "google_connected": connected_at is not None,
             "google_connected_at": connected_at.isoformat() if connected_at else None,
-            "google_connected_email": row[8],
-            "google_date_range_days": row[9],
+            "google_connected_email": _row_field(row, "google_connected_email", index=8),
+            "google_date_range_days": _row_field(row, "google_date_range_days", index=9),
             "crawl_authorized_at": crawl_auth.isoformat() if crawl_auth else None,
         })
     return out
