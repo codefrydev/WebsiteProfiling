@@ -285,12 +285,12 @@ def test_browser_fetcher_discovers_js_link(spa_server):
         finally:
             static.close()
         assert static_result.text is not None
-        assert "/discovered-by-js" not in static_result.text
+        assert 'href="/discovered-by-js"' not in static_result.text
 
         rendered = fetcher.fetch(spa_server)
         assert rendered.status == 200
         assert rendered.text is not None
-        assert "/discovered-by-js" in rendered.text
+        assert 'href="/discovered-by-js"' in rendered.text
         assert rendered.fetch_method == "rendered"
     finally:
         fetcher.close()

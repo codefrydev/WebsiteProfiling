@@ -6,6 +6,7 @@ import os
 import pytest
 
 from website_profiling.db import db_session
+from website_profiling.db.property_store import upsert_property_by_domain
 from website_profiling.integrations.google.gsc_links_store import (
     import_gsc_links_csv,
     read_gsc_links_status,
@@ -18,16 +19,7 @@ def property_id():
     if not (os.environ.get("DATABASE_URL") or "").strip():
         pytest.skip("DATABASE_URL not set")
     with db_session() as conn:
-        cur = conn.execute(
-            """
-            INSERT INTO properties (canonical_domain, display_name)
-            VALUES ('gsc-links-test.example', 'GSC Links Test')
-            RETURNING id
-            """
-        )
-        row = cur.fetchone()
-        conn.commit()
-        pid = int(row[0])
+        pid = upsert_property_by_domain(conn, "GSC Links Test", "gsc-links-test.example")
     yield pid
 
 

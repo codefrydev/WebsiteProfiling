@@ -157,7 +157,12 @@ def _crawl_rows_from_df(df: pd.DataFrame, crawl_run_id: int) -> list[tuple]:
         payload = {c: _sanitize_for_json(rec[c]) if not pd.isna(rec.get(c)) else None for c in data_cols}
         status = str(rec.get("status") or "") if "status" in rec else None
         title = str(rec.get("title") or "") if "title" in rec else None
-        fetch_method = str(rec.get("fetch_method") or "static").strip() or "static"
+        raw_fm = rec.get("fetch_method")
+        fetch_method = (
+            "static"
+            if pd.isna(raw_fm)
+            else (str(raw_fm).strip() or "static")
+        )
         rows.append((crawl_run_id, url, status, title, fetch_method, _json_val(payload)))
     return rows
 
