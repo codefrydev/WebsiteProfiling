@@ -198,6 +198,32 @@ def category_technical_seo(
                 ))
                 deductions.append((min(10, max(2, missing_lang // 5)), True))
 
+    if "page_analysis" in df.columns and len(success_df) > 0:
+        from ..crawl.fetchers.browser_diagnostics import browser_summary_from_page_analysis
+
+        pages_with_console = 0
+        for _, row in success_df.iterrows():
+            pa = _page_analysis_dict(row)
+            counts = browser_summary_from_page_analysis(pa)
+            url = str(row.get("url") or "").strip()
+            if counts["console_error_count"] > 0:
+                pages_with_console += 1
+            if counts["page_error_count"] > 0 and url:
+                issues.append(_issue(
+                    "Uncaught JavaScript error during browser render.",
+                    url=url,
+                    priority="High",
+                    recommendation="Fix runtime JS errors that may break page functionality or SEO signals.",
+                ))
+                deductions.append((5, True))
+        if pages_with_console > 0:
+            issues.append(_issue(
+                f"{pages_with_console} page(s) logged console errors during JavaScript rendering.",
+                priority="High" if pages_with_console > 3 else "Medium",
+                recommendation="Inspect browser console errors on affected URLs; fix broken scripts or API calls.",
+            ))
+            deductions.append((min(15, pages_with_console * 2), True))
+
     score = _score_deductions(100, deductions)
     return {
         "id": "technical_seo",

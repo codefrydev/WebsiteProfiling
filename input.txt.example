@@ -18,6 +18,17 @@ content_excerpt_max_chars = 4096
 preserve_crawl_history = true
 crawl_stream_to_db = false
 crawl_exclude_urls = 
+# crawl_render_mode: static | javascript | auto (auto = static first, browser when SPA heuristics match)
+crawl_render_mode = static
+crawl_js_concurrency = 3
+crawl_js_timeout = 30
+crawl_js_wait_until = domcontentloaded
+crawl_js_extra_wait_ms = 1500
+crawl_js_block_resources = true
+crawl_js_capture_console = true
+crawl_js_console_levels = error,warning
+crawl_js_capture_failed_requests = false
+crawl_js_console_max_per_page = 20
 
 # --- Report ---
 outbound_domain_max_rows = 200

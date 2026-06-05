@@ -78,7 +78,33 @@ def _summary_lines(payload: dict[str, Any]) -> list[tuple[str, str]]:
                 scope_txt += f" (limit {max_p})"
             if scope.get("crawl_limited"):
                 scope_txt += " — crawl limit reached"
+            render_mode = scope.get("render_mode")
+            if render_mode == "javascript":
+                js_c = scope.get("js_concurrency")
+                scope_txt += " — JavaScript rendering"
+                if js_c:
+                    scope_txt += f" ({js_c} parallel pages)"
+            elif render_mode == "auto":
+                scope_txt += " — auto rendering (static + JS fallback)"
+                ps = scope.get("pages_static")
+                pr = scope.get("pages_rendered")
+                if ps is not None and pr is not None:
+                    scope_txt += f" ({ps} static, {pr} JavaScript-rendered)"
+            elif scope.get("static_html_only"):
+                scope_txt += " — static HTML only"
             lines.append(("Crawl scope", scope_txt))
+            browser_diag = scope.get("browser_diagnostics")
+            if isinstance(browser_diag, dict):
+                pce = browser_diag.get("pages_with_console_errors")
+                tce = browser_diag.get("total_console_errors")
+                ppe = browser_diag.get("pages_with_page_errors")
+                if pce or ppe:
+                    parts = []
+                    if pce:
+                        parts.append(f"{pce} page(s) with console errors ({tce or 0} total)")
+                    if ppe:
+                        parts.append(f"{ppe} page(s) with uncaught JS errors")
+                    lines.append(("Browser diagnostics", "; ".join(parts)))
         if meta.get("google_fetched_at"):
             lines.append(("Google data fetched", str(meta["google_fetched_at"])))
     summary = payload.get("summary") or {}

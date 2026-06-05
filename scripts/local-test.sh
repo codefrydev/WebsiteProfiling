@@ -83,6 +83,7 @@ cmd_venv() {
   if [[ ! -x "$VENV/bin/pytest" ]]; then
     log "Installing Python dependencies"
     "$VENV/bin/pip" install -q -r "$ROOT/requirements.txt"
+    "$VENV/bin/pip" install -q -r "$ROOT/requirements-browser.txt"
   fi
 }
 
@@ -110,14 +111,30 @@ run_pytest() {
   fi
 }
 
+run_browser_pytest() {
+  if "$VENV/bin/python" -c "from website_profiling.crawl.fetchers import browser_status; import sys; sys.exit(0 if browser_status().get('ok') else 1)" 2>/dev/null; then
+    log "Browser pytest (tests/test_crawl_fetchers.py tests/test_crawler_browser_e2e.py -m browser)"
+    "$VENV/bin/pytest" tests/test_crawl_fetchers.py tests/test_crawler_browser_e2e.py -m browser -q --no-cov
+  else
+    warn "Chromium unavailable — skipping browser integration tests"
+  fi
+}
+
 cmd_python() {
   cmd_db
   cmd_venv
   cmd_migrate
   run_pytest
+  run_browser_pytest
   log "CLI smoke (python -m src --help)"
   "$VENV/bin/python" -m src --help >/dev/null
   ok "Python checks passed"
+}
+
+cmd_browser() {
+  cmd_venv
+  run_browser_pytest
+  ok "Browser pytest finished"
 }
 
 cmd_web() {
@@ -162,7 +179,8 @@ Local test runner — mirrors CI (python + web jobs)
 
   ./local-test              Same as: all
   ./local-test all          Postgres + migrations + pytest + CLI + web checks
-  ./local-test python       DB + pytest + python -m src --help
+  ./local-test python       DB + pytest + browser pytest + python -m src --help
+  ./local-test browser      Browser integration pytest only (skips if no Chromium)
   ./local-test web          typecheck, lint, vitest (no Docker)
   ./local-test quick        pytest + web without starting Docker (DB must be ready)
 
@@ -191,6 +209,7 @@ main() {
   case "$raw_cmd" in
     all|"") cmd_all ;;
     python) cmd_python ;;
+    browser) cmd_browser ;;
     web) cmd_web ;;
     quick)
       PYTEST_NO_COV=1

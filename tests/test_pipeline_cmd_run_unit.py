@@ -31,6 +31,38 @@ def test_pipeline_run_calls_crawl_with_minimal_config(monkeypatch) -> None:
     assert called["crawl"] == 1
 
 
+def test_run_crawl_passes_render_mode_to_run_crawler(monkeypatch) -> None:
+    from website_profiling.commands import pipeline_cmd
+
+    captured: dict = {}
+
+    def fake_run_crawler(**kwargs):
+        captured.update(kwargs)
+        return pd.DataFrame([{"url": "https://site.com", "status": 200}])
+
+    import website_profiling.crawl.crawler as crawler_mod
+
+    monkeypatch.setattr(crawler_mod, "run_crawler", fake_run_crawler)
+
+    cfg = {
+        "start_url": "https://site.com",
+        "run_crawl": "true",
+        "run_report": "false",
+        "run_plot": "false",
+        "run_lighthouse": "false",
+        "run_lighthouse_on_pages": "false",
+        "crawl_render_mode": "javascript",
+        "crawl_js_concurrency": "2",
+        "crawl_js_timeout": "25",
+    }
+    args = argparse.Namespace(command=None)
+    pipeline_cmd.run(cfg, args)
+
+    assert captured.get("render_mode") == "javascript"
+    assert captured.get("js_concurrency") == 2
+    assert captured.get("js_timeout") == 25
+
+
 def test_pipeline_lighthouse_on_pages_uses_selected_urls(monkeypatch) -> None:
     from website_profiling.commands import pipeline_cmd
 

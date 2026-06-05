@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Console Error Fixture</title>
+</head>
+<body>
+  <h1>Console error fixture</h1>
+  <script>
+    console.error('fixture console error message');
+    setTimeout(function () {
+      throw new Error('fixture uncaught page error');
+    }, 50);
+  </script>
+</body>
+</html>

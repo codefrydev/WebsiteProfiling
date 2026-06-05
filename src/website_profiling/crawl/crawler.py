@@ -40,19 +40,14 @@ from ..common import (
     parse_tech_stack,
 )
 from ..analysis.page import analyze_html
+from .fetchers import build_fetcher
+from .fetchers.base import FetchResult
+from .fetchers.browser_diagnostics import merge_browser_into_page_analysis
+from .fetchers.hybrid import HybridFetcher
+from .fetchers.spa_heuristics import needs_js_render_after_parse
+from .sitemap import discover_sitemap_urls
 
 DEFAULT_USER_AGENT = "WebsiteProfilingCrawler/1.0"
-
-# Headers we store for caching and security
-HEADER_KEYS = (
-    "Cache-Control",
-    "ETag",
-    "X-Robots-Tag",
-    "Strict-Transport-Security",
-    "X-Content-Type-Options",
-    "X-Frame-Options",
-    "Content-Security-Policy",
-)
 
 
 class Crawler:
@@ -72,13 +67,30 @@ class Crawler:
         use_wappalyzer: bool = True,
         store_content_excerpt: bool = False,
         content_excerpt_max_chars: int = 4096,
+        render_mode: str = "static",
+        js_concurrency: int = 3,
+        js_timeout: int = 30,
+        js_wait_until: str = "domcontentloaded",
+        js_extra_wait_ms: int = 1500,
+        js_block_resources: bool = True,
+        capture_console: bool = True,
+        js_console_levels: str = "error,warning",
+        capture_failed_requests: bool = False,
+        console_max_per_page: int = 20,
     ):
         self.start_url = start_url.rstrip("/")
         self.start_netloc = urlparse(self.start_url).netloc
+        self.render_mode = (render_mode or "static").strip().lower()
+        self.js_concurrency = max(1, int(js_concurrency))
+        effective_concurrency = (
+            self.js_concurrency
+            if self.render_mode == "javascript"
+            else max(1, int(concurrency))
+        )
         self.max_pages = (
             max_pages if (max_pages is not None and max_pages > 0) else float("inf")
         )
-        self.concurrency = max(1, int(concurrency))
+        self.concurrency = effective_concurrency
         self.timeout = timeout
         self.ignore_robots = ignore_robots
         self.allow_external = allow_external
@@ -102,6 +114,25 @@ class Crawler:
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": self.user_agent})
         self.rp = None if self.ignore_robots else load_robots(self.start_url)
+        self.fetcher = build_fetcher(
+            render_mode="javascript" if self.render_mode == "javascript" else ("auto" if self.render_mode == "auto" else "static"),
+            timeout=timeout,
+            user_agent=self.user_agent,
+            session=self.session,
+            js_concurrency=self.js_concurrency,
+            js_timeout=js_timeout,
+            js_wait_until=js_wait_until,
+            js_extra_wait_ms=js_extra_wait_ms,
+            js_block_resources=js_block_resources,
+            capture_console=capture_console,
+            js_console_levels=js_console_levels,
+            capture_failed_requests=capture_failed_requests,
+            console_max_per_page=console_max_per_page,
+        )
+        self._hybrid_fetcher = (
+            self.fetcher if isinstance(self.fetcher, HybridFetcher) else None
+        )
+        self._seed_sitemap_urls(timeout)
 
     def same_domain(self, url):
         return urlparse(url).netloc == self.start_netloc
@@ -114,36 +145,27 @@ class Crawler:
         except Exception:
             return True
 
-    def fetch(self, url):
+    def _seed_sitemap_urls(self, timeout: int) -> None:
         try:
-            t0 = time.perf_counter()
-            resp = self.session.get(
-                url, timeout=self.timeout, allow_redirects=True
-            )
-            response_time_ms = int((time.perf_counter() - t0) * 1000)
-            ct = resp.headers.get("Content-Type", "")
-            is_html = resp.status_code == 200 and (
-                "text/html" in ct or "application/xhtml+xml" in ct
-            )
-            text = resp.text if is_html else None
-            content_length = len(resp.content) if resp.content is not None else 0
-            final_url = resp.url or url
-            redirect_chain_length = len(resp.history)
-            headers_dict = {
-                k: (resp.headers.get(k) or "") for k in HEADER_KEYS
-            }
-            return (
-                resp.status_code,
-                ct,
-                text,
-                response_time_ms,
-                content_length,
-                final_url,
-                headers_dict,
-                redirect_chain_length,
+            seeds = discover_sitemap_urls(
+                self.start_url,
+                timeout=timeout,
+                session=self.session,
             )
         except Exception:
-            return None, None, None, None, None, None, {}, 0
+            return
+        for url in seeds:
+            if _url_matches_exclude(url, self.exclude_urls):
+                continue
+            if not self.allow_external and not self.same_domain(url):
+                continue
+            if url == self.start_url or url in self.depths:
+                continue
+            self.queue.put(url)
+            self.depths[url] = 0
+
+    def fetch(self, url) -> FetchResult:
+        return self.fetcher.fetch(url)
 
     def _empty_seo(self, url: str, headers_dict: Optional[dict] = None, redirect_chain_length: int = 0) -> dict:
         """Default SEO/performance fields when no HTML or error."""
@@ -197,6 +219,127 @@ class Crawler:
             "page_analysis": "{}",
         }
 
+    def _parse_page_content(
+        self,
+        url: str,
+        text: str,
+        final_url: str,
+        headers_dict: dict,
+        redirect_chain_length: int,
+    ) -> dict:
+        """Extract title, links, and SEO/content fields from HTML."""
+        ext = self._empty_seo(url, headers_dict, redirect_chain_length)
+        title, links = parse_links(url, text)
+        meta_description, meta_description_len, h1_text, h1_count, canonical_url = (
+            parse_seo(url, text)
+        )
+        seo_ext = parse_seo_extended(text, final_url or url)
+        ext["viewport_present"] = seo_ext.get("viewport_present", False)
+        ext["viewport_content"] = seo_ext.get("viewport_content", "")
+        ext["noindex"] = seo_ext.get("noindex", False)
+        if (headers_dict.get("X-Robots-Tag") or "").lower().find("noindex") >= 0:
+            ext["noindex"] = True
+        ext["has_schema"] = seo_ext.get("has_schema", False)
+        ext["heading_sequence"] = ",".join(seo_ext.get("heading_sequence") or [])
+        ext["images_without_alt"] = seo_ext.get("images_without_alt", 0)
+        ext["images_total"] = seo_ext.get("images_total", 0)
+        ext["img_without_lazy"] = seo_ext.get("img_without_lazy", 0)
+        ext["img_without_dimensions"] = seo_ext.get("img_without_dimensions", 0)
+        ext["aria_count"] = seo_ext.get("aria_count", 0)
+        ext["mixed_content_count"] = seo_ext.get("mixed_content_count", 0)
+        res_res = parse_resources(text, final_url or url)
+        ext["script_count"] = res_res.get("script_count", 0)
+        ext["link_stylesheet_count"] = res_res.get("link_stylesheet_count", 0)
+        from bs4 import BeautifulSoup as _BS
+
+        _soup = _BS(text, "lxml")
+        excerpt_max = self.content_excerpt_max_chars if self.store_content_excerpt else 0
+        ct_data = parse_content_text(_soup, text, excerpt_max_chars=excerpt_max)
+        ext["word_count"] = ct_data.get("word_count", 0)
+        ext["reading_level"] = ct_data.get("reading_level", 0.0)
+        ext["content_html_ratio"] = ct_data.get("content_html_ratio", 0.0)
+        ext["top_keywords"] = ct_data.get("top_keywords", "[]")
+        ext["content_excerpt"] = ct_data.get("content_excerpt") or ""
+        social = parse_social_meta(_soup)
+        ext["og_title"] = social.get("og_title", "")
+        ext["og_description"] = social.get("og_description", "")
+        ext["og_image"] = social.get("og_image", "")
+        ext["og_type"] = social.get("og_type", "")
+        ext["twitter_card"] = social.get("twitter_card", "")
+        ext["twitter_title"] = social.get("twitter_title", "")
+        ext["twitter_image"] = social.get("twitter_image", "")
+        if self.use_wappalyzer:
+            ext["tech_stack"] = detect_tech_wappalyzer(
+                final_url or url, text, headers_dict, _soup, self._wappalyzer_instance
+            )
+        else:
+            ext["tech_stack"] = parse_tech_stack(_soup, headers_dict, final_url or url)
+        ext["page_analysis"] = json.dumps(
+            analyze_html(text, final_url or url, final_url or url, canonical_url)
+        )
+        return {
+            "title": title,
+            "links": links,
+            "meta_description": meta_description,
+            "meta_description_len": meta_description_len,
+            "h1_text": h1_text,
+            "h1_count": h1_count,
+            "canonical_url": canonical_url,
+            "ext": ext,
+        }
+
+    def _maybe_refetch_after_parse(
+        self,
+        url: str,
+        result: FetchResult,
+        *,
+        link_count: int,
+        same_domain_link_count: int,
+    ) -> FetchResult:
+        """Post-parse auto-mode fallback when static HTML has too few links."""
+        if self.render_mode != "auto" or self._hybrid_fetcher is None:
+            return result
+        if result.fetch_method != "static":
+            return result
+        if not needs_js_render_after_parse(
+            result,
+            link_count=link_count,
+            same_domain_link_count=same_domain_link_count,
+        ):
+            return result
+        rendered = self._hybrid_fetcher.refetch_rendered(url)
+        if rendered.status == 200 and rendered.text:
+            return rendered
+        return result
+
+    @staticmethod
+    def _sync_from_fetch_result(
+        result: FetchResult,
+        url: str,
+        *,
+        text: Optional[str],
+        fetch_method: str,
+        final_url: str,
+        content_length: int,
+        response_time_ms: Optional[int],
+        headers_dict: dict,
+        redirect_chain_length: int,
+        status: Optional[int],
+        ct: Optional[str],
+    ) -> dict:
+        """Copy all FetchResult fields after a post-parse browser refetch."""
+        return {
+            "text": result.text,
+            "fetch_method": result.fetch_method,
+            "final_url": result.final_url or url,
+            "content_length": result.content_length or content_length,
+            "response_time_ms": result.response_time_ms,
+            "headers_dict": result.headers_dict or headers_dict,
+            "redirect_chain_length": result.redirect_chain_length,
+            "status": result.status,
+            "ct": result.content_type,
+        }
+
     def worker(self, url):
         if not self.allowed_by_robots(url):
             out = {
@@ -205,6 +348,7 @@ class Crawler:
                 "content_type": "",
                 "title": "",
                 "outlinks": 0,
+                "fetch_method": "static",
                 **self._empty_seo(url),
             }
             if self.store_outlinks:
@@ -212,14 +356,15 @@ class Crawler:
             return out
 
         result = self.fetch(url)
-        status = result[0]
-        ct = result[1]
-        text = result[2]
-        response_time_ms = result[3] if len(result) > 3 else None
-        content_length = result[4] if len(result) > 4 else 0
-        final_url = result[5] if len(result) > 5 else url
-        headers_dict = result[6] if len(result) > 6 else {}
-        redirect_chain_length = result[7] if len(result) > 7 else 0
+        status = result.status
+        ct = result.content_type
+        text = result.text
+        response_time_ms = result.response_time_ms
+        content_length = result.content_length or 0
+        final_url = result.final_url or url
+        headers_dict = result.headers_dict or {}
+        redirect_chain_length = result.redirect_chain_length
+        fetch_method = result.fetch_method
 
         if status is None:
             out = {
@@ -228,10 +373,15 @@ class Crawler:
                 "content_type": "",
                 "title": "",
                 "outlinks": 0,
+                "fetch_method": fetch_method,
                 **self._empty_seo(url, headers_dict, redirect_chain_length),
             }
             if self.store_outlinks:
                 out["outlink_targets"] = "[]"
+            if result.browser_diagnostics:
+                out["page_analysis"] = merge_browser_into_page_analysis(
+                    None, result.browser_diagnostics
+                )
             return out
 
         title = ""
@@ -245,54 +395,54 @@ class Crawler:
 
         ext = self._empty_seo(url, headers_dict, redirect_chain_length)
         if text:
-            title, links = parse_links(url, text)
-            outlinks_count = len(links)
-            meta_description, meta_description_len, h1_text, h1_count, canonical_url = (
-                parse_seo(url, text)
+            parsed = self._parse_page_content(
+                url, text, final_url or url, headers_dict, redirect_chain_length
             )
-            seo_ext = parse_seo_extended(text, final_url or url)
-            ext["viewport_present"] = seo_ext.get("viewport_present", False)
-            ext["viewport_content"] = seo_ext.get("viewport_content", "")
-            ext["noindex"] = seo_ext.get("noindex", False)
-            if (headers_dict.get("X-Robots-Tag") or "").lower().find("noindex") >= 0:
-                ext["noindex"] = True
-            ext["has_schema"] = seo_ext.get("has_schema", False)
-            ext["heading_sequence"] = ",".join(seo_ext.get("heading_sequence") or [])
-            ext["images_without_alt"] = seo_ext.get("images_without_alt", 0)
-            ext["images_total"] = seo_ext.get("images_total", 0)
-            ext["img_without_lazy"] = seo_ext.get("img_without_lazy", 0)
-            ext["img_without_dimensions"] = seo_ext.get("img_without_dimensions", 0)
-            ext["aria_count"] = seo_ext.get("aria_count", 0)
-            ext["mixed_content_count"] = seo_ext.get("mixed_content_count", 0)
-            res_res = parse_resources(text, final_url or url)
-            ext["script_count"] = res_res.get("script_count", 0)
-            ext["link_stylesheet_count"] = res_res.get("link_stylesheet_count", 0)
-            from bs4 import BeautifulSoup as _BS
-            _soup = _BS(text, "lxml")
-            excerpt_max = self.content_excerpt_max_chars if self.store_content_excerpt else 0
-            ct_data = parse_content_text(_soup, text, excerpt_max_chars=excerpt_max)
-            ext["word_count"] = ct_data.get("word_count", 0)
-            ext["reading_level"] = ct_data.get("reading_level", 0.0)
-            ext["content_html_ratio"] = ct_data.get("content_html_ratio", 0.0)
-            ext["top_keywords"] = ct_data.get("top_keywords", "[]")
-            ext["content_excerpt"] = ct_data.get("content_excerpt") or ""
-            social = parse_social_meta(_soup)
-            ext["og_title"] = social.get("og_title", "")
-            ext["og_description"] = social.get("og_description", "")
-            ext["og_image"] = social.get("og_image", "")
-            ext["og_type"] = social.get("og_type", "")
-            ext["twitter_card"] = social.get("twitter_card", "")
-            ext["twitter_title"] = social.get("twitter_title", "")
-            ext["twitter_image"] = social.get("twitter_image", "")
-            if self.use_wappalyzer:
-                ext["tech_stack"] = detect_tech_wappalyzer(
-                    final_url or url, text, headers_dict, _soup, self._wappalyzer_instance
+            links = parsed["links"]
+            same_domain_link_count = sum(1 for link in links if self.same_domain(link))
+            result = self._maybe_refetch_after_parse(
+                url,
+                result,
+                link_count=len(links),
+                same_domain_link_count=same_domain_link_count,
+            )
+            if result.text and result.text != text:
+                synced = self._sync_from_fetch_result(
+                    result,
+                    url,
+                    text=text,
+                    fetch_method=fetch_method,
+                    final_url=final_url,
+                    content_length=content_length,
+                    response_time_ms=response_time_ms,
+                    headers_dict=headers_dict,
+                    redirect_chain_length=redirect_chain_length,
+                    status=status,
+                    ct=ct,
                 )
-            else:
-                ext["tech_stack"] = parse_tech_stack(_soup, headers_dict, final_url or url)
-            ext["page_analysis"] = json.dumps(
-                analyze_html(text, final_url or url, final_url or url, canonical_url)
-            )
+                text = synced["text"]
+                fetch_method = synced["fetch_method"]
+                final_url = synced["final_url"]
+                content_length = synced["content_length"]
+                response_time_ms = synced["response_time_ms"]
+                headers_dict = synced["headers_dict"]
+                redirect_chain_length = synced["redirect_chain_length"]
+                status = synced["status"]
+                ct = synced["ct"]
+                parsed = self._parse_page_content(
+                    url, text, final_url, headers_dict, redirect_chain_length
+                )
+                links = parsed["links"]
+
+            title = parsed["title"]
+            outlinks_count = len(links)
+            meta_description = parsed["meta_description"]
+            meta_description_len = parsed["meta_description_len"]
+            h1_text = parsed["h1_text"]
+            h1_count = parsed["h1_count"]
+            canonical_url = parsed["canonical_url"]
+            ext = parsed["ext"]
+
             for link in links:
                 if _url_matches_exclude(link, self.exclude_urls):
                     continue
@@ -333,12 +483,18 @@ class Crawler:
         if self.polite_delay:
             time.sleep(self.polite_delay)
 
+        if result.browser_diagnostics:
+            ext["page_analysis"] = merge_browser_into_page_analysis(
+                ext.get("page_analysis"), result.browser_diagnostics
+            )
+
         res = {
             "url": url,
             "status": status,
             "content_type": ct or "",
             "title": title,
             "outlinks": outlinks_count,
+            "fetch_method": fetch_method,
             **ext,
         }
         if self.store_outlinks:
@@ -368,98 +524,100 @@ class Crawler:
             desc="Pages",
             disable=not show_progress,
         )
-        with ThreadPoolExecutor(max_workers=self.concurrency) as ex:
-            while (len(self.results) < self.max_pages) and (
-                not self.queue.empty() or futures
-            ):
-                while (
-                    not self.queue.empty()
-                    and len(futures) < self.concurrency
-                    and len(self.results) + len(futures) < self.max_pages
+        try:
+            with ThreadPoolExecutor(max_workers=self.concurrency) as ex:
+                while (len(self.results) < self.max_pages) and (
+                    not self.queue.empty() or futures
                 ):
-                    url = self.queue.get()
-                    if _url_matches_exclude(url, self.exclude_urls):
-                        continue
-                    with self.lock:
-                        if url in self.visited:
+                    while (
+                        not self.queue.empty()
+                        and len(futures) < self.concurrency
+                        and len(self.results) + len(futures) < self.max_pages
+                    ):
+                        url = self.queue.get()
+                        if _url_matches_exclude(url, self.exclude_urls):
                             continue
-                        self.visited.add(url)
-                    futures.append(ex.submit(self.worker, url))
+                        with self.lock:
+                            if url in self.visited:
+                                continue
+                            self.visited.add(url)
+                        futures.append(ex.submit(self.worker, url))
 
-                remaining = []
-                for f in futures:
-                    if f.done():
-                        try:
-                            res = f.result()
-                        except Exception:
-                            res = {
-                                "url": None,
-                                "status": "error",
-                                "content_type": "",
-                                "title": "",
-                                "outlinks": 0,
-                                "response_time_ms": "",
-                                "content_length": 0,
-                                "final_url": "",
-                                "meta_description": "",
-                                "meta_description_len": 0,
-                                "h1": "",
-                                "h1_count": 0,
-                                "canonical_url": "",
-                                "viewport_present": False,
-                                "viewport_content": "",
-                                "noindex": False,
-                                "has_schema": False,
-                                "heading_sequence": "",
-                                "images_without_alt": 0,
-                                "images_total": 0,
-                                "img_without_lazy": 0,
-                                "img_without_dimensions": 0,
-                                "aria_count": 0,
-                                "mixed_content_count": 0,
-                                "redirect_chain_length": 0,
-                                "cache_control": "",
-                                "etag": "",
-                                "x_robots_tag": "",
-                                "strict_transport_security": "",
-                                "x_content_type_options": "",
-                                "x_frame_options": "",
-                                "content_security_policy": "",
-                                "script_count": 0,
-                                "link_stylesheet_count": 0,
-                                "total_js_bytes": 0,
-                                "total_css_bytes": 0,
-                                "word_count": 0,
-                                "reading_level": 0.0,
-                                "content_html_ratio": 0.0,
-                                "top_keywords": "[]",
-                                "content_excerpt": "",
-                                "og_title": "",
-                                "og_description": "",
-                                "og_image": "",
-                                "og_type": "",
-                                "twitter_card": "",
-                                "twitter_title": "",
-                                "twitter_image": "",
-                                "tech_stack": "[]",
-                                "depth": None,
-                                "page_analysis": "{}",
-                            }
-                            if self.store_outlinks:
-                                res["outlink_targets"] = "[]"
-                        self.results.append(res)
-                        if db_writer is not None and res.get("url"):
-                            db_writer.enqueue(res)
-                        pbar.update(1)
-                    else:
-                        remaining.append(f)
-                futures = remaining
-                time.sleep(0.01)
+                    remaining = []
+                    for f in futures:
+                        if f.done():
+                            try:
+                                res = f.result()
+                            except Exception:
+                                res = {
+                                    "url": None,
+                                    "status": "error",
+                                    "content_type": "",
+                                    "title": "",
+                                    "outlinks": 0,
+                                    "response_time_ms": "",
+                                    "content_length": 0,
+                                    "final_url": "",
+                                    "meta_description": "",
+                                    "meta_description_len": 0,
+                                    "h1": "",
+                                    "h1_count": 0,
+                                    "canonical_url": "",
+                                    "viewport_present": False,
+                                    "viewport_content": "",
+                                    "noindex": False,
+                                    "has_schema": False,
+                                    "heading_sequence": "",
+                                    "images_without_alt": 0,
+                                    "images_total": 0,
+                                    "img_without_lazy": 0,
+                                    "img_without_dimensions": 0,
+                                    "aria_count": 0,
+                                    "mixed_content_count": 0,
+                                    "redirect_chain_length": 0,
+                                    "cache_control": "",
+                                    "etag": "",
+                                    "x_robots_tag": "",
+                                    "strict_transport_security": "",
+                                    "x_content_type_options": "",
+                                    "x_frame_options": "",
+                                    "content_security_policy": "",
+                                    "script_count": 0,
+                                    "link_stylesheet_count": 0,
+                                    "total_js_bytes": 0,
+                                    "total_css_bytes": 0,
+                                    "word_count": 0,
+                                    "reading_level": 0.0,
+                                    "content_html_ratio": 0.0,
+                                    "top_keywords": "[]",
+                                    "content_excerpt": "",
+                                    "og_title": "",
+                                    "og_description": "",
+                                    "og_image": "",
+                                    "og_type": "",
+                                    "twitter_card": "",
+                                    "twitter_title": "",
+                                    "twitter_image": "",
+                                    "tech_stack": "[]",
+                                    "depth": None,
+                                    "page_analysis": "{}",
+                                }
+                                if self.store_outlinks:
+                                    res["outlink_targets"] = "[]"
+                            self.results.append(res)
+                            if db_writer is not None and res.get("url"):
+                                db_writer.enqueue(res)
+                            pbar.update(1)
+                        else:
+                            remaining.append(f)
+                    futures = remaining
+                    time.sleep(0.01)
 
-                if self.queue.empty() and not futures:
-                    break
-
-        pbar.close()
+                    if self.queue.empty() and not futures:
+                        break
+        finally:
+            self.fetcher.close()
+            pbar.close()
         if db_writer is not None:
             db_writer.finish()
             db_writer.join()
@@ -519,6 +677,7 @@ class Crawler:
                 "tech_stack",
                 "depth",
                 "page_analysis",
+                "fetch_method",
             ]
             if self.store_outlinks:
                 cols.append("outlink_targets")
@@ -592,11 +751,27 @@ def run_crawler(
     content_excerpt_max_chars: int = 4096,
     crawl_stream_to_db: bool = False,
     property_id: Optional[int] = None,
+    render_mode: str = "static",
+    js_concurrency: int = 3,
+    js_timeout: int = 30,
+    js_wait_until: str = "domcontentloaded",
+    js_extra_wait_ms: int = 1500,
+    js_block_resources: bool = True,
+    capture_console: bool = True,
+    js_console_levels: str = "error,warning",
+    capture_failed_requests: bool = False,
+    console_max_per_page: int = 20,
 ) -> pd.DataFrame:
     """Run crawler and optionally save to CSV/JSON or PostgreSQL. Returns DataFrame."""
     import sys
     max_p = max_pages if max_pages is not None else 0
-    print(f"  Crawling {start_url} (max_pages={max_p or 'unlimited'}, concurrency={concurrency})...", flush=True)
+    mode_label = (render_mode or "static").strip().lower()
+    conc_label = js_concurrency if mode_label == "javascript" else concurrency
+    print(
+        f"  Crawling {start_url} (max_pages={max_p or 'unlimited'}, "
+        f"render_mode={mode_label}, concurrency={conc_label})...",
+        flush=True,
+    )
     crawler = Crawler(
         start_url=start_url,
         max_pages=max_pages,
@@ -610,6 +785,16 @@ def run_crawler(
         exclude_urls=exclude_urls,
         store_content_excerpt=store_content_excerpt,
         content_excerpt_max_chars=content_excerpt_max_chars,
+        render_mode=render_mode,
+        js_concurrency=js_concurrency,
+        js_timeout=js_timeout,
+        js_wait_until=js_wait_until,
+        js_extra_wait_ms=js_extra_wait_ms,
+        js_block_resources=js_block_resources,
+        capture_console=capture_console,
+        js_console_levels=js_console_levels,
+        capture_failed_requests=capture_failed_requests,
+        console_max_per_page=console_max_per_page,
     )
     stream_run_id: Optional[int] = None
     if output_db:
@@ -629,7 +814,9 @@ def run_crawler(
                     ensure_crawl_tables_cleared(conn)
                 if historical:
                     restore_historical_data(conn, historical)
-                stream_run_id = create_crawl_run(conn, start_url, property_id=property_id)
+                stream_run_id = create_crawl_run(
+                    conn, start_url, property_id=property_id, render_mode=render_mode
+                )
             print(f"  Streaming crawl results to DB (run_id={stream_run_id})...", flush=True)
 
     df = crawler.crawl(
@@ -656,7 +843,9 @@ def run_crawler(
                 ensure_crawl_tables_cleared(conn)
             if historical:
                 restore_historical_data(conn, historical)
-            run_id = create_crawl_run(conn, start_url, property_id=property_id)
+            run_id = create_crawl_run(
+                conn, start_url, property_id=property_id, render_mode=render_mode
+            )
             write_crawl(conn, df, crawl_run_id=run_id)
         print("  Crawl DB write complete.", flush=True)
     elif output_db and stream_run_id is not None:

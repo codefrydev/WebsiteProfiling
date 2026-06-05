@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Bar } from 'react-chartjs-2';
 import type { TooltipItem } from 'chart.js';
 import { Gauge, ChevronDown, ChevronRight } from 'lucide-react';
-import type { LinkDetail, LinkLighthouseData, LighthouseAuditRef, NlpSignals, PageAnalysis, SimilarInternalRow } from '@/types/report';
+import type { LinkDetail, LinkLighthouseData, LighthouseAuditRef, NlpSignals, PageAnalysis, SimilarInternalRow, BrowserDiagnostics } from '@/types/report';
 import { useReport } from '../../../context/useReport';
 import { formatLhMetric, parseKeywords, normaliseKw, severityBg } from '../../../utils/linkUtils';
 import { palette, scoreBandColor } from '../../../utils/chartPalette';
@@ -29,6 +29,116 @@ function normalizeSimilarInternal(raw: unknown): SimilarInternalRow[] {
       return null;
     })
     .filter((row): row is SimilarInternalRow => row != null);
+}
+
+function BrowserDiagnosticsBlock({ browser }: { browser: BrowserDiagnostics | undefined }) {
+  const p = strings.components.linkTabs.pageAnalysis;
+  const [expandedStacks, setExpandedStacks] = useState<Record<number, boolean>>({});
+
+  if (!browser || typeof browser !== 'object') return null;
+
+  const consoleMsgs = Array.isArray(browser.console) ? browser.console : [];
+  const pageErrors = Array.isArray(browser.page_errors) ? browser.page_errors : [];
+  const failedRequests = Array.isArray(browser.failed_requests) ? browser.failed_requests : [];
+  const hasAny = consoleMsgs.length > 0 || pageErrors.length > 0 || failedRequests.length > 0;
+
+  return (
+    <div>
+      <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">
+        {p.browserConsoleTitle}
+      </h3>
+      {!hasAny ? (
+        <p className="text-sm text-muted-foreground">{p.browserConsoleClean}</p>
+      ) : (
+        <div className="space-y-4">
+          {consoleMsgs.length > 0 ? (
+            <div className="bg-brand-900 border border-default rounded-lg overflow-hidden">
+              <div className="px-4 py-2 text-xs font-semibold text-muted-foreground border-b border-default">
+                {p.browserConsoleMessages}
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-muted-foreground border-b border-muted/60">
+                    <th className="px-4 py-2 w-24">{p.browserThLevel}</th>
+                    <th className="px-4 py-2">{p.browserThMessage}</th>
+                    <th className="px-4 py-2 w-48">{p.browserThLocation}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {consoleMsgs.map((msg, i) => (
+                    <tr key={i} className="border-b border-muted/60 last:border-0">
+                      <td className="px-4 py-2 text-xs uppercase text-muted-foreground">{msg.level || '—'}</td>
+                      <td className="px-4 py-2 font-mono text-xs text-foreground break-all">{msg.text || '—'}</td>
+                      <td className="px-4 py-2 text-xs text-muted-foreground font-mono break-all">
+                        {msg.source_url
+                          ? `${msg.source_url}${msg.line != null ? `:${msg.line}` : ''}`
+                          : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+
+          {pageErrors.length > 0 ? (
+            <div className="bg-brand-900 border border-default rounded-lg overflow-hidden">
+              <div className="px-4 py-2 text-xs font-semibold text-muted-foreground border-b border-default">
+                {p.browserUncaughtExceptions}
+              </div>
+              <ul className="divide-y divide-muted/60">
+                {pageErrors.map((err, i) => (
+                  <li key={i} className="px-4 py-3 text-sm">
+                    <div className="font-mono text-foreground break-all">{err.message || '—'}</div>
+                    {err.stack ? (
+                      <button
+                        type="button"
+                        className="mt-1 text-xs text-brand-400 hover:underline"
+                        onClick={() => setExpandedStacks((prev) => ({ ...prev, [i]: !prev[i] }))}
+                      >
+                        {expandedStacks[i] ? p.browserHideStack : p.browserShowStack}
+                      </button>
+                    ) : null}
+                    {err.stack && expandedStacks[i] ? (
+                      <pre className="mt-2 text-xs text-muted-foreground font-mono whitespace-pre-wrap break-all">
+                        {err.stack}
+                      </pre>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {failedRequests.length > 0 ? (
+            <div className="bg-brand-900 border border-default rounded-lg overflow-hidden">
+              <div className="px-4 py-2 text-xs font-semibold text-muted-foreground border-b border-default">
+                {p.browserFailedRequests}
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-muted-foreground border-b border-muted/60">
+                    <th className="px-4 py-2 w-20">{p.browserThMethod}</th>
+                    <th className="px-4 py-2">{p.browserThUrl}</th>
+                    <th className="px-4 py-2 w-48">{p.browserThFailure}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {failedRequests.map((req, i) => (
+                    <tr key={i} className="border-b border-muted/60 last:border-0">
+                      <td className="px-4 py-2 text-xs text-muted-foreground">{req.method || '—'}</td>
+                      <td className="px-4 py-2 font-mono text-xs text-foreground break-all">{req.url || '—'}</td>
+                      <td className="px-4 py-2 text-xs text-muted-foreground break-all">{req.failure || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : null}
+        </div>
+      )}
+    </div>
+  );
 }
 
 interface NerBlockProps {
@@ -516,6 +626,8 @@ export default function PageAnalysisTab({ link }: PageAnalysisTabProps) {
           </div>
         </div>
       )}
+
+      <BrowserDiagnosticsBlock browser={'browser' in pa ? (pa.browser as BrowserDiagnostics | undefined) : undefined} />
 
       {/* Warnings */}
       <div>

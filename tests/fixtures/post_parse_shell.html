@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Post-parse shell</title></head>
+<body>
+  <main class="mount-point"></main>
+  <script src="/a.js"></script>
+  <script src="/b.js"></script>
+  <script src="/c.js"></script>
+  <script src="/d.js"></script>
+  <script>
+    setTimeout(function () {
+      var nav = document.createElement('nav');
+      var a = document.createElement('a');
+      a.href = '/discovered-by-js';
+      a.textContent = 'JS link';
+      nav.appendChild(a);
+      document.body.appendChild(nav);
+    }, 200);
+  </script>
+</body>
+</html>

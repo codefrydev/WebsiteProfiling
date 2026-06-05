@@ -12,7 +12,9 @@
 - `web/app/` -- routes; `web/src/` -- React; pipeline: `PipelineRunnerFab`, `server/pipelineJobs.ts`, `server/pipelineConfig.ts`, `server/llmConfig.ts`, `server/db.ts`
 - `alembic/` -- schema migrations
 
-**Local dev:** `./local-run` (Postgres in Docker `wp-pg`, Next.js on host). See `scripts/local-run.sh`. **Local tests (CI parity):** `./local-test` — see `scripts/local-test.sh`.
+**Local dev:** `./local-run` (Postgres in Docker `wp-pg`, Next.js on host). See `scripts/local-run.sh`. **Local tests (CI parity):** `./local-test` (80% coverage gate); `./local-test browser` for `@pytest.mark.browser` integration tests — see `scripts/local-test.sh`. Mocked browser unit tests: `tests/test_browser_fetcher_unit.py`.
+
+**JavaScript crawl (optional):** Config keys `crawl_render_mode` (`static` | `javascript` | `auto`) and `crawl_js_*` in pipeline config / `pipelineConfigSchema.ts`. JS/auto crawls can capture browser console errors and uncaught exceptions (`crawl_js_capture_console`, stored under `page_analysis.browser`). **Auto mode** uses static-first fetch, pre-parse SPA heuristics (`needs_js_render`), then post-parse low-outlink fallback (`needs_js_render_after_parse`) in `crawler.py`. **Preflight:** `GET /api/crawl/browser-status` (localhost) spawns Python `browser_status()`; Run audit settings/run validation calls it when render mode is `javascript` or `auto`. Browser deps: `requirements-browser.txt` (installed by `./local-run setup` and `./local-test`). Runtime needs Chromium on `PATH` or `CHROME_PATH` (Docker sets `CHROME_PATH=/usr/bin/chromium`). Integration tests: `@pytest.mark.browser` — excluded by default in `pytest.ini`; Docker CI runs `tests/test_crawl_fetchers.py` and `tests/test_crawler_browser_e2e.py -m browser`; locally `./local-test browser`.
 
 **Run / APIs**
 
@@ -22,7 +24,7 @@
 - **`DATABASE_URL`** env: PostgreSQL connection string (required). **`DATA_DIR`**: secrets + shadow config (Docker: `/data`).
 - **Pipeline data** (crawl, edges, nodes, report payload, Lighthouse, keywords, warnings) is stored in **PostgreSQL only** — no JSON/CSV/HTML exports from the main pipeline.
 - **Pool tuning:** `DB_POOL_MIN` / `DB_POOL_MAX` (Python), `PGPOOL_MAX` (Node). Bulk crawl writes via `executemany`; optional **`crawl_stream_to_db`** streams rows during fetch.
-- **`web/`:** `/api/report/*` (PostgreSQL); `/api/run` spawns Python (localhost only); `/api/pipeline-config` GET/PUT; `/api/llm-config` GET/PUT (AI only); `PipelineRunnerFab` saves pipeline + LLM state before each run
+- **`web/`:** `/api/report/*` (PostgreSQL); `/api/run` spawns Python (localhost only); `/api/crawl/browser-status` GET (localhost, Playwright/Chromium preflight); `/api/pipeline-config` GET/PUT; `/api/llm-config` GET/PUT (AI only); `PipelineRunnerFab` saves pipeline + LLM state before each run
 - **Job store:** in-memory on `globalThis` in `web/src/server/pipelineJobs.ts` — job status/log is lost on server restart (single-process dev/Docker only).
 - **Docker:** `Dockerfile` + `docker-compose.yml` (postgres + web); **`LIGHTHOUSE_CHROME_FLAGS`**
 
@@ -30,7 +32,7 @@
 
 | Task | Where |
 |------|--------|
-| Crawl | `crawl/crawler.py` |
+| Crawl | `crawl/crawler.py`, `crawl/fetchers/` |
 | Report | `reporting/builder.py`, `reporting/categories.py` |
 | DB schema | `alembic/versions/` |
 | Local analysis | `analysis/local.py`, `requirements.txt` |

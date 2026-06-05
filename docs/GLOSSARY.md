@@ -32,6 +32,7 @@ UI terms agencies recognize, mapped to internal keys and data sources.
 | Inlinks | `inlinks` | Crawl graph |
 | Outlinks | `outlinks` | Crawl graph |
 | Status code | `status` | HTTP |
+| Crawl rendering | `crawl_render_mode` on run; `fetch_method` per URL | `static`, `javascript`, or `auto` crawl config; `static` vs `rendered` per page |
 | Impressions | `gsc_impressions` | Search Console |
 | Clicks | `gsc_clicks` | Search Console |
 | CTR | `gsc_ctr` | Search Console |

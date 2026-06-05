@@ -14,7 +14,12 @@
  *   multiselect   – checkbox group (stored as comma-separated values)
  *   textarea  – multi-line text input
  */
+import type { BrowserCrawlStatus } from '@/lib/browserCrawlStatus';
+import { crawlRenderModeUsesBrowser } from '@/lib/browserCrawlStatus';
 import type { PipelineConfigState } from '@/types/api';
+
+export const BROWSER_CRAWL_UNAVAILABLE_MSG =
+  'JavaScript crawl requires Playwright and Chromium. Install: pip install -r requirements-browser.txt. Chrome or Chromium must be on PATH or set CHROME_PATH.';
 
 export interface PipelineConfigField {
   key: string;
@@ -27,7 +32,10 @@ export interface PipelineConfigField {
   span?: 1 | 2;
   unit?: string;
   required?: boolean;
+  visibleWhen?: { key: string; not?: readonly string[] };
 }
+
+const JS_FIELD_VISIBLE_WHEN = { key: 'crawl_render_mode', not: ['static'] as const };
 
 export interface PipelineConfigSection {
   id: string;
@@ -78,6 +86,93 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
         type: 'textarea',
         defaultValue: '',
         help: 'Comma-separated URL substrings or patterns to exclude from crawling.',
+      },
+      {
+        key: 'crawl_render_mode',
+        label: 'Crawl rendering',
+        type: 'singleselect',
+        defaultValue: 'static',
+        options: [
+          { value: 'static', label: 'Static HTML (fast)' },
+          { value: 'javascript', label: 'JavaScript rendering (slow)' },
+          { value: 'auto', label: 'Auto (static, JS when needed)' },
+        ],
+        help: 'JavaScript mode uses headless Chromium for React, Vue, Next.js, and Shopify themes. Roughly 10–20× slower than static.',
+      },
+      {
+        key: 'crawl_js_concurrency',
+        label: 'JS parallel pages',
+        type: 'number',
+        defaultValue: '3',
+        help: 'Parallel browser page slots when JavaScript rendering is enabled. HTTP concurrency is ignored in JS mode.',
+        visibleWhen: JS_FIELD_VISIBLE_WHEN,
+      },
+      {
+        key: 'crawl_js_timeout',
+        label: 'JS navigation timeout (s)',
+        type: 'number',
+        defaultValue: '30',
+        visibleWhen: JS_FIELD_VISIBLE_WHEN,
+      },
+      {
+        key: 'crawl_js_wait_until',
+        label: 'JS wait until',
+        type: 'select',
+        defaultValue: 'domcontentloaded',
+        visibleWhen: JS_FIELD_VISIBLE_WHEN,
+        options: [
+          { value: 'domcontentloaded', label: 'DOM content loaded' },
+          { value: 'load', label: 'Full load' },
+          { value: 'commit', label: 'First commit' },
+        ],
+      },
+      {
+        key: 'crawl_js_extra_wait_ms',
+        label: 'JS hydration wait (ms)',
+        type: 'number',
+        defaultValue: '1500',
+        help: 'Extra wait after load for client-side hydration before capturing HTML.',
+        visibleWhen: JS_FIELD_VISIBLE_WHEN,
+      },
+      {
+        key: 'crawl_js_block_resources',
+        label: 'Block images/fonts in JS crawl',
+        type: 'bool',
+        defaultValue: true,
+        help: 'Blocks images, fonts, and media during JS crawl for faster rendering.',
+        visibleWhen: JS_FIELD_VISIBLE_WHEN,
+      },
+      {
+        key: 'crawl_js_capture_console',
+        label: 'Capture browser console during JS crawl',
+        type: 'bool',
+        defaultValue: true,
+        help: 'Records console.error and console.warning messages while pages load in headless Chromium.',
+        visibleWhen: JS_FIELD_VISIBLE_WHEN,
+      },
+      {
+        key: 'crawl_js_console_levels',
+        label: 'Console levels to capture',
+        type: 'text',
+        defaultValue: 'error,warning',
+        help: 'Comma-separated console levels (e.g. error, warning, info).',
+        visibleWhen: JS_FIELD_VISIBLE_WHEN,
+      },
+      {
+        key: 'crawl_js_capture_failed_requests',
+        label: 'Capture failed network requests',
+        type: 'bool',
+        defaultValue: false,
+        help: 'Records failed XHR/fetch during JS crawl (can be noisy).',
+        visibleWhen: JS_FIELD_VISIBLE_WHEN,
+      },
+      {
+        key: 'crawl_js_console_max_per_page',
+        label: 'Max console entries per page',
+        type: 'number',
+        defaultValue: '20',
+        help: 'Cap on console messages, page errors, and failed requests stored per URL.',
+        visibleWhen: JS_FIELD_VISIBLE_WHEN,
       },
     ],
   },
@@ -370,6 +465,21 @@ export function getFieldByKey(key: string): PipelineConfigField | undefined {
   return undefined;
 }
 
+/** Whether a field should be shown given current config state (visibleWhen rules). */
+export function isPipelineFieldVisible(
+  field: PipelineConfigField,
+  state: Record<string, string | boolean | undefined>,
+): boolean {
+  const rule = field.visibleWhen;
+  if (!rule) return true;
+  const raw = state[rule.key];
+  const value = raw === undefined || raw === null ? '' : String(raw).trim().toLowerCase();
+  if (rule.not?.length) {
+    return !rule.not.some((excluded) => excluded.toLowerCase() === value);
+  }
+  return true;
+}
+
 function isTruthyPipelineBool(
   value: string | boolean | undefined,
   defaultWhenUnset = false,
@@ -382,6 +492,14 @@ function isTruthyPipelineBool(
 export interface ValidatePipelineRunInput {
   state: PipelineConfigState;
   command?: string | null;
+  browserStatus?: BrowserCrawlStatus | null;
+}
+
+function runIncludesCrawl(state: PipelineConfigState, command: string | null | undefined): boolean {
+  if (command === 'crawl') return true;
+  if (command === 'report' || command === 'keywords' || command === 'lighthouse') return false;
+  if (!command) return isTruthyPipelineBool(state?.run_crawl, true);
+  return false;
 }
 
 /** Validate schema fields marked `required`. */
@@ -404,7 +522,11 @@ export function validateRequiredPipelineFields(state: PipelineConfigState): stri
  * Validate config before starting a pipeline job.
  * @returns error messages (empty if ok)
  */
-export function validatePipelineRun({ state, command = null }: ValidatePipelineRunInput): string[] {
+export function validatePipelineRun({
+  state,
+  command = null,
+  browserStatus = null,
+}: ValidatePipelineRunInput): string[] {
   const startUrl = String(state?.start_url ?? '').trim();
   const lighthouseUrl = String(state?.lighthouse_url ?? '').trim();
   const errors: string[] = [];
@@ -432,6 +554,14 @@ export function validatePipelineRun({ state, command = null }: ValidatePipelineR
   }
   if (needsLighthouseUrl && !lighthouseUrl && !startUrl) {
     errors.push('Lighthouse URL or Start URL is required for single-URL Lighthouse.');
+  }
+  if (
+    runIncludesCrawl(state, command) &&
+    crawlRenderModeUsesBrowser(state) &&
+    browserStatus != null &&
+    !browserStatus.ok
+  ) {
+    errors.push(browserStatus.message?.trim() || BROWSER_CRAWL_UNAVAILABLE_MSG);
   }
   return errors;
 }

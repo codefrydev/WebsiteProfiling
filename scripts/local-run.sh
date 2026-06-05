@@ -82,6 +82,7 @@ cmd_venv() {
   fi
   log "Installing Python dependencies"
   "$VENV/bin/pip" install -q -r "$ROOT/requirements.txt"
+  "$VENV/bin/pip" install -q -r "$ROOT/requirements-browser.txt"
 }
 
 cmd_migrate() {
@@ -155,7 +156,7 @@ Environment overrides (optional):
 After start, open: http://localhost:3000/home
 Run audits via sidebar "Run audit" (bottom-right FAB).
 
-Run CI-style tests: ./local-test (see ./local-test help).
+Run CI-style tests: ./local-test (see ./local-test help). JS crawl integration: ./local-test browser.
 EOF
 }
 

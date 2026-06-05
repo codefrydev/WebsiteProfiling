@@ -21,6 +21,11 @@ import { deriveSiteNameFromStartUrl } from '@/lib/domainSlug';
 import { useOptionalReport } from '@/context/useReport';
 import { strings, format } from '@/lib/strings';
 import {
+  type BrowserCrawlStatus,
+  crawlRenderModeUsesBrowser,
+  fetchBrowserCrawlStatus,
+} from '@/lib/browserCrawlStatus';
+import {
   buildInitialPipelineConfigState,
   validatePipelineRun,
   validateRequiredPipelineFields,
@@ -58,6 +63,9 @@ export interface PipelineContextValue {
   status: PipelineJobStatus | '';
   backgroundMode: boolean;
   startUrl: string;
+  browserCrawlStatus: BrowserCrawlStatus | null;
+  browserCrawlChecking: boolean;
+  refreshBrowserCrawlStatus: () => Promise<void>;
   setPresetId: (id: PipelinePresetId) => void;
   setCustomCommand: (value: string) => void;
   setField: (key: string, value: string | boolean) => void;
@@ -112,7 +120,28 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<PipelineJobStatus | ''>('');
   const [backgroundMode, setBackgroundMode] = useState(false);
   const [configLoaded, setConfigLoaded] = useState(false);
+  const [browserCrawlStatus, setBrowserCrawlStatus] = useState<BrowserCrawlStatus | null>(null);
+  const [browserCrawlChecking, setBrowserCrawlChecking] = useState(false);
   const pollStopRef = useRef<(() => void) | null>(null);
+
+  const refreshBrowserCrawlStatus = useCallback(async () => {
+    setBrowserCrawlChecking(true);
+    try {
+      const status = await fetchBrowserCrawlStatus();
+      setBrowserCrawlStatus(status);
+    } finally {
+      setBrowserCrawlChecking(false);
+    }
+  }, []);
+
+  const crawlRenderMode = String(configState.crawl_render_mode ?? 'static');
+  useEffect(() => {
+    if (!crawlRenderModeUsesBrowser({ crawl_render_mode: crawlRenderMode })) {
+      setBrowserCrawlStatus(null);
+      return;
+    }
+    void refreshBrowserCrawlStatus();
+  }, [crawlRenderMode, refreshBrowserCrawlStatus]);
 
   useEffect(() => {
     savePipelineRunnerPrefs({ pythonExe, repoRoot });
@@ -351,7 +380,16 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
 
   const run = useCallback(async () => {
     const command = effectiveCommand || null;
-    const validationErrors = validatePipelineRun({ state: configState, command });
+    let browserStatus = browserCrawlStatus;
+    if (crawlRenderModeUsesBrowser(configState)) {
+      browserStatus = await fetchBrowserCrawlStatus();
+      setBrowserCrawlStatus(browserStatus);
+    }
+    const validationErrors = validatePipelineRun({
+      state: configState,
+      command,
+      browserStatus,
+    });
     if (validationErrors.length > 0) {
       const message = validationErrors.join(' ');
       logPipelineFailure('Run validation failed', { command, errors: validationErrors });
@@ -403,6 +441,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     buildLlmPayload,
     pythonExe,
     repoRoot,
+    browserCrawlStatus,
     stopPoll,
     watchJob,
   ]);
@@ -432,6 +471,9 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       status,
       backgroundMode,
       startUrl: String(configState.start_url ?? ''),
+      browserCrawlStatus,
+      browserCrawlChecking,
+      refreshBrowserCrawlStatus,
       setPresetId,
       setCustomCommand,
       setField,
@@ -466,6 +508,9 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       log,
       status,
       backgroundMode,
+      browserCrawlStatus,
+      browserCrawlChecking,
+      refreshBrowserCrawlStatus,
       setLlmField,
       handleStartUrlChange,
       handlePresetChange,

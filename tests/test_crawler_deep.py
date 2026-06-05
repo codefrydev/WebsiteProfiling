@@ -8,7 +8,12 @@ import pandas as pd
 
 def test_worker_success_path_populates_many_fields(monkeypatch):
     import website_profiling.crawl.crawler as mod
+    from website_profiling.crawl.fetchers.base import FetchResult
 
+    monkeypatch.setattr(
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
+        lambda *_a, **_k: [],
+    )
     c = mod.Crawler(
         start_url="https://site.com",
         ignore_robots=True,
@@ -17,15 +22,16 @@ def test_worker_success_path_populates_many_fields(monkeypatch):
         store_outlinks=True,
         max_depth=2,
     )
-    c.fetch = lambda _url: (  # type: ignore[method-assign]
-        200,
-        "text/html",
-        "<html><body>ok</body></html>",
-        12,
-        100,
-        "https://site.com/page",
-        {"X-Robots-Tag": ""},
-        0,
+    c.fetch = lambda _url: FetchResult(  # type: ignore[method-assign]
+        status=200,
+        content_type="text/html",
+        text="<html><body>ok</body></html>",
+        response_time_ms=12,
+        content_length=100,
+        final_url="https://site.com/page",
+        headers_dict={"X-Robots-Tag": ""},
+        redirect_chain_length=0,
+        fetch_method="static",
     )
     monkeypatch.setattr(mod, "parse_links", lambda _u, _t: ("T", {"https://site.com/a", "https://ext.com/x"}))
     monkeypatch.setattr(mod, "parse_seo", lambda *_a, **_k: ("desc", 4, "h1", 1, "https://site.com/canon"))
@@ -86,6 +92,10 @@ def test_worker_success_path_populates_many_fields(monkeypatch):
 def test_crawl_runs_and_handles_done_futures(monkeypatch):
     import website_profiling.crawl.crawler as mod
 
+    monkeypatch.setattr(
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
+        lambda *_a, **_k: [],
+    )
     c = mod.Crawler(start_url="https://site.com", ignore_robots=True, use_wappalyzer=False, concurrency=1, max_pages=1)
     monkeypatch.setattr(
         c,
@@ -134,7 +144,7 @@ def test_run_crawler_streaming_db_path(monkeypatch):
     monkeypatch.setattr(mod, "Crawler", FakeCrawler)
     fake_db = types.SimpleNamespace(
         backup_db_if_exists=lambda: None,
-        create_crawl_run=lambda _c, _u, property_id=None: 10,
+        create_crawl_run=lambda _c, _u, property_id=None, render_mode=None: 10,
         db_session=lambda: _Ctx(),
         read_historical_data=lambda: {},
         restore_historical_data=lambda *_a, **_k: None,

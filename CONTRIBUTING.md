@@ -19,6 +19,8 @@ Thank you for helping improve this project. All contributions are welcome under 
 
 Details: [README.md](README.md), [AGENT.md](AGENT.md).
 
+JavaScript/auto crawl needs Playwright (`requirements-browser.txt`, installed by `./local-run setup`) and Chromium on `PATH` or `CHROME_PATH`. Unit tests mock the browser fetcher; integration tests use `@pytest.mark.browser` and run in the Docker CI job (`tests/test_crawl_fetchers.py`, `tests/test_crawler_browser_e2e.py`). Locally: `./local-test browser` (skips gracefully if Chromium is missing).
+
 ## Running tests
 
 Match CI before opening a pull request:
@@ -26,11 +28,12 @@ Match CI before opening a pull request:
 ```bash
 ./local-test              # full check (recommended)
 ./local-test python       # backend only
+./local-test browser      # JS crawl integration tests (skips if Chromium unavailable)
 ./local-test web            # frontend only
 ./local-test quick          # faster; DB must already be running
 ```
 
-CI runs Python tests (PostgreSQL + Alembic), web typecheck/lint/vitest, CLI smoke, and a Docker build (see [.github/workflows/ci.yml](.github/workflows/ci.yml)).
+CI runs Python tests (PostgreSQL + Alembic, 80% coverage gate), web typecheck/lint/vitest, CLI smoke, and a Docker build that also runs browser-marked pytest inside the image (see [.github/workflows/ci.yml](.github/workflows/ci.yml)).
 
 ## How to contribute
 

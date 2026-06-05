@@ -357,7 +357,12 @@ export interface ReportPayload {
       max_pages_configured?: number;
       robots_blocked_count?: number;
       static_html_only?: boolean;
+      render_mode?: string;
+      js_concurrency?: number | null;
+      pages_static?: number;
+      pages_rendered?: number;
       crawl_limited?: boolean;
+      browser_diagnostics?: BrowserDiagnosticsAggregate;
     };
     google_fetched_at?: string;
     google_date_range_days?: number;
@@ -428,6 +433,9 @@ export interface ReportLink {
       seo_score?: number;
     };
   };
+  console_error_count?: number;
+  page_error_count?: number;
+  has_browser_errors?: boolean;
 }
 
 export interface ReportTopPage {
@@ -634,6 +642,52 @@ export interface PageWarning {
   [key: string]: unknown;
 }
 
+export interface BrowserConsoleMessage {
+  level?: string;
+  text?: string;
+  source_url?: string;
+  line?: number;
+}
+
+export interface BrowserPageError {
+  message?: string;
+  stack?: string;
+}
+
+export interface BrowserFailedRequest {
+  url?: string;
+  method?: string;
+  failure?: string;
+}
+
+export interface BrowserDiagnosticsSummary {
+  console_error_count?: number;
+  console_warning_count?: number;
+  page_error_count?: number;
+  failed_request_count?: number;
+}
+
+export interface BrowserDiagnostics {
+  console?: BrowserConsoleMessage[];
+  page_errors?: BrowserPageError[];
+  failed_requests?: BrowserFailedRequest[];
+  summary?: BrowserDiagnosticsSummary;
+}
+
+export interface TopConsoleMessage {
+  text?: string;
+  count?: number;
+  sample_urls?: string[];
+}
+
+export interface BrowserDiagnosticsAggregate {
+  pages_with_console_errors?: number;
+  pages_with_page_errors?: number;
+  total_console_errors?: number;
+  total_page_errors?: number;
+  top_console_messages?: TopConsoleMessage[];
+}
+
 export interface PageAnalysis {
   internal_link_count?: number;
   external_link_count?: number;
@@ -645,6 +699,7 @@ export interface PageAnalysis {
   stylesheet_urls?: string[];
   script_urls?: string[];
   image_urls?: string[];
+  browser?: BrowserDiagnostics;
   signals?: { nlp_entities?: NlpSignals; language?: string };
   [key: string]: unknown;
 }

@@ -54,6 +54,109 @@ def test_run_single_lighthouse_exits_on_nonzero(monkeypatch):
     assert e.value.code == 2
 
 
+def test_run_plot_passes_render_mode_to_run_plot(monkeypatch):
+    from website_profiling.commands import pipeline_cmd
+
+    captured: dict = {}
+
+    def fake_run_plot(**kwargs):
+        captured.update(kwargs)
+
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "website_profiling.tools.plot",
+        types.SimpleNamespace(run_plot=fake_run_plot),
+    )
+
+    pipeline_cmd._run_plot(
+        {
+            "crawl_render_mode": "javascript",
+            "crawl_js_concurrency": "2",
+            "crawl_js_timeout": "25",
+            "crawl_js_wait_until": "load",
+            "crawl_js_extra_wait_ms": "2000",
+            "crawl_js_block_resources": "false",
+        },
+        True,
+    )
+
+    assert captured.get("render_mode") == "javascript"
+    assert captured.get("js_concurrency") == 2
+    assert captured.get("js_timeout") == 25
+    assert captured.get("js_wait_until") == "load"
+    assert captured.get("js_extra_wait_ms") == 2000
+    assert captured.get("js_block_resources") is False
+
+
+def test_build_report_metadata_includes_fetch_method_counts() -> None:
+    import pandas as pd
+    from website_profiling.reporting.builder import _build_report_metadata
+
+    df = pd.DataFrame(
+        [
+            {"url": "https://a.com/1", "status": "200", "fetch_method": "static"},
+            {"url": "https://a.com/2", "status": "200", "fetch_method": "rendered"},
+            {"url": "https://a.com/3", "status": "200", "fetch_method": "static"},
+        ]
+    )
+    meta = _build_report_metadata(
+        df,
+        {"crawl_render_mode": "auto", "max_pages": "10"},
+        None,
+        None,
+        None,
+        {},
+        1,
+        None,
+    )
+    scope = meta["crawl_scope"]
+    assert scope["pages_static"] == 2
+    assert scope["pages_rendered"] == 1
+    assert scope["render_mode"] == "auto"
+
+
+def test_build_report_metadata_aggregates_browser_diagnostics():
+    import json
+
+    import pandas as pd
+
+    from website_profiling.reporting.builder import _build_report_metadata
+
+    pa_with_error = json.dumps(
+        {
+            "browser": {
+                "console": [{"level": "error", "text": "Same error"}],
+                "page_errors": [{"message": "Uncaught"}],
+                "summary": {"console_error_count": 1, "page_error_count": 1},
+            }
+        }
+    )
+    pa_clean = json.dumps({"browser": {"console": [], "page_errors": [], "summary": {"console_error_count": 0}}})
+    df = pd.DataFrame(
+        [
+            {"url": "https://a.com/1", "status": "200", "fetch_method": "rendered", "page_analysis": pa_with_error},
+            {"url": "https://a.com/2", "status": "200", "fetch_method": "rendered", "page_analysis": pa_with_error},
+            {"url": "https://a.com/3", "status": "200", "fetch_method": "static", "page_analysis": pa_clean},
+        ]
+    )
+    meta = _build_report_metadata(
+        df,
+        {"crawl_render_mode": "javascript", "max_pages": "10"},
+        None,
+        None,
+        None,
+        {},
+        1,
+        None,
+    )
+    bd = meta["crawl_scope"]["browser_diagnostics"]
+    assert bd["pages_with_console_errors"] == 2
+    assert bd["total_console_errors"] == 2
+    assert bd["pages_with_page_errors"] == 2
+    assert len(bd["top_console_messages"]) >= 1
+    assert bd["top_console_messages"][0]["text"] == "Same error"
+
+
 def test_run_report_and_plot_paths(monkeypatch):
     from website_profiling.commands import pipeline_cmd
 

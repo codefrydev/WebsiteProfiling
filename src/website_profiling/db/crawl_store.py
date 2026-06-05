@@ -29,11 +29,19 @@ def create_crawl_run(
     conn: Connection,
     start_url: Optional[str] = None,
     property_id: Optional[int] = None,
+    render_mode: Optional[str] = None,
 ) -> int:
-    cur = conn.execute(
-        "INSERT INTO crawl_runs (created_at, start_url, property_id) VALUES (%s, %s, %s) RETURNING id",
-        (_now_iso(), start_url, property_id),
-    )
+    mode = (render_mode or "static").strip().lower()
+    try:
+        cur = conn.execute(
+            "INSERT INTO crawl_runs (created_at, start_url, property_id, render_mode) VALUES (%s, %s, %s, %s) RETURNING id",
+            (_now_iso(), start_url, property_id, mode),
+        )
+    except Exception:
+        cur = conn.execute(
+            "INSERT INTO crawl_runs (created_at, start_url, property_id) VALUES (%s, %s, %s) RETURNING id",
+            (_now_iso(), start_url, property_id),
+        )
     row = cur.fetchone()
     conn.commit()
     return int(row["id"])
@@ -50,13 +58,32 @@ def get_latest_crawl_run_id(conn: Connection) -> Optional[int]:
 
 def get_crawl_run_info(conn: Connection, run_id: int) -> Optional[dict[str, Any]]:
     try:
-        cur = conn.execute("SELECT created_at, start_url FROM crawl_runs WHERE id = %s", (run_id,))
+        cur = conn.execute(
+            "SELECT created_at, start_url, render_mode FROM crawl_runs WHERE id = %s",
+            (run_id,),
+        )
         row = cur.fetchone()
         if row is None:
             return None
-        return {"created_at": row["created_at"], "start_url": row["start_url"]}
+        out: dict[str, Any] = {
+            "created_at": row["created_at"],
+            "start_url": row["start_url"],
+        }
+        if "render_mode" in row.keys():
+            out["render_mode"] = row["render_mode"]
+        return out
     except Exception:
-        return None
+        try:
+            cur = conn.execute(
+                "SELECT created_at, start_url FROM crawl_runs WHERE id = %s",
+                (run_id,),
+            )
+            row = cur.fetchone()
+            if row is None:
+                return None
+            return {"created_at": row["created_at"], "start_url": row["start_url"]}
+        except Exception:
+            return None
 
 
 def _df_row_to_crawl_json(row: pd.Series) -> dict[str, Any]:
@@ -100,7 +127,15 @@ def _canonical_domain_from_report(conn: Connection, report_data: dict[str, Any])
     return _extract_hostname(start_url) or _extract_hostname(fallback_url)
 
 
-_CRAWL_INSERT_SQL = """INSERT INTO crawl_results (crawl_run_id, url, status, title, data)
+_CRAWL_INSERT_SQL = """INSERT INTO crawl_results (crawl_run_id, url, status, title, fetch_method, data)
+VALUES (%s, %s, %s, %s, %s, %s)
+ON CONFLICT (crawl_run_id, url) DO UPDATE SET
+  status = EXCLUDED.status,
+  title = EXCLUDED.title,
+  fetch_method = EXCLUDED.fetch_method,
+  data = EXCLUDED.data"""
+
+_CRAWL_INSERT_SQL_LEGACY = """INSERT INTO crawl_results (crawl_run_id, url, status, title, data)
 VALUES (%s, %s, %s, %s, %s)
 ON CONFLICT (crawl_run_id, url) DO UPDATE SET
   status = EXCLUDED.status,
@@ -112,7 +147,9 @@ def _crawl_rows_from_df(df: pd.DataFrame, crawl_run_id: int) -> list[tuple]:
     rows: list[tuple] = []
     if df.empty or "url" not in df.columns:
         return rows
-    data_cols = [c for c in df.columns if c not in ("url", "crawl_run_id")]
+    data_cols = [
+        c for c in df.columns if c not in ("url", "crawl_run_id", "fetch_method")
+    ]
     for rec in df.to_dict(orient="records"):
         url = str(rec.get("url", "")).rstrip("/")
         if not url:
@@ -120,8 +157,25 @@ def _crawl_rows_from_df(df: pd.DataFrame, crawl_run_id: int) -> list[tuple]:
         payload = {c: _sanitize_for_json(rec[c]) if not pd.isna(rec.get(c)) else None for c in data_cols}
         status = str(rec.get("status") or "") if "status" in rec else None
         title = str(rec.get("title") or "") if "title" in rec else None
-        rows.append((crawl_run_id, url, status, title, _json_val(payload)))
+        fetch_method = str(rec.get("fetch_method") or "static").strip() or "static"
+        rows.append((crawl_run_id, url, status, title, fetch_method, _json_val(payload)))
     return rows
+
+
+def _write_crawl_rows(conn: Connection, rows: list[tuple]) -> None:
+    if not rows:
+        return
+    normalized: list[tuple] = []
+    for row in rows:
+        if len(row) == 5:
+            normalized.append((row[0], row[1], row[2], row[3], "static", row[4]))
+        else:
+            normalized.append(row)
+    try:
+        _executemany(conn, _CRAWL_INSERT_SQL, normalized, page_size=_CRAWL_BATCH_SIZE)
+    except Exception:
+        legacy = [(r[0], r[1], r[2], r[3], r[5]) for r in normalized]
+        _executemany(conn, _CRAWL_INSERT_SQL_LEGACY, legacy, page_size=_CRAWL_BATCH_SIZE)
 
 
 def write_crawl_batch(
@@ -131,10 +185,10 @@ def write_crawl_batch(
     *,
     commit: bool = True,
 ) -> None:
-    """Insert a batch of crawl rows (each tuple: run_id, url, status, title, data Json)."""
+    """Insert a batch of crawl rows (each tuple: run_id, url, status, title, fetch_method, data Json)."""
     if not rows:
         return
-    _executemany(conn, _CRAWL_INSERT_SQL, rows, page_size=_CRAWL_BATCH_SIZE)
+    _write_crawl_rows(conn, rows)
     if commit:
         conn.commit()
 
@@ -170,37 +224,68 @@ def write_crawl(conn: Connection, df: pd.DataFrame, crawl_run_id: Optional[int] 
 
         rows = _crawl_rows_from_df(df, target_run_id)
         if rows:
-            _executemany(conn, _CRAWL_INSERT_SQL, rows, page_size=_CRAWL_BATCH_SIZE)
+            _write_crawl_rows(conn, rows)
 
 
 def read_crawl(conn: Connection, run_id: Optional[int] = None) -> pd.DataFrame:
     try:
+        return _read_crawl_rows(conn, run_id, include_fetch_method=True)
+    except Exception:
+        try:
+            return _read_crawl_rows(conn, run_id, include_fetch_method=False)
+        except Exception:
+            return pd.DataFrame()
+
+
+def _read_crawl_rows(
+    conn: Connection,
+    run_id: Optional[int],
+    *,
+    include_fetch_method: bool,
+) -> pd.DataFrame:
+    if run_id is None:
+        run_id = get_latest_crawl_run_id(conn)
+    if include_fetch_method:
         if run_id is None:
-            run_id = get_latest_crawl_run_id(conn)
-        if run_id is None:
-            cur = conn.execute("SELECT url, data FROM crawl_results")
+            cur = conn.execute("SELECT url, fetch_method, data FROM crawl_results")
         else:
             cur = conn.execute(
-                "SELECT url, data FROM crawl_results WHERE crawl_run_id = %s",
+                "SELECT url, fetch_method, data FROM crawl_results WHERE crawl_run_id = %s",
                 (run_id,),
             )
-        rows = cur.fetchall()
-        if not rows:
-            return pd.DataFrame()
-        records = []
-        for row in rows:
-            rec = {"url": row["url"]}
-            data = _parse_row_json(row) or {}
-            if isinstance(data, dict):
-                rec.update(data)
-            records.append(rec)
-        df = pd.DataFrame(records)
-        for c in _BOOL_COLS:
-            if c in df.columns:
-                df[c] = df[c].astype(bool)
-        return df
-    except Exception:
+    elif run_id is None:
+        cur = conn.execute("SELECT url, data FROM crawl_results")
+    else:
+        cur = conn.execute(
+            "SELECT url, data FROM crawl_results WHERE crawl_run_id = %s",
+            (run_id,),
+        )
+    rows = cur.fetchall()
+    if not rows:
         return pd.DataFrame()
+    records = []
+    for row in rows:
+        rec: dict[str, Any] = {"url": row["url"]}
+        fm_col: Optional[str] = None
+        if include_fetch_method and "fetch_method" in row.keys():
+            fm_col = str(row["fetch_method"] or "static").strip() or "static"
+        data = _parse_row_json(row) or {}
+        if isinstance(data, dict):
+            rec.update(data)
+        if fm_col is not None:
+            rec["fetch_method"] = fm_col
+        elif not include_fetch_method:
+            rec["fetch_method"] = str(
+                (data.get("fetch_method") if isinstance(data, dict) else None) or "static"
+            ).strip() or "static"
+        elif "fetch_method" not in rec:
+            rec["fetch_method"] = "static"
+        records.append(rec)
+    df = pd.DataFrame(records)
+    for c in _BOOL_COLS:
+        if c in df.columns:
+            df[c] = df[c].astype(bool)
+    return df
 
 
 def write_edges(conn: Connection, edges: list[tuple[str, str]], crawl_run_id: Optional[int] = None) -> None:
