@@ -162,6 +162,42 @@ export async function readLatestKeywordPayload(
   }
 }
 
+/** Latest gsc_links_data row (GSC Links CSV import). */
+export async function readLatestGscLinksPayload(
+  client: PoolClient,
+  propertyId: number | null = null,
+): Promise<Record<string, unknown> | null> {
+  if (propertyId == null) return null;
+  try {
+    const { rows } = await client.query(
+      `SELECT data FROM gsc_links_data
+       WHERE property_id = $1 ORDER BY id DESC LIMIT 1`,
+      [propertyId],
+    );
+    if (!rows.length) return null;
+    const raw = parseJsonField(rows[0].data);
+    if (!raw || typeof raw !== 'object') return null;
+    const sample = Array.isArray(raw.sample_links) ? raw.sample_links : [];
+    const latest = Array.isArray(raw.latest_links) ? raw.latest_links : [];
+    const cap = 2000;
+    let out = raw as Record<string, unknown>;
+    if (sample.length + latest.length > cap) {
+      const sampleCap = Math.min(sample.length, cap);
+      const latestCap = Math.max(0, cap - sampleCap);
+      out = {
+        ...raw,
+        sample_links: sample.slice(0, sampleCap),
+        latest_links: latest.slice(0, latestCap),
+        sample_links_full_count: sample.length,
+        latest_links_full_count: latest.length,
+      };
+    }
+    return out;
+  } catch {
+    return null;
+  }
+}
+
 async function lookupPropertyIdByDomain(
   client: PoolClient,
   domainRaw: string,
@@ -225,6 +261,9 @@ export async function mergeSidecarPayloadData(
 
   const keywords = await readLatestKeywordPayload(client, propertyId);
   if (keywords) merged.keywords = keywords as ReportPayload['keywords'];
+
+  const gscLinks = await readLatestGscLinksPayload(client, propertyId);
+  if (gscLinks) merged.gsc_links = gscLinks as ReportPayload['gsc_links'];
 
   if (scopedDomain) {
     merged = stripGoogleIfDomainMismatch(merged, scopedDomain);

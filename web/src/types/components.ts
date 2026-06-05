@@ -78,6 +78,40 @@ export interface GscDailyRow {
   [key: string]: unknown;
 }
 
+export interface GscTopLinkingSiteRow {
+  site?: string;
+  link_count?: number;
+  target_page_count?: number;
+  [key: string]: unknown;
+}
+
+export interface GscTopLinkedPageRow {
+  target_page?: string;
+  link_count?: number;
+  linking_site_count?: number;
+  target_in_crawl?: boolean;
+  crawl_url?: string;
+  [key: string]: unknown;
+}
+
+export interface GscTopLinkingTextRow {
+  anchor_text?: string;
+  link_count?: number;
+  [key: string]: unknown;
+}
+
+export interface GscSampleLinkRow {
+  source_page?: string;
+  target_page?: string;
+  target_url_on_linking_page?: string;
+  anchor_text?: string;
+  linking_site?: string;
+  discovered_at?: string;
+  target_in_crawl?: boolean;
+  crawl_url?: string;
+  [key: string]: unknown;
+}
+
 export interface Ga4PageRow {
   path: string;
   sessions?: number;

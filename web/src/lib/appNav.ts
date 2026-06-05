@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   AlertOctagon,
   ArrowLeftRight,
+  Link2,
   BarChart2,
   Cpu,
   FileDown,
@@ -51,6 +52,7 @@ const VIEW_NAV: { id: ViewId; icon: LucideIcon }[] = [
   { id: 'network', icon: Share2 },
   { id: 'gallery', icon: Images },
   { id: 'search-performance', icon: TrendingUp },
+  { id: 'backlinks', icon: Link2 },
   { id: 'traffic', icon: BarChart2 },
   { id: 'keywords-explorer', icon: Key },
 ];

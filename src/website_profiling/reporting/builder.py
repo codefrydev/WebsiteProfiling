@@ -864,6 +864,7 @@ def _build_report_metadata(
     ml_bundle: dict[str, Any],
     run_id: Optional[int],
     crawl_run_created_at: Optional[str],
+    gsc_links_data: Optional[dict[str, Any]] = None,
 ) -> dict[str, Any]:
     """Provenance and crawl scope for agency-facing audits."""
     sources: list[str] = ["crawl"]
@@ -874,6 +875,8 @@ def _build_report_metadata(
             sources.append("search_console")
         if google_data.get("ga4") or google_data.get("ga4_summary"):
             sources.append("analytics")
+    if gsc_links_data and "search_console" not in sources:
+        sources.append("search_console")
     llm_meta = ml_bundle.get("llm_meta")
     if isinstance(llm_meta, dict) and llm_meta.get("model"):
         sources.append("ai")
@@ -936,6 +939,12 @@ def _build_report_metadata(
             meta["gsc_row_count"] = gsc.get("row_count")
     if keywords_data:
         meta["keywords_enriched_at"] = keywords_data.get("enriched_at") or keywords_data.get("fetched_at")
+    if gsc_links_data:
+        meta["gsc_links_imported_at"] = gsc_links_data.get("imported_at")
+        meta["gsc_links_referring_domains"] = len(gsc_links_data.get("top_linking_sites") or [])
+        sample_n = len(gsc_links_data.get("sample_links") or [])
+        latest_n = len(gsc_links_data.get("latest_links") or [])
+        meta["gsc_links_sample_count"] = sample_n + latest_n
     if isinstance(llm_meta, dict):
         meta["llm"] = llm_meta
     return meta
@@ -1516,11 +1525,17 @@ def run_simple_report(
     with _db() as conn:
         google_data: Optional[dict[str, Any]] = None
         kw_data: Optional[dict[str, Any]] = None
+        gsc_links: Optional[dict[str, Any]] = None
+        property_id: Optional[int] = None
         try:
             from ..commands.config_resolve import resolve_property_id_from_cfg
-            from ..integrations.google.store import read_latest_google_data
 
             property_id = resolve_property_id_from_cfg(config, conn)
+        except Exception:
+            property_id = None
+        try:
+            from ..integrations.google.store import read_latest_google_data
+
             google_data = read_latest_google_data(conn, property_id=property_id)
             if google_data:
                 report_data["google"] = google_data
@@ -1528,6 +1543,8 @@ def run_simple_report(
             pass
         try:
             from ..integrations.google.keyword_store import read_latest_keyword_data
+            from ..integrations.google.gsc_links_store import read_latest_gsc_links_data
+
             kw_data = read_latest_keyword_data(conn, property_id)
             if kw_data:
                 rows = kw_data.get("rows") or []
@@ -1535,6 +1552,9 @@ def run_simple_report(
                     rows = rows[:500]
                     kw_data = {**kw_data, "rows": rows}
                 report_data["keywords"] = kw_data
+            gsc_links = read_latest_gsc_links_data(conn, property_id)
+            if gsc_links:
+                report_data["gsc_links"] = gsc_links
         except Exception:
             pass
         report_data["report_meta"] = _build_report_metadata(
@@ -1546,6 +1566,7 @@ def run_simple_report(
             ml_bundle,
             run_id,
             crawl_run_created_at,
+            gsc_links,
         )
         db_write_report_payload(conn, report_data)
     return "postgresql"

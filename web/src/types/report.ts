@@ -5,6 +5,10 @@ import type {
   GscDailyRow,
   GscPageRow,
   GscQueryRow,
+  GscSampleLinkRow,
+  GscTopLinkedPageRow,
+  GscTopLinkingSiteRow,
+  GscTopLinkingTextRow,
   KeywordRow,
   UrlJoinData,
 } from '@/types/components';
@@ -291,6 +295,22 @@ export interface KeywordReportData {
   [key: string]: unknown;
 }
 
+export interface GscLinksReportData {
+  imported_at?: string;
+  source?: 'gsc_links_csv';
+  export_types?: string[];
+  row_counts?: Record<string, number>;
+  top_linking_sites?: GscTopLinkingSiteRow[];
+  top_linked_pages?: GscTopLinkedPageRow[];
+  top_linking_text?: GscTopLinkingTextRow[];
+  sample_links?: GscSampleLinkRow[];
+  latest_links?: GscSampleLinkRow[];
+  sample_links_full_count?: number;
+  latest_links_full_count?: number;
+  errors?: string[];
+  [key: string]: unknown;
+}
+
 export interface SiteLevelChecks {
   robots_present?: boolean;
   sitemap_present?: boolean;
@@ -366,6 +386,9 @@ export interface ReportPayload {
     };
     google_fetched_at?: string;
     google_date_range_days?: number;
+    gsc_links_imported_at?: string;
+    gsc_links_referring_domains?: number;
+    gsc_links_sample_count?: number;
     llm?: { model?: string; prompt_version?: string; generated_at?: string };
   };
   links?: ReportLink[];
@@ -375,6 +398,7 @@ export interface ReportPayload {
   url_fingerprints?: UrlFingerprint[];
   google?: GoogleReportData;
   keywords?: KeywordReportData;
+  gsc_links?: GscLinksReportData;
   lighthouse_summary?: LighthousePageSummary;
   lighthouse_diagnostics?: LighthouseDiagnostic[];
   lighthouse_human_summary?: string;

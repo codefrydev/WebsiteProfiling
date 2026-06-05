@@ -221,6 +221,7 @@ def build_parser() -> argparse.ArgumentParser:
             "warnings",
             "enrich",
             "google",
+            "gsc-links-import",
             "page-live",
             "page-coach",
         ],
@@ -265,6 +266,29 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         dest="property_id",
         help="WebsiteProfiling property id for per-site Google credentials.",
+    )
+    parser.add_argument(
+        "--csv-stdin",
+        action="store_true",
+        dest="csv_stdin",
+        help="For gsc-links-import: read CSV from stdin.",
+    )
+    parser.add_argument(
+        "--csv-file",
+        default=None,
+        dest="csv_file",
+        help="For gsc-links-import: path to CSV file.",
+    )
+    parser.add_argument(
+        "--file-name",
+        default=None,
+        dest="file_name",
+        help="For gsc-links-import: original upload file name.",
+    )
+    parser.add_argument(
+        "--status",
+        action="store_true",
+        help="For gsc-links-import: print import status JSON and exit.",
     )
     parser.add_argument(
         "--enrich-google",

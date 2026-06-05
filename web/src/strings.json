@@ -94,6 +94,10 @@
       "label": "Search Console",
       "section": "Search & analytics"
     },
+    "backlinks": {
+      "label": "Backlinks",
+      "section": "Search & analytics"
+    },
     "traffic": {
       "label": "Analytics (GA4)",
       "section": "Search & analytics"
@@ -195,6 +199,18 @@
     "googlePropertyContextEmail": "Signed in as {email}",
     "googlePropertyGscGa4": "GSC: {gsc} · GA4: {ga4}",
     "googlePropertySyncSaving": "Updating Site URL…",
+    "gscLinksTitle": "Search Console Links (backlinks)",
+    "gscLinksDescription": "Import CSV exports from Google Search Console → Links. This is Google's sample of external sites linking to you — not crawl inlinks or a full web index.",
+    "gscLinksHelpUrl": "https://support.google.com/webmasters/answer/9049606",
+    "gscLinksHelpLabel": "GSC Links report help",
+    "gscLinksUploadLabel": "Upload GSC Links CSV",
+    "gscLinksUploadHint": "Export Top linking sites, Top linked pages, Top linking text, or Latest/More sample links from Search Console, then upload each file here.",
+    "gscLinksUploading": "Importing…",
+    "gscLinksUploadSuccess": "Import complete.",
+    "gscLinksUploadFailed": "Import failed: {message}",
+    "gscLinksLastImport": "Last import: {date}",
+    "gscLinksNoData": "No GSC Links import yet for this property.",
+    "gscLinksRowCounts": "{domains} referring domains · {pages} linked pages · {sample} sample links",
     "contentAiHint": "AI insights run when the audit report is built (optional).",
     "settingsSectionTabsLabel": "Settings sections",
     "settingsTabIntegrations": "Integrations",
@@ -1028,6 +1044,57 @@
         "rowsPerPage": "{n} per page"
       },
       "connectIntegrations": "Connect Google"
+    },
+    "backlinks": {
+      "title": "Backlinks",
+      "subtitle": "External links to your site from Google Search Console Links import",
+      "disclaimer": "Google's curated sample of backlinks it knows about — not Ahrefs-style full index, not crawl inlinks, and nofollow is not split out. Data may lag indexing by weeks.",
+      "fetchedAt": "Imported {date}",
+      "emptyTitle": "No backlink data yet",
+      "emptyBody": "Export CSV files from Google Search Console → Links and import them in Integrations. OAuth is optional for CSV import; data is scoped to the selected property.",
+      "emptyIntegrationsHint": "Open Integrations from the top-right header → Search Console Links (backlinks).",
+      "tabs": {
+        "overview": "Overview",
+        "domains": "Referring domains",
+        "pages": "Linked pages",
+        "anchors": "Anchor text",
+        "sample": "Sample links"
+      },
+      "kpi": {
+        "referringDomains": "Referring domains",
+        "linkedPages": "Top linked pages",
+        "sampleLinks": "Sample links",
+        "latestLinks": "Latest links"
+      },
+      "table": {
+        "site": "Site",
+        "targetPage": "Target page",
+        "sourcePage": "Source page",
+        "anchorText": "Anchor text",
+        "links": "Links",
+        "targetPages": "Target pages",
+        "linkingSites": "Linking sites",
+        "discovered": "Discovered",
+        "inCrawl": "In crawl",
+        "yes": "Yes",
+        "no": "No",
+        "searchDomains": "Search domains…",
+        "searchPages": "Search target pages…",
+        "searchAnchors": "Search anchor text…",
+        "searchLinks": "Search URLs…",
+        "exportCsv": "Export CSV",
+        "noData": "No data for this tab",
+        "showingSlice": "Showing {from}–{to} of {total}",
+        "pageOf": "Page",
+        "of": "of",
+        "previous": "Previous",
+        "next": "Next",
+        "rowsPerPage": "{n} per page"
+      },
+      "overview": {
+        "topDomainsTitle": "Top referring domains",
+        "topPagesTitle": "Most linked pages on your site"
+      }
     },
     "traffic": {
       "title": "Traffic & Engagement",

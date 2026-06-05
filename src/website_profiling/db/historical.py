@@ -60,6 +60,7 @@ def read_historical_data() -> dict[str, list]:
         "lh_audits",
         "lh_audit_items",
         "google_data",
+        "gsc_links_data",
         "keyword_data",
         "keyword_history",
         "keyword_suggest_cache",
@@ -164,6 +165,13 @@ def restore_historical_data(conn: Connection, data: dict[str, list]) -> None:
            VALUES (%s, %s, %s) ON CONFLICT (id) DO NOTHING""",
         data.get("google_data", []),
         ["id", "fetched_at", "data"],
+        {"data": json_t},
+    )
+    _bulk(
+        """INSERT INTO gsc_links_data (id, fetched_at, property_id, data)
+           VALUES (%s, %s, %s, %s) ON CONFLICT (id) DO NOTHING""",
+        data.get("gsc_links_data", []),
+        ["id", "fetched_at", "property_id", "data"],
         {"data": json_t},
     )
     _bulk(
