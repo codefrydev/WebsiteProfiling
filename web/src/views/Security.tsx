@@ -8,7 +8,9 @@ import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Badge, ViewTabs, ViewTabPanel } from '../components';
 import type { ViewTabItem } from '../components';
 import { palette } from '../utils/chartPalette';
-import { registerChartJsBase, barOptionsHorizontal, doughnutOptionsBottomLegend } from '../utils/chartJsDefaults';
+import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
+import { doughnutOptionsWithPercentTooltip, formatCompositionAria } from '../lib/chartDoughnutUtils';
+import { ChartAccessibleFallback } from '../components/charts';
 import type { SecurityFinding, ViewProps } from '@/types';
 import { securityFindingLabel } from '@/lib/securityFindingLabels';
 
@@ -102,13 +104,21 @@ export default function Security({ searchQuery = '' }: ViewProps) {
   }, [data?.security_findings]);
 
   const severityChart = useMemo(() => {
-    const counts = SEVERITY_ORDER.reduce<Record<string, number>>((acc, s) => {
-      acc[s] = allFindings.filter((f) => (f.severity || 'Info') === s).length;
-      return acc;
-    }, {});
+    const items = SEVERITY_ORDER.map((s) => ({
+      label: s,
+      value: allFindings.filter((f) => (f.severity || 'Info') === s).length,
+      color: SEVERITY_CONFIG[s].chartColor,
+    })).filter((item) => item.value > 0);
     return {
-      values: SEVERITY_ORDER.map((s) => counts[s] || 0),
-      colors: SEVERITY_ORDER.map((s) => SEVERITY_CONFIG[s].chartColor),
+      labels: items.map((i) => i.label),
+      values: items.map((i) => i.value),
+      colors: items.map((i) => i.color),
+      aria: formatCompositionAria(
+        items.map((i) => i.label),
+        items.map((i) => i.value),
+        'findings',
+      ),
+      rows: items.map((i) => [i.label, i.value] as [string, string | number]),
     };
   }, [allFindings]);
 
@@ -211,34 +221,22 @@ export default function Security({ searchQuery = '' }: ViewProps) {
               <p className="text-xs text-muted-foreground mb-3">{vs.findingsBySeverityHint}</p>
               <div className="h-56 flex items-center justify-center">
                 <div className="w-full max-w-[260px] h-48">
-                  <Doughnut
-                    data={{
-                      labels: SEVERITY_ORDER,
-                      datasets: [
-                        {
-                          data: severityChart.values,
-                          backgroundColor: severityChart.colors,
-                          borderColor: 'rgba(15,23,42,0.8)',
-                          borderWidth: 2,
-                        },
-                      ],
-                    }}
-                    options={{
-                      ...doughnutOptionsBottomLegend(),
-                      plugins: {
-                        ...doughnutOptionsBottomLegend().plugins,
-                        tooltip: {
-                          callbacks: {
-                            label: (ctx: TooltipItem<'doughnut'>) => {
-                              const n = Number(ctx.raw);
-                              if (n === 0) return ` ${ctx.label}: 0`;
-                              return ` ${ctx.label}: ${n.toLocaleString()}`;
-                            },
+                  <ChartAccessibleFallback summary={severityChart.aria} rows={severityChart.rows}>
+                    <Doughnut
+                      data={{
+                        labels: severityChart.labels,
+                        datasets: [
+                          {
+                            data: severityChart.values,
+                            backgroundColor: severityChart.colors,
+                            borderColor: 'rgba(15,23,42,0.8)',
+                            borderWidth: 2,
                           },
-                        },
-                      },
-                    }}
-                  />
+                        ],
+                      }}
+                      options={doughnutOptionsWithPercentTooltip()}
+                    />
+                  </ChartAccessibleFallback>
                 </div>
               </div>
             </Card>

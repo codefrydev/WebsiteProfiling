@@ -4,18 +4,24 @@ import {
   filterLighthouseByHost,
   lighthouseSummaryMatchesHost,
 } from '@/lib/domainSlug';
-import { palette, scoreBandColor, sortByValue, PALETTE_CATEGORICAL } from '@/utils/chartPalette';
+import { palette, sortByValue, PALETTE_CATEGORICAL } from '@/utils/chartPalette';
 import type { ReportPayload } from '@/types';
 import type { OverviewCharts } from './types';
+import { statusDistributionFromCounts } from '@/lib/statusDistribution';
+
 import { sumObject } from './chartUtils';
 
-const LH_CAT_ORDER = ['performance', 'accessibility', 'best-practices', 'seo', 'pwa'];
+const LH_CAT_ORDER = ['performance', 'accessibility', 'best-practices', 'seo'] as const;
 
 export function useOverviewCharts(
   data: ReportPayload | null | undefined,
   expectedHost: string,
 ): OverviewCharts {
   const vo = strings.views.overview;
+
+  const statusDistribution = useMemo(() => {
+    return statusDistributionFromCounts(data?.status_counts);
+  }, [data?.status_counts]);
 
   const wordCountChart = useMemo(() => {
     const dist = data?.content_analytics?.word_count_distribution;
@@ -145,40 +151,22 @@ export function useOverviewCharts(
     };
   }, [data?.seo_health, vo]);
 
-  const socialChart = useMemo(() => {
+  const socialStats = useMemo(() => {
     const social = data?.social_coverage || {};
     const og = social.og_coverage_pct;
     const tw = social.twitter_coverage_pct;
     const img = social.og_image_coverage_pct;
     if (og == null && tw == null && img == null) return null;
-    const labels: string[] = [];
-    const values: number[] = [];
-    if (og != null) {
-      labels.push(vo.socialLabelsOg);
-      values.push(Number(og));
-    }
-    if (tw != null) {
-      labels.push(vo.socialLabelsTwitter);
-      values.push(Number(tw));
-    }
-    if (img != null) {
-      labels.push(vo.socialLabelsOgImage);
-      values.push(Number(img));
-    }
-    if (!labels.length) return null;
+    const parts: string[] = [];
+    if (og != null) parts.push(`${vo.socialLabelsOg} ${Number(og)}%`);
+    if (tw != null) parts.push(`${vo.socialLabelsTwitter} ${Number(tw)}%`);
+    if (img != null) parts.push(`${vo.socialLabelsOgImage} ${Number(img)}%`);
+    if (!parts.length) return null;
     return {
-      data: {
-        labels,
-        datasets: [
-          {
-            label: vo.chartCoverage,
-            data: values,
-            backgroundColor: [PALETTE_CATEGORICAL[0], PALETTE_CATEGORICAL[2], PALETTE_CATEGORICAL[3]],
-            borderRadius: 4,
-          },
-        ],
-      },
-      aria: `${vo.ariaSocialIntro} ${labels.map((l, i) => `${l} ${values[i]}%`).join(', ')}.`,
+      og: og != null ? Number(og) : null,
+      twitter: tw != null ? Number(tw) : null,
+      ogImage: img != null ? Number(img) : null,
+      aria: `${vo.ariaSocialIntro} ${parts.join(', ')}.`,
     };
   }, [data?.social_coverage, vo]);
 
@@ -228,7 +216,52 @@ export function useOverviewCharts(
     };
   }, [data?.mime_labels, data?.mime_values, vo]);
 
-  const lighthouseChart = useMemo(() => {
+  const outlinksChart = useMemo(() => {
+    const labels = data?.outlink_labels || [];
+    const values = (data?.outlink_counts || []).map(Number);
+    if (!labels.length || !values.some((v) => v > 0)) return null;
+    return {
+      data: {
+        labels,
+        datasets: [
+          {
+            label: vo.chartUrls,
+            data: values,
+            backgroundColor: PALETTE_CATEGORICAL[1],
+            borderRadius: 4,
+          },
+        ],
+      },
+      aria: vo.ariaOutlinks,
+    };
+  }, [data?.outlink_labels, data?.outlink_counts, vo]);
+
+  const domainsChart = useMemo(() => {
+    let labels = data?.domain_labels || [];
+    let values = (data?.domain_values || []).map(Number);
+    if (!labels.length) return null;
+    const sorted = sortByValue(labels, values, 'desc');
+    labels = sorted.labels.slice(0, 10);
+    values = sorted.values.slice(0, 10);
+    if (!values.some((v) => v > 0)) return null;
+    return {
+      data: {
+        labels,
+        datasets: [
+          {
+            label: vo.chartUrls,
+            data: values,
+            backgroundColor: palette(labels.length),
+            borderRadius: 4,
+          },
+        ],
+      },
+      aria: `${vo.ariaDomainsPrefix} ${labels[0]}: ${values[0]}.`,
+      horizontal: true,
+    };
+  }, [data?.domain_labels, data?.domain_values, vo]);
+
+  const lighthouseScores = useMemo(() => {
     let cs = null;
     const summary = data?.lighthouse_summary;
     if (lighthouseSummaryMatchesHost(summary, expectedHost)) {
@@ -240,66 +273,79 @@ export function useOverviewCharts(
       cs = (first as { category_scores?: Record<string, unknown> } | undefined)?.category_scores;
     }
     if (!cs || typeof cs !== 'object') return null;
-    const labels: string[] = [];
-    const values: number[] = [];
-    const colors: string[] = [];
+
+    const scores: Record<string, number | null> = {};
+    const ariaParts: string[] = [];
     LH_CAT_ORDER.forEach((id) => {
       const v = (cs as Record<string, unknown>)[id];
-      if (v == null) return;
-      labels.push(vo.lighthouseCategoryLabels[id as keyof typeof vo.lighthouseCategoryLabels] || id);
-      values.push(Number(v));
-      colors.push(scoreBandColor(Number(v)));
+      const num = v != null ? Number(v) : null;
+      scores[id] = num;
+      if (num != null) {
+        const label = vo.lighthouseCategoryLabels[id as keyof typeof vo.lighthouseCategoryLabels] || id;
+        ariaParts.push(`${label} ${num}`);
+      }
     });
-    if (!labels.length) return null;
+    if (ariaParts.length === 0) return null;
     return {
-      data: {
-        labels,
-        datasets: [
-          {
-            label: vo.chartLighthouse,
-            data: values,
-            backgroundColor: colors,
-            borderRadius: 4,
-          },
-        ],
-      },
-      aria: `${vo.ariaLighthouseIntro} ${labels.map((l, i) => `${l} ${values[i]}`).join(', ')}.`,
+      scores,
+      aria: `${vo.ariaLighthouseIntro} ${ariaParts.join(', ')}.`,
     };
   }, [data?.lighthouse_summary, data?.lighthouse_by_url, expectedHost, vo]);
 
   const chartCount = useMemo(() => {
     let n = 0;
+    if (statusDistribution) n++;
     if (wordCountChart) n++;
     if (responseTimeChart) n++;
     if (depthChart) n++;
     if (titleMetaChart) n++;
-    if (socialChart) n++;
+    if (socialStats) n++;
     if (readingLevelChart) n++;
     if (mimeChart) n++;
-    if (lighthouseChart) n++;
+    if (outlinksChart) n++;
+    if (domainsChart) n++;
+    if (lighthouseScores) n++;
     return n;
-  }, [wordCountChart, responseTimeChart, depthChart, titleMetaChart, socialChart, readingLevelChart, mimeChart, lighthouseChart]);
-
-  const hasInsightCharts = Boolean(
-    wordCountChart ||
-      responseTimeChart ||
-      depthChart ||
-      titleMetaChart ||
-      socialChart ||
-      readingLevelChart ||
-      mimeChart ||
-      lighthouseChart,
-  );
-
-  return {
+  }, [
+    statusDistribution,
     wordCountChart,
     responseTimeChart,
     depthChart,
     titleMetaChart,
-    socialChart,
+    socialStats,
     readingLevelChart,
     mimeChart,
-    lighthouseChart,
+    outlinksChart,
+    domainsChart,
+    lighthouseScores,
+  ]);
+
+  const hasInsightCharts = Boolean(
+    statusDistribution ||
+      wordCountChart ||
+      responseTimeChart ||
+      depthChart ||
+      titleMetaChart ||
+      socialStats ||
+      readingLevelChart ||
+      mimeChart ||
+      outlinksChart ||
+      domainsChart ||
+      lighthouseScores,
+  );
+
+  return {
+    statusDistribution,
+    wordCountChart,
+    responseTimeChart,
+    depthChart,
+    titleMetaChart,
+    socialStats,
+    readingLevelChart,
+    mimeChart,
+    outlinksChart,
+    domainsChart,
+    lighthouseScores,
     chartCount,
     hasInsightCharts,
   };

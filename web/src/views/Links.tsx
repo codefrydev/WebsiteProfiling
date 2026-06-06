@@ -1,13 +1,11 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef, useCallback, type MouseEvent } from 'react';
-import { Link as LinkIcon, ArrowLeft, AlertTriangle, List, BarChart3 } from 'lucide-react';
+import { Link as LinkIcon, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Button, AlertBanner, ViewTabs } from '../components';
-import type { ViewTabItem } from '../components';
+import { PageLayout, PageHeader, Card, Button, AlertBanner } from '../components';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
-import { parseUrlTab } from '@/hooks/useUrlTab';
 import type {
   InspectorBrokenItem,
   InspectorCategoryIssue,
@@ -23,12 +21,8 @@ import type {
 
 import { CopyBtn, InspectorTabs } from '../components/links';
 import {
-  type LinksExplorerTabId,
-  LINKS_EXPLORER_TABS,
   type LinkSortKey,
-  useLinksExploreCharts,
   LinksExplorerTableTab,
-  LinksExplorerChartsTab,
 } from '../components/links/explorer';
 import {
   CONTENT_URL_KEYS, CONTENT_LABELS, CONTENT_RECOMMENDATIONS,
@@ -85,14 +79,12 @@ export default function Links({ searchQuery = '' }: ViewProps) {
   const [jsErrorFilter, setJsErrorFilter] = useState(sj.all);
 
   const [inspectNotFound, setInspectNotFound] = useState(false);
-  const lastExplorerTabRef = useRef<LinksExplorerTabId>('urls');
 
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
   const tableRef = useRef<HTMLDivElement | null>(null);
 
   const links = useMemo(() => data?.links || [], [data]);
-  const { charts: exploreCharts, barOptions: exploreBarOpts, chartCount } = useLinksExploreCharts(links);
 
   const inspectParam = searchParams.get('inspect');
   const tabParam = searchParams.get('tab');
@@ -105,12 +97,6 @@ export default function Links({ searchQuery = '' }: ViewProps) {
   const inInspector = matchedInspectUrl != null;
   const inspectorUrl = inInspector ? matchedInspectUrl : null;
 
-  const explorerTab = parseUrlTab(
-    inInspector ? null : tabParam,
-    LINKS_EXPLORER_TABS,
-    'urls',
-  );
-
   const inspectorTab = useMemo(() => {
     if (!inInspector || !inspectorUrl) return 'overview';
     if (tabParam && (INSPECTOR_TABS as readonly string[]).includes(tabParam)) {
@@ -120,21 +106,6 @@ export default function Links({ searchQuery = '' }: ViewProps) {
     if (link && linkHasBrowserErrors(link)) return 'analysis';
     return 'overview';
   }, [inInspector, inspectorUrl, tabParam, links]);
-
-  useEffect(() => {
-    if (!inInspector) {
-      lastExplorerTabRef.current = explorerTab;
-    }
-  }, [inInspector, explorerTab]);
-
-  useEffect(() => {
-    if (!inspectParam) {
-      setInspectNotFound(false);
-      return;
-    }
-    if (!links.length) return;
-    setInspectNotFound(!matchedInspectUrl);
-  }, [inspectParam, links.length, matchedInspectUrl]);
 
   const replaceParams = useCallback(
     (mutate: (params: URLSearchParams) => void) => {
@@ -146,46 +117,52 @@ export default function Links({ searchQuery = '' }: ViewProps) {
     [router, pathname, searchParams],
   );
 
-  const setExplorerTab = useCallback(
-    (tab: LinksExplorerTabId) => {
-      lastExplorerTabRef.current = tab;
-      replaceParams((params) => {
-        params.delete('inspect');
-        if (tab === 'urls') params.delete('tab');
-        else params.set('tab', tab);
-      });
-    },
-    [replaceParams],
-  );
+  useEffect(() => {
+    if (inInspector || tabParam !== 'charts') return;
+    replaceParams((params) => {
+      params.delete('tab');
+    });
+  }, [inInspector, tabParam, replaceParams]);
+
+  useEffect(() => {
+    if (!inspectParam) {
+      setInspectNotFound(false);
+      return;
+    }
+    if (!links.length) return;
+    setInspectNotFound(!matchedInspectUrl);
+  }, [inspectParam, links.length, matchedInspectUrl]);
 
   const openInspector = useCallback(
     (url: string, initialTab: string) => {
       replaceParams((params) => {
         params.set('inspect', url);
-        if (initialTab === 'overview') params.delete('tab');
-        else params.set('tab', initialTab);
+        params.set('tab', initialTab);
       });
     },
     [replaceParams],
   );
 
   const setInspectorTab = useCallback(
-    (tab: string) => {
+    (tab: string, section?: string) => {
       replaceParams((params) => {
-        if (tab === 'overview') params.delete('tab');
-        else params.set('tab', tab);
+        params.set('tab', tab);
+        if (tab === 'analysis' && section) {
+          params.set('section', section);
+        } else {
+          params.delete('section');
+        }
       });
     },
     [replaceParams],
   );
 
   const closeInspector = useCallback(() => {
-    const tab = lastExplorerTabRef.current;
     setInspectNotFound(false);
     replaceParams((params) => {
       params.delete('inspect');
-      if (tab === 'urls') params.delete('tab');
-      else params.set('tab', tab);
+      params.delete('tab');
+      params.delete('section');
     });
   }, [replaceParams]);
 
@@ -339,23 +316,6 @@ export default function Links({ searchQuery = '' }: ViewProps) {
     setHoveredRow(link.url);
   }, []);
 
-  const explorerTabItems = useMemo((): ViewTabItem[] => {
-    return [
-      {
-        id: 'urls',
-        label: vl.tabs.urls,
-        icon: <List className="h-3.5 w-3.5 shrink-0" aria-hidden />,
-        badge: filtered.length > 0 ? filtered.length : null,
-      },
-      {
-        id: 'charts',
-        label: vl.tabs.charts,
-        icon: <BarChart3 className="h-3.5 w-3.5 shrink-0" aria-hidden />,
-        badge: chartCount > 0 ? chartCount : null,
-      },
-    ];
-  }, [vl.tabs, filtered.length, chartCount]);
-
   if (!data) return null;
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
@@ -427,43 +387,29 @@ export default function Links({ searchQuery = '' }: ViewProps) {
             className="mb-0"
           />
 
-          <ViewTabs
-            tabs={explorerTabItems}
-            activeTab={explorerTab}
-            onChange={(id) => setExplorerTab(id as LinksExplorerTabId)}
-            ariaLabel={vl.title}
-            idPrefix="links-explorer"
+          <LinksExplorerTableTab
+            filterValues={filterValues}
+            onFilterChange={handleFilterChange}
+            onClearAllFilters={clearAllFilters}
+            searchQuery={searchQuery}
+            filtered={filtered}
+            pageLinks={pageLinks}
+            links={links}
+            page={page}
+            totalPages={totalPages}
+            sortBy={sortBy}
+            sortDesc={sortDesc}
+            onToggleSort={toggleSort}
+            onPagePrev={() => setPage((p) => Math.max(1, p - 1))}
+            onPageNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+            maxInlinksInResults={maxInlinksInResults}
+            onInspect={openInspector}
+            hoveredRow={hoveredRow}
+            tooltipPos={tooltipPos}
+            tableRef={tableRef}
+            onRowMouseEnter={handleRowMouseEnter}
+            onRowMouseLeave={() => setHoveredRow(null)}
           />
-
-          {explorerTab === 'urls' && (
-            <LinksExplorerTableTab
-              filterValues={filterValues}
-              onFilterChange={handleFilterChange}
-              onClearAllFilters={clearAllFilters}
-              searchQuery={searchQuery}
-              filtered={filtered}
-              pageLinks={pageLinks}
-              links={links}
-              page={page}
-              totalPages={totalPages}
-              sortBy={sortBy}
-              sortDesc={sortDesc}
-              onToggleSort={toggleSort}
-              onPagePrev={() => setPage((p) => Math.max(1, p - 1))}
-              onPageNext={() => setPage((p) => Math.min(totalPages, p + 1))}
-              maxInlinksInResults={maxInlinksInResults}
-              onInspect={openInspector}
-              hoveredRow={hoveredRow}
-              tooltipPos={tooltipPos}
-              tableRef={tableRef}
-              onRowMouseEnter={handleRowMouseEnter}
-              onRowMouseLeave={() => setHoveredRow(null)}
-            />
-          )}
-
-          {explorerTab === 'charts' && (
-            <LinksExplorerChartsTab charts={exploreCharts} barOptions={exploreBarOpts} />
-          )}
         </>
       ) : (
         <>

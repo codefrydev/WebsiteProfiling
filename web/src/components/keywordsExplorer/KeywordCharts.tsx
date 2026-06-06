@@ -1,15 +1,13 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Bar, Doughnut } from 'react-chartjs-2';
+import { Doughnut } from 'react-chartjs-2';
 import { palette } from '../../utils/chartPalette';
-import {
-  registerChartJsBase,
-  barOptionsHorizontal,
-  doughnutOptionsBottomLegend,
-} from '../../utils/chartJsDefaults';
+import { registerChartJsBase } from '../../utils/chartJsDefaults';
+import { filterZeroSlices, doughnutOptionsWithPercentTooltip, formatCompositionAria } from '../../lib/chartDoughnutUtils';
 import { strings } from '../../lib/strings';
 import GoogleChartCard from '../google/GoogleChartCard';
+import { ChartAccessibleFallback } from '../charts/ChartAccessibleFallback';
 import { buildIntentCounts, buildSourceCounts, SOURCE_CONFIG } from './keywordTableUtils';
 import type { KeywordIntent, KeywordRow } from '@/types/components';
 
@@ -23,6 +21,10 @@ const INTENT_ORDER: KeywordIntent[] = [
   'other',
 ];
 
+function intentLabel(intent: KeywordIntent): string {
+  return intent === 'other' ? 'Other' : intent.charAt(0).toUpperCase() + intent.slice(1);
+}
+
 interface IntentMixChartProps {
   rows: KeywordRow[];
 }
@@ -31,20 +33,19 @@ export function IntentMixChart({ rows }: IntentMixChartProps) {
   const ke = strings.views.keywordsExplorer;
   const chart = useMemo(() => {
     const counts = buildIntentCounts(rows);
-    const labels = INTENT_ORDER.filter((k) => counts[k] > 0).map(
-      (k) => (k === 'other' ? 'Other' : k.charAt(0).toUpperCase() + k.slice(1)),
-    );
-    const values = INTENT_ORDER.filter((k) => counts[k] > 0).map((k) => counts[k]);
-    if (!values.length) return null;
+    const labels = INTENT_ORDER.map((k) => intentLabel(k));
+    const values = INTENT_ORDER.map((k) => counts[k] ?? 0);
+    const filtered = filterZeroSlices(labels, values);
+    if (filtered.values.length === 0) return null;
     return {
       data: {
-        labels,
-        datasets: [{ data: values, backgroundColor: palette(labels.length) }],
+        labels: filtered.labels,
+        datasets: [{ data: filtered.values, backgroundColor: palette(filtered.labels.length) }],
       },
+      aria: formatCompositionAria(filtered.labels, filtered.values, 'keywords'),
+      rows: filtered.labels.map((label, i) => [label, filtered.values[i] ?? 0] as [string, string | number]),
     };
   }, [rows]);
-
-  const opts = useMemo(() => barOptionsHorizontal('Keywords'), [ke]);
 
   if (!chart) {
     return (
@@ -57,8 +58,14 @@ export function IntentMixChart({ rows }: IntentMixChartProps) {
   }
 
   return (
-    <GoogleChartCard title={ke.charts.intentTitle} hint={ke.charts.intentHint} ariaLabel={ke.charts.intentAria}>
-      <Bar data={chart.data} options={opts} />
+    <GoogleChartCard title={ke.charts.intentTitle} hint={ke.charts.intentHint} ariaLabel={chart.aria}>
+      <ChartAccessibleFallback summary={chart.aria} rows={chart.rows}>
+        <div className="h-full min-h-[12rem] flex items-center justify-center" role="presentation">
+          <div className="w-full max-w-[260px] h-52">
+            <Doughnut data={chart.data} options={doughnutOptionsWithPercentTooltip()} />
+          </div>
+        </div>
+      </ChartAccessibleFallback>
     </GoogleChartCard>
   );
 }
@@ -75,19 +82,21 @@ export function SourceMixChart({ rows }: SourceMixChartProps) {
     if (!entries.length) return null;
     const labels = entries.map(([k]) => SOURCE_CONFIG[k]?.label || k);
     const values = entries.map(([, v]) => v);
+    const filtered = filterZeroSlices(labels, values);
+    if (filtered.values.length === 0) return null;
     return {
       data: {
-        labels,
-        datasets: [{ data: values, backgroundColor: palette(labels.length) }],
+        labels: filtered.labels,
+        datasets: [{ data: filtered.values, backgroundColor: palette(filtered.labels.length) }],
       },
+      aria: formatCompositionAria(filtered.labels, filtered.values, 'keywords'),
+      rows: filtered.labels.map((label, i) => [label, filtered.values[i] ?? 0] as [string, string | number]),
     };
   }, [rows]);
 
-  const opts = useMemo(() => doughnutOptionsBottomLegend(), []);
-
   if (!chart) {
     return (
-      <GoogleChartCard title={ke.charts.sourceTitle} hint={ke.charts.sourceHint} ariaLabel={ke.charts.sourceAria} heightClass="h-56">
+      <GoogleChartCard title={ke.charts.sourceTitle} hint={ke.charts.sourceHint} ariaLabel={ke.charts.sourceAria}>
         <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
           {strings.common.notEnoughData}
         </div>
@@ -96,8 +105,14 @@ export function SourceMixChart({ rows }: SourceMixChartProps) {
   }
 
   return (
-    <GoogleChartCard title={ke.charts.sourceTitle} hint={ke.charts.sourceHint} ariaLabel={ke.charts.sourceAria} heightClass="h-56">
-      <Doughnut data={chart.data} options={opts} />
+    <GoogleChartCard title={ke.charts.sourceTitle} hint={ke.charts.sourceHint} ariaLabel={chart.aria}>
+      <ChartAccessibleFallback summary={chart.aria} rows={chart.rows}>
+        <div className="h-full min-h-[12rem] flex items-center justify-center" role="presentation">
+          <div className="w-full max-w-[260px] h-52">
+            <Doughnut data={chart.data} options={doughnutOptionsWithPercentTooltip()} />
+          </div>
+        </div>
+      </ChartAccessibleFallback>
     </GoogleChartCard>
   );
 }

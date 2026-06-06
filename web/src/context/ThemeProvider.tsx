@@ -15,9 +15,12 @@ export interface ThemeProviderProps {
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [preference, setPreferenceState] = useState<ThemePreference>(() =>
-    typeof window !== 'undefined' ? getStoredThemePreference() : 'system',
-  );
+  // Match SSR default; sync from localStorage after mount to avoid hydration mismatch.
+  const [preference, setPreferenceState] = useState<ThemePreference>('system');
+
+  useEffect(() => {
+    setPreferenceState(getStoredThemePreference());
+  }, []);
 
   const setPreference = useCallback((next: ThemePreference) => {
     setPreferenceState(next);

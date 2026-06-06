@@ -1,14 +1,9 @@
 import { useMemo } from 'react';
-import { Bar, Doughnut } from 'react-chartjs-2';
-import type { TooltipItem } from 'chart.js';
 import { Shield, Zap, Image } from 'lucide-react';
 import type { LinkDetail } from '@/types/report';
 import { strings, format } from '../../../lib/strings';
 import SecHeaderRow from '../SecHeaderRow';
 import MiniBar from '../MiniBar';
-import { registerChartJsBase, barOptionsHorizontal, doughnutOptionsBottomLegend } from '../../../utils/chartJsDefaults';
-
-registerChartJsBase();
 
 function headerPresent(val: unknown): boolean {
   if (val == null) return false;
@@ -47,75 +42,19 @@ export default function TechnicalTab({ link }: TechnicalTabProps) {
     return { present, missing };
   }, [link, SEC_HEADERS]);
 
-  const assetBar = useMemo(() => {
-    const scripts = Number(link.script_count) || 0;
-    const sheets = Number(link.link_stylesheet_count) || 0;
-    const images = Number(link.images_total) || 0;
-    return {
-      labels: [...lt.assetBarLabels],
-      values: [scripts, sheets, images],
-    };
-  }, [link, lt.assetBarLabels]);
-
-  const assetBarOpts = useMemo(() => {
-    const base = barOptionsHorizontal();
-    return {
-      ...base,
-      plugins: {
-        ...base.plugins,
-        tooltip: {
-          callbacks: {
-            label: (ctx: TooltipItem<'bar'>) => ` ${format(lt.tooltipItems, { n: Number(ctx.raw).toLocaleString() })}`,
-          },
-        },
-      },
-    };
-  }, [lt.tooltipItems]);
-
   return (
     <div className="space-y-6">
       <div>
         <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
           <Shield className="h-3.5 w-3.5" /> {lt.securityHeaders}
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-          <div className="bg-brand-900 border border-default rounded-xl p-3">
-            <div className="text-xs text-muted-foreground mb-2">{format(lt.headersPresentOf, { n: SEC_HEADERS.length })}</div>
-            <div className="h-40">
-              <Doughnut
-                data={{
-                  labels: [lt.doughnutPresent, lt.doughnutMissing],
-                  datasets: [
-                    {
-                      data: [securityHeaderCounts.present, securityHeaderCounts.missing],
-                      backgroundColor: ['#22C55E', '#334155'],
-                      borderColor: 'rgba(15,23,42,0.8)',
-                      borderWidth: 2,
-                    },
-                  ],
-                }}
-                options={doughnutOptionsBottomLegend()}
-              />
-            </div>
-          </div>
-          <div className="bg-brand-900 border border-default rounded-xl p-3">
-            <div className="text-xs text-muted-foreground mb-2">{lt.scriptsStylesImages}</div>
-            <div className="h-40">
-              <Bar
-                data={{
-                  labels: assetBar.labels,
-                  datasets: [
-                    {
-                      data: assetBar.values,
-                      backgroundColor: ['#4C72B0', '#DD8452', '#55A868'],
-                    },
-                  ],
-                }}
-                options={assetBarOpts}
-              />
-            </div>
-          </div>
-        </div>
+        <p className="text-xs text-muted-foreground mb-3">
+          {format(lt.headersPresentOf, { n: SEC_HEADERS.length })}{' '}
+          <span className="text-foreground font-semibold tabular-nums">
+            {securityHeaderCounts.present} {lt.doughnutPresent.toLowerCase()}, {securityHeaderCounts.missing}{' '}
+            {lt.doughnutMissing.toLowerCase()}
+          </span>
+        </p>
         <div className="space-y-2">
           {SEC_HEADERS.map((h) => (
             <SecHeaderRow

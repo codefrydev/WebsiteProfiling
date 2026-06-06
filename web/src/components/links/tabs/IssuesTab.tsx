@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Bar } from 'react-chartjs-2';
-import type { TooltipItem } from 'chart.js';
+import type { TooltipItem, ChartOptions } from 'chart.js';
 import { Gauge, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import type { InspectorDetails, InspectorIssueRow, LinkLighthouseData, LighthouseAuditRef } from '@/types/report';
 import { strings, format } from '../../../lib/strings';
@@ -8,6 +7,8 @@ import { SELECT_CLASS, SEO_ISSUE_RECOMMENDATIONS, severityBg } from '../../../ut
 import { formatLhMetric } from '../../../utils/linkUtils';
 import { palette, scoreBandColor } from '../../../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal } from '../../../utils/chartJsDefaults';
+import { RankedBarChart } from '../../../components/charts';
+import { formatCompositionAria } from '../../../lib/chartDoughnutUtils';
 
 registerChartJsBase();
 
@@ -89,16 +90,26 @@ export default function IssuesTab({ lhData, inspectorDetails }: IssuesTabProps) 
   }, [allIssues, issueFilter]);
 
   const typeChart = useMemo(() => {
-    const order = ['broken', 'redirect', 'seo', 'content', 'category', 'security'];
+    const order = ['broken', 'redirect', 'seo', 'content', 'category', 'security'] as const;
     const labels = [...it.typeLabels];
     const values = order.map((t) => allIssues.filter((i) => i.type === t).length);
-    return { labels, values };
+    const filteredLabels: string[] = [];
+    const filteredValues: number[] = [];
+    labels.forEach((label, i) => {
+      if (values[i] > 0) {
+        filteredLabels.push(label);
+        filteredValues.push(values[i]);
+      }
+    });
+    const aria = formatCompositionAria(filteredLabels, filteredValues, 'issues');
+    return { labels: filteredLabels, values: filteredValues, aria };
   }, [allIssues, it.typeLabels]);
 
-  const typeBarOpts = useMemo(() => {
+  const typeBarOpts = useMemo((): ChartOptions<'bar'> => {
     const base = barOptionsHorizontal();
     return {
       ...base,
+      indexAxis: 'y',
       plugins: {
         ...base.plugins,
         tooltip: {
@@ -110,7 +121,7 @@ export default function IssuesTab({ lhData, inspectorDetails }: IssuesTabProps) 
           },
         },
       },
-    };
+    } as ChartOptions<'bar'>;
   }, [it.issueTooltip]);
 
   return (
@@ -165,7 +176,9 @@ export default function IssuesTab({ lhData, inspectorDetails }: IssuesTabProps) 
           <div className="bg-brand-900 border border-default rounded-xl p-3 mb-4">
             <div className="text-xs text-muted-foreground mb-2">{it.issuesBySource}</div>
             <div className="h-36">
-              <Bar
+              <RankedBarChart
+                ariaSummary={typeChart.aria}
+                heightClass="h-36"
                 data={{
                   labels: typeChart.labels,
                   datasets: [{ data: typeChart.values, backgroundColor: palette(typeChart.labels.length) }],

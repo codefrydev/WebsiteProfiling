@@ -78,7 +78,7 @@ export interface InspectorTabsProps {
   /** @deprecated Use activeTab + onTabChange for URL-synced tabs */
   initialTab?: string;
   activeTab?: string;
-  onTabChange?: (tab: string) => void;
+  onTabChange?: (tab: string, section?: string) => void;
 }
 
 const VALID_TABS = new Set(TAB_IDS);
@@ -114,6 +114,11 @@ export default function InspectorTabs({
     else setInternalTab(tab);
   };
 
+  const handleOpenTab = (tab: string, section?: string) => {
+    if (isControlled) onTabChange(tab, section);
+    else setInternalTab(tab);
+  };
+
   const tabs = TAB_IDS.map((id) => ({
     id,
     label: TAB_LABELS[id],
@@ -134,7 +139,9 @@ export default function InspectorTabs({
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto p-6">
-        {activeTab === 'overview'  && <OverviewTab  link={link} />}
+        {activeTab === 'overview'  && (
+          <OverviewTab link={link} lhData={effectiveLh} onOpenTab={isControlled ? handleOpenTab : undefined} />
+        )}
         {activeTab === 'analysis'  && <PageAnalysisTab link={link} />}
         {activeTab === 'search'    && <SearchRetentionTab link={link} />}
         {activeTab === 'seo'       && <SeoSocialTab link={link} />}

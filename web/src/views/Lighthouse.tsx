@@ -7,8 +7,6 @@ import type {
 } from '@/types';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip } from 'chart.js';
-import { Bar } from 'react-chartjs-2';
 import { Gauge, Globe, Play } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import {
@@ -22,7 +20,6 @@ import { goToPipeline } from '../lib/pipelineReturn';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Button, ViewTabs, Select } from '../components';
 import type { ViewTabItem } from '../components';
-import { scoreBandColor } from '../utils/chartPalette';
 import {
   CATEGORIES, CATEGORY_LABELS, METRIC_THRESHOLDS, IMPACT_GROUPS, QUICK_WINS,
 } from '../utils/lighthouseUtils';
@@ -34,8 +31,6 @@ import {
   MultiPageTable,
   LhAuditExpandable,
 } from '../components/lighthouse';
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip);
 
 const BASE_TABS = ['overview', 'metrics', 'quick-wins', 'audits', 'diagnostics'] as const;
 const LH_TABS = [...BASE_TABS, 'pages'] as const;
@@ -359,42 +354,6 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
               <span><span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-1" />{vlh.scoreNeeds}</span>
               <span><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1" />{vlh.scoreGood}</span>
             </div>
-          </div>
-
-          <div>
-            <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vlh.categoryScores}</h2>
-            <p className="text-muted-foreground text-sm mb-3">{vlh.categoryScoresHint}</p>
-            {(() => {
-              const withScores = CATEGORIES
-                .map(({ id }) => ({
-                  id,
-                  label: CATEGORY_LABELS[id as keyof typeof CATEGORY_LABELS] || id,
-                  score: cs[id] != null ? Number(cs[id]) : null,
-                }))
-                .filter((c) => c.score != null)
-                .sort((a, b) => (a.score ?? 0) - (b.score ?? 0));
-              if (withScores.length === 0) return <Card className="p-4 text-muted-foreground text-sm">{vlh.noCategoryScores}</Card>;
-              return (
-                <Card padding="tight" className="print:break-inside-avoid">
-                  <div className="h-48" role="img" aria-label={`${vlh.categoryScoresAriaPrefix} ${withScores.map((c) => `${c.label} ${c.score}`).join(', ')}`}>
-                    <Bar
-                      data={{
-                        labels: withScores.map((c) => c.label),
-                        datasets: [{ data: withScores.map((c) => c.score ?? 0), backgroundColor: withScores.map((c) => scoreBandColor(c.score)), label: vlh.datasetScore }],
-                      }}
-                      options={{
-                        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                          x: { min: 0, max: 100, grid: { color: 'rgba(71, 85, 105, 0.5)' }, title: { display: true, text: vlh.scoreAxisTitle } },
-                          y: { grid: { color: 'rgba(71, 85, 105, 0.5)' } },
-                        },
-                      }}
-                    />
-                  </div>
-                </Card>
-              );
-            })()}
           </div>
 
           {humanSummary ? (

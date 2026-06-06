@@ -1,16 +1,12 @@
 'use client';
 
 import { ChevronRight, Lightbulb } from 'lucide-react';
-import { Bar } from 'react-chartjs-2';
 import type { ReportCategory, ReportPayload } from '@/types';
 import { strings, format } from '@/lib/strings';
 import { categoryDisplayName } from '@/lib/categoryDisplayNames';
-import { palette, scoreBandColor, sortByValue } from '@/utils/chartPalette';
+import { scoreBandColor } from '@/utils/chartPalette';
 import { Card } from '@/components';
 import { OverviewTabPanel } from './OverviewTabPanel';
-import { ensureOverviewChartsRegistered } from './chartSetup';
-
-ensureOverviewChartsRegistered();
 
 const REC_COLORS = [
   { border: 'border-l-blue-500', bg: 'bg-blue-500/10', text: 'text-link', dot: 'bg-blue-500' },
@@ -106,43 +102,6 @@ export function OverviewHealthTab({ data, categoriesFiltered, recommendationsFil
           <p className="text-muted-foreground">{vo.noCategoryData}</p>
         )}
       </div>
-
-      {data.status_counts && Object.keys(data.status_counts).length > 0 && (
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-bright mb-3">{vo.statusBreakdown}</h2>
-          <Card padding="tight" className="max-w-md">
-            {(() => {
-              const labels = Object.keys(data.status_counts!);
-              const values = Object.values(data.status_counts!).map(Number);
-              const { labels: sortedLabels, values: sortedValues } = sortByValue(labels, values, 'desc');
-              return (
-                <div
-                  className="h-40"
-                  role="img"
-                  aria-label={`${vo.statusAriaIntro} ${sortedLabels.map((l, i) => `${sortedValues[i]} ${l}`).join(', ')}`}
-                >
-                  <Bar
-                    data={{
-                      labels: sortedLabels,
-                      datasets: [{ data: sortedValues, backgroundColor: palette(sortedLabels.length), label: vo.chartUrls }],
-                    }}
-                    options={{
-                      indexAxis: 'y',
-                      responsive: true,
-                      maintainAspectRatio: false,
-                      plugins: { legend: { display: false } },
-                      scales: {
-                        x: { grid: { color: 'rgba(71, 85, 105, 0.5)' }, beginAtZero: true },
-                        y: { grid: { color: 'rgba(71, 85, 105, 0.5)' } },
-                      },
-                    }}
-                  />
-                </div>
-              );
-            })()}
-          </Card>
-        </div>
-      )}
 
       {data.site_level && (data.site_level.robots_present != null || data.site_level.sitemap_present != null) && (
         <div className="mb-8">

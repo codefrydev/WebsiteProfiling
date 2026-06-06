@@ -14,7 +14,6 @@ import {
   ShieldAlert,
   Bug,
   Gauge,
-  PieChart,
   Share2,
   BarChart2,
   Cpu,
@@ -56,7 +55,6 @@ const Content = dynamic(() => import('./views/Content'), { loading: () => viewLo
 const Security = dynamic(() => import('./views/Security'), { loading: () => viewLoading() });
 const JavaScriptErrors = dynamic(() => import('./views/JavaScriptErrors'), { loading: () => viewLoading() });
 const Lighthouse = dynamic(() => import('./views/Lighthouse'), { loading: () => viewLoading() });
-const Charts = dynamic(() => import('./views/Charts'), { loading: () => viewLoading() });
 const Network = dynamic(() => import('./views/Network'), {
   ssr: false,
   loading: () => viewLoading('Loading network graph…'),
@@ -114,7 +112,6 @@ const VIEW_CONFIG: ViewConfigEntry[] = [
   { id: 'javascript-errors', component: JavaScriptErrors as ComponentType<CurrentViewProps>, icon: Bug },
   { id: 'content-analytics', component: ContentAnalytics as ComponentType<CurrentViewProps>, icon: BarChart2 },
   { id: 'tech-stack', component: TechStack as ComponentType<CurrentViewProps>, icon: Cpu },
-  { id: 'charts', component: Charts as ComponentType<CurrentViewProps>, icon: PieChart },
   { id: 'network', component: Network as ComponentType<CurrentViewProps>, icon: Share2 },
   { id: 'gallery', component: Gallery as ComponentType<CurrentViewProps>, icon: Images },
   { id: 'search-performance', component: SearchPerformance as ComponentType<CurrentViewProps>, icon: TrendingUp },
@@ -173,6 +170,14 @@ function AppContent({ slug }: SlugProps): ReactNode {
 
   const view = pathSlugToViewId(slug ?? '');
 
+  useEffect(() => {
+    if (slug !== 'charts') return;
+    const next = new URLSearchParams(searchParams.toString());
+    next.set('tab', 'charts');
+    const q = next.toString();
+    router.replace(`/dashboard?${q}`);
+  }, [slug, searchParams, router]);
+
   const selectView = (id: ViewId | string, opts?: { domain?: string; reportId?: number }): void => {
     if (opts?.reportId != null) {
       setSelectedReportId(opts.reportId);
@@ -195,6 +200,10 @@ function AppContent({ slug }: SlugProps): ReactNode {
 
   if (!view) {
     return null;
+  }
+
+  if (view === 'charts') {
+    return <ReportShellSkeleton variant="dashboard" />;
   }
 
   const CurrentView = VIEWS.find((v) => v.id === view)?.component || Home;

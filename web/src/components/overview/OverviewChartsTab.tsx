@@ -3,19 +3,33 @@
 import { BarChart3 } from 'lucide-react';
 import { Bar } from 'react-chartjs-2';
 import { strings, format } from '@/lib/strings';
-import { Card } from '@/components';
+import { Card, StatCard } from '@/components';
+import { StatusDistributionChart, LighthouseScoreGrid } from '@/components/charts';
+import { barOptionsHorizontal } from '@/utils/chartJsDefaults';
 import type { ReportPayload } from '@/types';
-import type { OverviewCharts } from './types';
+import type { OverviewChartBlock, OverviewCharts } from './types';
 import { OverviewTabPanel } from './OverviewTabPanel';
 import { ensureOverviewChartsRegistered } from './chartSetup';
-import {
-  barOptsVertical,
-  barOptsGrouped,
-  barOptsSocial,
-  barOptsLighthouse,
-} from './chartUtils';
+import { barOptsVertical, barOptsGrouped } from './chartUtils';
 
 ensureOverviewChartsRegistered();
+
+function OverviewBarChart({
+  chart,
+  yTitle,
+}: {
+  chart: OverviewChartBlock;
+  yTitle: string;
+}) {
+  const opts = chart.horizontal
+    ? barOptionsHorizontal()
+    : barOptsVertical(yTitle, chart.aria);
+  return (
+    <div className={chart.horizontal ? 'h-56' : 'h-56'} role="img" aria-label={chart.aria}>
+      <Bar data={chart.data} options={opts} />
+    </div>
+  );
+}
 
 export interface OverviewChartsTabProps {
   charts: OverviewCharts;
@@ -25,17 +39,22 @@ export interface OverviewChartsTabProps {
 export function OverviewChartsTab({ charts, depth }: OverviewChartsTabProps) {
   const vo = strings.views.overview;
   const sj = strings.common;
+  const pct = strings.common.percentOfPages;
   const {
+    statusDistribution,
     wordCountChart,
     responseTimeChart,
     depthChart,
     titleMetaChart,
-    socialChart,
+    socialStats,
     readingLevelChart,
     mimeChart,
-    lighthouseChart,
+    outlinksChart,
+    domainsChart,
+    lighthouseScores,
     hasInsightCharts,
   } = charts;
+  const lhLabels = strings.lighthouse.categoryLabels as Record<string, string>;
 
   return (
     <OverviewTabPanel tabId="charts" className="space-y-6">
@@ -47,22 +66,25 @@ export function OverviewChartsTab({ charts, depth }: OverviewChartsTabProps) {
           </h2>
           <p className="text-sm text-muted-foreground mb-6 max-w-3xl">{vo.insightsHint}</p>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {statusDistribution && (
+              <Card shadow>
+                <h3 className="text-sm font-bold text-foreground mb-1">{vo.statusDist}</h3>
+                <p className="text-xs text-muted-foreground mb-3">{vo.statusDistHint}</p>
+                <StatusDistributionChart distribution={statusDistribution} />
+              </Card>
+            )}
             {wordCountChart && (
               <Card shadow>
                 <h3 className="text-sm font-bold text-foreground mb-1">{vo.contentDepth}</h3>
                 <p className="text-xs text-muted-foreground mb-3">{vo.contentDepthHint}</p>
-                <div className="h-56" role="img" aria-label={wordCountChart.aria}>
-                  <Bar data={wordCountChart.data} options={barOptsVertical(vo.chartPages, wordCountChart.aria)} />
-                </div>
+                <OverviewBarChart chart={wordCountChart} yTitle={vo.chartPages} />
               </Card>
             )}
             {responseTimeChart && (
               <Card shadow>
                 <h3 className="text-sm font-bold text-foreground mb-1">{vo.serverLatency}</h3>
                 <p className="text-xs text-muted-foreground mb-3">{vo.serverLatencyHint}</p>
-                <div className="h-56" role="img" aria-label={responseTimeChart.aria}>
-                  <Bar data={responseTimeChart.data} options={barOptsVertical(vo.chartUrls, responseTimeChart.aria)} />
-                </div>
+                <OverviewBarChart chart={responseTimeChart} yTitle={vo.chartUrls} />
               </Card>
             )}
             {depthChart && (
@@ -89,12 +111,20 @@ export function OverviewChartsTab({ charts, depth }: OverviewChartsTabProps) {
                 </div>
               </Card>
             )}
-            {socialChart && (
+            {socialStats && (
               <Card shadow>
                 <h3 className="text-sm font-bold text-foreground mb-1">{vo.socialPreview}</h3>
                 <p className="text-xs text-muted-foreground mb-3">{vo.socialPreviewHint}</p>
-                <div className="h-44" role="img" aria-label={socialChart.aria}>
-                  <Bar data={socialChart.data} options={barOptsSocial()} />
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" role="group" aria-label={socialStats.aria}>
+                  {socialStats.og != null && (
+                    <StatCard label={vo.socialLabelsOg} value={`${socialStats.og.toFixed(1)}%`} sub={pct} />
+                  )}
+                  {socialStats.twitter != null && (
+                    <StatCard label={vo.socialLabelsTwitter} value={`${socialStats.twitter.toFixed(1)}%`} sub={pct} />
+                  )}
+                  {socialStats.ogImage != null && (
+                    <StatCard label={vo.socialLabelsOgImage} value={`${socialStats.ogImage.toFixed(1)}%`} sub={pct} />
+                  )}
                 </div>
               </Card>
             )}
@@ -102,30 +132,39 @@ export function OverviewChartsTab({ charts, depth }: OverviewChartsTabProps) {
               <Card shadow>
                 <h3 className="text-sm font-bold text-foreground mb-1">{vo.readingLevel}</h3>
                 <p className="text-xs text-muted-foreground mb-3">{vo.readingLevelHint}</p>
-                <div className="h-56" role="img" aria-label={readingLevelChart.aria}>
-                  <Bar
-                    data={readingLevelChart.data}
-                    options={barOptsVertical(vo.chartPages, readingLevelChart.aria)}
-                  />
-                </div>
+                <OverviewBarChart chart={readingLevelChart} yTitle={vo.chartPages} />
               </Card>
             )}
             {mimeChart && (
               <Card shadow>
                 <h3 className="text-sm font-bold text-foreground mb-1">{vo.topMime}</h3>
                 <p className="text-xs text-muted-foreground mb-3">{vo.topMimeHint}</p>
-                <div className="h-56" role="img" aria-label={mimeChart.aria}>
-                  <Bar data={mimeChart.data} options={barOptsVertical(vo.chartUrls, mimeChart.aria)} />
-                </div>
+                <OverviewBarChart chart={mimeChart} yTitle={vo.chartUrls} />
               </Card>
             )}
-            {lighthouseChart && (
+            {outlinksChart && (
+              <Card shadow>
+                <h3 className="text-sm font-bold text-foreground mb-1">{vo.outlinksTitle}</h3>
+                <p className="text-xs text-muted-foreground mb-3">{vo.outlinksHint}</p>
+                <OverviewBarChart chart={outlinksChart} yTitle={vo.chartUrls} />
+              </Card>
+            )}
+            {domainsChart && (
+              <Card shadow className="lg:col-span-2">
+                <h3 className="text-sm font-bold text-foreground mb-1">{vo.topDomains}</h3>
+                <p className="text-xs text-muted-foreground mb-3">{vo.topDomainsHint}</p>
+                <OverviewBarChart chart={domainsChart} yTitle={vo.chartUrls} />
+              </Card>
+            )}
+            {lighthouseScores && (
               <Card shadow className="lg:col-span-2">
                 <h3 className="text-sm font-bold text-foreground mb-1">{vo.lhCategoryScores}</h3>
                 <p className="text-xs text-muted-foreground mb-3">{vo.lhCategoryHint}</p>
-                <div className="h-48 max-w-2xl" role="img" aria-label={lighthouseChart.aria}>
-                  <Bar data={lighthouseChart.data} options={barOptsLighthouse()} />
-                </div>
+                <LighthouseScoreGrid
+                  scores={lighthouseScores.scores}
+                  categoryLabels={lhLabels}
+                  aria={lighthouseScores.aria}
+                />
               </Card>
             )}
           </div>

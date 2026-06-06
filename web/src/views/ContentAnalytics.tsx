@@ -14,7 +14,7 @@ import type {
   TopicCluster,
   ViewProps,
 } from '@/types';
-import { anyChartOptions, anyDoughnutOptions } from '../utils/chartOptions';
+import { anyChartOptions } from '../utils/chartOptions';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import {
@@ -38,7 +38,10 @@ import {
 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, ViewTabs, ViewTabPanel } from '../components';
+import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, ViewTabs, ViewTabPanel, StatCard } from '../components';
+import { StatusDistributionChart, CoverageBar, ChartAccessibleFallback } from '../components/charts';
+import { statusDistributionFromSummary } from '../lib/statusDistribution';
+import { filterZeroSlices, doughnutOptionsWithPercentTooltip, formatCompositionAria } from '../lib/chartDoughnutUtils';
 import type { ViewTabItem } from '../components';
 import { palette, PALETTE_CATEGORICAL } from '../utils/chartPalette';
 import {
@@ -122,23 +125,6 @@ function barOptsH() {
   });
 }
 
-function doughnutOpts() {
-  const vca = strings.views.contentAnalytics;
-  return anyDoughnutOptions({
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'bottom', labels: { color: getChartLegendLabelColor(), font: { size: 11 }, padding: 12 } },
-      tooltip: {
-        callbacks: {
-          label: (ctx: TooltipItem<'doughnut'>) =>
-            ` ${format(vca.chartTooltipDoughnut, { label: ctx.label, n: ctx.raw?.toLocaleString() })}`,
-        },
-      },
-    },
-  });
-}
-
 function groupedBarOpts(yTitle?: string) {
   const vca = strings.views.contentAnalytics;
   const def = strings.common.pages;
@@ -218,32 +204,6 @@ function SectionHeader({
       <div>
         <h2 className="text-lg font-bold text-bright">{title}</h2>
         {description && <p className="text-sm text-muted-foreground mt-0.5">{description}</p>}
-      </div>
-    </div>
-  );
-}
-
-function CoverageBar({
-  label,
-  pct,
-  color,
-}: {
-  label: ReactNode;
-  pct?: number | null;
-  color: string;
-}) {
-  const safeP = Math.min(100, Math.max(0, pct ?? 0));
-  return (
-    <div className="space-y-1.5">
-      <div className="flex justify-between text-xs text-muted-foreground">
-        <span className="font-medium">{label}</span>
-        <span className={`font-bold ${color}`}>{safeP}%</span>
-      </div>
-      <div className="h-2 bg-track rounded-full overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${safeP >= 80 ? 'bg-green-500' : safeP >= 50 ? 'bg-amber-500' : 'bg-red-500'}`}
-          style={{ width: `${safeP}%` }}
-        />
       </div>
     </div>
   );
@@ -453,8 +413,6 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
   const ogImgPct = sc.og_image_coverage_pct ?? 0;
   const hasSocialData = ogPct > 0 || twPct > 0 || ogImgPct > 0;
 
-  // --- OG image doughnut ---
-  const ogImgMissingPct = Math.max(0, 100 - ogImgPct);
   const hasOgImgData = sc.og_image_coverage_pct != null;
 
   // --- Crawl depth distribution ---
@@ -463,20 +421,10 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
   const depthValues = Object.values(depthByDepth).map(Number);
   const hasDepthData = depthLabels.length > 0;
 
-  const statusDoughnut = (() => {
-    const parts = [
-      ['2xx OK', Number(summary.count_2xx) || 0],
-      ['3xx Redirect', Number(summary.count_3xx) || 0],
-      ['4xx Client error', Number(summary.count_4xx) || 0],
-      ['5xx Server error', Number(summary.count_5xx) || 0],
-      ['Error / blocked', Number(summary.count_error) || 0],
-    ].filter(([, n]) => Number(n) > 0);
-    return {
-      labels: parts.map((p) => p[0]),
-      values: parts.map((p) => p[1]),
-    };
-  })();
-  const hasStatusChart = statusDoughnut.values.length > 0 && (Number(summary.total_urls) || 0) > 0;
+  const statusDistribution = statusDistributionFromSummary(summary);
+  const hasStatusChart = statusDistribution != null && (Number(summary.total_urls) || 0) > 0;
+  const h1Chart = filterZeroSlices(h1Labels, h1Values);
+  const h1Aria = formatCompositionAria(h1Chart.labels, h1Chart.values, 'pages');
 
   const rtLabels = Object.keys(rtDist);
   const rtValues = rtLabels.map((k) => Number(rtDist[k]) || 0);
@@ -798,38 +746,8 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                     </>
                   )}
                 </p>
-                <div className="h-64 flex items-center justify-center">
-                  <div className="w-full max-w-[280px] h-56">
-                    <Doughnut
-                      data={{
-                        labels: statusDoughnut.labels,
-                        datasets: [
-                          {
-                            data: statusDoughnut.values,
-                            backgroundColor: palette(statusDoughnut.labels.length),
-                            borderColor: 'rgba(15,23,42,0.8)',
-                            borderWidth: 2,
-                          },
-                        ],
-                      }}
-                      options={{
-                        ...doughnutOpts(),
-                        plugins: {
-                          ...doughnutOpts().plugins,
-                          tooltip: {
-                            callbacks: {
-                              label: (ctx: TooltipItem<'doughnut'>) => {
-                                const n = Number(ctx.raw);
-                                const sum = statusDoughnut.values.reduce<number>((a, b) => a + Number(b), 0);
-                                const pct = sum > 0 ? ((100 * n) / sum).toFixed(1) : '0';
-                                return ` ${ctx.label}: ${n.toLocaleString()} (${pct}%)`;
-                              },
-                            },
-                          },
-                        },
-                      }}
-                    />
-                  </div>
+                <div className="h-64">
+                  <StatusDistributionChart distribution={statusDistribution!} heightClass="h-64" />
                 </div>
               </Card>
             )}
@@ -925,26 +843,16 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             {hasThinCompare && (
               <Card padding="tight" className={hasIssueBar && hasSeoOptimalBar ? 'lg:col-span-2' : ''}>
                 <h3 className="text-sm font-bold text-foreground mb-3">{vca.thinSignals}</h3>
-                <div className="h-48 max-w-md">
-                  <Bar
-                    data={{
-                      labels: ['Under 300 words', 'Small HTML body'],
-                      datasets: [
-                        {
-                          label: 'Page count',
-                          data: [thinByWords, thinByChars],
-                          backgroundColor: ['#F59E0B', '#DC2626'],
-                        },
-                      ],
-                    }}
-                    options={{
-                      ...barOpts(vca.thPages),
-                      plugins: {
-                        legend: { display: false },
-                        tooltip: { callbacks: { label: (ctx: TooltipItem<'bar'>) => ` ${ctx.raw?.toLocaleString()} pages` } },
-                      },
-                    }}
-                    plugins={[barValueLabelsPlugin]}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
+                  <StatCard
+                    label={vca.thinUnder300}
+                    value={thinByWords.toLocaleString()}
+                    sub={sj.pages}
+                  />
+                  <StatCard
+                    label={vca.thinSmallBody}
+                    value={thinByChars.toLocaleString()}
+                    sub={sj.pages}
                   />
                 </div>
               </Card>
@@ -1091,18 +999,27 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
               <h3 className="text-sm font-bold text-foreground mb-3">{vca.h1Dist}</h3>
               <div className="h-56">
                 {hasH1Data ? (
-                  <Doughnut
-                    data={{
-                      labels: h1Labels,
-                      datasets: [{
-                        data: h1Values,
-                        backgroundColor: ['#EF4444', '#22C55E', '#DD8452'],
-                        borderColor: 'rgba(15,23,42,0.8)',
-                        borderWidth: 2,
-                      }],
-                    }}
-                    options={doughnutOpts()}
-                  />
+                  <ChartAccessibleFallback
+                    summary={h1Aria}
+                    rows={h1Chart.labels.map((label, i) => [label, h1Chart.values[i] ?? 0] as [string, string | number])}
+                  >
+                    <div className="h-56 flex items-center justify-center" role="presentation">
+                      <div className="w-full max-w-[240px] h-full">
+                        <Doughnut
+                          data={{
+                            labels: h1Chart.labels,
+                            datasets: [{
+                              data: h1Chart.values,
+                              backgroundColor: ['#EF4444', '#22C55E', '#DD8452'].slice(0, h1Chart.labels.length),
+                              borderColor: 'rgba(15,23,42,0.8)',
+                              borderWidth: 2,
+                            }],
+                          }}
+                          options={doughnutOptionsWithPercentTooltip()}
+                        />
+                      </div>
+                    </div>
+                  </ChartAccessibleFallback>
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
                 )}
@@ -1218,7 +1135,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
         <SectionHeader icon={Share2} title={vca.socialMetaCoverage} />
 
         {/* Coverage progress bars */}
-        {(sc.og_coverage_pct != null || sc.twitter_coverage_pct != null) && (
+        {(sc.og_coverage_pct != null || sc.twitter_coverage_pct != null || hasOgImgData) && (
           <Card shadow>
             <div className="space-y-4">
               {sc.og_coverage_pct != null && (
@@ -1227,75 +1144,48 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
               {sc.twitter_coverage_pct != null && (
                 <CoverageBar label={vca.twitterProgress} pct={sc.twitter_coverage_pct} color="text-sky-700 dark:text-sky-400" />
               )}
+              {hasOgImgData && (
+                <CoverageBar label={vca.ogImage} pct={sc.og_image_coverage_pct} color="text-violet-700 dark:text-violet-400" />
+              )}
             </div>
           </Card>
         )}
 
         {/* Social meta visual comparison */}
         {hasSocialData && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Grouped bar: OG / Twitter / OG Image coverage */}
-            <Card padding="tight">
-              <h3 className="text-sm font-bold text-foreground mb-3">{vca.socialOverview}</h3>
-              <div className="h-64">
-                <Bar
-                  data={{
-                    labels: [vca.openGraph, vca.twitterCard, vca.ogImage],
-                    datasets: [
-                      {
-                        label: vca.datasetHasTag,
-                        data: [ogPct, twPct, ogImgPct],
-                        backgroundColor: '#22C55E',
-                      },
-                      {
-                        label: vca.datasetMissing,
-                        data: [100 - ogPct, 100 - twPct, 100 - ogImgPct],
-                        backgroundColor: '#EF444466',
-                      },
-                    ],
-                  }}
-                  options={{
-                    ...groupedBarOpts(),
-                    scales: {
-                      x: { stacked: true, grid: { color: getGridColor() } },
-                      y: { stacked: true, grid: { color: getGridColor() }, beginAtZero: true, max: 100, title: { display: true, text: 'Coverage %', color: getChartTitleColor() } },
+          <Card padding="tight">
+            <h3 className="text-sm font-bold text-foreground mb-3">{vca.socialOverview}</h3>
+            <div className="h-64">
+              <Bar
+                data={{
+                  labels: [vca.openGraph, vca.twitterCard, vca.ogImage],
+                  datasets: [
+                    {
+                      label: vca.datasetHasTag,
+                      data: [ogPct, twPct, ogImgPct],
+                      backgroundColor: '#22C55E',
                     },
-                    plugins: {
-                      legend: { display: true, labels: { color: getChartLegendLabelColor(), font: { size: 11 }, padding: 10 } },
-                      tooltip: { callbacks: { label: (ctx: TooltipItem<'bar'>) => ` ${ctx.dataset.label}: ${Number(ctx.raw).toFixed(1)}%` } },
+                    {
+                      label: vca.datasetMissing,
+                      data: [100 - ogPct, 100 - twPct, 100 - ogImgPct],
+                      backgroundColor: '#EF444466',
                     },
-                  }}
-                />
-              </div>
-            </Card>
-
-            {/* OG Image coverage doughnut */}
-            {hasOgImgData && (
-              <Card padding="tight">
-                <h3 className="text-sm font-bold text-foreground mb-3">OG Image Coverage</h3>
-                <div className="h-64">
-                  <Doughnut
-                    data={{
-                      labels: ['Has OG Image', 'Missing OG Image'],
-                      datasets: [{
-                        data: [ogImgPct, ogImgMissingPct],
-                        backgroundColor: ['#4C72B0', '#EF444466'],
-                        borderColor: 'rgba(15,23,42,0.8)',
-                        borderWidth: 2,
-                      }],
-                    }}
-                    options={{
-                      ...doughnutOpts(),
-                      plugins: {
-                        ...doughnutOpts().plugins,
-                        tooltip: { callbacks: { label: (ctx: TooltipItem<'doughnut'>) => ` ${ctx.label}: ${Number(ctx.raw).toFixed(1)}%` } },
-                      },
-                    }}
-                  />
-                </div>
-              </Card>
-            )}
-          </div>
+                  ],
+                }}
+                options={{
+                  ...groupedBarOpts(),
+                  scales: {
+                    x: { stacked: true, grid: { color: getGridColor() } },
+                    y: { stacked: true, grid: { color: getGridColor() }, beginAtZero: true, max: 100, title: { display: true, text: 'Coverage %', color: getChartTitleColor() } },
+                  },
+                  plugins: {
+                    legend: { display: true, labels: { color: getChartLegendLabelColor(), font: { size: 11 }, padding: 10 } },
+                    tooltip: { callbacks: { label: (ctx: TooltipItem<'bar'>) => ` ${ctx.dataset.label}: ${Number(ctx.raw).toFixed(1)}%` } },
+                  },
+                }}
+              />
+            </div>
+          </Card>
         )}
 
         {hasSocialMissCompare && (
