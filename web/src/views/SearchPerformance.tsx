@@ -7,8 +7,7 @@ import type { TableColumn } from '@/types/components';
 import { TrendingUp, Search, AlertCircle, Settings2, Download } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
-import { PageLayout, Card } from '../components';
-import SummaryCard from '../components/google/SummaryCard';
+import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs } from '../components';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import GoogleTableToolbar from '../components/google/GoogleTableToolbar';
 import { syncChartJsDefaultsColor } from '../utils/chartJsDefaults';
@@ -29,6 +28,7 @@ import {
 import UrlGapListsPanel from '../components/google/UrlGapListsPanel';
 import { buildLinksInspectHref } from '../lib/reportNav';
 import { useSearchParams } from 'next/navigation';
+import { useUrlTab } from '@/hooks/useUrlTab';
 
 const TABS = ['overview', 'queries', 'pages', 'opportunities', 'coverage'] as const;
 type GscTabId = (typeof TABS)[number];
@@ -54,7 +54,7 @@ export default function SearchPerformance() {
   const { data } = useReport();
   const sp = strings.views.searchPerformance;
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<GscTabId>('overview');
+  const [activeTab, setActiveTab] = useUrlTab(TABS, 'overview');
   const [querySearch, setQuerySearch] = useState('');
   const [pageSearch, setPageSearch] = useState('');
 
@@ -212,7 +212,7 @@ export default function SearchPerformance() {
 
   if (!google) {
     return (
-      <PageLayout>
+      <PageLayout className="space-y-6">
         <div className="max-w-md mx-auto text-center py-16">
           <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-xl font-bold text-bright mb-2">{sp.emptyTitle}</h2>
@@ -232,45 +232,47 @@ export default function SearchPerformance() {
     return true;
   });
 
+  const gscTabItems = TABS.map((id) => {
+    let badge: number | null = null;
+    if (id === 'opportunities') badge = opportunities.length || null;
+    if (id === 'coverage') badge = coverageBadge;
+    return {
+      id,
+      label: tabLabels[id as GscTabId],
+      badge: id !== 'queries' && id !== 'pages' ? badge : null,
+    };
+  });
+
   return (
-    <PageLayout>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-bright mb-2 flex items-center gap-2">
-          <TrendingUp className="h-7 w-7 text-link shrink-0" />
-          {sp.title}
-        </h1>
-        <p className="text-muted-foreground">
-          {subtitle}
-          {headerMeta}
-        </p>
-      </div>
+    <PageLayout className="space-y-6">
+      <PageHeader
+        icon={<TrendingUp className="h-7 w-7 text-link shrink-0" />}
+        title={sp.title}
+        subtitle={
+          <>
+            {subtitle}
+            {headerMeta}
+          </>
+        }
+      />
 
       {errors.length > 0 && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 flex gap-2 mb-6">
-          <AlertCircle className="h-4 w-4 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
-          <div className="text-sm text-amber-800 dark:text-amber-300 space-y-1">
-            {errors.map((e: string, i: number) => (
-              <p key={i}>{e}</p>
-            ))}
-          </div>
-        </div>
+        <AlertBanner
+          variant="warning"
+          icon={<AlertCircle className="h-4 w-4 text-amber-700 dark:text-amber-400 shrink-0" aria-hidden />}
+        >
+          {errors.map((e: string, i: number) => (
+            <p key={i}>{e}</p>
+          ))}
+        </AlertBanner>
       )}
 
       {gsc?.summary && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          <SummaryCard
-            label={sp.kpi.clicks}
-            value={gsc.summary.clicks?.toLocaleString()}
-          />
-          <SummaryCard
-            label={sp.kpi.impressions}
-            value={gsc.summary.impressions?.toLocaleString()}
-          />
-          <SummaryCard
-            label={sp.kpi.ctr}
-            value={gsc.summary.ctr != null ? `${gsc.summary.ctr}%` : null}
-          />
-          <SummaryCard label={sp.kpi.position} value={gsc.summary.position} />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatCard label={sp.kpi.clicks} value={gsc.summary.clicks?.toLocaleString()} />
+          <StatCard label={sp.kpi.impressions} value={gsc.summary.impressions?.toLocaleString()} />
+          <StatCard label={sp.kpi.ctr} value={gsc.summary.ctr != null ? `${gsc.summary.ctr}%` : null} />
+          <StatCard label={sp.kpi.position} value={gsc.summary.position} />
         </div>
       )}
 
@@ -278,45 +280,14 @@ export default function SearchPerformance() {
         <p className="text-sm text-muted-foreground">{sp.emptyBody}</p>
       ) : (
         <>
-          <div className="border-b border-default mb-6" role="tablist" aria-label={sp.title}>
-            <div className="flex gap-0 overflow-x-auto">
-              {TABS.map((id) => {
-                let badge = null;
-                if (id === 'opportunities') badge = opportunities.length || null;
-                if (id === 'coverage') badge = coverageBadge;
-                if (id === 'queries') badge = filteredQueries.length || null;
-                if (id === 'pages') badge = filteredPages.length || null;
-                const label = tabLabels[id as GscTabId];
-                return (
-                  <button
-                    key={id}
-                    type="button"
-                    role="tab"
-                    aria-selected={activeTab === id}
-                    aria-controls={`gsc-tab-${id}`}
-                    id={`gsc-tab-btn-${id}`}
-                    onClick={() => setActiveTab(id)}
-                    className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors flex items-center gap-1.5 ${
-                      activeTab === id
-                        ? 'border-accent text-accent'
-                        : 'border-transparent text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {label}
-                    {(badge ?? 0) > 0 && id !== 'queries' && id !== 'pages' && (
-                      <span
-                        className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                          activeTab === id ? 'bg-accent/20 text-accent' : 'bg-brand-800 text-muted-foreground'
-                        }`}
-                      >
-                        {badge}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          <ViewTabs
+            tabs={gscTabItems}
+            activeTab={activeTab}
+            onChange={(id) => setActiveTab(id as GscTabId)}
+            ariaLabel={sp.title}
+            idPrefix="gsc"
+            className="mb-2"
+          />
 
           {activeTab === 'overview' && (
             <div id="gsc-tab-overview" role="tabpanel" aria-labelledby="gsc-tab-btn-overview" className="space-y-6">
@@ -456,22 +427,22 @@ export default function SearchPerformance() {
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <UrlCoverageDoughnut urlJoin={urlJoin} />
                     <div className="grid grid-cols-2 gap-3">
-                      <SummaryCard
+                      <StatCard
                         label={sp.urlJoin.matched}
                         value={urlJoin.matched}
                         sub={sp.urlJoin.matchedSub}
                       />
-                      <SummaryCard
+                      <StatCard
                         label={sp.urlJoin.crawlOnly}
                         value={urlJoin.crawl_only}
                         sub={sp.urlJoin.crawlOnlySub}
                       />
-                      <SummaryCard
+                      <StatCard
                         label={sp.urlJoin.gscOnly}
                         value={urlJoin.gsc_only}
                         sub={sp.urlJoin.gscOnlySub}
                       />
-                      <SummaryCard
+                      <StatCard
                         label={sp.urlJoin.ga4Only}
                         value={urlJoin.ga4_only}
                         sub={sp.urlJoin.ga4OnlySub}

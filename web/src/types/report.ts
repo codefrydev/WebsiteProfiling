@@ -450,7 +450,7 @@ export interface ReportLink {
   degree?: number;
   og_image?: string;
   twitter_image?: string;
-  page_analysis?: { image_urls?: string[] };
+  page_analysis?: { image_urls?: string[]; browser?: BrowserDiagnostics };
   lighthouse?: {
     median_metrics?: {
       performance_score?: number;
@@ -832,6 +832,13 @@ export interface InspectorSecurityFinding {
   recommendation?: string;
 }
 
+export interface InspectorBrowserIssue {
+  severity: string;
+  message: string;
+  detail?: string;
+  recommendation?: string;
+}
+
 export interface InspectorDetails {
   broken: InspectorBrokenItem[];
   redirects: InspectorRedirectItem[];
@@ -839,6 +846,7 @@ export interface InspectorDetails {
   contentFlags: InspectorContentFlag[];
   categoryIssues: InspectorCategoryIssue[];
   securityFindings: InspectorSecurityFinding[];
+  browserIssues: InspectorBrowserIssue[];
   recommendations: string[];
 }
 
@@ -848,6 +856,7 @@ export interface InspectorIssueRow {
   type: string;
   recommendation?: string;
   category?: string;
+  detail?: string;
 }
 
 export interface ContentAnalyticsStats {

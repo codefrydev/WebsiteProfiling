@@ -1,6 +1,8 @@
 'use client';
 
-interface GoogleViewTabsProps {
+import ViewTabs from '../ViewTabs';
+
+interface LegacyGoogleViewTabsProps {
   tabs: string[];
   activeTab: string;
   onChange: (tab: string) => void;
@@ -8,43 +10,26 @@ interface GoogleViewTabsProps {
   labels?: Record<string, string>;
 }
 
-/**
- * Shared tab bar for Google data views.
- */
+/** @deprecated Use ViewTabs from @/components */
 export default function GoogleViewTabs({
-  tabs,
+  tabs: tabIds,
   activeTab,
   onChange,
   badges = {},
   labels = {},
-}: GoogleViewTabsProps) {
+}: LegacyGoogleViewTabsProps) {
+  const tabs = tabIds.map((id) => ({
+    id,
+    label: labels[id] || id,
+    badge: badges[id] ?? null,
+  }));
+
   return (
-    <div className="flex gap-1 flex-wrap" role="tablist">
-      {tabs.map((tab) => {
-        const isActive = activeTab === tab;
-        const badge = badges[tab];
-        const label = labels[tab] || tab;
-        return (
-          <button
-            key={tab}
-            role="tab"
-            aria-selected={isActive}
-            onClick={() => onChange(tab)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 ${
-              isActive
-                ? 'bg-brand-700 text-foreground'
-                : 'text-muted-foreground hover:text-foreground hover:bg-brand-800'
-            }`}
-          >
-            {label}
-            {badge != null && badge > 0 && (
-              <span className="bg-amber-600/80 text-white text-xs px-1.5 py-0.5 rounded-full tabular-nums leading-none">
-                {badge}
-              </span>
-            )}
-          </button>
-        );
-      })}
-    </div>
+    <ViewTabs
+      tabs={tabs}
+      activeTab={activeTab}
+      onChange={onChange}
+      ariaLabel="Tabs"
+    />
   );
 }

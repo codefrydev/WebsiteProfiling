@@ -55,6 +55,24 @@ export function rtColor(ms: unknown): string {
   return 'text-red-600 dark:text-red-400';
 }
 
+/** Relative bar width for inlinks vs max in current result set (0–100). */
+export function inlinksBarWidthPct(count: number, maxInSection: number): number {
+  const n = Math.max(0, Number(count) || 0);
+  const max = Math.max(0, Number(maxInSection) || 0);
+  if (n <= 0 || max <= 0) return 0;
+  return Math.min(100, (n / max) * 100);
+}
+
+/** Text emphasis for inlinks count — muted at zero, sky accent when strong. */
+export function inlinksTextClass(count: number, maxInSection: number): string {
+  const n = Math.max(0, Number(count) || 0);
+  if (n === 0) return 'text-muted-foreground font-normal';
+  const ratio = maxInSection > 0 ? n / maxInSection : 0;
+  if (ratio >= 0.66) return 'text-sky-800 dark:text-sky-300 font-semibold';
+  if (ratio >= 0.33) return 'text-sky-900/90 dark:text-sky-400 font-medium';
+  return 'text-foreground font-medium';
+}
+
 export function wcLabel(wc: number): LabelColor {
   if (wc < 300) return { label: strings.common.wcThin, color: 'text-red-600 dark:text-red-400' };
   if (wc < 1000) return { label: strings.common.wcMedium, color: 'text-yellow-800 dark:text-yellow-400' };
@@ -132,7 +150,8 @@ export function normaliseKw(kw: unknown): NormalisedKeyword {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-export const SELECT_CLASS = 'bg-brand-800 border border-brand-700 text-sm rounded-lg px-3 py-2 text-foreground outline-none';
+/** @deprecated Import Select or SELECT_CLASS from @/components/Select */
+export { SELECT_CLASS } from '@/components/Select';
 
 export const CONTENT_URL_KEYS = strings.linkExplorer.contentUrlKeys;
 

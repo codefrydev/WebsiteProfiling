@@ -8,3 +8,6 @@ export { default as OGPreview }    from './OGPreview';
 export { default as RowTooltip }   from './RowTooltip';
 export { default as SortTh }       from './SortTh';
 export { default as InspectorTabs }from './InspectorTabs';
+export { default as LinksFilterBar } from './LinksFilterBar';
+export { default as InlinksMetricCell } from './InlinksMetricCell';
+export { default as RelativeMetricBar } from './RelativeMetricBar';

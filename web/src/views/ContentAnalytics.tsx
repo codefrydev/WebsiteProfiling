@@ -1,5 +1,6 @@
 import type { Chart, TooltipItem } from 'chart.js';
 import { useState, useMemo, type ComponentType, type ReactNode } from 'react';
+import { useUrlTab } from '@/hooks/useUrlTab';
 import type {
   ContentAnalyticsData,
   ContentUrlsMap,
@@ -32,10 +33,13 @@ import {
   ListChecks,
   Sparkles,
   Link2,
+  LayoutDashboard,
+  BarChart2 as BarChart2Icon,
 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '../components';
+import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, ViewTabs, ViewTabPanel } from '../components';
+import type { ViewTabItem } from '../components';
 import { palette, PALETTE_CATEGORICAL } from '../utils/chartPalette';
 import {
   getGridColor,
@@ -316,11 +320,15 @@ const EMPTY_SEO: SeoHealthStats = {};
 const EMPTY_DEPTH: DepthDistribution = {};
 const EMPTY_CONTENT_URLS: ContentUrlsMap = {};
 
+const CONTENT_ANALYTICS_TABS = ['summary', 'analytics'] as const;
+type ContentAnalyticsTabId = (typeof CONTENT_ANALYTICS_TABS)[number];
+
 export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
   const vca = strings.views.contentAnalytics;
   const sj = strings.common;
   const ch = strings.charts;
   const { data } = useReport();
+  const [activeTab, setActiveTab] = useUrlTab(CONTENT_ANALYTICS_TABS, 'summary');
   const q = (searchQuery || '').toLowerCase().trim();
 
   const thinPages = useMemo((): ThinPageEntry[] => {
@@ -372,6 +380,19 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
       values: entries.map((x) => Number(x[1])),
     };
   }, [data?.ner_site_summary?.label_counts]);
+
+  const tabItems = useMemo((): ViewTabItem[] => [
+    {
+      id: 'summary',
+      label: vca.tabs.summary,
+      icon: <LayoutDashboard className="h-3.5 w-3.5 shrink-0" aria-hidden />,
+    },
+    {
+      id: 'analytics',
+      label: vca.tabs.analytics,
+      icon: <BarChart2Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />,
+    },
+  ], [vca.tabs]);
 
   if (!data) return null;
 
@@ -523,9 +544,19 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
   const semanticClusters = data.semantic_keyword_clusters ?? [];
 
   return (
-    <PageLayout className="space-y-8">
+    <PageLayout className="space-y-6">
       <PageHeader title={vca.title} subtitle={vca.subtitle} />
 
+      <ViewTabs
+        tabs={tabItems}
+        activeTab={activeTab}
+        onChange={(id) => setActiveTab(id as ContentAnalyticsTabId)}
+        ariaLabel={vca.title}
+        idPrefix="content-analytics"
+      />
+
+      {activeTab === 'summary' && (
+        <ViewTabPanel idPrefix="content-analytics" tabId="summary" className="space-y-6">
       {/* KPI stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card shadow>
@@ -747,6 +778,11 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
         </Card>
       )}
 
+        </ViewTabPanel>
+      )}
+
+      {activeTab === 'analytics' && (
+        <ViewTabPanel idPrefix="content-analytics" tabId="analytics" className="space-y-6">
       {(hasStatusChart || hasRtDist) && (
         <div className="space-y-6">
           <SectionHeader icon={Activity} title={vca.crawlHealth} />
@@ -1485,6 +1521,8 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             )}
           </div>
         </div>
+      )}
+        </ViewTabPanel>
       )}
     </PageLayout>
   );

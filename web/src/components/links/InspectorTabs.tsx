@@ -1,5 +1,8 @@
-import { useState, useMemo } from 'react';
+'use client';
+
+import { useState, useMemo, useEffect, type ReactNode } from 'react';
 import { Gauge, Share2, Code2, Shield, AlertTriangle, FileBarChart, LineChart } from 'lucide-react';
+import ViewTabs from '@/components/ViewTabs';
 import type { InspectorDetails, InspectorIssueRow, LinkDetail, LinkLighthouseData } from '@/types/report';
 import { strings, format } from '../../lib/strings';
 import { SEO_ISSUE_RECOMMENDATIONS } from '../../utils/linkUtils';
@@ -13,15 +16,27 @@ import SearchRetentionTab from './tabs/SearchRetentionTab';
 
 const ci = strings.components.inspectorTabs;
 
-const TABS = [
-  { id: 'overview', label: ci.overview, icon: <Gauge className="h-3.5 w-3.5" /> },
-  { id: 'analysis', label: ci.pageAnalysis, icon: <FileBarChart className="h-3.5 w-3.5" /> },
-  { id: 'search', label: ci.searchRetention, icon: <LineChart className="h-3.5 w-3.5" /> },
-  { id: 'seo', label: ci.seoSocial, icon: <Share2 className="h-3.5 w-3.5" /> },
-  { id: 'content', label: ci.content, icon: <Code2 className="h-3.5 w-3.5" /> },
-  { id: 'technical', label: ci.technical, icon: <Shield className="h-3.5 w-3.5" /> },
-  { id: 'issues', label: ci.issues, icon: <AlertTriangle className="h-3.5 w-3.5" /> },
-];
+const TAB_ICONS: Record<string, ReactNode> = {
+  overview: <Gauge className="h-3.5 w-3.5" />,
+  analysis: <FileBarChart className="h-3.5 w-3.5" />,
+  search: <LineChart className="h-3.5 w-3.5" />,
+  seo: <Share2 className="h-3.5 w-3.5" />,
+  content: <Code2 className="h-3.5 w-3.5" />,
+  technical: <Shield className="h-3.5 w-3.5" />,
+  issues: <AlertTriangle className="h-3.5 w-3.5" />,
+};
+
+const TAB_IDS = ['overview', 'analysis', 'search', 'seo', 'content', 'technical', 'issues'] as const;
+
+const TAB_LABELS: Record<string, string> = {
+  overview: ci.overview,
+  analysis: ci.pageAnalysis,
+  search: ci.searchRetention,
+  seo: ci.seoSocial,
+  content: ci.content,
+  technical: ci.technical,
+  issues: ci.issues,
+};
 
 function buildAllIssues(inspectorDetails: InspectorDetails | null): InspectorIssueRow[] {
   if (!inspectorDetails) return [];
@@ -44,6 +59,15 @@ function buildAllIssues(inspectorDetails: InspectorDetails | null): InspectorIss
   inspectorDetails.securityFindings.forEach((i) =>
     list.push({ severity: i.severity || 'Medium', message: i.message ?? '', type: 'security' })
   );
+  (inspectorDetails.browserIssues || []).forEach((i) =>
+    list.push({
+      severity: i.severity || 'High',
+      message: i.message ?? '',
+      type: 'browser',
+      detail: i.detail,
+      recommendation: i.recommendation,
+    })
+  );
   return list;
 }
 
@@ -51,10 +75,26 @@ export interface InspectorTabsProps {
   link: LinkDetail;
   lhData?: LinkLighthouseData | null;
   inspectorDetails: InspectorDetails | null;
+  /** @deprecated Use activeTab + onTabChange for URL-synced tabs */
+  initialTab?: string;
+  activeTab?: string;
+  onTabChange?: (tab: string) => void;
 }
 
-export default function InspectorTabs({ link, lhData, inspectorDetails }: InspectorTabsProps) {
-  const [activeTab, setActiveTab] = useState('overview');
+const VALID_TABS = new Set(TAB_IDS);
+
+export default function InspectorTabs({
+  link,
+  lhData,
+  inspectorDetails,
+  initialTab = 'overview',
+  activeTab: controlledTab,
+  onTabChange,
+}: InspectorTabsProps) {
+  const resolvedInitial = VALID_TABS.has(initialTab as typeof TAB_IDS[number]) ? initialTab : 'overview';
+  const [internalTab, setInternalTab] = useState(resolvedInitial);
+  const isControlled = controlledTab != null && onTabChange != null;
+  const activeTab = isControlled ? controlledTab : internalTab;
   const effectiveLh = link?.lighthouse || lhData;
 
   const issueCount = useMemo(
@@ -62,34 +102,38 @@ export default function InspectorTabs({ link, lhData, inspectorDetails }: Inspec
     [inspectorDetails]
   );
 
+  useEffect(() => {
+    if (isControlled) return;
+    if (VALID_TABS.has(initialTab as typeof TAB_IDS[number])) {
+      setInternalTab(initialTab);
+    }
+  }, [link.url, initialTab, isControlled]);
+
+  const handleTabChange = (tab: string) => {
+    if (isControlled) onTabChange(tab);
+    else setInternalTab(tab);
+  };
+
+  const tabs = TAB_IDS.map((id) => ({
+    id,
+    label: TAB_LABELS[id],
+    icon: TAB_ICONS[id],
+    badge: id === 'issues' ? issueCount : null,
+  }));
+
   return (
-    <div className="flex flex-col h-full">
-      {/* Tab bar */}
-      <div className="flex border-b border-muted bg-brand-800 shrink-0 overflow-x-auto">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setActiveTab(t.id)}
-            className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium whitespace-nowrap transition-all border-b-2 -mb-px ${
-              activeTab === t.id
-                ? 'text-bright border-blue-500'
-                : 'text-muted-foreground border-transparent hover:text-foreground hover:border-brand-700/80'
-            }`}
-          >
-            {t.icon}
-            {t.label}
-            {t.id === 'issues' && issueCount > 0 && (
-              <span className="ml-1 text-xs bg-red-500/20 text-red-800 dark:text-red-300 rounded-full px-1.5 py-0.5 leading-none">
-                {issueCount}
-              </span>
-            )}
-          </button>
-        ))}
+    <div className="flex flex-col h-full min-h-0">
+      <div className="shrink-0 px-4 pt-3 pb-2 border-b border-muted bg-brand-800">
+        <ViewTabs
+          tabs={tabs}
+          activeTab={activeTab}
+          onChange={handleTabChange}
+          ariaLabel={ci.overview}
+          idPrefix="inspector"
+        />
       </div>
 
-      {/* Tab content */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 min-h-0 overflow-y-auto p-6">
         {activeTab === 'overview'  && <OverviewTab  link={link} />}
         {activeTab === 'analysis'  && <PageAnalysisTab link={link} />}
         {activeTab === 'search'    && <SearchRetentionTab link={link} />}

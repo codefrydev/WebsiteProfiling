@@ -131,7 +131,7 @@ export default function Charts({ searchQuery = '' }: ViewProps) {
     : vc.ariaNoStatus;
 
   return (
-    <PageLayout>
+    <PageLayout className="space-y-6">
       <PageHeader title={vc.title} subtitle={vc.subtitle} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         <Card padding="tight" className="print:break-inside-avoid">

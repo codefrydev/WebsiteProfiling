@@ -3,6 +3,7 @@
 import { useMemo, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { useUrlTab } from '@/hooks/useUrlTab';
 import {
   ArrowLeftRight,
   FolderTree,
@@ -17,6 +18,7 @@ import {
   PageLayout,
   PageHeader,
   Card,
+  AlertBanner,
   Table,
   TableHead,
   TableHeadCell,
@@ -57,6 +59,8 @@ type CompareTab =
   | 'google'
   | 'audit';
 type UrlTab = 'all' | 'new' | 'removed' | 'content' | 'structure';
+
+const URL_TABS = ['all', 'new', 'removed', 'content', 'structure'] as const;
 
 function filterUrls(urls: string[], query: string): string[] {
   const q = query.trim().toLowerCase();
@@ -129,7 +133,7 @@ function UrlDiffTable({
   );
 }
 
-const TAB_KEYS: CompareTab[] = [
+const TAB_KEYS = [
   'overview',
   'urls',
   'status',
@@ -139,12 +143,20 @@ const TAB_KEYS: CompareTab[] = [
   'links',
   'google',
   'audit',
-];
+] as const satisfies readonly CompareTab[];
 
 export default function CompareReports({ searchQuery = '' }: ViewProps) {
   const searchParams = useSearchParams();
-  const [tab, setTab] = useState<CompareTab>('overview');
-  const [urlTab, setUrlTab] = useState<UrlTab>('all');
+  const [tab, setTabRaw] = useUrlTab(TAB_KEYS, 'overview', 'tab');
+  const [urlTab, setUrlTabRaw] = useUrlTab(URL_TABS, 'all', 'urlTab');
+  const setTab = useCallback(
+    (next: CompareTab) => {
+      setTabRaw(next);
+      if (next !== 'urls') setUrlTabRaw('all');
+    },
+    [setTabRaw, setUrlTabRaw],
+  );
+  const setUrlTab = setUrlTabRaw;
   const [copyHint, setCopyHint] = useState('');
   const { reportList, reportCompare, compareReportId, selectedReportId, loading, error } = useReport();
   const vc = strings.views.compare;
@@ -243,9 +255,9 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
 
   const visibleTabs = useMemo((): CompareTab[] => {
     if (!reportCompare?.extras.googleAvailable) {
-      return TAB_KEYS.filter((t) => t !== 'google');
+      return TAB_KEYS.filter((t) => t !== 'google') as CompareTab[];
     }
-    return TAB_KEYS;
+    return [...TAB_KEYS];
   }, [reportCompare?.extras.googleAvailable]);
 
   const urlTabLabels: { id: UrlTab; label: string; count: number }[] = useMemo(() => {
@@ -293,9 +305,9 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
       {reportCompare && compareReportId != null ? (
         <>
           {!reportCompare.urlChangeListsAvailable ? (
-            <p className="text-xs text-amber-800 dark:text-amber-300/90 bg-amber-500/10 border border-amber-500/25 rounded-lg px-3 py-2">
+            <AlertBanner variant="warning" className="text-xs">
               {vc.urlChangeListsUnavailable}
-            </p>
+            </AlertBanner>
           ) : null}
 
           <div className="flex flex-wrap gap-1 border-b border-default pb-1 overflow-x-auto">

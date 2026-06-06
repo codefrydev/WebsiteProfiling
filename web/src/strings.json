@@ -70,6 +70,10 @@
       "label": "Security",
       "section": "Site crawl"
     },
+    "javascript-errors": {
+      "label": "JavaScript errors",
+      "section": "Site crawl"
+    },
     "content-analytics": {
       "label": "Content quality",
       "section": "On-page & content"
@@ -662,7 +666,26 @@
       "toggleChartsShow": "Show compare bars",
       "toggleChartsHide": "Hide compare bars",
       "empty": "No crawl URLs to show. Run a crawl from Run audit, then build or refresh the site audit.",
-      "emptyFilter": "No URLs match the current search. Clear the header search or try another term."
+      "emptyFilter": "No URLs match the current search. Clear the header search or try another term.",
+      "searchFilterBanner": "Header search is filtering which URLs roll up into this tree. Clear search to include all crawled pages.",
+      "treeTitle": "Path tree",
+      "treeHint": "Expand folders to drill into URL prefixes. Metrics include all crawled pages under each path.",
+      "treeShowing": "Showing {count} visible paths · {total} prefixes total",
+      "quickJump": "Jump to section",
+      "tabs": {
+        "overview": "Overview",
+        "tree": "Path tree"
+      },
+      "stats": {
+        "urls": "URLs in view",
+        "pathPrefixes": "Path prefixes",
+        "totalInlinks": "Total inlinks",
+        "avgWords": "Avg words",
+        "avgResponse": "Avg response (ms)",
+        "avgPerf": "Avg perf score"
+      },
+      "overviewTopPaths": "Top path segments",
+      "overviewTopPathsHint": "First-level folders under /, ranked by page count in the current filter."
     },
     "redirects": {
       "title": "Redirects",
@@ -678,6 +701,10 @@
     },
     "techStack": {
       "title": "Tech Detection",
+      "tabs": {
+        "overview": "Overview",
+        "breakdown": "Breakdown"
+      },
       "subtitle": "Technologies detected across {count} analyzed pages.",
       "techDetectedSuffix": "technologies detected",
       "cardDetected": "Detected Technologies",
@@ -778,6 +805,10 @@
     },
     "content": {
       "title": "On-Page SEO",
+      "tabs": {
+        "overview": "Overview",
+        "issues": "Issues"
+      },
       "subtitlePrefix": "Audit missing or duplicate titles, meta descriptions, and H1 tags.",
       "subtitleIssues": "{count} total {word} detected.",
       "issueWord": "issue",
@@ -841,6 +872,11 @@
     },
     "links": {
       "title": "All URLs",
+      "tabs": {
+        "urls": "All URLs",
+        "charts": "Charts"
+      },
+      "chartsEmpty": "No distribution charts are available for this crawl yet.",
       "crawlPreviewBanner": "Crawl only — run Regenerate audit from crawl or Full site audit for Issues, Core Web Vitals, and site health scores.",
       "showingResults": "Analyze discovered URLs. Showing",
       "resultsSuffix": "results.",
@@ -860,6 +896,11 @@
       "filterThin": "Thin (<300)",
       "filterMedium": "Medium (300–1000)",
       "filterLong": "Long (1000+)",
+      "filterAllJs": "All JS errors",
+      "filterJsErrors": "Has JS errors",
+      "filterJsClean": "No JS errors",
+      "thJsErrors": "JS errors",
+      "jsErrorBadge": "{console} console · {page} uncaught",
       "chartStatusTitle": "All crawled URLs by status",
       "chartStatusHint": "Full link list (ignores table filters)",
       "chartWcTitle": "Word count bands",
@@ -890,6 +931,10 @@
     },
     "security": {
       "title": "Security & Headers",
+      "tabs": {
+        "charts": "Charts",
+        "findings": "Findings"
+      },
       "subtitlePrefix": "Security headers, injection risks, open redirects, and vulnerability findings from the crawl.",
       "subtitleCount": "{count} finding{s} total.",
       "findingsBySeverity": "Findings by severity",
@@ -902,6 +947,48 @@
       "emptyNoScan": "No security findings yet. Enable security checks in audit settings, then run a crawl.",
       "recommendation": "Recommendation",
       "findingTooltip": "{n} finding{s}"
+    },
+    "javascriptErrors": {
+      "title": "JavaScript errors",
+      "tabs": {
+        "summary": "Summary",
+        "errors": "All errors"
+      },
+      "subtitle": "Console errors and uncaught exceptions captured during JavaScript rendering.",
+      "subtitleCount": "({count} errors on {pages} pages)",
+      "emptyStaticTitle": "JavaScript rendering was not used",
+      "emptyStaticBody": "Browser console and runtime errors are only captured when the crawl uses JavaScript or Auto rendering. Re-run the audit with JavaScript rendering enabled and console capture turned on.",
+      "runAudit": "Run audit",
+      "emptyCleanTitle": "No JavaScript errors detected",
+      "emptyCleanBody": "No console errors or uncaught exceptions were logged during JavaScript rendering for this crawl.",
+      "emptyFiltered": "No errors match the current filters or search.",
+      "consolePagesCard": "Pages with console errors",
+      "consoleTotalCard": "Total console errors",
+      "exceptionPagesCard": "Pages with uncaught exceptions",
+      "exceptionTotalCard": "Total uncaught exceptions",
+      "renderMode": "Render mode",
+      "topRecurring": "Top recurring console errors",
+      "topRecurringHint": "Grouped by message text across the crawl",
+      "thMessage": "Message",
+      "thCount": "Count",
+      "thSampleUrls": "Sample URLs",
+      "allErrors": "All errors",
+      "allErrorsHint": "Console errors and uncaught exceptions with source location where available",
+      "thUrl": "URL",
+      "thType": "Type",
+      "thSource": "Source",
+      "thActions": "Actions",
+      "typeConsole": "Console",
+      "typeException": "Exception",
+      "typeAll": "All types",
+      "viewDetails": "View details",
+      "expandStack": "Show stack trace",
+      "collapseStack": "Hide stack trace",
+      "consoleErrorFallback": "Console error",
+      "exceptionFallback": "Uncaught exception",
+      "stackPreview": "{stack}…",
+      "inspectorConsoleRecommendation": "Fix the script at the reported source location; check network and CORS if the error references a failed load.",
+      "inspectorExceptionRecommendation": "Open the Page analysis tab for the full stack trace and browser console output."
     },
     "lighthouse": {
       "emptyTitle": "Page Speed",
@@ -944,7 +1031,15 @@
       "diagnosticsHint": "Issues grouped by impact area. Click a group to expand. Click any issue for full detail and evidence.",
       "allChecksPassed": "No failing audits — all checks passed.",
       "noDiagnosticsSearch": "No diagnostics match your search.",
-      "defaultFix": "See Lighthouse report for fix."
+      "defaultFix": "See Lighthouse report for fix.",
+      "tabs": {
+        "overview": "Overview",
+        "pages": "Pages",
+        "metrics": "Metrics",
+        "quickWins": "Quick wins",
+        "audits": "Audits",
+        "diagnostics": "Diagnostics"
+      }
     },
     "searchPerformance": {
       "title": "Search Performance",
@@ -1503,7 +1598,8 @@
         "fetchMethodMixLine": "{staticCount} static, {renderedCount} JavaScript-rendered.",
         "jsConcurrencyLine": "JS parallel pages: {count}.",
         "browserConsoleErrorsLine": "{pages} page(s) logged {errors} console error(s) during JavaScript rendering.",
-        "browserPageErrorsLine": "{pages} page(s) had uncaught JavaScript errors during rendering."
+        "browserPageErrorsLine": "{pages} page(s) had uncaught JavaScript errors during rendering.",
+        "viewJavaScriptErrors": "View JavaScript errors"
       },
       "googleStaleWarning": "Search Console & Analytics data is older than 7 days. Refresh from Integrations.",
       "googlePartialWarning": "Search Console or Analytics data is missing from the last sync.",
@@ -1516,6 +1612,13 @@
       "ga4SessionsCard": "Analytics sessions",
       "ga4UsersCard": "Active users",
       "dashboard": "Overview",
+      "tabs": {
+        "summary": "Summary",
+        "charts": "Charts",
+        "health": "Health",
+        "pages": "Top pages"
+      },
+      "chartsEmpty": "No chart distributions are available for this crawl yet.",
       "subtitleSiteHealth": "Site health summary for",
       "crawlDone": "Crawl completed.",
       "crawlDoneSeconds": "Crawl completed in {seconds}s.",
@@ -1671,6 +1774,10 @@
     },
     "contentAnalytics": {
       "title": "Content Insights",
+      "tabs": {
+        "summary": "Summary",
+        "analytics": "Analytics"
+      },
       "subtitle": "Word count, readability, content-to-HTML ratio, top keywords, social meta coverage, crawl health, and on-page flags.",
       "meanWords": "Mean Words",
       "medianWords": "Median Words",

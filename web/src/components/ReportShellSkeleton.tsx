@@ -103,7 +103,7 @@ export default function ReportShellSkeleton({ variant }: ReportShellSkeletonProp
             <Skeleton className="h-9 w-[7.5rem] sm:w-36 rounded-lg" />
           </div>
         </header>
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto px-[var(--spacing-page-x)] pt-4 pb-6 sm:px-6 lg:px-8 lg:pt-5 lg:pb-8 space-y-4">
           <Skeleton className="h-8 w-56 max-w-[80%]" />
           <Skeleton className="h-4 w-full max-w-2xl" />
           <Skeleton className="h-4 w-full max-w-xl" />

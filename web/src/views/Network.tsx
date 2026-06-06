@@ -3,7 +3,7 @@ import ForceGraph3D from '3d-force-graph';
 import { Maximize, Minimize, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Button } from '../components';
+import { PageLayout, PageHeader, Card, Button, DataViewLayout } from '../components';
 import type { GraphEdge, GraphNode, ViewProps } from '@/types';
 
 interface GraphNodeData {
@@ -241,7 +241,7 @@ export default function Network({ searchQuery = '' }: ViewProps) {
 
   if (loading) {
     return (
-      <PageLayout className="flex flex-col h-full">
+      <PageLayout variant="fullHeight" className="space-y-6">
         <PageHeader title={vn.title} subtitle={vn.subtitle} />
         <Card className="flex-1 min-h-[50vh] flex flex-col items-center justify-center gap-4 border-dashed">
           <Loader2 className="h-10 w-10 animate-spin text-link" aria-hidden />
@@ -262,10 +262,13 @@ export default function Network({ searchQuery = '' }: ViewProps) {
     graphPayload.totalNodeCount > 0;
 
   return (
-    <PageLayout className="flex flex-col h-full">
-      <PageHeader title={vn.title} subtitle={vn.subtitle} />
-      <div ref={wrapperRef} className="flex-1 flex flex-col min-h-[80vh]">
-        <Card overflowHidden padding="none" className="flex-1 shadow-lg relative min-h-[80vh]">
+    <PageLayout variant="fullHeight" className="space-y-4">
+      <DataViewLayout
+        fillHeight
+        header={<PageHeader title={vn.title} subtitle={vn.subtitle} className="mb-0" />}
+      >
+        <div ref={wrapperRef} className="flex-1 flex flex-col min-h-0">
+          <Card overflowHidden padding="none" className="flex-1 shadow-lg relative min-h-0">
           {hasGraph ? (
             <>
               <div
@@ -308,7 +311,8 @@ export default function Network({ searchQuery = '' }: ViewProps) {
             </div>
           )}
         </Card>
-      </div>
+        </div>
+      </DataViewLayout>
     </PageLayout>
   );
 }

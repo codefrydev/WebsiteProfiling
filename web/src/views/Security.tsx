@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
+import { useUrlTab } from '@/hooks/useUrlTab';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import type { TooltipItem } from 'chart.js';
-import { Shield, Flame, AlertTriangle, AlertCircle, Info, ExternalLink } from 'lucide-react';
+import { Shield, Flame, AlertTriangle, AlertCircle, Info, ExternalLink, BarChart3, List } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Badge } from '../components';
+import { PageLayout, PageHeader, Card, Badge, ViewTabs, ViewTabPanel } from '../components';
+import type { ViewTabItem } from '../components';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal, doughnutOptionsBottomLegend } from '../utils/chartJsDefaults';
 import type { SecurityFinding, ViewProps } from '@/types';
@@ -84,9 +86,13 @@ const SEVERITY_CONFIG: Record<SeverityKey, {
 
 const SEVERITY_ORDER: SeverityKey[] = ['Critical', 'High', 'Medium', 'Low', 'Info'];
 
+const SECURITY_TABS = ['charts', 'findings'] as const;
+type SecurityTabId = (typeof SECURITY_TABS)[number];
+
 export default function Security({ searchQuery = '' }: ViewProps) {
   const { data } = useReport();
   const [severityFilter, setSeverityFilter] = useState('All');
+  const [activeTab, setActiveTab] = useUrlTab(SECURITY_TABS, 'findings');
 
   const q = (searchQuery || '').toLowerCase().trim();
 
@@ -135,6 +141,26 @@ export default function Security({ searchQuery = '' }: ViewProps) {
     };
   }, []);
 
+  const vs = strings.views.security;
+
+  const tabItems = useMemo((): ViewTabItem[] => {
+    const chartCount = allFindings.length > 0 ? (typeLabels.length > 0 ? 2 : 1) : 0;
+    return [
+      {
+        id: 'findings',
+        label: vs.tabs.findings,
+        icon: <List className="h-3.5 w-3.5 shrink-0" aria-hidden />,
+        badge: allFindings.length > 0 ? allFindings.length : null,
+      },
+      {
+        id: 'charts',
+        label: vs.tabs.charts,
+        icon: <BarChart3 className="h-3.5 w-3.5 shrink-0" aria-hidden />,
+        badge: chartCount > 0 ? chartCount : null,
+      },
+    ];
+  }, [vs.tabs, allFindings.length, typeLabels.length]);
+
   if (!data) return null;
 
   const severityCounts = SEVERITY_ORDER.reduce<Record<string, number>>((acc, s) => {
@@ -162,8 +188,6 @@ export default function Security({ searchQuery = '' }: ViewProps) {
     return ao - bo;
   });
 
-  const vs = strings.views.security;
-
   return (
     <PageLayout className="space-y-6">
       <PageHeader
@@ -171,162 +195,174 @@ export default function Security({ searchQuery = '' }: ViewProps) {
         subtitle={`${vs.subtitlePrefix} ${format(vs.subtitleCount, { count: allFindings.length, s: allFindings.length !== 1 ? 's' : '' })}`}
       />
 
-      {allFindings.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card padding="tight" shadow>
-            <h2 className="text-sm font-bold text-foreground mb-1">{vs.findingsBySeverity}</h2>
-            <p className="text-xs text-muted-foreground mb-3">{vs.findingsBySeverityHint}</p>
-            <div className="h-56 flex items-center justify-center">
-              <div className="w-full max-w-[260px] h-48">
-                <Doughnut
-                  data={{
-                    labels: SEVERITY_ORDER,
-                    datasets: [
-                      {
-                        data: severityChart.values,
-                        backgroundColor: severityChart.colors,
-                        borderColor: 'rgba(15,23,42,0.8)',
-                        borderWidth: 2,
-                      },
-                    ],
-                  }}
-                  options={{
-                    ...doughnutOptionsBottomLegend(),
-                    plugins: {
-                      ...doughnutOptionsBottomLegend().plugins,
-                      tooltip: {
-                        callbacks: {
-                          label: (ctx: TooltipItem<'doughnut'>) => {
-                            const n = Number(ctx.raw);
-                            if (n === 0) return ` ${ctx.label}: 0`;
-                            return ` ${ctx.label}: ${n.toLocaleString()}`;
+      <ViewTabs
+        tabs={tabItems}
+        activeTab={activeTab}
+        onChange={(id) => setActiveTab(id as SecurityTabId)}
+        ariaLabel={vs.title}
+        idPrefix="security"
+      />
+
+      {activeTab === 'charts' && allFindings.length > 0 && (
+        <ViewTabPanel idPrefix="security" tabId="charts" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card padding="tight" shadow>
+              <h2 className="text-sm font-bold text-foreground mb-1">{vs.findingsBySeverity}</h2>
+              <p className="text-xs text-muted-foreground mb-3">{vs.findingsBySeverityHint}</p>
+              <div className="h-56 flex items-center justify-center">
+                <div className="w-full max-w-[260px] h-48">
+                  <Doughnut
+                    data={{
+                      labels: SEVERITY_ORDER,
+                      datasets: [
+                        {
+                          data: severityChart.values,
+                          backgroundColor: severityChart.colors,
+                          borderColor: 'rgba(15,23,42,0.8)',
+                          borderWidth: 2,
+                        },
+                      ],
+                    }}
+                    options={{
+                      ...doughnutOptionsBottomLegend(),
+                      plugins: {
+                        ...doughnutOptionsBottomLegend().plugins,
+                        tooltip: {
+                          callbacks: {
+                            label: (ctx: TooltipItem<'doughnut'>) => {
+                              const n = Number(ctx.raw);
+                              if (n === 0) return ` ${ctx.label}: 0`;
+                              return ` ${ctx.label}: ${n.toLocaleString()}`;
+                            },
                           },
                         },
                       },
-                    },
-                  }}
-                />
-              </div>
-            </div>
-          </Card>
-          {typeLabels.length > 0 && (
-            <Card padding="tight" shadow>
-              <h2 className="text-sm font-bold text-foreground mb-1">{vs.findingsByType}</h2>
-              <p className="text-xs text-muted-foreground mb-3">{vs.findingsByTypeHint}</p>
-              <div className="h-56">
-                <Bar
-                  data={{
-                    labels: typeLabels,
-                    datasets: [{ data: typeValues, backgroundColor: palette(typeLabels.length) }],
-                  }}
-                  options={typeBarOpts}
-                />
-              </div>
-            </Card>
-          )}
-        </div>
-      )}
-
-      {/* Severity summary cards — act as filters */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        {SEVERITY_ORDER.map((sev) => {
-          const cfg = SEVERITY_CONFIG[sev];
-          const Icon = cfg.icon;
-          const count = severityCounts[sev] || 0;
-          const isActive = severityFilter === sev;
-          return (
-            <Card
-              key={sev}
-              shadow
-              className={`cursor-pointer transition-all select-none ${
-                isActive
-                  ? `${cfg.ring || `ring-1 ring-neutral-500/20`} ${cfg.border}`
-                  : 'hover:border-brand-700/80'
-              }`}
-              onClick={() => setSeverityFilter((prev) => (prev === sev ? 'All' : sev))}
-            >
-              <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${cfg.text}`}>
-                <Icon className="h-4 w-4" /> {sev}
-              </div>
-              <div className={`text-3xl font-bold ${count > 0 ? cfg.text : 'text-muted-foreground'}`}>{count}</div>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* "All" pill to reset filter */}
-      {severityFilter !== 'All' && (
-        <div>
-          <button
-            type="button"
-            onClick={() => setSeverityFilter('All')}
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors border border-default rounded-full px-3 py-1"
-          >
-            {vs.showAllSeverities}
-          </button>
-        </div>
-      )}
-
-      {/* Findings list */}
-      {findings.length === 0 ? (
-        <Card className="flex flex-col items-center justify-center py-20 gap-4">
-          <Shield className="h-14 w-14 text-green-600/60" />
-          <div className="text-center">
-            <p className="text-foreground font-semibold text-base">{vs.emptyTitle}</p>
-            <p className="text-muted-foreground text-sm mt-1">
-              {allFindings.length > 0 ? vs.emptyFiltered : vs.emptyNoScan}
-            </p>
-          </div>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {findings.map((f, i) => {
-            const sev = (f.severity || 'Info') as SeverityKey;
-            const cfg = SEVERITY_CONFIG[sev] ?? SEVERITY_CONFIG.Info;
-            const Icon = cfg.icon;
-            return (
-              <div
-                key={i}
-                className={`bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.rowBorder} p-5 flex flex-col gap-3 hover:border-brand-700/80 transition-colors`}
-              >
-                {/* Row header */}
-                <div className="flex flex-wrap items-start gap-3">
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Icon className={`h-4 w-4 ${cfg.text}`} />
-                    <Badge value={sev} label={sev} />
-                  </div>
-                  <span className={`font-mono text-xs px-2 py-0.5 rounded ${cfg.bg} ${cfg.text} border ${cfg.border} select-all`}>
-                    {securityFindingLabel(f.finding_type)}
-                  </span>
-                  {f.url && (
-                    <a
-                      href={f.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-1 font-mono text-link text-xs hover:underline break-all min-w-0"
-                    >
-                      <span className="line-clamp-1">{f.url}</span>
-                      <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                    </a>
-                  )}
+                    }}
+                  />
                 </div>
-
-                {/* Message */}
-                <p className="text-foreground text-sm leading-snug">{f.message || strings.common.emDash}</p>
-
-                {/* Recommendation */}
-                {f.recommendation && (
-                  <div className={`rounded-lg px-3 py-2.5 border text-sm text-muted-foreground leading-relaxed ${cfg.recBg}`}>
-                    <span className="text-xs font-bold uppercase tracking-wide text-link block mb-1">
-                      {vs.recommendation}
-                    </span>
-                    {f.recommendation}
-                  </div>
-                )}
               </div>
-            );
-          })}
-        </div>
+            </Card>
+            {typeLabels.length > 0 && (
+              <Card padding="tight" shadow>
+                <h2 className="text-sm font-bold text-foreground mb-1">{vs.findingsByType}</h2>
+                <p className="text-xs text-muted-foreground mb-3">{vs.findingsByTypeHint}</p>
+                <div className="h-56">
+                  <Bar
+                    data={{
+                      labels: typeLabels,
+                      datasets: [{ data: typeValues, backgroundColor: palette(typeLabels.length) }],
+                    }}
+                    options={typeBarOpts}
+                  />
+                </div>
+              </Card>
+            )}
+          </div>
+        </ViewTabPanel>
+      )}
+
+      {activeTab === 'charts' && allFindings.length === 0 && (
+        <ViewTabPanel idPrefix="security" tabId="charts">
+          <Card className="p-8 text-center text-muted-foreground text-sm">{vs.emptyNoScan}</Card>
+        </ViewTabPanel>
+      )}
+
+      {activeTab === 'findings' && (
+        <ViewTabPanel idPrefix="security" tabId="findings" className="space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            {SEVERITY_ORDER.map((sev) => {
+              const cfg = SEVERITY_CONFIG[sev];
+              const Icon = cfg.icon;
+              const count = severityCounts[sev] || 0;
+              const isActive = severityFilter === sev;
+              return (
+                <Card
+                  key={sev}
+                  shadow
+                  className={`cursor-pointer transition-all select-none ${
+                    isActive
+                      ? `${cfg.ring || `ring-1 ring-neutral-500/20`} ${cfg.border}`
+                      : 'hover:border-brand-700/80'
+                  }`}
+                  onClick={() => setSeverityFilter((prev) => (prev === sev ? 'All' : sev))}
+                >
+                  <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${cfg.text}`}>
+                    <Icon className="h-4 w-4" /> {sev}
+                  </div>
+                  <div className={`text-3xl font-bold ${count > 0 ? cfg.text : 'text-muted-foreground'}`}>{count}</div>
+                </Card>
+              );
+            })}
+          </div>
+
+          {severityFilter !== 'All' && (
+            <div>
+              <button
+                type="button"
+                onClick={() => setSeverityFilter('All')}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors border border-default rounded-full px-3 py-1"
+              >
+                {vs.showAllSeverities}
+              </button>
+            </div>
+          )}
+
+          {findings.length === 0 ? (
+            <Card className="flex flex-col items-center justify-center py-20 gap-4">
+              <Shield className="h-14 w-14 text-green-600/60" />
+              <div className="text-center">
+                <p className="text-foreground font-semibold text-base">{vs.emptyTitle}</p>
+                <p className="text-muted-foreground text-sm mt-1">
+                  {allFindings.length > 0 ? vs.emptyFiltered : vs.emptyNoScan}
+                </p>
+              </div>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {findings.map((f, i) => {
+                const sev = (f.severity || 'Info') as SeverityKey;
+                const cfg = SEVERITY_CONFIG[sev] ?? SEVERITY_CONFIG.Info;
+                const Icon = cfg.icon;
+                return (
+                  <div
+                    key={i}
+                    className={`bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.rowBorder} p-5 flex flex-col gap-3 hover:border-brand-700/80 transition-colors`}
+                  >
+                    <div className="flex flex-wrap items-start gap-3">
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Icon className={`h-4 w-4 ${cfg.text}`} />
+                        <Badge value={sev} label={sev} />
+                      </div>
+                      <span className={`font-mono text-xs px-2 py-0.5 rounded ${cfg.bg} ${cfg.text} border ${cfg.border} select-all`}>
+                        {securityFindingLabel(f.finding_type)}
+                      </span>
+                      {f.url && (
+                        <a
+                          href={f.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1 font-mono text-link text-xs hover:underline break-all min-w-0"
+                        >
+                          <span className="line-clamp-1">{f.url}</span>
+                          <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                        </a>
+                      )}
+                    </div>
+                    <p className="text-foreground text-sm leading-snug">{f.message || strings.common.emDash}</p>
+                    {f.recommendation && (
+                      <div className={`rounded-lg px-3 py-2.5 border text-sm text-muted-foreground leading-relaxed ${cfg.recBg}`}>
+                        <span className="text-xs font-bold uppercase tracking-wide text-link block mb-1">
+                          {vs.recommendation}
+                        </span>
+                        {f.recommendation}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </ViewTabPanel>
       )}
     </PageLayout>
   );

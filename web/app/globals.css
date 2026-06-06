@@ -152,6 +152,20 @@ body {
   filter: brightness(1.08);
 }
 
+/* Full-height views (Links, Network): single internal scroll, no outer page scroll */
+#viewContainer:has([data-full-height]) {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+#viewContainer:has([data-full-height]) > .fade-in {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .fade-in {
   animation: fadeIn 0.3s ease-in-out;
 }

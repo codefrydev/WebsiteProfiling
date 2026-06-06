@@ -9,6 +9,7 @@ export type ViewId =
   | 'content'
   | 'lighthouse'
   | 'security'
+  | 'javascript-errors'
   | 'content-analytics'
   | 'tech-stack'
   | 'charts'
@@ -31,6 +32,7 @@ const VIEW_IDS = new Set<string>([
   'content',
   'lighthouse',
   'security',
+  'javascript-errors',
   'content-analytics',
   'tech-stack',
   'charts',

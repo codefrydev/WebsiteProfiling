@@ -6,6 +6,7 @@ import type {
   ViewProps,
 } from '@/types';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useUrlTab } from '@/hooks/useUrlTab';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { Gauge, Globe, Play } from 'lucide-react';
@@ -19,7 +20,8 @@ import {
 } from '../lib/domainSlug';
 import { goToPipeline } from '../lib/pipelineReturn';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Button } from '../components';
+import { PageLayout, PageHeader, Card, Button, ViewTabs, Select } from '../components';
+import type { ViewTabItem } from '../components';
 import { scoreBandColor } from '../utils/chartPalette';
 import {
   CATEGORIES, CATEGORY_LABELS, METRIC_THRESHOLDS, IMPACT_GROUPS, QUICK_WINS,
@@ -35,7 +37,10 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip);
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+const BASE_TABS = ['overview', 'metrics', 'quick-wins', 'audits', 'diagnostics'] as const;
+const LH_TABS = [...BASE_TABS, 'pages'] as const;
+type LhTabId = (typeof LH_TABS)[number];
+
 const EMPTY_LH: LighthousePageSummary = {};
 
 export default function Lighthouse({ searchQuery = '' }: ViewProps) {
@@ -43,6 +48,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
   const { data, startUrlByRunId } = useReport();
   const searchParams = useSearchParams();
   const detailRef = useRef<HTMLDivElement>(null);
+  const [activeTab, setActiveTab] = useUrlTab(LH_TABS, 'overview');
 
   const expectedHost = useMemo(() => {
     const fromPayload = canonicalDomainFromPayload(data, startUrlByRunId);
@@ -81,10 +87,10 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
 
   const handleSelectUrl = (url: string) => {
     setSelectedUrl(url);
+    setActiveTab('overview');
     setTimeout(() => detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
 
-  // Active summary: per-URL when available, else global (only if hostname matches)
   const summary = useMemo(() => {
     if (displayUrl && byUrl[displayUrl]) return byUrl[displayUrl];
     const global = data?.lighthouse_summary;
@@ -144,7 +150,6 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
     topFailures.length > 0 ||
     failingAuditsDetailed.length > 0;
 
-  // Build flat diagnostics list
   const diagnosticsList = useMemo(() => {
     if (diagnostics.length > 0) return diagnostics;
     return topFailures.map((f: LighthouseFailure) => ({
@@ -168,7 +173,6 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
     });
   }, [diagnosticsList, q]);
 
-  // Group diagnostics by primary_impact
   const groupedDiagnostics = useMemo(() => {
     const map: Record<string, LighthouseDiagnostic[]> = {};
     IMPACT_GROUPS.forEach((g) => { map[g.id] = []; });
@@ -186,7 +190,6 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
     return map;
   }, [diagnosticsForGroups]);
 
-  // Default-open: group with most critical/high issues
   const mostCriticalGroup = useMemo(() => {
     let maxId = 'UX'; let maxCount = 0;
     Object.entries(groupedDiagnostics).forEach(([id, items]) => {
@@ -196,7 +199,6 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
     return maxId;
   }, [groupedDiagnostics]);
 
-  // Quick Wins pass/fail from audit IDs
   const quickWinStatus = useMemo(() => {
     const allAuditIds = new Set(
       diagnosticsList.map((d) => d.lighthouse_audit_id || d.id).filter(Boolean) as string[],
@@ -208,12 +210,76 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
     return status;
   }, [diagnosticsList]);
 
+  const quickWinFailCount = useMemo(
+    () => QUICK_WINS.filter((w) => !(quickWinStatus[w.id] ?? false)).length,
+    [quickWinStatus],
+  );
+
   const vlh = strings.views.lighthouse;
+  const tabLabels = vlh.tabs as Record<string, string>;
+
+  const lhTabItems = useMemo((): ViewTabItem[] => {
+    const items: ViewTabItem[] = [
+      { id: 'overview', label: tabLabels.overview },
+    ];
+    if (hasMulti) {
+      items.push({
+        id: 'pages',
+        label: tabLabels.pages,
+        badge: urlPool.length || null,
+      });
+    }
+    items.push(
+      { id: 'metrics', label: tabLabels.metrics },
+      {
+        id: 'quick-wins',
+        label: tabLabels.quickWins,
+        badge: quickWinFailCount > 0 ? quickWinFailCount : null,
+      },
+      {
+        id: 'audits',
+        label: tabLabels.audits,
+        badge: failingAuditsDetailed.length > 0 ? failingAuditsDetailed.length : null,
+      },
+      {
+        id: 'diagnostics',
+        label: tabLabels.diagnostics,
+        badge: diagnosticsList.length > 0 ? diagnosticsList.length : null,
+      },
+    );
+    return items;
+  }, [hasMulti, urlPool.length, quickWinFailCount, failingAuditsDetailed.length, diagnosticsList.length, tabLabels]);
+
+  const urlPicker = hasMulti && activeTab !== 'pages' ? (
+    <div className="flex items-center gap-2 min-w-0 max-w-md">
+      <Globe className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />
+      {urlPool.length === 0 ? (
+        <span className="text-sm text-muted-foreground">{vlh.noUrlMatch}</span>
+      ) : (
+        <Select
+          value={displayUrl || ''}
+          onChange={(e) => setSelectedUrl(e.target.value || null)}
+          className="flex-1 min-w-0 max-w-lg"
+          aria-label={vlh.detailedView}
+        >
+          {urlPool.map((url) => {
+            const sc = byUrl[url]?.category_scores?.performance;
+            const dot = sc != null ? (sc >= 90 ? '🟢' : sc >= 50 ? '🟡' : '🔴') : '⚪';
+            return <option key={url} value={url}>{dot} {url}</option>;
+          })}
+        </Select>
+      )}
+    </div>
+  ) : null;
 
   if (!hasData) {
     return (
-      <PageLayout>
-        <PageHeader title={vlh.emptyTitle} subtitle={vlh.emptySubtitle} />
+      <PageLayout maxWidth className="space-y-6">
+        <PageHeader
+          icon={<Gauge className="h-7 w-7 text-link shrink-0" />}
+          title={vlh.emptyTitle}
+          subtitle={vlh.emptySubtitle}
+        />
         <Card className="mx-auto max-w-lg p-8 text-center">
           <span className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
             <Gauge className="h-6 w-6" aria-hidden />
@@ -233,174 +299,154 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
   }
 
   return (
-    <PageLayout>
-      {/* ── Header ── */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-bright mb-2">{vlh.pageSpeedTitle}</h1>
-        {summary.url && (
-          <p className="text-muted-foreground text-sm mb-1">
-            <a href={summary.url} target="_blank" rel="noreferrer" className="text-link hover:underline break-all">
-              {summary.url}
-            </a>
-          </p>
-        )}
-        <Card padding="tight" className="mt-4">
-          <h3 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-3">{vlh.analysisSettings}</h3>
-          <div className="flex flex-wrap gap-6 text-sm">
-            <div><span className="text-muted-foreground block text-xs mb-0.5">{vlh.mode}</span><span className="text-foreground font-medium capitalize">{mode}</span></div>
-            <div><span className="text-muted-foreground block text-xs mb-0.5">{vlh.device}</span><span className="text-foreground font-medium capitalize">{device}</span></div>
-            <div className="min-w-0">
-              <span className="text-muted-foreground block text-xs mb-0.5">{vlh.categories}</span>
-              <span className="text-foreground font-medium">
-                {Array.isArray(categories)
-                  ? categories.map((c) => CATEGORY_LABELS[c as keyof typeof CATEGORY_LABELS] || c).join(', ')
-                  : vlh.categoriesFallback}
-              </span>
-            </div>
-          </div>
-          {(runTimestamp || iterations) && (
-            <p className="text-muted-foreground text-xs mt-3 pt-3 border-t border-muted">
-              {iterations > 0 && <span>{format(vlh.runsMediansFull, { n: iterations })}</span>}
-              {runTimestamp && <span className="ml-3">{vlh.generated} {new Date(runTimestamp).toLocaleString()}</span>}
-            </p>
-          )}
-        </Card>
+    <PageLayout maxWidth className="space-y-6">
+      <div ref={detailRef}>
+        <PageHeader
+          icon={<Gauge className="h-7 w-7 text-link shrink-0" />}
+          title={vlh.pageSpeedTitle}
+          subtitle={
+            summary.url ? (
+              <a href={summary.url} target="_blank" rel="noreferrer" className="text-link hover:underline break-all text-sm">
+                {summary.url}
+              </a>
+            ) : undefined
+          }
+          actions={urlPicker}
+        />
       </div>
 
-      {/* ── Multi-page comparison ── */}
-      {hasMulti && (
-        <div className="mb-10">
-          <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vlh.multiCompare}</h2>
-          <p className="text-muted-foreground text-sm mb-3">{vlh.multiCompareHint}</p>
+      <Card padding="tight">
+        <h3 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-3">{vlh.analysisSettings}</h3>
+        <div className="flex flex-wrap gap-6 text-sm">
+          <div><span className="text-muted-foreground block text-xs mb-0.5">{vlh.mode}</span><span className="text-foreground font-medium capitalize">{mode}</span></div>
+          <div><span className="text-muted-foreground block text-xs mb-0.5">{vlh.device}</span><span className="text-foreground font-medium capitalize">{device}</span></div>
+          <div className="min-w-0">
+            <span className="text-muted-foreground block text-xs mb-0.5">{vlh.categories}</span>
+            <span className="text-foreground font-medium">
+              {Array.isArray(categories)
+                ? categories.map((c) => CATEGORY_LABELS[c as keyof typeof CATEGORY_LABELS] || c).join(', ')
+                : vlh.categoriesFallback}
+            </span>
+          </div>
+        </div>
+        {(runTimestamp || iterations) && (
+          <p className="text-muted-foreground text-xs mt-3 pt-3 border-t border-muted">
+            {iterations > 0 && <span>{format(vlh.runsMediansFull, { n: iterations })}</span>}
+            {runTimestamp && <span className="ml-3">{vlh.generated} {new Date(runTimestamp).toLocaleString()}</span>}
+          </p>
+        )}
+      </Card>
+
+      <ViewTabs
+        tabs={lhTabItems}
+        activeTab={activeTab}
+        onChange={(id) => setActiveTab(id as LhTabId)}
+        ariaLabel={vlh.pageSpeedTitle}
+        idPrefix="lh"
+      />
+
+      {activeTab === 'overview' && (
+        <div id="lh-tab-overview" role="tabpanel" aria-labelledby="lh-tab-btn-overview" className="space-y-6">
+          <div>
+            <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-4">{vlh.categoriesSection}</h2>
+            <div className="flex flex-wrap gap-6 justify-start items-center">
+              {CATEGORIES.map(({ id, label }) => (
+                <ScoreRing key={id} label={label} score={cs[id] != null ? Number(cs[id]) : null} />
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-6 mt-4 text-xs text-muted-foreground">
+              <span><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-1" />{vlh.scorePoor}</span>
+              <span><span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-1" />{vlh.scoreNeeds}</span>
+              <span><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1" />{vlh.scoreGood}</span>
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vlh.categoryScores}</h2>
+            <p className="text-muted-foreground text-sm mb-3">{vlh.categoryScoresHint}</p>
+            {(() => {
+              const withScores = CATEGORIES
+                .map(({ id }) => ({
+                  id,
+                  label: CATEGORY_LABELS[id as keyof typeof CATEGORY_LABELS] || id,
+                  score: cs[id] != null ? Number(cs[id]) : null,
+                }))
+                .filter((c) => c.score != null)
+                .sort((a, b) => (a.score ?? 0) - (b.score ?? 0));
+              if (withScores.length === 0) return <Card className="p-4 text-muted-foreground text-sm">{vlh.noCategoryScores}</Card>;
+              return (
+                <Card padding="tight" className="print:break-inside-avoid">
+                  <div className="h-48" role="img" aria-label={`${vlh.categoryScoresAriaPrefix} ${withScores.map((c) => `${c.label} ${c.score}`).join(', ')}`}>
+                    <Bar
+                      data={{
+                        labels: withScores.map((c) => c.label),
+                        datasets: [{ data: withScores.map((c) => c.score ?? 0), backgroundColor: withScores.map((c) => scoreBandColor(c.score)), label: vlh.datasetScore }],
+                      }}
+                      options={{
+                        indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                          x: { min: 0, max: 100, grid: { color: 'rgba(71, 85, 105, 0.5)' }, title: { display: true, text: vlh.scoreAxisTitle } },
+                          y: { grid: { color: 'rgba(71, 85, 105, 0.5)' } },
+                        },
+                      }}
+                    />
+                  </div>
+                </Card>
+              );
+            })()}
+          </div>
+
+          {humanSummary ? (
+            <Card>
+              <h2 className="text-foreground text-sm font-bold uppercase tracking-wider mb-3">{vlh.summary}</h2>
+              <pre className="text-muted-foreground text-sm whitespace-pre-wrap font-sans">{humanSummary}</pre>
+            </Card>
+          ) : null}
+        </div>
+      )}
+
+      {activeTab === 'pages' && hasMulti && (
+        <div id="lh-tab-pages" role="tabpanel" aria-labelledby="lh-tab-btn-pages" className="space-y-4">
+          <p className="text-muted-foreground text-sm">{vlh.multiCompareHint}</p>
           <Card padding="none" overflowHidden>
             <MultiPageTable byUrl={byUrlForTable} selectedUrl={displayUrl} onSelect={handleSelectUrl} />
           </Card>
         </div>
       )}
 
-      {/* ── URL selector ── */}
-      {hasMulti && (
-        <div className="mb-8" ref={detailRef}>
-          <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vlh.detailedView}</h2>
-          <div className="flex items-center gap-3">
-            <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
-            {urlPool.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{vlh.noUrlMatch}</p>
-            ) : (
-              <select
-                value={displayUrl || ''}
-                onChange={(e) => setSelectedUrl(e.target.value || null)}
-                className="bg-brand-800 border border-default text-sm rounded-lg px-3 py-2 text-foreground outline-none flex-1 max-w-lg"
-              >
-                {urlPool.map((url) => {
-                  const sc = byUrl[url]?.category_scores?.performance;
-                  const dot = sc != null ? (sc >= 90 ? '🟢' : sc >= 50 ? '🟡' : '🔴') : '⚪';
-                  return <option key={url} value={url}>{dot} {url}</option>;
-                })}
-              </select>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ── Score Rings ── */}
-      <div className="mb-10">
-        <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-4">{vlh.categoriesSection}</h2>
-        <div className="flex flex-wrap gap-6 justify-start items-center">
-          {CATEGORIES.map(({ id, label }) => (
-            <ScoreRing key={id} label={label} score={cs[id] != null ? Number(cs[id]) : null} />
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-6 mt-4 text-xs text-muted-foreground">
-          <span><span className="inline-block w-2 h-2 rounded-full bg-red-500 mr-1" />{vlh.scorePoor}</span>
-          <span><span className="inline-block w-2 h-2 rounded-full bg-yellow-500 mr-1" />{vlh.scoreNeeds}</span>
-          <span><span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1" />{vlh.scoreGood}</span>
-        </div>
-      </div>
-
-      {/* ── Category scores bar chart ── */}
-      <div className="mb-10">
-        <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vlh.categoryScores}</h2>
-        <p className="text-muted-foreground text-sm mb-3">{vlh.categoryScoresHint}</p>
-        {(() => {
-          const withScores = CATEGORIES
-            .map(({ id }) => ({
-              id,
-              label: CATEGORY_LABELS[id as keyof typeof CATEGORY_LABELS] || id,
-              score: cs[id] != null ? Number(cs[id]) : null,
-            }))
-            .filter((c) => c.score != null)
-            .sort((a, b) => (a.score ?? 0) - (b.score ?? 0));
-          if (withScores.length === 0) return <Card className="p-4 text-muted-foreground text-sm">{vlh.noCategoryScores}</Card>;
-          return (
-            <Card padding="tight" className="print:break-inside-avoid">
-              <div className="h-48" role="img" aria-label={`${vlh.categoryScoresAriaPrefix} ${withScores.map((c) => `${c.label} ${c.score}`).join(', ')}`}>
-                <Bar
-                  data={{
-                    labels: withScores.map((c) => c.label),
-                    datasets: [{ data: withScores.map((c) => c.score ?? 0), backgroundColor: withScores.map((c) => scoreBandColor(c.score)), label: vlh.datasetScore }],
-                  }}
-                  options={{
-                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                      x: { min: 0, max: 100, grid: { color: 'rgba(71, 85, 105, 0.5)' }, title: { display: true, text: vlh.scoreAxisTitle } },
-                      y: { grid: { color: 'rgba(71, 85, 105, 0.5)' } },
-                    },
-                  }}
-                />
-              </div>
-            </Card>
-          );
-        })()}
-      </div>
-
-      {/* ── Metrics with threshold bars ── */}
-      <div className="mb-10">
-        <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vlh.metrics}</h2>
-        <p className="text-muted-foreground text-sm mb-4">
-          {format(vlh.metricsHint, { runs: iterations || 1 })}
-        </p>
-        <Card overflowHidden padding="none">
-          <div className="divide-y divide-muted">
-            {(Object.keys(METRIC_THRESHOLDS) as Array<keyof typeof METRIC_THRESHOLDS>).map((key) => (
-              <ThresholdBar key={key} metricKey={key} value={mm[key] as number | null | undefined} />
-            ))}
-          </div>
-        </Card>
-      </div>
-
-      {/* ── Quick Wins ── */}
-      <div className="mb-10">
-        <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vlh.quickWins}</h2>
-        <p className="text-muted-foreground text-sm mb-4">
-          {vlh.quickWinsHint}
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {QUICK_WINS.map((win) => (
-            <QuickWinCard key={win.id} win={win} passed={quickWinStatus[win.id] ?? false} />
-          ))}
-        </div>
-      </div>
-
-      {/* ── Human Summary ── */}
-      {humanSummary && (
-        <div className="mb-10">
-          <Card>
-            <h2 className="text-foreground text-sm font-bold uppercase tracking-wider mb-3">{vlh.summary}</h2>
-            <pre className="text-muted-foreground text-sm whitespace-pre-wrap font-sans">{humanSummary}</pre>
+      {activeTab === 'metrics' && (
+        <div id="lh-tab-metrics" role="tabpanel" aria-labelledby="lh-tab-btn-metrics" className="space-y-4">
+          <p className="text-muted-foreground text-sm">
+            {format(vlh.metricsHint, { runs: iterations || 1 })}
+          </p>
+          <Card overflowHidden padding="none">
+            <div className="divide-y divide-muted">
+              {(Object.keys(METRIC_THRESHOLDS) as Array<keyof typeof METRIC_THRESHOLDS>).map((key) => (
+                <ThresholdBar key={key} metricKey={key} value={mm[key] as number | null | undefined} />
+              ))}
+            </div>
           </Card>
         </div>
       )}
 
-      {/* ── Failing audits with Lighthouse detail tables ── */}
-      {failingAuditsDetailed.length > 0 && (
-        <div className="mb-10">
-          <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vlh.auditTables}</h2>
-          <p className="text-muted-foreground text-sm mb-3">
-            {vlh.auditTablesHint}
-          </p>
-          {failingAuditsForDisplay.length > 0 ? (
+      {activeTab === 'quick-wins' && (
+        <div id="lh-tab-quick-wins" role="tabpanel" aria-labelledby="lh-tab-btn-quick-wins" className="space-y-4">
+          <p className="text-muted-foreground text-sm">{vlh.quickWinsHint}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {QUICK_WINS.map((win) => (
+              <QuickWinCard key={win.id} win={win} passed={quickWinStatus[win.id] ?? false} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'audits' && (
+        <div id="lh-tab-audits" role="tabpanel" aria-labelledby="lh-tab-btn-audits" className="space-y-4">
+          <p className="text-muted-foreground text-sm">{vlh.auditTablesHint}</p>
+          {failingAuditsDetailed.length === 0 ? (
+            <Card className="p-6 text-center text-muted-foreground text-sm">{vlh.allChecksPassed}</Card>
+          ) : failingAuditsForDisplay.length > 0 ? (
             <ul className="space-y-2">
               {failingAuditsForDisplay.map((a) => (
                 <LhAuditExpandable key={a.id} audit={a} />
@@ -412,37 +458,31 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
         </div>
       )}
 
-      {/* ── Grouped Diagnostics ── */}
-      <div className="mb-8">
-        <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vlh.diagnostics}</h2>
-        <p className="text-muted-foreground text-sm mb-4">
-          {vlh.diagnosticsHint}
-        </p>
-        {diagnosticsList.length === 0 ? (
-          <Card className="p-6 text-center text-muted-foreground text-sm">
-            {vlh.allChecksPassed}
-          </Card>
-        ) : diagnosticsForGroups.length === 0 ? (
-          <Card className="p-6 text-center text-muted-foreground text-sm">
-            {vlh.noDiagnosticsSearch}
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {IMPACT_GROUPS.map((group) => {
-              const items = groupedDiagnostics[group.id] || [];
-              if (items.length === 0) return null;
-              return (
-                <DiagnosticGroup
-                  key={group.id}
-                  group={group}
-                  items={items}
-                  defaultOpen={group.id === mostCriticalGroup}
-                />
-              );
-            })}
-          </div>
-        )}
-      </div>
+      {activeTab === 'diagnostics' && (
+        <div id="lh-tab-diagnostics" role="tabpanel" aria-labelledby="lh-tab-btn-diagnostics" className="space-y-4">
+          <p className="text-muted-foreground text-sm">{vlh.diagnosticsHint}</p>
+          {diagnosticsList.length === 0 ? (
+            <Card className="p-6 text-center text-muted-foreground text-sm">{vlh.allChecksPassed}</Card>
+          ) : diagnosticsForGroups.length === 0 ? (
+            <Card className="p-6 text-center text-muted-foreground text-sm">{vlh.noDiagnosticsSearch}</Card>
+          ) : (
+            <div className="space-y-3">
+              {IMPACT_GROUPS.map((group) => {
+                const items = groupedDiagnostics[group.id] || [];
+                if (items.length === 0) return null;
+                return (
+                  <DiagnosticGroup
+                    key={group.id}
+                    group={group}
+                    items={items}
+                    defaultOpen={group.id === mostCriticalGroup}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </PageLayout>
   );
 }

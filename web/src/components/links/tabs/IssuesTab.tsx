@@ -71,6 +71,15 @@ export default function IssuesTab({ lhData, inspectorDetails }: IssuesTabProps) 
         recommendation: i.recommendation,
       })
     );
+    (inspectorDetails.browserIssues || []).forEach((i) =>
+      list.push({
+        severity: i.severity || 'High',
+        message: i.message ?? '',
+        type: 'browser',
+        detail: i.detail,
+        recommendation: i.recommendation,
+      })
+    );
     return list;
   }, [inspectorDetails, ci, it]);
 
@@ -207,10 +216,17 @@ export default function IssuesTab({ lhData, inspectorDetails }: IssuesTabProps) 
                     <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   )}
                 </button>
-                {expandedIssue === i && issue.recommendation && (
-                  <div className="mx-2 border-x border-b border-default rounded-b-xl bg-brand-900 px-4 py-3">
-                    <span className="text-xs text-link font-semibold">{it.recommendation}</span>
-                    <span className="text-xs text-foreground">{issue.recommendation}</span>
+                {expandedIssue === i && (issue.detail || issue.recommendation) && (
+                  <div className="mx-2 border-x border-b border-default rounded-b-xl bg-brand-900 px-4 py-3 space-y-2">
+                    {issue.detail ? (
+                      <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap break-all">{issue.detail}</pre>
+                    ) : null}
+                    {issue.recommendation ? (
+                      <p className="text-xs text-foreground">
+                        <span className="text-link font-semibold">{it.recommendation} </span>
+                        {issue.recommendation}
+                      </p>
+                    ) : null}
                   </div>
                 )}
               </div>

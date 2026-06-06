@@ -1,16 +1,21 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useUrlTab } from '@/hooks/useUrlTab';
 import { Bar } from 'react-chartjs-2';
 import type { TooltipItem } from 'chart.js';
-import { ExternalLink, CheckCircle2, FileText, Copy } from 'lucide-react';
+import { ExternalLink, CheckCircle2, FileText, Copy, BarChart3, List } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, Button } from '../components';
+import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, Button, ViewTabs, ViewTabPanel } from '../components';
+import type { ViewTabItem } from '../components';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
 import { formatPageHrefLines } from '../utils/linkUtils';
 import type { ContentUrlEntry, ContentUrlsMap, ViewProps } from '@/types';
 
 registerChartJsBase();
+
+const CONTENT_TABS = ['overview', 'issues'] as const;
+type ContentTabId = (typeof CONTENT_TABS)[number];
 
 export default function Content({ searchQuery = '' }: ViewProps) {
   const vc = strings.views.content;
@@ -20,6 +25,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
   const { data } = useReport();
   const [filter, setFilter] = useState('missing_h1');
   const [page, setPage] = useState(1);
+  const [activeTab, setActiveTab] = useUrlTab(CONTENT_TABS, 'issues');
   const perPage = 50;
 
   const contentUrls = useMemo((): ContentUrlsMap => data?.content_urls ?? {}, [data?.content_urls]);
@@ -85,6 +91,21 @@ export default function Content({ searchQuery = '' }: ViewProps) {
     [contentUrls, CONTENT_FILTERS]
   );
 
+  const tabItems = useMemo((): ViewTabItem[] => [
+    {
+      id: 'overview',
+      label: vc.tabs.overview,
+      icon: <BarChart3 className="h-3.5 w-3.5 shrink-0" aria-hidden />,
+      badge: totalIssues > 0 ? totalIssues : null,
+    },
+    {
+      id: 'issues',
+      label: vc.tabs.issues,
+      icon: <List className="h-3.5 w-3.5 shrink-0" aria-hidden />,
+      badge: list.length > 0 ? list.length : null,
+    },
+  ], [vc.tabs, totalIssues, list.length]);
+
   if (!data) return null;
 
   const activeFilter = CONTENT_FILTERS.find((f) => f.key === filter);
@@ -106,129 +127,146 @@ export default function Content({ searchQuery = '' }: ViewProps) {
     <PageLayout className="space-y-6">
       <PageHeader title={vc.title} subtitle={subtitle} />
 
-      {(data.content_duplicates?.length ?? 0) > 0 && (
-        <Card shadow>
-          <div className="flex items-center gap-2 mb-3">
-            <Copy className="h-4 w-4 text-violet-700 dark:text-violet-400" />
-            <h2 className="text-sm font-bold text-foreground">{vc.dupClusters}</h2>
-          </div>
-          <div className="max-h-72 overflow-y-auto rounded-lg border border-muted">
-            <Table>
-              <TableHead sticky>
-                <tr>
-                  <TableHeadCell>{vc.colCluster}</TableHeadCell>
-                  <TableHeadCell>{vc.colRepresentative}</TableHeadCell>
-                  <TableHeadCell className="text-right">{vc.colUrls}</TableHeadCell>
-                </tr>
-              </TableHead>
-              <TableBody striped>
-                {(data.content_duplicates || []).slice(0, 40).map((g) => (
-                  <TableRow key={g.id}>
-                    <TableCell className="font-mono text-xs text-violet-800 dark:text-violet-300">{g.id}</TableCell>
-                    <TableCell className="max-w-md">
-                      <a
-                        href={g.representative_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-link text-xs font-mono hover:underline break-all"
-                      >
-                        {g.representative_url}
-                      </a>
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground text-xs tabular-nums">
-                      {g.member_count ?? (g.member_urls || []).length}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>
-      )}
+      <ViewTabs
+        tabs={tabItems}
+        activeTab={activeTab}
+        onChange={(id) => setActiveTab(id as ContentTabId)}
+        ariaLabel={vc.title}
+        idPrefix="content"
+      />
 
-      {totalIssues > 0 && (
-        <Card padding="tight" shadow>
-          <h2 className="text-sm font-bold text-foreground mb-1">{vc.issuesByType}</h2>
-          <p className="text-xs text-muted-foreground mb-3">{vc.issuesByTypeHint}</p>
-          <div className="h-[22rem]">
-            <Bar
-              data={{
-                labels: issueBarData.labels,
-                datasets: [{ data: issueBarData.values, backgroundColor: palette(issueBarData.labels.length) }],
-              }}
-              options={issueBarOpts}
-            />
-          </div>
-        </Card>
-      )}
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-        {CONTENT_FILTERS.map(({ key, label }) => {
-          const count = getCount(key);
-          const hasIssues = count > 0;
-          const isActive = filter === key;
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setFilter(key)}
-              className={`text-left rounded-xl border p-3 transition-all ${
-                isActive
-                  ? hasIssues
-                    ? 'bg-red-500/10 border-red-500/40 ring-1 ring-red-500/20'
-                    : 'bg-green-500/10 border-green-500/40 ring-1 ring-green-500/20'
-                  : hasIssues
-                  ? 'bg-brand-800 border-amber-700/40 hover:border-amber-600/60'
-                  : 'bg-brand-800 border-default hover:border-brand-700/80 opacity-60'
-              }`}
-            >
-              <div className={`text-xl font-bold ${hasIssues ? (isActive ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400') : 'text-green-700 dark:text-green-400'}`}>
-                {count}
+      {activeTab === 'overview' && (
+        <ViewTabPanel idPrefix="content" tabId="overview" className="space-y-6">
+          {(data.content_duplicates?.length ?? 0) > 0 && (
+            <Card shadow>
+              <div className="flex items-center gap-2 mb-3">
+                <Copy className="h-4 w-4 text-violet-700 dark:text-violet-400" />
+                <h2 className="text-sm font-bold text-foreground">{vc.dupClusters}</h2>
               </div>
-              <div className="text-xs text-muted-foreground mt-0.5 leading-tight">{label}</div>
-            </button>
-          );
-        })}
-      </div>
+              <div className="max-h-72 overflow-y-auto rounded-lg border border-muted">
+                <Table>
+                  <TableHead sticky>
+                    <tr>
+                      <TableHeadCell>{vc.colCluster}</TableHeadCell>
+                      <TableHeadCell>{vc.colRepresentative}</TableHeadCell>
+                      <TableHeadCell className="text-right">{vc.colUrls}</TableHeadCell>
+                    </tr>
+                  </TableHead>
+                  <TableBody striped>
+                    {(data.content_duplicates || []).slice(0, 40).map((g) => (
+                      <TableRow key={g.id}>
+                        <TableCell className="font-mono text-xs text-violet-800 dark:text-violet-300">{g.id}</TableCell>
+                        <TableCell className="max-w-md">
+                          <a
+                            href={g.representative_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-link text-xs font-mono hover:underline break-all"
+                          >
+                            {g.representative_url}
+                          </a>
+                        </TableCell>
+                        <TableCell className="text-right text-muted-foreground text-xs tabular-nums">
+                          {g.member_count ?? (g.member_urls || []).length}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
+          )}
 
-      <div className="flex gap-2 flex-wrap items-center">
-        {CONTENT_FILTERS.map(({ key, label }) => {
-          const count = getCount(key);
-          const isActive = filter === key;
-          const hasIssues = count > 0;
-          return (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setFilter(key)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors ${
-                isActive
-                  ? 'bg-blue-500/20 text-link border-blue-500/30'
-                  : hasIssues
-                  ? 'border-amber-700/50 bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:border-amber-600/60'
-                  : 'border-default bg-brand-800 text-muted-foreground hover:border-brand-700/80'
-              }`}
-            >
-              {hasIssues && !isActive && (
-                <span className="h-1.5 w-1.5 rounded-full bg-amber-400 flex-shrink-0" />
-              )}
-              {label}
-              <span className={`text-xs font-bold ${isActive ? 'text-link-soft' : hasIssues ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground'}`}>
-                ({count})
-              </span>
-            </button>
-          );
-        })}
-      </div>
+          {totalIssues > 0 && (
+            <Card padding="tight" shadow>
+              <h2 className="text-sm font-bold text-foreground mb-1">{vc.issuesByType}</h2>
+              <p className="text-xs text-muted-foreground mb-3">{vc.issuesByTypeHint}</p>
+              <div className="h-[22rem]">
+                <Bar
+                  data={{
+                    labels: issueBarData.labels,
+                    datasets: [{ data: issueBarData.values, backgroundColor: palette(issueBarData.labels.length) }],
+                  }}
+                  options={issueBarOpts}
+                />
+              </div>
+            </Card>
+          )}
 
-      {activeFilter?.guidance && (
-        <div className="flex items-start gap-3 bg-blue-500/5 border border-blue-500/20 rounded-xl px-4 py-3">
-          <FileText className="h-4 w-4 text-link flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-foreground leading-relaxed">{activeFilter.guidance}</p>
-        </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+            {CONTENT_FILTERS.map(({ key, label }) => {
+              const count = getCount(key);
+              const hasIssues = count > 0;
+              const isActive = filter === key;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => {
+                    setFilter(key);
+                    setActiveTab('issues');
+                  }}
+                  className={`text-left rounded-xl border p-3 transition-all ${
+                    isActive
+                      ? hasIssues
+                        ? 'bg-red-500/10 border-red-500/40 ring-1 ring-red-500/20'
+                        : 'bg-green-500/10 border-green-500/40 ring-1 ring-green-500/20'
+                      : hasIssues
+                        ? 'bg-brand-800 border-amber-700/40 hover:border-amber-600/60'
+                        : 'bg-brand-800 border-default hover:border-brand-700/80 opacity-60'
+                  }`}
+                >
+                  <div className={`text-xl font-bold ${hasIssues ? (isActive ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400') : 'text-green-700 dark:text-green-400'}`}>
+                    {count}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5 leading-tight">{label}</div>
+                </button>
+              );
+            })}
+          </div>
+        </ViewTabPanel>
       )}
 
-      <Card overflowHidden shadow padding="none" className="flex flex-col">
+      {activeTab === 'issues' && (
+        <ViewTabPanel idPrefix="content" tabId="issues" className="space-y-6">
+          <div className="flex gap-2 flex-wrap items-center">
+            {CONTENT_FILTERS.map(({ key, label }) => {
+              const count = getCount(key);
+              const isActive = filter === key;
+              const hasIssues = count > 0;
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setFilter(key)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold border transition-colors ${
+                    isActive
+                      ? 'bg-blue-500/20 text-link border-blue-500/30'
+                      : hasIssues
+                        ? 'border-amber-700/50 bg-amber-500/10 text-amber-800 dark:text-amber-300 hover:border-amber-600/60'
+                        : 'border-default bg-brand-800 text-muted-foreground hover:border-brand-700/80'
+                  }`}
+                >
+                  {hasIssues && !isActive && (
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+                  )}
+                  {label}
+                  <span className={`text-xs font-bold ${isActive ? 'text-link-soft' : hasIssues ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground'}`}>
+                    ({count})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {activeFilter?.guidance && (
+            <div className="flex items-start gap-3 bg-blue-500/5 border border-blue-500/20 rounded-xl px-4 py-3">
+              <FileText className="h-4 w-4 text-link flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-foreground leading-relaxed">{activeFilter.guidance}</p>
+            </div>
+          )}
+
+          <Card overflowHidden shadow padding="none" className="flex flex-col">
         {list.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <CheckCircle2 className="h-10 w-10 text-green-600" />
@@ -372,7 +410,9 @@ export default function Content({ searchQuery = '' }: ViewProps) {
             </div>
           </>
         )}
-      </Card>
+          </Card>
+        </ViewTabPanel>
+      )}
     </PageLayout>
   );
 }

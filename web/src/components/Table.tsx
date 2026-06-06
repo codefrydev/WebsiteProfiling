@@ -32,7 +32,7 @@ export const TableHead = ({ children, sticky = false }: TableHeadProps) => (
 );
 
 export const TableHeadCell = ({ children, className = '', title }: { children?: ReactNode; className?: string; title?: string }) => (
-  <th className={`px-4 py-3 whitespace-nowrap ${className}`.trim()} title={title}>{children}</th>
+  <th className={`px-4 py-3.5 whitespace-nowrap ${className}`.trim()} title={title}>{children}</th>
 );
 
 interface TableBodyProps {
@@ -48,7 +48,7 @@ export const TableBody = ({ children, striped = false, className = '' }: TableBo
 );
 
 export const TableRow = ({ children, className = '' }: { children?: ReactNode; className?: string }) => (
-  <tr className={`hover:bg-brand-900/60 transition-colors ${className}`.trim()}>{children}</tr>
+  <tr className={`hover:bg-brand-800/80 transition-colors ${className}`.trim()}>{children}</tr>
 );
 
 export const TableCell = ({ children, className = '', title }: { children?: ReactNode; className?: string; title?: string }) => (
