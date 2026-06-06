@@ -10,6 +10,7 @@ import {
   getPipelineJobFromDb,
   insertPipelineJob,
   isAnyPipelineJobRunning,
+  reconcileStaleRunningJobs,
 } from '@/server/pipelineJobsDb';
 import type { PipelineJob, PipelineJobStore } from '@/types/api';
 
@@ -102,6 +103,7 @@ export interface StartPipelineJobOptions {
  */
 export async function assertNoRunningJob(): Promise<void> {
   if (isDbJobsEnabled()) {
+    await reconcileStaleRunningJobs();
     if (await isAnyPipelineJobRunning()) {
       throw new Error('An audit job is already running');
     }
@@ -209,6 +211,8 @@ export async function getJob(id: string): Promise<PipelineJob | null> {
   if (isDbJobsEnabled()) {
     const fromDb = await getPipelineJobFromDb(id);
     if (fromDb) return fromDb;
+    // Fall back to in-memory for jobs started in this process before DB insert completes.
+    return getStore().jobs.get(id) ?? null;
   }
   return getStore().jobs.get(id) ?? null;
 }

@@ -332,6 +332,30 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
         )}
       </Card>
 
+      {data?.crux_summary?.ok && (
+        <Card padding="tight">
+          <h3 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-3">
+            Real users (CrUX)
+          </h3>
+          <div className="flex flex-wrap gap-4 text-sm">
+            {(['lcp', 'inp', 'cls'] as const).map((metric) => {
+              const pass = data.crux_summary?.pass?.[metric];
+              const p75 = data.crux_summary?.metrics?.[
+                metric === 'lcp' ? 'largest_contentful_paint' : metric === 'inp' ? 'interaction_to_next_paint' : 'cumulative_layout_shift'
+              ]?.p75;
+              return (
+                <div key={metric}>
+                  <span className="text-muted-foreground uppercase text-xs">{metric}</span>
+                  <p className={`font-medium ${pass ? 'text-emerald-600' : 'text-amber-600'}`}>
+                    {p75 != null ? String(p75) : '—'} {pass === false ? '(needs improvement)' : pass ? '(good)' : ''}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
+
       <ViewTabs
         tabs={lhTabItems}
         activeTab={activeTab}

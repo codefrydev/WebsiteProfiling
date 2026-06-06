@@ -947,6 +947,9 @@ def _build_report_metadata(
         meta["gsc_links_sample_count"] = sample_n + latest_n
     if isinstance(llm_meta, dict):
         meta["llm"] = llm_meta
+    logo_url = (str((config or {}).get("export_logo_url") or "")).strip()
+    if logo_url:
+        meta["export_logo_url"] = logo_url
     return meta
 
 
@@ -1108,11 +1111,21 @@ def run_simple_report(
 
     print("  Building report categories...", flush=True)
 
+    crux_summary: Optional[dict[str, Any]] = None
+    if get_bool(config or {}, "enable_crux", False) and start_url:
+        try:
+            from ..integrations.crux import fetch_crux_origin_metrics
+
+            crux_summary = fetch_crux_origin_metrics(start_url)
+        except Exception as e:
+            ml_bundle.setdefault("ml_errors", []).append(f"crux: {e}")
+
     categories = build_categories(
         df, edges, summary_seo, site_level, start_url or "",
         security_findings=security_findings,
         lighthouse_summary=lighthouse_summary,
         ml_bundle=ml_bundle,
+        crux_summary=crux_summary,
     )
     # Ensure categories are JSON-serializable (score may be None)
     for cat in categories:
@@ -1555,6 +1568,76 @@ def run_simple_report(
             gsc_links = read_latest_gsc_links_data(conn, property_id)
             if gsc_links:
                 report_data["gsc_links"] = gsc_links
+            from ..config import get_list
+            from ..integrations.google.competitor_links import build_competitor_link_gap
+
+            comp_raw = get_list(config or {}, "competitor_domains", sep=",")
+            comp_gap = build_competitor_link_gap(gsc_links, comp_raw)
+            if comp_gap:
+                report_data["competitor_link_gap"] = comp_gap
+        except Exception:
+            pass
+        try:
+            from .indexation import build_indexation_coverage
+
+            gap_limit = get_int(config or {}, "google_url_gap_list_limit", 200) or 200
+            indexation_cov = build_indexation_coverage(
+                df,
+                start_url or "",
+                google_data,
+                list_limit=gap_limit,
+            )
+            report_data["indexation_coverage"] = indexation_cov
+            from .categories import merge_indexation_issues
+
+            merge_indexation_issues(report_data.get("categories") or [], df, indexation_cov)
+        except Exception as e:
+            report_data.setdefault("ml_errors", []).append(f"indexation: {e}")
+        try:
+            from .crawl_segments import build_crawl_segments
+            from ..config import get_str
+
+            raw = get_str(config or {}, "crawl_path_segments", "") or ""
+            prefixes = [p.strip() for p in raw.split(",") if p.strip()]
+            if prefixes:
+                report_data["crawl_segments"] = build_crawl_segments(
+                    df,
+                    report_data.get("categories") or [],
+                    prefixes,
+                )
+        except Exception as e:
+            report_data.setdefault("ml_errors", []).append(f"crawl_segments: {e}")
+        if crux_summary and crux_summary.get("ok"):
+            report_data["crux_summary"] = crux_summary
+        try:
+            from ..config import get_str
+            from ..integrations.bing.webmaster import fetch_bing_backlinks_summary
+
+            bing_key = get_str(config or {}, "bing_webmaster_api_key", "") or ""
+            if bing_key and start_url:
+                bing_data = fetch_bing_backlinks_summary(bing_key, start_url)
+                if bing_data.get("ok"):
+                    report_data["bing_backlinks"] = bing_data
+        except Exception as e:
+            report_data.setdefault("ml_errors", []).append(f"bing: {e}")
+        try:
+            from ..llm.issue_fixes import enrich_top_issues_with_llm
+
+            gsc_pages = []
+            gsc_block = (report_data.get("google") or {}).get("gsc") or {}
+            if isinstance(gsc_block, dict):
+                gsc_pages = gsc_block.get("top_pages") or gsc_block.get("pages") or []
+            enrich_top_issues_with_llm(
+                report_data.get("categories") or [],
+                llm_cfg_for_clusters,
+                gsc_pages=gsc_pages,
+            )
+        except Exception as e:
+            report_data.setdefault("ml_errors", []).append(f"issue_fixes: {e}")
+        try:
+            from ..llm.audit_summary import generate_audit_executive_summary
+
+            report_data["executive_summary"] = generate_audit_executive_summary(report_data, config)
         except Exception:
             pass
         report_data["report_meta"] = _build_report_metadata(

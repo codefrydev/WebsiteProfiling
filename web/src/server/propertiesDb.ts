@@ -14,6 +14,9 @@ export interface PropertyRow {
   google_date_range_days: number | null;
   default_crawl_preset: string | null;
   crawl_authorized_at: string | null;
+  schedule_cron: string | null;
+  alert_webhook_url: string | null;
+  alert_email: string | null;
   google_connected?: boolean;
 }
 
@@ -37,7 +40,8 @@ export function canonicalDomainFromStartUrl(startUrl: string): string {
 const PROPERTY_SELECT = `
   SELECT id, name, canonical_domain, site_url, gsc_site_url, ga4_property_id,
          google_auth_mode, google_connected_at::text, google_connected_email,
-         google_date_range_days, default_crawl_preset, crawl_authorized_at::text
+         google_date_range_days, default_crawl_preset, crawl_authorized_at::text,
+         schedule_cron, alert_webhook_url, alert_email
   FROM properties`;
 
 function mapPropertyRow(row: PropertyRow): PropertyRow {
@@ -101,6 +105,52 @@ export async function setPropertyCrawlAuthorized(propertyId: number): Promise<vo
     await client.query(
       `UPDATE properties SET crawl_authorized_at = now(), updated_at = now() WHERE id = $1`,
       [propertyId],
+    );
+  });
+}
+
+export async function setPropertyOpsSettings(
+  propertyId: number,
+  patch: {
+    scheduleCron?: string | null;
+    alertWebhookUrl?: string | null;
+    alertEmail?: string | null;
+  },
+): Promise<void> {
+  await withDb(async (client) => {
+    const sets: string[] = ['updated_at = now()'];
+    const vals: unknown[] = [];
+    let n = 0;
+    if (patch.scheduleCron !== undefined) {
+      n += 1;
+      sets.push(`schedule_cron = $${n}`);
+      vals.push(patch.scheduleCron);
+    }
+    if (patch.alertWebhookUrl !== undefined) {
+      n += 1;
+      sets.push(`alert_webhook_url = $${n}`);
+      vals.push(patch.alertWebhookUrl);
+    }
+    if (patch.alertEmail !== undefined) {
+      n += 1;
+      sets.push(`alert_email = $${n}`);
+      vals.push(patch.alertEmail);
+    }
+    if (n === 0) return;
+    n += 1;
+    vals.push(propertyId);
+    await client.query(`UPDATE properties SET ${sets.join(', ')} WHERE id = $${n}`, vals);
+  });
+}
+
+export async function setPropertyCrawlPreset(
+  propertyId: number,
+  presetId: string | null,
+): Promise<void> {
+  await withDb(async (client) => {
+    await client.query(
+      `UPDATE properties SET default_crawl_preset = $2, updated_at = now() WHERE id = $1`,
+      [propertyId, presetId],
     );
   });
 }

@@ -15,6 +15,7 @@ import IntegrationsModal from '@/components/IntegrationsModal';
 import { Badge, ReportSelector } from '@/components';
 import ThemeToggle from '@/components/ThemeToggle';
 import { useReport } from '@/context/useReport';
+import { useSession } from '@/context/SessionContext';
 import { strings, format } from '@/lib/strings';
 import { canonicalDomainFromPayload } from '@/lib/domainSlug';
 import { OPEN_INTEGRATIONS } from '@/lib/pipelineJobEvents';
@@ -64,6 +65,7 @@ export default function AppShell({
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
   const [integrationsToast, setIntegrationsToast] = useState<IntegrationsToast | null>(null);
   const { data, startUrlByRunId } = useReport();
+  const { readonly: sessionReadonly } = useSession();
 
   const trailing = searchParams.toString() ? `?${searchParams.toString()}` : '';
   const closeSidebar = () => setSidebarOpen(false);
@@ -231,6 +233,14 @@ export default function AppShell({
       ) : null}
 
       <main className="flex-1 flex flex-col h-screen overflow-hidden bg-brand-900 relative min-w-0">
+        {sessionReadonly ? (
+          <div
+            role="status"
+            className="shrink-0 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-center text-xs text-amber-200 print:hidden"
+          >
+            {strings.app.readonlyBanner}
+          </div>
+        ) : null}
         {showSidebar ? (
           <header className="h-16 border-b border-muted bg-brand-800/80 backdrop-blur-md flex items-center justify-between gap-3 px-4 sm:px-6 shrink-0 z-10 print:hidden">
             <button

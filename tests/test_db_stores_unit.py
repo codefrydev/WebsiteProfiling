@@ -200,3 +200,58 @@ def test_report_store_write_and_read_none() -> None:
     assert conn2.commits == 1
     assert _extract_hostname("https://X.com/a") == "x.com"
 
+
+def test_report_store_writes_audit_health_snapshot() -> None:
+    from website_profiling.db.report_store import write_report_payload
+
+    conn = _LegacyConn(row=(42,))
+    write_report_payload(
+        conn,  # type: ignore[arg-type]
+        {
+            "site_name": "Health Site",
+            "property_id": 7,
+            "categories": [
+                {"id": "technical_seo", "score": 80, "issues": [{"priority": "High"}]},
+                {"id": "link_health", "score": 60, "issues": [{"priority": "Critical"}, {"priority": "Low"}]},
+            ],
+        },
+    )
+    audit_sql = [(s, p) for s, p in conn.executed if "audit_health_snapshots" in s]
+    assert audit_sql
+    assert audit_sql[0][1][0] == 7
+    assert audit_sql[0][1][3] == 70
+
+
+def test_report_store_health_snapshot_skips_invalid_entries() -> None:
+    from website_profiling.db.report_store import write_report_payload
+
+    conn = _LegacyConn(row=(1,))
+    write_report_payload(
+        conn,  # type: ignore[arg-type]
+        {
+            "site_name": "X",
+            "property_id": "not-a-number",
+            "categories": [
+                "bad",
+                {"id": "ok", "score": 50, "issues": ["bad", {"priority": "High"}]},
+            ],
+        },
+    )
+    audit = [(s, p) for s, p in conn.executed if "audit_health_snapshots" in s][0]
+    assert audit[1][0] is None
+    assert audit[1][3] == 50
+
+
+def test_report_store_health_snapshot_insert_failure_is_ignored() -> None:
+    from website_profiling.db.report_store import write_report_payload
+
+    class _BoomOnAudit(_LegacyConn):
+        def execute(self, sql, params=None):
+            if "audit_health_snapshots" in sql:
+                raise RuntimeError("no table")
+            return super().execute(sql, params)
+
+    conn = _BoomOnAudit(row=(2,))
+    write_report_payload(conn, {"site_name": "Y", "categories": []})  # type: ignore[arg-type]
+    assert conn.commits == 1
+

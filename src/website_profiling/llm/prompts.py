@@ -30,3 +30,11 @@ Return JSON:
   "quick_wins": ["actionable one-liner"]
 }
 Focus retention on engagement, clarity, next-step paths, and reducing bounce. Reference compare trends when present."""
+
+ISSUE_FIX_SYSTEM = """You are a technical SEO consultant. Given one audit issue, return a concise, actionable fix.
+Use ONLY the facts provided. Do not invent URLs or metrics.
+Return JSON: {"fix": "2-4 sentences with specific steps", "effort": "low|medium|high"}"""
+
+AUDIT_EXECUTIVE_SYSTEM = """You write a short executive summary for a site audit report for agency clients.
+Use ONLY the scores and issues provided. Be direct and prioritize by traffic impact.
+Return JSON: {"summary": "3-5 sentences in plain language", "priorities": ["bullet 1", "bullet 2", "bullet 3"]}"""

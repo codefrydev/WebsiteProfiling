@@ -288,13 +288,40 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
         </div>
         <ReportCompareControls />
         {reportList.length >= 2 && newerRow && baselineRow && compareReportId != null ? (
-          <div className="mt-4 flex flex-wrap gap-2 text-xs">
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
             <span className="rounded-md bg-blue-500/15 border border-blue-500/30 px-2 py-1 text-link">
               {vc.newerLabel}: {formatReportGeneratedAt(newerRow.generated_at)}
             </span>
             <span className="rounded-md bg-brand-900 border border-default px-2 py-1 text-muted-foreground">
               {vc.baselineLabel}: {formatReportGeneratedAt(baselineRow.generated_at)}
             </span>
+            <button
+              type="button"
+              className="ml-auto px-3 py-1.5 rounded-lg border border-default bg-brand-800 hover:bg-brand-700 text-foreground text-xs font-medium"
+              onClick={() => {
+                void fetch('/api/compare/export', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    reportIdA: compareReportId,
+                    reportIdB: selectedReportId,
+                  }),
+                })
+                  .then(async (res) => {
+                    if (!res.ok) throw new Error('Export failed');
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `compare-${compareReportId}-vs-${selectedReportId}.csv`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  })
+                  .catch(() => {});
+              }}
+            >
+              Export issue diff (CSV)
+            </button>
           </div>
         ) : null}
         {reportList.length >= 2 && compareReportId == null && !loading && !error ? (

@@ -1,0 +1,9 @@
+{
+  "d": {
+    "Links": [
+      {"Url": "https://example.com/a", "Count": 3},
+      {"Url": "https://example.com/b", "Count": 1}
+    ],
+    "TotalPages": 1
+  }
+}

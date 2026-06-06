@@ -106,6 +106,12 @@ def import_gsc_links_csv(
         file_name=file_name,
     )
     write_gsc_links_data(conn, merged, property_id=property_id)
+    try:
+        from .gsc_links_sync import snapshot_gsc_links
+
+        snapshot_gsc_links(property_id, merged)
+    except Exception:
+        pass
     return {
         "ok": True,
         "imported_at": merged.get("imported_at"),
@@ -118,6 +124,26 @@ def import_gsc_links_csv(
 def _last_export_type(data: dict[str, Any]) -> str | None:
     types = data.get("export_types") or []
     return types[-1] if types else None
+
+
+def import_third_party_links_overlay(
+    conn: Connection,
+    property_id: int,
+    overlay: dict[str, Any],
+) -> dict[str, Any]:
+    """Merge Moz/Majestic CSV overlay into latest gsc_links_data snapshot."""
+    existing = read_latest_gsc_links_data(conn, property_id, for_report=False) or {
+        "imported_at": overlay.get("imported_at"),
+        "source": "gsc_links_csv",
+        "top_linking_sites": [],
+    }
+    overlays = list(existing.get("third_party_overlays") or [])
+    provider = str(overlay.get("provider") or "").strip().lower()
+    overlays = [o for o in overlays if str(o.get("provider") or "").lower() != provider]
+    overlays.append(overlay)
+    merged = {**existing, "third_party_overlays": overlays}
+    write_gsc_links_data(conn, merged, property_id=property_id)
+    return {"ok": True, "overlay": overlay, "overlay_count": len(overlays)}
 
 
 def read_gsc_links_status(

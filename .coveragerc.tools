@@ -1,0 +1,10 @@
+[run]
+source = website_profiling.tools
+omit =
+    */website_profiling/tools/keywords.py
+    */website_profiling/tools/plot.py
+    */website_profiling/tools/warnings.py
+
+[report]
+show_missing = True
+skip_empty = True

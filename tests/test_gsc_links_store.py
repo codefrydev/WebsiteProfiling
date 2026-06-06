@@ -23,6 +23,7 @@ def property_id():
     yield pid
 
 
+@pytest.mark.integration
 def test_import_and_read_roundtrip(property_id):
     csv_text = "Site,Links,Target pages\nexample.com,5,2\n"
     with db_session() as conn:
@@ -39,6 +40,7 @@ def test_import_and_read_roundtrip(property_id):
         assert status["referringDomainCount"] == 1
 
 
+@pytest.mark.integration
 def test_merge_second_import(property_id):
     with db_session() as conn:
         import_gsc_links_csv(

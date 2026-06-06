@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Globe,
@@ -36,8 +37,44 @@ export interface OverviewSummaryTabProps {
 export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount }: OverviewSummaryTabProps) {
   const vo = strings.views.overview;
   const sj = strings.common;
+  const [healthDelta, setHealthDelta] = useState<number | null>(null);
 
   const s = data.summary || {};
+  const healthScore = (data.categories || [])
+    .map((c) => Number(c?.score))
+    .filter((n) => Number.isFinite(n));
+  const currentHealth =
+    healthScore.length > 0
+      ? Math.round(healthScore.reduce((a, b) => a + b, 0) / healthScore.length)
+      : null;
+
+  useEffect(() => {
+    const domain = data.site_name || '';
+    if (!domain) return;
+    void fetch(`/api/report/history?domain=${encodeURIComponent(domain)}&limit=2`)
+      .then((r) => r.json())
+      .then((payload: { history?: Array<{ healthScore?: number | null }> }) => {
+        const hist = payload.history || [];
+        if (hist.length >= 2 && currentHealth != null && hist[1]?.healthScore != null) {
+          setHealthDelta(currentHealth - Number(hist[1].healthScore));
+        }
+      })
+      .catch(() => {});
+  }, [data.site_name, currentHealth]);
+
+  const execTopIssues = (data.executive_summary?.top_issues || []).slice(0, 5);
+  const execPriorities = (data.executive_summary?.priorities || []).filter(Boolean);
+  const execSource = data.executive_summary?.source;
+  const fallbackTopIssues = (data.categories || [])
+    .flatMap((cat) =>
+      (cat.issues || []).map((iss) => ({
+        ...iss,
+        category: cat.name || cat.id,
+      })),
+    )
+    .filter((iss) => iss.priority === 'Critical' || iss.priority === 'High')
+    .slice(0, 3);
+  const topIssues = execTopIssues.length > 0 ? execTopIssues : fallbackTopIssues;
   const h1Zero = (data.seo_health && data.seo_health.h1_zero) || 0;
   const brokenCount = (s.count_4xx || 0) + (s.count_5xx || 0);
   const googleData = data.google;
@@ -60,9 +97,73 @@ export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount 
     (data.semantic_keyword_clusters?.length ?? 0) > 0 ||
     (data.ner_site_summary?.label_counts && Object.keys(data.ner_site_summary.label_counts).length > 0);
 
+  const execSummary = data.executive_summary?.summary;
+  const gscClicks = data.google?.gsc?.summary?.clicks;
+
   return (
     <OverviewTabPanel tabId="summary" className="space-y-6">
       <div className="space-y-4">
+        {(execSummary || currentHealth != null) && (
+          <Card padding="tight">
+            {currentHealth != null && (
+              <p className="text-sm text-foreground mb-2">
+                <span className="font-semibold">Audit health:</span> {currentHealth}/100
+                {healthDelta != null && healthDelta !== 0 && (
+                  <span className={healthDelta > 0 ? ' text-emerald-600' : ' text-rose-600'}>
+                    {' '}
+                    ({healthDelta > 0 ? '+' : ''}
+                    {healthDelta} vs prior run)
+                  </span>
+                )}
+              </p>
+            )}
+            {execSummary ? (
+              <>
+                {execSource === 'ai_insights' ? (
+                  <p className="text-[10px] uppercase tracking-wide text-fuchsia-700 dark:text-fuchsia-300 font-semibold mb-1">
+                    {vo.executiveAiLabel}
+                  </p>
+                ) : null}
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{execSummary}</p>
+              </>
+            ) : null}
+            {execPriorities.length > 0 ? (
+              <ul className="mt-3 space-y-1 text-sm list-disc pl-5 text-foreground">
+                {execPriorities.map((line, i) => (
+                  <li key={`${line}-${i}`}>{line}</li>
+                ))}
+              </ul>
+            ) : null}
+            {gscClicks != null && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Search Console clicks ({data.report_meta?.google_date_range_days ?? 28}d): {Number(gscClicks).toLocaleString()}
+              </p>
+            )}
+            {topIssues.length > 0 && (
+              <div className="mt-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">
+                  {vo.topTrafficIssues}
+                </p>
+                <ul className="space-y-1 text-sm">
+                  {topIssues.map((iss, i) => {
+                    const row = iss as { message?: string; priority?: string; gsc_clicks?: number };
+                    const clicks = Number(row.gsc_clicks || 0);
+                    return (
+                      <li key={`${row.message}-${i}`} className="text-foreground">
+                        <span className="text-muted-foreground">[{row.priority}]</span> {row.message}
+                        {clicks > 0 ? (
+                          <span className="text-xs text-muted-foreground ml-1">
+                            ({clicks.toLocaleString()} {vo.clicksLabel})
+                          </span>
+                        ) : null}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+          </Card>
+        )}
         {provenanceSources.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="text-muted-foreground">{vo.dataSourcesLabel}:</span>

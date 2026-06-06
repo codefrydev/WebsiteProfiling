@@ -1,0 +1,48 @@
+[
+  {
+    "url": "https://example.com/",
+    "status": "200",
+    "title": "Home",
+    "meta_description": "Welcome to our site with enough description text here.",
+    "h1": "Home",
+    "word_count": 500,
+    "noindex": false,
+    "page_analysis": "{\"hreflang_alternates\":[{\"hreflang\":\"en\",\"href\":\"https://example.com/fr/\"}]}"
+  },
+  {
+    "url": "https://example.com/thin",
+    "status": "200",
+    "title": "Thin page title here",
+    "meta_description": "",
+    "h1": "",
+    "word_count": 50,
+    "noindex": false
+  },
+  {
+    "url": "https://example.com/noindex",
+    "status": "200",
+    "title": "Secret page with a reasonable title tag",
+    "meta_description": "A meta description that is long enough for testing purposes here.",
+    "h1": "Secret",
+    "word_count": 400,
+    "noindex": true
+  },
+  {
+    "url": "https://example.com/missing",
+    "status": "200",
+    "title": "Page Not Found - Example",
+    "meta_description": "",
+    "h1": "404",
+    "word_count": 20,
+    "noindex": false
+  },
+  {
+    "url": "https://example.com/redirect",
+    "status": "301",
+    "title": "",
+    "meta_description": "",
+    "h1": "",
+    "word_count": 0,
+    "noindex": false
+  }
+]

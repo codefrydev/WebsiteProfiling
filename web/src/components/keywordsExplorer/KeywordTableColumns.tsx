@@ -5,6 +5,8 @@ import { formatGscCtr } from '../../lib/gscMetrics';
 import { INTENT_COLORS, SOURCE_CONFIG, difficultyColor } from './keywordTableUtils';
 import type { KeywordHistoryRow } from '@/types/api';
 import type { KeywordHistoryMap, KeywordRow, TableColumn } from '@/types/components';
+import UrlInspectorButton from '@/components/UrlInspectorButton';
+import ContentBriefButton from './ContentBriefButton';
 
 function KwBadge({ label, colorClass }: { label: string; colorClass: string }) {
   return (
@@ -64,6 +66,7 @@ export function buildKeywordColumns(
   showTrend: boolean,
   historyByKeyword: KeywordHistoryMap,
   ke: { table: Record<string, string> },
+  allRows: KeywordRow[] = [],
 ): TableColumn[] {
   const cols: TableColumn[] = [
     {
@@ -123,6 +126,22 @@ export function buildKeywordColumns(
         v ? (
           <span className="text-xs text-muted-foreground truncate block max-w-xs lg:max-w-md">
             {String(v)}
+          </span>
+        ) : (
+          '—'
+        ),
+    });
+  }
+
+  const showSerp = allRows.some((r) => r.serp_estimated_competition != null);
+  if (showSerp) {
+    cols.push({
+      key: 'serp_estimated_competition',
+      label: ke.table.serpCompetition,
+      render: (v) =>
+        v != null && typeof v === 'number' ? (
+          <span className="tabular-nums text-orange-700 dark:text-orange-300 font-semibold" title={ke.table.serpCompetitionHint}>
+            {v}
           </span>
         ) : (
           '—'
@@ -213,6 +232,24 @@ export function buildKeywordColumns(
     render: (v) => (
       <span className="text-xs text-muted-foreground block min-w-[12rem]">{String(v || '—')}</span>
     ),
+  });
+
+  cols.push({
+    key: '_brief',
+    label: ke.table.brief,
+    render: (_v, row) => {
+      const r = row as KeywordRow | undefined;
+      const kw = String(r?.keyword || '').trim();
+      if (!kw) return null;
+      const cluster = allRows.filter((x) => String(x.keyword || '').trim() === kw);
+      return <ContentBriefButton keyword={kw} clusterRows={cluster.length ? cluster : r ? [r] : []} />;
+    },
+  });
+
+  cols.push({
+    key: '_inspect',
+    label: '',
+    render: (_v, row) => <UrlInspectorButton url={(row as KeywordRow)?.gsc_url} />,
   });
 
   return cols;

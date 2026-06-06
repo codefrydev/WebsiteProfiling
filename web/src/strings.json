@@ -19,7 +19,8 @@
     "noReportForDomain": "No audit found for this property. Run an audit for this site or choose another property from Properties.",
     "noReportForDomainTitle": "No audit for this property",
     "openRunAudit": "Run audit",
-    "goToProperties": "Properties"
+    "goToProperties": "Properties",
+    "readonlyBanner": "Read-only access — run audits and save settings are disabled for this session."
   },
   "nav": {
     "home": {
@@ -98,6 +99,10 @@
       "label": "Search Console",
       "section": "Search & analytics"
     },
+    "indexation": {
+      "label": "Indexation",
+      "section": "Search & analytics"
+    },
     "backlinks": {
       "label": "Backlinks",
       "section": "Search & analytics"
@@ -109,6 +114,10 @@
     "keywords-explorer": {
       "label": "Keywords",
       "section": "Search & analytics"
+    },
+    "log-analyzer": {
+      "label": "Log analyzer",
+      "section": "Advanced"
     }
   },
   "reportSelector": {
@@ -215,6 +224,33 @@
     "gscLinksLastImport": "Last import: {date}",
     "gscLinksNoData": "No GSC Links import yet for this property.",
     "gscLinksRowCounts": "{domains} referring domains · {pages} linked pages · {sample} sample links",
+    "bingWebmaster": {
+      "title": "Bing Webmaster Tools",
+      "hint": "Set bing_webmaster_api_key and Site URL in Run audit → Search Console & Analytics, then sync here. Live API wiring is optional; imports remain primary.",
+      "syncLabel": "Sync Bing summary",
+      "syncing": "Syncing…",
+      "failed": "Bing sync failed",
+      "success": "Bing summary fetched."
+    },
+    "propertyOps": {
+      "title": "Scheduled audits & alerts",
+      "hint": "Per-property automation. Cron uses UTC. Trigger checks via POST /api/schedule/check and POST /api/alerts/check.",
+      "loading": "Loading ops settings…",
+      "scheduleCronLabel": "Audit schedule (cron)",
+      "scheduleCronPlaceholder": "0 6 * * 1",
+      "scheduleCronHelp": "Five-field cron: minute hour day month weekday. Example: Mondays at 06:00 UTC.",
+      "alertWebhookLabel": "Alert webhook URL",
+      "alertWebhookHelp": "POST JSON when health score drops or critical issues appear.",
+      "alertEmailLabel": "Alert email",
+      "alertEmailHelp": "Optional email for alert notifications (requires mail setup).",
+      "saveLabel": "Save ops settings",
+      "saving": "Saving…",
+      "saved": "Ops settings saved.",
+      "saveFailed": "Could not save ops settings.",
+      "cronEndpointsHint": "Wire cron: curl -X POST http://localhost:3000/api/schedule/check and /api/alerts/check?propertyId={id}",
+      "gscLinksMissing": "No GSC Links CSV imported yet — upload from Search Console → Links for backlink velocity and competitor gap.",
+      "gscLinksStale": "GSC Links import is {days} days old — re-import weekly for accurate velocity."
+    },
     "contentAiHint": "AI insights run when the audit report is built (optional).",
     "settingsSectionTabsLabel": "Settings sections",
     "settingsTabIntegrations": "Integrations",
@@ -628,6 +664,15 @@
       "issueWord": "issue",
       "issuesWord": "issues",
       "fixRecommendation": "Fix Recommendation",
+      "ruleRecommendation": "Rule-based fix",
+      "aiFix": {
+        "button": "AI fix suggestion",
+        "regenerate": "Regenerate AI fix",
+        "loading": "Generating…",
+        "failed": "AI fix unavailable",
+        "empty": "No suggestion returned.",
+        "label": "AI insights"
+      },
       "issuesByCategory": "Issues by category",
       "issuesByCategoryHint": "Reflects current search and category filter, not priority filter.",
       "issuesByPriority": "Issues by priority",
@@ -635,6 +680,11 @@
       "allPriorities": "All Priorities",
       "allCategories": "All Categories",
       "noMatches": "No issues match the current filters.",
+      "tabAudit": "Audit issues",
+      "tabBoard": "Task board",
+      "taskBoardHint": "Sorted by Search Console clicks to affected URLs when available.",
+      "taskBoardNoProperty": "Link an active property in Integrations to track issue workflow.",
+      "taskBoardStatus": "Issue status",
       "categoryOther": "Other",
       "priorityOrder": [
         "Critical",
@@ -672,6 +722,12 @@
       "treeHint": "Expand folders to drill into URL prefixes. Metrics include all crawled pages under each path.",
       "treeShowing": "Showing {count} visible paths · {total} prefixes total",
       "quickJump": "Jump to section",
+      "crawlSegmentsTitle": "Configured path segments",
+      "crawlSegmentsHint": "Health scores from crawl_path_segments in pipeline settings. URL counts are from this crawl.",
+      "crawlSegmentsOverall": "Overall health",
+      "crawlSegmentsPrefix": "Prefix",
+      "crawlSegmentsUrls": "URLs",
+      "crawlSegmentsHealth": "Health",
       "tabs": {
         "overview": "Overview",
         "tree": "Path tree"
@@ -917,6 +973,8 @@
       "thCrawlDepth": "Crawl depth",
       "thLoadTime": "Load time",
       "thWords": "Words",
+      "thCustomExtract": "Extract",
+      "exportCsv": "Export CSV",
       "thActions": "Actions",
       "inspect": "Inspect",
       "pageOf": "Page",
@@ -1040,6 +1098,32 @@
         "audits": "Audits",
         "diagnostics": "Diagnostics"
       }
+    },
+    "logAnalyzer": {
+      "title": "Log file analyzer",
+      "subtitle": "Upload nginx or Apache access logs to compare Googlebot frequency with your crawl.",
+      "upload": "Analyze log",
+      "noProperty": "Select an active property in Integrations first.",
+      "googlebotHits": "Googlebot requests",
+      "logOnlyUrls": "URLs in logs not crawled",
+      "crawlOnlyUrls": "Crawled URLs not in logs",
+      "parsedLines": "Parsed log lines",
+      "uniquePaths": "Unique paths",
+      "logOnlyListTitle": "Sample paths in logs but not crawled",
+      "crawlOnlyListTitle": "Sample crawled paths not in logs",
+      "listHint": "Showing up to 50 sample paths. Full counts appear in the summary cards above.",
+      "emptyList": "No paths in this category."
+    },
+    "indexation": {
+      "title": "Indexation & coverage",
+      "subtitle": "Compare crawled URLs, XML sitemap, and Google Search Console pages.",
+      "crawled": "Crawled (2xx)",
+      "sitemap": "In sitemap",
+      "gscPages": "GSC pages",
+      "sitemapOnly": "Sitemap only",
+      "gapsTitle": "URL coverage gaps",
+      "gapsHint": "URLs present in one source but missing from another. Measured from crawl; Search Console from Google API.",
+      "sitemapOnlyList": "In sitemap but not crawled"
     },
     "searchPerformance": {
       "title": "Search Performance",
@@ -1189,6 +1273,33 @@
       "overview": {
         "topDomainsTitle": "Top referring domains",
         "topPagesTitle": "Most linked pages on your site"
+      },
+      "bingTitle": "Bing Webmaster inbound links",
+      "bingHint": "From Bing Webmaster GetLinkCounts when bing_webmaster_api_key is set in Run audit settings.",
+      "bingLinkedPages": "Pages with inbound links",
+      "bingInboundLinks": "Total inbound links (sample)",
+      "competitorImport": {
+        "title": "Competitor referring-domain gap",
+        "hint": "Upload a competitor's GSC Links CSV (Top linking sites). Domains in their sample but not in your imported sample are listed as Estimated gaps. Set competitor domains in Run audit for static gap checks.",
+        "competitorPlaceholder": "competitor.com",
+        "competitorRequired": "Enter a competitor domain first.",
+        "uploadLabel": "Upload competitor CSV",
+        "uploading": "Analyzing…",
+        "failed": "Import failed",
+        "gapSummary": "{count} domains in {competitor} sample not in your GSC Links sample",
+        "noGap": "No unique referring domains found vs. your sample."
+      },
+      "thirdPartyImport": {
+        "title": "Moz / Majestic overlay",
+        "hint": "Upload referring-domain exports from Moz Link Explorer or Majestic. Compared against your GSC Links sample — Estimated, not a live API.",
+        "mozLabel": "Moz CSV",
+        "majesticLabel": "Majestic CSV",
+        "uploadLabel": "Upload overlay CSV",
+        "uploading": "Importing…",
+        "failed": "Import failed",
+        "noProperty": "Select an active property in Integrations to import third-party link data.",
+        "estimated": "Estimated",
+        "summary": "{count} referring domains · {gaps} not in GSC Links sample"
       }
     },
     "traffic": {
@@ -1312,9 +1423,11 @@
         "all": "All keywords",
         "questions": "Questions",
         "quickwins": "Quick wins",
+        "striking": "Striking distance",
         "lostclicks": "Lost clicks",
         "opportunities": "Opportunities",
         "cannib": "Cannibalisation",
+        "alignment": "Query–page alignment",
         "bypage": "By page"
       },
       "tabHelp": {
@@ -1322,9 +1435,11 @@
         "all": "Full keyword list with Search Console metrics, intent, and sources.",
         "questions": "Question-style queries (who, what, how, etc.) — useful for FAQ and content ideas.",
         "quickwins": "Keywords ranking positions 4–20 with meaningful click upside if you improve to top 3.",
+        "striking": "High-impression keywords in positions 4–20 — close to page one.",
         "lostclicks": "Queries that lost clicks compared to the prior period — investigate ranking or CTR drops.",
         "opportunities": "Keywords discovered from expansion but not yet ranking in Search Console.",
         "cannib": "Same query ranking on multiple URLs — consolidate or canonicalise to one primary page.",
+        "alignment": "Search Console queries where another on-site URL may be a better ranking target.",
         "bypage": "Browse ranking queries grouped by landing page URL from Search Console."
       },
       "overview": {
@@ -1397,6 +1512,8 @@
         "parentTopic": "Parent topic",
         "kd": "Difficulty",
         "kdEstimated": "Difficulty (est.)",
+        "serpCompetition": "SERP comp. (est.)",
+        "serpCompetitionHint": "Estimated from SerpAPI organic result density and SERP features",
         "onSiteFrequency": "On-site frequency",
         "position": "Avg. position",
         "impressions": "Impressions",
@@ -1406,6 +1523,7 @@
         "opportunityClicks": "+Clicks@#3 (est.)",
         "trend": "Trend",
         "action": "Action",
+        "brief": "Brief",
         "brand": "brand",
         "question": "Q",
         "noData": "No keywords in this view",
@@ -1415,6 +1533,24 @@
         "previous": "Previous",
         "next": "Next",
         "rowsPerPage": "{n} per page"
+      },
+      "alignment": {
+        "empty": "No query–page misalignment detected for high-impression queries.",
+        "intro": "{count} query(ies) may rank from a suboptimal URL. Consider consolidating or retargeting content.",
+        "searchPlaceholder": "Search keywords or URLs…",
+        "currentUrl": "Current URL",
+        "suggestedUrl": "Suggested URL",
+        "metrics": "{impressions} impressions · avg. position {position}"
+      },
+      "contentBrief": {
+        "buttonLabel": "Brief",
+        "buttonTitle": "Generate content brief for this keyword",
+        "modalTitle": "Content brief",
+        "loading": "Generating brief…",
+        "failed": "Brief generation failed",
+        "empty": "No brief content returned.",
+        "provenance": "Source",
+        "close": "Close"
       },
       "cannib": {
         "empty": "No cannibalisation detected. Each keyword appears to rank from a unique page.",
@@ -1607,6 +1743,9 @@
       "googleConnectTitle": "Connect Google Search Console & Analytics",
       "googleConnectBody": "Add real query, click, and traffic data to this audit.",
       "googleConnectSubtitle": "Sync clicks, impressions, average position, and Analytics sessions. Open Integrations (gear icon, top right).",
+      "executiveAiLabel": "AI executive summary",
+      "topTrafficIssues": "Top traffic-impacting issues",
+      "clicksLabel": "clicks",
       "gscClicksCard": "Search Console clicks",
       "gscImpressionsCard": "Impressions",
       "ga4SessionsCard": "Analytics sessions",

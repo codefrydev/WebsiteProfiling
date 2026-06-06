@@ -188,6 +188,14 @@ export interface CannibalisationItem {
   pages?: CannibalisationPage[];
 }
 
+export interface QueryPageMisalignmentItem {
+  keyword: string;
+  current_url: string;
+  suggested_url: string;
+  impressions?: number;
+  position?: number;
+}
+
 export interface KeywordByPageResponse {
   keyword_count?: number;
   cannibalisation?: CannibalisationItem[];

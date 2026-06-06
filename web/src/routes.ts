@@ -16,11 +16,13 @@ export type ViewId =
   | 'network'
   | 'gallery'
   | 'search-performance'
+  | 'indexation'
   | 'backlinks'
   | 'traffic'
   | 'keywords-explorer'
   | 'compare'
-  | 'export';
+  | 'export'
+  | 'log-analyzer';
 
 const VIEW_IDS = new Set<string>([
   'home',
@@ -39,11 +41,13 @@ const VIEW_IDS = new Set<string>([
   'network',
   'gallery',
   'search-performance',
+  'indexation',
   'backlinks',
   'traffic',
   'keywords-explorer',
   'compare',
   'export',
+  'log-analyzer',
 ]);
 
 export function viewIdToPathSlug(viewId: string): string {

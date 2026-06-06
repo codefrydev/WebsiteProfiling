@@ -17,6 +17,8 @@ import { apiUrl } from '@/lib/publicBase';
 import { strings, format } from '@/lib/strings';
 import { dispatchPipelineJobStarted, pollPipelineJob } from '@/lib/pipelineJobEvents';
 import { useOptionalReport } from '@/context/useReport';
+import PropertyOpsSection from '@/components/integrations/PropertyOpsSection';
+import BingWebmasterSection from '@/components/integrations/BingWebmasterSection';
 import { useOptionalPipeline } from '@/context/PipelineContext';
 import { useResolvedPropertyId } from '@/hooks/useResolvedPropertyId';
 import { googlePropertyEndpoints } from '@/lib/googlePropertyEndpoints';
@@ -24,6 +26,7 @@ import { pickInitialPropertyId, siteUrlFromProperty } from '@/lib/googleProperty
 import { deriveSiteNameFromStartUrl } from '@/lib/domainSlug';
 import type { PropertyListItem } from '@/types/api';
 import Button from '@/components/Button';
+import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 
 const GCP_GUIDE_URL =
   'https://developers.google.com/workspace/guides/get-started';
@@ -235,6 +238,7 @@ export default function GoogleIntegrationsPanel({
 }: GoogleIntegrationsPanelProps) {
   const report = useOptionalReport();
   const pipeline = useOptionalPipeline();
+  const { readOnly } = useReadOnlySession();
   const startUrl =
     startUrlProp.trim() ||
     String(pipeline?.configState.start_url || report?.data?.start_url || report?.data?.links?.[0]?.url || '');
@@ -310,6 +314,7 @@ export default function GoogleIntegrationsPanel({
 
   const handlePropertySelect = useCallback(
     async (id: number) => {
+      if (readOnly) return;
       setSelectedPropertyId(id);
       const row = propertyRows.find((p) => p.id === id);
       if (!row || !pipeline) return;
@@ -324,7 +329,7 @@ export default function GoogleIntegrationsPanel({
         setSyncingProperty(false);
       }
     },
-    [propertyRows, pipeline],
+    [propertyRows, pipeline, readOnly],
   );
   const [status, setStatus] = useState<GoogleStatusResponse | null>(null);
   const [loadingStatus, setLoadingStatus] = useState(false);
@@ -528,7 +533,7 @@ export default function GoogleIntegrationsPanel({
   };
 
   const handleSaveClientCreds = async () => {
-    if (!clientId.trim() || !clientSecret.trim()) return;
+    if (readOnly || !clientId.trim() || !clientSecret.trim()) return;
     setSavingCreds(true);
     try {
       const res = await fetch(apiUrl('/integrations/google/credentials'), {
@@ -559,6 +564,7 @@ export default function GoogleIntegrationsPanel({
 
   const handleSaveProperties = useCallback(
     async (options?: { auto?: boolean }): Promise<boolean> => {
+      if (readOnly) return false;
       if (ga4PropertyId && !/^\d+$/.test(ga4PropertyId.trim())) {
         const msg =
           'Analytics property ID must be a numeric ID (e.g. 123456789). The G-XXXXXXX code is a Measurement ID — find the numeric ID in GA4 Admin > Property Settings.';
@@ -610,11 +616,11 @@ export default function GoogleIntegrationsPanel({
         setSavingProps(false);
       }
     },
-    [gscSiteUrl, ga4PropertyId, dateRangeDays, endpoints.credentials, fetchStatus],
+    [gscSiteUrl, ga4PropertyId, dateRangeDays, endpoints.credentials, fetchStatus, readOnly],
   );
 
   const handlePropertiesBlur = useCallback(() => {
-    if (!status?.connected || savingProps) return;
+    if (readOnly || !status?.connected || savingProps) return;
     if (!gscSiteUrl.trim() && !ga4PropertyId.trim()) return;
     if (!propertiesDirty) return;
     void handleSaveProperties({ auto: true });
@@ -625,6 +631,7 @@ export default function GoogleIntegrationsPanel({
     ga4PropertyId,
     propertiesDirty,
     handleSaveProperties,
+    readOnly,
   ]);
 
   useEffect(() => {
@@ -642,7 +649,7 @@ export default function GoogleIntegrationsPanel({
   }, [propertiesSaveState]);
 
   const handleSaveRefreshToken = async () => {
-    if (!refreshToken.trim() || effectivePropertyId == null) return;
+    if (readOnly || !refreshToken.trim() || effectivePropertyId == null) return;
     setSavingToken(true);
     try {
       const res = await fetch(endpoints.credentials, {
@@ -666,6 +673,7 @@ export default function GoogleIntegrationsPanel({
   };
 
   const handleTest = async () => {
+    if (readOnly) return;
     setTesting(true);
     setTestLog('');
     try {
@@ -701,6 +709,7 @@ export default function GoogleIntegrationsPanel({
   }, []);
 
   const handleFetch = async () => {
+    if (readOnly) return;
     setFetching(true);
     setFetchLog('Starting Google data fetch…');
     setFetchJobStatus('running');
@@ -753,6 +762,7 @@ export default function GoogleIntegrationsPanel({
   };
 
   const handleDisconnect = async () => {
+    if (readOnly) return;
     try {
       await fetch(endpoints.disconnect, { method: 'POST' });
       await fetchStatus();
@@ -771,6 +781,11 @@ export default function GoogleIntegrationsPanel({
 
   return (
     <div className="space-y-4">
+      {readOnly ? (
+        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-200">
+          {strings.app.readonlyBanner}
+        </p>
+      ) : null}
       <p className="rounded-lg border border-default bg-brand-800/50 px-4 py-2.5 text-xs text-muted-foreground">
         Google Client ID/Secret and service account keys are stored in the database. Each site keeps its own
         OAuth connection and Search Console / Analytics property IDs.
@@ -802,7 +817,7 @@ export default function GoogleIntegrationsPanel({
               const id = parseInt(e.target.value, 10);
               if (Number.isFinite(id)) void handlePropertySelect(id);
             }}
-            disabled={syncingProperty}
+            disabled={syncingProperty || readOnly}
             className={selectClassName()}
           >
             {propertyRows.map((p) => (
@@ -943,7 +958,7 @@ export default function GoogleIntegrationsPanel({
               <Button
                 variant="primary"
                 onClick={() => void handleSaveClientCreds()}
-                disabled={savingCreds || (!clientId.trim() && !clientSecret.trim())}
+                disabled={readOnly || savingCreds || (!clientId.trim() && !clientSecret.trim())}
               >
                 {savingCreds ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
                 Save credentials
@@ -978,7 +993,7 @@ export default function GoogleIntegrationsPanel({
                 )}
                 <Button
                   variant="primary"
-                  disabled={!hasClientId || needsProperty}
+                  disabled={readOnly || !hasClientId || needsProperty}
                   onClick={() => {
                     void (async () => {
                       const pid = await ensurePropertyIdForOAuth();
@@ -1130,19 +1145,19 @@ export default function GoogleIntegrationsPanel({
                 <Button
                   variant="primary"
                   onClick={() => void handleSaveProperties()}
-                  disabled={savingProps || !status?.connected}
+                  disabled={readOnly || savingProps || !status?.connected}
                 >
                   {savingProps ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
                   {savingProps ? s.googlePropertiesSaving : 'Save properties'}
                 </Button>
-                <Button variant="secondary" onClick={() => void handleTest()} disabled={testing}>
+                <Button variant="secondary" onClick={() => void handleTest()} disabled={readOnly || testing}>
                   {testing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
                   Test connection
                 </Button>
                 <Button
                   variant="secondary"
                   onClick={() => void handleFetch()}
-                  disabled={fetching}
+                  disabled={readOnly || fetching}
                   className="border-green-700/40 text-green-800 hover:bg-green-500/10 dark:text-green-300"
                 >
                   {fetching ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
@@ -1242,7 +1257,7 @@ export default function GoogleIntegrationsPanel({
                 />
                 <Button
                   variant="secondary"
-                  disabled={uploadingLinks}
+                  disabled={readOnly || uploadingLinks}
                   onClick={() => linksFileInputRef.current?.click()}
                 >
                   {uploadingLinks ? (
@@ -1263,6 +1278,12 @@ export default function GoogleIntegrationsPanel({
                 </p>
               ) : null}
             </SetupStep>
+          ) : null}
+
+          <BingWebmasterSection />
+
+          {effectivePropertyId != null ? (
+            <PropertyOpsSection propertyId={effectivePropertyId} />
           ) : null}
 
           {effectivePropertyId != null ? (
@@ -1290,7 +1311,7 @@ export default function GoogleIntegrationsPanel({
                   <Button
                     variant="secondary"
                     onClick={() => void handleSaveRefreshToken()}
-                    disabled={savingToken || !refreshToken.trim()}
+                    disabled={readOnly || savingToken || !refreshToken.trim()}
                   >
                     {savingToken ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
                     Save token

@@ -1,10 +1,14 @@
 [run]
 source = website_profiling
 
-# We are NOT hiding core code. We only omit modules that require external
-# services/binaries (Google APIs, Lighthouse) or are impractical to unit-test here.
+# Core unit-test gate (100%). reporting/, tools/, and external integrations are
+# enforced by separate CI jobs — see .coveragerc.reporting and .coveragerc.tools.
 omit =
     */website_profiling/integrations/google/*
+    */website_profiling/integrations/bing/*
+    */website_profiling/integrations/crux/*
+    */website_profiling/integrations/serp/*
+    */website_profiling/integrations/links/third_party_csv.py
     */website_profiling/lighthouse/*
     */website_profiling/reporting/*
     */website_profiling/tools/*
@@ -18,4 +22,3 @@ omit =
 [report]
 show_missing = True
 skip_empty = True
-

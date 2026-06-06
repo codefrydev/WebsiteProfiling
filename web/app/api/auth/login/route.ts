@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import {
   authEnabled,
   createSessionToken,
+  defaultSessionRole,
   parseBasicAuth,
 } from '@/server/auth';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
@@ -18,7 +19,7 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
   if (!parseBasicAuth(request)) {
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
-  const token = createSessionToken('analyst');
+  const token = createSessionToken(defaultSessionRole());
   const res = NextResponse.json({ ok: true });
   res.cookies.set('wp_session', token, {
     httpOnly: true,

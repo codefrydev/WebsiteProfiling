@@ -50,6 +50,39 @@ def select_lighthouse_urls_from_crawl(df: pd.DataFrame, max_pages: int) -> list[
     )
 
 
+def select_lighthouse_urls_from_gsc(
+    google_data: dict | None,
+    crawl_urls: list[str],
+    max_pages: int,
+) -> list[str]:
+    """Prefer top GSC pages by clicks that exist in crawl."""
+    if not google_data or max_pages <= 0:
+        return []
+    gsc = google_data.get("gsc") if isinstance(google_data.get("gsc"), dict) else {}
+    pages = gsc.get("pages") if isinstance(gsc.get("pages"), list) else []
+    crawl_set = {u.rstrip("/") for u in crawl_urls}
+    ranked: list[tuple[float, str]] = []
+    for row in pages:
+        if not isinstance(row, dict):
+            continue
+        url = str(row.get("page") or row.get("url") or "").strip()
+        if not url:
+            continue
+        norm = url.rstrip("/")
+        if norm not in crawl_set and url not in crawl_set:
+            continue
+        try:
+            clicks = float(row.get("clicks") or 0)
+        except (TypeError, ValueError):
+            clicks = 0.0
+        ranked.append((clicks, url))
+    ranked.sort(key=lambda x: -x[0])
+    picked = [u for _, u in ranked[:max_pages]]
+    if picked:
+        return picked
+    return crawl_urls[:max_pages]
+
+
 def run(cfg: dict, args: argparse.Namespace) -> None:
     use_database = True
 
@@ -123,6 +156,9 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
     js_console_levels = (cfg.get("crawl_js_console_levels") or "error,warning").strip()
     capture_failed_requests = get_bool(cfg, "crawl_js_capture_failed_requests", False)
     console_max_per_page = get_int(cfg, "crawl_js_console_max_per_page", 20) or 20
+    custom_extraction_regex = (cfg.get("custom_extraction_regex") or "").strip()
+    crawl_ignore_raw = (cfg.get("crawl_ignore_params") or "").strip()
+    crawl_ignore_params = [p.strip() for p in crawl_ignore_raw.split(",") if p.strip()] or None
     print("Crawling...")
     run_crawler(
         start_url=start_url,
@@ -153,6 +189,8 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
         js_console_levels=js_console_levels,
         capture_failed_requests=capture_failed_requests,
         console_max_per_page=console_max_per_page,
+        custom_extraction_regex=custom_extraction_regex,
+        crawl_ignore_params=crawl_ignore_params,
     )
     print("[Crawl] Done.", flush=True)
     print("Crawl results: PostgreSQL")
@@ -166,7 +204,18 @@ def _run_lighthouse_on_pages(cfg: dict, lighthouse_max_pages: int) -> None:
     with db_session() as conn:
         run_id = get_latest_crawl_run_id(conn)
         df = read_crawl(conn, run_id)
-    urls_200 = select_lighthouse_urls_from_crawl(df, lighthouse_max_pages)
+        google_data = None
+        try:
+            from ..integrations.google.store import read_latest_google_data
+            from .config_resolve import active_property_id_from_cfg
+
+            google_data = read_latest_google_data(conn, property_id=active_property_id_from_cfg(cfg))
+        except Exception:
+            google_data = None
+    crawl_urls = select_lighthouse_urls_from_crawl(df, lighthouse_max_pages * 3)
+    urls_200 = select_lighthouse_urls_from_gsc(google_data, crawl_urls, lighthouse_max_pages)
+    if not urls_200:
+        urls_200 = select_lighthouse_urls_from_crawl(df, lighthouse_max_pages)
     if not urls_200:
         print("[Lighthouse on pages] No 200 OK URLs in crawl. Skip.", flush=True)
     else:
