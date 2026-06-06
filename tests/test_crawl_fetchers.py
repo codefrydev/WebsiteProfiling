@@ -265,10 +265,10 @@ def test_playwright_chromium_unavailable_without_playwright(monkeypatch):
 
 
 def test_chromium_available_via_playwright_executable(monkeypatch):
-    from website_profiling.crawl.fetchers import browser_deps
+    import sys
+    import types
 
-    monkeypatch.setattr(browser_deps, "_system_chromium_available", lambda: False)
-    monkeypatch.setattr(browser_deps, "_playwright_importable", lambda: True)
+    from website_profiling.crawl.fetchers import browser_deps
 
     class FakeChromium:
         executable_path = "/tmp/fake-chromium"
@@ -283,20 +283,15 @@ def test_chromium_available_via_playwright_executable(monkeypatch):
         def __exit__(self, *_args):
             return False
 
-    monkeypatch.setattr(
-        "playwright.sync_api.sync_playwright",
-        lambda: FakeContext(),
-        raising=False,
-    )
-    import sys
-    import types
-
     sync_api = types.ModuleType("playwright.sync_api")
     sync_api.sync_playwright = lambda: FakeContext()
     playwright_mod = types.ModuleType("playwright")
     playwright_mod.sync_api = sync_api
     monkeypatch.setitem(sys.modules, "playwright", playwright_mod)
     monkeypatch.setitem(sys.modules, "playwright.sync_api", sync_api)
+
+    monkeypatch.setattr(browser_deps, "_system_chromium_available", lambda: False)
+    monkeypatch.setattr(browser_deps, "_playwright_importable", lambda: True)
     monkeypatch.setattr(
         browser_deps.os.path,
         "isfile",
