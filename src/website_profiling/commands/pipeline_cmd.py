@@ -17,6 +17,19 @@ from .config_resolve import (
     should_enrich_keywords_after_report,
 )
 
+_ALLOWED_RENDER_MODES = frozenset({"static", "javascript", "auto"})
+
+
+def _normalize_render_mode(cfg: dict) -> str:
+    mode = (cfg.get("crawl_render_mode") or "static").strip().lower()
+    if mode not in _ALLOWED_RENDER_MODES:
+        print(
+            f"Warning: invalid crawl_render_mode {mode!r}; using static.",
+            file=sys.stderr,
+        )
+        return "static"
+    return mode
+
 
 def select_lighthouse_urls_from_crawl(df: pd.DataFrame, max_pages: int) -> list[str]:
     if df.empty or "url" not in df.columns:
@@ -98,6 +111,18 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
     content_excerpt_max_chars = get_int(cfg, "content_excerpt_max_chars", 4096) or 4096
     crawl_stream_to_db = get_bool(cfg, "crawl_stream_to_db", False)
     property_id = active_property_id_from_cfg(cfg)
+    render_mode = _normalize_render_mode(cfg)
+    js_concurrency = get_int(cfg, "crawl_js_concurrency", 3) or 3
+    js_timeout = get_int(cfg, "crawl_js_timeout", 30) or 30
+    js_wait_until = (cfg.get("crawl_js_wait_until") or "domcontentloaded").strip()
+    js_extra_wait_ms = get_int(cfg, "crawl_js_extra_wait_ms", 1500)
+    if js_extra_wait_ms is None:
+        js_extra_wait_ms = 1500
+    js_block_resources = get_bool(cfg, "crawl_js_block_resources", True)
+    capture_console = get_bool(cfg, "crawl_js_capture_console", True)
+    js_console_levels = (cfg.get("crawl_js_console_levels") or "error,warning").strip()
+    capture_failed_requests = get_bool(cfg, "crawl_js_capture_failed_requests", False)
+    console_max_per_page = get_int(cfg, "crawl_js_console_max_per_page", 20) or 20
     print("Crawling...")
     run_crawler(
         start_url=start_url,
@@ -118,6 +143,16 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
         content_excerpt_max_chars=content_excerpt_max_chars,
         crawl_stream_to_db=crawl_stream_to_db,
         property_id=property_id,
+        render_mode=render_mode,
+        js_concurrency=js_concurrency,
+        js_timeout=js_timeout,
+        js_wait_until=js_wait_until,
+        js_extra_wait_ms=js_extra_wait_ms,
+        js_block_resources=js_block_resources,
+        capture_console=capture_console,
+        js_console_levels=js_console_levels,
+        capture_failed_requests=capture_failed_requests,
+        console_max_per_page=console_max_per_page,
     )
     print("[Crawl] Done.", flush=True)
     print("Crawl results: PostgreSQL")
@@ -233,6 +268,20 @@ def _run_plot(cfg: dict, use_database: bool) -> None:
     from ..tools.plot import run_plot as do_plot
 
     print("[Plot] Starting...", flush=True)
+    render_mode = (cfg.get("crawl_render_mode") or "").strip().lower() or None
+    if render_mode is not None and render_mode not in _ALLOWED_RENDER_MODES:
+        print(
+            f"Warning: invalid crawl_render_mode {render_mode!r}; using crawl run default.",
+            file=sys.stderr,
+        )
+        render_mode = None
+    js_concurrency = get_int(cfg, "crawl_js_concurrency", 3) or 3
+    js_timeout = get_int(cfg, "crawl_js_timeout", 30) or 30
+    js_wait_until = (cfg.get("crawl_js_wait_until") or "domcontentloaded").strip()
+    js_extra_wait_ms = get_int(cfg, "crawl_js_extra_wait_ms", 1500)
+    if js_extra_wait_ms is None:
+        js_extra_wait_ms = 1500
+    js_block_resources = get_bool(cfg, "crawl_js_block_resources", True)
     e = do_plot(
         same_domain_only=get_bool(cfg, "same_domain_only", True),
         max_fetch_for_edges=get_int(cfg, "max_fetch_for_edges", 500),
@@ -240,6 +289,12 @@ def _run_plot(cfg: dict, use_database: bool) -> None:
         timeout=10,
         polite_delay=0.15,
         use_database=use_database,
+        render_mode=render_mode,
+        js_timeout=js_timeout,
+        js_concurrency=js_concurrency,
+        js_wait_until=js_wait_until,
+        js_extra_wait_ms=js_extra_wait_ms,
+        js_block_resources=js_block_resources,
     )
     print("[Plot] Done.", flush=True)
     print(f"Plot data: {e}")

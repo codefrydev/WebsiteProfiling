@@ -18,6 +18,7 @@ UI terms agencies recognize, mapped to internal keys and data sources.
 | Technologies | `tech-stack` | Wappalyzer-style detection | BuiltWith |
 | Crawl summary | `charts` | Crawl aggregates | SF overview |
 | Internal links | `network` | Link graph | Ahrefs Internal Links |
+| Backlinks | `backlinks`, `gsc_links`, `gsc_links_data` | GSC Links CSV import (Google sample) | GSC Links report |
 | Page previews | `gallery` | Crawl excerpts | Visual QA |
 | Search Console | `search-performance`, `google_data` (scoped by `property_id`) | GSC API per property | Google Search Console |
 | Analytics (GA4) | `traffic`, `google_data` (scoped by `property_id`) | GA4 API per property | Google Analytics |
@@ -32,7 +33,10 @@ UI terms agencies recognize, mapped to internal keys and data sources.
 | Inlinks | `inlinks` | Crawl graph |
 | Outlinks | `outlinks` | Crawl graph |
 | Status code | `status` | HTTP |
+| Crawl rendering | `crawl_render_mode` on run; `fetch_method` per URL | `static`, `javascript`, or `auto` crawl config; `static` vs `rendered` per page |
 | Impressions | `gsc_impressions` | Search Console |
+| Referring domains | `top_linking_sites` | GSC Links CSV import |
+| External links to site | `sample_links`, `latest_links` | GSC Links CSV import |
 | Clicks | `gsc_clicks` | Search Console |
 | CTR | `gsc_ctr` | Search Console |
 | Average position | `gsc_position` | Search Console |

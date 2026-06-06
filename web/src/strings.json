@@ -94,6 +94,10 @@
       "label": "Search Console",
       "section": "Search & analytics"
     },
+    "backlinks": {
+      "label": "Backlinks",
+      "section": "Search & analytics"
+    },
     "traffic": {
       "label": "Analytics (GA4)",
       "section": "Search & analytics"
@@ -160,6 +164,9 @@
     "loadingSettings": "Loading settings…",
     "settingsTitle": "Audit settings",
     "settingsSubtitle": "Fine-tune crawl, audit report, Lighthouse, keywords, and AI options.",
+    "browserCrawlBannerTitle": "Headless browser not available",
+    "browserCrawlBannerHint": "JavaScript and Auto crawl modes need Playwright Python packages and Chromium. Run: pip install -r requirements-browser.txt. Ensure Chrome or Chromium is on PATH or set CHROME_PATH.",
+    "browserCrawlChecking": "Checking browser availability…",
     "saveSettings": "Save settings",
     "saveAndClose": "Save & close",
     "saving": "Saving…",
@@ -192,6 +199,18 @@
     "googlePropertyContextEmail": "Signed in as {email}",
     "googlePropertyGscGa4": "GSC: {gsc} · GA4: {ga4}",
     "googlePropertySyncSaving": "Updating Site URL…",
+    "gscLinksTitle": "Search Console Links (backlinks)",
+    "gscLinksDescription": "Import CSV exports from Google Search Console → Links. This is Google's sample of external sites linking to you — not crawl inlinks or a full web index.",
+    "gscLinksHelpUrl": "https://support.google.com/webmasters/answer/9049606",
+    "gscLinksHelpLabel": "GSC Links report help",
+    "gscLinksUploadLabel": "Upload GSC Links CSV",
+    "gscLinksUploadHint": "Export Top linking sites, Top linked pages, Top linking text, or Latest/More sample links from Search Console, then upload each file here.",
+    "gscLinksUploading": "Importing…",
+    "gscLinksUploadSuccess": "Import complete.",
+    "gscLinksUploadFailed": "Import failed: {message}",
+    "gscLinksLastImport": "Last import: {date}",
+    "gscLinksNoData": "No GSC Links import yet for this property.",
+    "gscLinksRowCounts": "{domains} referring domains · {pages} linked pages · {sample} sample links",
     "contentAiHint": "AI insights run when the audit report is built (optional).",
     "settingsSectionTabsLabel": "Settings sections",
     "settingsTabIntegrations": "Integrations",
@@ -1026,6 +1045,57 @@
       },
       "connectIntegrations": "Connect Google"
     },
+    "backlinks": {
+      "title": "Backlinks",
+      "subtitle": "External links to your site from Google Search Console Links import",
+      "disclaimer": "Google's curated sample of backlinks it knows about — not Ahrefs-style full index, not crawl inlinks, and nofollow is not split out. Data may lag indexing by weeks.",
+      "fetchedAt": "Imported {date}",
+      "emptyTitle": "No backlink data yet",
+      "emptyBody": "Export CSV files from Google Search Console → Links and import them in Integrations. OAuth is optional for CSV import; data is scoped to the selected property.",
+      "emptyIntegrationsHint": "Open Integrations from the top-right header → Search Console Links (backlinks).",
+      "tabs": {
+        "overview": "Overview",
+        "domains": "Referring domains",
+        "pages": "Linked pages",
+        "anchors": "Anchor text",
+        "sample": "Sample links"
+      },
+      "kpi": {
+        "referringDomains": "Referring domains",
+        "linkedPages": "Top linked pages",
+        "sampleLinks": "Sample links",
+        "latestLinks": "Latest links"
+      },
+      "table": {
+        "site": "Site",
+        "targetPage": "Target page",
+        "sourcePage": "Source page",
+        "anchorText": "Anchor text",
+        "links": "Links",
+        "targetPages": "Target pages",
+        "linkingSites": "Linking sites",
+        "discovered": "Discovered",
+        "inCrawl": "In crawl",
+        "yes": "Yes",
+        "no": "No",
+        "searchDomains": "Search domains…",
+        "searchPages": "Search target pages…",
+        "searchAnchors": "Search anchor text…",
+        "searchLinks": "Search URLs…",
+        "exportCsv": "Export CSV",
+        "noData": "No data for this tab",
+        "showingSlice": "Showing {from}–{to} of {total}",
+        "pageOf": "Page",
+        "of": "of",
+        "previous": "Previous",
+        "next": "Next",
+        "rowsPerPage": "{n} per page"
+      },
+      "overview": {
+        "topDomainsTitle": "Top referring domains",
+        "topPagesTitle": "Most linked pages on your site"
+      }
+    },
     "traffic": {
       "title": "Traffic & Engagement",
       "subtitle": "Google Analytics 4 sessions and engagement for {range}",
@@ -1427,7 +1497,13 @@
         "pagesLine": "{pages} URLs crawled (limit {max}).",
         "limitedNote": "The crawl limit was reached; this is not a full-site audit unless the limit covers your site.",
         "robotsLine": "{count} URLs blocked by robots.txt.",
-        "staticHtmlNote": "Static HTML only — links rendered only by JavaScript may be missing."
+        "staticHtmlNote": "Static HTML only — links rendered only by JavaScript may be missing.",
+        "javascriptNote": "JavaScript rendering enabled — pages were loaded in headless Chromium before analysis.",
+        "autoNote": "Auto rendering — static HTML first; headless Chromium used when a page looks like a JavaScript app shell.",
+        "fetchMethodMixLine": "{staticCount} static, {renderedCount} JavaScript-rendered.",
+        "jsConcurrencyLine": "JS parallel pages: {count}.",
+        "browserConsoleErrorsLine": "{pages} page(s) logged {errors} console error(s) during JavaScript rendering.",
+        "browserPageErrorsLine": "{pages} page(s) had uncaught JavaScript errors during rendering."
       },
       "googleStaleWarning": "Search Console & Analytics data is older than 7 days. Refresh from Integrations.",
       "googlePartialWarning": "Search Console or Analytics data is missing from the last sync.",
@@ -1869,6 +1945,19 @@
         "severityLow": "Low",
         "noMatchingWarnings": "No matching warnings for this page.",
         "resources": "Resources",
+        "browserConsoleTitle": "Browser console (JS crawl)",
+        "browserConsoleClean": "No console errors or uncaught exceptions were captured during JavaScript rendering.",
+        "browserConsoleMessages": "Console messages",
+        "browserUncaughtExceptions": "Uncaught exceptions",
+        "browserFailedRequests": "Failed network requests",
+        "browserThLevel": "Level",
+        "browserThMessage": "Message",
+        "browserThLocation": "Location",
+        "browserThUrl": "URL",
+        "browserThMethod": "Method",
+        "browserThFailure": "Failure",
+        "browserShowStack": "Show stack",
+        "browserHideStack": "Hide stack",
         "resourceChartLabels": [
           "Internal links",
           "External links",

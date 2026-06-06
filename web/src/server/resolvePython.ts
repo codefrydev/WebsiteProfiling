@@ -74,6 +74,34 @@ export function resolvePythonExecutable(
   return process.platform === 'win32' ? 'python' : 'python3';
 }
 
+/**
+ * Parse JSON from Python CLI stdout when log lines may precede the payload.
+ * Tries each non-empty line from the bottom; also handles `{...}` suffix on a line.
+ */
+export function parsePythonJsonStdout(stdout: string): Record<string, unknown> | null {
+  const lines = stdout.trim().split('\n').filter(Boolean);
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i].trim();
+    const candidates = [line];
+    const jsonStart = line.lastIndexOf('{');
+    if (jsonStart > 0) {
+      candidates.push(line.slice(jsonStart));
+    }
+    for (const candidate of candidates) {
+      if (!candidate.startsWith('{') && !candidate.startsWith('[')) continue;
+      try {
+        const parsed = JSON.parse(candidate) as unknown;
+        if (parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          return parsed as Record<string, unknown>;
+        }
+      } catch {
+        /* try next candidate */
+      }
+    }
+  }
+  return null;
+}
+
 export function formatPythonSpawnError(err: Error, resolvedPython: string, repoRoot: string): string {
   if (!/ENOENT/i.test(err.message)) {
     return err.message;

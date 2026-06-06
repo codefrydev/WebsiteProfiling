@@ -43,6 +43,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Python: base requirements + optional LLM API clients
 COPY requirements.txt /app/requirements.txt
 COPY requirements-llm.txt /app/requirements-llm.txt
+COPY requirements-browser.txt /app/requirements-browser.txt
 COPY alembic.ini /app/alembic.ini
 COPY alembic /app/alembic
 RUN --mount=type=cache,target=/root/.cache/pip \
@@ -50,6 +51,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
   && /opt/venv/bin/pip install --upgrade pip \
   && /opt/venv/bin/pip install -r /app/requirements.txt \
   && /opt/venv/bin/pip install -r /app/requirements-llm.txt \
+  && /opt/venv/bin/pip install -r /app/requirements-browser.txt \
   && ln -sf /opt/venv/bin/python /usr/local/bin/python \
   && ln -sf /opt/venv/bin/python /usr/local/bin/python3
 
@@ -66,7 +68,9 @@ RUN --mount=type=cache,target=/root/.npm \
     cd /app/web && npm ci
 
 # Application source
+COPY pytest.ini /app/pytest.ini
 COPY src /app/src
+COPY tests /app/tests
 COPY web /app/web
 COPY alembic /app/alembic
 COPY alembic.ini /app/alembic.ini

@@ -232,6 +232,12 @@ def build_edges_from_df(
     concurrency: int,
     timeout: int,
     polite_delay: float,
+    render_mode: str = "static",
+    js_timeout: int = 30,
+    js_concurrency: int = 3,
+    js_wait_until: str = "domcontentloaded",
+    js_extra_wait_ms: int = 1500,
+    js_block_resources: bool = True,
 ) -> list[tuple[str, str]]:
     """Build or load edges; return list of (from, to) tuples."""
     edges = load_edges(edges_csv) if (edges_csv or "").strip() else []
@@ -260,13 +266,37 @@ def build_edges_from_df(
     session = requests.Session()
     session.headers.update({"User-Agent": "WebsiteProfiling/1.0"})
     urls = df["url"].tolist()[:max_fetch_for_edges]
+    mode = (render_mode or "static").strip().lower()
+    use_js = mode in ("javascript", "auto")
+    fetcher = None
+    if use_js:
+        from ..crawl.fetchers import build_fetcher
+
+        fetcher = build_fetcher(
+            render_mode="javascript" if mode == "javascript" else "auto",
+            timeout=timeout,
+            user_agent="WebsiteProfiling/1.0",
+            session=session,
+            js_timeout=js_timeout,
+            js_concurrency=js_concurrency,
+            js_wait_until=js_wait_until,
+            js_extra_wait_ms=js_extra_wait_ms,
+            js_block_resources=js_block_resources,
+        )
 
     def fetch(src):
         try:
-            r = session.get(src, timeout=timeout, allow_redirects=True)
-            if r.status_code != 200 or not r.headers.get("Content-Type", "").lower().startswith("text/html"):
-                return []
-            soup = BeautifulSoup(r.text, "lxml")
+            if fetcher is not None:
+                r = fetcher.fetch(src)
+                if r.status != 200 or not r.text:
+                    return []
+                html = r.text
+            else:
+                resp = session.get(src, timeout=timeout, allow_redirects=True)
+                if resp.status_code != 200 or not resp.headers.get("Content-Type", "").lower().startswith("text/html"):
+                    return []
+                html = resp.text
+            soup = BeautifulSoup(html, "lxml")
             out = set()
             for a in soup.find_all("a", href=True):
                 ln = normalize_link(src, a["href"])
@@ -279,16 +309,20 @@ def build_edges_from_df(
         except Exception:
             return []
 
-    with ThreadPoolExecutor(max_workers=concurrency) as ex:
-        futures = {ex.submit(fetch, u): u for u in urls}
-        for f in tqdm(as_completed(futures), total=len(futures), desc="Extracting links"):
-            src = futures[f]
-            try:
-                outs = f.result()
-            except Exception:
-                outs = []
-            for t in outs:
-                edges.append((src, t))
+    try:
+        with ThreadPoolExecutor(max_workers=concurrency) as ex:
+            futures = {ex.submit(fetch, u): u for u in urls}
+            for f in tqdm(as_completed(futures), total=len(futures), desc="Extracting links"):
+                src = futures[f]
+                try:
+                    outs = f.result()
+                except Exception:
+                    outs = []
+                for t in outs:
+                    edges.append((src, t))
+    finally:
+        if fetcher is not None:
+            fetcher.close()
     return edges
 
 
@@ -830,6 +864,7 @@ def _build_report_metadata(
     ml_bundle: dict[str, Any],
     run_id: Optional[int],
     crawl_run_created_at: Optional[str],
+    gsc_links_data: Optional[dict[str, Any]] = None,
 ) -> dict[str, Any]:
     """Provenance and crawl scope for agency-facing audits."""
     sources: list[str] = ["crawl"]
@@ -840,6 +875,8 @@ def _build_report_metadata(
             sources.append("search_console")
         if google_data.get("ga4") or google_data.get("ga4_summary"):
             sources.append("analytics")
+    if gsc_links_data and "search_console" not in sources:
+        sources.append("search_console")
     llm_meta = ml_bundle.get("llm_meta")
     if isinstance(llm_meta, dict) and llm_meta.get("model"):
         sources.append("ai")
@@ -858,16 +895,37 @@ def _build_report_metadata(
     if not df.empty and "status" in df.columns:
         blocked = int((df["status"].astype(str) == "blocked_by_robots").sum())
 
+    render_mode = (str((config or {}).get("crawl_render_mode") or "static")).strip().lower()
+    js_concurrency = get_int(config or {}, "crawl_js_concurrency", 3) or 3
+    static_html_only = render_mode == "static"
+
+    crawl_scope: dict[str, Any] = {
+        "pages_crawled": pages_crawled,
+        "max_pages_configured": max_pages_cfg or pages_crawled,
+        "robots_blocked_count": blocked,
+        "static_html_only": static_html_only,
+        "render_mode": render_mode,
+        "js_concurrency": js_concurrency if not static_html_only else None,
+        "crawl_limited": bool(max_pages_cfg and pages_crawled >= max_pages_cfg),
+    }
+    if not df.empty and "fetch_method" in df.columns:
+        fm = df["fetch_method"].astype(str).str.strip().str.lower()
+        pages_static = int((fm == "static").sum())
+        pages_rendered = int((fm == "rendered").sum())
+        if render_mode == "auto" or pages_rendered > 0:
+            crawl_scope["pages_static"] = pages_static
+            crawl_scope["pages_rendered"] = pages_rendered
+
+    from ..crawl.fetchers.browser_diagnostics import aggregate_browser_diagnostics_df
+
+    browser_agg = aggregate_browser_diagnostics_df(df)
+    if browser_agg and (render_mode != "static" or browser_agg.get("total_console_errors", 0) > 0):
+        crawl_scope["browser_diagnostics"] = browser_agg
+
     meta: dict[str, Any] = {
         "data_sources": sources,
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "crawl_scope": {
-            "pages_crawled": pages_crawled,
-            "max_pages_configured": max_pages_cfg or pages_crawled,
-            "robots_blocked_count": blocked,
-            "static_html_only": True,
-            "crawl_limited": bool(max_pages_cfg and pages_crawled >= max_pages_cfg),
-        },
+        "crawl_scope": crawl_scope,
     }
     if run_id is not None:
         meta["crawl_run_id"] = run_id
@@ -881,6 +939,12 @@ def _build_report_metadata(
             meta["gsc_row_count"] = gsc.get("row_count")
     if keywords_data:
         meta["keywords_enriched_at"] = keywords_data.get("enriched_at") or keywords_data.get("fetched_at")
+    if gsc_links_data:
+        meta["gsc_links_imported_at"] = gsc_links_data.get("imported_at")
+        meta["gsc_links_referring_domains"] = len(gsc_links_data.get("top_linking_sites") or [])
+        sample_n = len(gsc_links_data.get("sample_links") or [])
+        latest_n = len(gsc_links_data.get("latest_links") or [])
+        meta["gsc_links_sample_count"] = sample_n + latest_n
     if isinstance(llm_meta, dict):
         meta["llm"] = llm_meta
     return meta
@@ -979,8 +1043,28 @@ def run_simple_report(
 
     if not edges and not df.empty:
         print("  Building edges from crawl data...", flush=True)
+        render_mode = (str((config or {}).get("crawl_render_mode") or "static")).strip().lower()
+        js_concurrency_cfg = get_int(config or {}, "crawl_js_concurrency", 3) or 3
+        js_timeout_cfg = get_int(config or {}, "crawl_js_timeout", 30) or 30
+        js_wait_until_cfg = (str((config or {}).get("crawl_js_wait_until") or "domcontentloaded")).strip()
+        js_extra_wait_ms_cfg = get_int(config or {}, "crawl_js_extra_wait_ms", 1500)
+        if js_extra_wait_ms_cfg is None:
+            js_extra_wait_ms_cfg = 1500
+        js_block_resources_cfg = get_bool(config or {}, "crawl_js_block_resources", True)
         edges = build_edges_from_df(
-            df, "", same_domain_only, max_fetch_for_edges, concurrency, timeout, 0.12
+            df,
+            "",
+            same_domain_only,
+            max_fetch_for_edges,
+            concurrency,
+            timeout,
+            0.12,
+            render_mode=render_mode,
+            js_timeout=js_timeout_cfg,
+            js_concurrency=js_concurrency_cfg,
+            js_wait_until=js_wait_until_cfg,
+            js_extra_wait_ms=js_extra_wait_ms_cfg,
+            js_block_resources=js_block_resources_cfg,
         )
         print(f"  Edges: {len(edges)}.", flush=True)
         if edges:
@@ -1264,6 +1348,14 @@ def run_simple_report(
         rec["page_analysis"] = pa_obj
         rec["internal_link_count"] = int(pa_obj.get("internal_link_count") or 0)
         rec["external_link_count"] = int(pa_obj.get("external_link_count") or 0)
+        from ..crawl.fetchers.browser_diagnostics import browser_summary_from_page_analysis
+
+        browser_counts = browser_summary_from_page_analysis(pa_obj)
+        rec["console_error_count"] = browser_counts["console_error_count"]
+        rec["page_error_count"] = browser_counts["page_error_count"]
+        rec["has_browser_errors"] = (
+            browser_counts["console_error_count"] > 0 or browser_counts["page_error_count"] > 0
+        )
 
         rec["lighthouse"] = lighthouse_for_url(lighthouse_by_url or {}, u)
 
@@ -1433,11 +1525,17 @@ def run_simple_report(
     with _db() as conn:
         google_data: Optional[dict[str, Any]] = None
         kw_data: Optional[dict[str, Any]] = None
+        gsc_links: Optional[dict[str, Any]] = None
+        property_id: Optional[int] = None
         try:
             from ..commands.config_resolve import resolve_property_id_from_cfg
-            from ..integrations.google.store import read_latest_google_data
 
             property_id = resolve_property_id_from_cfg(config, conn)
+        except Exception:
+            property_id = None
+        try:
+            from ..integrations.google.store import read_latest_google_data
+
             google_data = read_latest_google_data(conn, property_id=property_id)
             if google_data:
                 report_data["google"] = google_data
@@ -1445,6 +1543,8 @@ def run_simple_report(
             pass
         try:
             from ..integrations.google.keyword_store import read_latest_keyword_data
+            from ..integrations.google.gsc_links_store import read_latest_gsc_links_data
+
             kw_data = read_latest_keyword_data(conn, property_id)
             if kw_data:
                 rows = kw_data.get("rows") or []
@@ -1452,6 +1552,9 @@ def run_simple_report(
                     rows = rows[:500]
                     kw_data = {**kw_data, "rows": rows}
                 report_data["keywords"] = kw_data
+            gsc_links = read_latest_gsc_links_data(conn, property_id)
+            if gsc_links:
+                report_data["gsc_links"] = gsc_links
         except Exception:
             pass
         report_data["report_meta"] = _build_report_metadata(
@@ -1463,6 +1566,7 @@ def run_simple_report(
             ml_bundle,
             run_id,
             crawl_run_created_at,
+            gsc_links,
         )
         db_write_report_payload(conn, report_data)
     return "postgresql"

@@ -16,8 +16,11 @@ Audit category scores (0–100) are **internal audit scores**, not Google rankin
 
 ## Crawl limitations
 
-- Crawl uses **HTTP GET + static HTML parsing** only (no JavaScript execution). See [Docs.md](../Docs.md).
-- Client-rendered links and SPAs may be under-represented; reports must show crawl scope (pages crawled vs limit, robots blocks).
+- Default crawl uses **HTTP GET + static HTML parsing** (no JavaScript execution). `crawl_render_mode = static` (default).
+- Optional **JavaScript rendering** (`crawl_render_mode = javascript`) loads every page in headless Chromium before parsing — slower (~10–20×) and heavier on memory, but required for many React, Vue, Next.js, Angular, Svelte, and Shopify themes.
+- **Auto rendering** (`crawl_render_mode = auto`) fetches static HTML first, then uses browser fallback when SPA shell heuristics or low outlink counts suggest client-rendered content. Per-page `fetch_method` (`static` vs `rendered`) is stored on crawl rows for provenance.
+- Client-rendered links and SPAs may be under-represented in static-only mode; reports show crawl scope (pages crawled vs limit, robots blocks, render mode, browser diagnostic counts when applicable).
+- JS and auto modes require Playwright + Chromium; the Run audit UI checks availability via `GET /api/crawl/browser-status` before starting a job.
 - Only crawl sites you are **authorized** to test. Respect `robots.txt` unless an admin explicitly overrides for owned properties.
 
 ## Security scanning

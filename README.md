@@ -32,10 +32,11 @@ Open [http://localhost:3000/home](http://localhost:3000/home).
 
 ```bash
 ./local-test              # before push: full CI parity (DB + pytest + web)
-./local-test python         # backend only: pytest + CLI smoke
-./local-test web            # frontend only: typecheck, lint, vitest
-./local-test quick          # fast loop: skip Docker start; needs DB already up
-./local-test all --no-cov   # full run without pytest coverage gate
+./local-test python       # backend: pytest (80% coverage) + browser pytest + CLI smoke
+./local-test browser      # JS crawl integration tests (skips if Chromium unavailable)
+./local-test web          # frontend: typecheck, lint, vitest
+./local-test quick        # fast loop; needs DB already up (no coverage gate)
+./local-test all --no-cov # full run without pytest coverage gate
 ```
 
 ## Contributing
@@ -52,6 +53,8 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and 
 - [docs/COMPANY_STANDARDS.md](docs/COMPANY_STANDARDS.md) — data and security policy
 
 Google Search Console / Analytics: connect via **Integrations** (gear icon) in the app.
+
+**JavaScript crawl (optional):** In Audit settings, set **Crawl rendering** to `javascript` (always headless Chromium) or `auto` (static first, browser when SPA heuristics match). Install locally: `pip install -r requirements-browser.txt` and Chromium on `PATH` or `CHROME_PATH` (included in Docker). The UI preflights via `GET /api/crawl/browser-status` before runs when JS/auto is selected.
 
 Production: `docker-compose.prod.yml` (set `POSTGRES_PASSWORD`, `AUTH_SECRET`).
 

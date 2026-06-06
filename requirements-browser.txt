@@ -1,0 +1,2 @@
+# Optional: JavaScript rendering crawl (headless Chromium via Playwright)
+playwright>=1.49.0

@@ -360,6 +360,21 @@ export default function GoogleIntegrationsPanel({
   const [fetchJobStatus, setFetchJobStatus] = useState('');
   const fetchPollStopRef = useRef<(() => void) | null>(null);
 
+  const [linksStatus, setLinksStatus] = useState<{
+    hasData?: boolean;
+    lastImportedAt?: string;
+    exportTypes?: string[];
+    rowCounts?: Record<string, number>;
+    referringDomainCount?: number;
+    topLinkedPageCount?: number;
+    sampleLinkCount?: number;
+    latestLinkCount?: number;
+  } | null>(null);
+  const [loadingLinksStatus, setLoadingLinksStatus] = useState(false);
+  const [uploadingLinks, setUploadingLinks] = useState(false);
+  const [linksUploadMessage, setLinksUploadMessage] = useState('');
+  const linksFileInputRef = useRef<HTMLInputElement | null>(null);
+
   // Advanced accordion (paste refresh token)
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [refreshToken, setRefreshToken] = useState('');
@@ -425,6 +440,63 @@ export default function GoogleIntegrationsPanel({
   useEffect(() => {
     void fetchStatus();
   }, [fetchStatus]);
+
+  const fetchLinksStatus = useCallback(async () => {
+    if (effectivePropertyId == null || !endpoints.linksStatus) {
+      setLinksStatus(null);
+      return;
+    }
+    setLoadingLinksStatus(true);
+    try {
+      const res = await fetch(endpoints.linksStatus);
+      if (res.ok) {
+        setLinksStatus((await res.json()) as typeof linksStatus);
+      }
+    } catch {
+      setLinksStatus(null);
+    } finally {
+      setLoadingLinksStatus(false);
+    }
+  }, [effectivePropertyId, endpoints.linksStatus]);
+
+  useEffect(() => {
+    void fetchLinksStatus();
+  }, [fetchLinksStatus]);
+
+  const handleLinksFile = useCallback(
+    async (file: File) => {
+      if (effectivePropertyId == null || !endpoints.linksImport) return;
+      setUploadingLinks(true);
+      setLinksUploadMessage('');
+      try {
+        const fileContent = await file.text();
+        const res = await fetch(endpoints.linksImport, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileContent, fileName: file.name }),
+        });
+        const data = (await res.json()) as { ok?: boolean; error?: string };
+        if (!res.ok || !data.ok) {
+          setLinksUploadMessage(
+            format(s.gscLinksUploadFailed, { message: data.error || res.statusText }),
+          );
+          return;
+        }
+        setLinksUploadMessage(s.gscLinksUploadSuccess);
+        await fetchLinksStatus();
+      } catch (e) {
+        setLinksUploadMessage(
+          format(s.gscLinksUploadFailed, {
+            message: e instanceof Error ? e.message : String(e),
+          }),
+        );
+      } finally {
+        setUploadingLinks(false);
+        if (linksFileInputRef.current) linksFileInputRef.current.value = '';
+      }
+    },
+    [effectivePropertyId, endpoints.linksImport, fetchLinksStatus, s.gscLinksUploadFailed, s.gscLinksUploadSuccess],
+  );
 
   useEffect(() => {
     if (initialToast) setToast(initialToast);
@@ -1110,6 +1182,85 @@ export default function GoogleIntegrationsPanel({
                     {fetchLog}
                   </pre>
                 </div>
+              ) : null}
+            </SetupStep>
+          ) : null}
+
+          {effectivePropertyId != null && endpoints.linksImport ? (
+            <SetupStep
+              step={4}
+              title={s.gscLinksTitle}
+              description={s.gscLinksDescription}
+              done={Boolean(linksStatus?.hasData)}
+              icon={Link2}
+            >
+              <p className="text-xs text-muted-foreground">
+                <a
+                  href={s.gscLinksHelpUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-link hover:underline"
+                >
+                  {s.gscLinksHelpLabel}
+                  <ExternalLink className="h-3 w-3" aria-hidden />
+                </a>
+              </p>
+              <p className="text-xs text-muted-foreground">{s.gscLinksUploadHint}</p>
+
+              {loadingLinksStatus ? (
+                <p className="text-xs text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden />
+                  Loading import status…
+                </p>
+              ) : linksStatus?.hasData && linksStatus.lastImportedAt ? (
+                <p className="text-xs text-muted-foreground">
+                  {format(s.gscLinksLastImport, {
+                    date: new Date(String(linksStatus.lastImportedAt)).toLocaleString(),
+                  })}
+                  {' · '}
+                  {format(s.gscLinksRowCounts, {
+                    domains: linksStatus.referringDomainCount ?? 0,
+                    pages: linksStatus.topLinkedPageCount ?? 0,
+                    sample:
+                      (linksStatus.sampleLinkCount ?? 0) + (linksStatus.latestLinkCount ?? 0),
+                  })}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">{s.gscLinksNoData}</p>
+              )}
+
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  ref={linksFileInputRef}
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void handleLinksFile(file);
+                  }}
+                />
+                <Button
+                  variant="secondary"
+                  disabled={uploadingLinks}
+                  onClick={() => linksFileInputRef.current?.click()}
+                >
+                  {uploadingLinks ? (
+                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                  ) : null}
+                  {uploadingLinks ? s.gscLinksUploading : s.gscLinksUploadLabel}
+                </Button>
+              </div>
+              {linksUploadMessage ? (
+                <p
+                  className={`text-xs ${
+                    linksUploadMessage === s.gscLinksUploadSuccess
+                      ? 'text-green-700 dark:text-green-400'
+                      : 'text-red-700 dark:text-red-400'
+                  }`}
+                >
+                  {linksUploadMessage}
+                </p>
               ) : null}
             </SetupStep>
           ) : null}

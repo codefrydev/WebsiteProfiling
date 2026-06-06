@@ -126,3 +126,77 @@ def test_lighthouse_store_summary_and_run_id() -> None:
     rid = write_lighthouse_run(conn, url="u", strategy="mobile", run_index=0, data={"x": 1})  # type: ignore[arg-type]
     assert rid == 9
 
+
+class _LegacyConn:
+    """Minimal conn used by config/llm/report store error-path tests."""
+
+    def __init__(self, row=None, rows=None, boom=False):
+        self.row = row
+        self.rows = rows or []
+        self.boom = boom
+        self.commits = 0
+        self.executed = []
+
+    def execute(self, sql, params=None):
+        self.executed.append((sql, params))
+        if self.boom:
+            raise RuntimeError("boom")
+        return self
+
+    def fetchone(self):
+        return self.row
+
+    def fetchall(self):
+        return list(self.rows)
+
+    def commit(self):
+        self.commits += 1
+
+    def transaction(self):
+        class _CM:
+            def __enter__(self_non):
+                return None
+
+            def __exit__(self_non, _t, _v, _tb):
+                return False
+
+        return _CM()
+
+
+def test_config_store_read_error_fallbacks() -> None:
+    from website_profiling.db.config_store import read_llm_config, read_pipeline_config
+
+    known, unknown = read_pipeline_config(_LegacyConn(boom=True))  # type: ignore[arg-type]
+    assert known == {}
+    assert unknown == []
+    assert read_llm_config(_LegacyConn(boom=True)) == {}  # type: ignore[arg-type]
+
+
+def test_config_store_write_llm_config() -> None:
+    from website_profiling.db.config_store import write_llm_config
+
+    conn = _LegacyConn()
+    write_llm_config(conn, {"k": "v"}, secret_keys={"k"})  # type: ignore[arg-type]
+    assert any("INSERT INTO llm_config" in s for s, _ in conn.executed)
+
+
+def test_llm_cache_write_and_batch_read_error() -> None:
+    from website_profiling.db.llm_cache_store import read_llm_cache_batch, write_llm_cache
+
+    conn = _LegacyConn()
+    write_llm_cache(conn, "k", '{"a":1}')  # type: ignore[arg-type]
+    write_llm_cache(conn, "k", "not-json")  # type: ignore[arg-type]
+    assert conn.commits == 2
+    assert read_llm_cache_batch(_LegacyConn(boom=True), ["k"]) == {}  # type: ignore[arg-type]
+
+
+def test_report_store_write_and_read_none() -> None:
+    from website_profiling.db.report_store import _extract_hostname, read_report_payload, write_report_payload
+
+    conn = _LegacyConn(row=None)
+    assert read_report_payload(conn) is None  # type: ignore[arg-type]
+    conn2 = _LegacyConn()
+    write_report_payload(conn2, {"site_name": "S", "top_pages": [{"url": "https://x.com"}]})  # type: ignore[arg-type]
+    assert conn2.commits == 1
+    assert _extract_hostname("https://X.com/a") == "x.com"
+

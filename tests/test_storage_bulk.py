@@ -51,3 +51,39 @@ def test_write_crawl_dataframe_executemany(pg_conn):
     write_crawl(pg_conn, df, crawl_run_id=run_id)
     out = read_crawl(pg_conn, run_id)
     assert len(out) == 50
+
+
+def test_write_crawl_persists_fetch_method(pg_conn):
+    run_id = create_crawl_run(pg_conn, "https://fetch.example.com")
+    df = pd.DataFrame(
+        [
+            {
+                "url": "https://fetch.example.com/rendered",
+                "status": "200",
+                "title": "Rendered",
+                "fetch_method": "rendered",
+            },
+            {
+                "url": "https://fetch.example.com/static",
+                "status": "200",
+                "title": "Static",
+            },
+        ]
+    )
+    write_crawl(pg_conn, df, crawl_run_id=run_id)
+
+    cur = pg_conn.execute(
+        "SELECT url, fetch_method FROM crawl_results WHERE crawl_run_id = %s ORDER BY url",
+        (run_id,),
+    )
+    rows = cur.fetchall()
+    assert len(rows) == 2
+    by_url = {r["url"]: r["fetch_method"] for r in rows}
+    assert by_url["https://fetch.example.com/rendered"] == "rendered"
+    assert by_url["https://fetch.example.com/static"] == "static"
+
+    df = read_crawl(pg_conn, run_id)
+    assert len(df) == 2
+    by_url_df = df.set_index("url")["fetch_method"].to_dict()
+    assert by_url_df["https://fetch.example.com/rendered"] == "rendered"
+    assert by_url_df["https://fetch.example.com/static"] == "static"

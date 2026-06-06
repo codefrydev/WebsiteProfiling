@@ -1,3 +1,4 @@
+"""Unit tests for crawl_store, lighthouse_store, and google_cmd branches."""
 from __future__ import annotations
 
 import argparse
@@ -22,6 +23,16 @@ class C:
             return C(row={"id": 7})
         if "ORDER BY id DESC LIMIT 1" in sql:
             return C(row={"id": 2})
+        if "SELECT url, fetch_method, data FROM crawl_results" in sql:
+            return C(
+                rows=[
+                    {
+                        "url": "u",
+                        "fetch_method": "static",
+                        "data": {"viewport_present": True, "noindex": False, "has_schema": True},
+                    }
+                ]
+            )
         if "SELECT url, data FROM crawl_results" in sql:
             return C(rows=[{"url": "u", "data": {"viewport_present": True, "noindex": False, "has_schema": True}}])
         if "SELECT from_url, to_url FROM edges" in sql:

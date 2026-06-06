@@ -130,8 +130,6 @@ def compute_duplicate_groups(
     parent: dict[str, str] = {}
 
     def find(x: str) -> str:
-        if x not in parent:
-            parent[x] = x
         if parent[x] != x:
             parent[x] = find(parent[x])
         return parent[x]

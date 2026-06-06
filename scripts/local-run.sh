@@ -23,6 +23,7 @@ export DATABASE_URL="${DATABASE_URL:-postgres://${PG_USER}:${PG_PASSWORD}@127.0.
 export DATA_DIR="${DATA_DIR:-$ROOT/data}"
 export PYTHON="${PYTHON:-$ROOT/.venv/bin/python}"
 export WEBSITE_PROFILING_ROOT="$ROOT"
+export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$ROOT/src"
 
 VENV="$ROOT/.venv"
 WEB="$ROOT/web"
@@ -82,6 +83,7 @@ cmd_venv() {
   fi
   log "Installing Python dependencies"
   "$VENV/bin/pip" install -q -r "$ROOT/requirements.txt"
+  "$VENV/bin/pip" install -q -r "$ROOT/requirements-browser.txt"
 }
 
 cmd_migrate() {
@@ -99,10 +101,25 @@ cmd_web_deps() {
   fi
 }
 
+cmd_browser_deps() {
+  [[ -x "$VENV/bin/python" ]] || cmd_venv
+  log "Ensuring Playwright + Chromium for JS crawl"
+  if ! "$VENV/bin/python" -c "
+from website_profiling.crawl.fetchers import ensure_browser_deps
+import json, sys
+status = ensure_browser_deps()
+print(json.dumps(status))
+sys.exit(0 if status.get('ok') else 1)
+"; then
+    warn "Browser deps unavailable — JS/auto crawl disabled until Playwright + Chromium install successfully"
+  fi
+}
+
 cmd_setup() {
   mkdir -p "$DATA_DIR"
   cmd_db
   cmd_venv
+  cmd_browser_deps
   cmd_migrate
   cmd_web_deps
   log "Setup complete."
@@ -114,6 +131,7 @@ cmd_start() {
   mkdir -p "$DATA_DIR"
   cmd_db
   [[ -x "$VENV/bin/alembic" ]] || cmd_venv
+  cmd_browser_deps
   log "Ensuring migrations are up to date"
   "$VENV/bin/alembic" upgrade head
   cmd_web_deps
@@ -122,7 +140,7 @@ cmd_start() {
   log "DATA_DIR=$DATA_DIR"
   log "PYTHON=$PYTHON"
   cd "$WEB"
-  export DATABASE_URL DATA_DIR PYTHON WEBSITE_PROFILING_ROOT
+  export DATABASE_URL DATA_DIR PYTHON WEBSITE_PROFILING_ROOT PYTHONPATH
   exec npm run dev
 }
 
@@ -155,7 +173,7 @@ Environment overrides (optional):
 After start, open: http://localhost:3000/home
 Run audits via sidebar "Run audit" (bottom-right FAB).
 
-Run CI-style tests: ./local-test (see ./local-test help).
+Run CI-style tests: ./local-test (see ./local-test help). JS crawl integration: ./local-test browser.
 EOF
 }
 

@@ -17,5 +17,5 @@ def test_cli_help_lists_commands():
         timeout=15,
     )
     assert proc.returncode == 0
-    for cmd in ("crawl", "report", "plot", "lighthouse", "keywords", "warnings", "enrich", "google"):
+    for cmd in ("crawl", "report", "plot", "lighthouse", "keywords", "warnings", "enrich", "google", "gsc-links-import"):
         assert cmd in proc.stdout

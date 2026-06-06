@@ -7,6 +7,7 @@ from .commands import (
     config_resolve,
     enrich_cmd,
     google_cmd,
+    gsc_links_cmd,
     keywords_cmd,
     lighthouse_cmd,
     page_coach_cmd,
@@ -33,6 +34,8 @@ def main() -> None:
         enrich_cmd.run(cfg, args)
     elif args.command == "google":
         google_cmd.run(cfg, cwd, path, args)
+    elif args.command == "gsc-links-import":
+        gsc_links_cmd.run(cfg, args)
     elif args.command == "page-live":
         page_live_cmd.run(cfg, cwd, args)
     elif args.command == "page-coach":

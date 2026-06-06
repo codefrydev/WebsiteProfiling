@@ -44,6 +44,12 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build image
         run: docker build -t website-profiling:ci .
+      - name: Browser crawl tests in image
+        run: |
+          docker run --rm \
+            -e DATABASE_URL=postgres://profiling:profiling@localhost:5432/website_profiling \
+            website-profiling:ci \
+            /opt/venv/bin/pytest tests/test_crawl_fetchers.py tests/test_crawler_browser_e2e.py -m browser -q -o addopts=
 
   web:
     runs-on: ubuntu-latest

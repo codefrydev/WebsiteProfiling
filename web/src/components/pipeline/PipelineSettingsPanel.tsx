@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Loader2, Save, X } from 'lucide-react';
 import { strings, format } from '@/lib/strings';
 import type { IntegrationToast } from '@/types/api';
-import { PIPELINE_CONFIG_SECTIONS } from '@/lib/pipelineConfigSchema';
+import { crawlRenderModeUsesBrowser } from '@/lib/browserCrawlStatus';
+import { PIPELINE_CONFIG_SECTIONS, isPipelineFieldVisible } from '@/lib/pipelineConfigSchema';
 import { LLM_CONFIG_SECTIONS } from '@/lib/llmConfigSchema';
 import { usePipeline } from '@/context/PipelineContext';
 import Button from '@/components/Button';
@@ -40,7 +41,7 @@ function ConfigSectionFields({
 }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {section.fields.map((f) => (
+      {section.fields.filter((f) => isPipelineFieldVisible(f, values)).map((f) => (
         <ConfigField
           key={f.key}
           field={f}
@@ -112,7 +113,13 @@ export default function PipelineSettingsPanel({
     setCustomCommand,
     resetConfig,
     dismissLegacyBanner,
+    browserCrawlStatus,
+    browserCrawlChecking,
   } = usePipeline();
+
+  const showBrowserCrawlBanner =
+    crawlRenderModeUsesBrowser(configState) &&
+    (browserCrawlChecking || (browserCrawlStatus != null && !browserCrawlStatus.ok));
 
   const group = PIPELINE_SETTINGS_GROUPS.find((g) => g.id === activeGroup);
   const showLegacyBanner = configSource === 'legacy' && !legacyBannerDismissed && activeGroup === 'crawl-report';
@@ -300,6 +307,18 @@ export default function PipelineSettingsPanel({
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
+      {showBrowserCrawlBanner ? (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <p className="text-sm font-medium text-amber-950 dark:text-amber-100/90">
+            {s.browserCrawlBannerTitle}
+          </p>
+          <p className="mt-1 text-sm text-amber-900/90 dark:text-amber-100/80">
+            {browserCrawlChecking
+              ? s.browserCrawlChecking
+              : browserCrawlStatus?.message?.trim() || s.browserCrawlBannerHint}
+          </p>
+        </div>
+      ) : null}
       {showLegacyBanner ? (
         <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
           <p className="flex-1 text-sm text-amber-950 dark:text-amber-100/90">{s.legacyBanner}</p>

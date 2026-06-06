@@ -20,6 +20,7 @@ import {
   Images,
   FolderTree,
   TrendingUp,
+  Link2,
   Key,
   ArrowLeftRight,
   FileDown,
@@ -62,6 +63,7 @@ const ContentAnalytics = dynamic(() => import('./views/ContentAnalytics'), { loa
 const TechStack = dynamic(() => import('./views/TechStack'), { loading: () => viewLoading() });
 const Gallery = dynamic(() => import('./views/Gallery'), { loading: () => viewLoading() });
 const SearchPerformance = dynamic(() => import('./views/SearchPerformance'), { loading: () => viewLoading() });
+const Backlinks = dynamic(() => import('./views/Backlinks'), { loading: () => viewLoading() });
 const Traffic = dynamic(() => import('./views/Traffic'), { loading: () => viewLoading() });
 const KeywordsExplorer = dynamic(() => import('./views/KeywordsExplorer'), { loading: () => viewLoading() });
 const ExportReport = dynamic(() => import('./views/ExportReport'), { loading: () => viewLoading() });
@@ -113,6 +115,7 @@ const VIEW_CONFIG: ViewConfigEntry[] = [
   { id: 'network', component: Network as ComponentType<CurrentViewProps>, icon: Share2 },
   { id: 'gallery', component: Gallery as ComponentType<CurrentViewProps>, icon: Images },
   { id: 'search-performance', component: SearchPerformance as ComponentType<CurrentViewProps>, icon: TrendingUp },
+  { id: 'backlinks', component: Backlinks as ComponentType<CurrentViewProps>, icon: Link2 },
   { id: 'traffic', component: Traffic as ComponentType<CurrentViewProps>, icon: BarChart2 },
   { id: 'keywords-explorer', component: KeywordsExplorer as ComponentType<CurrentViewProps>, icon: Key },
 ];

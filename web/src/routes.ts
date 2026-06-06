@@ -15,6 +15,7 @@ export type ViewId =
   | 'network'
   | 'gallery'
   | 'search-performance'
+  | 'backlinks'
   | 'traffic'
   | 'keywords-explorer'
   | 'compare'
@@ -36,6 +37,7 @@ const VIEW_IDS = new Set<string>([
   'network',
   'gallery',
   'search-performance',
+  'backlinks',
   'traffic',
   'keywords-explorer',
   'compare',
