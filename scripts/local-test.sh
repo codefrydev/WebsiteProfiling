@@ -21,6 +21,7 @@ PG_DB="${WP_PG_DB:-website_profiling}"
 export DATABASE_URL="${DATABASE_URL:-postgres://${PG_USER}:${PG_PASSWORD}@127.0.0.1:${PG_PORT}/${PG_DB}}"
 export DATA_DIR="${DATA_DIR:-$ROOT/data}"
 export WEBSITE_PROFILING_ROOT="$ROOT"
+export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$ROOT/src"
 
 VENV="$ROOT/.venv"
 WEB="$ROOT/web"
@@ -106,7 +107,7 @@ run_pytest() {
     log "Pytest (tests/ -q --no-cov)"
     "$VENV/bin/pytest" tests/ -q --no-cov
   else
-    log "Pytest (tests/ -q, 80% coverage gate — same as CI)"
+    log "Pytest (tests/ -q, 100% in-scope coverage gate — same as CI)"
     "$VENV/bin/pytest" tests/ -q
   fi
 }

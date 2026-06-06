@@ -59,3 +59,28 @@ class FakeConn:
     def transaction(self) -> Iterator[None]:
         yield None
 
+
+class CrawlConn(FakeConn):
+    """FakeConn with fetchone/fetchall routing for crawl_store SQL patterns."""
+
+    def __init__(self, *, fetchone=None, fetchall=None, boom_execute: bool = False) -> None:
+        super().__init__()
+        self._fetchone = fetchone
+        self._fetchall = fetchall or []
+        self.boom_execute = boom_execute
+        self._cursor = FakeCursor(fetchone_value=fetchone, fetchall_value=fetchall)
+
+    def execute(self, sql: str, params: tuple[Any, ...] | None = None) -> FakeCursor:
+        self.executed.append((sql, params))
+        if self.boom_execute:
+            raise RuntimeError("boom")
+        if "RETURNING id" in sql:
+            self._cursor = FakeCursor(fetchone_value=self._fetchone or {"id": 1})
+        elif "SELECT id FROM crawl_runs" in sql:
+            self._cursor = FakeCursor(fetchone_value=self._fetchone)
+        elif "FROM crawl_results" in sql or "FROM edges" in sql or "FROM nodes" in sql:
+            self._cursor = FakeCursor(fetchall_value=self._fetchall)
+        elif "FROM crawl_runs WHERE" in sql:
+            self._cursor = FakeCursor(fetchone_value=self._fetchone)
+        return self._cursor
+

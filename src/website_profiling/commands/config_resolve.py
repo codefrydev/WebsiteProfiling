@@ -181,13 +181,21 @@ def resolve_config(args: argparse.Namespace) -> tuple[dict[str, str], str]:
 
         cwd = get_data_dir()
         if cfg:
-            print("[Config] Loaded from pipeline_config table (PostgreSQL)", flush=True)
+            print(
+                "[Config] Loaded from pipeline_config table (PostgreSQL)",
+                file=sys.stderr,
+                flush=True,
+            )
         else:
             shadow = shadow_config_path()
             if os.path.isfile(shadow):
                 cfg = load_config(shadow)
                 cwd = os.path.dirname(shadow) or os.getcwd()
-                print(f"[Config] Loaded from shadow file ({shadow})", flush=True)
+                print(
+                    f"[Config] Loaded from shadow file ({shadow})",
+                    file=sys.stderr,
+                    flush=True,
+                )
             else:
                 print(
                     "No audit settings found. Open Run audit in the web app, "

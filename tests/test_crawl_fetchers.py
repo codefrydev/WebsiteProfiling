@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from website_profiling.crawl.fetchers.base import FetchResult
+from website_profiling.crawl.fetchers.browser_deps import ensure_browser_deps
 from website_profiling.crawl.fetchers.factory import browser_status, build_fetcher, validate_browser_available
 from website_profiling.crawl.fetchers.spa_heuristics import needs_js_render, needs_js_render_after_parse
 from website_profiling.crawl.fetchers.static import StaticFetcher
@@ -101,6 +102,7 @@ def test_build_fetcher_static_mode():
 def test_validate_browser_available_raises_without_playwright(monkeypatch):
     import builtins
 
+    monkeypatch.setenv("WP_SKIP_BROWSER_AUTO_INSTALL", "1")
     real_import = builtins.__import__
 
     def mock_import(name, globals=None, locals=None, fromlist=(), level=0):
@@ -215,15 +217,204 @@ def test_browser_status_ok_when_chromium_available(
     monkeypatch.setitem(sys.modules, "playwright", types.ModuleType("playwright"))
     monkeypatch.setenv("CHROME_PATH", env_chrome_path)
     monkeypatch.setattr(
-        "website_profiling.crawl.fetchers.factory.os.path.isfile",
+        "website_profiling.crawl.fetchers.browser_deps.os.path.isfile",
         lambda path: isfile_return and path == env_chrome_path,
     )
     monkeypatch.setattr(
-        "website_profiling.crawl.fetchers.factory.shutil.which",
+        "website_profiling.crawl.fetchers.browser_deps.shutil.which",
         lambda _name: which_return,
     )
     status = browser_status()
     assert status["ok"] is True
+
+
+def test_ensure_browser_deps_skips_install_when_disabled(monkeypatch):
+    monkeypatch.setenv("WP_SKIP_BROWSER_AUTO_INSTALL", "1")
+    monkeypatch.setattr(
+        "website_profiling.crawl.fetchers.browser_deps.browser_status",
+        lambda: {"ok": False, "message": "missing"},
+    )
+    monkeypatch.setattr(
+        "website_profiling.crawl.fetchers.browser_deps._pip_install_browser_requirements",
+        lambda: (_ for _ in ()).throw(AssertionError("should not pip install")),
+    )
+    status = ensure_browser_deps()
+    assert status["ok"] is False
+
+
+def test_repo_root_uses_website_profiling_root_env(monkeypatch, tmp_path):
+    from website_profiling.crawl.fetchers import browser_deps
+
+    monkeypatch.setenv("WEBSITE_PROFILING_ROOT", str(tmp_path))
+    assert browser_deps._repo_root() == tmp_path
+
+
+def test_repo_root_defaults_to_project_root(monkeypatch):
+    from website_profiling.crawl.fetchers import browser_deps
+
+    monkeypatch.delenv("WEBSITE_PROFILING_ROOT", raising=False)
+    root = browser_deps._repo_root()
+    assert (root / "requirements-browser.txt").is_file()
+
+
+def test_playwright_chromium_unavailable_without_playwright(monkeypatch):
+    from website_profiling.crawl.fetchers import browser_deps
+
+    monkeypatch.setattr(browser_deps, "_playwright_importable", lambda: False)
+    assert browser_deps._playwright_chromium_available() is False
+
+
+def test_chromium_available_via_playwright_executable(monkeypatch):
+    from website_profiling.crawl.fetchers import browser_deps
+
+    monkeypatch.setattr(browser_deps, "_system_chromium_available", lambda: False)
+    monkeypatch.setattr(browser_deps, "_playwright_importable", lambda: True)
+
+    class FakeChromium:
+        executable_path = "/tmp/fake-chromium"
+
+    class FakePlaywright:
+        chromium = FakeChromium()
+
+    class FakeContext:
+        def __enter__(self):
+            return FakePlaywright()
+
+        def __exit__(self, *_args):
+            return False
+
+    monkeypatch.setattr(
+        "playwright.sync_api.sync_playwright",
+        lambda: FakeContext(),
+        raising=False,
+    )
+    import sys
+    import types
+
+    sync_api = types.ModuleType("playwright.sync_api")
+    sync_api.sync_playwright = lambda: FakeContext()
+    playwright_mod = types.ModuleType("playwright")
+    playwright_mod.sync_api = sync_api
+    monkeypatch.setitem(sys.modules, "playwright", playwright_mod)
+    monkeypatch.setitem(sys.modules, "playwright.sync_api", sync_api)
+    monkeypatch.setattr(
+        browser_deps.os.path,
+        "isfile",
+        lambda path: path == "/tmp/fake-chromium",
+    )
+    assert browser_deps.chromium_available() is True
+
+
+def test_playwright_chromium_available_returns_false_on_error(monkeypatch):
+    from website_profiling.crawl.fetchers import browser_deps
+
+    monkeypatch.setattr(browser_deps, "_playwright_importable", lambda: True)
+
+    def boom():
+        raise RuntimeError("playwright broken")
+
+    import sys
+    import types
+
+    sync_api = types.ModuleType("playwright.sync_api")
+    sync_api.sync_playwright = boom
+    monkeypatch.setitem(sys.modules, "playwright", types.ModuleType("playwright"))
+    monkeypatch.setitem(sys.modules, "playwright.sync_api", sync_api)
+    assert browser_deps._playwright_chromium_available() is False
+
+
+def test_browser_status_missing_chromium_with_playwright(monkeypatch):
+    import sys
+    import types
+
+    monkeypatch.setitem(sys.modules, "playwright", types.ModuleType("playwright"))
+    monkeypatch.setattr(
+        "website_profiling.crawl.fetchers.browser_deps.chromium_available",
+        lambda: False,
+    )
+    status = browser_status()
+    assert status["ok"] is False
+    assert "JavaScript crawl requires" in str(status.get("message", ""))
+
+
+def test_ensure_browser_deps_returns_ok_without_install(monkeypatch):
+    monkeypatch.setattr(
+        "website_profiling.crawl.fetchers.browser_deps.browser_status",
+        lambda: {"ok": True},
+    )
+    monkeypatch.setattr(
+        "website_profiling.crawl.fetchers.browser_deps._pip_install_browser_requirements",
+        lambda: (_ for _ in ()).throw(AssertionError("should not pip install")),
+    )
+    status = ensure_browser_deps()
+    assert status["ok"] is True
+
+
+def test_pip_install_browser_requirements_missing_file(monkeypatch, tmp_path):
+    from website_profiling.crawl.fetchers import browser_deps
+
+    monkeypatch.setenv("WEBSITE_PROFILING_ROOT", str(tmp_path))
+    with pytest.raises(RuntimeError, match="Missing requirements-browser.txt"):
+        browser_deps._pip_install_browser_requirements()
+
+
+def test_ensure_browser_deps_reports_auto_install_failure(monkeypatch):
+    import subprocess
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.fetchers.browser_deps.browser_status",
+        lambda: {"ok": False, "message": "missing"},
+    )
+    monkeypatch.setattr(
+        "website_profiling.crawl.fetchers.browser_deps._playwright_importable",
+        lambda: False,
+    )
+    monkeypatch.setattr(
+        "website_profiling.crawl.fetchers.browser_deps._pip_install_browser_requirements",
+        lambda: (_ for _ in ()).throw(subprocess.CalledProcessError(1, "pip")),
+    )
+    status = ensure_browser_deps(install=True)
+    assert status["ok"] is False
+    assert "Auto-install failed" in str(status.get("message", ""))
+
+
+def test_build_fetcher_unknown_mode_falls_back_to_static():
+    fetcher = build_fetcher(render_mode="unknown-mode", timeout=5)  # type: ignore[arg-type]
+    try:
+        assert isinstance(fetcher, StaticFetcher)
+    finally:
+        fetcher.close()
+
+
+def test_ensure_browser_deps_installs_when_missing(monkeypatch):
+    pip_called: list[str] = []
+    pw_called: list[str] = []
+    statuses = [{"ok": False, "message": "missing"}, {"ok": True}]
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.fetchers.browser_deps.browser_status",
+        lambda: statuses.pop(0) if statuses else {"ok": True},
+    )
+    monkeypatch.setattr(
+        "website_profiling.crawl.fetchers.browser_deps._playwright_importable",
+        lambda: bool(pip_called),
+    )
+    monkeypatch.setattr(
+        "website_profiling.crawl.fetchers.browser_deps.chromium_available",
+        lambda: bool(pw_called),
+    )
+    monkeypatch.setattr(
+        "website_profiling.crawl.fetchers.browser_deps._pip_install_browser_requirements",
+        lambda: pip_called.append("pip"),
+    )
+    monkeypatch.setattr(
+        "website_profiling.crawl.fetchers.browser_deps._playwright_install_chromium",
+        lambda: pw_called.append("playwright"),
+    )
+    status = ensure_browser_deps()
+    assert status["ok"] is True
+    assert pip_called == ["pip"]
+    assert pw_called == ["playwright"]
 
 
 def test_parse_sitemap_xml_urlset():

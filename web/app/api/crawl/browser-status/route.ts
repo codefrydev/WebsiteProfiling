@@ -9,7 +9,10 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const CHECK_SCRIPT =
-  'from website_profiling.crawl.fetchers import browser_status; import json; print(json.dumps(browser_status()))';
+  'from website_profiling.crawl.fetchers import ensure_browser_deps; import json; print(json.dumps(ensure_browser_deps()))';
+
+/** First-time Playwright/Chromium install can take a few minutes. */
+const CHECK_TIMEOUT_MS = 180_000;
 
 /**
  * GET /api/crawl/browser-status
@@ -90,6 +93,6 @@ export const GET: ApiRouteHandler = async (request): Promise<Response> => {
         message: 'Browser status check timed out.',
         error: 'timeout',
       });
-    }, 5000);
+    }, CHECK_TIMEOUT_MS);
   });
 };

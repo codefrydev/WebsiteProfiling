@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-import os
-import shutil
 from typing import Callable, Literal, Optional
 
 import requests
 
 from .base import PageFetcher
 from .browser import BrowserFetcher, _BROWSER_INSTALL_MSG
+from .browser_deps import browser_status, ensure_browser_deps
 from .browser_diagnostics import parse_console_levels
 from .hybrid import HybridFetcher
 from .static import StaticFetcher
@@ -19,25 +18,9 @@ RenderMode = Literal["static", "javascript", "auto"]
 
 def validate_browser_available() -> None:
     """Raise RuntimeError if JS crawl prerequisites are missing."""
-    status = browser_status()
+    status = ensure_browser_deps()
     if not status["ok"]:
         raise RuntimeError(str(status.get("message") or _BROWSER_INSTALL_MSG))
-
-
-def browser_status() -> dict[str, str | bool]:
-    """Non-raising check for JS crawl prerequisites."""
-    try:
-        import playwright  # noqa: F401
-    except ImportError:
-        return {"ok": False, "message": _BROWSER_INSTALL_MSG}
-
-    chrome_path = (os.environ.get("CHROME_PATH") or "").strip()
-    if chrome_path and os.path.isfile(chrome_path):
-        return {"ok": True}
-    for name in ("chromium", "chromium-browser", "google-chrome", "google-chrome-stable"):
-        if shutil.which(name):
-            return {"ok": True}
-    return {"ok": False, "message": _BROWSER_INSTALL_MSG}
 
 
 def _browser_factory(

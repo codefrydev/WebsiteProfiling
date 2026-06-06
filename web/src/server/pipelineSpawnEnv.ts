@@ -15,6 +15,8 @@ export function getPipelineSpawnEnv(
     ...process.env,
     WEBSITE_PROFILING_ROOT: repoRoot,
     DATA_DIR: getDataDir(),
+    // Required for `python -c "from website_profiling ..."` (browser-status, exports, etc.).
+    PYTHONPATH: path.join(repoRoot, 'src'),
   };
   if (propertyId != null && Number.isFinite(propertyId)) {
     env.WP_PROPERTY_ID = String(propertyId);

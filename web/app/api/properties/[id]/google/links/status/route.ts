@@ -3,7 +3,11 @@ import { spawn } from 'child_process';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
 import { getPropertyById } from '@/server/propertiesDb';
 import { getPipelineSpawnEnv, getRepoRoot } from '@/server/pipelineSpawnEnv';
-import { formatPythonSpawnError, resolvePythonExecutable } from '@/server/resolvePython';
+import {
+  formatPythonSpawnError,
+  parsePythonJsonStdout,
+  resolvePythonExecutable,
+} from '@/server/resolvePython';
 import type { ApiRouteHandlerWithParams } from '@/types/api';
 
 export const runtime = 'nodejs';
@@ -54,24 +58,18 @@ export const GET: ApiRouteHandlerWithParams<{ id: string }> = async (
     });
 
     proc.on('close', (code: number | null) => {
-      const raw = stdout.trim() || stderr.trim();
-      try {
-        const parsed = JSON.parse(raw) as Record<string, unknown>;
-        if (code === 0) {
-          resolve(NextResponse.json(parsed));
-          return;
-        }
-        resolve(
-          NextResponse.json({ error: raw || 'Status check failed', exitCode: code }, { status: 400 }),
-        );
-      } catch {
-        resolve(
-          NextResponse.json(
-            { error: raw || 'Status check failed', exitCode: code },
-            { status: code === 0 ? 500 : 400 },
-          ),
-        );
+      const parsed = parsePythonJsonStdout(stdout);
+      if (parsed && code === 0) {
+        resolve(NextResponse.json(parsed));
+        return;
       }
+      const raw = stdout.trim() || stderr.trim();
+      resolve(
+        NextResponse.json(
+          { error: raw || 'Status check failed', exitCode: code },
+          { status: code === 0 ? 500 : 400 },
+        ),
+      );
     });
 
     setTimeout(() => {

@@ -1,3 +1,4 @@
+"""Unit tests for pipeline_cmd, report metadata, and db pool lifecycle."""
 from __future__ import annotations
 
 import argparse

@@ -1,3 +1,4 @@
+"""Unit tests for crawl_store, lighthouse_store, and google_cmd branches."""
 from __future__ import annotations
 
 import argparse

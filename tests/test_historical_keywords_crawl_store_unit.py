@@ -1,3 +1,4 @@
+"""Unit tests for historical db, keywords_cmd, crawl_store, and lighthouse_store."""
 from __future__ import annotations
 
 import argparse
@@ -370,8 +371,8 @@ def test_lighthouse_store_write_audits_from_run(monkeypatch):
                         "numeric_value": 1,
                         "help_text": "",
                         "details_type": "table",
-                        "details_headings": "[]",
-                        "details_meta": "{}",
+                        "details_headings": [],
+                        "details_meta": {},
                     }
                 ],
                 [(0, 0, {"x": 1})],
