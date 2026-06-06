@@ -1,12 +1,10 @@
+'use client';
+
 import { useState, useMemo, useEffect, useRef, useCallback, type MouseEvent } from 'react';
-import { Bar } from 'react-chartjs-2';
-import type { TooltipItem } from 'chart.js';
-import { Search, Link as LinkIcon, ArrowLeft, ExternalLink, Link2, AlertTriangle } from 'lucide-react';
+import { Link as LinkIcon, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
-import { PageLayout, Card, Badge, Button } from '../components';
-import { palette } from '../utils/chartPalette';
-import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
+import { PageLayout, PageHeader, Card, Button, AlertBanner } from '../components';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import type {
   InspectorBrokenItem,
@@ -21,14 +19,28 @@ import type {
   ViewProps,
 } from '@/types';
 
-registerChartJsBase();
+import { CopyBtn, InspectorTabs } from '../components/links';
 import {
-  SELECT_CLASS, CONTENT_URL_KEYS, CONTENT_LABELS, CONTENT_RECOMMENDATIONS,
-  SEO_ISSUE_RECOMMENDATIONS, formatMs, rtColor, formatPageHrefLines,
+  type LinkSortKey,
+  LinksExplorerTableTab,
+} from '../components/links/explorer';
+import {
+  CONTENT_URL_KEYS, CONTENT_LABELS, CONTENT_RECOMMENDATIONS,
+  SEO_ISSUE_RECOMMENDATIONS,
 } from '../utils/linkUtils';
-import { SortTh, RowTooltip, InspectorTabs, CopyBtn } from '../components/links';
+import type { LinksFilterValues } from '../components/links/LinksFilterBar';
+import { linkHasBrowserErrors } from '@/lib/browserErrors';
+import { browserInspectorIssueRows } from '@/components/browser/BrowserDiagnosticsPanel';
 
-type LinkSortKey = 'url' | 'status' | 'inlinks' | 'depth' | 'response_time_ms' | 'word_count';
+const INSPECTOR_TABS = [
+  'overview',
+  'analysis',
+  'search',
+  'seo',
+  'content',
+  'technical',
+  'issues',
+] as const;
 
 function normalizeForCompare(url: string): string {
   try {
@@ -37,6 +49,14 @@ function normalizeForCompare(url: string): string {
   } catch {
     return (url || '').toLowerCase().replace(/\/$/, '');
   }
+}
+
+function resolveInspectUrl(inspectParam: string, links: ReportLink[]): string | null {
+  const exact = links.find((l) => l.url === inspectParam);
+  if (exact) return exact.url;
+  const normTarget = normalizeForCompare(inspectParam);
+  const normMatch = links.find((l) => normalizeForCompare(l.url) === normTarget);
+  return normMatch?.url ?? null;
 }
 
 export default function Links({ searchQuery = '' }: ViewProps) {
@@ -50,55 +70,109 @@ export default function Links({ searchQuery = '' }: ViewProps) {
   const [sortBy, setSortBy] = useState<LinkSortKey>('inlinks');
   const [sortDesc, setSortDesc] = useState(true);
   const [page, setPage] = useState(1);
-  const perPage = 50;
+  const perPage = 20;
 
   const [statusFilter, setStatusFilter] = useState(sj.all);
   const [inlinksFilter, setInlinksFilter] = useState(sj.all);
   const [rtFilter, setRtFilter] = useState(sj.all);
   const [wcFilter, setWcFilter] = useState(sj.all);
+  const [jsErrorFilter, setJsErrorFilter] = useState(sj.all);
 
-  const [inspectorUrl, setInspectorUrl] = useState<string | null>(null);
   const [inspectNotFound, setInspectNotFound] = useState(false);
 
   const [hoveredRow, setHoveredRow] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ top: 0, left: 0 });
   const tableRef = useRef<HTMLDivElement | null>(null);
 
+  const links = useMemo(() => data?.links || [], [data]);
+
+  const inspectParam = searchParams.get('inspect');
+  const tabParam = searchParams.get('tab');
+
+  const matchedInspectUrl = useMemo(() => {
+    if (!inspectParam || !links.length) return null;
+    return resolveInspectUrl(inspectParam, links);
+  }, [inspectParam, links]);
+
+  const inInspector = matchedInspectUrl != null;
+  const inspectorUrl = inInspector ? matchedInspectUrl : null;
+
+  const inspectorTab = useMemo(() => {
+    if (!inInspector || !inspectorUrl) return 'overview';
+    if (tabParam && (INSPECTOR_TABS as readonly string[]).includes(tabParam)) {
+      return tabParam;
+    }
+    const link = links.find((l) => l.url === inspectorUrl);
+    if (link && linkHasBrowserErrors(link)) return 'analysis';
+    return 'overview';
+  }, [inInspector, inspectorUrl, tabParam, links]);
+
+  const replaceParams = useCallback(
+    (mutate: (params: URLSearchParams) => void) => {
+      const next = new URLSearchParams(searchParams.toString());
+      mutate(next);
+      const q = next.toString();
+      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+    },
+    [router, pathname, searchParams],
+  );
+
+  useEffect(() => {
+    if (inInspector || tabParam !== 'charts') return;
+    replaceParams((params) => {
+      params.delete('tab');
+    });
+  }, [inInspector, tabParam, replaceParams]);
+
+  useEffect(() => {
+    if (!inspectParam) {
+      setInspectNotFound(false);
+      return;
+    }
+    if (!links.length) return;
+    setInspectNotFound(!matchedInspectUrl);
+  }, [inspectParam, links.length, matchedInspectUrl]);
+
+  const openInspector = useCallback(
+    (url: string, initialTab: string) => {
+      replaceParams((params) => {
+        params.set('inspect', url);
+        params.set('tab', initialTab);
+      });
+    },
+    [replaceParams],
+  );
+
+  const setInspectorTab = useCallback(
+    (tab: string, section?: string) => {
+      replaceParams((params) => {
+        params.set('tab', tab);
+        if (tab === 'analysis' && section) {
+          params.set('section', section);
+        } else {
+          params.delete('section');
+        }
+      });
+    },
+    [replaceParams],
+  );
+
+  const closeInspector = useCallback(() => {
+    setInspectNotFound(false);
+    replaceParams((params) => {
+      params.delete('inspect');
+      params.delete('tab');
+      params.delete('section');
+    });
+  }, [replaceParams]);
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { setInspectorUrl(null); setInspectNotFound(false); }
+      if (e.key === 'Escape' && inInspector) closeInspector();
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
-
-  const links = useMemo(() => data?.links || [], [data]);
-
-  // Handle ?inspect=<url> deep-link from Traffic/Search Performance
-  useEffect(() => {
-    const inspectParam = searchParams.get('inspect');
-    if (!inspectParam || !links.length) return;
-
-    // Try exact match first, then normalize-equal match
-    const exact = links.find((l) => l.url === inspectParam);
-    const normTarget = normalizeForCompare(inspectParam);
-    const normMatch = exact || links.find((l) => normalizeForCompare(l.url) === normTarget);
-
-    if (normMatch) {
-      setInspectorUrl(normMatch.url);
-      setInspectNotFound(false);
-    } else {
-      setInspectorUrl(null);
-      setInspectNotFound(true);
-    }
-
-    // Clear the inspect param to avoid re-triggering on back navigation
-    const next = new URLSearchParams(searchParams.toString());
-    next.delete('inspect');
-    const q = next.toString();
-    router.replace(q ? `${pathname}?${q}` : pathname);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, links]);
+  }, [inInspector, closeInspector]);
 
   const filtered = useMemo(() => {
     let list = [...links];
@@ -109,6 +183,8 @@ export default function Links({ searchQuery = '' }: ViewProps) {
     if (wcFilter === 'Thin')   list = list.filter((l) => (l.word_count ?? 0) < 300);
     if (wcFilter === 'Medium') list = list.filter((l) => { const w = l.word_count ?? 0; return w >= 300 && w < 1000; });
     if (wcFilter === 'Long')   list = list.filter((l) => (l.word_count ?? 0) >= 1000);
+    if (jsErrorFilter === 'Has errors') list = list.filter((l) => linkHasBrowserErrors(l));
+    if (jsErrorFilter === 'Clean') list = list.filter((l) => !linkHasBrowserErrors(l));
     const q = (searchQuery || '').toLowerCase().trim();
     if (q) {
       list = list.filter((l) => {
@@ -133,7 +209,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
       return sortDesc ? -cmp : cmp;
     });
     return list;
-  }, [links, statusFilter, inlinksFilter, rtFilter, wcFilter, searchQuery, sortBy, sortDesc, sj.all]);
+  }, [links, statusFilter, inlinksFilter, rtFilter, wcFilter, jsErrorFilter, searchQuery, sortBy, sortDesc, sj.all]);
 
   const maxInlinksInResults = useMemo(() => {
     if (!filtered.length) return 1;
@@ -211,8 +287,24 @@ export default function Links({ searchQuery = '' }: ViewProps) {
     contentFlags.forEach((f) => { if (f.recommendation) allRecommendations.add(f.recommendation); });
     categoryIssues.forEach((iss) => { if (iss.recommendation) allRecommendations.add(iss.recommendation); });
     securityFindings.forEach((f) => { if (f.recommendation) allRecommendations.add(f.recommendation); });
-    return { broken, redirects, seoIssues, categoryIssues, contentFlags, securityFindings, recommendations: [...allRecommendations] } as InspectorDetails;
-  }, [inspectorUrl, data]);
+    const linkForIssues = links.find((l) => l.url === url);
+    const browserIssues = browserInspectorIssueRows(
+      linkForIssues?.page_analysis && typeof linkForIssues.page_analysis === 'object'
+        ? linkForIssues.page_analysis.browser
+        : undefined,
+    );
+    browserIssues.forEach((iss) => { if (iss.recommendation) allRecommendations.add(iss.recommendation); });
+    return {
+      broken,
+      redirects,
+      seoIssues,
+      categoryIssues,
+      contentFlags,
+      securityFindings,
+      browserIssues,
+      recommendations: [...allRecommendations],
+    } as InspectorDetails;
+  }, [inspectorUrl, data, links]);
 
   const handleRowMouseEnter = useCallback((e: MouseEvent<HTMLTableRowElement>, link: ReportLink) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -223,54 +315,6 @@ export default function Links({ searchQuery = '' }: ViewProps) {
     });
     setHoveredRow(link.url);
   }, []);
-
-  const exploreCharts = useMemo(() => {
-    if (links.length === 0) return null;
-    const statusMap = new Map();
-    links.forEach((l) => {
-      const s = String(l.status ?? sj.emDash);
-      statusMap.set(s, (statusMap.get(s) || 0) + 1);
-    });
-    const statusPairs = [...statusMap.entries()].sort((a, b) => b[1] - a[1]);
-    let thin = 0;
-    let medium = 0;
-    let long = 0;
-    let noData = 0;
-    links.forEach((l) => {
-      const w = l.word_count;
-      if (w == null || w === 0) {
-        noData += 1;
-        return;
-      }
-      if (w < 300) thin += 1;
-      else if (w < 1000) medium += 1;
-      else long += 1;
-    });
-    return {
-      statusLabels: statusPairs.map((p) => p[0]),
-      statusValues: statusPairs.map((p) => p[1]),
-      wcLabels: vl.wcBands,
-      wcValues: [thin, medium, long, noData],
-    };
-  }, [links, vl.wcBands, sj.emDash]);
-
-  const exploreBarOpts = useMemo(() => {
-    const base = barOptionsHorizontal();
-    return {
-      ...base,
-      plugins: {
-        ...base.plugins,
-        tooltip: {
-          callbacks: {
-            label: (ctx: TooltipItem<'bar'>) => {
-              const n = Number(ctx.raw);
-              return ` ${n.toLocaleString()} ${n !== 1 ? vl.urlMany : vl.urlOne}`;
-            },
-          },
-        },
-      },
-    };
-  }, [vl]);
 
   if (!data) return null;
 
@@ -287,280 +331,111 @@ export default function Links({ searchQuery = '' }: ViewProps) {
     setPage(1);
   };
 
+  const filterValues: LinksFilterValues = {
+    inlinksFilter,
+    statusFilter,
+    rtFilter,
+    wcFilter,
+    jsErrorFilter,
+  };
+
+  const handleFilterChange = (key: keyof LinksFilterValues, value: string) => {
+    if (key === 'inlinksFilter') setInlinksFilter(value);
+    if (key === 'statusFilter') setStatusFilter(value);
+    if (key === 'rtFilter') setRtFilter(value);
+    if (key === 'wcFilter') setWcFilter(value);
+    if (key === 'jsErrorFilter') setJsErrorFilter(value);
+    setPage(1);
+  };
+
+  const clearAllFilters = () => {
+    setInlinksFilter(sj.all);
+    setStatusFilter(sj.all);
+    setRtFilter(sj.all);
+    setWcFilter(sj.all);
+    setJsErrorFilter(sj.all);
+    setPage(1);
+  };
+
   const linkForInspector = inspectorUrl ? (links.find((l) => l.url === inspectorUrl) || null) : null;
 
   return (
-    <PageLayout className="flex flex-col h-full">
+    <PageLayout className="flex flex-col gap-4">
       {data?.crawl_only_preview ? (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 mb-4">
-          <p className="text-sm text-amber-800 dark:text-amber-300">{vl.crawlPreviewBanner}</p>
-        </div>
+        <AlertBanner variant="warning">{vl.crawlPreviewBanner}</AlertBanner>
       ) : null}
       {inspectNotFound && (
-        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3 flex gap-2 mb-4">
-          <AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
-          <p className="text-sm text-amber-800 dark:text-amber-300">
-            {strings.components?.urlGapLists?.notInCrawlBanner || 'This URL was reported by Google but isn\'t in the crawl. Inspector data is limited.'}
-          </p>
-          <button
-            type="button"
-            onClick={() => setInspectNotFound(false)}
-            className="ml-auto text-amber-700 dark:text-amber-400 hover:text-amber-900 dark:hover:text-amber-200 text-xs"
-          >
-            ✕
-          </button>
-        </div>
+        <AlertBanner
+          variant="warning"
+          icon={<AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-400 shrink-0" aria-hidden />}
+          onDismiss={() => setInspectNotFound(false)}
+        >
+          {strings.components?.urlGapLists?.notInCrawlBanner || 'This URL was reported by Google but isn\'t in the crawl. Inspector data is limited.'}
+        </AlertBanner>
       )}
-      {inspectorUrl == null ? (
+      {!inInspector ? (
         <>
-          <div className="mb-6 flex justify-between items-end shrink-0 flex-wrap gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-bright mb-2">{vl.title}</h1>
-              <p className="text-muted-foreground">
+          <PageHeader
+            title={vl.title}
+            subtitle={
+              <>
                 {vl.showingResults}{' '}
                 <span className="font-bold text-bright">{filtered.length.toLocaleString()}</span> {vl.resultsSuffix}
-              </p>
-              <p className="text-sm text-muted-foreground mt-2 max-w-3xl leading-relaxed">{vl.explorerHint}</p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <select value={inlinksFilter} onChange={(e) => { setInlinksFilter(e.target.value); setPage(1); }} className={SELECT_CLASS}>
-                <option value={sj.all}>{vl.filterAllPages}</option>
-                <option value="Orphans">{vl.filterOrphans}</option>
-              </select>
-              <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} className={SELECT_CLASS}>
-                <option value={sj.all}>{vl.filterAllStatus}</option>
-                <option value="200">{vl.status200}</option>
-                <option value="404">{vl.status404}</option>
-                <option value="301">{vl.status301}</option>
-                <option value="302">{vl.status302}</option>
-              </select>
-              <select value={rtFilter} onChange={(e) => { setRtFilter(e.target.value); setPage(1); }} className={SELECT_CLASS}>
-                <option value={sj.all}>{vl.filterAllRt}</option>
-                <option value="Fast">{vl.filterFast}</option>
-                <option value="Slow">{vl.filterSlow}</option>
-              </select>
-              <select value={wcFilter} onChange={(e) => { setWcFilter(e.target.value); setPage(1); }} className={SELECT_CLASS}>
-                <option value={sj.all}>{vl.filterAllWc}</option>
-                <option value="Thin">{vl.filterThin}</option>
-                <option value="Medium">{vl.filterMedium}</option>
-                <option value="Long">{vl.filterLong}</option>
-              </select>
-            </div>
-          </div>
+                <span className="block text-sm mt-2 max-w-3xl leading-relaxed">{vl.explorerHint}</span>
+              </>
+            }
+            className="mb-0"
+          />
 
-          {exploreCharts && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4 shrink-0">
-              <Card padding="tight" shadow>
-                <h2 className="text-sm font-bold text-foreground mb-1">{vl.chartStatusTitle}</h2>
-                <p className="text-xs text-muted-foreground mb-2">{vl.chartStatusHint}</p>
-                <div className="h-48">
-                  <Bar
-                    data={{
-                      labels: exploreCharts.statusLabels,
-                      datasets: [{ data: exploreCharts.statusValues, backgroundColor: palette(exploreCharts.statusLabels.length) }],
-                    }}
-                    options={exploreBarOpts}
-                  />
-                </div>
-              </Card>
-              <Card padding="tight" shadow>
-                <h2 className="text-sm font-bold text-foreground mb-1">{vl.chartWcTitle}</h2>
-                <p className="text-xs text-muted-foreground mb-2">{vl.chartWcHint}</p>
-                <div className="h-48">
-                  <Bar
-                    data={{
-                      labels: exploreCharts.wcLabels,
-                      datasets: [{ data: exploreCharts.wcValues, backgroundColor: palette(exploreCharts.wcLabels.length) }],
-                    }}
-                    options={exploreBarOpts}
-                  />
-                </div>
-              </Card>
-            </div>
-          )}
-
-          <Card overflowHidden padding="none" className="flex flex-col flex-1 min-h-[min(500px,70vh)] sm:min-h-[500px]">
-            <div
-              className="overflow-x-auto overflow-y-visible touch-pan-x overscroll-x-contain flex-1 relative scroll-smooth"
-              ref={tableRef}
-            >
-              {hoveredRow && (() => {
-                const link = links.find((l) => l.url === hoveredRow);
-                return link ? <RowTooltip link={link} style={{ position: 'absolute', top: tooltipPos.top, left: tooltipPos.left }} /> : null;
-              })()}
-
-              <p className="sm:hidden text-xs text-muted-foreground px-3 py-2 border-b border-muted bg-brand-900/40">{sj.tableSwipeHint}</p>
-
-              <table className="w-full min-w-[560px] text-left text-sm">
-                <thead className="bg-brand-900 uppercase text-xs font-semibold sticky top-0 z-20 shadow-sm">
-                  <tr>
-                    <SortTh
-                      label={vl.thPage}
-                      field="url"
-                      sortBy={sortBy}
-                      sortDesc={sortDesc}
-                      onSort={toggleSort}
-                      className="px-3 sm:px-6 sticky left-0 z-30 bg-brand-900 border-r border-default shadow-[4px_0_16px_-8px_rgba(0,0,0,0.55)]"
-                    />
-                    <SortTh label={vl.thStatus} field="status" sortBy={sortBy} sortDesc={sortDesc} onSort={toggleSort} />
-                    <SortTh label={vl.thLinksIn} field="inlinks" sortBy={sortBy} sortDesc={sortDesc} onSort={toggleSort} />
-                    <SortTh
-                      label={vl.thCrawlDepth}
-                      field="depth"
-                      sortBy={sortBy}
-                      sortDesc={sortDesc}
-                      onSort={toggleSort}
-                      className="hidden md:table-cell"
-                    />
-                    <SortTh label={vl.thLoadTime} field="response_time_ms" sortBy={sortBy} sortDesc={sortDesc} onSort={toggleSort} />
-                    <SortTh
-                      label={vl.thWords}
-                      field="word_count"
-                      sortBy={sortBy}
-                      sortDesc={sortDesc}
-                      onSort={toggleSort}
-                      className="hidden md:table-cell"
-                    />
-                    <th className="px-3 sm:px-4 py-4 text-center text-muted-foreground uppercase text-xs whitespace-nowrap">{vl.thActions}</th>
-                  </tr>
-                </thead>
-                <tbody
-                  className="divide-y divide-muted [&>tr:nth-child(even)]:bg-brand-900/30 [&>tr>td:first-child]:sticky [&>tr>td:first-child]:left-0 [&>tr>td:first-child]:z-10 [&>tr>td:first-child]:bg-inherit [&>tr>td:first-child]:border-r [&>tr>td:first-child]:border-default [&>tr>td:first-child]:shadow-[4px_0_16px_-8px_rgba(0,0,0,0.5)] [&>tr>td:first-child]:max-w-[min(280px,85vw)]"
-                >
-                  {pageLinks.map((link, i) => {
-                    const inl = link.inlinks ?? 0;
-                    const inlPct = (inl / maxInlinksInResults) * 100;
-                    const hrefLines = formatPageHrefLines(link.url);
-                    return (
-                    <tr
-                      key={i}
-                      className="hover:bg-brand-800/80 transition-colors cursor-default"
-                      onMouseEnter={(e) => handleRowMouseEnter(e, link)}
-                      onMouseLeave={() => setHoveredRow(null)}
-                    >
-                      <td className="px-3 sm:px-6 py-3 align-top min-w-0">
-                        <div className="min-w-0 flex flex-col gap-0.5">
-                          <div
-                            className="text-bright font-medium text-sm leading-snug line-clamp-2"
-                            title={link.title || undefined}
-                          >
-                            {link.title ? (
-                              link.title
-                            ) : (
-                              <span className="text-muted-foreground italic font-normal">{vl.noTitle}</span>
-                            )}
-                          </div>
-                          <a
-                            href={link.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-link group min-w-0"
-                            title={link.url}
-                          >
-                            <span className="truncate font-mono">{hrefLines.label}</span>
-                            <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" />
-                          </a>
-                          {(link.depth != null || (link.word_count ?? 0) > 0) && (
-                            <p className="mt-1 md:hidden text-[11px] text-muted-foreground leading-snug">
-                              {link.depth != null && (
-                                <span>
-                                  {vl.thCrawlDepth}: {String(link.depth)}
-                                </span>
-                              )}
-                              {link.depth != null && (link.word_count ?? 0) > 0 && <span className="mx-1.5 text-muted-foreground">·</span>}
-                              {(link.word_count ?? 0) > 0 && (
-                                <span>
-                                  {vl.thWords}: {(link.word_count ?? 0).toLocaleString()}
-                                </span>
-                              )}
-                            </p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-3 sm:px-4 py-3 whitespace-nowrap align-middle"><Badge value={link.status ?? ''} /></td>
-                      <td className="px-3 sm:px-4 py-3 text-right align-middle min-w-0">
-                        <div className="flex w-full min-w-0 flex-col items-stretch gap-1.5 sm:flex-row sm:items-center sm:justify-end sm:gap-2">
-                          <div className="order-2 sm:order-1 min-w-0 flex-1 bg-track rounded-full h-2 hidden sm:block">
-                            <div
-                              className="h-2 rounded-full bg-gradient-to-r from-violet-600 to-fuchsia-400 transition-all"
-                              style={{ width: `${inlPct}%` }}
-                            />
-                          </div>
-                          <span
-                            className="order-1 sm:order-2 shrink-0 inline-flex items-center justify-end gap-1.5 text-sm font-semibold text-foreground tabular-nums"
-                            title={
-                              maxInlinksInResults > 0
-                                ? `${Math.round(inlPct)}% of the strongest links-in count in your current results (${maxInlinksInResults}).`
-                                : undefined
-                            }
-                          >
-                            <Link2 className="h-3.5 w-3.5 text-muted-foreground shrink-0 hidden sm:inline" aria-hidden />
-                            {inl}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="hidden md:table-cell px-4 py-3 text-foreground text-sm tabular-nums whitespace-nowrap align-middle">
-                        {link.depth != null ? link.depth : sj.emDash}
-                      </td>
-                      <td className={`px-3 sm:px-4 py-3 text-sm font-semibold tabular-nums whitespace-nowrap align-middle ${rtColor(link.response_time_ms)}`}>
-                        {formatMs(link.response_time_ms)}
-                      </td>
-                      <td className="hidden md:table-cell px-4 py-3 text-sm text-foreground tabular-nums whitespace-nowrap align-middle">
-                        {(link.word_count ?? 0) > 0 ? (link.word_count ?? 0).toLocaleString() : sj.emDash}
-                      </td>
-                      <td className="px-3 sm:px-4 py-3 text-center whitespace-nowrap align-middle">
-                        <button
-                          type="button"
-                          onClick={() => setInspectorUrl(link.url)}
-                          className="inline-flex items-center justify-center gap-1.5 min-h-11 min-w-[2.75rem] sm:min-h-0 sm:min-w-0 text-muted-foreground hover:text-bright bg-brand-800 hover:bg-brand-700 px-3 py-2.5 sm:px-2 sm:py-1 rounded-lg sm:rounded text-xs font-medium transition-colors touch-manipulation"
-                        >
-                          <Search className="h-4 w-4 sm:h-3 sm:w-3 shrink-0" /> {vl.inspect}
-                        </button>
-                      </td>
-                    </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="p-4 border-t border-muted bg-brand-900 flex justify-between items-center shrink-0">
-              <div className="text-sm text-muted-foreground">
-                {vl.pageOf} <span className="font-bold text-bright">{page}</span> {vl.of}{' '}
-                <span className="font-bold text-bright">{totalPages}</span>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="secondary" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="px-3 py-1 text-foreground">{vl.previous}</Button>
-                <Button variant="secondary" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="px-3 py-1 text-foreground">{vl.next}</Button>
-              </div>
-            </div>
-          </Card>
+          <LinksExplorerTableTab
+            filterValues={filterValues}
+            onFilterChange={handleFilterChange}
+            onClearAllFilters={clearAllFilters}
+            searchQuery={searchQuery}
+            filtered={filtered}
+            pageLinks={pageLinks}
+            links={links}
+            page={page}
+            totalPages={totalPages}
+            sortBy={sortBy}
+            sortDesc={sortDesc}
+            onToggleSort={toggleSort}
+            onPagePrev={() => setPage((p) => Math.max(1, p - 1))}
+            onPageNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+            maxInlinksInResults={maxInlinksInResults}
+            onInspect={openInspector}
+            hoveredRow={hoveredRow}
+            tooltipPos={tooltipPos}
+            tableRef={tableRef}
+            onRowMouseEnter={handleRowMouseEnter}
+            onRowMouseLeave={() => setHoveredRow(null)}
+          />
         </>
       ) : (
         <>
-          <div className="mb-4 flex justify-between items-center shrink-0 flex-wrap gap-4">
-            <Button variant="secondary" onClick={() => setInspectorUrl(null)} className="inline-flex items-center gap-2 text-foreground">
+          <div className="flex justify-between items-center flex-wrap gap-4">
+            <Button variant="secondary" onClick={closeInspector} className="inline-flex items-center gap-2 text-foreground">
               <ArrowLeft className="h-4 w-4" /> {vl.backToExplorer}
             </Button>
             <h1 className="text-2xl font-bold text-bright flex items-center gap-2">
               <LinkIcon className="h-6 w-6 text-blue-500 shrink-0" /> {vl.urlInspector}
             </h1>
           </div>
-
-          <div className="mb-4 shrink-0 flex items-center gap-2 bg-brand-900 border border-default p-3 rounded-xl">
-            <span className="font-mono text-link text-sm break-all flex-1">{inspectorUrl}</span>
-            <CopyBtn text={inspectorUrl} className="shrink-0" />
-            <a href={inspectorUrl} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-bright transition-colors shrink-0">
+          <div className="flex items-center gap-2 bg-brand-900 border border-default p-3 rounded-xl">
+            <span className="font-mono text-link text-sm break-all flex-1">{matchedInspectUrl}</span>
+            <CopyBtn text={matchedInspectUrl} className="shrink-0" />
+            <a href={matchedInspectUrl} target="_blank" rel="noreferrer" className="text-muted-foreground hover:text-bright transition-colors shrink-0">
               <LinkIcon className="h-4 w-4" />
             </a>
           </div>
-
-          <Card padding="none" overflowHidden className="flex flex-col flex-1 min-h-0">
+          <Card padding="none" overflowHidden className="flex flex-col min-h-[min(400px,60vh)]">
             {linkForInspector ? (
               <InspectorTabs
                 link={linkForInspector}
-                lhData={(data.lighthouse_by_url?.[inspectorUrl] ?? null) as LinkLighthouseData | null}
+                lhData={(data.lighthouse_by_url?.[matchedInspectUrl] ?? null) as LinkLighthouseData | null}
                 inspectorDetails={inspectorDetails}
+                activeTab={inspectorTab}
+                onTabChange={setInspectorTab}
               />
             ) : (
               <div className="p-8 text-center text-muted-foreground">{vl.noUrlData}</div>

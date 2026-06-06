@@ -4,9 +4,10 @@ import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { Link2, Settings2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
+import { useUrlTab } from '@/hooks/useUrlTab';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
-import { PageLayout } from '../components';
+import { PageLayout, PageHeader, ViewTabs } from '../components';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import GoogleTableToolbar from '../components/google/GoogleTableToolbar';
 import GscLinksSummaryCards from '../components/backlinks/GscLinksSummaryCards';
@@ -41,7 +42,7 @@ export default function Backlinks(_props: ViewProps) {
     rowsPerPage: vb.table.rowsPerPage,
   };
 
-  const [activeTab, setActiveTab] = useState<BacklinksTabId>('overview');
+  const [activeTab, setActiveTab] = useUrlTab(TABS, 'overview');
   const [domainSearch, setDomainSearch] = useState('');
   const [pageSearch, setPageSearch] = useState('');
   const [anchorSearch, setAnchorSearch] = useState('');
@@ -204,7 +205,7 @@ export default function Backlinks(_props: ViewProps) {
 
   if (!gscLinks?.export_types?.length) {
     return (
-      <PageLayout>
+      <PageLayout className="space-y-6">
         <div className="max-w-md mx-auto text-center py-16">
           <Link2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-xl font-bold text-bright mb-2">{vb.emptyTitle}</h2>
@@ -220,43 +221,34 @@ export default function Backlinks(_props: ViewProps) {
 
   const tabLabels = vb.tabs as Record<BacklinksTabId, string>;
 
+  const backlinksTabItems = TABS.map((id) => ({
+    id,
+    label: tabLabels[id],
+  }));
+
   return (
-    <PageLayout>
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-bright mb-2 flex items-center gap-2">
-          <Link2 className="h-7 w-7 text-link shrink-0" />
-          {vb.title}
-        </h1>
-        <p className="text-muted-foreground">
-          {vb.subtitle}
-          {headerMeta}
-        </p>
-        <p className="text-xs text-muted-foreground mt-2 max-w-3xl">{vb.disclaimer}</p>
-      </div>
+    <PageLayout className="space-y-6">
+      <PageHeader
+        icon={<Link2 className="h-7 w-7 text-link shrink-0" />}
+        title={vb.title}
+        subtitle={
+          <>
+            {vb.subtitle}
+            {headerMeta}
+            <span className="block text-xs text-muted-foreground mt-2 max-w-3xl">{vb.disclaimer}</span>
+          </>
+        }
+      />
 
       <GscLinksSummaryCards data={gscLinks} labels={vb.kpi} />
 
-      <div className="border-b border-default mb-6" role="tablist" aria-label={vb.title}>
-        <div className="flex gap-0 overflow-x-auto">
-          {TABS.map((id) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              aria-selected={activeTab === id}
-              id={`backlinks-tab-btn-${id}`}
-              onClick={() => setActiveTab(id)}
-              className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-                activeTab === id
-                  ? 'border-link text-link'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {tabLabels[id]}
-            </button>
-          ))}
-        </div>
-      </div>
+      <ViewTabs
+        tabs={backlinksTabItems}
+        activeTab={activeTab}
+        onChange={(id) => setActiveTab(id as BacklinksTabId)}
+        ariaLabel={vb.title}
+        idPrefix="backlinks"
+      />
 
       {activeTab === 'overview' && (
         <div className="grid gap-6 lg:grid-cols-2">

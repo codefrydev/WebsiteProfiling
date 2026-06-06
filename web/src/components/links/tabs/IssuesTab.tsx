@@ -1,6 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Bar } from 'react-chartjs-2';
-import type { TooltipItem } from 'chart.js';
+import type { TooltipItem, ChartOptions } from 'chart.js';
 import { Gauge, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import type { InspectorDetails, InspectorIssueRow, LinkLighthouseData, LighthouseAuditRef } from '@/types/report';
 import { strings, format } from '../../../lib/strings';
@@ -8,6 +7,8 @@ import { SELECT_CLASS, SEO_ISSUE_RECOMMENDATIONS, severityBg } from '../../../ut
 import { formatLhMetric } from '../../../utils/linkUtils';
 import { palette, scoreBandColor } from '../../../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal } from '../../../utils/chartJsDefaults';
+import { RankedBarChart } from '../../../components/charts';
+import { formatCompositionAria } from '../../../lib/chartDoughnutUtils';
 
 registerChartJsBase();
 
@@ -71,6 +72,15 @@ export default function IssuesTab({ lhData, inspectorDetails }: IssuesTabProps) 
         recommendation: i.recommendation,
       })
     );
+    (inspectorDetails.browserIssues || []).forEach((i) =>
+      list.push({
+        severity: i.severity || 'High',
+        message: i.message ?? '',
+        type: 'browser',
+        detail: i.detail,
+        recommendation: i.recommendation,
+      })
+    );
     return list;
   }, [inspectorDetails, ci, it]);
 
@@ -80,16 +90,26 @@ export default function IssuesTab({ lhData, inspectorDetails }: IssuesTabProps) 
   }, [allIssues, issueFilter]);
 
   const typeChart = useMemo(() => {
-    const order = ['broken', 'redirect', 'seo', 'content', 'category', 'security'];
+    const order = ['broken', 'redirect', 'seo', 'content', 'category', 'security'] as const;
     const labels = [...it.typeLabels];
     const values = order.map((t) => allIssues.filter((i) => i.type === t).length);
-    return { labels, values };
+    const filteredLabels: string[] = [];
+    const filteredValues: number[] = [];
+    labels.forEach((label, i) => {
+      if (values[i] > 0) {
+        filteredLabels.push(label);
+        filteredValues.push(values[i]);
+      }
+    });
+    const aria = formatCompositionAria(filteredLabels, filteredValues, 'issues');
+    return { labels: filteredLabels, values: filteredValues, aria };
   }, [allIssues, it.typeLabels]);
 
-  const typeBarOpts = useMemo(() => {
+  const typeBarOpts = useMemo((): ChartOptions<'bar'> => {
     const base = barOptionsHorizontal();
     return {
       ...base,
+      indexAxis: 'y',
       plugins: {
         ...base.plugins,
         tooltip: {
@@ -101,7 +121,7 @@ export default function IssuesTab({ lhData, inspectorDetails }: IssuesTabProps) 
           },
         },
       },
-    };
+    } as ChartOptions<'bar'>;
   }, [it.issueTooltip]);
 
   return (
@@ -156,7 +176,9 @@ export default function IssuesTab({ lhData, inspectorDetails }: IssuesTabProps) 
           <div className="bg-brand-900 border border-default rounded-xl p-3 mb-4">
             <div className="text-xs text-muted-foreground mb-2">{it.issuesBySource}</div>
             <div className="h-36">
-              <Bar
+              <RankedBarChart
+                ariaSummary={typeChart.aria}
+                heightClass="h-36"
                 data={{
                   labels: typeChart.labels,
                   datasets: [{ data: typeChart.values, backgroundColor: palette(typeChart.labels.length) }],
@@ -207,10 +229,17 @@ export default function IssuesTab({ lhData, inspectorDetails }: IssuesTabProps) 
                     <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   )}
                 </button>
-                {expandedIssue === i && issue.recommendation && (
-                  <div className="mx-2 border-x border-b border-default rounded-b-xl bg-brand-900 px-4 py-3">
-                    <span className="text-xs text-link font-semibold">{it.recommendation}</span>
-                    <span className="text-xs text-foreground">{issue.recommendation}</span>
+                {expandedIssue === i && (issue.detail || issue.recommendation) && (
+                  <div className="mx-2 border-x border-b border-default rounded-b-xl bg-brand-900 px-4 py-3 space-y-2">
+                    {issue.detail ? (
+                      <pre className="text-xs font-mono text-muted-foreground whitespace-pre-wrap break-all">{issue.detail}</pre>
+                    ) : null}
+                    {issue.recommendation ? (
+                      <p className="text-xs text-foreground">
+                        <span className="text-link font-semibold">{it.recommendation} </span>
+                        {issue.recommendation}
+                      </p>
+                    ) : null}
                   </div>
                 )}
               </div>

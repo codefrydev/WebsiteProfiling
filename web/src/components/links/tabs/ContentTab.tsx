@@ -1,74 +1,23 @@
 import { useMemo, useState, createElement, type ComponentType } from 'react';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend, type Chart, type TooltipItem } from 'chart.js';
-import { Bar, Doughnut } from 'react-chartjs-2';
-import { BookOpen, BarChart2, FileText, Layers, Share2, Tag } from 'lucide-react';
-import type { ContentAnalyticsData, LinkDetail } from '@/types/report';
+import Link from 'next/link';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, type TooltipItem } from 'chart.js';
+import { BookOpen, BarChart2, Check, FileText, Layers, Share2, Tag, X } from 'lucide-react';
+import type { LinkDetail } from '@/types/report';
 import { useReport } from '../../../context/useReport';
 import { Card } from '../../../components';
+import { RatioBar, RankedBarChart } from '../../../components/charts';
 import { wcLabel, readingLabel, parseKeywords, normaliseKw } from '../../../utils/linkUtils';
-import { palette, PALETTE_CATEGORICAL } from '../../../utils/chartPalette';
+import { PALETTE_CATEGORICAL } from '../../../utils/chartPalette';
 import HeadingPills from '../HeadingPills';
 import { strings, format } from '../../../lib/strings';
-import { getGridColor, getChartTitleColor, getChartCanvasTextColor } from '../../../utils/chartJsDefaults';
+import { getGridColor, getChartTitleColor } from '../../../utils/chartJsDefaults';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
-
-const barValueLabelsPlugin = {
-  id: 'contentTabBarLabels',
-  afterDatasetsDraw(chart: Chart<'bar'>) {
-    const ctx = chart.ctx;
-    const meta = chart.getDatasetMeta(0);
-    if (!meta?.data?.length) return;
-    const dataset = chart.data.datasets?.[0];
-    if (!dataset?.data) return;
-    const isHorizontal = chart.options.indexAxis === 'y';
-    ctx.save();
-    ctx.font = '11px system-ui, sans-serif';
-    ctx.fillStyle = getChartCanvasTextColor();
-    ctx.textAlign = isHorizontal ? 'left' : 'center';
-    ctx.textBaseline = 'middle';
-    meta.data.forEach((bar, i) => {
-      const value = dataset.data[i];
-      if (value == null || value === 0) return;
-      const label = Number(value).toLocaleString();
-      const x = isHorizontal ? bar.x + 6 : bar.x;
-      const y = isHorizontal ? bar.y : bar.y - 12;
-      ctx.fillText(label, x, y);
-    });
-    ctx.restore();
-  },
-};
-
-function barOpts(yTitle: string, xTitle: string | undefined, tooltipUnit: string | undefined) {
-  const lc = strings.components.linkTabs.content;
-  const vca = strings.views.contentAnalytics;
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (ctx: TooltipItem<'bar'>) =>
-            ` ${
-              tooltipUnit === 'words'
-                ? format(lc.tooltipWords, { n: ctx.raw?.toLocaleString() ?? ctx.raw })
-                : format(vca.chartTooltipCount, { n: ctx.raw?.toLocaleString() ?? ctx.raw })
-            }`,
-        },
-      },
-    },
-    scales: {
-      x: { grid: { color: getGridColor() }, ...(xTitle ? { title: { display: true, text: xTitle, color: getChartTitleColor() } } : {}) },
-      y: { grid: { color: getGridColor() }, beginAtZero: true, title: { display: true, text: yTitle, color: getChartTitleColor() } },
-    },
-  };
-}
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 function barOptsH(suffixLabel?: string) {
   const sj = strings.common;
   return {
-    indexAxis: 'y',
+    indexAxis: 'y' as const,
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -87,25 +36,11 @@ function barOptsH(suffixLabel?: string) {
   };
 }
 
-function barOptsReadingDist() {
-  const vca = strings.views.contentAnalytics;
-  return {
-    indexAxis: 'y',
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (ctx: TooltipItem<'bar'>) => ` ${format(vca.chartTooltipCount, { n: ctx.raw?.toLocaleString() ?? ctx.raw })}`,
-        },
-      },
-    },
-    scales: {
-      x: { grid: { color: getGridColor() }, beginAtZero: true, title: { display: true, text: vca.thPages, color: getChartTitleColor() } },
-      y: { grid: { color: getGridColor() } },
-    },
-  };
+function formatPctDelta(page: number, ref: number | null): string | null {
+  if (ref == null || ref === 0 || page <= 0) return null;
+  const pct = ((page - ref) / ref) * 100;
+  const sign = pct >= 0 ? '+' : '';
+  return `${sign}${pct.toFixed(0)}%`;
 }
 
 function barOptsCompare() {
@@ -129,58 +64,15 @@ function barOptsCompare() {
   };
 }
 
-function doughnutPageOpts() {
-  const lc = strings.components.linkTabs.content;
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 11 }, padding: 12 } },
-      tooltip: {
-        callbacks: {
-          label: (ctx: TooltipItem<'bar'>) => ` ${format(lc.tooltipDoughnut, { label: ctx.label, n: ctx.raw?.toLocaleString() })}`,
-        },
-      },
-    },
-  };
-}
-
-function groupedSocialOpts() {
-  const lc = strings.components.linkTabs.content;
-  return {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true, labels: { color: '#94a3b8', font: { size: 11 }, padding: 10 } },
-      tooltip: {
-        callbacks: {
-          label: (ctx: TooltipItem<'bar'>) =>
-            ` ${format(lc.tooltipGroupedPct, { dataset: ctx.dataset.label, pct: Number(ctx.raw ?? 0).toFixed(0) })}`,
-        },
-      },
-    },
-    scales: {
-      x: { stacked: true, grid: { color: getGridColor() } },
-      y: {
-        stacked: true,
-        grid: { color: getGridColor() },
-        beginAtZero: true,
-        max: 100,
-        title: { display: true, text: lc.axisPercent, color: getChartTitleColor() },
-      },
-    },
-  };
-}
-
-function qualityBarColors(labels: string[]): string[] {
-  return labels.map((l) => {
-    const s = l.toLowerCase();
-    if (s.includes('missing') || s.includes('no h1')) return '#EF4444';
-    if (s.includes('short') || s.includes('long')) return '#EAB308';
-    if (s.includes('optimal') || s.includes('one h1')) return '#22C55E';
-    if (s.includes('multiple')) return '#DD8452';
-    return '#4C72B0';
-  });
+function qualityBadgeClass(label: string): string {
+  const s = label.toLowerCase();
+  if (s.includes('missing') || s.includes('no h1')) {
+    return 'bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/30';
+  }
+  if (s.includes('short') || s.includes('long') || s.includes('multiple')) {
+    return 'bg-amber-500/15 text-amber-800 dark:text-amber-400 border-amber-500/30';
+  }
+  return 'bg-green-500/15 text-green-800 dark:text-green-400 border-green-500/30';
 }
 
 function titleQualityIndex(len: number | string | undefined): number {
@@ -206,42 +98,6 @@ function h1QualityIndex(count: number | string | undefined): number {
   return 2;
 }
 
-function oneHotDoughnut(labels: string[], index: number, colors: string[]) {
-  const data = labels.map((_, i) => (i === index ? 1 : 0));
-  const backgroundColor = labels.map((_, i) => (i === index ? colors[i] : `${colors[i]}33`));
-  return { labels, datasets: [{ data, backgroundColor, borderColor: 'rgba(15,23,42,0.8)', borderWidth: 2 }] };
-}
-
-function wcBucketLabel(wc: number, buckets: string[]): string {
-  const w = Number(wc) || 0;
-  const b = buckets;
-  if (!b?.length) return '';
-  if (w <= 100) return b[0];
-  if (w <= 300) return b[1];
-  if (w <= 600) return b[2];
-  if (w <= 1000) return b[3];
-  if (w <= 2000) return b[4];
-  return b[5];
-}
-
-function readingBandLabel(rl: number, bands: string[]): string {
-  const r = Number(rl) || 0;
-  const b = bands;
-  if (!b?.length) return '';
-  if (r <= 5) return b[0];
-  if (r <= 8) return b[1];
-  if (r <= 12) return b[2];
-  return b[3];
-}
-
-function contentRatioBandLabel(pct: number, lc: Record<string, string>): string {
-  const p = Number(pct) || 0;
-  if (p <= 10) return lc.ratioLt10;
-  if (p <= 20) return lc.ratio1020;
-  if (p <= 40) return lc.ratio2040;
-  return lc.ratioGt40;
-}
-
 interface SectionHeaderProps {
   icon: ComponentType<{ className?: string }>;
   title: string;
@@ -262,6 +118,33 @@ function SectionHeader({ icon, title, description }: SectionHeaderProps) {
   );
 }
 
+function QualityStatusRow({ label, detail, statusLabel }: { label: string; detail: string; statusLabel: string }) {
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div className="text-sm font-bold text-foreground">{label}</div>
+        <div className="text-xs text-muted-foreground">{detail}</div>
+      </div>
+      <span className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${qualityBadgeClass(statusLabel)}`}>
+        {statusLabel}
+      </span>
+    </div>
+  );
+}
+
+function SocialCheckItem({ label, present }: { label: string; present: boolean }) {
+  const lc = strings.components.linkTabs.content;
+  return (
+    <div className="flex items-center justify-between gap-3 py-2 border-b border-muted/50 last:border-0">
+      <span className="text-sm text-foreground">{label}</span>
+      <span className={`inline-flex items-center gap-1.5 text-xs font-medium ${present ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+        {present ? <Check className="h-3.5 w-3.5" aria-hidden /> : <X className="h-3.5 w-3.5" aria-hidden />}
+        {present ? lc.socialPresent : lc.socialMissing}
+      </span>
+    </div>
+  );
+}
+
 export interface ContentTabProps {
   link: LinkDetail;
 }
@@ -269,7 +152,6 @@ export interface ContentTabProps {
 export default function ContentTab({ link }: ContentTabProps) {
   const lc = strings.components.linkTabs.content;
   const vca = strings.views.contentAnalytics;
-  const vo = strings.views.overview;
   const sj = strings.common;
   const lo = strings.components.linkTabs.overview;
   const { data } = useReport();
@@ -282,19 +164,8 @@ export default function ContentTab({ link }: ContentTabProps) {
   const keywords = useMemo(() => parseKeywords(link.top_keywords), [link.top_keywords]);
   const ratioPct = Math.min(100, Math.max(0, Number(link.content_html_ratio) || 0));
 
-  const ca: ContentAnalyticsData = data?.content_analytics ?? {};
+  const ca = data?.content_analytics ?? {};
   const wcStats = ca.word_count_stats ?? {};
-  const wcDist = ca.word_count_distribution ?? {};
-  const rlDist = ca.reading_level_distribution ?? {};
-  const crDist = ca.content_ratio_distribution ?? {};
-
-  const wcLabels = Object.keys(wcDist);
-  const wcValues = Object.values(wcDist).map(Number);
-  const rlLabels = Object.keys(rlDist);
-  const rlValues = Object.values(rlDist).map(Number);
-  const crLabels = Object.keys(crDist);
-  const crValues = Object.values(crDist).map(Number);
-
   const meanW = wcStats.mean != null ? Math.round(wcStats.mean) : null;
   const medianW = wcStats.median != null ? Math.round(wcStats.median) : null;
 
@@ -302,9 +173,13 @@ export default function ContentTab({ link }: ContentTabProps) {
   const metaLen = link.meta_description_len != null ? Number(link.meta_description_len) : (link.meta_description || '').length;
   const h1c = link.h1_count != null ? Number(link.h1_count) : null;
 
-  const titleIdx = titleQualityIndex(titleLen);
-  const metaIdx = metaQualityIndex(metaLen);
-  const h1Idx = h1c != null && !Number.isNaN(h1c) ? h1QualityIndex(h1c) : null;
+  const titleQualLabels = vca.titleQualLabels;
+  const metaQualLabels = vca.metaQualLabels;
+  const h1QualLabels = vca.h1Labels;
+
+  const titleStatus = titleQualLabels[titleQualityIndex(titleLen)] ?? sj.emDash;
+  const metaStatus = metaQualLabels[metaQualityIndex(metaLen)] ?? sj.emDash;
+  const h1Status = h1c != null && !Number.isNaN(h1c) ? h1QualLabels[h1QualityIndex(h1c)] : null;
 
   const kwSorted = useMemo(() => {
     const rows = keywords.map((kw) => normaliseKw(kw)).filter((k) => k.word);
@@ -315,29 +190,6 @@ export default function ContentTab({ link }: ContentTabProps) {
   const hasOg = !!(link.og_title && String(link.og_title).trim());
   const hasTw = !!(link.twitter_card && String(link.twitter_card).trim());
   const hasOgImg = !!(link.og_image && String(link.og_image).trim());
-
-  const depthDist = data?.depth_distribution ?? {};
-  const depthByDepth = depthDist.by_depth ?? {};
-  const depthLabels = Object.keys(depthByDepth).map((d) => format(lc.depthLabel, { n: d }));
-  const depthValues = Object.values(depthByDepth).map(Number);
-  const hasDepthData = depthLabels.length > 0;
-
-  const titleQualLabels = vca.titleQualLabels;
-  const metaQualLabels = vca.metaQualLabels;
-  const h1QualLabels = vca.h1Labels;
-
-  const titleDoughnut = useMemo(
-    () => oneHotDoughnut(titleQualLabels, titleIdx, qualityBarColors(titleQualLabels)),
-    [titleIdx, titleQualLabels]
-  );
-  const metaDoughnut = useMemo(
-    () => oneHotDoughnut(metaQualLabels, metaIdx, qualityBarColors(metaQualLabels)),
-    [metaIdx, metaQualLabels]
-  );
-  const h1Doughnut = useMemo(() => {
-    if (h1Idx == null) return null;
-    return oneHotDoughnut(h1QualLabels, h1Idx, ['#EF4444', '#22C55E', '#DD8452']);
-  }, [h1Idx, h1QualLabels]);
 
   const compareBarData = useMemo(() => {
     const labels = [lc.labelThisPage];
@@ -356,11 +208,24 @@ export default function ContentTab({ link }: ContentTabProps) {
     return { labels, values, colors };
   }, [wc, meanW, medianW, lc.labelThisPage, lc.labelSiteMean, lc.labelSiteMedian]);
 
+  const meanDelta = formatPctDelta(wc, meanW);
+  const medianDelta = formatPctDelta(wc, medianW);
+  const compareAria = compareBarData.labels
+    .map((label, i) => `${label}: ${compareBarData.values[i]?.toLocaleString() ?? 0} words`)
+    .join('; ');
+  const kwAria = kwSorted.length
+    ? kwSorted.map((k) => `${k.word}: ${Number(k.count) || 0}`).join('; ')
+    : '';
+
   return (
     <div className="space-y-8">
-      <p className="text-xs text-muted-foreground -mt-2">{lc.intro}</p>
+      <p className="text-xs text-muted-foreground -mt-2">
+        {lc.intro}{' '}
+        <Link href="/content-analytics" className="text-link-soft hover:underline font-medium">
+          {lc.viewSiteDistributions}
+        </Link>
+      </p>
 
-      {/* KPI row */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <Card shadow className="!p-4">
           <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
@@ -368,6 +233,12 @@ export default function ContentTab({ link }: ContentTabProps) {
           </div>
           <div className={`text-2xl font-bold tabular-nums ${wcInfo.color}`}>{wc.toLocaleString()}</div>
           <div className="text-[10px] text-muted-foreground mt-0.5">{wcInfo.label}</div>
+          {meanDelta != null && (
+            <div className="text-[10px] text-muted-foreground mt-1">{format(lc.vsSiteMeanDelta, { pct: meanDelta })}</div>
+          )}
+          {medianDelta != null && (
+            <div className="text-[10px] text-muted-foreground">{format(lc.vsSiteMedianDelta, { pct: medianDelta })}</div>
+          )}
         </Card>
         <Card shadow className="!p-4">
           <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
@@ -399,7 +270,6 @@ export default function ContentTab({ link }: ContentTabProps) {
         </Card>
       </div>
 
-      {/* This page vs site */}
       <div className="space-y-4">
         <SectionHeader icon={BarChart2} title={lc.vsSiteTitle} description={lc.vsSiteDesc} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -408,13 +278,14 @@ export default function ContentTab({ link }: ContentTabProps) {
             <p className="text-xs text-muted-foreground mb-2">{lc.vsSiteAggregates}</p>
             <div className="h-56">
               {compareBarData.values.length > 0 ? (
-                <Bar
+                <RankedBarChart
+                  ariaSummary={`Word count comparison. ${compareAria}`}
+                  heightClass="h-56"
                   data={{
                     labels: compareBarData.labels,
                     datasets: [{ data: compareBarData.values, backgroundColor: compareBarData.colors }],
                   }}
                   options={barOptsCompare()}
-                  plugins={[barValueLabelsPlugin]}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
@@ -423,155 +294,70 @@ export default function ContentTab({ link }: ContentTabProps) {
           </Card>
           <Card padding="tight">
             <h3 className="text-sm font-bold text-foreground mb-1">{lc.textVsMarkup}</h3>
-            <p className="text-xs text-muted-foreground mb-2">{lc.textVsMarkupDesc}</p>
+            <p className="text-xs text-muted-foreground mb-4">{lc.textVsMarkupDesc}</p>
+            <RatioBar
+              label={lc.textVsMarkup}
+              primaryLabel={lc.doughnutBodyText}
+              secondaryLabel={lc.doughnutOtherMarkup}
+              primaryPct={ratioPct}
+            />
+          </Card>
+        </div>
+      </div>
+
+      {kwSorted.length > 0 && (
+        <div className="space-y-4">
+          <SectionHeader icon={BarChart2} title={lc.topKeywordsPage} description={lc.freqThisUrl} />
+          <Card padding="tight">
             <div className="h-56">
-              <Doughnut
+              <RankedBarChart
+                ariaSummary={`Top keywords on this page. ${kwAria}`}
+                heightClass="h-56"
                 data={{
-                  labels: [lc.doughnutBodyText, lc.doughnutOtherMarkup],
-                  datasets: [
-                    {
-                      data: [ratioPct, Math.max(0, 100 - ratioPct)],
-                      backgroundColor: ['#22C55E', '#334155'],
-                      borderColor: 'rgba(15,23,42,0.8)',
-                      borderWidth: 2,
-                    },
-                  ],
+                  labels: kwSorted.map((k) => k.word),
+                  datasets: [{ data: kwSorted.map((k) => Number(k.count) || 0), backgroundColor: PALETTE_CATEGORICAL[0] }],
                 }}
-                options={doughnutPageOpts()}
+                options={barOptsH(lc.horizontalBarSuffix)}
               />
             </div>
           </Card>
         </div>
-      </div>
+      )}
 
-      {/* Site distributions + where this page falls */}
-      <div className="space-y-4">
-        <SectionHeader icon={BarChart2} title={lc.siteDistTitle} description={lc.siteDistDesc} />
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card padding="tight">
-            <h3 className="text-sm font-bold text-foreground mb-1">{lc.wordCountDist}</h3>
-            <p className="text-xs text-muted-foreground mb-2">
-              {format(lc.thisPageWords, { words: wc.toLocaleString() })}{' '}
-              <span className="text-link-soft font-semibold">{wcBucketLabel(wc, vo.wcBuckets)}</span>
-            </p>
-            <div className="h-56">
-              {wcLabels.length > 0 ? (
-                <Bar
-                  data={{ labels: wcLabels, datasets: [{ data: wcValues, backgroundColor: palette(wcLabels.length) }] }}
-                  options={barOpts(vca.thPages, lc.axisBucket, 'pages')}
-                  plugins={[barValueLabelsPlugin]}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
-              )}
-            </div>
-          </Card>
-          <Card padding="tight">
-            <h3 className="text-sm font-bold text-foreground mb-1">{lc.readingLevelDist}</h3>
-            <p className="text-xs text-muted-foreground mb-2">
-              {rl > 0 ? (
-                <>
-                  {lc.thisPageGrade}{' '}
-                  <span className="text-link-soft font-semibold">{format(lo.readingGrade, { n: rl })}</span> {lc.gradeArrow}{' '}
-                  <span className="text-foreground">{readingBandLabel(rl, vo.rlBuckets)}</span>
-                </>
-              ) : (
-                lc.notEnoughReading
-              )}
-            </p>
-            <div className="h-56">
-              {rlLabels.length > 0 ? (
-                <Bar
-                  data={{
-                    labels: rlLabels,
-                    datasets: [{ data: rlValues, backgroundColor: ['#22C55E', '#4C72B0', '#EAB308', '#EF4444'].slice(0, rlLabels.length) }],
-                  }}
-                  options={barOptsReadingDist()}
-                  plugins={[barValueLabelsPlugin]}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
-              )}
-            </div>
-          </Card>
-          <Card padding="tight">
-            <h3 className="text-sm font-bold text-foreground mb-1">{lc.contentHtmlRatio}</h3>
-            <p className="text-xs text-muted-foreground mb-2">
-              {lc.thisPageRatio} <span className="text-link-soft font-semibold">{ratioPct.toFixed(1)}%</span> {lc.ratioArrow}{' '}
-              <span className="text-foreground">{contentRatioBandLabel(ratioPct, lc)}</span>
-            </p>
-            <div className="h-56">
-              {crLabels.length > 0 ? (
-                <Bar
-                  data={{ labels: crLabels, datasets: [{ data: crValues, backgroundColor: palette(crLabels.length) }] }}
-                  options={barOpts(vca.thPages, lc.axisBucket, 'pages')}
-                  plugins={[barValueLabelsPlugin]}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
-              )}
-            </div>
-          </Card>
-          {kwSorted.length > 0 ? (
-            <Card padding="tight">
-              <h3 className="text-sm font-bold text-foreground mb-1">{lc.topKeywordsPage}</h3>
-              <p className="text-xs text-muted-foreground mb-2">{lc.freqThisUrl}</p>
-              <div className="h-56">
-                <Bar
-                  data={{
-                    labels: kwSorted.map((k) => k.word),
-                    datasets: [{ data: kwSorted.map((k) => Number(k.count) || 0), backgroundColor: PALETTE_CATEGORICAL[0] }],
-                  }}
-                  options={barOptsH(lc.horizontalBarSuffix)}
-                  plugins={[barValueLabelsPlugin]}
-                />
-              </div>
-            </Card>
-          ) : (
-            <Card padding="tight" className="flex items-center justify-center min-h-[14rem]">
-              <p className="text-sm text-muted-foreground">{lc.noKeywordPage}</p>
-            </Card>
-          )}
-        </div>
-      </div>
-
-      {/* On-page SEO (this page) */}
       <div className="space-y-4">
         <SectionHeader icon={Tag} title={lc.onPageSignalsTitle} description={lc.onPageSignalsDesc} />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card padding="tight">
-            <h3 className="text-sm font-bold text-foreground mb-1">{lc.titleTag}</h3>
-            <p className="text-xs text-muted-foreground mb-2">{format(lc.characters, { n: titleLen })}</p>
-            <div className="h-52">
-              <Doughnut data={titleDoughnut} options={doughnutPageOpts()} />
-            </div>
-          </Card>
-          <Card padding="tight">
-            <h3 className="text-sm font-bold text-foreground mb-1">{lc.metaDesc}</h3>
-            <p className="text-xs text-muted-foreground mb-2">{format(lc.characters, { n: metaLen })}</p>
-            <div className="h-52">
-              <Doughnut data={metaDoughnut} options={doughnutPageOpts()} />
-            </div>
-          </Card>
-          <Card padding="tight">
-            <h3 className="text-sm font-bold text-foreground mb-1">{lc.h1Count}</h3>
-            <p className="text-xs text-muted-foreground mb-2">
-              {h1c != null && !Number.isNaN(h1c) ? format(lc.headingCount, { n: h1c }) : sj.emDash}
-            </p>
-            <div className="h-52">
-              {h1Doughnut ? (
-                <Doughnut data={h1Doughnut} options={doughnutPageOpts()} />
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{lc.noH1Data}</div>
-              )}
-            </div>
-          </Card>
-        </div>
+        <Card padding="tight" className="divide-y divide-muted/50 space-y-0">
+          <div className="py-4 first:pt-0 last:pb-0">
+            <QualityStatusRow
+              label={lc.titleTag}
+              detail={format(lc.characters, { n: titleLen })}
+              statusLabel={titleStatus}
+            />
+          </div>
+          <div className="py-4 first:pt-0 last:pb-0">
+            <QualityStatusRow
+              label={lc.metaDesc}
+              detail={format(lc.characters, { n: metaLen })}
+              statusLabel={metaStatus}
+            />
+          </div>
+          <div className="py-4 first:pt-0 last:pb-0">
+            {h1Status ? (
+              <QualityStatusRow
+                label={lc.h1Count}
+                detail={format(lc.headingCount, { n: h1c ?? 0 })}
+                statusLabel={h1Status}
+              />
+            ) : (
+              <div className="text-sm text-muted-foreground">{lc.noH1Data}</div>
+            )}
+          </div>
+        </Card>
       </div>
 
       {link.content_excerpt && String(link.content_excerpt).trim() && (
         <div className="space-y-4">
-          <SectionHeader icon={FileText} title="Content excerpt" description="Snippet stored during crawl when excerpts are enabled" />
+          <SectionHeader icon={FileText} title={lc.contentExcerpt} description={lc.contentExcerptHint} />
           <Card padding="tight">
             <p className="text-xs text-foreground whitespace-pre-wrap break-words max-h-72 overflow-y-auto leading-relaxed">
               {String(link.content_excerpt).trim()}
@@ -580,60 +366,15 @@ export default function ContentTab({ link }: ContentTabProps) {
         </div>
       )}
 
-      {/* Social meta (this page) */}
       <div className="space-y-4">
         <SectionHeader icon={Share2} title={lc.socialMetaTitle} description={lc.socialMetaDesc} />
         <Card padding="tight">
-          <div className="h-56">
-            <Bar
-              data={{
-                labels: [vca.openGraph, vca.twitterCard, vca.ogImage],
-                datasets: [
-                  {
-                    label: lc.datasetPresent,
-                    data: [hasOg ? 100 : 0, hasTw ? 100 : 0, hasOgImg ? 100 : 0],
-                    backgroundColor: '#22C55E',
-                  },
-                  {
-                    label: lc.datasetMissing,
-                    data: [hasOg ? 0 : 100, hasTw ? 0 : 100, hasOgImg ? 0 : 100],
-                    backgroundColor: '#EF444466',
-                  },
-                ],
-              }}
-              options={groupedSocialOpts()}
-            />
-          </div>
+          <SocialCheckItem label={vca.openGraph} present={hasOg} />
+          <SocialCheckItem label={vca.twitterCard} present={hasTw} />
+          <SocialCheckItem label={vca.ogImage} present={hasOgImg} />
         </Card>
       </div>
 
-      {/* Crawl depth (site) + heading structure */}
-      {hasDepthData && (
-        <div className="space-y-4">
-          <SectionHeader icon={Layers} title={lc.siteArchTitle} description={lc.siteArchDesc} />
-          <Card padding="tight">
-            <h3 className="text-sm font-bold text-foreground mb-1">{lc.crawlDepthDist}</h3>
-            {link.depth != null && (
-              <p className="text-xs text-muted-foreground mb-2">
-                {lc.thisPageDepth}{' '}
-                <span className="text-link-soft font-semibold">{format(lc.depthLabel, { n: link.depth })}</span>
-              </p>
-            )}
-            <div className="h-56">
-              <Bar
-                data={{
-                  labels: depthLabels,
-                  datasets: [{ data: depthValues, backgroundColor: palette(depthLabels.length) }],
-                }}
-                options={barOpts(vca.thPages, lc.axisDepth, 'pages')}
-                plugins={[barValueLabelsPlugin]}
-              />
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* Heading sequence + keyword pills (detail) */}
       {link.heading_sequence && (
         <div className="bg-brand-900 border border-default rounded-xl p-4">
           <div className="text-xs text-muted-foreground mb-3">{lc.headingStructure}</div>

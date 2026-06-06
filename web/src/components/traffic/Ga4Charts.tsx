@@ -12,6 +12,8 @@ import {
   getChartTitleColor,
   getChartLegendLabelColor,
 } from '../../utils/chartJsDefaults';
+import { filterZeroSlices, doughnutOptionsWithPercentTooltip, formatCompositionAria } from '../../lib/chartDoughnutUtils';
+import { ChartAccessibleFallback } from '../charts/ChartAccessibleFallback';
 import { strings } from '../../lib/strings';
 import { truncateLabel } from '../google/tableUtils';
 import { buildEngagementBuckets } from './ga4TableUtils';
@@ -254,34 +256,23 @@ export function Ga4ChannelDoughnut({ by_channel }: Ga4ChannelDoughnutProps) {
     if (!by_channel?.length) return null;
     const labels = by_channel.map((r) => r.channel || '(none)');
     const values = by_channel.map((r) => r.sessions || 0);
-    if (!values.some((v) => v > 0)) return null;
-    return { data: { labels, datasets: [{ data: values, backgroundColor: palette(labels.length) }] } };
+    const filtered = filterZeroSlices(labels, values);
+    if (filtered.values.length === 0) return null;
+    return {
+      data: { labels: filtered.labels, datasets: [{ data: filtered.values, backgroundColor: palette(filtered.labels.length) }] },
+      aria: formatCompositionAria(filtered.labels, filtered.values, 'sessions'),
+      rows: filtered.labels.map((label, i) => [label, filtered.values[i] ?? 0] as [string, string | number]),
+    };
   }, [by_channel]);
 
-  const opts = useMemo((): ChartOptions<'doughnut'> => {
-    const legendColor = getChartLegendLabelColor();
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'bottom', labels: { color: legendColor, font: { size: 11 }, padding: 12 } },
-        tooltip: {
-          callbacks: {
-            label: (ctx: TooltipItem<'doughnut'>) => {
-              const raw = ctx.raw;
-              const val = typeof raw === 'number' ? raw : Number(raw);
-              return ` ${ctx.label}: ${val.toLocaleString()}`;
-            },
-          },
-        },
-      },
-    };
-  }, []);
+  const opts = useMemo(() => doughnutOptionsWithPercentTooltip(), []);
 
   if (!chart) return null;
   return (
-    <GoogleChartCard title={tf.charts.channelTitle} hint={tf.charts.channelHint} ariaLabel={tf.charts.channelAria} heightClass="h-56">
-      <Doughnut data={chart.data} options={opts} />
+    <GoogleChartCard title={tf.charts.channelTitle} hint={tf.charts.channelHint} ariaLabel={chart.aria} heightClass="h-56">
+      <ChartAccessibleFallback summary={chart.aria} rows={chart.rows}>
+        <Doughnut data={chart.data} options={opts} />
+      </ChartAccessibleFallback>
     </GoogleChartCard>
   );
 }
@@ -296,34 +287,23 @@ export function Ga4DeviceDoughnut({ by_device }: Ga4DeviceDoughnutProps) {
     if (!by_device?.length) return null;
     const labels = by_device.map((r) => r.device || '(none)');
     const values = by_device.map((r) => r.sessions || 0);
-    if (!values.some((v) => v > 0)) return null;
-    return { data: { labels, datasets: [{ data: values, backgroundColor: palette(labels.length) }] } };
+    const filtered = filterZeroSlices(labels, values);
+    if (filtered.values.length === 0) return null;
+    return {
+      data: { labels: filtered.labels, datasets: [{ data: filtered.values, backgroundColor: palette(filtered.labels.length) }] },
+      aria: formatCompositionAria(filtered.labels, filtered.values, 'sessions'),
+      rows: filtered.labels.map((label, i) => [label, filtered.values[i] ?? 0] as [string, string | number]),
+    };
   }, [by_device]);
 
-  const opts = useMemo((): ChartOptions<'doughnut'> => {
-    const legendColor = getChartLegendLabelColor();
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { position: 'bottom', labels: { color: legendColor, font: { size: 11 }, padding: 12 } },
-        tooltip: {
-          callbacks: {
-            label: (ctx: TooltipItem<'doughnut'>) => {
-              const raw = ctx.raw;
-              const val = typeof raw === 'number' ? raw : Number(raw);
-              return ` ${ctx.label}: ${val.toLocaleString()}`;
-            },
-          },
-        },
-      },
-    };
-  }, []);
+  const opts = useMemo(() => doughnutOptionsWithPercentTooltip(), []);
 
   if (!chart) return null;
   return (
-    <GoogleChartCard title={tf.charts.deviceTitle} hint={tf.charts.deviceHint} ariaLabel={tf.charts.deviceAria} heightClass="h-56">
-      <Doughnut data={chart.data} options={opts} />
+    <GoogleChartCard title={tf.charts.deviceTitle} hint={tf.charts.deviceHint} ariaLabel={chart.aria} heightClass="h-56">
+      <ChartAccessibleFallback summary={chart.aria} rows={chart.rows}>
+        <Doughnut data={chart.data} options={opts} />
+      </ChartAccessibleFallback>
     </GoogleChartCard>
   );
 }

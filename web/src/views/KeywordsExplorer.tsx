@@ -5,13 +5,14 @@ import type { KeywordRow, KeywordReportData, ViewProps } from '@/types';
 import type { CannibalisationItem, KeywordHistoryMap } from '@/types/components';
 import { Key, Settings2, Play } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useUrlTab } from '@/hooks/useUrlTab';
 import { useReport } from '../context/useReport';
 import { useKeywordBrandQuery } from '@/hooks/useKeywordBrandQuery';
 import { filterKeywordRowsForDomain } from '@/lib/filterKeywordsForDomain';
 import { apiUrl } from '../lib/publicBase';
 import { goToPipeline } from '../lib/pipelineReturn';
 import { strings, format } from '../lib/strings';
-import { PageLayout, Card, Button } from '../components';
+import { PageLayout, PageHeader, Card, Button, ViewTabs } from '../components';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import { filterBySearch } from '../components/google/tableUtils';
 import { syncChartJsDefaultsColor } from '../utils/chartJsDefaults';
@@ -40,7 +41,7 @@ import {
   isTableTab,
 } from '../components/keywordsExplorer/keywordTabMeta';
 
-const TAB_IDS: KeywordTabId[] = ['overview', ...KEYWORD_TABLE_TAB_IDS, 'cannib', 'bypage'];
+const KEYWORD_TABS = ['overview', ...KEYWORD_TABLE_TAB_IDS, 'cannib', 'bypage'] as const;
 
 const EMPTY_ROWS: KeywordRow[] = [];
 const EMPTY_HISTORY: KeywordHistoryMap = {};
@@ -63,7 +64,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
     '';
   const brandName = String(kwData?.brand_name || deriveBrandFromUrl(startUrl) || '').trim();
 
-  const [activeTab, setActiveTab] = useState<KeywordTabId>('overview');
+  const [activeTab, setActiveTab] = useUrlTab(KEYWORD_TABS, 'overview');
   const [intentFilter, setIntentFilter] = useState('');
   const [brandedFilter, setBrandedFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
@@ -230,7 +231,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
 
   const tabBadges = useMemo(() => {
     const badges: Partial<Record<KeywordTabId, number | null>> = {};
-    for (const id of TAB_IDS) {
+    for (const id of KEYWORD_TABS) {
       badges[id] = tabRowCount(id, rows, tabFilterOptions, tabCounts);
     }
     return badges;
@@ -276,14 +277,12 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
 
   if (!kwData || rows.length === 0) {
     return (
-      <PageLayout>
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-bright mb-2 flex items-center gap-2">
-            <Key className="h-7 w-7 text-link shrink-0" />
-            {ke.title}
-          </h1>
-          <p className="text-muted-foreground">{ke.subtitle}</p>
-        </div>
+      <PageLayout className="space-y-6">
+        <PageHeader
+          icon={<Key className="h-7 w-7 text-link shrink-0" />}
+          title={ke.title}
+          subtitle={ke.subtitle}
+        />
         <div className="max-w-md mx-auto text-center py-12">
           <Key className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
           <h2 className="text-xl font-bold text-bright mb-2">{ke.emptyTitle}</h2>
@@ -317,8 +316,14 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
     );
   }
 
+  const keywordTabItems = KEYWORD_TABS.map((id) => ({
+    id,
+    label: tabLabels[id],
+    badge: tabBadges[id] ?? null,
+  }));
+
   return (
-    <PageLayout>
+    <PageLayout className="space-y-6">
       <KeywordExplorerChrome
         title={ke.title}
         subtitle={ke.subtitle}
@@ -351,40 +356,13 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
         </p>
       )}
 
-      <div className="border-b border-default mb-6" role="tablist" aria-label={ke.title}>
-        <div className="flex gap-0 overflow-x-auto">
-          {TAB_IDS.map((id) => {
-            const badge = tabBadges[id];
-            return (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={activeTab === id}
-                aria-controls={`kw-tab-${id}`}
-                id={`kw-tab-btn-${id}`}
-                onClick={() => setActiveTab(id)}
-                className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors flex items-center gap-1.5 ${
-                  activeTab === id
-                    ? 'border-accent text-accent'
-                    : 'border-transparent text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {tabLabels[id]}
-                {(badge ?? 0) > 0 && (
-                  <span
-                    className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold tabular-nums ${
-                      activeTab === id ? 'bg-accent/20 text-accent' : 'bg-brand-800 text-muted-foreground'
-                    }`}
-                  >
-                    {badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      <ViewTabs
+        tabs={keywordTabItems}
+        activeTab={activeTab}
+        onChange={(id) => setActiveTab(id as KeywordTabId)}
+        ariaLabel={ke.title}
+        idPrefix="kw"
+      />
 
       {activeTab === 'overview' && (
         <KeywordOverviewPanel

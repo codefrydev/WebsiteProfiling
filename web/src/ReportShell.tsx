@@ -12,8 +12,8 @@ import {
   Repeat,
   FileText,
   ShieldAlert,
+  Bug,
   Gauge,
-  PieChart,
   Share2,
   BarChart2,
   Cpu,
@@ -36,7 +36,7 @@ import { ReportProvider as ReportProviderBase } from './context/ReportContext';
 import type { ReportPayload } from '@/types';
 function viewLoading(label = 'Loading view…') {
   return (
-    <div className="px-5 pt-4 pb-6 sm:px-6 lg:px-8 space-y-4" role="status" aria-busy="true" aria-label={label}>
+    <div className="px-[var(--spacing-page-x)] pt-4 pb-6 sm:px-6 lg:px-8 lg:pt-5 lg:pb-8 space-y-4" role="status" aria-busy="true" aria-label={label}>
       <span className="sr-only">{label}</span>
       <div className="h-8 w-56 max-w-[70%] animate-pulse rounded-md bg-brand-800/90 dark:bg-white/[0.07]" />
       <div className="h-40 w-full rounded-xl border border-default animate-pulse bg-brand-800/40 dark:bg-white/[0.04]" />
@@ -53,8 +53,8 @@ const SiteStructure = dynamic(() => import('./views/SiteStructure'), { loading: 
 const Redirects = dynamic(() => import('./views/Redirects'), { loading: () => viewLoading() });
 const Content = dynamic(() => import('./views/Content'), { loading: () => viewLoading() });
 const Security = dynamic(() => import('./views/Security'), { loading: () => viewLoading() });
+const JavaScriptErrors = dynamic(() => import('./views/JavaScriptErrors'), { loading: () => viewLoading() });
 const Lighthouse = dynamic(() => import('./views/Lighthouse'), { loading: () => viewLoading() });
-const Charts = dynamic(() => import('./views/Charts'), { loading: () => viewLoading() });
 const Network = dynamic(() => import('./views/Network'), {
   ssr: false,
   loading: () => viewLoading('Loading network graph…'),
@@ -109,9 +109,9 @@ const VIEW_CONFIG: ViewConfigEntry[] = [
   { id: 'content', component: Content as ComponentType<CurrentViewProps>, icon: FileText },
   { id: 'lighthouse', component: Lighthouse as ComponentType<CurrentViewProps>, icon: Gauge },
   { id: 'security', component: Security as ComponentType<CurrentViewProps>, icon: ShieldAlert },
+  { id: 'javascript-errors', component: JavaScriptErrors as ComponentType<CurrentViewProps>, icon: Bug },
   { id: 'content-analytics', component: ContentAnalytics as ComponentType<CurrentViewProps>, icon: BarChart2 },
   { id: 'tech-stack', component: TechStack as ComponentType<CurrentViewProps>, icon: Cpu },
-  { id: 'charts', component: Charts as ComponentType<CurrentViewProps>, icon: PieChart },
   { id: 'network', component: Network as ComponentType<CurrentViewProps>, icon: Share2 },
   { id: 'gallery', component: Gallery as ComponentType<CurrentViewProps>, icon: Images },
   { id: 'search-performance', component: SearchPerformance as ComponentType<CurrentViewProps>, icon: TrendingUp },
@@ -170,6 +170,14 @@ function AppContent({ slug }: SlugProps): ReactNode {
 
   const view = pathSlugToViewId(slug ?? '');
 
+  useEffect(() => {
+    if (slug !== 'charts') return;
+    const next = new URLSearchParams(searchParams.toString());
+    next.set('tab', 'charts');
+    const q = next.toString();
+    router.replace(`/dashboard?${q}`);
+  }, [slug, searchParams, router]);
+
   const selectView = (id: ViewId | string, opts?: { domain?: string; reportId?: number }): void => {
     if (opts?.reportId != null) {
       setSelectedReportId(opts.reportId);
@@ -192,6 +200,10 @@ function AppContent({ slug }: SlugProps): ReactNode {
 
   if (!view) {
     return null;
+  }
+
+  if (view === 'charts') {
+    return <ReportShellSkeleton variant="dashboard" />;
   }
 
   const CurrentView = VIEWS.find((v) => v.id === view)?.component || Home;

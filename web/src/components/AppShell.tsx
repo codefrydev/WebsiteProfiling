@@ -26,6 +26,10 @@ import {
   type NavItemId,
 } from '@/lib/appNav';
 import type { ReportPayload } from '@/types';
+import {
+  getBrowserDiagnosticsScope,
+  getLinksWithBrowserErrors,
+} from '@/lib/browserErrors';
 
 interface IntegrationsToast {
   type: 'success' | 'error';
@@ -109,6 +113,8 @@ export default function AppShell({
     ) ?? 0;
   const securityFindings = data?.security_findings;
   const securityCount = Array.isArray(securityFindings) ? securityFindings.length : 0;
+  const jsErrorScope = getBrowserDiagnosticsScope(data);
+  const jsErrorPageCount = jsErrorScope.usesBrowser ? getLinksWithBrowserErrors(data?.links).length : 0;
 
   const auditedHost =
     canonicalDomainFromPayload(data, startUrlByRunId) || strings.app.defaultSiteName;
@@ -188,6 +194,9 @@ export default function AppShell({
                       ) : null}
                       {item.id === 'security' && securityCount > 0 ? (
                         <Badge variant="medium" label={String(securityCount)} className="shrink-0" />
+                      ) : null}
+                      {item.id === 'javascript-errors' && jsErrorPageCount > 0 ? (
+                        <Badge variant="high" label={String(jsErrorPageCount)} className="shrink-0" />
                       ) : null}
                     </Link>
                   );

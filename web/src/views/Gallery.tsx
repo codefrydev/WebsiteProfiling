@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { Bar } from 'react-chartjs-2';
-import type { TooltipItem } from 'chart.js';
 import {
   Images,
   ExternalLink,
@@ -16,11 +14,7 @@ import {
 import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card } from '../components';
-import { PALETTE_CATEGORICAL } from '../utils/chartPalette';
-import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
 import type { GalleryImageItem, ReportLink, ViewProps } from '@/types';
-
-registerChartJsBase();
 
 type GalleryKind = 'content' | 'og' | 'twitter' | string;
 type GalleryDensity = 'sm' | 'md' | 'lg';
@@ -269,40 +263,6 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
 
   const items = useMemo(() => collectFromLinks(data?.links), [data?.links]);
 
-  const kindBreakdown = useMemo(() => {
-    let onPage = 0;
-    let og = 0;
-    let twitter = 0;
-    items.forEach((item) => {
-      const kinds = new Set(item.refs.map((r) => r.kind));
-      if (kinds.has('content')) onPage += 1;
-      if (kinds.has('og')) og += 1;
-      if (kinds.has('twitter')) twitter += 1;
-    });
-    return {
-      labels: vg.wcBreakdownLabels,
-      values: [onPage, og, twitter],
-    };
-  }, [items, vg.wcBreakdownLabels]);
-
-  const kindBarOpts = useMemo(() => {
-    const base = barOptionsHorizontal();
-    return {
-      ...base,
-      plugins: {
-        ...base.plugins,
-        tooltip: {
-          callbacks: {
-            label: (ctx: TooltipItem<'bar'>) => {
-              const n = Number(ctx.raw);
-              return ` ${n.toLocaleString()} unique image${n !== 1 ? 's' : ''}`;
-            },
-          },
-        },
-      },
-    };
-  }, []);
-
   const filtered = useMemo(() => {
     const q = (searchQuery || '').toLowerCase().trim();
     return items.filter((item) => {
@@ -399,27 +359,7 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
             </button>
           ))}
         </div>
-        <div className="flex flex-col sm:flex-row sm:items-end gap-4 w-full lg:w-auto lg:min-w-[280px]">
-          {items.length > 0 && (
-            <div className="flex-1 min-w-0 max-w-md">
-              <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold block mb-1">{vg.bySourceType}</span>
-              <div className="h-24">
-                <Bar
-                  data={{
-                    labels: kindBreakdown.labels,
-                    datasets: [
-                      {
-                        data: kindBreakdown.values,
-                        backgroundColor: [PALETTE_CATEGORICAL[0], PALETTE_CATEGORICAL[1], PALETTE_CATEGORICAL[2]],
-                      },
-                    ],
-                  }}
-                  options={kindBarOpts}
-                />
-              </div>
-            </div>
-          )}
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
+        <div className="flex flex-wrap items-center gap-3 shrink-0 ml-auto">
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Layout</span>
               <div className="flex rounded-lg border border-default overflow-hidden">
@@ -471,7 +411,6 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
               </div>
             </div>
           </div>
-        </div>
       </div>
 
       <Card className="p-4 flex flex-wrap gap-6 text-sm">

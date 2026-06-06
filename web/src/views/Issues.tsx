@@ -6,7 +6,9 @@ import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Badge } from '../components';
 import { palette } from '../utils/chartPalette';
-import { registerChartJsBase, barOptionsHorizontal, doughnutOptionsBottomLegend } from '../utils/chartJsDefaults';
+import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
+import { doughnutOptionsWithPercentTooltip, formatCompositionAria } from '../lib/chartDoughnutUtils';
+import { ChartAccessibleFallback } from '../components/charts';
 import type { ReportIssue, ViewProps } from '@/types';
 import { categoryDisplayName } from '@/lib/categoryDisplayNames';
 
@@ -193,10 +195,23 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
   }, [forCharts, sj]);
 
   const priorityChart = useMemo(() => {
-    const values = PRIORITY_ORDER.map((p) => forCharts.filter((item) => (item.issue.priority || 'Medium') === p).length);
-    const colors = PRIORITY_ORDER.map((p) => PRIORITY_CONFIG[p as PriorityKey].chartColor);
-    return { values, colors };
-  }, [forCharts, PRIORITY_ORDER]);
+    const items = PRIORITY_ORDER.map((p) => ({
+      label: p,
+      value: forCharts.filter((item) => (item.issue.priority || 'Medium') === p).length,
+      color: PRIORITY_CONFIG[p as PriorityKey].chartColor,
+    })).filter((item) => item.value > 0);
+    return {
+      labels: items.map((i) => i.label),
+      values: items.map((i) => i.value),
+      colors: items.map((i) => i.color),
+      aria: formatCompositionAria(
+        items.map((i) => i.label),
+        items.map((i) => i.value),
+        vi.issuesWord,
+      ),
+      rows: items.map((i) => [i.label, i.value] as [string, string | number]),
+    };
+  }, [forCharts, PRIORITY_ORDER, vi.issuesWord]);
 
   const priorityCounts = PRIORITY_ORDER.reduce<Record<string, number>>((acc, p) => {
     acc[p] = list.filter((item) => (item.issue.priority || 'Medium') === p).length;
@@ -282,34 +297,33 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
             <p className="text-xs text-muted-foreground mb-2">{vi.issuesByPriorityHint}</p>
             <div className="h-64 flex items-center justify-center">
               <div className="w-full max-w-[280px] h-52">
-                <Doughnut
-                  data={{
-                    labels: PRIORITY_ORDER,
-                    datasets: [
-                      {
-                        data: priorityChart.values,
-                        backgroundColor: priorityChart.colors,
-                        borderColor: 'rgba(15,23,42,0.8)',
-                        borderWidth: 2,
-                      },
-                    ],
-                  }}
-                  options={{
-                    ...doughnutOptionsBottomLegend(),
-                    plugins: {
-                      ...doughnutOptionsBottomLegend().plugins,
-                      tooltip: {
-                        callbacks: {
-                          label: (ctx: TooltipItem<'doughnut'>) => {
-                            const n = Number(ctx.raw);
-                            if (n === 0) return ` ${ctx.label}: 0`;
-                            return ` ${ctx.label}: ${n.toLocaleString()} ${n !== 1 ? vi.issuesWord : vi.issueWord}`;
+                <ChartAccessibleFallback summary={priorityChart.aria} rows={priorityChart.rows}>
+                  <Doughnut
+                    data={{
+                      labels: priorityChart.labels,
+                      datasets: [
+                        {
+                          data: priorityChart.values,
+                          backgroundColor: priorityChart.colors,
+                          borderColor: 'rgba(15,23,42,0.8)',
+                          borderWidth: 2,
+                        },
+                      ],
+                    }}
+                    options={doughnutOptionsWithPercentTooltip({
+                      plugins: {
+                        tooltip: {
+                          callbacks: {
+                            label: (ctx: TooltipItem<'doughnut'>) => {
+                              const n = Number(ctx.raw);
+                              return ` ${ctx.label}: ${n.toLocaleString()} ${n !== 1 ? vi.issuesWord : vi.issueWord}`;
+                            },
                           },
                         },
                       },
-                    },
-                  }}
-                />
+                    })}
+                  />
+                </ChartAccessibleFallback>
               </div>
             </div>
           </Card>

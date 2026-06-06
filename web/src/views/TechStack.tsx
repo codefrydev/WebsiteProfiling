@@ -1,10 +1,13 @@
 import type { Chart, TooltipItem } from 'chart.js';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { useUrlTab } from '@/hooks/useUrlTab';
+import { Cpu, List } from 'lucide-react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '../components';
+import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, ViewTabs, ViewTabPanel } from '../components';
+import type { ViewTabItem } from '../components';
 import { palette } from '../utils/chartPalette';
 import { getGridColor, getChartCanvasTextColor } from '../utils/chartJsDefaults';
 import { anyChartOptions } from '../utils/chartOptions';
@@ -54,9 +57,13 @@ function categorizeTech(name: string): string {
 
 const EMPTY_TS: TechStackSummary = {};
 
+const TECH_STACK_TABS = ['overview', 'breakdown'] as const;
+type TechStackTabId = (typeof TECH_STACK_TABS)[number];
+
 export default function TechStack({ searchQuery = '' }: ViewProps) {
   const vr = strings.views.techStack;
   const { data } = useReport();
+  const [activeTab, setActiveTab] = useUrlTab(TECH_STACK_TABS, 'overview');
   const q = (searchQuery || '').toLowerCase().trim();
   const ts: TechStackSummary = data?.tech_stack_summary ?? EMPTY_TS;
   const techs = useMemo(() => {
@@ -69,6 +76,21 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
       return name.includes(q) || cat.includes(q) || sampleHit;
     });
   }, [ts.technologies, q]);
+
+  const tabItems = useMemo((): ViewTabItem[] => [
+    {
+      id: 'overview',
+      label: vr.tabs.overview,
+      icon: <Cpu className="h-3.5 w-3.5 shrink-0" aria-hidden />,
+      badge: techs.length > 0 ? techs.length : null,
+    },
+    {
+      id: 'breakdown',
+      label: vr.tabs.breakdown,
+      icon: <List className="h-3.5 w-3.5 shrink-0" aria-hidden />,
+      badge: techs.length > 0 ? techs.length : null,
+    },
+  ], [vr.tabs, techs.length]);
 
   if (!data) return null;
 
@@ -83,89 +105,106 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
   });
 
   return (
-    <PageLayout className="space-y-8">
+    <PageLayout className="space-y-6">
       <PageHeader
         title={vr.title}
         subtitle={format(vr.subtitle, { count: totalAnalyzed.toLocaleString() })}
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-        {Object.entries(categoryCounts).slice(0, 4).map(([cat, count]) => (
-          <Card key={cat} shadow>
-            <div className="text-xs text-muted-foreground uppercase font-bold mb-1">{cat}</div>
-            <div className="text-2xl font-bold text-bright">{String(count)}</div>
-            <div className="text-[10px] text-muted-foreground mt-1">{vr.techDetectedSuffix}</div>
-          </Card>
-        ))}
-      </div>
+      <ViewTabs
+        tabs={tabItems}
+        activeTab={activeTab}
+        onChange={(id) => setActiveTab(id as TechStackTabId)}
+        ariaLabel={vr.title}
+        idPrefix="tech-stack"
+      />
 
-      <Card padding="tight">
-        <h3 className="text-sm font-bold text-foreground mb-1">{vr.cardDetected}</h3>
-        <p className="text-xs text-muted-foreground mb-3">{vr.cardHint}</p>
-        <div style={{ height: Math.max(200, techs.length * 28 + 40) }}>
-          {chartLabels.length > 0 ? (
-            <Bar
-              data={{ labels: chartLabels, datasets: [{ data: chartValues, backgroundColor: palette(chartLabels.length) }] }}
-              options={anyChartOptions({
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                  legend: { display: false },
-                  tooltip: {
-                    callbacks: {
-                      label: (ctx: TooltipItem<'bar'>) =>
-                        format(vr.tooltipPages, { count: String(ctx.raw ?? '').toLocaleString() }),
+      {activeTab === 'overview' && (
+        <ViewTabPanel idPrefix="tech-stack" tabId="overview" className="space-y-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {Object.entries(categoryCounts).slice(0, 4).map(([cat, count]) => (
+              <Card key={cat} shadow>
+                <div className="text-xs text-muted-foreground uppercase font-bold mb-1">{cat}</div>
+                <div className="text-2xl font-bold text-bright">{String(count)}</div>
+                <div className="text-[10px] text-muted-foreground mt-1">{vr.techDetectedSuffix}</div>
+              </Card>
+            ))}
+          </div>
+
+          <Card padding="tight">
+            <h3 className="text-sm font-bold text-foreground mb-1">{vr.cardDetected}</h3>
+            <p className="text-xs text-muted-foreground mb-3">{vr.cardHint}</p>
+            <div style={{ height: Math.max(200, techs.length * 28 + 40) }}>
+              {chartLabels.length > 0 ? (
+                <Bar
+                  data={{ labels: chartLabels, datasets: [{ data: chartValues, backgroundColor: palette(chartLabels.length) }] }}
+                  options={anyChartOptions({
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: { display: false },
+                      tooltip: {
+                        callbacks: {
+                          label: (ctx: TooltipItem<'bar'>) =>
+                            format(vr.tooltipPages, { count: String(ctx.raw ?? '').toLocaleString() }),
+                        },
+                      },
                     },
-                  },
-                },
-                scales: {
-                  x: { grid: { color: getGridColor() }, beginAtZero: true, title: { display: true, text: vr.chartAxisPages } },
-                  y: { grid: { color: getGridColor() } },
-                },
-              })}
-              plugins={[barValueLabelsPlugin]}
-            />
-          ) : (ts.technologies || []).length > 0 ? (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{vr.noSearchMatch}</div>
-          ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{vr.noData}</div>
-          )}
-        </div>
-      </Card>
-
-      {techs.length > 0 && (
-        <div>
-          <h2 className="text-xl font-bold text-bright mb-4">{vr.breakdownTitle}</h2>
-          <Card overflowHidden padding="none">
-            <Table>
-              <TableHead>
-                <tr>
-                  <TableHeadCell className="text-left">{vr.colTechnology}</TableHeadCell>
-                  <TableHeadCell className="text-left">{vr.colCategory}</TableHeadCell>
-                  <TableHeadCell className="text-right">{vr.colPages}</TableHeadCell>
-                  <TableHeadCell className="text-left">{vr.colSampleUrls}</TableHeadCell>
-                </tr>
-              </TableHead>
-              <TableBody>
-                {techs.map((t, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="text-foreground font-medium">{t.name}</TableCell>
-                    <TableCell className="text-muted-foreground text-xs">{categorizeTech(t.name || '')}</TableCell>
-                    <TableCell className="text-right font-mono text-muted-foreground">{(t.count ?? 0).toLocaleString()}</TableCell>
-                    <TableCell className="text-xs max-w-md">
-                      {(t.sample_urls || []).map((u, j) => (
-                        <a key={j} href={u} target="_blank" rel="noreferrer" className="text-link hover:underline block truncate">
-                          {u.replace(/^https?:\/\//, '').slice(0, 60)}
-                        </a>
-                      ))}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    scales: {
+                      x: { grid: { color: getGridColor() }, beginAtZero: true, title: { display: true, text: vr.chartAxisPages } },
+                      y: { grid: { color: getGridColor() } },
+                    },
+                  })}
+                  plugins={[barValueLabelsPlugin]}
+                />
+              ) : (ts.technologies || []).length > 0 ? (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{vr.noSearchMatch}</div>
+              ) : (
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{vr.noData}</div>
+              )}
+            </div>
           </Card>
-        </div>
+        </ViewTabPanel>
+      )}
+
+      {activeTab === 'breakdown' && (
+        <ViewTabPanel idPrefix="tech-stack" tabId="breakdown">
+          {techs.length > 0 ? (
+            <Card overflowHidden padding="none">
+              <Table>
+                <TableHead>
+                  <tr>
+                    <TableHeadCell className="text-left">{vr.colTechnology}</TableHeadCell>
+                    <TableHeadCell className="text-left">{vr.colCategory}</TableHeadCell>
+                    <TableHeadCell className="text-right">{vr.colPages}</TableHeadCell>
+                    <TableHeadCell className="text-left">{vr.colSampleUrls}</TableHeadCell>
+                  </tr>
+                </TableHead>
+                <TableBody>
+                  {techs.map((t, i) => (
+                    <TableRow key={i}>
+                      <TableCell className="text-foreground font-medium">{t.name}</TableCell>
+                      <TableCell className="text-muted-foreground text-xs">{categorizeTech(t.name || '')}</TableCell>
+                      <TableCell className="text-right font-mono text-muted-foreground">{(t.count ?? 0).toLocaleString()}</TableCell>
+                      <TableCell className="text-xs max-w-md">
+                        {(t.sample_urls || []).map((u, j) => (
+                          <a key={j} href={u} target="_blank" rel="noreferrer" className="text-link hover:underline block truncate">
+                            {u.replace(/^https?:\/\//, '').slice(0, 60)}
+                          </a>
+                        ))}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Card>
+          ) : (
+            <Card className="p-8 text-center text-muted-foreground text-sm">
+              {(ts.technologies || []).length > 0 ? vr.noSearchMatch : vr.noData}
+            </Card>
+          )}
+        </ViewTabPanel>
       )}
     </PageLayout>
   );
