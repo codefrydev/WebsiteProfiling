@@ -24,7 +24,10 @@ import {
   Key,
   ArrowLeftRight,
   FileDown,
+  FileSearch,
+  Terminal,
 } from 'lucide-react';
+import { UrlInspectorProvider } from './context/UrlInspectorContext';
 import AppShell from './components/AppShell';
 import { useReport } from './context/useReport';
 import { strings } from './lib/strings';
@@ -63,10 +66,12 @@ const ContentAnalytics = dynamic(() => import('./views/ContentAnalytics'), { loa
 const TechStack = dynamic(() => import('./views/TechStack'), { loading: () => viewLoading() });
 const Gallery = dynamic(() => import('./views/Gallery'), { loading: () => viewLoading() });
 const SearchPerformance = dynamic(() => import('./views/SearchPerformance'), { loading: () => viewLoading() });
+const Indexation = dynamic(() => import('./views/Indexation'), { loading: () => viewLoading() });
 const Backlinks = dynamic(() => import('./views/Backlinks'), { loading: () => viewLoading() });
 const Traffic = dynamic(() => import('./views/Traffic'), { loading: () => viewLoading() });
 const KeywordsExplorer = dynamic(() => import('./views/KeywordsExplorer'), { loading: () => viewLoading() });
 const ExportReport = dynamic(() => import('./views/ExportReport'), { loading: () => viewLoading() });
+const LogAnalyzer = dynamic(() => import('./views/LogAnalyzer'), { loading: () => viewLoading() });
 
 interface ReportShellReportContext {
   data: ReportPayload | null;
@@ -102,6 +107,7 @@ const VIEW_CONFIG: ViewConfigEntry[] = [
   { id: 'overview', component: Overview as ComponentType<CurrentViewProps>, icon: LayoutDashboard },
   { id: 'compare', component: CompareReports as ComponentType<CurrentViewProps>, icon: ArrowLeftRight },
   { id: 'export', component: ExportReport as ComponentType<CurrentViewProps>, icon: FileDown },
+  { id: 'log-analyzer', component: LogAnalyzer as ComponentType<CurrentViewProps>, icon: Terminal },
   { id: 'issues', component: Issues as ComponentType<CurrentViewProps>, icon: AlertOctagon },
   { id: 'links', component: Links as ComponentType<CurrentViewProps>, icon: LinkIcon },
   { id: 'site-structure', component: SiteStructure as ComponentType<CurrentViewProps>, icon: FolderTree },
@@ -115,6 +121,7 @@ const VIEW_CONFIG: ViewConfigEntry[] = [
   { id: 'network', component: Network as ComponentType<CurrentViewProps>, icon: Share2 },
   { id: 'gallery', component: Gallery as ComponentType<CurrentViewProps>, icon: Images },
   { id: 'search-performance', component: SearchPerformance as ComponentType<CurrentViewProps>, icon: TrendingUp },
+  { id: 'indexation', component: Indexation as ComponentType<CurrentViewProps>, icon: FileSearch },
   { id: 'backlinks', component: Backlinks as ComponentType<CurrentViewProps>, icon: Link2 },
   { id: 'traffic', component: Traffic as ComponentType<CurrentViewProps>, icon: BarChart2 },
   { id: 'keywords-explorer', component: KeywordsExplorer as ComponentType<CurrentViewProps>, icon: Key },
@@ -264,10 +271,6 @@ function RoutedShell({ slug }: SlugProps): ReactNode {
   );
 }
 
-export default function ReportShell({ slug }: SlugProps): ReactNode {
-  return <RoutedShell slug={slug} />;
-}
-
 /** Wraps children with ReportProvider (db + domain from URL). */
 export function ReportAppClient({ children }: { children: ReactNode }): ReactNode {
   const searchParams = useSearchParams();
@@ -276,7 +279,17 @@ export function ReportAppClient({ children }: { children: ReactNode }): ReactNod
 
   return (
     <ReportProvider domainSlug={domainSlug}>
-      {children}
+      <UrlInspectorProvider>
+        {children}
+      </UrlInspectorProvider>
     </ReportProvider>
+  );
+}
+
+export default function ReportShell({ slug }: SlugProps): ReactNode {
+  return (
+    <ReportAppClient>
+      <RoutedShell slug={slug} />
+    </ReportAppClient>
   );
 }

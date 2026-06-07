@@ -46,6 +46,26 @@ export function authEnabled(): boolean {
   return Boolean(sessionSecret());
 }
 
+const READONLY_ROLES = new Set(['viewer', 'client-readonly']);
+
+export function sessionRoleFromRequest(request: NextRequest): string | null {
+  if (!authEnabled()) return null;
+  const cookie = request.cookies.get(COOKIE_NAME)?.value;
+  const session = verifySessionToken(cookie);
+  return session?.role ?? null;
+}
+
+export function canMutateRole(role: string | null | undefined): boolean {
+  if (!authEnabled()) return true;
+  if (!role) return false;
+  return !READONLY_ROLES.has(role);
+}
+
+export function defaultSessionRole(): string {
+  const configured = (process.env.AUTH_DEFAULT_ROLE || 'analyst').trim();
+  return configured || 'analyst';
+}
+
 export function requireApiAuth(request: NextRequest): NextResponse | null {
   if (!authEnabled()) return null;
   const cookie = request.cookies.get(COOKIE_NAME)?.value;
@@ -53,9 +73,10 @@ export function requireApiAuth(request: NextRequest): NextResponse | null {
   if (!session) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
   }
-  if (session.role === 'viewer') {
+  if (session.role === 'viewer' || session.role === 'client-readonly') {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
+  // admin, editor, analyst may mutate
   return null;
 }
 

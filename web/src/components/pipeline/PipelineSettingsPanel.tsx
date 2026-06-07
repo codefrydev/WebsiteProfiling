@@ -8,6 +8,7 @@ import { crawlRenderModeUsesBrowser } from '@/lib/browserCrawlStatus';
 import { PIPELINE_CONFIG_SECTIONS, isPipelineFieldVisible } from '@/lib/pipelineConfigSchema';
 import { LLM_CONFIG_SECTIONS } from '@/lib/llmConfigSchema';
 import { usePipeline } from '@/context/PipelineContext';
+import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import Button from '@/components/Button';
 import GoogleIntegrationsPanel from '@/components/GoogleIntegrationsPanel';
 import ConfigField from './ConfigField';
@@ -56,6 +57,7 @@ function ConfigSectionFields({
 
 export function PipelineSettingsSaveBar({ onSaved }: { onSaved?: () => void }) {
   const { loading, saving, saveMsg, busy, saveSettings } = usePipeline();
+  const { readOnly } = useReadOnlySession();
 
   const handleSave = async () => {
     const ok = await saveSettings();
@@ -80,11 +82,11 @@ export function PipelineSettingsSaveBar({ onSaved }: { onSaved?: () => void }) {
       <Button
         variant="primary"
         onClick={() => void handleSave()}
-        disabled={busy || saving || loading}
+        disabled={busy || saving || loading || readOnly}
         className="shrink-0"
       >
         <Save className="h-4 w-4" aria-hidden />
-        {saving ? s.saving : s.saveSettings}
+        {readOnly ? strings.app.readonlyBanner : saving ? s.saving : s.saveSettings}
       </Button>
     </div>
   );
@@ -116,6 +118,8 @@ export default function PipelineSettingsPanel({
     browserCrawlStatus,
     browserCrawlChecking,
   } = usePipeline();
+  const { readOnly } = useReadOnlySession();
+  const fieldsDisabled = busy || readOnly;
 
   const showBrowserCrawlBanner =
     crawlRenderModeUsesBrowser(configState) &&
@@ -152,7 +156,7 @@ export default function PipelineSettingsPanel({
           <ConfigSectionFields
             section={section}
             values={configState}
-            disabled={busy}
+            disabled={fieldsDisabled}
             onChange={(key, value) => setField(key, value)}
           />
         ),
@@ -168,7 +172,7 @@ export default function PipelineSettingsPanel({
             <ConfigSectionFields
               section={section}
               values={llmConfigState}
-              disabled={busy}
+              disabled={fieldsDisabled}
               onChange={(key, value) => setLlmField(key, value)}
             />
           ),
@@ -194,7 +198,7 @@ export default function PipelineSettingsPanel({
                 type="text"
                 value={customCommand}
                 onChange={(e) => setCustomCommand(e.target.value)}
-                disabled={busy}
+                disabled={fieldsDisabled}
                 placeholder="e.g. warnings, enrich, plot"
                 className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 font-mono text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
               />
@@ -213,7 +217,7 @@ export default function PipelineSettingsPanel({
                   type="text"
                   value={pythonExe}
                   onChange={(e) => setPythonExe(e.target.value)}
-                  disabled={busy}
+                  disabled={fieldsDisabled}
                   placeholder="python"
                   className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 font-mono text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
@@ -230,7 +234,7 @@ export default function PipelineSettingsPanel({
                   type="text"
                   value={repoRoot}
                   onChange={(e) => setRepoRoot(e.target.value)}
-                  disabled={busy}
+                  disabled={fieldsDisabled}
                   placeholder="Default: parent folder of web/"
                   className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 font-mono text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
                 />
@@ -254,7 +258,7 @@ export default function PipelineSettingsPanel({
               <Button
                 variant="secondary"
                 onClick={resetConfig}
-                disabled={busy}
+                disabled={fieldsDisabled}
                 className="border-amber-500/40 text-amber-900 hover:bg-amber-500/10 dark:border-amber-500/35 dark:text-amber-300 dark:hover:bg-amber-500/15"
               >
                 {s.resetDefaults}

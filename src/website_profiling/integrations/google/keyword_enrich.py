@@ -154,6 +154,50 @@ def industry_ctr(pos: float) -> float:
 
 # ── Cannibalisation ───────────────────────────────────────────────────────────
 
+def detect_query_page_misalignment(
+    rows: list[dict[str, Any]],
+    *,
+    min_impressions: int = 100,
+) -> list[dict[str, Any]]:
+    """
+    Flag GSC queries where the ranking URL may not match the best internal target
+    (heuristic: another page on-site has higher impressions for related terms).
+    """
+    by_url: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        url = str(row.get("gsc_url") or "").strip()
+        if url:
+            by_url[url] = row
+
+    misaligned: list[dict[str, Any]] = []
+    for row in rows:
+        kw = str(row.get("keyword") or "").strip().lower()
+        url = str(row.get("gsc_url") or "").strip()
+        impressions = int(row.get("gsc_impressions") or 0)
+        if not kw or not url or impressions < min_impressions:
+            continue
+        pos = float(row.get("gsc_position") or 0)
+        if pos <= 0 or pos > 30:
+            continue
+        # Same brand term on a different URL with more traffic potential
+        for other_url, other in by_url.items():
+            if other_url == url:
+                continue
+            other_kw = str(other.get("keyword") or "").strip().lower()
+            if not other_kw or other_kw != kw:
+                continue
+            if int(other.get("traffic_potential") or 0) > int(row.get("traffic_potential") or 0):
+                misaligned.append({
+                    "keyword": kw,
+                    "current_url": url,
+                    "suggested_url": other_url,
+                    "impressions": impressions,
+                    "position": pos,
+                })
+                break
+    return misaligned[:50]
+
+
 def detect_cannibalisation(
     gsc_by_page: dict[str, dict],
 ) -> list[dict[str, Any]]:
@@ -545,6 +589,29 @@ def run_enrichment(
             reverse=True,
         )
 
+        striking_distance = [
+            r for r in rows
+            if r.get("gsc_position") is not None
+            and 4 <= float(r.get("gsc_position") or 0) <= 20
+            and float(r.get("gsc_impressions") or 0) >= 50
+        ]
+        striking_distance.sort(
+            key=lambda r: (float(r.get("gsc_impressions") or 0), -float(r.get("gsc_position") or 0)),
+            reverse=True,
+        )
+
+        query_misalignment = detect_query_page_misalignment(rows)
+
+        serp_key = str((cfg or {}).get("serp_api_key") or "").strip()
+        serp_overlay_count = 0
+        if serp_key:
+            try:
+                from ..serp.estimates import overlay_serp_estimates
+
+                serp_overlay_count = overlay_serp_estimates(rows, serp_key)
+            except Exception:
+                pass
+
         data_blob = {
             "fetched_at": fetched_at,
             "property_id": property_id,
@@ -554,6 +621,11 @@ def run_enrichment(
             "suggest_count": sum(1 for r in rows if "suggest" in (r.get("sources") or []) or "youtube" in (r.get("sources") or []) or "questions" in (r.get("sources") or [])),
             "cannibalisation": cannibalisation[:50],
             "cannibalisation_count": len(cannibalisation),
+            "query_page_misalignment": query_misalignment,
+            "query_page_misalignment_count": len(query_misalignment),
+            "striking_distance": striking_distance[:100],
+            "striking_distance_count": len(striking_distance),
+            "serp_overlay_count": serp_overlay_count,
             "rows": rows,
         }
 

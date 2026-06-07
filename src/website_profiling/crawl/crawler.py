@@ -77,6 +77,8 @@ class Crawler:
         js_console_levels: str = "error,warning",
         capture_failed_requests: bool = False,
         console_max_per_page: int = 20,
+        custom_extraction_regex: str = "",
+        crawl_ignore_params: Optional[list[str]] = None,
     ):
         self.start_url = start_url.rstrip("/")
         self.start_netloc = urlparse(self.start_url).netloc
@@ -103,6 +105,8 @@ class Crawler:
         self.store_content_excerpt = bool(store_content_excerpt)
         self.content_excerpt_max_chars = max(0, int(content_excerpt_max_chars or 0))
         self._wappalyzer_instance = None
+        self.custom_extraction_regex = (custom_extraction_regex or "").strip()
+        self.crawl_ignore_params = list(crawl_ignore_params or [])
 
         self.queue = Queue()
         if not _url_matches_exclude(self.start_url, self.exclude_urls):
@@ -443,6 +447,11 @@ class Crawler:
             canonical_url = parsed["canonical_url"]
             ext = parsed["ext"]
 
+            if self.crawl_ignore_params:
+                from ..common import strip_crawl_query_params
+
+                links = [strip_crawl_query_params(l, self.crawl_ignore_params) for l in links]
+
             for link in links:
                 if _url_matches_exclude(link, self.exclude_urls):
                     continue
@@ -479,6 +488,16 @@ class Crawler:
         ext["content_security_policy"] = headers_dict.get("Content-Security-Policy", "")
 
         ext["depth"] = self.depths.get(url)
+
+        if self.custom_extraction_regex and text:
+            import re
+
+            try:
+                match = re.search(self.custom_extraction_regex, text)
+                if match:
+                    ext["custom_extract"] = match.group(1) if match.lastindex else match.group(0)
+            except re.error:
+                pass
 
         if self.polite_delay:
             time.sleep(self.polite_delay)
@@ -761,6 +780,8 @@ def run_crawler(
     js_console_levels: str = "error,warning",
     capture_failed_requests: bool = False,
     console_max_per_page: int = 20,
+    custom_extraction_regex: str = "",
+    crawl_ignore_params: Optional[list[str]] = None,
 ) -> pd.DataFrame:
     """Run crawler and optionally save to CSV/JSON or PostgreSQL. Returns DataFrame."""
     import sys
@@ -795,6 +816,8 @@ def run_crawler(
         js_console_levels=js_console_levels,
         capture_failed_requests=capture_failed_requests,
         console_max_per_page=console_max_per_page,
+        custom_extraction_regex=custom_extraction_regex,
+        crawl_ignore_params=crawl_ignore_params,
     )
     stream_run_id: Optional[int] = None
     if output_db:

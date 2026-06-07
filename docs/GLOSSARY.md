@@ -24,7 +24,24 @@ UI terms agencies recognize, mapped to internal keys and data sources.
 | Analytics (GA4) | `traffic`, `google_data` (scoped by `property_id`) | GA4 API per property | Google Analytics |
 | Keywords | `keywords-explorer`, `keyword_data` | Crawl + Search Console + research | Keyword tools (site-scoped) |
 | Compare audits | `compare` | Two report payloads | Historical comparison |
+| Indexation & coverage | `indexation`, `indexation_coverage` | Crawl + sitemap + GSC URL join | SEMrush indexability, GSC coverage |
+| CrUX field CWV | `crux_summary` | Chrome UX Report API | PageSpeed field data |
+| Executive summary | `executive_summary` | Issues + GSC + optional AI | Agency audit cover page |
 | Run audit | Pipeline / `python -m src` | User-triggered job | Start site audit |
+| Issue task board | `issues` view (board tab), `issue_status` | Workflow persistence per property | Jira-style triage |
+| Query–page alignment | `keywords-explorer` alignment tab, `query_page_misalignment` | Search Console heuristics | Landing-page targeting |
+| Crawl segments | `site-structure` overview, `crawl_segments` | `crawl_path_segments` config + crawl | Section health rollups |
+| Log analyzer | `log-analyzer` view | Uploaded access log vs crawl | Log file insights |
+| Competitor link gap | `backlinks` overview, `competitor_link_gap` | GSC Links import + `competitor_domains` | Link gap analysis |
+| Moz / Majestic overlay | `third_party_overlays` on `gsc_links`, `/api/backlinks/third-party-import` | CSV export upload | Estimated referring-domain comparison vs GSC sample |
+| Bing backlinks | `bing_backlinks`, Integrations sync | Bing Webmaster API (optional) | Secondary link source |
+| SERP competition overlay | `serp_estimated_competition` on keywords | SerpAPI (optional) | Estimated SERP difficulty |
+| Scheduled audits | `properties.schedule_cron`, `/api/schedule/check` | Cron + pipeline spawn | Recurring site audit — see [OPS.md](OPS.md) |
+| Property alerts | `alert_webhook_url`, `/api/alerts/check` | Health snapshot rules | Ops notifications |
+| Content brief | Keywords Brief button, `/api/keywords/content-brief` | LLM or deterministic | Content planning |
+| AI issue fix | `llm_recommendation`, `/api/issues/fix-suggestion` | LLM on demand + report build | Actionable remediation |
+| Read-only session | `AUTH_DEFAULT_ROLE=client-readonly`, `/api/auth/session` | Session cookie | Client view-only access |
+| Export executive summary | `export_audit_html/pdf/csv`, `executive_summary` | Report payload + optional AI | Client deliverable |
 
 ## Metric names
 

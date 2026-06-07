@@ -26,7 +26,7 @@ import {
   buildPageExportColumns,
 } from '../components/searchPerformance/gscTableUtils';
 import UrlGapListsPanel from '../components/google/UrlGapListsPanel';
-import { buildLinksInspectHref } from '../lib/reportNav';
+import UrlInspectorButton from '@/components/UrlInspectorButton';
 import { useSearchParams } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
 
@@ -158,16 +158,14 @@ export default function SearchPerformance() {
         key: '_inspect',
         label: '',
         render: (_v, row) => (
-          <a
-            href={buildLinksInspectHref(String((row as GscPageRow).page ?? ''), searchParams)}
-            className="text-xs text-link hover:underline whitespace-nowrap"
-          >
-            {strings.components?.urlGapLists?.openInLinks || 'Link Explorer'}
-          </a>
+          <UrlInspectorButton
+            url={String((row as GscPageRow).page ?? '')}
+            label="Inspect"
+          />
         ),
       },
     ],
-    [sp, searchParams],
+    [sp],
   );
 
   const paginationLabels = {

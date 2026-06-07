@@ -1,0 +1,8 @@
+[run]
+source = website_profiling.reporting
+omit =
+    */website_profiling/reporting/builder.py
+
+[report]
+show_missing = True
+skip_empty = True

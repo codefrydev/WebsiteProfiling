@@ -26,7 +26,7 @@
 - **Pool tuning:** `DB_POOL_MIN` / `DB_POOL_MAX` (Python), `PGPOOL_MAX` (Node). Bulk crawl writes via `executemany`; optional **`crawl_stream_to_db`** streams rows during fetch.
 - **`web/`:** `/api/report/*` (PostgreSQL); `/api/run` spawns Python (localhost only); `/api/crawl/browser-status` GET (localhost, Playwright/Chromium preflight); `/api/pipeline-config` GET/PUT; `/api/llm-config` GET/PUT (AI only); `/api/properties/{id}/google/links/import` POST (GSC Links CSV); `PipelineRunnerFab` saves pipeline + LLM state before each run
 - **Job store:** in-memory on `globalThis` in `web/src/server/pipelineJobs.ts` — job status/log is lost on server restart (single-process dev/Docker only).
-- **Docker:** `Dockerfile` + `docker-compose.yml` (postgres + web); **`LIGHTHOUSE_CHROME_FLAGS`**
+- **Docker:** `Dockerfile` + `docker-compose.yml` (postgres + web); **`docker-compose.pull.yml`** for pre-built images (`WEB_IMAGE`); **`LIGHTHOUSE_CHROME_FLAGS`**
 
 **Where to edit**
 
@@ -45,3 +45,40 @@
 Schema changes: add Alembic migration (`alembic revision`).
 
 **Company standards:** UI copy in `web/src/strings.json` (Site Audit, Properties, Run audit). Data provenance on `report_meta` in report payload. Docs: `docs/COMPANY_STANDARDS.md`, `docs/GLOSSARY.md`. Migration `003_company_standards` (properties, pipeline_jobs, audit_log). Durable jobs in `web/src/server/pipelineJobsDb.ts`. Export: `GET /api/report/export`, `src/website_profiling/tools/export_audit.py`.
+
+**Common footguns (check before finishing web or DB work)**
+
+These recur when adding features. Verify explicitly — do not assume tests caught them.
+
+1. **React context — `useReport` / `ReportProvider`**
+   - Report views call `useReport()`. That only works inside `ReportAppClient` → `ReportProvider`.
+   - **Do:** Render report views via `ReportShell` (wraps `ReportAppClient` internally).
+   - **Don't:** Import a view directly in `app/*/page.tsx` without `ReportShell`.
+   - Standalone routes under `web/app/` (e.g. `log-analyzer`, `indexation`) are **not** auto-wrapped by `(reports)/layout`.
+
+   ```tsx
+   // ✅
+   import ReportShell from '@/ReportShell';
+   export default function Page() {
+     return <ReportShell slug="log-analyzer" />;
+   }
+   ```
+
+2. **Python — local imports shadow module imports**
+   - `from ..config import get_int` anywhere inside a function makes that name **local for the entire function**. Using it earlier → `UnboundLocalError`.
+   - **Do:** Use the module-level import (see top of `reporting/builder.py`).
+   - **Don't:** Re-import inside a function if the same name is used above that line in the same function.
+
+3. **PostgreSQL rows — never `row[0]`**
+   - Connections may use psycopg `dict_row`. `row[0]` → `KeyError: 0` on dict rows; tuple-only unit tests still pass.
+   - **Do:** `_row_field(row, "id", index=0)` from `website_profiling.db._common` (pattern in `property_store.py`).
+   - **Don't:** `fetchone()[0]` on `INSERT … RETURNING` without `_row_field`.
+
+   ```python
+   from ._common import _row_field
+   row = cur.fetchone()
+   rid = _row_field(row, "id", index=0)
+   report_id = int(rid) if rid is not None else None
+   ```
+
+**Checklist:** new report page uses `ReportShell` · no duplicate local imports in long functions · new `fetchone()` uses `_row_field`

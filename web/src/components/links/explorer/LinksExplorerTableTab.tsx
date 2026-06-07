@@ -61,6 +61,7 @@ export function LinksExplorerTableTab({
 }: LinksExplorerTableTabProps) {
   const vl = strings.views.links;
   const sj = strings.common;
+  const hasCustomExtract = links.some((l) => l.custom_extract);
 
   return (
     <LinksExplorerTabPanel tabId="urls" className="flex flex-col gap-4">
@@ -117,6 +118,11 @@ export function LinksExplorerTableTab({
                   onSort={onToggleSort}
                   className="hidden md:table-cell"
                 />
+                {hasCustomExtract ? (
+                  <th className="hidden lg:table-cell px-4 py-4 text-muted-foreground uppercase text-xs whitespace-nowrap">
+                    {vl.thCustomExtract}
+                  </th>
+                ) : null}
                 <th className="hidden lg:table-cell px-4 py-4 text-muted-foreground uppercase text-xs whitespace-nowrap">
                   {vl.thJsErrors}
                 </th>
@@ -196,6 +202,11 @@ export function LinksExplorerTableTab({
                     <td className="hidden md:table-cell px-4 py-3 text-sm text-foreground tabular-nums whitespace-nowrap align-middle">
                       {(link.word_count ?? 0) > 0 ? (link.word_count ?? 0).toLocaleString() : sj.emDash}
                     </td>
+                    {hasCustomExtract ? (
+                      <td className="hidden lg:table-cell px-4 py-3 text-xs text-foreground align-middle max-w-[12rem] truncate" title={link.custom_extract}>
+                        {link.custom_extract || sj.emDash}
+                      </td>
+                    ) : null}
                     <td className="hidden lg:table-cell px-4 py-3 text-xs align-middle whitespace-nowrap">
                       {linkHasBrowserErrors(link) ? (
                         <span className="inline-flex items-center rounded-md bg-red-500/10 border border-red-500/25 px-2 py-0.5 font-mono text-red-700 dark:text-red-300">

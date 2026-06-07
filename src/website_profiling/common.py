@@ -63,7 +63,39 @@ def save_edges(edges: list[tuple[str, str]], path: str) -> None:
         pd.DataFrame(edges, columns=["from", "to"]).to_csv(path, index=False)
 
 
-def normalize_link(base: str, href: str) -> str | None:
+_TRACKING_PARAM_PREFIXES = ("utm_",)
+_FACET_PARAM_NAMES = frozenset({"sort", "filter", "page", "offset", "limit"})
+
+
+def strip_crawl_query_params(url: str, ignore_params: list[str] | None = None) -> str:
+    """Remove tracking and facet query params for crawl deduplication."""
+    parsed = urlparse(url)
+    if not parsed.query:
+        return url.rstrip("/")
+    ignore = {p.lower() for p in (ignore_params or [])}
+    parts = []
+    for pair in parsed.query.split("&"):
+        if not pair:
+            continue
+        key = pair.split("=", 1)[0].lower()
+        if key in ignore:
+            continue
+        if any(key.startswith(p) for p in _TRACKING_PARAM_PREFIXES):
+            continue
+        if key in _FACET_PARAM_NAMES:
+            continue
+        parts.append(pair)
+    query = "&".join(parts)
+    rebuilt = parsed._replace(query=query).geturl()
+    return rebuilt.rstrip("/")
+
+
+def normalize_link(
+    base: str,
+    href: str,
+    strip_params: bool = True,
+    ignore_params: list[str] | None = None,
+) -> str | None:
     if not href:
         return None
     href = href.strip()
@@ -74,7 +106,10 @@ def normalize_link(base: str, href: str) -> str | None:
     parsed = urlparse(joined)
     if parsed.scheme not in ("http", "https"):
         return None
-    return joined.rstrip("/")
+    out = joined.rstrip("/")
+    if strip_params:
+        out = strip_crawl_query_params(out, ignore_params)
+    return out
 
 
 def parse_links(base_url: str, html_text: str) -> tuple[str, set[str]]:

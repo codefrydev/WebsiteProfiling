@@ -10,6 +10,8 @@ import {
   MousePointerClick,
   Split,
   Zap,
+  Target,
+  ArrowRightLeft,
 } from 'lucide-react';
 import type { KeywordTabId } from './keywordTabMeta';
 import { strings } from '../../lib/strings';
@@ -19,9 +21,11 @@ const TAB_ICONS: Record<KeywordTabId, typeof Key> = {
   all: List,
   questions: HelpCircle,
   quickwins: Zap,
+  striking: Target,
   lostclicks: MousePointerClick,
   opportunities: Lightbulb,
   cannib: Split,
+  alignment: ArrowRightLeft,
   bypage: FileText,
 };
 

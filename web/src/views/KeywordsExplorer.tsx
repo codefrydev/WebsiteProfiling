@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { KeywordRow, KeywordReportData, ViewProps } from '@/types';
-import type { CannibalisationItem, KeywordHistoryMap } from '@/types/components';
+import type { CannibalisationItem, KeywordHistoryMap, QueryPageMisalignmentItem } from '@/types/components';
 import { Key, Settings2, Play } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
@@ -23,6 +23,7 @@ import {
 } from '../components/keywordsExplorer/keywordTableUtils';
 import {
   CannibalisationPanel,
+  QueryPageMisalignmentPanel,
   ByPagePanel,
   BulkSeedPanel,
 } from '../components/keywordsExplorer/KeywordPanels';
@@ -41,7 +42,7 @@ import {
   isTableTab,
 } from '../components/keywordsExplorer/keywordTabMeta';
 
-const KEYWORD_TABS = ['overview', ...KEYWORD_TABLE_TAB_IDS, 'cannib', 'bypage'] as const;
+const KEYWORD_TABS = ['overview', ...KEYWORD_TABLE_TAB_IDS, 'cannib', 'alignment', 'bypage'] as const;
 
 const EMPTY_ROWS: KeywordRow[] = [];
 const EMPTY_HISTORY: KeywordHistoryMap = {};
@@ -104,18 +105,27 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
     () => baseRowsForTab('opportunities', rows, tabFilterOptions).length,
     [rows, tabFilterOptions],
   );
+  const strikingCount = useMemo(
+    () => baseRowsForTab('striking', rows, tabFilterOptions).length,
+    [rows, tabFilterOptions],
+  );
   const cannibItems: CannibalisationItem[] = (kwData?.cannibalisation as CannibalisationItem[] | undefined) ?? [];
+  const alignmentItems: QueryPageMisalignmentItem[] =
+    (kwData?.query_page_misalignment as QueryPageMisalignmentItem[] | undefined) ??
+    [];
 
   const tabCounts = useMemo(
     () => ({
       questions: questionCount,
       quickwins: quickWinCount,
+      striking: strikingCount || Number(kwData?.striking_distance_count) || 0,
       lostclicks: lostClickCount,
       opportunities: opportunityCount,
       cannib: cannibItems.length,
+      alignment: alignmentItems.length,
       pages: new Set(rows.map((r) => r.gsc_url).filter(Boolean)).size,
     }),
-    [questionCount, quickWinCount, lostClickCount, opportunityCount, cannibItems.length, rows],
+    [questionCount, quickWinCount, strikingCount, kwData?.striking_distance_count, lostClickCount, opportunityCount, cannibItems.length, alignmentItems.length, rows],
   );
 
   const hasActiveFilters = !!(searchQuery || intentFilter || brandedFilter || sourceFilter);
@@ -196,8 +206,8 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
   }, [gscKeywordsForHistory, brandQuery]);
 
   const columns = useMemo(
-    () => buildKeywordColumns(showParentTopic, showTrend, historyByKeyword, ke),
-    [showParentTopic, showTrend, historyByKeyword, ke],
+    () => buildKeywordColumns(showParentTopic, showTrend, historyByKeyword, ke, rows),
+    [showParentTopic, showTrend, historyByKeyword, ke, rows],
   );
 
   const insights = useMemo(() => {
@@ -242,10 +252,11 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
 
   const bannerCount = useMemo(() => {
     if (activeTab === 'cannib') return cannibItems.length;
+    if (activeTab === 'alignment') return alignmentItems.length;
     if (activeTab === 'bypage') return tabCounts.pages;
     if (isTableTab(activeTab)) return tableRows.length;
     return null;
-  }, [activeTab, cannibItems.length, tabCounts.pages, tableRows.length]);
+  }, [activeTab, cannibItems.length, alignmentItems.length, tabCounts.pages, tableRows.length]);
 
   const navigateTab = useCallback((tab: KeywordTabId) => setActiveTab(tab), []);
 
@@ -405,6 +416,8 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
 
           {activeTab === 'cannib' ? (
             <CannibalisationPanel items={cannibItems} />
+          ) : activeTab === 'alignment' ? (
+            <QueryPageMisalignmentPanel items={alignmentItems} />
           ) : activeTab === 'bypage' ? (
             <ByPagePanel rows={rows} ke={ke} brandQuery={brandQuery} />
           ) : tableEmptyContent ? (

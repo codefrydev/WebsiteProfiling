@@ -1,10 +1,14 @@
 import { useState, useMemo } from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import type { TooltipItem } from 'chart.js';
-import { AlertTriangle, AlertCircle, Info, ChevronDown, ChevronRight, ExternalLink, Flame, BarChart2 } from 'lucide-react';
+import { AlertTriangle, AlertCircle, Info, ChevronDown, ChevronRight, ExternalLink, Flame, BarChart2, ListChecks } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useOptionalPipeline } from '../context/PipelineContext';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Badge } from '../components';
+import { PageLayout, PageHeader, Card, Badge, ViewTabs } from '../components';
+import UrlInspectorButton from '@/components/UrlInspectorButton';
+import IssueTaskBoard from '@/components/issues/IssueTaskBoard';
+import IssueAiFixButton from '@/components/issues/IssueAiFixButton';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
 import { doughnutOptionsWithPercentTooltip, formatCompositionAria } from '../lib/chartDoughnutUtils';
@@ -117,20 +121,32 @@ function CategorySection({ category, items, defaultOpen = false, vi, emDash }: C
                   </div>
                   <h3 className="text-foreground font-medium text-sm leading-snug">{iss.message || emDash}</h3>
                   {iss.url && (
-                    <a
-                      href={iss.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mt-2 inline-flex items-center gap-1 font-mono text-link text-xs hover:underline break-all"
-                    >
-                      {iss.url}
-                      <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                    </a>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <a
+                        href={iss.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1 font-mono text-link text-xs hover:underline break-all"
+                      >
+                        {iss.url}
+                        <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                      </a>
+                      <UrlInspectorButton url={iss.url} />
+                    </div>
                   )}
                 </div>
-                <div className="flex-1 min-w-0 bg-brand-900 rounded-lg p-3 border border-muted">
+                <div className="flex-1 min-w-0 bg-brand-900 rounded-lg p-3 border border-muted space-y-2">
                   <div className="text-xs text-link font-bold uppercase mb-1 tracking-wide">{vi.fixRecommendation}</div>
-                  <p className="text-muted-foreground text-sm leading-relaxed">{iss.recommendation || emDash}</p>
+                  <p className="text-muted-foreground text-sm leading-relaxed">
+                    {iss.llm_recommendation || iss.recommendation || emDash}
+                  </p>
+                  {iss.llm_recommendation && iss.recommendation && iss.llm_recommendation !== iss.recommendation ? (
+                    <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
+                      <span className="font-semibold">{vi.ruleRecommendation}: </span>
+                      {iss.recommendation}
+                    </p>
+                  ) : null}
+                  <IssueAiFixButton issue={iss} category={item.category} />
                 </div>
               </div>
             );
@@ -142,12 +158,24 @@ function CategorySection({ category, items, defaultOpen = false, vi, emDash }: C
 }
 
 export default function Issues({ searchQuery = '' }: ViewProps) {
-  const { data } = useReport();
+  const { data, selectedReportId } = useReport();
+  const pipeline = useOptionalPipeline();
+  const propertyId = Number(pipeline?.configState.active_property_id || 0) || null;
   const vi = strings.views.issues;
   const sj = strings.common;
   const PRIORITY_ORDER = vi.priorityOrder;
+  const [issuesTab, setIssuesTab] = useState<'audit' | 'board'>('audit');
   const [priorityFilter, setPriorityFilter] = useState(sj.all);
   const [categoryFilter, setCategoryFilter] = useState(sj.all);
+
+  const clicksByUrl = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const row of data?.google?.gsc?.top_pages || []) {
+      const url = String(row.page || '').replace(/\/$/, '');
+      if (url) map.set(url, Number(row.clicks) || 0);
+    }
+    return map;
+  }, [data?.google?.gsc?.top_pages]);
 
   const q = (searchQuery || '').toLowerCase().trim();
 
@@ -229,10 +257,22 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
   }
 
   filtered.sort((a, b) => {
+    const aClicks = clicksByUrl.get(String(a.issue.url || '').replace(/\/$/, '')) || 0;
+    const bClicks = clicksByUrl.get(String(b.issue.url || '').replace(/\/$/, '')) || 0;
+    if (bClicks !== aClicks) return bClicks - aClicks;
     const ao = (PRIORITY_CONFIG[(a.issue.priority || 'Medium') as PriorityKey] ?? PRIORITY_CONFIG.Medium).order;
     const bo = (PRIORITY_CONFIG[(b.issue.priority || 'Medium') as PriorityKey] ?? PRIORITY_CONFIG.Medium).order;
     return ao - bo;
   });
+
+  const taskBoardIssues = useMemo(
+    () =>
+      list.map((item) => ({
+        ...item,
+        clicks: clicksByUrl.get(String(item.issue.url || '').replace(/\/$/, '')) || 0,
+      })),
+    [list, clicksByUrl],
+  );
 
   const grouped = filtered.reduce<Record<string, CategoryIssueItem[]>>((acc, item) => {
     const cat = item.category || sj.uncategorized;
@@ -271,7 +311,26 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
     <PageLayout className="space-y-6">
       <PageHeader title={vi.title} subtitle={subtitle} />
 
-      {showCharts && (
+      <ViewTabs
+        tabs={[
+          { id: 'audit', label: vi.tabAudit || 'Audit issues', icon: <AlertTriangle className="h-3.5 w-3.5" /> },
+          { id: 'board', label: vi.tabBoard || 'Task board', icon: <ListChecks className="h-3.5 w-3.5" /> },
+        ]}
+        activeTab={issuesTab}
+        onChange={(id) => setIssuesTab(id as 'audit' | 'board')}
+        ariaLabel={vi.title}
+        idPrefix="issues"
+      />
+
+      {issuesTab === 'board' ? (
+        <IssueTaskBoard
+          propertyId={propertyId}
+          reportId={selectedReportId}
+          issues={taskBoardIssues}
+        />
+      ) : null}
+
+      {issuesTab === 'audit' && showCharts && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card padding="tight" shadow>
             <div className="flex items-center gap-2 mb-1">
@@ -330,6 +389,7 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
         </div>
       )}
 
+      {issuesTab === 'audit' && (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {PRIORITY_ORDER.map((p) => {
           const cfg = PRIORITY_CONFIG[p as PriorityKey];
@@ -352,7 +412,9 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
           );
         })}
       </div>
+      )}
 
+      {issuesTab === 'audit' && (
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -397,8 +459,9 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
           </select>
         )}
       </div>
+      )}
 
-      {filtered.length === 0 ? (
+      {issuesTab === 'audit' && (filtered.length === 0 ? (
         <Card className="flex flex-col items-center justify-center py-16 gap-3">
           <Info className="h-10 w-10 text-muted-foreground" />
           <p className="text-muted-foreground text-sm">{vi.noMatches}</p>
@@ -416,7 +479,7 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
             />
           ))}
         </div>
-      )}
+      ))}
     </PageLayout>
   );
 }

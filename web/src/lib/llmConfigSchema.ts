@@ -62,6 +62,20 @@ export const LLM_CONFIG_SECTIONS = [
       { key: 'llm_enable_similar_internal', label: 'Similar internal pages', type: 'bool', defaultValue: true },
       { key: 'llm_enable_keyword_clusters', label: 'Topic clusters (AI)', type: 'bool', defaultValue: true },
       {
+        key: 'llm_enable_issue_fixes',
+        label: 'Issue fix suggestions',
+        type: 'bool',
+        defaultValue: true,
+        help: 'Generate AI fix text for top traffic-weighted audit issues at report build time.',
+      },
+      {
+        key: 'llm_enable_audit_summary',
+        label: 'Executive audit summary (AI)',
+        type: 'bool',
+        defaultValue: true,
+        help: 'LLM narrative for Overview executive summary when AI insights are enabled.',
+      },
+      {
         key: 'llm_enable_page_coach',
         label: 'Link Explorer page coach',
         type: 'bool',

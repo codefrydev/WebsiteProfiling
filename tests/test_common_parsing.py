@@ -12,6 +12,33 @@ def test_normalize_link_filters_schemes_and_strips_fragment_and_slash() -> None:
     assert normalize_link("https://x.com/base/", "https://x.com/a/") == "https://x.com/a"
 
 
+def test_strip_crawl_query_params_removes_tracking_and_facets() -> None:
+    from website_profiling.common import strip_crawl_query_params
+
+    url = "https://x.com/page?utm_source=mail&page=2&id=stay"
+    stripped = strip_crawl_query_params(url)
+    assert "utm_source" not in stripped
+    assert "page=2" not in stripped
+    assert "id=stay" in stripped
+
+
+def test_strip_crawl_query_params_skips_empty_pairs() -> None:
+    from website_profiling.common import strip_crawl_query_params
+
+    url = "https://x.com/page?&&id=1"
+    stripped = strip_crawl_query_params(url)
+    assert "id=1" in stripped
+
+
+def test_strip_crawl_query_params_honors_ignore_list() -> None:
+    from website_profiling.common import strip_crawl_query_params
+
+    url = "https://x.com/page?strip=1&keep=2"
+    stripped = strip_crawl_query_params(url, ignore_params=["strip"])
+    assert "strip=1" not in stripped
+    assert "keep=2" in stripped
+
+
 def test_parse_links_and_title() -> None:
     from website_profiling.common import parse_links
 

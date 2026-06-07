@@ -24,9 +24,10 @@ import {
   finalizeRollup,
 } from '../lib/siteStructureTree';
 import { PageLayout, PageHeader, Card, Button, StatCard, AlertBanner, ViewTabs, ViewTabPanel } from '../components';
+import UrlInspectorButton from '@/components/UrlInspectorButton';
 import type { ViewTabItem } from '../components';
 import PathTreeTable from '../components/siteStructure/PathTreeTable';
-import type { PathTreeNode, PathTreeTableRow, ViewProps } from '@/types';
+import type { CrawlSegmentEntry, CrawlSegmentsData, PathTreeNode, PathTreeTableRow, ViewProps } from '@/types';
 
 const TREE_PAGE_SIZE = 20;
 
@@ -274,6 +275,16 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
 
   const rootMetrics = merged.get('/')?.current;
 
+  const crawlSegments = (data?.crawl_segments as CrawlSegmentsData | undefined) ?? null;
+
+  const topLinksByInlinks = useMemo(
+    () =>
+      [...filteredLinks]
+        .sort((a, b) => Number(b.inlinks || 0) - Number(a.inlinks || 0))
+        .slice(0, 10),
+    [filteredLinks],
+  );
+
   const panelKey = [
     selectedReportId ?? '',
     compareReportId ?? '',
@@ -366,11 +377,56 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
                 icon={<Gauge className="h-3.5 w-3.5" aria-hidden />}
               />
             </div>
-          ) : (
+          ) : null}
+          {crawlSegments?.segments?.length ? (
+            <Card className="mt-4" padding="tight">
+              <h3 className="text-sm font-bold text-foreground mb-1">{s.crawlSegmentsTitle}</h3>
+              <p className="text-xs text-muted-foreground mb-3">{s.crawlSegmentsHint}</p>
+              {crawlSegments.overall_health != null ? (
+                <p className="text-xs text-muted-foreground mb-3">
+                  {s.crawlSegmentsOverall}:{' '}
+                  <span className="font-semibold text-foreground tabular-nums">{crawlSegments.overall_health}</span>
+                </p>
+              ) : null}
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-muted-foreground uppercase">
+                    <th className="text-left py-2 pr-3">{s.crawlSegmentsPrefix}</th>
+                    <th className="text-right py-2 px-3">{s.crawlSegmentsUrls}</th>
+                    <th className="text-right py-2 pl-3">{s.crawlSegmentsHealth}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-muted">
+                  {crawlSegments.segments.map((seg: CrawlSegmentEntry) => (
+                    <tr key={seg.prefix}>
+                      <td className="py-2 pr-3 font-mono text-foreground">{seg.prefix}</td>
+                      <td className="py-2 px-3 text-right tabular-nums">{seg.url_count ?? 0}</td>
+                      <td className="py-2 pl-3 text-right tabular-nums">{seg.health_score ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          ) : null}
+          {topLinksByInlinks.length > 0 ? (
+            <Card className="mt-4" padding="tight">
+              <h3 className="text-sm font-bold text-foreground mb-3">Top pages by inlinks</h3>
+              <ul className="space-y-2 text-xs">
+                {topLinksByInlinks.map((link) => (
+                  <li key={link.url} className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono text-muted-foreground truncate flex-1 min-w-0">{link.url}</span>
+                    <span className="tabular-nums text-muted-foreground">{Number(link.inlinks || 0).toLocaleString()}</span>
+                    <UrlInspectorButton url={link.url} />
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ) : null}
+          {!tree ? (
             <p className="text-muted-foreground text-sm py-8 text-center">
               {filteredLinks.length === 0 && (data?.links?.length ?? 0) > 0 ? s.emptyFilter : s.empty}
             </p>
-          )}
+          ) : null}
         </ViewTabPanel>
       )}
 

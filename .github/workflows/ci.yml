@@ -33,8 +33,21 @@ jobs:
         run: pip install -r requirements.txt
       - name: Apply migrations
         run: alembic upgrade head
-      - name: Pytest
-        run: pytest tests/ -q
+      - name: Pytest (core, 100% coverage)
+        run: pytest tests/ -q -m "not browser"
+      - name: Pytest (reporting coverage gate)
+        run: |
+          pytest tests/test_categories_roadmap.py tests/test_report_categories_golden.py \
+            tests/test_categories_coverage.py tests/test_indexation_coverage.py tests/test_crawl_segments.py \
+            tests/test_terminology.py \
+            --cov=website_profiling.reporting --cov-config=.coveragerc.reporting \
+            --cov-report=term-missing --cov-fail-under=100 -q -o addopts=
+      - name: Pytest (tools coverage gate)
+        run: |
+          pytest tests/test_alert_checker.py tests/test_schedule_runner.py tests/test_export_audit.py \
+            tests/test_export_audit_coverage.py \
+            --cov=website_profiling.tools --cov-config=.coveragerc.tools \
+            --cov-report=term-missing --cov-fail-under=100 -q -o addopts=
       - name: CLI smoke
         run: python -m src --help
 
@@ -47,9 +60,15 @@ jobs:
       - name: Browser crawl tests in image
         run: |
           docker run --rm \
-            -e DATABASE_URL=postgres://profiling:profiling@localhost:5432/website_profiling \
             website-profiling:ci \
             /opt/venv/bin/pytest tests/test_crawl_fetchers.py tests/test_crawler_browser_e2e.py -m browser -q -o addopts=
+      - name: Compose smoke (postgres + web)
+        env:
+          WEB_IMAGE: website-profiling:ci
+        run: |
+          docker compose -f docker-compose.pull.yml up -d --wait
+          curl -fsS http://127.0.0.1:3000/home
+          docker compose -f docker-compose.pull.yml down -v
 
   web:
     runs-on: ubuntu-latest

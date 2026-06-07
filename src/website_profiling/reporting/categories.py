@@ -62,6 +62,172 @@ def _score_deductions(max_score: int, deductions: list[tuple[int, bool]]) -> int
     return max(0, max_score - total)
 
 
+def _hreflang_issues(success_df: pd.DataFrame) -> list[dict]:
+    """Hreflang cluster consistency (return tags, self-reference)."""
+    issues: list[dict] = []
+    if "page_analysis" not in success_df.columns:
+        return issues
+    for _, row in success_df.iterrows():
+        pa = _page_analysis_dict(row)
+        alts = pa.get("hreflang_alternates") or []
+        if not alts:
+            continue
+        url = str(row.get("url") or "").strip()
+        langs = [str(a.get("hreflang") or a.get("lang") or "").strip().lower() for a in alts if isinstance(a, dict)]
+        hrefs = [str(a.get("href") or "").strip() for a in alts if isinstance(a, dict)]
+        if langs and len(set(langs)) < len(langs):
+            issues.append(_issue(
+                "Duplicate hreflang language codes on page.",
+                url=url,
+                priority="High",
+                recommendation="Each hreflang alternate should use a unique language/region code.",
+            ))
+            break
+        if url and hrefs and url.rstrip("/") not in [h.rstrip("/") for h in hrefs]:
+            issues.append(_issue(
+                "Hreflang cluster missing self-referencing alternate.",
+                url=url,
+                priority="Medium",
+                recommendation="Include a hreflang link pointing to this page URL.",
+            ))
+            break
+    return issues
+
+
+def _schema_issues(success_df: pd.DataFrame) -> list[dict]:
+    issues: list[dict] = []
+    invalid = 0
+    for _, row in success_df.iterrows():
+        pa = _page_analysis_dict(row)
+        schemas = pa.get("json_ld_types") or pa.get("schema_types") or []
+        if isinstance(schemas, str):
+            schemas = [schemas]
+        url = str(row.get("url") or "").strip()
+        has_schema = str(row.get("has_schema", "")).lower() in ("true", "1", "yes")
+        if has_schema and not schemas:
+            invalid += 1
+            if invalid == 1:
+                issues.append(_issue(
+                    "Structured data present but could not parse JSON-LD @type.",
+                    url=url,
+                    priority="Low",
+                    recommendation="Validate JSON-LD with Google Rich Results Test.",
+                ))
+    return issues
+
+
+def _soft_404_issues(success_df: pd.DataFrame) -> list[dict]:
+    issues: list[dict] = []
+    markers = ("not found", "404", "page not found", "doesn't exist", "does not exist")
+    for _, row in success_df.iterrows():
+        title = str(row.get("title") or "").lower()
+        if any(m in title for m in markers):
+            url = str(row.get("url") or "").strip()
+            issues.append(_issue(
+                "Possible soft 404: page returns 200 but title suggests not found.",
+                url=url,
+                priority="High",
+                recommendation="Return 404 status or redirect to a relevant page.",
+            ))
+            if len(issues) >= 10:
+                break
+    return issues
+
+
+def _broken_link_sources(edges: list[tuple[str, str]], broken_urls: set[str]) -> list[dict]:
+    """Issues listing which pages link to broken URLs."""
+    issues: list[dict] = []
+    if not broken_urls:
+        return issues
+    sources: dict[str, list[str]] = {}
+    for src, tgt in edges:
+        if tgt in broken_urls:
+            sources.setdefault(tgt, []).append(src)
+    for tgt, srcs in list(sources.items())[:15]:
+        sample = ", ".join(srcs[:3])
+        more = f" (+{len(srcs) - 3} more)" if len(srcs) > 3 else ""
+        issues.append(_issue(
+            f"Broken URL linked from {len(srcs)} page(s): {sample}{more}",
+            url=tgt,
+            priority="High",
+            recommendation="Fix or remove links pointing to this URL.",
+        ))
+    return issues
+
+
+def _indexation_coverage_issues(
+    df: pd.DataFrame,
+    indexation: dict | None,
+) -> list[dict]:
+    """Sitemap vs crawl mismatches and noindex URLs listed in sitemap."""
+    issues: list[dict] = []
+    if not indexation:
+        return issues
+    lists = indexation.get("lists") if isinstance(indexation.get("lists"), dict) else {}
+    sitemap_only = lists.get("sitemap_only") or []
+    for url in sitemap_only[:15]:
+        issues.append(_issue(
+            f"URL in sitemap but not crawled: {url}",
+            url=str(url),
+            priority="High",
+            recommendation="Verify the URL is linked internally, not blocked by robots, and within crawl scope.",
+        ))
+    sitemap_urls = indexation.get("sitemap_urls") or []
+    if sitemap_urls and "noindex" in df.columns:
+        from ..integrations.google.normalize import normalize_url
+
+        sitemap_norm = {normalize_url(u) for u in sitemap_urls}
+        success = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns else df
+        for _, row in success.iterrows():
+            url = str(row.get("url") or "").strip()
+            if not url:
+                continue
+            noindex = str(row.get("noindex") or "").lower() in ("true", "1", "yes")
+            if noindex and normalize_url(url) in sitemap_norm:
+                issues.append(_issue(
+                    "Page has noindex but is listed in XML sitemap.",
+                    url=url,
+                    priority="Critical",
+                    recommendation="Remove the URL from the sitemap or remove noindex if the page should be indexed.",
+                ))
+                break
+    return issues
+
+
+def merge_indexation_issues(categories: list[dict], df: pd.DataFrame, indexation: dict | None) -> None:
+    """Append indexation coverage issues to the technical SEO category."""
+    extra = _indexation_coverage_issues(df, indexation)
+    if not extra:
+        return
+    for cat in categories:
+        if cat.get("id") == "technical_seo":
+            cat["issues"] = _sort_issues((cat.get("issues") or []) + extra)
+            recs = {i["recommendation"] for i in cat["issues"] if i.get("recommendation")}
+            cat["recommendations"] = list(recs)
+            break
+
+
+def _orphan_hub_suggestions(edges: list[tuple[str, str]], orphan_urls: list[str]) -> list[dict]:
+    issues: list[dict] = []
+    if not edges or not orphan_urls:
+        return issues
+    in_deg: dict[str, int] = {}
+    out_from: dict[str, list[str]] = {}
+    for src, tgt in edges:
+        in_deg[tgt] = in_deg.get(tgt, 0) + 1
+        out_from.setdefault(src, []).append(tgt)
+    hubs = sorted(in_deg.keys(), key=lambda u: -in_deg.get(u, 0))[:5]
+    hub_label = hubs[0] if hubs else ""
+    for orphan in orphan_urls[:10]:
+        issues.append(_issue(
+            f"Orphan page (no inlinks). Consider linking from hub page: {hub_label}" if hub_label else "Orphan page (no inlinks).",
+            url=orphan,
+            priority="Medium",
+            recommendation="Add internal links from category or hub pages to this URL.",
+        ))
+    return issues
+
+
 def category_technical_seo(
     df: pd.DataFrame,
     site_level: dict,
@@ -198,6 +364,10 @@ def category_technical_seo(
                 ))
                 deductions.append((min(10, max(2, missing_lang // 5)), True))
 
+    issues.extend(_hreflang_issues(success_df))
+    issues.extend(_schema_issues(success_df))
+    issues.extend(_soft_404_issues(success_df))
+
     if "page_analysis" in df.columns and len(success_df) > 0:
         from ..crawl.fetchers.browser_diagnostics import browser_summary_from_page_analysis
 
@@ -249,7 +419,10 @@ def category_core_web_vitals() -> dict:
     }
 
 
-def category_core_web_vitals_from_lighthouse(lighthouse_summary: dict) -> dict:
+def category_core_web_vitals_from_lighthouse(
+    lighthouse_summary: dict,
+    crux_summary: Optional[dict] = None,
+) -> dict:
     """Core Web Vitals from Lighthouse summary: score 0–100 from performance score, issues from top_failures."""
     issues = []
     recommendations = []
@@ -268,6 +441,19 @@ def category_core_web_vitals_from_lighthouse(lighthouse_summary: dict) -> dict:
         ))
     if not issues and perf_score is not None and perf_score < 80:
         recommendations.append("Improve Core Web Vitals (LCP, CLS, TBT) per Lighthouse recommendations.")
+    if crux_summary and crux_summary.get("ok"):
+        pw = crux_summary.get("pass") or {}
+        for metric, label, rec in (
+            ("lcp", "LCP", "Improve largest contentful paint (field data)."),
+            ("inp", "INP", "Reduce interaction to next paint (field data)."),
+            ("cls", "CLS", "Reduce cumulative layout shift (field data)."),
+        ):
+            if pw.get(metric) is False:
+                issues.append(_issue(
+                    f"CrUX field data: {label} does not pass Core Web Vitals threshold.",
+                    priority="High",
+                    recommendation=rec,
+                ))
     return {
         "id": "core_web_vitals",
         "name": CATEGORY_CORE_WEB_VITALS,
@@ -480,6 +666,8 @@ def category_link_health(
             priority=priority,
             recommendation="Fix or remove the link; return 200 or redirect to a valid URL.",
         ))
+    broken_url_set = {str(b.get("url") or "").strip() for b in issues_broken if b.get("url")}
+    issues.extend(_broken_link_sources(edges, broken_url_set))
     if issues_broken:
         deductions.append((min(30, len(issues_broken) * 2), True))
 
@@ -517,6 +705,7 @@ def category_link_health(
                 recommendation="Add internal links to important pages to improve crawlability and internal link equity.",
             ))
             deductions.append((5, True))
+        issues.extend(_orphan_hub_suggestions(edges, orphans[:15]))
 
     score = _score_deductions(100, deductions)
     return {
@@ -715,6 +904,7 @@ def build_categories(
     security_findings: Optional[list[dict]] = None,
     lighthouse_summary: Optional[dict] = None,
     ml_bundle: Optional[dict] = None,
+    crux_summary: Optional[dict] = None,
 ) -> list[dict]:
     """
     Build all category dicts with score, issues (with priority and recommendation), and recommendations.
@@ -728,7 +918,7 @@ def build_categories(
     issues_redirects = summary_seo.get("issues", {}).get("redirects", [])
 
     cwv = (
-        category_core_web_vitals_from_lighthouse(lighthouse_summary)
+        category_core_web_vitals_from_lighthouse(lighthouse_summary, crux_summary)
         if lighthouse_summary
         else category_core_web_vitals()
     )

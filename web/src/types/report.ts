@@ -41,6 +41,8 @@ export interface ReportIssue {
   url?: string;
   priority?: string;
   recommendation?: string;
+  llm_recommendation?: string;
+  llm_fix_effort?: string;
   type?: string;
   severity?: string;
   finding_type?: string;
@@ -295,6 +297,18 @@ export interface KeywordReportData {
   [key: string]: unknown;
 }
 
+export interface ThirdPartyLinksOverlay {
+  provider?: string;
+  provenance?: string;
+  source?: string;
+  imported_at?: string;
+  referring_domain_count?: number;
+  domains_not_in_gsc_count?: number;
+  domains_not_in_gsc_sample?: string[];
+  gsc_domains_not_in_third_party_count?: number;
+  top_domains?: Array<{ domain?: string; authority?: number | string; backlinks?: number }>;
+}
+
 export interface GscLinksReportData {
   imported_at?: string;
   source?: 'gsc_links_csv';
@@ -308,6 +322,7 @@ export interface GscLinksReportData {
   sample_links_full_count?: number;
   latest_links_full_count?: number;
   errors?: string[];
+  third_party_overlays?: ThirdPartyLinksOverlay[];
   [key: string]: unknown;
 }
 
@@ -361,6 +376,52 @@ export interface GalleryImageItem {
 }
 
 /** JSON report payload stored in report_payload.data (partial known shape). */
+export interface IndexationCoverage {
+  origin?: string;
+  counts?: {
+    crawled?: number;
+    sitemap?: number;
+    gsc_pages?: number;
+    sitemap_only?: number;
+    crawled_not_in_sitemap?: number;
+    gsc_not_crawled?: number;
+  };
+  lists?: {
+    sitemap_only?: string[];
+    crawled_not_in_sitemap?: string[];
+    gsc_not_crawled?: string[];
+  };
+  lists_total?: Record<string, number>;
+  url_join?: GoogleReportData['url_join'];
+}
+
+export interface CruxSummary {
+  ok?: boolean;
+  origin?: string;
+  metrics?: Record<string, { p75?: number; histogram?: unknown[] }>;
+  pass?: { lcp?: boolean; inp?: boolean; cls?: boolean };
+  error?: string;
+}
+
+export interface ExecutiveSummary {
+  ok?: boolean;
+  source?: string;
+  summary?: string;
+  priorities?: string[];
+  top_issues?: Array<Record<string, unknown>>;
+}
+
+export interface BingBacklinksSummary {
+  ok?: boolean;
+  source?: string;
+  site_url?: string;
+  linked_pages?: Array<{ url?: string; inbound_links?: number }>;
+  linked_page_count?: number;
+  total_inbound_links?: number;
+  provenance?: string;
+  error?: string;
+}
+
 export interface ReportPayload {
   site_name?: string;
   crawl_run_id?: number;
@@ -399,6 +460,12 @@ export interface ReportPayload {
   google?: GoogleReportData;
   keywords?: KeywordReportData;
   gsc_links?: GscLinksReportData;
+  competitor_link_gap?: {
+    source?: string;
+    provenance?: string;
+    competitors?: Array<{ competitor?: string; links_to_us?: boolean; note?: string }>;
+    our_referring_domain_count?: number;
+  };
   lighthouse_summary?: LighthousePageSummary;
   lighthouse_diagnostics?: LighthouseDiagnostic[];
   lighthouse_human_summary?: string;
@@ -434,6 +501,10 @@ export interface ReportPayload {
   semantic_keyword_clusters?: TopicCluster[];
   status_counts?: Record<string, number>;
   lighthouse_by_url?: Record<string, LighthousePageSummary>;
+  indexation_coverage?: IndexationCoverage;
+  crux_summary?: CruxSummary;
+  executive_summary?: ExecutiveSummary;
+  bing_backlinks?: BingBacklinksSummary;
   [key: string]: unknown;
 }
 
@@ -460,6 +531,18 @@ export interface ReportLink {
   console_error_count?: number;
   page_error_count?: number;
   has_browser_errors?: boolean;
+  custom_extract?: string;
+}
+
+export interface CrawlSegmentEntry {
+  prefix: string;
+  url_count?: number;
+  health_score?: number | null;
+}
+
+export interface CrawlSegmentsData {
+  overall_health?: number | null;
+  segments?: CrawlSegmentEntry[];
 }
 
 export interface ReportTopPage {

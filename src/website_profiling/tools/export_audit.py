@@ -33,6 +33,16 @@ def _load_payload(report_id: Optional[int] = None) -> dict[str, Any]:
     return payload
 
 
+def _issue_recommendation(issue: dict[str, Any]) -> tuple[str, str]:
+    """Return (display recommendation, llm_recommendation if distinct)."""
+    rule = str(issue.get("recommendation") or "").strip()
+    llm = str(issue.get("llm_recommendation") or "").strip()
+    if llm and llm != rule:
+        display = llm if llm else rule
+        return display, llm
+    return llm or rule, llm
+
+
 def _issues_rows(payload: dict[str, Any]) -> list[dict[str, str]]:
     rows: list[dict[str, str]] = []
     for cat in payload.get("categories") or []:
@@ -43,14 +53,108 @@ def _issues_rows(payload: dict[str, Any]) -> list[dict[str, str]]:
         for issue in cat.get("issues") or []:
             if not isinstance(issue, dict):
                 continue
+            rec, llm_rec = _issue_recommendation(issue)
             rows.append({
                 "category": ui_name,
                 "priority": str(issue.get("priority") or ""),
                 "message": str(issue.get("message") or ""),
                 "url": str(issue.get("url") or ""),
-                "recommendation": str(issue.get("recommendation") or ""),
+                "recommendation": rec,
+                "llm_recommendation": llm_rec,
             })
     return rows
+
+
+def _executive_export_data(payload: dict[str, Any]) -> dict[str, Any]:
+    """Normalize executive_summary and legacy recommendations for export."""
+    exec_sum = payload.get("executive_summary")
+    summary = ""
+    priorities: list[str] = []
+    top_issues: list[dict[str, Any]] = []
+    source = ""
+    if isinstance(exec_sum, dict):
+        summary = str(exec_sum.get("summary") or "").strip()
+        source = str(exec_sum.get("source") or "").strip()
+        raw_pri = exec_sum.get("priorities") or []
+        if isinstance(raw_pri, list):
+            priorities = [str(p).strip() for p in raw_pri if str(p).strip()]
+        raw_top = exec_sum.get("top_issues") or []
+        if isinstance(raw_top, list):
+            top_issues = [i for i in raw_top if isinstance(i, dict)][:8]
+
+    legacy_recs = payload.get("recommendations") or []
+    legacy_list: list[str] = []
+    if isinstance(legacy_recs, list):
+        legacy_list = [str(r).strip() for r in legacy_recs if str(r).strip()]
+
+    if not summary and legacy_list:
+        summary = "\n".join(f"• {r}" for r in legacy_list[:12])
+
+    return {
+        "summary": summary,
+        "priorities": priorities,
+        "top_issues": top_issues,
+        "source": source,
+        "legacy_recommendations": legacy_list,
+    }
+
+
+def _executive_source_label(source: str) -> str:
+    if source == "ai_insights":
+        return "AI insights"
+    if source == "deterministic":
+        return "Measured + Search Console"
+    return source or "Audit data"
+
+
+def _executive_summary_html(payload: dict[str, Any]) -> str:
+    data = _executive_export_data(payload)
+    if not data["summary"] and not data["priorities"] and not data["top_issues"]:
+        return ""
+
+    parts: list[str] = ['<section><h2>Executive summary</h2>']
+    if data["source"]:
+        parts.append(
+            f'<p class="muted">Source: {html.escape(_executive_source_label(data["source"]))}</p>'
+        )
+    if data["summary"]:
+        summary_html = html.escape(data["summary"]).replace("\n", "<br/>")
+        parts.append(f'<div class="callout"><p>{summary_html}</p></div>')
+
+    if data["priorities"]:
+        pri_items = "".join(f"<li>{html.escape(p)}</li>" for p in data["priorities"][:8])
+        parts.append(f"<h3>Priorities</h3><ul>{pri_items}</ul>")
+
+    if data["top_issues"]:
+        rows = ""
+        for iss in data["top_issues"]:
+            pri = str(iss.get("priority") or "").lower()
+            badge_cls = f"badge-{pri}" if pri in {"critical", "high", "medium", "low"} else "badge-low"
+            clicks = iss.get("gsc_clicks")
+            clicks_txt = ""
+            if clicks is not None:
+                try:
+                    if float(clicks) > 0:
+                        clicks_txt = f' · {int(float(clicks))} GSC clicks'
+                except (TypeError, ValueError):
+                    pass
+            rows += (
+                "<tr>"
+                f"<td><span class=\"badge {badge_cls}\">{html.escape(str(iss.get('priority') or ''))}</span></td>"
+                f"<td>{html.escape(str(iss.get('message') or ''))}</td>"
+                f"<td class=\"url\">{html.escape(str(iss.get('url') or ''))}</td>"
+                f"<td>{html.escape(clicks_txt.lstrip(' · ') if clicks_txt else '—')}</td>"
+                "</tr>"
+            )
+        parts.append(
+            "<h3>Top traffic-impacting issues</h3>"
+            '<table class="data"><thead><tr>'
+            "<th>Priority</th><th>Issue</th><th>URL</th><th>GSC clicks</th>"
+            f"</tr></thead><tbody>{rows}</tbody></table>"
+        )
+
+    parts.append("</section>")
+    return "".join(parts)
 
 
 def _priority_sort_key(row: dict[str, str]) -> int:
@@ -179,9 +283,13 @@ def _category_cards_html(categories: Any) -> str:
         if not isinstance(cat, dict):
             continue
         name = html.escape(category_display_name(str(cat.get("name") or "Category")))
-        score_txt, score_cls = _score_band(
-            float(cat["score"]) if cat.get("score") is not None else None
-        )
+        score_val: float | None = None
+        if cat.get("score") is not None:
+            try:
+                score_val = float(cat["score"])
+            except (TypeError, ValueError):
+                score_val = None
+        score_txt, score_cls = _score_band(score_val)
         issue_n = len(cat.get("issues") or [])
         cards.append(
             f'<article class="score-card {score_cls}">'
@@ -463,10 +571,26 @@ def export_audit_csv(report_id: Optional[int] = None) -> str:
             link.get("inlinks", ""),
             link.get("word_count", ""),
         ])
+    exec_data = _executive_export_data(payload)
+    if exec_data["summary"] or exec_data["priorities"]:
+        w.writerow([])
+        w.writerow(["# Executive summary"])
+        w.writerow(["source", _executive_source_label(exec_data["source"])])
+        if exec_data["summary"]:
+            w.writerow(["summary", exec_data["summary"]])
+        for i, pri in enumerate(exec_data["priorities"], 1):
+            w.writerow([f"priority_{i}", pri])
     w.writerow([])
-    w.writerow(["category", "priority", "message", "url", "recommendation"])
+    w.writerow(["category", "priority", "message", "url", "recommendation", "llm_recommendation"])
     for row in _issues_rows(payload):
-        w.writerow([row["category"], row["priority"], row["message"], row["url"], row["recommendation"]])
+        w.writerow([
+            row["category"],
+            row["priority"],
+            row["message"],
+            row["url"],
+            row["recommendation"],
+            row.get("llm_recommendation", ""),
+        ])
     return buf.getvalue()
 
 
@@ -509,6 +633,7 @@ def export_audit_html(report_id: Optional[int] = None) -> str:
             "</tr>"
         )
 
+    has_custom_extract = any(isinstance(l, dict) and l.get("custom_extract") for l in links)
     link_rows = ""
     for link in links:
         status = str(link.get("status") or "")
@@ -519,6 +644,11 @@ def export_audit_html(report_id: Optional[int] = None) -> str:
             status_cls = "badge-high"
         elif status.startswith("4") or status.startswith("5"):
             status_cls = "badge-critical"
+        custom_cell = (
+            f"<td>{html.escape(str(link.get('custom_extract') or ''))}</td>"
+            if has_custom_extract
+            else ""
+        )
         link_rows += (
             "<tr>"
             f"<td class=\"url\">{html.escape(str(link.get('url') or ''))}</td>"
@@ -526,6 +656,7 @@ def export_audit_html(report_id: Optional[int] = None) -> str:
             f"<td>{html.escape(str(link.get('title') or ''))}</td>"
             f"<td>{html.escape(str(link.get('inlinks') or ''))}</td>"
             f"<td>{html.escape(str(link.get('word_count') or ''))}</td>"
+            f"{custom_cell}"
             "</tr>"
         )
 
@@ -534,14 +665,7 @@ def export_audit_html(report_id: Optional[int] = None) -> str:
         for term, desc in _GLOSSARY_ROWS
     )
 
-    recs = payload.get("recommendations") or []
-    rec_html = ""
-    if isinstance(recs, list) and recs:
-        items = "".join(f"<li>{html.escape(str(r))}</li>" for r in recs[:12])
-        rec_html = (
-            '<section><h2>Executive summary</h2>'
-            f'<div class="callout"><ul>{items}</ul></div></section>'
-        )
+    rec_html = _executive_summary_html(payload)
 
     truncated_note = ""
     if issue_total > len(issues):
@@ -552,6 +676,13 @@ def export_audit_html(report_id: Optional[int] = None) -> str:
 
     exported_at = datetime.now(timezone.utc).strftime("%d %B %Y, %H:%M UTC")
     report_title = html.escape(str(payload.get("report_title") or "Technical SEO Audit Report"))
+    report_meta = payload.get("report_meta") if isinstance(payload.get("report_meta"), dict) else {}
+    logo_url = str(report_meta.get("export_logo_url") or "").strip()
+    logo_html = (
+        f'<img src="{html.escape(logo_url)}" alt="Logo" class="export-logo" style="max-height:48px;margin-bottom:12px"/>'
+        if logo_url
+        else ""
+    )
     hero_copy = (
         f"{issue_total} findings across {len(categories)} audit categories."
         if categories
@@ -572,6 +703,7 @@ def export_audit_html(report_id: Optional[int] = None) -> str:
 <div class="report">
   <header class="cover">
     <div class="cover-brand">Site Audit</div>
+    {logo_html}
     <h1>{site}</h1>
     <p class="cover-subtitle">{report_title}</p>
     <dl class="cover-meta">
@@ -619,7 +751,7 @@ def export_audit_html(report_id: Optional[int] = None) -> str:
       <h2>Crawled URLs (sample)</h2>
       <p class="muted">First {len(links)} URLs from the crawl. Export CSV for the full URL inventory.</p>
       <table class="data">
-        <thead><tr><th>URL</th><th>Status</th><th>Title</th><th>Inlinks</th><th>Words</th></tr></thead>
+        <thead><tr><th>URL</th><th>Status</th><th>Title</th><th>Inlinks</th><th>Words</th>{'<th>Custom extract</th>' if has_custom_extract else ''}</tr></thead>
         <tbody>{link_rows or '<tr><td colspan="5">No URLs recorded.</td></tr>'}</tbody>
       </table>
     </section>
@@ -709,7 +841,12 @@ def export_audit_pdf(report_id: Optional[int] = None) -> bytes:
                 continue
             name = category_display_name(str(cat.get("name") or "Category"))
             score = cat.get("score")
-            score_txt = str(int(round(float(score)))) if score is not None else "—"
+            score_txt = "—"
+            if score is not None:
+                try:
+                    score_txt = str(int(round(float(score))))
+                except (TypeError, ValueError):
+                    score_txt = "—"
             cat_data.append([name, score_txt, str(len(cat.get("issues") or []))])
         cat_table = Table(cat_data, colWidths=[3.0 * inch, 0.9 * inch, 0.9 * inch])
         cat_table.setStyle(TableStyle([
@@ -724,11 +861,40 @@ def export_audit_pdf(report_id: Optional[int] = None) -> bytes:
         story.append(cat_table)
         story.append(Spacer(1, 0.2 * inch))
 
-    recs = payload.get("recommendations") or []
-    if isinstance(recs, list) and recs:
-        rec_items = "".join(f"• {html.escape(str(r))}<br/>" for r in recs[:8])
+    exec_data = _executive_export_data(payload)
+    if exec_data["summary"] or exec_data["priorities"] or exec_data["top_issues"]:
         story.append(Paragraph("Executive summary", section_style))
-        story.append(Paragraph(rec_items, styles["Normal"]))
+        if exec_data["source"]:
+            story.append(Paragraph(
+                f"<i>Source: {html.escape(_executive_source_label(exec_data['source']))}</i>",
+                styles["Normal"],
+            ))
+        if exec_data["summary"]:
+            summary_pdf = html.escape(exec_data["summary"]).replace("\n", "<br/>")
+            story.append(Paragraph(summary_pdf, styles["Normal"]))
+        if exec_data["priorities"]:
+            pri_items = "".join(f"• {html.escape(p)}<br/>" for p in exec_data["priorities"][:8])
+            story.append(Paragraph(f"<b>Priorities</b><br/>{pri_items}", styles["Normal"]))
+        if exec_data["top_issues"]:
+            top_data = [["Priority", "Issue", "URL"]]
+            for iss in exec_data["top_issues"][:6]:
+                msg = str(iss.get("message") or "")
+                if len(msg) > 100:
+                    msg = msg[:97] + "..."
+                url = str(iss.get("url") or "")
+                if len(url) > 70:
+                    url = url[:67] + "..."
+                top_data.append([str(iss.get("priority") or ""), msg, url])
+            top_table = Table(top_data, colWidths=[0.85 * inch, 3.2 * inch, 2.45 * inch])
+            top_table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), table_header),
+                ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("FONTSIZE", (0, 0), (-1, -1), 8),
+                ("GRID", (0, 0), (-1, -1), 0.25, table_grid),
+                ("VALIGN", (0, 0), (-1, -1), "TOP"),
+            ]))
+            story.append(Paragraph("<b>Top traffic-impacting issues</b>", styles["Normal"]))
+            story.append(top_table)
         story.append(Spacer(1, 0.2 * inch))
 
     summary_data = [["Field", "Value"]] + [[k, v] for k, v in _summary_lines(payload)]

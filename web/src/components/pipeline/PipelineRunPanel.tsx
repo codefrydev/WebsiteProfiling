@@ -16,12 +16,14 @@ import { strings } from '@/lib/strings';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
 import { usePipeline } from '@/context/PipelineContext';
+import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import {
   PipelineStatusBadge,
   PRESET_COPY,
   PresetIcon,
 } from './pipelineUi';
 import { PIPELINE_PRESETS } from './pipelinePresets';
+import { CRAWL_PRESETS, type CrawlPresetId } from '@/lib/crawlPresets';
 import PipelineWizardProgress, { type WizardStep } from './PipelineWizardProgress';
 import PipelineLogViewer from './PipelineLogViewer';
 import CrawlAuthorizeCheckbox from './CrawlAuthorizeCheckbox';
@@ -57,10 +59,13 @@ export default function PipelineRunPanel() {
     presetId,
     handleStartUrlChange,
     handlePresetChange,
+    crawlPresetId,
+    handleCrawlPresetChange,
     setField,
     run,
     continueInBackground,
   } = usePipeline();
+  const { readOnly } = useReadOnlySession();
 
   const [crawlAuthorized, setCrawlAuthorized] = useState(false);
 
@@ -90,7 +95,7 @@ export default function PipelineRunPanel() {
     }
   }, [status, log]);
 
-  const disabled = busy || loading;
+  const disabled = busy || loading || readOnly;
   const urlValid = isValidUrl(startUrl);
   const presetCopy = PRESET_COPY[presetId];
   const crawlOnlyNote =
@@ -185,26 +190,29 @@ export default function PipelineRunPanel() {
             placeholder={s.startUrlPlaceholder}
             className="mt-4 w-full rounded-lg border border-default bg-brand-900 px-3 py-3 text-sm text-foreground transition focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
-          <div className="mt-4 flex flex-wrap gap-2">
-            <span className="w-full text-xs text-muted-foreground font-medium">Crawl size preset</span>
-            {(['small', 'medium', 'large'] as const).map((key) => {
-              const preset = crawlPresets[key];
-              if (!preset) return null;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => {
-                    setField('max_pages', preset.maxPages);
-                    if (preset.stream) setField('crawl_stream_to_db', true);
-                  }}
-                  className="rounded-lg border border-default bg-brand-900/80 px-3 py-1.5 text-xs font-medium text-foreground hover:border-blue-500/40 transition"
-                >
-                  {preset.label} ({preset.maxPages} URLs)
-                </button>
-              );
-            })}
+          <div className="mt-4 space-y-2">
+            <span className="text-xs text-muted-foreground font-medium">Crawl preset</span>
+            <div className="flex flex-wrap gap-2">
+              {CRAWL_PRESETS.map((preset) => {
+                const selected = crawlPresetId === preset.id;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    disabled={disabled}
+                    title={preset.description}
+                    onClick={() => handleCrawlPresetChange(preset.id as CrawlPresetId)}
+                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+                      selected
+                        ? 'border-blue-500/60 bg-blue-500/10 text-foreground'
+                        : 'border-default bg-brand-900/80 text-foreground hover:border-blue-500/40'
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
           <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
             <Button
@@ -311,8 +319,15 @@ export default function PipelineRunPanel() {
             </dl>
 
             <div className="mt-5">
-              <CrawlAuthorizeCheckbox checked={crawlAuthorized} onChange={setCrawlAuthorized} />
+              <CrawlAuthorizeCheckbox
+                checked={crawlAuthorized}
+                onChange={setCrawlAuthorized}
+                disabled={readOnly}
+              />
             </div>
+            {readOnly ? (
+              <p className="mt-3 text-xs text-amber-700 dark:text-amber-300">{strings.app.readonlyBanner}</p>
+            ) : null}
 
             <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-muted pt-5">
               <div>

@@ -4,6 +4,7 @@ import { Loader2, Maximize2, Terminal } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { strings } from '@/lib/strings';
 import { usePipeline } from '@/context/PipelineContext';
+import { useSession } from '@/context/SessionContext';
 import { storePipelineReturnPath } from '@/lib/pipelineReturn';
 
 const s = strings.pipelineRunner;
@@ -16,6 +17,7 @@ export default function PipelineRunnerFab() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { busy, status, log, backgroundMode, openPipelinePage } = usePipeline();
+  const { loading: sessionLoading, canMutate } = useSession();
 
   const onPipelinePage = pathname === '/pipeline' || pathname.startsWith('/pipeline/');
   const showDock = backgroundMode && (busy || Boolean(status) || Boolean(log));
@@ -29,7 +31,7 @@ export default function PipelineRunnerFab() {
     openPipelinePage('run');
   };
 
-  if (onPipelinePage) {
+  if (onPipelinePage || sessionLoading || !canMutate) {
     return null;
   }
 

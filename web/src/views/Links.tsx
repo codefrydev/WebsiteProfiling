@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef, useCallback, type MouseEvent } from 'react';
-import { Link as LinkIcon, ArrowLeft, AlertTriangle } from 'lucide-react';
+import { Link as LinkIcon, ArrowLeft, AlertTriangle, Download } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Button, AlertBanner } from '../components';
@@ -31,6 +31,7 @@ import {
 import type { LinksFilterValues } from '../components/links/LinksFilterBar';
 import { linkHasBrowserErrors } from '@/lib/browserErrors';
 import { browserInspectorIssueRows } from '@/components/browser/BrowserDiagnosticsPanel';
+import { exportLinksCsv } from '@/utils/linkExport';
 
 const INSPECTOR_TABS = [
   'overview',
@@ -385,6 +386,19 @@ export default function Links({ searchQuery = '' }: ViewProps) {
               </>
             }
             className="mb-0"
+            actions={
+              filtered.length > 0 ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => exportLinksCsv(filtered)}
+                  className="inline-flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4 shrink-0" aria-hidden />
+                  {vl.exportCsv}
+                </Button>
+              ) : undefined
+            }
           />
 
           <LinksExplorerTableTab

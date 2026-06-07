@@ -20,6 +20,7 @@ import {
   ShieldAlert,
   Terminal,
   TrendingUp,
+  FileSearch,
 } from 'lucide-react';
 import { strings } from '@/lib/strings';
 import { viewIdToPathSlug, type ViewId } from '@/routes';
@@ -39,6 +40,7 @@ const VIEW_NAV: { id: ViewId; icon: LucideIcon }[] = [
   { id: 'overview', icon: LayoutDashboard },
   { id: 'compare', icon: ArrowLeftRight },
   { id: 'export', icon: FileDown },
+  { id: 'log-analyzer', icon: Terminal },
   { id: 'issues', icon: AlertOctagon },
   { id: 'links', icon: LinkIcon },
   { id: 'site-structure', icon: FolderTree },
@@ -52,6 +54,7 @@ const VIEW_NAV: { id: ViewId; icon: LucideIcon }[] = [
   { id: 'network', icon: Share2 },
   { id: 'gallery', icon: Images },
   { id: 'search-performance', icon: TrendingUp },
+  { id: 'indexation', icon: FileSearch },
   { id: 'backlinks', icon: Link2 },
   { id: 'traffic', icon: BarChart2 },
   { id: 'keywords-explorer', icon: Key },

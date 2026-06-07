@@ -1,6 +1,7 @@
 import { Building2, ExternalLink, Globe, ArrowRight, Search, Settings2, Trash2 } from 'lucide-react';
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import { PageLayout, Card } from '../components';
+import HealthSparkline from '@/components/HealthSparkline';
 import { Skeleton, SkeletonDomainCard } from '../components/Skeleton';
 import { useReport } from '../context/useReport';
 import { format, strings } from '../lib/strings';
@@ -40,6 +41,7 @@ export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
   const [pendingDeleteKey, setPendingDeleteKey] = useState<string | null>(null);
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [healthHistoryByDomain, setHealthHistoryByDomain] = useState<Record<string, number[]>>({});
 
   const portfolioCardKey = (group: PortfolioGroup) =>
     `${group.domainParam}-${group.crawlOnly ? 'crawl' : 'report'}-${group.reportId ?? 'nr'}-${group.crawlRunId ?? 'nc'}-${group.generatedAtMs}`;
@@ -116,6 +118,43 @@ export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
       cancelled = true;
     };
   }, [reportList, crawlRuns]);
+
+  useEffect(() => {
+    if (!domainGroups.length) {
+      setHealthHistoryByDomain({});
+      return;
+    }
+    let cancelled = false;
+    void Promise.all(
+      domainGroups
+        .filter((g) => !g.crawlOnly && g.domainParam)
+        .map(async (g) => {
+          try {
+            const res = await fetch(
+              apiUrl(`/report/history?domain=${encodeURIComponent(g.domainParam)}&limit=8`),
+            );
+            const body = await res.json();
+            const scores = [...(body.history || [])]
+              .map((row: { healthScore?: number | null }) => row.healthScore)
+              .filter((n: unknown): n is number => typeof n === 'number' && Number.isFinite(n))
+              .reverse();
+            return [g.domainParam, scores] as [string, number[]];
+          } catch {
+            return [g.domainParam, [] as number[]] as [string, number[]];
+          }
+        }),
+    ).then((entries) => {
+      if (cancelled) return;
+      const map: Record<string, number[]> = {};
+      for (const [domain, scores] of entries) {
+        if (scores.length) map[domain] = scores;
+      }
+      setHealthHistoryByDomain(map);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [domainGroups]);
 
   const portfolioTotals = useMemo(() => {
     const totalBrands = domainGroups.length;
@@ -263,7 +302,10 @@ export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
                     </div>
                     <div className="text-right shrink-0">
                       <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{vh.healthScoreLabel}</p>
-                      <p className={`text-base font-bold tabular-nums ${healthScoreClass(group.healthScore)}`}>{group.healthScore}</p>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <HealthSparkline scores={healthHistoryByDomain[group.domainParam] || []} />
+                        <p className={`text-base font-bold tabular-nums ${healthScoreClass(group.healthScore)}`}>{group.healthScore}</p>
+                      </div>
                     </div>
                     </button>
                     <button

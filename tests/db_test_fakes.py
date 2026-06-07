@@ -1,3 +1,10 @@
+"""
+Minimal psycopg-like fakes for unit tests.
+
+FakeConn routes behavior by SQL substring — it does NOT validate real schema or
+query correctness. For SQL round-trips use Postgres integration tests such as
+tests/test_storage_bulk.py and tests/test_gsc_links_store.py (DATABASE_URL required).
+"""
 from __future__ import annotations
 
 from contextlib import contextmanager

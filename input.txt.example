@@ -50,6 +50,14 @@ lighthouse_categories = performance,accessibility,best-practices,seo
 lighthouse_iterations = 1
 run_lighthouse = true
 run_lighthouse_on_pages = true
+enable_crux = false
+competitor_domains =
+bing_webmaster_api_key =
+serp_api_key =
+export_logo_url =
+custom_extraction_regex =
+crawl_path_segments =
+crawl_ignore_params =
 lighthouse_max_pages = 2
 lighthouse_concurrency = 2
 

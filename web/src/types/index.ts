@@ -3,6 +3,8 @@ export type {
   ViewNavigateOptions,
   ReportPayload,
   ReportLink,
+  CrawlSegmentsData,
+  CrawlSegmentEntry,
   ReportTopPage,
   ReportSummary,
   ReportCategory,

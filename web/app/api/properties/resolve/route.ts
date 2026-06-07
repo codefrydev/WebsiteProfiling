@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
 import {
   canonicalDomainFromStartUrl,
+  getPropertyByDomain,
   resolvePropertyIdFromStartUrl,
 } from '@/server/propertiesDb';
 import type { ApiRouteHandler } from '@/types/api';
@@ -20,7 +21,12 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
   try {
     const id = await resolvePropertyIdFromStartUrl(startUrl);
     const domain = canonicalDomainFromStartUrl(startUrl);
-    return NextResponse.json({ id, canonical_domain: domain });
+    const property = domain ? await getPropertyByDomain(domain) : null;
+    return NextResponse.json({
+      id,
+      canonical_domain: domain,
+      default_crawl_preset: property?.default_crawl_preset ?? null,
+    });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return NextResponse.json({ error: msg }, { status: 500 });

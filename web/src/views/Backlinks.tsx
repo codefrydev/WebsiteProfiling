@@ -1,16 +1,20 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link2, Settings2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { useReport } from '../context/useReport';
+import { useOptionalPipeline } from '../context/PipelineContext';
+import { apiUrl } from '../lib/publicBase';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, ViewTabs } from '../components';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import GoogleTableToolbar from '../components/google/GoogleTableToolbar';
 import GscLinksSummaryCards from '../components/backlinks/GscLinksSummaryCards';
+import CompetitorGapImport from '../components/backlinks/CompetitorGapImport';
+import ThirdPartyLinksImport from '../components/backlinks/ThirdPartyLinksImport';
 import {
   buildAnchorExportColumns,
   buildDomainExportColumns,
@@ -30,8 +34,32 @@ type BacklinksTabId = (typeof TABS)[number];
 export default function Backlinks(_props: ViewProps) {
   const vb = strings.views.backlinks;
   const searchParams = useSearchParams();
-  const { data } = useReport();
+  const { data, loadReport } = useReport();
+  const pipeline = useOptionalPipeline();
+  const propertyId = Number(pipeline?.configState.active_property_id || 0);
   const gscLinks = data?.gsc_links;
+  const bingBacklinks = data?.bing_backlinks;
+  const competitorGap = data?.competitor_link_gap;
+  const [velocity, setVelocity] = useState<Array<{ capturedAt: string; referringDomains: number }>>([]);
+
+  useEffect(() => {
+    if (!propertyId) {
+      setVelocity([]);
+      return;
+    }
+    let cancelled = false;
+    void fetch(apiUrl(`/backlinks/velocity?propertyId=${propertyId}`))
+      .then((r) => r.json())
+      .then((body) => {
+        if (!cancelled) setVelocity(body.snapshots || []);
+      })
+      .catch(() => {
+        if (!cancelled) setVelocity([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [propertyId]);
 
   const paginationLabels = {
     showingSlice: vb.table.showingSlice,
@@ -249,6 +277,86 @@ export default function Backlinks(_props: ViewProps) {
         ariaLabel={vb.title}
         idPrefix="backlinks"
       />
+
+      {activeTab === 'overview' && bingBacklinks?.ok ? (
+        <div className="mb-6 p-4 rounded-xl border border-default bg-brand-800/50">
+          <h3 className="text-sm font-bold text-foreground mb-2">{vb.bingTitle}</h3>
+          <p className="text-xs text-muted-foreground mb-3">{vb.bingHint}</p>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <span>
+              <span className="text-muted-foreground">{vb.bingLinkedPages}: </span>
+              <span className="font-semibold tabular-nums">{bingBacklinks.linked_page_count ?? 0}</span>
+            </span>
+            <span>
+              <span className="text-muted-foreground">{vb.bingInboundLinks}: </span>
+              <span className="font-semibold tabular-nums">{bingBacklinks.total_inbound_links ?? 0}</span>
+            </span>
+          </div>
+          {(bingBacklinks.linked_pages || []).length > 0 ? (
+            <ul className="mt-3 space-y-1 text-xs font-mono max-h-32 overflow-y-auto">
+              {(bingBacklinks.linked_pages || []).slice(0, 8).map((row) => (
+                <li key={row.url} className="flex justify-between gap-2">
+                  <span className="truncate text-muted-foreground">{row.url}</span>
+                  <span className="tabular-nums shrink-0">{row.inbound_links ?? 0}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+
+      {activeTab === 'overview' ? (
+        <ThirdPartyLinksImport gscLinks={gscLinks} onImported={() => void loadReport()} />
+      ) : null}
+
+      {activeTab === 'overview' && gscLinks ? <CompetitorGapImport gscLinks={gscLinks} /> : null}
+
+      {activeTab === 'overview' && competitorGap?.competitors?.length ? (
+        <div className="mb-6 p-4 rounded-xl border border-default bg-brand-800/50">
+          <h3 className="text-sm font-bold text-foreground mb-2">Competitor link gap</h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            Based on imported GSC Links sample ({competitorGap.provenance || 'Search Console'}).
+          </p>
+          <ul className="text-sm space-y-1">
+            {(competitorGap.competitors as Array<{ competitor?: string; links_to_us?: boolean }>).map((row) => (
+              <li key={row.competitor} className="flex items-center gap-2">
+                <span className="font-mono text-xs">{row.competitor}</span>
+                <span className={row.links_to_us ? 'text-emerald-600 text-xs' : 'text-amber-600 text-xs'}>
+                  {row.links_to_us ? 'links to you' : 'not in referring domains sample'}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {activeTab === 'overview' && velocity.length >= 2 && (
+        <div className="mb-6 p-4 rounded-xl border border-default bg-brand-800/50">
+          <h3 className="text-sm font-bold text-foreground mb-2">Referring domain velocity</h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            {format('{latest} domains ({delta} vs prior snapshot)', {
+              latest: velocity[velocity.length - 1].referringDomains.toLocaleString(),
+              delta:
+                velocity[velocity.length - 1].referringDomains -
+                velocity[velocity.length - 2].referringDomains,
+            })}
+          </p>
+          <div className="flex items-end gap-1 h-16">
+            {velocity.map((snap) => {
+              const max = Math.max(...velocity.map((s) => s.referringDomains), 1);
+              const h = Math.max(4, (snap.referringDomains / max) * 100);
+              return (
+                <div
+                  key={snap.capturedAt}
+                  className="flex-1 bg-accent/70 rounded-t"
+                  style={{ height: `${h}%` }}
+                  title={`${snap.capturedAt}: ${snap.referringDomains}`}
+                />
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {activeTab === 'overview' && (
         <div className="grid gap-6 lg:grid-cols-2">

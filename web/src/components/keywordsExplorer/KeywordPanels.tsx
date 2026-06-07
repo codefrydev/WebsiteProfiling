@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { apiUrl } from '../../lib/publicBase';
 import { buildLinksInspectHref } from '../../lib/reportNav';
+import UrlInspectorButton from '@/components/UrlInspectorButton';
 import { strings, format } from '../../lib/strings';
 import { Card } from '../index';
 import CopyBtn from '../links/CopyBtn';
@@ -25,6 +26,7 @@ import type {
   KeywordByPageResponse,
   KeywordExpandResult,
   KeywordRow,
+  QueryPageMisalignmentItem,
 } from '@/types/components';
 import KeywordEmptyState from './KeywordEmptyState';
 
@@ -117,6 +119,7 @@ export function CannibalisationPanel({ items }: CannibalisationPanelProps) {
                       {p.url}
                       <ExternalLink className="w-2.5 h-2.5 inline ml-0.5 shrink-0" />
                     </a>
+                    <UrlInspectorButton url={p.url} />
                     <span className="text-muted-foreground tabular-nums shrink-0">
                       {format(c.clicks, { n: p.clicks })}
                     </span>
@@ -127,6 +130,85 @@ export function CannibalisationPanel({ items }: CannibalisationPanelProps) {
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+interface QueryPageMisalignmentPanelProps {
+  items: QueryPageMisalignmentItem[];
+}
+
+export function QueryPageMisalignmentPanel({ items }: QueryPageMisalignmentPanelProps) {
+  const a = strings.views.keywordsExplorer.alignment;
+  const [search, setSearch] = useState('');
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let list = items ?? [];
+    if (q) {
+      list = list.filter(
+        (item) =>
+          String(item.keyword || '').toLowerCase().includes(q) ||
+          String(item.current_url || '').toLowerCase().includes(q) ||
+          String(item.suggested_url || '').toLowerCase().includes(q),
+      );
+    }
+    return [...list].sort((x, y) => (y.impressions || 0) - (x.impressions || 0));
+  }, [items, search]);
+
+  if (!items?.length) {
+    return <KeywordEmptyState icon={Link2} title={a.empty} description="" />;
+  }
+
+  return (
+    <div className="p-4 sm:p-5">
+      <div className="mb-4 p-3 rounded-xl border border-amber-500/25 bg-amber-500/5">
+        <p className="text-sm text-foreground font-medium flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden />
+          {format(a.intro, { count: items.length })}
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        <div className="flex items-center gap-1.5 bg-brand-900 border border-default rounded-lg px-2.5 py-1.5 flex-1 min-w-[12rem] max-w-md">
+          <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" aria-hidden />
+          <input
+            type="search"
+            placeholder={a.searchPlaceholder}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="bg-transparent text-sm text-foreground placeholder-muted-foreground focus:outline-none w-full min-w-0"
+          />
+        </div>
+      </div>
+      <div className="space-y-3">
+        {filtered.map((item, i) => (
+          <Card key={`${item.keyword}-${item.current_url}-${i}`} className="border-amber-500/25 !bg-amber-500/5">
+            <p className="font-semibold text-foreground mb-2">&ldquo;{item.keyword}&rdquo;</p>
+            <p className="text-xs text-muted-foreground mb-2 tabular-nums">
+              {format(a.metrics, {
+                impressions: (item.impressions || 0).toLocaleString(),
+                position: parseFloat(String(item.position || 0)).toFixed(1),
+              })}
+            </p>
+            <div className="space-y-2 text-xs">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-muted-foreground shrink-0">{a.currentUrl}</span>
+                <a href={item.current_url} target="_blank" rel="noopener noreferrer" className="text-link hover:underline truncate min-w-0 flex-1 font-mono">
+                  {item.current_url}
+                </a>
+                <UrlInspectorButton url={item.current_url} />
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-muted-foreground shrink-0">{a.suggestedUrl}</span>
+                <a href={item.suggested_url} target="_blank" rel="noopener noreferrer" className="text-link hover:underline truncate min-w-0 flex-1 font-mono">
+                  {item.suggested_url}
+                </a>
+                <UrlInspectorButton url={item.suggested_url} />
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

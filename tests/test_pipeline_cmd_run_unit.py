@@ -101,3 +101,36 @@ def test_pipeline_lighthouse_on_pages_uses_selected_urls(monkeypatch) -> None:
     pipeline_cmd._run_lighthouse_on_pages(cfg, lighthouse_max_pages=10)
     assert urls_seen["urls"] == ["https://a.com"]
 
+
+def test_lighthouse_on_pages_swallows_google_data_errors(monkeypatch) -> None:
+    from website_profiling.commands import pipeline_cmd
+
+    class _Ctx:
+        def __enter__(self):
+            return object()
+
+        def __exit__(self, _t, _v, _tb):
+            return False
+
+    import website_profiling.db as db
+
+    monkeypatch.setattr(db, "db_session", lambda: _Ctx())
+    monkeypatch.setattr(db, "get_latest_crawl_run_id", lambda _c: 1)
+    monkeypatch.setattr(
+        db,
+        "read_crawl",
+        lambda _c, _rid: pd.DataFrame([{"url": "https://a.com", "status": 200}]),
+    )
+    monkeypatch.setattr(
+        "website_profiling.integrations.google.store.read_latest_google_data",
+        lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("no google")),
+    )
+    urls_seen = {}
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "website_profiling.lighthouse.runner",
+        types.SimpleNamespace(run_lighthouse_on_pages=lambda urls, **_k: urls_seen.setdefault("urls", urls)),
+    )
+    pipeline_cmd._run_lighthouse_on_pages({}, lighthouse_max_pages=5)
+    assert urls_seen["urls"] == ["https://a.com"]
+

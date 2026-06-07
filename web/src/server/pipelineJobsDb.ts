@@ -86,6 +86,100 @@ export async function isAnyPipelineJobRunning(): Promise<boolean> {
   });
 }
 
+export interface PipelineJobListItem {
+  id: string;
+  jobType: string;
+  status: 'running' | 'success' | 'error';
+  propertyId: number | null;
+  startedAt: string;
+  finishedAt: string | null;
+  exitCode: number | null;
+  error: string | null;
+}
+
+const STALE_JOB_HOURS = Number(process.env.PIPELINE_JOB_STALE_HOURS || '6');
+
+/** Mark jobs stuck in running state as error (e.g. after server restart). */
+export async function reconcileStaleRunningJobs(): Promise<number> {
+  return withDb(async (client) => {
+    const cur = await client.query<{ id: string }>(
+      `UPDATE pipeline_jobs
+       SET status = 'error',
+           error_text = COALESCE(error_text, 'Job interrupted (server restart or timeout)'),
+           finished_at = now()
+       WHERE status = 'running'
+         AND started_at < now() - ($1::text || ' hours')::interval
+       RETURNING id::text`,
+      [String(STALE_JOB_HOURS)],
+    );
+    return cur.rowCount ?? 0;
+  });
+}
+
+export async function listRecentPipelineJobs(limit = 20): Promise<PipelineJobListItem[]> {
+  return withDb(async (client) => {
+    const cur = await client.query<{
+      id: string;
+      job_type: string;
+      status: string;
+      property_id: number | null;
+      started_at: Date;
+      finished_at: Date | null;
+      exit_code: number | null;
+      error_text: string | null;
+    }>(
+      `SELECT id::text, job_type, status, property_id, started_at, finished_at, exit_code, error_text
+       FROM pipeline_jobs
+       ORDER BY started_at DESC
+       LIMIT $1`,
+      [limit],
+    );
+    return cur.rows.map((row) => ({
+      id: row.id,
+      jobType: row.job_type,
+      status: row.status === 'success' ? 'success' : row.status === 'running' ? 'running' : 'error',
+      propertyId: row.property_id,
+      startedAt: row.started_at.toISOString(),
+      finishedAt: row.finished_at?.toISOString() ?? null,
+      exitCode: row.exit_code,
+      error: row.error_text,
+    }));
+  });
+}
+
+export async function getActiveRunningJob(): Promise<PipelineJobListItem | null> {
+  return withDb(async (client) => {
+    const cur = await client.query<{
+      id: string;
+      job_type: string;
+      status: string;
+      property_id: number | null;
+      started_at: Date;
+      finished_at: Date | null;
+      exit_code: number | null;
+      error_text: string | null;
+    }>(
+      `SELECT id::text, job_type, status, property_id, started_at, finished_at, exit_code, error_text
+       FROM pipeline_jobs
+       WHERE status = 'running'
+       ORDER BY started_at DESC
+       LIMIT 1`,
+    );
+    const row = cur.rows[0];
+    if (!row) return null;
+    return {
+      id: row.id,
+      jobType: row.job_type,
+      status: 'running',
+      propertyId: row.property_id,
+      startedAt: row.started_at.toISOString(),
+      finishedAt: row.finished_at?.toISOString() ?? null,
+      exitCode: row.exit_code,
+      error: row.error_text,
+    };
+  });
+}
+
 export async function writeAuditLog(
   action: string,
   actor: string | null,

@@ -38,6 +38,7 @@ import {
   getPresetById,
   type PipelinePresetId,
 } from '@/components/pipeline/pipelinePresets';
+import { applyCrawlPreset, isCrawlPresetId, type CrawlPresetId } from '@/lib/crawlPresets';
 import { loadPipelineRunnerPrefs, savePipelineRunnerPrefs } from '@/lib/pipelineRunnerPrefs';
 
 const s = strings.pipelineRunner;
@@ -74,6 +75,8 @@ export interface PipelineContextValue {
   setRepoRoot: (value: string) => void;
   handleStartUrlChange: (value: string) => void;
   handlePresetChange: (id: PipelinePresetId) => void;
+  crawlPresetId: CrawlPresetId | '';
+  handleCrawlPresetChange: (id: CrawlPresetId) => void;
   resetConfig: () => void;
   dismissLegacyBanner: () => void;
   loadConfig: () => Promise<void>;
@@ -122,6 +125,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
   const [configLoaded, setConfigLoaded] = useState(false);
   const [browserCrawlStatus, setBrowserCrawlStatus] = useState<BrowserCrawlStatus | null>(null);
   const [browserCrawlChecking, setBrowserCrawlChecking] = useState(false);
+  const [crawlPresetId, setCrawlPresetId] = useState<CrawlPresetId | ''>('');
   const pollStopRef = useRef<(() => void) | null>(null);
 
   const refreshBrowserCrawlStatus = useCallback(async () => {
@@ -288,6 +292,28 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     }
   }, [configLoaded, loadConfig]);
 
+  /** Resume polling the active DB-backed job after refresh or server restart. */
+  useEffect(() => {
+    if (!configLoaded || busy || status === 'running') return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await fetch(apiUrl('/jobs?limit=1'));
+        const data = await res.json().catch(() => ({}));
+        if (cancelled || !res.ok) return;
+        const active = data.active as { id?: string; jobType?: string } | null;
+        if (active?.id) {
+          watchJob(active.id, { navigate: false, jobCommand: active.jobType || '' });
+        }
+      } catch {
+        /* non-fatal */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [configLoaded, busy, status, watchJob]);
+
   const setLlmField = useCallback((key: string, v: string | boolean) => {
     setLlmConfigState((prev) => ({ ...prev, [key]: v }));
     if (key === 'llm_api_key') {
@@ -317,6 +343,22 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const applyPropertyCrawlPreset = useCallback(async (startUrlValue: string) => {
+    const trimmed = startUrlValue.trim();
+    if (!trimmed) return;
+    try {
+      const res = await fetch(apiUrl(`/properties/resolve?startUrl=${encodeURIComponent(trimmed)}`));
+      const data = await res.json().catch(() => ({}));
+      const preset = String(data.default_crawl_preset || '').trim();
+      if (preset && isCrawlPresetId(preset)) {
+        setCrawlPresetId(preset);
+        setConfigState((prev) => applyCrawlPreset(preset, prev));
+      }
+    } catch {
+      /* non-fatal */
+    }
+  }, []);
+
   const handleStartUrlChange = useCallback((value: string) => {
     setConfigState((prev) => {
       const currentSiteName = String(prev.site_name ?? '').trim();
@@ -334,7 +376,21 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       }
       return { ...prev, start_url: value };
     });
-  }, []);
+    void applyPropertyCrawlPreset(value);
+  }, [applyPropertyCrawlPreset]);
+
+  const handleCrawlPresetChange = useCallback((preset: CrawlPresetId) => {
+    setCrawlPresetId(preset);
+    setConfigState((prev) => applyCrawlPreset(preset, prev));
+    const propertyId = Number(configState.active_property_id || 0);
+    if (propertyId > 0) {
+      void fetch(apiUrl(`/properties/${propertyId}/preset`), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preset }),
+      }).catch(() => {});
+    }
+  }, [configState.active_property_id]);
 
   const resetConfig = useCallback(() => {
     setConfigState(buildInitialPipelineConfigState());
@@ -482,6 +538,8 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       setRepoRoot,
       handleStartUrlChange,
       handlePresetChange,
+      crawlPresetId,
+      handleCrawlPresetChange,
       resetConfig,
       dismissLegacyBanner: () => setLegacyBannerDismissed(true),
       loadConfig,
@@ -514,6 +572,8 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       setLlmField,
       handleStartUrlChange,
       handlePresetChange,
+      crawlPresetId,
+      handleCrawlPresetChange,
       resetConfig,
       loadConfig,
       saveSettings,

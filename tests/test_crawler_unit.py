@@ -606,3 +606,96 @@ def test_worker_error_path_stores_browser_diagnostics_only(monkeypatch) -> None:
     pa = json.loads(out["page_analysis"])
     assert pa["browser"]["summary"]["console_error_count"] == 1
 
+
+def test_worker_strips_ignored_query_params_from_links(monkeypatch) -> None:
+    import json
+
+    from website_profiling.crawl.crawler import Crawler
+    from website_profiling.crawl.fetchers.base import FetchResult
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
+        lambda *_a, **_k: [],
+    )
+    html = '<html><body><a href="/target?utm_source=x">L</a></body></html>'
+    c = Crawler(
+        start_url="https://site.com",
+        ignore_robots=True,
+        use_wappalyzer=False,
+        crawl_ignore_params=["utm_source"],
+        store_outlinks=True,
+    )
+    c.fetch = lambda _url: FetchResult(  # type: ignore[method-assign]
+        status=200,
+        content_type="text/html",
+        text=html,
+        response_time_ms=1,
+        content_length=len(html),
+        final_url="https://site.com/",
+        headers_dict={},
+        redirect_chain_length=0,
+        fetch_method="static",
+    )
+    out = c.worker("https://site.com/")
+    targets = json.loads(out["outlink_targets"])
+    assert targets == ["https://site.com/target"]
+
+
+def test_worker_custom_extraction_regex(monkeypatch) -> None:
+    from website_profiling.crawl.crawler import Crawler
+    from website_profiling.crawl.fetchers.base import FetchResult
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
+        lambda *_a, **_k: [],
+    )
+    html = "<html><body>SKU: ABC-123</body></html>"
+    c = Crawler(
+        start_url="https://site.com",
+        ignore_robots=True,
+        use_wappalyzer=False,
+        custom_extraction_regex=r"SKU:\s*([\w-]+)",
+    )
+    c.fetch = lambda _url: FetchResult(  # type: ignore[method-assign]
+        status=200,
+        content_type="text/html",
+        text=html,
+        response_time_ms=1,
+        content_length=len(html),
+        final_url="https://site.com/a",
+        headers_dict={},
+        redirect_chain_length=0,
+        fetch_method="static",
+    )
+    out = c.worker("https://site.com/a")
+    assert out.get("custom_extract") == "ABC-123"
+
+
+def test_worker_custom_extraction_invalid_regex_is_ignored(monkeypatch) -> None:
+    from website_profiling.crawl.crawler import Crawler
+    from website_profiling.crawl.fetchers.base import FetchResult
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
+        lambda *_a, **_k: [],
+    )
+    c = Crawler(
+        start_url="https://site.com",
+        ignore_robots=True,
+        use_wappalyzer=False,
+        custom_extraction_regex="[invalid",
+    )
+    c.fetch = lambda _url: FetchResult(  # type: ignore[method-assign]
+        status=200,
+        content_type="text/html",
+        text="<html><body>data</body></html>",
+        response_time_ms=1,
+        content_length=10,
+        final_url="https://site.com/a",
+        headers_dict={},
+        redirect_chain_length=0,
+        fetch_method="static",
+    )
+    out = c.worker("https://site.com/a")
+    assert "custom_extract" not in out
+

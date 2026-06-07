@@ -145,6 +145,12 @@ export function filterRowsByTab(
         const pos = parseFloat(String(r.gsc_position || 0));
         return pos >= 4 && pos <= 20 && (r.opportunity_clicks || 0) > 5;
       });
+    case 'striking':
+      return rows.filter((r) => {
+        const pos = parseFloat(String(r.gsc_position || 0));
+        const imp = parseFloat(String(r.gsc_impressions || 0));
+        return pos >= 4 && pos <= 20 && imp >= 50;
+      });
     case 'lostclicks':
       return rows.filter((r) => r.lost_clicks);
     case 'opportunities':

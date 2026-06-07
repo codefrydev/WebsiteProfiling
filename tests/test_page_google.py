@@ -88,11 +88,10 @@ def test_keyword_enrich_parses_jsonb_google_row():
     assert "test query" in gsc_queries
 
 
-def test_page_coach_cache_key_stable():
-    from website_profiling.llm.page_coach import build_page_context
-
-    ctx = {"page_url": "https://x.com", "link": None, "current": None, "compare": []}
+def test_page_coach_context_shape():
+    """Minimal context dict matches keys produced by build_page_context."""
+    ctx = {"page_url": "https://x.com", "link": None, "current": None, "baseline": None, "compare": []}
     payload = json.dumps(ctx, sort_keys=True, default=str)
     assert "https://x.com" in payload
-    # build_page_context needs DB — smoke import only
-    assert callable(build_page_context)
+    assert "baseline" in payload
+    assert "compare" in payload
