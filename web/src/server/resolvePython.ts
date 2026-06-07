@@ -58,6 +58,7 @@ export function resolvePythonExecutable(
   const venvCandidates = [
     path.join(repoRoot, '.venv', 'bin', 'python'),
     path.join(repoRoot, '.venv', 'bin', 'python3'),
+    path.join(repoRoot, '.venv', 'Scripts', 'python.exe'),
     path.join(repoRoot, 'activate', 'bin', 'python'),
     path.join(repoRoot, 'activate', 'bin', 'python3'),
   ];
