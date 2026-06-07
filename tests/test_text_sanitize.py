@@ -26,6 +26,13 @@ def test_sanitize_unicode_deep_nested() -> None:
     serialized.encode("utf-8")
 
 
+def test_sanitize_unicode_deep_tuple() -> None:
+    cleaned = sanitize_unicode_deep(("ok\udc9d", {"nested": "x\udc9d"}))
+    assert isinstance(cleaned, tuple)
+    assert "\udc9d" not in cleaned[0]
+    assert "\udc9d" not in cleaned[1]["nested"]
+
+
 def test_agent_surrogate_tool_result_does_not_break_llm_request() -> None:
     surrogate = "\udc9d"
     tool_payload = {

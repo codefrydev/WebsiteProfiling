@@ -40,10 +40,52 @@ def test_list_sessions() -> None:
     assert rows[0]["property_id"] == 7
 
 
+def test_get_session_found() -> None:
+    conn = FakeConn()
+    now = datetime.now(timezone.utc)
+    conn.set_next_cursor(
+        FakeCursor(
+            fetchone_value={
+                "id": 5,
+                "property_id": 7,
+                "title": "Found",
+                "created_at": now,
+                "updated_at": now,
+            },
+        ),
+    )
+    row = get_session(conn, 5)
+    assert row is not None
+    assert row["title"] == "Found"
+
+
 def test_get_session_missing() -> None:
     conn = FakeConn()
     conn.set_next_cursor(FakeCursor(fetchone_value=None))
     assert get_session(conn, 99) is None
+
+
+def test_get_messages_parses_json_fields() -> None:
+    conn = FakeConn()
+    now = datetime.now(timezone.utc)
+    conn.set_next_cursor(
+        FakeCursor(
+            fetchall_value=[
+                {
+                    "id": 1,
+                    "role": "tool",
+                    "content": "",
+                    "tool_name": "list_issues",
+                    "tool_args": '{"limit": 5}',
+                    "tool_result": "not-json",
+                    "created_at": now,
+                },
+            ],
+        ),
+    )
+    msgs = get_messages(conn, 5)
+    assert msgs[0]["tool_args"] == {"limit": 5}
+    assert msgs[0]["tool_result"] == "not-json"
 
 
 def test_get_messages() -> None:

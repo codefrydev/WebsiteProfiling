@@ -12,6 +12,15 @@ def test_resolve_properties_resource() -> None:
     assert "properties" in text
 
 
+def test_resolve_report_latest_missing_payload() -> None:
+    with patch("website_profiling.mcp.server.db_session") as mock_db, patch.object(
+        mcp_server.AuditToolContext, "load_payload", return_value=None,
+    ):
+        mock_db.return_value.__enter__.return_value = object()
+        text = mcp_server._resolve_resource("audit://property/1/report/latest")
+    assert "error" in text
+
+
 def test_resolve_glossary_and_tools() -> None:
     text = mcp_server._resolve_resource("audit://tools")
     assert "tool_count" in text
