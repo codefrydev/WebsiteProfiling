@@ -2,14 +2,16 @@ import { vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import { EventEmitter } from 'events';
 
-export function localRequest(path: string, init?: RequestInit): NextRequest {
+type NextRequestInit = NonNullable<ConstructorParameters<typeof NextRequest>[1]>;
+
+export function localRequest(path: string, init?: NextRequestInit): NextRequest {
   return new NextRequest(`http://localhost:3000${path}`, {
     ...init,
     headers: { host: 'localhost:3000', ...(init?.headers || {}) },
   });
 }
 
-export function remoteRequest(path: string, init?: RequestInit): NextRequest {
+export function remoteRequest(path: string, init?: NextRequestInit): NextRequest {
   return new NextRequest(`http://192.168.1.5:3000${path}`, init);
 }
 

@@ -124,14 +124,14 @@ def test_check_health_alerts_postgres_integration(property_id) -> None:
     with db_session() as conn:
         conn.execute(
             """INSERT INTO audit_health_snapshots
-               (property_id, report_id, health_score, category_scores, issue_counts)
-               VALUES (%s, 1, 90, '{}', '{}')""",
+               (property_id, report_id, health_score, category_scores, issue_counts, generated_at)
+               VALUES (%s, 1, 90, '{}', '{}', '2026-05-01T00:00:00Z')""",
             (property_id,),
         )
         conn.execute(
             """INSERT INTO audit_health_snapshots
-               (property_id, report_id, health_score, category_scores, issue_counts)
-               VALUES (%s, 2, 70, '{}', '{}')""",
+               (property_id, report_id, health_score, category_scores, issue_counts, generated_at)
+               VALUES (%s, 2, 70, '{}', '{}', '2026-06-01T00:00:00Z')""",
             (property_id,),
         )
         conn.commit()

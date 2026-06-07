@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { EventEmitter } from 'events';
+import { localRequest } from '@/server/testHelpers/routeTestUtils';
 
 const spawnMock = vi.fn();
 const getPropertyByIdMock = vi.fn();
@@ -29,13 +30,6 @@ function makeChildProcess(stdout: string, exitCode: number) {
     proc.emit('close', exitCode);
   }, 10);
   return proc;
-}
-
-function localRequest(path: string, init?: RequestInit): NextRequest {
-  return new NextRequest(`http://localhost:3000${path}`, {
-    ...init,
-    headers: { host: 'localhost:3000', ...(init?.headers || {}) },
-  });
 }
 
 async function importRoute() {
