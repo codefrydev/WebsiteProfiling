@@ -232,6 +232,7 @@ def build_parser() -> argparse.ArgumentParser:
             "gsc-links-import",
             "page-live",
             "page-coach",
+            "chat",
         ],
         help="Run only this step (default: run all steps according to config)",
     )
@@ -309,5 +310,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         dest="expand_only",
         help="For 'keywords' command: only run Suggest expansion and print JSON to stdout.",
+    )
+    parser.add_argument(
+        "--stdin-json",
+        action="store_true",
+        dest="stdin_json",
+        help="For 'chat' command: read JSON payload from stdin and emit NDJSON events.",
     )
     return parser

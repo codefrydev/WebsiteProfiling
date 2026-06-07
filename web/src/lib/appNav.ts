@@ -21,11 +21,12 @@ import {
   Terminal,
   TrendingUp,
   FileSearch,
+  MessageSquare,
 } from 'lucide-react';
 import { strings } from '@/lib/strings';
 import { viewIdToPathSlug, type ViewId } from '@/routes';
 
-export type NavItemId = ViewId | 'pipeline';
+export type NavItemId = ViewId | 'pipeline' | 'chat';
 
 export interface AppNavItem {
   id: NavItemId;
@@ -68,6 +69,14 @@ const PIPELINE_NAV: AppNavItem = {
   hrefPath: '/pipeline',
 };
 
+const CHAT_NAV: AppNavItem = {
+  id: 'chat',
+  label: strings.nav.chat.label,
+  section: strings.nav.chat.section,
+  icon: MessageSquare,
+  hrefPath: '/chat',
+};
+
 export const APP_NAV_ITEMS: AppNavItem[] = [
   ...VIEW_NAV.map(({ id, icon }) => ({
     id,
@@ -77,12 +86,13 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
     hrefPath: id === 'home' ? '/home' : `/${viewIdToPathSlug(id)}`,
   })),
   PIPELINE_NAV,
+  CHAT_NAV,
 ];
 
 export const APP_NAV_SECTIONS = [...new Set(APP_NAV_ITEMS.map((item) => item.section))];
 
 export function navHref(item: AppNavItem, trailingQuery: string): string {
-  if (item.id === 'home' || item.id === 'pipeline') {
+  if (item.id === 'home' || item.id === 'pipeline' || item.id === 'chat') {
     return item.hrefPath;
   }
   return trailingQuery ? `${item.hrefPath}${trailingQuery}` : item.hrefPath;
@@ -91,6 +101,9 @@ export function navHref(item: AppNavItem, trailingQuery: string): string {
 export function isNavItemActive(item: AppNavItem, pathname: string): boolean {
   if (item.id === 'pipeline') {
     return pathname === '/pipeline' || pathname.startsWith('/pipeline/');
+  }
+  if (item.id === 'chat') {
+    return pathname === '/chat' || pathname.startsWith('/chat/');
   }
   if (item.id === 'home') {
     return pathname === '/home';

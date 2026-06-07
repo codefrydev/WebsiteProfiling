@@ -45,7 +45,7 @@ jobs:
       - name: Pytest (tools coverage gate)
         run: |
           pytest tests/test_alert_checker.py tests/test_schedule_runner.py tests/test_export_audit.py \
-            tests/test_export_audit_coverage.py \
+            tests/test_export_audit_coverage.py tests/test_audit_tools.py tests/test_mcp_registry.py \
             --cov=website_profiling.tools --cov-config=.coveragerc.tools \
             --cov-report=term-missing --cov-fail-under=100 -q -o addopts=
       - name: CLI smoke

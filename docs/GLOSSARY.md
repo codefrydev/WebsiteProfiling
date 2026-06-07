@@ -40,6 +40,8 @@ UI terms agencies recognize, mapped to internal keys and data sources.
 | Property alerts | `alert_webhook_url`, `/api/alerts/check` | Health snapshot rules | Ops notifications |
 | Content brief | Keywords Brief button, `/api/keywords/content-brief` | LLM or deterministic | Content planning |
 | AI issue fix | `llm_recommendation`, `/api/issues/fix-suggestion` | LLM on demand + report build | Actionable remediation |
+| AI Chat | `/chat`, `/api/chat`, `chat_sessions` | LLM + read-only audit tools | Conversational site audit queries |
+| MCP tools | `python -m website_profiling.mcp` | Same `audit_tools` as chat | Cursor / Claude Desktop integration — see [MCP.md](MCP.md) |
 | Read-only session | `AUTH_DEFAULT_ROLE=client-readonly`, `/api/auth/session` | Session cookie | Client view-only access |
 | Export executive summary | `export_audit_html/pdf/csv`, `executive_summary` | Report payload + optional AI | Client deliverable |
 

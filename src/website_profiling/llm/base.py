@@ -3,11 +3,37 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Protocol
+from dataclasses import dataclass, field
+from typing import Any, Callable, Protocol
+
+
+@dataclass
+class ToolCall:
+    id: str
+    name: str
+    arguments: dict[str, Any]
+
+
+@dataclass
+class ChatResult:
+    content: str = ""
+    tool_calls: list[ToolCall] = field(default_factory=list)
+    finish_reason: str = "stop"
+
+
+TokenCallback = Callable[[str], None]
 
 
 class LLMClient(Protocol):
     def complete_json(self, system: str, user: str) -> dict[str, Any]: ...
+
+    def chat_with_tools(
+        self,
+        messages: list[dict[str, Any]],
+        tools: list[dict[str, Any]],
+        *,
+        on_token: TokenCallback | None = None,
+    ) -> ChatResult: ...
 
 
 def parse_json_response(text: str) -> dict[str, Any]:

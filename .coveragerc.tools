@@ -4,6 +4,14 @@ omit =
     */website_profiling/tools/keywords.py
     */website_profiling/tools/plot.py
     */website_profiling/tools/warnings.py
+    */website_profiling/tools/audit_tools/context.py
+    */website_profiling/tools/audit_tools/crawl.py
+    */website_profiling/tools/audit_tools/google.py
+    */website_profiling/tools/audit_tools/health.py
+    */website_profiling/tools/audit_tools/keywords.py
+    */website_profiling/tools/audit_tools/lighthouse.py
+    */website_profiling/tools/audit_tools/properties.py
+    */website_profiling/tools/audit_tools/report.py
 
 [report]
 show_missing = True

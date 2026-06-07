@@ -43,6 +43,10 @@
       "label": "Run audit",
       "section": "Overview"
     },
+    "chat": {
+      "label": "AI Chat",
+      "section": "AI"
+    },
     "issues": {
       "label": "Issues",
       "section": "Overview"
@@ -2087,6 +2091,35 @@
     }
   },
   "components": {
+    "chat": {
+      "pageTitle": "AI Chat",
+      "newChat": "New chat",
+      "inputPlaceholder": "Ask about issues, pages, Lighthouse, keywords…",
+      "sendLabel": "Send message",
+      "emptyHint": "Ask questions about your latest audit — issues, crawl pages, Core Web Vitals, keywords, or Search Console metrics.",
+      "thinking": "Thinking…",
+      "suggestedTitle": "Suggested questions",
+      "suggestedPrompts": [
+        "What are the top critical issues?",
+        "Show pages with 404 status",
+        "Summarize Lighthouse performance",
+        "What keyword opportunities exist?"
+      ],
+      "toolActivityTitle": "Tools used",
+      "toolRunning": "running…",
+      "toolDone": "done",
+      "loadingSessions": "Loading chats…",
+      "noSessions": "No chats yet",
+      "deleteSession": "Delete chat",
+      "propertyLabel": "Property",
+      "noProperties": "No properties",
+      "aiDisabledTitle": "AI is not enabled",
+      "aiDisabledHint": "Enable AI insights and configure a provider in Run audit → AI settings.",
+      "openAiSettings": "Open AI settings",
+      "aiSettingsLink": "AI settings",
+      "sessionError": "Could not create chat session",
+      "agentError": "The assistant encountered an error"
+    },
     "llmDisclosure": {
       "prefix": "AI insight ·",
       "promptVersion": "prompt"
