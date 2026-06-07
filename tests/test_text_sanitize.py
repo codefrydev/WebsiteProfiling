@@ -4,8 +4,6 @@ from __future__ import annotations
 import json
 from unittest.mock import patch
 
-from httpx._content import encode_json
-
 from website_profiling.llm.agent import run_agent_turn
 from website_profiling.llm.base import ChatResult, ToolCall
 from website_profiling.text_sanitize import sanitize_unicode_deep, strip_surrogates
@@ -76,6 +74,9 @@ def test_agent_surrogate_tool_result_does_not_break_llm_request() -> None:
 
     assert result["ok"] is True
     assert client.last_messages is not None
-    encode_json({"messages": client.last_messages, "tools": [], "stream": True})
+    json.dumps(
+        {"messages": client.last_messages, "tools": [], "stream": True},
+        ensure_ascii=False,
+    ).encode("utf-8")
     tool_end = next(e for e in events if e["type"] == "tool_end")
     assert "\udc9d" not in json.dumps(tool_end["result"])
