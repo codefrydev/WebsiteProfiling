@@ -137,3 +137,143 @@ def list_lighthouse_poor_seo_pages(conn: Connection, ctx: AuditToolContext, args
     poor.sort(key=lambda x: float(x.get("seo") or 0))
     sliced = cap_list(poor, limit, max_cap=50)
     return {"pages": sliced["items"], "total": sliced["total"], "truncated": sliced["truncated"], "threshold": threshold}
+
+
+def _extract_lh_score(data: dict[str, Any], *keys: str) -> float | None:
+    for key in keys:
+        val = data.get(key)
+        if val is not None:
+            try:
+                return float(val)
+            except (TypeError, ValueError):
+                pass
+    scores = data.get("scores") if isinstance(data.get("scores"), dict) else {}
+    category_scores = data.get("category_scores") if isinstance(data.get("category_scores"), dict) else {}
+    metrics = data.get("median_metrics") if isinstance(data.get("median_metrics"), dict) else {}
+    for key in keys:
+        for block in (scores, category_scores, metrics):
+            if key in block and block[key] is not None:
+                try:
+                    return float(block[key])
+                except (TypeError, ValueError):
+                    pass
+        alt = key.replace("-", "_")
+        if alt in metrics and metrics[alt] is not None:
+            try:
+                return float(metrics[alt])
+            except (TypeError, ValueError):
+                pass
+    return None
+
+
+def _list_lighthouse_poor_category(
+    conn: Connection,
+    ctx: AuditToolContext,
+    args: dict[str, Any],
+    *,
+    score_keys: tuple[str, ...],
+    result_key: str,
+    threshold_arg: str,
+    default_threshold: int,
+) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    payload = scoped.load_payload(conn)
+    if not payload:
+        return {"error": "no report found", "pages": [], "total": 0, "truncated": False}
+    limit = parse_limit(args.get("limit"), 30, 50)
+    threshold = parse_limit(args.get(threshold_arg), default_threshold, 100)
+    by_url = payload.get("lighthouse_by_url") or {}
+    poor = []
+    if isinstance(by_url, dict):
+        for url, data in by_url.items():
+            if not isinstance(data, dict):
+                continue
+            score = _extract_lh_score(data, *score_keys)
+            if score is not None and score < threshold:
+                poor.append({"url": url, result_key: score})
+    poor.sort(key=lambda x: float(x.get(result_key) or 0))
+    sliced = cap_list(poor, limit, max_cap=50)
+    return {
+        "pages": sliced["items"],
+        "total": sliced["total"],
+        "truncated": sliced["truncated"],
+        "threshold": threshold,
+    }
+
+
+def list_lighthouse_poor_accessibility_pages(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    out = _list_lighthouse_poor_category(
+        conn,
+        ctx,
+        args,
+        score_keys=("accessibility", "accessibility_score"),
+        result_key="accessibility",
+        threshold_arg="accessibility_threshold",
+        default_threshold=50,
+    )
+    for page in out.get("pages") or []:
+        if "accessibility" in page:
+            page["accessibility_score"] = page.pop("accessibility")
+    return out
+
+
+def list_lighthouse_poor_best_practices_pages(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    out = _list_lighthouse_poor_category(
+        conn,
+        ctx,
+        args,
+        score_keys=("best-practices", "best_practices", "best_practices_score"),
+        result_key="best_practices",
+        threshold_arg="best_practices_threshold",
+        default_threshold=50,
+    )
+    for page in out.get("pages") or []:
+        if "best_practices" in page:
+            page["best_practices_score"] = page.pop("best_practices")
+    return out
+
+
+def list_lighthouse_cwv_failures(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    from ...lighthouse.runner import CLS_GOOD, LCP_GOOD_MS
+
+    scoped = ctx.with_args(args)
+    payload = scoped.load_payload(conn)
+    if not payload:
+        return {"error": "no report found", "pages": [], "total": 0, "truncated": False}
+    limit = parse_limit(args.get("limit"), 30, 50)
+    by_url = payload.get("lighthouse_by_url") or {}
+    failures: list[dict[str, Any]] = []
+    if isinstance(by_url, dict):
+        for url, data in by_url.items():
+            if not isinstance(data, dict):
+                continue
+            metrics = data.get("median_metrics") if isinstance(data.get("median_metrics"), dict) else data
+            lcp = metrics.get("lcp_ms")
+            cls = metrics.get("cls")
+            tbt = metrics.get("tbt_ms")
+            failed: list[str] = []
+            try:
+                if lcp is not None and float(lcp) > LCP_GOOD_MS:
+                    failed.append("lcp")
+            except (TypeError, ValueError):
+                pass
+            try:
+                if cls is not None and float(cls) > CLS_GOOD:
+                    failed.append("cls")
+            except (TypeError, ValueError):
+                pass
+            try:
+                if tbt is not None and float(tbt) > 200:
+                    failed.append("tbt")
+            except (TypeError, ValueError):
+                pass
+            if failed:
+                failures.append({
+                    "url": url,
+                    "failed_metrics": failed,
+                    "lcp_ms": lcp,
+                    "cls": cls,
+                    "tbt_ms": tbt,
+                })
+    sliced = cap_list(failures, limit, max_cap=50)
+    return {"pages": sliced["items"], "total": sliced["total"], "truncated": sliced["truncated"]}

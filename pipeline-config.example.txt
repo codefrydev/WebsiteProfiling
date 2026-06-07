@@ -42,6 +42,11 @@ max_nodes_plot = 400
 run_security_scan = true
 security_scan_active = false
 security_max_urls_probe = 20
+probe_image_inventory = false
+max_image_probe_urls = 500
+image_probe_concurrency = 6
+image_probe_timeout = 8
+image_unoptimized_min_kb = 200
 
 # --- Lighthouse ---
 lighthouse_url = 

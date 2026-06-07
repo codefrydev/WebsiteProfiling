@@ -1,3 +1,5 @@
+import { pathSlugToViewId } from '@/routes';
+
 const STORAGE_KEY = 'chat:last-context:v1';
 
 export interface ChatUrlContext {
@@ -54,6 +56,25 @@ export function buildChatSearchQuery(
   );
   applyChatUrlContext(params, ctx);
   return params.toString();
+}
+
+/** Report views that carry ?domain= (not home, chat, or pipeline). */
+export function isChatFabVisiblePath(pathname: string): boolean {
+  if (pathname === '/chat' || pathname.startsWith('/chat/')) return false;
+  if (pathname === '/pipeline' || pathname.startsWith('/pipeline/')) return false;
+  if (pathname === '/home') return false;
+  const slug = pathname.replace(/^\//, '').split('/')[0] ?? '';
+  const viewId = pathSlugToViewId(slug);
+  return viewId != null && viewId !== 'home';
+}
+
+/** Deep link into chat scoped to the current site domain. */
+export function buildChatFabHref(domain: string | null | undefined): string {
+  const trimmed = (domain ?? '').trim();
+  if (!trimmed) return '/chat';
+  const params = new URLSearchParams();
+  params.set('domain', trimmed);
+  return `/chat?${params.toString()}`;
 }
 
 export function applyChatUrlContext(

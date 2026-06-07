@@ -8,6 +8,7 @@ import {
   Home,
   Link as LinkIcon,
   MessageSquarePlus,
+  PanelLeft,
   Settings,
   Terminal,
   Trash2,
@@ -176,6 +177,10 @@ export default function ChatSidebar({
         <Link href="/home" className="mb-2 flex h-10 w-10 items-center justify-center" title={c.navHome}>
           <AppLogo />
         </Link>
+
+        <RailButton label={c.sidebarExpand} onClick={() => setExpanded(true)}>
+          <PanelLeft className="h-5 w-5" />
+        </RailButton>
 
         <RailButton label={c.newChat} onClick={onNewChat}>
           <MessageSquarePlus className="h-5 w-5" />

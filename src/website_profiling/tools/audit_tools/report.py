@@ -134,6 +134,48 @@ def list_issues(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -
     }
 
 
+def search_issues(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    """Search issues with combined filters including message substring."""
+    scoped = ctx.with_args(args)
+    payload = scoped.load_payload(conn)
+    if not payload:
+        return {"error": "no report found", "issues": [], "total": 0, "truncated": False}
+
+    limit = args.get("limit", _ISSUE_LIMIT_DEFAULT)
+    try:
+        limit = int(limit)
+    except (TypeError, ValueError):
+        limit = _ISSUE_LIMIT_DEFAULT
+    limit = max(1, min(limit, _ISSUE_LIMIT_MAX))
+
+    priority_filter = _normalize_priority(str(args.get("priority") or ""))
+    category_id = str(args.get("category_id") or "").strip()
+    url_contains = str(args.get("url_contains") or "").strip().lower()
+    message_contains = str(args.get("message_contains") or "").strip().lower()
+
+    issues = _iter_category_issues(payload)
+    if priority_filter:
+        issues = [i for i in issues if i.get("priority") == priority_filter]
+    if category_id:
+        issues = [i for i in issues if i.get("category_id") == category_id]
+    if url_contains:
+        issues = [i for i in issues if url_contains in str(i.get("url") or "").lower()]
+    if message_contains:
+        issues = [
+            i for i in issues
+            if message_contains in str(i.get("message") or "").lower()
+            or message_contains in str(i.get("recommendation") or "").lower()
+        ]
+
+    total = len(issues)
+    truncated = total > limit
+    return {
+        "issues": issues[:limit],
+        "total": total,
+        "truncated": truncated,
+    }
+
+
 def get_critical_issues(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
     """All Critical-priority audit issues (chat table visualization)."""
     return list_issues(conn, ctx, {**args, "priority": "Critical"})

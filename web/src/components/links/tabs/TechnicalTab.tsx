@@ -109,6 +109,12 @@ export default function TechnicalTab({ link }: TechnicalTabProps) {
             label={lt.noLazyLoad}
             color={(link.img_without_lazy ?? 0) > 0 ? 'bg-yellow-500' : 'bg-green-500'}
           />
+          <MiniBar
+            value={link.img_without_dimensions || 0}
+            total={Math.max(imgTotal, 1)}
+            label={lt.noDimensions}
+            color={(link.img_without_dimensions ?? 0) > 0 ? 'bg-orange-500' : 'bg-green-500'}
+          />
           <div className="flex items-center justify-between pt-2 border-t border-muted">
             <span className="text-sm text-muted-foreground">{lt.ariaElements}</span>
             <span className="text-sm text-foreground font-mono">{link.aria_count ?? 0}</span>

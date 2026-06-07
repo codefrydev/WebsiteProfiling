@@ -424,9 +424,48 @@ code {
 
 .chat-prose-blockquote {
   margin: 0.75rem 0;
-  padding-left: 0.75rem;
+  padding: 0.75rem 1rem;
   border-left: 3px solid var(--app-border);
+  border-radius: 0 0.375rem 0.375rem 0;
   color: var(--app-text-subtle);
+  background: rgb(255 255 255 / 0.02);
+}
+
+.chat-prose-insight {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid rgb(245 158 11 / 0.55);
+  border-radius: 0 0.375rem 0.375rem 0;
+  background: rgb(245 158 11 / 0.08);
+  color: var(--app-text);
+}
+
+.chat-prose-insight-title {
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  border-left: 3px solid rgb(245 158 11 / 0.55);
+  background: rgb(245 158 11 / 0.08);
+  color: rgb(253 230 138 / 0.95);
+}
+
+.chat-prose > .chat-prose-insight-title:first-child {
+  margin-top: 0;
+}
+
+.chat-prose-ol {
+  counter-reset: chat-rec;
+}
+
+.chat-prose-ol > .chat-prose-li {
+  margin: 0.5rem 0;
+  padding-left: 0.25rem;
+}
+
+.chat-prose-ol > .chat-prose-li::marker {
+  font-weight: 600;
+  color: var(--accent, rgb(96 165 250));
 }
 
 .chat-prose-hr {

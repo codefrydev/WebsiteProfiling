@@ -179,6 +179,67 @@ describe('deriveChatBlocks', () => {
       'label_value:MIME types',
     );
   });
+
+  it('builds image_audit_summary from get_image_audit_summary', () => {
+    const blocks = deriveChatBlocks([
+      doneTool('get_image_audit_summary', {
+        images_total_crawled: 106,
+        pages_missing_alt: 1,
+        pages_without_lazy_images: 9,
+        pages_missing_image_dimensions: 0,
+        og_image_coverage_pct: 95,
+        og_image_missing_count: 2,
+        lighthouse_image_diagnostics: 3,
+        image_inventory_available: false,
+      }),
+    ]);
+    expect(blocks.map((b) => b.type)).toContain('image_audit_summary');
+    const summary = blocks.find((b) => b.type === 'image_audit_summary');
+    if (summary?.type === 'image_audit_summary') {
+      expect(summary.imagesTotal).toBe(106);
+      expect(summary.pagesWithoutLazy).toBe(9);
+    }
+  });
+
+  it('builds image_pages_table from list_pages_without_lazy_images', () => {
+    const blocks = deriveChatBlocks([
+      doneTool('list_pages_without_lazy_images', {
+        pages: [{ url: 'https://ex.com/a', title: 'A', img_without_lazy: 2, images_total: 5 }],
+        total: 1,
+      }),
+    ]);
+    expect(blocks[0]?.type).toBe('image_pages_table');
+  });
+
+  it('builds preview page tables from get_image_audit_summary', () => {
+    const blocks = deriveChatBlocks([
+      doneTool('get_image_audit_summary', {
+        images_total_crawled: 106,
+        pages_missing_alt: 1,
+        pages_without_lazy_images: 9,
+        pages_missing_image_dimensions: 0,
+        lighthouse_image_diagnostics: 1,
+        image_inventory_available: false,
+        page_previews: {
+          missing_alt: {
+            pages: [{ url: 'https://ex.com/docs', images_without_alt: 1, images_total: 1 }],
+            total: 1,
+          },
+          missing_lazy: {
+            pages: [{ url: 'https://ex.com/', img_without_lazy: 2, images_total: 54 }],
+            total: 9,
+            truncated: true,
+          },
+          missing_og: { pages: [{ url: 'https://ex.com/og' }], total: 11, truncated: true },
+        },
+        lighthouse_image_previews: [{ title: 'LCP image', lighthouse_audit_id: 'largest-contentful-paint' }],
+      }),
+    ]);
+    const types = blocks.map((b) => b.type);
+    expect(types).toContain('image_audit_summary');
+    expect(types.filter((t) => t === 'image_pages_table').length).toBeGreaterThanOrEqual(2);
+    expect(types).toContain('image_lighthouse_list');
+  });
 });
 
 describe('toolEventsToActivity', () => {

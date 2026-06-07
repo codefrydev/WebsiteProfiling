@@ -13,6 +13,10 @@ export function preprocessChatMarkdown(content: string): string {
     'Issues to fix',
     'Recommendations',
     'Next steps',
+    'Power Insights',
+    'Recommended actions',
+    'Quick wins',
+    'Priority fixes',
   ];
 
   for (const title of sectionHeadings) {

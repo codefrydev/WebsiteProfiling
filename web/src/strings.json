@@ -2161,7 +2161,9 @@
         "What is our schema markup coverage?",
         "Which pages have thin content?",
         "Show content duplicate clusters",
-        "What changed in health score over time?"
+        "What changed in health score over time?",
+        "Download the audit as PDF",
+        "Which images are largest and unoptimized?"
       ],
       "toolActivityTitle": "Tools used",
       "toolRunning": "running…",
@@ -2183,6 +2185,8 @@
       "ollamaLabel": "Ollama",
       "ollamaNoModel": "no model selected",
       "ollamaUnreachable": "Cannot reach Ollama",
+      "fabTitle": "AI Chat",
+      "fabAria": "Open AI chat for this site",
       "ollamaToolsMode": "native tools",
       "ollamaReactMode": "JSON tool mode",
       "ollamaModelMissing": "Configured model not in local or cloud catalog",
@@ -2230,7 +2234,24 @@
         "ctr": "CTR",
         "topQueries": "Top queries",
         "topPages": "Top pages",
-        "askTopQuery": "Analyze search performance for query: {query}"
+        "askTopQuery": "Analyze search performance for query: {query}",
+        "imageAudit": {
+          "title": "Image audit",
+          "subtitle": "Crawl + social + Lighthouse image signals",
+          "totalImages": "images crawled",
+          "missingAlt": "Missing alt",
+          "noLazyLoad": "No lazy load",
+          "missingDimensions": "No dimensions",
+          "lighthouseIssues": "LH image issues",
+          "ogCoverage": "OG image coverage",
+          "sizeProbe": "Size probe",
+          "probeOn": "enabled",
+          "probeOff": "not in report",
+          "issueBreakdown": "Page-level image issues",
+          "lighthouseTitle": "Lighthouse image opportunities",
+          "morePages": "{count} more not shown",
+          "exportList": "Export the full list of {topic} as CSV"
+        }
       },
       "navHome": "Home",
       "navGsc": "Search Console",
@@ -2511,6 +2532,7 @@
         "totalImages": "Total Images",
         "missingAlt": "Missing Alt",
         "noLazyLoad": "No Lazy Load",
+        "noDimensions": "No width/height",
         "ariaElements": "ARIA Elements",
         "assetBarLabels": [
           "Scripts",

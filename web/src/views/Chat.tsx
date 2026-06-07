@@ -117,9 +117,16 @@ export default function ChatPage() {
       );
       const stored = readStoredChatContext();
       const explicitId = urlCtx.propertyId ?? stored.propertyId ?? null;
+      const domainFromUrl =
+        searchParams.get('domain') ?? searchParams.get('brand') ?? '';
+      const domainStartUrl = domainFromUrl.trim()
+        ? domainFromUrl.startsWith('http')
+          ? domainFromUrl.trim()
+          : `https://${domainFromUrl.trim()}`
+        : '';
       const nextId = pickInitialPropertyId(rows, {
         explicitId,
-        startUrl: String(configState.start_url || ''),
+        startUrl: domainStartUrl || String(configState.start_url || ''),
         activePropertyId: String(configState.active_property_id || ''),
       });
       setPropertyId((current) => {
@@ -131,7 +138,7 @@ export default function ChatPage() {
     } finally {
       setLoadingProperties(false);
     }
-  }, [configState.active_property_id, configState.start_url]);
+  }, [configState.active_property_id, configState.start_url, searchParams]);
 
   const resolveSessionFromUrl = useCallback(async (sid: number, pid: number | null) => {
     try {
@@ -507,7 +514,6 @@ export default function ChatPage() {
             propertyId={propertyId}
             sessionTitle={activeSession?.title}
             loading={loadingProperties}
-            onExpandSidebar={layout.expanded ? undefined : () => layout.setExpanded(true)}
           />
           {!llmEnabled ? (
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-8">

@@ -2,6 +2,7 @@
 
 import type { ChatBlock } from '@/components/chat/deriveChatBlocks';
 import { blockKey } from '@/components/chat/deriveChatBlocks';
+import ChatFileDownloadBlock from './ChatFileDownloadBlock';
 import ChatCategoryScoresBlock from './ChatCategoryScoresBlock';
 import ChatCompareCategoryBlock from './ChatCompareCategoryBlock';
 import ChatGoogleSummaryBlock from './ChatGoogleSummaryBlock';
@@ -11,6 +12,10 @@ import ChatIssueTableBlock from './ChatIssueTableBlock';
 import ChatLabelValueChartBlock from './ChatLabelValueChartBlock';
 import ChatLighthouseBlock from './ChatLighthouseBlock';
 import ChatStatusBreakdownBlock from './ChatStatusBreakdownBlock';
+import ChatImageAuditBlock from './ChatImageAuditBlock';
+import ChatImagePagesTableBlock from './ChatImagePagesTableBlock';
+import ChatImageAttentionTableBlock from './ChatImageAttentionTableBlock';
+import ChatImageLighthouseBlock from './ChatImageLighthouseBlock';
 
 export interface ChatBlocksProps {
   blocks: ChatBlock[];
@@ -42,6 +47,16 @@ export default function ChatBlocks({ blocks }: ChatBlocksProps) {
             return <ChatLighthouseBlock key={key} block={block} />;
           case 'google_summary':
             return <ChatGoogleSummaryBlock key={key} block={block} />;
+          case 'file_download':
+            return <ChatFileDownloadBlock key={key} block={block} />;
+          case 'image_audit_summary':
+            return <ChatImageAuditBlock key={key} block={block} />;
+          case 'image_pages_table':
+            return <ChatImagePagesTableBlock key={key} block={block} />;
+          case 'image_attention_table':
+            return <ChatImageAttentionTableBlock key={key} block={block} />;
+          case 'image_lighthouse_list':
+            return <ChatImageLighthouseBlock key={key} block={block} />;
           default:
             return null;
         }

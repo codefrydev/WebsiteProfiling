@@ -59,6 +59,48 @@ def normalize_messages_for_ollama(messages: list[dict[str, Any]]) -> list[dict[s
     return out
 
 
+def _extract_ollama_error(response: Any) -> str:
+    raw = ""
+    try:
+        if getattr(response, "is_stream_consumed", True) is False:
+            body = response.read()
+            raw = body.decode("utf-8", errors="replace") if isinstance(body, bytes) else str(body)
+        else:
+            raw = response.text or ""
+    except Exception:
+        raw = ""
+    raw = raw.strip()
+    if not raw:
+        return ""
+    try:
+        data = json.loads(raw)
+        if isinstance(data, dict) and data.get("error"):
+            return str(data["error"]).strip()
+    except json.JSONDecodeError:
+        pass
+    return raw
+
+
+def format_ollama_error(status_code: int, detail: str, model: str) -> str:
+    """Human-readable Ollama HTTP error for chat UI."""
+    detail = detail.strip()
+    low = detail.lower()
+    if status_code == 404 and "model" in low and "not found" in low:
+        return (
+            f"Ollama model '{model}' is not installed. "
+            f"Run `ollama pull {model}` or pick another model under Audit settings → AI."
+        )
+    if status_code == 404:
+        hint = detail or "endpoint not found"
+        return (
+            f"Ollama returned 404 for /api/chat ({hint}). "
+            "Check that Ollama is running, llm_base_url is correct, and your Ollama version supports chat."
+        )
+    if detail:
+        return f"Ollama API error ({status_code}): {detail}"
+    return f"Ollama API error ({status_code})."
+
+
 class OllamaClient:
     def __init__(self, cfg: dict[str, str]) -> None:
         self._model = (cfg.get("llm_model") or "llama3.2").strip()
@@ -74,16 +116,15 @@ class OllamaClient:
         return httpx.Client(timeout=self._timeout)
 
     def _raise_for_status(self, response: Any) -> None:
+        if int(getattr(response, "status_code", 0) or 0) >= 400:
+            detail = _extract_ollama_error(response)
+            raise RuntimeError(format_ollama_error(response.status_code, detail, self._model))
         try:
             response.raise_for_status()
         except Exception as e:
-            detail = ""
-            try:
-                detail = response.text.strip()
-            except Exception:
-                pass
+            detail = _extract_ollama_error(response)
             if detail:
-                raise RuntimeError(f"Ollama API error ({response.status_code}): {detail}") from e
+                raise RuntimeError(format_ollama_error(response.status_code, detail, self._model)) from e
             raise
 
     def complete_json(self, system: str, user: str) -> dict[str, Any]:

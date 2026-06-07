@@ -9,6 +9,24 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { Components } from 'react-markdown';
 import { preprocessChatMarkdown } from '@/components/chat/preprocessChatMarkdown';
 
+function flattenText(node: unknown): string {
+  if (node == null || typeof node === 'boolean') return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(flattenText).join('');
+  if (typeof node === 'object' && node !== null && 'props' in node) {
+    const props = (node as { props?: { children?: unknown } }).props;
+    return flattenText(props?.children);
+  }
+  return '';
+}
+
+function insightHeadingClass(children: unknown, base: string): string {
+  const text = flattenText(children);
+  return /💡|power insights|recommended actions|quick wins|priority fixes/i.test(text)
+    ? `${base} chat-prose-insight-title`
+    : base;
+}
+
 export interface ChatMarkdownProps {
   content: string;
   streaming?: boolean;
@@ -19,9 +37,9 @@ export default function ChatMarkdown({ content, streaming }: ChatMarkdownProps) 
 
   const components = useMemo<Components>(
     () => ({
-      h1: ({ children }) => <h3 className="chat-prose-h1">{children}</h3>,
-      h2: ({ children }) => <h4 className="chat-prose-h2">{children}</h4>,
-      h3: ({ children }) => <h5 className="chat-prose-h3">{children}</h5>,
+      h1: ({ children }) => <h3 className={insightHeadingClass(children, 'chat-prose-h1')}>{children}</h3>,
+      h2: ({ children }) => <h4 className={insightHeadingClass(children, 'chat-prose-h2')}>{children}</h4>,
+      h3: ({ children }) => <h5 className={insightHeadingClass(children, 'chat-prose-h3')}>{children}</h5>,
       p: ({ children }) => <p className="chat-prose-p">{children}</p>,
       ul: ({ children }) => <ul className="chat-prose-ul">{children}</ul>,
       ol: ({ children }) => <ol className="chat-prose-ol">{children}</ol>,
@@ -33,9 +51,17 @@ export default function ChatMarkdown({ content, streaming }: ChatMarkdownProps) 
       ),
       strong: ({ children }) => <strong className="font-semibold text-bright">{children}</strong>,
       em: ({ children }) => <em>{children}</em>,
-      blockquote: ({ children }) => (
-        <blockquote className="chat-prose-blockquote">{children}</blockquote>
-      ),
+      blockquote: ({ children }) => {
+        const text = String(children ?? '');
+        const isInsight = /💡|power insights|key takeaway/i.test(text);
+        return (
+          <blockquote
+            className={isInsight ? 'chat-prose-insight' : 'chat-prose-blockquote'}
+          >
+            {children}
+          </blockquote>
+        );
+      },
       hr: () => <hr className="chat-prose-hr" />,
       table: ({ children }) => (
         <div className="chat-prose-table-wrap">
