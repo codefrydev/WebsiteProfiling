@@ -1,10 +1,12 @@
-import { Building2, ExternalLink, Globe, ArrowRight, Search, Settings2, Trash2 } from 'lucide-react';
+import { Building2, ChevronDown, ExternalLink, Globe, ArrowRight, Search, Trash2 } from 'lucide-react';
 import { useMemo, useState, useEffect, useCallback } from 'react';
+import AppLogo from '@/components/AppLogo';
 import { PageLayout, Card } from '../components';
 import HealthSparkline from '@/components/HealthSparkline';
 import { Skeleton, SkeletonDomainCard } from '../components/Skeleton';
 import { useReport } from '../context/useReport';
 import { format, strings } from '../lib/strings';
+import { extractHostname } from '@/lib/domainSlug';
 import { apiUrl, reportApi } from '../lib/publicBase';
 import type { PortfolioGroup, ReportCategory, ViewProps } from '@/types';
 
@@ -30,7 +32,15 @@ function healthScoreClass(score: number): string {
   return 'text-rose-700 dark:text-rose-400';
 }
 
-export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
+function portfolioRootDomain(group: PortfolioGroup): string {
+  const host = extractHostname(group.crawlUrl) || group.domainName.trim().toLowerCase();
+  if (!host) return group.domainName || 'unknown';
+  const parts = host.split('.').filter(Boolean);
+  if (parts.length <= 2) return host;
+  return parts.slice(-2).join('.');
+}
+
+export default function Home({ onNavigate }: ViewProps) {
   const { reportList, crawlRuns, loadCrawlPreview, refreshReports } = useReport();
   const vh = strings.views.home;
   const sj = strings.common;
@@ -42,6 +52,16 @@ export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
   const [deletingKey, setDeletingKey] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [healthHistoryByDomain, setHealthHistoryByDomain] = useState<Record<string, number[]>>({});
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
+
+  const toggleGroupCollapsed = useCallback((rootDomain: string) => {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(rootDomain)) next.delete(rootDomain);
+      else next.add(rootDomain);
+      return next;
+    });
+  }, []);
 
   const portfolioCardKey = (group: PortfolioGroup) =>
     `${group.domainParam}-${group.crawlOnly ? 'crawl' : 'report'}-${group.reportId ?? 'nr'}-${group.crawlRunId ?? 'nc'}-${group.generatedAtMs}`;
@@ -174,6 +194,22 @@ export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
     ));
   }, [domainGroups, filterQuery]);
 
+  const groupedPortfolio = useMemo(() => {
+    const map = new Map<string, PortfolioGroup[]>();
+    for (const group of filteredGroups) {
+      const key = portfolioRootDomain(group);
+      const items = map.get(key) ?? [];
+      items.push(group);
+      map.set(key, items);
+    }
+    return Array.from(map.entries())
+      .map(([rootDomain, items]) => ({
+        rootDomain,
+        items: items.toSorted((a, b) => b.generatedAtMs - a.generatedAtMs),
+      }))
+      .toSorted((a, b) => (b.items[0]?.generatedAtMs ?? 0) - (a.items[0]?.generatedAtMs ?? 0));
+  }, [filteredGroups]);
+
   const emptyMessage = filterQuery
     ? vh.noSearchResults
     : vh.empty;
@@ -192,19 +228,11 @@ export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
 
       <div className="min-h-[42vh] flex items-center justify-center">
         <div className="max-w-2xl mx-auto text-center w-full">
+        <div className="mb-3 flex justify-center">
+          <AppLogo size={40} className="opacity-90" />
+        </div>
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">{vh.title}</h1>
         <p className="mt-0.5 text-xs sm:text-sm text-muted-foreground">{vh.subtitle}</p>
-
-        {onOpenIntegrations ? (
-          <button
-            type="button"
-            onClick={onOpenIntegrations}
-            className="mt-3 inline-flex items-center gap-2 rounded-lg border border-default bg-brand-900/40 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-brand-800 transition-colors"
-          >
-            <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
-            Configure Google (Search Console &amp; Analytics)
-          </button>
-        ) : null}
 
         <div className="mt-2.5 relative">
           <Search className="h-3.5 w-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
@@ -255,25 +283,57 @@ export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
       ) : null}
 
       {portfolioLoading ? (
-        <div className="w-full mt-2" role="status" aria-busy="true" aria-label={strings.app.loading}>
+        <div className="w-full mt-4 space-y-6" role="status" aria-busy="true" aria-label={strings.app.loading}>
           <span className="sr-only">{strings.app.loading}</span>
-          <div className="flex w-full flex-row flex-wrap justify-center gap-3 items-stretch">
-            <SkeletonDomainCard />
-            <SkeletonDomainCard />
-            <SkeletonDomainCard />
+          <div>
+            <Skeleton className="mb-3 h-5 w-36" />
+            <div className="flex gap-3 overflow-x-auto pb-1">
+              <SkeletonDomainCard />
+              <SkeletonDomainCard />
+              <SkeletonDomainCard />
+            </div>
           </div>
         </div>
       ) : filteredGroups.length > 0 ? (
-        <div className="w-full mt-2">
-          <div className="flex w-full flex-row flex-wrap justify-center gap-3 items-stretch">
-          {filteredGroups.map((group) => {
+        <div className="w-full mt-4 space-y-6">
+          {groupedPortfolio.map(({ rootDomain, items }) => {
+            const collapsed = collapsedGroups.has(rootDomain);
+            return (
+            <section key={rootDomain} className="min-w-0 rounded-xl border border-default/80 bg-brand-900/20">
+              <button
+                type="button"
+                onClick={() => toggleGroupCollapsed(rootDomain)}
+                aria-expanded={!collapsed}
+                aria-controls={`portfolio-group-${rootDomain}`}
+                className="flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-brand-900/35"
+              >
+                <span className="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground">
+                  <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                  <span className="truncate">{rootDomain}</span>
+                </span>
+                <span className="flex shrink-0 items-center gap-2">
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {format(vh.groupPropertyCount, { count: items.length })}
+                  </span>
+                  <ChevronDown
+                    className={`h-4 w-4 text-muted-foreground transition-transform ${collapsed ? '' : 'rotate-180'}`}
+                    aria-hidden
+                  />
+                </span>
+              </button>
+              {!collapsed ? (
+              <div
+                id={`portfolio-group-${rootDomain}`}
+                className="flex gap-3 overflow-x-auto px-3 pb-3 items-stretch"
+              >
+          {items.map((group) => {
             const cardKey = portfolioCardKey(group);
             const confirmOpen = pendingDeleteKey === cardKey;
             const isDeleting = deletingKey === cardKey;
             return (
             <div
               key={cardKey}
-              className="text-left w-[min(260px,100%)] max-w-[260px] min-w-0 relative"
+              className="relative min-w-[260px] max-w-[300px] shrink-0 text-left"
             >
               <Card
                 shadow
@@ -430,7 +490,11 @@ export default function Home({ onNavigate, onOpenIntegrations }: ViewProps) {
             </div>
           );
           })}
-          </div>
+              </div>
+              ) : null}
+            </section>
+          );
+          })}
         </div>
       ) : (
         <Card>

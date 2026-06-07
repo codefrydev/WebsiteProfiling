@@ -672,6 +672,175 @@
     }
   },
   "views": {
+    "landing": {
+      "metaTitle": "Site Audit — Self-hosted technical SEO",
+      "metaDescription": "Crawl your sites, find technical SEO issues, connect Search Console and Analytics, and export client reports — free and self-hosted.",
+      "navFeatures": "Features",
+      "navHowItWorks": "How it works",
+      "navQuickStart": "Quick start",
+      "navGoogleSetup": "Google setup",
+      "navOpenApp": "Dashboard",
+      "navRunAudit": "Run audit",
+      "heroBadge": "Open source · Self-hosted",
+      "heroTitle": "Technical SEO audits you control",
+      "heroSubtitle": "Crawl sites, surface real issues, connect Search Console and Analytics, and ship client reports — on infrastructure you own.",
+      "ctaDashboard": "Open dashboard",
+      "ctaRunAudit": "Run your first audit",
+      "ctaGoogleGuide": "Google setup guide",
+      "scrollHint": "New here? Follow the steps below.",
+      "pathTitle": "Get started",
+      "pathStepInstall": "Install",
+      "pathStepInstallHint": "Docker or local dev",
+      "pathStepCrawl": "Crawl",
+      "pathStepCrawlHint": "Run your first audit",
+      "pathStepGoogle": "Connect Google",
+      "pathStepGoogleHint": "GSC + GA4 OAuth",
+      "pathStepReport": "Review",
+      "pathStepReportHint": "Issues & exports",
+      "sectionGettingStarted": "Getting started",
+      "sectionCapabilities": "Capabilities",
+      "sectionSetupGuide": "Setup guide",
+      "featuresTitle": "Everything you need for technical SEO",
+      "featuresSubtitle": "Familiar workflows from Screaming Frog, SEMrush, and Ahrefs — in one open-source tool you run yourself.",
+      "featureCrawlTitle": "Site crawl",
+      "featureCrawlDescription": "Crawl every URL, status codes, redirect chains, and site structure — like Screaming Frog.",
+      "featureIssuesTitle": "Issues & health",
+      "featureIssuesDescription": "Prioritized technical issues and site health scores — like SEMrush Site Audit.",
+      "featureOnPageTitle": "On-page & performance",
+      "featureOnPageDescription": "Titles, meta, content checks, and Lighthouse Core Web Vitals — like PageSpeed Insights.",
+      "featureSearchTitle": "Search & traffic",
+      "featureSearchDescription": "Search Console queries and GA4 traffic when you connect Google.",
+      "featureKeywordsTitle": "Keywords & indexation",
+      "featureKeywordsDescription": "Keyword explorer, query–page alignment, and indexation coverage.",
+      "featureLinksTitle": "Links & logs",
+      "featureLinksDescription": "Backlinks from GSC Links import and access-log analysis — Ahrefs-style insights from your data.",
+      "featureAiTitle": "AI assistant",
+      "featureAiDescription": "Ask questions about your audit in chat or via MCP tools in Cursor and Claude Desktop.",
+      "featureSelfHostedTitle": "Self-hosted",
+      "featureSelfHostedDescription": "Run with Docker or locally. Your crawl data stays on your infrastructure.",
+      "howItWorksTitle": "How it works",
+      "howItWorksSubtitle": "Three steps from first crawl to client-ready report.",
+      "step1Title": "Run a crawl",
+      "step1Description": "Enter a start URL, choose crawl depth, and launch a full site audit from Run audit.",
+      "step2Title": "Connect Google",
+      "step2Description": "Create OAuth credentials in Google Cloud, then connect Search Console and GA4 per property.",
+      "step2Link": "Google setup guide",
+      "step3Title": "Review reports",
+      "step3Description": "Open your property from the dashboard, explore issues, and export HTML or PDF for clients.",
+      "step3Link": "Open dashboard",
+      "quickStartTitle": "Quick start",
+      "quickStartSubtitle": "Get running in minutes with Docker or local development.",
+      "quickStartDockerLabel": "Docker",
+      "quickStartDockerCommand": "docker compose up --build",
+      "quickStartLocalLabel": "Local development",
+      "quickStartLocalSetup": "./local-run setup",
+      "quickStartLocalRun": "./local-run",
+      "quickStartDocsHint": "See CONTRIBUTING.md and docs/MCP.md in the repository for full setup and AI chat configuration.",
+      "googleSetupTitle": "Google Search Console & Analytics setup",
+      "googleSetupSubtitle": "Step-by-step guide to create a Google Cloud project, OAuth credentials, and connect GSC + GA4 to your properties.",
+      "googleSetupCta": "Open Integrations",
+      "googleSetupNote": "OAuth Client ID/Secret are stored once for the whole app. Each site property keeps its own Google sign-in and GSC/GA4 property IDs.",
+      "googleSetupSections": {
+        "prerequisites": {
+          "title": "Before you start",
+          "items": [
+            "A Google account with access to the site's Search Console property (Owner or Full user).",
+            "A GA4 property for the same site (Admin access to read Analytics data).",
+            "Verify the site in Search Console (domain or URL-prefix property) before connecting.",
+            "In Site Audit, set a Site URL under Run audit → Crawl so the property can be linked."
+          ]
+        },
+        "gcpProject": {
+          "title": "Create a Google Cloud project",
+          "items": [
+            "Go to Google Cloud Console and create a new project (or pick an existing one).",
+            "Note the project name — you will enable APIs and create credentials here.",
+            "Billing is not required for Search Console and Analytics Data API reads within normal quotas."
+          ],
+          "linkLabel": "Google Cloud Console",
+          "linkUrl": "https://console.cloud.google.com/"
+        },
+        "enableApis": {
+          "title": "Enable required APIs",
+          "items": [
+            "In APIs & Services → Library, enable Google Search Console API.",
+            "Enable Google Analytics Data API (for GA4 runReport).",
+            "Wait a minute after enabling before creating credentials or testing."
+          ],
+          "linkLabel": "Enable APIs",
+          "linkUrl": "https://console.cloud.google.com/apis/library"
+        },
+        "oauthConsent": {
+          "title": "Configure OAuth consent screen",
+          "items": [
+            "Open APIs & Services → OAuth consent screen.",
+            "Choose External (or Internal if using Google Workspace for your org only).",
+            "Add app name, support email, and developer contact.",
+            "Add scopes: .../auth/webmasters.readonly and .../auth/analytics.readonly.",
+            "Add your Google account as a test user while the app is in Testing mode."
+          ],
+          "linkLabel": "OAuth consent screen",
+          "linkUrl": "https://console.cloud.google.com/apis/credentials/consent"
+        },
+        "oauthClient": {
+          "title": "Create OAuth client (recommended)",
+          "items": [
+            "Go to APIs & Services → Credentials → Create credentials → OAuth client ID.",
+            "Application type: Web application.",
+            "Authorized redirect URI (local dev): http://localhost:3000/api/integrations/google/callback",
+            "For production, add the same path on your public origin (or set GOOGLE_REDIRECT_URI).",
+            "Copy the Client ID and Client Secret into Site Audit → Integrations → Connect tab → Save credentials.",
+            "Per site: pick the property, click Connect with Google, and sign in with an account that has GSC + GA4 access."
+          ],
+          "linkLabel": "Create credentials",
+          "linkUrl": "https://console.cloud.google.com/apis/credentials"
+        },
+        "serviceAccount": {
+          "title": "Alternative: service account (advanced)",
+          "items": [
+            "IAM & Admin → Service accounts → Create → Keys → Add key → JSON.",
+            "Grant the service account access: add its email as a user in Search Console (property settings) and GA4 (Property access management) with Viewer role.",
+            "Upload the JSON key via the credentials upload API or pipeline settings (service account replaces OAuth app credentials at the app level).",
+            "Service accounts cannot use the Connect with Google button — use this only if your workflow requires non-interactive access."
+          ],
+          "linkLabel": "Service accounts",
+          "linkUrl": "https://console.cloud.google.com/iam-admin/serviceaccounts"
+        },
+        "gscProperty": {
+          "title": "Search Console property",
+          "items": [
+            "In Google Search Console, confirm the property URL matches how you crawl (e.g. https://www.example.com/ or sc-domain:example.com).",
+            "After OAuth connect, open Integrations → Properties & sync → Load properties and select the GSC site.",
+            "If the site is missing, the signed-in user may lack access or the property is not verified."
+          ],
+          "linkLabel": "Search Console",
+          "linkUrl": "https://search.google.com/search-console"
+        },
+        "ga4Property": {
+          "title": "Google Analytics 4 property",
+          "items": [
+            "In GA4 Admin → Property settings, copy the numeric Property ID (e.g. 123456789).",
+            "Do not use the G-XXXXXXXX Measurement ID — Site Audit needs the numeric property ID.",
+            "In Integrations → Properties & sync, select the GA4 property or paste the numeric ID, then Save properties.",
+            "Use Test connection, then Fetch data now to pull queries and traffic into reports."
+          ],
+          "linkLabel": "GA4 Admin",
+          "linkUrl": "https://analytics.google.com/"
+        },
+        "inApp": {
+          "title": "Connect inside Site Audit",
+          "items": [
+            "Open a report and click the gear icon (Integrations), or go to Run audit → Search Console & Analytics tab.",
+            "Connect tab: save Client ID + Secret, then Connect with Google for the selected site.",
+            "Properties & sync tab: choose GSC site, GA4 property ID, and date range; save and fetch.",
+            "Imports tab: optionally upload GSC Links CSV exports for backlink samples."
+          ]
+        }
+      },
+      "footerOpenApp": "Open app",
+      "footerRunAudit": "Run audit",
+      "footerChat": "AI chat"
+    },
     "home": {
       "title": "Properties",
       "subtitle": "Client sites from crawls and audit runs. Search by domain or start URL.",
@@ -681,6 +850,7 @@
       "totalUrlsLabel": "URLs crawled",
       "avgHealthLabel": "Avg site health",
       "brandLabel": "Property",
+      "groupPropertyCount": "{count} properties",
       "healthScoreLabel": "Site health",
       "crawlUrlLabel": "Site URL",
       "urlCountLabel": "URLs",
