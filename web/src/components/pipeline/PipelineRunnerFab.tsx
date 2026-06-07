@@ -20,6 +20,7 @@ export default function PipelineRunnerFab() {
   const { loading: sessionLoading, canMutate } = useSession();
 
   const onPipelinePage = pathname === '/pipeline' || pathname.startsWith('/pipeline/');
+  const isHomePage = pathname === '/home';
   const showDock = backgroundMode && (busy || Boolean(status) || Boolean(log));
 
   const goToPipeline = () => {
@@ -31,7 +32,7 @@ export default function PipelineRunnerFab() {
     openPipelinePage('run');
   };
 
-  if (onPipelinePage || sessionLoading || !canMutate) {
+  if (!isHomePage || onPipelinePage || sessionLoading || !canMutate) {
     return null;
   }
 

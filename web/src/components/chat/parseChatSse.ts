@@ -1,5 +1,6 @@
 export type ChatSseEvent =
   | { type: 'token'; text: string }
+  | { type: 'status'; phase?: string; detail?: string }
   | { type: 'tool_start'; name?: string; args?: Record<string, unknown> }
   | { type: 'tool_end'; name?: string; result?: Record<string, unknown> }
   | { type: 'done'; message?: string }
@@ -26,6 +27,12 @@ export function parseSseChunk(buffer: string): { events: ChatSseEvent[]; rest: s
       const data = JSON.parse(dataLine) as Record<string, unknown>;
       if (eventType === 'token') {
         events.push({ type: 'token', text: String(data.text || '') });
+      } else if (eventType === 'status') {
+        events.push({
+          type: 'status',
+          phase: String(data.phase || ''),
+          detail: String(data.detail || ''),
+        });
       } else if (eventType === 'tool_start') {
         events.push({
           type: 'tool_start',

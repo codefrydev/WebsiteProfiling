@@ -134,6 +134,11 @@ def list_issues(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -
     }
 
 
+def get_critical_issues(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    """All Critical-priority audit issues (chat table visualization)."""
+    return list_issues(conn, ctx, {**args, "priority": "Critical"})
+
+
 def get_category_scores(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
     scoped = ctx.with_args(args)
     payload = scoped.load_payload(conn)
@@ -150,3 +155,36 @@ def get_category_scores(conn: Connection, ctx: AuditToolContext, args: dict[str,
             "issue_count": len(cat.get("issues") or []),
         })
     return {"categories": categories, "health_score": _health_score(payload)}
+
+
+def get_executive_summary(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    payload = scoped.load_payload(conn)
+    if not payload:
+        return {"error": "no report found"}
+    summary = payload.get("executive_summary")
+    if not summary:
+        return {"error": "executive_summary not generated — enable AI in audit settings", "missing": True}
+    return {"executive_summary": summary}
+
+
+def get_report_meta(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    payload = scoped.load_payload(conn)
+    if not payload:
+        return {"error": "no report found"}
+    meta = payload.get("report_meta")
+    if not isinstance(meta, dict):
+        return {"error": "report_meta not in payload", "missing": True}
+    return {"report_meta": meta}
+
+
+def get_site_level(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    payload = scoped.load_payload(conn)
+    if not payload:
+        return {"error": "no report found"}
+    site_level = payload.get("site_level")
+    if not isinstance(site_level, dict):
+        return {"error": "site_level not in payload", "missing": True}
+    return {"site_level": site_level}

@@ -1,9 +1,26 @@
 'use client';
 
-import { Sparkles } from 'lucide-react';
+import {
+  AlertTriangle,
+  FileSearch,
+  Gauge,
+  GitBranch,
+  Link2,
+  Search,
+} from 'lucide-react';
 import { strings } from '@/lib/strings';
+import type { LucideIcon } from 'lucide-react';
 
 const c = strings.components.chat;
+
+const PROMPT_ICONS: LucideIcon[] = [
+  AlertTriangle,
+  Link2,
+  GitBranch,
+  FileSearch,
+  Search,
+  Gauge,
+];
 
 export interface SuggestedPromptsProps {
   onSelect: (prompt: string) => void;
@@ -11,24 +28,31 @@ export interface SuggestedPromptsProps {
 }
 
 export default function SuggestedPrompts({ onSelect, disabled }: SuggestedPromptsProps) {
+  const prompts = c.suggestedPrompts.slice(0, 6);
+
   return (
-    <div className="space-y-2">
-      <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-        <Sparkles className="h-3.5 w-3.5 text-violet-400" />
-        {c.suggestedTitle}
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {c.suggestedPrompts.map((prompt) => (
-          <button
-            key={prompt}
-            type="button"
-            disabled={disabled}
-            onClick={() => onSelect(prompt)}
-            className="rounded-full border border-default bg-brand-800/80 px-3 py-1.5 text-xs text-foreground hover:border-violet-500/40 hover:bg-violet-500/10 disabled:opacity-40"
-          >
-            {prompt}
-          </button>
-        ))}
+    <div className="mx-auto w-full max-w-3xl pt-10">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        {prompts.map((prompt, i) => {
+          const Icon = PROMPT_ICONS[i % PROMPT_ICONS.length];
+          return (
+            <button
+              key={prompt}
+              type="button"
+              disabled={disabled}
+              onClick={() => onSelect(prompt)}
+              className="group flex items-start gap-3 rounded-2xl border border-default/50 bg-[var(--chat-surface)]/25 px-4 py-3 text-left transition-all hover:border-default hover:bg-[var(--chat-surface)]/60 disabled:opacity-40"
+            >
+              <Icon
+                className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground"
+                aria-hidden
+              />
+              <span className="text-[13px] leading-snug text-foreground/85 group-hover:text-foreground">
+                {prompt}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );

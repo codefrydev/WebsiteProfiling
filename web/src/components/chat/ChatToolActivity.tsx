@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, Wrench } from 'lucide-react';
-import { strings } from '@/lib/strings';
+import { format, strings } from '@/lib/strings';
 
 const c = strings.components.chat;
 
@@ -19,24 +19,24 @@ export interface ChatToolActivityProps {
 }
 
 export default function ChatToolActivity({ items }: ChatToolActivityProps) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
 
   if (!items.length) return null;
 
   return (
-    <div className="rounded-lg border border-violet-500/20 bg-violet-500/5 text-sm">
+    <div className="text-sm">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 px-3 py-2 text-left text-violet-200"
+        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+        aria-expanded={open}
       >
-        {open ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-        <Wrench className="h-4 w-4" />
-        <span>{c.toolActivityTitle}</span>
-        <span className="text-xs text-muted-foreground">({items.length})</span>
+        {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+        <Wrench className="h-3.5 w-3.5" />
+        <span>{format(c.toolsUsedSummary, { count: items.length })}</span>
       </button>
       {open ? (
-        <ul className="space-y-2 border-t border-violet-500/10 px-3 py-2 text-xs">
+        <ul className="mt-1 space-y-1 border-l border-muted/50 pl-3 text-xs">
           {items.map((item) => (
             <li key={item.id} className="font-mono text-muted-foreground">
               <span className="text-violet-300">{item.name}</span>

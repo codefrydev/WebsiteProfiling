@@ -3,3 +3,6 @@ export { RatioBar, CoverageBar } from './RatioBar';
 export { LighthouseScoreGrid } from './LighthouseScoreGrid';
 export { StatusDistributionChart } from './DistributionChart';
 export { RankedBarChart } from './RankedBarChart';
+export { CategoryScoreGauge } from './CategoryScoreGauge';
+export { ScoreDelta } from './ScoreDelta';
+export { SimpleBarChart } from './SimpleBarChart';

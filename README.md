@@ -68,6 +68,15 @@ Google Search Console / Analytics: connect via **Integrations** (gear icon) in t
 
 **JavaScript crawl (optional):** In Audit settings, set **Crawl rendering** to `javascript` (always headless Chromium) or `auto` (static first, browser when SPA heuristics match). Install locally: `pip install -r requirements-browser.txt` and Chromium on `PATH` or `CHROME_PATH` (included in Docker). The UI preflights via `GET /api/crawl/browser-status` before runs when JS/auto is selected.
 
+**AI Chat (optional):** Ask questions about your audit data at [http://localhost:3000/chat](http://localhost:3000/chat). Enable a provider under **Run audit → AI settings** (`llm_enabled`, provider, model). `./local-run setup` installs `requirements-llm.txt` (`httpx`, OpenAI, Anthropic SDKs).
+
+| Provider | Notes |
+|----------|--------|
+| **Ollama** | Local daemon at `http://127.0.0.1:11434`. Chat UI lists installed models plus the live Ollama cloud catalog (billing: free local, account free tier, Pro). Native tool calling when supported; otherwise ReAct fallback. Pick the model in-chat without leaving the page. |
+| **OpenAI** / **Anthropic** | API key in AI settings; native tool calling with streaming. |
+
+The agent uses the same **121 read-only audit tools** as the MCP server (`docs/MCP.md`). Responses stream over SSE (`POST /api/chat`) with status, tool activity, and tokens. Sessions are saved per property (`chat_sessions` / `chat_messages`).
+
 Production: `docker-compose.prod.yml` (set `POSTGRES_PASSWORD`, `AUTH_SECRET`).
 
 ## License

@@ -15,58 +15,22 @@ import { doughnutOptionsWithPercentTooltip, formatCompositionAria } from '../lib
 import { ChartAccessibleFallback } from '../components/charts';
 import type { ReportIssue, ViewProps } from '@/types';
 import { categoryDisplayName } from '@/lib/categoryDisplayNames';
+import {
+  PRIORITY_CONFIG,
+  PRIORITY_ORDER,
+  normalizePriority,
+  type PriorityKey,
+} from '@/lib/issuePriority';
 
 registerChartJsBase();
 
 const MAX_CATEGORY_CHART = 12;
 
-type PriorityKey = 'Critical' | 'High' | 'Medium' | 'Low';
-
-const PRIORITY_CONFIG: Record<PriorityKey, {
-  border: string;
-  bg: string;
-  text: string;
-  ring: string;
-  icon: typeof Flame;
-  order: number;
-  chartColor: string;
-}> = {
-  Critical: {
-    border: 'border-l-red-500',
-    bg: 'bg-red-500/10',
-    text: 'text-red-700 dark:text-red-400',
-    ring: 'ring-1 ring-red-500/20 border-red-900/30',
-    icon: Flame,
-    order: 0,
-    chartColor: '#EF4444',
-  },
-  High: {
-    border: 'border-l-orange-500',
-    bg: 'bg-orange-500/10',
-    text: 'text-orange-700 dark:text-orange-400',
-    ring: 'ring-1 ring-orange-500/20 border-orange-900/30',
-    icon: AlertTriangle,
-    order: 1,
-    chartColor: '#F97316',
-  },
-  Medium: {
-    border: 'border-l-yellow-500',
-    bg: 'bg-yellow-500/10',
-    text: 'text-yellow-800 dark:text-yellow-400',
-    ring: '',
-    icon: AlertCircle,
-    order: 2,
-    chartColor: '#EAB308',
-  },
-  Low: {
-    border: 'border-l-neutral-500',
-    bg: 'bg-brand-700/10',
-    text: 'text-muted-foreground',
-    ring: '',
-    icon: Info,
-    order: 3,
-    chartColor: '#64748B',
-  },
+const PRIORITY_ICONS: Record<PriorityKey, typeof Flame> = {
+  Critical: Flame,
+  High: AlertTriangle,
+  Medium: AlertCircle,
+  Low: Info,
 };
 
 interface CategoryIssueItem {
@@ -105,9 +69,9 @@ function CategorySection({ category, items, defaultOpen = false, vi, emDash }: C
         <div className="mt-2 space-y-3 pl-4">
           {items.map((item, i) => {
             const iss = item.issue;
-            const p = (iss.priority || 'Medium') as PriorityKey;
-            const cfg = PRIORITY_CONFIG[p] ?? PRIORITY_CONFIG.Medium;
-            const Icon = cfg.icon;
+            const p = normalizePriority(iss.priority);
+            const cfg = PRIORITY_CONFIG[p];
+            const Icon = PRIORITY_ICONS[p];
             return (
               <div
                 key={i}
@@ -163,7 +127,7 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
   const propertyId = Number(pipeline?.configState.active_property_id || 0) || null;
   const vi = strings.views.issues;
   const sj = strings.common;
-  const PRIORITY_ORDER = vi.priorityOrder;
+  const priorityOrder = PRIORITY_ORDER;
   const [issuesTab, setIssuesTab] = useState<'audit' | 'board'>('audit');
   const [priorityFilter, setPriorityFilter] = useState(sj.all);
   const [categoryFilter, setCategoryFilter] = useState(sj.all);
@@ -223,10 +187,10 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
   }, [forCharts, sj]);
 
   const priorityChart = useMemo(() => {
-    const items = PRIORITY_ORDER.map((p) => ({
+    const items = priorityOrder.map((p) => ({
       label: p,
-      value: forCharts.filter((item) => (item.issue.priority || 'Medium') === p).length,
-      color: PRIORITY_CONFIG[p as PriorityKey].chartColor,
+      value: forCharts.filter((item) => normalizePriority(item.issue.priority) === p).length,
+      color: PRIORITY_CONFIG[p].chartColor,
     })).filter((item) => item.value > 0);
     return {
       labels: items.map((i) => i.label),
@@ -239,10 +203,10 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
       ),
       rows: items.map((i) => [i.label, i.value] as [string, string | number]),
     };
-  }, [forCharts, PRIORITY_ORDER, vi.issuesWord]);
+  }, [forCharts, priorityOrder, vi.issuesWord]);
 
-  const priorityCounts = PRIORITY_ORDER.reduce<Record<string, number>>((acc, p) => {
-    acc[p] = list.filter((item) => (item.issue.priority || 'Medium') === p).length;
+  const priorityCounts = priorityOrder.reduce<Record<string, number>>((acc, p) => {
+    acc[p] = list.filter((item) => normalizePriority(item.issue.priority) === p).length;
     return acc;
   }, {});
 
@@ -260,8 +224,8 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
     const aClicks = clicksByUrl.get(String(a.issue.url || '').replace(/\/$/, '')) || 0;
     const bClicks = clicksByUrl.get(String(b.issue.url || '').replace(/\/$/, '')) || 0;
     if (bClicks !== aClicks) return bClicks - aClicks;
-    const ao = (PRIORITY_CONFIG[(a.issue.priority || 'Medium') as PriorityKey] ?? PRIORITY_CONFIG.Medium).order;
-    const bo = (PRIORITY_CONFIG[(b.issue.priority || 'Medium') as PriorityKey] ?? PRIORITY_CONFIG.Medium).order;
+    const ao = PRIORITY_CONFIG[normalizePriority(a.issue.priority)].order;
+    const bo = PRIORITY_CONFIG[normalizePriority(b.issue.priority)].order;
     return ao - bo;
   });
 
@@ -391,9 +355,9 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
 
       {issuesTab === 'audit' && (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {PRIORITY_ORDER.map((p) => {
-          const cfg = PRIORITY_CONFIG[p as PriorityKey];
-          const Icon = cfg.icon;
+        {priorityOrder.map((p) => {
+          const cfg = PRIORITY_CONFIG[p];
+          const Icon = PRIORITY_ICONS[p];
           const count = priorityCounts[p] || 0;
           return (
             <Card
@@ -427,8 +391,8 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
         >
           {vi.allPriorities}
         </button>
-        {PRIORITY_ORDER.map((p) => {
-          const cfg = PRIORITY_CONFIG[p as PriorityKey];
+        {priorityOrder.map((p) => {
+          const cfg = PRIORITY_CONFIG[p];
           const active = priorityFilter === p;
           return (
             <button

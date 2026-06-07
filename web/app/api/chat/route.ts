@@ -11,12 +11,29 @@ import {
   messagesForAgentContext,
   updateChatSessionTitle,
 } from '@/server/chatDb';
+import { loadLlmConfig } from '@/server/llmConfig';
 import type { ApiRouteHandler } from '@/types/api';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const CHAT_TIMEOUT_MS = 120_000;
+const DEFAULT_CHAT_TIMEOUT_MS = 120_000;
+const OLLAMA_MIN_TIMEOUT_MS = 300_000;
+
+async function resolveChatTimeoutMs(): Promise<number> {
+  try {
+    const cfg = await loadLlmConfig();
+    const provider = String(cfg.state.llm_provider || 'none');
+    const timeoutS = Number(cfg.state.llm_timeout_s) || 120;
+    const baseMs = Math.max(timeoutS, 30) * 1000;
+    if (provider === 'ollama') {
+      return Math.max(baseMs, OLLAMA_MIN_TIMEOUT_MS);
+    }
+    return baseMs;
+  } catch {
+    return DEFAULT_CHAT_TIMEOUT_MS;
+  }
+}
 
 interface ChatBody {
   sessionId?: number;
@@ -73,15 +90,43 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
     report_id: Number.isFinite(reportId) ? reportId : undefined,
   });
 
+  const chatTimeoutMs = await resolveChatTimeoutMs();
+  const timeoutSec = Math.round(chatTimeoutMs / 1000);
+
   const stream = new ReadableStream({
     start(controller) {
       const encoder = new TextEncoder();
       let assistantText = '';
       let buffer = '';
+      let stderrAcc = '';
+      const toolEvents: Array<{
+        name: string;
+        args?: Record<string, unknown>;
+        result?: Record<string, unknown>;
+      }> = [];
+      let sawError = false;
       let timedOut = false;
+      let closed = false;
+      let exitCode: number | null = null;
+
+      const closeStream = () => {
+        if (closed) return;
+        closed = true;
+        try {
+          controller.close();
+        } catch {
+          /* stream may already be closed (client disconnect, timeout race) */
+        }
+      };
 
       const push = (event: string, data: Record<string, unknown>) => {
-        controller.enqueue(encoder.encode(sseLine(event, data)));
+        if (closed) return;
+        if (event === 'error') sawError = true;
+        try {
+          controller.enqueue(encoder.encode(sseLine(event, data)));
+        } catch {
+          closed = true;
+        }
       };
 
       const proc = spawn(
@@ -101,9 +146,9 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
         } catch {
           /* ignore */
         }
-        push('error', { message: 'Chat timed out after 120s' });
-        controller.close();
-      }, CHAT_TIMEOUT_MS);
+        push('error', { message: `Chat timed out after ${timeoutSec}s` });
+        closeStream();
+      }, chatTimeoutMs);
 
       proc.stdin?.write(stdinPayload);
       proc.stdin?.end();
@@ -116,13 +161,41 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
           const trimmed = line.trim();
           if (!trimmed) continue;
           try {
-            const evt = JSON.parse(trimmed) as { type?: string; text?: string; message?: string };
+            const evt = JSON.parse(trimmed) as {
+              type?: string;
+              text?: string;
+              message?: string;
+              phase?: string;
+              detail?: string;
+              name?: string;
+              args?: Record<string, unknown>;
+              result?: Record<string, unknown>;
+            };
             if (evt.type === 'token' && evt.text) {
               assistantText += evt.text;
               push('token', { text: evt.text });
+            } else if (evt.type === 'status') {
+              push('status', {
+                phase: evt.phase || 'working',
+                detail: evt.detail || evt.message || '',
+              });
             } else if (evt.type === 'tool_start') {
+              toolEvents.push({
+                name: String(evt.name || ''),
+                args: evt.args || {},
+              });
               push('tool_start', evt as Record<string, unknown>);
             } else if (evt.type === 'tool_end') {
+              const name = String(evt.name || '');
+              const existing = toolEvents.findIndex((t) => t.name === name && t.result == null);
+              if (existing >= 0) {
+                toolEvents[existing] = {
+                  ...toolEvents[existing],
+                  result: evt.result || {},
+                };
+              } else {
+                toolEvents.push({ name, result: evt.result || {} });
+              }
               push('tool_end', evt as Record<string, unknown>);
             } else if (evt.type === 'done' && evt.message) {
               assistantText = evt.message;
@@ -136,23 +209,50 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
         }
       });
 
-      proc.stderr?.on('data', () => {
-        /* stderr logged by python; not forwarded to client */
+      proc.stderr?.on('data', (chunk: Buffer) => {
+        stderrAcc += chunk.toString();
+        if (stderrAcc.length > 8000) {
+          stderrAcc = stderrAcc.slice(-8000);
+        }
       });
 
       proc.on('error', (err: Error) => {
         clearTimeout(timer);
         push('error', { message: formatPythonSpawnError(err, pythonExe, repoRoot) });
-        controller.close();
+        closeStream();
       });
 
-      proc.on('close', async () => {
+      proc.on('close', async (code: number | null) => {
         clearTimeout(timer);
         if (timedOut) return;
+        exitCode = code;
+
+        if (!sawError && !assistantText.trim()) {
+          const stderrLine = stderrAcc
+            .split('\n')
+            .map((l) => l.trim())
+            .find((l) => l && !l.startsWith('['));
+          const fallback =
+            stderrLine ||
+            (exitCode != null && exitCode !== 0
+              ? `Assistant process exited with code ${exitCode}.`
+              : 'No response from the assistant.');
+          push('error', { message: fallback });
+        } else if (!sawError && exitCode != null && exitCode !== 0) {
+          const stderrLine = stderrAcc
+            .split('\n')
+            .map((l) => l.trim())
+            .find((l) => l && !l.startsWith('['));
+          if (stderrLine) {
+            push('error', { message: stderrLine });
+          }
+        }
 
         if (assistantText.trim()) {
           try {
-            await appendChatMessage(sessionId, 'assistant', assistantText.trim());
+            await appendChatMessage(sessionId, 'assistant', assistantText.trim(), {
+              toolResult: toolEvents.length ? { tool_events: toolEvents } : null,
+            });
             if (session.title === 'New chat') {
               const title = message.slice(0, 60) + (message.length > 60 ? '…' : '');
               await updateChatSessionTitle(sessionId, title);
@@ -162,7 +262,7 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
           }
         }
 
-        controller.close();
+        closeStream();
       });
     },
   });

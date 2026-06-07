@@ -40,8 +40,15 @@ def run(_cfg: dict, args: argparse.Namespace) -> None:
     def on_event(event: dict) -> None:
         print(json.dumps(event, default=str), flush=True)
 
-    result = run_agent_turn(messages, ctx, on_event=on_event)
+    try:
+        result = run_agent_turn(messages, ctx, on_event=on_event)
+    except Exception as e:
+        msg = str(e).strip() or type(e).__name__
+        print(json.dumps({"type": "error", "message": msg}), flush=True)
+        sys.exit(1)
+
     if not result.get("ok"):
-        print(json.dumps({"type": "error", "message": result.get("error", "Agent failed")}), flush=True)
+        err = result.get("error", "Agent failed")
+        print(json.dumps({"type": "error", "message": err}), flush=True)
         sys.exit(1)
     sys.exit(0)

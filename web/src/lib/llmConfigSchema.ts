@@ -115,6 +115,24 @@ export function getLlmFieldByKey(key: string): (typeof LLM_CONFIG_SECTIONS)[numb
   return null;
 }
 
+/** Show/hide LLM fields based on current provider selection. */
+export function isLlmFieldVisible(
+  key: string,
+  values: Record<string, string | boolean | undefined>,
+): boolean {
+  const provider = String(values.llm_provider || 'none');
+  if (key === 'llm_api_key') {
+    return provider !== 'none' && provider !== 'ollama';
+  }
+  if (key === 'llm_base_url') {
+    return provider === 'ollama';
+  }
+  if (key === 'llm_model') {
+    return provider !== 'ollama';
+  }
+  return true;
+}
+
 export function buildInitialLlmConfigState(): LlmConfigState {
   const out: LlmConfigState = {};
   for (const section of LLM_CONFIG_SECTIONS) {

@@ -6,7 +6,8 @@ import { strings, format } from '@/lib/strings';
 import type { IntegrationToast } from '@/types/api';
 import { crawlRenderModeUsesBrowser } from '@/lib/browserCrawlStatus';
 import { PIPELINE_CONFIG_SECTIONS, isPipelineFieldVisible } from '@/lib/pipelineConfigSchema';
-import { LLM_CONFIG_SECTIONS } from '@/lib/llmConfigSchema';
+import { LLM_CONFIG_SECTIONS, isLlmFieldVisible } from '@/lib/llmConfigSchema';
+import OllamaModelPicker from '@/components/pipeline/OllamaModelPicker';
 import { usePipeline } from '@/context/PipelineContext';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import Button from '@/components/Button';
@@ -34,23 +35,31 @@ function ConfigSectionFields({
   values,
   disabled,
   onChange,
+  fieldFilter,
+  extra,
 }: {
   section: ConfigSection | LlmSection;
   values: Record<string, string | boolean | undefined>;
   disabled: boolean;
   onChange: (key: string, value: string | boolean) => void;
+  fieldFilter?: (key: string) => boolean;
+  extra?: ReactNode;
 }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {section.fields.filter((f) => isPipelineFieldVisible(f, values)).map((f) => (
-        <ConfigField
-          key={f.key}
-          field={f}
-          value={values[f.key]}
-          disabled={disabled}
-          onChange={(v) => onChange(f.key, v)}
-        />
-      ))}
+      {section.fields
+        .filter((f) => isPipelineFieldVisible(f, values))
+        .filter((f) => (fieldFilter ? fieldFilter(f.key) : true))
+        .map((f) => (
+          <ConfigField
+            key={f.key}
+            field={f}
+            value={values[f.key]}
+            disabled={disabled}
+            onChange={(v) => onChange(f.key, v)}
+          />
+        ))}
+      {extra}
     </div>
   );
 }
@@ -164,6 +173,7 @@ export default function PipelineSettingsPanel({
     }
 
     if (group.includesLlm) {
+      const isOllama = String(llmConfigState.llm_provider || 'none') === 'ollama';
       for (const section of LLM_CONFIG_SECTIONS) {
         panels.push({
           id: section.id,
@@ -174,6 +184,17 @@ export default function PipelineSettingsPanel({
               values={llmConfigState}
               disabled={fieldsDisabled}
               onChange={(key, value) => setLlmField(key, value)}
+              fieldFilter={(key) => isLlmFieldVisible(key, llmConfigState)}
+              extra={
+                section.id === 'llm_provider' && isOllama ? (
+                  <OllamaModelPicker
+                    model={String(llmConfigState.llm_model || '')}
+                    baseUrl={String(llmConfigState.llm_base_url || 'http://127.0.0.1:11434')}
+                    disabled={fieldsDisabled}
+                    onModelChange={(v) => setLlmField('llm_model', v)}
+                  />
+                ) : null
+              }
             />
           ),
         });

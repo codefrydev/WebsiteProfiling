@@ -81,6 +81,7 @@ export interface PipelineContextValue {
   dismissLegacyBanner: () => void;
   loadConfig: () => Promise<void>;
   saveSettings: () => Promise<boolean>;
+  saveLlmModel: (model: string) => Promise<boolean>;
   run: () => Promise<void>;
   continueInBackground: () => void;
   openPipelinePage: (tab?: PipelineTab) => void;
@@ -434,6 +435,32 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     }
   }, [configState, unknownKeys, configPath, buildLlmPayload]);
 
+  const saveLlmModel = useCallback(
+    async (model: string): Promise<boolean> => {
+      const trimmed = model.trim();
+      if (!trimmed) return false;
+      setLlmConfigState((prev) => ({ ...prev, llm_model: trimmed }));
+      setSaving(true);
+      try {
+        const res = await fetch(apiUrl('/llm-config'), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            state: { ...buildLlmPayload(), llm_model: trimmed },
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || res.statusText);
+        return true;
+      } catch {
+        return false;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [buildLlmPayload],
+  );
+
   const run = useCallback(async () => {
     const command = effectiveCommand || null;
     let browserStatus = browserCrawlStatus;
@@ -544,6 +571,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       dismissLegacyBanner: () => setLegacyBannerDismissed(true),
       loadConfig,
       saveSettings,
+      saveLlmModel,
       run,
       continueInBackground,
       openPipelinePage,
@@ -577,6 +605,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       resetConfig,
       loadConfig,
       saveSettings,
+      saveLlmModel,
       run,
       continueInBackground,
       openPipelinePage,

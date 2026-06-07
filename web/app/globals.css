@@ -1,9 +1,7 @@
 @import "tailwindcss";
 
-@source "../src/**/*.jsx";
-@source "../src/**/*.js";
-@source "./**/*.jsx";
-@source "./**/*.js";
+@source "../src/**/*.{js,jsx,ts,tsx}";
+@source "./**/*.{js,jsx,ts,tsx}";
 
 /* Class-based dark mode (html.dark) — toggled by ThemeProvider + inline FOUC script */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -45,6 +43,12 @@
   /* Links / interactive blue (readable on light surfaces) */
   --app-link: #1d4ed8;
   --app-link-soft: #1e3a8a;
+
+  --chat-bg: var(--app-bg);
+  --chat-surface: var(--app-bg-elevated);
+  --chat-surface-hover: var(--app-bg-muted);
+  --chat-glow: rgba(66, 97, 255, 0.08);
+  --chat-glow-secondary: rgba(138, 79, 255, 0.04);
 }
 
 html.dark {
@@ -81,6 +85,12 @@ html.dark {
   --shadow: var(--shadow-elevated);
   --app-link: #60a5fa;
   --app-link-soft: #93c5fd;
+
+  --chat-bg: #131314;
+  --chat-surface: #1e1f20;
+  --chat-surface-hover: #28292a;
+  --chat-glow: rgba(66, 97, 255, 0.12);
+  --chat-glow-secondary: rgba(138, 79, 255, 0.06);
 }
 
 @theme {
@@ -231,6 +241,233 @@ code {
   line-height: 135%;
   padding: 4px 8px;
   background: var(--code-bg);
+}
+
+/* Chat shell layout — explicit breakpoints so sidebar participates in flex on desktop */
+.chat-sidebar-rail {
+  position: relative;
+  z-index: 40;
+  display: flex;
+  height: 100%;
+  width: 3.5rem;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  border-right: 1px solid color-mix(in srgb, var(--app-border-muted) 70%, transparent);
+  background: var(--chat-surface);
+  padding: 0.75rem 0;
+}
+
+.chat-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  border: 0;
+  background: var(--app-overlay);
+}
+
+.chat-sidebar-panel {
+  z-index: 40;
+  display: flex;
+  height: 100%;
+  width: 17.5rem;
+  flex-shrink: 0;
+  flex-direction: column;
+  border-right: 1px solid color-mix(in srgb, var(--app-border-muted) 70%, transparent);
+  background: var(--chat-surface);
+}
+
+@media (max-width: 767px) {
+  .chat-sidebar-backdrop {
+    display: block;
+  }
+
+  .chat-sidebar-panel {
+    position: fixed;
+    inset: 0 auto 0 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .chat-sidebar-backdrop {
+    display: none;
+  }
+
+  .chat-sidebar-panel {
+    position: relative;
+  }
+}
+
+/* Chat shell — explicit height chain (flex-1 alone was not filling the viewport) */
+.chat-shell-main {
+  position: relative;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-main-panel {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-context-bar {
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+/* Grid pins composer to the bottom; messages scroll in the top row */
+.chat-conversation {
+  display: grid;
+  min-height: 0;
+  flex: 1 1 0%;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.chat-messages-scroll {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.chat-composer-dock {
+  border-top: 1px solid color-mix(in srgb, var(--app-border-muted) 55%, transparent);
+  background: color-mix(in srgb, var(--chat-bg) 96%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+/* Chat page ambient glow */
+.chat-glow {
+  background: radial-gradient(
+    ellipse 90% 60% at 50% 42%,
+    var(--chat-glow) 0%,
+    var(--chat-glow-secondary) 40%,
+    transparent 72%
+  );
+}
+
+.chat-hero-input {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+.chat-hero-input:focus-within {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 8px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* Chat markdown prose */
+.chat-prose {
+  color: var(--app-text);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.chat-prose-h1,
+.chat-prose-h2,
+.chat-prose-h3 {
+  color: var(--app-text-heading);
+  font-weight: 600;
+  margin: 1rem 0 0.5rem;
+}
+
+.chat-prose-h1 { font-size: 1.125rem; }
+.chat-prose-h2 { font-size: 1rem; }
+.chat-prose-h3 {
+  font-size: 0.9375rem;
+  margin-top: 1.25rem;
+  padding-top: 0.25rem;
+  color: var(--app-text-heading);
+}
+
+.chat-prose > h3:first-child,
+.chat-prose > h4:first-child,
+.chat-prose > h5:first-child {
+  margin-top: 0;
+}
+
+.chat-prose-p {
+  margin: 0.5rem 0;
+}
+
+.chat-prose-ul,
+.chat-prose-ol {
+  margin: 0.5rem 0;
+  padding-left: 1.25rem;
+}
+
+.chat-prose-li {
+  margin: 0.25rem 0;
+}
+
+.chat-prose-a {
+  color: var(--app-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
+}
+
+.chat-prose-blockquote {
+  margin: 0.75rem 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--app-border);
+  color: var(--app-text-subtle);
+}
+
+.chat-prose-hr {
+  margin: 1rem 0;
+  border: 0;
+  border-top: 1px solid var(--app-border-muted);
+}
+
+.chat-prose-table-wrap {
+  margin: 0.75rem 0;
+  overflow-x: auto;
+}
+
+.chat-prose-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.chat-prose-th,
+.chat-prose-td {
+  border: 1px solid var(--app-border-muted);
+  padding: 0.375rem 0.5rem;
+  text-align: left;
+}
+
+.chat-prose-th {
+  background: var(--app-bg-muted);
+  font-weight: 600;
+}
+
+.chat-prose-pre {
+  margin: 0.75rem 0;
+}
+
+.chat-inline-code {
+  border-radius: 0.25rem;
+  background: var(--code-bg);
+  padding: 0.125rem 0.375rem;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 0.8125rem;
 }
 
 /* Focus visibility for keyboard users */

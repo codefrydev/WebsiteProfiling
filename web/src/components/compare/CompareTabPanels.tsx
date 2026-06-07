@@ -12,30 +12,10 @@ const ComparePerformanceCharts = dynamic(
   { ssr: false },
 );
 import type { IssueDeltaRow } from '@/lib/reportCompareExtras';
-import { TrendingDown, TrendingUp, Minus } from 'lucide-react';
+import { ScoreDelta } from '@/components/charts/ScoreDelta';
 import type { CompareMetricRow, ReportCompareSummary } from '@/lib/reportCompare';
 import { Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, Badge } from '@/components';
 import { CompareMetricCard } from './CompareDeltaBadge';
-
-function ScoreDelta({ delta }: { delta: number | null }) {
-  if (delta == null || delta === 0) {
-    return (
-      <span className="inline-flex items-center gap-0.5 text-muted-foreground text-xs">
-        <Minus className="h-3 w-3" /> 0
-      </span>
-    );
-  }
-  const up = delta > 0;
-  const Icon = up ? TrendingUp : TrendingDown;
-  const color = up ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400';
-  return (
-    <span className={`inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums ${color}`}>
-      <Icon className="h-3 w-3" />
-      {up ? '+' : ''}
-      {delta}
-    </span>
-  );
-}
 
 function matchesQuery(text: string, q: string): boolean {
   return text.toLowerCase().includes(q);
