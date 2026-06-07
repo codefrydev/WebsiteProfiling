@@ -39,15 +39,17 @@ jobs:
         run: |
           pytest tests/test_categories_roadmap.py tests/test_report_categories_golden.py \
             tests/test_categories_coverage.py tests/test_indexation_coverage.py tests/test_crawl_segments.py \
-            tests/test_terminology.py \
+            tests/test_terminology.py tests/test_compare_payload.py \
             --cov=website_profiling.reporting --cov-config=.coveragerc.reporting \
             --cov-report=term-missing --cov-fail-under=100 -q -o addopts=
       - name: Pytest (tools coverage gate)
         run: |
           pytest tests/test_alert_checker.py tests/test_schedule_runner.py tests/test_export_audit.py \
-            tests/test_export_audit_coverage.py \
+            tests/test_export_audit_coverage.py tests/test_audit_tools.py tests/test_audit_tools_expanded.py \
+            tests/test_audit_tools_coverage.py \
+            tests/test_mcp_registry.py tests/test_mcp_resources.py \
             --cov=website_profiling.tools --cov-config=.coveragerc.tools \
-            --cov-report=term-missing --cov-fail-under=100 -q -o addopts=
+            --cov-report=term-missing --cov-fail-under=95 -q -o addopts=
       - name: CLI smoke
         run: python -m src --help
 

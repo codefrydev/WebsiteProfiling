@@ -10,6 +10,8 @@ import psycopg
 from psycopg import Connection
 from psycopg.types.json import Json
 
+from ..text_sanitize import strip_surrogates
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
@@ -59,8 +61,10 @@ def _sanitize_for_json(obj: Any) -> Any:
     """Recursively replace NaN/Inf and numpy types so JSON is valid."""
     if obj is None:
         return None
-    if isinstance(obj, (bool, str)):
+    if isinstance(obj, bool):
         return obj
+    if isinstance(obj, str):
+        return strip_surrogates(obj)
     if isinstance(obj, int):
         return int(obj)
     if isinstance(obj, float):

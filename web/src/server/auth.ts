@@ -80,6 +80,20 @@ export function requireApiAuth(request: NextRequest): NextResponse | null {
   return null;
 }
 
+/** Chat is read-only query — allow client-readonly; block unauthenticated viewer. */
+export function requireApiAuthForChat(request: NextRequest): NextResponse | null {
+  if (!authEnabled()) return null;
+  const cookie = request.cookies.get(COOKIE_NAME)?.value;
+  const session = verifySessionToken(cookie);
+  if (!session) {
+    return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+  }
+  if (session.role === 'viewer') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+  return null;
+}
+
 export function requireAdmin(request: NextRequest): NextResponse | null {
   const base = requireApiAuth(request);
   if (base) return base;

@@ -2,6 +2,23 @@ declare module '*.css';
 
 declare module '@/patchConsole';
 
+declare module 'react-syntax-highlighter' {
+  import type { ComponentType } from 'react';
+
+  export interface SyntaxHighlighterProps {
+    language?: string;
+    style?: Record<string, Record<string, string>>;
+    customStyle?: Record<string, string | number>;
+    children?: string;
+  }
+
+  export const Prism: ComponentType<SyntaxHighlighterProps>;
+}
+
+declare module 'react-syntax-highlighter/dist/esm/styles/prism' {
+  export const oneDark: Record<string, Record<string, string>>;
+}
+
 declare module 'react-chartjs-2' {
   import type { ChartProps } from 'react-chartjs-2/dist/types';
   import type { ChartData, ChartOptions, DefaultDataPoint } from 'chart.js';

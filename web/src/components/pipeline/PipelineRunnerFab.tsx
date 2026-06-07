@@ -1,6 +1,6 @@
 'use client';
 
-import { Loader2, Maximize2, Terminal } from 'lucide-react';
+import { Loader2, Maximize2, Square, Terminal } from 'lucide-react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { strings } from '@/lib/strings';
 import { usePipeline } from '@/context/PipelineContext';
@@ -16,10 +16,11 @@ export default function PipelineRunnerFab() {
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { busy, status, log, backgroundMode, openPipelinePage } = usePipeline();
+  const { busy, status, log, backgroundMode, stopping, cancelJob, openPipelinePage } = usePipeline();
   const { loading: sessionLoading, canMutate } = useSession();
 
   const onPipelinePage = pathname === '/pipeline' || pathname.startsWith('/pipeline/');
+  const isHomePage = pathname === '/home';
   const showDock = backgroundMode && (busy || Boolean(status) || Boolean(log));
 
   const goToPipeline = () => {
@@ -31,7 +32,7 @@ export default function PipelineRunnerFab() {
     openPipelinePage('run');
   };
 
-  if (onPipelinePage || sessionLoading || !canMutate) {
+  if (!isHomePage || onPipelinePage || sessionLoading || !canMutate) {
     return null;
   }
 
@@ -65,6 +66,20 @@ export default function PipelineRunnerFab() {
                       : 'Idle'}
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => void cancelJob()}
+            disabled={!busy || stopping}
+            className="shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-brand-700 hover:text-foreground disabled:opacity-40"
+            aria-label={s.stopJobAria}
+            title={stopping ? s.stoppingJob : s.stopJob}
+          >
+            {stopping ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Square className="h-4 w-4 fill-current" aria-hidden />
+            )}
+          </button>
           <button
             type="button"
             onClick={() => router.push('/pipeline')}

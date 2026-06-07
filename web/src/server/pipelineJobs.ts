@@ -1,4 +1,4 @@
-import { spawn } from 'child_process';
+import { spawn, type ChildProcess } from 'child_process';
 import path from 'path';
 import fs from 'fs';
 import { randomUUID } from 'crypto';
@@ -6,13 +6,14 @@ import { getPipelineSpawnEnv } from '@/server/pipelineSpawnEnv';
 import { formatPythonSpawnError, resolvePythonExecutable } from '@/server/resolvePython';
 import {
   appendPipelineJobLog,
+  cancelPipelineJobInDb,
   finishPipelineJob,
   getPipelineJobFromDb,
   insertPipelineJob,
   isAnyPipelineJobRunning,
   reconcileStaleRunningJobs,
 } from '@/server/pipelineJobsDb';
-import type { PipelineJob, PipelineJobStore } from '@/types/api';
+import type { PipelineJob, PipelineJobEntry, PipelineJobStore } from '@/types/api';
 
 function isDbJobsEnabled(): boolean {
   return Boolean((process.env.DATABASE_URL || '').trim());
@@ -44,11 +45,39 @@ const ALLOWED_COMMANDS = new Set<string | null | undefined>([
 function getStore(): PipelineJobStore {
   if (!globalThis.__websiteProfilingPipelineJobs) {
     globalThis.__websiteProfilingPipelineJobs = {
-      jobs: new Map<string, PipelineJob>(),
+      jobs: new Map<string, PipelineJobEntry>(),
       running: false,
     };
   }
   return globalThis.__websiteProfilingPipelineJobs;
+}
+
+function getProcessMap(): Map<string, ChildProcess> {
+  if (!globalThis.__websiteProfilingPipelineProcesses) {
+    globalThis.__websiteProfilingPipelineProcesses = new Map<string, ChildProcess>();
+  }
+  return globalThis.__websiteProfilingPipelineProcesses;
+}
+
+const CANCELLED_MESSAGE = 'Cancelled by user';
+
+function markJobFinished(
+  id: string,
+  entry: PipelineJobEntry,
+  status: 'success' | 'error',
+  exitCode: number | null,
+  error?: string,
+): void {
+  if (entry.finished) return;
+  entry.finished = true;
+  entry.status = status;
+  entry.exitCode = exitCode;
+  if (error) entry.error = error;
+  getStore().running = false;
+  getProcessMap().delete(id);
+  if (isDbJobsEnabled()) {
+    void finishPipelineJob(id, status, exitCode, error).catch(() => {});
+  }
 }
 
 function sanitizePython(py: string | undefined | null, repoRoot: string): string {
@@ -140,7 +169,7 @@ export function startPipelineJob(
   }
 
   const id = randomUUID();
-  const entry: PipelineJob = {
+  const entry: PipelineJobEntry = {
     status: 'running',
     exitCode: null,
     log: '',
@@ -164,6 +193,7 @@ export function startPipelineJob(
     env: getPipelineSpawnEnv(repoRoot, options.propertyId ?? null),
     shell: false,
   });
+  getProcessMap().set(id, proc);
 
   const append = (chunk: Buffer | string): void => {
     const text = chunk.toString();
@@ -180,28 +210,26 @@ export function startPipelineJob(
   proc.stderr?.on('data', append);
 
   proc.on('error', (err: Error) => {
-    entry.status = 'error';
-    entry.error = formatPythonSpawnError(err, pythonExe, repoRoot);
-    entry.exitCode = -1;
-    store.running = false;
-    if (isDbJobsEnabled()) {
-      void finishPipelineJob(id, 'error', -1, entry.error).catch(() => {});
-    }
+    if (entry.finished) return;
+    const message = formatPythonSpawnError(err, pythonExe, repoRoot);
+    markJobFinished(id, entry, 'error', -1, message);
   });
 
   proc.on('close', (code: number | null) => {
-    entry.exitCode = code;
-    entry.status = code === 0 ? 'success' : 'error';
-    if (code !== 0 && !entry.error) {
+    if (entry.finished) return;
+    if (entry.cancelled) {
+      markJobFinished(id, entry, 'error', code ?? -1, CANCELLED_MESSAGE);
+      return;
+    }
+    const status = code === 0 ? 'success' : 'error';
+    let error: string | undefined;
+    if (code !== 0) {
       const tail = entry.log.trim().slice(-500);
-      entry.error = tail
+      error = tail
         ? `Process exited with code ${code ?? 'unknown'}`
         : `Process exited with code ${code ?? 'unknown'} (no output captured)`;
     }
-    store.running = false;
-    if (isDbJobsEnabled()) {
-      void finishPipelineJob(id, entry.status, code, entry.error).catch(() => {});
-    }
+    markJobFinished(id, entry, status, code, error);
   });
 
   return id;
@@ -220,4 +248,68 @@ export async function getJob(id: string): Promise<PipelineJob | null> {
 /** Sync read from in-memory cache only (legacy). */
 export function getJobSync(id: string): PipelineJob | null {
   return getStore().jobs.get(id) ?? null;
+}
+
+export interface CancelPipelineJobResult {
+  ok: boolean;
+  status: PipelineJob['status'];
+  error?: string;
+}
+
+/**
+ * Stop a running pipeline job. Kills the child process when this server instance
+ * spawned it; otherwise marks the DB row cancelled (best effort after restart).
+ */
+export async function cancelPipelineJob(id: string): Promise<CancelPipelineJobResult> {
+  const trimmed = id.trim();
+  if (!trimmed) {
+    return { ok: false, status: 'error', error: 'Job id is required' };
+  }
+
+  const store = getStore();
+  const entry = store.jobs.get(trimmed);
+  const proc = getProcessMap().get(trimmed);
+
+  if (entry?.status === 'running' && proc && !proc.killed) {
+    entry.cancelled = true;
+    entry.error = CANCELLED_MESSAGE;
+    const cancelLine = `\n[Cancelled] ${CANCELLED_MESSAGE}\n`;
+    entry.log += cancelLine;
+    if (isDbJobsEnabled()) {
+      void appendPipelineJobLog(trimmed, cancelLine).catch(() => {});
+    }
+    try {
+      proc.kill();
+    } catch {
+      /* process may already be gone */
+    }
+    return { ok: true, status: 'running' };
+  }
+
+  if (entry?.status === 'running') {
+    entry.cancelled = true;
+    markJobFinished(trimmed, entry, 'error', -1, CANCELLED_MESSAGE);
+    return { ok: true, status: 'error', error: CANCELLED_MESSAGE };
+  }
+
+  if (isDbJobsEnabled()) {
+    const fromDb = await getPipelineJobFromDb(trimmed);
+    if (!fromDb) {
+      return { ok: false, status: 'error', error: 'Job not found' };
+    }
+    if (fromDb.status !== 'running') {
+      return { ok: false, status: fromDb.status, error: 'Job is not running' };
+    }
+    const updated = await cancelPipelineJobInDb(trimmed, CANCELLED_MESSAGE);
+    if (!updated) {
+      return { ok: false, status: fromDb.status, error: 'Job is not running' };
+    }
+    store.running = false;
+    return { ok: true, status: 'error', error: CANCELLED_MESSAGE };
+  }
+
+  if (!entry) {
+    return { ok: false, status: 'error', error: 'Job not found' };
+  }
+  return { ok: false, status: entry.status, error: 'Job is not running' };
 }

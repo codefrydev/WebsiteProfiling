@@ -19,12 +19,14 @@
 **Run / APIs**
 
 - Run audit (CLI): `python -m src` — reads config from PostgreSQL (`pipeline_config`); shadow `DATA_DIR/pipeline-config.txt` if table empty. CLI override: `python -m src --config path`
-- Optional step: `crawl` | `report` | `plot` | `lighthouse` | `keywords` | `warnings` | `enrich` | `google`
+- Optional step: `crawl` | `report` | `plot` | `lighthouse` | `keywords` | `warnings` | `enrich` | `google` | `chat`
 - **`preserve_crawl_history`** (default true): append crawls; `false` truncates crawl tables but restores `report_payload`, Lighthouse, `google_data`, `keyword_data`, `keyword_history`, `keyword_suggest_cache`, and `crawl_runs`
 - **`DATABASE_URL`** env: PostgreSQL connection string (required). **`DATA_DIR`**: secrets + shadow config (Docker: `/data`).
 - **Pipeline data** (crawl, edges, nodes, report payload, Lighthouse, keywords, warnings) is stored in **PostgreSQL only** — no JSON/CSV/HTML exports from the main pipeline.
 - **Pool tuning:** `DB_POOL_MIN` / `DB_POOL_MAX` (Python), `PGPOOL_MAX` (Node). Bulk crawl writes via `executemany`; optional **`crawl_stream_to_db`** streams rows during fetch.
-- **`web/`:** `/api/report/*` (PostgreSQL); `/api/run` spawns Python (localhost only); `/api/crawl/browser-status` GET (localhost, Playwright/Chromium preflight); `/api/pipeline-config` GET/PUT; `/api/llm-config` GET/PUT (AI only); `/api/properties/{id}/google/links/import` POST (GSC Links CSV); `PipelineRunnerFab` saves pipeline + LLM state before each run
+- **`web/`:** `/api/report/*` (PostgreSQL); `/api/run` spawns Python (localhost only); `/api/crawl/browser-status` GET (localhost, Playwright/Chromium preflight); `/api/pipeline-config` GET/PUT; `/api/llm-config` GET/PUT (AI only); `/api/chat` POST (SSE agent); `/api/chat/sessions` GET/POST; `/api/properties/{id}/google/links/import` POST (GSC Links CSV); `PipelineRunnerFab` saves pipeline + LLM state before each run
+- **MCP:** `python -m website_profiling.mcp` (stdio, **121 read-only audit tools** + MCP resources). See `docs/MCP.md`. Requires `pip install -r requirements-mcp.txt`.
+- **AI Chat UI:** `/chat` — property-scoped chat with saved sessions (`chat_sessions`, `chat_messages` tables, migration `012_chat_sessions`).
 - **Job store:** in-memory on `globalThis` in `web/src/server/pipelineJobs.ts` — job status/log is lost on server restart (single-process dev/Docker only).
 - **Docker:** `Dockerfile` + `docker-compose.yml` (postgres + web); **`docker-compose.pull.yml`** for pre-built images (`WEB_IMAGE`); **`LIGHTHOUSE_CHROME_FLAGS`**
 
@@ -36,7 +38,8 @@
 | Report | `reporting/builder.py`, `reporting/categories.py` |
 | DB schema | `alembic/versions/` |
 | Local analysis | `analysis/local.py`, `requirements.txt` |
-| AI insights (LLM) | `llm/enrich.py`, `llm_config.py`, `requirements-llm.txt` |
+| AI insights (LLM) | `llm/enrich.py`, `llm/agent.py`, `llm_config.py`, `requirements-llm.txt` |
+| Audit query tools (MCP + chat) | `tools/audit_tools/`, `mcp/server.py`, `commands/chat_cmd.py` |
 | Config / CLI | `config.py` (`load_config`, `load_config_from_db`), `cli.py`, `input.txt.example` |
 | UI pipeline schema | `web/src/lib/pipelineConfigSchema.ts` |
 | UI LLM schema | `web/src/lib/llmConfigSchema.ts` |

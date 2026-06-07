@@ -9,6 +9,16 @@ Implementation is split across ``db.*_store`` modules; this module re-exports th
 from __future__ import annotations
 
 from ._common import _parse_json_field, _parse_row_json, _row_field, _sanitize_for_json
+from .chat_store import (
+    append_message,
+    create_session,
+    delete_session,
+    get_messages,
+    get_session,
+    list_sessions,
+    touch_session,
+    update_session_title,
+)
 from .config_store import read_llm_config, read_pipeline_config, write_llm_config, write_pipeline_config
 from .crawl_store import (
     create_crawl_run,
@@ -44,16 +54,22 @@ __all__ = [
     "_parse_row_json",
     "_row_field",
     "_sanitize_for_json",
+    "append_message",
     "backup_db_if_exists",
     "close_db_pool",
     "create_crawl_run",
+    "create_session",
+    "delete_session",
     "db_session",
     "ensure_crawl_tables_cleared",
     "get_crawl_run_info",
     "get_data_dir",
+    "get_messages",
+    "get_session",
     "get_database_url",
     "get_latest_crawl_run_id",
     "init_schema",
+    "list_sessions",
     "read_crawl",
     "read_edges",
     "read_historical_data",
@@ -70,6 +86,8 @@ __all__ = [
     "read_pipeline_config",
     "read_report_payload",
     "restore_historical_data",
+    "touch_session",
+    "update_session_title",
     "write_crawl",
     "write_crawl_batch",
     "write_edges",

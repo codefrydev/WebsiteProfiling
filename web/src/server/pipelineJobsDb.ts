@@ -40,6 +40,25 @@ export async function appendPipelineJobLog(id: string, chunk: string): Promise<v
   });
 }
 
+export async function cancelPipelineJobInDb(
+  id: string,
+  message = 'Cancelled by user',
+): Promise<boolean> {
+  return withDb(async (client) => {
+    const cur = await client.query<{ id: string }>(
+      `UPDATE pipeline_jobs
+       SET status = 'error',
+           error_text = $2,
+           exit_code = -1,
+           finished_at = now()
+       WHERE id = $1::uuid AND status = 'running'
+       RETURNING id::text`,
+      [id, message],
+    );
+    return (cur.rowCount ?? 0) > 0;
+  });
+}
+
 export async function finishPipelineJob(
   id: string,
   status: 'success' | 'error',

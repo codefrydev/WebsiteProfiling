@@ -4,7 +4,7 @@ import { ChevronRight, Lightbulb } from 'lucide-react';
 import type { ReportCategory, ReportPayload } from '@/types';
 import { strings, format } from '@/lib/strings';
 import { categoryDisplayName } from '@/lib/categoryDisplayNames';
-import { scoreBandColor } from '@/utils/chartPalette';
+import { CategoryScoreGauge } from '@/components/charts/CategoryScoreGauge';
 import { Card } from '@/components';
 import { OverviewTabPanel } from './OverviewTabPanel';
 
@@ -34,66 +34,14 @@ export function OverviewHealthTab({ data, categoriesFiltered, recommendationsFil
         {data.categories && data.categories.length > 0 ? (
           categoriesFiltered.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {categoriesFiltered.map((cat, i) => {
-                const score = cat.score != null ? Math.min(100, Math.max(0, cat.score)) : 0;
-                const label = score >= 80 ? vo.scoreGood : score >= 50 ? vo.scoreNeeds : vo.scoreCritical;
-                const labelCls =
-                  score >= 80
-                    ? 'text-green-700 dark:text-green-400'
-                    : score >= 50
-                      ? 'text-yellow-700 dark:text-yellow-400'
-                      : 'text-red-600 dark:text-red-500';
-                const color = scoreBandColor(cat.score);
-                const isCritical = score < 50;
-                return (
-                  <Card key={i} className="flex items-center gap-6">
-                    <div
-                      className="w-20 h-20 relative shrink-0"
-                      aria-label={format(vo.categoryScoreAria, {
-                        name: cat.name || cat.id,
-                        band: label,
-                        score: cat.score != null ? cat.score : sj.na,
-                      })}
-                    >
-                      <svg viewBox="0 0 36 36" className="w-20 h-20 -rotate-90">
-                        <path
-                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                          fill="none"
-                          stroke="#1F2937"
-                          strokeWidth="3"
-                        />
-                        <path
-                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                          fill="none"
-                          stroke={color}
-                          strokeWidth="3"
-                          strokeDasharray={`${score}, 100`}
-                          strokeLinecap="round"
-                        />
-                        {isCritical && (
-                          <path
-                            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                            fill="none"
-                            stroke={color}
-                            strokeWidth="1.5"
-                            strokeDasharray="3 3"
-                            opacity="0.8"
-                          />
-                        )}
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center text-xl font-bold text-bright">
-                        {cat.score != null ? cat.score : sj.na}
-                      </div>
-                    </div>
-                    <div className="min-w-0 break-words pr-1">
-                      <h3 className="text-lg font-bold text-foreground">
-                        {categoryDisplayName(String(cat.name ?? cat.id ?? ''))}
-                      </h3>
-                      <p className={`text-sm mt-1 ${labelCls}`}>{label}</p>
-                    </div>
-                  </Card>
-                );
-              })}
+              {categoriesFiltered.map((cat, i) => (
+                <Card key={i} className="p-4">
+                  <CategoryScoreGauge
+                    name={categoryDisplayName(String(cat.name ?? cat.id ?? ''))}
+                    score={cat.score}
+                  />
+                </Card>
+              ))}
             </div>
           ) : (
             <p className="text-muted-foreground mb-8">{vo.noCategorySearch}</p>

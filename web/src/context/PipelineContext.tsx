@@ -60,6 +60,8 @@ export interface PipelineContextValue {
   pythonExe: string;
   repoRoot: string;
   busy: boolean;
+  stopping: boolean;
+  activeJobId: string;
   log: string;
   status: PipelineJobStatus | '';
   backgroundMode: boolean;
@@ -81,7 +83,9 @@ export interface PipelineContextValue {
   dismissLegacyBanner: () => void;
   loadConfig: () => Promise<void>;
   saveSettings: () => Promise<boolean>;
+  saveLlmModel: (model: string) => Promise<boolean>;
   run: () => Promise<void>;
+  cancelJob: () => Promise<boolean>;
   continueInBackground: () => void;
   openPipelinePage: (tab?: PipelineTab) => void;
 }
@@ -119,6 +123,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
   const [pythonExe, setPythonExe] = useState(() => loadPipelineRunnerPrefs().pythonExe);
   const [repoRoot, setRepoRoot] = useState(() => loadPipelineRunnerPrefs().repoRoot);
   const [busy, setBusy] = useState(false);
+  const [stopping, setStopping] = useState(false);
   const [log, setLog] = useState('');
   const [status, setStatus] = useState<PipelineJobStatus | ''>('');
   const [backgroundMode, setBackgroundMode] = useState(false);
@@ -127,6 +132,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
   const [browserCrawlChecking, setBrowserCrawlChecking] = useState(false);
   const [crawlPresetId, setCrawlPresetId] = useState<CrawlPresetId | ''>('');
   const pollStopRef = useRef<(() => void) | null>(null);
+  const activeJobIdRef = useRef('');
 
   const refreshBrowserCrawlStatus = useCallback(async () => {
     setBrowserCrawlChecking(true);
@@ -181,7 +187,9 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     ) => {
       if (!jobId) return;
       stopPoll();
+      activeJobIdRef.current = jobId;
       setBusy(true);
+      setStopping(false);
       setLog('');
       setStatus('running');
       setBackgroundMode(false);
@@ -205,7 +213,9 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         setStatus(job.status);
         if (job.status === 'success' || job.status === 'error') {
           stopPoll();
+          activeJobIdRef.current = '';
           setBusy(false);
+          setStopping(false);
           if (job.status === 'error') {
             logPipelineFailure('Job finished with error', {
               jobId,
@@ -434,6 +444,32 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     }
   }, [configState, unknownKeys, configPath, buildLlmPayload]);
 
+  const saveLlmModel = useCallback(
+    async (model: string): Promise<boolean> => {
+      const trimmed = model.trim();
+      if (!trimmed) return false;
+      setLlmConfigState((prev) => ({ ...prev, llm_model: trimmed }));
+      setSaving(true);
+      try {
+        const res = await fetch(apiUrl('/llm-config'), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            state: { ...buildLlmPayload(), llm_model: trimmed },
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || res.statusText);
+        return true;
+      } catch {
+        return false;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [buildLlmPayload],
+  );
+
   const run = useCallback(async () => {
     const command = effectiveCommand || null;
     let browserStatus = browserCrawlStatus;
@@ -488,6 +524,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       });
       setStatus('error');
       setLog(message);
+      activeJobIdRef.current = '';
       setBusy(false);
     }
   }, [
@@ -507,6 +544,40 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     router.push(readPipelineReturnPath());
   }, [router]);
 
+  const cancelJob = useCallback(async (): Promise<boolean> => {
+    const jobId = activeJobIdRef.current;
+    if (!jobId || stopping) return false;
+    setStopping(true);
+    try {
+      const res = await fetch(apiUrl(`/jobs/${encodeURIComponent(jobId)}/cancel`), {
+        method: 'POST',
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        const message = typeof data.error === 'string' ? data.error : res.statusText;
+        logPipelineFailure('Cancel job failed', { jobId, message, status: res.status });
+        setStatus('error');
+        setLog(format(s.stopJobFailed, { message }));
+        stopPoll();
+        activeJobIdRef.current = '';
+        setBusy(false);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      logPipelineFailure('Cancel job failed', { jobId, message, error: e });
+      setStatus('error');
+      setLog(format(s.stopJobFailed, { message }));
+      stopPoll();
+      activeJobIdRef.current = '';
+      setBusy(false);
+      return false;
+    } finally {
+      setStopping(false);
+    }
+  }, [stopPoll, stopping]);
+
   const value = useMemo<PipelineContextValue>(
     () => ({
       presetId,
@@ -523,6 +594,8 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       pythonExe,
       repoRoot,
       busy,
+      stopping,
+      activeJobId: activeJobIdRef.current,
       log,
       status,
       backgroundMode,
@@ -544,7 +617,9 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       dismissLegacyBanner: () => setLegacyBannerDismissed(true),
       loadConfig,
       saveSettings,
+      saveLlmModel,
       run,
+      cancelJob,
       continueInBackground,
       openPipelinePage,
     }),
@@ -563,6 +638,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       pythonExe,
       repoRoot,
       busy,
+      stopping,
       log,
       status,
       backgroundMode,
@@ -577,7 +653,9 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       resetConfig,
       loadConfig,
       saveSettings,
+      saveLlmModel,
       run,
+      cancelJob,
       continueInBackground,
       openPipelinePage,
     ],

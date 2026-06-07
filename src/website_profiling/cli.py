@@ -4,6 +4,7 @@ CLI: read config file and run crawl, report, or plot.
 from __future__ import annotations
 
 from .commands import (
+    chat_cmd,
     config_resolve,
     enrich_cmd,
     google_cmd,
@@ -40,6 +41,8 @@ def main() -> None:
         page_live_cmd.run(cfg, cwd, args)
     elif args.command == "page-coach":
         page_coach_cmd.run(cfg, cwd, args)
+    elif args.command == "chat":
+        chat_cmd.run(cfg, args)
     else:
         pipeline_cmd.run(cfg, args)
 

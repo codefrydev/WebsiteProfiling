@@ -3,10 +3,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Loader2, Save, X } from 'lucide-react';
 import { strings, format } from '@/lib/strings';
-import type { IntegrationToast } from '@/types/api';
+import type { IntegrationToast, PipelineUnknownKey } from '@/types/api';
 import { crawlRenderModeUsesBrowser } from '@/lib/browserCrawlStatus';
 import { PIPELINE_CONFIG_SECTIONS, isPipelineFieldVisible } from '@/lib/pipelineConfigSchema';
-import { LLM_CONFIG_SECTIONS } from '@/lib/llmConfigSchema';
+import { LLM_CONFIG_SECTIONS, isLlmFieldVisible } from '@/lib/llmConfigSchema';
+import OllamaModelPicker from '@/components/pipeline/OllamaModelPicker';
 import { usePipeline } from '@/context/PipelineContext';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import Button from '@/components/Button';
@@ -15,6 +16,7 @@ import ConfigField from './ConfigField';
 import PipelineSettingsSectionTabs from './PipelineSettingsSectionTabs';
 import {
   PIPELINE_SETTINGS_GROUPS,
+  type PipelineSettingsGroup,
   type PipelineSettingsGroupId,
 } from './pipelineSettingsGroups';
 
@@ -34,25 +36,167 @@ function ConfigSectionFields({
   values,
   disabled,
   onChange,
+  fieldFilter,
+  extra,
 }: {
   section: ConfigSection | LlmSection;
   values: Record<string, string | boolean | undefined>;
   disabled: boolean;
   onChange: (key: string, value: string | boolean) => void;
+  fieldFilter?: (key: string) => boolean;
+  extra?: ReactNode;
 }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {section.fields.filter((f) => isPipelineFieldVisible(f, values)).map((f) => (
-        <ConfigField
-          key={f.key}
-          field={f}
-          value={values[f.key]}
-          disabled={disabled}
-          onChange={(v) => onChange(f.key, v)}
-        />
-      ))}
+      {section.fields
+        .filter((f) => isPipelineFieldVisible(f, values))
+        .filter((f) => (fieldFilter ? fieldFilter(f.key) : true))
+        .map((f) => (
+          <ConfigField
+            key={f.key}
+            field={f}
+            value={values[f.key]}
+            disabled={disabled}
+            onChange={(v) => onChange(f.key, v)}
+          />
+        ))}
+      {extra}
     </div>
   );
+}
+
+function RunnerSettingsFields({
+  customCommand,
+  pythonExe,
+  repoRoot,
+  unknownKeys,
+  disabled,
+  onCustomCommandChange,
+  onPythonExeChange,
+  onRepoRootChange,
+  onReset,
+}: {
+  customCommand: string;
+  pythonExe: string;
+  repoRoot: string;
+  unknownKeys: PipelineUnknownKey[];
+  disabled: boolean;
+  onCustomCommandChange: (value: string) => void;
+  onPythonExeChange: (value: string) => void;
+  onRepoRootChange: (value: string) => void;
+  onReset: () => void;
+}) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <label
+          htmlFor="pipe-custom-command"
+          className="mb-1.5 block text-xs font-medium text-muted-foreground"
+        >
+          {s.customCommandLabel}
+        </label>
+        <input
+          id="pipe-custom-command"
+          type="text"
+          value={customCommand}
+          onChange={(e) => onCustomCommandChange(e.target.value)}
+          disabled={disabled}
+          placeholder="e.g. warnings, enrich, plot"
+          className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 font-mono text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+        />
+        <p className="mt-1.5 text-xs text-muted-foreground">{s.customCommandHelp}</p>
+      </div>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label
+            htmlFor="pipe-python"
+            className="mb-1.5 block text-xs font-medium text-muted-foreground"
+          >
+            {s.pythonExeLabel}
+          </label>
+          <input
+            id="pipe-python"
+            type="text"
+            value={pythonExe}
+            onChange={(e) => onPythonExeChange(e.target.value)}
+            disabled={disabled}
+            placeholder="python"
+            className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 font-mono text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="pipe-repo"
+            className="mb-1.5 block text-xs font-medium text-muted-foreground"
+          >
+            {s.repoRootLabel}
+          </label>
+          <input
+            id="pipe-repo"
+            type="text"
+            value={repoRoot}
+            onChange={(e) => onRepoRootChange(e.target.value)}
+            disabled={disabled}
+            placeholder="Default: parent folder of web/"
+            className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 font-mono text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          />
+        </div>
+      </div>
+      {unknownKeys.length > 0 ? (
+        <div>
+          <p className="mb-2 text-xs text-muted-foreground">{s.unknownKeysHelp}</p>
+          <div className="space-y-1 rounded-lg border border-default bg-brand-900 p-3 font-mono text-xs text-foreground">
+            {unknownKeys.map(({ key, value }) => (
+              <div key={key}>
+                <span className="text-link">{key}</span>
+                {' = '}
+                <span>{value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      <div className="flex justify-end pt-2">
+        <Button
+          variant="secondary"
+          onClick={onReset}
+          disabled={disabled}
+          className="border-amber-500/40 text-amber-900 hover:bg-amber-500/10 dark:border-amber-500/35 dark:text-amber-300 dark:hover:bg-amber-500/15"
+        >
+          {s.resetDefaults}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function buildSectionTabs(group: PipelineSettingsGroup | undefined): { id: string; label: string }[] {
+  if (!group) return [];
+
+  const tabs: { id: string; label: string }[] = [];
+
+  if (group.id === 'google') {
+    tabs.push({ id: 'integrations', label: s.settingsTabIntegrations });
+  }
+
+  for (const sectionId of group.sectionIds) {
+    const section = PIPELINE_CONFIG_SECTIONS.find((sec) => sec.id === sectionId);
+    if (section) {
+      tabs.push({ id: section.id, label: section.label });
+    }
+  }
+
+  if (group.includesLlm) {
+    for (const section of LLM_CONFIG_SECTIONS) {
+      tabs.push({ id: section.id, label: section.label });
+    }
+  }
+
+  if (group.id === 'advanced') {
+    tabs.push({ id: 'runner', label: s.settingsTabRunner });
+  }
+
+  return tabs;
 }
 
 export function PipelineSettingsSaveBar({ onSaved }: { onSaved?: () => void }) {
@@ -65,24 +209,27 @@ export function PipelineSettingsSaveBar({ onSaved }: { onSaved?: () => void }) {
   };
 
   const saveFailed = saveMsg.includes('Save failed') || saveMsg.includes('failed');
+  const saveDisabled = saving || loading || readOnly;
+
+  const statusHint = saveMsg
+    ? saveMsg
+    : busy
+      ? s.settingsSaveWhileRunningHint
+      : s.settingsSubtitle;
 
   return (
     <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6 lg:px-8">
       <div className="min-w-0 flex-1">
-        {saveMsg ? (
-          <span
-            className={`text-sm ${saveFailed ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400'}`}
-          >
-            {saveMsg}
-          </span>
-        ) : (
-          <span className="text-xs text-muted-foreground">{s.settingsSubtitle}</span>
-        )}
+        <span
+          className={`text-sm ${saveMsg ? (saveFailed ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400') : 'text-xs text-muted-foreground'}`}
+        >
+          {statusHint}
+        </span>
       </div>
       <Button
         variant="primary"
         onClick={() => void handleSave()}
-        disabled={busy || saving || loading || readOnly}
+        disabled={saveDisabled}
         className="shrink-0"
       >
         <Save className="h-4 w-4" aria-hidden />
@@ -98,7 +245,6 @@ export default function PipelineSettingsPanel({
 }: PipelineSettingsPanelProps) {
   const {
     loading,
-    busy,
     configState,
     llmConfigState,
     unknownKeys,
@@ -113,13 +259,14 @@ export default function PipelineSettingsPanel({
     setPythonExe,
     setRepoRoot,
     setCustomCommand,
+    handleStartUrlChange,
     resetConfig,
     dismissLegacyBanner,
     browserCrawlStatus,
     browserCrawlChecking,
   } = usePipeline();
   const { readOnly } = useReadOnlySession();
-  const fieldsDisabled = busy || readOnly;
+  const fieldsDisabled = readOnly;
 
   const showBrowserCrawlBanner =
     crawlRenderModeUsesBrowser(configState) &&
@@ -128,180 +275,100 @@ export default function PipelineSettingsPanel({
   const group = PIPELINE_SETTINGS_GROUPS.find((g) => g.id === activeGroup);
   const showLegacyBanner = configSource === 'legacy' && !legacyBannerDismissed && activeGroup === 'crawl-report';
 
-  const sectionPanels = useMemo(() => {
-    if (!group) return [];
+  const sectionTabs = useMemo(() => buildSectionTabs(group), [group]);
+  const sectionTabIds = useMemo(
+    () => sectionTabs.map((tab) => tab.id).join(','),
+    [sectionTabs],
+  );
 
-    const panels: { id: string; label: string; content: ReactNode }[] = [];
-
-    if (group.id === 'google') {
-      panels.push({
-        id: 'integrations',
-        label: s.settingsTabIntegrations,
-        content: (
-          <GoogleIntegrationsPanel
-            initialToast={googleIntegrationsToast}
-            startUrl={String(configState.start_url || '')}
-          />
-        ),
-      });
-    }
-
-    for (const sectionId of group.sectionIds) {
-      const section = PIPELINE_CONFIG_SECTIONS.find((sec) => sec.id === sectionId);
-      if (!section) continue;
-      panels.push({
-        id: section.id,
-        label: section.label,
-        content: (
-          <ConfigSectionFields
-            section={section}
-            values={configState}
-            disabled={fieldsDisabled}
-            onChange={(key, value) => setField(key, value)}
-          />
-        ),
-      });
-    }
-
-    if (group.includesLlm) {
-      for (const section of LLM_CONFIG_SECTIONS) {
-        panels.push({
-          id: section.id,
-          label: section.label,
-          content: (
-            <ConfigSectionFields
-              section={section}
-              values={llmConfigState}
-              disabled={fieldsDisabled}
-              onChange={(key, value) => setLlmField(key, value)}
-            />
-          ),
-        });
-      }
-    }
-
-    if (group.id === 'advanced') {
-      panels.push({
-        id: 'runner',
-        label: s.settingsTabRunner,
-        content: (
-          <div className="space-y-4">
-            <div>
-              <label
-                htmlFor="pipe-custom-command"
-                className="mb-1.5 block text-xs font-medium text-muted-foreground"
-              >
-                {s.customCommandLabel}
-              </label>
-              <input
-                id="pipe-custom-command"
-                type="text"
-                value={customCommand}
-                onChange={(e) => setCustomCommand(e.target.value)}
-                disabled={fieldsDisabled}
-                placeholder="e.g. warnings, enrich, plot"
-                className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 font-mono text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-              />
-              <p className="mt-1.5 text-xs text-muted-foreground">{s.customCommandHelp}</p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div>
-                <label
-                  htmlFor="pipe-python"
-                  className="mb-1.5 block text-xs font-medium text-muted-foreground"
-                >
-                  {s.pythonExeLabel}
-                </label>
-                <input
-                  id="pipe-python"
-                  type="text"
-                  value={pythonExe}
-                  onChange={(e) => setPythonExe(e.target.value)}
-                  disabled={fieldsDisabled}
-                  placeholder="python"
-                  className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 font-mono text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="pipe-repo"
-                  className="mb-1.5 block text-xs font-medium text-muted-foreground"
-                >
-                  {s.repoRootLabel}
-                </label>
-                <input
-                  id="pipe-repo"
-                  type="text"
-                  value={repoRoot}
-                  onChange={(e) => setRepoRoot(e.target.value)}
-                  disabled={fieldsDisabled}
-                  placeholder="Default: parent folder of web/"
-                  className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 font-mono text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                />
-              </div>
-            </div>
-            {unknownKeys.length > 0 ? (
-              <div>
-                <p className="mb-2 text-xs text-muted-foreground">{s.unknownKeysHelp}</p>
-                <div className="space-y-1 rounded-lg border border-default bg-brand-900 p-3 font-mono text-xs text-foreground">
-                  {unknownKeys.map(({ key, value }) => (
-                    <div key={key}>
-                      <span className="text-link">{key}</span>
-                      {' = '}
-                      <span>{value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : null}
-            <div className="flex justify-end pt-2">
-              <Button
-                variant="secondary"
-                onClick={resetConfig}
-                disabled={fieldsDisabled}
-                className="border-amber-500/40 text-amber-900 hover:bg-amber-500/10 dark:border-amber-500/35 dark:text-amber-300 dark:hover:bg-amber-500/15"
-              >
-                {s.resetDefaults}
-              </Button>
-            </div>
-          </div>
-        ),
-      });
-    }
-
-    return panels;
-  }, [
-    group,
-    busy,
-    configState,
-    llmConfigState,
-    googleIntegrationsToast,
-    customCommand,
-    pythonExe,
-    repoRoot,
-    unknownKeys,
-    setField,
-    setLlmField,
-    setCustomCommand,
-    setPythonExe,
-    setRepoRoot,
-    resetConfig,
-  ]);
-
-  const useSectionTabs = sectionPanels.length > 1;
-  const [activeSectionTab, setActiveSectionTab] = useState(sectionPanels[0]?.id ?? '');
+  const useSectionTabs = sectionTabs.length > 1;
+  const [activeSectionTab, setActiveSectionTab] = useState(sectionTabs[0]?.id ?? '');
 
   useEffect(() => {
-    setActiveSectionTab(sectionPanels[0]?.id ?? '');
-  }, [activeGroup]);
+    setActiveSectionTab(sectionTabs[0]?.id ?? '');
+  }, [activeGroup, sectionTabs]);
 
   useEffect(() => {
     setActiveSectionTab((current) =>
-      sectionPanels.some((p) => p.id === current) ? current : (sectionPanels[0]?.id ?? ''),
+      sectionTabs.some((tab) => tab.id === current) ? current : (sectionTabs[0]?.id ?? ''),
     );
-  }, [sectionPanels]);
+  }, [sectionTabIds, sectionTabs]);
 
-  const activePanel = sectionPanels.find((p) => p.id === activeSectionTab) ?? sectionPanels[0];
+  const activeTabId =
+    sectionTabs.find((tab) => tab.id === activeSectionTab)?.id ?? sectionTabs[0]?.id ?? '';
+
+  const handlePipelineFieldChange = (sectionId: string, key: string, value: string | boolean) => {
+    if (sectionId === 'crawl' && key === 'start_url') {
+      handleStartUrlChange(String(value));
+      return;
+    }
+    setField(key, value);
+  };
+
+  const renderSectionContent = (sectionId: string): ReactNode => {
+    if (sectionId === 'integrations') {
+      return (
+        <GoogleIntegrationsPanel
+          initialToast={googleIntegrationsToast}
+          startUrl={String(configState.start_url || '')}
+        />
+      );
+    }
+
+    if (sectionId === 'runner') {
+      return (
+        <RunnerSettingsFields
+          customCommand={customCommand}
+          pythonExe={pythonExe}
+          repoRoot={repoRoot}
+          unknownKeys={unknownKeys}
+          disabled={fieldsDisabled}
+          onCustomCommandChange={setCustomCommand}
+          onPythonExeChange={setPythonExe}
+          onRepoRootChange={setRepoRoot}
+          onReset={resetConfig}
+        />
+      );
+    }
+
+    const pipelineSection = PIPELINE_CONFIG_SECTIONS.find((sec) => sec.id === sectionId);
+    if (pipelineSection) {
+      return (
+        <ConfigSectionFields
+          section={pipelineSection}
+          values={configState}
+          disabled={fieldsDisabled}
+          onChange={(key, value) => handlePipelineFieldChange(sectionId, key, value)}
+        />
+      );
+    }
+
+    const llmSection = LLM_CONFIG_SECTIONS.find((sec) => sec.id === sectionId);
+    if (llmSection) {
+      const isOllama = String(llmConfigState.llm_provider || 'none') === 'ollama';
+      return (
+        <ConfigSectionFields
+          section={llmSection}
+          values={llmConfigState}
+          disabled={fieldsDisabled}
+          onChange={(key, value) => setLlmField(key, value)}
+          fieldFilter={(key) => isLlmFieldVisible(key, llmConfigState)}
+          extra={
+            llmSection.id === 'llm_provider' && isOllama ? (
+              <OllamaModelPicker
+                model={String(llmConfigState.llm_model || '')}
+                baseUrl={String(llmConfigState.llm_base_url || 'http://127.0.0.1:11434')}
+                disabled={fieldsDisabled}
+                onModelChange={(v) => setLlmField('llm_model', v)}
+              />
+            ) : null
+          }
+        />
+      );
+    }
+
+    return null;
+  };
 
   if (!group) {
     return null;
@@ -311,6 +378,11 @@ export default function PipelineSettingsPanel({
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
+      {readOnly ? (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <p className="text-sm text-amber-950 dark:text-amber-100/90">{strings.app.readonlyBanner}</p>
+        </div>
+      ) : null}
       {showBrowserCrawlBanner ? (
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
           <p className="text-sm font-medium text-amber-950 dark:text-amber-100/90">
@@ -367,26 +439,24 @@ export default function PipelineSettingsPanel({
           {useSectionTabs ? (
             <>
               <PipelineSettingsSectionTabs
-                tabs={sectionPanels.map((p) => ({ id: p.id, label: p.label }))}
+                tabs={sectionTabs}
                 activeTab={activeSectionTab}
                 onChange={setActiveSectionTab}
                 ariaLabel={s.settingsSectionTabsLabel}
               />
-              {activePanel ? (
+              {activeTabId ? (
                 <div
-                  id={`pipe-settings-panel-${activePanel.id}`}
+                  id={`pipe-settings-panel-${activeTabId}`}
                   role="tabpanel"
-                  aria-labelledby={`pipe-settings-tab-${activePanel.id}`}
+                  aria-labelledby={`pipe-settings-tab-${activeTabId}`}
                   className={settingsCardClass}
                 >
-                  {activePanel.content}
+                  {renderSectionContent(activeTabId)}
                 </div>
               ) : null}
             </>
           ) : (
-            <div className={settingsCardClass}>
-              {activePanel?.content}
-            </div>
+            <div className={settingsCardClass}>{activeTabId ? renderSectionContent(activeTabId) : null}</div>
           )}
         </div>
       )}
