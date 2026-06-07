@@ -254,6 +254,15 @@ function Invoke-PytestTools {
         tests/test_audit_tools.py `
         tests/test_audit_tools_expanded.py `
         tests/test_audit_tools_coverage.py `
+        tests/test_audit_tools_dispatch_coverage.py `
+        tests/test_export_custom_coverage.py `
+        tests/test_export_artifacts_coverage.py `
+        tests/test_export_compare_coverage.py `
+        tests/test_export_tools_coverage.py `
+        tests/test_image_tools.py `
+        tests/test_export_custom.py `
+        tests/test_export_artifacts.py `
+        tests/test_export_compare.py `
         tests/test_mcp_registry.py `
         tests/test_mcp_resources.py `
         --cov=website_profiling.tools `

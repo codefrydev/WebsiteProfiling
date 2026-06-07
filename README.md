@@ -18,18 +18,6 @@ docker compose up --build
 
 Open [http://localhost:3000/home](http://localhost:3000/home).
 
-**Docker (published image)**
-
-The app requires PostgreSQL on the same Docker network. Do **not** run the image alone with `docker run` — the hostname `postgres` only resolves inside Compose.
-
-```bash
-docker pull your-registry/website-profiling:tag
-export WEB_IMAGE=your-registry/website-profiling:tag
-docker compose -f docker-compose.pull.yml up -d
-```
-
-Open [http://localhost:3000/home](http://localhost:3000/home).
-
 **Local dev**
 
 ```bash

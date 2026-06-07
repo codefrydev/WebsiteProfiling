@@ -102,14 +102,69 @@ cmd_web_deps() {
   fi
 }
 
-run_pytest() {
+run_pytest_core() {
   if [[ "$PYTEST_NO_COV" -eq 1 ]]; then
-    log "Pytest (tests/ -q --no-cov)"
-    "$VENV/bin/pytest" tests/ -q --no-cov
+    log "Pytest (tests/ -q -m not browser --no-cov)"
+    "$VENV/bin/pytest" tests/ -q -m "not browser" --no-cov
   else
-    log "Pytest (tests/ -q, 100% in-scope coverage gate — same as CI)"
-    "$VENV/bin/pytest" tests/ -q
+    log "Pytest (tests/ -q -m not browser, core 100% coverage gate)"
+    "$VENV/bin/pytest" tests/ -q -m "not browser"
   fi
+}
+
+run_pytest_reporting() {
+  [[ "$PYTEST_NO_COV" -eq 1 ]] && return 0
+  log "Pytest (reporting coverage gate, 100%)"
+  "$VENV/bin/pytest" \
+    tests/test_categories_roadmap.py \
+    tests/test_report_categories_golden.py \
+    tests/test_categories_coverage.py \
+    tests/test_indexation_coverage.py \
+    tests/test_crawl_segments.py \
+    tests/test_terminology.py \
+    tests/test_compare_payload.py \
+    --cov=website_profiling.reporting \
+    --cov-config=.coveragerc.reporting \
+    --cov-report=term-missing \
+    --cov-fail-under=100 \
+    -q \
+    -o addopts=
+}
+
+run_pytest_tools() {
+  [[ "$PYTEST_NO_COV" -eq 1 ]] && return 0
+  log "Pytest (tools coverage gate, 95%)"
+  "$VENV/bin/pytest" \
+    tests/test_alert_checker.py \
+    tests/test_schedule_runner.py \
+    tests/test_export_audit.py \
+    tests/test_export_audit_coverage.py \
+    tests/test_audit_tools.py \
+    tests/test_audit_tools_expanded.py \
+    tests/test_audit_tools_coverage.py \
+    tests/test_audit_tools_dispatch_coverage.py \
+    tests/test_export_custom_coverage.py \
+    tests/test_export_artifacts_coverage.py \
+    tests/test_export_compare_coverage.py \
+    tests/test_export_tools_coverage.py \
+    tests/test_image_tools.py \
+    tests/test_export_custom.py \
+    tests/test_export_artifacts.py \
+    tests/test_export_compare.py \
+    tests/test_mcp_registry.py \
+    tests/test_mcp_resources.py \
+    --cov=website_profiling.tools \
+    --cov-config=.coveragerc.tools \
+    --cov-report=term-missing \
+    --cov-fail-under=95 \
+    -q \
+    -o addopts=
+}
+
+run_pytest() {
+  run_pytest_core
+  run_pytest_reporting
+  run_pytest_tools
 }
 
 run_browser_pytest() {
@@ -152,7 +207,7 @@ cmd_web() {
 cmd_all() {
   cmd_python
   cmd_web
-  ok "All local tests passed (CI python + web jobs)"
+  ok "All local tests passed (CI python + web jobs, including reporting/tools gates)"
 }
 
 cmd_quick() {
@@ -179,8 +234,8 @@ cmd_help() {
 Local test runner — mirrors CI (python + web jobs)
 
   ./local-test              Same as: all
-  ./local-test all          Postgres + migrations + pytest + CLI + web checks
-  ./local-test python       DB + pytest + browser pytest + python -m src --help
+  ./local-test all          Postgres + migrations + pytest (core + reporting + tools) + CLI + web
+  ./local-test python       DB + pytest (core + reporting + tools) + browser pytest + CLI smoke
   ./local-test browser      Browser integration pytest only (skips if no Chromium)
   ./local-test web          typecheck, lint, vitest (no Docker)
   ./local-test quick        pytest + web without starting Docker (DB must be ready)
