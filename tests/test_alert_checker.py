@@ -114,7 +114,12 @@ def property_id():
 
     with db_session() as conn:
         pid = upsert_property_by_domain(conn, "Alert Test", "alert-test.example")
+        conn.execute("DELETE FROM audit_health_snapshots WHERE property_id = %s", (pid,))
+        conn.commit()
     yield pid
+    with db_session() as conn:
+        conn.execute("DELETE FROM audit_health_snapshots WHERE property_id = %s", (pid,))
+        conn.commit()
 
 
 @pytest.mark.integration
@@ -125,13 +130,13 @@ def test_check_health_alerts_postgres_integration(property_id) -> None:
         conn.execute(
             """INSERT INTO audit_health_snapshots
                (property_id, report_id, health_score, category_scores, issue_counts, generated_at)
-               VALUES (%s, 1, 90, '{}', '{}', '2026-05-01T00:00:00Z')""",
+               VALUES (%s, 9001, 90, '{}', '{}', NOW() - INTERVAL '2 days')""",
             (property_id,),
         )
         conn.execute(
             """INSERT INTO audit_health_snapshots
                (property_id, report_id, health_score, category_scores, issue_counts, generated_at)
-               VALUES (%s, 2, 70, '{}', '{}', '2026-06-01T00:00:00Z')""",
+               VALUES (%s, 9002, 70, '{}', '{}', NOW() - INTERVAL '1 day')""",
             (property_id,),
         )
         conn.commit()

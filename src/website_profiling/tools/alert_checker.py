@@ -12,7 +12,7 @@ def check_health_alerts(property_id: int, threshold_drop: int = 10) -> list[dict
     with db_session() as conn:
         cur = conn.execute(
             """SELECT health_score, generated_at FROM audit_health_snapshots
-               WHERE property_id = %s ORDER BY generated_at DESC LIMIT 2""",
+               WHERE property_id = %s ORDER BY generated_at DESC, id DESC LIMIT 2""",
             (property_id,),
         )
         rows = cur.fetchall() or []
