@@ -75,15 +75,31 @@ function Test-Command([string]$Name) {
 }
 
 function Get-PythonLauncher {
-    foreach ($cmd in @("py", "python", "python3")) {
+    foreach ($cmd in @("python", "python3", "py")) {
         if (Get-Command $cmd -ErrorAction SilentlyContinue) {
             if ($cmd -eq "py") {
-                return @("py", "-3")
+                return ,@("py", "-3")
             }
-            return @($cmd)
+            return ,@($cmd)
         }
     }
     Write-Die "Missing required command: python (install Python 3.11+ and ensure it is on PATH)"
+}
+
+function Invoke-PythonLauncher {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$Launcher,
+        [Parameter(ValueFromRemainingArguments = $true)]
+        [string[]]$PythonArgs
+    )
+
+    if ($Launcher.Count -gt 1) {
+        & $Launcher[0] $Launcher[1] @PythonArgs
+    } else {
+        & $Launcher[0] @PythonArgs
+    }
+    Assert-LastExitCode "Python command failed: $($Launcher -join ' ') $($PythonArgs -join ' ')"
 }
 
 function Get-DockerContainerNames {
@@ -101,7 +117,14 @@ function Get-DockerContainerNames {
 
 function Test-DockerRunning {
     Test-Command docker
-    & docker info *> $null
+    # Docker Desktop writes capability warnings to stderr; avoid treating them as terminating errors.
+    $prevErrorAction = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        cmd /c "docker info >nul 2>&1"
+    } finally {
+        $ErrorActionPreference = $prevErrorAction
+    }
     Assert-LastExitCode "Docker is not running. Start Docker Desktop, then retry."
 }
 
@@ -153,8 +176,7 @@ function Invoke-Venv {
     $pyLauncher = Get-PythonLauncher
     if (-not (Test-Path $VENV_PYTHON)) {
         Write-Log "Creating Python venv at .venv"
-        & @pyLauncher -m venv $VENV
-        Assert-LastExitCode "Failed to create Python virtual environment at .venv"
+        Invoke-PythonLauncher -Launcher $pyLauncher -PythonArgs @("-m", "venv", $VENV)
     }
     Write-Log "Installing Python dependencies"
     & $VENV_PIP install -q -r (Join-Path $ROOT "requirements.txt")
