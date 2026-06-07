@@ -25,6 +25,11 @@ import {
   readStoredChatContext,
   writeStoredChatContext,
 } from '@/lib/chatUrlState';
+import {
+  normalizePropertyId,
+  pickInitialPropertyId,
+  propertyIdsEqual,
+} from '@/lib/googlePropertySelection';
 
 const c = strings.components.chat;
 
@@ -91,7 +96,7 @@ export default function ChatPage() {
 
   const showConversation = Boolean(sessionId) || messages.length > 0 || busy || loadingMessages;
   const isHero = !showConversation;
-  const activeProperty = properties.find((p) => p.id === propertyId) ?? null;
+  const activeProperty = properties.find((p) => propertyIdsEqual(p.id, propertyId)) ?? null;
   const activeSession = sessions.find((s) => s.id === sessionId) ?? null;
 
   const loadProperties = useCallback(async () => {
@@ -100,7 +105,10 @@ export default function ChatPage() {
       const res = await fetch(apiUrl('/properties'));
       if (!res.ok) return;
       const data = (await res.json()) as { properties?: PropertyOption[] };
-      const rows = data.properties || [];
+      const rows = (data.properties || []).map((p) => ({
+        ...p,
+        id: normalizePropertyId(p.id) ?? p.id,
+      }));
       setProperties(rows);
       const urlCtx = parseChatUrlContext(
         new URLSearchParams(
@@ -108,23 +116,22 @@ export default function ChatPage() {
         ),
       );
       const stored = readStoredChatContext();
-      const activeRaw = configState.active_property_id;
-      const activeId = activeRaw ? Number(activeRaw) : null;
-      const preferred =
-        urlCtx.propertyId ??
-        stored.propertyId ??
-        (activeId && rows.some((p) => p.id === activeId) ? activeId : null) ??
-        rows[0]?.id ??
-        null;
-      if (preferred && rows.some((p) => p.id === preferred)) {
-        setPropertyId(preferred);
-      }
+      const explicitId = urlCtx.propertyId ?? stored.propertyId ?? null;
+      const nextId = pickInitialPropertyId(rows, {
+        explicitId,
+        startUrl: String(configState.start_url || ''),
+        activePropertyId: String(configState.active_property_id || ''),
+      });
+      setPropertyId((current) => {
+        if (nextId != null) return nextId;
+        return current != null ? null : current;
+      });
     } catch {
       /* ignore */
     } finally {
       setLoadingProperties(false);
     }
-  }, [configState.active_property_id]);
+  }, [configState.active_property_id, configState.start_url]);
 
   const resolveSessionFromUrl = useCallback(async (sid: number, pid: number | null) => {
     try {
