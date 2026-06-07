@@ -19,7 +19,7 @@ UI terms agencies recognize, mapped to internal keys and data sources.
 | Crawl summary | `charts` | Crawl aggregates | SF overview |
 | Internal links | `network` | Link graph | Ahrefs Internal Links |
 | Backlinks | `backlinks`, `gsc_links`, `gsc_links_data` | GSC Links CSV import (Google sample) | GSC Links report |
-| Page previews | `gallery` | Crawl excerpts | Visual QA |
+| Page previews | `gallery`, `list_site_image_urls`, `image_inventory` | Crawl excerpts + optional HTTP probe | Visual QA; size/format when probed |
 | Search Console | `search-performance`, `google_data` (scoped by `property_id`) | GSC API per property | Google Search Console |
 | Analytics (GA4) | `traffic`, `google_data` (scoped by `property_id`) | GA4 API per property | Google Analytics |
 | Keywords | `keywords-explorer`, `keyword_data` | Crawl + Search Console + research | Keyword tools (site-scoped) |
@@ -43,7 +43,7 @@ UI terms agencies recognize, mapped to internal keys and data sources.
 | AI Chat | `/chat`, `/api/chat`, `chat_sessions` | LLM + read-only audit tools | Conversational site audit queries |
 | MCP tools | `python -m website_profiling.mcp` | Same `audit_tools` as chat | Cursor / Claude Desktop integration — see [MCP.md](MCP.md) |
 | Read-only session | `AUTH_DEFAULT_ROLE=client-readonly`, `/api/auth/session` | Session cookie | Client view-only access |
-| Export executive summary | `export_audit_html/pdf/csv`, `executive_summary` | Report payload + optional AI | Client deliverable |
+| Export executive summary | `export_audit_html/pdf/csv`, `export_audit_report` (chat/MCP), Export view | Report payload + optional AI | Client deliverable |
 
 ## Metric names
 

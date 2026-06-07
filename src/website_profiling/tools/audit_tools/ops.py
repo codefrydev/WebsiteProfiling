@@ -9,7 +9,7 @@ from psycopg import Connection
 from ...db._common import _row_field
 from ...db.property_store import get_property_by_id
 from ...tools.alert_checker import check_all_alerts
-from ._slice import parse_limit
+from ._slice import cap_list, parse_limit
 from .context import AuditToolContext
 
 
@@ -124,32 +124,160 @@ def list_log_uploads(conn: Connection, ctx: AuditToolContext, args: dict[str, An
     return {"uploads": uploads, "count": len(uploads), "property_id": scoped.property_id}
 
 
+def _parse_analysis_field(raw: Any) -> dict[str, Any]:
+    if isinstance(raw, dict):
+        return raw
+    if isinstance(raw, str):
+        try:
+            parsed = json.loads(raw)
+            return parsed if isinstance(parsed, dict) else {}
+        except json.JSONDecodeError:
+            return {}
+    return {}
+
+
+def _load_log_analysis(
+    conn: Connection,
+    property_id: int,
+    upload_id: int | None = None,
+) -> dict[str, Any] | None:
+    if upload_id is not None:
+        cur = conn.execute(
+            """SELECT id, filename, line_count, analysis, uploaded_at
+               FROM log_file_uploads
+               WHERE property_id = %s AND id = %s
+               LIMIT 1""",
+            (property_id, int(upload_id)),
+        )
+    else:
+        cur = conn.execute(
+            """SELECT id, filename, line_count, analysis, uploaded_at
+               FROM log_file_uploads
+               WHERE property_id = %s
+               ORDER BY uploaded_at DESC
+               LIMIT 1""",
+            (property_id,),
+        )
+    row = cur.fetchone()
+    if not row:
+        return None
+    uploaded = _row_field(row, "uploaded_at", index=4)
+    return {
+        "upload_id": _row_field(row, "id", index=0),
+        "filename": _row_field(row, "filename", index=1),
+        "line_count": _row_field(row, "line_count", index=2),
+        "analysis": _parse_analysis_field(_row_field(row, "analysis", index=3)),
+        "uploaded_at": uploaded.isoformat() if hasattr(uploaded, "isoformat") else str(uploaded or ""),
+    }
+
+
 def get_latest_log_analysis(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
     scoped = ctx.with_args(args)
     if scoped.property_id is None:
         return {"error": "property_id is required"}
-    cur = conn.execute(
-        """SELECT filename, line_count, analysis, uploaded_at
-           FROM log_file_uploads
-           WHERE property_id = %s
-           ORDER BY uploaded_at DESC
-           LIMIT 1""",
-        (int(scoped.property_id),),
-    )
-    row = cur.fetchone()
+    row = _load_log_analysis(conn, int(scoped.property_id))
     if not row:
         return {"error": "no log uploads found", "missing": True}
-    analysis = _row_field(row, "analysis", index=2)
-    if isinstance(analysis, str):
-        try:
-            analysis = json.loads(analysis)
-        except json.JSONDecodeError:
-            analysis = {}
-    uploaded = _row_field(row, "uploaded_at", index=3)
     return {
-        "filename": _row_field(row, "filename", index=0),
-        "line_count": _row_field(row, "line_count", index=1),
-        "analysis": analysis if isinstance(analysis, dict) else {},
-        "uploaded_at": uploaded.isoformat() if hasattr(uploaded, "isoformat") else str(uploaded or ""),
+        **row,
         "property_id": scoped.property_id,
+    }
+
+
+def get_log_analysis_by_id(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    if scoped.property_id is None:
+        return {"error": "property_id is required"}
+    upload_id = args.get("upload_id")
+    if upload_id is None:
+        return {"error": "upload_id is required"}
+    try:
+        uid = int(upload_id)
+    except (TypeError, ValueError):
+        return {"error": "invalid upload_id"}
+    row = _load_log_analysis(conn, int(scoped.property_id), upload_id=uid)
+    if not row:
+        return {"error": "log upload not found", "missing": True}
+    return {**row, "property_id": scoped.property_id}
+
+
+def _log_compare_paths(analysis: dict[str, Any]) -> dict[str, list[str]]:
+    compare = analysis.get("crawl_compare") if isinstance(analysis.get("crawl_compare"), dict) else {}
+    log_only = compare.get("log_only_paths") or analysis.get("log_only_paths") or []
+    crawl_only = compare.get("crawl_only_paths") or analysis.get("crawl_only_paths") or []
+    return {
+        "log_only_paths": [str(p) for p in log_only if p] if isinstance(log_only, list) else [],
+        "crawl_only_paths": [str(p) for p in crawl_only if p] if isinstance(crawl_only, list) else [],
+    }
+
+
+def get_log_top_paths(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    if scoped.property_id is None:
+        return {"error": "property_id is required"}
+    row = _load_log_analysis(conn, int(scoped.property_id))
+    if not row:
+        return {"error": "no log uploads found", "missing": True, "paths": [], "total": 0, "truncated": False}
+    analysis = row.get("analysis") or {}
+    paths = analysis.get("top_paths") or []
+    if not isinstance(paths, list):
+        paths = []
+    limit = parse_limit(args.get("limit"), 30, 100)
+    sliced = cap_list(paths, limit, max_cap=100)
+    return {
+        "paths": sliced["items"],
+        "total": sliced["total"],
+        "truncated": sliced["truncated"],
+        "upload_id": row.get("upload_id"),
+        "filename": row.get("filename"),
+    }
+
+
+def list_log_only_paths(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    if scoped.property_id is None:
+        return {"error": "property_id is required"}
+    row = _load_log_analysis(conn, int(scoped.property_id))
+    if not row:
+        return {"error": "no log uploads found", "missing": True, "paths": [], "total": 0, "truncated": False}
+    paths = _log_compare_paths(row.get("analysis") or {}).get("log_only_paths") or []
+    limit = parse_limit(args.get("limit"), 50, 200)
+    items = [{"path": p} for p in paths]
+    sliced = cap_list(items, limit, max_cap=200)
+    return {"paths": sliced["items"], "total": sliced["total"], "truncated": sliced["truncated"]}
+
+
+def list_crawl_only_paths(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    if scoped.property_id is None:
+        return {"error": "property_id is required"}
+    row = _load_log_analysis(conn, int(scoped.property_id))
+    if not row:
+        return {"error": "no log uploads found", "missing": True, "paths": [], "total": 0, "truncated": False}
+    paths = _log_compare_paths(row.get("analysis") or {}).get("crawl_only_paths") or []
+    limit = parse_limit(args.get("limit"), 50, 200)
+    items = [{"path": p} for p in paths]
+    sliced = cap_list(items, limit, max_cap=200)
+    return {"paths": sliced["items"], "total": sliced["total"], "truncated": sliced["truncated"]}
+
+
+def get_log_googlebot_stats(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    if scoped.property_id is None:
+        return {"error": "property_id is required"}
+    row = _load_log_analysis(conn, int(scoped.property_id))
+    if not row:
+        return {"error": "no log uploads found", "missing": True}
+    analysis = row.get("analysis") or {}
+    parsed = int(analysis.get("parsed_lines") or 0)
+    bot_hits = int(analysis.get("googlebot_hits") or 0)
+    ratio = round(bot_hits / parsed, 4) if parsed > 0 else None
+    return {
+        "upload_id": row.get("upload_id"),
+        "filename": row.get("filename"),
+        "parsed_lines": parsed,
+        "googlebot_hits": bot_hits,
+        "googlebot_ratio": ratio,
+        "unique_paths": analysis.get("unique_paths"),
+        "status_counts": analysis.get("status_counts"),
     }

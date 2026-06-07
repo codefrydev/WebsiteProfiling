@@ -79,36 +79,44 @@ def _tools_catalog_json() -> str:
         "performance": [],
         "drift": [],
         "security": [],
+        "ops": [],
+        "export": [],
+        "images": [],
     }
     for tool in TOOL_DEFINITIONS:
         name = tool["name"]
-        if name.startswith(("list_propert", "get_propert", "get_report", "get_executive", "get_site", "list_report")):
+        if name.startswith("export_") or name == "compose_custom_report" or name == "list_export_formats":
+            domains["export"].append(name)
+        elif name.startswith(("get_image_", "list_pages_without_lazy", "list_pages_with_images_missing", "list_site_image", "list_lighthouse_image", "list_largest_images", "list_unoptimized_images", "list_images_needing")):
+            domains["images"].append(name)
+        elif name.startswith(("list_propert", "get_propert", "get_report", "get_executive", "get_site", "list_report", "get_portfolio")):
             domains["portfolio"].append(name)
         elif "issue" in name or "category" in name or "workflow" in name:
             domains["issues"].append(name)
-        elif name in ("search_pages", "get_page_details", "get_internal_links", "list_redirects", "list_broken_links",
-                      "get_status_code", "get_response_time", "get_depth", "get_crawl_segments", "get_browser"):
+        elif name.startswith(("list_pages_", "list_canonical", "list_long_", "list_robots_", "get_top_pages_by", "search_pages", "get_page_", "list_redirects", "list_broken", "list_status_", "get_status_code", "get_response_time", "get_depth", "get_crawl_", "get_browser", "list_pages_with", "list_pages_by")):
             domains["crawl"].append(name)
         elif "schema" in name or name == "get_seo_health":
             domains["schema"].append(name)
-        elif "orphan" in name or "link" in name or "fingerprint" in name:
+        elif "orphan" in name or "link" in name or "fingerprint" in name or "pagerank" in name:
             domains["links"].append(name)
         elif "indexation" in name or "hreflang" in name or "language" in name:
             domains["indexation"].append(name)
-        elif "content" in name or "social" in name or "ner" in name or "thin" in name or "opportunit" in name:
+        elif "content" in name or "social" in name or "ner" in name or "thin" in name or "opportunit" in name or "duplicate" in name:
             domains["content"].append(name)
-        elif "keyword" in name or "cannibal" in name or "misalignment" in name or "striking" in name or "semantic" in name:
+        elif "keyword" in name or "cannibal" in name or "misalignment" in name or "striking" in name or "semantic" in name or name == "expand_keywords" or name == "generate_content_brief":
             domains["keywords"].append(name)
         elif "google" in name or "gsc" in name or "ga4" in name:
             domains["google"].append(name)
         elif "backlink" in name or "competitor" in name or "bing" in name or "gsc_links" in name:
             domains["backlinks"].append(name)
-        elif "lighthouse" in name or "crux" in name or "slow" in name:
+        elif "lighthouse" in name or "crux" in name or "slow" in name or "cwv" in name:
             domains["performance"].append(name)
-        elif "health" in name or "compare" in name or "alert" in name or "tech_stack" in name:
+        elif "health" in name or "compare" in name or "alert" in name or "tech_stack" in name or name == "list_pages_by_technology":
             domains["drift"].append(name)
         elif "security" in name:
             domains["security"].append(name)
+        elif "log" in name or name in ("get_property_ops", "list_crawl_runs", "list_log_uploads", "get_page_coach"):
+            domains["ops"].append(name)
         else:
             domains["portfolio"].append(name)
     return json.dumps({"tool_count": len(TOOL_DEFINITIONS), "handlers": sorted(tool_handler_names()), "domains": domains}, indent=2)

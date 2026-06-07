@@ -5,6 +5,7 @@ import '@/patchConsole';
 import { ThemeProvider } from '@/context/ThemeProvider';
 import { PipelineProvider } from '@/context/PipelineContext';
 import { SessionProvider } from '@/context/SessionContext';
+import ChatFab from '@/components/chat/ChatFab';
 import PipelineRunnerFab from '@/components/pipeline/PipelineRunnerFab';
 
 function LoadingFallback() {
@@ -22,6 +23,7 @@ export default function ClientProviders({ children }: { children: ReactNode }): 
         <Suspense fallback={<LoadingFallback />}>
           <PipelineProvider>
             {children}
+            <ChatFab />
             <PipelineRunnerFab />
           </PipelineProvider>
         </Suspense>

@@ -978,6 +978,66 @@ def _build_keyword_opportunities(df: pd.DataFrame, config: dict[str, str] | None
     }
 
 
+def _build_image_inventory(
+    links: list[dict[str, Any]],
+    config: Optional[dict[str, str]],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    from ..analysis.image_probe import collect_image_refs_from_links, probe_image_urls
+
+    refs = collect_image_refs_from_links(links)
+    unoptimized_min_kb = get_int(config or {}, "image_unoptimized_min_kb", 200) or 200
+    summary: dict[str, Any] = {
+        "probed": 0,
+        "failed": 0,
+        "total_bytes": 0,
+        "over_threshold_count": 0,
+        "unoptimized_min_kb": unoptimized_min_kb,
+        "inventory_available": False,
+    }
+    if not get_bool(config or {}, "probe_image_inventory", False):
+        return [], summary
+
+    max_urls = get_int(config or {}, "max_image_probe_urls", 500) or 500
+    concurrency = get_int(config or {}, "image_probe_concurrency", 6) or 6
+    probe_timeout = get_int(config or {}, "image_probe_timeout", 8) or 8
+    url_list = list(refs.keys())[:max_urls]
+    if not url_list:
+        return [], summary
+
+    print(f"  Probing up to {len(url_list)} image URL(s)...", flush=True)
+    probed = probe_image_urls(
+        url_list,
+        concurrency=concurrency,
+        timeout=probe_timeout,
+    )
+    threshold_bytes = unoptimized_min_kb * 1024
+    inventory: list[dict[str, Any]] = []
+    for row in probed:
+        url = row.get("url")
+        meta = refs.get(str(url or ""), {"source_pages": set(), "kinds": set()})
+        size = row.get("size_bytes")
+        entry = {
+            "url": url,
+            "status": row.get("status"),
+            "content_type": row.get("content_type"),
+            "size_bytes": size,
+            "error": row.get("error"),
+            "source_pages": sorted(meta.get("source_pages") or []),
+            "kinds": sorted(meta.get("kinds") or []),
+        }
+        inventory.append(entry)
+        summary["probed"] += 1
+        if row.get("error") or row.get("status") is None:
+            summary["failed"] += 1
+        if size is not None:
+            summary["total_bytes"] += int(size)
+            if int(size) >= threshold_bytes:
+                summary["over_threshold_count"] += 1
+    summary["inventory_available"] = True
+    print(f"  Image probe complete ({summary['probed']} URLs, {summary['failed']} failed).", flush=True)
+    return inventory, summary
+
+
 def run_simple_report(
     max_fetch_for_edges: int = 300,
     concurrency: int = 6,
@@ -1311,6 +1371,7 @@ def run_simple_report(
         rec["images_total"] = _int_col("images_total")
         rec["images_without_alt"] = _int_col("images_without_alt")
         rec["img_without_lazy"] = _int_col("img_without_lazy")
+        rec["img_without_dimensions"] = _int_col("img_without_dimensions")
         rec["aria_count"] = _int_col("aria_count")
         rec["mixed_content_count"] = _int_col("mixed_content_count")
 
@@ -1450,6 +1511,66 @@ def run_simple_report(
                 title_str = "" if pd.isna(row.get("title")) else str(row.get("title")).strip()
                 thin_content.append({"url": u, "title": title_str, "content_length": c})
 
+    missing_canonical: list[dict[str, Any]] = []
+    canonical_mismatch: list[dict[str, Any]] = []
+    missing_alt: list[dict[str, Any]] = []
+    success_mask = df["status"].astype(str).str.match(r"2\d{2}", na=False) if "status" in df.columns else pd.Series([True] * len(df))
+    success_df_urls = df[success_mask] if len(df) else df
+    if "canonical_url" in success_df_urls.columns:
+        for _, row in success_df_urls.iterrows():
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            u = str(u).strip()
+            title_str = "" if pd.isna(row.get("title")) else str(row.get("title")).strip()
+            canon = "" if pd.isna(row.get("canonical_url")) else str(row.get("canonical_url")).strip()
+            if not canon:
+                missing_canonical.append({"url": u, "title": title_str})
+            elif u.rstrip("/").lower() != canon.rstrip("/").lower():
+                canonical_mismatch.append({"url": u, "canonical_url": canon, "title": title_str})
+    if "images_without_alt" in success_df_urls.columns:
+        alt_missing = pd.to_numeric(success_df_urls["images_without_alt"], errors="coerce").fillna(0).astype(int)
+        for i, row in success_df_urls.iterrows():
+            if alt_missing.loc[i] <= 0:
+                continue
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            missing_alt.append({
+                "url": str(u).strip(),
+                "images_without_alt": int(alt_missing.loc[i]),
+                "images_total": int(pd.to_numeric(row.get("images_total"), errors="coerce") or 0),
+            })
+
+    missing_lazy: list[dict[str, Any]] = []
+    missing_dimensions: list[dict[str, Any]] = []
+    if "img_without_lazy" in success_df_urls.columns:
+        lazy_missing = pd.to_numeric(success_df_urls["img_without_lazy"], errors="coerce").fillna(0).astype(int)
+        for i, row in success_df_urls.iterrows():
+            if lazy_missing.loc[i] <= 0:
+                continue
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            missing_lazy.append({
+                "url": str(u).strip(),
+                "img_without_lazy": int(lazy_missing.loc[i]),
+                "images_total": int(pd.to_numeric(row.get("images_total"), errors="coerce") or 0),
+            })
+    if "img_without_dimensions" in success_df_urls.columns:
+        dim_missing = pd.to_numeric(success_df_urls["img_without_dimensions"], errors="coerce").fillna(0).astype(int)
+        for i, row in success_df_urls.iterrows():
+            if dim_missing.loc[i] <= 0:
+                continue
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            missing_dimensions.append({
+                "url": str(u).strip(),
+                "img_without_dimensions": int(dim_missing.loc[i]),
+                "images_total": int(pd.to_numeric(row.get("images_total"), errors="coerce") or 0),
+            })
+
     content_urls = {
         "missing_h1": missing_h1,
         "missing_title": missing_title,
@@ -1458,6 +1579,11 @@ def run_simple_report(
         "meta_desc_short": meta_desc_short,
         "meta_desc_long": meta_desc_long,
         "thin_content": thin_content,
+        "missing_canonical": missing_canonical,
+        "canonical_mismatch": canonical_mismatch,
+        "missing_alt": missing_alt,
+        "missing_lazy": missing_lazy,
+        "missing_dimensions": missing_dimensions,
     }
 
     print("  Building content analytics...", flush=True)
@@ -1481,6 +1607,7 @@ def run_simple_report(
     tech_stack_summary = _build_tech_stack_summary(df)
     response_time_stats = _build_response_time_stats(df)
     depth_distribution = _build_depth_distribution(df)
+    image_inventory, image_inventory_summary = _build_image_inventory(links, config)
 
     report_data = {
         "site_name": site_display,
@@ -1515,6 +1642,8 @@ def run_simple_report(
         "tech_stack_summary": tech_stack_summary,
         "response_time_stats": response_time_stats,
         "depth_distribution": depth_distribution,
+        "image_inventory": image_inventory,
+        "image_inventory_summary": image_inventory_summary,
         "content_duplicates": ml_bundle.get("content_duplicates") or [],
         "language_summary": ml_bundle.get("language_summary") or {},
         "ner_site_summary": ml_bundle.get("ner_site_summary") or {},

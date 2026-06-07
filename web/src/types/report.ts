@@ -723,6 +723,7 @@ export interface LinkDetail extends Omit<ReportLink, 'page_analysis' | 'lighthou
   images_total?: number;
   images_without_alt?: number;
   img_without_lazy?: number;
+  img_without_dimensions?: number;
   aria_count?: number;
   internal_link_count?: number;
   external_link_count?: number;

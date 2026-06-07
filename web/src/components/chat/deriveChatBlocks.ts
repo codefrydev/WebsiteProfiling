@@ -91,6 +91,49 @@ export type ChatBlock =
       ctr?: number;
       queries: GoogleQueryRow[];
       pages: GooglePageRow[];
+    }
+  | {
+      type: 'file_download';
+      files: { label?: string; url: string; mime_type?: string; filename: string }[];
+    }
+  | {
+      type: 'image_audit_summary';
+      imagesTotal: number;
+      pagesMissingAlt: number;
+      pagesWithoutLazy: number;
+      pagesMissingDimensions: number;
+      ogCoveragePct?: number;
+      ogMissingCount?: number;
+      lighthouseImageDiagnostics: number;
+      inventoryAvailable: boolean;
+      inventoryProbed?: number;
+      inventoryFailed?: number;
+    }
+  | {
+      type: 'image_pages_table';
+      title: string;
+      pages: { url: string; title?: string; detail?: string }[];
+      total?: number;
+      truncated?: boolean;
+    }
+  | {
+      type: 'image_lighthouse_list';
+      items: { title: string; auditId?: string; url?: string; displayValue?: string }[];
+      total: number;
+    }
+  | {
+      type: 'image_attention_table';
+      title: string;
+      items: {
+        url?: string;
+        pageUrl?: string;
+        sizeBytes?: number | null;
+        contentType?: string;
+        reasons: string[];
+        score?: number;
+      }[];
+      total?: number;
+      truncated?: boolean;
     };
 
 const SUMMARY_TOOLS = new Set(['get_report_summary', 'get_executive_summary']);
@@ -119,6 +162,35 @@ const GOOGLE_SUMMARY_TOOLS = new Set([
   'get_gsc_top_queries',
   'get_gsc_top_pages',
 ]);
+const EXPORT_TOOLS = new Set([
+  'export_audit_report',
+  'export_compare_csv',
+  'export_list_as_csv',
+  'export_custom_report',
+]);
+
+const IMAGE_SUMMARY_TOOL = 'get_image_audit_summary';
+
+const IMAGE_PREVIEW_TITLES: Record<string, string> = {
+  missing_alt: 'Pages missing alt text',
+  missing_lazy: 'Pages without lazy-loaded images',
+  missing_dimensions: 'Pages missing width/height',
+  missing_og: 'Pages missing OG image',
+};
+
+const IMAGE_PAGE_TABLE_TOOLS: Record<string, string> = {
+  list_pages_with_missing_alt: IMAGE_PREVIEW_TITLES.missing_alt,
+  list_pages_without_lazy_images: IMAGE_PREVIEW_TITLES.missing_lazy,
+  list_pages_with_images_missing_dimensions: IMAGE_PREVIEW_TITLES.missing_dimensions,
+  list_pages_missing_og_image: IMAGE_PREVIEW_TITLES.missing_og,
+};
+
+const IMAGE_INVENTORY_TABLE_TOOLS: Record<string, string> = {
+  list_largest_images: 'Largest images',
+  list_unoptimized_images: 'Unoptimized images',
+};
+
+const IMAGE_ATTENTION_TOOL = 'list_images_needing_attention';
 
 function asRecord(v: unknown): Record<string, unknown> | null {
   return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
@@ -130,6 +202,14 @@ export function blockKey(block: ChatBlock): string {
       return `label_value:${block.title}`;
     case 'health_trend':
       return block.categoryId ? `health_trend:${block.categoryId}` : 'health_trend';
+    case 'file_download':
+      return `file_download:${block.files.map((f) => f.filename).join(',')}`;
+    case 'image_pages_table':
+      return `image_pages:${block.title}`;
+    case 'image_attention_table':
+      return `image_attention:${block.title}`;
+    case 'image_lighthouse_list':
+      return 'image_lighthouse';
     default:
       return block.type;
   }
@@ -517,9 +597,234 @@ function parseGooglePages(raw: unknown): GooglePageRow[] {
   return out;
 }
 
-type BlockParser = (name: string, result: Record<string, unknown>) => ChatBlock | null;
+function blockFromImageSummaryPreviews(
+  name: string,
+  result: Record<string, unknown>,
+): ChatBlock[] | null {
+  if (name !== IMAGE_SUMMARY_TOOL || result.error) return null;
+  const previews = asRecord(result.page_previews);
+  if (!previews) return null;
+  const blocks: ChatBlock[] = [];
+  for (const [key, title] of Object.entries(IMAGE_PREVIEW_TITLES)) {
+    const bucket = asRecord(previews[key]);
+    const pagesRaw = bucket?.pages;
+    if (!Array.isArray(pagesRaw) || !pagesRaw.length) continue;
+    const pages = pagesRaw
+      .map((raw) => {
+        const row = asRecord(raw);
+        if (!row) return null;
+        const url = String(row.url || '').trim();
+        if (!url) return null;
+        return {
+          url,
+          title: row.title != null ? String(row.title) : undefined,
+          detail: pageDetailFromRow(row),
+        };
+      })
+      .filter((p): p is NonNullable<typeof p> => p != null);
+    if (!pages.length) continue;
+    blocks.push({
+      type: 'image_pages_table',
+      title,
+      pages,
+      total: typeof bucket?.total === 'number' ? bucket.total : pages.length,
+      truncated: Boolean(bucket?.truncated),
+    });
+  }
+  const lhRaw = result.lighthouse_image_previews;
+  if (Array.isArray(lhRaw) && lhRaw.length) {
+    const items = lhRaw
+      .map((raw) => {
+        const row = asRecord(raw);
+        if (!row) return null;
+        return {
+          title: String(row.title || row.lighthouse_audit_id || 'Lighthouse'),
+          auditId: row.lighthouse_audit_id != null ? String(row.lighthouse_audit_id) : undefined,
+          url: row.url != null ? String(row.url) : undefined,
+          displayValue: row.display_value != null ? String(row.display_value) : undefined,
+        };
+      })
+      .filter((i): i is NonNullable<typeof i> => i != null);
+    if (items.length) {
+      blocks.push({
+        type: 'image_lighthouse_list',
+        items,
+        total: Number(result.lighthouse_image_diagnostics) || items.length,
+      });
+    }
+  }
+  return blocks.length ? blocks : null;
+}
+
+function blockFromImageSummary(name: string, result: Record<string, unknown>): ChatBlock | null {
+  if (name !== IMAGE_SUMMARY_TOOL) return null;
+  if (result.error) return null;
+  const inv = asRecord(result.image_inventory_summary);
+  return {
+    type: 'image_audit_summary',
+    imagesTotal: Number(result.images_total_crawled) || 0,
+    pagesMissingAlt: Number(result.pages_missing_alt) || 0,
+    pagesWithoutLazy: Number(result.pages_without_lazy_images) || 0,
+    pagesMissingDimensions: Number(result.pages_missing_image_dimensions) || 0,
+    ogCoveragePct:
+      result.og_image_coverage_pct != null ? Number(result.og_image_coverage_pct) : undefined,
+    ogMissingCount:
+      result.og_image_missing_count != null ? Number(result.og_image_missing_count) : undefined,
+    lighthouseImageDiagnostics: Number(result.lighthouse_image_diagnostics) || 0,
+    inventoryAvailable: Boolean(result.image_inventory_available),
+    inventoryProbed: inv?.probed != null ? Number(inv.probed) : undefined,
+    inventoryFailed: inv?.failed != null ? Number(inv.failed) : undefined,
+  };
+}
+
+function pageDetailFromRow(row: Record<string, unknown>): string | undefined {
+  const parts: string[] = [];
+  if (row.images_without_alt != null) parts.push(`${row.images_without_alt} missing alt`);
+  if (row.img_without_lazy != null) parts.push(`${row.img_without_lazy} without lazy load`);
+  if (row.img_without_dimensions != null) parts.push(`${row.img_without_dimensions} missing dimensions`);
+  if (row.images_total != null && parts.length) {
+    return `${parts.join(' · ')} (${row.images_total} total)`;
+  }
+  return parts.join(' · ') || undefined;
+}
+
+function blockFromImagePagesTable(name: string, result: Record<string, unknown>): ChatBlock | null {
+  const title = IMAGE_PAGE_TABLE_TOOLS[name];
+  if (!title) return null;
+  if (result.error) return null;
+  const pagesRaw = result.pages;
+  if (!Array.isArray(pagesRaw) || !pagesRaw.length) return null;
+  const pages = pagesRaw
+    .map((raw) => {
+      const row = asRecord(raw);
+      if (!row) return null;
+      const url = String(row.url || '').trim();
+      if (!url) return null;
+      return {
+        url,
+        title: row.title != null ? String(row.title) : undefined,
+        detail: pageDetailFromRow(row),
+      };
+    })
+    .filter((p): p is NonNullable<typeof p> => p != null);
+  if (!pages.length) return null;
+  return {
+    type: 'image_pages_table',
+    title,
+    pages,
+    total: typeof result.total === 'number' ? result.total : pages.length,
+    truncated: Boolean(result.truncated),
+  };
+}
+
+function formatBytes(n: number): string {
+  if (n >= 1_048_576) return `${(n / 1_048_576).toFixed(1)} MB`;
+  if (n >= 1024) return `${Math.round(n / 1024)} KB`;
+  return `${n} B`;
+}
+
+function blockFromImageInventoryTable(name: string, result: Record<string, unknown>): ChatBlock | null {
+  const title = IMAGE_INVENTORY_TABLE_TOOLS[name];
+  if (!title) return null;
+  if (result.error) return null;
+  const itemsRaw = result.items;
+  if (!Array.isArray(itemsRaw) || !itemsRaw.length) return null;
+  const items = itemsRaw
+    .map((raw) => {
+      const row = asRecord(raw);
+      if (!row) return null;
+      const url = String(row.url || '').trim();
+      if (!url) return null;
+      const size = row.size_bytes != null ? Number(row.size_bytes) : null;
+      const ctype = row.content_type != null ? String(row.content_type) : undefined;
+      const reasons: string[] = [];
+      if (row.reason) reasons.push(String(row.reason));
+      if (size != null && Number.isFinite(size)) {
+        reasons.push(formatBytes(size));
+      }
+      if (ctype) reasons.push(ctype);
+      return {
+        url,
+        sizeBytes: size,
+        contentType: ctype,
+        reasons,
+        score: row.attention_score != null ? Number(row.attention_score) : undefined,
+      };
+    })
+    .filter((i): i is NonNullable<typeof i> => i != null);
+  if (!items.length) return null;
+  return {
+    type: 'image_attention_table',
+    title,
+    items,
+    total: typeof result.total === 'number' ? result.total : items.length,
+    truncated: Boolean(result.truncated),
+  };
+}
+
+function blockFromImageAttention(name: string, result: Record<string, unknown>): ChatBlock | null {
+  if (name !== IMAGE_ATTENTION_TOOL) return null;
+  if (result.error) return null;
+  const itemsRaw = result.items;
+  if (!Array.isArray(itemsRaw) || !itemsRaw.length) return null;
+  const items = itemsRaw
+    .map((raw) => {
+      const row = asRecord(raw);
+      if (!row) return null;
+      const reasons = Array.isArray(row.reasons)
+        ? row.reasons.map((r) => String(r)).filter(Boolean)
+        : [];
+      if (!reasons.length && !row.url && !row.page_url) return null;
+      return {
+        url: row.url != null ? String(row.url) : undefined,
+        pageUrl: row.page_url != null ? String(row.page_url) : undefined,
+        sizeBytes: row.size_bytes != null ? Number(row.size_bytes) : null,
+        contentType: row.content_type != null ? String(row.content_type) : undefined,
+        reasons,
+        score: row.attention_score != null ? Number(row.attention_score) : undefined,
+      };
+    })
+    .filter((i): i is NonNullable<typeof i> => i != null);
+  if (!items.length) return null;
+  return {
+    type: 'image_attention_table',
+    title: 'Images needing attention',
+    items,
+    total: typeof result.total === 'number' ? result.total : items.length,
+    truncated: Boolean(result.truncated),
+  };
+}
+
+function blockFromFileDownload(name: string, result: Record<string, unknown>): ChatBlock | null {
+  if (!EXPORT_TOOLS.has(name)) return null;
+  if (result.error) return null;
+  const artifactId = String(result.artifact_id || '');
+  const filename = String(result.filename || 'export.bin');
+  if (!artifactId) return null;
+  const mimeType = result.mime_type != null ? String(result.mime_type) : undefined;
+  const fmt = result.format != null ? String(result.format).toUpperCase() : undefined;
+  return {
+    type: 'file_download',
+    files: [
+      {
+        filename,
+        mime_type: mimeType,
+        url: `/api/chat/artifacts/${artifactId}`,
+        label: fmt ? `Download ${fmt}` : undefined,
+      },
+    ],
+  };
+}
+
+type BlockParser = (name: string, result: Record<string, unknown>) => ChatBlock | ChatBlock[] | null;
 
 const BLOCK_PARSERS: BlockParser[] = [
+  blockFromFileDownload,
+  blockFromImageSummary,
+  blockFromImageSummaryPreviews,
+  blockFromImagePagesTable,
+  blockFromImageInventoryTable,
+  blockFromImageAttention,
   blockFromSummary,
   blockFromReportCrawlStatus,
   blockFromIssueTable,
@@ -542,12 +847,15 @@ export function deriveChatBlocks(toolActivity: ToolActivityItem[]): ChatBlock[] 
     if (item.status !== 'done' || !item.result) continue;
     const result = item.result;
     for (const parser of BLOCK_PARSERS) {
-      const block = parser(item.name, result);
-      if (!block) continue;
-      const key = blockKey(block);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      blocks.push(block);
+      const parsed = parser(item.name, result);
+      if (!parsed) continue;
+      const candidates = Array.isArray(parsed) ? parsed : [parsed];
+      for (const block of candidates) {
+        const key = blockKey(block);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        blocks.push(block);
+      }
     }
   }
 

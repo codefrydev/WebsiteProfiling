@@ -28,22 +28,41 @@ from .charts import (
 from .compare import compare_reports
 from .compare_slices import (
     compare_category_deltas,
+    compare_content_metrics,
+    compare_duplicate_deltas,
+    compare_google_metrics,
+    compare_health_score_delta,
     compare_issue_deltas,
     compare_lighthouse_deltas,
     compare_link_metric_deltas,
+    compare_priority_counts,
     compare_redirect_deltas,
+    compare_security_deltas,
     compare_seo_health_deltas,
+    compare_tech_deltas,
     compare_url_set_diff,
 )
 from .content import (
     get_content_analytics,
     get_content_duplicates,
+    get_duplicate_cluster,
     get_keyword_opportunities,
     get_ner_site_summary,
     get_social_coverage,
     list_thin_content_pages,
 )
 from .context import AuditToolContext
+from .crawl_lists import (
+    get_top_pages_by_pagerank,
+    list_canonical_mismatch,
+    list_long_redirect_chains,
+    list_pages_missing_canonical,
+    list_pages_missing_og_image,
+    list_pages_missing_viewport,
+    list_pages_skipped_headings,
+    list_pages_with_missing_alt,
+    list_robots_blocked_urls,
+)
 from .crawl import (
     get_browser_diagnostics_summary,
     get_crawl_links_table,
@@ -96,8 +115,35 @@ from .lighthouse import (
     get_lighthouse_for_url,
     get_lighthouse_human_summary,
     get_lighthouse_summary,
+    list_lighthouse_cwv_failures,
+    list_lighthouse_poor_accessibility_pages,
+    list_lighthouse_poor_best_practices_pages,
     list_lighthouse_poor_seo_pages,
     list_slow_pages,
+)
+from .export_tools import (
+    compose_custom_report,
+    export_audit_report,
+    export_compare_csv,
+    export_custom_report,
+    export_list_as_csv,
+    list_export_formats,
+)
+from .image_tools import (
+    get_image_audit_summary,
+    list_images_needing_attention,
+    list_largest_images,
+    list_lighthouse_image_opportunities,
+    list_pages_with_images_missing_dimensions,
+    list_pages_without_lazy_images,
+    list_site_image_urls,
+    list_unoptimized_images,
+)
+from .llm_tools import (
+    expand_keywords,
+    generate_content_brief,
+    get_page_coach,
+    get_portfolio_summary,
 )
 from .onpage import (
     list_content_url_issues,
@@ -115,14 +161,20 @@ from .links import (
     get_outbound_link_domains,
     get_top_linked_pages,
     get_url_fingerprints,
+    list_broken_link_sources,
     list_orphan_pages,
 )
 from .ops import (
     get_google_integration_status,
     get_integration_alerts,
     get_latest_log_analysis,
+    get_log_analysis_by_id,
+    get_log_googlebot_stats,
+    get_log_top_paths,
     get_property_ops,
+    list_crawl_only_paths,
     list_crawl_runs,
+    list_log_only_paths,
     list_log_uploads,
 )
 from .properties import get_property, list_properties
@@ -134,6 +186,7 @@ from .report import (
     get_report_summary,
     get_site_level,
     list_issues,
+    search_issues,
 )
 from .report_extras import (
     get_audit_recommendations,
@@ -144,8 +197,12 @@ from .report_extras import (
     list_issues_with_ai_fixes,
 )
 from .schema import get_schema_coverage, list_pages_without_schema, search_pages_by_schema_type
-from .security import get_security_findings
-from .tech import get_tech_stack_summary
+from .security import (
+    get_security_findings,
+    get_security_findings_summary,
+    list_security_findings_by_type,
+)
+from .tech import get_tech_stack_summary, list_pages_by_technology
 from .tool_catalog import TOOL_DEFINITIONS
 from .workflow import list_issue_workflow
 
@@ -275,6 +332,54 @@ _TOOL_HANDLERS: dict[str, ToolHandler] = {
     "compare_url_set_diff": compare_url_set_diff,
     "compare_redirect_deltas": compare_redirect_deltas,
     "compare_link_metric_deltas": compare_link_metric_deltas,
+    "compare_security_deltas": compare_security_deltas,
+    "compare_duplicate_deltas": compare_duplicate_deltas,
+    "compare_tech_deltas": compare_tech_deltas,
+    "compare_content_metrics": compare_content_metrics,
+    "compare_google_metrics": compare_google_metrics,
+    "compare_priority_counts": compare_priority_counts,
+    "compare_health_score_delta": compare_health_score_delta,
+    "list_pages_missing_canonical": list_pages_missing_canonical,
+    "list_canonical_mismatch": list_canonical_mismatch,
+    "list_pages_with_missing_alt": list_pages_with_missing_alt,
+    "list_pages_skipped_headings": list_pages_skipped_headings,
+    "list_pages_missing_viewport": list_pages_missing_viewport,
+    "list_long_redirect_chains": list_long_redirect_chains,
+    "list_robots_blocked_urls": list_robots_blocked_urls,
+    "list_pages_missing_og_image": list_pages_missing_og_image,
+    "get_top_pages_by_pagerank": get_top_pages_by_pagerank,
+    "get_log_top_paths": get_log_top_paths,
+    "list_log_only_paths": list_log_only_paths,
+    "list_crawl_only_paths": list_crawl_only_paths,
+    "get_log_googlebot_stats": get_log_googlebot_stats,
+    "get_log_analysis_by_id": get_log_analysis_by_id,
+    "list_lighthouse_poor_accessibility_pages": list_lighthouse_poor_accessibility_pages,
+    "list_lighthouse_poor_best_practices_pages": list_lighthouse_poor_best_practices_pages,
+    "list_lighthouse_cwv_failures": list_lighthouse_cwv_failures,
+    "list_pages_by_technology": list_pages_by_technology,
+    "get_duplicate_cluster": get_duplicate_cluster,
+    "get_security_findings_summary": get_security_findings_summary,
+    "list_security_findings_by_type": list_security_findings_by_type,
+    "list_broken_link_sources": list_broken_link_sources,
+    "search_issues": search_issues,
+    "generate_content_brief": generate_content_brief,
+    "get_page_coach": get_page_coach,
+    "get_portfolio_summary": get_portfolio_summary,
+    "expand_keywords": expand_keywords,
+    "export_audit_report": export_audit_report,
+    "export_compare_csv": export_compare_csv,
+    "export_list_as_csv": export_list_as_csv,
+    "compose_custom_report": compose_custom_report,
+    "export_custom_report": export_custom_report,
+    "list_export_formats": list_export_formats,
+    "get_image_audit_summary": get_image_audit_summary,
+    "list_pages_without_lazy_images": list_pages_without_lazy_images,
+    "list_pages_with_images_missing_dimensions": list_pages_with_images_missing_dimensions,
+    "list_site_image_urls": list_site_image_urls,
+    "list_lighthouse_image_opportunities": list_lighthouse_image_opportunities,
+    "list_largest_images": list_largest_images,
+    "list_unoptimized_images": list_unoptimized_images,
+    "list_images_needing_attention": list_images_needing_attention,
 }
 
 

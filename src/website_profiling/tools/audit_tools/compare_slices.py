@@ -7,12 +7,19 @@ from psycopg import Connection
 
 from ...reporting.compare_payload import (
     build_category_scores,
+    build_content_metrics,
+    build_duplicate_deltas,
+    build_google_metrics,
     build_issue_deltas,
     build_lighthouse_url_deltas,
     build_link_metric_deltas,
+    build_priority_counts,
     build_redirect_deltas,
+    build_security_deltas,
     build_seo_health_deltas,
+    build_tech_deltas,
     build_url_set_diff,
+    _score_from_categories,
 )
 from ._slice import cap_list, parse_limit
 from .compare_helpers import load_compare_pair
@@ -133,4 +140,93 @@ def compare_link_metric_deltas(conn: Connection, ctx: AuditToolContext, args: di
         "link_metric_deltas": sliced["items"],
         "total": sliced["total"],
         "truncated": sliced["truncated"],
+    }
+
+
+def _compare_list_slice(
+    conn: Connection,
+    ctx: AuditToolContext,
+    args: dict[str, Any],
+    *,
+    builder,
+    result_key: str,
+    default_limit: int = 50,
+    max_cap: int = 100,
+) -> dict[str, Any]:
+    current, baseline, cur_rid, base_rid, err = load_compare_pair(conn, ctx, args)
+    if err:
+        return err
+    assert current is not None and baseline is not None
+    items = builder(current, baseline)
+    limit = parse_limit(args.get("limit"), default_limit, max_cap)
+    sliced = cap_list(items if isinstance(items, list) else [], limit, max_cap=max_cap)
+    return {
+        **_compare_meta(cur_rid, base_rid, current, baseline),
+        result_key: sliced["items"],
+        "total": sliced["total"],
+        "truncated": sliced["truncated"],
+    }
+
+
+def compare_security_deltas(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    return _compare_list_slice(conn, ctx, args, builder=build_security_deltas, result_key="security_deltas")
+
+
+def compare_duplicate_deltas(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    return _compare_list_slice(conn, ctx, args, builder=build_duplicate_deltas, result_key="duplicate_deltas")
+
+
+def compare_tech_deltas(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    return _compare_list_slice(conn, ctx, args, builder=build_tech_deltas, result_key="tech_deltas")
+
+
+def compare_content_metrics(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    current, baseline, cur_rid, base_rid, err = load_compare_pair(conn, ctx, args)
+    if err:
+        return err
+    assert current is not None and baseline is not None
+    return {
+        **_compare_meta(cur_rid, base_rid, current, baseline),
+        "content_metrics": build_content_metrics(current, baseline),
+    }
+
+
+def compare_google_metrics(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    current, baseline, cur_rid, base_rid, err = load_compare_pair(conn, ctx, args)
+    if err:
+        return err
+    assert current is not None and baseline is not None
+    google = build_google_metrics(current, baseline)
+    return {
+        **_compare_meta(cur_rid, base_rid, current, baseline),
+        "google_available": google.get("available", False),
+        "google_metrics": google.get("metrics") or [],
+    }
+
+
+def compare_priority_counts(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    current, baseline, cur_rid, base_rid, err = load_compare_pair(conn, ctx, args)
+    if err:
+        return err
+    assert current is not None and baseline is not None
+    return {
+        **_compare_meta(cur_rid, base_rid, current, baseline),
+        "priority_counts": build_priority_counts(current, baseline),
+    }
+
+
+def compare_health_score_delta(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    current, baseline, cur_rid, base_rid, err = load_compare_pair(conn, ctx, args)
+    if err:
+        return err
+    assert current is not None and baseline is not None
+    cur_health = _score_from_categories(current.get("categories") or [])
+    base_health = _score_from_categories(baseline.get("categories") or [])
+    return {
+        **_compare_meta(cur_rid, base_rid, current, baseline),
+        "health_score": {
+            "current": cur_health,
+            "baseline": base_health,
+            "delta": (cur_health - base_health) if cur_health is not None and base_health is not None else None,
+        },
     }

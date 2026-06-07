@@ -161,7 +161,7 @@ def conn() -> MagicMock:
 def test_handler_schema_parity() -> None:
     names = {t["name"] for t in TOOL_DEFINITIONS}
     assert names == tool_handler_names()
-    assert len(TOOL_DEFINITIONS) == 123
+    assert len(TOOL_DEFINITIONS) == 171
 
 
 def test_slice_helpers() -> None:
@@ -408,3 +408,140 @@ def test_compare_reports(conn: MagicMock, ctx: AuditToolContext) -> None:
         side_effect=[None, baseline],
     ):
         assert "not found" in dispatch_tool("compare_reports", {"baseline_report_id": 1}, context=ctx, conn=conn)["error"]
+
+
+def test_new_gap_closure_tools(conn: MagicMock, ctx: AuditToolContext) -> None:
+    payload = _full_payload()
+    payload["content_urls"] = {
+        **payload.get("content_urls", {}),
+        "missing_canonical": [{"url": "https://ex.com/a", "title": "A"}],
+        "canonical_mismatch": [{"url": "https://ex.com/b", "canonical_url": "https://ex.com/other", "title": "B"}],
+        "missing_alt": [{"url": "https://ex.com/c", "images_without_alt": 2, "images_total": 3}],
+    }
+    payload["social_coverage"] = {"og_image_missing": ["https://ex.com/d"]}
+    payload["security_findings"] = [
+        {"url": "https://ex.com", "severity": "High", "finding_type": "hsts", "message": "missing"},
+    ]
+    payload["lighthouse_by_url"] = {
+        "https://ex.com/slow": {
+            "median_metrics": {"lcp_ms": 4000, "cls": 0.2, "tbt_ms": 300, "accessibility_score": 40, "best_practices_score": 45},
+            "accessibility": 40,
+            "best-practices": 45,
+        },
+    }
+    payload["graph_edges"] = [{"from": "https://ex.com/src", "to": "https://ex.com/broken"}]
+    payload["issues"] = {"broken": [{"url": "https://ex.com/broken", "status": "404"}]}
+    payload["tech_stack_summary"] = {"technologies": [{"name": "WordPress", "count": 2, "sample_urls": ["https://ex.com/wp"]}]}
+    df = pd.DataFrame([
+        {
+            "url": "https://ex.com/a",
+            "status": "200",
+            "canonical_url": "",
+            "images_without_alt": 1,
+            "images_total": 2,
+            "heading_sequence": "h1,h3",
+            "viewport_present": "false",
+            "redirect_chain_length": 2,
+            "og_image": "",
+            "pagerank": 0.5,
+            "tech_stack": '["WordPress"]',
+        },
+    ])
+    log_row = {
+        "upload_id": 1,
+        "filename": "access.log",
+        "line_count": 100,
+        "analysis": {
+            "top_paths": [{"path": "/hot", "hits": 50}],
+            "parsed_lines": 100,
+            "googlebot_hits": 10,
+            "crawl_compare": {"log_only_paths": ["/log-only"], "crawl_only_paths": ["/crawl-only"]},
+        },
+    }
+    with patch.object(Ctx, "load_payload", return_value=payload), patch.object(Ctx, "load_crawl_df", return_value=df):
+        assert dispatch_tool("list_pages_missing_canonical", {}, context=ctx, conn=conn)["total"] >= 1
+        assert dispatch_tool("list_canonical_mismatch", {}, context=ctx, conn=conn)["total"] >= 1
+        assert dispatch_tool("list_pages_with_missing_alt", {}, context=ctx, conn=conn)["total"] >= 1
+        assert dispatch_tool("list_pages_without_lazy_images", {}, context=ctx, conn=conn)["total"] >= 0
+        assert dispatch_tool("list_pages_with_images_missing_dimensions", {}, context=ctx, conn=conn)["total"] >= 0
+        assert dispatch_tool("get_image_audit_summary", {}, context=ctx, conn=conn)["pages_missing_alt"] >= 0
+        assert dispatch_tool("list_pages_skipped_headings", {}, context=ctx, conn=conn)["total"] == 1
+        assert dispatch_tool("list_pages_missing_viewport", {}, context=ctx, conn=conn)["total"] == 1
+        assert dispatch_tool("list_long_redirect_chains", {}, context=ctx, conn=conn)["total"] == 1
+        assert dispatch_tool("list_pages_missing_og_image", {}, context=ctx, conn=conn)["total"] >= 1
+        assert dispatch_tool("get_top_pages_by_pagerank", {}, context=ctx, conn=conn)["total"] >= 0
+        assert dispatch_tool("get_security_findings_summary", {}, context=ctx, conn=conn)["total_findings"] == 1
+        assert dispatch_tool("list_security_findings_by_type", {"finding_type": "hsts"}, context=ctx, conn=conn)["total"] == 1
+        assert dispatch_tool("list_broken_link_sources", {}, context=ctx, conn=conn)["total"] == 1
+        assert dispatch_tool("list_pages_by_technology", {"technology_name": "WordPress"}, context=ctx, conn=conn)["total"] >= 1
+        assert dispatch_tool("get_duplicate_cluster", {"cluster_index": 0}, context=ctx, conn=conn)["cluster_index"] == 0
+        assert dispatch_tool("search_issues", {"message_contains": "title"}, context=ctx, conn=conn)["total"] >= 0
+        assert dispatch_tool("list_lighthouse_poor_accessibility_pages", {}, context=ctx, conn=conn)["total"] == 1
+        assert dispatch_tool("list_lighthouse_poor_best_practices_pages", {}, context=ctx, conn=conn)["total"] == 1
+        assert dispatch_tool("list_lighthouse_cwv_failures", {}, context=ctx, conn=conn)["total"] == 1
+    with patch("website_profiling.tools.audit_tools.ops._load_log_analysis", return_value=log_row):
+        assert dispatch_tool("get_log_top_paths", {"property_id": 1}, context=ctx, conn=conn)["total"] == 1
+        assert dispatch_tool("list_log_only_paths", {"property_id": 1}, context=ctx, conn=conn)["total"] == 1
+        assert dispatch_tool("list_crawl_only_paths", {"property_id": 1}, context=ctx, conn=conn)["total"] == 1
+        assert dispatch_tool("get_log_googlebot_stats", {"property_id": 1}, context=ctx, conn=conn)["googlebot_hits"] == 10
+    with patch("website_profiling.tools.audit_tools.compare_helpers.read_report_payload", return_value=payload):
+        assert "security_deltas" in dispatch_tool("compare_security_deltas", {"baseline_report_id": 1}, context=ctx, conn=conn)
+        assert "health_score" in dispatch_tool("compare_health_score_delta", {"baseline_report_id": 1}, context=ctx, conn=conn)
+    with patch("website_profiling.tools.audit_tools.llm_tools.list_properties_public", return_value=[{"id": 1, "name": "ex.com", "canonical_domain": "ex.com"}]):
+        conn.execute = MagicMock(return_value=MagicMock(fetchone=MagicMock(return_value={"health_score": 80, "generated_at": datetime.now(timezone.utc), "report_id": 1, "issue_counts": "{}"})))
+        assert dispatch_tool("get_portfolio_summary", {}, conn=conn)["count"] == 1
+    with patch("website_profiling.tools.audit_tools.llm_tools.batch_expand", return_value={"widgets": {"web": ["widgets near me"]}}):
+        assert dispatch_tool("expand_keywords", {"seeds": ["widgets"]}, context=ctx, conn=conn)["seed_count"] == 1
+    assert dispatch_tool("generate_content_brief", {"keyword": "widgets"}, context=ctx, conn=conn)["brief"]["keyword"] == "widgets"
+
+
+def test_export_tools(conn: MagicMock, ctx: AuditToolContext, tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    payload = _full_payload()
+    with patch.object(Ctx, "load_payload", return_value=payload), patch(
+        "website_profiling.tools.audit_tools.export_tools.export_audit_csv",
+        return_value="url,status\nhttps://ex.com,200\n",
+    ):
+        out = dispatch_tool("export_audit_report", {"format": "csv"}, context=ctx, conn=conn)
+        assert out.get("artifact_id")
+        assert out.get("filename", "").endswith(".csv")
+    formats = dispatch_tool("list_export_formats", {}, context=ctx, conn=conn)
+    assert formats.get("formats")
+    with patch.object(Ctx, "load_payload", return_value=payload), patch(
+        "website_profiling.tools.audit_tools.export_tools._dispatch",
+        return_value={"pages": [{"url": "https://ex.com/broken", "status": "404"}], "total": 1, "truncated": False},
+    ):
+        csv_out = dispatch_tool(
+            "export_list_as_csv",
+            {"tool_name": "list_broken_links", "tool_args": {}},
+            context=ctx,
+            conn=conn,
+        )
+        assert csv_out.get("artifact_id")
+        assert csv_out.get("total") == 1
+    with patch.object(Ctx, "load_payload", return_value=payload):
+        spec = dispatch_tool(
+            "compose_custom_report",
+            {
+                "title": "Client",
+                "sections": [{"type": "category_scores"}, {"type": "notes", "heading": "N", "markdown": "Hi"}],
+            },
+            context=ctx,
+            conn=conn,
+        )
+        assert spec.get("report_spec_id")
+        with patch(
+            "website_profiling.tools.audit_tools.export_tools.resolve_section_results",
+            return_value=[None, None],
+        ):
+            html_out = dispatch_tool(
+                "export_custom_report",
+                {"report_spec_id": spec["report_spec_id"], "format": "html"},
+                context=ctx,
+                conn=conn,
+            )
+            assert html_out.get("artifact_id")
+    with patch("website_profiling.tools.audit_tools.export_tools.load_compare_pair") as mock_pair:
+        mock_pair.return_value = (payload, payload, 2, 1, None)
+        cmp_out = dispatch_tool("export_compare_csv", {"baseline_report_id": 1}, context=ctx, conn=conn)
+        assert cmp_out.get("artifact_id")

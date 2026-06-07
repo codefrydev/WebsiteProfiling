@@ -28,3 +28,4 @@ input.txt
 # Runtime shadow written to DATA_DIR by the web UI (not the committed example)
 pipeline-config.txt
 *__pycache__*
+.coverage

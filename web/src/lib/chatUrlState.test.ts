@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyChatUrlContext,
+  buildChatFabHref,
   buildChatSearchQuery,
+  isChatFabVisiblePath,
   parseChatUrlContext,
 } from './chatUrlState';
 
@@ -28,5 +30,19 @@ describe('chatUrlState', () => {
   it('buildChatSearchQuery returns unchanged string when context matches', () => {
     const current = 'property=3&session=42';
     expect(buildChatSearchQuery(current, { propertyId: 3, sessionId: 42 })).toBe(current);
+  });
+
+  it('buildChatFabHref includes domain query for chat deep link', () => {
+    expect(buildChatFabHref('codefrydev.in')).toBe('/chat?domain=codefrydev.in');
+    expect(buildChatFabHref('')).toBe('/chat');
+    expect(buildChatFabHref(null)).toBe('/chat');
+  });
+
+  it('isChatFabVisiblePath matches report routes only', () => {
+    expect(isChatFabVisiblePath('/dashboard')).toBe(true);
+    expect(isChatFabVisiblePath('/issues')).toBe(true);
+    expect(isChatFabVisiblePath('/home')).toBe(false);
+    expect(isChatFabVisiblePath('/chat')).toBe(false);
+    expect(isChatFabVisiblePath('/pipeline')).toBe(false);
   });
 });

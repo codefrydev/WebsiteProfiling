@@ -11,6 +11,7 @@ import {
   KeyRound,
   Link2,
   BarChart3,
+  Settings2,
 } from 'lucide-react';
 import type { GooglePropertiesResponse, GoogleStatusResponse, IntegrationToast } from '@/types/api';
 import { apiUrl } from '@/lib/publicBase';
@@ -26,7 +27,11 @@ import { pickInitialPropertyId, siteUrlFromProperty } from '@/lib/googleProperty
 import { deriveSiteNameFromStartUrl } from '@/lib/domainSlug';
 import type { PropertyListItem } from '@/types/api';
 import Button from '@/components/Button';
+import ViewTabs from '@/components/ViewTabs';
+import { ViewTabPanel } from '@/components/ViewTabPanel';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
+
+type IntegrationsTabId = 'connect' | 'properties' | 'imports' | 'settings';
 
 const GCP_GUIDE_URL =
   'https://developers.google.com/workspace/guides/get-started';
@@ -221,6 +226,8 @@ function InputField({
 export interface GoogleIntegrationsPanelProps {
   initialToast?: IntegrationToast | null;
   showTitle?: boolean;
+  /** Tabbed layout for modal / large containers. */
+  layout?: 'default' | 'tabbed';
   /** When omitted, resolved from pipeline/report Site URL. */
   propertyId?: number | null;
   /** Site URL used to resolve the property row when propertyId is omitted. */
@@ -233,6 +240,7 @@ export interface GoogleIntegrationsPanelProps {
 export default function GoogleIntegrationsPanel({
   initialToast,
   showTitle = true,
+  layout = 'default',
   propertyId: propertyIdProp,
   startUrl: startUrlProp = '',
 }: GoogleIntegrationsPanelProps) {
@@ -381,6 +389,7 @@ export default function GoogleIntegrationsPanel({
   const linksFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Advanced accordion (paste refresh token)
+  const [activeTab, setActiveTab] = useState<IntegrationsTabId>('connect');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [refreshToken, setRefreshToken] = useState('');
   const [savingToken, setSavingToken] = useState(false);
@@ -778,19 +787,24 @@ export default function GoogleIntegrationsPanel({
   const step2Done = Boolean(connected);
 
   const needsProperty = effectivePropertyId == null && !startUrl.trim();
+  const isTabbed = layout === 'tabbed';
 
-  return (
-    <div className="space-y-4">
-      {readOnly ? (
-        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-200">
-          {strings.app.readonlyBanner}
-        </p>
-      ) : null}
-      <p className="rounded-lg border border-default bg-brand-800/50 px-4 py-2.5 text-xs text-muted-foreground">
-        Google Client ID/Secret and service account keys are stored in the database. Each site keeps its own
-        OAuth connection and Search Console / Analytics property IDs.
-      </p>
+  const readOnlyBanner = readOnly ? (
+    <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-200">
+      {strings.app.readonlyBanner}
+    </p>
+  ) : null;
 
+  const infoBannerText =
+    'Google Client ID/Secret and service account keys are stored in the database. Each site keeps its own OAuth connection and Search Console / Analytics property IDs.';
+
+  const infoBanner = (
+    <p className="rounded-lg border border-default bg-brand-800/50 px-4 py-2.5 text-xs leading-relaxed text-muted-foreground">
+      {infoBannerText}
+    </p>
+  );
+
+  const propertySelector = (
       <div className="rounded-xl border border-default bg-brand-800/60 px-4 py-4 sm:px-5 space-y-3">
         <label htmlFor="googlePropertySelect" className="block text-xs font-medium text-muted-foreground">
           {s.googlePropertySelectorLabel}
@@ -869,54 +883,117 @@ export default function GoogleIntegrationsPanel({
           </div>
         ) : null}
       </div>
+  );
 
-      {needsProperty ? (
-        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
-          Set a Site URL under Crawl settings so this audit can link Google Search Console and Analytics to the
-          correct domain.
-        </p>
-      ) : null}
-      {showTitle ? (
-        <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-default bg-brand-800/60 px-4 py-4 sm:px-5">
-          <div className="flex min-w-0 items-start gap-3">
-            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-default bg-brand-900/80">
-              <GoogleMark className="h-5 w-5" />
-            </span>
-            <div className="min-w-0">
-              <h2 className="text-base font-semibold text-foreground">Connect Search Console & Analytics</h2>
-              <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
-                Connect Search Console and Analytics 4, then choose properties to sync with your reports.
-              </p>
-            </div>
+  const needsPropertyWarning = needsProperty ? (
+    <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
+      Set a Site URL under Crawl settings so this audit can link Google Search Console and Analytics to the
+      correct domain.
+    </p>
+  ) : null;
+
+  const titleBlock = showTitle ? (
+    <div className="flex flex-wrap items-start justify-between gap-4 rounded-xl border border-default bg-brand-800/60 px-4 py-4 sm:px-5">
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-default bg-brand-900/80">
+          <GoogleMark className="h-5 w-5" />
+        </span>
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-foreground">Connect Search Console & Analytics</h2>
+          <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
+            Connect Search Console and Analytics 4, then choose properties to sync with your reports.
+          </p>
+        </div>
+      </div>
+      <StatusPill connected={connected} />
+    </div>
+  ) : null;
+
+  const compactContextBar = isTabbed ? (
+    <div className="rounded-xl border border-default bg-brand-800/60 px-4 py-3.5 space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-2.5">
+          <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-default bg-brand-900/80">
+            <GoogleMark className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">Site & connection</p>
+            <p className="text-xs text-muted-foreground">Credentials are shared; OAuth is per site.</p>
           </div>
-          <StatusPill connected={connected} />
         </div>
-      ) : null}
-
-      {toast ? (
-        <div
-          className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm ${
-            toast.type === 'success'
-              ? 'border border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400'
-              : 'border border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-400'
-          }`}
-        >
-          {toast.type === 'success' ? (
-            <CheckCircle2 className="h-4 w-4 shrink-0" />
+        <StatusPill connected={connected} />
+      </div>
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-start">
+        <div className="min-w-0 space-y-1.5">
+          <label htmlFor="googlePropertySelect" className="block text-xs font-medium text-muted-foreground">
+            {s.googlePropertySelectorLabel}
+          </label>
+          {loadingPropertyRows ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading sites…
+            </div>
+          ) : propertyRows.length === 0 && effectivePropertyId == null ? (
+            <p className="text-sm text-amber-800 dark:text-amber-200">{s.googlePropertySelectorEmpty}</p>
+          ) : propertyRows.length === 0 && startUrl.trim() ? (
+            <p className="text-sm text-muted-foreground">
+              Site: <span className="font-mono text-foreground">{startUrl.trim()}</span>
+            </p>
           ) : (
-            <AlertCircle className="h-4 w-4 shrink-0" />
+            <select
+              id="googlePropertySelect"
+              value={String(selectedPropertyId ?? effectivePropertyId ?? '')}
+              onChange={(e) => {
+                const id = parseInt(e.target.value, 10);
+                if (Number.isFinite(id)) void handlePropertySelect(id);
+              }}
+              disabled={syncingProperty || readOnly}
+              className={selectClassName()}
+            >
+              {propertyRows.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.canonical_domain})
+                  {p.google_connected ? ` — ${s.googlePropertyConnected}` : ` — ${s.googlePropertyNotConnected}`}
+                </option>
+              ))}
+            </select>
           )}
-          <span>{toast.message}</span>
         </div>
-      ) : null}
+        {selectedProperty && status ? (
+          <div className="rounded-lg border border-muted/60 bg-brand-900/40 px-3 py-2.5 text-xs space-y-1">
+            <p className="font-medium text-foreground">
+              {format(s.googlePropertyContextTitle, { name: selectedProperty.name })}
+            </p>
+            <p className="text-muted-foreground">
+              {format(s.googlePropertyGscGa4, {
+                gsc: status.gscSiteUrl || '—',
+                ga4: status.ga4PropertyId || '—',
+              })}
+            </p>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  ) : null;
 
-      {loadingStatus ? (
-        <div className="flex items-center justify-center gap-2 rounded-xl border border-default bg-brand-800/40 py-12 text-sm text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin text-link" />
-          Loading connection status…
-        </div>
+  const toastBlock = toast ? (
+    <div
+      className={`flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm ${
+        toast.type === 'success'
+          ? 'border border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400'
+          : 'border border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-400'
+      }`}
+    >
+      {toast.type === 'success' ? (
+        <CheckCircle2 className="h-4 w-4 shrink-0" />
       ) : (
-        <>
+        <AlertCircle className="h-4 w-4 shrink-0" />
+      )}
+      <span>{toast.message}</span>
+    </div>
+  ) : null;
+
+  const credentialsStep = (
           <SetupStep
             step={1}
             title="Google Cloud credentials"
@@ -965,7 +1042,9 @@ export default function GoogleIntegrationsPanel({
               </Button>
             </div>
           </SetupStep>
+  );
 
+  const connectStep = (
           <SetupStep
             step={2}
             title="Connect Google account"
@@ -1017,8 +1096,22 @@ export default function GoogleIntegrationsPanel({
               </div>
             )}
           </SetupStep>
+  );
 
-          {connected ? (
+  const loadingBlock = (
+    <div className="flex items-center justify-center gap-2 rounded-xl border border-default bg-brand-800/40 py-12 text-sm text-muted-foreground">
+      <Loader2 className="h-5 w-5 animate-spin text-link" />
+      Loading connection status…
+    </div>
+  );
+
+  const connectNotReadyMessage = (
+    <p className="rounded-lg border border-default bg-brand-800/50 px-4 py-6 text-center text-sm text-muted-foreground">
+      Connect your Google account in the <span className="font-medium text-foreground">Connect</span> tab first.
+    </p>
+  );
+
+  const propertiesStep = connected ? (
             <SetupStep
               step={3}
               title="Properties & sync"
@@ -1199,9 +1292,9 @@ export default function GoogleIntegrationsPanel({
                 </div>
               ) : null}
             </SetupStep>
-          ) : null}
+  ) : null;
 
-          {effectivePropertyId != null && endpoints.linksImport ? (
+  const linksStep = effectivePropertyId != null && endpoints.linksImport ? (
             <SetupStep
               step={4}
               title={s.gscLinksTitle}
@@ -1278,15 +1371,9 @@ export default function GoogleIntegrationsPanel({
                 </p>
               ) : null}
             </SetupStep>
-          ) : null}
+  ) : null;
 
-          <BingWebmasterSection />
-
-          {effectivePropertyId != null ? (
-            <PropertyOpsSection propertyId={effectivePropertyId} />
-          ) : null}
-
-          {effectivePropertyId != null ? (
+  const advancedSection = effectivePropertyId != null ? (
             <div className="overflow-hidden rounded-xl border border-default bg-brand-800/40">
               <button
                 type="button"
@@ -1319,8 +1406,100 @@ export default function GoogleIntegrationsPanel({
                 </div>
               ) : null}
             </div>
+  ) : null;
+
+  const integrationTabs = [
+    { id: 'connect' as const, label: 'Connect', icon: <KeyRound className="h-3.5 w-3.5" aria-hidden /> },
+    { id: 'properties' as const, label: 'Properties & sync', icon: <BarChart3 className="h-3.5 w-3.5" aria-hidden /> },
+    { id: 'imports' as const, label: 'Imports', icon: <Link2 className="h-3.5 w-3.5" aria-hidden /> },
+    { id: 'settings' as const, label: 'Settings', icon: <Settings2 className="h-3.5 w-3.5" aria-hidden /> },
+  ];
+
+  if (isTabbed) {
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        <div className="shrink-0 space-y-3 border-b border-muted pb-4">
+          {readOnlyBanner}
+          {compactContextBar}
+          {needsPropertyWarning}
+          {toastBlock}
+          <ViewTabs
+            tabs={integrationTabs}
+            activeTab={activeTab}
+            onChange={(tabId) => setActiveTab(tabId as IntegrationsTabId)}
+            ariaLabel="Integration sections"
+            idPrefix="integrations"
+            className="border-t border-muted/60 pt-3"
+          />
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto pt-4">
+          {loadingStatus ? (
+            loadingBlock
+          ) : (
+            <>
+              {activeTab === 'connect' ? (
+                <ViewTabPanel idPrefix="integrations" tabId="connect" className="space-y-4">
+                  <p className="rounded-lg border border-default bg-brand-800/50 px-4 py-2.5 text-xs leading-relaxed text-muted-foreground">
+                    {infoBannerText}
+                  </p>
+                  <div className="grid gap-4 xl:grid-cols-2">
+                    {credentialsStep}
+                    {connectStep}
+                  </div>
+                </ViewTabPanel>
+              ) : null}
+              {activeTab === 'properties' ? (
+                <ViewTabPanel idPrefix="integrations" tabId="properties" className="space-y-4">
+                  {propertiesStep ?? connectNotReadyMessage}
+                </ViewTabPanel>
+              ) : null}
+              {activeTab === 'imports' ? (
+                <ViewTabPanel idPrefix="integrations" tabId="imports" className="space-y-4">
+                  {linksStep}
+                  <BingWebmasterSection />
+                </ViewTabPanel>
+              ) : null}
+              {activeTab === 'settings' ? (
+                <ViewTabPanel idPrefix="integrations" tabId="settings" className="space-y-4">
+                  {effectivePropertyId != null ? (
+                    <PropertyOpsSection propertyId={effectivePropertyId} />
+                  ) : (
+                    <p className="rounded-lg border border-default bg-brand-800/50 px-4 py-6 text-center text-sm text-muted-foreground">
+                      Select a site above to configure schedules and alerts.
+                    </p>
+                  )}
+                  {advancedSection}
+                </ViewTabPanel>
+              ) : null}
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {readOnlyBanner}
+      {infoBanner}
+      {propertySelector}
+      {needsPropertyWarning}
+      {titleBlock}
+      {toastBlock}
+      {loadingStatus ? (
+        loadingBlock
+      ) : (
+        <div className="space-y-4">
+          {credentialsStep}
+          {connectStep}
+          {propertiesStep}
+          {linksStep}
+          <BingWebmasterSection />
+          {effectivePropertyId != null ? (
+            <PropertyOpsSection propertyId={effectivePropertyId} />
           ) : null}
-        </>
+          {advancedSection}
+        </div>
       )}
     </div>
   );

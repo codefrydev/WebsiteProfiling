@@ -244,6 +244,17 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
         help: 'Authorized testing only. Sends controlled probes beyond passive header checks.',
       },
       { key: 'security_max_urls_probe', label: 'Security max URLs to probe', type: 'number', defaultValue: '20' },
+      {
+        key: 'probe_image_inventory',
+        label: 'Probe image URLs (size/MIME)',
+        type: 'bool',
+        defaultValue: false,
+        help: 'HEAD/GET discovered image URLs during report build for largest/unoptimized image tools.',
+      },
+      { key: 'max_image_probe_urls', label: 'Max image URLs to probe', type: 'number', defaultValue: '500' },
+      { key: 'image_probe_concurrency', label: 'Image probe concurrency', type: 'number', defaultValue: '6' },
+      { key: 'image_probe_timeout', label: 'Image probe timeout (seconds)', type: 'number', defaultValue: '8' },
+      { key: 'image_unoptimized_min_kb', label: 'Unoptimized image min size (KB)', type: 'number', defaultValue: '200' },
     ],
   },
   {

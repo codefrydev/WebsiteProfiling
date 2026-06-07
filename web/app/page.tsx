@@ -1,23 +1,16 @@
-import { redirect } from 'next/navigation';
+import type { Metadata } from 'next';
+import LandingPage from '@/views/Landing';
+import { strings } from '@/lib/strings';
+
+const vl = strings.views.landing;
+
+export const metadata: Metadata = {
+  title: vl.metaTitle,
+  description: vl.metaDescription,
+};
 
 export const dynamic = 'force-dynamic';
 
-export default async function RootPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const params = await searchParams;
-  const sp = new URLSearchParams();
-  for (const [key, value] of Object.entries(params)) {
-    if (typeof value === 'string') {
-      sp.set(key, value);
-    } else if (Array.isArray(value)) {
-      for (const v of value) {
-        sp.append(key, v);
-      }
-    }
-  }
-  const q = sp.toString();
-  redirect(q ? `/home?${q}` : '/home');
+export default function RootPage() {
+  return <LandingPage />;
 }

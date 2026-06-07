@@ -15,12 +15,18 @@ function isIssueTable(headerRow: string): boolean {
   );
 }
 
+function isImageMetricTable(headerRow: string): boolean {
+  const h = headerRow.toLowerCase();
+  return /metric|value|images|alt|lazy|dimension|og/i.test(h);
+}
+
 function shouldStripTable(headerRow: string, blocks: ChatBlock[]): boolean {
   for (const block of blocks) {
     if (block.type === 'category_scores' && isCategoryScoreTable(headerRow)) return true;
     if (block.type === 'issue_table' && isIssueTable(headerRow)) return true;
     if (block.type === 'compare_category_deltas' && isCategoryScoreTable(headerRow)) return true;
     if (block.type === 'google_summary' && /query|clicks|page/i.test(headerRow)) return true;
+    if (block.type === 'image_audit_summary' && isImageMetricTable(headerRow)) return true;
   }
   return false;
 }
@@ -118,11 +124,54 @@ function stripOverviewProse(content: string, blocks: ChatBlock[]): string {
   return out.replace(/\n{3,}/g, '\n\n').trim();
 }
 
+function stripImageAuditProse(content: string, blocks: ChatBlock[]): string {
+  const hasImageViz = blocks.some(
+    (b) =>
+      b.type === 'image_audit_summary' ||
+      b.type === 'image_pages_table' ||
+      b.type === 'image_lighthouse_list',
+  );
+  if (!hasImageViz) return content;
+
+  let out = content;
+  out = out.replace(/^[^\n#]*📸[^\n]*\n?/m, '');
+  out = out.replace(
+    /^.*\b(?:total images crawled|pages missing alt|pages with non-lazy|pages missing image dimensions|og image coverage|lighthouse image).*(?:\d+|%).*$/gim,
+    '',
+  );
+  out = out.replace(/\n?#{1,3}\s*headline numbers[^\n]*\n[\s\S]*?(?=\n#{1,3}\s|$)/gi, '\n');
+
+  // Drop per-issue URL enumerations when page tables render the same data
+  if (blocks.some((b) => b.type === 'image_pages_table')) {
+    out = out.replace(
+      /\n?#{1,5}\s*\d+\.\s*(?:missing alt|lazy|og|lighthouse|dimensions)[^\n]*\n[\s\S]*?(?=\n#{1,5}\s|\n#{1,3}\s|$)/gi,
+      '\n',
+    );
+    const lines = out.split('\n');
+    const filtered = lines.filter((line) => {
+      const t = line.trim();
+      if (!t) return true;
+      if (/^https?:\/\//i.test(t)) return false;
+      if (/^[-*]\s+https?:\/\//i.test(t)) return false;
+      if (/^[-*]\s+\/[\w/-]+/.test(t)) return false;
+      if (/non-lazy\s*\/\s*\d+\s+total/i.test(t)) return false;
+      if (/without alt/i.test(t) && /\d+\s+of\s+\d+/i.test(t)) return false;
+      if (/pages missing:/i.test(t)) return false;
+      if (/^[-*]\s+[\w-]+,\s+[\w-]+/.test(t) && t.length < 120) return false;
+      return true;
+    });
+    out = filtered.join('\n');
+  }
+
+  return out.replace(/\n{3,}/g, '\n\n').trim();
+}
+
 /** Remove GFM tables and prose duplicated by structured chat blocks. */
 export function stripRedundantMarkdown(content: string, blocks: ChatBlock[]): string {
   if (!content.trim() || !blocks.length) return content;
   let out = stripTables(content, blocks);
   out = stripIssueProse(out, blocks);
   out = stripOverviewProse(out, blocks);
+  out = stripImageAuditProse(out, blocks);
   return out.replace(/\n{3,}/g, '\n\n').trim();
 }

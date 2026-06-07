@@ -115,14 +115,18 @@ def test_run_gsc_links_staleness_alerts_delegates() -> None:
         assert len(run_gsc_links_staleness_alerts()) == 1
 
 
-def test_name_main_guard(capsys, monkeypatch) -> None:
+def test_module_main_guard(capsys, monkeypatch) -> None:
     import runpy
+    import sys
 
     monkeypatch.setenv("DATABASE_URL", "postgres://u:p@127.0.0.1:5432/test")
     conn = MagicMock()
     cur = MagicMock()
     cur.fetchall.return_value = []
     conn.execute.return_value = cur
+
+    # run_module executes __main__ in a fresh import; drop any prior import from this file.
+    sys.modules.pop("website_profiling.tools.schedule_runner", None)
 
     with patch("website_profiling.db.storage.db_session") as mock_session:
         mock_session.return_value.__enter__.return_value = conn
