@@ -9,12 +9,16 @@ import {
   Loader2,
   ScanSearch,
   Sparkles,
+  Square,
   Wrench,
 } from 'lucide-react';
 import type { PipelineJobStatus } from '@/types/api';
 import type { PipelinePresetId } from './pipelinePresets';
 import type { PipelineSettingsGroupId } from './pipelineSettingsGroups';
 import { strings } from '@/lib/strings';
+import Button from '@/components/Button';
+
+const s = strings.pipelineRunner;
 
 const presetStrings = strings.pipelineRunner.presets;
 
@@ -105,6 +109,35 @@ export function PipelineStatusBadge({
       )}
       {display}
     </span>
+  );
+}
+
+export function PipelineStopButton({
+  onClick,
+  disabled,
+  stopping,
+  className = '',
+}: {
+  onClick: () => void | Promise<void> | Promise<boolean>;
+  disabled?: boolean;
+  stopping?: boolean;
+  className?: string;
+}) {
+  return (
+    <Button
+      variant="secondary"
+      onClick={() => void onClick()}
+      disabled={disabled || stopping}
+      className={className}
+      aria-label={s.stopJobAria}
+    >
+      {stopping ? (
+        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+      ) : (
+        <Square className="h-4 w-4 fill-current" aria-hidden />
+      )}
+      {stopping ? s.stoppingJob : s.stopJob}
+    </Button>
   );
 }
 

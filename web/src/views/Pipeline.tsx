@@ -11,9 +11,10 @@ import PipelineShell, {
   pipelineNavFromSearchParams,
   type PipelineNavId,
 } from '@/components/pipeline/PipelineShell';
-import { PipelineStatusBadge } from '@/components/pipeline/pipelineUi';
+import { PipelineStatusBadge, PipelineStopButton } from '@/components/pipeline/pipelineUi';
 import { isPipelinePresetId } from '@/components/pipeline/pipelinePresets';
 import { usePipeline } from '@/context/PipelineContext';
+import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import { OPEN_INTEGRATIONS } from '@/lib/pipelineJobEvents';
 
 export default function PipelinePage() {
@@ -21,7 +22,8 @@ export default function PipelinePage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const activeNav = pipelineNavFromSearchParams(searchParams);
-  const { busy, status, handlePresetChange } = usePipeline();
+  const { busy, status, stopping, handlePresetChange, cancelJob } = usePipeline();
+  const { readOnly } = useReadOnlySession();
   const [googleIntegrationsToast, setGoogleIntegrationsToast] = useState<IntegrationToast | null>(
     null,
   );
@@ -80,8 +82,18 @@ export default function PipelinePage() {
   };
 
   const headerExtra =
-    activeNav === 'run' && (busy || status) ? (
-      <PipelineStatusBadge status={status} busy={busy} />
+    busy || status ? (
+      <div className="flex items-center gap-2">
+        <PipelineStatusBadge status={status} busy={busy} />
+        {busy ? (
+          <PipelineStopButton
+            onClick={cancelJob}
+            stopping={stopping}
+            disabled={readOnly}
+            className="py-1.5"
+          />
+        ) : null}
+      </div>
     ) : null;
 
   return (

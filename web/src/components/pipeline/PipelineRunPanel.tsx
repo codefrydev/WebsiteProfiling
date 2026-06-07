@@ -19,6 +19,7 @@ import { usePipeline } from '@/context/PipelineContext';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import {
   PipelineStatusBadge,
+  PipelineStopButton,
   PRESET_COPY,
   PresetIcon,
 } from './pipelineUi';
@@ -27,6 +28,7 @@ import { CRAWL_PRESETS, type CrawlPresetId } from '@/lib/crawlPresets';
 import PipelineWizardProgress, { type WizardStep } from './PipelineWizardProgress';
 import PipelineLogViewer from './PipelineLogViewer';
 import CrawlAuthorizeCheckbox from './CrawlAuthorizeCheckbox';
+import PipelineRunPreviewCard from './PipelineRunPreviewCard';
 
 const s = strings.pipelineRunner;
 const crawlPresets = s.crawlPresets as Record<string, { label: string; maxPages: string; stream?: boolean }>;
@@ -56,6 +58,8 @@ export default function PipelineRunPanel() {
     status,
     log,
     startUrl,
+    configState,
+    customCommand,
     presetId,
     handleStartUrlChange,
     handlePresetChange,
@@ -63,6 +67,8 @@ export default function PipelineRunPanel() {
     handleCrawlPresetChange,
     setField,
     run,
+    cancelJob,
+    stopping,
     continueInBackground,
   } = usePipeline();
   const { readOnly } = useReadOnlySession();
@@ -318,6 +324,13 @@ export default function PipelineRunPanel() {
               </div>
             </dl>
 
+            <PipelineRunPreviewCard
+              presetId={presetId}
+              configState={configState}
+              customCommand={customCommand}
+              crawlPresetId={crawlPresetId}
+            />
+
             <div className="mt-5">
               <CrawlAuthorizeCheckbox
                 checked={crawlAuthorized}
@@ -340,9 +353,17 @@ export default function PipelineRunPanel() {
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 {busy ? (
-                  <Button variant="secondary" onClick={continueInBackground} className="py-2.5">
-                    {s.continueInBackground}
-                  </Button>
+                  <>
+                    <PipelineStopButton
+                      onClick={cancelJob}
+                      stopping={stopping}
+                      disabled={readOnly}
+                      className="py-2.5"
+                    />
+                    <Button variant="secondary" onClick={continueInBackground} className="py-2.5">
+                      {s.continueInBackground}
+                    </Button>
+                  </>
                 ) : null}
                 <Button
                   variant="primary"
@@ -374,7 +395,17 @@ export default function PipelineRunPanel() {
                   <Terminal className="h-4 w-4 text-muted-foreground" aria-hidden />
                   <span className="text-sm font-medium text-foreground">{s.outputLabel}</span>
                 </div>
-                <PipelineStatusBadge status={status} busy={busy} />
+                <div className="flex items-center gap-2">
+                  {busy ? (
+                    <PipelineStopButton
+                      onClick={cancelJob}
+                      stopping={stopping}
+                      disabled={readOnly}
+                      className="py-1.5"
+                    />
+                  ) : null}
+                  <PipelineStatusBadge status={status} busy={busy} />
+                </div>
               </div>
 
               {log ? (

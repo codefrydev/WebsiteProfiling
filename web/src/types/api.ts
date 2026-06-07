@@ -25,8 +25,14 @@ export interface PipelineJob {
   error?: string;
 }
 
+/** In-memory job entry (server only). */
+export interface PipelineJobEntry extends PipelineJob {
+  cancelled?: boolean;
+  finished?: boolean;
+}
+
 export interface PipelineJobStore {
-  jobs: Map<string, PipelineJob>;
+  jobs: Map<string, PipelineJobEntry>;
   running: boolean;
 }
 
@@ -200,4 +206,5 @@ export interface AuditSqlExample {
 
 declare global {
   var __websiteProfilingPipelineJobs: PipelineJobStore | undefined;
+  var __websiteProfilingPipelineProcesses: Map<string, import('child_process').ChildProcess> | undefined;
 }
