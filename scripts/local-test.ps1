@@ -1,11 +1,12 @@
-# Local dev: PostgreSQL in Docker (wp-pg), Python venv + Next.js on the host.
-# Usage: .\local-run.ps1 [command]
-#   (default) start   — ensure DB, migrations, npm run dev
-#   setup           — DB + venv + deps + migrations (no web server)
-#   db              — start Postgres container only
-#   migrate         — alembic upgrade head
-#   stop            — stop wp-pg container
-#   help            — show commands
+# Local test runner — mirrors .github/workflows/ci.yml on Windows.
+# Usage: .\scripts\local-test.ps1 [command] [-NoCov]
+#   (default) all        — Postgres + migrations + Python + web checks
+#   python               — DB + pytest + CLI smoke only
+#   reporting            — reporting module 100% coverage gate (CI step)
+#   tools                — tools module coverage gate
+#   web                  — typecheck, lint, vitest (no Postgres)
+#   quick                — pytest -NoCov + web (DB must already be running)
+#   help                 — show commands
 # Requires: PowerShell 5.1+ (PowerShell 7+ recommended for reliable exit codes)
 
 $ErrorActionPreference = "Stop"
@@ -30,6 +31,7 @@ if (-not $env:DATA_DIR) {
 $VENV = Join-Path $ROOT ".venv"
 $VENV_PYTHON = Join-Path $VENV "Scripts\python.exe"
 $VENV_PIP = Join-Path $VENV "Scripts\pip.exe"
+$VENV_PYTEST = Join-Path $VENV "Scripts\pytest.exe"
 $VENV_ALEMBIC = Join-Path $VENV "Scripts\alembic.exe"
 $WEB = Join-Path $ROOT "web"
 
@@ -39,12 +41,15 @@ if ($env:PYTHONPATH) {
 } else {
     $env:PYTHONPATH = Join-Path $ROOT "src"
 }
-if (-not $env:PYTHON) {
-    $env:PYTHON = $VENV_PYTHON
-}
+
+$PytestNoCov = $false
 
 function Write-Log([string]$Message) {
     Write-Host "-> $Message" -ForegroundColor Cyan
+}
+
+function Write-Ok([string]$Message) {
+    Write-Host "OK $Message" -ForegroundColor Green
 }
 
 function Write-Warn([string]$Message) {
@@ -110,14 +115,11 @@ function Get-DockerContainerNames {
     if (-not $output) {
         return @()
     }
-    # Force array: a single container name returns a scalar string; -contains on a
-    # string checks characters, not whole names.
     return @($output | ForEach-Object { "$_".Trim() } | Where-Object { $_ })
 }
 
 function Test-DockerRunning {
     Test-Command docker
-    # Docker Desktop writes capability warnings to stderr; avoid treating them as terminating errors.
     $prevErrorAction = $ErrorActionPreference
     $ErrorActionPreference = "Continue"
     try {
@@ -178,13 +180,13 @@ function Invoke-Venv {
         Write-Log "Creating Python venv at .venv"
         Invoke-PythonLauncher -Launcher $pyLauncher -PythonArgs @("-m", "venv", $VENV)
     }
-    Write-Log "Installing Python dependencies"
-    & $VENV_PIP install -q -r (Join-Path $ROOT "requirements.txt")
-    Assert-LastExitCode "Failed to install requirements.txt"
-    & $VENV_PIP install -q -r (Join-Path $ROOT "requirements-browser.txt")
-    Assert-LastExitCode "Failed to install requirements-browser.txt"
-    & $VENV_PIP install -q -r (Join-Path $ROOT "requirements-llm.txt")
-    Assert-LastExitCode "Failed to install requirements-llm.txt"
+    if (-not (Test-Path $VENV_PYTEST)) {
+        Write-Log "Installing Python dependencies"
+        & $VENV_PIP install -q -r (Join-Path $ROOT "requirements.txt")
+        Assert-LastExitCode "Failed to install requirements.txt"
+        & $VENV_PIP install -q -r (Join-Path $ROOT "requirements-browser.txt")
+        Assert-LastExitCode "Failed to install requirements-browser.txt"
+    }
 }
 
 function Invoke-Migrate {
@@ -212,109 +214,166 @@ function Invoke-WebDeps {
     }
 }
 
-function Invoke-BrowserDeps {
-    if (-not (Test-Path $VENV_PYTHON)) {
-        Invoke-Venv
-    }
-    Write-Log "Ensuring Playwright + Chromium for JS crawl"
-    $script = @"
-from website_profiling.crawl.fetchers import ensure_browser_deps
-import json, sys
-status = ensure_browser_deps()
-print(json.dumps(status))
-sys.exit(0 if status.get('ok') else 1)
-"@
-    & $VENV_PYTHON -c $script
-    if ($PSVersionTable.PSVersion.Major -ge 7) {
-        $failed = ($LASTEXITCODE -ne 0)
+function Invoke-PytestCore {
+    if ($PytestNoCov) {
+        Write-Log "Pytest (tests/ -q -m not browser --no-cov)"
+        & $VENV_PYTEST tests/ -q -m "not browser" --no-cov
     } else {
-        $failed = (-not $?)
+        Write-Log "Pytest (tests/ -q -m not browser, 100% coverage gate)"
+        & $VENV_PYTEST tests/ -q -m "not browser"
     }
-    if ($failed) {
-        Write-Warn "Browser deps unavailable - JS/auto crawl disabled until Playwright + Chromium install successfully"
-    }
+    Assert-LastExitCode "Core pytest failed"
 }
 
-function Invoke-Setup {
-    New-Item -ItemType Directory -Force -Path $env:DATA_DIR | Out-Null
+function Invoke-PytestReporting {
+    Write-Log "Pytest (reporting coverage gate, 100%)"
+    & $VENV_PYTEST `
+        tests/test_categories_roadmap.py `
+        tests/test_report_categories_golden.py `
+        tests/test_categories_coverage.py `
+        tests/test_indexation_coverage.py `
+        tests/test_crawl_segments.py `
+        tests/test_terminology.py `
+        tests/test_compare_payload.py `
+        --cov=website_profiling.reporting `
+        --cov-config=.coveragerc.reporting `
+        --cov-report=term-missing `
+        --cov-fail-under=100 `
+        -q `
+        -o addopts=
+    Assert-LastExitCode "Reporting coverage gate failed"
+}
+
+function Invoke-PytestTools {
+    Write-Log "Pytest (tools coverage gate, 95%)"
+    & $VENV_PYTEST `
+        tests/test_alert_checker.py `
+        tests/test_schedule_runner.py `
+        tests/test_export_audit.py `
+        tests/test_export_audit_coverage.py `
+        tests/test_audit_tools.py `
+        tests/test_audit_tools_expanded.py `
+        tests/test_audit_tools_coverage.py `
+        tests/test_mcp_registry.py `
+        tests/test_mcp_resources.py `
+        --cov=website_profiling.tools `
+        --cov-config=.coveragerc.tools `
+        --cov-report=term-missing `
+        --cov-fail-under=95 `
+        -q `
+        -o addopts=
+    Assert-LastExitCode "Tools coverage gate failed"
+}
+
+function Invoke-PythonChecks {
     Invoke-Db
     Invoke-Venv
-    Invoke-BrowserDeps
     Invoke-Migrate
-    Invoke-WebDeps
-    Write-Log "Setup complete."
-    Write-Log "Start the UI: .\local-run.ps1 start"
-    Write-Log "Open http://localhost:3000/home (use localhost, not 127.0.0.1 for pipeline APIs)"
+    Invoke-PytestCore
+    Invoke-PytestReporting
+    Invoke-PytestTools
+    Write-Log "CLI smoke (python -m src --help)"
+    & $VENV_PYTHON -m src --help *> $null
+    Assert-LastExitCode "CLI smoke failed"
+    Write-Ok "Python checks passed"
 }
 
-function Invoke-Start {
-    New-Item -ItemType Directory -Force -Path $env:DATA_DIR | Out-Null
-    Invoke-Db
-    if (-not (Test-Path $VENV_ALEMBIC)) {
-        Invoke-Venv
-    }
-    Invoke-BrowserDeps
-    Write-Log "Ensuring migrations are up to date"
-    & $VENV_ALEMBIC upgrade head
-    Assert-LastExitCode "Database migration failed (alembic upgrade head)"
+function Invoke-WebChecks {
     Invoke-WebDeps
-    Write-Log "Starting Next.js dev server (Ctrl+C to stop)"
-    Write-Log "DATABASE_URL=$($env:DATABASE_URL)"
-    Write-Log "DATA_DIR=$($env:DATA_DIR)"
-    Write-Log "PYTHON=$($env:PYTHON)"
+    Write-Log "Web typecheck"
     Push-Location $WEB
     try {
-        & npm run dev
+        & npm run typecheck
+        Assert-LastExitCode "Web typecheck failed"
+        Write-Log "Web lint"
+        & npm run lint
+        Assert-LastExitCode "Web lint failed"
+        Write-Log "Web tests (vitest)"
+        & npm test
+        Assert-LastExitCode "Web tests failed"
     } finally {
         Pop-Location
     }
+    Write-Ok "Web checks passed"
 }
 
-function Invoke-Stop {
-    Test-DockerRunning
-    if (Test-ContainerRunning $PG_CONTAINER) {
-        Write-Log "Stopping $PG_CONTAINER"
-        & docker stop $PG_CONTAINER *> $null
-        Assert-LastExitCode "Failed to stop container $PG_CONTAINER"
-    } else {
-        Write-Warn "Container $PG_CONTAINER is not running"
+function Invoke-Quick {
+    if (-not $env:DATABASE_URL) {
+        Write-Die "DATABASE_URL is not set. Export it or run .\scripts\local-test.ps1 all"
     }
+    Invoke-Venv
+    Invoke-WebDeps
+    Write-Warn "quick: assuming Postgres is up and migrated (.\local-run.ps1 db; .\local-run.ps1 migrate)"
+    $PytestNoCov = $true
+    Invoke-PytestCore
+    Write-Log "CLI smoke (python -m src --help)"
+    & $VENV_PYTHON -m src --help *> $null
+    Assert-LastExitCode "CLI smoke failed"
+    Invoke-WebChecks
+    Write-Ok "Quick test run passed"
 }
 
 function Show-Help {
     Write-Host @"
-Local dev runner - Postgres in Docker, app on your machine
+Local test runner — mirrors CI (python + web jobs)
 
-  .\local-run.ps1              Same as: start
-  .\local-run.ps1 start        DB + migrations + npm run dev
-  .\local-run.ps1 setup        One-time setup (no dev server)
-  .\local-run.ps1 db           Start Postgres only
-  .\local-run.ps1 migrate      Run alembic upgrade head
-  .\local-run.ps1 stop         Stop Postgres container
+  .\scripts\local-test.ps1              Same as: all
+  .\scripts\local-test.ps1 all          Postgres + migrations + full pytest + web
+  .\scripts\local-test.ps1 python       DB + pytest (core + reporting + tools) + CLI
+  .\scripts\local-test.ps1 reporting    Reporting module 100% coverage gate only
+  .\scripts\local-test.ps1 tools        Tools module coverage gate only
+  .\scripts\local-test.ps1 web          typecheck, lint, vitest (no Docker)
+  .\scripts\local-test.ps1 quick        pytest -NoCov + web (DB must be ready)
 
-Environment overrides (optional):
-  DATABASE_URL  (default: postgres://postgres:dev@127.0.0.1:5432/website_profiling)
-  DATA_DIR      (default: <repo>/data)
-  PYTHON        (default: <repo>/.venv/Scripts/python.exe)
-  WP_PG_CONTAINER, WP_PG_PORT, WP_PG_PASSWORD, WP_PG_DB
+  .\scripts\local-test.ps1 all -NoCov   skip pytest coverage gates (faster)
 
-After start, open: http://localhost:3000/home
-Run audits via sidebar "Run audit" (bottom-right FAB).
+Environment (same as .\local-run.ps1):
+  DATABASE_URL, DATA_DIR, WP_PG_CONTAINER, WP_PG_PORT, ...
 
-Run CI-style tests: .\local-test.ps1 or ./local-test (bash/Git Bash/WSL).
+One-time dev setup: .\local-run.ps1 setup
 "@
 }
 
-$cmd = if ($args.Count -gt 0) { $args[0] } else { "start" }
+$cmd = "all"
+$argList = @($args)
+if ($argList.Count -gt 0) {
+    $cmd = $argList[0]
+    $argList = if ($argList.Count -gt 1) { $argList[1..($argList.Count - 1)] } else { @() }
+}
+
+foreach ($arg in $argList) {
+    switch ($arg) {
+        "-NoCov" { $PytestNoCov = $true }
+        "-h" { Show-Help; exit 0 }
+        "--help" { Show-Help; exit 0 }
+        default { Write-Die "Unknown argument: $arg (try: .\scripts\local-test.ps1 help)" }
+    }
+}
 
 switch ($cmd) {
-    "start" { Invoke-Start }
-    "setup" { Invoke-Setup }
-    "db" { Invoke-Db }
-    "migrate" { Invoke-Migrate }
-    "stop" { Invoke-Stop }
+    "all" {
+        Invoke-PythonChecks
+        Invoke-WebChecks
+        Write-Ok "All local tests passed (CI python + web jobs)"
+    }
+    "python" { Invoke-PythonChecks }
+    "reporting" {
+        Invoke-Venv
+        Invoke-PytestReporting
+        Write-Ok "Reporting coverage gate passed"
+    }
+    "tools" {
+        Invoke-Venv
+        Invoke-PytestTools
+        Write-Ok "Tools coverage gate passed"
+    }
+    "web" { Invoke-WebChecks }
+    "quick" {
+        $PytestNoCov = $true
+        Invoke-Quick
+    }
     "help" { Show-Help }
     "-h" { Show-Help }
     "--help" { Show-Help }
-    default { Write-Die "Unknown command: $cmd (try: .\local-run.ps1 help)" }
+    default { Write-Die "Unknown command: $cmd (try: .\scripts\local-test.ps1 help)" }
 }
