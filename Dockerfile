@@ -34,7 +34,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     NEXT_TELEMETRY_DISABLED=1 \
     WEBSITE_PROFILING_ROOT=/app \
-    DATABASE_URL=postgres://profiling:profiling@postgres:5432/website_profiling \
     DATA_DIR=/data \
     PYTHON=/opt/venv/bin/python \
     CHROME_PATH=/usr/bin/chromium \

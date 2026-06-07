@@ -1,0 +1,47 @@
+# Run a pre-built/pulled image with Postgres (no local docker build).
+# Usage:
+#   export WEB_IMAGE=your-registry/website-profiling:tag
+#   docker compose -f docker-compose.pull.yml up -d
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: website_profiling
+      POSTGRES_USER: profiling
+      POSTGRES_PASSWORD: profiling
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U profiling -d website_profiling"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  web:
+    image: ${WEB_IMAGE:-website-profiling:latest}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    environment:
+      WEBSITE_PROFILING_ROOT: /app
+      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
+      DATA_DIR: /data
+      PYTHON: /opt/venv/bin/python
+      NODE_ENV: production
+      CHROME_PATH: /usr/bin/chromium
+      LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
+      LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
+    volumes:
+      - profiling-data:/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/home', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  pg-data:
+  profiling-data:

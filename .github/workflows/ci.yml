@@ -62,6 +62,13 @@ jobs:
           docker run --rm \
             website-profiling:ci \
             /opt/venv/bin/pytest tests/test_crawl_fetchers.py tests/test_crawler_browser_e2e.py -m browser -q -o addopts=
+      - name: Compose smoke (postgres + web)
+        env:
+          WEB_IMAGE: website-profiling:ci
+        run: |
+          docker compose -f docker-compose.pull.yml up -d --wait
+          curl -fsS http://127.0.0.1:3000/home
+          docker compose -f docker-compose.pull.yml down -v
 
   web:
     runs-on: ubuntu-latest

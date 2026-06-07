@@ -47,6 +47,8 @@ After pulling roadmap changes, apply Alembic revision `011` (included in the ful
 # or, if Postgres is already up: ./local-test quick
 ```
 
+**Docker:** run migrations automatically at container start. Use `docker compose up` (build) or `docker compose -f docker-compose.pull.yml up` (pre-built `WEB_IMAGE`) so Postgres and the app share a network — not standalone `docker run`.
+
 ## Running tests
 
 **Python (core, 100% coverage on non-omitted modules):**
