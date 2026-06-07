@@ -254,11 +254,14 @@ export default function ChatSidebar({
               {!properties.length ? (
                 <option value="">{c.noProperties}</option>
               ) : (
-                properties.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {formatChatPropertyOption(p)}
-                  </option>
-                ))
+                <>
+                  <option value="">{c.selectProperty}</option>
+                  {properties.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {formatChatPropertyOption(p)}
+                    </option>
+                  ))}
+                </>
               )}
             </select>
           </div>

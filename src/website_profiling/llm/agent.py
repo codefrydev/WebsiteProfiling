@@ -5,6 +5,7 @@ import json
 from typing import Any, Callable
 
 from ..llm_config import llm_is_enabled, load_llm_config_from_db
+from ..text_sanitize import sanitize_unicode_deep, strip_surrogates
 from ..tools.audit_tools import AuditToolContext
 from ..tools.audit_tools.registry import TOOL_DEFINITIONS, dispatch_tool, openai_tools_schema
 from .base import ChatResult, ToolCall, get_llm_client
@@ -60,7 +61,7 @@ Respond with valid JSON only, one of:
 
 def _emit(on_event: Callable[[dict], None] | None, event: dict[str, Any]) -> None:
     if on_event:
-        on_event(event)
+        on_event(sanitize_unicode_deep(event))
 
 
 def _supports_native_tools(client: Any) -> bool:
@@ -112,7 +113,7 @@ def _build_openai_messages(history: list[dict[str, str]]) -> list[dict[str, Any]
     out: list[dict[str, Any]] = [{"role": "system", "content": SYSTEM_PROMPT}]
     for msg in history:
         role = msg.get("role")
-        content = str(msg.get("content") or "")
+        content = strip_surrogates(str(msg.get("content") or ""))
         if role in ("user", "assistant"):
             out.append({"role": role, "content": content})
     return out
@@ -147,7 +148,7 @@ def run_agent_turn(
     final_message = ""
 
     def on_token(text: str) -> None:
-        _emit(on_event, {"type": "token", "text": text})
+        _emit(on_event, {"type": "token", "text": strip_surrogates(text)})
 
     for _round in range(MAX_TOOL_ROUNDS):
         _emit(on_event, {
@@ -156,10 +157,11 @@ def run_agent_turn(
             "detail": f"Thinking (step {_round + 1}/{MAX_TOOL_ROUNDS})…",
         })
         try:
+            llm_messages = sanitize_unicode_deep(openai_messages)
             if _supports_native_tools(client):
-                result = client.chat_with_tools(openai_messages, tools, on_token=on_token)
+                result = client.chat_with_tools(llm_messages, tools, on_token=on_token)
             else:
-                result = _react_step(client, openai_messages, _tools_description(compact=True), on_token)
+                result = _react_step(client, llm_messages, _tools_description(compact=True), on_token)
         except Exception as e:
             msg = str(e).strip() or type(e).__name__
             if "httpx" in msg.lower() or "requirements-llm" in msg.lower():
@@ -180,7 +182,7 @@ def run_agent_turn(
                         "function": {
                             "index": i,
                             "name": tc.name,
-                            "arguments": tc.arguments,
+                            "arguments": sanitize_unicode_deep(tc.arguments),
                         },
                     })
                 else:
@@ -193,7 +195,7 @@ def run_agent_turn(
             if _supports_native_tools(client):
                 openai_messages.append({
                     "role": "assistant",
-                    "content": result.content or "",
+                    "content": strip_surrogates(result.content or ""),
                     "tool_calls": assistant_tool_calls,
                 })
             else:
@@ -204,25 +206,28 @@ def run_agent_turn(
 
             for tc in result.tool_calls:
                 _emit(on_event, {"type": "tool_start", "name": tc.name, "args": tc.arguments})
-                tool_result = dispatch_tool(tc.name, tc.arguments, context=context)
+                tool_result = sanitize_unicode_deep(
+                    dispatch_tool(tc.name, tc.arguments, context=context),
+                )
                 _emit(on_event, {"type": "tool_end", "name": tc.name, "result": tool_result})
                 tool_events.append({"name": tc.name, "args": tc.arguments, "result": tool_result})
 
+                tool_content = json.dumps(tool_result, default=str)
                 if ollama_format:
                     openai_messages.append({
                         "role": "tool",
                         "tool_name": tc.name,
-                        "content": json.dumps(tool_result, default=str),
+                        "content": tool_content,
                     })
                 else:
                     openai_messages.append({
                         "role": "tool",
                         "tool_call_id": tc.id,
-                        "content": json.dumps(tool_result, default=str),
+                        "content": tool_content,
                     })
             continue
 
-        final_message = result.content.strip()
+        final_message = strip_surrogates(result.content).strip()
         if final_message:
             _emit(on_event, {"type": "done", "message": final_message})
             return {"ok": True, "message": final_message, "tool_events": tool_events}

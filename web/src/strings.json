@@ -2172,6 +2172,7 @@
       "noSessions": "No chats yet",
       "deleteSession": "Delete chat",
       "propertyLabel": "Property",
+      "selectProperty": "Select property…",
       "noProperties": "No properties",
       "aiDisabledTitle": "AI is not enabled",
       "aiDisabledHint": "Enable AI insights and configure a provider in Run audit → AI settings.",

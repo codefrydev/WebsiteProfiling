@@ -5,6 +5,7 @@ import argparse
 import json
 import sys
 
+from ..text_sanitize import sanitize_unicode_deep
 from ..tools.audit_tools import AuditToolContext
 from ..llm.agent import run_agent_turn
 
@@ -38,7 +39,7 @@ def run(_cfg: dict, args: argparse.Namespace) -> None:
     ctx = AuditToolContext(property_id=pid, report_id=rid)
 
     def on_event(event: dict) -> None:
-        print(json.dumps(event, default=str), flush=True)
+        print(json.dumps(sanitize_unicode_deep(event), default=str), flush=True)
 
     try:
         result = run_agent_turn(messages, ctx, on_event=on_event)
