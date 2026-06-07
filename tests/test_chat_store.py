@@ -88,6 +88,28 @@ def test_get_messages_parses_json_fields() -> None:
     assert msgs[0]["tool_result"] == "not-json"
 
 
+def test_get_messages_keeps_invalid_tool_args_json() -> None:
+    conn = FakeConn()
+    now = datetime.now(timezone.utc)
+    conn.set_next_cursor(
+        FakeCursor(
+            fetchall_value=[
+                {
+                    "id": 2,
+                    "role": "tool",
+                    "content": "",
+                    "tool_name": "list_issues",
+                    "tool_args": "not-json",
+                    "tool_result": None,
+                    "created_at": now,
+                },
+            ],
+        ),
+    )
+    msgs = get_messages(conn, 5)
+    assert msgs[0]["tool_args"] == "not-json"
+
+
 def test_get_messages() -> None:
     conn = FakeConn()
     now = datetime.now(timezone.utc)

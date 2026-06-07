@@ -65,6 +65,19 @@ def test_tools_catalog_json_includes_security_tools() -> None:
     assert "get_security_findings" in catalog["domains"]["security"]
 
 
+def test_tools_catalog_json_backlinks_domain() -> None:
+    fake_tools = [
+        {
+            "name": "get_bing_overview",
+            "description": "Bing overview without link in name.",
+            "inputSchema": {"type": "object", "properties": {}},
+        },
+    ]
+    with patch("website_profiling.mcp.server.TOOL_DEFINITIONS", fake_tools):
+        catalog = json.loads(mcp_server._tools_catalog_json())
+    assert catalog["domains"]["backlinks"] == ["get_bing_overview"]
+
+
 def test_resolve_glossary_and_report_by_id() -> None:
     glossary = mcp_server._resolve_resource("audit://glossary")
     assert isinstance(glossary, str)
@@ -170,3 +183,8 @@ def test_mcp_package_main(monkeypatch) -> None:
     with patch("website_profiling.mcp.server.main") as mock_main:
         runpy.run_module("website_profiling.mcp", run_name="__main__")
     mock_main.assert_called_once()
+
+
+def test_mcp_server_main_guard() -> None:
+    with pytest.raises(SystemExit, match="MCP SDK"):
+        runpy.run_module("website_profiling.mcp.server", run_name="__main__")
