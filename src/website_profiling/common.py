@@ -112,20 +112,61 @@ def normalize_link(
     return out
 
 
-def parse_links(base_url: str, html_text: str) -> tuple[str, set[str]]:
-    """Extract page title and set of absolute links from HTML. Returns (title, links)."""
+def _parse_rel_flags(rel_raw: str) -> tuple[bool, bool, bool]:
+    parts = {p.strip().lower() for p in (rel_raw or "").split() if p.strip()}
+    return ("nofollow" in parts, "sponsored" in parts, "ugc" in parts)
+
+
+def _anchor_text_from_tag(a) -> str:
+    parts: list[str] = []
+    for child in a.children:
+        if getattr(child, "name", None) == "img":
+            parts.append("[image]")
+        elif isinstance(child, str):
+            t = child.strip()
+            if t:
+                parts.append(t)
+    text = " ".join(parts).strip() or a.get_text(separator=" ", strip=True)
+    return (text or "")[:500]
+
+
+def parse_link_edges(base_url: str, html_text: str) -> tuple[str, list[dict]]:
+    """Extract title and rich outbound link records from HTML."""
     soup = BeautifulSoup(html_text, "lxml")
     title_tag = (
         soup.title.string.strip()
         if soup.title and soup.title.string
         else ""
     )
-    links = set()
+    start_netloc = urlparse(base_url).netloc
+    edges: list[dict] = []
     for a in soup.find_all("a", href=True):
         ln = normalize_link(base_url, a["href"])
-        if ln:
-            links.add(ln)
-    return title_tag, links
+        if not ln:
+            continue
+        rel_raw = a.get("rel") or ""
+        if isinstance(rel_raw, list):
+            rel_str = " ".join(str(x) for x in rel_raw)
+        else:
+            rel_str = str(rel_raw)
+        nofollow, sponsored, ugc = _parse_rel_flags(rel_str)
+        link_type = "internal" if urlparse(ln).netloc == start_netloc else "external"
+        edges.append({
+            "to_url": ln.rstrip("/"),
+            "anchor_text": _anchor_text_from_tag(a),
+            "rel": rel_str.strip(),
+            "is_nofollow": nofollow,
+            "is_sponsored": sponsored,
+            "is_ugc": ugc,
+            "link_type": link_type,
+        })
+    return title_tag, edges
+
+
+def parse_links(base_url: str, html_text: str) -> tuple[str, set[str]]:
+    """Extract page title and set of absolute links from HTML. Returns (title, links)."""
+    title, edges = parse_link_edges(base_url, html_text)
+    return title, {e["to_url"] for e in edges}
 
 
 def parse_seo(base_url: str, html_text: str) -> tuple[str, int, str, int, str]:

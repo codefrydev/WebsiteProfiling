@@ -49,7 +49,8 @@ UI terms agencies recognize, mapped to internal keys and data sources.
 
 | UI | Field | Source |
 |----|-------|--------|
-| Inlinks | `inlinks` | Crawl graph |
+| Impact score | `impact_score` on issues | GSC clicks + GA4 sessions + priority weight (see below) |
+| Link edges | `link_edges`, `link_rel_summary` | Crawl anchor/rel attributes |
 | Outlinks | `outlinks` | Crawl graph |
 | Status code | `status` | HTTP |
 | Crawl rendering | `crawl_render_mode` on run; `fetch_method` per URL | `static`, `javascript`, or `auto` crawl config; `static` vs `rendered` per page |
@@ -61,6 +62,8 @@ UI terms agencies recognize, mapped to internal keys and data sources.
 | Average position | `gsc_position` | Search Console |
 | On-site frequency | `volume` (heuristic) | Estimated from crawl |
 | Sessions | GA4 metrics | Analytics |
+
+**Impact score:** `priority_weight + (gsc_clicks × 10) + (ga4_sessions × 5)` with Critical=1000, High=100, Medium=10, Low=1.
 
 ## Provenance badges
 

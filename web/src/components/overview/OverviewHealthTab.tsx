@@ -7,6 +7,7 @@ import { categoryDisplayName } from '@/lib/categoryDisplayNames';
 import { CategoryScoreGauge } from '@/components/charts/CategoryScoreGauge';
 import { Card } from '@/components';
 import { OverviewTabPanel } from './OverviewTabPanel';
+import { PortfolioBenchmarkCard } from './PortfolioBenchmarkCard';
 
 const REC_COLORS = [
   { border: 'border-l-blue-500', bg: 'bg-blue-500/10', text: 'text-link', dot: 'bg-blue-500' },
@@ -29,6 +30,7 @@ export function OverviewHealthTab({ data, categoriesFiltered, recommendationsFil
 
   return (
     <OverviewTabPanel tabId="health" className="space-y-8">
+      <PortfolioBenchmarkCard benchmark={data.portfolio_benchmark} />
       <div>
         <h2 className="text-xl font-bold text-bright mb-4">{vo.healthByCategory}</h2>
         {data.categories && data.categories.length > 0 ? (

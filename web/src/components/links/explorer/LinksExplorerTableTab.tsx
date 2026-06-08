@@ -7,7 +7,9 @@ import { strings, format } from '@/lib/strings';
 import { Card, Badge, Button } from '@/components';
 import { formatMs, rtColor, formatPageHrefLines } from '@/utils/linkUtils';
 import { linkHasBrowserErrors } from '@/lib/browserErrors';
+import { collectCustomFieldKeys, parseLinkCustomFields } from '@/lib/customFields';
 import { SortTh, RowTooltip, LinksFilterBar, InlinksMetricCell } from '@/components/links';
+import SavedCrawlFiltersBar from '@/components/links/SavedCrawlFiltersBar';
 import type { LinksFilterValues } from '@/components/links/LinksFilterBar';
 import type { LinkSortKey } from './types';
 import { LinksExplorerTabPanel } from './LinksExplorerTabPanel';
@@ -16,6 +18,8 @@ export interface LinksExplorerTableTabProps {
   filterValues: LinksFilterValues;
   onFilterChange: (key: keyof LinksFilterValues, value: string) => void;
   onClearAllFilters: () => void;
+  propertyId?: number;
+  onLoadSavedFilter?: (values: LinksFilterValues) => void;
   searchQuery: string;
   filtered: ReportLink[];
   pageLinks: ReportLink[];
@@ -40,6 +44,8 @@ export function LinksExplorerTableTab({
   filterValues,
   onFilterChange,
   onClearAllFilters,
+  propertyId = 0,
+  onLoadSavedFilter,
   searchQuery,
   filtered,
   pageLinks,
@@ -62,6 +68,7 @@ export function LinksExplorerTableTab({
   const vl = strings.views.links;
   const sj = strings.common;
   const hasCustomExtract = links.some((l) => l.custom_extract);
+  const customFieldKeys = collectCustomFieldKeys(links);
 
   return (
     <LinksExplorerTabPanel tabId="urls" className="flex flex-col gap-4">
@@ -71,6 +78,13 @@ export function LinksExplorerTableTab({
         onClearAll={onClearAllFilters}
         searchQuery={searchQuery}
       />
+      {onLoadSavedFilter ? (
+        <SavedCrawlFiltersBar
+          propertyId={propertyId}
+          filterValues={filterValues}
+          onLoad={onLoadSavedFilter}
+        />
+      ) : null}
 
       <Card overflowHidden padding="none" className="flex flex-col min-h-[min(500px,70vh)] sm:min-h-[500px]">
         <div
@@ -123,6 +137,14 @@ export function LinksExplorerTableTab({
                     {vl.thCustomExtract}
                   </th>
                 ) : null}
+                {customFieldKeys.map((key) => (
+                  <th
+                    key={key}
+                    className="hidden xl:table-cell px-4 py-4 text-muted-foreground uppercase text-xs whitespace-nowrap"
+                  >
+                    {key}
+                  </th>
+                ))}
                 <th className="hidden lg:table-cell px-4 py-4 text-muted-foreground uppercase text-xs whitespace-nowrap">
                   {vl.thJsErrors}
                 </th>
@@ -207,6 +229,18 @@ export function LinksExplorerTableTab({
                         {link.custom_extract || sj.emDash}
                       </td>
                     ) : null}
+                    {customFieldKeys.map((key) => {
+                      const value = parseLinkCustomFields(link)[key];
+                      return (
+                        <td
+                          key={key}
+                          className="hidden xl:table-cell px-4 py-3 text-xs text-foreground align-middle max-w-[10rem] truncate"
+                          title={value}
+                        >
+                          {value || sj.emDash}
+                        </td>
+                      );
+                    })}
                     <td className="hidden lg:table-cell px-4 py-3 text-xs align-middle whitespace-nowrap">
                       {linkHasBrowserErrors(link) ? (
                         <span className="inline-flex items-center rounded-md bg-red-500/10 border border-red-500/25 px-2 py-0.5 font-mono text-red-700 dark:text-red-300">

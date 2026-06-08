@@ -17,7 +17,10 @@ export type KeywordTabId =
   | KeywordTableTabId
   | 'cannib'
   | 'alignment'
-  | 'bypage';
+  | 'bypage'
+  | 'topics'
+  | 'templates'
+  | 'competitor';
 
 export function isTableTab(tab: KeywordTabId): tab is KeywordTableTabId {
   return (KEYWORD_TABLE_TAB_IDS as readonly string[]).includes(tab);

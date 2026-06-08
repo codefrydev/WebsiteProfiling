@@ -7,6 +7,7 @@ import { Key, Settings2, Play } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { useReport } from '../context/useReport';
+import { useOptionalPipeline } from '../context/PipelineContext';
 import { useKeywordBrandQuery } from '@/hooks/useKeywordBrandQuery';
 import { filterKeywordRowsForDomain } from '@/lib/filterKeywordsForDomain';
 import { apiUrl } from '../lib/publicBase';
@@ -27,6 +28,10 @@ import {
   ByPagePanel,
   BulkSeedPanel,
 } from '../components/keywordsExplorer/KeywordPanels';
+import TopicMapPanel from '../components/keywordsExplorer/TopicMapPanel';
+import ContentTemplatesPanel from '../components/keywordsExplorer/ContentTemplatesPanel';
+import CompetitorKeywordImport from '../components/keywordsExplorer/CompetitorKeywordImport';
+import CompetitorKeywordGapPanel from '../components/keywordsExplorer/CompetitorKeywordGapPanel';
 import KeywordOverviewPanel from '../components/keywordsExplorer/KeywordOverviewPanel';
 import KeywordTabBanner from '../components/keywordsExplorer/KeywordTabBanner';
 import KeywordFiltersBar from '../components/keywordsExplorer/KeywordFiltersBar';
@@ -42,7 +47,7 @@ import {
   isTableTab,
 } from '../components/keywordsExplorer/keywordTabMeta';
 
-const KEYWORD_TABS = ['overview', ...KEYWORD_TABLE_TAB_IDS, 'cannib', 'alignment', 'bypage'] as const;
+const KEYWORD_TABS = ['overview', ...KEYWORD_TABLE_TAB_IDS, 'cannib', 'alignment', 'bypage', 'topics', 'templates', 'competitor'] as const;
 
 const EMPTY_ROWS: KeywordRow[] = [];
 const EMPTY_HISTORY: KeywordHistoryMap = {};
@@ -50,6 +55,8 @@ const EMPTY_HISTORY: KeywordHistoryMap = {};
 export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
   const router = useRouter();
   const { data, startUrlByRunId, selectedReportId } = useReport();
+  const pipeline = useOptionalPipeline();
+  const propertyId = Number(pipeline?.configState.active_property_id || 0);
   const ke = strings.views.keywordsExplorer;
   const brandQuery = useKeywordBrandQuery();
   const kwData: KeywordReportData | undefined = data?.keywords;
@@ -86,7 +93,12 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
   const hasGscConnected = !!data?.google?.gsc;
   const showParentTopic = rows.some((r) => r.parent_topic);
   const showTrend = rows.some((r) => r.trend);
-  const tabLabels = ke.tabs as Record<KeywordTabId, string>;
+  const tabLabels = {
+    ...(ke.tabs as Record<string, string>),
+    topics: 'Topic map',
+    templates: 'Content templates',
+    competitor: 'Competitor keywords',
+  } as Record<KeywordTabId, string>;
 
   const quickWinCount = useMemo(
     () =>
@@ -420,6 +432,23 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
             <QueryPageMisalignmentPanel items={alignmentItems} />
           ) : activeTab === 'bypage' ? (
             <ByPagePanel rows={rows} ke={ke} brandQuery={brandQuery} />
+          ) : activeTab === 'topics' ? (
+            <TopicMapPanel
+              clusters={(data?.semantic_keyword_clusters as Array<{ topic?: string; keywords?: string[] }>) || []}
+              emptyLabel="Run a report with LLM keyword clusters enabled to see topic groups."
+            />
+          ) : activeTab === 'templates' ? (
+            <ContentTemplatesPanel
+              defaultKeyword={rows[0]?.keyword || ''}
+              clusterRows={rows.slice(0, 20)}
+            />
+          ) : activeTab === 'competitor' ? (
+            <>
+              <CompetitorKeywordImport propertyId={propertyId} />
+              <CompetitorKeywordGapPanel
+                rows={Array.isArray(data?.competitor_keyword_gap) ? data.competitor_keyword_gap : []}
+              />
+            </>
           ) : tableEmptyContent ? (
             tableEmptyContent
           ) : (

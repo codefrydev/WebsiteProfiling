@@ -56,6 +56,87 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
         placeholder: 'https://example.com',
         help: 'Required before running a crawl or audit. Enter the property site to analyze.',
       },
+      {
+        key: 'crawl_discovery_mode',
+        label: 'URL discovery mode',
+        type: 'select',
+        defaultValue: 'spider',
+        options: [
+          { value: 'spider', label: 'Spider — follow internal links' },
+          { value: 'list', label: 'List only — audit pasted/uploaded URLs' },
+          { value: 'sitemap', label: 'Sitemap only — no link following' },
+          { value: 'hybrid', label: 'Hybrid — spider + sitemap + list' },
+        ],
+        help: 'Controls how URLs enter the crawl queue. List mode does not follow links.',
+      },
+      {
+        key: 'crawl_url_list',
+        label: 'URL list',
+        type: 'textarea',
+        defaultValue: '',
+        span: 2,
+        placeholder: 'https://example.com/page-a\nhttps://example.com/page-b',
+        help: 'One URL per line (or comma-separated). Required for List mode; optional for Hybrid.',
+        visibleWhen: { key: 'crawl_discovery_mode', not: ['spider', 'sitemap'] },
+      },
+      {
+        key: 'crawl_user_agent_preset',
+        label: 'Crawl user-agent preset',
+        type: 'select',
+        defaultValue: 'default',
+        options: [
+          { value: 'default', label: 'Default crawler UA' },
+          { value: 'mobile', label: 'Mobile Safari' },
+          { value: 'custom', label: 'Custom UA string' },
+        ],
+      },
+      {
+        key: 'crawl_user_agent_custom',
+        label: 'Custom user-agent',
+        type: 'text',
+        defaultValue: '',
+        visibleWhen: { key: 'crawl_user_agent_preset', not: ['default', 'mobile'] },
+      },
+      {
+        key: 'crawl_auth_username',
+        label: 'HTTP Basic auth username',
+        type: 'text',
+        defaultValue: '',
+      },
+      {
+        key: 'crawl_auth_password',
+        label: 'HTTP Basic auth password',
+        type: 'text',
+        defaultValue: '',
+      },
+      {
+        key: 'crawl_extra_headers',
+        label: 'Extra request headers',
+        type: 'textarea',
+        defaultValue: '',
+        help: 'One header per line: Name: value',
+      },
+      {
+        key: 'crawl_cookies',
+        label: 'Cookie header value',
+        type: 'text',
+        defaultValue: '',
+      },
+      {
+        key: 'crawl_robots_txt_override',
+        label: 'Robots.txt override',
+        type: 'textarea',
+        defaultValue: '',
+        help: 'Paste robots.txt rules for staging crawls instead of fetching live robots.txt.',
+      },
+      {
+        key: 'custom_extractors',
+        label: 'Custom extractors (JSON)',
+        type: 'textarea',
+        defaultValue: '',
+        span: 2,
+        help: 'JSON array: [{\"name\":\"sku\",\"type\":\"css\",\"selector\":\"[data-sku]\",\"attr\":\"data-sku\"}]',
+      },
       { key: 'max_pages', label: 'Crawl limit (URLs)', type: 'number', defaultValue: '500' },
       { key: 'concurrency', label: 'Concurrent requests', type: 'number', defaultValue: '8' },
       { key: 'timeout', label: 'Timeout (s)', type: 'number', defaultValue: '12' },
@@ -309,6 +390,12 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
       { key: 'run_lighthouse', label: 'Run single-URL Lighthouse', type: 'bool', defaultValue: true },
       { key: 'run_lighthouse_on_pages', label: 'Run Lighthouse on crawled pages', type: 'bool', defaultValue: true },
       { key: 'enable_crux', label: 'Fetch CrUX field Core Web Vitals', type: 'bool', defaultValue: false, help: 'Uses Chrome UX Report API for real-user LCP, INP, CLS at origin level.' },
+      { key: 'enable_rich_results_validation', label: 'Validate structured data (Rich Results)', type: 'bool', defaultValue: false },
+      { key: 'enable_axe', label: 'Run axe accessibility scan (browser crawl)', type: 'bool', defaultValue: false },
+      { key: 'enable_spell_check', label: 'Spell-check page excerpts', type: 'bool', defaultValue: false },
+      { key: 'enable_html_validation', label: 'Basic HTML validation warnings', type: 'bool', defaultValue: false },
+      { key: 'enable_amp_audit', label: 'AMP canonical pairing audit', type: 'bool', defaultValue: false },
+      { key: 'enable_wayback_lookup', label: 'Wayback lookup for 404 URLs', type: 'bool', defaultValue: false },
       { key: 'lighthouse_max_pages', label: 'Performance sample size (URLs)', type: 'number', defaultValue: '2' },
       { key: 'lighthouse_concurrency', label: 'Lighthouse parallel URLs', type: 'number', defaultValue: '2' },
     ],
@@ -630,6 +717,11 @@ export function validatePipelineRun({
     !browserStatus.ok
   ) {
     errors.push(browserStatus.message?.trim() || BROWSER_CRAWL_UNAVAILABLE_MSG);
+  }
+  const discovery = String(state?.crawl_discovery_mode ?? 'spider').trim().toLowerCase();
+  const urlList = String(state?.crawl_url_list ?? '').trim();
+  if (runIncludesCrawl(state, command) && discovery === 'list' && !urlList) {
+    errors.push('URL list is required when discovery mode is List. Paste URLs in Audit settings.');
   }
   return errors;
 }

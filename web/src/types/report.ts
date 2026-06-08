@@ -43,6 +43,10 @@ export interface ReportIssue {
   recommendation?: string;
   llm_recommendation?: string;
   llm_fix_effort?: string;
+  impact_score?: number;
+  gsc_clicks?: number;
+  gsc_impressions?: number;
+  ga4_sessions?: number;
   type?: string;
   severity?: string;
   finding_type?: string;
@@ -357,6 +361,32 @@ export interface KeywordOpportunities {
   token_topic_clusters?: TopicCluster[];
 }
 
+export interface LinkEdgeRow {
+  from_url?: string;
+  to_url?: string;
+  anchor_text?: string;
+  rel?: string;
+  is_nofollow?: boolean;
+  is_sponsored?: boolean;
+  is_ugc?: boolean;
+  link_type?: string;
+}
+
+export interface LinkRelSummary {
+  total_edges?: number;
+  internal_edges?: number;
+  nofollow_internal?: number;
+  sponsored_internal?: number;
+  ugc_internal?: number;
+  external_edges?: number;
+}
+
+export interface InlinkAnchorRow {
+  target_url?: string;
+  anchor_text?: string;
+  inlink_count?: number;
+}
+
 export interface GraphEdge {
   from?: string;
   to?: string;
@@ -420,6 +450,30 @@ export interface BingBacklinksSummary {
   total_inbound_links?: number;
   provenance?: string;
   error?: string;
+}
+
+export interface PortfolioBenchmark {
+  median_health_score?: number | null;
+  property_health_score?: number | null;
+}
+
+export interface RichResultsValidationRow {
+  url: string;
+  status?: string;
+  provenance?: string;
+  message?: string;
+  verdict?: string;
+  schema_types?: string[];
+  issues?: string[];
+}
+
+export interface CompetitorKeywordGapRow {
+  keyword: string;
+  competitor?: string;
+  volume?: string | number | null;
+  position?: string | number | null;
+  url?: string | null;
+  source?: string;
 }
 
 export interface ReportPayload {
@@ -486,6 +540,12 @@ export interface ReportPayload {
   keyword_opportunities?: KeywordOpportunities;
   graph_nodes?: GraphNode[];
   graph_edges?: GraphEdge[];
+  link_edges?: LinkEdgeRow[];
+  link_rel_summary?: LinkRelSummary;
+  inlink_anchor_matrix?: InlinkAnchorRow[];
+  portfolio_benchmark?: PortfolioBenchmark;
+  rich_results_validation?: RichResultsValidationRow[];
+  competitor_keyword_gap?: CompetitorKeywordGapRow[];
   recommendations?: string[];
   mime_labels?: string[];
   mime_values?: number[];
@@ -532,6 +592,8 @@ export interface ReportLink {
   page_error_count?: number;
   has_browser_errors?: boolean;
   custom_extract?: string;
+  /** JSON string or parsed map from XPath/CSS custom extractors */
+  custom_fields?: string | Record<string, string>;
 }
 
 export interface CrawlSegmentEntry {

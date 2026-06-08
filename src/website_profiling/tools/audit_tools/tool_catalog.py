@@ -43,6 +43,7 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             "priority": {"type": "string", "enum": ["Critical", "High", "Medium", "Low"]},
             "category_id": {"type": "string"},
             "url_contains": {"type": "string"},
+            "sort": {"type": "string", "enum": ["impact"]},
             "limit": _LIMIT,
         },
     ),
@@ -213,7 +214,10 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
     _tool("get_security_findings_summary", "Security findings grouped by finding_type.", {"property_id": _PID, "report_id": _RID}),
     _tool("list_security_findings_by_type", "Security findings filtered by finding_type.", {"property_id": _PID, "report_id": _RID, "finding_type": {"type": "string"}, "limit": _LIMIT}, ["finding_type"]),
     _tool("list_broken_link_sources", "Pages linking to broken URLs.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
-    _tool("search_issues", "Search audit issues by message, URL, category, or priority.", {"property_id": _PID, "report_id": _RID, "message_contains": {"type": "string"}, "url_contains": {"type": "string"}, "category_id": {"type": "string"}, "priority": {"type": "string"}, "limit": _LIMIT}),
+    _tool("get_link_rel_summary", "nofollow/sponsored/UGC counts from crawl link_edges.", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_inlink_anchors", "Inlink anchor text matrix (target × anchor counts).", {"property_id": _PID, "report_id": _RID, "url": _URL, "limit": {"type": "integer", "maximum": 200}}),
+    _tool("list_nofollow_internal_links", "Internal links with rel=nofollow from crawl.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("search_issues", "Search audit issues by message, URL, category, or priority.", {"property_id": _PID, "report_id": _RID, "message_contains": {"type": "string"}, "url_contains": {"type": "string"}, "category_id": {"type": "string"}, "priority": {"type": "string"}, "sort": {"type": "string", "enum": ["impact"]}, "limit": _LIMIT}),
     # LLM / portfolio
     _tool("generate_content_brief", "Generate a content brief for a target keyword.", {"property_id": _PID, "keyword": {"type": "string"}, "gaps": {"type": "array", "items": {"type": "string"}}}, ["keyword"]),
     _tool("get_page_coach", "LLM internal linking coach for one URL.", {"url": _URL, "property_id": _PID, "report_id": _RID, "refresh": {"type": "boolean"}}, ["url"]),
@@ -243,6 +247,16 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             "limit": {"type": "integer", "maximum": 500},
         },
         ["tool_name"],
+    ),
+    _tool(
+        "export_sitemap_xml",
+        "Generate XML sitemap from indexable crawled URLs.",
+        {"property_id": _PID, "report_id": _RID},
+    ),
+    _tool(
+        "validate_rich_results",
+        "Validate structured data / Rich Results for sample URLs (Estimated without API key).",
+        {"property_id": _PID, "report_id": _RID, "limit": {"type": "integer", "maximum": 50}, "api_key": {"type": "string"}},
     ),
     _tool(
         "compose_custom_report",

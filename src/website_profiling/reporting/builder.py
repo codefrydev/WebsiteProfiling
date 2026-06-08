@@ -1192,6 +1192,14 @@ def run_simple_report(
         if "score" in cat and cat["score"] is not None and hasattr(cat["score"], "item"):
             cat["score"] = int(cat["score"])
 
+    optional_audit_meta: dict[str, Any] = {}
+    try:
+        from .optional_audits import apply_optional_audits
+
+        optional_audit_meta = apply_optional_audits(categories, df, config)
+    except Exception as e:
+        ml_bundle.setdefault("ml_errors", []).append(f"optional_audits: {e}")
+
     df["status_str"] = df["status"].astype(str) if "status" in df.columns else "unknown"
     status_counts = df["status_str"].value_counts().to_dict()
     df["mime"] = (
@@ -1406,6 +1414,10 @@ def run_simple_report(
 
         # Tech stack
         rec["tech_stack"] = _str_col("tech_stack")
+
+        # Custom extraction (regex + XPath/CSS extractors)
+        rec["custom_extract"] = _str_col("custom_extract")
+        rec["custom_fields"] = _str_col("custom_fields")
 
         pa_obj: dict[str, Any] = {}
         if "page_analysis" in df.columns:
@@ -1653,7 +1665,58 @@ def run_simple_report(
         "url_fingerprints": url_fingerprints,
         "keyword_opportunities": keyword_opportunities,
         "ml_errors": ml_bundle.get("ml_errors") or [],
+        **optional_audit_meta,
     }
+    if get_bool(config or {}, "enable_rich_results_validation", False):
+        try:
+            from ..integrations.google.rich_results import validate_urls
+            from ..config import get_str
+
+            sample_urls = [
+                str(l.get("url") or "")
+                for l in links
+                if isinstance(l, dict) and str(l.get("status") or "").startswith("2")
+            ][:20]
+            links_by_url = {
+                str(l.get("url") or ""): l for l in links if isinstance(l, dict) and l.get("url")
+            }
+            creds = None
+            property_id_rr: Optional[int] = None
+            gsc_site = (get_str(config or {}, "gsc_site_url", "") or "").strip() or None
+            try:
+                from ..db import db_session as _rr_db
+                from ..commands.config_resolve import resolve_property_id_from_cfg
+
+                with _rr_db() as conn:
+                    property_id_rr = resolve_property_id_from_cfg(config, conn)
+            except Exception:
+                property_id_rr = None
+            if property_id_rr:
+                try:
+                    from ..integrations.google.auth import build_credentials
+
+                    creds = build_credentials(property_id_rr)
+                except Exception:
+                    creds = None
+            report_data["rich_results_validation"] = validate_urls(
+                sample_urls,
+                creds=creds,
+                site_url=gsc_site,
+                links_by_url=links_by_url,
+            )
+        except Exception as e:
+            report_data.setdefault("ml_errors", []).append(f"rich_results: {e}")
+    try:
+        from ..config import get_str
+        import json as _json
+
+        comp_kw = (get_str(config or {}, "competitor_keyword_gap_json", "") or "").strip()
+        if comp_kw:
+            parsed = _json.loads(comp_kw)
+            if isinstance(parsed, list):
+                report_data["competitor_keyword_gap"] = parsed
+    except Exception as e:
+        report_data.setdefault("ml_errors", []).append(f"competitor_keywords: {e}")
     if run_id is not None:
         report_data["crawl_run_id"] = run_id
         report_data["crawl_run_created_at"] = crawl_run_created_at
@@ -1681,8 +1744,26 @@ def run_simple_report(
             google_data = read_latest_google_data(conn, property_id=property_id)
             if google_data:
                 report_data["google"] = google_data
+                from .issue_impact import enrich_categories_with_traffic_impact
+
+                enrich_categories_with_traffic_impact(
+                    report_data.get("categories") or [],
+                    google_data,
+                )
         except Exception:
             pass
+        try:
+            from ..db.crawl_store import read_link_edges
+            from .link_edges_report import build_inlink_anchor_matrix, summarize_link_rel
+
+            if run_id is not None:
+                link_edges = read_link_edges(conn, run_id, limit=15000)
+                if link_edges:
+                    report_data["link_edges"] = link_edges
+                    report_data["link_rel_summary"] = summarize_link_rel(link_edges)
+                    report_data["inlink_anchor_matrix"] = build_inlink_anchor_matrix(link_edges)
+        except Exception as e:
+            report_data.setdefault("ml_errors", []).append(f"link_edges: {e}")
         try:
             from ..integrations.google.keyword_store import read_latest_keyword_data
             from ..integrations.google.gsc_links_store import read_latest_gsc_links_data
@@ -1767,6 +1848,25 @@ def run_simple_report(
             from ..llm.audit_summary import generate_audit_executive_summary
 
             report_data["executive_summary"] = generate_audit_executive_summary(report_data, config)
+        except Exception:
+            pass
+        try:
+            from ..tools.audit_tools.llm_tools import get_portfolio_summary
+            from ..tools.audit_tools.context import AuditToolContext
+
+            portfolio = get_portfolio_summary(conn, AuditToolContext(property_id=property_id), {})
+            scores = []
+            for c in report_data.get("categories") or []:
+                try:
+                    if c.get("score") is not None:
+                        scores.append(int(float(c.get("score"))))
+                except (TypeError, ValueError):
+                    continue
+            prop_health = round(sum(scores) / len(scores)) if scores else None
+            report_data["portfolio_benchmark"] = {
+                "median_health_score": portfolio.get("median_health_score"),
+                "property_health_score": prop_health,
+            }
         except Exception:
             pass
         report_data["report_meta"] = _build_report_metadata(

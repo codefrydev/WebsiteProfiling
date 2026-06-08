@@ -159,6 +159,14 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
     custom_extraction_regex = (cfg.get("custom_extraction_regex") or "").strip()
     crawl_ignore_raw = (cfg.get("crawl_ignore_params") or "").strip()
     crawl_ignore_params = [p.strip() for p in crawl_ignore_raw.split(",") if p.strip()] or None
+    from ..crawl.discovery import normalize_discovery_mode, parse_crawl_url_list
+
+    discovery_mode = normalize_discovery_mode(cfg.get("crawl_discovery_mode"))
+    crawl_url_list = parse_crawl_url_list(cfg.get("crawl_url_list"), start_url=start_url)
+    from ..crawl.extraction import parse_extractors_config
+
+    custom_extractors = parse_extractors_config(cfg.get("custom_extractors"))
+    enable_axe = get_bool(cfg, "enable_axe", False)
     print("Crawling...")
     run_crawler(
         start_url=start_url,
@@ -191,6 +199,17 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
         console_max_per_page=console_max_per_page,
         custom_extraction_regex=custom_extraction_regex,
         crawl_ignore_params=crawl_ignore_params,
+        discovery_mode=discovery_mode,
+        crawl_url_list=crawl_url_list or None,
+        crawl_user_agent_preset=(cfg.get("crawl_user_agent_preset") or "default").strip(),
+        crawl_user_agent_custom=(cfg.get("crawl_user_agent_custom") or "").strip(),
+        crawl_auth_username=(cfg.get("crawl_auth_username") or "").strip(),
+        crawl_auth_password=(cfg.get("crawl_auth_password") or "").strip(),
+        crawl_extra_headers=(cfg.get("crawl_extra_headers") or "").strip(),
+        crawl_cookies=(cfg.get("crawl_cookies") or "").strip(),
+        crawl_robots_txt_override=(cfg.get("crawl_robots_txt_override") or "").strip(),
+        custom_extractors=custom_extractors or None,
+        enable_axe=enable_axe,
     )
     print("[Crawl] Done.", flush=True)
     print("Crawl results: PostgreSQL")

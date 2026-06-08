@@ -30,21 +30,40 @@ def create_crawl_run(
     start_url: Optional[str] = None,
     property_id: Optional[int] = None,
     render_mode: Optional[str] = None,
+    discovery_mode: Optional[str] = None,
 ) -> int:
     mode = (render_mode or "static").strip().lower()
-    try:
-        cur = conn.execute(
+    disc = (discovery_mode or "spider").strip().lower()
+    statements = [
+        (
+            "INSERT INTO crawl_runs (created_at, start_url, property_id, render_mode, discovery_mode) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (_now_iso(), start_url, property_id, mode, disc),
+        ),
+        (
             "INSERT INTO crawl_runs (created_at, start_url, property_id, render_mode) VALUES (%s, %s, %s, %s) RETURNING id",
             (_now_iso(), start_url, property_id, mode),
-        )
-    except Exception:
-        cur = conn.execute(
+        ),
+        (
             "INSERT INTO crawl_runs (created_at, start_url, property_id) VALUES (%s, %s, %s) RETURNING id",
             (_now_iso(), start_url, property_id),
-        )
-    row = cur.fetchone()
-    conn.commit()
-    return int(row["id"])
+        ),
+    ]
+    last_err: Exception | None = None
+    for sql, params in statements:
+        try:
+            cur = conn.execute(sql, params)
+            row = cur.fetchone()
+            conn.commit()
+            return int(row["id"])
+        except Exception as exc:
+            last_err = exc
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+    if last_err is not None:
+        raise last_err
+    raise RuntimeError("create_crawl_run failed")  # pragma: no cover
 
 
 def get_latest_crawl_run_id(conn: Connection) -> Optional[int]:
@@ -314,6 +333,67 @@ def write_edges(conn: Connection, edges: list[tuple[str, str]], crawl_run_id: Op
             [(crawl_run_id, a.rstrip("/"), b.rstrip("/")) for a, b in edges],
         )
     conn.commit()
+
+
+def write_link_edges(
+    conn: Connection,
+    edges: list[dict],
+    crawl_run_id: Optional[int] = None,
+) -> None:
+    if crawl_run_id is None:
+        crawl_run_id = get_latest_crawl_run_id(conn)
+    if crawl_run_id is None or not edges:
+        return
+    conn.execute("DELETE FROM link_edges WHERE crawl_run_id = %s", (crawl_run_id,))
+    rows = []
+    for e in edges:
+        from_u = str(e.get("from_url") or "").rstrip("/")
+        to_u = str(e.get("to_url") or "").rstrip("/")
+        if not from_u or not to_u:
+            continue
+        rows.append((
+            crawl_run_id,
+            from_u,
+            to_u,
+            str(e.get("anchor_text") or "")[:500],
+            str(e.get("rel") or "")[:200],
+            bool(e.get("is_nofollow")),
+            bool(e.get("is_sponsored")),
+            bool(e.get("is_ugc")),
+            str(e.get("link_type") or "internal"),
+        ))
+    if rows:
+        _executemany(
+            conn,
+            """INSERT INTO link_edges (
+                crawl_run_id, from_url, to_url, anchor_text, rel,
+                is_nofollow, is_sponsored, is_ugc, link_type
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING""",
+            rows,
+        )
+    conn.commit()
+
+
+def read_link_edges(
+    conn: Connection,
+    run_id: Optional[int] = None,
+    *,
+    limit: int = 5000,
+) -> list[dict[str, Any]]:
+    if run_id is None:
+        run_id = get_latest_crawl_run_id(conn)
+    if run_id is None:
+        return []
+    try:
+        cur = conn.execute(
+            """SELECT from_url, to_url, anchor_text, rel, is_nofollow, is_sponsored, is_ugc, link_type
+               FROM link_edges WHERE crawl_run_id = %s LIMIT %s""",
+            (run_id, max(1, int(limit))),
+        )
+        return [dict(row) for row in cur.fetchall()]
+    except Exception:
+        return []
 
 
 def read_edges(conn: Connection, run_id: Optional[int] = None) -> list[tuple[str, str]]:

@@ -363,5 +363,21 @@ def analyze_html(
             "Use <label for=\"id\">, wrap in <label>, or aria-label.",
         )
 
+    pagination: dict[str, str | None] = {"rel_next": None, "rel_prev": None, "amphtml": None}
+    for link in soup.find_all("link", rel=True):
+        rel_raw = link.get("rel") or []
+        rels = {str(r).lower() for r in (rel_raw if isinstance(rel_raw, list) else [rel_raw])}
+        href = link.get("href") or ""
+        if not href:
+            continue
+        abs_href = normalize_link(base_url, href) or href
+        if "next" in rels:
+            pagination["rel_next"] = abs_href
+        if "prev" in rels:
+            pagination["rel_prev"] = abs_href
+        if "amphtml" in rels:
+            pagination["amphtml"] = abs_href
+    out["pagination"] = pagination
+
     out["warnings"] = warnings
     return out

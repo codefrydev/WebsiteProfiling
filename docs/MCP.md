@@ -43,11 +43,11 @@ Add to `.cursor/mcp.json` (or Cursor MCP settings):
 | `audit://glossary` | Excerpt from `docs/GLOSSARY.md` |
 | `audit://tools` | Tool catalog grouped by SEO domain |
 
-## Tools (171 read-only + export)
+## Tools (176 read-only + export)
 
 ### Export and deliverables
 
-`export_audit_report`, `export_compare_csv`, `export_list_as_csv`, `compose_custom_report`, `export_custom_report`, `list_export_formats`
+`export_audit_report`, `export_compare_csv`, `export_list_as_csv`, `export_sitemap_xml`, `validate_rich_results`, `compose_custom_report`, `export_custom_report`, `list_export_formats`
 
 Full audit exports reuse the same generators as the Export view (PDF requires `reportlab`). Export tools store files as artifacts (24h TTL); in-app chat renders download buttons via `/api/chat/artifacts/{id}`.
 
@@ -79,7 +79,7 @@ Size-based tools require `probe_image_inventory=true` in pipeline config when bu
 
 ### Links and architecture
 
-`list_orphan_pages`, `get_top_linked_pages`, `get_top_crawled_pages`, `get_outbound_link_domains`, `get_link_graph_summary`, `get_url_fingerprints`, `list_broken_link_sources`, `get_mime_type_breakdown`, `get_title_length_distribution`, `get_domain_link_distribution`, `get_outlink_distribution`
+`get_link_rel_summary`, `get_inlink_anchors`, `list_nofollow_internal_links`, `list_orphan_pages`, `get_top_linked_pages`, `get_top_crawled_pages`, `get_outbound_link_domains`, `get_link_graph_summary`, `get_url_fingerprints`, `list_broken_link_sources`, `get_mime_type_breakdown`, `get_title_length_distribution`, `get_domain_link_distribution`, `get_outlink_distribution`
 
 ### Indexation and international
 
@@ -115,12 +115,13 @@ Size-based tools require `probe_image_inventory=true` in pipeline config when bu
 
 ## Future pipeline items (not yet exposed as tools)
 
-These require additional crawl or third-party integrations before dedicated tools are useful:
+These require additional third-party integrations or product scope beyond current crawl data:
 
-- Google Rich Results / schema validation API
-- Full backlink index and anchor-text analytics
-- axe / color-contrast accessibility audits
+- Full backlink index and anchor-text analytics (beyond GSC Links import)
 - SERP rank tracking beyond GSC position snapshots
+- Standalone Google Rich Results Test API (current `validate_rich_results` uses crawl heuristics + GSC URL Inspection)
+
+Already available: `validate_rich_results`, `export_sitemap_xml`, workbook export, axe audits via `enable_axe` on browser crawls.
 
 ## Example prompts
 

@@ -27,11 +27,12 @@ import { PageLayout, PageHeader, Card, Button, StatCard, AlertBanner, ViewTabs, 
 import UrlInspectorButton from '@/components/UrlInspectorButton';
 import type { ViewTabItem } from '../components';
 import PathTreeTable from '../components/siteStructure/PathTreeTable';
+import CrawlMapPanel from '../components/siteStructure/CrawlMapPanel';
 import type { CrawlSegmentEntry, CrawlSegmentsData, PathTreeNode, PathTreeTableRow, ViewProps } from '@/types';
 
 const TREE_PAGE_SIZE = 20;
 
-const SITE_STRUCTURE_TABS = ['overview', 'tree'] as const;
+const SITE_STRUCTURE_TABS = ['overview', 'tree', 'map'] as const;
 type SiteStructureTabId = (typeof SITE_STRUCTURE_TABS)[number];
 
 interface SiteStructureTreePanelProps {
@@ -311,6 +312,12 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
         icon: <FolderTree className="h-3.5 w-3.5 shrink-0" aria-hidden />,
         badge: filteredLinks.length > 0 ? filteredLinks.length : null,
       },
+      {
+        id: 'map',
+        label: 'Crawl map',
+        icon: <Layers className="h-3.5 w-3.5 shrink-0" aria-hidden />,
+        badge: null,
+      },
     ];
   }, [s.tabs, merged.size, filteredLinks.length]);
 
@@ -453,6 +460,12 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
           </Card>
         </ViewTabPanel>
       )}
+
+      {activeTab === 'map' && tree ? (
+        <ViewTabPanel idPrefix="site-structure" tabId="map">
+          <CrawlMapPanel tree={tree} />
+        </ViewTabPanel>
+      ) : null}
     </PageLayout>
   );
 }

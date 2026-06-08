@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from 'react';
 import { Download, FileText, Printer } from 'lucide-react';
 import Button from '@/components/Button';
 import { useReport } from '@/context/useReport';
-import { buildAuditExportUrl } from '@/lib/exportAudit';
+import { buildAuditExportUrl, buildWorkbookExportUrl, buildSitemapExportUrl } from '@/lib/exportAudit';
 import { strings } from '@/lib/strings';
 import type { ViewProps } from '@/types/report';
 
@@ -20,6 +20,8 @@ export default function ExportReport(_props: ViewProps) {
   const pdfUrl = buildAuditExportUrl('pdf', reportId);
   const csvUrl = buildAuditExportUrl('csv', reportId);
   const jsonUrl = buildAuditExportUrl('json', reportId);
+  const workbookUrl = buildWorkbookExportUrl(reportId);
+  const sitemapUrl = buildSitemapExportUrl(reportId);
 
   const siteLabel = data?.site_name || strings.app.defaultSiteName;
   const generated = data?.report_generated_at;
@@ -59,6 +61,22 @@ export default function ExportReport(_props: ViewProps) {
             >
               <FileText className="h-4 w-4" />
               {ve.downloadCsv}
+            </a>
+            <a
+              href={workbookUrl}
+              download
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-default text-foreground hover:bg-brand-700/80 transition-colors"
+            >
+              <Download className="h-4 w-4" />
+              {ve.downloadWorkbook}
+            </a>
+            <a
+              href={sitemapUrl}
+              download
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-default text-foreground hover:bg-brand-700/80 transition-colors"
+            >
+              <Download className="h-4 w-4" />
+              {ve.downloadSitemap}
             </a>
             <a
               href={jsonUrl}

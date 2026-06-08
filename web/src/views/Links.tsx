@@ -32,6 +32,8 @@ import type { LinksFilterValues } from '../components/links/LinksFilterBar';
 import { linkHasBrowserErrors } from '@/lib/browserErrors';
 import { browserInspectorIssueRows } from '@/components/browser/BrowserDiagnosticsPanel';
 import { exportLinksCsv } from '@/utils/linkExport';
+import LinkAttributesPanel from '@/components/links/LinkAttributesPanel';
+import { useOptionalPipeline } from '../context/PipelineContext';
 
 const INSPECTOR_TABS = [
   'overview',
@@ -64,6 +66,8 @@ export default function Links({ searchQuery = '' }: ViewProps) {
   const vl = strings.views.links;
   const sj = strings.common;
   const { data } = useReport();
+  const pipeline = useOptionalPipeline();
+  const propertyId = Number(pipeline?.configState.active_property_id || 0);
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -358,6 +362,15 @@ export default function Links({ searchQuery = '' }: ViewProps) {
     setPage(1);
   };
 
+  const loadSavedFilter = (values: LinksFilterValues) => {
+    setInlinksFilter(values.inlinksFilter);
+    setStatusFilter(values.statusFilter);
+    setRtFilter(values.rtFilter);
+    setWcFilter(values.wcFilter);
+    setJsErrorFilter(values.jsErrorFilter);
+    setPage(1);
+  };
+
   const linkForInspector = inspectorUrl ? (links.find((l) => l.url === inspectorUrl) || null) : null;
 
   return (
@@ -401,10 +414,29 @@ export default function Links({ searchQuery = '' }: ViewProps) {
             }
           />
 
+          <LinkAttributesPanel
+            summary={data?.link_rel_summary}
+            anchors={data?.inlink_anchor_matrix}
+            labels={{
+              title: vl.linkAttributesTitle ?? 'Link attributes',
+              total: vl.linkAttrTotal ?? 'Total links',
+              internal: vl.linkAttrInternal ?? 'Internal',
+              nofollow: vl.linkAttrNofollow ?? 'Nofollow internal',
+              sponsored: vl.linkAttrSponsored ?? 'Sponsored internal',
+              external: vl.linkAttrExternal ?? 'External',
+              anchorMatrix: vl.inlinkAnchorMatrix ?? 'Inlink anchor text',
+              target: vl.inlinkTarget ?? 'Target URL',
+              anchor: vl.inlinkAnchor ?? 'Anchor text',
+              inlinks: vl.inlinkCount ?? 'Inlinks',
+            }}
+          />
+
           <LinksExplorerTableTab
             filterValues={filterValues}
             onFilterChange={handleFilterChange}
             onClearAllFilters={clearAllFilters}
+            propertyId={propertyId}
+            onLoadSavedFilter={loadSavedFilter}
             searchQuery={searchQuery}
             filtered={filtered}
             pageLinks={pageLinks}

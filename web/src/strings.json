@@ -1153,6 +1153,16 @@
       "showingResults": "Analyze discovered URLs. Showing",
       "resultsSuffix": "results.",
       "explorerHint": "Each row is a crawled URL. \"Inlinks\" is how many internal links point to this page in this crawl. Sort columns or open URL details for the full breakdown.",
+      "linkAttributesTitle": "Link attributes",
+      "linkAttrTotal": "Total links",
+      "linkAttrInternal": "Internal",
+      "linkAttrNofollow": "Nofollow internal",
+      "linkAttrSponsored": "Sponsored internal",
+      "linkAttrExternal": "External",
+      "inlinkAnchorMatrix": "Inlink anchor text",
+      "inlinkTarget": "Target URL",
+      "inlinkAnchor": "Anchor text",
+      "inlinkCount": "Inlinks",
       "noTitle": "No title",
       "filterAllPages": "All pages",
       "filterOrphans": "Orphans (0 inlinks)",
@@ -1768,6 +1778,16 @@
         "provenance": "Source",
         "close": "Close"
       },
+      "competitorGap": {
+        "title": "Imported competitor keywords",
+        "hint": "From Ahrefs or Semrush CSV import. Re-run the audit after import to persist in the report payload.",
+        "empty": "No competitor keywords in this report yet. Import a CSV above, then run Keywords or a full audit.",
+        "colKeyword": "Keyword",
+        "colCompetitor": "Competitor",
+        "colVolume": "Volume",
+        "colPosition": "Position",
+        "colUrl": "Landing URL"
+      },
       "cannib": {
         "empty": "No cannibalisation detected. Each keyword appears to rank from a unique page.",
         "emptyFiltered": "No cannibalisation issues match your search.",
@@ -1934,7 +1954,9 @@
       "print": "Print",
       "downloadPdf": "Download PDF",
       "downloadCsv": "Download CSV",
-      "downloadJson": "Download JSON"
+      "downloadJson": "Download JSON",
+      "downloadWorkbook": "Download crawl workbook (ZIP)",
+      "downloadSitemap": "Download XML sitemap"
     },
     "overview": {
       "openExportPage": "Export report",
@@ -2051,6 +2073,11 @@
       "lhCategoryScores": "Lighthouse category scores",
       "lhCategoryHint": "From the attached Lighthouse summary (typically the audited landing or representative URL). Scores are 0–100; bars use the same good / needs work / poor coloring as elsewhere.",
       "healthByCategory": "Health by Category",
+      "portfolioBenchmarkTitle": "Portfolio benchmark",
+      "portfolioBenchmarkHint": "Compare this property’s average category score to the median across all properties on this instance.",
+      "portfolioPropertyScore": "This property",
+      "portfolioMedianScore": "Portfolio median",
+      "portfolioDelta": "Vs median",
       "noCategorySearch": "No categories match your search.",
       "noCategoryData": "No category data.",
       "scoreGood": "Good",
@@ -2152,6 +2179,13 @@
       "twitterTags": "twitter card tags",
       "thinPages": "Thin Pages",
       "under300": "under 300 words",
+      "richResultsTitle": "Structured data (Rich Results)",
+      "richResultsHint": "Sample of 2xx URLs checked via crawl JSON-LD heuristics or Google Search Console URL Inspection when OAuth is connected.",
+      "richResultsEmpty": "No Rich Results validation rows.",
+      "richResultsColUrl": "URL",
+      "richResultsColStatus": "Status",
+      "richResultsColSource": "Source",
+      "richResultsColMessage": "Details",
       "i18nTitle": "Internationalization (crawl)",
       "pages2xx": "2xx pages",
       "missingHtmlLang": "Missing <html lang>",
@@ -2462,6 +2496,12 @@
       "searchRetention": "Search & retention",
       "brokenMessage": "Broken / error response ({status})",
       "redirectMessage": "Redirect {status}"
+    },
+    "pageImprove": {
+      "coachButton": "Get AI coach",
+      "coachLoading": "Generating coach…",
+      "coachFailed": "Page coach failed",
+      "coachTitle": "AI recommendations"
     },
     "copyBtn": {
       "copy": "Copy",

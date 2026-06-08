@@ -77,6 +77,9 @@ export type {
   ContentAnalyticsStats,
   SimilarInternalRow,
   TechStackEntry,
+  PortfolioBenchmark,
+  RichResultsValidationRow,
+  CompetitorKeywordGapRow,
 } from '@/types/report';
 
 export type {

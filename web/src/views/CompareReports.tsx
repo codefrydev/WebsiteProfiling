@@ -36,6 +36,7 @@ import {
   CompareLinksPanel,
   CompareGooglePanel,
 } from '../components/compare/CompareTabPanels';
+import CompareUrlMetadataTable from '../components/compare/CompareUrlMetadataTable';
 import dynamic from 'next/dynamic';
 
 const CompareOverviewCharts = dynamic(
@@ -58,9 +59,9 @@ type CompareTab =
   | 'links'
   | 'google'
   | 'audit';
-type UrlTab = 'all' | 'new' | 'removed' | 'content' | 'structure';
+type UrlTab = 'all' | 'new' | 'removed' | 'content' | 'structure' | 'fields';
 
-const URL_TABS = ['all', 'new', 'removed', 'content', 'structure'] as const;
+const URL_TABS = ['all', 'new', 'removed', 'content', 'structure', 'fields'] as const;
 
 function filterUrls(urls: string[], query: string): string[] {
   const q = query.trim().toLowerCase();
@@ -204,6 +205,20 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
     return all.sort((a, b) => a.localeCompare(b));
   }, [urlLists, urlTab]);
 
+  const metadataFiltered = useMemo(() => {
+    if (!reportCompare) return [];
+    const q = searchQuery.trim().toLowerCase();
+    const rows = reportCompare.urlMetadataChanges || [];
+    if (!q) return rows;
+    return rows.filter(
+      (r) =>
+        r.url.toLowerCase().includes(q) ||
+        r.field.toLowerCase().includes(q) ||
+        r.baseline.toLowerCase().includes(q) ||
+        r.current.toLowerCase().includes(q),
+    );
+  }, [reportCompare, searchQuery]);
+
   const statusFiltered = useMemo(() => {
     if (!reportCompare) return [];
     const q = searchQuery.trim().toLowerCase();
@@ -274,8 +289,9 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
       { id: 'removed', label: vc.urlTabs.removed, count: urlLists.removedUrls.length },
       { id: 'content', label: vc.urlTabs.content, count: urlLists.contentChanged.length },
       { id: 'structure', label: vc.urlTabs.structure, count: urlLists.structureChanged.length },
+      { id: 'fields', label: 'Title / canonical', count: reportCompare?.urlMetadataChanges?.length ?? 0 },
     ];
-  }, [urlLists, vc.urlTabs]);
+  }, [urlLists, vc.urlTabs, reportCompare?.urlMetadataChanges?.length]);
 
   return (
     <PageLayout className="space-y-6">
@@ -463,6 +479,11 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                 ))}
               </div>
               {copyHint ? <p className="text-xs text-emerald-700 dark:text-emerald-400">{copyHint}</p> : null}
+              {urlTab === 'fields' ? (
+                <Card shadow>
+                  <CompareUrlMetadataTable rows={metadataFiltered} emptyLabel={vc.noneInCategory} />
+                </Card>
+              ) : (
               <Card shadow>
                 <UrlDiffTable
                   urls={activeUrlList}
@@ -471,6 +492,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                   copyLabel={vc.copyUrls}
                 />
               </Card>
+              )}
             </div>
           ) : null}
 

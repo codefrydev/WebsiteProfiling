@@ -139,9 +139,14 @@ class BrowserFetcher:
         console_levels: frozenset[str] | None = None,
         capture_failed_requests: bool = False,
         console_max_per_page: int = 20,
+        run_axe: bool = False,
+        extra_http_headers: Optional[dict[str, str]] = None,
+        http_credentials: Optional[dict[str, str]] = None,
     ) -> None:
         self.timeout = max(1, int(timeout))
         self.user_agent = user_agent
+        self.extra_http_headers = dict(extra_http_headers or {})
+        self.http_credentials = http_credentials
         self.js_concurrency = max(1, int(js_concurrency))
         self.wait_until = wait_until if wait_until in ("domcontentloaded", "load", "commit") else "domcontentloaded"
         self.extra_wait_ms = max(0, int(extra_wait_ms))
@@ -150,6 +155,7 @@ class BrowserFetcher:
         self.console_levels = console_levels or frozenset({"error", "warning"})
         self.capture_failed_requests = bool(capture_failed_requests)
         self.console_max_per_page = max(1, int(console_max_per_page))
+        self.run_axe = bool(run_axe)
 
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._thread: Optional[threading.Thread] = None
@@ -199,7 +205,12 @@ class BrowserFetcher:
             launch_kwargs["executable_path"] = chrome_path
 
         browser = await playwright.chromium.launch(**launch_kwargs)
-        context = await browser.new_context(user_agent=self.user_agent)
+        context_kwargs: dict[str, Any] = {"user_agent": self.user_agent}
+        if self.extra_http_headers:
+            context_kwargs["extra_http_headers"] = self.extra_http_headers
+        if self.http_credentials:
+            context_kwargs["http_credentials"] = self.http_credentials
+        context = await browser.new_context(**context_kwargs)
         semaphore = asyncio.Semaphore(self.js_concurrency)
         pages: list[Any] = []
         for _ in range(self.js_concurrency):
@@ -339,6 +350,14 @@ class BrowserFetcher:
                 content_length = len(text.encode("utf-8")) if text else 0
             except Exception:
                 text = None
+            if self.run_axe and text:
+                from ..axe_runner import run_axe_on_page
+
+                axe_violations = await run_axe_on_page(page)
+                if axe_violations:
+                    if browser_diagnostics is None:
+                        browser_diagnostics = finalize_browser_diagnostics([], [], [])
+                    browser_diagnostics["axe_violations"] = axe_violations
 
         return FetchResult(
             status=status,

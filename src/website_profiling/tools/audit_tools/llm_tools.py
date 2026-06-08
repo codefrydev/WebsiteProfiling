@@ -95,7 +95,13 @@ def get_portfolio_summary(conn: Connection, _ctx: AuditToolContext, args: dict[s
             "generated_at": generated_at.isoformat() if hasattr(generated_at, "isoformat") else str(generated_at or ""),
             "issue_counts": issue_counts,
         })
-    return {"properties": summaries, "count": len(summaries)}
+    scores = [s["health_score"] for s in summaries if isinstance(s.get("health_score"), (int, float))]
+    median = None
+    if scores:
+        ordered = sorted(scores)
+        mid = len(ordered) // 2
+        median = ordered[mid] if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2
+    return {"properties": summaries, "count": len(summaries), "median_health_score": median}
 
 
 def expand_keywords(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
