@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import {
   ArrowLeftRight,
@@ -147,17 +147,27 @@ const TAB_KEYS = [
 ] as const satisfies readonly CompareTab[];
 
 export default function CompareReports({ searchQuery = '' }: ViewProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [tab, setTabRaw] = useUrlTab(TAB_KEYS, 'overview', 'tab');
-  const [urlTab, setUrlTabRaw] = useUrlTab(URL_TABS, 'all', 'urlTab');
+  const [tab] = useUrlTab(TAB_KEYS, 'overview', 'tab');
+  const [urlTab, setUrlTab] = useUrlTab(URL_TABS, 'all', 'urlTab');
   const setTab = useCallback(
     (next: CompareTab) => {
-      setTabRaw(next);
-      if (next !== 'urls') setUrlTabRaw('all');
+      const params = new URLSearchParams(searchParams.toString());
+      if (next === 'overview') {
+        params.delete('tab');
+      } else {
+        params.set('tab', next);
+      }
+      if (next !== 'urls') {
+        params.delete('urlTab');
+      }
+      const q = params.toString();
+      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
     },
-    [setTabRaw, setUrlTabRaw],
+    [router, pathname, searchParams],
   );
-  const setUrlTab = setUrlTabRaw;
   const [copyHint, setCopyHint] = useState('');
   const { reportList, reportCompare, compareReportId, selectedReportId, loading, error } = useReport();
   const vc = strings.views.compare;
