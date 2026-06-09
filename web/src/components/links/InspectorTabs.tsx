@@ -13,6 +13,8 @@ import TechnicalTab from './tabs/TechnicalTab';
 import IssuesTab from './tabs/IssuesTab';
 import PageAnalysisTab from './tabs/PageAnalysisTab';
 import SearchRetentionTab from './tabs/SearchRetentionTab';
+import PageImprovePanel from './PageImprovePanel';
+import { Sparkles } from 'lucide-react';
 
 const ci = strings.components.inspectorTabs;
 
@@ -24,9 +26,10 @@ const TAB_ICONS: Record<string, ReactNode> = {
   content: <Code2 className="h-3.5 w-3.5" />,
   technical: <Shield className="h-3.5 w-3.5" />,
   issues: <AlertTriangle className="h-3.5 w-3.5" />,
+  improve: <Sparkles className="h-3.5 w-3.5" />,
 };
 
-const TAB_IDS = ['overview', 'analysis', 'search', 'seo', 'content', 'technical', 'issues'] as const;
+const TAB_IDS = ['overview', 'analysis', 'search', 'seo', 'content', 'technical', 'issues', 'improve'] as const;
 
 const TAB_LABELS: Record<string, string> = {
   overview: ci.overview,
@@ -36,6 +39,7 @@ const TAB_LABELS: Record<string, string> = {
   content: ci.content,
   technical: ci.technical,
   issues: ci.issues,
+  improve: 'Page Improve',
 };
 
 function buildAllIssues(inspectorDetails: InspectorDetails | null): InspectorIssueRow[] {
@@ -148,7 +152,10 @@ export default function InspectorTabs({
         {activeTab === 'content'   && <ContentTab   link={link} />}
         {activeTab === 'technical' && <TechnicalTab  link={link} />}
         {activeTab === 'issues'    && (
-          <IssuesTab lhData={effectiveLh} inspectorDetails={inspectorDetails} />
+          <IssuesTab lhData={effectiveLh} inspectorDetails={inspectorDetails} pageUrl={link.url} />
+        )}
+        {activeTab === 'improve'   && (
+          <PageImprovePanel url={link.url} inspectorDetails={inspectorDetails} />
         )}
       </div>
     </div>

@@ -10,6 +10,8 @@ import { useSearchParams } from 'next/navigation';
 import { apiUrl } from '../../lib/publicBase';
 import { buildLinksInspectHref } from '../../lib/reportNav';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
+import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import { buildCannibalisationContext, buildMisalignmentContext } from '@/lib/fixSuggestionContext';
 import { strings, format } from '../../lib/strings';
 import { Card } from '../index';
 import CopyBtn from '../links/CopyBtn';
@@ -126,6 +128,7 @@ export function CannibalisationPanel({ items }: CannibalisationPanelProps) {
                   </li>
                 ))}
               </ul>
+              <AiSuggestionButton request={buildCannibalisationContext(item)} />
             </Card>
           ))}
         </div>
@@ -206,6 +209,7 @@ export function QueryPageMisalignmentPanel({ items }: QueryPageMisalignmentPanel
                 <UrlInspectorButton url={item.suggested_url} />
               </div>
             </div>
+            <AiSuggestionButton request={buildMisalignmentContext(item)} />
           </Card>
         ))}
       </div>

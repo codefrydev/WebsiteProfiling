@@ -503,14 +503,24 @@ def run_lighthouse_on_pages(
                 except OSError:
                     pass
 
+    from ..progress import emit_progress
+
     if workers == 1:
         for idx, url in enumerate(urls):
             try:
                 print(f"[Lighthouse on pages] {idx + 1}/{total}: {url}", flush=True)
+                emit_progress(
+                    "lighthouse",
+                    "audit",
+                    current=idx + 1,
+                    total=total,
+                    url=url,
+                )
                 _audit_one(url)
             except Exception as e:
                 print(f"  Skipped (error): {e}", file=sys.stderr, flush=True)
     else:
+        completed = 0
         with ThreadPoolExecutor(max_workers=workers) as pool:
             futures = {pool.submit(_audit_one, url): url for url in urls}
             for future in as_completed(futures):
@@ -519,6 +529,14 @@ def run_lighthouse_on_pages(
                     future.result()
                 except Exception as e:
                     print(f"  Skipped {url} (error): {e}", file=sys.stderr, flush=True)
+                completed += 1
+                emit_progress(
+                    "lighthouse",
+                    "audit",
+                    current=completed,
+                    total=total,
+                    url=url,
+                )
 
     print(f"[Lighthouse on pages] Done. Wrote {total} URL(s) to DB.", flush=True)
 

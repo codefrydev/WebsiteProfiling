@@ -327,19 +327,30 @@ def build_edges_from_df(
 
 
 def _fetch_site_level(start_url: str, timeout: int = 8) -> dict:
-    """Fetch robots.txt and sitemap.xml from start_url origin. Return site_level dict."""
+    """Fetch robots.txt, sitemap.xml, ads.txt, and security.txt from start_url origin."""
+    from .site_files import fetch_ads_txt, fetch_security_txt, merge_site_file_fields
+
     parsed = urlparse(start_url)
     if not parsed.scheme or not parsed.netloc:
-        return {"robots_present": False, "sitemap_present": False, "sitemap_valid": False}
+        return {
+            "robots_present": False,
+            "sitemap_present": False,
+            "sitemap_valid": False,
+            "ads_txt_present": False,
+            "security_txt_present": False,
+        }
     base = f"{parsed.scheme}://{parsed.netloc}"
     session = requests.Session()
     session.headers.update({"User-Agent": "WebsiteProfiling/1.0"})
-    out = {"robots_present": False, "sitemap_present": False, "sitemap_valid": False}
+    out: dict[str, Any] = {
+        "robots_present": False,
+        "sitemap_present": False,
+        "sitemap_valid": False,
+    }
     try:
         r = session.get(f"{base}/robots.txt", timeout=timeout)
         if r.status_code == 200 and r.text:
             out["robots_present"] = True
-            # Optional: parse robots for sitemap URL
             for line in r.text.splitlines():
                 line = line.strip()
                 if line.lower().startswith("sitemap:"):
@@ -350,10 +361,11 @@ def _fetch_site_level(start_url: str, timeout: int = 8) -> dict:
         r = session.get(f"{base}/sitemap.xml", timeout=timeout)
         if r.status_code == 200 and r.text:
             out["sitemap_present"] = True
-            # Basic XML check
             out["sitemap_valid"] = "<" in r.text and ">" in r.text and ("urlset" in r.text or "sitemapindex" in r.text)
     except Exception:
         pass
+    merge_site_file_fields(out, fetch_ads_txt(session, base, timeout=timeout))
+    merge_site_file_fields(out, fetch_security_txt(session, base, timeout=timeout))
     return out
 
 
@@ -1069,6 +1081,9 @@ def run_simple_report(
     )
     run_id = None
     crawl_run_created_at: Optional[str] = None
+    from ..progress import emit_progress
+
+    emit_progress("report", "load_crawl", message="Loading crawl data from DB")
     print("  Loading crawl data from DB...", flush=True)
     with db_session() as conn:
         run_id = get_latest_crawl_run_id(conn)
@@ -1105,6 +1120,7 @@ def run_simple_report(
     report_display_title = (report_title or "").strip() or f"{site_display} — Crawl Report"
 
     if not edges and not df.empty:
+        emit_progress("report", "build_edges", message="Building edges from crawl data")
         print("  Building edges from crawl data...", flush=True)
         render_mode = (str((config or {}).get("crawl_render_mode") or "static")).strip().lower()
         js_concurrency_cfg = get_int(config or {}, "crawl_js_concurrency", 3) or 3
@@ -1136,11 +1152,18 @@ def run_simple_report(
 
     # Long report work (ML, graph, network) runs without a DB handle; payload write uses db_session again.
 
+    emit_progress("report", "seo_summary", message="Computing SEO summary and issues")
     print("  Computing SEO summary and issues...", flush=True)
     summary_seo = _compute_summary_seo_issues(df)
 
+    emit_progress("report", "site_level", message="Fetching site-level data")
     print("  Fetching site-level (robots.txt, sitemap)...", flush=True)
     site_level = _fetch_site_level(start_url or "", timeout=8)
+
+    emit_progress("report", "contact_intelligence", message="Building contact intelligence")
+    from .contact_intelligence import build_contact_intelligence
+
+    contact_intelligence = build_contact_intelligence(df, site_level, start_url or "", config)
 
     site_ssl_expires_at: Optional[str] = None
     su = (start_url or "").strip()
@@ -1152,6 +1175,7 @@ def run_simple_report(
 
     security_findings: list = []
     if run_security_scan_flag:
+        emit_progress("report", "security_scan", message="Running security scan")
         print("  Running security scan...", flush=True)
         security_findings = run_security_scan(
             df,
@@ -1163,12 +1187,14 @@ def run_simple_report(
         )
         print(f"  Security scan: {len(security_findings)} findings.", flush=True)
 
+    emit_progress("report", "content_analysis", message="Content analysis")
     print("  Content analysis (crawl + optional AI insights)...", flush=True)
     local_bundle = run_local_enrichment(df, config)
     llm_cfg = load_llm_config_from_db()
     llm_bundle = run_llm_enrichment(df, llm_cfg) if llm_is_enabled(llm_cfg) else {}
     ml_bundle = merge_bundles(local_bundle, llm_bundle)
 
+    emit_progress("report", "categories", message="Building report categories")
     print("  Building report categories...", flush=True)
 
     crux_summary: Optional[dict[str, Any]] = None
@@ -1186,11 +1212,20 @@ def run_simple_report(
         lighthouse_summary=lighthouse_summary,
         ml_bundle=ml_bundle,
         crux_summary=crux_summary,
+        lighthouse_by_url=lighthouse_by_url,
     )
     # Ensure categories are JSON-serializable (score may be None)
     for cat in categories:
         if "score" in cat and cat["score"] is not None and hasattr(cat["score"], "item"):
             cat["score"] = int(cat["score"])
+
+    optional_audit_meta: dict[str, Any] = {}
+    try:
+        from .optional_audits import apply_optional_audits
+
+        optional_audit_meta = apply_optional_audits(categories, df, config)
+    except Exception as e:
+        ml_bundle.setdefault("ml_errors", []).append(f"optional_audits: {e}")
 
     df["status_str"] = df["status"].astype(str) if "status" in df.columns else "unknown"
     status_counts = df["status_str"].value_counts().to_dict()
@@ -1407,6 +1442,10 @@ def run_simple_report(
         # Tech stack
         rec["tech_stack"] = _str_col("tech_stack")
 
+        # Custom extraction (regex + XPath/CSS extractors)
+        rec["custom_extract"] = _str_col("custom_extract")
+        rec["custom_fields"] = _str_col("custom_fields")
+
         pa_obj: dict[str, Any] = {}
         if "page_analysis" in df.columns:
             raw_pa = row.get("page_analysis")
@@ -1586,6 +1625,7 @@ def run_simple_report(
         "missing_dimensions": missing_dimensions,
     }
 
+    emit_progress("report", "content_analytics", message="Building content analytics")
     print("  Building content analytics...", flush=True)
     content_analytics = _build_content_analytics(df)
     semantic_keyword_clusters: list[dict[str, Any]] = []
@@ -1620,6 +1660,7 @@ def run_simple_report(
         "recommendations": summary_seo["recommendations"],
         "categories": categories,
         "site_level": site_level,
+        "contact_intelligence": contact_intelligence,
         "redirects": summary_seo["issues"].get("redirects", []),
         "orphan_urls": [rec["url"] for rec in links if rec.get("inlinks", 0) == 0],
         "status_counts": status_counts,
@@ -1653,7 +1694,62 @@ def run_simple_report(
         "url_fingerprints": url_fingerprints,
         "keyword_opportunities": keyword_opportunities,
         "ml_errors": ml_bundle.get("ml_errors") or [],
+        **optional_audit_meta,
     }
+    if get_bool(config or {}, "enable_rich_results_validation", False):
+        try:
+            from ..integrations.google.rich_results import summarize_rich_results, validate_urls
+            from ..config import get_str
+
+            sample_urls = [
+                str(l.get("url") or "")
+                for l in links
+                if isinstance(l, dict) and str(l.get("status") or "").startswith("2")
+            ][:20]
+            links_by_url = {
+                str(l.get("url") or ""): l for l in links if isinstance(l, dict) and l.get("url")
+            }
+            creds = None
+            property_id_rr: Optional[int] = None
+            gsc_site = (get_str(config or {}, "gsc_site_url", "") or "").strip() or None
+            try:
+                from ..db import db_session as _rr_db
+                from ..commands.config_resolve import resolve_property_id_from_cfg
+
+                with _rr_db() as conn:
+                    property_id_rr = resolve_property_id_from_cfg(config, conn)
+            except Exception:
+                property_id_rr = None
+            if property_id_rr:
+                try:
+                    from ..integrations.google.auth import build_credentials
+
+                    creds = build_credentials(property_id_rr)
+                except Exception:
+                    creds = None
+            rr_api_key = (get_str(config or {}, "google_rich_results_api_key", "") or "").strip() or None
+            rr_rows = validate_urls(
+                sample_urls,
+                api_key=rr_api_key,
+                creds=creds,
+                site_url=gsc_site,
+                links_by_url=links_by_url,
+            )
+            report_data["rich_results_validation"] = rr_rows
+            report_data["rich_results_meta"] = summarize_rich_results(rr_rows)
+        except Exception as e:
+            report_data.setdefault("ml_errors", []).append(f"rich_results: {e}")
+    try:
+        from ..config import get_str
+        import json as _json
+
+        comp_kw = (get_str(config or {}, "competitor_keyword_gap_json", "") or "").strip()
+        if comp_kw:
+            parsed = _json.loads(comp_kw)
+            if isinstance(parsed, list):
+                report_data["competitor_keyword_gap"] = parsed
+    except Exception as e:
+        report_data.setdefault("ml_errors", []).append(f"competitor_keywords: {e}")
     if run_id is not None:
         report_data["crawl_run_id"] = run_id
         report_data["crawl_run_created_at"] = crawl_run_created_at
@@ -1662,6 +1758,7 @@ def run_simple_report(
         report_data["lighthouse_diagnostics"] = lighthouse_summary.get("diagnostics") or []
         report_data["lighthouse_human_summary"] = lighthouse_summary.get("human_summary_full") or lighthouse_summary.get("human_summary") or ""
     report_data["lighthouse_by_url"] = lighthouse_by_url
+    emit_progress("report", "write_payload", message="Writing report payload to DB")
     print("  Writing report payload to DB...", flush=True)
     from ..db import db_session as _db, write_report_payload as db_write_report_payload
     with _db() as conn:
@@ -1681,8 +1778,27 @@ def run_simple_report(
             google_data = read_latest_google_data(conn, property_id=property_id)
             if google_data:
                 report_data["google"] = google_data
+                from .issue_impact import enrich_categories_with_traffic_impact
+
+                enrich_categories_with_traffic_impact(
+                    report_data.get("categories") or [],
+                    google_data,
+                )
         except Exception:
             pass
+        try:
+            from ..db.crawl_store import read_link_edges
+            from .link_edges_report import build_inlink_anchor_matrix, summarize_link_rel
+
+            emit_progress("report", "link_edges", message="Loading crawl link edges")
+            if run_id is not None:
+                link_edges = read_link_edges(conn, run_id, limit=15000)
+                if link_edges:
+                    report_data["link_edges"] = link_edges
+                    report_data["link_rel_summary"] = summarize_link_rel(link_edges)
+                    report_data["inlink_anchor_matrix"] = build_inlink_anchor_matrix(link_edges)
+        except Exception as e:
+            report_data.setdefault("ml_errors", []).append(f"link_edges: {e}")
         try:
             from ..integrations.google.keyword_store import read_latest_keyword_data
             from ..integrations.google.gsc_links_store import read_latest_gsc_links_data
@@ -1720,6 +1836,15 @@ def run_simple_report(
             from .categories import merge_indexation_issues
 
             merge_indexation_issues(report_data.get("categories") or [], df, indexation_cov)
+            emit_progress("report", "subdomains", message="Building subdomain inventory")
+            from .subdomains import build_subdomain_inventory
+            from .categories import merge_subdomain_issues
+
+            subdomains_data = build_subdomain_inventory(df, indexation_cov, start_url or "", config)
+            report_data["subdomains"] = subdomains_data
+            if subdomains_data.get("crtsh_error"):
+                report_data.setdefault("ml_errors", []).append(subdomains_data["crtsh_error"])
+            merge_subdomain_issues(report_data.get("categories") or [], subdomains_data)
         except Exception as e:
             report_data.setdefault("ml_errors", []).append(f"indexation: {e}")
         try:
@@ -1769,6 +1894,48 @@ def run_simple_report(
             report_data["executive_summary"] = generate_audit_executive_summary(report_data, config)
         except Exception:
             pass
+        try:
+            from ..tools.audit_tools.llm_tools import get_portfolio_summary
+            from ..tools.audit_tools.context import AuditToolContext
+
+            portfolio = get_portfolio_summary(conn, AuditToolContext(property_id=property_id), {})
+            scores = []
+            for c in report_data.get("categories") or []:
+                try:
+                    if c.get("score") is not None:
+                        scores.append(int(float(c.get("score"))))
+                except (TypeError, ValueError):
+                    continue
+            prop_health = round(sum(scores) / len(scores)) if scores else None
+            prop_count = int(portfolio.get("count") or 0)
+            median = portfolio.get("median_health_score")
+            bench: dict[str, Any] = {
+                "median_health_score": median,
+                "property_health_score": prop_health,
+                "property_count": prop_count,
+            }
+            if prop_count <= 1:
+                bench["status"] = "single_property"
+                bench["message"] = "Add more properties to compare portfolio median."
+            elif median is None:
+                bench["status"] = "unavailable"
+                bench["message"] = "No health snapshots yet for portfolio comparison."
+            else:
+                bench["status"] = "ok"
+            report_data["portfolio_benchmark"] = bench
+            print(
+                f"  Portfolio benchmark: property={prop_health}, median={median}, count={prop_count}",
+                flush=True,
+            )
+        except Exception as e:
+            report_data.setdefault("ml_errors", []).append(f"portfolio_benchmark: {e}")
+            report_data["portfolio_benchmark"] = {
+                "status": "error",
+                "message": str(e),
+                "property_health_score": None,
+                "median_health_score": None,
+                "property_count": 0,
+            }
         report_data["report_meta"] = _build_report_metadata(
             df,
             config,

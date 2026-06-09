@@ -22,6 +22,8 @@ import {
   TrendingUp,
   FileSearch,
   MessageSquare,
+  Globe2,
+  Contact2,
 } from 'lucide-react';
 import { strings } from '@/lib/strings';
 import { viewIdToPathSlug, type ViewId } from '@/routes';
@@ -56,6 +58,8 @@ const VIEW_NAV: { id: ViewId; icon: LucideIcon }[] = [
   { id: 'gallery', icon: Images },
   { id: 'search-performance', icon: TrendingUp },
   { id: 'indexation', icon: FileSearch },
+  { id: 'subdomains', icon: Globe2 },
+  { id: 'contacts', icon: Contact2 },
   { id: 'backlinks', icon: Link2 },
   { id: 'traffic', icon: BarChart2 },
   { id: 'keywords-explorer', icon: Key },

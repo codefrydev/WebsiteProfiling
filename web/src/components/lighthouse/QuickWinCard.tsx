@@ -1,5 +1,9 @@
+'use client';
+
 import { useState } from 'react';
 import { CheckCircle, XCircle, ChevronDown, ChevronUp, Zap, Image, Code2, Search, Shield, Clock, type LucideIcon } from 'lucide-react';
+import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import { buildLighthouseQuickWinContext } from '@/lib/fixSuggestionContext';
 import type { LighthouseQuickWin } from '@/types/report';
 
 const ICON_MAP: Record<string, LucideIcon> = { Zap, Image, Code2, Search, Shield, Clock };
@@ -59,6 +63,7 @@ export default function QuickWinCard({ win, passed }: QuickWinCardProps) {
             <span className="text-xs text-muted-foreground">Estimated impact:</span>
             <span className="text-xs text-link font-semibold">{win.impact}</span>
           </div>
+          <AiSuggestionButton request={buildLighthouseQuickWinContext(win, passed)} />
         </div>
       )}
     </div>

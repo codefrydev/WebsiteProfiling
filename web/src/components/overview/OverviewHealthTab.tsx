@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { ChevronRight, Lightbulb } from 'lucide-react';
 import type { ReportCategory, ReportPayload } from '@/types';
 import { strings, format } from '@/lib/strings';
@@ -7,6 +9,9 @@ import { categoryDisplayName } from '@/lib/categoryDisplayNames';
 import { CategoryScoreGauge } from '@/components/charts/CategoryScoreGauge';
 import { Card } from '@/components';
 import { OverviewTabPanel } from './OverviewTabPanel';
+import { PortfolioBenchmarkCard } from './PortfolioBenchmarkCard';
+import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import { buildOverviewRecommendationContext } from '@/lib/fixSuggestionContext';
 
 const REC_COLORS = [
   { border: 'border-l-blue-500', bg: 'bg-blue-500/10', text: 'text-link', dot: 'bg-blue-500' },
@@ -26,9 +31,21 @@ export interface OverviewHealthTabProps {
 export function OverviewHealthTab({ data, categoriesFiltered, recommendationsFiltered }: OverviewHealthTabProps) {
   const vo = strings.views.overview;
   const sj = strings.common;
+  const searchParams = useSearchParams();
+  const querySuffix = searchParams.toString() ? `?${searchParams.toString()}` : '';
+  const hasSubdomains = Boolean(data.subdomains && !data.subdomains.disabled);
+  const hasContacts = Boolean(
+    data.contact_intelligence &&
+      ((data.contact_intelligence.emails?.length ?? 0) +
+        (data.contact_intelligence.phones?.length ?? 0) +
+        (data.contact_intelligence.addresses?.length ?? 0) +
+        (data.contact_intelligence.organization_names?.length ?? 0) >
+        0),
+  );
 
   return (
     <OverviewTabPanel tabId="health" className="space-y-8">
+      <PortfolioBenchmarkCard benchmark={data.portfolio_benchmark} />
       <div>
         <h2 className="text-xl font-bold text-bright mb-4">{vo.healthByCategory}</h2>
         {data.categories && data.categories.length > 0 ? (
@@ -70,7 +87,50 @@ export function OverviewHealthTab({ data, categoriesFiltered, recommendationsFil
                     : ''}
               </span>
             </div>
+            {data.site_level.ads_txt_present != null && (
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">{vo.adsTxt}</span>
+                <span className="font-semibold text-foreground">
+                  {data.site_level.ads_txt_present ? sj.yes : sj.no}
+                  {data.site_level.ads_txt_present
+                    ? data.site_level.ads_txt_valid
+                      ? vo.adsTxtValid
+                      : vo.adsTxtInvalid
+                    : ''}
+                </span>
+              </div>
+            )}
+            {data.site_level.security_txt_present != null && (
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">{vo.securityTxt}</span>
+                <span className="font-semibold text-foreground">
+                  {data.site_level.security_txt_present ? sj.yes : sj.no}
+                  {data.site_level.security_txt_present &&
+                  (data.site_level.security_txt_contact?.length ?? 0) > 0
+                    ? format(vo.securityTxtContacts, {
+                        count: data.site_level.security_txt_contact?.length ?? 0,
+                      })
+                    : ''}
+                </span>
+              </div>
+            )}
           </Card>
+          {(hasSubdomains || hasContacts) && (
+            <div className="flex flex-wrap gap-4 mt-3 text-sm">
+              {hasSubdomains ? (
+                <Link href={`/subdomains${querySuffix}`} className="text-link hover:underline inline-flex items-center gap-1">
+                  {vo.viewSubdomains}
+                  <ChevronRight className="h-4 w-4" aria-hidden />
+                </Link>
+              ) : null}
+              {hasContacts ? (
+                <Link href={`/contacts${querySuffix}`} className="text-link hover:underline inline-flex items-center gap-1">
+                  {vo.viewContacts}
+                  <ChevronRight className="h-4 w-4" aria-hidden />
+                </Link>
+              ) : null}
+            </div>
+          )}
         </div>
       )}
 
@@ -86,10 +146,13 @@ export function OverviewHealthTab({ data, categoriesFiltered, recommendationsFil
                 return (
                   <div
                     key={i}
-                    className={`flex items-start gap-3 border-l-4 ${c.border} ${c.bg} rounded-r-xl px-4 py-3`}
+                    className={`flex flex-col gap-2 border-l-4 ${c.border} ${c.bg} rounded-r-xl px-4 py-3`}
                   >
-                    <ChevronRight className={`h-4 w-4 shrink-0 mt-0.5 ${c.text}`} />
-                    <span className="text-sm text-foreground leading-relaxed">{r}</span>
+                    <div className="flex items-start gap-3">
+                      <ChevronRight className={`h-4 w-4 shrink-0 mt-0.5 ${c.text}`} />
+                      <span className="text-sm text-foreground leading-relaxed flex-1">{r}</span>
+                    </div>
+                    <AiSuggestionButton request={buildOverviewRecommendationContext(r)} className="pl-7" />
                   </div>
                 );
               })}

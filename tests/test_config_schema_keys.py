@@ -21,6 +21,16 @@ SCHEMA_KEYS = {
     "preserve_crawl_history",
     "crawl_stream_to_db",
     "crawl_exclude_urls",
+    "crawl_discovery_mode",
+    "crawl_url_list",
+    "crawl_user_agent_preset",
+    "crawl_user_agent_custom",
+    "crawl_auth_username",
+    "crawl_auth_password",
+    "crawl_extra_headers",
+    "crawl_cookies",
+    "crawl_robots_txt_override",
+    "custom_extractors",
     "crawl_render_mode",
     "crawl_js_concurrency",
     "crawl_js_timeout",
@@ -54,6 +64,13 @@ SCHEMA_KEYS = {
     "run_lighthouse",
     "run_lighthouse_on_pages",
     "enable_crux",
+    "enable_rich_results_validation",
+    "google_rich_results_api_key",
+    "enable_axe",
+    "enable_spell_check",
+    "enable_html_validation",
+    "enable_amp_audit",
+    "enable_wayback_lookup",
     "competitor_domains",
     "bing_webmaster_api_key",
     "serp_api_key",
@@ -75,6 +92,9 @@ SCHEMA_KEYS = {
     "enable_google_analytics",
     "google_date_range_days",
     "google_url_gap_list_limit",
+    "enable_subdomain_discovery",
+    "subdomain_ct_lookup",
+    "enable_rdap_org_lookup",
     "enrich_keywords_after_report",
     "keyword_max_pages",
     "keyword_gsc_max_rows",
@@ -107,6 +127,12 @@ def test_pipeline_example_keys_are_subset_of_schema():
 def test_schema_keys_documented_or_optional_in_example():
     keys = parse_config_keys(REPO_ROOT / "pipeline-config.example.txt")
     # Tristate 'auto' keys may be omitted from static examples (UI omits them when auto).
-    optional_omitted = {"enrich_keywords_after_report", "active_property_id"}
+    optional_omitted = {
+        "enrich_keywords_after_report",
+        "active_property_id",
+        "enable_subdomain_discovery",
+        "subdomain_ct_lookup",
+        "enable_rdap_org_lookup",
+    }
     missing = SCHEMA_KEYS - keys - optional_omitted
     assert not missing, f"pipeline-config.example.txt missing keys: {sorted(missing)}"

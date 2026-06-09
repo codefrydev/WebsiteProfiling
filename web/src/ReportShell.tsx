@@ -26,6 +26,8 @@ import {
   FileDown,
   FileSearch,
   Terminal,
+  Globe2,
+  Contact2,
 } from 'lucide-react';
 import { UrlInspectorProvider } from './context/UrlInspectorContext';
 import AppShell from './components/AppShell';
@@ -72,6 +74,8 @@ const Traffic = dynamic(() => import('./views/Traffic'), { loading: () => viewLo
 const KeywordsExplorer = dynamic(() => import('./views/KeywordsExplorer'), { loading: () => viewLoading() });
 const ExportReport = dynamic(() => import('./views/ExportReport'), { loading: () => viewLoading() });
 const LogAnalyzer = dynamic(() => import('./views/LogAnalyzer'), { loading: () => viewLoading() });
+const Subdomains = dynamic(() => import('./views/Subdomains'), { loading: () => viewLoading() });
+const Contacts = dynamic(() => import('./views/Contacts'), { loading: () => viewLoading() });
 
 interface ReportShellReportContext {
   data: ReportPayload | null;
@@ -122,6 +126,8 @@ const VIEW_CONFIG: ViewConfigEntry[] = [
   { id: 'gallery', component: Gallery as ComponentType<CurrentViewProps>, icon: Images },
   { id: 'search-performance', component: SearchPerformance as ComponentType<CurrentViewProps>, icon: TrendingUp },
   { id: 'indexation', component: Indexation as ComponentType<CurrentViewProps>, icon: FileSearch },
+  { id: 'subdomains', component: Subdomains as ComponentType<CurrentViewProps>, icon: Globe2 },
+  { id: 'contacts', component: Contacts as ComponentType<CurrentViewProps>, icon: Contact2 },
   { id: 'backlinks', component: Backlinks as ComponentType<CurrentViewProps>, icon: Link2 },
   { id: 'traffic', component: Traffic as ComponentType<CurrentViewProps>, icon: BarChart2 },
   { id: 'keywords-explorer', component: KeywordsExplorer as ComponentType<CurrentViewProps>, icon: Key },

@@ -46,7 +46,15 @@ function highlightText(text: string, query: string) {
   );
 }
 
-function ProgressLine({ line, query }: { line: PipelineLogLine; query: string }) {
+function ProgressLine({
+  line,
+  query,
+  label = 'Progress',
+}: {
+  line: PipelineLogLine;
+  query: string;
+  label?: string;
+}) {
   const p = line.progress;
   if (!p) {
     return (
@@ -56,7 +64,7 @@ function ProgressLine({ line, query }: { line: PipelineLogLine; query: string })
   return (
     <div className="space-y-1.5 rounded-md border border-blue-500/20 bg-blue-500/5 px-3 py-2">
       <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-        <span className="font-medium text-blue-200/90">Crawl progress</span>
+        <span className="font-medium text-blue-200/90">{label}</span>
         <span className="tabular-nums text-foreground/80">
           {p.current}/{p.total} ({p.percent}%)
         </span>
@@ -71,6 +79,22 @@ function ProgressLine({ line, query }: { line: PipelineLogLine; query: string })
   );
 }
 
+function ActivityLine({ line, query }: { line: PipelineLogLine; query: string }) {
+  const url = line.progressEvent?.url ?? line.text.replace(/^→\s*/, '');
+  return (
+    <div className="space-y-1.5 py-1">
+      <div
+        className="truncate rounded-md border border-default/60 bg-brand-900/50 px-2 py-1 font-mono text-[11px] text-[#e6edf3]/90"
+        title={url}
+      >
+        <span className="text-blue-300/90">→ </span>
+        {highlightText(url, query)}
+      </div>
+      {line.progress ? <ProgressLine line={line} query={query} label="Crawl progress" /> : null}
+    </div>
+  );
+}
+
 function LogLine({ line, query }: { line: PipelineLogLine; query: string }) {
   if (line.kind === 'noise') {
     return (
@@ -80,10 +104,18 @@ function LogLine({ line, query }: { line: PipelineLogLine; query: string }) {
     );
   }
 
+  if (line.kind === 'activity') {
+    return <ActivityLine line={line} query={query} />;
+  }
+
   if (line.kind === 'progress') {
     return (
       <div className="py-1">
-        <ProgressLine line={line} query={query} />
+        <ProgressLine
+          line={line}
+          query={query}
+          label={line.phase === 'crawl' ? 'Crawl progress' : 'Progress'}
+        />
       </div>
     );
   }

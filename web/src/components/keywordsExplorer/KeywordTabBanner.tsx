@@ -12,6 +12,9 @@ import {
   Zap,
   Target,
   ArrowRightLeft,
+  Layers,
+  BookOpen,
+  Users,
 } from 'lucide-react';
 import type { KeywordTabId } from './keywordTabMeta';
 import { strings } from '../../lib/strings';
@@ -27,6 +30,9 @@ const TAB_ICONS: Record<KeywordTabId, typeof Key> = {
   cannib: Split,
   alignment: ArrowRightLeft,
   bypage: FileText,
+  topics: Layers,
+  templates: BookOpen,
+  competitor: Users,
 };
 
 export interface KeywordTabBannerProps {

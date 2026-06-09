@@ -13,6 +13,8 @@ import { doughnutOptionsWithPercentTooltip, formatCompositionAria } from '../lib
 import { ChartAccessibleFallback } from '../components/charts';
 import type { SecurityFinding, ViewProps } from '@/types';
 import { securityFindingLabel } from '@/lib/securityFindingLabels';
+import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import { buildSecurityFindingContext } from '@/lib/fixSuggestionContext';
 
 registerChartJsBase();
 
@@ -355,6 +357,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
                         {f.recommendation}
                       </div>
                     )}
+                    <AiSuggestionButton request={buildSecurityFindingContext(f)} />
                   </div>
                 );
               })}

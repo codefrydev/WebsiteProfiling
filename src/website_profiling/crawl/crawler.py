@@ -32,7 +32,7 @@ from ..common import (
     load_robots,
     normalize_link,
     parse_content_text,
-    parse_links,
+    parse_link_edges,
     parse_resources,
     parse_seo,
     parse_seo_extended,
@@ -40,6 +40,12 @@ from ..common import (
     parse_tech_stack,
 )
 from ..analysis.page import analyze_html
+from .discovery import (
+    follow_links_for_mode,
+    normalize_discovery_mode,
+    seed_sitemap_for_mode,
+)
+from .extraction import parse_extractors_config, run_extractors
 from .fetchers import build_fetcher
 from .fetchers.base import FetchResult
 from .fetchers.browser_diagnostics import merge_browser_into_page_analysis
@@ -48,6 +54,19 @@ from .fetchers.spa_heuristics import needs_js_render_after_parse
 from .sitemap import discover_sitemap_urls
 
 DEFAULT_USER_AGENT = "WebsiteProfilingCrawler/1.0"
+MOBILE_USER_AGENT = (
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
+    "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+)
+
+
+def resolve_crawl_user_agent(preset: str | None, custom: str | None, default: str | None = None) -> str:
+    p = (preset or "default").strip().lower()
+    if p == "mobile":
+        return MOBILE_USER_AGENT
+    if p == "custom" and custom and str(custom).strip():
+        return str(custom).strip()
+    return (default or DEFAULT_USER_AGENT).strip() or DEFAULT_USER_AGENT
 
 
 class Crawler:
@@ -79,9 +98,24 @@ class Crawler:
         console_max_per_page: int = 20,
         custom_extraction_regex: str = "",
         crawl_ignore_params: Optional[list[str]] = None,
+        discovery_mode: str = "spider",
+        crawl_url_list: Optional[list[str]] = None,
+        crawl_user_agent_preset: str = "default",
+        crawl_user_agent_custom: str = "",
+        crawl_auth_username: str = "",
+        crawl_auth_password: str = "",
+        crawl_extra_headers: str = "",
+        crawl_cookies: str = "",
+        crawl_robots_txt_override: str = "",
+        custom_extractors: Optional[list[dict]] = None,
+        enable_axe: bool = False,
     ):
         self.start_url = start_url.rstrip("/")
         self.start_netloc = urlparse(self.start_url).netloc
+        self.discovery_mode = normalize_discovery_mode(discovery_mode)
+        self.follow_links = follow_links_for_mode(self.discovery_mode)
+        self.crawl_url_list = [u.rstrip("/") for u in (crawl_url_list or []) if u and str(u).strip()]
+        self.link_edges_accum: list[dict] = []
         self.render_mode = (render_mode or "static").strip().lower()
         self.js_concurrency = max(1, int(js_concurrency))
         effective_concurrency = (
@@ -97,7 +131,9 @@ class Crawler:
         self.ignore_robots = ignore_robots
         self.allow_external = allow_external
         self.max_depth = None if max_depth is None else int(max_depth)
-        self.user_agent = user_agent or DEFAULT_USER_AGENT
+        self.user_agent = resolve_crawl_user_agent(
+            crawl_user_agent_preset, crawl_user_agent_custom, user_agent
+        )
         self.polite_delay = max(0.0, float(polite_delay))
         self.store_outlinks = store_outlinks
         self.exclude_urls = list(exclude_urls) if exclude_urls else []
@@ -106,18 +142,37 @@ class Crawler:
         self.content_excerpt_max_chars = max(0, int(content_excerpt_max_chars or 0))
         self._wappalyzer_instance = None
         self.custom_extraction_regex = (custom_extraction_regex or "").strip()
+        self.custom_extractors = list(custom_extractors or [])
         self.crawl_ignore_params = list(crawl_ignore_params or [])
 
         self.queue = Queue()
-        if not _url_matches_exclude(self.start_url, self.exclude_urls):
-            self.queue.put(self.start_url)
-        self.depths = {self.start_url: 0}
+        self.depths: dict[str, int] = {}
         self.visited = set()
         self.results = []
         self.lock = threading.Lock()
         self.session = requests.Session()
         self.session.headers.update({"User-Agent": self.user_agent})
-        self.rp = None if self.ignore_robots else load_robots(self.start_url)
+        if crawl_auth_username:
+            self.session.auth = (crawl_auth_username, crawl_auth_password or "")
+        for line in (crawl_extra_headers or "").replace("\r", "").split("\n"):
+            if ":" in line:
+                key, val = line.split(":", 1)
+                k, v = key.strip(), val.strip()
+                if k:
+                    self.session.headers[k] = v
+        if crawl_cookies and str(crawl_cookies).strip():
+            self.session.headers["Cookie"] = str(crawl_cookies).strip()
+        self.rp = None
+        if not self.ignore_robots:
+            override = (crawl_robots_txt_override or "").strip()
+            if override:
+                import io
+                import urllib.robotparser as robotparser
+
+                self.rp = robotparser.RobotFileParser()
+                self.rp.parse(override.splitlines())
+            else:
+                self.rp = load_robots(self.start_url)
         self.fetcher = build_fetcher(
             render_mode="javascript" if self.render_mode == "javascript" else ("auto" if self.render_mode == "auto" else "static"),
             timeout=timeout,
@@ -132,11 +187,33 @@ class Crawler:
             js_console_levels=js_console_levels,
             capture_failed_requests=capture_failed_requests,
             console_max_per_page=console_max_per_page,
+            run_axe=enable_axe,
         )
         self._hybrid_fetcher = (
             self.fetcher if isinstance(self.fetcher, HybridFetcher) else None
         )
-        self._seed_sitemap_urls(timeout)
+        self._seed_initial_urls(timeout)
+
+    def _enqueue_seed(self, url: str, depth: int = 0) -> None:
+        u = url.rstrip("/")
+        if _url_matches_exclude(u, self.exclude_urls):
+            return
+        if not self.allow_external and not self.same_domain(u):
+            return
+        if u in self.depths:
+            return
+        self.queue.put(u)
+        self.depths[u] = depth
+
+    def _seed_initial_urls(self, timeout: int) -> None:
+        mode = self.discovery_mode
+        if mode in ("list", "hybrid"):
+            for url in self.crawl_url_list:
+                self._enqueue_seed(url, 0)
+        if mode in ("spider", "hybrid"):
+            self._enqueue_seed(self.start_url, 0)
+        if seed_sitemap_for_mode(mode):
+            self._seed_sitemap_urls(timeout)
 
     def same_domain(self, url):
         return urlparse(url).netloc == self.start_netloc
@@ -159,14 +236,7 @@ class Crawler:
         except Exception:
             return
         for url in seeds:
-            if _url_matches_exclude(url, self.exclude_urls):
-                continue
-            if not self.allow_external and not self.same_domain(url):
-                continue
-            if url == self.start_url or url in self.depths:
-                continue
-            self.queue.put(url)
-            self.depths[url] = 0
+            self._enqueue_seed(url, 0)
 
     def fetch(self, url) -> FetchResult:
         return self.fetcher.fetch(url)
@@ -233,7 +303,8 @@ class Crawler:
     ) -> dict:
         """Extract title, links, and SEO/content fields from HTML."""
         ext = self._empty_seo(url, headers_dict, redirect_chain_length)
-        title, links = parse_links(url, text)
+        title, link_edge_rows = parse_link_edges(url, text)
+        links = {e["to_url"] for e in link_edge_rows}
         meta_description, meta_description_len, h1_text, h1_count, canonical_url = (
             parse_seo(url, text)
         )
@@ -284,6 +355,7 @@ class Crawler:
         return {
             "title": title,
             "links": links,
+            "link_edges": link_edge_rows,
             "meta_description": meta_description,
             "meta_description_len": meta_description_len,
             "h1_text": h1_text,
@@ -452,7 +524,14 @@ class Crawler:
 
                 links = [strip_crawl_query_params(l, self.crawl_ignore_params) for l in links]
 
-            for link in links:
+            link_edge_rows = parsed.get("link_edges") or []
+            for edge in link_edge_rows:
+                link = edge.get("to_url") or ""
+                if self.store_outlinks:
+                    outlink_list.append(link)
+                    self.link_edges_accum.append({"from_url": url, **edge})
+                if not self.follow_links:
+                    continue
                 if _url_matches_exclude(link, self.exclude_urls):
                     continue
                 if not self.allow_external and not self.same_domain(link):
@@ -468,8 +547,6 @@ class Crawler:
                     ):
                         self.queue.put(link)
                         self.depths[link] = cur_depth + 1
-                if self.store_outlinks:
-                    outlink_list.append(link)
 
         ext["response_time_ms"] = response_time_ms if response_time_ms is not None else ""
         ext["content_length"] = content_length or 0
@@ -498,6 +575,11 @@ class Crawler:
                     ext["custom_extract"] = match.group(1) if match.lastindex else match.group(0)
             except re.error:
                 pass
+
+        if self.custom_extractors and text:
+            fields = run_extractors(text, self.custom_extractors)
+            if fields:
+                ext["custom_fields"] = json.dumps(fields)
 
         if self.polite_delay:
             time.sleep(self.polite_delay)
@@ -533,6 +615,11 @@ class Crawler:
         stream_batch_size: int = 500,
     ):
         start_time = time.time()
+        from ..progress import CrawlProgressTracker, emit_phase_start
+
+        crawl_total = None if self.max_pages == float("inf") else int(self.max_pages)
+        progress_tracker = CrawlProgressTracker(crawl_total, start_time=start_time)
+        emit_phase_start("crawl", message="Crawling pages")
         futures = []
         db_writer: Optional[_CrawlDbWriter] = None
         if stream_crawl_run_id is not None:
@@ -627,6 +714,10 @@ class Crawler:
                             if db_writer is not None and res.get("url"):
                                 db_writer.enqueue(res)
                             pbar.update(1)
+                            progress_tracker.maybe_emit(
+                                len(self.results),
+                                str(res.get("url") or "") or None,
+                            )
                         else:
                             remaining.append(f)
                     futures = remaining
@@ -782,15 +873,27 @@ def run_crawler(
     console_max_per_page: int = 20,
     custom_extraction_regex: str = "",
     crawl_ignore_params: Optional[list[str]] = None,
+    discovery_mode: str = "spider",
+    crawl_url_list: Optional[list[str]] = None,
+    crawl_user_agent_preset: str = "default",
+    crawl_user_agent_custom: str = "",
+    crawl_auth_username: str = "",
+    crawl_auth_password: str = "",
+    crawl_extra_headers: str = "",
+    crawl_cookies: str = "",
+    crawl_robots_txt_override: str = "",
+    custom_extractors: Optional[list] = None,
+    enable_axe: bool = False,
 ) -> pd.DataFrame:
     """Run crawler and optionally save to CSV/JSON or PostgreSQL. Returns DataFrame."""
     import sys
     max_p = max_pages if max_pages is not None else 0
     mode_label = (render_mode or "static").strip().lower()
+    disc_label = normalize_discovery_mode(discovery_mode)
     conc_label = js_concurrency if mode_label == "javascript" else concurrency
     print(
         f"  Crawling {start_url} (max_pages={max_p or 'unlimited'}, "
-        f"render_mode={mode_label}, concurrency={conc_label})...",
+        f"discovery={disc_label}, render_mode={mode_label}, concurrency={conc_label})...",
         flush=True,
     )
     crawler = Crawler(
@@ -818,6 +921,17 @@ def run_crawler(
         console_max_per_page=console_max_per_page,
         custom_extraction_regex=custom_extraction_regex,
         crawl_ignore_params=crawl_ignore_params,
+        discovery_mode=disc_label,
+        crawl_url_list=crawl_url_list,
+        crawl_user_agent_preset=crawl_user_agent_preset,
+        crawl_user_agent_custom=crawl_user_agent_custom,
+        crawl_auth_username=crawl_auth_username,
+        crawl_auth_password=crawl_auth_password,
+        crawl_extra_headers=crawl_extra_headers,
+        crawl_cookies=crawl_cookies,
+        crawl_robots_txt_override=crawl_robots_txt_override,
+        custom_extractors=custom_extractors,
+        enable_axe=enable_axe,
     )
     stream_run_id: Optional[int] = None
     if output_db:
@@ -838,7 +952,8 @@ def run_crawler(
                 if historical:
                     restore_historical_data(conn, historical)
                 stream_run_id = create_crawl_run(
-                    conn, start_url, property_id=property_id, render_mode=render_mode
+                    conn, start_url, property_id=property_id, render_mode=render_mode,
+                    discovery_mode=disc_label,
                 )
             print(f"  Streaming crawl results to DB (run_id={stream_run_id})...", flush=True)
 
@@ -846,6 +961,19 @@ def run_crawler(
         show_progress=show_progress,
         stream_crawl_run_id=stream_run_id,
     )
+    if output_db and crawler.link_edges_accum:
+        from ..db import db_session
+        from ..db.crawl_store import write_link_edges
+
+        run_id = stream_run_id
+        if run_id is None:
+            with db_session() as conn:
+                from ..db.crawl_store import get_latest_crawl_run_id
+
+                run_id = get_latest_crawl_run_id(conn)
+        if run_id is not None:
+            with db_session() as conn:
+                write_link_edges(conn, crawler.link_edges_accum, crawl_run_id=run_id)
     if output_db and not df.empty and stream_run_id is None:
         import sys
         print("  Writing crawl results to DB...", flush=True)
@@ -867,9 +995,14 @@ def run_crawler(
             if historical:
                 restore_historical_data(conn, historical)
             run_id = create_crawl_run(
-                conn, start_url, property_id=property_id, render_mode=render_mode
+                conn, start_url, property_id=property_id, render_mode=render_mode,
+                discovery_mode=disc_label,
             )
             write_crawl(conn, df, crawl_run_id=run_id)
+            if crawler.link_edges_accum:
+                from ..db.crawl_store import write_link_edges
+
+                write_link_edges(conn, crawler.link_edges_accum, crawl_run_id=run_id)
         print("  Crawl DB write complete.", flush=True)
     elif output_db and stream_run_id is not None:
         print("  Crawl streamed to DB during fetch.", flush=True)

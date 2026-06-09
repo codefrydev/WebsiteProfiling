@@ -2,6 +2,7 @@
 Report categories for site audits: Technical SEO, Core Web Vitals, Performance,
 Accessibility & markup, Links, Mobile SEO, Security, Content quality.
 """
+import json
 from typing import Any, Optional
 from urllib.parse import urlparse
 
@@ -207,6 +208,29 @@ def merge_indexation_issues(categories: list[dict], df: pd.DataFrame, indexation
             break
 
 
+def merge_subdomain_issues(categories: list[dict], subdomains: dict | None) -> None:
+    """Append GSC subdomain gap summary to technical SEO."""
+    if not subdomains or subdomains.get("disabled"):
+        return
+    hosts = subdomains.get("gsc_hosts_not_crawled") or []
+    if not hosts:
+        return
+    preview = ", ".join(hosts[:5])
+    suffix = f" (+{len(hosts) - 5} more)" if len(hosts) > 5 else ""
+    msg = f"GSC shows URLs on subdomain(s) not reached by crawl: {preview}{suffix}."
+    issue = _issue(
+        msg,
+        priority="Medium",
+        recommendation="Include these hosts in crawl scope or verify they are intentional separate properties.",
+    )
+    for cat in categories:
+        if cat.get("id") == "technical_seo":
+            cat["issues"] = _sort_issues((cat.get("issues") or []) + [issue])
+            recs = {i["recommendation"] for i in cat["issues"] if i.get("recommendation")}
+            cat["recommendations"] = list(recs)
+            break
+
+
 def _orphan_hub_suggestions(edges: list[tuple[str, str]], orphan_urls: list[str]) -> list[dict]:
     issues: list[dict] = []
     if not edges or not orphan_urls:
@@ -259,6 +283,18 @@ def category_technical_seo(
             recommendation="Ensure sitemap is valid XML and follows sitemaps.org format.",
         ))
         deductions.append((5, True))
+    if site_level.get("ads_txt_present") is False:
+        issues.append(_issue(
+            "ads.txt is missing or unreachable.",
+            priority="Low",
+            recommendation="Add an ads.txt file at the site root if you run programmatic advertising.",
+        ))
+    if site_level.get("security_txt_present") is False:
+        issues.append(_issue(
+            "security.txt is missing or unreachable.",
+            priority="Low",
+            recommendation="Publish security.txt at /.well-known/security.txt with a Contact field for security reporting.",
+        ))
 
     # Canonical: missing or self-mismatch
     if "canonical_url" in df.columns and len(success_df) > 0:
@@ -544,8 +580,84 @@ def category_performance(df: pd.DataFrame) -> dict:
     }
 
 
-def category_html_accessibility(df: pd.DataFrame) -> dict:
-    """HTML and Accessibility: semantic HTML, heading structure, alt, ARIA, contrast (stub)."""
+def _parse_page_analysis_cell(raw: object) -> dict[str, Any]:
+    if isinstance(raw, dict):
+        return raw
+    if not raw or not isinstance(raw, str):
+        return {}
+    try:
+        parsed = json.loads(raw)
+        return parsed if isinstance(parsed, dict) else {}
+    except Exception:
+        return {}
+
+
+def contrast_issues_from_sources(
+    df: pd.DataFrame,
+    lighthouse_by_url: Optional[dict[str, Any]] = None,
+) -> list[dict]:
+    """Contrast issues from axe crawl data and per-URL Lighthouse failures."""
+    issues: list[dict] = []
+    seen_urls: set[str] = set()
+
+    if df is not None and not df.empty and "page_analysis" in df.columns:
+        for _, row in df.iterrows():
+            url = str(row.get("url") or "").strip()
+            if not url:
+                continue
+            pa = _parse_page_analysis_cell(row.get("page_analysis"))
+            axe = pa.get("axe_violations")
+            if not isinstance(axe, list):
+                continue
+            contrast_hits = [
+                v for v in axe
+                if isinstance(v, dict) and "color-contrast" in str(v.get("id") or "")
+            ]
+            if not contrast_hits:
+                continue
+            seen_urls.add(url.rstrip("/"))
+            first = contrast_hits[0]
+            msg = str(first.get("description") or first.get("help") or "Color contrast violation")
+            issues.append(_issue(
+                f"axe: {msg}",
+                url=url,
+                priority="Medium",
+                recommendation=str(
+                    first.get("help")
+                    or "Fix text/background contrast to meet WCAG AA (axe-core)."
+                ),
+            ))
+
+    lh_map = lighthouse_by_url or {}
+    for url, summary in lh_map.items():
+        if not isinstance(summary, dict):
+            continue
+        u = str(url or summary.get("url") or "").strip().rstrip("/")
+        if not u or u in seen_urls:
+            continue
+        for fail in summary.get("top_failures") or []:
+            if not isinstance(fail, dict):
+                continue
+            if str(fail.get("id") or "") != "color-contrast":
+                continue
+            seen_urls.add(u)
+            help_text = str(fail.get("helpText") or "Low color contrast")
+            issues.append(_issue(
+                f"Lighthouse: {help_text}",
+                url=u,
+                priority="Medium",
+                recommendation="Increase contrast ratio between text and background to meet WCAG AA.",
+            ))
+            break
+
+    return issues[:40]
+
+
+def category_html_accessibility(
+    df: pd.DataFrame,
+    lighthouse_by_url: Optional[dict[str, Any]] = None,
+) -> dict:
+    """HTML and Accessibility: semantic HTML, heading structure, alt, ARIA, contrast."""
     issues = []
     deductions = []
     success_df = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns else pd.DataFrame()
@@ -628,11 +740,16 @@ def category_html_accessibility(df: pd.DataFrame) -> dict:
             ))
             deductions.append((min(10, complex_pages * 2), True))
 
-    issues.append(_issue(
-        "Color contrast is not measured by this tool.",
-        priority="Low",
-        recommendation="Use browser DevTools or axe to check contrast and accessibility.",
-    ))
+    contrast_issues = contrast_issues_from_sources(df, lighthouse_by_url)
+    if contrast_issues:
+        issues.extend(contrast_issues)
+        deductions.append((min(25, len(contrast_issues) * 4), True))
+    else:
+        issues.append(_issue(
+            "Color contrast is not measured by this tool.",
+            priority="Low",
+            recommendation="Enable axe (browser crawl) or Lighthouse to check contrast.",
+        ))
 
     score = _score_deductions(100, deductions)
     if len(success_df) > 0 and score == 0:
@@ -905,6 +1022,7 @@ def build_categories(
     lighthouse_summary: Optional[dict] = None,
     ml_bundle: Optional[dict] = None,
     crux_summary: Optional[dict] = None,
+    lighthouse_by_url: Optional[dict[str, Any]] = None,
 ) -> list[dict]:
     """
     Build all category dicts with score, issues (with priority and recommendation), and recommendations.
@@ -926,7 +1044,7 @@ def build_categories(
         category_technical_seo(df, site_level),
         cwv,
         category_performance(df),
-        category_html_accessibility(df),
+        category_html_accessibility(df, lighthouse_by_url=lighthouse_by_url),
         category_link_health(df, edges, issues_broken, issues_redirects),
         category_mobile(df),
         category_security(df, site_level, start_url or "", security_findings=security_findings),

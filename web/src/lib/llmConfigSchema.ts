@@ -63,10 +63,10 @@ export const LLM_CONFIG_SECTIONS = [
       { key: 'llm_enable_keyword_clusters', label: 'Topic clusters (AI)', type: 'bool', defaultValue: true },
       {
         key: 'llm_enable_issue_fixes',
-        label: 'Issue fix suggestions',
+        label: 'AI fix suggestions',
         type: 'bool',
         defaultValue: true,
-        help: 'Generate AI fix text for top traffic-weighted audit issues at report build time.',
+        help: 'On-demand AI fix buttons across Issues, Lighthouse, Security, and other audit surfaces; also enriches top issues at report build.',
       },
       {
         key: 'llm_enable_audit_summary',

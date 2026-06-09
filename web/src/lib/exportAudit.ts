@@ -12,3 +12,17 @@ export function buildAuditExportUrl(
   if (options?.inline) q.set('disposition', 'inline');
   return reportApi(`/export?${q.toString()}`);
 }
+
+export function buildWorkbookExportUrl(reportId: number | null | undefined): string {
+  const q = new URLSearchParams();
+  if (reportId != null) q.set('reportId', String(reportId));
+  const qs = q.toString();
+  return reportApi(`/export-workbook${qs ? `?${qs}` : ''}`);
+}
+
+export function buildSitemapExportUrl(reportId: number | null | undefined): string {
+  const q = new URLSearchParams();
+  if (reportId != null) q.set('reportId', String(reportId));
+  const qs = q.toString();
+  return reportApi(`/export-sitemap${qs ? `?${qs}` : ''}`);
+}

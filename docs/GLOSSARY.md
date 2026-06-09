@@ -39,17 +39,21 @@ UI terms agencies recognize, mapped to internal keys and data sources.
 | Scheduled audits | `properties.schedule_cron`, `/api/schedule/check` | Cron + pipeline spawn | Recurring site audit — see [OPS.md](OPS.md) |
 | Property alerts | `alert_webhook_url`, `/api/alerts/check` | Health snapshot rules | Ops notifications |
 | Content brief | Keywords Brief button, `/api/keywords/content-brief` | LLM or deterministic | Content planning |
-| AI issue fix | `llm_recommendation`, `/api/issues/fix-suggestion` | LLM on demand + report build | Actionable remediation |
+| AI fix suggestions | `llm_recommendation`, `/api/ai/fix-suggestion`, `/api/issues/fix-suggestion` (legacy) | LLM on demand + report build | Actionable remediation across Issues, Lighthouse, Security, and other surfaces |
 | AI Chat | `/chat`, `/api/chat`, `chat_sessions` | LLM + read-only audit tools | Conversational site audit queries |
 | MCP tools | `python -m website_profiling.mcp` | Same `audit_tools` as chat | Cursor / Claude Desktop integration — see [MCP.md](MCP.md) |
 | Read-only session | `AUTH_DEFAULT_ROLE=client-readonly`, `/api/auth/session` | Session cookie | Client view-only access |
 | Export executive summary | `export_audit_html/pdf/csv`, `export_audit_report` (chat/MCP), Export view | Report payload + optional AI | Client deliverable |
+| ads.txt / security.txt | `site_level`, `get_ads_txt_status`, `get_security_txt_status` | Root file fetch at report build | Publisher / contact file hygiene |
+| Subdomain inventory | `subdomains`, `list_subdomains`, `/subdomains` view | Crawl + GSC + optional crt.sh | Host footprint vs crawl scope |
+| Contact intelligence | `contact_intelligence`, `get_contact_intelligence`, `/contacts` view | Crawl schema/mailto + security.txt + RDAP org | Business identity consistency |
 
 ## Metric names
 
 | UI | Field | Source |
 |----|-------|--------|
-| Inlinks | `inlinks` | Crawl graph |
+| Impact score | `impact_score` on issues | GSC clicks + GA4 sessions + priority weight (see below) |
+| Link edges | `link_edges`, `link_rel_summary` | Crawl anchor/rel attributes |
 | Outlinks | `outlinks` | Crawl graph |
 | Status code | `status` | HTTP |
 | Crawl rendering | `crawl_render_mode` on run; `fetch_method` per URL | `static`, `javascript`, or `auto` crawl config; `static` vs `rendered` per page |
@@ -61,6 +65,8 @@ UI terms agencies recognize, mapped to internal keys and data sources.
 | Average position | `gsc_position` | Search Console |
 | On-site frequency | `volume` (heuristic) | Estimated from crawl |
 | Sessions | GA4 metrics | Analytics |
+
+**Impact score:** `priority_weight + (gsc_clicks × 10) + (ga4_sessions × 5)` with Critical=1000, High=100, Medium=10, Low=1.
 
 ## Provenance badges
 

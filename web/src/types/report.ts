@@ -43,6 +43,10 @@ export interface ReportIssue {
   recommendation?: string;
   llm_recommendation?: string;
   llm_fix_effort?: string;
+  impact_score?: number;
+  gsc_clicks?: number;
+  gsc_impressions?: number;
+  ga4_sessions?: number;
   type?: string;
   severity?: string;
   finding_type?: string;
@@ -330,6 +334,49 @@ export interface SiteLevelChecks {
   robots_present?: boolean;
   sitemap_present?: boolean;
   sitemap_valid?: boolean;
+  ads_txt_present?: boolean;
+  ads_txt_valid?: boolean;
+  ads_txt_line_count?: number;
+  ads_txt_issues?: string[];
+  security_txt_present?: boolean;
+  security_txt_valid?: boolean;
+  security_txt_contact?: string[];
+  security_txt_expires?: string | null;
+}
+
+export interface ContactIntelligenceEntry {
+  value?: string;
+  sources?: string[];
+  urls?: string[];
+}
+
+export interface ContactIntelligence {
+  emails?: ContactIntelligenceEntry[];
+  phones?: ContactIntelligenceEntry[];
+  addresses?: ContactIntelligenceEntry[];
+  organization_names?: ContactIntelligenceEntry[];
+  primary_contact_page?: string | null;
+  consistency_notes?: string[];
+}
+
+export interface SubdomainHostEntry {
+  host?: string;
+  sources?: string[];
+  in_crawl?: boolean;
+  in_gsc?: boolean;
+  url_count_crawl?: number;
+  url_count_gsc?: number;
+  in_scope?: boolean;
+}
+
+export interface SubdomainInventory {
+  apex?: string;
+  hosts?: SubdomainHostEntry[];
+  gsc_hosts_not_crawled?: string[];
+  out_of_scope_discovered?: string[];
+  fetched_at?: string;
+  disabled?: boolean;
+  crtsh_error?: string;
 }
 
 export interface NerSiteSummary {
@@ -355,6 +402,32 @@ export interface KeywordOpportunities {
   quick_wins?: KeywordOpportunityItem[];
   high_value?: KeywordOpportunityItem[];
   token_topic_clusters?: TopicCluster[];
+}
+
+export interface LinkEdgeRow {
+  from_url?: string;
+  to_url?: string;
+  anchor_text?: string;
+  rel?: string;
+  is_nofollow?: boolean;
+  is_sponsored?: boolean;
+  is_ugc?: boolean;
+  link_type?: string;
+}
+
+export interface LinkRelSummary {
+  total_edges?: number;
+  internal_edges?: number;
+  nofollow_internal?: number;
+  sponsored_internal?: number;
+  ugc_internal?: number;
+  external_edges?: number;
+}
+
+export interface InlinkAnchorRow {
+  target_url?: string;
+  anchor_text?: string;
+  inlink_count?: number;
 }
 
 export interface GraphEdge {
@@ -422,6 +495,43 @@ export interface BingBacklinksSummary {
   error?: string;
 }
 
+export type PortfolioBenchmarkStatus = 'ok' | 'single_property' | 'unavailable' | 'error';
+
+export interface PortfolioBenchmark {
+  median_health_score?: number | null;
+  property_health_score?: number | null;
+  property_count?: number;
+  status?: PortfolioBenchmarkStatus;
+  message?: string;
+}
+
+export interface RichResultsValidationRow {
+  url: string;
+  status?: string;
+  provenance?: string;
+  source?: string;
+  message?: string;
+  verdict?: string;
+  schema_types?: string[];
+  issues?: string[];
+}
+
+export interface RichResultsMeta {
+  checked?: number;
+  gsc_count?: number;
+  api_count?: number;
+  heuristic_count?: number;
+}
+
+export interface CompetitorKeywordGapRow {
+  keyword: string;
+  competitor?: string;
+  volume?: string | number | null;
+  position?: string | number | null;
+  url?: string | null;
+  source?: string;
+}
+
 export interface ReportPayload {
   site_name?: string;
   crawl_run_id?: number;
@@ -481,11 +591,20 @@ export interface ReportPayload {
   depth_distribution?: DepthDistribution;
   tech_stack_summary?: TechStackSummary;
   site_level?: SiteLevelChecks;
+  contact_intelligence?: ContactIntelligence;
+  subdomains?: SubdomainInventory;
   ner_site_summary?: NerSiteSummary;
   language_summary?: LanguageSummary;
   keyword_opportunities?: KeywordOpportunities;
   graph_nodes?: GraphNode[];
   graph_edges?: GraphEdge[];
+  link_edges?: LinkEdgeRow[];
+  link_rel_summary?: LinkRelSummary;
+  inlink_anchor_matrix?: InlinkAnchorRow[];
+  portfolio_benchmark?: PortfolioBenchmark;
+  rich_results_validation?: RichResultsValidationRow[];
+  rich_results_meta?: RichResultsMeta;
+  competitor_keyword_gap?: CompetitorKeywordGapRow[];
   recommendations?: string[];
   mime_labels?: string[];
   mime_values?: number[];
@@ -532,6 +651,8 @@ export interface ReportLink {
   page_error_count?: number;
   has_browser_errors?: boolean;
   custom_extract?: string;
+  /** JSON string or parsed map from XPath/CSS custom extractors */
+  custom_fields?: string | Record<string, string>;
 }
 
 export interface CrawlSegmentEntry {

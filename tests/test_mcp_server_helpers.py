@@ -61,7 +61,7 @@ def test_read_glossary_excerpt_missing(monkeypatch) -> None:
 
 def test_tools_catalog_json_includes_security_tools() -> None:
     catalog = json.loads(mcp_server._tools_catalog_json())
-    assert catalog["tool_count"] >= 171
+    assert catalog["tool_count"] >= 176
     assert "get_security_findings" in catalog["domains"]["security"]
 
 
@@ -168,7 +168,7 @@ def test_mcp_main_registers_handlers(monkeypatch) -> None:
     assert captured["name"] == "site-audit"
     assert captured["ran"] is True
     tools = asyncio.run(captured["list_tools"]())  # type: ignore[arg-type]
-    assert len(tools) >= 171
+    assert len(tools) >= 176
     resources = asyncio.run(captured["list_resources"]())  # type: ignore[arg-type]
     assert any(r["uri"] == "audit://property/7" for r in resources)
 
@@ -186,5 +186,11 @@ def test_mcp_package_main(monkeypatch) -> None:
 
 
 def test_mcp_server_main_guard() -> None:
+    # run_module executes __main__ in a fresh import; drop any prior import from this file.
+    sys.modules.pop("website_profiling.mcp.server", None)
     with pytest.raises(SystemExit, match="MCP SDK"):
-        runpy.run_module("website_profiling.mcp.server", run_name="__main__")
+        runpy.run_module(
+            "website_profiling.mcp.server",
+            run_name="__main__",
+            alter_sys=False,
+        )

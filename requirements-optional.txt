@@ -1,0 +1,3 @@
+# Optional audit dependencies (install when enabling spell-check / HTML validation extras)
+pyspellchecker>=0.8.1
+html5lib>=1.1

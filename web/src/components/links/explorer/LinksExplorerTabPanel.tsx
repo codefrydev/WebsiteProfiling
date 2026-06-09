@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react';
 
+export type LinksExplorerTabId = 'urls' | 'anchors';
+
 interface LinksExplorerTabPanelProps {
-  tabId: 'urls';
+  tabId: LinksExplorerTabId;
   className?: string;
   children: ReactNode;
 }

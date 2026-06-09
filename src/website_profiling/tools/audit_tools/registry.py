@@ -129,6 +129,7 @@ from .export_tools import (
     export_list_as_csv,
     list_export_formats,
 )
+from .export_extras import export_sitemap_xml, validate_rich_results
 from .image_tools import (
     get_image_audit_summary,
     list_images_needing_attention,
@@ -157,11 +158,14 @@ from .onpage import (
     list_seo_onpage_issues,
 )
 from .links import (
+    get_inlink_anchors,
     get_link_graph_summary,
+    get_link_rel_summary,
     get_outbound_link_domains,
     get_top_linked_pages,
     get_url_fingerprints,
     list_broken_link_sources,
+    list_nofollow_internal_links,
     list_orphan_pages,
 )
 from .ops import (
@@ -178,6 +182,12 @@ from .ops import (
     list_log_uploads,
 )
 from .properties import get_property, list_properties
+from .property_profile import (
+    get_ads_txt_status,
+    get_contact_intelligence,
+    get_security_txt_status,
+    list_subdomains,
+)
 from .report import (
     get_category_scores,
     get_critical_issues,
@@ -279,6 +289,10 @@ _TOOL_HANDLERS: dict[str, ToolHandler] = {
     "get_audit_recommendations": get_audit_recommendations,
     "get_ml_errors": get_ml_errors,
     "get_ssl_expiry_info": get_ssl_expiry_info,
+    "get_ads_txt_status": get_ads_txt_status,
+    "get_security_txt_status": get_security_txt_status,
+    "list_subdomains": list_subdomains,
+    "get_contact_intelligence": get_contact_intelligence,
     "list_audit_categories": list_audit_categories,
     "get_category_recommendations": get_category_recommendations,
     "list_issues_with_ai_fixes": list_issues_with_ai_fixes,
@@ -361,6 +375,9 @@ _TOOL_HANDLERS: dict[str, ToolHandler] = {
     "get_security_findings_summary": get_security_findings_summary,
     "list_security_findings_by_type": list_security_findings_by_type,
     "list_broken_link_sources": list_broken_link_sources,
+    "get_link_rel_summary": get_link_rel_summary,
+    "get_inlink_anchors": get_inlink_anchors,
+    "list_nofollow_internal_links": list_nofollow_internal_links,
     "search_issues": search_issues,
     "generate_content_brief": generate_content_brief,
     "get_page_coach": get_page_coach,
@@ -372,6 +389,8 @@ _TOOL_HANDLERS: dict[str, ToolHandler] = {
     "compose_custom_report": compose_custom_report,
     "export_custom_report": export_custom_report,
     "list_export_formats": list_export_formats,
+    "export_sitemap_xml": export_sitemap_xml,
+    "validate_rich_results": validate_rich_results,
     "get_image_audit_summary": get_image_audit_summary,
     "list_pages_without_lazy_images": list_pages_without_lazy_images,
     "list_pages_with_images_missing_dimensions": list_pages_with_images_missing_dimensions,

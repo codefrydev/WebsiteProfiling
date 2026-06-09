@@ -89,6 +89,35 @@ def test_run_plot_passes_render_mode_to_run_plot(monkeypatch):
     assert captured.get("js_block_resources") is False
 
 
+def test_run_plot_emits_done_on_failure(monkeypatch):
+    from website_profiling.commands import pipeline_cmd
+
+    done_calls: list[tuple[str, dict]] = []
+
+    monkeypatch.setattr(pipeline_cmd, "emit_phase_start", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        pipeline_cmd,
+        "emit_phase_done",
+        lambda phase, message=None: done_calls.append((phase, {"message": message})),
+    )
+
+    def boom(**_kwargs):
+        raise RuntimeError("plot failed")
+
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "website_profiling.tools.plot",
+        types.SimpleNamespace(run_plot=boom),
+    )
+
+    import pytest
+
+    with pytest.raises(RuntimeError, match="plot failed"):
+        pipeline_cmd._run_plot({}, True)
+
+    assert done_calls == [("plot", {"message": "Charts step failed"})]
+
+
 def test_build_report_metadata_includes_fetch_method_counts() -> None:
     import pandas as pd
     from website_profiling.reporting.builder import _build_report_metadata

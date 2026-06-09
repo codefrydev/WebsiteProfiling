@@ -117,3 +117,50 @@ def list_broken_link_sources(conn: Connection, ctx: AuditToolContext, args: dict
     items.sort(key=lambda x: x["source_count"], reverse=True)
     sliced = cap_list(items, limit, max_cap=50)
     return {"sources": sliced["items"], "total": sliced["total"], "truncated": sliced["truncated"]}
+
+
+def get_link_rel_summary(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    payload = scoped.load_payload(conn)
+    if not payload:
+        return {"error": "no report found"}
+    summary = payload.get("link_rel_summary")
+    if isinstance(summary, dict):
+        return summary
+    from ...reporting.link_edges_report import summarize_link_rel
+
+    edges = payload.get("link_edges") or []
+    return summarize_link_rel(edges if isinstance(edges, list) else [])
+
+
+def get_inlink_anchors(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    payload = scoped.load_payload(conn)
+    if not payload:
+        return {"error": "no report found", "rows": [], "total": 0, "truncated": False}
+    limit = parse_limit(args.get("limit"), 50, 200)
+    target = str(args.get("url") or args.get("target_url") or "").strip().rstrip("/").lower()
+    rows = payload.get("inlink_anchor_matrix") or []
+    if not isinstance(rows, list):
+        rows = []
+    if target:
+        rows = [r for r in rows if str(r.get("target_url") or "").lower().rstrip("/") == target]
+    sliced = cap_list(rows, limit, max_cap=200)
+    return {"rows": sliced["items"], "total": sliced["total"], "truncated": sliced["truncated"]}
+
+
+def list_nofollow_internal_links(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    payload = scoped.load_payload(conn)
+    if not payload:
+        return {"error": "no report found", "links": [], "total": 0, "truncated": False}
+    limit = parse_limit(args.get("limit"), 50, 100)
+    edges = payload.get("link_edges") or []
+    items = [
+        e for e in (edges if isinstance(edges, list) else [])
+        if isinstance(e, dict)
+        and e.get("link_type") == "internal"
+        and e.get("is_nofollow")
+    ]
+    sliced = cap_list(items, limit, max_cap=100)
+    return {"links": sliced["items"], "total": sliced["total"], "truncated": sliced["truncated"]}

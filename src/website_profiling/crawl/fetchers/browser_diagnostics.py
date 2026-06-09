@@ -55,6 +55,9 @@ def merge_browser_into_page_analysis(
         except json.JSONDecodeError:
             pa = {}
     pa["browser"] = browser_diagnostics
+    axe = browser_diagnostics.get("axe_violations")
+    if isinstance(axe, list) and axe:
+        pa["axe_violations"] = axe
     return json.dumps(pa)
 
 

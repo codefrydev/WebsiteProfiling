@@ -26,7 +26,10 @@ describe('issues/fix-suggestion route', () => {
 
   it('returns suggestion when Python succeeds', async () => {
     spawnMock.mockImplementation(() =>
-      makeSpawnChild(JSON.stringify({ ok: true, suggestion: 'Add preload hint' }) + '\n', 0),
+      makeSpawnChild(
+        JSON.stringify({ ok: true, fix: { fix: 'Add preload hint', effort: 'low' } }) + '\n',
+        0,
+      ),
     );
     const { POST } = await import('../../app/api/issues/fix-suggestion/route');
     const res = await POST(
@@ -37,6 +40,7 @@ describe('issues/fix-suggestion route', () => {
     );
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.suggestion).toMatch(/preload/i);
+    expect(body.ok).toBe(true);
+    expect(body.fix.fix).toMatch(/preload/i);
   });
 });

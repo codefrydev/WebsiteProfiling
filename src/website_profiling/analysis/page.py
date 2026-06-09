@@ -85,6 +85,97 @@ def _json_ld_missing_type(data: object) -> bool:
     return walk(data)
 
 
+_CONTACT_ORG_TYPES = frozenset({
+    "organization",
+    "localbusiness",
+    "corporation",
+    "store",
+    "restaurant",
+    "professionalService",
+    "newsmediaorganization",
+})
+_CONTACT_CAP = 10
+
+
+def _normalize_type_name(raw: object) -> str:
+    if isinstance(raw, str):
+        return raw.strip()
+    if isinstance(raw, list) and raw:
+        return _normalize_type_name(raw[0])
+    return ""
+
+
+def _collect_json_ld_types(data: object, types: set[str]) -> None:
+    if isinstance(data, dict):
+        t = data.get("@type")
+        name = _normalize_type_name(t)
+        if name:
+            types.add(name)
+        graph = data.get("@graph")
+        if isinstance(graph, list):
+            for item in graph:
+                _collect_json_ld_types(item, types)
+        for key, val in data.items():
+            if key in ("@graph", "@type"):
+                continue
+            if isinstance(val, (dict, list)):
+                _collect_json_ld_types(val, types)
+    elif isinstance(data, list):
+        for item in data:
+            _collect_json_ld_types(item, types)
+
+
+def _format_postal_address(addr: object) -> str:
+    if isinstance(addr, str):
+        return addr.strip()[:500]
+    if not isinstance(addr, dict):
+        return ""
+    parts: list[str] = []
+    for key in ("streetAddress", "addressLocality", "addressRegion", "postalCode", "addressCountry"):
+        val = addr.get(key)
+        if isinstance(val, str) and val.strip():
+            parts.append(val.strip())
+    return ", ".join(parts)[:500]
+
+
+def _append_contact(signals: dict[str, list[str]], key: str, value: object) -> None:
+    if not isinstance(value, str):
+        return
+    val = value.strip()
+    if not val:
+        return
+    bucket = signals.setdefault(key, [])
+    if len(bucket) >= _CONTACT_CAP:
+        return
+    if val not in bucket:
+        bucket.append(val)
+
+
+def _collect_json_ld_contacts(data: object, signals: dict[str, list[str]]) -> None:
+    if isinstance(data, dict):
+        type_name = _normalize_type_name(data.get("@type")).lower()
+        is_org = any(t in type_name for t in _CONTACT_ORG_TYPES) or type_name in _CONTACT_ORG_TYPES
+        if is_org:
+            _append_contact(signals, "organization_names", data.get("name"))
+            _append_contact(signals, "emails", data.get("email"))
+            _append_contact(signals, "phones", data.get("telephone"))
+            addr = _format_postal_address(data.get("address"))
+            if addr:
+                _append_contact(signals, "addresses", addr)
+        graph = data.get("@graph")
+        if isinstance(graph, list):
+            for item in graph:
+                _collect_json_ld_contacts(item, signals)
+        for key, val in data.items():
+            if key in ("@graph",):
+                continue
+            if isinstance(val, (dict, list)):
+                _collect_json_ld_contacts(val, signals)
+    elif isinstance(data, list):
+        for item in data:
+            _collect_json_ld_contacts(item, signals)
+
+
 def analyze_html(
     html: str,
     page_url: str,
@@ -322,6 +413,14 @@ def analyze_html(
             image_urls.append(url)
     out["image_urls"] = _cap(image_urls)
 
+    json_ld_types: set[str] = set()
+    contact_signals: dict[str, list[str]] = {
+        "emails": [],
+        "phones": [],
+        "addresses": [],
+        "organization_names": [],
+    }
+
     # JSON-LD
     for idx, sc in enumerate(soup.find_all("script", type=lambda t: t and "ld+json" in str(t).lower())):
         raw = (sc.string or "").strip()
@@ -332,6 +431,8 @@ def analyze_html(
         except json.JSONDecodeError:
             warn("json_ld_parse", "medium", "Invalid JSON-LD block", f"Block index {idx}")
             continue
+        _collect_json_ld_types(data, json_ld_types)
+        _collect_json_ld_contacts(data, contact_signals)
         if _json_ld_missing_type(data):
             warn(
                 "json_ld_missing_type",
@@ -340,6 +441,20 @@ def analyze_html(
                 "Validate with Rich Results Test; ensure each entity includes @type where required.",
             )
             break
+
+    if json_ld_types:
+        out["json_ld_types"] = sorted(json_ld_types)[:_CONTACT_CAP]
+
+    for a in soup.find_all("a", href=True):
+        href = (a.get("href") or "").strip()
+        lower = href.lower()
+        if lower.startswith("mailto:"):
+            _append_contact(contact_signals, "emails", href[7:].split("?")[0])
+        elif lower.startswith("tel:"):
+            _append_contact(contact_signals, "phones", href[4:].split("?")[0])
+
+    if any(contact_signals[k] for k in contact_signals):
+        out["contact_signals"] = contact_signals
 
     # Empty anchors
     empty_anchors = 0
@@ -362,6 +477,22 @@ def analyze_html(
             f"Found {bad_inputs} form control(s) without an associated label",
             "Use <label for=\"id\">, wrap in <label>, or aria-label.",
         )
+
+    pagination: dict[str, str | None] = {"rel_next": None, "rel_prev": None, "amphtml": None}
+    for link in soup.find_all("link", rel=True):
+        rel_raw = link.get("rel") or []
+        rels = {str(r).lower() for r in (rel_raw if isinstance(rel_raw, list) else [rel_raw])}
+        href = link.get("href") or ""
+        if not href:
+            continue
+        abs_href = normalize_link(base_url, href) or href
+        if "next" in rels:
+            pagination["rel_next"] = abs_href
+        if "prev" in rels:
+            pagination["rel_prev"] = abs_href
+        if "amphtml" in rels:
+            pagination["amphtml"] = abs_href
+    out["pagination"] = pagination
 
     out["warnings"] = warnings
     return out

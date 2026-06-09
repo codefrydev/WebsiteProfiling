@@ -50,6 +50,13 @@ export interface LinkStatusChangeRow {
   baselineStatus: string;
 }
 
+export interface UrlMetadataChangeRow {
+  url: string;
+  field: string;
+  baseline: string;
+  current: string;
+}
+
 export interface SeoHealthDeltaRow {
   id: string;
   label: string;
@@ -66,6 +73,7 @@ export interface ReportCompareSummary {
   categoryScores: CategoryScoreRow[];
   seoHealth: SeoHealthDeltaRow[];
   statusChanges: LinkStatusChangeRow[];
+  urlMetadataChanges: UrlMetadataChangeRow[];
   currentGeneratedAt: string | null;
   baselineGeneratedAt: string | null;
   extras: ReportCompareExtras;
@@ -132,6 +140,36 @@ function buildLinkStatusChanges(current: ReportPayload, baseline: ReportPayload)
     }
   }
   out.sort((a, b) => a.url.localeCompare(b.url));
+  return out;
+}
+
+const METADATA_FIELDS: { key: string; label: string }[] = [
+  { key: 'title', label: 'Title' },
+  { key: 'status', label: 'Status' },
+  { key: 'canonical_url', label: 'Canonical' },
+];
+
+function buildUrlMetadataChanges(current: ReportPayload, baseline: ReportPayload): UrlMetadataChangeRow[] {
+  const curMap = new Map<string, ReportLink>();
+  for (const l of current.links ?? []) {
+    const k = normReportUrl(l.url);
+    if (k) curMap.set(k, l);
+  }
+  const out: UrlMetadataChangeRow[] = [];
+  for (const bl of baseline.links ?? []) {
+    const k = normReportUrl(bl.url);
+    if (!k) continue;
+    const cl = curMap.get(k);
+    if (!cl) continue;
+    for (const { key, label } of METADATA_FIELDS) {
+      const curVal = String((cl as unknown as Record<string, unknown>)[key] ?? '').trim();
+      const baseVal = String((bl as unknown as Record<string, unknown>)[key] ?? '').trim();
+      if (curVal !== baseVal) {
+        out.push({ url: cl.url || bl.url, field: label, baseline: baseVal, current: curVal });
+      }
+    }
+  }
+  out.sort((a, b) => a.url.localeCompare(b.url) || a.field.localeCompare(b.field));
   return out;
 }
 
@@ -286,6 +324,7 @@ export function buildReportCompareSummary(
     categoryScores: buildCategoryScores(current, baseline),
     seoHealth: buildSeoHealthDeltas(current, baseline),
     statusChanges: buildLinkStatusChanges(current, baseline),
+    urlMetadataChanges: buildUrlMetadataChanges(current, baseline),
     currentGeneratedAt: current.report_generated_at ?? null,
     baselineGeneratedAt: baseline.report_generated_at ?? null,
     extras: buildReportCompareExtras(current, baseline, extrasLabels),

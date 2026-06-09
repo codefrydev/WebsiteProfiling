@@ -89,7 +89,11 @@ def _tools_catalog_json() -> str:
             domains["export"].append(name)
         elif name.startswith(("get_image_", "list_pages_without_lazy", "list_pages_with_images_missing", "list_site_image", "list_lighthouse_image", "list_largest_images", "list_unoptimized_images", "list_images_needing")):
             domains["images"].append(name)
-        elif name.startswith(("list_propert", "get_propert", "get_report", "get_executive", "get_site", "list_report", "get_portfolio")):
+        elif name.startswith(("list_propert", "get_propert", "get_report", "get_executive", "get_site", "list_report", "get_portfolio")) or name in (
+            "get_ads_txt_status",
+            "get_security_txt_status",
+            "get_contact_intelligence",
+        ):
             domains["portfolio"].append(name)
         elif "issue" in name or "category" in name or "workflow" in name:
             domains["issues"].append(name)
@@ -99,7 +103,7 @@ def _tools_catalog_json() -> str:
             domains["schema"].append(name)
         elif "orphan" in name or "link" in name or "fingerprint" in name or "pagerank" in name:
             domains["links"].append(name)
-        elif "indexation" in name or "hreflang" in name or "language" in name:
+        elif "indexation" in name or "hreflang" in name or "language" in name or name == "list_subdomains":
             domains["indexation"].append(name)
         elif "content" in name or "social" in name or "ner" in name or "thin" in name or "opportunit" in name or "duplicate" in name:
             domains["content"].append(name)

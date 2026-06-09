@@ -125,6 +125,12 @@ def list_issues(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -
     if url_contains:
         issues = [i for i in issues if url_contains in str(i.get("url") or "").lower()]
 
+    sort_mode = str(args.get("sort") or "").strip().lower()
+    if sort_mode == "impact":
+        from ...reporting.issue_impact import sort_issues_by_impact
+
+        issues = sort_issues_by_impact(issues)
+
     total = len(issues)
     truncated = total > limit
     return {

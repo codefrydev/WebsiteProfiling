@@ -66,3 +66,28 @@ def test_build_categories_golden_fingerprints() -> None:
 
     ids = {c["id"] for c in categories}
     assert ids >= {"technical_seo", "core_web_vitals", "link_health", "security", "performance"}
+
+
+def test_build_categories_missing_site_files_low_issues() -> None:
+    rows = json.loads((FIXTURES / "minimal_crawl.json").read_text(encoding="utf-8"))
+    df = pd.DataFrame(rows)
+    site_level = {
+        "robots_present": True,
+        "sitemap_present": True,
+        "sitemap_valid": True,
+        "ads_txt_present": False,
+        "security_txt_present": False,
+    }
+    categories = build_categories(
+        df,
+        [],
+        {"issues": {}},
+        site_level,
+        "https://example.com/",
+    )
+    tech = next(c for c in categories if c.get("id") == "technical_seo")
+    msgs = " ".join(str(i.get("message") or "") for i in tech.get("issues") or [])
+    assert "ads.txt" in msgs.lower()
+    assert "security.txt" in msgs.lower()
+    priorities = {str(i.get("priority")) for i in tech.get("issues") or [] if "ads.txt" in str(i.get("message") or "").lower()}
+    assert "Low" in priorities

@@ -1,5 +1,9 @@
+'use client';
+
 import { useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
+import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import { buildLighthouseAuditContext } from '@/lib/fixSuggestionContext';
 import type { LighthouseAuditRef } from '@/types/report';
 import LhDetailsTable from './LhDetailsTable';
 
@@ -40,6 +44,7 @@ export default function LhAuditExpandable({ audit }: LhAuditExpandableProps) {
           )}
           {hasTable && items && <LhDetailsTable headings={headings} items={items} />}
           {!hasTable && <p className="text-xs text-muted-foreground">No detail rows for this audit.</p>}
+          <AiSuggestionButton request={buildLighthouseAuditContext(audit)} />
         </div>
       )}
     </li>

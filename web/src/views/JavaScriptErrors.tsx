@@ -19,6 +19,8 @@ import {
   linksInspectHref,
   type FlatBrowserErrorRow,
 } from '@/lib/browserErrors';
+import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import { buildBrowserErrorContext, buildBrowserErrorSummaryContext } from '@/lib/fixSuggestionContext';
 
 type TypeFilter = 'All' | 'console' | 'exception';
 const JS_ERRORS_TABS = ['summary', 'errors'] as const;
@@ -160,7 +162,14 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
                   <TableBody>
                     {topMessages.map((row) => (
                       <TableRow key={row.text} className="align-top">
-                        <TableCell className="font-mono text-xs break-all">{row.text}</TableCell>
+                        <TableCell className="font-mono text-xs break-all">
+                          <div className="space-y-2">
+                            <span>{row.text}</span>
+                            <AiSuggestionButton
+                              request={buildBrowserErrorSummaryContext(row.text, row.sample_urls, row.count)}
+                            />
+                          </div>
+                        </TableCell>
                         <TableCell className="text-muted-foreground">{row.count.toLocaleString()}</TableCell>
                         <TableCell>
                           <ul className="space-y-1">
@@ -259,7 +268,12 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
                             <TableCell className="text-xs text-muted-foreground capitalize">
                               {row.type === 'console' ? vj.typeConsole : vj.typeException}
                             </TableCell>
-                            <TableCell className="font-mono text-xs break-all">{row.message}</TableCell>
+                            <TableCell className="font-mono text-xs break-all">
+                              <div className="space-y-2">
+                                <span>{row.message}</span>
+                                <AiSuggestionButton request={buildBrowserErrorContext(row)} />
+                              </div>
+                            </TableCell>
                             <TableCell className="font-mono text-xs text-muted-foreground break-all">
                               {formatBrowserErrorSource(row.source_url, row.line)}
                             </TableCell>

@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef, useCallback, type MouseEvent } from 'react';
-import { Link as LinkIcon, ArrowLeft, AlertTriangle, Download } from 'lucide-react';
+import { Link as LinkIcon, ArrowLeft, AlertTriangle, Download, List, TextQuote } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Button, AlertBanner } from '../components';
+import { PageLayout, PageHeader, Card, Button, AlertBanner, ViewTabs } from '../components';
+import type { ViewTabItem } from '../components';
+import { useUrlTab } from '@/hooks/useUrlTab';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
 import type {
   InspectorBrokenItem,
@@ -22,6 +24,7 @@ import type {
 import { CopyBtn, InspectorTabs } from '../components/links';
 import {
   type LinkSortKey,
+  LinksExplorerAnchorsTab,
   LinksExplorerTableTab,
 } from '../components/links/explorer';
 import {
@@ -32,6 +35,12 @@ import type { LinksFilterValues } from '../components/links/LinksFilterBar';
 import { linkHasBrowserErrors } from '@/lib/browserErrors';
 import { browserInspectorIssueRows } from '@/components/browser/BrowserDiagnosticsPanel';
 import { exportLinksCsv } from '@/utils/linkExport';
+import { useOptionalPipeline } from '../context/PipelineContext';
+import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import { buildTechnicalLinkIssueContext } from '@/lib/fixSuggestionContext';
+
+const EXPLORER_TABS = ['urls', 'anchors'] as const;
+type ExplorerTabId = (typeof EXPLORER_TABS)[number];
 
 const INSPECTOR_TABS = [
   'overview',
@@ -64,6 +73,8 @@ export default function Links({ searchQuery = '' }: ViewProps) {
   const vl = strings.views.links;
   const sj = strings.common;
   const { data } = useReport();
+  const pipeline = useOptionalPipeline();
+  const propertyId = Number(pipeline?.configState.active_property_id || 0);
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -86,6 +97,55 @@ export default function Links({ searchQuery = '' }: ViewProps) {
   const tableRef = useRef<HTMLDivElement | null>(null);
 
   const links = useMemo(() => data?.links || [], [data]);
+
+  const hasLinkAttributes = Boolean(
+    data?.link_rel_summary || (data?.inlink_anchor_matrix?.length ?? 0) > 0,
+  );
+
+  const explorerValidTabs = useMemo((): readonly ExplorerTabId[] => {
+    if (hasLinkAttributes) return EXPLORER_TABS;
+    return ['urls'];
+  }, [hasLinkAttributes]);
+
+  const [explorerTab, setExplorerTab] = useUrlTab(explorerValidTabs, 'urls');
+
+  const linkAttributeLabels = useMemo(
+    () => ({
+      title: vl.linkAttributesTitle ?? 'Link attributes',
+      total: vl.linkAttrTotal ?? 'Total links',
+      internal: vl.linkAttrInternal ?? 'Internal',
+      nofollow: vl.linkAttrNofollow ?? 'Nofollow internal',
+      sponsored: vl.linkAttrSponsored ?? 'Sponsored internal',
+      external: vl.linkAttrExternal ?? 'External',
+      anchorMatrix: vl.inlinkAnchorMatrix ?? 'Inlink anchor text',
+      target: vl.inlinkTarget ?? 'Target URL',
+      anchor: vl.inlinkAnchor ?? 'Anchor text',
+      inlinks: vl.inlinkCount ?? 'Inlinks',
+      follow: vl.linkAttrFollow ?? 'Follow internal',
+      ugc: vl.linkAttrUgc ?? 'UGC internal',
+    }),
+    [vl],
+  );
+
+  const explorerTabItems = useMemo((): ViewTabItem[] => {
+    const items: ViewTabItem[] = [
+      {
+        id: 'urls',
+        label: vl.tabs.urls,
+        icon: <List className="h-3.5 w-3.5 shrink-0" aria-hidden />,
+        badge: links.length > 0 ? links.length : null,
+      },
+    ];
+    if (hasLinkAttributes) {
+      items.push({
+        id: 'anchors',
+        label: vl.tabs.anchors,
+        icon: <TextQuote className="h-3.5 w-3.5 shrink-0" aria-hidden />,
+        badge: data?.inlink_anchor_matrix?.length ?? null,
+      });
+    }
+    return items;
+  }, [vl.tabs, links.length, hasLinkAttributes, data?.inlink_anchor_matrix?.length]);
 
   const inspectParam = searchParams.get('inspect');
   const tabParam = searchParams.get('tab');
@@ -117,13 +177,6 @@ export default function Links({ searchQuery = '' }: ViewProps) {
     },
     [router, pathname, searchParams],
   );
-
-  useEffect(() => {
-    if (inInspector || tabParam !== 'charts') return;
-    replaceParams((params) => {
-      params.delete('tab');
-    });
-  }, [inInspector, tabParam, replaceParams]);
 
   useEffect(() => {
     if (!inspectParam) {
@@ -307,6 +360,27 @@ export default function Links({ searchQuery = '' }: ViewProps) {
     } as InspectorDetails;
   }, [inspectorUrl, data, links]);
 
+  const siteTechnicalIssues = useMemo(() => {
+    const q = (searchQuery || '').toLowerCase().trim();
+    const issues = data?.issues || {};
+    const rows: Array<{ message: string; url: string; kind: string }> = [];
+    (issues.broken || []).forEach((item) => {
+      const url = String(item.url || '');
+      const message = `Broken link (${item.status ?? 'error'})`;
+      if (!q || `${url} ${message}`.toLowerCase().includes(q)) {
+        rows.push({ message, url, kind: 'broken_link' });
+      }
+    });
+    (issues.redirects || []).forEach((item) => {
+      const url = String(item.url || '');
+      const message = `Redirect ${item.status ?? ''} → ${item.final_url || ''}`.trim();
+      if (!q || `${url} ${message}`.toLowerCase().includes(q)) {
+        rows.push({ message, url, kind: 'redirect' });
+      }
+    });
+    return rows.slice(0, 40);
+  }, [data?.issues, searchQuery]);
+
   const handleRowMouseEnter = useCallback((e: MouseEvent<HTMLTableRowElement>, link: ReportLink) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const containerRect = tableRef.current?.getBoundingClientRect?.() || { top: 0, left: 0, width: 800 };
@@ -358,6 +432,15 @@ export default function Links({ searchQuery = '' }: ViewProps) {
     setPage(1);
   };
 
+  const loadSavedFilter = (values: LinksFilterValues) => {
+    setInlinksFilter(values.inlinksFilter);
+    setStatusFilter(values.statusFilter);
+    setRtFilter(values.rtFilter);
+    setWcFilter(values.wcFilter);
+    setJsErrorFilter(values.jsErrorFilter);
+    setPage(1);
+  };
+
   const linkForInspector = inspectorUrl ? (links.find((l) => l.url === inspectorUrl) || null) : null;
 
   return (
@@ -387,7 +470,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
             }
             className="mb-0"
             actions={
-              filtered.length > 0 ? (
+              explorerTab === 'urls' && filtered.length > 0 ? (
                 <Button
                   type="button"
                   variant="secondary"
@@ -401,10 +484,37 @@ export default function Links({ searchQuery = '' }: ViewProps) {
             }
           />
 
+          <ViewTabs
+            tabs={explorerTabItems}
+            activeTab={explorerTab}
+            onChange={(id) => setExplorerTab(id as ExplorerTabId)}
+            ariaLabel={vl.title}
+            idPrefix="links-explorer"
+          />
+
+          {siteTechnicalIssues.length > 0 ? (
+            <Card className="p-4 space-y-3">
+              <h2 className="text-sm font-bold text-foreground">{vl.siteTechnicalIssuesTitle}</h2>
+              <p className="text-xs text-muted-foreground">{vl.siteTechnicalIssuesHint}</p>
+              <ul className="space-y-3 max-h-64 overflow-y-auto">
+                {siteTechnicalIssues.map((row, i) => (
+                  <li key={`${row.url}-${row.kind}-${i}`} className="border border-default rounded-lg px-3 py-2 space-y-2">
+                    <div className="text-xs font-mono text-link break-all">{row.url}</div>
+                    <div className="text-xs text-muted-foreground">{row.message}</div>
+                    <AiSuggestionButton request={buildTechnicalLinkIssueContext(row.message, row.url, row.kind)} />
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          ) : null}
+
+          {explorerTab === 'urls' ? (
           <LinksExplorerTableTab
             filterValues={filterValues}
             onFilterChange={handleFilterChange}
             onClearAllFilters={clearAllFilters}
+            propertyId={propertyId}
+            onLoadSavedFilter={loadSavedFilter}
             searchQuery={searchQuery}
             filtered={filtered}
             pageLinks={pageLinks}
@@ -424,6 +534,13 @@ export default function Links({ searchQuery = '' }: ViewProps) {
             onRowMouseEnter={handleRowMouseEnter}
             onRowMouseLeave={() => setHoveredRow(null)}
           />
+          ) : (
+            <LinksExplorerAnchorsTab
+              summary={data?.link_rel_summary}
+              anchors={data?.inlink_anchor_matrix}
+              labels={linkAttributeLabels}
+            />
+          )}
         </>
       ) : (
         <>

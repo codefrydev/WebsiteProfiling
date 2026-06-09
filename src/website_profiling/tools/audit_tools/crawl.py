@@ -265,6 +265,7 @@ def search_pages_advanced(conn: Connection, ctx: AuditToolContext, args: dict[st
     missing_title = args.get("missing_title")
     min_word = args.get("min_word_count")
     max_word = args.get("max_word_count")
+    has_pagination = args.get("has_pagination")
 
     def _truthy(val: Any) -> bool:
         return str(val or "").lower() in ("true", "1", "yes")
@@ -301,6 +302,11 @@ def search_pages_advanced(conn: Connection, ctx: AuditToolContext, args: dict[st
                     continue
             except (TypeError, ValueError):
                 pass
+        if _flag(has_pagination):
+            pa = _parse_page_analysis(r)
+            pag = pa.get("pagination") if isinstance(pa.get("pagination"), dict) else {}
+            if not (pag.get("rel_next") or pag.get("rel_prev")):
+                continue
         filtered.append({
             "url": str(r.get("url") or ""),
             "status": str(r.get("status") or ""),

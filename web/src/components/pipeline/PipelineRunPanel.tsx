@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -27,8 +27,12 @@ import { PIPELINE_PRESETS } from './pipelinePresets';
 import { CRAWL_PRESETS, type CrawlPresetId } from '@/lib/crawlPresets';
 import PipelineWizardProgress, { type WizardStep } from './PipelineWizardProgress';
 import PipelineLogViewer from './PipelineLogViewer';
+import PipelineProgressHeader from './PipelineProgressHeader';
 import CrawlAuthorizeCheckbox from './CrawlAuthorizeCheckbox';
 import PipelineRunPreviewCard from './PipelineRunPreviewCard';
+import { buildPipelineRunPreview } from '@/lib/pipelineRunPreview';
+import { computeLivePipelineEstimate } from '@/lib/pipelineLiveEstimate';
+import { parsePipelineProgressEvents, resolveActiveProgress } from '@/lib/formatPipelineLog';
 
 const s = strings.pipelineRunner;
 const crawlPresets = s.crawlPresets as Record<string, { label: string; maxPages: string; stream?: boolean }>;
@@ -107,6 +111,25 @@ export default function PipelineRunPanel() {
   const crawlOnlyNote =
     presetId === 'crawl-only' ? strings.reportSelector.crawlOnlyNote : null;
   const showProgress = busy || Boolean(status) || Boolean(log);
+
+  const runPreview = useMemo(
+    () =>
+      buildPipelineRunPreview({
+        presetId,
+        configState,
+        customCommand,
+        crawlPresetId,
+      }),
+    [presetId, configState, customCommand, crawlPresetId],
+  );
+
+  const liveEstimate = useMemo(() => {
+    const isRunning = busy || status === 'running' || status === 'starting';
+    if (!isRunning || !log.trim()) return null;
+    const events = parsePipelineProgressEvents(log);
+    const latest = resolveActiveProgress(events, status);
+    return computeLivePipelineEstimate(runPreview, events, latest, status);
+  }, [busy, status, log, runPreview]);
 
   const goToStep = (next: WizardStep) => {
     setStep(next);
@@ -329,6 +352,7 @@ export default function PipelineRunPanel() {
               configState={configState}
               customCommand={customCommand}
               crawlPresetId={crawlPresetId}
+              liveEstimate={liveEstimate}
             />
 
             <div className="mt-5">
@@ -407,6 +431,15 @@ export default function PipelineRunPanel() {
                   <PipelineStatusBadge status={status} busy={busy} />
                 </div>
               </div>
+
+              {log ? (
+                <PipelineProgressHeader
+                  log={log}
+                  status={status}
+                  liveEstimate={liveEstimate}
+                  className="mb-3"
+                />
+              ) : null}
 
               {log ? (
                 <div>

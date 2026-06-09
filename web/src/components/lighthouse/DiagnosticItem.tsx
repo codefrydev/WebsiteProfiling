@@ -1,5 +1,9 @@
+'use client';
+
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import { buildLighthouseDiagnosticContext } from '@/lib/fixSuggestionContext';
 import type { LighthouseDiagnostic } from '@/types/report';
 import LhDetailsTable from './LhDetailsTable';
 
@@ -53,6 +57,7 @@ export default function DiagnosticItem({ d }: DiagnosticItemProps) {
             {d.detailed_fix && (
               <p className="text-xs text-muted-foreground mt-2">{d.detailed_fix}</p>
             )}
+            <AiSuggestionButton request={buildLighthouseDiagnosticContext(d)} className="mt-3" />
           </div>
 
           {d.estimated_impact && (

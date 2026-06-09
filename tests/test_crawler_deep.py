@@ -33,7 +33,17 @@ def test_worker_success_path_populates_many_fields(monkeypatch):
         redirect_chain_length=0,
         fetch_method="static",
     )
-    monkeypatch.setattr(mod, "parse_links", lambda _u, _t: ("T", {"https://site.com/a", "https://ext.com/x"}))
+    monkeypatch.setattr(
+        mod,
+        "parse_link_edges",
+        lambda _u, _t: (
+            "T",
+            [
+                {"to_url": "https://site.com/a", "anchor_text": "a", "rel": "", "is_nofollow": False, "is_sponsored": False, "is_ugc": False, "link_type": "internal"},
+                {"to_url": "https://ext.com/x", "anchor_text": "x", "rel": "", "is_nofollow": False, "is_sponsored": False, "is_ugc": False, "link_type": "external"},
+            ],
+        ),
+    )
     monkeypatch.setattr(mod, "parse_seo", lambda *_a, **_k: ("desc", 4, "h1", 1, "https://site.com/canon"))
     monkeypatch.setattr(
         mod,
@@ -412,7 +422,7 @@ def test_run_crawler_non_streaming_db_write(monkeypatch):
 
     class FakeCrawler:
         def __init__(self, **_kwargs):
-            pass
+            self.link_edges_accum = []
 
         def crawl(self, **_kwargs):
             return pd.DataFrame([{"url": "https://a.com", "status": 200, "title": "ok"}])
@@ -428,7 +438,7 @@ def test_run_crawler_non_streaming_db_write(monkeypatch):
 
     fake_db = types.SimpleNamespace(
         backup_db_if_exists=lambda: "/tmp/backup.sql",
-        create_crawl_run=lambda _c, _u, property_id=None, render_mode=None: 7,
+        create_crawl_run=lambda *_a, **_k: 7,
         db_session=lambda: _Ctx(),
         read_historical_data=lambda: {"report_payload": [{"id": 1}]},
         restore_historical_data=lambda *_a, **_k: None,
@@ -456,7 +466,7 @@ def test_run_crawler_streaming_db_with_history_backup(monkeypatch):
 
     class FakeCrawler:
         def __init__(self, **_kwargs):
-            pass
+            self.link_edges_accum = []
 
         def crawl(self, **_kwargs):
             return pd.DataFrame([{"url": "https://a.com", "status": 200}])
@@ -473,7 +483,7 @@ def test_run_crawler_streaming_db_with_history_backup(monkeypatch):
 
     fake_db = types.SimpleNamespace(
         backup_db_if_exists=lambda: "/tmp/backup.sql",
-        create_crawl_run=lambda _c, _u, property_id=None, render_mode=None: 11,
+        create_crawl_run=lambda *_a, **_k: 11,
         db_session=lambda: _Ctx(),
         read_historical_data=lambda: {"report_payload": [{"id": 1}]},
         restore_historical_data=lambda *_a, **_k: restored.append(True),
@@ -502,7 +512,7 @@ def test_run_crawler_streaming_db_path(monkeypatch):
 
     class FakeCrawler:
         def __init__(self, **_kwargs):
-            pass
+            self.link_edges_accum = []
 
         def crawl(self, **_kwargs):
             return pd.DataFrame([{"url": "https://a.com", "status": 200}])
@@ -517,7 +527,7 @@ def test_run_crawler_streaming_db_path(monkeypatch):
     monkeypatch.setattr(mod, "Crawler", FakeCrawler)
     fake_db = types.SimpleNamespace(
         backup_db_if_exists=lambda: None,
-        create_crawl_run=lambda _c, _u, property_id=None, render_mode=None: 10,
+        create_crawl_run=lambda *_a, **_k: 10,
         db_session=lambda: _Ctx(),
         read_historical_data=lambda: {},
         restore_historical_data=lambda *_a, **_k: None,

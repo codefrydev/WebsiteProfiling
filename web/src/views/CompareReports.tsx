@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import {
   ArrowLeftRight,
@@ -36,6 +36,7 @@ import {
   CompareLinksPanel,
   CompareGooglePanel,
 } from '../components/compare/CompareTabPanels';
+import CompareUrlMetadataTable from '../components/compare/CompareUrlMetadataTable';
 import dynamic from 'next/dynamic';
 
 const CompareOverviewCharts = dynamic(
@@ -58,9 +59,9 @@ type CompareTab =
   | 'links'
   | 'google'
   | 'audit';
-type UrlTab = 'all' | 'new' | 'removed' | 'content' | 'structure';
+type UrlTab = 'all' | 'new' | 'removed' | 'content' | 'structure' | 'fields';
 
-const URL_TABS = ['all', 'new', 'removed', 'content', 'structure'] as const;
+const URL_TABS = ['all', 'new', 'removed', 'content', 'structure', 'fields'] as const;
 
 function filterUrls(urls: string[], query: string): string[] {
   const q = query.trim().toLowerCase();
@@ -146,17 +147,27 @@ const TAB_KEYS = [
 ] as const satisfies readonly CompareTab[];
 
 export default function CompareReports({ searchQuery = '' }: ViewProps) {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [tab, setTabRaw] = useUrlTab(TAB_KEYS, 'overview', 'tab');
-  const [urlTab, setUrlTabRaw] = useUrlTab(URL_TABS, 'all', 'urlTab');
+  const [tab] = useUrlTab(TAB_KEYS, 'overview', 'tab');
+  const [urlTab, setUrlTab] = useUrlTab(URL_TABS, 'all', 'urlTab');
   const setTab = useCallback(
     (next: CompareTab) => {
-      setTabRaw(next);
-      if (next !== 'urls') setUrlTabRaw('all');
+      const params = new URLSearchParams(searchParams.toString());
+      if (next === 'overview') {
+        params.delete('tab');
+      } else {
+        params.set('tab', next);
+      }
+      if (next !== 'urls') {
+        params.delete('urlTab');
+      }
+      const q = params.toString();
+      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
     },
-    [setTabRaw, setUrlTabRaw],
+    [router, pathname, searchParams],
   );
-  const setUrlTab = setUrlTabRaw;
   const [copyHint, setCopyHint] = useState('');
   const { reportList, reportCompare, compareReportId, selectedReportId, loading, error } = useReport();
   const vc = strings.views.compare;
@@ -203,6 +214,20 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
     }
     return all.sort((a, b) => a.localeCompare(b));
   }, [urlLists, urlTab]);
+
+  const metadataFiltered = useMemo(() => {
+    if (!reportCompare) return [];
+    const q = searchQuery.trim().toLowerCase();
+    const rows = reportCompare.urlMetadataChanges || [];
+    if (!q) return rows;
+    return rows.filter(
+      (r) =>
+        r.url.toLowerCase().includes(q) ||
+        r.field.toLowerCase().includes(q) ||
+        r.baseline.toLowerCase().includes(q) ||
+        r.current.toLowerCase().includes(q),
+    );
+  }, [reportCompare, searchQuery]);
 
   const statusFiltered = useMemo(() => {
     if (!reportCompare) return [];
@@ -274,8 +299,9 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
       { id: 'removed', label: vc.urlTabs.removed, count: urlLists.removedUrls.length },
       { id: 'content', label: vc.urlTabs.content, count: urlLists.contentChanged.length },
       { id: 'structure', label: vc.urlTabs.structure, count: urlLists.structureChanged.length },
+      { id: 'fields', label: 'Title / canonical', count: reportCompare?.urlMetadataChanges?.length ?? 0 },
     ];
-  }, [urlLists, vc.urlTabs]);
+  }, [urlLists, vc.urlTabs, reportCompare?.urlMetadataChanges?.length]);
 
   return (
     <PageLayout className="space-y-6">
@@ -463,6 +489,11 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                 ))}
               </div>
               {copyHint ? <p className="text-xs text-emerald-700 dark:text-emerald-400">{copyHint}</p> : null}
+              {urlTab === 'fields' ? (
+                <Card shadow>
+                  <CompareUrlMetadataTable rows={metadataFiltered} emptyLabel={vc.noneInCategory} />
+                </Card>
+              ) : (
               <Card shadow>
                 <UrlDiffTable
                   urls={activeUrlList}
@@ -471,6 +502,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                   copyLabel={vc.copyUrls}
                 />
               </Card>
+              )}
             </div>
           ) : null}
 

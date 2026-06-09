@@ -16,6 +16,8 @@ import { ScoreDelta } from '@/components/charts/ScoreDelta';
 import type { CompareMetricRow, ReportCompareSummary } from '@/lib/reportCompare';
 import { Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, Badge } from '@/components';
 import { CompareMetricCard } from './CompareDeltaBadge';
+import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import { buildCompareIssueContext, buildCompareSecurityContext } from '@/lib/fixSuggestionContext';
 
 function matchesQuery(text: string, q: string): boolean {
   return text.toLowerCase().includes(q);
@@ -133,10 +135,20 @@ export function CompareIssuesPanel({ compare, searchQuery, vc, emptyLabel }: Pan
                   <TableCell>
                     <KindBadge kind={row.kind} vc={vc} />
                   </TableCell>
-                  <TableCell className="text-sm">
+                  <TableCell className="text-sm align-top">
                     <span className="font-medium">{row.findingType}</span>
                     <span className="text-muted-foreground"> · {row.severity}</span>
                     <p className="text-xs text-muted-foreground mt-0.5">{row.message}</p>
+                    <AiSuggestionButton
+                      request={buildCompareSecurityContext({
+                        message: row.message,
+                        url: row.url,
+                        findingType: row.findingType,
+                        severity: row.severity,
+                        kind: row.kind,
+                      })}
+                      className="mt-2"
+                    />
                   </TableCell>
                   <TableCell className="font-mono text-xs break-all">{row.url}</TableCell>
                 </TableRow>
@@ -207,8 +219,13 @@ function IssueTable({
                 <Badge variant={row.priority === 'Critical' || row.priority === 'High' ? 'high' : 'medium'} label={row.priority} />
               </TableCell>
               <TableCell className="text-sm">{row.category}</TableCell>
-              <TableCell className="text-sm text-muted-foreground max-w-md">{row.message}</TableCell>
-              <TableCell className="font-mono text-xs break-all">{row.url}</TableCell>
+              <TableCell className="text-sm text-muted-foreground max-w-md align-top">
+                <div className="space-y-2">
+                  <span>{row.message}</span>
+                  <AiSuggestionButton request={buildCompareIssueContext(row)} />
+                </div>
+              </TableCell>
+              <TableCell className="font-mono text-xs break-all align-top">{row.url}</TableCell>
             </TableRow>
           ))}
         </TableBody>

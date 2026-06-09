@@ -41,6 +41,10 @@ export type {
   DepthDistribution,
   TechStackSummary,
   SiteLevelChecks,
+  ContactIntelligence,
+  ContactIntelligenceEntry,
+  SubdomainInventory,
+  SubdomainHostEntry,
   NerSiteSummary,
   LanguageSummary,
   KeywordOpportunities,
@@ -77,6 +81,9 @@ export type {
   ContentAnalyticsStats,
   SimilarInternalRow,
   TechStackEntry,
+  PortfolioBenchmark,
+  RichResultsValidationRow,
+  CompetitorKeywordGapRow,
 } from '@/types/report';
 
 export type {

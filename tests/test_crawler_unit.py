@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 
@@ -524,7 +526,9 @@ def test_worker_respects_exclude_and_max_depth_for_links(monkeypatch) -> None:
     )
     out = c.worker("https://site.com/")
     assert "https://site.com/child" not in c.depths
-    assert out.get("outlink_targets") == "[]"
+    assert "https://site.com/skip/child" not in c.depths
+    targets = json.loads(out.get("outlink_targets") or "[]")
+    assert "https://site.com/child" in targets
 
 
 def test_worker_applies_polite_delay(monkeypatch) -> None:

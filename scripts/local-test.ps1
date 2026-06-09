@@ -245,7 +245,7 @@ function Invoke-PytestReporting {
 }
 
 function Invoke-PytestTools {
-    Write-Log "Pytest (tools coverage gate, 95%)"
+    Write-Log "Pytest (tools coverage gate, 100%)"
     & $VENV_PYTEST `
         tests/test_alert_checker.py `
         tests/test_schedule_runner.py `
@@ -265,10 +265,11 @@ function Invoke-PytestTools {
         tests/test_export_compare.py `
         tests/test_mcp_registry.py `
         tests/test_mcp_resources.py `
+        tests/test_tools_branch_coverage.py `
         --cov=website_profiling.tools `
         --cov-config=.coveragerc.tools `
         --cov-report=term-missing `
-        --cov-fail-under=95 `
+        --cov-fail-under=100 `
         -q `
         -o addopts=
     Assert-LastExitCode "Tools coverage gate failed"

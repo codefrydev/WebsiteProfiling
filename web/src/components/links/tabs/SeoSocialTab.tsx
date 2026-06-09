@@ -5,6 +5,7 @@ import { strings } from '../../../lib/strings';
 import { parseTechStack } from '../../../utils/linkUtils';
 import CopyBtn from '../CopyBtn';
 import OGPreview from '../OGPreview';
+import SerpPreview from '../SerpPreview';
 
 export interface SeoSocialTabProps {
   link: LinkDetail;
@@ -36,6 +37,10 @@ export default function SeoSocialTab({ link }: SeoSocialTabProps) {
 
   return (
     <div className="space-y-6">
+      <div>
+        <div className="text-xs text-muted-foreground mb-2">SERP snippet preview</div>
+        <SerpPreview link={link} />
+      </div>
       <div className="bg-brand-900 border border-default rounded-xl p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="text-xs text-muted-foreground">{s.canonicalUrl}</div>

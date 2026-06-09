@@ -10,6 +10,7 @@ import type {
   ResponseTimeStats,
   SeoHealthStats,
   SocialCoverageStats,
+  RichResultsValidationRow,
   ThinPageEntry,
   TopicCluster,
   ViewProps,
@@ -44,6 +45,7 @@ import { statusDistributionFromSummary } from '../lib/statusDistribution';
 import { filterZeroSlices, doughnutOptionsWithPercentTooltip, formatCompositionAria } from '../lib/chartDoughnutUtils';
 import type { ViewTabItem } from '../components';
 import { palette, PALETTE_CATEGORICAL } from '../utils/chartPalette';
+import RichResultsValidationPanel from '../components/content/RichResultsValidationPanel';
 import {
   getGridColor,
   getChartTitleColor,
@@ -316,6 +318,11 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
     return arr.filter((u) => String(u).toLowerCase().includes(q));
   }, [data?.social_coverage?.missing_twitter, q]);
 
+  const richResultsRows = useMemo((): RichResultsValidationRow[] => {
+    const raw = data?.rich_results_validation;
+    return Array.isArray(raw) ? raw : [];
+  }, [data?.rich_results_validation]);
+
   const languageMlChart = useMemo(() => {
     const c = data?.language_summary?.counts || {};
     const entries = Object.entries(c)
@@ -560,6 +567,10 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
           <div className="text-xs text-muted-foreground mt-1">{vca.under300}</div>
         </Card>
       </div>
+
+      {richResultsRows.length > 0 ? (
+        <RichResultsValidationPanel rows={richResultsRows} meta={data?.rich_results_meta} />
+      ) : null}
 
       {((hreflang?.pages_200 ?? 0) > 0 || outboundDomains.length > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

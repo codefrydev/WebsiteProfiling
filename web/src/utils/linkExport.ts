@@ -1,4 +1,5 @@
 import type { ReportLink } from '@/types';
+import { collectCustomFieldKeys, parseLinkCustomFields } from '@/lib/customFields';
 
 function escapeCsv(v: unknown): string {
   if (v == null) return '';
@@ -9,6 +10,7 @@ function escapeCsv(v: unknown): string {
 export function exportLinksCsv(links: ReportLink[], filename = 'crawl_urls.csv'): void {
   if (!links.length) return;
   const hasCustomExtract = links.some((l) => l.custom_extract);
+  const customFieldKeys = collectCustomFieldKeys(links);
   const cols = [
     'url',
     'status',
@@ -19,14 +21,15 @@ export function exportLinksCsv(links: ReportLink[], filename = 'crawl_urls.csv')
     'word_count',
     'response_time_ms',
     ...(hasCustomExtract ? ['custom_extract'] : []),
+    ...customFieldKeys,
   ];
   const lines = [
     cols.join(','),
-    ...links.map((l) =>
-      cols
-        .map((c) => escapeCsv((l as unknown as Record<string, unknown>)[c]))
-        .join(','),
-    ),
+    ...links.map((l) => {
+      const fields = parseLinkCustomFields(l);
+      const row: Record<string, unknown> = { ...l, ...fields };
+      return cols.map((c) => escapeCsv(row[c])).join(',');
+    }),
   ];
   const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);

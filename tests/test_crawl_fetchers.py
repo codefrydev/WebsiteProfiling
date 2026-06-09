@@ -381,6 +381,21 @@ def test_build_fetcher_unknown_mode_falls_back_to_static():
         fetcher.close()
 
 
+def test_browser_auth_from_session_maps_headers_and_credentials():
+    import requests
+
+    from website_profiling.crawl.fetchers.factory import _browser_auth_from_session
+
+    session = requests.Session()
+    session.headers.update({"User-Agent": "TestBot", "Cookie": "sid=abc", "X-Auth": "token"})
+    session.auth = ("crawler", "secret")
+    headers, credentials = _browser_auth_from_session(session)
+    assert "User-Agent" not in headers
+    assert headers["Cookie"] == "sid=abc"
+    assert headers["X-Auth"] == "token"
+    assert credentials == {"username": "crawler", "password": "secret"}
+
+
 def test_ensure_browser_deps_installs_when_missing(monkeypatch):
     pip_called: list[str] = []
     pw_called: list[str] = []

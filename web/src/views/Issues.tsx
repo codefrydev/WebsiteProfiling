@@ -221,8 +221,11 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
   }
 
   filtered.sort((a, b) => {
-    const aClicks = clicksByUrl.get(String(a.issue.url || '').replace(/\/$/, '')) || 0;
-    const bClicks = clicksByUrl.get(String(b.issue.url || '').replace(/\/$/, '')) || 0;
+    const aImpact = Number(a.issue.impact_score) || 0;
+    const bImpact = Number(b.issue.impact_score) || 0;
+    if (bImpact !== aImpact) return bImpact - aImpact;
+    const aClicks = Number(a.issue.gsc_clicks) || clicksByUrl.get(String(a.issue.url || '').replace(/\/$/, '')) || 0;
+    const bClicks = Number(b.issue.gsc_clicks) || clicksByUrl.get(String(b.issue.url || '').replace(/\/$/, '')) || 0;
     if (bClicks !== aClicks) return bClicks - aClicks;
     const ao = PRIORITY_CONFIG[normalizePriority(a.issue.priority)].order;
     const bo = PRIORITY_CONFIG[normalizePriority(b.issue.priority)].order;

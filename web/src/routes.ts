@@ -17,6 +17,8 @@ export type ViewId =
   | 'gallery'
   | 'search-performance'
   | 'indexation'
+  | 'subdomains'
+  | 'contacts'
   | 'backlinks'
   | 'traffic'
   | 'keywords-explorer'
@@ -42,6 +44,8 @@ const VIEW_IDS = new Set<string>([
   'gallery',
   'search-performance',
   'indexation',
+  'subdomains',
+  'contacts',
   'backlinks',
   'traffic',
   'keywords-explorer',

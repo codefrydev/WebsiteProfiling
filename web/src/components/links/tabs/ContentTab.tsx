@@ -11,6 +11,9 @@ import { PALETTE_CATEGORICAL } from '../../../utils/chartPalette';
 import HeadingPills from '../HeadingPills';
 import { strings, format } from '../../../lib/strings';
 import { getGridColor, getChartTitleColor } from '../../../utils/chartJsDefaults';
+import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import { buildContentSignalContext } from '@/lib/fixSuggestionContext';
+import type { FixSuggestionRequest } from '@/types/fixSuggestion';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -118,16 +121,29 @@ function SectionHeader({ icon, title, description }: SectionHeaderProps) {
   );
 }
 
-function QualityStatusRow({ label, detail, statusLabel }: { label: string; detail: string; statusLabel: string }) {
+function QualityStatusRow({
+  label,
+  detail,
+  statusLabel,
+  fixRequest,
+}: {
+  label: string;
+  detail: string;
+  statusLabel: string;
+  fixRequest?: FixSuggestionRequest;
+}) {
   return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <div className="text-sm font-bold text-foreground">{label}</div>
-        <div className="text-xs text-muted-foreground">{detail}</div>
+    <div className="space-y-2">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <div className="text-sm font-bold text-foreground">{label}</div>
+          <div className="text-xs text-muted-foreground">{detail}</div>
+        </div>
+        <span className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${qualityBadgeClass(statusLabel)}`}>
+          {statusLabel}
+        </span>
       </div>
-      <span className={`inline-flex w-fit items-center rounded-full border px-2.5 py-1 text-xs font-semibold ${qualityBadgeClass(statusLabel)}`}>
-        {statusLabel}
-      </span>
+      {fixRequest ? <AiSuggestionButton request={fixRequest} /> : null}
     </div>
   );
 }
@@ -177,9 +193,13 @@ export default function ContentTab({ link }: ContentTabProps) {
   const metaQualLabels = vca.metaQualLabels;
   const h1QualLabels = vca.h1Labels;
 
-  const titleStatus = titleQualLabels[titleQualityIndex(titleLen)] ?? sj.emDash;
-  const metaStatus = metaQualLabels[metaQualityIndex(metaLen)] ?? sj.emDash;
-  const h1Status = h1c != null && !Number.isNaN(h1c) ? h1QualLabels[h1QualityIndex(h1c)] : null;
+  const titleQi = titleQualityIndex(titleLen);
+  const metaQi = metaQualityIndex(metaLen);
+  const h1Qi = h1c != null && !Number.isNaN(h1c) ? h1QualityIndex(h1c) : null;
+  const titleStatus = titleQualLabels[titleQi] ?? sj.emDash;
+  const metaStatus = metaQualLabels[metaQi] ?? sj.emDash;
+  const h1Status = h1Qi != null ? h1QualLabels[h1Qi] : null;
+  const pageUrl = link.url || '';
 
   const kwSorted = useMemo(() => {
     const rows = keywords.map((kw) => normaliseKw(kw)).filter((k) => k.word);
@@ -332,6 +352,11 @@ export default function ContentTab({ link }: ContentTabProps) {
               label={lc.titleTag}
               detail={format(lc.characters, { n: titleLen })}
               statusLabel={titleStatus}
+              fixRequest={
+                titleQi !== 2
+                  ? buildContentSignalContext('title', lc.titleTag, format(lc.characters, { n: titleLen }), titleStatus, pageUrl)
+                  : undefined
+              }
             />
           </div>
           <div className="py-4 first:pt-0 last:pb-0">
@@ -339,6 +364,11 @@ export default function ContentTab({ link }: ContentTabProps) {
               label={lc.metaDesc}
               detail={format(lc.characters, { n: metaLen })}
               statusLabel={metaStatus}
+              fixRequest={
+                metaQi !== 2
+                  ? buildContentSignalContext('meta', lc.metaDesc, format(lc.characters, { n: metaLen }), metaStatus, pageUrl)
+                  : undefined
+              }
             />
           </div>
           <div className="py-4 first:pt-0 last:pb-0">
@@ -347,6 +377,11 @@ export default function ContentTab({ link }: ContentTabProps) {
                 label={lc.h1Count}
                 detail={format(lc.headingCount, { n: h1c ?? 0 })}
                 statusLabel={h1Status}
+                fixRequest={
+                  h1Qi !== 1
+                    ? buildContentSignalContext('h1', lc.h1Count, format(lc.headingCount, { n: h1c ?? 0 }), h1Status, pageUrl)
+                    : undefined
+                }
               />
             ) : (
               <div className="text-sm text-muted-foreground">{lc.noH1Data}</div>
