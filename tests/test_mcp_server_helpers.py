@@ -186,5 +186,11 @@ def test_mcp_package_main(monkeypatch) -> None:
 
 
 def test_mcp_server_main_guard() -> None:
+    # run_module executes __main__ in a fresh import; drop any prior import from this file.
+    sys.modules.pop("website_profiling.mcp.server", None)
     with pytest.raises(SystemExit, match="MCP SDK"):
-        runpy.run_module("website_profiling.mcp.server", run_name="__main__")
+        runpy.run_module(
+            "website_profiling.mcp.server",
+            run_name="__main__",
+            alter_sys=False,
+        )
