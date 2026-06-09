@@ -7,6 +7,7 @@ import sys
 import pandas as pd
 
 from ..config import get_bool, get_float, get_int, get_list
+from ..progress import emit_phase_done, emit_phase_start
 from .config_resolve import (
     active_property_id_from_cfg,
     cleanup_lighthouse_work_dir,
@@ -96,6 +97,7 @@ def run(cfg: dict, args: argparse.Namespace) -> None:
     if args.command is None and (
         run_crawl or run_lighthouse or run_lighthouse_on_pages or run_report or run_plot
     ):
+        emit_phase_start("config", message="Resolving pipeline configuration")
         steps = []
         if run_crawl:
             steps.append("crawl")
@@ -108,6 +110,7 @@ def run(cfg: dict, args: argparse.Namespace) -> None:
         if run_plot:
             steps.append("plot")
         print(f"Site Audit: {', '.join(steps)}", flush=True)
+        emit_phase_done("config")
 
     if run_crawl:
         _run_crawl(cfg, use_database)
@@ -129,6 +132,7 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
     from ..crawl.crawler import run_crawler
 
     print("[Crawl] Starting...", flush=True)
+    emit_phase_start("crawl")
     start_url = require_start_url(cfg, for_step="crawl")
     max_pages = get_int(cfg, "max_pages")
     concurrency = get_int(cfg, "concurrency", 8)
@@ -212,6 +216,7 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
         enable_axe=enable_axe,
     )
     print("[Crawl] Done.", flush=True)
+    emit_phase_done("crawl")
     print("Crawl results: PostgreSQL")
 
 
@@ -220,6 +225,7 @@ def _run_lighthouse_on_pages(cfg: dict, lighthouse_max_pages: int) -> None:
     from ..lighthouse.runner import run_lighthouse_on_pages as do_lighthouse_on_pages
 
     print("[Lighthouse on pages] Starting...", flush=True)
+    emit_phase_start("lighthouse", message="Lighthouse on pages")
     with db_session() as conn:
         run_id = get_latest_crawl_run_id(conn)
         df = read_crawl(conn, run_id)
@@ -258,12 +264,14 @@ def _run_lighthouse_on_pages(cfg: dict, lighthouse_max_pages: int) -> None:
         finally:
             cleanup_lighthouse_work_dir(lh_out)
     print("[Lighthouse on pages] Done.", flush=True)
+    emit_phase_done("lighthouse")
 
 
 def _run_single_lighthouse(cfg: dict, use_database: bool) -> None:
     from ..lighthouse.runner import main as lighthouse_main
 
     print("[Lighthouse] Starting...", flush=True)
+    emit_phase_start("lighthouse")
     lh_url = require_lighthouse_url(cfg)
     lh_strategy = (cfg.get("lighthouse_strategy") or "mobile").lower()
     if lh_strategy not in ("mobile", "desktop"):
@@ -287,6 +295,7 @@ def _run_single_lighthouse(cfg: dict, use_database: bool) -> None:
     if exit_code != 0:
         sys.exit(exit_code)
     print("[Lighthouse] Done.", flush=True)
+    emit_phase_done("lighthouse")
 
 
 def _run_report(cfg: dict, use_database: bool) -> None:
@@ -302,6 +311,7 @@ def _run_report(cfg: dict, use_database: bool) -> None:
     security_scan_active = get_bool(cfg, "security_scan_active", False)
     security_max_urls_probe = get_int(cfg, "security_max_urls_probe", 20) or 20
     print("[Report] Starting...", flush=True)
+    emit_phase_start("report")
     out = run_simple_report(
         max_fetch_for_edges=max_fetch,
         concurrency=6,
@@ -319,23 +329,28 @@ def _run_report(cfg: dict, use_database: bool) -> None:
         config=cfg,
     )
     print("[Report] Done.", flush=True)
+    emit_phase_done("report")
     print(f"Report written: {out}")
 
     if should_enrich_keywords_after_report(cfg) and google_db_has_gsc(cfg):
         print("[Keywords] Post-audit keyword research (Search Console data found)...", flush=True)
+        emit_phase_start("keywords")
         from ..integrations.google.keyword_enrich import run_enrichment
 
         try:
             run_enrichment(cfg)
             print("[Keywords] Post-audit keyword research done.", flush=True)
+            emit_phase_done("keywords")
         except Exception as e:
             print(f"Warning: post-audit keyword research failed: {e}", file=sys.stderr)
+            emit_phase_done("keywords", message=f"keywords failed: {e}")
 
 
 def _run_plot(cfg: dict, use_database: bool) -> None:
     from ..tools.plot import run_plot as do_plot
 
     print("[Plot] Starting...", flush=True)
+    emit_phase_start("plot", message="Building charts and link graph")
     render_mode = (cfg.get("crawl_render_mode") or "").strip().lower() or None
     if render_mode is not None and render_mode not in _ALLOWED_RENDER_MODES:
         print(
@@ -350,19 +365,24 @@ def _run_plot(cfg: dict, use_database: bool) -> None:
     if js_extra_wait_ms is None:
         js_extra_wait_ms = 1500
     js_block_resources = get_bool(cfg, "crawl_js_block_resources", True)
-    e = do_plot(
-        same_domain_only=get_bool(cfg, "same_domain_only", True),
-        max_fetch_for_edges=get_int(cfg, "max_fetch_for_edges", 500),
-        concurrency=8,
-        timeout=10,
-        polite_delay=0.15,
-        use_database=use_database,
-        render_mode=render_mode,
-        js_timeout=js_timeout,
-        js_concurrency=js_concurrency,
-        js_wait_until=js_wait_until,
-        js_extra_wait_ms=js_extra_wait_ms,
-        js_block_resources=js_block_resources,
-    )
-    print("[Plot] Done.", flush=True)
-    print(f"Plot data: {e}")
+    try:
+        e = do_plot(
+            same_domain_only=get_bool(cfg, "same_domain_only", True),
+            max_fetch_for_edges=get_int(cfg, "max_fetch_for_edges", 500),
+            concurrency=8,
+            timeout=10,
+            polite_delay=0.15,
+            use_database=use_database,
+            render_mode=render_mode,
+            js_timeout=js_timeout,
+            js_concurrency=js_concurrency,
+            js_wait_until=js_wait_until,
+            js_extra_wait_ms=js_extra_wait_ms,
+            js_block_resources=js_block_resources,
+        )
+        print("[Plot] Done.", flush=True)
+        emit_phase_done("plot", message="Charts and link graph complete")
+        print(f"Plot data: {e}")
+    except Exception:
+        emit_phase_done("plot", message="Charts step failed")
+        raise

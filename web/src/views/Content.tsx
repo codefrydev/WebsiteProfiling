@@ -11,6 +11,8 @@ import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
 import { formatPageHrefLines } from '../utils/linkUtils';
 import type { ContentUrlEntry, ContentUrlsMap, ViewProps } from '@/types';
+import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import { buildDuplicateClusterContext } from '@/lib/fixSuggestionContext';
 
 registerChartJsBase();
 
@@ -150,11 +152,12 @@ export default function Content({ searchQuery = '' }: ViewProps) {
                       <TableHeadCell>{vc.colCluster}</TableHeadCell>
                       <TableHeadCell>{vc.colRepresentative}</TableHeadCell>
                       <TableHeadCell className="text-right">{vc.colUrls}</TableHeadCell>
+                      <TableHeadCell className="w-36" />
                     </tr>
                   </TableHead>
                   <TableBody striped>
                     {(data.content_duplicates || []).slice(0, 40).map((g) => (
-                      <TableRow key={g.id}>
+                      <TableRow key={g.id} className="align-top">
                         <TableCell className="font-mono text-xs text-violet-800 dark:text-violet-300">{g.id}</TableCell>
                         <TableCell className="max-w-md">
                           <a
@@ -168,6 +171,9 @@ export default function Content({ searchQuery = '' }: ViewProps) {
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground text-xs tabular-nums">
                           {g.member_count ?? (g.member_urls || []).length}
+                        </TableCell>
+                        <TableCell>
+                          <AiSuggestionButton request={buildDuplicateClusterContext(g)} />
                         </TableCell>
                       </TableRow>
                     ))}

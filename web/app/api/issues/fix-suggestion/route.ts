@@ -7,8 +7,15 @@ import type { ApiRouteHandler } from '@/types/api';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+const PYTHON_SCRIPT = `
+import json, sys
+from website_profiling.llm.fix_suggestions import generate_fix_suggestion
+payload = json.load(sys.stdin)
+print(json.dumps(generate_fix_suggestion(payload, refresh=bool(payload.get("refresh")))))
+`;
+
 /**
- * POST /api/issues/fix-suggestion — on-demand LLM fix for one issue.
+ * POST /api/issues/fix-suggestion — legacy alias for issue-source fix suggestions.
  */
 export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Response> => {
   let body: {
@@ -32,32 +39,26 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
 
   const repoRoot = getRepoRoot();
   const pythonExe = resolvePythonExecutable(null, repoRoot);
-  const script = `
-import json, sys
-from website_profiling.llm.issue_fixes import generate_issue_fix_suggestion
-payload = json.load(sys.stdin)
-print(json.dumps(generate_issue_fix_suggestion(payload, refresh=bool(payload.get("refresh")))))
-`;
+  const payload = {
+    source: 'issue',
+    message,
+    url: body.url,
+    priority: body.priority,
+    category: body.category,
+    recommendation: body.recommendation,
+    type: body.type,
+    refresh: body.refresh,
+  };
 
   return new Promise<Response>((resolve) => {
-    const proc = spawn(pythonExe, ['-c', script], {
+    const proc = spawn(pythonExe, ['-c', PYTHON_SCRIPT], {
       cwd: repoRoot,
       env: getPipelineSpawnEnv(repoRoot),
       shell: false,
     });
     let stdout = '';
     proc.stdout?.on('data', (c: Buffer | string) => { stdout += c.toString(); });
-    proc.stdin?.write(
-      JSON.stringify({
-        message,
-        url: body.url,
-        priority: body.priority,
-        category: body.category,
-        recommendation: body.recommendation,
-        type: body.type,
-        refresh: body.refresh,
-      }),
-    );
+    proc.stdin?.write(JSON.stringify(payload));
     proc.stdin?.end();
     proc.on('close', (code) => {
       const parsed = parsePythonJsonStdout(stdout);

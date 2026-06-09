@@ -7,6 +7,8 @@ import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBod
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
 import type { ReportRedirect, ViewProps } from '@/types';
+import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import { buildRedirectContext } from '@/lib/fixSuggestionContext';
 
 registerChartJsBase();
 
@@ -84,11 +86,12 @@ export default function Redirects({ searchQuery = '' }: ViewProps) {
                 <TableHeadCell>{vr.colFrom}</TableHeadCell>
                 <TableHeadCell>{vr.colStatus}</TableHeadCell>
                 <TableHeadCell>{vr.colTo}</TableHeadCell>
+                <TableHeadCell className="w-36" />
               </tr>
             </TableHead>
             <TableBody>
               {redirects.map((r, i) => (
-                <TableRow key={i}>
+                <TableRow key={i} className="align-top">
                   <TableCell className="font-mono text-link text-xs break-all py-3">
                     <a href={r.url || r.from} target="_blank" rel="noreferrer" className="hover:underline">
                       {r.url || r.from}
@@ -101,6 +104,9 @@ export default function Redirects({ searchQuery = '' }: ViewProps) {
                     <a href={r.final_url || r.to} target="_blank" rel="noreferrer" className="hover:underline">
                       {r.final_url || r.to}
                     </a>
+                  </TableCell>
+                  <TableCell className="py-3">
+                    <AiSuggestionButton request={buildRedirectContext(r)} />
                   </TableCell>
                 </TableRow>
               ))}

@@ -161,7 +161,7 @@ def conn() -> MagicMock:
 def test_handler_schema_parity() -> None:
     names = {t["name"] for t in TOOL_DEFINITIONS}
     assert names == tool_handler_names()
-    assert len(TOOL_DEFINITIONS) == 176
+    assert len(TOOL_DEFINITIONS) == 180
 
 
 def test_slice_helpers() -> None:

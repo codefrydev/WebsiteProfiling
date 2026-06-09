@@ -6,6 +6,7 @@ import { strings } from '@/lib/strings';
 import { usePipeline } from '@/context/PipelineContext';
 import { useSession } from '@/context/SessionContext';
 import { storePipelineReturnPath } from '@/lib/pipelineReturn';
+import PipelineProgressHeader from './PipelineProgressHeader';
 
 const s = strings.pipelineRunner;
 
@@ -39,11 +40,13 @@ export default function PipelineRunnerFab() {
   return (
     <div className="print:hidden fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
       {showDock ? (
-        <div
-          role="status"
-          aria-live="polite"
-          className="flex max-w-[min(100vw-2rem,20rem)] items-center gap-3 rounded-xl border border-default bg-brand-800 px-3 py-2.5 shadow-xl"
-        >
+        <div className="flex max-w-[min(100vw-2rem,22rem)] flex-col gap-2">
+          {log && busy ? <PipelineProgressHeader log={log} compact className="shadow-xl" /> : null}
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-center gap-3 rounded-xl border border-default bg-brand-800 px-3 py-2.5 shadow-xl"
+          >
           {busy ? (
             <Loader2 className="h-5 w-5 shrink-0 animate-spin text-link" aria-hidden />
           ) : (
@@ -89,6 +92,7 @@ export default function PipelineRunnerFab() {
           >
             <Maximize2 className="h-4 w-4" />
           </button>
+          </div>
         </div>
       ) : null}
       <button

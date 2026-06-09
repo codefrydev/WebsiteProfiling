@@ -615,6 +615,11 @@ class Crawler:
         stream_batch_size: int = 500,
     ):
         start_time = time.time()
+        from ..progress import CrawlProgressTracker, emit_phase_start
+
+        crawl_total = None if self.max_pages == float("inf") else int(self.max_pages)
+        progress_tracker = CrawlProgressTracker(crawl_total, start_time=start_time)
+        emit_phase_start("crawl", message="Crawling pages")
         futures = []
         db_writer: Optional[_CrawlDbWriter] = None
         if stream_crawl_run_id is not None:
@@ -709,6 +714,10 @@ class Crawler:
                             if db_writer is not None and res.get("url"):
                                 db_writer.enqueue(res)
                             pbar.update(1)
+                            progress_tracker.maybe_emit(
+                                len(self.results),
+                                str(res.get("url") or "") or None,
+                            )
                         else:
                             remaining.append(f)
                     futures = remaining

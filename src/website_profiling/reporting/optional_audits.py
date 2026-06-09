@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from typing import Any, Optional
 from urllib.parse import urlparse
 
@@ -10,7 +11,10 @@ import pandas as pd
 import requests
 
 from ..config import get_bool
+from ..progress import emit_progress
 from .categories import _issue, _sort_issues
+
+_WAYBACK_CACHE: dict[str, bool] = {}
 
 
 def _parse_page_analysis(raw: object) -> dict[str, Any]:
@@ -50,7 +54,6 @@ def pagination_issues(df: pd.DataFrame) -> list[dict]:
     issues: list[dict] = []
     if df is None or df.empty or "page_analysis" not in df.columns:
         return issues
-    missing_next = 0
     orphan_prev = 0
     amp_mismatch = 0
     for _, row in df.iterrows():
@@ -61,8 +64,6 @@ def pagination_issues(df: pd.DataFrame) -> list[dict]:
         pag = pa.get("pagination") if isinstance(pa.get("pagination"), dict) else {}
         rel_next = pag.get("rel_next")
         rel_prev = pag.get("rel_prev")
-        if rel_next and not rel_prev:
-            missing_next += 0  # rel_prev optional on first page
         if rel_prev and not rel_next:
             orphan_prev += 1
         amphtml = pag.get("amphtml")
@@ -83,12 +84,23 @@ def pagination_issues(df: pd.DataFrame) -> list[dict]:
     return issues
 
 
-def spell_check_issues(df: pd.DataFrame, *, max_pages: int = 50) -> list[dict]:
+def _spell_text_parts(row: pd.Series) -> str:
+    parts = [
+        str(row.get("title") or ""),
+        str(row.get("h1") or ""),
+        str(row.get("content_excerpt") or ""),
+        str(row.get("meta_description") or ""),
+    ]
+    return " ".join(p for p in parts if p.strip())
+
+
+def spell_check_issues(df: pd.DataFrame, *, max_pages: int = 50) -> tuple[list[dict], Optional[str]]:
+    """Return (issues, skip_reason). skip_reason set when pyspellchecker is missing."""
     issues: list[dict] = []
     try:
         from spellchecker import SpellChecker  # type: ignore[import-untyped]
     except ImportError:
-        return issues
+        return issues, "pyspellchecker not installed (pip install -r requirements-optional.txt)"
     spell = SpellChecker()
     checked = 0
     for _, row in df.iterrows():
@@ -97,7 +109,7 @@ def spell_check_issues(df: pd.DataFrame, *, max_pages: int = 50) -> list[dict]:
         status = str(row.get("status") or "")
         if not status.startswith("2"):
             continue
-        excerpt = str(row.get("content_excerpt") or row.get("meta_description") or "").strip()
+        excerpt = _spell_text_parts(row).strip()
         if len(excerpt) < 40:
             continue
         words = re.findall(r"[a-zA-Z']{4,}", excerpt.lower())
@@ -111,14 +123,22 @@ def spell_check_issues(df: pd.DataFrame, *, max_pages: int = 50) -> list[dict]:
                 f"Possible spelling issues ({sample}).",
                 url=url,
                 priority="Low",
-                recommendation="Review visible copy for typos; spell check is heuristic on excerpt text.",
+                recommendation="Review title, H1, and visible copy for typos.",
             ))
             checked += 1
-    return issues[:20]
+    return issues[:20], None
 
 
-def html_validation_issues(df: pd.DataFrame, *, max_pages: int = 30) -> list[dict]:
+def html_validation_issues(df: pd.DataFrame, *, max_pages: int = 30) -> tuple[list[dict], bool]:
+    """Return issues and whether html5lib parser was used."""
     issues: list[dict] = []
+    use_parser = False
+    try:
+        import html5lib  # type: ignore[import-untyped]  # noqa: F401
+        use_parser = True
+    except ImportError:
+        use_parser = False
+
     checked = 0
     for _, row in df.iterrows():
         if checked >= max_pages:
@@ -128,6 +148,14 @@ def html_validation_issues(df: pd.DataFrame, *, max_pages: int = 30) -> list[dic
             continue
         url = str(row.get("url") or "")
         warnings: list[str] = []
+        if use_parser:
+            try:
+                from html5lib import HTMLParser  # type: ignore[import-untyped]
+
+                parser = HTMLParser()
+                parser.parse(html)
+            except Exception as exc:
+                warnings.append(f"parser error: {exc}")
         if html.count("<title") > 1:
             warnings.append("multiple title tags")
         if re.search(r"<html[^>]*>", html, re.I) and not re.search(r"</html>", html, re.I):
@@ -143,34 +171,38 @@ def html_validation_issues(df: pd.DataFrame, *, max_pages: int = 30) -> list[dic
                 recommendation="Fix markup validation issues that may affect parsing or accessibility.",
             ))
             checked += 1
-    return issues
+    return issues, use_parser
 
 
 def amp_audit_issues(df: pd.DataFrame) -> list[dict]:
     issues: list[dict] = []
     if df is None or df.empty:
         return issues
-    amp_pages = 0
-    missing_canonical = 0
     for _, row in df.iterrows():
         url = str(row.get("url") or "")
         pa = _parse_page_analysis(row.get("page_analysis"))
         pag = pa.get("pagination") if isinstance(pa.get("pagination"), dict) else {}
         amphtml = pag.get("amphtml")
-        is_amp = "/amp" in urlparse(url).path.lower() or bool(re.search(r"\bamp\b", str(row.get("content_type") or ""), re.I))
-        if amphtml or is_amp:
-            amp_pages += 1
-            canon = str(row.get("canonical_url") or "").strip()
-            if not canon:
-                missing_canonical += 1
-                issues.append(_issue(
-                    "AMP or amphtml variant missing canonical URL.",
-                    url=url,
-                    priority="Medium",
-                    recommendation="Add canonical link pointing to the preferred non-AMP URL.",
-                ))
-    if amp_pages and not issues:
-        return []
+        is_amp = "/amp" in urlparse(url).path.lower() or bool(
+            re.search(r"\bamp\b", str(row.get("content_type") or ""), re.I)
+        )
+        if not amphtml and not is_amp:
+            continue
+        canon = str(row.get("canonical_url") or "").strip()
+        if not canon:
+            issues.append(_issue(
+                "AMP or amphtml variant missing canonical URL.",
+                url=url,
+                priority="Medium",
+                recommendation="Add canonical link pointing to the preferred non-AMP URL.",
+            ))
+        elif amphtml and canon and amphtml.rstrip("/") != canon.rstrip("/") and is_amp:
+            issues.append(_issue(
+                "AMP page canonical does not match linked amphtml href.",
+                url=url,
+                priority="Medium",
+                recommendation="Align canonical URL with amphtml pairing for AMP variants.",
+            ))
     return issues[:25]
 
 
@@ -188,6 +220,17 @@ def wayback_issues(df: pd.DataFrame, *, max_lookups: int = 15) -> list[dict]:
         url = str(row.get("url") or "").strip()
         if not url:
             continue
+        cache_key = url.rstrip("/")
+        if cache_key in _WAYBACK_CACHE:
+            if _WAYBACK_CACHE[cache_key]:
+                issues.append(_issue(
+                    "404 URL has Wayback snapshot (Estimated).",
+                    url=url,
+                    priority="Low",
+                    recommendation="Review whether redirect or content restoration is appropriate.",
+                ))
+                looked += 1
+            continue
         try:
             resp = requests.get(
                 "https://archive.org/wayback/available",
@@ -196,7 +239,9 @@ def wayback_issues(df: pd.DataFrame, *, max_lookups: int = 15) -> list[dict]:
             )
             data = resp.json()
             snap = (data.get("archived_snapshots") or {}).get("closest") or {}
-            if snap.get("available"):
+            available = bool(snap.get("available"))
+            _WAYBACK_CACHE[cache_key] = available
+            if available:
                 ts = snap.get("timestamp") or "unknown"
                 issues.append(_issue(
                     f"404 URL has Wayback snapshot (Estimated, captured {ts}).",
@@ -206,6 +251,7 @@ def wayback_issues(df: pd.DataFrame, *, max_lookups: int = 15) -> list[dict]:
                 ))
                 looked += 1
         except Exception:
+            _WAYBACK_CACHE[cache_key] = False
             continue
     return issues
 
@@ -245,42 +291,65 @@ def apply_optional_audits(
     content = _content_quality_category(categories)
     a11y = _accessibility_category(categories)
 
+    emit_progress("optional", "pagination", message="Checking pagination links")
     pag = pagination_issues(df)
     if pag and tech is not None:
         tech.setdefault("issues", []).extend(pag)
         tech["issues"] = _sort_issues(tech["issues"])
+        extras["pagination_issues"] = len(pag)
 
     if get_bool(cfg, "enable_spell_check", False) and content is not None:
-        spell = spell_check_issues(df)
+        emit_progress("optional", "spell_check", message="Spell-checking excerpts")
+        spell, skip = spell_check_issues(df)
+        if skip:
+            extras["spell_check_skipped"] = skip
+            print(f"Warning: {skip}", file=sys.stderr, flush=True)
         if spell:
             content.setdefault("issues", []).extend(spell)
             content["issues"] = _sort_issues(content["issues"])
             extras["spell_check_pages"] = len(spell)
 
     if get_bool(cfg, "enable_html_validation", False) and tech is not None:
-        html_issues = html_validation_issues(df)
+        emit_progress("optional", "html_validation", message="Validating HTML structure")
+        html_issues, used_parser = html_validation_issues(df)
+        extras["html_validation_parser"] = "html5lib" if used_parser else "regex"
         if html_issues:
             tech.setdefault("issues", []).extend(html_issues)
             tech["issues"] = _sort_issues(tech["issues"])
+            extras["html_validation_pages"] = len(html_issues)
 
     if get_bool(cfg, "enable_amp_audit", False) and tech is not None:
+        emit_progress("optional", "amp_audit", message="AMP canonical pairing audit")
         amp = amp_audit_issues(df)
         if amp:
             tech.setdefault("issues", []).extend(amp)
             tech["issues"] = _sort_issues(tech["issues"])
+            extras["amp_audit_issues"] = len(amp)
 
     if get_bool(cfg, "enable_wayback_lookup", False) and tech is not None:
+        emit_progress("optional", "wayback", message="Wayback lookup for 404 URLs")
         wb = wayback_issues(df)
         if wb:
             tech.setdefault("issues", []).extend(wb)
             tech["issues"] = _sort_issues(tech["issues"])
-            extras["wayback_404_checked"] = min(15, len(wb))
+            extras["wayback_404_checked"] = len(wb)
 
     if get_bool(cfg, "enable_axe", False) and a11y is not None:
-        axe = axe_issues_from_df(df)
-        if axe:
-            a11y.setdefault("issues", []).extend(axe)
-            a11y["issues"] = _sort_issues(a11y["issues"])
-            extras["axe_violation_count"] = len(axe)
+        render_mode = str(cfg.get("crawl_render_mode") or "static").strip().lower()
+        if render_mode == "static":
+            extras["axe_skipped"] = "enable_axe requires javascript or auto crawl rendering"
+            print(
+                "Warning: enable_axe is set but crawl_render_mode=static; axe runs only on browser-rendered pages.",
+                file=sys.stderr,
+                flush=True,
+            )
+        else:
+            emit_progress("optional", "axe", message="Collecting axe accessibility violations")
+            axe = axe_issues_from_df(df)
+            if axe:
+                a11y.setdefault("issues", []).extend(axe)
+                a11y["issues"] = _sort_issues(a11y["issues"])
+                extras["axe_violation_count"] = len(axe)
 
+    emit_progress("optional", "done", message="Optional audits complete")
     return extras

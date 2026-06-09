@@ -1,3 +1,4 @@
+import dynamic from 'next/dynamic';
 import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import {
@@ -10,6 +11,7 @@ import {
   ChevronsDownUp,
   ChevronsUpDown,
   BarChart3,
+  Share2,
 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
@@ -22,17 +24,24 @@ import {
   defaultExpandedPathKeys,
   filterLinksBySearch,
   finalizeRollup,
+  linkMatchesPathKey,
 } from '../lib/siteStructureTree';
 import { PageLayout, PageHeader, Card, Button, StatCard, AlertBanner, ViewTabs, ViewTabPanel } from '../components';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
 import type { ViewTabItem } from '../components';
 import PathTreeTable from '../components/siteStructure/PathTreeTable';
 import CrawlMapPanel from '../components/siteStructure/CrawlMapPanel';
+
+const SiteStructureLinkGraph = dynamic(
+  () => import('../components/siteStructure/SiteStructureLinkGraph'),
+  { ssr: false, loading: () => <p className="text-sm text-muted-foreground py-8 text-center">Loading link graph…</p> },
+);
+
 import type { CrawlSegmentEntry, CrawlSegmentsData, PathTreeNode, PathTreeTableRow, ViewProps } from '@/types';
 
 const TREE_PAGE_SIZE = 20;
 
-const SITE_STRUCTURE_TABS = ['overview', 'tree', 'map'] as const;
+const SITE_STRUCTURE_TABS = ['overview', 'tree', 'map', 'graph'] as const;
 type SiteStructureTabId = (typeof SITE_STRUCTURE_TABS)[number];
 
 interface SiteStructureTreePanelProps {
@@ -241,6 +250,7 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
   const s = strings.views.siteStructure;
   const { data, compareData, startUrlByRunId, selectedReportId, compareReportId } = useReport();
   const [showCompareCharts, setShowCompareCharts] = useState(true);
+  const [pathPrefixFilter, setPathPrefixFilter] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useUrlTab(SITE_STRUCTURE_TABS, 'overview');
 
   const expectedHost = useMemo(
@@ -248,15 +258,21 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
     [data, startUrlByRunId]
   );
 
-  const filteredLinks = useMemo(
-    () => filterLinksBySearch(data?.links || [], searchQuery),
-    [data?.links, searchQuery]
-  );
+  const filteredLinks = useMemo(() => {
+    let links = filterLinksBySearch(data?.links || [], searchQuery);
+    if (pathPrefixFilter) {
+      links = links.filter((l) => linkMatchesPathKey(String(l.url || ''), pathPrefixFilter, expectedHost));
+    }
+    return links;
+  }, [data?.links, searchQuery, pathPrefixFilter, expectedHost]);
 
-  const baselineLinks = useMemo(
-    () => filterLinksBySearch(compareData?.links || [], searchQuery),
-    [compareData?.links, searchQuery]
-  );
+  const baselineLinks = useMemo(() => {
+    let links = filterLinksBySearch(compareData?.links || [], searchQuery);
+    if (pathPrefixFilter) {
+      links = links.filter((l) => linkMatchesPathKey(String(l.url || ''), pathPrefixFilter, expectedHost));
+    }
+    return links;
+  }, [compareData?.links, searchQuery, pathPrefixFilter, expectedHost]);
 
   const hasCompare = compareData != null && compareReportId != null;
   const searchActive = (searchQuery || '').trim().length > 0;
@@ -318,8 +334,14 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
         icon: <Layers className="h-3.5 w-3.5 shrink-0" aria-hidden />,
         badge: null,
       },
+      {
+        id: 'graph',
+        label: 'Link graph',
+        icon: <Share2 className="h-3.5 w-3.5 shrink-0" aria-hidden />,
+        badge: (data?.graph_nodes?.length ?? 0) > 0 ? Math.min(200, data!.graph_nodes!.length) : null,
+      },
     ];
-  }, [s.tabs, merged.size, filteredLinks.length]);
+  }, [s.tabs, merged.size, filteredLinks.length, data?.graph_nodes?.length]);
 
   if (!data) return null;
 
@@ -462,8 +484,47 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
       )}
 
       {activeTab === 'map' && tree ? (
-        <ViewTabPanel idPrefix="site-structure" tabId="map">
-          <CrawlMapPanel tree={tree} />
+        <ViewTabPanel idPrefix="site-structure" tabId="map" className="space-y-3">
+          {pathPrefixFilter ? (
+            <AlertBanner variant="info" className="text-xs py-2 flex flex-wrap items-center gap-2">
+              <span>
+                Filtering tree to <span className="font-mono font-semibold">{pathPrefixFilter}</span>
+              </span>
+              <Button
+                type="button"
+                variant="secondary"
+                className="text-xs py-0.5 px-2"
+                onClick={() => setPathPrefixFilter(null)}
+              >
+                Clear filter
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="text-xs py-0.5 px-2"
+                onClick={() => setActiveTab('tree')}
+              >
+                View in tree
+              </Button>
+            </AlertBanner>
+          ) : null}
+          <CrawlMapPanel
+            tree={tree}
+            crawlSegments={crawlSegments}
+            selectedPath={pathPrefixFilter}
+            onSelectPath={(pathKey) => {
+              setPathPrefixFilter(pathKey);
+              setActiveTab('tree');
+            }}
+          />
+        </ViewTabPanel>
+      ) : null}
+
+      {activeTab === 'graph' && data ? (
+        <ViewTabPanel idPrefix="site-structure" tabId="graph">
+          <Card padding="default">
+            <SiteStructureLinkGraph />
+          </Card>
         </ViewTabPanel>
       ) : null}
     </PageLayout>

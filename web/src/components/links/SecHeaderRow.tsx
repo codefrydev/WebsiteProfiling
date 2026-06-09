@@ -1,13 +1,18 @@
+'use client';
+
 import { useState } from 'react';
 import { CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import { buildSecurityHeaderContext } from '@/lib/fixSuggestionContext';
 
 export interface SecHeaderRowProps {
   label: string;
   value?: string | null;
   recommendation?: string;
+  pageUrl?: string;
 }
 
-export default function SecHeaderRow({ label, value, recommendation }: SecHeaderRowProps) {
+export default function SecHeaderRow({ label, value, recommendation, pageUrl }: SecHeaderRowProps) {
   const [open, setOpen] = useState(false);
   const present = !!value;
 
@@ -43,6 +48,9 @@ export default function SecHeaderRow({ label, value, recommendation }: SecHeader
               <span className="text-muted-foreground">Recommendation:</span> {recommendation}
             </p>
           )}
+          {!present ? (
+            <AiSuggestionButton request={buildSecurityHeaderContext(label, pageUrl)} />
+          ) : null}
         </div>
       )}
     </div>

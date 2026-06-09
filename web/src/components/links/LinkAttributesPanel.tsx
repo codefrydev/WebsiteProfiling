@@ -5,6 +5,7 @@ import { Card } from '@/components';
 import { strings } from '@/lib/strings';
 import type { InlinkAnchorRow, LinkRelSummary } from '@/types/report';
 import type { TableColumn } from '@/types/components';
+import LinkAttributesCharts from './LinkAttributesCharts';
 
 const paginationLabels = {
   showingSlice: strings.views.backlinks.table.showingSlice,
@@ -29,6 +30,8 @@ interface LinkAttributesPanelProps {
     target: string;
     anchor: string;
     inlinks: string;
+    follow: string;
+    ugc: string;
   };
 }
 
@@ -46,18 +49,30 @@ export default function LinkAttributesPanel({ summary, anchors, labels }: LinkAt
   ];
 
   return (
-    <div className="space-y-4 mb-6">
+    <div className="space-y-4 min-w-0">
+      <LinkAttributesCharts
+        summary={summary}
+        anchors={anchors}
+        labels={{
+          internal: labels.internal,
+          external: labels.external,
+          nofollow: labels.nofollow,
+          sponsored: labels.sponsored,
+          follow: labels.follow,
+          ugc: labels.ugc,
+        }}
+      />
       {summary ? (
         <Card className="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-sm">
-          <div><span className="text-muted-foreground">{labels.total}</span><div className="font-semibold">{summary.total_edges ?? 0}</div></div>
-          <div><span className="text-muted-foreground">{labels.internal}</span><div className="font-semibold">{summary.internal_edges ?? 0}</div></div>
-          <div><span className="text-muted-foreground">{labels.nofollow}</span><div className="font-semibold">{summary.nofollow_internal ?? 0}</div></div>
-          <div><span className="text-muted-foreground">{labels.sponsored}</span><div className="font-semibold">{summary.sponsored_internal ?? 0}</div></div>
-          <div><span className="text-muted-foreground">{labels.external}</span><div className="font-semibold">{summary.external_edges ?? 0}</div></div>
+          <div><span className="text-muted-foreground">{labels.total}</span><div className="font-semibold">{(summary.total_edges ?? 0).toLocaleString()}</div></div>
+          <div><span className="text-muted-foreground">{labels.internal}</span><div className="font-semibold">{(summary.internal_edges ?? 0).toLocaleString()}</div></div>
+          <div><span className="text-muted-foreground">{labels.nofollow}</span><div className="font-semibold">{(summary.nofollow_internal ?? 0).toLocaleString()}</div></div>
+          <div><span className="text-muted-foreground">{labels.sponsored}</span><div className="font-semibold">{(summary.sponsored_internal ?? 0).toLocaleString()}</div></div>
+          <div><span className="text-muted-foreground">{labels.external}</span><div className="font-semibold">{(summary.external_edges ?? 0).toLocaleString()}</div></div>
         </Card>
       ) : null}
       {anchors?.length ? (
-        <Card className="p-4">
+        <Card className="p-4 min-w-0 overflow-hidden">
           <h3 className="text-sm font-semibold mb-3">{labels.anchorMatrix}</h3>
           <SortablePaginatedTable
             rows={anchors as Record<string, unknown>[]}

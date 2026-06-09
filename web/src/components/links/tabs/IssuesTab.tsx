@@ -9,15 +9,22 @@ import { palette, scoreBandColor } from '../../../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal } from '../../../utils/chartJsDefaults';
 import { RankedBarChart } from '../../../components/charts';
 import { formatCompositionAria } from '../../../lib/chartDoughnutUtils';
+import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import {
+  buildInspectorIssueContext,
+  buildLighthouseFailureContext,
+  buildRecommendationBulletContext,
+} from '@/lib/fixSuggestionContext';
 
 registerChartJsBase();
 
 export interface IssuesTabProps {
   lhData?: LinkLighthouseData | null;
   inspectorDetails: InspectorDetails | null;
+  pageUrl?: string;
 }
 
-export default function IssuesTab({ lhData, inspectorDetails }: IssuesTabProps) {
+export default function IssuesTab({ lhData, inspectorDetails, pageUrl }: IssuesTabProps) {
   const ci = strings.components.inspectorTabs;
   const it = strings.components.linkTabs.issues;
   const sj = strings.common;
@@ -160,8 +167,11 @@ export default function IssuesTab({ lhData, inspectorDetails }: IssuesTabProps) 
                 <div className="text-xs text-muted-foreground mb-2">{it.lighthouseFailures}</div>
                 <div className="space-y-2">
                   {topFailures.map((f: LighthouseAuditRef, i: number) => (
-                    <div key={i} className="bg-brand-800 border border-default rounded-lg px-3 py-2 text-xs text-foreground">
-                      {f.helpText || f.id}
+                    <div key={i} className="bg-brand-800 border border-default rounded-lg px-3 py-2 text-xs text-foreground space-y-2">
+                      <span>{f.helpText || f.id}</span>
+                      <AiSuggestionButton
+                        request={buildLighthouseFailureContext(f.helpText || f.id || '', f.id, pageUrl)}
+                      />
                     </div>
                   ))}
                 </div>
@@ -240,6 +250,7 @@ export default function IssuesTab({ lhData, inspectorDetails }: IssuesTabProps) 
                         {issue.recommendation}
                       </p>
                     ) : null}
+                    <AiSuggestionButton request={buildInspectorIssueContext(issue, pageUrl)} />
                   </div>
                 )}
               </div>
@@ -255,10 +266,13 @@ export default function IssuesTab({ lhData, inspectorDetails }: IssuesTabProps) 
             {inspectorDetails.recommendations.map((rec: string, i: number) => (
               <div
                 key={i}
-                className="flex items-start gap-2 bg-brand-800 border border-default rounded-lg px-4 py-2.5"
+                className="flex flex-col gap-2 bg-brand-800 border border-default rounded-lg px-4 py-2.5"
               >
-                <ChevronRight className="h-3.5 w-3.5 text-link shrink-0 mt-0.5" />
-                <span className="text-sm text-foreground">{rec}</span>
+                <div className="flex items-start gap-2">
+                  <ChevronRight className="h-3.5 w-3.5 text-link shrink-0 mt-0.5" />
+                  <span className="text-sm text-foreground flex-1">{rec}</span>
+                </div>
+                <AiSuggestionButton request={buildRecommendationBulletContext(rec, pageUrl)} />
               </div>
             ))}
           </div>

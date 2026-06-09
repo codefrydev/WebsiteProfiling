@@ -119,11 +119,13 @@ run_pytest_reporting() {
     tests/test_categories_roadmap.py \
     tests/test_report_categories_golden.py \
     tests/test_categories_coverage.py \
+    tests/test_contrast_issues.py \
     tests/test_indexation_coverage.py \
     tests/test_crawl_segments.py \
     tests/test_terminology.py \
     tests/test_compare_payload.py \
     tests/test_optional_audits.py \
+    tests/test_property_profile.py \
     tests/test_reporting_gaps.py \
     --cov=website_profiling.reporting \
     --cov-config=.coveragerc.reporting \
@@ -135,7 +137,7 @@ run_pytest_reporting() {
 
 run_pytest_tools() {
   [[ "$PYTEST_NO_COV" -eq 1 ]] && return 0
-  log "Pytest (tools coverage gate, 95%)"
+  log "Pytest (tools coverage gate, 100%)"
   "$VENV/bin/pytest" \
     tests/test_alert_checker.py \
     tests/test_schedule_runner.py \
@@ -158,10 +160,11 @@ run_pytest_tools() {
     tests/test_export_sitemap.py \
     tests/test_mcp_registry.py \
     tests/test_mcp_resources.py \
+    tests/test_tools_branch_coverage.py \
     --cov=website_profiling.tools \
     --cov-config=.coveragerc.tools \
     --cov-report=term-missing \
-    --cov-fail-under=95 \
+    --cov-fail-under=100 \
     -q \
     -o addopts=
 }

@@ -9,6 +9,8 @@ import { linkHasBrowserErrors } from '@/lib/browserErrors';
 import { parseUrlTab } from '@/hooks/useUrlTab';
 import { severityBg } from '../../../utils/linkUtils';
 import { strings, format } from '../../../lib/strings';
+import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import { buildOnPageWarningContext } from '@/lib/fixSuggestionContext';
 
 const SECTION_TABS = ['insights', 'browser', 'warnings', 'resources'] as const;
 type PageAnalysisSection = (typeof SECTION_TABS)[number];
@@ -251,7 +253,7 @@ function InsightsPanel({
   );
 }
 
-function WarningsPanel({ pa }: { pa: PageAnalysis }) {
+function WarningsPanel({ pa, pageUrl }: { pa: PageAnalysis; pageUrl: string }) {
   const p = strings.components.linkTabs.pageAnalysis;
   const [sevFilter, setSevFilter] = useState('All');
   const filteredWarnings = useMemo(() => {
@@ -282,15 +284,18 @@ function WarningsPanel({ pa }: { pa: PageAnalysis }) {
           {filteredWarnings.map((w, i) => (
             <li
               key={`${w.id}-${i}`}
-              className="bg-brand-900 border border-default rounded-lg px-3 py-2 text-sm text-foreground"
+              className="bg-brand-900 border border-default rounded-lg px-3 py-2 text-sm text-foreground space-y-2"
             >
-              <span className={`text-xs px-2 py-0.5 rounded mr-2 ${severityBg(w.severity)}`}>
-                {w.severity || 'info'}
-              </span>
-              {w.message}
-              {w.detail && (
-                <div className="mt-1 text-xs text-muted-foreground font-mono break-all">{w.detail}</div>
-              )}
+              <div>
+                <span className={`text-xs px-2 py-0.5 rounded mr-2 ${severityBg(w.severity)}`}>
+                  {w.severity || 'info'}
+                </span>
+                {w.message}
+                {w.detail && (
+                  <div className="mt-1 text-xs text-muted-foreground font-mono break-all">{w.detail}</div>
+                )}
+              </div>
+              <AiSuggestionButton request={buildOnPageWarningContext(w, pageUrl)} />
             </li>
           ))}
         </ul>
@@ -438,7 +443,7 @@ export default function PageAnalysisTab({ link }: PageAnalysisTabProps) {
         )}
         {activeSection === 'warnings' && (
           <ViewTabPanel idPrefix="page-analysis" tabId="warnings">
-            <WarningsPanel pa={pa} />
+            <WarningsPanel pa={pa} pageUrl={link.url} />
           </ViewTabPanel>
         )}
         {activeSection === 'resources' && (

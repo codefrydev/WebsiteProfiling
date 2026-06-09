@@ -152,7 +152,7 @@ export default function InspectorTabs({
         {activeTab === 'content'   && <ContentTab   link={link} />}
         {activeTab === 'technical' && <TechnicalTab  link={link} />}
         {activeTab === 'issues'    && (
-          <IssuesTab lhData={effectiveLh} inspectorDetails={inspectorDetails} />
+          <IssuesTab lhData={effectiveLh} inspectorDetails={inspectorDetails} pageUrl={link.url} />
         )}
         {activeTab === 'improve'   && (
           <PageImprovePanel url={link.url} inspectorDetails={inspectorDetails} />

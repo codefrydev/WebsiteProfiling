@@ -68,6 +68,13 @@ def test_get_link_rel_summary_uses_payload_summary(ctx):
     assert get_link_rel_summary(conn, ctx, {})["total_edges"] == 9
 
 
+def test_export_extras_empty_payload(ctx):
+    conn = MagicMock()
+    ctx.load_payload = MagicMock(return_value={})
+    assert export_sitemap_xml(conn, ctx, {})["error"] == "report not found"
+    assert validate_rich_results(conn, ctx, {})["error"] == "report not found"
+
+
 def test_export_sitemap_xml_tool(ctx, monkeypatch):
     conn = MagicMock()
     scoped = MagicMock()

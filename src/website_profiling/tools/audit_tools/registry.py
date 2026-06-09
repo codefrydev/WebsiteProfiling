@@ -182,6 +182,12 @@ from .ops import (
     list_log_uploads,
 )
 from .properties import get_property, list_properties
+from .property_profile import (
+    get_ads_txt_status,
+    get_contact_intelligence,
+    get_security_txt_status,
+    list_subdomains,
+)
 from .report import (
     get_category_scores,
     get_critical_issues,
@@ -283,6 +289,10 @@ _TOOL_HANDLERS: dict[str, ToolHandler] = {
     "get_audit_recommendations": get_audit_recommendations,
     "get_ml_errors": get_ml_errors,
     "get_ssl_expiry_info": get_ssl_expiry_info,
+    "get_ads_txt_status": get_ads_txt_status,
+    "get_security_txt_status": get_security_txt_status,
+    "list_subdomains": list_subdomains,
+    "get_contact_intelligence": get_contact_intelligence,
     "list_audit_categories": list_audit_categories,
     "get_category_recommendations": get_category_recommendations,
     "list_issues_with_ai_fixes": list_issues_with_ai_fixes,

@@ -124,10 +124,10 @@ def test_spell_html_wayback_and_axe(monkeypatch):
     fake_spell.unknown.return_value = {"sentense", "wrds", "misspelled", "heuristics"}
     monkeypatch.setitem(__import__("sys").modules, "spellchecker", MagicMock(SpellChecker=lambda: fake_spell))
 
-    spell = spell_check_issues(df, max_pages=5)
+    spell, _ = spell_check_issues(df, max_pages=5)
     assert spell
 
-    html_issues = html_validation_issues(df)
+    html_issues, _ = html_validation_issues(df)
     assert any("multiple title" in i["message"] for i in html_issues)
 
     monkeypatch.setattr(
@@ -186,6 +186,7 @@ def test_apply_optional_audits_all_flags(monkeypatch):
             "enable_amp_audit": "true",
             "enable_wayback_lookup": "true",
             "enable_axe": "true",
+            "crawl_render_mode": "javascript",
         },
     )
     assert meta.get("spell_check_pages", 0) >= 0
@@ -214,7 +215,7 @@ def test_optional_audits_edge_branches(monkeypatch):
     assert pagination_issues(pag_df) == []
 
     dup_html = LONG_HTML + '<div id="a"></div><div id="a"></div>'
-    dup_issues = html_validation_issues(pd.DataFrame([{"url": "https://x.com", "html": dup_html}]))
+    dup_issues, _ = html_validation_issues(pd.DataFrame([{"url": "https://x.com", "html": dup_html}]))
     assert any("duplicate id" in i["message"] for i in dup_issues)
 
     monkeypatch.setattr(
@@ -225,7 +226,7 @@ def test_optional_audits_edge_branches(monkeypatch):
 
 
 def test_optional_audits_remaining_branches(monkeypatch):
-    assert html_validation_issues(pd.DataFrame([{"url": "https://x.com", "html": LONG_HTML}]), max_pages=0) == []
+    assert html_validation_issues(pd.DataFrame([{"url": "https://x.com", "html": LONG_HTML}]), max_pages=0)[0] == []
     assert wayback_issues(pd.DataFrame([{"url": "https://x.com/missing", "status": "404"}]), max_lookups=0) == []
 
     spell_df = pd.DataFrame([
@@ -236,11 +237,11 @@ def test_optional_audits_remaining_branches(monkeypatch):
     fake_spell = MagicMock()
     fake_spell.unknown.return_value = set()
     monkeypatch.setitem(__import__("sys").modules, "spellchecker", MagicMock(SpellChecker=lambda: fake_spell))
-    assert spell_check_issues(spell_df) == []
-    assert spell_check_issues(spell_df, max_pages=0) == []
+    assert spell_check_issues(spell_df)[0] == []
+    assert spell_check_issues(spell_df, max_pages=0)[0] == []
 
     unclosed_html = "<html><head><title>Only</title></head><body>" + ("y" * 120)
-    html_issues = html_validation_issues(pd.DataFrame([{"url": "https://x.com", "html": unclosed_html}]))
+    html_issues, _ = html_validation_issues(pd.DataFrame([{"url": "https://x.com", "html": unclosed_html}]))
     assert any("missing closing html" in i["message"] for i in html_issues)
 
     amp_ok = pd.DataFrame([
@@ -250,7 +251,8 @@ def test_optional_audits_remaining_branches(monkeypatch):
 
     categories = [{"id": "technical_seo", "name": "Technical", "issues": [], "recommendations": []}]
     meta = apply_optional_audits(categories, amp_ok, {"enable_amp_audit": "true", "enable_html_validation": "true"})
-    assert meta == {}
+    assert meta.get("html_validation_parser") in ("regex", "html5lib")
+    assert "html_validation_pages" not in meta
 
     no_a11y = [{"id": "technical_seo", "name": "Technical", "issues": [], "recommendations": []}]
     df = pd.DataFrame([{"url": "https://x.com", "status": "200", "page_analysis": "{}"}])
@@ -269,3 +271,42 @@ def test_optional_audits_remaining_branches(monkeypatch):
     assert amp_categories[0]["issues"]
 
     assert wayback_issues(pd.DataFrame([{"url": "", "status": "404"}])) == []
+
+
+def test_html_validation_html5lib_parser_path(monkeypatch):
+    fake_parser = MagicMock()
+    fake_parser.parse.side_effect = ValueError("parse fail")
+    fake_html5lib = MagicMock()
+    fake_html5lib.HTMLParser.return_value = fake_parser
+    monkeypatch.setitem(__import__("sys").modules, "html5lib", fake_html5lib)
+
+    html_issues, use_parser = html_validation_issues(
+        pd.DataFrame([{"url": "https://x.com", "html": LONG_HTML}])
+    )
+    assert use_parser is True
+    assert any("parser error" in i["message"] for i in html_issues)
+
+
+def test_amp_canonical_mismatch_and_axe_static_skip():
+    amp_df = pd.DataFrame([
+        {
+            "url": "https://example.com/amp/article",
+            "status": "200",
+            "canonical_url": "https://example.com/wrong",
+            "page_analysis": json.dumps(
+                {"pagination": {"amphtml": "https://example.com/article"}}
+            ),
+        }
+    ])
+    amp_issues = amp_audit_issues(amp_df)
+    assert any("does not match" in i["message"] for i in amp_issues)
+
+    categories = [
+        {"id": "html_accessibility", "name": "A11y", "issues": [], "recommendations": []},
+    ]
+    meta = apply_optional_audits(
+        categories,
+        pd.DataFrame([{"url": "https://x.com", "status": "200", "page_analysis": "{}"}]),
+        {"enable_axe": "true", "crawl_render_mode": "static"},
+    )
+    assert meta.get("axe_skipped")

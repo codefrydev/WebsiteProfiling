@@ -29,7 +29,10 @@ def run_plot(
     if not use_database:
         raise ValueError("Plot requires DATABASE_URL (PostgreSQL).")
 
+    from ..progress import emit_progress
+
     run_id = None
+    emit_progress("plot", "load_data", message="Loading crawl and edges from database")
     print("  Loading crawl and edges from DB...", flush=True)
     from ..db import db_session, get_crawl_run_info, get_latest_crawl_run_id, read_crawl, read_edges
     with db_session() as conn:
@@ -54,6 +57,7 @@ def run_plot(
     mode = (render_mode or "static").strip().lower()
 
     if not edges and not df.empty:
+        emit_progress("plot", "build_edges", message="Building link graph from crawl data")
         print("  Building edges from crawl data...", flush=True)
         edges = build_edges_from_df(
             df,
@@ -74,6 +78,7 @@ def run_plot(
 
     if edges:
         edges_df = pd.DataFrame(edges, columns=["from", "to"])
+        emit_progress("plot", "write_db", message="Writing nodes and edges to database")
         print("  Writing edges and nodes to DB...", flush=True)
         from ..db import db_session, get_latest_crawl_run_id, write_edges as db_write_edges, write_nodes as db_write_nodes
         with db_session() as conn:

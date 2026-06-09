@@ -578,6 +578,10 @@ def test_new_tools_coverage() -> None:
         assert idx_mod.list_indexation_gaps(conn, ctx, {"gap_type": "sitemap_only"})["error"]
         assert idx_mod.get_indexation_url_join(conn, ctx, {})["error"]
 
+    with patch.object(Ctx, "load_payload", return_value={"indexation_coverage": "bad"}):
+        assert idx_mod.list_indexation_gaps(conn, ctx, {"gap_type": "sitemap_only"})["missing"] is True
+        assert idx_mod.get_indexation_url_join(conn, ctx, {})["missing"] is True
+
     ops_row = MagicMock()
     ops_row.keys = MagicMock(return_value=["schedule_cron", "alert_webhook_url", "alert_email"])
     ops_conn3 = MagicMock()
@@ -648,6 +652,75 @@ def test_new_tools_coverage() -> None:
     assert health_mod.get_health_history(fake_h3, Ctx(property_id=1), {})["count"] == 1
 
 
+def test_property_profile_tools() -> None:
+    from website_profiling.tools.audit_tools import property_profile as pp_mod
+
+    conn = MagicMock()
+    ctx = Ctx(property_id=1)
+
+    with patch.object(Ctx, "load_payload", return_value={}):
+        assert pp_mod.get_ads_txt_status(conn, ctx, {})["error"] == "no report found"
+        assert pp_mod.get_security_txt_status(conn, ctx, {})["error"] == "no report found"
+        assert pp_mod.list_subdomains(conn, ctx, {})["error"] == "no report found"
+        assert pp_mod.get_contact_intelligence(conn, ctx, {})["error"] == "no report found"
+
+    payload = {
+        "site_level": {
+            "ads_txt_present": True,
+            "ads_txt_valid": True,
+            "ads_txt_line_count": 1,
+            "ads_txt_issues": [],
+            "security_txt_present": True,
+            "security_txt_valid": True,
+            "security_txt_contact": ["mailto:a@b.com"],
+            "security_txt_expires": "2030-01-01",
+        },
+        "subdomains": {
+            "apex": "example.com",
+            "hosts": [
+                {"host": "www.example.com", "in_scope": True},
+                {"host": "other.net", "in_scope": False},
+            ],
+            "gsc_hosts_not_crawled": ["blog.example.com"],
+            "out_of_scope_discovered": ["other.net"],
+        },
+        "contact_intelligence": {
+            "emails": [{"value": "a@b.com"}],
+            "phones": [{"value": "+1"}],
+            "addresses": [{"value": "1 Main"}],
+            "organization_names": [{"value": "Example Co"}],
+            "primary_contact_page": "https://example.com/contact",
+            "consistency_notes": ["note"],
+        },
+    }
+    with patch.object(Ctx, "load_payload", return_value=payload):
+        assert pp_mod.get_ads_txt_status(conn, ctx, {})["ads_txt_present"] is True
+        assert pp_mod.get_security_txt_status(conn, ctx, {})["security_txt_contact"]
+        scoped = pp_mod.list_subdomains(conn, ctx, {"in_scope_only": "false", "limit": 1})
+        assert scoped["truncated"] is True
+        in_scope = pp_mod.list_subdomains(conn, ctx, {"in_scope_only": True})
+        assert all(h["in_scope"] for h in in_scope["hosts"])
+        contacts = pp_mod.get_contact_intelligence(conn, ctx, {"limit": 5})
+        assert contacts["emails"][0]["value"] == "a@b.com"
+
+    with patch.object(Ctx, "load_payload", return_value={"site_level": "bad"}):
+        assert pp_mod.get_ads_txt_status(conn, ctx, {})["missing"] is True
+        assert pp_mod.get_security_txt_status(conn, ctx, {})["missing"] is True
+
+    with patch.object(Ctx, "load_payload", return_value={"subdomains": None}):
+        assert pp_mod.list_subdomains(conn, ctx, {})["missing"] is True
+
+    with patch.object(Ctx, "load_payload", return_value={"contact_intelligence": "bad"}):
+        assert pp_mod.get_contact_intelligence(conn, ctx, {})["missing"] is True
+
+    with patch.object(
+        Ctx,
+        "load_payload",
+        return_value={"contact_intelligence": {"emails": "bad", "phones": [], "addresses": [], "organization_names": []}},
+    ):
+        assert pp_mod.get_contact_intelligence(conn, ctx, {})["emails"] == []
+
+
 def test_all_tools_empty_payload() -> None:
     """Hit 'no report found' branches across payload-backed tools."""
     conn = MagicMock()
@@ -665,6 +738,7 @@ def test_all_tools_empty_payload() -> None:
         "get_crux_summary", "get_tech_stack_summary", "get_security_findings",
         "get_category_issues",
         "get_audit_recommendations", "get_ml_errors", "get_ssl_expiry_info",
+        "get_ads_txt_status", "get_security_txt_status", "list_subdomains", "get_contact_intelligence",
         "list_audit_categories", "get_category_recommendations", "list_issues_with_ai_fixes",
         "list_seo_onpage_issues", "list_content_url_issues", "list_pages_missing_title",
         "get_crawl_summary", "get_mime_type_breakdown", "list_indexation_gaps",

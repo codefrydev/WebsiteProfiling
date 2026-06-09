@@ -75,6 +75,14 @@ export function normalizePathname(url: string, expectedHost = ''): string | null
   return p || '/';
 }
 
+/** True when link URL belongs under a path-tree prefix key. */
+export function linkMatchesPathKey(url: string, pathKey: string, expectedHost = ''): boolean {
+  const pathname = normalizePathname(url, expectedHost);
+  if (!pathname) return false;
+  if (!pathKey || pathKey === '/') return true;
+  return pathname === pathKey || pathname.startsWith(`${pathKey}/`);
+}
+
 /** Prefix paths from pathname: `/`, `/blog`, `/blog/a` for `/blog/a`. */
 export function prefixKeysForPathname(pathname: string): string[] {
   if (!pathname || pathname === '/') return ['/'];

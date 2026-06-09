@@ -4,6 +4,8 @@ import type { LinkDetail } from '@/types/report';
 import { strings, format } from '../../../lib/strings';
 import SecHeaderRow from '../SecHeaderRow';
 import MiniBar from '../MiniBar';
+import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import { buildTechnicalLinkIssueContext } from '@/lib/fixSuggestionContext';
 
 function headerPresent(val: unknown): boolean {
   if (val == null) return false;
@@ -62,6 +64,7 @@ export default function TechnicalTab({ link }: TechnicalTabProps) {
               label={h.label}
               value={String(link[h.field as keyof LinkDetail] ?? '')}
               recommendation={h.rec}
+              pageUrl={link.url}
             />
           ))}
         </div>
@@ -73,14 +76,22 @@ export default function TechnicalTab({ link }: TechnicalTabProps) {
         </h3>
         <div className="space-y-2">
           {perfRows.map(({ label, value, mono, warn }) => (
-            <div
-              key={label}
-              className="bg-brand-900 border border-default rounded-lg flex items-center justify-between px-4 py-2.5"
-            >
-              <span className="text-sm text-muted-foreground">{label}</span>
-              <span className={`text-sm ${mono ? 'font-mono' : ''} ${warn ? 'text-red-600 dark:text-red-400' : 'text-foreground'}`}>
-                {value}
-              </span>
+            <div key={label} className="bg-brand-900 border border-default rounded-lg px-4 py-2.5 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">{label}</span>
+                <span className={`text-sm ${mono ? 'font-mono' : ''} ${warn ? 'text-red-600 dark:text-red-400' : 'text-foreground'}`}>
+                  {value}
+                </span>
+              </div>
+              {warn ? (
+                <AiSuggestionButton
+                  request={buildTechnicalLinkIssueContext(
+                    `${label}: ${value}`,
+                    link.url,
+                    'mixed_content',
+                  )}
+                />
+              ) : null}
             </div>
           ))}
         </div>

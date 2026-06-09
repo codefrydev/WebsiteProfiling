@@ -108,6 +108,23 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
     _tool("get_audit_recommendations", "Actionable SEO recommendation bullets from the audit.", {"property_id": _PID, "report_id": _RID}),
     _tool("get_ml_errors", "ML analysis errors (duplicates, NER, clusters) if any failed.", {"property_id": _PID, "report_id": _RID}),
     _tool("get_ssl_expiry_info", "Site TLS certificate expiry from the audit.", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_ads_txt_status", "ads.txt presence and validation from site-level checks.", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_security_txt_status", "security.txt presence and Contact/Expires fields from site-level checks.", {"property_id": _PID, "report_id": _RID}),
+    _tool(
+        "list_subdomains",
+        "Passive subdomain inventory from crawl, GSC, and certificate transparency.",
+        {
+            "property_id": _PID,
+            "report_id": _RID,
+            "in_scope_only": {"type": "boolean", "description": "Only hosts on the property apex (default true)"},
+            "limit": {"type": "integer", "maximum": 200},
+        },
+    ),
+    _tool(
+        "get_contact_intelligence",
+        "Business contact signals from crawl, schema, security.txt, and RDAP org (sourced).",
+        {"property_id": _PID, "report_id": _RID, "limit": {"type": "integer", "maximum": 100}},
+    ),
     _tool("list_audit_categories", "All audit categories with scores and issue counts.", {"property_id": _PID, "report_id": _RID}),
     _tool("get_category_recommendations", "Category-level recommendations for one category_id.", {"category_id": {"type": "string"}, "property_id": _PID, "report_id": _RID}, ["category_id"]),
     _tool("list_issues_with_ai_fixes", "Issues that include LLM-generated fix suggestions.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),

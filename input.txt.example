@@ -56,6 +56,9 @@ max_image_probe_urls = 500
 image_probe_concurrency = 6
 image_probe_timeout = 8
 image_unoptimized_min_kb = 200
+enable_subdomain_discovery = true
+subdomain_ct_lookup = true
+enable_rdap_org_lookup = true
 
 # --- Lighthouse ---
 lighthouse_url = 
@@ -67,6 +70,7 @@ run_lighthouse = true
 run_lighthouse_on_pages = true
 enable_crux = false
 enable_rich_results_validation = false
+google_rich_results_api_key =
 enable_axe = false
 enable_spell_check = false
 enable_html_validation = false

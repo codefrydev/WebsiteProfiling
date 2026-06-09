@@ -568,7 +568,9 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
         </Card>
       </div>
 
-      {richResultsRows.length > 0 ? <RichResultsValidationPanel rows={richResultsRows} /> : null}
+      {richResultsRows.length > 0 ? (
+        <RichResultsValidationPanel rows={richResultsRows} meta={data?.rich_results_meta} />
+      ) : null}
 
       {((hreflang?.pages_200 ?? 0) > 0 || outboundDomains.length > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

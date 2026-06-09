@@ -7,6 +7,7 @@ import {
   buildPipelineRunPreview,
   formatPipelineRunDuration,
 } from '@/lib/pipelineRunPreview';
+import { formatLivePipelineDuration, type LivePipelineEstimate } from '@/lib/pipelineLiveEstimate';
 import type { PipelinePresetId } from '@/components/pipeline/pipelinePresets';
 import type { CrawlPresetId } from '@/lib/crawlPresets';
 import type { PipelineConfigState } from '@/types/api';
@@ -18,6 +19,7 @@ export interface PipelineRunPreviewCardProps {
   configState: PipelineConfigState;
   customCommand?: string;
   crawlPresetId?: CrawlPresetId | '';
+  liveEstimate?: LivePipelineEstimate | null;
 }
 
 export default function PipelineRunPreviewCard({
@@ -25,6 +27,7 @@ export default function PipelineRunPreviewCard({
   configState,
   customCommand = '',
   crawlPresetId = '',
+  liveEstimate = null,
 }: PipelineRunPreviewCardProps) {
   const [configOpen, setConfigOpen] = useState(false);
   const preview = buildPipelineRunPreview({
@@ -34,7 +37,10 @@ export default function PipelineRunPreviewCard({
     crawlPresetId,
   });
 
-  const duration = formatPipelineRunDuration(preview.timeMinSeconds, preview.timeMaxSeconds);
+  const isLive = liveEstimate != null && liveEstimate.source === 'live' && (liveEstimate.remainingMs ?? 0) > 0;
+  const duration = isLive
+    ? formatLivePipelineDuration(liveEstimate)
+    : formatPipelineRunDuration(preview.timeMinSeconds, preview.timeMaxSeconds);
 
   return (
     <div className="mt-5 space-y-4 rounded-xl border border-default bg-brand-900/40 p-4 sm:p-5">
@@ -43,9 +49,17 @@ export default function PipelineRunPreviewCard({
           <h3 className="text-sm font-semibold text-foreground">{s.title}</h3>
           <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{s.hint}</p>
         </div>
-        <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-medium text-blue-800 dark:text-blue-200">
+        <div
+          className={`inline-flex max-w-full items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
+            isLive
+              ? 'border-green-500/35 bg-green-500/10 text-green-800 dark:text-green-200'
+              : 'border-blue-500/30 bg-blue-500/10 text-blue-800 dark:text-blue-200'
+          }`}
+        >
           <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
-          {s.estimatedTime}: {duration}
+          <span className="truncate">
+            {isLive ? s.liveEstimatedTime : s.estimatedTime}: {duration}
+          </span>
         </div>
       </div>
 

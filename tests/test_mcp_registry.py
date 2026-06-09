@@ -7,7 +7,7 @@ from website_profiling.tools.audit_tools.registry import TOOL_DEFINITIONS, dispa
 
 
 def test_tool_definitions_schema() -> None:
-    assert len(TOOL_DEFINITIONS) == 176
+    assert len(TOOL_DEFINITIONS) == 180
     for tool in TOOL_DEFINITIONS:
         assert tool.get("name")
         assert tool.get("description")
