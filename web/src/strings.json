@@ -899,12 +899,20 @@
         "label": "AI insights"
       },
       "issuesByCategory": "Issues by category",
-      "issuesByCategoryHint": "Reflects current search and category filter, not priority filter.",
+      "issuesByCategoryHint": "Reflects current search and priority filter.",
       "issuesByPriority": "Issues by priority",
-      "issuesByPriorityHint": "Same slice as category chart (search + category filter only).",
+      "issuesByPriorityHint": "Same slice as category chart (search + priority filter only).",
       "allPriorities": "All Priorities",
       "allCategories": "All Categories",
       "noMatches": "No issues match the current filters.",
+      "pagination": {
+        "showingSlice": "Showing {from}–{to} of {total}",
+        "pageOf": "Page",
+        "of": "of",
+        "previous": "Previous",
+        "next": "Next",
+        "rowsPerPage": "{n} per page"
+      },
       "tabAudit": "Audit issues",
       "tabBoard": "Task board",
       "taskBoardHint": "Sorted by Search Console clicks to affected URLs when available.",
@@ -1252,7 +1260,15 @@
       "emptyFiltered": "No findings match the current filters or search.",
       "emptyNoScan": "No security findings yet. Enable security checks in audit settings, then run a crawl.",
       "recommendation": "Recommendation",
-      "findingTooltip": "{n} finding{s}"
+      "findingTooltip": "{n} finding{s}",
+      "pagination": {
+        "showingSlice": "Showing {from}–{to} of {total}",
+        "pageOf": "Page",
+        "of": "of",
+        "previous": "Previous",
+        "next": "Next",
+        "rowsPerPage": "{n} per page"
+      }
     },
     "javascriptErrors": {
       "title": "JavaScript errors",
@@ -1294,7 +1310,15 @@
       "exceptionFallback": "Uncaught exception",
       "stackPreview": "{stack}…",
       "inspectorConsoleRecommendation": "Fix the script at the reported source location; check network and CORS if the error references a failed load.",
-      "inspectorExceptionRecommendation": "Open the Page analysis tab for the full stack trace and browser console output."
+      "inspectorExceptionRecommendation": "Open the Page analysis tab for the full stack trace and browser console output.",
+      "pagination": {
+        "showingSlice": "Showing {from}–{to} of {total}",
+        "pageOf": "Page",
+        "of": "of",
+        "previous": "Previous",
+        "next": "Next",
+        "rowsPerPage": "{n} per page"
+      }
     },
     "lighthouse": {
       "emptyTitle": "Page Speed",
@@ -1334,9 +1358,17 @@
       "auditTablesHint": "Expand any row for full Lighthouse detail rows (thumbnails, resource URLs, DOM nodes).",
       "noAuditsSearch": "No audits match your search.",
       "diagnostics": "Diagnostics & Fixes",
-      "diagnosticsHint": "Issues grouped by impact area. Click a group to expand. Click any issue for full detail and evidence.",
+      "diagnosticsHint": "Issues grouped by impact area. Select a tab to browse diagnostics with pagination.",
       "allChecksPassed": "No failing audits — all checks passed.",
       "noDiagnosticsSearch": "No diagnostics match your search.",
+      "pagination": {
+        "showingSlice": "Showing {from}–{to} of {total}",
+        "pageOf": "Page",
+        "of": "of",
+        "previous": "Previous",
+        "next": "Next",
+        "rowsPerPage": "{n} per page"
+      },
       "defaultFix": "See Lighthouse report for fix.",
       "tabs": {
         "overview": "Overview",

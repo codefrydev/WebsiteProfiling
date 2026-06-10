@@ -1,11 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import type { TooltipItem } from 'chart.js';
 import { Shield, Flame, AlertTriangle, AlertCircle, Info, ExternalLink, BarChart3, List } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Badge, ViewTabs, ViewTabPanel } from '../components';
+import { PageLayout, PageHeader, Card, Badge, ViewTabs, ViewTabPanel, Button } from '../components';
+import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import type { ViewTabItem } from '../components';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
@@ -97,6 +98,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
   const { data } = useReport();
   const [severityFilter, setSeverityFilter] = useState('All');
   const [activeTab, setActiveTab] = useUrlTab(SECURITY_TABS, 'findings');
+  const [findingsPage, setFindingsPage] = useState(1);
 
   const q = (searchQuery || '').toLowerCase().trim();
 
@@ -154,6 +156,44 @@ export default function Security({ searchQuery = '' }: ViewProps) {
   }, []);
 
   const vs = strings.views.security;
+  const vsp = vs.pagination;
+
+  const filteredFindings = useMemo(() => {
+    let list: SecurityFinding[] = allFindings;
+    if (severityFilter !== 'All') {
+      list = list.filter((f) => (f.severity || 'Info') === severityFilter);
+    }
+    if (q) {
+      list = list.filter((f) => {
+        const url = (f.url || '').toLowerCase();
+        const msg = (f.message || '').toLowerCase();
+        const rec = (f.recommendation || '').toLowerCase();
+        const typ = securityFindingLabel(f.finding_type).toLowerCase();
+        return url.includes(q) || msg.includes(q) || rec.includes(q) || typ.includes(q);
+      });
+    }
+    return [...list].sort((a, b) => {
+      const ao = (SEVERITY_CONFIG[(a.severity || 'Info') as SeverityKey] ?? SEVERITY_CONFIG.Info).order;
+      const bo = (SEVERITY_CONFIG[(b.severity || 'Info') as SeverityKey] ?? SEVERITY_CONFIG.Info).order;
+      return ao - bo;
+    });
+  }, [allFindings, severityFilter, q]);
+
+  const {
+    slice: visibleFindings,
+    page: safeFindingsPage,
+    totalPages: findingsTotalPages,
+    total: filteredFindingsTotal,
+    from: findingsFrom,
+    to: findingsTo,
+  } = useMemo(
+    () => paginateSlice(filteredFindings, findingsPage, PAGE_SIZE),
+    [filteredFindings, findingsPage],
+  );
+
+  useEffect(() => {
+    setFindingsPage(1);
+  }, [severityFilter, q]);
 
   const tabItems = useMemo((): ViewTabItem[] => {
     const chartCount = allFindings.length > 0 ? (typeLabels.length > 0 ? 2 : 1) : 0;
@@ -179,26 +219,6 @@ export default function Security({ searchQuery = '' }: ViewProps) {
     acc[s] = allFindings.filter((f) => (f.severity || 'Info') === s).length;
     return acc;
   }, {});
-
-  let findings: SecurityFinding[] = allFindings;
-  if (severityFilter !== 'All') {
-    findings = findings.filter((f) => (f.severity || 'Info') === severityFilter);
-  }
-  if (q) {
-    findings = findings.filter((f) => {
-      const url = (f.url || '').toLowerCase();
-      const msg = (f.message || '').toLowerCase();
-      const rec = (f.recommendation || '').toLowerCase();
-      const typ = securityFindingLabel(f.finding_type).toLowerCase();
-      return url.includes(q) || msg.includes(q) || rec.includes(q) || typ.includes(q);
-    });
-  }
-
-  findings = [...findings].sort((a, b) => {
-    const ao = (SEVERITY_CONFIG[(a.severity || 'Info') as SeverityKey] ?? SEVERITY_CONFIG.Info).order;
-    const bo = (SEVERITY_CONFIG[(b.severity || 'Info') as SeverityKey] ?? SEVERITY_CONFIG.Info).order;
-    return ao - bo;
-  });
 
   return (
     <PageLayout className="space-y-6">
@@ -307,7 +327,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
             </div>
           )}
 
-          {findings.length === 0 ? (
+          {filteredFindings.length === 0 ? (
             <Card className="flex flex-col items-center justify-center py-20 gap-4">
               <Shield className="h-14 w-14 text-green-600/60" />
               <div className="text-center">
@@ -318,49 +338,86 @@ export default function Security({ searchQuery = '' }: ViewProps) {
               </div>
             </Card>
           ) : (
-            <div className="space-y-3">
-              {findings.map((f, i) => {
-                const sev = (f.severity || 'Info') as SeverityKey;
-                const cfg = SEVERITY_CONFIG[sev] ?? SEVERITY_CONFIG.Info;
-                const Icon = cfg.icon;
-                return (
-                  <div
-                    key={i}
-                    className={`bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.rowBorder} p-5 flex flex-col gap-3 hover:border-brand-700/80 transition-colors`}
-                  >
-                    <div className="flex flex-wrap items-start gap-3">
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <Icon className={`h-4 w-4 ${cfg.text}`} />
-                        <Badge value={sev} label={sev} />
-                      </div>
-                      <span className={`font-mono text-xs px-2 py-0.5 rounded ${cfg.bg} ${cfg.text} border ${cfg.border} select-all`}>
-                        {securityFindingLabel(f.finding_type)}
-                      </span>
-                      {f.url && (
-                        <a
-                          href={f.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="flex items-center gap-1 font-mono text-link text-xs hover:underline break-all min-w-0"
-                        >
-                          <span className="line-clamp-1">{f.url}</span>
-                          <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                        </a>
-                      )}
-                    </div>
-                    <p className="text-foreground text-sm leading-snug">{f.message || strings.common.emDash}</p>
-                    {f.recommendation && (
-                      <div className={`rounded-lg px-3 py-2.5 border text-sm text-muted-foreground leading-relaxed ${cfg.recBg}`}>
-                        <span className="text-xs font-bold uppercase tracking-wide text-link block mb-1">
-                          {vs.recommendation}
+            <div className="space-y-4">
+              <div className="space-y-3">
+                {visibleFindings.map((f, i) => {
+                  const sev = (f.severity || 'Info') as SeverityKey;
+                  const cfg = SEVERITY_CONFIG[sev] ?? SEVERITY_CONFIG.Info;
+                  const Icon = cfg.icon;
+                  return (
+                    <div
+                      key={`${safeFindingsPage}-${i}`}
+                      className={`bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.rowBorder} p-5 flex flex-col gap-3 hover:border-brand-700/80 transition-colors`}
+                    >
+                      <div className="flex flex-wrap items-start gap-3">
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Icon className={`h-4 w-4 ${cfg.text}`} />
+                          <Badge value={sev} label={sev} />
+                        </div>
+                        <span className={`font-mono text-xs px-2 py-0.5 rounded ${cfg.bg} ${cfg.text} border ${cfg.border} select-all`}>
+                          {securityFindingLabel(f.finding_type)}
                         </span>
-                        {f.recommendation}
+                        {f.url && (
+                          <a
+                            href={f.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-1 font-mono text-link text-xs hover:underline break-all min-w-0"
+                          >
+                            <span className="line-clamp-1">{f.url}</span>
+                            <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                          </a>
+                        )}
                       </div>
-                    )}
-                    <AiSuggestionButton request={buildSecurityFindingContext(f)} />
+                      <p className="text-foreground text-sm leading-snug">{f.message || strings.common.emDash}</p>
+                      {f.recommendation && (
+                        <div className={`rounded-lg px-3 py-2.5 border text-sm text-muted-foreground leading-relaxed ${cfg.recBg}`}>
+                          <span className="text-xs font-bold uppercase tracking-wide text-link block mb-1">
+                            {vs.recommendation}
+                          </span>
+                          {f.recommendation}
+                        </div>
+                      )}
+                      <AiSuggestionButton request={buildSecurityFindingContext(f)} />
+                    </div>
+                  );
+                })}
+              </div>
+              {filteredFindingsTotal > 0 ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center pt-1">
+                  <div className="text-sm text-muted-foreground space-y-0.5">
+                    <div>{format(vsp.showingSlice, { from: findingsFrom, to: findingsTo, total: filteredFindingsTotal })}</div>
+                    <div className="text-xs">
+                      {vsp.pageOf}{' '}
+                      <span className="font-bold text-bright tabular-nums">{safeFindingsPage}</span> {vsp.of}{' '}
+                      <span className="font-bold text-bright tabular-nums">{findingsTotalPages}</span>
+                      <span className="text-muted-foreground ml-2">
+                        ({format(vsp.rowsPerPage, { n: PAGE_SIZE })})
+                      </span>
+                    </div>
                   </div>
-                );
-              })}
+                  {findingsTotalPages > 1 ? (
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="secondary"
+                        onClick={() => setFindingsPage((p) => Math.max(1, p - 1))}
+                        disabled={safeFindingsPage <= 1}
+                        className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                      >
+                        {vsp.previous}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => setFindingsPage((p) => Math.min(findingsTotalPages, p + 1))}
+                        disabled={safeFindingsPage >= findingsTotalPages}
+                        className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                      >
+                        {vsp.next}
+                      </Button>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           )}
         </ViewTabPanel>
