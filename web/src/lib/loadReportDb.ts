@@ -53,7 +53,15 @@ export async function getCrawlRunSummaries(client: PoolClient): Promise<CrawlRun
            WHERE crl.status IS NULL
               OR crl.status = ''
               OR crl.status !~ '^[2345]'
-         )::int AS other
+         )::int AS other,
+         COUNT(*) FILTER (
+           WHERE NULLIF(TRIM(COALESCE(crl.title, crl.data->>'title', '')), '') IS NOT NULL
+         )::int AS with_title,
+         COALESCE(ROUND(AVG(NULLIF((crl.data->>'word_count')::numeric, 0))), 0)::int AS avg_word_count,
+         COUNT(*) FILTER (
+           WHERE COALESCE((crl.data->>'word_count')::int, 0) > 0
+             AND COALESCE((crl.data->>'word_count')::int, 0) < 300
+         )::int AS thin_pages
        FROM crawl_runs cr
        LEFT JOIN crawl_results crl ON crl.crawl_run_id = cr.id
        GROUP BY cr.id, cr.start_url, cr.created_at
@@ -69,6 +77,9 @@ export async function getCrawlRunSummaries(client: PoolClient): Promise<CrawlRun
       s4xx: Number(row.s4xx) || 0,
       s5xx: Number(row.s5xx) || 0,
       other: Number(row.other) || 0,
+      with_title: Number(row.with_title) || 0,
+      avg_word_count: Number(row.avg_word_count) || 0,
+      thin_pages: Number(row.thin_pages) || 0,
     }));
   } catch {
     return [];

@@ -723,6 +723,9 @@ export interface CrawlRunSummary {
   s4xx: number;
   s5xx: number;
   other: number;
+  with_title: number;
+  avg_word_count: number;
+  thin_pages: number;
 }
 
 export interface ReportListRow {
@@ -745,6 +748,27 @@ export interface StatusCounts {
   other: number;
 }
 
+export interface PortfolioIssueCounts {
+  critical: number;
+  high: number;
+  medium: number;
+  low: number;
+}
+
+export interface PortfolioCategorySnapshot {
+  id: string;
+  name: string;
+  score: number;
+  issueCount: number;
+}
+
+export interface PortfolioSeoSignals {
+  missingTitles: number;
+  missingMetaDesc: number;
+  thinContent: number;
+  h1Issues: number;
+}
+
 export interface PortfolioGroup {
   domainName: string;
   crawlUrl: string;
@@ -752,6 +776,23 @@ export interface PortfolioGroup {
   healthScore: number;
   statusCounts: StatusCounts;
   lastCrawl: string;
+  lastAudit: string;
+  totalIssues: number;
+  issueCounts: PortfolioIssueCounts;
+  successRate: number | null;
+  titleCoverage: number | null;
+  avgWordCount: number | null;
+  thinPages: number | null;
+  technicalSeoScore: number | null;
+  perfScore: number | null;
+  seoScore: number | null;
+  crawlDurationS: number | null;
+  categorySnapshots: PortfolioCategorySnapshot[];
+  seoSignals: PortfolioSeoSignals | null;
+  securityFindings: number;
+  duplicateClusters: number;
+  medianWordCount: number | null;
+  medianResponseMs: number | null;
   reportId: number | null;
   crawlRunId?: number;
   crawlOnly?: boolean;

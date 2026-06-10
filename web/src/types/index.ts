@@ -22,6 +22,8 @@ export type {
   ReportMetaResponse,
   StatusCounts,
   PortfolioGroup,
+  PortfolioCategorySnapshot,
+  PortfolioSeoSignals,
   ReportFingerprintDiff,
   PathRollupMetrics,
   PathRollup,

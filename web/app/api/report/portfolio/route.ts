@@ -11,6 +11,7 @@ import {
   computeCrawlOnlyGroups,
   mergePortfolioGroups,
 } from '@/lib/homePortfolio';
+import { buildCrawlHistoryByDomain } from '@/lib/portfolioCrawlHistory';
 import { strings } from '@/lib/strings';
 import type { ApiRouteHandler } from '@/types/api';
 import type { StringsCatalog } from '@/types/strings';
@@ -29,7 +30,7 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
     : [];
 
   try {
-    const groups = await withReportDb(async (client) => {
+    const portfolio = await withReportDb(async (client) => {
       const all = await listReportsFromDatabase(client);
       const idSet = new Set(ids);
       const reportList = ids.length ? all.filter((r) => idSet.has(r.id)) : all;
@@ -51,11 +52,13 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
         catalog.views.home.unknownBrand,
         catalog.common.emDash,
       );
-      return mergePortfolioGroups(reportGroups, crawlOnlyGroups);
+      const groups = mergePortfolioGroups(reportGroups, crawlOnlyGroups);
+      const crawlHistoryByDomain = buildCrawlHistoryByDomain(crawlSummaries);
+      return { groups, crawlHistoryByDomain };
     });
-    return NextResponse.json({ groups });
+    return NextResponse.json(portfolio);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: msg, groups: [] }, { status: 500 });
+    return NextResponse.json({ error: msg, groups: [], crawlHistoryByDomain: {} }, { status: 500 });
   }
 };
