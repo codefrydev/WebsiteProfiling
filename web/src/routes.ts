@@ -1,4 +1,4 @@
-/** Known report view ids (path segments under `/`). */
+/** Internal view ids used by components and navigation. */
 export type ViewId =
   | 'home'
   | 'overview'
@@ -12,7 +12,6 @@ export type ViewId =
   | 'javascript-errors'
   | 'content-analytics'
   | 'tech-stack'
-  | 'charts'
   | 'network'
   | 'gallery'
   | 'search-performance'
@@ -26,9 +25,11 @@ export type ViewId =
   | 'export'
   | 'log-analyzer';
 
-const VIEW_IDS = new Set<string>([
+/** Canonical URL path segments under `/` (validated by `[slug]/page.tsx`). */
+export const REPORT_PATH_SLUGS = [
   'home',
-  'overview',
+  'dashboard',
+  'keywords',
   'issues',
   'links',
   'site-structure',
@@ -39,7 +40,6 @@ const VIEW_IDS = new Set<string>([
   'javascript-errors',
   'content-analytics',
   'tech-stack',
-  'charts',
   'network',
   'gallery',
   'search-performance',
@@ -48,11 +48,14 @@ const VIEW_IDS = new Set<string>([
   'contacts',
   'backlinks',
   'traffic',
-  'keywords-explorer',
   'compare',
   'export',
   'log-analyzer',
-]);
+] as const;
+
+export type ReportPathSlug = (typeof REPORT_PATH_SLUGS)[number];
+
+const REPORT_PATH_SLUG_SET = new Set<string>(REPORT_PATH_SLUGS);
 
 export function viewIdToPathSlug(viewId: string): string {
   if (viewId === 'overview') return 'dashboard';
@@ -64,5 +67,5 @@ export function pathSlugToViewId(slug: string | null | undefined): ViewId | null
   if (!slug || typeof slug !== 'string') return null;
   if (slug === 'dashboard') return 'overview';
   if (slug === 'keywords') return 'keywords-explorer';
-  return VIEW_IDS.has(slug) ? (slug as ViewId) : null;
+  return REPORT_PATH_SLUG_SET.has(slug) ? (slug as ViewId) : null;
 }

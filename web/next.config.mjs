@@ -12,6 +12,16 @@ const nextConfig = {
         destination: '/keywords',
         permanent: true,
       },
+      {
+        source: '/overview',
+        destination: '/dashboard',
+        permanent: true,
+      },
+      {
+        source: '/charts',
+        destination: '/dashboard?tab=charts',
+        permanent: false,
+      },
     ];
   },
 };

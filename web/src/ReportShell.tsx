@@ -183,14 +183,6 @@ function AppContent({ slug }: SlugProps): ReactNode {
 
   const view = pathSlugToViewId(slug ?? '');
 
-  useEffect(() => {
-    if (slug !== 'charts') return;
-    const next = new URLSearchParams(searchParams.toString());
-    next.set('tab', 'charts');
-    const q = next.toString();
-    router.replace(`/dashboard?${q}`);
-  }, [slug, searchParams, router]);
-
   const selectView = (id: ViewId | string, opts?: { domain?: string; reportId?: number }): void => {
     if (opts?.reportId != null) {
       setSelectedReportId(opts.reportId);
@@ -213,10 +205,6 @@ function AppContent({ slug }: SlugProps): ReactNode {
 
   if (!view) {
     return null;
-  }
-
-  if (view === 'charts') {
-    return <ReportShellSkeleton variant="dashboard" />;
   }
 
   const CurrentView = VIEWS.find((v) => v.id === view)?.component || Home;
@@ -293,9 +281,5 @@ export function ReportAppClient({ children }: { children: ReactNode }): ReactNod
 }
 
 export default function ReportShell({ slug }: SlugProps): ReactNode {
-  return (
-    <ReportAppClient>
-      <RoutedShell slug={slug} />
-    </ReportAppClient>
-  );
+  return <RoutedShell slug={slug} />;
 }
