@@ -312,7 +312,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
 
   if (!hasData) {
     return (
-      <PageLayout maxWidth className="space-y-6">
+      <PageLayout className="space-y-6">
         <PageHeader
           icon={<Gauge className="h-7 w-7 text-link shrink-0" />}
           title={vlh.emptyTitle}
@@ -337,7 +337,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
   }
 
   return (
-    <PageLayout maxWidth className="space-y-6">
+    <PageLayout className="space-y-6">
       <div ref={detailRef}>
         <PageHeader
           icon={<Gauge className="h-7 w-7 text-link shrink-0" />}
