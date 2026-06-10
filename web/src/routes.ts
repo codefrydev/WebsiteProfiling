@@ -11,6 +11,7 @@ export type ViewId =
   | 'security'
   | 'javascript-errors'
   | 'content-analytics'
+  | 'text-content-analysis'
   | 'tech-stack'
   | 'network'
   | 'gallery'
@@ -39,6 +40,7 @@ export const REPORT_PATH_SLUGS = [
   'security',
   'javascript-errors',
   'content-analytics',
+  'text-content-analysis',
   'tech-stack',
   'network',
   'gallery',

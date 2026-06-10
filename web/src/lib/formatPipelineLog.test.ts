@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   computeEta,
+  crawlProgressCountLabel,
+  crawlProgressPercent,
   extractLatestProgress,
   formatDurationMs,
   parsePipelineLog,
@@ -74,5 +76,41 @@ describe('formatDurationMs', () => {
   it('formats seconds and minutes', () => {
     expect(formatDurationMs(45000)).toBe('45s');
     expect(formatDurationMs(125000)).toBe('2m 5s');
+  });
+});
+
+describe('crawlProgressPercent', () => {
+  it('shows 100% when crawl finished naturally', () => {
+    expect(crawlProgressPercent({ current: 1138, total: 1138, limit: 1500 })).toBe(100);
+  });
+
+  it('uses limit for in-flight estimate', () => {
+    expect(crawlProgressPercent({ current: 500, total: 1500, limit: 1500 })).toBe(33);
+  });
+});
+
+describe('crawlProgressCountLabel', () => {
+  it('labels natural completion', () => {
+    expect(crawlProgressCountLabel({ current: 1138, total: 1138, limit: 1500 })).toBe(
+      '1138/1138 (100%)',
+    );
+  });
+
+  it('labels in-flight crawl with limit', () => {
+    expect(crawlProgressCountLabel({ current: 500, total: 1500, limit: 1500 })).toBe(
+      '500 crawled (max 1500)',
+    );
+  });
+});
+
+describe('parsePipelineLog tqdm suppression', () => {
+  it('hides tqdm when structured crawl progress exists', () => {
+    const raw = [
+      '@progress {"phase":"crawl","step":"fetch","current":5,"total":1500,"limit":1500,"ts":1}',
+      'Pages: 100%|██████████| 1500/1500 [00:10<00:00, 150.00it/s]',
+    ].join('\n');
+    const lines = parsePipelineLog(raw);
+    expect(lines.some((l) => l.kind === 'progress' && l.text.includes('Pages:'))).toBe(false);
+    expect(lines.some((l) => l.kind === 'noise' && l.text.includes('Pages:'))).toBe(true);
   });
 });

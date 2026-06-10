@@ -49,3 +49,24 @@ def test_emit_phase_done():
         payload = json.loads(args[len(PREFIX) :])
         assert payload["phase"] == "report"
         assert payload["step"] == "done"
+
+
+def test_crawl_tracker_finish_natural_stop(capsys):
+    tracker = CrawlProgressTracker(total=1500, limit=1500, start_time=1000.0)
+    tracker.finish(1138)
+    lines = [ln for ln in capsys.readouterr().out.splitlines() if ln.startswith(PREFIX)]
+    assert len(lines) == 1
+    payload = json.loads(lines[0][len(PREFIX) :])
+    assert payload["current"] == 1138
+    assert payload["total"] == 1138
+    assert payload["limit"] == 1500
+
+
+def test_crawl_tracker_finish_at_limit(capsys):
+    tracker = CrawlProgressTracker(total=1500, limit=1500, start_time=1000.0)
+    tracker.finish(1500)
+    lines = [ln for ln in capsys.readouterr().out.splitlines() if ln.startswith(PREFIX)]
+    payload = json.loads(lines[-1][len(PREFIX) :])
+    assert payload["current"] == 1500
+    assert payload["total"] == 1500
+    assert payload["limit"] == 1500

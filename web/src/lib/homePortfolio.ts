@@ -1,8 +1,11 @@
+import { crawledUrlCount } from './crawlCounts';
+import { DATA_SOURCE_IDS, type DataSourceId } from './dataProvenance';
 import { canonicalDomainFromPayload, extractHostname, slugifyDomain } from './domainSlug';
 import { titleCoveragePct } from './portfolioCrawlHistory';
 import type {
   CrawlRunSummary,
   PortfolioCategorySnapshot,
+  PortfolioCrawlConfig,
   PortfolioGroup,
   PortfolioIssueCounts,
   PortfolioSeoSignals,
@@ -127,6 +130,39 @@ function toLocalDateTime(value: string | null | undefined): string {
 
 type GetPayloadFn = (reportId: number) => Promise<ReportPayload> | ReportPayload;
 
+export type CrawlRunMeta = {
+  render_mode?: string;
+  discovery_mode?: string;
+};
+
+function dataSourcesFromPayload(payload: ReportPayload): DataSourceId[] {
+  const raw = payload.report_meta?.data_sources ?? [];
+  const allowed = new Set<string>(DATA_SOURCE_IDS);
+  return raw.filter((s): s is DataSourceId => allowed.has(String(s)));
+}
+
+function crawlConfigFromPayload(
+  payload: ReportPayload,
+  runMeta?: CrawlRunMeta,
+): PortfolioCrawlConfig | null {
+  const scope = payload.report_meta?.crawl_scope;
+  if (!scope && !runMeta?.render_mode && !runMeta?.discovery_mode) return null;
+  return {
+    ...scope,
+    render_mode: scope?.render_mode ?? runMeta?.render_mode,
+    discovery_mode: runMeta?.discovery_mode,
+  };
+}
+
+function crawlConfigFromSummary(row: CrawlRunSummary): PortfolioCrawlConfig | null {
+  if (!row.render_mode && !row.discovery_mode && !row.url_count) return null;
+  return {
+    pages_crawled: row.url_count,
+    render_mode: row.render_mode,
+    discovery_mode: row.discovery_mode,
+  };
+}
+
 /**
  * Build portfolio domain cards (same logic as Home view useMemo).
  */
@@ -137,6 +173,7 @@ export async function computeDomainGroups(
   unknownBrand: string,
   emDash: string,
   getPayload: GetPayloadFn,
+  runMetaByRunId: Map<number, CrawlRunMeta> = new Map(),
 ): Promise<PortfolioGroup[]> {
   const brandMap = new Map<string, PortfolioGroup>();
 
@@ -165,7 +202,7 @@ export async function computeDomainGroups(
       s5xx: Number(summary.count_5xx || 0),
       other: Number(summary.count_error || 0),
     };
-    const urlCount = Number(summary.total_urls || payload?.links?.length || payload?.top_pages?.length || 0);
+    const urlCount = crawledUrlCount(payload);
     const successPct = urlCount > 0 ? Math.round((statusCounts.s2xx / urlCount) * 100) : 0;
     const healthScore = scoreFromCategories(payload?.categories) ?? 0;
     const runCreatedAt = runId != null ? runCreatedAtByRunId.get(runId) : '';
@@ -193,6 +230,9 @@ export async function computeDomainGroups(
     const duplicateClusters = Array.isArray(payload.content_duplicates) ? payload.content_duplicates.length : 0;
     const medianWordCount = medianWordCountFromPayload(payload);
     const medianResponseMs = medianResponseMsFromPayload(payload);
+    const runMeta = runId != null ? runMetaByRunId.get(runId) : undefined;
+    const crawlConfig = crawlConfigFromPayload(payload, runMeta);
+    const dataSources = dataSourcesFromPayload(payload);
 
     const existing = brandMap.get(brandKey);
     if (!existing || generatedAtMs > existing.generatedAtMs) {
@@ -226,6 +266,8 @@ export async function computeDomainGroups(
         crawlRunId: runId ?? undefined,
         generatedAtMs,
         domainParam: canonicalHost,
+        crawlConfig,
+        dataSources: dataSources.length > 0 ? dataSources : undefined,
       });
     }
   }
@@ -310,6 +352,7 @@ export function computeCrawlOnlyGroups(
       crawlOnly: true,
       generatedAtMs,
       domainParam: domainKey,
+      crawlConfig: crawlConfigFromSummary(row),
     });
   }
 

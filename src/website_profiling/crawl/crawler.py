@@ -258,6 +258,7 @@ class Crawler:
             "noindex": False,
             "has_schema": False,
             "heading_sequence": "",
+            "heading_text": "",
             "images_without_alt": 0,
             "images_total": 0,
             "img_without_lazy": 0,
@@ -316,6 +317,7 @@ class Crawler:
             ext["noindex"] = True
         ext["has_schema"] = seo_ext.get("has_schema", False)
         ext["heading_sequence"] = ",".join(seo_ext.get("heading_sequence") or [])
+        ext["heading_text"] = " | ".join(seo_ext.get("heading_text") or [])
         ext["images_without_alt"] = seo_ext.get("images_without_alt", 0)
         ext["images_total"] = seo_ext.get("images_total", 0)
         ext["img_without_lazy"] = seo_ext.get("img_without_lazy", 0)
@@ -617,18 +619,24 @@ class Crawler:
         start_time = time.time()
         from ..progress import CrawlProgressTracker, emit_phase_start
 
-        crawl_total = None if self.max_pages == float("inf") else int(self.max_pages)
-        progress_tracker = CrawlProgressTracker(crawl_total, start_time=start_time)
+        crawl_limit = None if self.max_pages == float("inf") else int(self.max_pages)
+        progress_tracker = CrawlProgressTracker(
+            crawl_limit,
+            start_time=start_time,
+            limit=crawl_limit,
+        )
         emit_phase_start("crawl", message="Crawling pages")
         futures = []
         db_writer: Optional[_CrawlDbWriter] = None
+        pages_crawled = 0
         if stream_crawl_run_id is not None:
             db_writer = _CrawlDbWriter(stream_crawl_run_id, stream_batch_size)
             db_writer.start()
+        use_tqdm = show_progress and stream_crawl_run_id is None
         pbar = tqdm(
             total=None if self.max_pages == float("inf") else int(self.max_pages),
             desc="Pages",
-            disable=not show_progress,
+            disable=not use_tqdm,
         )
         try:
             with ThreadPoolExecutor(max_workers=self.concurrency) as ex:
@@ -674,6 +682,7 @@ class Crawler:
                                     "noindex": False,
                                     "has_schema": False,
                                     "heading_sequence": "",
+            "heading_text": "",
                                     "images_without_alt": 0,
                                     "images_total": 0,
                                     "img_without_lazy": 0,
@@ -711,12 +720,16 @@ class Crawler:
                                 if self.store_outlinks:
                                     res["outlink_targets"] = "[]"
                             self.results.append(res)
-                            if db_writer is not None and res.get("url"):
-                                db_writer.enqueue(res)
-                            pbar.update(1)
+                            page_url = str(res.get("url") or "").strip() or None
+                            if page_url:
+                                pages_crawled += 1
+                                if db_writer is not None:
+                                    db_writer.enqueue(res)
+                            if use_tqdm:
+                                pbar.update(1)
                             progress_tracker.maybe_emit(
-                                len(self.results),
-                                str(res.get("url") or "") or None,
+                                pages_crawled,
+                                page_url,
                             )
                         else:
                             remaining.append(f)
@@ -727,7 +740,15 @@ class Crawler:
                         break
         finally:
             self.fetcher.close()
-            pbar.close()
+            progress_tracker.finish(pages_crawled)
+            if use_tqdm:
+                pbar.close()
+        limit_label = (
+            str(int(self.max_pages))
+            if self.max_pages != float("inf")
+            else "unlimited"
+        )
+        print(f"  Crawled {pages_crawled} URLs (limit {limit_label}).", flush=True)
         if db_writer is not None:
             db_writer.finish()
             db_writer.join()
@@ -754,6 +775,7 @@ class Crawler:
                 "noindex",
                 "has_schema",
                 "heading_sequence",
+                "heading_text",
                 "images_without_alt",
                 "images_total",
                 "img_without_lazy",

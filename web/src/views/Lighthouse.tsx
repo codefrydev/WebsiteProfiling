@@ -44,6 +44,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
   const { data, startUrlByRunId } = useReport();
   const searchParams = useSearchParams();
   const detailRef = useRef<HTMLDivElement>(null);
+  const pageDetailRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useUrlTab(LH_TABS, 'overview');
   const [activeImpactGroup, setActiveImpactGroup] = useState<string | null>(null);
   const [diagnosticPage, setDiagnosticPage] = useState(1);
@@ -85,9 +86,13 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
 
   const handleSelectUrl = (url: string) => {
     setSelectedUrl(url);
-    setActiveTab('overview');
-    setTimeout(() => detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    setTimeout(() => pageDetailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
+
+  const selectedPageSummary = useMemo(() => {
+    if (!selectedUrl || !byUrl[selectedUrl]) return null;
+    return byUrl[selectedUrl];
+  }, [selectedUrl, byUrl]);
 
   const summary = useMemo(() => {
     if (displayUrl && byUrl[displayUrl]) return byUrl[displayUrl];
@@ -436,8 +441,32 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
         <div id="lh-tab-pages" role="tabpanel" aria-labelledby="lh-tab-btn-pages" className="space-y-4">
           <p className="text-muted-foreground text-sm">{vlh.multiCompareHint}</p>
           <Card padding="none" overflowHidden>
-            <MultiPageTable byUrl={byUrlForTable} selectedUrl={displayUrl} onSelect={handleSelectUrl} />
+            <MultiPageTable byUrl={byUrlForTable} selectedUrl={selectedUrl} onSelect={handleSelectUrl} />
           </Card>
+          {selectedPageSummary ? (
+            <div ref={pageDetailRef} className="space-y-6">
+              <div>
+                <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-4">
+                  {vlh.categoriesSection}
+                </h2>
+                <div className="flex flex-wrap gap-6 justify-start items-center">
+                  {CATEGORIES.map(({ id, label }) => {
+                    const pageCs = selectedPageSummary.category_scores || {};
+                    const score = pageCs[id] != null ? Number(pageCs[id]) : null;
+                    return <ScoreRing key={id} label={label} score={score} />;
+                  })}
+                </div>
+              </div>
+              {(selectedPageSummary.human_summary_full || selectedPageSummary.human_summary) ? (
+                <Card>
+                  <h2 className="text-foreground text-sm font-bold uppercase tracking-wider mb-3">{vlh.summary}</h2>
+                  <pre className="text-muted-foreground text-sm whitespace-pre-wrap font-sans">
+                    {selectedPageSummary.human_summary_full || selectedPageSummary.human_summary}
+                  </pre>
+                </Card>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       )}
 

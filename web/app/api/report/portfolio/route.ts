@@ -37,6 +37,12 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
       const crawlRows = await getCrawlRunsRows(client);
       const startUrlByRunId = new Map(crawlRows.map((cr) => [cr.id, cr.start_url]));
       const runCreatedAtByRunId = new Map(crawlRows.map((cr) => [cr.id, cr.created_at]));
+      const runMetaByRunId = new Map(
+        crawlRows.map((cr) => [
+          cr.id,
+          { render_mode: cr.render_mode, discovery_mode: cr.discovery_mode },
+        ]),
+      );
       const reportGroups = await computeDomainGroups(
         reportList,
         startUrlByRunId,
@@ -44,6 +50,7 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
         catalog.views.home.unknownBrand,
         catalog.common.emDash,
         (id: number) => readReportPayloadFromDatabase(client, id),
+        runMetaByRunId,
       );
       const crawlSummaries = await getCrawlRunSummaries(client);
       const crawlOnlyGroups = computeCrawlOnlyGroups(

@@ -1,3 +1,4 @@
+import type { DataSourceId } from '@/lib/dataProvenance';
 import type {
   Ga4ChannelRow,
   Ga4DeviceRow,
@@ -156,6 +157,29 @@ export interface ContentAnalyticsData {
   top_keywords_site?: SiteKeywordEntry[];
   thin_pages?: ThinPageEntry[];
   [key: string]: unknown;
+}
+
+export interface TextContentPageRef {
+  url: string;
+  count: number;
+}
+
+export interface TextContentKeywordEntry {
+  word: string;
+  total_count: number;
+  page_count: number;
+  top_pages?: TextContentPageRef[];
+}
+
+export interface TextContentAnalysisData {
+  vocabulary_stats?: {
+    unique_terms?: number;
+    pages_with_keywords?: number;
+    avg_terms_per_page?: number;
+    total_term_occurrences?: number;
+  };
+  keyword_index?: TextContentKeywordEntry[];
+  keyword_frequency_histogram?: Record<string, number>;
 }
 
 export interface ResponseTimeStats {
@@ -396,6 +420,12 @@ export interface KeywordOpportunityItem {
   keyword?: string;
   recommended_action?: string;
   score?: number;
+  volume?: number;
+  relevance?: number;
+  sources_count?: number;
+  difficulty?: number;
+  difficulty_estimated?: boolean;
+  data_source?: string;
 }
 
 export interface KeywordOpportunities {
@@ -587,6 +617,7 @@ export interface ReportPayload {
   seo_health?: SeoHealthStats;
   social_coverage?: SocialCoverageStats;
   content_analytics?: ContentAnalyticsData;
+  text_content_analysis?: TextContentAnalysisData;
   response_time_stats?: ResponseTimeStats;
   depth_distribution?: DepthDistribution;
   tech_stack_summary?: TechStackSummary;
@@ -711,6 +742,8 @@ export interface CrawlRunRow {
   id: number;
   start_url: string;
   created_at: string;
+  render_mode?: string;
+  discovery_mode?: string;
 }
 
 export interface CrawlRunSummary {
@@ -726,6 +759,21 @@ export interface CrawlRunSummary {
   with_title: number;
   avg_word_count: number;
   thin_pages: number;
+  render_mode?: string;
+  discovery_mode?: string;
+}
+
+export interface PortfolioCrawlConfig {
+  pages_crawled?: number;
+  max_pages_configured?: number;
+  robots_blocked_count?: number;
+  static_html_only?: boolean;
+  render_mode?: string;
+  js_concurrency?: number | null;
+  pages_static?: number;
+  pages_rendered?: number;
+  crawl_limited?: boolean;
+  discovery_mode?: string;
 }
 
 export interface ReportListRow {
@@ -798,6 +846,8 @@ export interface PortfolioGroup {
   crawlOnly?: boolean;
   generatedAtMs: number;
   domainParam: string;
+  crawlConfig?: PortfolioCrawlConfig | null;
+  dataSources?: DataSourceId[];
 }
 
 export interface ReportFingerprintDiff {

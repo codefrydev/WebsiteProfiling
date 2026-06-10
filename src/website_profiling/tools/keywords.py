@@ -11,6 +11,8 @@ from urllib.parse import urlparse
 
 import pandas as pd
 
+from ..analysis.text_hygiene import filter_topic_clusters, is_junk_semantic_term
+
 # Default weights: volume 40%, relevance 30%, ctr_est 15%, (1 - difficulty) 15%
 DEFAULT_WEIGHTS = {"volume": 0.40, "relevance": 0.30, "ctr_est": 0.15, "ease": 0.15}
 
@@ -36,6 +38,28 @@ def _ngrams(tokens: list[str], n: int) -> list[str]:
     return [" ".join(tokens[i : i + n]) for i in range(len(tokens) - n + 1)]
 
 
+def _tokens_from_top_keywords(raw: Any) -> list[tuple[str, int]]:
+    """Parse per-page top_keywords JSON into weighted terms from body copy."""
+    if raw is None or (isinstance(raw, float) and pd.isna(raw)):
+        return []
+    try:
+        items = json.loads(str(raw)) if isinstance(raw, str) else raw
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return []
+    if not isinstance(items, list):
+        return []
+    out: list[tuple[str, int]] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        word = str(item.get("word") or "").strip().lower()
+        if len(word) < 3 or is_junk_semantic_term(word):
+            continue
+        count = int(item.get("count") or 1)
+        out.append((word, max(1, count)))
+    return out
+
+
 def _slug_tokens(url: str) -> list[str]:
     """Extract path segments as potential keywords (slug words)."""
     parsed = urlparse(url)
@@ -50,13 +74,31 @@ def _slug_tokens(url: str) -> list[str]:
     return out
 
 
+def _add_candidate(
+    candidates: dict[str, dict[str, Any]],
+    keyword: str,
+    url: str,
+    *,
+    weight: int = 1,
+) -> None:
+    kw = keyword.strip().lower()
+    if len(kw) < 2 or is_junk_semantic_term(kw):
+        return
+    if kw not in candidates:
+        candidates[kw] = {"sources": [], "tokens": _tokenize(kw), "count": 0}
+    if url not in candidates[kw]["sources"]:
+        candidates[kw]["sources"].append(url)
+    candidates[kw]["count"] += max(1, weight)
+
+
 def extract_candidates_from_df(df: pd.DataFrame) -> dict[str, dict[str, Any]]:
     """
     From crawl DataFrame, extract candidate keywords (1–4 grams) from title, meta_description,
-    h1, heading_sequence, and URL slugs. Returns dict: keyword -> {sources: [urls], tokens, ...}.
+    h1, per-page top_keywords (body copy), and URL slugs.
+    heading_sequence is intentionally excluded — it stores tag names (h1,h2), not heading text.
     """
     candidates: dict[str, dict[str, Any]] = {}
-    text_cols = ["title", "meta_description", "h1", "heading_sequence"]
+    text_cols = ["title", "meta_description", "h1", "heading_text"]
     for _, row in df.iterrows():
         url = str(row.get("url") or "").strip()
         if not url or str(row.get("status", "")).startswith(("4", "5")):
@@ -70,17 +112,16 @@ def extract_candidates_from_df(df: pd.DataFrame) -> dict[str, dict[str, Any]]:
                 continue
             all_tokens.extend(_tokenize(str(val)))
         all_tokens.extend(_slug_tokens(url))
+        if "top_keywords" in row.index:
+            for word, count in _tokens_from_top_keywords(row.get("top_keywords")):
+                _add_candidate(candidates, word, url, weight=count)
         if not all_tokens:
             continue
         for n in range(1, 5):
             for ng in _ngrams(all_tokens, n):
                 if len(ng) < 2:
                     continue
-                if ng not in candidates:
-                    candidates[ng] = {"sources": [], "tokens": _tokenize(ng), "count": 0}
-                if url not in candidates[ng]["sources"]:
-                    candidates[ng]["sources"].append(url)
-                candidates[ng]["count"] += 1
+                _add_candidate(candidates, ng, url)
     return candidates
 
 
@@ -110,6 +151,8 @@ def score_keywords(
     relevance_scores = _relevance_tfidf(candidates, corpus_size or len(candidates))
     results: list[dict[str, Any]] = []
     for kw, data in candidates.items():
+        if is_junk_semantic_term(kw):
+            continue
         raw_vol = (data.get("count") or 0) / max(corpus_size or 1, 1) * 100
         volume = min(1.0, raw_vol)
         difficulty = 50.0
@@ -160,6 +203,8 @@ def cluster_keywords(scored: list[dict[str, Any]]) -> list[dict[str, Any]]:
     kw_list = [s["keyword"] for s in scored]
     for s in scored:
         kw = s.get("keyword") or ""
+        if is_junk_semantic_term(kw):
+            continue
         if kw in used:
             continue
         cluster = {kw}
@@ -244,7 +289,7 @@ def run_keyword_pipeline(
     corpus_size = len(df)
     weights = DEFAULT_WEIGHTS
     scored = score_keywords(candidates, weights=weights, corpus_size=corpus_size)
-    clusters = cluster_keywords(scored)
+    clusters = filter_topic_clusters(cluster_keywords(scored))
 
     semantic_clusters: list[dict[str, Any]] = []
     try:
@@ -259,7 +304,11 @@ def run_keyword_pipeline(
             try:
                 from ..llm.enrich import cluster_keywords_llm
 
-                top_kw = [s["keyword"] for s in scored[:200] if s.get("keyword")]
+                top_kw = [
+                    s["keyword"]
+                    for s in scored[:200]
+                    if s.get("keyword") and not is_junk_semantic_term(str(s["keyword"]))
+                ]
                 semantic_clusters = cluster_keywords_llm(top_kw, llm_cfg)
             except Exception as e:
                 print(f"Semantic keywords skipped: {e}", file=sys.stderr)

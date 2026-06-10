@@ -10,8 +10,13 @@ import {
 } from 'lucide-react';
 import { Card } from '@/components';
 import Sparkline, { type SparklineMode } from '@/components/Sparkline';
+import { DataSourceBadgeRow } from '@/components/DataSourceBadge';
 import { PRIORITY_CONFIG } from '@/lib/issuePriority';
 import { format, strings } from '@/lib/strings';
+import {
+  formatPortfolioCrawlSummary,
+  hasPortfolioCrawlConfig,
+} from '@/lib/portfolioCrawlConfig';
 import type { PortfolioAuditHistoryPoint } from '@/lib/portfolioAuditHistory';
 import type { PortfolioCrawlHistoryPoint } from '@/types/api';
 import type { PortfolioCategorySnapshot, PortfolioGroup } from '@/types';
@@ -107,6 +112,9 @@ export default function PortfolioPropertyCard({
     thinPagesLabel: vh.thinPagesLabel,
     h1IssuesLabel: vh.h1IssuesLabel,
   });
+  const crawlConfigSegments = formatPortfolioCrawlSummary(group.crawlConfig);
+  const showCrawlConfig = hasPortfolioCrawlConfig(group.crawlConfig);
+  const showDataSources = !group.crawlOnly && (group.dataSources?.length ?? 0) > 0;
 
   return (
     <div className="relative min-w-[520px] max-w-[600px] shrink-0 text-left">
@@ -232,6 +240,27 @@ export default function PortfolioPropertyCard({
               <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-70" />
             </a>
           </div>
+
+          {showCrawlConfig || showDataSources ? (
+            <div className="rounded-md border border-default bg-brand-900/35 px-2 py-1.5 space-y-1.5">
+              {showCrawlConfig ? (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-0.5">
+                    {vh.crawlConfigLabel}
+                  </p>
+                  <p className="text-xs text-foreground leading-snug">{crawlConfigSegments.join(' · ')}</p>
+                </div>
+              ) : null}
+              {showDataSources ? (
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">
+                    {strings.views.overview.dataSourcesLabel}
+                  </p>
+                  <DataSourceBadgeRow sources={group.dataSources!} />
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
           {group.crawlOnly ? (
             <div className="grid grid-cols-2 gap-2">

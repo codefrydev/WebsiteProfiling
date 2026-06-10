@@ -29,6 +29,13 @@ const baseGroup: PortfolioGroup = {
   reportId: 1,
   generatedAtMs: 1000,
   domainParam: 'codefrydev.in',
+  crawlConfig: {
+    render_mode: 'auto',
+    discovery_mode: 'spider',
+    pages_crawled: 30,
+    max_pages_configured: 500,
+  },
+  dataSources: ['crawl', 'lighthouse'],
 };
 
 describe('portfolioCardKey', () => {

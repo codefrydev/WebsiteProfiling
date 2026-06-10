@@ -28,6 +28,7 @@ import {
   Terminal,
   Globe2,
   Contact2,
+  TextSearch,
 } from 'lucide-react';
 import { UrlInspectorProvider } from './context/UrlInspectorContext';
 import AppShell from './components/AppShell';
@@ -65,6 +66,7 @@ const Network = dynamic(() => import('./views/Network'), {
   loading: () => viewLoading('Loading network graph…'),
 });
 const ContentAnalytics = dynamic(() => import('./views/ContentAnalytics'), { loading: () => viewLoading() });
+const TextContentAnalysis = dynamic(() => import('./views/TextContentAnalysis'), { loading: () => viewLoading() });
 const TechStack = dynamic(() => import('./views/TechStack'), { loading: () => viewLoading() });
 const Gallery = dynamic(() => import('./views/Gallery'), { loading: () => viewLoading() });
 const SearchPerformance = dynamic(() => import('./views/SearchPerformance'), { loading: () => viewLoading() });
@@ -121,6 +123,7 @@ const VIEW_CONFIG: ViewConfigEntry[] = [
   { id: 'security', component: Security as ComponentType<CurrentViewProps>, icon: ShieldAlert },
   { id: 'javascript-errors', component: JavaScriptErrors as ComponentType<CurrentViewProps>, icon: Bug },
   { id: 'content-analytics', component: ContentAnalytics as ComponentType<CurrentViewProps>, icon: BarChart2 },
+  { id: 'text-content-analysis', component: TextContentAnalysis as ComponentType<CurrentViewProps>, icon: TextSearch },
   { id: 'tech-stack', component: TechStack as ComponentType<CurrentViewProps>, icon: Cpu },
   { id: 'network', component: Network as ComponentType<CurrentViewProps>, icon: Share2 },
   { id: 'gallery', component: Gallery as ComponentType<CurrentViewProps>, icon: Images },

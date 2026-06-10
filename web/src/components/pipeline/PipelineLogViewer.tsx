@@ -90,7 +90,6 @@ function ActivityLine({ line, query }: { line: PipelineLogLine; query: string })
         <span className="text-blue-300/90">→ </span>
         {highlightText(url, query)}
       </div>
-      {line.progress ? <ProgressLine line={line} query={query} label="Crawl progress" /> : null}
     </div>
   );
 }

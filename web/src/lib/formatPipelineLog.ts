@@ -28,10 +28,46 @@ export interface PipelineProgressEvent {
   ts: number;
   current?: number;
   total?: number;
+  limit?: number;
   url?: string;
   message?: string;
   elapsed_ms?: number;
   avg_ms?: number;
+}
+
+export function crawlProgressPercent(
+  evt: Pick<PipelineProgressEvent, 'current' | 'total' | 'limit'>,
+): number | null {
+  const current = evt.current ?? 0;
+  const total = evt.total ?? 0;
+  if (total > 0 && current >= total) {
+    return 100;
+  }
+  const ceiling = evt.limit ?? total;
+  if (ceiling > 0 && current > 0) {
+    return Math.min(99, Math.round((current / ceiling) * 100));
+  }
+  return null;
+}
+
+export function crawlProgressCountLabel(
+  evt: Pick<PipelineProgressEvent, 'current' | 'total' | 'limit'>,
+): string | null {
+  const current = evt.current ?? 0;
+  if (current <= 0) return null;
+  const total = evt.total ?? 0;
+  const limit = evt.limit;
+  if (total > 0 && current >= total) {
+    return `${current}/${total} (100%)`;
+  }
+  if (limit != null && limit > 0 && current < limit) {
+    return `${current} crawled (max ${limit})`;
+  }
+  if (total > 0) {
+    const pct = Math.min(100, Math.round((current / total) * 100));
+    return `${current}/${total} (${pct}%)`;
+  }
+  return `${current} crawled`;
 }
 
 export interface PipelineEtaResult {
@@ -296,24 +332,23 @@ function progressEventToLogLine(evt: PipelineProgressEvent, id: number): Pipelin
     };
   }
 
-  const hasCounts =
-    evt.current != null && evt.total != null && evt.total > 0;
-  const progress = hasCounts
-    ? {
-        percent: Math.min(100, Math.round(((evt.current ?? 0) / (evt.total ?? 1)) * 100)),
-        current: evt.current ?? 0,
-        total: evt.total ?? 0,
-      }
-    : undefined;
+  const hasCounts = evt.current != null && evt.current > 0;
+  const percent = hasCounts ? crawlProgressPercent(evt) : null;
+  const progress =
+    hasCounts && percent != null
+      ? {
+          percent,
+          current: evt.current ?? 0,
+          total: evt.total ?? evt.limit ?? evt.current ?? 0,
+        }
+      : undefined;
 
   if (evt.step === 'fetch' && evt.url) {
-    const countSuffix = hasCounts ? ` (${evt.current}/${evt.total})` : '';
     return {
       id,
-      text: `→ ${evt.url}${countSuffix}`,
+      text: `→ ${evt.url}`,
       kind: 'activity',
       phase,
-      progress,
       progressEvent: evt,
     };
   }
@@ -354,7 +389,9 @@ export function computeEta(
   }
   const elapsedMs = latest.elapsed_ms ?? null;
   let percent: number | null = null;
-  if (
+  if (latest.phase === 'crawl' && latest.current != null && latest.current > 0) {
+    percent = crawlProgressPercent(latest);
+  } else if (
     latest.current != null &&
     latest.total != null &&
     latest.total > 0
@@ -389,11 +426,21 @@ export function computeEta(
   if (
     latest.current != null &&
     latest.total != null &&
-    latest.total > latest.current &&
+    latest.current >= latest.total
+  ) {
+    remainingMs = 0;
+  } else if (
+    latest.current != null &&
     ratePerSec != null &&
     ratePerSec > 0
   ) {
-    remainingMs = Math.round(((latest.total - latest.current) / ratePerSec) * 1000);
+    const etaTotal =
+      latest.phase === 'crawl' && latest.limit != null && latest.limit > (latest.current ?? 0)
+        ? latest.limit
+        : latest.total;
+    if (etaTotal != null && etaTotal > (latest.current ?? 0)) {
+      remainingMs = Math.round(((etaTotal - (latest.current ?? 0)) / ratePerSec) * 1000);
+    }
   }
 
   return { remainingMs, ratePerSec, elapsedMs, percent };
@@ -408,9 +455,16 @@ export function formatDurationMs(ms: number | null): string {
   return rem ? `${min}m ${rem}s` : `${min}m`;
 }
 
+function rawHasStructuredCrawlProgress(raw: string): boolean {
+  return parsePipelineProgressEvents(raw).some(
+    (e) => e.phase === 'crawl' && e.step === 'fetch' && e.current != null && e.current > 0,
+  );
+}
+
 /** Split raw job log into display lines (collapse tqdm spam, tag phases, fold shutdown noise). */
 export function parsePipelineLog(raw: string): PipelineLogLine[] {
   const cleaned = stripAnsi(raw);
+  const suppressTqdm = rawHasStructuredCrawlProgress(cleaned);
   const physicalLines = cleaned.split('\n');
   const parsed: PipelineLogLine[] = [];
   let id = 0;
@@ -427,7 +481,10 @@ export function parsePipelineLog(raw: string): PipelineLogLine[] {
       continue;
     }
 
-    const kind = classifyLine(line);
+    let kind = classifyLine(line);
+    if (suppressTqdm && kind === 'progress') {
+      kind = 'noise';
+    }
     const entry: PipelineLogLine = { id: id++, text: line, kind, phase: 'other' };
     if (kind === 'progress') {
       entry.progress = parseTqdmProgress(line);
