@@ -40,8 +40,6 @@ def is_junk_semantic_term(term: str) -> bool:
         return True
     if all(t in STRUCTURAL_JUNK_TOKENS for t in tokens):
         return True
-    if len(tokens) == 1 and tokens[0] in STRUCTURAL_JUNK_TOKENS:
-        return True
     return False
 
 

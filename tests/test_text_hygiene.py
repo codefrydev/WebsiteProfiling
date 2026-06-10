@@ -13,6 +13,17 @@ def test_is_junk_semantic_term_heading_tags() -> None:
     assert is_junk_semantic_term("h1") is True
 
 
+def test_is_junk_semantic_term_empty_or_non_word() -> None:
+    assert is_junk_semantic_term("") is True
+    assert is_junk_semantic_term("   ") is True
+    assert is_junk_semantic_term("!!!") is True
+
+
+def test_is_junk_semantic_term_structural_multi_token() -> None:
+    assert is_junk_semantic_term("div span") is True
+    assert is_junk_semantic_term("html body") is True
+
+
 def test_is_junk_semantic_term_real_words() -> None:
     assert is_junk_semantic_term("video games") is False
     assert is_junk_semantic_term("artificial intelligence") is False

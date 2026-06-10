@@ -363,6 +363,21 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
     },
   ], [vca.tabs]);
 
+  const topKw = useMemo(
+    () => filterSemanticTerms(data?.content_analytics?.top_keywords_site || []),
+    [data?.content_analytics?.top_keywords_site],
+  );
+
+  const tokenClusters = useMemo(
+    () => filterTopicClusters(data?.keyword_opportunities?.token_topic_clusters ?? []),
+    [data?.keyword_opportunities?.token_topic_clusters],
+  );
+
+  const semanticClusters = useMemo(
+    () => filterTopicClusters(data?.semantic_keyword_clusters ?? []),
+    [data?.semantic_keyword_clusters],
+  );
+
   if (!data) return null;
 
   const summary: ReportSummary = data.summary ?? EMPTY_SUMMARY;
@@ -379,7 +394,6 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
   const wcDist = ca.word_count_distribution || {};
   const rlDist = ca.reading_level_distribution || {};
   const crDist = ca.content_ratio_distribution || {};
-  const topKw = useMemo(() => filterSemanticTerms(ca.top_keywords_site || []), [ca.top_keywords_site]);
 
   const wcLabels = Object.keys(wcDist);
   const wcValues = Object.values(wcDist).map(Number);
@@ -498,14 +512,6 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
 
   const hreflang = data.hreflang_summary;
   const outboundDomains = data.outbound_link_domains ?? [];
-  const tokenClusters = useMemo(
-    () => filterTopicClusters(data.keyword_opportunities?.token_topic_clusters ?? []),
-    [data.keyword_opportunities?.token_topic_clusters],
-  );
-  const semanticClusters = useMemo(
-    () => filterTopicClusters(data.semantic_keyword_clusters ?? []),
-    [data.semantic_keyword_clusters],
-  );
 
   return (
     <PageLayout className="space-y-6">
