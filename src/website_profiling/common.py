@@ -211,6 +211,7 @@ def parse_seo_extended(html_text: str, base_url: str) -> dict:
         "noindex": False,
         "has_schema": False,
         "heading_sequence": [],
+        "heading_text": [],
         "images_without_alt": 0,
         "images_total": 0,
         "img_without_lazy": 0,
@@ -233,10 +234,13 @@ def parse_seo_extended(html_text: str, base_url: str) -> dict:
         out["has_schema"] = True
     if soup.find(attrs={"itemscope": True}):
         out["has_schema"] = True
-    # Heading order (h1..h6 only)
+    # Heading order (h1..h6 tag names) and visible heading copy (for keywords / fingerprints)
     for tag in soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6"]):
         if tag.name:
             out["heading_sequence"].append(tag.name)
+        text = (tag.get_text(separator=" ", strip=True) or "").strip()
+        if text:
+            out["heading_text"].append(text)
     # Images: alt, lazy, dimensions
     base_scheme = urlparse(base_url).scheme.lower()
     for img in soup.find_all("img"):

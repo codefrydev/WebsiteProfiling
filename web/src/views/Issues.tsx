@@ -1,11 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import type { TooltipItem } from 'chart.js';
-import { AlertTriangle, AlertCircle, Info, ChevronDown, ChevronRight, ExternalLink, Flame, BarChart2, ListChecks } from 'lucide-react';
+import { AlertTriangle, AlertCircle, Info, ExternalLink, Flame, BarChart2, ListChecks } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useOptionalPipeline } from '../context/PipelineContext';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Badge, ViewTabs } from '../components';
+import { PageLayout, PageHeader, Card, Badge, ViewTabs, ViewTabPanel, Button } from '../components';
+import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
 import IssueTaskBoard from '@/components/issues/IssueTaskBoard';
 import IssueAiFixButton from '@/components/issues/IssueAiFixButton';
@@ -38,85 +39,56 @@ interface CategoryIssueItem {
   issue: ReportIssue;
 }
 
-interface CategorySectionProps {
-  category: string;
-  items: CategoryIssueItem[];
-  defaultOpen?: boolean;
+interface IssueCardProps {
+  item: CategoryIssueItem;
   vi: (typeof strings.views)['issues'];
   emDash: string;
 }
 
-function CategorySection({ category, items, defaultOpen = false, vi, emDash }: CategorySectionProps) {
-  const [open, setOpen] = useState(defaultOpen);
+function IssueCard({ item, vi, emDash }: IssueCardProps) {
+  const iss = item.issue;
+  const p = normalizePriority(iss.priority);
+  const cfg = PRIORITY_CONFIG[p];
+  const Icon = PRIORITY_ICONS[p];
   return (
-    <div>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center gap-3 py-3 px-4 bg-brand-800 border border-default rounded-xl hover:border-brand-700/80 transition-colors text-left"
-      >
-        {open ? (
-          <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-        )}
-        <span className="font-semibold text-foreground flex-1">{categoryDisplayName(category)}</span>
-        <span className="text-xs font-bold text-muted-foreground bg-brand-700/60 rounded-full px-2.5 py-0.5">
-          {items.length} {items.length === 1 ? vi.issueWord : vi.issuesWord}
-        </span>
-      </button>
-      {open && (
-        <div className="mt-2 space-y-3 pl-4">
-          {items.map((item, i) => {
-            const iss = item.issue;
-            const p = normalizePriority(iss.priority);
-            const cfg = PRIORITY_CONFIG[p];
-            const Icon = PRIORITY_ICONS[p];
-            return (
-              <div
-                key={i}
-                className={`bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.border} flex flex-col md:flex-row gap-4 p-5 hover:border-brand-700/80 transition-colors`}
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Icon className={`h-4 w-4 flex-shrink-0 ${cfg.text}`} />
-                    <Badge value={p} />
-                    <span className="text-xs text-muted-foreground font-medium">{categoryDisplayName(item.category)}</span>
-                  </div>
-                  <h3 className="text-foreground font-medium text-sm leading-snug">{iss.message || emDash}</h3>
-                  {iss.url && (
-                    <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <a
-                        href={iss.url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center gap-1 font-mono text-link text-xs hover:underline break-all"
-                      >
-                        {iss.url}
-                        <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                      </a>
-                      <UrlInspectorButton url={iss.url} />
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0 bg-brand-900 rounded-lg p-3 border border-muted space-y-2">
-                  <div className="text-xs text-link font-bold uppercase mb-1 tracking-wide">{vi.fixRecommendation}</div>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    {iss.llm_recommendation || iss.recommendation || emDash}
-                  </p>
-                  {iss.llm_recommendation && iss.recommendation && iss.llm_recommendation !== iss.recommendation ? (
-                    <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
-                      <span className="font-semibold">{vi.ruleRecommendation}: </span>
-                      {iss.recommendation}
-                    </p>
-                  ) : null}
-                  <IssueAiFixButton issue={iss} category={item.category} />
-                </div>
-              </div>
-            );
-          })}
+    <div
+      className={`bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.border} flex flex-col md:flex-row gap-4 p-5 hover:border-brand-700/80 transition-colors`}
+    >
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2 mb-2">
+          <Icon className={`h-4 w-4 flex-shrink-0 ${cfg.text}`} />
+          <Badge value={p} />
+          <span className="text-xs text-muted-foreground font-medium">{categoryDisplayName(item.category)}</span>
         </div>
-      )}
+        <h3 className="text-foreground font-medium text-sm leading-snug">{iss.message || emDash}</h3>
+        {iss.url && (
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <a
+              href={iss.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 font-mono text-link text-xs hover:underline break-all"
+            >
+              {iss.url}
+              <ExternalLink className="h-3 w-3 flex-shrink-0" />
+            </a>
+            <UrlInspectorButton url={iss.url} />
+          </div>
+        )}
+      </div>
+      <div className="flex-1 min-w-0 bg-brand-900 rounded-lg p-3 border border-muted space-y-2">
+        <div className="text-xs text-link font-bold uppercase mb-1 tracking-wide">{vi.fixRecommendation}</div>
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          {iss.llm_recommendation || iss.recommendation || emDash}
+        </p>
+        {iss.llm_recommendation && iss.recommendation && iss.llm_recommendation !== iss.recommendation ? (
+          <p className="text-[11px] text-muted-foreground/80 leading-relaxed">
+            <span className="font-semibold">{vi.ruleRecommendation}: </span>
+            {iss.recommendation}
+          </p>
+        ) : null}
+        <IssueAiFixButton issue={iss} category={item.category} />
+      </div>
     </div>
   );
 }
@@ -126,11 +98,13 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
   const pipeline = useOptionalPipeline();
   const propertyId = Number(pipeline?.configState.active_property_id || 0) || null;
   const vi = strings.views.issues;
+  const vlp = vi.pagination;
   const sj = strings.common;
   const priorityOrder = PRIORITY_ORDER;
   const [issuesTab, setIssuesTab] = useState<'audit' | 'board'>('audit');
   const [priorityFilter, setPriorityFilter] = useState(sj.all);
-  const [categoryFilter, setCategoryFilter] = useState(sj.all);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [issuePage, setIssuePage] = useState(1);
 
   const clicksByUrl = useMemo(() => {
     const map = new Map<string, number>();
@@ -160,10 +134,7 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
     });
   }, [data, q]);
 
-  const forCharts = useMemo(() => {
-    if (categoryFilter === sj.all) return list;
-    return list.filter((item) => item.category === categoryFilter);
-  }, [list, categoryFilter, sj.all]);
+  const forCharts = list;
 
   const { categoryChartLabels, categoryChartValues } = useMemo(() => {
     const m = new Map();
@@ -210,14 +181,10 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
     return acc;
   }, {});
 
-  const categories = [...new Set(list.map((item) => item.category))].filter(Boolean).sort();
 
   let filtered = list;
   if (priorityFilter !== sj.all) {
     filtered = filtered.filter((item) => (item.issue.priority || 'Medium') === priorityFilter);
-  }
-  if (categoryFilter !== sj.all) {
-    filtered = filtered.filter((item) => item.category === categoryFilter);
   }
 
   filtered.sort((a, b) => {
@@ -247,6 +214,36 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
     acc[cat].push(item);
     return acc;
   }, {});
+
+  const categoryTabs = useMemo(
+    () =>
+      Object.entries(grouped)
+        .sort((a, b) => b[1].length - a[1].length)
+        .map(([cat, items]) => ({
+          id: cat,
+          label: categoryDisplayName(cat),
+          badge: items.length,
+        })),
+    [grouped],
+  );
+
+  const resolvedCategory =
+    activeCategory && grouped[activeCategory] ? activeCategory : categoryTabs[0]?.id ?? '';
+
+  const activeItems = grouped[resolvedCategory] || [];
+
+  const {
+    slice: visibleIssues,
+    page: safePage,
+    totalPages,
+    total: activeTotal,
+    from,
+    to,
+  } = useMemo(() => paginateSlice(activeItems, issuePage, PAGE_SIZE), [activeItems, issuePage]);
+
+  useEffect(() => {
+    setIssuePage(1);
+  }, [resolvedCategory, priorityFilter, q]);
 
   const categoryBarOpts = useMemo(() => {
     const base = barOptionsHorizontal();
@@ -412,19 +409,6 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
             </button>
           );
         })}
-
-        {categories.length > 1 && (
-          <select
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-            className="ml-auto bg-brand-800 border border-default text-sm rounded-lg px-3 py-2 text-foreground outline-none hover:border-brand-700/80 transition-colors"
-          >
-            <option value={sj.all}>{vi.allCategories}</option>
-            {categories.map((cat) => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
-        )}
       </div>
       )}
 
@@ -434,17 +418,56 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
           <p className="text-muted-foreground text-sm">{vi.noMatches}</p>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {Object.entries(grouped).map(([cat, items], idx) => (
-            <CategorySection
-              key={cat}
-              category={cat}
-              items={items}
-              defaultOpen={idx === 0}
-              vi={vi}
-              emDash={sj.emDash}
+        <div className="space-y-4">
+          {categoryTabs.length > 1 ? (
+            <ViewTabs
+              tabs={categoryTabs}
+              activeTab={resolvedCategory}
+              onChange={(id) => setActiveCategory(id)}
+              ariaLabel={vi.allCategories}
+              idPrefix="issues-category"
             />
-          ))}
+          ) : null}
+          <ViewTabPanel idPrefix="issues-category" tabId={resolvedCategory} className="space-y-3">
+            {visibleIssues.map((item, i) => (
+              <IssueCard key={`${resolvedCategory}-${safePage}-${i}`} item={item} vi={vi} emDash={sj.emDash} />
+            ))}
+          </ViewTabPanel>
+          {activeTotal > 0 ? (
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center pt-1">
+              <div className="text-sm text-muted-foreground space-y-0.5">
+                <div>{format(vlp.showingSlice, { from, to, total: activeTotal })}</div>
+                <div className="text-xs">
+                  {vlp.pageOf}{' '}
+                  <span className="font-bold text-bright tabular-nums">{safePage}</span> {vlp.of}{' '}
+                  <span className="font-bold text-bright tabular-nums">{totalPages}</span>
+                  <span className="text-muted-foreground ml-2">
+                    ({format(vlp.rowsPerPage, { n: PAGE_SIZE })})
+                  </span>
+                </div>
+              </div>
+              {totalPages > 1 ? (
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setIssuePage((p) => Math.max(1, p - 1))}
+                    disabled={safePage <= 1}
+                    className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                  >
+                    {vlp.previous}
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    onClick={() => setIssuePage((p) => Math.min(totalPages, p + 1))}
+                    disabled={safePage >= totalPages}
+                    className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                  >
+                    {vlp.next}
+                  </Button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       ))}
     </PageLayout>

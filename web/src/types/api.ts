@@ -92,8 +92,16 @@ export interface OkDbPathResponse {
   dbPath: string;
 }
 
+export interface PortfolioCrawlHistoryPoint {
+  pagesDiscovered: number;
+  titleCoverage: number;
+  avgWordCount: number;
+  createdAtMs: number;
+}
+
 export interface PortfolioResponse {
   groups: PortfolioGroup[];
+  crawlHistoryByDomain?: Record<string, PortfolioCrawlHistoryPoint[]>;
 }
 
 export interface ReportPayloadResponse {

@@ -26,6 +26,7 @@ from ..common import (
 from ..tools.keywords import cluster_keywords, extract_candidates_from_df, score_keywords
 from ..config import get_bool, get_int
 from ..analysis import merge_bundles, run_local_enrichment
+from ..analysis.text_hygiene import filter_topic_clusters, is_junk_semantic_term
 from ..llm.enrich import cluster_keywords_llm, run_llm_enrichment
 from ..llm_config import load_llm_config_from_db, llm_is_enabled
 from .categories import build_categories
@@ -588,8 +589,10 @@ def _build_content_analytics(df: pd.DataFrame) -> dict:
             except (json.JSONDecodeError, TypeError):
                 pass
         result["top_keywords_site"] = [
-            {"word": w, "count": c} for w, c in kw_counter.most_common(30) if w
-        ]
+            {"word": w, "count": c}
+            for w, c in kw_counter.most_common(50)
+            if w and not is_junk_semantic_term(str(w))
+        ][:30]
 
     for _, row in success_df.iterrows():
         u = row.get("url")
@@ -600,6 +603,110 @@ def _build_content_analytics(df: pd.DataFrame) -> dict:
             result["thin_pages"].append({"url": str(u).strip(), "word_count": w})
 
     return result
+
+
+def _parse_top_keywords_items(raw: Any) -> list[dict[str, Any]]:
+    """Parse per-page top_keywords JSON into dict items with word/count."""
+    if raw is None or (isinstance(raw, float) and pd.isna(raw)):
+        return []
+    try:
+        items = json.loads(str(raw)) if isinstance(raw, str) else raw
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return []
+    if not isinstance(items, list):
+        return []
+    out: list[dict[str, Any]] = []
+    for item in items:
+        if isinstance(item, dict):
+            word = str(item.get("word") or "").strip()
+            if word:
+                out.append({"word": word, "count": int(item.get("count") or 1)})
+    return out
+
+
+def _build_text_content_analysis(df: pd.DataFrame) -> dict:
+    """Cross-page keyword aggregates for the text content analysis view."""
+    empty = {
+        "vocabulary_stats": {
+            "unique_terms": 0,
+            "pages_with_keywords": 0,
+            "avg_terms_per_page": 0.0,
+            "total_term_occurrences": 0,
+        },
+        "keyword_index": [],
+        "keyword_frequency_histogram": {"1": 0, "2-5": 0, "6-20": 0, "21+": 0},
+    }
+    if df.empty or "top_keywords" not in df.columns:
+        return empty
+
+    success_df = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns else df
+    if success_df.empty:
+        return empty
+
+    # word -> { total_count, pages: { url -> count } }
+    index: dict[str, dict[str, Any]] = {}
+    pages_with_keywords = 0
+    total_occurrences = 0
+
+    for _, row in success_df.iterrows():
+        url = row.get("url")
+        if pd.isna(url) or not url:
+            continue
+        url_str = str(url).strip()
+        items = _parse_top_keywords_items(row.get("top_keywords"))
+        page_had_kw = False
+        for item in items:
+            word = item["word"].lower()
+            if is_junk_semantic_term(word):
+                continue
+            count = max(1, int(item.get("count") or 1))
+            if word not in index:
+                index[word] = {"total_count": 0, "pages": {}}
+            index[word]["total_count"] += count
+            index[word]["pages"][url_str] = index[word]["pages"].get(url_str, 0) + count
+            total_occurrences += count
+            page_had_kw = True
+        if page_had_kw:
+            pages_with_keywords += 1
+
+    unique_terms = len(index)
+    avg_terms = round(total_occurrences / pages_with_keywords, 1) if pages_with_keywords else 0.0
+
+    histogram = {"1": 0, "2-5": 0, "6-20": 0, "21+": 0}
+    for data in index.values():
+        pc = len(data["pages"])
+        if pc == 1:
+            histogram["1"] += 1
+        elif pc <= 5:
+            histogram["2-5"] += 1
+        elif pc <= 20:
+            histogram["6-20"] += 1
+        else:
+            histogram["21+"] += 1
+
+    sorted_words = sorted(index.items(), key=lambda x: x[1]["total_count"], reverse=True)
+    keyword_index: list[dict[str, Any]] = []
+    for word, data in sorted_words:
+        top_pages = sorted(data["pages"].items(), key=lambda x: x[1], reverse=True)[:5]
+        keyword_index.append(
+            {
+                "word": word,
+                "total_count": data["total_count"],
+                "page_count": len(data["pages"]),
+                "top_pages": [{"url": u, "count": c} for u, c in top_pages],
+            }
+        )
+
+    return {
+        "vocabulary_stats": {
+            "unique_terms": unique_terms,
+            "pages_with_keywords": pages_with_keywords,
+            "avg_terms_per_page": avg_terms,
+            "total_term_occurrences": total_occurrences,
+        },
+        "keyword_index": keyword_index,
+        "keyword_frequency_histogram": histogram,
+    }
 
 
 def _build_social_coverage(df: pd.DataFrame) -> dict:
@@ -834,9 +941,10 @@ def _build_url_fingerprints(df: pd.DataFrame) -> list[dict[str, Any]]:
         h1c = int(pd.to_numeric(row.get("h1_count"), errors="coerce") or 0)
         sc = int(pd.to_numeric(row.get("script_count"), errors="coerce") or 0)
         lc = int(pd.to_numeric(row.get("link_stylesheet_count"), errors="coerce") or 0)
-        raw_c = "|".join([title, meta, h1, headings, str(wc), str(cl)]).encode("utf-8")
+        # heading_sequence is structural (h1,h2,...) — keep it in structure fingerprint only.
+        raw_c = "|".join([title, meta, h1, str(wc), str(cl)]).encode("utf-8")
         content_fp = hashlib.sha256(raw_c).hexdigest()
-        raw_s = "|".join([str(cl), str(sc), str(lc), str(h1c)]).encode("utf-8")
+        raw_s = "|".join([str(cl), str(sc), str(lc), str(h1c), headings]).encode("utf-8")
         structure_fp = hashlib.sha256(raw_s).hexdigest()
         out.append({
             "url": u,
@@ -865,6 +973,25 @@ def _build_hreflang_summary(df: pd.DataFrame) -> dict[str, Any]:
         "pages_missing_html_lang": missing_lang,
         "pages_with_hreflang_links": with_hreflang,
     }
+
+
+def _validate_report_url_counts(report_data: dict[str, Any], df_row_count: int) -> None:
+    """Ensure crawled URL counts are consistent across report payload fields."""
+    links = report_data.get("links") or []
+    summary = report_data.get("summary") or {}
+    scope = (report_data.get("report_meta") or {}).get("crawl_scope") or {}
+    link_count = len(links) if isinstance(links, list) else 0
+    total_urls = int(summary.get("total_urls") or 0)
+    pages_crawled = int(scope.get("pages_crawled") or 0)
+    counts = {link_count, total_urls, pages_crawled, df_row_count}
+    if len(counts) > 1:
+        msg = (
+            f"report count mismatch: links={link_count}, "
+            f"summary.total_urls={total_urls}, "
+            f"pages_crawled={pages_crawled}, df_rows={df_row_count}"
+        )
+        print(f"  WARNING: {msg}", flush=True)
+        report_data.setdefault("ml_errors", []).append(msg)
 
 
 def _build_report_metadata(
@@ -986,7 +1113,7 @@ def _build_keyword_opportunities(df: pd.DataFrame, config: dict[str, str] | None
     return {
         "quick_wins": quick_wins[:10],
         "high_value": high_value[:10],
-        "token_topic_clusters": clusters[:50],
+        "token_topic_clusters": filter_topic_clusters(clusters)[:50],
     }
 
 
@@ -1628,13 +1755,18 @@ def run_simple_report(
     emit_progress("report", "content_analytics", message="Building content analytics")
     print("  Building content analytics...", flush=True)
     content_analytics = _build_content_analytics(df)
+    text_content_analysis = _build_text_content_analysis(df)
     semantic_keyword_clusters: list[dict[str, Any]] = []
     llm_cfg_for_clusters = load_llm_config_from_db()
     if llm_is_enabled(llm_cfg_for_clusters):
         try:
             llm_cfg = llm_cfg_for_clusters
             if str(llm_cfg.get("llm_enable_keyword_clusters", "")).lower() in ("true", "1", "yes"):
-                words = [x["word"] for x in (content_analytics.get("top_keywords_site") or []) if x.get("word")]
+                words = [
+                    x["word"]
+                    for x in (content_analytics.get("top_keywords_site") or [])
+                    if x.get("word") and not is_junk_semantic_term(str(x["word"]))
+                ]
                 semantic_keyword_clusters = cluster_keywords_llm(words, llm_cfg)
         except Exception as e:
             ml_bundle.setdefault("ml_errors", []).append(str(e))
@@ -1679,6 +1811,7 @@ def run_simple_report(
         "content_urls": content_urls,
         "security_findings": security_findings,
         "content_analytics": content_analytics,
+        "text_content_analysis": text_content_analysis,
         "social_coverage": social_coverage,
         "tech_stack_summary": tech_stack_summary,
         "response_time_stats": response_time_stats,
@@ -1947,6 +2080,7 @@ def run_simple_report(
             crawl_run_created_at,
             gsc_links,
         )
+        _validate_report_url_counts(report_data, len(df))
         db_write_report_payload(conn, report_data)
     return "postgresql"
 

@@ -231,10 +231,14 @@ function Invoke-PytestReporting {
         tests/test_categories_roadmap.py `
         tests/test_report_categories_golden.py `
         tests/test_categories_coverage.py `
+        tests/test_contrast_issues.py `
         tests/test_indexation_coverage.py `
         tests/test_crawl_segments.py `
         tests/test_terminology.py `
         tests/test_compare_payload.py `
+        tests/test_optional_audits.py `
+        tests/test_property_profile.py `
+        tests/test_reporting_gaps.py `
         --cov=website_profiling.reporting `
         --cov-config=.coveragerc.reporting `
         --cov-report=term-missing `

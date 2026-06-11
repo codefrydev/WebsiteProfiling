@@ -6,6 +6,8 @@ import re
 
 import pandas as pd
 
+from .text_hygiene import is_junk_semantic_term
+
 
 def top_keywords_as_text(row: pd.Series, max_terms: int = 15) -> str:
     if "top_keywords" not in row.index:
@@ -23,20 +25,26 @@ def top_keywords_as_text(row: pd.Series, max_terms: int = 15) -> str:
         words: list[str] = []
         for item in arr[:max_terms]:
             if isinstance(item, dict) and item.get("word"):
-                words.append(str(item["word"]))
+                word = str(item["word"]).strip()
+                if word and not is_junk_semantic_term(word):
+                    words.append(word)
         return " ".join(words)
     except json.JSONDecodeError:
         return ""
 
 
 def normalize_fingerprint_text(row: pd.Series) -> str:
-    """Concatenate on-page text signals for duplicates, language, and LLM context."""
+    """Concatenate on-page text signals for duplicates, language, and LLM context.
+
+    heading_sequence is excluded — it stores tag names (h1,h2), not heading copy.
+    Prefer heading_text (actual H2–H6 copy) when present.
+    """
     parts: list[str] = []
     for col in (
         "title",
         "h1",
         "meta_description",
-        "heading_sequence",
+        "heading_text",
         "og_title",
         "og_description",
         "twitter_title",

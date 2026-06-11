@@ -38,6 +38,7 @@ import { exportLinksCsv } from '@/utils/linkExport';
 import { useOptionalPipeline } from '../context/PipelineContext';
 import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
 import { buildTechnicalLinkIssueContext } from '@/lib/fixSuggestionContext';
+import { crawledUrlCount } from '@/lib/crawlCounts';
 
 const EXPLORER_TABS = ['urls', 'anchors'] as const;
 type ExplorerTabId = (typeof EXPLORER_TABS)[number];
@@ -97,6 +98,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
   const tableRef = useRef<HTMLDivElement | null>(null);
 
   const links = useMemo(() => data?.links || [], [data]);
+  const crawledCount = useMemo(() => crawledUrlCount(data), [data]);
 
   const hasLinkAttributes = Boolean(
     data?.link_rel_summary || (data?.inlink_anchor_matrix?.length ?? 0) > 0,
@@ -133,7 +135,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
         id: 'urls',
         label: vl.tabs.urls,
         icon: <List className="h-3.5 w-3.5 shrink-0" aria-hidden />,
-        badge: links.length > 0 ? links.length : null,
+        badge: crawledCount > 0 ? crawledCount : null,
       },
     ];
     if (hasLinkAttributes) {
@@ -145,7 +147,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
       });
     }
     return items;
-  }, [vl.tabs, links.length, hasLinkAttributes, data?.inlink_anchor_matrix?.length]);
+  }, [vl.tabs, crawledCount, hasLinkAttributes, data?.inlink_anchor_matrix?.length]);
 
   const inspectParam = searchParams.get('inspect');
   const tabParam = searchParams.get('tab');

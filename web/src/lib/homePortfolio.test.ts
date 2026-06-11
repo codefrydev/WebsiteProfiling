@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { computeCrawlOnlyGroups } from './homePortfolio';
-import type { CrawlRunSummary, PortfolioGroup } from '@/types/report';
+import { computeCrawlOnlyGroups, computeDomainGroups } from './homePortfolio';
+import type { CrawlRunSummary, PortfolioGroup, ReportListRow, ReportPayload } from '@/types/report';
 
 describe('computeCrawlOnlyGroups', () => {
   it('skips crawl runs that already have a report card', () => {
@@ -12,6 +12,23 @@ describe('computeCrawlOnlyGroups', () => {
         healthScore: 80,
         statusCounts: { s2xx: 10, s3xx: 0, s4xx: 0, s5xx: 0, other: 0 },
         lastCrawl: '',
+        lastAudit: '',
+        totalIssues: 0,
+        issueCounts: { critical: 0, high: 0, medium: 0, low: 0 },
+        successRate: null,
+        titleCoverage: null,
+        avgWordCount: null,
+        thinPages: null,
+        technicalSeoScore: null,
+        perfScore: null,
+        seoScore: null,
+        crawlDurationS: null,
+        categorySnapshots: [],
+        seoSignals: null,
+        securityFindings: 0,
+        duplicateClusters: 0,
+        medianWordCount: null,
+        medianResponseMs: null,
         reportId: 1,
         crawlRunId: 1,
         generatedAtMs: 1000,
@@ -29,9 +46,84 @@ describe('computeCrawlOnlyGroups', () => {
         s5xx: 0,
         other: 0,
         created_at: '2026-01-02',
+        with_title: 10,
+        avg_word_count: 420,
+        thin_pages: 1,
       },
     ];
     const crawlOnly = computeCrawlOnlyGroups(crawlSummaries, reportGroups, 'Unknown', '—');
     expect(crawlOnly).toHaveLength(0);
+  });
+
+  it('populates crawlConfig from crawl run mode fields', () => {
+    const crawlSummaries: CrawlRunSummary[] = [
+      {
+        crawl_run_id: 2,
+        start_url: 'https://example.com',
+        url_count: 15,
+        s2xx: 15,
+        s3xx: 0,
+        s4xx: 0,
+        s5xx: 0,
+        other: 0,
+        created_at: '2026-01-02',
+        with_title: 10,
+        avg_word_count: 420,
+        thin_pages: 1,
+        render_mode: 'auto',
+        discovery_mode: 'sitemap',
+      },
+    ];
+    const crawlOnly = computeCrawlOnlyGroups(crawlSummaries, [], 'Unknown', '—');
+    expect(crawlOnly).toHaveLength(1);
+    expect(crawlOnly[0]?.crawlConfig).toEqual({
+      pages_crawled: 15,
+      render_mode: 'auto',
+      discovery_mode: 'sitemap',
+    });
+  });
+});
+
+describe('computeDomainGroups', () => {
+  it('populates crawlConfig and dataSources from report payload', async () => {
+    const reportList: ReportListRow[] = [
+      {
+        id: 1,
+        generated_at: '2026-01-03T00:00:00Z',
+        site_name: 'Example',
+        canonical_domain: 'example.com',
+      },
+    ];
+    const payload: ReportPayload = {
+      crawl_run_id: 5,
+      report_meta: {
+        data_sources: ['crawl', 'lighthouse', 'search_console'],
+        crawl_scope: {
+          pages_crawled: 100,
+          max_pages_configured: 500,
+          render_mode: 'static',
+          crawl_limited: false,
+        },
+      },
+      categories: [{ id: 'technical_seo', name: 'Tech SEO', score: 80, issues: [] }],
+      summary: { total_urls: 100 },
+    };
+    const groups = await computeDomainGroups(
+      reportList,
+      new Map([[5, 'https://example.com']]),
+      new Map([[5, '2026-01-02T00:00:00Z']]),
+      'Unknown',
+      '—',
+      async () => payload,
+      new Map([[5, { discovery_mode: 'spider' }]]),
+    );
+    expect(groups).toHaveLength(1);
+    expect(groups[0]?.crawlConfig).toMatchObject({
+      pages_crawled: 100,
+      max_pages_configured: 500,
+      render_mode: 'static',
+      discovery_mode: 'spider',
+    });
+    expect(groups[0]?.dataSources).toEqual(['crawl', 'lighthouse', 'search_console']);
   });
 });

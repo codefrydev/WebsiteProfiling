@@ -8,6 +8,8 @@ import {
   PHASE_LABELS,
   PIPELINE_STEPPER_PHASES,
   computeEta,
+  crawlProgressCountLabel,
+  crawlProgressPercent,
   formatDurationMs,
   parsePipelineProgressEvents,
   resolveActiveProgress,
@@ -52,14 +54,23 @@ export default function PipelineProgressHeader({
   const stepText = stepLabel(latest.step, latest.message);
   const phaseLabel = PHASE_LABELS[activePhase] ?? activePhase;
   const isActive = !jobFinished && latest.step !== 'done';
-  const hasBar =
-    isActive &&
-    latest.current != null &&
-    latest.total != null &&
-    latest.total > 0;
-  const barPct = hasBar
-    ? Math.min(100, Math.round(((latest.current ?? 0) / (latest.total ?? 1)) * 100))
-    : null;
+  const countLabel =
+    latest.phase === 'crawl' && latest.current != null && latest.current > 0
+      ? crawlProgressCountLabel(latest)
+      : latest.current != null && latest.total != null && latest.total > 0
+        ? `${latest.current}/${latest.total}${
+            latest.current >= latest.total ? ' (100%)' : ''
+          }`
+        : null;
+  const barPct =
+    isActive && latest.current != null && latest.current > 0
+      ? latest.phase === 'crawl'
+        ? crawlProgressPercent(latest)
+        : latest.total != null && latest.total > 0
+          ? Math.min(100, Math.round(((latest.current ?? 0) / latest.total) * 100))
+          : null
+      : null;
+  const hasBar = isActive && barPct != null;
 
   return (
     <div
@@ -110,12 +121,7 @@ export default function PipelineProgressHeader({
           </span>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2 tabular-nums text-muted-foreground">
-          {hasBar ? (
-            <span>
-              {latest.current}/{latest.total}
-              {barPct != null ? ` (${barPct}%)` : ''}
-            </span>
-          ) : null}
+          {countLabel ? <span>{countLabel}</span> : null}
           {eta.ratePerSec != null && latest.phase === 'crawl' ? (
             <span>{eta.ratePerSec.toFixed(1)} pg/s</span>
           ) : null}

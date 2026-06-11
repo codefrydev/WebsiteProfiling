@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   Globe,
   CheckCircle,
@@ -13,7 +14,6 @@ import {
   Timer,
   TrendingUp,
   ChevronRight,
-  Lightbulb,
   Sparkles,
   ArrowLeftRight,
   FileDown,
@@ -21,11 +21,16 @@ import {
 import type { ReportPayload } from '@/types';
 import type { DataSourceId } from '@/lib/dataProvenance';
 import { strings, format } from '@/lib/strings';
+import { crawledUrlCount } from '@/lib/crawlCounts';
 import { googleSnapshotStatus } from '@/lib/googleSnapshot';
 import { Card, AlertBanner, StatCard } from '@/components';
 import { DataSourceBadgeRow } from '@/components/DataSourceBadge';
 import LlmDisclosure from '@/components/LlmDisclosure';
 import { OverviewTabPanel } from './OverviewTabPanel';
+import {
+  OverviewKeywordOpportunitiesCard,
+  buildKeywordsHref,
+} from './OverviewKeywordOpportunitiesCard';
 
 export interface OverviewSummaryTabProps {
   data: ReportPayload;
@@ -37,9 +42,15 @@ export interface OverviewSummaryTabProps {
 export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount }: OverviewSummaryTabProps) {
   const vo = strings.views.overview;
   const sj = strings.common;
+  const searchParams = useSearchParams();
   const [healthDelta, setHealthDelta] = useState<number | null>(null);
+  const keywordsHref = useMemo(
+    () => buildKeywordsHref(searchParams.toString()),
+    [searchParams],
+  );
 
   const s = data.summary || {};
+  const crawledCount = crawledUrlCount(data);
   const healthScore = (data.categories || [])
     .map((c) => Number(c?.score))
     .filter((n) => Number.isFinite(n));
@@ -234,7 +245,7 @@ export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount 
           <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
             <Globe className="h-4 w-4" /> {vo.totalUrls}
           </div>
-          <div className="text-3xl font-bold text-bright">{(s.total_urls || 0).toLocaleString()}</div>
+          <div className="text-3xl font-bold text-bright">{crawledCount.toLocaleString()}</div>
           <div className="text-xs text-muted-foreground mt-2">{s.avg_outlinks ?? 0} {vo.avgOutlinks}</div>
         </Card>
         <Card shadow>
@@ -325,48 +336,13 @@ export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount 
         </Card>
       ) : null}
 
-      {(data.keyword_opportunities?.quick_wins?.length ?? 0) > 0 ||
-      (data.keyword_opportunities?.high_value?.length ?? 0) > 0 ? (
-        <Card shadow className="mb-8">
-          <div className="flex items-center gap-2 mb-2">
-            <Lightbulb className="h-5 w-5 text-yellow-700 dark:text-yellow-400" />
-            <h2 className="text-lg font-bold text-bright">{vo.keywordOpportunities}</h2>
-          </div>
-          <p className="text-xs text-muted-foreground mb-4 max-w-3xl">{vo.keywordOpportunitiesHint}</p>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-2">{vo.quickWinsEase}</h3>
-              <ul className="space-y-2">
-                {(data.keyword_opportunities?.quick_wins || []).slice(0, 8).map((k, idx) => (
-                  <li
-                    key={`qw-${k.keyword}-${idx}`}
-                    className="flex justify-between gap-2 text-sm bg-brand-900 border border-default rounded-lg px-3 py-2"
-                  >
-                    <span className="text-foreground font-medium truncate">{k.keyword}</span>
-                    <span className="text-xs text-muted-foreground shrink-0">{k.recommended_action || sj.emDash}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-foreground mb-2">{vo.highEmphasis}</h3>
-              <ul className="space-y-2">
-                {(data.keyword_opportunities?.high_value || []).slice(0, 8).map((k, idx) => (
-                  <li
-                    key={`hv-${k.keyword}-${idx}`}
-                    className="flex justify-between gap-2 text-sm bg-brand-900 border border-default rounded-lg px-3 py-2"
-                  >
-                    <span className="text-foreground font-medium truncate">{k.keyword}</span>
-                    <span className="text-xs font-mono text-muted-foreground shrink-0">
-                      {k.score != null ? Number(k.score).toFixed(3) : sj.emDash}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </Card>
-      ) : null}
+      <OverviewKeywordOpportunitiesCard
+        keywords={data.keywords}
+        keywordOpportunities={data.keyword_opportunities}
+        contentAnalytics={data.content_analytics}
+        keywordsHref={keywordsHref}
+        hasGoogleConnected={Boolean(googleData)}
+      />
 
       {showContentIntelligence ? (
         <div className="mb-8">

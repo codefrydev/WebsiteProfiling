@@ -15,6 +15,7 @@ import type {
   TopicCluster,
   ViewProps,
 } from '@/types';
+import { filterSemanticTerms, filterTopicClusters } from '@/lib/semanticTextHygiene';
 import { anyChartOptions } from '../utils/chartOptions';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
@@ -41,6 +42,7 @@ import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, ViewTabs, ViewTabPanel, StatCard } from '../components';
 import { StatusDistributionChart, CoverageBar, ChartAccessibleFallback } from '../components/charts';
+import { crawledUrlCount } from '@/lib/crawlCounts';
 import { statusDistributionFromSummary } from '../lib/statusDistribution';
 import { filterZeroSlices, doughnutOptionsWithPercentTooltip, formatCompositionAria } from '../lib/chartDoughnutUtils';
 import type { ViewTabItem } from '../components';
@@ -361,9 +363,25 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
     },
   ], [vca.tabs]);
 
+  const topKw = useMemo(
+    () => filterSemanticTerms(data?.content_analytics?.top_keywords_site || []),
+    [data?.content_analytics?.top_keywords_site],
+  );
+
+  const tokenClusters = useMemo(
+    () => filterTopicClusters(data?.keyword_opportunities?.token_topic_clusters ?? []),
+    [data?.keyword_opportunities?.token_topic_clusters],
+  );
+
+  const semanticClusters = useMemo(
+    () => filterTopicClusters(data?.semantic_keyword_clusters ?? []),
+    [data?.semantic_keyword_clusters],
+  );
+
   if (!data) return null;
 
   const summary: ReportSummary = data.summary ?? EMPTY_SUMMARY;
+  const crawledCount = crawledUrlCount(data);
   const rtStats: ResponseTimeStats = data.response_time_stats ?? EMPTY_RT;
   const rtDist = rtStats.distribution || {};
   const contentUrls: ContentUrlsMap = data.content_urls ?? EMPTY_CONTENT_URLS;
@@ -376,7 +394,6 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
   const wcDist = ca.word_count_distribution || {};
   const rlDist = ca.reading_level_distribution || {};
   const crDist = ca.content_ratio_distribution || {};
-  const topKw = ca.top_keywords_site || [];
 
   const wcLabels = Object.keys(wcDist);
   const wcValues = Object.values(wcDist).map(Number);
@@ -429,7 +446,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
   const hasDepthData = depthLabels.length > 0;
 
   const statusDistribution = statusDistributionFromSummary(summary);
-  const hasStatusChart = statusDistribution != null && (Number(summary.total_urls) || 0) > 0;
+  const hasStatusChart = statusDistribution != null && crawledCount > 0;
   const h1Chart = filterZeroSlices(h1Labels, h1Values);
   const h1Aria = formatCompositionAria(h1Chart.labels, h1Chart.values, 'pages');
 
@@ -495,8 +512,6 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
 
   const hreflang = data.hreflang_summary;
   const outboundDomains = data.outbound_link_domains ?? [];
-  const tokenClusters = data.keyword_opportunities?.token_topic_clusters ?? [];
-  const semanticClusters = data.semantic_keyword_clusters ?? [];
 
   return (
     <PageLayout className="space-y-6">
@@ -751,7 +766,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                 <h3 className="text-sm font-bold text-foreground mb-1">{vca.urlsByStatus}</h3>
                 <p className="text-xs text-muted-foreground mb-3">
                   {vca.totalCrawled}{' '}
-                  <span className="text-foreground font-semibold">{Number(summary.total_urls || 0).toLocaleString()}</span>
+                  <span className="text-foreground font-semibold">{crawledCount.toLocaleString()}</span>
                   {summary.success_rate != null && (
                     <> · <span className="text-green-700 dark:text-green-400 font-semibold">{summary.success_rate}%</span> {vca.returned2xx}
                     </>

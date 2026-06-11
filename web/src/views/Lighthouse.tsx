@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import type {
   LighthouseDiagnostic,
   LighthouseFailure,
@@ -18,7 +18,8 @@ import {
 } from '../lib/domainSlug';
 import { goToPipeline } from '../lib/pipelineReturn';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Button, ViewTabs, Select } from '../components';
+import { PageLayout, PageHeader, Card, Button, ViewTabs, ViewTabPanel, Select } from '../components';
+import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import type { ViewTabItem } from '../components';
 import {
   CATEGORIES, CATEGORY_LABELS, METRIC_THRESHOLDS, IMPACT_GROUPS, QUICK_WINS,
@@ -26,7 +27,7 @@ import {
 import {
   ScoreRing,
   ThresholdBar,
-  DiagnosticGroup,
+  DiagnosticItem,
   QuickWinCard,
   MultiPageTable,
   LhAuditExpandable,
@@ -43,7 +44,10 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
   const { data, startUrlByRunId } = useReport();
   const searchParams = useSearchParams();
   const detailRef = useRef<HTMLDivElement>(null);
+  const pageDetailRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useUrlTab(LH_TABS, 'overview');
+  const [activeImpactGroup, setActiveImpactGroup] = useState<string | null>(null);
+  const [diagnosticPage, setDiagnosticPage] = useState(1);
 
   const expectedHost = useMemo(() => {
     const fromPayload = canonicalDomainFromPayload(data, startUrlByRunId);
@@ -82,9 +86,13 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
 
   const handleSelectUrl = (url: string) => {
     setSelectedUrl(url);
-    setActiveTab('overview');
-    setTimeout(() => detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
+    setTimeout(() => pageDetailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
   };
+
+  const selectedPageSummary = useMemo(() => {
+    if (!selectedUrl || !byUrl[selectedUrl]) return null;
+    return byUrl[selectedUrl];
+  }, [selectedUrl, byUrl]);
 
   const summary = useMemo(() => {
     if (displayUrl && byUrl[displayUrl]) return byUrl[displayUrl];
@@ -194,6 +202,45 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
     return maxId;
   }, [groupedDiagnostics]);
 
+  const impactGroupTabs = useMemo(
+    () =>
+      IMPACT_GROUPS.map((group) => ({
+        group,
+        items: groupedDiagnostics[group.id] || [],
+      }))
+        .filter(({ items }) => items.length > 0)
+        .sort((a, b) => b.items.length - a.items.length)
+        .map(({ group, items }) => ({
+          id: group.id,
+          label: group.label,
+          badge: items.length,
+        })),
+    [groupedDiagnostics],
+  );
+
+  const resolvedImpactGroup =
+    activeImpactGroup && (groupedDiagnostics[activeImpactGroup]?.length ?? 0) > 0
+      ? activeImpactGroup
+      : impactGroupTabs.find((t) => t.id === mostCriticalGroup)?.id ?? impactGroupTabs[0]?.id ?? '';
+
+  const activeDiagnostics = groupedDiagnostics[resolvedImpactGroup] || [];
+
+  const {
+    slice: visibleDiagnostics,
+    page: safeDiagnosticPage,
+    totalPages: diagnosticTotalPages,
+    total: activeDiagnosticTotal,
+    from: diagnosticFrom,
+    to: diagnosticTo,
+  } = useMemo(
+    () => paginateSlice(activeDiagnostics, diagnosticPage, PAGE_SIZE),
+    [activeDiagnostics, diagnosticPage],
+  );
+
+  useEffect(() => {
+    setDiagnosticPage(1);
+  }, [resolvedImpactGroup, q]);
+
   const quickWinStatus = useMemo(() => {
     const allAuditIds = new Set(
       diagnosticsList.map((d) => d.lighthouse_audit_id || d.id).filter(Boolean) as string[],
@@ -211,6 +258,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
   );
 
   const vlh = strings.views.lighthouse;
+  const vlp = vlh.pagination;
   const tabLabels = vlh.tabs as Record<string, string>;
 
   const lhTabItems = useMemo((): ViewTabItem[] => {
@@ -269,7 +317,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
 
   if (!hasData) {
     return (
-      <PageLayout maxWidth className="space-y-6">
+      <PageLayout className="space-y-6">
         <PageHeader
           icon={<Gauge className="h-7 w-7 text-link shrink-0" />}
           title={vlh.emptyTitle}
@@ -294,7 +342,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
   }
 
   return (
-    <PageLayout maxWidth className="space-y-6">
+    <PageLayout className="space-y-6">
       <div ref={detailRef}>
         <PageHeader
           icon={<Gauge className="h-7 w-7 text-link shrink-0" />}
@@ -393,8 +441,32 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
         <div id="lh-tab-pages" role="tabpanel" aria-labelledby="lh-tab-btn-pages" className="space-y-4">
           <p className="text-muted-foreground text-sm">{vlh.multiCompareHint}</p>
           <Card padding="none" overflowHidden>
-            <MultiPageTable byUrl={byUrlForTable} selectedUrl={displayUrl} onSelect={handleSelectUrl} />
+            <MultiPageTable byUrl={byUrlForTable} selectedUrl={selectedUrl} onSelect={handleSelectUrl} />
           </Card>
+          {selectedPageSummary ? (
+            <div ref={pageDetailRef} className="space-y-6">
+              <div>
+                <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-4">
+                  {vlh.categoriesSection}
+                </h2>
+                <div className="flex flex-wrap gap-6 justify-start items-center">
+                  {CATEGORIES.map(({ id, label }) => {
+                    const pageCs = selectedPageSummary.category_scores || {};
+                    const score = pageCs[id] != null ? Number(pageCs[id]) : null;
+                    return <ScoreRing key={id} label={label} score={score} />;
+                  })}
+                </div>
+              </div>
+              {(selectedPageSummary.human_summary_full || selectedPageSummary.human_summary) ? (
+                <Card>
+                  <h2 className="text-foreground text-sm font-bold uppercase tracking-wider mb-3">{vlh.summary}</h2>
+                  <pre className="text-muted-foreground text-sm whitespace-pre-wrap font-sans">
+                    {selectedPageSummary.human_summary_full || selectedPageSummary.human_summary}
+                  </pre>
+                </Card>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -449,19 +521,56 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
           ) : diagnosticsForGroups.length === 0 ? (
             <Card className="p-6 text-center text-muted-foreground text-sm">{vlh.noDiagnosticsSearch}</Card>
           ) : (
-            <div className="space-y-3">
-              {IMPACT_GROUPS.map((group) => {
-                const items = groupedDiagnostics[group.id] || [];
-                if (items.length === 0) return null;
-                return (
-                  <DiagnosticGroup
-                    key={group.id}
-                    group={group}
-                    items={items}
-                    defaultOpen={group.id === mostCriticalGroup}
-                  />
-                );
-              })}
+            <div className="space-y-4">
+              {impactGroupTabs.length > 1 ? (
+                <ViewTabs
+                  tabs={impactGroupTabs}
+                  activeTab={resolvedImpactGroup}
+                  onChange={(id) => setActiveImpactGroup(id)}
+                  ariaLabel={vlh.diagnostics}
+                  idPrefix="lh-diagnostics"
+                />
+              ) : null}
+              <ViewTabPanel idPrefix="lh-diagnostics" tabId={resolvedImpactGroup} className="space-y-2">
+                {visibleDiagnostics.map((d, i) => (
+                  <DiagnosticItem key={`${resolvedImpactGroup}-${safeDiagnosticPage}-${i}`} d={d} />
+                ))}
+              </ViewTabPanel>
+              {activeDiagnosticTotal > 0 ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center pt-1">
+                  <div className="text-sm text-muted-foreground space-y-0.5">
+                    <div>{format(vlp.showingSlice, { from: diagnosticFrom, to: diagnosticTo, total: activeDiagnosticTotal })}</div>
+                    <div className="text-xs">
+                      {vlp.pageOf}{' '}
+                      <span className="font-bold text-bright tabular-nums">{safeDiagnosticPage}</span> {vlp.of}{' '}
+                      <span className="font-bold text-bright tabular-nums">{diagnosticTotalPages}</span>
+                      <span className="text-muted-foreground ml-2">
+                        ({format(vlp.rowsPerPage, { n: PAGE_SIZE })})
+                      </span>
+                    </div>
+                  </div>
+                  {diagnosticTotalPages > 1 ? (
+                    <div className="flex gap-2 justify-end">
+                      <Button
+                        variant="secondary"
+                        onClick={() => setDiagnosticPage((p) => Math.max(1, p - 1))}
+                        disabled={safeDiagnosticPage <= 1}
+                        className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                      >
+                        {vlp.previous}
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        onClick={() => setDiagnosticPage((p) => Math.min(diagnosticTotalPages, p + 1))}
+                        disabled={safeDiagnosticPage >= diagnosticTotalPages}
+                        className="px-3 py-1 text-foreground touch-manipulation min-h-11 sm:min-h-0"
+                      >
+                        {vlp.next}
+                      </Button>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           )}
         </div>

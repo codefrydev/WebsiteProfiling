@@ -13,7 +13,7 @@ export function Skeleton({ className = '' }: { className?: string }) {
 /** Rounded rectangle mimicking a portfolio / domain card on Home. */
 export function SkeletonDomainCard() {
   return (
-    <div className="w-[min(260px,100%)] max-w-[260px] rounded-xl border border-default bg-brand-900/40 p-2 space-y-2">
+    <div className="w-[min(520px,100%)] max-w-[520px] rounded-xl border border-default bg-brand-900/40 p-2 space-y-2">
       <div className="flex justify-between gap-2">
         <div className="space-y-1.5 flex-1 min-w-0">
           <Skeleton className="h-2.5 w-12" />
@@ -25,7 +25,9 @@ export function SkeletonDomainCard() {
         </div>
       </div>
       <Skeleton className="h-12 w-full rounded-md" />
-      <Skeleton className="h-14 w-full rounded-md" />
+      <Skeleton className="h-16 w-full rounded-md" />
+      <Skeleton className="h-20 w-full rounded-md" />
+      <Skeleton className="h-12 w-full rounded-md" />
       <div className="flex gap-1 pt-0.5">
         <Skeleton className="h-5 w-12 rounded-md" />
         <Skeleton className="h-5 w-12 rounded-md" />

@@ -559,6 +559,46 @@ def test_worker_applies_polite_delay(monkeypatch) -> None:
     assert sleeps == [0.05]
 
 
+def test_crawl_with_progress_bar(monkeypatch) -> None:
+    from website_profiling.crawl.crawler import Crawler
+    from website_profiling.crawl.fetchers.base import FetchResult
+
+    html = "<html><head><title>T</title></head><body>ok</body></html>"
+
+    class DummyFetcher:
+        def fetch(self, url: str) -> FetchResult:
+            return FetchResult(
+                status=200,
+                content_type="text/html",
+                text=html,
+                response_time_ms=1,
+                content_length=len(html),
+                final_url=url,
+                headers_dict={},
+                redirect_chain_length=0,
+                fetch_method="static",
+            )
+
+        def close(self) -> None:
+            pass
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.crawler.build_fetcher",
+        lambda **_kwargs: DummyFetcher(),
+    )
+    monkeypatch.setattr("website_profiling.crawl.crawler.time.sleep", lambda _s: None)
+
+    c = Crawler(
+        start_url="https://site.com",
+        ignore_robots=True,
+        use_wappalyzer=False,
+        concurrency=1,
+        max_pages=1,
+    )
+    df = c.crawl(show_progress=True)
+    assert len(df) == 1
+
+
 def test_queue_contains_swallows_queue_errors() -> None:
     from website_profiling.crawl.crawler import Crawler
 
