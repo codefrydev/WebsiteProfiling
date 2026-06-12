@@ -34,6 +34,13 @@ def test_select_lighthouse_urls_from_crawl_filters_to_2xx_and_dedupes() -> None:
     ]
 
 
+def test_select_lighthouse_urls_from_crawl_accepts_float_status() -> None:
+    from website_profiling.commands.pipeline_cmd import select_lighthouse_urls_from_crawl
+
+    df = pd.DataFrame([{"url": "https://a.com", "status": 200.0}])
+    assert select_lighthouse_urls_from_crawl(df, max_pages=5) == ["https://a.com"]
+
+
 def test_select_lighthouse_urls_from_gsc_ranks_by_clicks() -> None:
     from website_profiling.commands.pipeline_cmd import select_lighthouse_urls_from_gsc
 

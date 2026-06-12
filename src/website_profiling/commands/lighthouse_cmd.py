@@ -23,7 +23,12 @@ def run(cfg: dict, args: argparse.Namespace) -> None:
     lh_mode = (cfg.get("lighthouse_mode") or "navigation").strip().lower() or "navigation"
     lh_categories = cfg.get("lighthouse_categories", "").strip()
     lh_categories = get_list(cfg, "lighthouse_categories", sep=",") if lh_categories else None
-    lh_iterations = get_int(cfg, "lighthouse_iterations", 3) or 3
+    lh_iterations = get_int(cfg, "lighthouse_iterations", 3)
+    if lh_iterations is None:
+        lh_iterations = 3
+    js_extra_wait_ms = get_int(cfg, "crawl_js_extra_wait_ms", 1500)
+    if js_extra_wait_ms is None:
+        js_extra_wait_ms = 1500
     lh_out = lighthouse_work_dir()
     try:
         sys.exit(
@@ -35,6 +40,7 @@ def run(cfg: dict, args: argparse.Namespace) -> None:
                 use_database=True,
                 mode=lh_mode,
                 categories=lh_categories,
+                wait_ms=js_extra_wait_ms,
             )
         )
     finally:

@@ -14,10 +14,23 @@ def test_cron_matches_current_minute() -> None:
 
 
 def test_cron_matches_weekday() -> None:
-    # 2026-06-07 is Sunday (weekday 6)
+    # 2026-06-07 is Sunday (standard cron DOW 0)
     now = datetime(2026, 6, 7, 10, 0, tzinfo=timezone.utc)
-    assert _cron_matches("0 10 * * 6", now) is True
+    assert _cron_matches("0 10 * * 0", now) is True
+    assert _cron_matches("0 10 * * 1", now) is False
+
+
+def test_cron_matches_monday() -> None:
+    # 2026-06-08 is Monday (standard cron DOW 1)
+    now = datetime(2026, 6, 8, 10, 0, tzinfo=timezone.utc)
+    assert _cron_matches("0 10 * * 1", now) is True
     assert _cron_matches("0 10 * * 0", now) is False
+
+
+def test_cron_matches_invalid_minute_or_hour() -> None:
+    now = datetime(2026, 6, 7, 14, 30, tzinfo=timezone.utc)
+    assert _cron_matches("30 abc * * *", now) is False
+    assert _cron_matches("abc 14 * * *", now) is False
 
 
 def test_cron_invalid_expression() -> None:
@@ -63,11 +76,11 @@ def test_run_due_scheduled_audits_skips_non_matching_cron() -> None:
     mock_spawn.assert_not_called()
 
 
-def test_spawn_audit_applies_preset() -> None:
+def test_spawn_audit_sets_env_and_cwd() -> None:
     from website_profiling.tools import schedule_runner
 
     conn = MagicMock()
-    written: dict = {}
+    repo_root = "/tmp/wp-repo"
 
     with patch("website_profiling.db.property_store.get_property_by_id") as mock_prop:
         mock_prop.return_value = {
@@ -75,21 +88,18 @@ def test_spawn_audit_applies_preset() -> None:
             "site_url": "https://example.com",
             "default_crawl_preset": "spa",
         }
-        with patch(
-            "website_profiling.db.config_store.read_pipeline_config",
-            return_value=({"max_pages": "100"}, {}),
-        ):
-            with patch(
-                "website_profiling.db.config_store.write_pipeline_config",
-                side_effect=lambda _c, known, _u: written.update(known),
-            ):
-                with patch("website_profiling.tools.schedule_runner.subprocess.Popen") as mock_popen:
-                    schedule_runner._spawn_audit_for_property(5, conn)
+        with patch("website_profiling.tools.schedule_runner._repo_root", return_value=repo_root):
+            with patch("website_profiling.tools.schedule_runner.subprocess.Popen") as mock_popen:
+                schedule_runner._spawn_audit_for_property(5, conn)
 
-    assert written.get("active_property_id") == "5"
-    assert written.get("start_url") == "https://example.com"
-    assert written.get("crawl_render_mode") == "auto"
     mock_popen.assert_called_once()
+    _args, kwargs = mock_popen.call_args
+    assert _args[0] == [schedule_runner.sys.executable, "-m", "src"]
+    assert kwargs["cwd"] == repo_root
+    env = kwargs["env"]
+    assert env["WP_PROPERTY_ID"] == "5"
+    assert env["PYTHONPATH"] == f"{repo_root}/src"
+    assert env["WEBSITE_PROFILING_ROOT"] == repo_root
 
 
 def test_spawn_audit_skips_missing_property(capsys) -> None:

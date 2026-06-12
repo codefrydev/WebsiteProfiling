@@ -13,6 +13,7 @@ import subprocess
 import sys
 import threading
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from ..console_io import console_print
@@ -30,6 +31,37 @@ _LIGHTHOUSE_INSTALL_MSG = (
 
 # Serialise npx-on-demand installs — parallel npx runs corrupt /root/.npm/_npx cache in Docker.
 _NPX_LIGHTHOUSE_LOCK = threading.Lock()
+
+_LIGHTHOUSE_FLOW_MODES = frozenset({"snapshot", "timespan"})
+
+
+def _repo_root() -> str:
+    explicit = (os.environ.get("WEBSITE_PROFILING_ROOT") or "").strip()
+    if explicit:
+        return explicit
+    return str(Path(__file__).resolve().parents[3])
+
+
+def _lighthouse_flow_script() -> str:
+    return os.path.join(_repo_root(), "scripts", "lighthouse_user_flow.mjs")
+
+
+def _normalize_lighthouse_mode(mode: str | None) -> str:
+    m = (mode or "navigation").strip().lower() or "navigation"
+    if m not in ("navigation", "snapshot", "timespan"):
+        raise RuntimeError(
+            f"Invalid lighthouse_mode {m!r}; use navigation, snapshot, or timespan."
+        )
+    return m
+
+
+def _node_cmd() -> str:
+    node = shutil.which("node")
+    if node is None:
+        raise RuntimeError(
+            "Node.js not found. Install Node.js (https://nodejs.org) for Lighthouse user flows."
+        )
+    return node
 
 
 def _build_report_html_content(summary: dict[str, Any]) -> str:
@@ -147,13 +179,72 @@ def _parse_categories(categories: str | list[str] | None) -> list[str] | None:
     return out if out else None
 
 
+def run_lighthouse_flow_once(
+    url: str,
+    mode: str,
+    strategy: str,
+    output_path: str,
+    *,
+    categories: list[str] | None = None,
+    wait_ms: int = 1500,
+) -> subprocess.CompletedProcess:
+    """Run Lighthouse user flow (snapshot/timespan) via Node script."""
+    script = _lighthouse_flow_script()
+    if not os.path.isfile(script):
+        raise RuntimeError(f"Lighthouse flow script not found: {script}")
+    npx = shutil.which("npx")
+    node = _node_cmd()
+    flow_args = [
+        f"--url={url}",
+        f"--mode={mode}",
+        f"--strategy={strategy}",
+        f"--output={output_path}",
+        f"--wait-ms={max(0, int(wait_ms))}",
+    ]
+    if categories:
+        flow_args.append("--categories=" + ",".join(categories))
+    if npx is not None:
+        cmd = [npx, "-y", "-p", "lighthouse", "-p", "puppeteer", "node", script, *flow_args]
+        use_lock = True
+    else:
+        cmd = [node, script, *flow_args]
+        use_lock = False
+    try:
+        run_kwargs = {
+            "capture_output": True,
+            "encoding": "utf-8",
+            "errors": "replace",
+            "timeout": 300,
+            "cwd": _repo_root(),
+        }
+        if use_lock:
+            with _NPX_LIGHTHOUSE_LOCK:
+                return subprocess.run(cmd, **run_kwargs)
+        return subprocess.run(cmd, **run_kwargs)
+    except FileNotFoundError as e:
+        raise RuntimeError(_LIGHTHOUSE_INSTALL_MSG) from e
+
+
 def run_lighthouse_once(
     url: str,
     strategy: str,
     output_path: str,
     categories: list[str] | None = None,
+    *,
+    mode: str = "navigation",
+    wait_ms: int = 1500,
 ) -> subprocess.CompletedProcess:
-    """Run lighthouse CLI once; output JSON to output_path. strategy is 'mobile' or 'desktop'. categories: optional list for --only-categories."""
+    """Run lighthouse once; navigation uses CLI, snapshot/timespan use User Flow API."""
+    lh_mode = _normalize_lighthouse_mode(mode)
+    if lh_mode in _LIGHTHOUSE_FLOW_MODES:
+        return run_lighthouse_flow_once(
+            url,
+            lh_mode,
+            strategy,
+            output_path,
+            categories=categories,
+            wait_ms=wait_ms,
+        )
     base = _lighthouse_cmd()
     preset = _preset_for_strategy(strategy)
     chrome_flags = (os.environ.get("LIGHTHOUSE_CHROME_FLAGS") or "").strip() or "--headless"
@@ -290,6 +381,7 @@ def run_lighthouse_audit(
     output_dir: str = ".",
     mode: str = "navigation",
     categories: str | list[str] | None = None,
+    wait_ms: int = 1500,
 ) -> dict[str, Any]:
     """
     Run Lighthouse `iterations` times, save raw JSONs to output_dir, compute median metrics,
@@ -301,11 +393,15 @@ def run_lighthouse_audit(
             "Node/npm not found. Install Node.js (https://nodejs.org); then run: npm install -g lighthouse. "
             "Chrome or Chromium is also required for headless mode."
         )
+    lh_mode = _normalize_lighthouse_mode(mode)
     strategy = strategy.lower() if strategy else "mobile"
     if strategy not in ("mobile", "desktop"):
         strategy = "mobile"
     iterations = max(1, int(iterations))
-    console_print(f"Lighthouse audit: {url} (strategy={strategy}, iterations={iterations})", flush=True)
+    console_print(
+        f"Lighthouse audit: {url} (mode={lh_mode}, strategy={strategy}, iterations={iterations})",
+        flush=True,
+    )
     os.makedirs(output_dir, exist_ok=True)
     raw_runs_dir = os.path.join(output_dir, "raw_runs")
     os.makedirs(raw_runs_dir, exist_ok=True)
@@ -324,7 +420,14 @@ def run_lighthouse_audit(
         console_print(f"  Lighthouse run {i + 1}/{iterations} ({strategy})...", flush=True)
         out_name = f"lighthouse_{url_slug}_{ts}_run{i + 1}.json"
         out_path = os.path.join(raw_runs_dir, out_name)
-        proc = run_lighthouse_once(url, strategy, out_path, categories=categories)
+        proc = run_lighthouse_once(
+            url,
+            strategy,
+            out_path,
+            categories=categories,
+            mode=lh_mode,
+            wait_ms=wait_ms,
+        )
         if proc.returncode != 0:
             raise RuntimeError(
                 f"Lighthouse run failed (exit {proc.returncode}): {proc.stderr or proc.stdout or 'unknown'}"
@@ -416,7 +519,7 @@ def run_lighthouse_audit(
 
     summary = {
         "url": url,
-        "mode": mode or "navigation",
+        "mode": lh_mode,
         "strategy": strategy,
         "device": strategy,
         "categories": categories or list(LIGHTHOUSE_CATEGORY_IDS),
@@ -441,13 +544,15 @@ def run_lighthouse_on_pages(
     mode: str = "navigation",
     categories: str | list[str] | None = None,
     concurrency: int = 2,
-) -> None:
+    wait_ms: int = 1500,
+) -> dict[str, int]:
     """
     Run Lighthouse audit on each URL and store per-URL summary in PostgreSQL.
     Failures for a single URL are logged and do not stop the rest.
+    Returns {attempted, succeeded, failed}.
     """
     if not urls:
-        return
+        return {"attempted": 0, "succeeded": 0, "failed": 0}
     if not is_lighthouse_available():
         raise RuntimeError(
             "Node/npm not found. Install Node.js (https://nodejs.org); then run: npm install -g lighthouse. "
@@ -469,16 +574,20 @@ def run_lighthouse_on_pages(
     categories = _parse_categories(categories) if categories else None
     total = len(urls)
     workers = max(1, min(int(concurrency or 2), 8))
+    succeeded = 0
+    failed = 0
 
-    def _audit_one(url: str) -> None:
+    def _audit_one(url: str) -> bool:
+        url_out = os.path.join(output_dir, _url_safe(url))
         console_print(f"[Lighthouse on pages] {url}", flush=True)
         summary = run_lighthouse_audit(
             url=url,
             strategy=strategy,
             iterations=iterations,
-            output_dir=output_dir,
+            output_dir=url_out,
             mode=mode,
             categories=categories,
+            wait_ms=wait_ms,
         )
         lhr: dict[str, Any] | None = None
         for raw_path in reversed(summary.get("raw_reports") or []):
@@ -500,6 +609,7 @@ def run_lighthouse_on_pages(
                     os.remove(raw_path)
                 except OSError:
                     pass
+        return True
 
     from ..progress import emit_progress
 
@@ -514,8 +624,12 @@ def run_lighthouse_on_pages(
                     total=total,
                     url=url,
                 )
-                _audit_one(url)
+                if _audit_one(url):
+                    succeeded += 1
+                else:
+                    failed += 1
             except Exception as e:
+                failed += 1
                 console_print(f"  Skipped (error): {e}", file=sys.stderr, flush=True)
     else:
         completed = 0
@@ -524,8 +638,12 @@ def run_lighthouse_on_pages(
             for future in as_completed(futures):
                 url = futures[future]
                 try:
-                    future.result()
+                    if future.result():
+                        succeeded += 1
+                    else:
+                        failed += 1
                 except Exception as e:
+                    failed += 1
                     console_print(f"  Skipped {url} (error): {e}", file=sys.stderr, flush=True)
                 completed += 1
                 emit_progress(
@@ -536,7 +654,7 @@ def run_lighthouse_on_pages(
                     url=url,
                 )
 
-    console_print(f"[Lighthouse on pages] Done. Wrote {total} URL(s) to DB.", flush=True)
+    return {"attempted": total, "succeeded": succeeded, "failed": failed}
 
 
 def main(
@@ -548,6 +666,7 @@ def main(
     use_database: bool = True,
     mode: str = "navigation",
     categories: str | list[str] | None = None,
+    wait_ms: int = 1500,
 ) -> int:
     """
     Run Lighthouse audit and write summary to JSON file and/or PostgreSQL. Returns 0 on success, non-zero on error.
@@ -560,6 +679,7 @@ def main(
             output_dir=output_dir,
             mode=mode,
             categories=categories,
+            wait_ms=wait_ms,
         )
     except RuntimeError as e:
         console_print(str(e), file=sys.stderr)

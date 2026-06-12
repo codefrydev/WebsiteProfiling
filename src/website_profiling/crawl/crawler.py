@@ -27,6 +27,7 @@ import pandas as pd
 import requests
 from tqdm.auto import tqdm
 
+from ..console_io import console_print
 from ..common import (
     detect_tech_wappalyzer,
     load_robots,
@@ -720,11 +721,12 @@ class Crawler:
                                 if self.store_outlinks:
                                     res["outlink_targets"] = "[]"
                             self.results.append(res)
-                            page_url = str(res.get("url") or "").strip() or None
-                            if page_url:
-                                pages_crawled += 1
-                                if db_writer is not None:
-                                    db_writer.enqueue(res)
+                            page_url = (
+                                str(res.get("url") or res.get("final_url") or "").strip() or None
+                            )
+                            pages_crawled += 1
+                            if page_url and db_writer is not None:
+                                db_writer.enqueue(res)
                             if use_tqdm:
                                 pbar.update(1)
                             progress_tracker.maybe_emit(
@@ -748,7 +750,7 @@ class Crawler:
             if self.max_pages != float("inf")
             else "unlimited"
         )
-        print(f"  Crawled {pages_crawled} URLs (limit {limit_label}).", flush=True)
+        console_print(f"  Crawled {pages_crawled} URLs (limit {limit_label}).", flush=True)
         if db_writer is not None:
             db_writer.finish()
             db_writer.join()
@@ -908,12 +910,11 @@ def run_crawler(
     enable_axe: bool = False,
 ) -> pd.DataFrame:
     """Run crawler and optionally save to CSV/JSON or PostgreSQL. Returns DataFrame."""
-    import sys
     max_p = max_pages if max_pages is not None else 0
     mode_label = (render_mode or "static").strip().lower()
     disc_label = normalize_discovery_mode(discovery_mode)
     conc_label = js_concurrency if mode_label == "javascript" else concurrency
-    print(
+    console_print(
         f"  Crawling {start_url} (max_pages={max_p or 'unlimited'}, "
         f"discovery={disc_label}, render_mode={mode_label}, concurrency={conc_label})...",
         flush=True,
@@ -967,7 +968,7 @@ def run_crawler(
                 historical = read_historical_data()
                 backup_path = backup_db_if_exists()
                 if backup_path:
-                    print(f"  Backed up existing DB to {backup_path}", flush=True)
+                    console_print(f"  Backed up existing DB to {backup_path}", flush=True)
             with db_session() as conn:
                 if not preserve_crawl_history:
                     ensure_crawl_tables_cleared(conn)
@@ -977,7 +978,7 @@ def run_crawler(
                     conn, start_url, property_id=property_id, render_mode=render_mode,
                     discovery_mode=disc_label,
                 )
-            print(f"  Streaming crawl results to DB (run_id={stream_run_id})...", flush=True)
+            console_print(f"  Streaming crawl results to DB (run_id={stream_run_id})...", flush=True)
 
     df = crawler.crawl(
         show_progress=show_progress,
@@ -998,7 +999,7 @@ def run_crawler(
                 write_link_edges(conn, crawler.link_edges_accum, crawl_run_id=run_id)
     if output_db and not df.empty and stream_run_id is None:
         import sys
-        print("  Writing crawl results to DB...", flush=True)
+        console_print("  Writing crawl results to DB...", flush=True)
         from ..db import backup_db_if_exists, create_crawl_run, db_session, read_historical_data, restore_historical_data, write_crawl
         from ..db.storage import ensure_crawl_tables_cleared
         historical = {}
@@ -1007,10 +1008,10 @@ def run_crawler(
             historical = read_historical_data()
             n_reports = len(historical.get("report_payload", []))
             if n_reports:
-                print(f"  Preserving {n_reports} historical report(s) from existing DB...", flush=True)
+                console_print(f"  Preserving {n_reports} historical report(s) from existing DB...", flush=True)
             backup_path = backup_db_if_exists()
             if backup_path:
-                print(f"  Backed up existing DB to {backup_path}", flush=True)
+                console_print(f"  Backed up existing DB to {backup_path}", flush=True)
         with db_session() as conn:
             if not preserve_crawl_history:
                 ensure_crawl_tables_cleared(conn)
@@ -1025,9 +1026,9 @@ def run_crawler(
                 from ..db.crawl_store import write_link_edges
 
                 write_link_edges(conn, crawler.link_edges_accum, crawl_run_id=run_id)
-        print("  Crawl DB write complete.", flush=True)
+        console_print("  Crawl DB write complete.", flush=True)
     elif output_db and stream_run_id is not None:
-        print("  Crawl streamed to DB during fetch.", flush=True)
+        console_print("  Crawl streamed to DB during fetch.", flush=True)
     elif output_csv and not df.empty:
         if output_csv.lower().endswith(".json"):
             df.to_json(output_csv, orient="records", indent=2, date_format="iso", default_handler=str)

@@ -544,7 +544,9 @@ def test_pipeline_lighthouse_on_pages_and_enrich_failure(monkeypatch) -> None:
     monkeypatch.setitem(
         sys.modules,
         "website_profiling.lighthouse.runner",
-        types.SimpleNamespace(run_lighthouse_on_pages=lambda **_k: None),
+        types.SimpleNamespace(
+            run_lighthouse_on_pages=lambda **_k: {"attempted": 1, "succeeded": 1, "failed": 0},
+        ),
     )
     monkeypatch.setattr(pipeline_cmd, "lighthouse_work_dir", lambda: "/tmp/lh")
     monkeypatch.setattr(pipeline_cmd, "cleanup_lighthouse_work_dir", lambda _p: None)

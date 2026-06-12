@@ -36,14 +36,10 @@ def cleanup_lighthouse_work_dir(work_dir: str) -> None:
 
 
 def active_property_id_from_cfg(cfg: dict | None = None) -> int | None:
-    """Resolve active property from pipeline config or WP_PROPERTY_ID env."""
-    import os
-
-    raw = ""
-    if cfg:
+    """Resolve active property: WP_PROPERTY_ID env (spawned jobs) then pipeline config."""
+    raw = os.environ.get("WP_PROPERTY_ID", "").strip()
+    if not raw and cfg:
         raw = str(cfg.get("active_property_id") or "").strip()
-    if not raw:
-        raw = os.environ.get("WP_PROPERTY_ID", "").strip()
     if not raw:
         return None
     try:
@@ -51,6 +47,39 @@ def active_property_id_from_cfg(cfg: dict | None = None) -> int | None:
         return pid if pid > 0 else None
     except ValueError:
         return None
+
+
+def apply_property_spawn_overlay(cfg: dict[str, str]) -> dict[str, str]:
+    """When WP_PROPERTY_ID is set, overlay property site_url and crawl preset onto cfg."""
+    raw = os.environ.get("WP_PROPERTY_ID", "").strip()
+    if not raw:
+        return cfg
+    try:
+        prop_id = int(raw)
+    except ValueError:
+        return cfg
+    if prop_id <= 0:
+        return cfg
+
+    from ..db import db_session
+    from ..db.property_store import get_property_by_id
+
+    with db_session() as conn:
+        prop = get_property_by_id(conn, prop_id)
+    if not prop:
+        return cfg
+
+    merged = dict(cfg)
+    merged["active_property_id"] = str(prop_id)
+    site_url = str(prop.get("site_url") or "").strip()
+    if site_url:
+        merged["start_url"] = site_url
+    preset = str(prop.get("default_crawl_preset") or "").strip()
+    if preset:
+        from ..crawl_presets import apply_crawl_preset
+
+        merged = apply_crawl_preset(preset, merged)
+    return merged
 
 
 def resolve_property_id_from_cfg(cfg: dict | None = None, conn=None) -> int | None:
@@ -204,6 +233,7 @@ def resolve_config(args: argparse.Namespace) -> tuple[dict[str, str], str]:
                 )
                 sys.exit(1)
 
+    cfg = apply_property_spawn_overlay(cfg)
     return cfg, cwd
 
 

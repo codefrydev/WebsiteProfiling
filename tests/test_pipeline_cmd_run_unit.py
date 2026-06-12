@@ -93,6 +93,7 @@ def test_pipeline_lighthouse_on_pages_uses_selected_urls(monkeypatch) -> None:
 
     def fake_lh_on_pages(urls, **_kwargs):
         urls_seen["urls"] = urls
+        return {"attempted": len(urls), "succeeded": len(urls), "failed": 0}
 
     monkeypatch.setitem(
         __import__("sys").modules,
@@ -132,7 +133,12 @@ def test_lighthouse_on_pages_swallows_google_data_errors(monkeypatch) -> None:
     monkeypatch.setitem(
         __import__("sys").modules,
         "website_profiling.lighthouse.runner",
-        types.SimpleNamespace(run_lighthouse_on_pages=lambda urls, **_k: urls_seen.setdefault("urls", urls)),
+        types.SimpleNamespace(
+            run_lighthouse_on_pages=lambda urls, **_k: (
+                urls_seen.setdefault("urls", urls),
+                {"attempted": len(urls), "succeeded": len(urls), "failed": 0},
+            )[1],
+        ),
     )
     pipeline_cmd._run_lighthouse_on_pages({}, lighthouse_max_pages=5)
     assert urls_seen["urls"] == ["https://a.com"]
