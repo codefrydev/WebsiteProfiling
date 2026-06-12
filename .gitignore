@@ -29,3 +29,5 @@ input.txt
 pipeline-config.txt
 *__pycache__*
 .coverage
+.agents/
+skills-lock.json

@@ -52,7 +52,7 @@ function IssueCard({ item, vi, emDash }: IssueCardProps) {
   const Icon = PRIORITY_ICONS[p];
   return (
     <div
-      className={`bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.border} flex flex-col md:flex-row gap-4 p-5 hover:border-brand-700/80 transition-colors`}
+      className={`bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.border} flex flex-col md:flex-row gap-4 p-5 hover:border-brand-700/80 transition-colors min-w-0 max-w-full overflow-hidden`}
     >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-2">
@@ -78,7 +78,7 @@ function IssueCard({ item, vi, emDash }: IssueCardProps) {
       </div>
       <div className="flex-1 min-w-0 bg-brand-900 rounded-lg p-3 border border-muted space-y-2">
         <div className="text-xs text-link font-bold uppercase mb-1 tracking-wide">{vi.fixRecommendation}</div>
-        <p className="text-muted-foreground text-sm leading-relaxed">
+        <p className="text-muted-foreground text-sm leading-relaxed break-words">
           {iss.llm_recommendation || iss.recommendation || emDash}
         </p>
         {iss.llm_recommendation && iss.recommendation && iss.llm_recommendation !== iss.recommendation ? (
@@ -246,7 +246,7 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
   }, [resolvedCategory, priorityFilter, q]);
 
   const categoryBarOpts = useMemo(() => {
-    const base = barOptionsHorizontal();
+    const base = barOptionsHorizontal(undefined, categoryChartLabels);
     return {
       ...base,
       plugins: {
@@ -261,7 +261,7 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
         },
       },
     };
-  }, [vi]);
+  }, [vi, categoryChartLabels]);
 
   if (!data) return null;
 
@@ -272,7 +272,7 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
   })}`;
 
   return (
-    <PageLayout className="space-y-6">
+    <PageLayout className="space-y-6 min-w-0 max-w-full">
       <PageHeader title={vi.title} subtitle={subtitle} />
 
       <ViewTabs
@@ -295,14 +295,14 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
       ) : null}
 
       {issuesTab === 'audit' && showCharts && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <Card padding="tight" shadow>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-w-0">
+          <Card padding="tight" shadow overflowHidden className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <BarChart2 className="h-4 w-4 text-link" />
               <h2 className="text-sm font-bold text-foreground">{vi.issuesByCategory}</h2>
             </div>
             <p className="text-xs text-muted-foreground mb-2">{vi.issuesByCategoryHint}</p>
-            <div className="h-64">
+            <div className="relative h-64 min-w-0 w-full overflow-hidden">
               <Bar
                 data={{
                   labels: categoryChartLabels,
@@ -312,14 +312,14 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
               />
             </div>
           </Card>
-          <Card padding="tight" shadow>
+          <Card padding="tight" shadow overflowHidden className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <BarChart2 className="h-4 w-4 text-link" />
               <h2 className="text-sm font-bold text-foreground">{vi.issuesByPriority}</h2>
             </div>
             <p className="text-xs text-muted-foreground mb-2">{vi.issuesByPriorityHint}</p>
-            <div className="h-64 flex items-center justify-center">
-              <div className="w-full max-w-[280px] h-52">
+            <div className="h-64 flex items-center justify-center min-w-0 overflow-hidden">
+              <div className="w-full max-w-[280px] h-52 min-w-0">
                 <ChartAccessibleFallback summary={priorityChart.aria} rows={priorityChart.rows}>
                   <Doughnut
                     data={{
@@ -354,7 +354,7 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
       )}
 
       {issuesTab === 'audit' && (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 min-w-0">
         {priorityOrder.map((p) => {
           const cfg = PRIORITY_CONFIG[p];
           const Icon = PRIORITY_ICONS[p];
@@ -418,7 +418,7 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
           <p className="text-muted-foreground text-sm">{vi.noMatches}</p>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 min-w-0 max-w-full">
           {categoryTabs.length > 1 ? (
             <ViewTabs
               tabs={categoryTabs}

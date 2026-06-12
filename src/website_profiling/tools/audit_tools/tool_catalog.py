@@ -324,4 +324,58 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
         "Ranked images/pages with composite attention reasons (size, format, alt/lazy/dimension issues).",
         {"property_id": _PID, "report_id": _RID, "min_size_kb": {"type": "integer"}, "limit": {"type": "integer", "maximum": 100}},
     ),
+    # Impact prioritization
+    _tool(
+        "list_top_impact_issues",
+        "Audit issues ranked by traffic-weighted impact_score (GSC clicks + GA4 sessions + priority).",
+        {"property_id": _PID, "report_id": _RID, "priority": {"type": "string"}, "category_id": {"type": "string"}, "limit": _LIMIT},
+    ),
+    # Payload extras
+    _tool("get_rich_results_summary", "Rich Results validation meta counts from report build.", {"property_id": _PID, "report_id": _RID}),
+    _tool("list_rich_results_failures", "URLs failing rich-results validation (status != pass).", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("get_competitor_keyword_gap", "Competitor keyword gap rows from competitor_keyword_gap_json config.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("get_portfolio_benchmark", "Property health vs portfolio median benchmark.", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_site_anchor_text_summary", "Top sitewide inlink anchor texts from inlink_anchor_matrix.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("get_pagination_audit_summary", "rel=prev/next and AMP pairing issue counts from crawl.", {"property_id": _PID, "report_id": _RID}),
+    # Crawl extras
+    _tool("list_pages_soft_404", "2xx pages whose title suggests not-found (soft 404).", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("list_pages_with_axe_violations", "Pages with axe-core accessibility violations (enable_axe crawl).", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("get_axe_audit_summary", "Site-wide axe violation counts by rule id.", {"property_id": _PID, "report_id": _RID}),
+    _tool("list_pages_with_mixed_content", "HTTPS pages with mixed HTTP content references.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("list_dead_end_pages", "Crawlable pages with inlinks but zero outlinks.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("list_duplicate_title_groups", "Groups of pages sharing the same title and meta description.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("list_heavy_pages_by_bytes", "Pages ranked by total JS + CSS bytes.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("list_pages_poor_cache_headers", "Pages missing or weak cache-control / etag headers.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("list_pages_low_content_ratio", "Pages with low content_html_ratio (bloated HTML).", {"property_id": _PID, "report_id": _RID, "max_content_html_ratio": {"type": "number"}, "limit": _LIMIT}),
+    _tool("get_heading_outline_for_url", "Heading sequence and outline for one URL.", {"url": _URL, "property_id": _PID, "report_id": _RID}, ["url"]),
+    # Crawl metrics
+    _tool("get_asset_weight_summary", "JS/CSS bytes and script_count percentiles from crawl.", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_readability_summary", "Reading level histogram and mean/median from crawl.", {"property_id": _PID, "report_id": _RID}),
+    # CTR opportunities
+    _tool("list_keywords_ctr_opportunity", "Keywords flagged for CTR improvement (title/meta).", {"property_id": _PID, "limit": _LIMIT}, ["property_id"]),
+    _tool("get_gsc_ctr_opportunity_pages", "GSC pages with high impressions and below-curve CTR.", {"property_id": _PID, "min_impressions": {"type": "integer"}, "limit": _LIMIT}),
+    # Compare extras
+    _tool("compare_indexation_deltas", "Indexation coverage count and gap list changes vs baseline.", {"baseline_report_id": _RID, "report_id": _RID}, ["baseline_report_id"]),
+    _tool("compare_orphan_deltas", "Orphan URL set changes vs baseline report.", {"baseline_report_id": _RID, "report_id": _RID}, ["baseline_report_id"]),
+    # GEO / AEO
+    _tool("get_llms_txt_status", "Check for /llms.txt and /.well-known/llms.txt on the property domain.", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_faq_schema_coverage", "FAQPage/QAPage schema coverage across crawled pages.", {"property_id": _PID, "report_id": _RID}),
+    _tool("list_pages_missing_faq_schema", "Q&A-style URLs missing FAQ schema markup.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("get_geo_readiness_score", "Composite 0-100 GEO readiness score from crawl signals.", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_aeo_content_signals_for_url", "Per-URL answer-engine quotability signals.", {"url": _URL, "property_id": _PID, "report_id": _RID}, ["url"]),
+    _tool("get_eeat_signals_summary", "Author/Organization schema and about/contact page counts.", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_js_rendering_delta", "Static vs rendered title/word-count differences.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("get_internal_link_suggestions", "TF-IDF related pages and anchor hints for a source URL.", {"url": _URL, "property_id": _PID, "report_id": _RID, "limit": {"type": "integer", "maximum": 10}}, ["url"]),
+    # LLM generators
+    _tool("generate_issue_fix", "LLM fix suggestion for one audit issue message.", {"property_id": _PID, "message": {"type": "string"}, "url": _URL, "priority": {"type": "string"}, "category_id": {"type": "string"}, "refresh": {"type": "boolean"}}, ["message"]),
+    _tool("summarize_category_for_client", "Client-friendly category summary with optional LLM narrative.", {"category_id": {"type": "string"}, "property_id": _PID, "report_id": _RID}, ["category_id"]),
+    _tool("prioritize_fix_roadmap", "Top N issues ranked by impact_score for a fix roadmap.", {"property_id": _PID, "report_id": _RID, "limit": {"type": "integer", "maximum": 30}}),
+    _tool("analyze_serp_snippet_for_url", "GSC query context plus LLM title/meta CTR suggestions.", {"url": _URL, "property_id": _PID, "report_id": _RID}, ["url"]),
+    _tool("draft_llms_txt", "Draft llms.txt content from top pages and schema coverage.", {"property_id": _PID, "report_id": _RID}),
+    # Integrations
+    _tool("get_gsc_url_inspection", "Live GSC URL Inspection (indexing + rich results). Requires Google OAuth.", {"url": _URL, "property_id": _PID}, ["url", "property_id"]),
+    _tool("get_gsc_index_coverage", "Estimated indexation coverage from crawl + sitemap + GSC join.", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_bing_index_status", "Bing Webmaster URL info (requires bing_webmaster_api_key).", {"url": _URL, "property_id": _PID}, ["url", "property_id"]),
+    _tool("get_serp_feature_overlay", "Keywords with SERP feature / competition overlay data.", {"property_id": _PID, "limit": _LIMIT}, ["property_id"]),
+    _tool("check_ai_citation_presence", "On-site citation readiness estimate for brand/query (no live LLM API).", {"property_id": _PID, "query": {"type": "string"}, "brand": {"type": "string"}}),
 ]

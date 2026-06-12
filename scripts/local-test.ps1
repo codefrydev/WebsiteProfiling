@@ -259,6 +259,9 @@ function Invoke-PytestTools {
         tests/test_audit_tools_expanded.py `
         tests/test_audit_tools_coverage.py `
         tests/test_audit_tools_dispatch_coverage.py `
+        tests/test_audit_tools_links_extras.py `
+        tests/test_audit_tools_expansion.py `
+        tests/test_audit_tools_expansion_coverage.py `
         tests/test_export_custom_coverage.py `
         tests/test_export_artifacts_coverage.py `
         tests/test_export_compare_coverage.py `
@@ -267,6 +270,8 @@ function Invoke-PytestTools {
         tests/test_export_custom.py `
         tests/test_export_artifacts.py `
         tests/test_export_compare.py `
+        tests/test_export_workbook.py `
+        tests/test_export_sitemap.py `
         tests/test_mcp_registry.py `
         tests/test_mcp_resources.py `
         tests/test_tools_branch_coverage.py `

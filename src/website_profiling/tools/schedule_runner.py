@@ -5,25 +5,45 @@ import os
 import subprocess
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
+
+
+def _cron_dow(now: datetime) -> int:
+    """Standard cron weekday: Sunday=0 … Saturday=6."""
+    return (now.weekday() + 1) % 7
 
 
 def _cron_matches(cron_expr: str, now: datetime) -> bool:
-    """Minimal cron matcher: 'MIN HOUR * * DOW' (single values only)."""
+    """Minimal cron matcher: 'MIN HOUR * * DOW' (UTC, single values only)."""
     parts = cron_expr.strip().split()
     if len(parts) != 5:
         return False
     minute, hour, _dom, _month, dow = parts
-    if minute != "*" and int(minute) != now.minute:
+    try:
+        if minute != "*" and int(minute) != now.minute:
+            return False
+        if hour != "*" and int(hour) != now.hour:
+            return False
+    except ValueError:
         return False
-    if hour != "*" and int(hour) != now.hour:
-        return False
-    if dow != "*" and str(now.weekday()) not in dow.split(","):
-        return False
+    if dow != "*":
+        cron_dow = _cron_dow(now)
+        allowed = {part.strip() for part in dow.split(",") if part.strip()}
+        if str(cron_dow) not in allowed:
+            return False
     return True
 
 
+def _repo_root() -> str:
+    explicit = (os.environ.get("WEBSITE_PROFILING_ROOT") or "").strip()
+    if explicit:
+        return explicit
+    # src/website_profiling/tools/schedule_runner.py -> repo root
+    return str(Path(__file__).resolve().parents[3])
+
+
 def _spawn_audit_for_property(prop_id: int, conn) -> None:
-    from ..db.config_store import read_pipeline_config, write_pipeline_config
+    """Spawn audit for one property. Never writes to pipeline_config."""
     from ..db.property_store import get_property_by_id
 
     prop = get_property_by_id(conn, int(prop_id))
@@ -31,21 +51,26 @@ def _spawn_audit_for_property(prop_id: int, conn) -> None:
         print(f"[Schedule] Property {prop_id} not found — skipped", flush=True)
         return
 
-    known, unknown = read_pipeline_config(conn)
-    known["active_property_id"] = str(prop_id)
     site_url = str(prop.get("site_url") or "").strip()
-    if site_url:
-        known["start_url"] = site_url
-    preset = str(prop.get("default_crawl_preset") or "").strip()
-    if preset:
-        from ..crawl_presets import apply_crawl_preset
-
-        known = apply_crawl_preset(preset, known)
-    write_pipeline_config(conn, known, unknown)
-
-    env = {**os.environ, "WP_PROPERTY_ID": str(prop_id)}
-    subprocess.Popen([sys.executable, "-m", "src"], env=env)
-    print(f"[Schedule] Spawned audit for property {prop_id} ({site_url or 'no site_url'})", flush=True)
+    repo_root = _repo_root()
+    env = {
+        **os.environ,
+        "WP_PROPERTY_ID": str(prop_id),
+        "WP_SCHEDULED_SPAWN": "1",
+        "WEBSITE_PROFILING_ROOT": repo_root,
+        "PYTHONPATH": os.path.join(repo_root, "src"),
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONUTF8": "1",
+    }
+    subprocess.Popen(
+        [sys.executable, "-m", "src"],
+        env=env,
+        cwd=repo_root,
+    )
+    print(
+        f"[Schedule] Spawned audit for property {prop_id} ({site_url or 'no site_url'})",
+        flush=True,
+    )
 
 
 def run_due_scheduled_audits() -> int:
@@ -53,6 +78,7 @@ def run_due_scheduled_audits() -> int:
 
     now = datetime.now(timezone.utc)
     started = 0
+    matched: list[int] = []
     with db_session() as conn:
         cur = conn.execute(
             "SELECT id, name, schedule_cron FROM properties WHERE schedule_cron IS NOT NULL AND trim(schedule_cron) != ''"
@@ -63,8 +89,16 @@ def run_due_scheduled_audits() -> int:
             cron = row[2] if not hasattr(row, "keys") else row["schedule_cron"]
             if not cron or not _cron_matches(str(cron), now):
                 continue
-            print(f"[Schedule] Starting audit for property {prop_id} ({cron})", flush=True)
-            _spawn_audit_for_property(int(prop_id), conn)
+            matched.append(int(prop_id))
+
+        if len(matched) > 1:
+            print(
+                f"[Schedule] {len(matched)} properties due this minute — spawning sequentially",
+                flush=True,
+            )
+        for prop_id in matched:
+            print(f"[Schedule] Starting audit for property {prop_id}", flush=True)
+            _spawn_audit_for_property(prop_id, conn)
             started += 1
     return started
 
@@ -76,6 +110,9 @@ def run_gsc_links_staleness_alerts() -> list[dict]:
 
 
 def main() -> None:
+    from ..console_io import configure_stdio
+
+    configure_stdio()
     n = run_due_scheduled_audits()
     stale = run_gsc_links_staleness_alerts()
     print(f"Started {n} scheduled audit(s).")

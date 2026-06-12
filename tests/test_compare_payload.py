@@ -9,9 +9,11 @@ from website_profiling.reporting.compare_payload import (
     build_duplicate_deltas,
     build_full_compare,
     build_google_metrics,
+    build_indexation_deltas,
     build_issue_deltas,
     build_lighthouse_url_deltas,
     build_link_metric_deltas,
+    build_orphan_deltas,
     build_priority_counts,
     build_redirect_deltas,
     build_security_deltas,
@@ -238,6 +240,49 @@ def test_category_scores_skips_invalid() -> None:
     assert len(scores) == 1
     assert scores[0]["id"] == "perf"
     assert scores[0]["delta"] == -5
+
+
+def test_indexation_and_orphan_deltas() -> None:
+    cur = {
+        "indexation_coverage": {
+            "counts": {"crawled": 12, "sitemap": 10},
+            "lists": {
+                "sitemap_only": ["https://ex.com/new-gap"],
+                "crawled_not_in_sitemap": [],
+                "gsc_not_crawled": ["https://ex.com/gsc-only"],
+            },
+        },
+        "orphan_urls": ["https://ex.com/orphan-a", "https://ex.com/orphan-b"],
+    }
+    base = {
+        "indexation_coverage": {
+            "counts": {"crawled": 10, "gsc": 8},
+            "lists": {
+                "sitemap_only": ["https://ex.com/old-gap"],
+                "crawled_not_in_sitemap": ["https://ex.com/crawl-gap"],
+                "gsc_not_crawled": [],
+            },
+        },
+        "orphan_urls": ["https://ex.com/orphan-a"],
+    }
+    idx = build_indexation_deltas(cur, base)
+    assert any(d["metric"] == "crawled" and d["delta"] == 2 for d in idx["count_deltas"])
+    assert idx["gap_deltas"]["sitemap_only"]["added_count"] >= 1
+    assert idx["gap_deltas"]["crawled_not_in_sitemap"]["removed_count"] >= 1
+
+    orphans = build_orphan_deltas(cur, base)
+    assert orphans["added_count"] == 1
+    assert orphans["removed_count"] == 0
+    assert orphans["delta"] == 1
+
+    empty = build_orphan_deltas({"orphan_urls": "not-a-list"}, {})
+    assert empty["current_count"] == 0
+
+    bad_counts = build_indexation_deltas(
+        {"indexation_coverage": {"counts": {"crawled": "many"}, "lists": {}}},
+        {"indexation_coverage": {"counts": {"crawled": "few"}, "lists": {}}},
+    )
+    assert bad_counts["count_deltas"][0]["delta"] is None
 
 
 def test_full_compare_truncation() -> None:

@@ -148,6 +148,8 @@ run_pytest_tools() {
     tests/test_audit_tools_coverage.py \
     tests/test_audit_tools_dispatch_coverage.py \
     tests/test_audit_tools_links_extras.py \
+    tests/test_audit_tools_expansion.py \
+    tests/test_audit_tools_expansion_coverage.py \
     tests/test_export_custom_coverage.py \
     tests/test_export_artifacts_coverage.py \
     tests/test_export_compare_coverage.py \

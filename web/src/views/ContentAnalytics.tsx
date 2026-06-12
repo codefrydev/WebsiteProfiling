@@ -41,7 +41,7 @@ import {
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, ViewTabs, ViewTabPanel, StatCard } from '../components';
-import { StatusDistributionChart, CoverageBar, ChartAccessibleFallback } from '../components/charts';
+import { StatusDistributionChart, CoverageBar, ChartAccessibleFallback, ChartPanel } from '../components/charts';
 import { crawledUrlCount } from '@/lib/crawlCounts';
 import { statusDistributionFromSummary } from '../lib/statusDistribution';
 import { filterZeroSlices, doughnutOptionsWithPercentTooltip, formatCompositionAria } from '../lib/chartDoughnutUtils';
@@ -53,6 +53,7 @@ import {
   getChartTitleColor,
   getChartCanvasTextColor,
   getChartLegendLabelColor,
+  truncateChartLabel,
 } from '../utils/chartJsDefaults';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
@@ -108,8 +109,17 @@ function barOpts(xTitle?: string) {
   });
 }
 
-function barOptsH() {
+function barOptsH(yAxisLabels?: readonly string[]) {
   const freq = strings.charts.axisFrequency;
+  const yScale: Record<string, unknown> = { grid: { color: getGridColor() } };
+  if (yAxisLabels?.length) {
+    yScale.ticks = {
+      callback: (_value: unknown, index: number) => {
+        const label = yAxisLabels[index];
+        return label ? truncateChartLabel(String(label)) : '';
+      },
+    };
+  }
   return anyChartOptions({
     indexAxis: 'y',
     responsive: true,
@@ -124,7 +134,7 @@ function barOptsH() {
     },
     scales: {
       x: { grid: { color: getGridColor() }, beginAtZero: true, title: { display: true, text: freq } },
-      y: { grid: { color: getGridColor() } },
+      y: yScale,
     },
   });
 }
@@ -648,7 +658,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             <Sparkles className="h-4 w-4 text-violet-700 dark:text-violet-400" />
             <h3 className="text-sm font-bold text-foreground">{vca.languageMix}</h3>
           </div>
-          <div className="h-56">
+          <ChartPanel>
             <Bar
               data={{
                 labels: languageMlChart.labels,
@@ -662,7 +672,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
               }}
               options={barOpts(vca.thPages)}
             />
-          </div>
+          </ChartPanel>
         </Card>
       )}
 
@@ -672,7 +682,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             <Tag className="h-4 w-4 text-cyan-700 dark:text-cyan-400" />
             <h3 className="text-sm font-bold text-foreground">{vca.entityLabels}</h3>
           </div>
-          <div className="h-56">
+          <ChartPanel>
             <Bar
               data={{
                 labels: nerSiteChart.labels,
@@ -684,9 +694,9 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                   },
                 ],
               }}
-              options={barOptsH()}
+              options={barOptsH(nerSiteChart.labels)}
             />
-          </div>
+          </ChartPanel>
         </Card>
       )}
 
@@ -772,9 +782,9 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                     </>
                   )}
                 </p>
-                <div className="h-64">
+                <ChartPanel heightClass="h-64">
                   <StatusDistributionChart distribution={statusDistribution!} heightClass="h-64" />
-                </div>
+                </ChartPanel>
               </Card>
             )}
             {hasRtDist && (
@@ -794,7 +804,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                     </>
                   )}
                 </p>
-                <div className="h-64">
+                <ChartPanel heightClass="h-64">
                   <Bar
                     data={{
                       labels: rtLabels,
@@ -809,7 +819,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                     }}
                     plugins={[barValueLabelsPlugin]}
                   />
-                </div>
+                </ChartPanel>
               </Card>
             )}
           </div>
@@ -823,28 +833,28 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             {hasIssueBar && (
               <Card padding="tight">
                 <h3 className="text-sm font-bold text-foreground mb-3">URLs flagged by issue type</h3>
-                <div className="h-80">
+                <ChartPanel heightClass="h-80">
                   <Bar
                     data={{
                       labels: issueBarLabels,
                       datasets: [{ data: issueBarValues, backgroundColor: palette(issueBarLabels.length) }],
                     }}
                     options={{
-                      ...barOptsH(),
+                      ...barOptsH(issueBarLabels),
                       plugins: {
-                        ...barOptsH().plugins,
+                        ...barOptsH(issueBarLabels).plugins,
                         tooltip: { callbacks: { label: (ctx: TooltipItem<'bar'>) => ` ${ctx.raw?.toLocaleString()} URLs` } },
                       },
                     }}
                     plugins={[barValueLabelsPlugin]}
                   />
-                </div>
+                </ChartPanel>
               </Card>
             )}
             {hasSeoOptimalBar && (
               <Card padding="tight">
                 <h3 className="text-sm font-bold text-foreground mb-3">Pages in “good” ranges</h3>
-                <div className="h-56">
+                <ChartPanel>
                   <Bar
                     data={{
                       labels: ['Title length', 'Meta description', 'H1 count'],
@@ -863,7 +873,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                     }}
                     options={stackedPercentBarOpts()}
                   />
-                </div>
+                </ChartPanel>
               </Card>
             )}
             {hasThinCompare && (
@@ -912,7 +922,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card padding="tight">
             <h3 className="text-sm font-bold text-foreground mb-3">{vca.wordCountDist}</h3>
-            <div className="h-64">
+            <ChartPanel heightClass="h-64">
               {wcLabels.length > 0 ? (
                 <Bar
                   data={{ labels: wcLabels, datasets: [{ data: wcValues, backgroundColor: palette(wcLabels.length) }] }}
@@ -922,30 +932,30 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
               )}
-            </div>
+            </ChartPanel>
           </Card>
 
           <Card padding="tight">
             <h3 className="text-sm font-bold text-foreground mb-3">{vca.readingLevelDist}</h3>
-            <div className="h-64">
+            <ChartPanel heightClass="h-64">
               {rlLabels.length > 0 ? (
                 <Bar
                   data={{
                     labels: rlLabels,
                     datasets: [{ data: rlValues, backgroundColor: ['#22C55E', '#4C72B0', '#EAB308', '#EF4444'].slice(0, rlLabels.length) }],
                   }}
-                  options={{ ...barOptsH(), plugins: { ...barOptsH().plugins, tooltip: { callbacks: { label: (ctx: TooltipItem<'bar'>) => ` ${ctx.raw} pages` } } } }}
+                  options={{ ...barOptsH(rlLabels), plugins: { ...barOptsH(rlLabels).plugins, tooltip: { callbacks: { label: (ctx: TooltipItem<'bar'>) => ` ${ctx.raw} pages` } } } }}
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
               )}
-            </div>
+            </ChartPanel>
           </Card>
 
           <Card padding="tight">
             <h3 className="text-sm font-bold text-foreground mb-3">{vca.contentHtmlRatio}</h3>
-            <div className="h-64">
+            <ChartPanel heightClass="h-64">
               {crLabels.length > 0 ? (
                 <Bar
                   data={{ labels: crLabels, datasets: [{ data: crValues, backgroundColor: palette(crLabels.length) }] }}
@@ -955,28 +965,28 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
               )}
-            </div>
+            </ChartPanel>
           </Card>
 
           <Card padding="tight">
             <h3 className="text-sm font-bold text-foreground mb-3">{vca.topKeywords}</h3>
-            <div className="h-[28rem]">
+            <ChartPanel heightClass="h-[28rem]">
               {kwLabels.length > 0 ? (
                 <Bar
                   data={{ labels: kwLabels, datasets: [{ data: kwValues, backgroundColor: PALETTE_CATEGORICAL[0] }] }}
-                  options={barOptsH()}
+                  options={barOptsH(kwLabels)}
                   plugins={[barValueLabelsPlugin]}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{vca.noKeywordData}</div>
               )}
-            </div>
+            </ChartPanel>
           </Card>
 
           {hasWcPercBar && (
             <Card padding="tight" className="lg:col-span-2">
               <h3 className="text-sm font-bold text-foreground mb-3">{vca.wordCountLadder}</h3>
-              <div className="h-56">
+              <ChartPanel>
                 <Bar
                   data={{
                     labels: wcPercLabels,
@@ -1009,7 +1019,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                   }}
                   plugins={[barValueLabelsPlugin]}
                 />
-              </div>
+              </ChartPanel>
             </Card>
           )}
         </div>
@@ -1023,13 +1033,13 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             {/* H1 Distribution Doughnut */}
             <Card padding="tight">
               <h3 className="text-sm font-bold text-foreground mb-3">{vca.h1Dist}</h3>
-              <div className="h-56">
+              <ChartPanel>
                 {hasH1Data ? (
                   <ChartAccessibleFallback
                     summary={h1Aria}
                     rows={h1Chart.labels.map((label, i) => [label, h1Chart.values[i] ?? 0] as [string, string | number])}
                   >
-                    <div className="h-56 flex items-center justify-center" role="presentation">
+                    <div className="h-full flex items-center justify-center min-w-0 overflow-hidden" role="presentation">
                       <div className="w-full max-w-[240px] h-full">
                         <Doughnut
                           data={{
@@ -1049,13 +1059,13 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
                 )}
-              </div>
+              </ChartPanel>
             </Card>
 
             {/* Title Length Quality */}
             <Card padding="tight">
               <h3 className="text-sm font-bold text-foreground mb-3">{vca.titleTagQuality}</h3>
-              <div className="h-56">
+              <ChartPanel>
                 {hasTitleData ? (
                   <Bar
                     data={{
@@ -1071,13 +1081,13 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
                 )}
-              </div>
+              </ChartPanel>
             </Card>
 
             {/* Meta Description Quality */}
             <Card padding="tight">
               <h3 className="text-sm font-bold text-foreground mb-3">{vca.metaDescQuality}</h3>
-              <div className="h-56">
+              <ChartPanel>
                 {hasMetaData ? (
                   <Bar
                     data={{
@@ -1093,16 +1103,16 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
                 )}
-              </div>
+              </ChartPanel>
             </Card>
           </div>
 
           {(hasTitleMetaCompare || hasSeoGapCountCompare) && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
               {hasTitleMetaCompare && (
                 <Card padding="tight">
                   <h3 className="text-sm font-bold text-foreground mb-3">{vca.titleVsMetaBuckets}</h3>
-                  <div className="h-64">
+                  <ChartPanel heightClass="h-64">
                     <Bar
                       data={{
                         labels: vca.compareBuckets,
@@ -1122,13 +1132,13 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                       options={groupedBarOpts(sj.pages)}
                       plugins={[barValueLabelsPlugin]}
                     />
-                  </div>
+                  </ChartPanel>
                 </Card>
               )}
               {hasSeoGapCountCompare && (
                 <Card padding="tight">
                   <h3 className="text-sm font-bold text-foreground mb-3">{vca.seoOptimalVsGapCounts}</h3>
-                  <div className="h-64">
+                  <ChartPanel heightClass="h-64">
                     <Bar
                       data={{
                         labels: [vca.seoTitle, vca.seoMeta, vca.seoH1],
@@ -1148,7 +1158,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                       options={groupedBarOpts(sj.pages)}
                       plugins={[barValueLabelsPlugin]}
                     />
-                  </div>
+                  </ChartPanel>
                 </Card>
               )}
             </div>
@@ -1181,7 +1191,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
         {hasSocialData && (
           <Card padding="tight">
             <h3 className="text-sm font-bold text-foreground mb-3">{vca.socialOverview}</h3>
-            <div className="h-64">
+            <ChartPanel heightClass="h-64">
               <Bar
                 data={{
                   labels: [vca.openGraph, vca.twitterCard, vca.ogImage],
@@ -1210,14 +1220,14 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                   },
                 }}
               />
-            </div>
+            </ChartPanel>
           </Card>
         )}
 
         {hasSocialMissCompare && (
           <Card padding="tight" shadow>
             <h3 className="text-sm font-bold text-foreground mb-3">{vca.missingSocialUrlCompare}</h3>
-            <div className="h-56 max-w-lg">
+            <ChartPanel className="max-w-lg">
               <Bar
                 data={{
                   labels: [vca.openGraph, vca.twitterCard],
@@ -1251,7 +1261,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                 }}
                 plugins={[barValueLabelsPlugin]}
               />
-            </div>
+            </ChartPanel>
           </Card>
         )}
 
@@ -1382,7 +1392,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                   )}
                 </p>
               )}
-              <div className="h-64">
+              <ChartPanel heightClass="h-64">
                 <Bar
                   data={{
                     labels: depthLabels,
@@ -1397,7 +1407,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                   }}
                   plugins={[barValueLabelsPlugin]}
                 />
-              </div>
+              </ChartPanel>
             </Card>
 
             {/* Word count percentile summary */}

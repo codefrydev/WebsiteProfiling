@@ -9,9 +9,10 @@ Cron-friendly HTTP endpoints for scheduled audits and property alerts. All route
 Runs `schedule_runner.py`, which:
 
 1. Matches each property’s `schedule_cron` (UTC, five-field cron) against the current minute.
-2. Sets `active_property_id` and `start_url` on the global pipeline config.
-3. Applies the property’s `default_crawl_preset` (starter / spa / ecommerce / performance).
-4. Spawns a full audit (`python -m src` with `WP_PROPERTY_ID`).
+2. Spawns a full audit (`python -m src`) with `WP_PROPERTY_ID` and `WP_SCHEDULED_SPAWN=1`.
+3. The child process **reads** `pipeline_config` only for shared integration keys (Google, etc.). Crawl settings come from the property’s `site_url` and `default_crawl_preset` (starter / spa / ecommerce / performance). **`pipeline_config` is never written or overwritten** — not by cron, not in memory on top of saved workspace keys.
+
+Manual **Run audit** from the web UI uses saved `pipeline_config` unchanged (no overlay, no env property id on the pipeline spawn).
 
 **Example (every Monday 06:00 UTC):**
 

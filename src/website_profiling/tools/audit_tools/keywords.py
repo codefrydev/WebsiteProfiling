@@ -201,6 +201,14 @@ def list_keywords_by_action(conn: Connection, ctx: AuditToolContext, args: dict[
     )
 
 
+def list_keywords_ctr_opportunity(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    """Keywords flagged for CTR improvement (title/meta snippet optimization)."""
+    return _filter_keyword_rows(
+        conn, ctx, args,
+        lambda r: "improve ctr" in str(r.get("recommended_action") or "").lower(),
+    )
+
+
 def list_keywords_by_position(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
     min_pos = args.get("min_position")
     max_pos = args.get("max_position")

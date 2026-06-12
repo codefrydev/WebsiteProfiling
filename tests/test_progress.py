@@ -42,11 +42,10 @@ def test_crawl_tracker_throttles(capsys):
 
 
 def test_emit_phase_done():
-    with patch("website_profiling.progress.print") as mock_print:
+    with patch("website_profiling.progress.emit_machine_line") as mock_emit:
         emit_phase_done("report")
-        args = mock_print.call_args[0][0]
-        assert args.startswith(PREFIX)
-        payload = json.loads(args[len(PREFIX) :])
+        prefix, payload = mock_emit.call_args[0]
+        assert prefix == PREFIX
         assert payload["phase"] == "report"
         assert payload["step"] == "done"
 

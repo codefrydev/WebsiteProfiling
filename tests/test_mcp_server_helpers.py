@@ -61,8 +61,10 @@ def test_read_glossary_excerpt_missing(monkeypatch) -> None:
 
 def test_tools_catalog_json_includes_security_tools() -> None:
     catalog = json.loads(mcp_server._tools_catalog_json())
-    assert catalog["tool_count"] >= 176
+    assert catalog["tool_count"] >= 221
     assert "get_security_findings" in catalog["domains"]["security"]
+    assert "get_geo_readiness_score" in catalog["domains"]["geo"]
+    assert "get_gsc_url_inspection" in catalog["domains"]["integrations"]
 
 
 def test_tools_catalog_json_backlinks_domain() -> None:
@@ -168,7 +170,7 @@ def test_mcp_main_registers_handlers(monkeypatch) -> None:
     assert captured["name"] == "site-audit"
     assert captured["ran"] is True
     tools = asyncio.run(captured["list_tools"]())  # type: ignore[arg-type]
-    assert len(tools) >= 176
+    assert len(tools) >= 221
     resources = asyncio.run(captured["list_resources"]())  # type: ignore[arg-type]
     assert any(r["uri"] == "audit://property/7" for r in resources)
 

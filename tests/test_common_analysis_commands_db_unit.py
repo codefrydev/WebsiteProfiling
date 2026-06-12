@@ -711,6 +711,26 @@ def test_lighthouse_cmd_invalid_strategy(monkeypatch) -> None:
     assert captured.get("strategy") == "mobile"
 
 
+def test_lighthouse_cmd_defaults_when_get_int_returns_none(monkeypatch) -> None:
+    from website_profiling.commands import lighthouse_cmd
+
+    monkeypatch.setattr(lighthouse_cmd, "require_lighthouse_url", lambda _cfg: "https://a.com")
+    monkeypatch.setattr(lighthouse_cmd, "lighthouse_work_dir", lambda: "/tmp/lh")
+    monkeypatch.setattr(lighthouse_cmd, "cleanup_lighthouse_work_dir", lambda _p: None)
+    monkeypatch.setattr(lighthouse_cmd, "get_int", lambda _c, _k, _d: None)
+    captured: dict = {}
+
+    def fake_main(**kwargs):
+        captured.update(kwargs)
+        return 0
+
+    monkeypatch.setitem(__import__("sys").modules, "website_profiling.lighthouse.runner", types.SimpleNamespace(main=fake_main))
+    with pytest.raises(SystemExit):
+        lighthouse_cmd.run({"lighthouse_url": "https://a.com"}, argparse.Namespace())
+    assert captured.get("iterations") == 3
+    assert captured.get("wait_ms") == 1500
+
+
 def test_warnings_cmd_relative_input(monkeypatch, tmp_path) -> None:
     from website_profiling.commands import warnings_cmd
 

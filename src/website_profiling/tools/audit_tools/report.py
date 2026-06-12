@@ -34,14 +34,18 @@ def _iter_category_issues(payload: dict[str, Any]) -> list[dict[str, Any]]:
             if not isinstance(issue, dict):
                 continue
             rec = str(issue.get("llm_recommendation") or issue.get("recommendation") or "")
-            rows.append({
+            row: dict[str, Any] = {
                 "category_id": cat_id,
                 "category": cat_name,
                 "priority": str(issue.get("priority") or "Medium"),
                 "message": str(issue.get("message") or ""),
                 "url": str(issue.get("url") or ""),
                 "recommendation": rec,
-            })
+            }
+            for key in ("impact_score", "gsc_clicks", "gsc_impressions", "ga4_sessions"):
+                if issue.get(key) is not None:
+                    row[key] = issue.get(key)
+            rows.append(row)
     rows.sort(key=lambda x: _PRIORITY_ORDER.get(x.get("priority", "Low"), 99))
     return rows
 
@@ -173,6 +177,12 @@ def search_issues(conn: Connection, ctx: AuditToolContext, args: dict[str, Any])
             or message_contains in str(i.get("recommendation") or "").lower()
         ]
 
+    sort_mode = str(args.get("sort") or "").strip().lower()
+    if sort_mode == "impact":
+        from ...reporting.issue_impact import sort_issues_by_impact
+
+        issues = sort_issues_by_impact(issues)
+
     total = len(issues)
     truncated = total > limit
     return {
@@ -180,6 +190,11 @@ def search_issues(conn: Connection, ctx: AuditToolContext, args: dict[str, Any])
         "total": total,
         "truncated": truncated,
     }
+
+
+def list_top_impact_issues(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    """Issues ranked by traffic-weighted impact_score (GSC clicks + GA4 sessions + priority)."""
+    return list_issues(conn, ctx, {**args, "sort": "impact"})
 
 
 def get_critical_issues(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:

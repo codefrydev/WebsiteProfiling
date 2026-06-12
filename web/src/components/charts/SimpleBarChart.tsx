@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
 import { palette } from '@/utils/chartPalette';
 import { barOptionsHorizontal, registerChartJsBase } from '@/utils/chartJsDefaults';
+import { ChartPanel } from './ChartPanel';
 
 registerChartJsBase();
 
@@ -37,8 +38,12 @@ export function SimpleBarChart({
   );
 
   return (
-    <div className={heightClass} role="img" aria-label={ariaLabel}>
-      <Bar data={data} options={horizontal ? barOptionsHorizontal() : undefined} />
-    </div>
+    <ChartPanel heightClass={heightClass}>
+      <Bar
+        data={data}
+        options={horizontal ? barOptionsHorizontal(undefined, labels) : undefined}
+        aria-label={ariaLabel}
+      />
+    </ChartPanel>
   );
 }

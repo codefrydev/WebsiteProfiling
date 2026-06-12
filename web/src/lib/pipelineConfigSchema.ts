@@ -382,6 +382,8 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
           { value: 'timespan', label: 'Timespan' },
           { value: 'snapshot', label: 'Snapshot' },
         ],
+        help:
+          'Navigation: full performance audit via CLI. Snapshot: page-state audit (accessibility/best-practices; limited performance). Timespan: post-load window using crawl_js_extra_wait_ms.',
       },
       {
         key: 'lighthouse_strategy',

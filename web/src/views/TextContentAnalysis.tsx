@@ -53,7 +53,9 @@ import {
   getGridColor,
   getChartTitleColor,
   getChartCanvasTextColor,
+  truncateChartLabel,
 } from '../utils/chartJsDefaults';
+import { ChartPanel } from '../components/charts';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
@@ -115,8 +117,17 @@ function barOpts(xTitle?: string) {
   });
 }
 
-function barOptsH(xTitle?: string) {
+function barOptsH(xTitle?: string, yAxisLabels?: readonly string[]) {
   const freq = strings.charts.axisFrequency;
+  const yScale: Record<string, unknown> = { grid: { color: getGridColor() } };
+  if (yAxisLabels?.length) {
+    yScale.ticks = {
+      callback: (_value: unknown, index: number) => {
+        const label = yAxisLabels[index];
+        return label ? truncateChartLabel(String(label)) : '';
+      },
+    };
+  }
   return anyChartOptions({
     indexAxis: 'y',
     responsive: true,
@@ -129,7 +140,7 @@ function barOptsH(xTitle?: string) {
         grace: '10%',
         title: { display: true, text: xTitle ?? freq },
       },
-      y: { grid: { color: getGridColor() } },
+      y: yScale,
     },
   });
 }
@@ -456,7 +467,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                 <BarChart2 className="h-4 w-4 text-link" />
                 <h3 className="text-sm font-bold text-foreground">{vtca.keywordFrequencyHist}</h3>
               </div>
-              <div className="h-56">
+              <ChartPanel>
                 <Bar
                   data={{
                     labels: histChart.labels,
@@ -465,7 +476,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                   options={barOpts(ch.axisCount)}
                   plugins={[barValueLabelsPlugin]}
                 />
-              </div>
+              </ChartPanel>
             </Card>
           ) : null}
 
@@ -488,16 +499,16 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                   {keywordsChartPagination.total.toLocaleString()} terms
                 </p>
               </div>
-              <div style={{ height: keywordsChartHeightPx }}>
+              <ChartPanel heightClass="" style={{ height: keywordsChartHeightPx }}>
                 <Bar
                   data={{
                     labels: keywordsChart.labels,
                     datasets: [{ data: keywordsChart.values, backgroundColor: PALETTE_CATEGORICAL[0] }],
                   }}
-                  options={barOptsH(ch.axisCount)}
+                  options={barOptsH(ch.axisCount, keywordsChart.labels)}
                   plugins={[barValueLabelsPlugin]}
                 />
-              </div>
+              </ChartPanel>
               {keywordsChartPagination.total > 0 ? (
                 <div className="mt-3 pt-3 border-t border-default flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
                   <div className="text-sm text-muted-foreground space-y-0.5">
@@ -548,10 +559,10 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
           )}
 
           <SectionHeader icon={BarChart2} title={vtca.tabs.analytics} />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
             <Card padding="tight">
               <h3 className="text-sm font-bold text-foreground mb-3">{vtca.wordCountDist}</h3>
-              <div className="h-64">
+              <ChartPanel heightClass="h-64">
                 {wcLabels.length > 0 ? (
                   <Bar
                     data={{ labels: wcLabels, datasets: [{ data: wcValues, backgroundColor: palette(wcLabels.length) }] }}
@@ -561,12 +572,12 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
                 )}
-              </div>
+              </ChartPanel>
             </Card>
 
             <Card padding="tight">
               <h3 className="text-sm font-bold text-foreground mb-3">{vtca.readingLevelDist}</h3>
-              <div className="h-64">
+              <ChartPanel heightClass="h-64">
                 {rlLabels.length > 0 ? (
                   <Bar
                     data={{
@@ -574,9 +585,9 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                       datasets: [{ data: rlValues, backgroundColor: ['#22C55E', '#4C72B0', '#EAB308', '#EF4444'].slice(0, rlLabels.length) }],
                     }}
                     options={{
-                      ...barOptsH(),
+                      ...barOptsH(undefined, rlLabels),
                       plugins: {
-                        ...barOptsH().plugins,
+                        ...barOptsH(undefined, rlLabels).plugins,
                         tooltip: { callbacks: { label: (ctx: TooltipItem<'bar'>) => ` ${ctx.raw} pages` } },
                       },
                     }}
@@ -585,12 +596,12 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
                 )}
-              </div>
+              </ChartPanel>
             </Card>
 
             <Card padding="tight">
               <h3 className="text-sm font-bold text-foreground mb-3">{vtca.contentHtmlRatio}</h3>
-              <div className="h-64">
+              <ChartPanel heightClass="h-64">
                 {crLabels.length > 0 ? (
                   <Bar
                     data={{ labels: crLabels, datasets: [{ data: crValues, backgroundColor: palette(crLabels.length) }] }}
@@ -600,13 +611,13 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
                 )}
-              </div>
+              </ChartPanel>
             </Card>
 
             {hasWcPercBar ? (
               <Card padding="tight">
                 <h3 className="text-sm font-bold text-foreground mb-3">{vtca.wordCountLadder}</h3>
-                <div className="h-56">
+                <ChartPanel>
                   <Bar
                     data={{
                       labels: wcPercLabels,
@@ -632,7 +643,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                     }}
                     plugins={[barValueLabelsPlugin]}
                   />
-                </div>
+                </ChartPanel>
               </Card>
             ) : null}
           </div>
@@ -647,7 +658,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                 <Globe className="h-4 w-4 text-violet-700 dark:text-violet-400" />
                 <h3 className="text-sm font-bold text-foreground">{vtca.languageMix}</h3>
               </div>
-              <div className="h-56">
+              <ChartPanel>
                 <Bar
                   data={{
                     labels: languageMlChart.labels,
@@ -655,7 +666,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                   }}
                   options={barOpts(sj.pages)}
                 />
-              </div>
+              </ChartPanel>
             </Card>
           ) : null}
 
@@ -665,15 +676,15 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                 <Sparkles className="h-4 w-4 text-cyan-700 dark:text-cyan-400" />
                 <h3 className="text-sm font-bold text-foreground">{vtca.entityLabels}</h3>
               </div>
-              <div className="h-56">
+              <ChartPanel>
                 <Bar
                   data={{
                     labels: nerSiteChart.labels,
                     datasets: [{ data: nerSiteChart.values, backgroundColor: palette(nerSiteChart.labels.length) }],
                   }}
-                  options={barOptsH(ch.axisCount)}
+                  options={barOptsH(ch.axisCount, nerSiteChart.labels)}
                 />
-              </div>
+              </ChartPanel>
             </Card>
           ) : null}
 

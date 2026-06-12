@@ -72,6 +72,14 @@ def _full_payload() -> dict:
         "security_findings": [{"url": "https://ex.com", "severity": "high", "finding_type": "hsts", "message": "Missing HSTS"}],
         "tech_stack_summary": {"technologies": [{"name": "WordPress", "count": 10}]},
         "competitor_link_gap": {"gaps": [{"domain": "rival.com"}]},
+        "competitor_keyword_gap": [{"keyword": "widgets", "competitor": "rival.com"}],
+        "portfolio_benchmark": {"median_health_score": 75, "property_health_score": 80},
+        "rich_results_meta": {"checked": 5, "gsc_count": 2, "heuristic_count": 3},
+        "rich_results_validation": [
+            {"url": "https://ex.com/", "status": "pass"},
+            {"url": "https://ex.com/bad", "status": "fail", "message": "Invalid schema"},
+        ],
+        "inlink_anchor_matrix": [{"target_url": "https://ex.com/", "anchor_text": "home", "inlink_count": 3}],
         "bing_backlinks": {"ok": True, "total": 100},
         "crux_summary": {"ok": True, "lcp_p75": 2.1},
         "gsc_links": {"imported_at": "2026-06-01", "top_linking_sites": []},
@@ -134,7 +142,16 @@ def _full_payload() -> dict:
                 "name": "Technical SEO",
                 "score": 80,
                 "issues": [
-                    {"priority": "Critical", "message": "Missing title", "url": "https://ex.com/a", "recommendation": "Add title"},
+                    {
+                        "priority": "Critical",
+                        "message": "Missing title",
+                        "url": "https://ex.com/a",
+                        "recommendation": "Add title",
+                        "impact_score": 1205.0,
+                        "gsc_clicks": 20,
+                        "gsc_impressions": 500,
+                        "ga4_sessions": 1,
+                    },
                     {"priority": "High", "message": "Slow page", "url": "https://ex.com/blog/slow", "recommendation": "Optimize"},
                 ],
             },
@@ -161,7 +178,7 @@ def conn() -> MagicMock:
 def test_handler_schema_parity() -> None:
     names = {t["name"] for t in TOOL_DEFINITIONS}
     assert names == tool_handler_names()
-    assert len(TOOL_DEFINITIONS) == 180
+    assert len(TOOL_DEFINITIONS) == 221
 
 
 def test_slice_helpers() -> None:

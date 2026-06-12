@@ -544,7 +544,9 @@ def test_pipeline_lighthouse_on_pages_and_enrich_failure(monkeypatch) -> None:
     monkeypatch.setitem(
         sys.modules,
         "website_profiling.lighthouse.runner",
-        types.SimpleNamespace(run_lighthouse_on_pages=lambda **_k: None),
+        types.SimpleNamespace(
+            run_lighthouse_on_pages=lambda **_k: {"attempted": 1, "succeeded": 1, "failed": 0},
+        ),
     )
     monkeypatch.setattr(pipeline_cmd, "lighthouse_work_dir", lambda: "/tmp/lh")
     monkeypatch.setattr(pipeline_cmd, "cleanup_lighthouse_work_dir", lambda _p: None)
@@ -1109,9 +1111,8 @@ def test_pipeline_cmd_js_extra_wait_none_branch(monkeypatch) -> None:
         "website_profiling.lighthouse.runner",
         types.SimpleNamespace(main=lambda **_k: 3),
     )
-    with pytest.raises(SystemExit) as e:
+    with pytest.raises(RuntimeError, match="Lighthouse failed with exit code 3"):
         pipeline_cmd._run_single_lighthouse({"lighthouse_strategy": "tablet"}, True)
-    assert e.value.code == 3
 
     monkeypatch.setitem(
         sys.modules,

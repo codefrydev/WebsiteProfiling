@@ -2,12 +2,17 @@
 from __future__ import annotations
 
 import argparse
+import re
 import sys
+from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Literal
 
 import pandas as pd
 
 from ..config import get_bool, get_float, get_int, get_list
-from ..progress import emit_phase_done, emit_phase_start
+from ..console_io import console_print
+from ..progress import emit_phase_done, emit_phase_start, emit_progress
 from .config_resolve import (
     active_property_id_from_cfg,
     cleanup_lighthouse_work_dir,
@@ -21,10 +26,42 @@ from .config_resolve import (
 _ALLOWED_RENDER_MODES = frozenset({"static", "javascript", "auto"})
 
 
+def _cfg_int(cfg: dict, key: str, default: int) -> int:
+    val = get_int(cfg, key, default)
+    return default if val is None else val
+
+
+def _is_2xx_status(val) -> bool:
+    if val is None:
+        return False
+    try:
+        return 200 <= int(float(val)) <= 299
+    except (TypeError, ValueError):
+        return bool(re.match(r"^2\d{2}$", str(val).strip()))
+
+
+@dataclass
+class PhaseResult:
+    name: str
+    status: Literal["ok", "failed"]
+    error: str | None = None
+
+
+def run_pipeline_phase(name: str, fn: Callable[[], None]) -> PhaseResult:
+    """Run one pipeline phase; failures are recorded and do not abort the process."""
+    try:
+        fn()
+        return PhaseResult(name, "ok")
+    except Exception as e:
+        emit_progress(name, "error", message=str(e))
+        console_print(f"[{name}] failed: {e}", file=sys.stderr)
+        return PhaseResult(name, "failed", error=str(e))
+
+
 def _normalize_render_mode(cfg: dict) -> str:
     mode = (cfg.get("crawl_render_mode") or "static").strip().lower()
     if mode not in _ALLOWED_RENDER_MODES:
-        print(
+        console_print(
             f"Warning: invalid crawl_render_mode {mode!r}; using static.",
             file=sys.stderr,
         )
@@ -37,7 +74,7 @@ def select_lighthouse_urls_from_crawl(df: pd.DataFrame, max_pages: int) -> list[
         return []
     if "status" not in df.columns:
         return []
-    success_df = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)]
+    success_df = df[df["status"].map(_is_2xx_status)]
     if success_df.empty:
         return []
     return (
@@ -92,7 +129,7 @@ def run(cfg: dict, args: argparse.Namespace) -> None:
     run_plot = args.command == "plot" or (args.command is None and get_bool(cfg, "run_plot", False))
     run_lighthouse = args.command is None and get_bool(cfg, "run_lighthouse", False)
     run_lighthouse_on_pages = args.command is None and get_bool(cfg, "run_lighthouse_on_pages", False)
-    lighthouse_max_pages = get_int(cfg, "lighthouse_max_pages", 20) or 20
+    lighthouse_max_pages = _cfg_int(cfg, "lighthouse_max_pages", 20)
 
     if args.command is None and (
         run_crawl or run_lighthouse or run_lighthouse_on_pages or run_report or run_plot
@@ -109,30 +146,62 @@ def run(cfg: dict, args: argparse.Namespace) -> None:
             steps.append("report")
         if run_plot:
             steps.append("plot")
-        print(f"Site Audit: {', '.join(steps)}", flush=True)
+        console_print(f"Site Audit: {', '.join(steps)}", flush=True)
         emit_phase_done("config")
 
+    phase_results: list[PhaseResult] = []
+
     if run_crawl:
-        _run_crawl(cfg, use_database)
+        phase_results.append(run_pipeline_phase("crawl", lambda: _run_crawl(cfg, use_database)))
 
     if run_lighthouse_on_pages and use_database:
-        _run_lighthouse_on_pages(cfg, lighthouse_max_pages)
+        phase_results.append(
+            run_pipeline_phase(
+                "lighthouse",
+                lambda: _run_lighthouse_on_pages(cfg, lighthouse_max_pages),
+            )
+        )
 
     if run_lighthouse and not run_lighthouse_on_pages:
-        _run_single_lighthouse(cfg, use_database)
+        phase_results.append(
+            run_pipeline_phase(
+                "lighthouse",
+                lambda: _run_single_lighthouse(cfg, use_database),
+            )
+        )
 
     if run_report:
-        _run_report(cfg, use_database)
+        phase_results.append(run_pipeline_phase("report", lambda: _run_report(cfg, use_database)))
 
     if run_plot:
-        _run_plot(cfg, use_database)
+        phase_results.append(run_pipeline_phase("plot", lambda: _run_plot(cfg, use_database)))
+
+    _finalize_pipeline_run(phase_results)
+
+
+def _finalize_pipeline_run(phase_results: list[PhaseResult]) -> None:
+    """Exit non-zero only when a critical phase failed; optional phases warn instead."""
+    failed = [r for r in phase_results if r.status == "failed"]
+    if not failed:
+        return
+    names = ", ".join(r.name for r in failed)
+    failed_names = {r.name for r in failed}
+    report_ok = any(r.name == "report" and r.status == "ok" for r in phase_results)
+    critical_failed = failed_names & {"crawl", "report"}
+    if report_ok and not critical_failed:
+        console_print(
+            f"Pipeline completed with warnings (optional phase failures: {names})",
+            file=sys.stderr,
+        )
+        return
+    console_print(f"Pipeline finished with failures: {names}", file=sys.stderr)
+    sys.exit(1)
 
 
 def _run_crawl(cfg: dict, use_database: bool) -> None:
     from ..crawl.crawler import run_crawler
 
-    print("[Crawl] Starting...", flush=True)
-    emit_phase_start("crawl")
+    console_print("[Crawl] Starting...", flush=True)
     start_url = require_start_url(cfg, for_step="crawl")
     max_pages = get_int(cfg, "max_pages")
     concurrency = get_int(cfg, "concurrency", 8)
@@ -145,12 +214,12 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
     exclude_urls = get_list(cfg, "crawl_exclude_urls", sep=",")
     preserve_crawl_history = get_bool(cfg, "preserve_crawl_history", True)
     store_content_excerpt = get_bool(cfg, "store_content_excerpt", False)
-    content_excerpt_max_chars = get_int(cfg, "content_excerpt_max_chars", 4096) or 4096
+    content_excerpt_max_chars = _cfg_int(cfg, "content_excerpt_max_chars", 4096)
     crawl_stream_to_db = get_bool(cfg, "crawl_stream_to_db", False)
     property_id = active_property_id_from_cfg(cfg)
     render_mode = _normalize_render_mode(cfg)
-    js_concurrency = get_int(cfg, "crawl_js_concurrency", 3) or 3
-    js_timeout = get_int(cfg, "crawl_js_timeout", 30) or 30
+    js_concurrency = _cfg_int(cfg, "crawl_js_concurrency", 3)
+    js_timeout = _cfg_int(cfg, "crawl_js_timeout", 30)
     js_wait_until = (cfg.get("crawl_js_wait_until") or "domcontentloaded").strip()
     js_extra_wait_ms = get_int(cfg, "crawl_js_extra_wait_ms", 1500)
     if js_extra_wait_ms is None:
@@ -159,7 +228,7 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
     capture_console = get_bool(cfg, "crawl_js_capture_console", True)
     js_console_levels = (cfg.get("crawl_js_console_levels") or "error,warning").strip()
     capture_failed_requests = get_bool(cfg, "crawl_js_capture_failed_requests", False)
-    console_max_per_page = get_int(cfg, "crawl_js_console_max_per_page", 20) or 20
+    console_max_per_page = _cfg_int(cfg, "crawl_js_console_max_per_page", 20)
     custom_extraction_regex = (cfg.get("custom_extraction_regex") or "").strip()
     crawl_ignore_raw = (cfg.get("crawl_ignore_params") or "").strip()
     crawl_ignore_params = [p.strip() for p in crawl_ignore_raw.split(",") if p.strip()] or None
@@ -171,7 +240,7 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
 
     custom_extractors = parse_extractors_config(cfg.get("custom_extractors"))
     enable_axe = get_bool(cfg, "enable_axe", False)
-    print("Crawling...")
+    console_print("Crawling...")
     run_crawler(
         start_url=start_url,
         max_pages=max_pages,
@@ -215,16 +284,16 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
         custom_extractors=custom_extractors or None,
         enable_axe=enable_axe,
     )
-    print("[Crawl] Done.", flush=True)
+    console_print("[Crawl] Done.", flush=True)
     emit_phase_done("crawl")
-    print("Crawl results: PostgreSQL")
+    console_print("Crawl results: PostgreSQL")
 
 
 def _run_lighthouse_on_pages(cfg: dict, lighthouse_max_pages: int) -> None:
     from ..db import db_session, get_latest_crawl_run_id, read_crawl
     from ..lighthouse.runner import run_lighthouse_on_pages as do_lighthouse_on_pages
 
-    print("[Lighthouse on pages] Starting...", flush=True)
+    console_print("[Lighthouse on pages] Starting...", flush=True)
     emit_phase_start("lighthouse", message="Lighthouse on pages")
     with db_session() as conn:
         run_id = get_latest_crawl_run_id(conn)
@@ -242,35 +311,60 @@ def _run_lighthouse_on_pages(cfg: dict, lighthouse_max_pages: int) -> None:
     if not urls_200:
         urls_200 = select_lighthouse_urls_from_crawl(df, lighthouse_max_pages)
     if not urls_200:
-        print("[Lighthouse on pages] No 200 OK URLs in crawl. Skip.", flush=True)
+        console_print("[Lighthouse on pages] No 200 OK URLs in crawl. Skip.", flush=True)
+        emit_progress("lighthouse", "skip", message="No 200 OK URLs in crawl")
     else:
         lh_strategy = (cfg.get("lighthouse_strategy") or "mobile").lower()
         if lh_strategy not in ("mobile", "desktop"):
             lh_strategy = "mobile"
         lh_mode = (cfg.get("lighthouse_mode") or "navigation").strip().lower() or "navigation"
         lh_categories = get_list(cfg, "lighthouse_categories", sep=",")
-        lh_iterations = get_int(cfg, "lighthouse_iterations", 3) or 3
+        lh_iterations = _cfg_int(cfg, "lighthouse_iterations", 3)
+        js_extra_wait_ms = get_int(cfg, "crawl_js_extra_wait_ms", 1500)
+        if js_extra_wait_ms is None:
+            js_extra_wait_ms = 1500
         lh_out = lighthouse_work_dir()
         try:
-            do_lighthouse_on_pages(
+            stats = do_lighthouse_on_pages(
                 urls=urls_200,
                 strategy=lh_strategy,
                 iterations=lh_iterations,
                 output_dir=lh_out,
                 mode=lh_mode,
                 categories=lh_categories if lh_categories else None,
-                concurrency=get_int(cfg, "lighthouse_concurrency", 2) or 2,
+                concurrency=_cfg_int(cfg, "lighthouse_concurrency", 2),
+                wait_ms=js_extra_wait_ms,
             )
         finally:
             cleanup_lighthouse_work_dir(lh_out)
-    print("[Lighthouse on pages] Done.", flush=True)
-    emit_phase_done("lighthouse")
+        attempted = stats.get("attempted", 0)
+        succeeded = stats.get("succeeded", 0)
+        failed = stats.get("failed", 0)
+        console_print(
+            f"[Lighthouse on pages] Done. Wrote {succeeded}/{attempted} URL(s) to DB.",
+            flush=True,
+        )
+        if succeeded == 0 and attempted > 0:
+            emit_progress(
+                "lighthouse",
+                "error",
+                message=f"All {attempted} Lighthouse URL(s) failed",
+            )
+        elif failed > 0:
+            emit_phase_done(
+                "lighthouse",
+                message=f"Lighthouse complete with {failed} failure(s)",
+            )
+        else:
+            emit_phase_done("lighthouse")
+        return
+    console_print("[Lighthouse on pages] Done.", flush=True)
 
 
 def _run_single_lighthouse(cfg: dict, use_database: bool) -> None:
     from ..lighthouse.runner import main as lighthouse_main
 
-    print("[Lighthouse] Starting...", flush=True)
+    console_print("[Lighthouse] Starting...", flush=True)
     emit_phase_start("lighthouse")
     lh_url = require_lighthouse_url(cfg)
     lh_strategy = (cfg.get("lighthouse_strategy") or "mobile").lower()
@@ -278,7 +372,10 @@ def _run_single_lighthouse(cfg: dict, use_database: bool) -> None:
         lh_strategy = "mobile"
     lh_mode = (cfg.get("lighthouse_mode") or "navigation").strip().lower() or "navigation"
     lh_categories = get_list(cfg, "lighthouse_categories", sep=",")
-    lh_iterations = get_int(cfg, "lighthouse_iterations", 3) or 3
+    lh_iterations = _cfg_int(cfg, "lighthouse_iterations", 3)
+    js_extra_wait_ms = get_int(cfg, "crawl_js_extra_wait_ms", 1500)
+    if js_extra_wait_ms is None:
+        js_extra_wait_ms = 1500
     lh_out = lighthouse_work_dir()
     try:
         exit_code = lighthouse_main(
@@ -289,12 +386,13 @@ def _run_single_lighthouse(cfg: dict, use_database: bool) -> None:
             use_database=use_database,
             mode=lh_mode,
             categories=lh_categories if lh_categories else None,
+            wait_ms=js_extra_wait_ms,
         )
     finally:
         cleanup_lighthouse_work_dir(lh_out)
     if exit_code != 0:
-        sys.exit(exit_code)
-    print("[Lighthouse] Done.", flush=True)
+        raise RuntimeError(f"Lighthouse failed with exit code {exit_code}")
+    console_print("[Lighthouse] Done.", flush=True)
     emit_phase_done("lighthouse")
 
 
@@ -309,8 +407,8 @@ def _run_report(cfg: dict, use_database: bool) -> None:
     start_url = require_start_url(cfg, for_step="report")
     run_security_scan_flag = get_bool(cfg, "run_security_scan", True)
     security_scan_active = get_bool(cfg, "security_scan_active", False)
-    security_max_urls_probe = get_int(cfg, "security_max_urls_probe", 20) or 20
-    print("[Report] Starting...", flush=True)
+    security_max_urls_probe = _cfg_int(cfg, "security_max_urls_probe", 20)
+    console_print("[Report] Starting...", flush=True)
     emit_phase_start("report")
     out = run_simple_report(
         max_fetch_for_edges=max_fetch,
@@ -328,38 +426,38 @@ def _run_report(cfg: dict, use_database: bool) -> None:
         use_database=use_database,
         config=cfg,
     )
-    print("[Report] Done.", flush=True)
+    console_print("[Report] Done.", flush=True)
     emit_phase_done("report")
-    print(f"Report written: {out}")
+    console_print(f"Report written: {out}")
 
     if should_enrich_keywords_after_report(cfg) and google_db_has_gsc(cfg):
-        print("[Keywords] Post-audit keyword research (Search Console data found)...", flush=True)
+        console_print("[Keywords] Post-audit keyword research (Search Console data found)...", flush=True)
         emit_phase_start("keywords")
         from ..integrations.google.keyword_enrich import run_enrichment
 
         try:
             run_enrichment(cfg)
-            print("[Keywords] Post-audit keyword research done.", flush=True)
+            console_print("[Keywords] Post-audit keyword research done.", flush=True)
             emit_phase_done("keywords")
         except Exception as e:
-            print(f"Warning: post-audit keyword research failed: {e}", file=sys.stderr)
-            emit_phase_done("keywords", message=f"keywords failed: {e}")
+            console_print(f"Warning: post-audit keyword research failed: {e}", file=sys.stderr)
+            emit_progress("keywords", "error", message=str(e))
 
 
 def _run_plot(cfg: dict, use_database: bool) -> None:
     from ..tools.plot import run_plot as do_plot
 
-    print("[Plot] Starting...", flush=True)
+    console_print("[Plot] Starting...", flush=True)
     emit_phase_start("plot", message="Building charts and link graph")
     render_mode = (cfg.get("crawl_render_mode") or "").strip().lower() or None
     if render_mode is not None and render_mode not in _ALLOWED_RENDER_MODES:
-        print(
+        console_print(
             f"Warning: invalid crawl_render_mode {render_mode!r}; using crawl run default.",
             file=sys.stderr,
         )
         render_mode = None
-    js_concurrency = get_int(cfg, "crawl_js_concurrency", 3) or 3
-    js_timeout = get_int(cfg, "crawl_js_timeout", 30) or 30
+    js_concurrency = _cfg_int(cfg, "crawl_js_concurrency", 3)
+    js_timeout = _cfg_int(cfg, "crawl_js_timeout", 30)
     js_wait_until = (cfg.get("crawl_js_wait_until") or "domcontentloaded").strip()
     js_extra_wait_ms = get_int(cfg, "crawl_js_extra_wait_ms", 1500)
     if js_extra_wait_ms is None:
@@ -380,9 +478,9 @@ def _run_plot(cfg: dict, use_database: bool) -> None:
             js_extra_wait_ms=js_extra_wait_ms,
             js_block_resources=js_block_resources,
         )
-        print("[Plot] Done.", flush=True)
+        console_print("[Plot] Done.", flush=True)
         emit_phase_done("plot", message="Charts and link graph complete")
-        print(f"Plot data: {e}")
+        console_print(f"Plot data: {e}")
     except Exception:
         emit_phase_done("plot", message="Charts step failed")
         raise

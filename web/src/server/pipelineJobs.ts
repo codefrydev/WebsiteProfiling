@@ -4,6 +4,7 @@ import fs from 'fs';
 import { randomUUID } from 'crypto';
 import { getPipelineSpawnEnv } from '@/server/pipelineSpawnEnv';
 import { formatPythonSpawnError, resolvePythonExecutable } from '@/server/resolvePython';
+import { buildPipelineJobErrorMessage } from '@/lib/pipelineJobErrorMessage';
 import {
   appendPipelineJobLog,
   cancelPipelineJobInDb,
@@ -190,7 +191,7 @@ export function startPipelineJob(
 
   const proc = spawn(pythonExe, args, {
     cwd: repoRoot,
-    env: getPipelineSpawnEnv(repoRoot, options.propertyId ?? null),
+    env: getPipelineSpawnEnv(repoRoot),
     shell: false,
   });
   getProcessMap().set(id, proc);
@@ -224,10 +225,7 @@ export function startPipelineJob(
     const status = code === 0 ? 'success' : 'error';
     let error: string | undefined;
     if (code !== 0) {
-      const tail = entry.log.trim().slice(-500);
-      error = tail
-        ? `Process exited with code ${code ?? 'unknown'}`
-        : `Process exited with code ${code ?? 'unknown'} (no output captured)`;
+      error = buildPipelineJobErrorMessage(entry.log, code);
     }
     markJobFinished(id, entry, status, code, error);
   });

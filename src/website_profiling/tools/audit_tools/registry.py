@@ -32,9 +32,11 @@ from .compare_slices import (
     compare_duplicate_deltas,
     compare_google_metrics,
     compare_health_score_delta,
+    compare_indexation_deltas,
     compare_issue_deltas,
     compare_lighthouse_deltas,
     compare_link_metric_deltas,
+    compare_orphan_deltas,
     compare_priority_counts,
     compare_redirect_deltas,
     compare_security_deltas,
@@ -42,6 +44,7 @@ from .compare_slices import (
     compare_tech_deltas,
     compare_url_set_diff,
 )
+from .crawl_metrics import get_asset_weight_summary, get_readability_summary
 from .content import (
     get_content_analytics,
     get_content_duplicates,
@@ -53,15 +56,35 @@ from .content import (
 )
 from .context import AuditToolContext
 from .crawl_lists import (
+    get_axe_audit_summary,
+    get_heading_outline_for_url,
     get_top_pages_by_pagerank,
     list_canonical_mismatch,
+    list_dead_end_pages,
+    list_duplicate_title_groups,
+    list_heavy_pages_by_bytes,
     list_long_redirect_chains,
+    list_pages_low_content_ratio,
     list_pages_missing_canonical,
     list_pages_missing_og_image,
     list_pages_missing_viewport,
+    list_pages_poor_cache_headers,
     list_pages_skipped_headings,
+    list_pages_soft_404,
+    list_pages_with_axe_violations,
     list_pages_with_missing_alt,
+    list_pages_with_mixed_content,
     list_robots_blocked_urls,
+)
+from .geo_tools import (
+    get_aeo_content_signals_for_url,
+    get_eeat_signals_summary,
+    get_faq_schema_coverage,
+    get_geo_readiness_score,
+    get_internal_link_suggestions,
+    get_js_rendering_delta,
+    get_llms_txt_status,
+    list_pages_missing_faq_schema,
 )
 from .crawl import (
     get_browser_diagnostics_summary,
@@ -88,9 +111,17 @@ from .google import (
     get_ga4_page_metrics,
     get_ga4_summary,
     get_google_summary,
+    get_gsc_ctr_opportunity_pages,
     get_gsc_page_query_slice,
     get_gsc_top_pages,
     get_gsc_top_queries,
+)
+from .integration_tools import (
+    check_ai_citation_presence,
+    get_bing_index_status,
+    get_gsc_index_coverage,
+    get_gsc_url_inspection,
+    get_serp_feature_overlay,
 )
 from .health import get_category_health_history, get_health_history, list_report_history
 from .indexation_tools import get_indexation_coverage, get_indexation_url_join, list_indexation_gaps
@@ -107,6 +138,7 @@ from .keywords import (
     list_keywords_by_action,
     list_keywords_by_impressions,
     list_keywords_by_position,
+    list_keywords_ctr_opportunity,
     search_keywords,
 )
 from .lighthouse import (
@@ -141,10 +173,23 @@ from .image_tools import (
     list_unoptimized_images,
 )
 from .llm_tools import (
+    analyze_serp_snippet_for_url,
+    draft_llms_txt,
     expand_keywords,
     generate_content_brief,
+    generate_issue_fix,
     get_page_coach,
     get_portfolio_summary,
+    prioritize_fix_roadmap,
+    summarize_category_for_client,
+)
+from .payload_extras import (
+    get_competitor_keyword_gap,
+    get_pagination_audit_summary,
+    get_portfolio_benchmark,
+    get_rich_results_summary,
+    get_site_anchor_text_summary,
+    list_rich_results_failures,
 )
 from .onpage import (
     list_content_url_issues,
@@ -196,6 +241,7 @@ from .report import (
     get_report_summary,
     get_site_level,
     list_issues,
+    list_top_impact_issues,
     search_issues,
 )
 from .report_extras import (
@@ -399,6 +445,47 @@ _TOOL_HANDLERS: dict[str, ToolHandler] = {
     "list_largest_images": list_largest_images,
     "list_unoptimized_images": list_unoptimized_images,
     "list_images_needing_attention": list_images_needing_attention,
+    "list_top_impact_issues": list_top_impact_issues,
+    "get_rich_results_summary": get_rich_results_summary,
+    "list_rich_results_failures": list_rich_results_failures,
+    "get_competitor_keyword_gap": get_competitor_keyword_gap,
+    "get_portfolio_benchmark": get_portfolio_benchmark,
+    "get_site_anchor_text_summary": get_site_anchor_text_summary,
+    "get_pagination_audit_summary": get_pagination_audit_summary,
+    "list_pages_soft_404": list_pages_soft_404,
+    "list_pages_with_axe_violations": list_pages_with_axe_violations,
+    "get_axe_audit_summary": get_axe_audit_summary,
+    "list_pages_with_mixed_content": list_pages_with_mixed_content,
+    "list_dead_end_pages": list_dead_end_pages,
+    "list_duplicate_title_groups": list_duplicate_title_groups,
+    "list_heavy_pages_by_bytes": list_heavy_pages_by_bytes,
+    "list_pages_poor_cache_headers": list_pages_poor_cache_headers,
+    "list_pages_low_content_ratio": list_pages_low_content_ratio,
+    "get_heading_outline_for_url": get_heading_outline_for_url,
+    "get_asset_weight_summary": get_asset_weight_summary,
+    "get_readability_summary": get_readability_summary,
+    "list_keywords_ctr_opportunity": list_keywords_ctr_opportunity,
+    "get_gsc_ctr_opportunity_pages": get_gsc_ctr_opportunity_pages,
+    "compare_indexation_deltas": compare_indexation_deltas,
+    "compare_orphan_deltas": compare_orphan_deltas,
+    "get_llms_txt_status": get_llms_txt_status,
+    "get_faq_schema_coverage": get_faq_schema_coverage,
+    "list_pages_missing_faq_schema": list_pages_missing_faq_schema,
+    "get_geo_readiness_score": get_geo_readiness_score,
+    "get_aeo_content_signals_for_url": get_aeo_content_signals_for_url,
+    "get_eeat_signals_summary": get_eeat_signals_summary,
+    "get_js_rendering_delta": get_js_rendering_delta,
+    "get_internal_link_suggestions": get_internal_link_suggestions,
+    "generate_issue_fix": generate_issue_fix,
+    "summarize_category_for_client": summarize_category_for_client,
+    "prioritize_fix_roadmap": prioritize_fix_roadmap,
+    "analyze_serp_snippet_for_url": analyze_serp_snippet_for_url,
+    "draft_llms_txt": draft_llms_txt,
+    "get_gsc_url_inspection": get_gsc_url_inspection,
+    "get_gsc_index_coverage": get_gsc_index_coverage,
+    "get_bing_index_status": get_bing_index_status,
+    "get_serp_feature_overlay": get_serp_feature_overlay,
+    "check_ai_citation_presence": check_ai_citation_presence,
 }
 
 

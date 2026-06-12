@@ -1,4 +1,5 @@
 import argparse
+from unittest.mock import patch
 
 import pytest
 
@@ -42,9 +43,102 @@ def test_active_property_id_from_env(monkeypatch) -> None:
     monkeypatch.delenv("WP_PROPERTY_ID", raising=False)
     monkeypatch.setenv("WP_PROPERTY_ID", "12")
     assert config_resolve.active_property_id_from_cfg({}) == 12
+    assert config_resolve.active_property_id_from_cfg({"active_property_id": "3"}) == 12
+    monkeypatch.delenv("WP_PROPERTY_ID", raising=False)
     assert config_resolve.active_property_id_from_cfg({"active_property_id": "3"}) == 3
     assert config_resolve.active_property_id_from_cfg({"active_property_id": "bad"}) is None
     assert config_resolve.active_property_id_from_cfg({"active_property_id": "0"}) is None
+
+
+def test_apply_property_spawn_overlay(monkeypatch) -> None:
+    from website_profiling.commands import config_resolve
+
+    monkeypatch.setenv("WP_PROPERTY_ID", "7")
+    monkeypatch.setenv("WP_SCHEDULED_SPAWN", "1")
+
+    class Ctx:
+        def __enter__(self):
+            return object()
+
+        def __exit__(self, *_):
+            return False
+
+    with patch("website_profiling.db.db_session", lambda: Ctx()):
+        with patch(
+            "website_profiling.db.property_store.get_property_by_id",
+            return_value={
+                "id": 7,
+                "site_url": "https://spawned.example.com",
+                "default_crawl_preset": "spa",
+            },
+        ):
+            merged = config_resolve.apply_property_spawn_overlay(
+                {
+                    "max_pages": "50",
+                    "enable_google_search_console": "true",
+                }
+            )
+    assert merged["active_property_id"] == "7"
+    assert merged["start_url"] == "https://spawned.example.com"
+    assert merged["crawl_render_mode"] == "auto"
+    assert merged["max_pages"] == "2000"
+    assert merged["enable_google_search_console"] == "true"
+
+
+def test_apply_property_spawn_overlay_skipped_without_scheduled_flag(monkeypatch) -> None:
+    from website_profiling.commands import config_resolve
+
+    monkeypatch.setenv("WP_PROPERTY_ID", "7")
+    monkeypatch.delenv("WP_SCHEDULED_SPAWN", raising=False)
+
+    cfg = {
+        "max_pages": "50",
+        "start_url": "https://saved.example.com",
+    }
+    merged = config_resolve.apply_property_spawn_overlay(cfg)
+    assert merged == cfg
+
+
+def test_apply_property_spawn_overlay_skipped_when_only_scheduled_flag(monkeypatch) -> None:
+    from website_profiling.commands import config_resolve
+
+    monkeypatch.delenv("WP_PROPERTY_ID", raising=False)
+    monkeypatch.setenv("WP_SCHEDULED_SPAWN", "1")
+
+    cfg = {"max_pages": "50", "start_url": "https://saved.example.com"}
+    merged = config_resolve.apply_property_spawn_overlay(cfg)
+    assert merged == cfg
+
+
+@pytest.mark.parametrize("property_id", ["bad", "0"])
+def test_apply_property_spawn_overlay_returns_cfg_on_invalid_property_id(
+    monkeypatch, property_id
+) -> None:
+    from website_profiling.commands import config_resolve
+
+    monkeypatch.setenv("WP_PROPERTY_ID", property_id)
+    monkeypatch.setenv("WP_SCHEDULED_SPAWN", "1")
+    cfg = {"max_pages": "50", "start_url": "https://saved.example.com"}
+    assert config_resolve.apply_property_spawn_overlay(cfg) == cfg
+
+
+def test_apply_property_spawn_overlay_returns_cfg_when_property_missing(monkeypatch) -> None:
+    from website_profiling.commands import config_resolve
+
+    monkeypatch.setenv("WP_PROPERTY_ID", "9")
+    monkeypatch.setenv("WP_SCHEDULED_SPAWN", "1")
+    cfg = {"max_pages": "50", "start_url": "https://saved.example.com"}
+
+    class Ctx:
+        def __enter__(self):
+            return object()
+
+        def __exit__(self, *_):
+            return False
+
+    with patch("website_profiling.db.db_session", lambda: Ctx()):
+        with patch("website_profiling.db.property_store.get_property_by_id", return_value=None):
+            assert config_resolve.apply_property_spawn_overlay(cfg) == cfg
 
 
 def test_resolve_property_id_from_cfg_no_start_url() -> None:

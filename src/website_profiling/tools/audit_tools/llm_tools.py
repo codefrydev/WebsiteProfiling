@@ -128,3 +128,208 @@ def expand_keywords(conn: Connection, ctx: AuditToolContext, args: dict[str, Any
         "expansions": expanded,
         "seed_count": len(seeds),
     }
+
+
+def _llm_disabled_response() -> dict[str, Any]:
+    from ...llm_config import load_llm_config_from_db, llm_is_enabled
+
+    cfg = load_llm_config_from_db()
+    if not llm_is_enabled(cfg):
+        return {"error": "AI insights are disabled — enable LLM in audit settings", "missing": True}
+    return {}
+
+
+def generate_issue_fix(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    from ...llm.issue_fixes import generate_issue_fix_suggestion
+    from ...llm_config import load_llm_config_from_db
+
+    err = _llm_disabled_response()
+    if err:
+        return err
+    message = str(args.get("message") or "").strip()
+    if not message:
+        return {"error": "message is required (issue message to fix)"}
+    refresh = str(args.get("refresh") or "").lower() in ("true", "1", "yes")
+    issue = {
+        "message": message,
+        "url": args.get("url"),
+        "priority": args.get("priority"),
+        "category": args.get("category_id") or args.get("category"),
+        "recommendation": args.get("recommendation"),
+    }
+    result = generate_issue_fix_suggestion(issue, cfg=load_llm_config_from_db(), refresh=refresh)
+    result["provenance"] = "AI insights"
+    return result
+
+
+def summarize_category_for_client(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    from .issues import get_category_issues
+
+    category_id = str(args.get("category_id") or "").strip()
+    if not category_id:
+        return {"error": "category_id is required"}
+    data = get_category_issues(conn, ctx, {**args, "category_id": category_id})
+    if data.get("error"):
+        return data
+    issues = data.get("issues") or []
+    top = issues[:5]
+    bullets = [
+        f"[{i.get('priority')}] {i.get('message')}" + (f" ({i.get('url')})" if i.get("url") else "")
+        for i in top
+        if isinstance(i, dict)
+    ]
+    summary = {
+        "category_id": category_id,
+        "category_name": data.get("name"),
+        "score": data.get("score"),
+        "issue_count": len(issues),
+        "headline": f"{data.get('name') or category_id}: {len(issues)} issue(s), score {data.get('score')}",
+        "top_issues": bullets,
+    }
+    err = _llm_disabled_response()
+    if not err:
+        from ...llm.base import get_llm_client, parse_json_response
+        from ...llm_config import load_llm_config_from_db
+
+        cfg = load_llm_config_from_db()
+        try:
+            client = get_llm_client(cfg)
+            user = (
+                "Write a 2-3 sentence client-friendly summary of this audit category. "
+                f"Return JSON with key summary. Data: {json.dumps(summary, default=str)[:3000]}"
+            )
+            raw = client.complete_json("You are a technical SEO consultant writing for clients.", user)
+            if isinstance(raw, dict) and raw.get("summary"):
+                summary["narrative"] = raw["summary"]
+            else:
+                summary["narrative"] = str(raw.get("summary") or parse_json_response(str(raw)).get("summary") or "")
+        except Exception as e:
+            summary["narrative_error"] = str(e)
+    summary["provenance"] = "AI insights" if summary.get("narrative") else "Crawl"
+    return summary
+
+
+def prioritize_fix_roadmap(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    from ...reporting.issue_impact import sort_issues_by_impact
+    from .report import _iter_category_issues
+
+    scoped = ctx.with_args(args)
+    payload = scoped.load_payload(conn)
+    if not payload:
+        return {"error": "no report found", "roadmap": []}
+    issues = sort_issues_by_impact(_iter_category_issues(payload))
+    try:
+        top_n = int(args.get("limit", 15))
+    except (TypeError, ValueError):
+        top_n = 15
+    top_n = max(1, min(top_n, 30))
+    roadmap = [
+        {
+            "rank": i + 1,
+            "priority": iss.get("priority"),
+            "impact_score": iss.get("impact_score"),
+            "message": iss.get("message"),
+            "url": iss.get("url"),
+            "category": iss.get("category"),
+            "gsc_clicks": iss.get("gsc_clicks"),
+            "ga4_sessions": iss.get("ga4_sessions"),
+        }
+        for i, iss in enumerate(issues[:top_n])
+    ]
+    return {"roadmap": roadmap, "total_issues": len(issues), "provenance": "Crawl"}
+
+
+def analyze_serp_snippet_for_url(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    from ...integrations.google.page_lookup import slice_from_google_row
+
+    scoped = ctx.with_args(args)
+    url = str(args.get("url") or "").strip()
+    if not url:
+        return {"error": "url is required"}
+    data = scoped.load_google(conn)
+    gsc_slice = slice_from_google_row(data, url) if data else {}
+    scoped_df = scoped.load_crawl_df(conn)
+    page_row: dict[str, Any] = {}
+    if scoped_df is not None and not scoped_df.empty:
+        needle = url.rstrip("/").lower()
+        for _, row in scoped_df.iterrows():
+            if str(row.get("url") or "").rstrip("/").lower() == needle:
+                page_row = row.to_dict()
+                break
+    base = {
+        "url": url,
+        "current_title": page_row.get("title"),
+        "current_meta_description": page_row.get("meta_description"),
+        "gsc_queries": (gsc_slice.get("gsc") or {}).get("queries") if isinstance(gsc_slice, dict) else None,
+        "gsc_metrics": (gsc_slice.get("gsc") or {}).get("page_metrics") if isinstance(gsc_slice, dict) else None,
+    }
+    err = _llm_disabled_response()
+    if err:
+        base["note"] = err.get("error")
+        base["provenance"] = "Crawl"
+        return base
+    from ...llm.base import get_llm_client
+    from ...llm_config import load_llm_config_from_db
+
+    cfg = load_llm_config_from_db()
+    client = get_llm_client(cfg)
+    if not client:
+        base["provenance"] = "Crawl"
+        return base
+    prompt = (
+        "Suggest improved title and meta description for better CTR. "
+        f"Context: {json.dumps(base, default=str)[:2500]}"
+    )
+    try:
+        suggestions = client.complete_json(
+            "You are an SEO copywriter. Return JSON with title, meta_description, rationale.",
+            prompt,
+        )
+        base["suggestions"] = suggestions if isinstance(suggestions, dict) else {}
+        base["provenance"] = "AI insights"
+    except Exception as e:
+        base["error"] = str(e)
+        base["provenance"] = "Crawl"
+    return base
+
+
+def draft_llms_txt(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    payload = scoped.load_payload(conn)
+    if not payload:
+        return {"error": "no report found"}
+    site_name = str(payload.get("site_name") or scoped.resolve_property_domain(conn) or "Site")
+    top_pages = (payload.get("top_pages") or payload.get("links") or [])[:10]
+    page_urls = [str(p.get("url")) for p in top_pages if isinstance(p, dict) and p.get("url")]
+    schema_cov = payload.get("schema_coverage") if isinstance(payload.get("schema_coverage"), dict) else {}
+    draft_lines = [
+        f"# {site_name}",
+        "",
+        "> LLM-oriented site index (draft — review before publishing)",
+        "",
+        "## Key pages",
+        *[f"- {u}" for u in page_urls],
+        "",
+        f"## Schema coverage: {schema_cov.get('pages_with_schema', 'n/a')} pages with structured data",
+    ]
+    err = _llm_disabled_response()
+    if not err:
+        from ...llm.base import get_llm_client
+        from ...llm_config import load_llm_config_from_db
+
+        try:
+            client = get_llm_client(load_llm_config_from_db())
+            raw = client.complete_json(
+                "You write concise llms.txt files per emerging conventions. Return JSON with key content.",
+                "Polish this llms.txt draft:\n" + "\n".join(draft_lines),
+            )
+            content = raw.get("content") if isinstance(raw, dict) else None
+            if content and str(content).strip():
+                draft_lines = str(content).strip().splitlines()
+        except Exception:
+            pass
+    return {
+        "site_name": site_name,
+        "llms_txt_draft": "\n".join(draft_lines),
+        "provenance": "AI insights",
+    }

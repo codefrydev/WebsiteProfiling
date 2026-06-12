@@ -113,10 +113,9 @@ export default function IssuesTab({ lhData, inspectorDetails, pageUrl }: IssuesT
   }, [allIssues, it.typeLabels]);
 
   const typeBarOpts = useMemo((): ChartOptions<'bar'> => {
-    const base = barOptionsHorizontal();
+    const base = barOptionsHorizontal(undefined, typeChart.labels);
     return {
       ...base,
-      indexAxis: 'y',
       plugins: {
         ...base.plugins,
         tooltip: {
@@ -129,7 +128,7 @@ export default function IssuesTab({ lhData, inspectorDetails, pageUrl }: IssuesT
         },
       },
     } as ChartOptions<'bar'>;
-  }, [it.issueTooltip]);
+  }, [it.issueTooltip, typeChart.labels]);
 
   return (
     <div className="space-y-6">

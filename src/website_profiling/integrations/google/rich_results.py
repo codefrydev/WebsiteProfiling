@@ -70,61 +70,9 @@ def _local_row(url: str, link: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def _inspect_via_gsc(creds: Any, site_url: str, url: str) -> dict[str, Any]:
-    from .gsc import _build_service, _call_with_retry, resolve_gsc_site_url, list_gsc_sites
+    from .gsc_inspection import inspect_url_rich_results_row
 
-    sites = list_gsc_sites(creds)
-    resolved, err = resolve_gsc_site_url(site_url, sites)
-    if not resolved:
-        return {
-            "url": url,
-            "status": "error",
-            "provenance": "Google Search Console",
-            "source": "gsc",
-            "message": err or "GSC site URL not accessible.",
-        }
-    service = _build_service(creds)
-    body = {"inspectionUrl": url, "siteUrl": resolved}
-    resp = _call_with_retry(
-        lambda: service.urlInspection().index().inspect(body=body).execute()
-    )
-    inspection = resp.get("inspectionResult") or {}
-    rich = inspection.get("richResultsResult") or {}
-    verdict = str(rich.get("verdict") or "UNKNOWN")
-    detected = rich.get("detectedItems") or []
-    types: list[str] = []
-    for item in detected:
-        if isinstance(item, dict):
-            rt = item.get("richResultType")
-            if rt:
-                types.append(str(rt))
-    status = "pass"
-    if verdict in ("FAIL", "ERROR"):
-        status = "fail"
-    elif verdict in ("PARTIAL", "WARN", "WARNING"):
-        status = "warning"
-    elif verdict in ("NEUTRAL", "UNKNOWN", "NOT_APPLICABLE"):
-        status = "info"
-    message = f"Rich Results verdict: {verdict}"
-    if types:
-        message += f" ({', '.join(types[:5])})"
-    row: dict[str, Any] = {
-        "url": url,
-        "status": status,
-        "provenance": "Google Search Console",
-        "source": "gsc",
-        "message": message,
-        "verdict": verdict,
-    }
-    if types:
-        row["schema_types"] = types[:10]
-    issues = rich.get("issues") or []
-    if issues:
-        row["issues"] = [
-            str(i.get("issueMessage") or i.get("severity") or i)
-            for i in issues[:5]
-            if isinstance(i, dict) or i
-        ]
-    return row
+    return inspect_url_rich_results_row(creds, site_url, url)
 
 
 def _inspect_via_rich_results_api(api_key: str, url: str) -> dict[str, Any]:

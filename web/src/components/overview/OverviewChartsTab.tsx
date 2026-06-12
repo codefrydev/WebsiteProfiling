@@ -5,6 +5,7 @@ import { Bar } from 'react-chartjs-2';
 import { strings, format } from '@/lib/strings';
 import { Card, StatCard } from '@/components';
 import { StatusDistributionChart, LighthouseScoreGrid } from '@/components/charts';
+import { ChartPanel } from '@/components/charts';
 import { barOptionsHorizontal } from '@/utils/chartJsDefaults';
 import type { ReportPayload } from '@/types';
 import type { OverviewChartBlock, OverviewCharts } from './types';
@@ -21,13 +22,16 @@ function OverviewBarChart({
   chart: OverviewChartBlock;
   yTitle: string;
 }) {
+  const labels = chart.data.labels?.map(String) ?? [];
   const opts = chart.horizontal
-    ? barOptionsHorizontal()
+    ? barOptionsHorizontal(undefined, labels)
     : barOptsVertical(yTitle, chart.aria);
   return (
-    <div className={chart.horizontal ? 'h-56' : 'h-56'} role="img" aria-label={chart.aria}>
-      <Bar data={chart.data} options={opts} />
-    </div>
+    <ChartPanel>
+      <div className="h-full w-full" role="img" aria-label={chart.aria}>
+        <Bar data={chart.data} options={opts} />
+      </div>
+    </ChartPanel>
   );
 }
 
@@ -65,7 +69,7 @@ export function OverviewChartsTab({ charts, depth }: OverviewChartsTabProps) {
             {vo.insightsGlance}
           </h2>
           <p className="text-sm text-muted-foreground mb-6 max-w-3xl">{vo.insightsHint}</p>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
             {statusDistribution && (
               <Card shadow>
                 <h3 className="text-sm font-bold text-foreground mb-1">{vo.statusDist}</h3>
@@ -97,18 +101,22 @@ export function OverviewChartsTab({ charts, depth }: OverviewChartsTabProps) {
                     avgDepth: depth.avg_depth ?? sj.emDash,
                   })}
                 </div>
-                <div className="h-52" role="img" aria-label={depthChart.aria}>
-                  <Bar data={depthChart.data} options={barOptsVertical(vo.chartUrls, depthChart.aria)} />
-                </div>
+                <ChartPanel heightClass="h-52">
+                  <div className="h-full w-full" role="img" aria-label={depthChart.aria}>
+                    <Bar data={depthChart.data} options={barOptsVertical(vo.chartUrls, depthChart.aria)} />
+                  </div>
+                </ChartPanel>
               </Card>
             )}
             {titleMetaChart && (
               <Card shadow>
                 <h3 className="text-sm font-bold text-foreground mb-1">{vo.titleMetaHealth}</h3>
                 <p className="text-xs text-muted-foreground mb-3">{vo.titleMetaHint}</p>
-                <div className="h-64" role="img" aria-label={titleMetaChart.aria}>
-                  <Bar data={titleMetaChart.data} options={barOptsGrouped(vo.chartPages)} />
-                </div>
+                <ChartPanel heightClass="h-64">
+                  <div className="h-full w-full" role="img" aria-label={titleMetaChart.aria}>
+                    <Bar data={titleMetaChart.data} options={barOptsGrouped(vo.chartPages)} />
+                  </div>
+                </ChartPanel>
               </Card>
             )}
             {socialStats && (

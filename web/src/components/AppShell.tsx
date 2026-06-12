@@ -288,8 +288,8 @@ export default function AppShell({
           initialToast={integrationsToast}
         />
 
-        <div className="relative min-h-0 flex-1 overflow-y-auto" id="viewContainer">
-          <div className="fade-in">{children}</div>
+        <div className="relative min-h-0 flex-1 overflow-y-auto overflow-x-hidden" id="viewContainer">
+          <div className="fade-in min-w-0 max-w-full">{children}</div>
         </div>
       </main>
     </div>

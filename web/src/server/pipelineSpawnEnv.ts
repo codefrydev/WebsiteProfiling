@@ -8,6 +8,7 @@ export function getRepoRoot(): string {
 /** Env for spawning `python -m src` so CLI loads config from PostgreSQL. */
 export function getPipelineSpawnEnv(
   repoRootOverride?: string,
+  /** For property-scoped CLI calls (Google, chat), not full pipeline runs. */
   propertyId?: number | null,
 ): NodeJS.ProcessEnv {
   const repoRoot = repoRootOverride || getRepoRoot();
@@ -17,6 +18,8 @@ export function getPipelineSpawnEnv(
     DATA_DIR: getDataDir(),
     // Required for `python -c "from website_profiling ..."` (browser-status, exports, etc.).
     PYTHONPATH: path.join(repoRoot, 'src'),
+    PYTHONIOENCODING: 'utf-8',
+    PYTHONUTF8: '1',
   };
   if (propertyId != null && Number.isFinite(propertyId)) {
     env.WP_PROPERTY_ID = String(propertyId);

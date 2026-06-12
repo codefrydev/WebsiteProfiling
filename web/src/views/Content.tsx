@@ -70,7 +70,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
   }, [contentUrls, CONTENT_FILTERS]);
 
   const issueBarOpts = useMemo(() => {
-    const base = barOptionsHorizontal();
+    const base = barOptionsHorizontal(undefined, issueBarData.labels);
     return {
       ...base,
       plugins: {
@@ -85,7 +85,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
         },
       },
     };
-  }, []);
+  }, [issueBarData.labels]);
 
   const getCount = (key: string) => (contentUrls[key] || []).length;
   const totalIssues = useMemo(
@@ -184,10 +184,10 @@ export default function Content({ searchQuery = '' }: ViewProps) {
           )}
 
           {totalIssues > 0 && (
-            <Card padding="tight" shadow>
+            <Card padding="tight" shadow overflowHidden className="min-w-0">
               <h2 className="text-sm font-bold text-foreground mb-1">{vc.issuesByType}</h2>
               <p className="text-xs text-muted-foreground mb-3">{vc.issuesByTypeHint}</p>
-              <div className="h-[22rem]">
+              <div className="relative h-[22rem] min-w-0 w-full overflow-hidden">
                 <Bar
                   data={{
                     labels: issueBarData.labels,

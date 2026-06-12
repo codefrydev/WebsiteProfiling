@@ -1,4 +1,5 @@
 export { ChartAccessibleFallback } from './ChartAccessibleFallback';
+export { ChartPanel } from './ChartPanel';
 export { RatioBar, CoverageBar } from './RatioBar';
 export { LighthouseScoreGrid } from './LighthouseScoreGrid';
 export { StatusDistributionChart } from './DistributionChart';

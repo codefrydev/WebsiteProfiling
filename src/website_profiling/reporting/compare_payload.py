@@ -529,6 +529,66 @@ def build_url_set_diff(current: dict[str, Any], baseline: dict[str, Any]) -> dic
     }
 
 
+def build_indexation_deltas(current: dict[str, Any], baseline: dict[str, Any]) -> dict[str, Any]:
+    """Indexation coverage count and gap list changes between reports."""
+    cur_cov = current.get("indexation_coverage") if isinstance(current.get("indexation_coverage"), dict) else {}
+    base_cov = baseline.get("indexation_coverage") if isinstance(baseline.get("indexation_coverage"), dict) else {}
+    cur_counts = cur_cov.get("counts") if isinstance(cur_cov.get("counts"), dict) else {}
+    base_counts = base_cov.get("counts") if isinstance(base_cov.get("counts"), dict) else {}
+    count_deltas: list[dict[str, Any]] = []
+    for key in sorted(set(cur_counts) | set(base_counts)):
+        cur_v = cur_counts.get(key)
+        base_v = base_counts.get(key)
+        try:
+            delta = int(cur_v or 0) - int(base_v or 0)
+        except (TypeError, ValueError):
+            delta = None
+        count_deltas.append({"metric": key, "current": cur_v, "baseline": base_v, "delta": delta})
+    gap_types = ("sitemap_only", "crawled_not_in_sitemap", "gsc_not_crawled")
+    gap_deltas: dict[str, Any] = {}
+    cur_lists = cur_cov.get("lists") if isinstance(cur_cov.get("lists"), dict) else {}
+    base_lists = base_cov.get("lists") if isinstance(base_cov.get("lists"), dict) else {}
+
+    def _norm_set(items: list[Any]) -> set[str]:
+        return {norm_report_url(str(u)) for u in items if u}
+
+    for gap in gap_types:
+        cur_set = _norm_set(cur_lists.get(gap) or [])
+        base_set = _norm_set(base_lists.get(gap) or [])
+        added = sorted(cur_set - base_set)
+        removed = sorted(base_set - cur_set)
+        gap_deltas[gap] = {
+            "added_count": len(added),
+            "removed_count": len(removed),
+            "added": added[:50],
+            "removed": removed[:50],
+        }
+    return {"count_deltas": count_deltas, "gap_deltas": gap_deltas}
+
+
+def build_orphan_deltas(current: dict[str, Any], baseline: dict[str, Any]) -> dict[str, Any]:
+    """Orphan URL set changes between reports."""
+    def _orphan_set(payload: dict[str, Any]) -> set[str]:
+        urls = payload.get("orphan_urls") or []
+        if not isinstance(urls, list):
+            return set()
+        return {norm_report_url(str(u)) for u in urls if u}
+
+    cur_set = _orphan_set(current)
+    base_set = _orphan_set(baseline)
+    added = sorted(cur_set - base_set)
+    removed = sorted(base_set - cur_set)
+    return {
+        "current_count": len(cur_set),
+        "baseline_count": len(base_set),
+        "delta": len(cur_set) - len(base_set),
+        "added": added[:100],
+        "removed": removed[:100],
+        "added_count": len(added),
+        "removed_count": len(removed),
+    }
+
+
 def build_full_compare(
     current: dict[str, Any],
     baseline: dict[str, Any],

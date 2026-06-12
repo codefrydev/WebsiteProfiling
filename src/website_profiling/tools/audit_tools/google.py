@@ -135,3 +135,55 @@ def get_ga4_page_metrics(conn: Connection, ctx: AuditToolContext, args: dict[str
     if ga4_slice:
         return {"path": path, "metrics": ga4_slice, "fetched_at": data.get("fetched_at")}
     return {"error": "path not found in GA4 top pages", "path": path, "missing": True}
+
+
+def get_gsc_ctr_opportunity_pages(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    """Pages with high impressions but CTR below industry curve at their position."""
+    from ...integrations.google.keyword_enrich import ctr_as_fraction, industry_ctr
+
+    scoped = ctx.with_args(args)
+    data = scoped.load_google(conn)
+    if not data:
+        return {"error": "no google data found", "pages": [], "total": 0, "truncated": False}
+    gsc = data.get("gsc") if isinstance(data.get("gsc"), dict) else {}
+    pages = gsc.get("pages") or gsc.get("top_pages") or []
+    if not isinstance(pages, list):
+        pages = []
+    try:
+        min_impressions = int(args.get("min_impressions", 100))
+    except (TypeError, ValueError):
+        min_impressions = 100
+    opportunities: list[dict[str, Any]] = []
+    for row in pages:
+        if not isinstance(row, dict):
+            continue
+        impressions = int(row.get("impressions") or 0)
+        if impressions < min_impressions:
+            continue
+        try:
+            pos = float(row.get("position") or 0)
+        except (TypeError, ValueError):
+            pos = 0
+        if pos <= 0:
+            continue
+        ctr_frac = ctr_as_fraction(row.get("ctr"))
+        expected = industry_ctr(pos)
+        if ctr_frac > 0 and ctr_frac < expected * 0.7:
+            opportunities.append({
+                "page": row.get("page") or row.get("url"),
+                "clicks": row.get("clicks"),
+                "impressions": impressions,
+                "ctr": row.get("ctr"),
+                "position": pos,
+                "expected_ctr_fraction": round(expected, 4),
+                "opportunity": "improve CTR (title/description)",
+            })
+    opportunities.sort(key=lambda p: -int(p.get("impressions") or 0))
+    limit = parse_limit(args.get("limit"), 30, 50)
+    sliced = cap_list(opportunities, limit, max_cap=50)
+    return {
+        "pages": sliced["items"],
+        "total": sliced["total"],
+        "truncated": sliced["truncated"],
+        "provenance": "Search Console",
+    }

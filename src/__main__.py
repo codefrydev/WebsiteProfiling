@@ -9,6 +9,8 @@ if str(_root) not in sys.path:
     sys.path.insert(0, str(_root))
 
 from website_profiling.cli import main
+from website_profiling.console_io import configure_stdio
 
 if __name__ == "__main__":
+    configure_stdio()
     main()
