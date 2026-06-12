@@ -84,7 +84,6 @@ cmd_venv() {
   if [[ ! -x "$VENV/bin/pytest" ]]; then
     log "Installing Python dependencies"
     "$VENV/bin/pip" install -q -r "$ROOT/requirements.txt"
-    "$VENV/bin/pip" install -q -r "$ROOT/requirements-browser.txt"
   fi
 }
 

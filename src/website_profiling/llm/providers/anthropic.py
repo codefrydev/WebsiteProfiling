@@ -20,7 +20,7 @@ class AnthropicClient:
         try:
             import anthropic
         except ImportError as e:
-            raise ImportError("pip install anthropic (or requirements-llm.txt)") from e
+            raise ImportError("pip install -r requirements.txt") from e
 
         client = anthropic.Anthropic(api_key=self._api_key, timeout=self._timeout)
         msg = client.messages.create(
@@ -47,7 +47,7 @@ class AnthropicClient:
         try:
             import anthropic
         except ImportError as e:
-            raise ImportError("pip install anthropic (or requirements-llm.txt)") from e
+            raise ImportError("pip install -r requirements.txt") from e
 
         system_parts: list[str] = []
         anthropic_messages: list[dict[str, Any]] = []

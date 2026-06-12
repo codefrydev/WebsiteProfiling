@@ -185,9 +185,9 @@ def run_agent_turn(
                 result = _react_step(client, llm_messages, _tools_description(compact=True), on_token)
         except Exception as e:
             msg = str(e).strip() or type(e).__name__
-            if "httpx" in msg.lower() or "requirements-llm" in msg.lower():
+            if "httpx" in msg.lower() or "requirements.txt" in msg.lower():
                 msg = (
-                    "LLM dependencies are missing. Run: pip install -r requirements-llm.txt "
+                    "LLM dependencies are missing. Run: pip install -r requirements.txt "
                     f"(or restart with ./local-run setup). Details: {msg}"
                 )
             _emit(on_event, {"type": "error", "message": msg})

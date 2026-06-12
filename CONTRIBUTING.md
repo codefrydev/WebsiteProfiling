@@ -19,7 +19,7 @@ Thank you for helping improve this project. All contributions are welcome under 
 
 Details: [README.md](README.md), [AGENT.md](AGENT.md).
 
-JavaScript/auto crawl needs Playwright (`requirements-browser.txt`, installed by `./local-run setup`) and Chromium on `PATH` or `CHROME_PATH`. Unit tests mock the browser fetcher; integration tests use `@pytest.mark.browser` and run in the Docker CI job (`tests/test_crawl_fetchers.py`, `tests/test_crawler_browser_e2e.py`). Locally: `./local-test browser` (skips gracefully if Chromium is missing).
+JavaScript/auto crawl needs Playwright (from `requirements.txt`, installed by `./local-run setup`) and Chromium on `PATH` or `CHROME_PATH`. Unit tests mock the browser fetcher; integration tests use `@pytest.mark.browser` and run in the Docker CI job (`tests/test_crawl_fetchers.py`, `tests/test_crawler_browser_e2e.py`). Locally: `./local-test browser` (skips gracefully if Chromium is missing).
 
 ## Running tests
 

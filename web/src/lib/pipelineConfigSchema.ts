@@ -19,7 +19,7 @@ import { crawlRenderModeUsesBrowser } from '@/lib/browserCrawlStatus';
 import type { PipelineConfigState } from '@/types/api';
 
 export const BROWSER_CRAWL_UNAVAILABLE_MSG =
-  'JavaScript crawl requires Playwright and Chromium. Install: pip install -r requirements-browser.txt. Chrome or Chromium must be on PATH or set CHROME_PATH.';
+  'JavaScript crawl requires Playwright and Chromium. Install: pip install -r requirements.txt. Chrome or Chromium must be on PATH or set CHROME_PATH.';
 
 export interface PipelineConfigField {
   key: string;

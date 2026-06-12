@@ -83,8 +83,6 @@ cmd_venv() {
   fi
   log "Installing Python dependencies"
   "$VENV/bin/pip" install -q -r "$ROOT/requirements.txt"
-  "$VENV/bin/pip" install -q -r "$ROOT/requirements-browser.txt"
-  "$VENV/bin/pip" install -q -r "$ROOT/requirements-llm.txt"
 }
 
 cmd_migrate() {

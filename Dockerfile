@@ -39,18 +39,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     CHROME_PATH=/usr/bin/chromium \
     LIGHTHOUSE_PATH=/usr/local/bin/lighthouse
 
-# Python: base requirements + optional LLM API clients
+# Python dependencies
 COPY requirements.txt /app/requirements.txt
-COPY requirements-llm.txt /app/requirements-llm.txt
-COPY requirements-browser.txt /app/requirements-browser.txt
 COPY alembic.ini /app/alembic.ini
 COPY alembic /app/alembic
 RUN --mount=type=cache,target=/root/.cache/pip \
     python3 -m venv /opt/venv \
   && /opt/venv/bin/pip install --upgrade pip \
   && /opt/venv/bin/pip install -r /app/requirements.txt \
-  && /opt/venv/bin/pip install -r /app/requirements-llm.txt \
-  && /opt/venv/bin/pip install -r /app/requirements-browser.txt \
   && ln -sf /opt/venv/bin/python /usr/local/bin/python \
   && ln -sf /opt/venv/bin/python /usr/local/bin/python3
 

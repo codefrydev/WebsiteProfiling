@@ -61,7 +61,7 @@ export const GET: ApiRouteHandler = async (request): Promise<Response> => {
           ok: false,
           message:
             stderr.trim() ||
-            'JavaScript crawl requires Playwright and Chromium. Install: pip install -r requirements-browser.txt.',
+            'JavaScript crawl requires Playwright and Chromium. Install: pip install -r requirements.txt.',
           error: stderr.trim() || `exit ${code}`,
         });
         return;

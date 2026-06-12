@@ -22,7 +22,7 @@ from .prompts import (
     SIMILAR_SYSTEM,
 )
 
-LLM_INSTALL_HINT = "Install LLM dependencies: pip install -r requirements-llm.txt"
+LLM_INSTALL_HINT = "Install LLM dependencies: pip install -r requirements.txt"
 
 
 def _cfg_bool(cfg: dict[str, str] | None, key: str, default: bool = False) -> bool:

@@ -111,7 +111,7 @@ WebsiteProfiling/
 ├── Dockerfile                 # Production image
 ├── local-run                  # Dev setup & start script
 ├── local-test                 # Full test suite (CI parity)
-├── requirements*.txt          # Python deps (core, browser, LLM, MCP)
+├── requirements.txt           # Python dependencies
 └── pipeline-config.example.txt
 ```
 
@@ -173,9 +173,9 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and 
 
 Google Search Console / Analytics: connect via **Integrations** (gear icon) in the app.
 
-**JavaScript crawl (optional):** In Audit settings, set **Crawl rendering** to `javascript` (always headless Chromium) or `auto` (static first, browser when SPA heuristics match). Install locally: `pip install -r requirements-browser.txt` and Chromium on `PATH` or `CHROME_PATH` (included in Docker). The UI preflights via `GET /api/crawl/browser-status` before runs when JS/auto is selected.
+**JavaScript crawl (optional):** In Audit settings, set **Crawl rendering** to `javascript` (always headless Chromium) or `auto` (static first, browser when SPA heuristics match). Requires Playwright from `requirements.txt` and Chromium on `PATH` or `CHROME_PATH` (included in Docker). The UI preflights via `GET /api/crawl/browser-status` before runs when JS/auto is selected.
 
-**AI Chat (optional):** Ask questions about your audit data at [http://localhost:3000/chat](http://localhost:3000/chat). Enable a provider under **Run audit → AI settings** (`llm_enabled`, provider, model). `./local-run setup` installs `requirements-llm.txt` (`httpx`, OpenAI, Anthropic SDKs).
+**AI Chat (optional):** Ask questions about your audit data at [http://localhost:3000/chat](http://localhost:3000/chat). Enable a provider under **Run audit → AI settings** (`llm_enabled`, provider, model). `./local-run setup` installs all Python deps from `requirements.txt` (including `httpx`, OpenAI, and Anthropic SDKs).
 
 | Provider | Notes |
 |----------|--------|

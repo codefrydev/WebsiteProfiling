@@ -5,7 +5,7 @@ Read-only [Model Context Protocol](https://modelcontextprotocol.io) tools for qu
 ## Install
 
 ```bash
-pip install -r requirements-mcp.txt
+pip install -r requirements.txt
 export DATABASE_URL=postgres://profiling:profiling@localhost:5432/website_profiling
 export PYTHONPATH=src
 ```

@@ -18,7 +18,7 @@ class GeminiClient:
         try:
             import httpx
         except ImportError as e:
-            raise ImportError("pip install httpx (or requirements-llm.txt)") from e
+            raise ImportError("pip install -r requirements.txt") from e
 
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{self._model}:generateContent"
         payload = {

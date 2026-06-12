@@ -254,7 +254,7 @@ def test_repo_root_defaults_to_project_root(monkeypatch):
 
     monkeypatch.delenv("WEBSITE_PROFILING_ROOT", raising=False)
     root = browser_deps._repo_root()
-    assert (root / "requirements-browser.txt").is_file()
+    assert (root / "requirements.txt").is_file()
 
 
 def test_playwright_chromium_unavailable_without_playwright(monkeypatch):
@@ -345,12 +345,18 @@ def test_ensure_browser_deps_returns_ok_without_install(monkeypatch):
     assert status["ok"] is True
 
 
-def test_pip_install_browser_requirements_missing_file(monkeypatch, tmp_path):
+def test_pip_install_browser_requirements_runs_playwright_install(monkeypatch, tmp_path):
     from website_profiling.crawl.fetchers import browser_deps
 
     monkeypatch.setenv("WEBSITE_PROFILING_ROOT", str(tmp_path))
-    with pytest.raises(RuntimeError, match="Missing requirements-browser.txt"):
-        browser_deps._pip_install_browser_requirements()
+    called: list = []
+
+    def fake_run(cmd, **kwargs):
+        called.append(cmd)
+
+    monkeypatch.setattr(browser_deps.subprocess, "run", fake_run)
+    browser_deps._pip_install_browser_requirements()
+    assert called and "playwright>=1.49.0" in called[0]
 
 
 def test_ensure_browser_deps_reports_auto_install_failure(monkeypatch):
