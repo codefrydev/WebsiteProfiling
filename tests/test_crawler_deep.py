@@ -8,6 +8,7 @@ import pandas as pd
 
 def test_worker_success_path_populates_many_fields(monkeypatch):
     import website_profiling.crawl.crawler as mod
+    import website_profiling.crawl.page_record as pr_mod
     from website_profiling.crawl.fetchers.base import FetchResult
 
     monkeypatch.setattr(
@@ -34,7 +35,7 @@ def test_worker_success_path_populates_many_fields(monkeypatch):
         fetch_method="static",
     )
     monkeypatch.setattr(
-        mod,
+        pr_mod,
         "parse_link_edges",
         lambda _u, _t: (
             "T",
@@ -44,9 +45,9 @@ def test_worker_success_path_populates_many_fields(monkeypatch):
             ],
         ),
     )
-    monkeypatch.setattr(mod, "parse_seo", lambda *_a, **_k: ("desc", 4, "h1", 1, "https://site.com/canon"))
+    monkeypatch.setattr(pr_mod, "parse_seo", lambda *_a, **_k: ("desc", 4, "h1", 1, "https://site.com/canon"))
     monkeypatch.setattr(
-        mod,
+        pr_mod,
         "parse_seo_extended",
         lambda *_a, **_k: {
             "viewport_present": True,
@@ -62,9 +63,9 @@ def test_worker_success_path_populates_many_fields(monkeypatch):
             "mixed_content_count": 0,
         },
     )
-    monkeypatch.setattr(mod, "parse_resources", lambda *_a, **_k: {"script_count": 1, "link_stylesheet_count": 1})
+    monkeypatch.setattr(pr_mod, "parse_resources", lambda *_a, **_k: {"script_count": 1, "link_stylesheet_count": 1})
     monkeypatch.setattr(
-        mod,
+        pr_mod,
         "parse_content_text",
         lambda *_a, **_k: {
             "word_count": 10,
@@ -75,7 +76,7 @@ def test_worker_success_path_populates_many_fields(monkeypatch):
         },
     )
     monkeypatch.setattr(
-        mod,
+        pr_mod,
         "parse_social_meta",
         lambda *_a, **_k: {
             "og_title": "og",
@@ -87,8 +88,8 @@ def test_worker_success_path_populates_many_fields(monkeypatch):
             "twitter_image": "",
         },
     )
-    monkeypatch.setattr(mod, "parse_tech_stack", lambda *_a, **_k: "[]")
-    monkeypatch.setattr(mod, "analyze_html", lambda *_a, **_k: {"ok": True})
+    monkeypatch.setattr(pr_mod, "parse_tech_stack", lambda *_a, **_k: "[]")
+    monkeypatch.setattr(pr_mod, "analyze_html", lambda *_a, **_k: {"ok": True})
 
     out = c.worker("https://site.com")
     assert out["status"] == 200

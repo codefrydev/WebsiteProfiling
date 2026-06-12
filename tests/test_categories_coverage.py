@@ -467,7 +467,7 @@ def test_category_html_accessibility_alt_thin_reading_level() -> None:
 def test_category_html_accessibility_score_zero_floor() -> None:
     df = pd.DataFrame([{"url": "https://example.com/", "status": "200", "h1_count": 1}])
     with patch(
-        "website_profiling.reporting.categories._score_deductions",
+        "website_profiling.reporting.categories.accessibility._score_deductions",
         return_value=0,
     ):
         cat = category_html_accessibility(df)

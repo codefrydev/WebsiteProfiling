@@ -126,6 +126,10 @@ run_pytest_reporting() {
     tests/test_optional_audits.py \
     tests/test_property_profile.py \
     tests/test_reporting_gaps.py \
+    tests/test_text_content_analysis.py \
+    tests/test_builder_image_buckets.py \
+    tests/test_pipeline_report_pool_unit.py \
+    tests/test_reporting_builder_modules.py \
     --cov=website_profiling.reporting \
     --cov-config=.coveragerc.reporting \
     --cov-report=term-missing \

@@ -251,7 +251,7 @@ def test_crawler_robots_txt_override_parses(monkeypatch) -> None:
         lambda *_a, **_k: [],
     )
     monkeypatch.setattr(
-        "website_profiling.crawl.crawler.load_robots",
+        "website_profiling.crawl.frontier.load_robots",
         lambda _u: (_ for _ in ()).throw(AssertionError("load_robots should not run")),
     )
     c = Crawler(
@@ -269,7 +269,7 @@ def test_crawler_loads_robots_when_no_override(monkeypatch) -> None:
         "website_profiling.crawl.sitemap.discover_sitemap_urls",
         lambda *_a, **_k: [],
     )
-    monkeypatch.setattr("website_profiling.crawl.crawler.load_robots", lambda _u: object())
+    monkeypatch.setattr("website_profiling.crawl.frontier.load_robots", lambda _u: object())
     c = Crawler(start_url="https://site.com", ignore_robots=False)
     assert c.rp is not None
 

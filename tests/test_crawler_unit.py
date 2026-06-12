@@ -8,7 +8,7 @@ def _mock_sitemap_unless_seeding_test(monkeypatch, request):
     if request.node.name == "test_crawler_seeds_sitemap_urls":
         return
     monkeypatch.setattr(
-        "website_profiling.crawl.crawler.discover_sitemap_urls",
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
         lambda *_a, **_k: [],
     )
 
@@ -45,7 +45,7 @@ def test_crawler_sitemap_seed_exception_is_ignored(monkeypatch) -> None:
     def _boom(*_a, **_k):
         raise RuntimeError("sitemap unavailable")
 
-    monkeypatch.setattr("website_profiling.crawl.crawler.discover_sitemap_urls", _boom)
+    monkeypatch.setattr("website_profiling.crawl.sitemap.discover_sitemap_urls", _boom)
     c = Crawler(start_url="https://site.com", ignore_robots=True, use_wappalyzer=False)
     assert c.queue.qsize() == 1
 
@@ -54,7 +54,7 @@ def test_crawler_sitemap_seed_filters_exclude_external_and_duplicates(monkeypatc
     from website_profiling.crawl.crawler import Crawler
 
     monkeypatch.setattr(
-        "website_profiling.crawl.crawler.discover_sitemap_urls",
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
         lambda *_a, **_k: [
             "https://site.com/skip-me",
             "https://external.com/page",
@@ -81,7 +81,7 @@ def test_crawler_seeds_sitemap_urls(monkeypatch) -> None:
     from website_profiling.crawl.crawler import Crawler
 
     monkeypatch.setattr(
-        "website_profiling.crawl.crawler.discover_sitemap_urls",
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
         lambda *_a, **_k: ["https://site.com/from-sitemap"],
     )
     c = Crawler(
@@ -300,7 +300,7 @@ def test_worker_uses_wappalyzer_when_enabled(monkeypatch) -> None:
 
     html = "<html><head><title>T</title></head><body>ok</body></html>"
     monkeypatch.setattr(
-        "website_profiling.crawl.crawler.detect_tech_wappalyzer",
+        "website_profiling.crawl.page_record.detect_tech_wappalyzer",
         lambda *_a, **_k: '["React"]',
     )
     c = Crawler(

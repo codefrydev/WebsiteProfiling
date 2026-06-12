@@ -1,73 +1,47 @@
 """
 Website crawler: threaded, respects robots.txt, returns DataFrame and optional CSV.
 """
+from __future__ import annotations
+
 import json
-import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
-from queue import Queue
 from typing import Optional
-from urllib.parse import urlparse
-
-
-def _url_matches_exclude(url: str, exclude_urls: list[str]) -> bool:
-    """True if url equals or is under any exclude prefix (trailing-slash normalized)."""
-    if not exclude_urls:
-        return False
-    u = url.rstrip("/")
-    for prefix in exclude_urls:
-        p = prefix.strip().rstrip("/")
-        if not p:
-            continue
-        if u == p or u.startswith(p + "/"):
-            return True
-    return False
 
 import pandas as pd
 import requests
 from tqdm.auto import tqdm
 
 from ..console_io import console_print
-from ..common import (
-    detect_tech_wappalyzer,
-    load_robots,
-    normalize_link,
-    parse_content_text,
-    parse_link_edges,
-    parse_resources,
-    parse_seo,
-    parse_seo_extended,
-    parse_social_meta,
-    parse_tech_stack,
+from ..common import strip_crawl_query_params
+from .config import (
+    DEFAULT_USER_AGENT,
+    MOBILE_USER_AGENT,
+    CrawlConfig,
+    resolve_crawl_user_agent,
 )
-from ..analysis.page import analyze_html
-from .discovery import (
-    follow_links_for_mode,
-    normalize_discovery_mode,
-    seed_sitemap_for_mode,
-)
-from .extraction import parse_extractors_config, run_extractors
+from .db_writer import CrawlDbWriter, _CrawlDbWriter
+from .discovery import normalize_discovery_mode
 from .fetchers import build_fetcher
-from .fetchers.base import FetchResult
-from .fetchers.browser_diagnostics import merge_browser_into_page_analysis
-from .fetchers.hybrid import HybridFetcher
-from .fetchers.spa_heuristics import needs_js_render_after_parse
 from .sitemap import discover_sitemap_urls
+from .fetchers.base import FetchResult
+from .fetchers.hybrid import HybridFetcher
+from .frontier import CrawlFrontier, url_matches_exclude
+from .page_record import PageRecordBuilder
+from .schema import crawl_dataframe_columns, empty_crawl_row
 
-DEFAULT_USER_AGENT = "WebsiteProfilingCrawler/1.0"
-MOBILE_USER_AGENT = (
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) "
-    "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
-)
+# Re-export for backward compatibility.
+_url_matches_exclude = url_matches_exclude
 
-
-def resolve_crawl_user_agent(preset: str | None, custom: str | None, default: str | None = None) -> str:
-    p = (preset or "default").strip().lower()
-    if p == "mobile":
-        return MOBILE_USER_AGENT
-    if p == "custom" and custom and str(custom).strip():
-        return str(custom).strip()
-    return (default or DEFAULT_USER_AGENT).strip() or DEFAULT_USER_AGENT
+__all__ = [
+    "Crawler",
+    "run_crawler",
+    "resolve_crawl_user_agent",
+    "DEFAULT_USER_AGENT",
+    "MOBILE_USER_AGENT",
+    "_url_matches_exclude",
+    "_CrawlDbWriter",
+]
 
 
 class Crawler:
@@ -110,331 +84,166 @@ class Crawler:
         crawl_robots_txt_override: str = "",
         custom_extractors: Optional[list[dict]] = None,
         enable_axe: bool = False,
+        *,
+        config: Optional[CrawlConfig] = None,
     ):
-        self.start_url = start_url.rstrip("/")
-        self.start_netloc = urlparse(self.start_url).netloc
-        self.discovery_mode = normalize_discovery_mode(discovery_mode)
-        self.follow_links = follow_links_for_mode(self.discovery_mode)
-        self.crawl_url_list = [u.rstrip("/") for u in (crawl_url_list or []) if u and str(u).strip()]
-        self.link_edges_accum: list[dict] = []
-        self.render_mode = (render_mode or "static").strip().lower()
-        self.js_concurrency = max(1, int(js_concurrency))
-        effective_concurrency = (
-            self.js_concurrency
-            if self.render_mode == "javascript"
-            else max(1, int(concurrency))
-        )
-        self.max_pages = (
-            max_pages if (max_pages is not None and max_pages > 0) else float("inf")
-        )
-        self.concurrency = effective_concurrency
-        self.timeout = timeout
-        self.ignore_robots = ignore_robots
-        self.allow_external = allow_external
-        self.max_depth = None if max_depth is None else int(max_depth)
-        self.user_agent = resolve_crawl_user_agent(
-            crawl_user_agent_preset, crawl_user_agent_custom, user_agent
-        )
-        self.polite_delay = max(0.0, float(polite_delay))
-        self.store_outlinks = store_outlinks
-        self.exclude_urls = list(exclude_urls) if exclude_urls else []
-        self.use_wappalyzer = use_wappalyzer
-        self.store_content_excerpt = bool(store_content_excerpt)
-        self.content_excerpt_max_chars = max(0, int(content_excerpt_max_chars or 0))
-        self._wappalyzer_instance = None
-        self.custom_extraction_regex = (custom_extraction_regex or "").strip()
-        self.custom_extractors = list(custom_extractors or [])
-        self.crawl_ignore_params = list(crawl_ignore_params or [])
+        if config is None:
+            config = CrawlConfig.from_kwargs(
+                start_url=start_url,
+                max_pages=max_pages,
+                concurrency=concurrency,
+                timeout=timeout,
+                ignore_robots=ignore_robots,
+                allow_external=allow_external,
+                max_depth=max_depth,
+                user_agent=user_agent,
+                polite_delay=polite_delay,
+                store_outlinks=store_outlinks,
+                exclude_urls=exclude_urls,
+                use_wappalyzer=use_wappalyzer,
+                store_content_excerpt=store_content_excerpt,
+                content_excerpt_max_chars=content_excerpt_max_chars,
+                render_mode=render_mode,
+                js_concurrency=js_concurrency,
+                js_timeout=js_timeout,
+                js_wait_until=js_wait_until,
+                js_extra_wait_ms=js_extra_wait_ms,
+                js_block_resources=js_block_resources,
+                capture_console=capture_console,
+                js_console_levels=js_console_levels,
+                capture_failed_requests=capture_failed_requests,
+                console_max_per_page=console_max_per_page,
+                custom_extraction_regex=custom_extraction_regex,
+                crawl_ignore_params=crawl_ignore_params,
+                discovery_mode=discovery_mode,
+                crawl_url_list=crawl_url_list,
+                crawl_user_agent_preset=crawl_user_agent_preset,
+                crawl_user_agent_custom=crawl_user_agent_custom,
+                crawl_auth_username=crawl_auth_username,
+                crawl_auth_password=crawl_auth_password,
+                crawl_extra_headers=crawl_extra_headers,
+                crawl_cookies=crawl_cookies,
+                crawl_robots_txt_override=crawl_robots_txt_override,
+                custom_extractors=custom_extractors,
+                enable_axe=enable_axe,
+            )
+        config.normalized()
+        self.config = config
 
-        self.queue = Queue()
-        self.depths: dict[str, int] = {}
-        self.visited = set()
-        self.results = []
-        self.lock = threading.Lock()
+        self.start_url = config.start_url
+        self.discovery_mode = config.discovery_mode
+        self.follow_links = config.follow_links
+        self.crawl_url_list = config.crawl_url_list
+        self.link_edges_accum: list[dict] = []
+        self.render_mode = config.render_mode
+        self.max_pages = config.max_pages
+        self.concurrency = config.effective_concurrency
+        self.timeout = config.timeout
+        self.polite_delay = config.polite_delay
+        self.store_outlinks = config.store_outlinks
+        self.exclude_urls = config.exclude_urls
+        self.crawl_ignore_params = config.crawl_ignore_params
+        self.custom_extraction_regex = config.custom_extraction_regex
+        self.custom_extractors = config.custom_extractors
+
+        self.page_builder = PageRecordBuilder(
+            use_wappalyzer=config.use_wappalyzer,
+            store_content_excerpt=config.store_content_excerpt,
+            content_excerpt_max_chars=config.content_excerpt_max_chars,
+            custom_extraction_regex=config.custom_extraction_regex,
+            custom_extractors=config.custom_extractors,
+        )
+
+        self.frontier = CrawlFrontier(
+            config.start_url,
+            allow_external=config.allow_external,
+            max_depth=config.max_depth,
+            exclude_urls=config.exclude_urls,
+            follow_links=config.follow_links,
+            ignore_robots=config.ignore_robots,
+            user_agent=config.user_agent or DEFAULT_USER_AGENT,
+            crawl_robots_txt_override=config.crawl_robots_txt_override,
+        )
+        self.queue = self.frontier.queue
+        self.depths = self.frontier.depths
+        self.visited = self.frontier.visited
+        self.lock = self.frontier.lock
+
+        self.results: list[dict] = []
         self.session = requests.Session()
-        self.session.headers.update({"User-Agent": self.user_agent})
-        if crawl_auth_username:
-            self.session.auth = (crawl_auth_username, crawl_auth_password or "")
-        for line in (crawl_extra_headers or "").replace("\r", "").split("\n"):
+        self.session.headers.update({"User-Agent": config.user_agent})
+        if config.crawl_auth_username:
+            self.session.auth = (config.crawl_auth_username, config.crawl_auth_password or "")
+        for line in (config.crawl_extra_headers or "").replace("\r", "").split("\n"):
             if ":" in line:
                 key, val = line.split(":", 1)
                 k, v = key.strip(), val.strip()
                 if k:
                     self.session.headers[k] = v
-        if crawl_cookies and str(crawl_cookies).strip():
-            self.session.headers["Cookie"] = str(crawl_cookies).strip()
-        self.rp = None
-        if not self.ignore_robots:
-            override = (crawl_robots_txt_override or "").strip()
-            if override:
-                import io
-                import urllib.robotparser as robotparser
+        if config.crawl_cookies and str(config.crawl_cookies).strip():
+            self.session.headers["Cookie"] = str(config.crawl_cookies).strip()
 
-                self.rp = robotparser.RobotFileParser()
-                self.rp.parse(override.splitlines())
-            else:
-                self.rp = load_robots(self.start_url)
         self.fetcher = build_fetcher(
-            render_mode="javascript" if self.render_mode == "javascript" else ("auto" if self.render_mode == "auto" else "static"),
-            timeout=timeout,
-            user_agent=self.user_agent,
+            render_mode=config.fetcher_render_mode,
+            timeout=config.timeout,
+            user_agent=config.user_agent,
             session=self.session,
-            js_concurrency=self.js_concurrency,
-            js_timeout=js_timeout,
-            js_wait_until=js_wait_until,
-            js_extra_wait_ms=js_extra_wait_ms,
-            js_block_resources=js_block_resources,
-            capture_console=capture_console,
-            js_console_levels=js_console_levels,
-            capture_failed_requests=capture_failed_requests,
-            console_max_per_page=console_max_per_page,
-            run_axe=enable_axe,
+            js_concurrency=config.js_concurrency,
+            js_timeout=config.js_timeout,
+            js_wait_until=config.js_wait_until,
+            js_extra_wait_ms=config.js_extra_wait_ms,
+            js_block_resources=config.js_block_resources,
+            capture_console=config.capture_console,
+            js_console_levels=config.js_console_levels,
+            capture_failed_requests=config.capture_failed_requests,
+            console_max_per_page=config.console_max_per_page,
+            run_axe=config.enable_axe,
         )
         self._hybrid_fetcher = (
             self.fetcher if isinstance(self.fetcher, HybridFetcher) else None
         )
-        self._seed_initial_urls(timeout)
+        self.frontier.seed_initial_urls(
+            discovery_mode=config.discovery_mode,
+            crawl_url_list=config.crawl_url_list,
+            timeout=config.timeout,
+            session=self.session,
+        )
 
-    def _enqueue_seed(self, url: str, depth: int = 0) -> None:
-        u = url.rstrip("/")
-        if _url_matches_exclude(u, self.exclude_urls):
-            return
-        if not self.allow_external and not self.same_domain(u):
-            return
-        if u in self.depths:
-            return
-        self.queue.put(u)
-        self.depths[u] = depth
+    @property
+    def rp(self):
+        return self.frontier.rp
 
-    def _seed_initial_urls(self, timeout: int) -> None:
-        mode = self.discovery_mode
-        if mode in ("list", "hybrid"):
-            for url in self.crawl_url_list:
-                self._enqueue_seed(url, 0)
-        if mode in ("spider", "hybrid"):
-            self._enqueue_seed(self.start_url, 0)
-        if seed_sitemap_for_mode(mode):
-            self._seed_sitemap_urls(timeout)
+    @rp.setter
+    def rp(self, value) -> None:
+        self.frontier.rp = value
 
-    def same_domain(self, url):
-        return urlparse(url).netloc == self.start_netloc
+    def same_domain(self, url: str) -> bool:
+        return self.frontier.same_domain(url)
 
-    def allowed_by_robots(self, url):
-        if self.ignore_robots or not self.rp:
-            return True
-        try:
-            return self.rp.can_fetch(self.user_agent, url)
-        except Exception:
-            return True
+    def allowed_by_robots(self, url: str) -> bool:
+        return self.frontier.allowed_by_robots(url)
 
-    def _seed_sitemap_urls(self, timeout: int) -> None:
-        try:
-            seeds = discover_sitemap_urls(
-                self.start_url,
-                timeout=timeout,
-                session=self.session,
-            )
-        except Exception:
-            return
-        for url in seeds:
-            self._enqueue_seed(url, 0)
+    def _queue_contains(self, item: str) -> bool:
+        return self.frontier.queue_contains(item)
 
-    def fetch(self, url) -> FetchResult:
+    def fetch(self, url: str) -> FetchResult:
         return self.fetcher.fetch(url)
 
-    def _empty_seo(self, url: str, headers_dict: Optional[dict] = None, redirect_chain_length: int = 0) -> dict:
-        """Default SEO/performance fields when no HTML or error."""
-        h = headers_dict or {}
-        return {
-            "response_time_ms": "",
-            "content_length": 0,
-            "final_url": url,
-            "meta_description": "",
-            "meta_description_len": 0,
-            "h1": "",
-            "h1_count": 0,
-            "canonical_url": "",
-            "viewport_present": False,
-            "viewport_content": "",
-            "noindex": False,
-            "has_schema": False,
-            "heading_sequence": "",
-            "heading_text": "",
-            "images_without_alt": 0,
-            "images_total": 0,
-            "img_without_lazy": 0,
-            "img_without_dimensions": 0,
-            "aria_count": 0,
-            "mixed_content_count": 0,
-            "redirect_chain_length": redirect_chain_length,
-            "cache_control": h.get("Cache-Control", ""),
-            "etag": h.get("ETag", ""),
-            "x_robots_tag": h.get("X-Robots-Tag", ""),
-            "strict_transport_security": h.get("Strict-Transport-Security", ""),
-            "x_content_type_options": h.get("X-Content-Type-Options", ""),
-            "x_frame_options": h.get("X-Frame-Options", ""),
-            "content_security_policy": h.get("Content-Security-Policy", ""),
-            "script_count": 0,
-            "link_stylesheet_count": 0,
-            "total_js_bytes": 0,
-            "total_css_bytes": 0,
-            "word_count": 0,
-            "reading_level": 0.0,
-            "content_html_ratio": 0.0,
-            "top_keywords": "[]",
-            "content_excerpt": "",
-            "og_title": "",
-            "og_description": "",
-            "og_image": "",
-            "og_type": "",
-            "twitter_card": "",
-            "twitter_title": "",
-            "twitter_image": "",
-            "tech_stack": "[]",
-            "depth": None,
-            "page_analysis": "{}",
-        }
-
-    def _parse_page_content(
-        self,
-        url: str,
-        text: str,
-        final_url: str,
-        headers_dict: dict,
-        redirect_chain_length: int,
-    ) -> dict:
-        """Extract title, links, and SEO/content fields from HTML."""
-        ext = self._empty_seo(url, headers_dict, redirect_chain_length)
-        title, link_edge_rows = parse_link_edges(url, text)
-        links = {e["to_url"] for e in link_edge_rows}
-        meta_description, meta_description_len, h1_text, h1_count, canonical_url = (
-            parse_seo(url, text)
-        )
-        seo_ext = parse_seo_extended(text, final_url or url)
-        ext["viewport_present"] = seo_ext.get("viewport_present", False)
-        ext["viewport_content"] = seo_ext.get("viewport_content", "")
-        ext["noindex"] = seo_ext.get("noindex", False)
-        if (headers_dict.get("X-Robots-Tag") or "").lower().find("noindex") >= 0:
-            ext["noindex"] = True
-        ext["has_schema"] = seo_ext.get("has_schema", False)
-        ext["heading_sequence"] = ",".join(seo_ext.get("heading_sequence") or [])
-        ext["heading_text"] = " | ".join(seo_ext.get("heading_text") or [])
-        ext["images_without_alt"] = seo_ext.get("images_without_alt", 0)
-        ext["images_total"] = seo_ext.get("images_total", 0)
-        ext["img_without_lazy"] = seo_ext.get("img_without_lazy", 0)
-        ext["img_without_dimensions"] = seo_ext.get("img_without_dimensions", 0)
-        ext["aria_count"] = seo_ext.get("aria_count", 0)
-        ext["mixed_content_count"] = seo_ext.get("mixed_content_count", 0)
-        res_res = parse_resources(text, final_url or url)
-        ext["script_count"] = res_res.get("script_count", 0)
-        ext["link_stylesheet_count"] = res_res.get("link_stylesheet_count", 0)
-        from bs4 import BeautifulSoup as _BS
-
-        _soup = _BS(text, "lxml")
-        excerpt_max = self.content_excerpt_max_chars if self.store_content_excerpt else 0
-        ct_data = parse_content_text(_soup, text, excerpt_max_chars=excerpt_max)
-        ext["word_count"] = ct_data.get("word_count", 0)
-        ext["reading_level"] = ct_data.get("reading_level", 0.0)
-        ext["content_html_ratio"] = ct_data.get("content_html_ratio", 0.0)
-        ext["top_keywords"] = ct_data.get("top_keywords", "[]")
-        ext["content_excerpt"] = ct_data.get("content_excerpt") or ""
-        social = parse_social_meta(_soup)
-        ext["og_title"] = social.get("og_title", "")
-        ext["og_description"] = social.get("og_description", "")
-        ext["og_image"] = social.get("og_image", "")
-        ext["og_type"] = social.get("og_type", "")
-        ext["twitter_card"] = social.get("twitter_card", "")
-        ext["twitter_title"] = social.get("twitter_title", "")
-        ext["twitter_image"] = social.get("twitter_image", "")
-        if self.use_wappalyzer:
-            ext["tech_stack"] = detect_tech_wappalyzer(
-                final_url or url, text, headers_dict, _soup, self._wappalyzer_instance
-            )
-        else:
-            ext["tech_stack"] = parse_tech_stack(_soup, headers_dict, final_url or url)
-        ext["page_analysis"] = json.dumps(
-            analyze_html(text, final_url or url, final_url or url, canonical_url)
-        )
-        return {
-            "title": title,
-            "links": links,
-            "link_edges": link_edge_rows,
-            "meta_description": meta_description,
-            "meta_description_len": meta_description_len,
-            "h1_text": h1_text,
-            "h1_count": h1_count,
-            "canonical_url": canonical_url,
-            "ext": ext,
-        }
-
-    def _maybe_refetch_after_parse(
-        self,
-        url: str,
-        result: FetchResult,
-        *,
-        link_count: int,
-        same_domain_link_count: int,
-    ) -> FetchResult:
-        """Post-parse auto-mode fallback when static HTML has too few links."""
-        if self.render_mode != "auto" or self._hybrid_fetcher is None:
-            return result
-        if result.fetch_method != "static":
-            return result
-        if not needs_js_render_after_parse(
-            result,
-            link_count=link_count,
-            same_domain_link_count=same_domain_link_count,
-        ):
-            return result
-        rendered = self._hybrid_fetcher.refetch_rendered(url)
-        if rendered.status == 200 and rendered.text:
-            return rendered
-        return result
-
-    @staticmethod
-    def _sync_from_fetch_result(
-        result: FetchResult,
-        url: str,
-        *,
-        text: Optional[str],
-        fetch_method: str,
-        final_url: str,
-        content_length: int,
-        response_time_ms: Optional[int],
-        headers_dict: dict,
-        redirect_chain_length: int,
-        status: Optional[int],
-        ct: Optional[str],
-    ) -> dict:
-        """Copy all FetchResult fields after a post-parse browser refetch."""
-        return {
-            "text": result.text,
-            "fetch_method": result.fetch_method,
-            "final_url": result.final_url or url,
-            "content_length": result.content_length or content_length,
-            "response_time_ms": result.response_time_ms,
-            "headers_dict": result.headers_dict or headers_dict,
-            "redirect_chain_length": result.redirect_chain_length,
-            "status": result.status,
-            "ct": result.content_type,
-        }
-
-    def worker(self, url):
+    def worker(self, url: str) -> dict:
         if not self.allowed_by_robots(url):
-            out = {
-                "url": url,
-                "status": "blocked_by_robots",
-                "content_type": "",
-                "title": "",
-                "outlinks": 0,
-                "fetch_method": "static",
-                **self._empty_seo(url),
-            }
-            if self.store_outlinks:
-                out["outlink_targets"] = "[]"
-            return out
+            return PageRecordBuilder.build_robots_blocked_row(
+                url, store_outlinks=self.store_outlinks
+            )
 
         result = self.fetch(url)
+        if result.status is None:
+            return PageRecordBuilder.build_fetch_error_row(
+                url,
+                result,
+                fetch_method=result.fetch_method,
+                store_outlinks=self.store_outlinks,
+            )
+
         status = result.status
         ct = result.content_type
         text = result.text
@@ -445,59 +254,33 @@ class Crawler:
         redirect_chain_length = result.redirect_chain_length
         fetch_method = result.fetch_method
 
-        if status is None:
-            out = {
-                "url": url,
-                "status": "error",
-                "content_type": "",
-                "title": "",
-                "outlinks": 0,
-                "fetch_method": fetch_method,
-                **self._empty_seo(url, headers_dict, redirect_chain_length),
-            }
-            if self.store_outlinks:
-                out["outlink_targets"] = "[]"
-            if result.browser_diagnostics:
-                out["page_analysis"] = merge_browser_into_page_analysis(
-                    None, result.browser_diagnostics
-                )
-            return out
-
         title = ""
         outlinks_count = 0
-        outlink_list = []
+        outlink_list: list[str] = []
         meta_description = ""
         meta_description_len = 0
         h1_text = ""
         h1_count = 0
         canonical_url = ""
 
-        ext = self._empty_seo(url, headers_dict, redirect_chain_length)
+        ext = self.page_builder.empty_ext(url, headers_dict, redirect_chain_length)
         if text:
-            parsed = self._parse_page_content(
+            parsed = self.page_builder.parse_page_content(
                 url, text, final_url or url, headers_dict, redirect_chain_length
             )
             links = parsed["links"]
             same_domain_link_count = sum(1 for link in links if self.same_domain(link))
-            result = self._maybe_refetch_after_parse(
+            result = PageRecordBuilder.maybe_refetch_after_parse(
                 url,
                 result,
+                render_mode=self.render_mode,
+                hybrid_fetcher=self._hybrid_fetcher,
                 link_count=len(links),
                 same_domain_link_count=same_domain_link_count,
             )
             if result.text and result.text != text:
-                synced = self._sync_from_fetch_result(
-                    result,
-                    url,
-                    text=text,
-                    fetch_method=fetch_method,
-                    final_url=final_url,
-                    content_length=content_length,
-                    response_time_ms=response_time_ms,
-                    headers_dict=headers_dict,
-                    redirect_chain_length=redirect_chain_length,
-                    status=status,
-                    ct=ct,
+                synced = PageRecordBuilder.sync_from_fetch_result(
+                    result, url, content_length=content_length, headers_dict=headers_dict
                 )
                 text = synced["text"]
                 fetch_method = synced["fetch_method"]
@@ -508,7 +291,7 @@ class Crawler:
                 redirect_chain_length = synced["redirect_chain_length"]
                 status = synced["status"]
                 ct = synced["ct"]
-                parsed = self._parse_page_content(
+                parsed = self.page_builder.parse_page_content(
                     url, text, final_url, headers_dict, redirect_chain_length
                 )
                 links = parsed["links"]
@@ -523,8 +306,6 @@ class Crawler:
             ext = parsed["ext"]
 
             if self.crawl_ignore_params:
-                from ..common import strip_crawl_query_params
-
                 links = [strip_crawl_query_params(l, self.crawl_ignore_params) for l in links]
 
             link_edge_rows = parsed.get("link_edges") or []
@@ -533,23 +314,7 @@ class Crawler:
                 if self.store_outlinks:
                     outlink_list.append(link)
                     self.link_edges_accum.append({"from_url": url, **edge})
-                if not self.follow_links:
-                    continue
-                if _url_matches_exclude(link, self.exclude_urls):
-                    continue
-                if not self.allow_external and not self.same_domain(link):
-                    continue
-                cur_depth = self.depths.get(url, 0)
-                if self.max_depth is not None and cur_depth >= self.max_depth:
-                    continue
-                with self.lock:
-                    if (
-                        link not in self.visited
-                        and link not in self.depths
-                        and not self._queue_contains(link)
-                    ):
-                        self.queue.put(link)
-                        self.depths[link] = cur_depth + 1
+                self.frontier.try_enqueue_link(link, url)
 
         ext["response_time_ms"] = response_time_ms if response_time_ms is not None else ""
         ext["content_length"] = content_length or 0
@@ -566,31 +331,14 @@ class Crawler:
         ext["x_content_type_options"] = headers_dict.get("X-Content-Type-Options", "")
         ext["x_frame_options"] = headers_dict.get("X-Frame-Options", "")
         ext["content_security_policy"] = headers_dict.get("Content-Security-Policy", "")
-
         ext["depth"] = self.depths.get(url)
 
-        if self.custom_extraction_regex and text:
-            import re
-
-            try:
-                match = re.search(self.custom_extraction_regex, text)
-                if match:
-                    ext["custom_extract"] = match.group(1) if match.lastindex else match.group(0)
-            except re.error:
-                pass
-
-        if self.custom_extractors and text:
-            fields = run_extractors(text, self.custom_extractors)
-            if fields:
-                ext["custom_fields"] = json.dumps(fields)
+        self.page_builder.apply_custom_extractions(ext, text)
 
         if self.polite_delay:
             time.sleep(self.polite_delay)
 
-        if result.browser_diagnostics:
-            ext["page_analysis"] = merge_browser_into_page_analysis(
-                ext.get("page_analysis"), result.browser_diagnostics
-            )
+        PageRecordBuilder.merge_browser_diagnostics(ext, result)
 
         res = {
             "url": url,
@@ -605,18 +353,12 @@ class Crawler:
             res["outlink_targets"] = json.dumps(list(outlink_list))
         return res
 
-    def _queue_contains(self, item):
-        try:
-            return item in list(self.queue.queue)
-        except Exception:
-            return False
-
     def crawl(
         self,
         show_progress: bool = True,
         stream_crawl_run_id: Optional[int] = None,
         stream_batch_size: int = 500,
-    ):
+    ) -> pd.DataFrame:
         start_time = time.time()
         from ..progress import CrawlProgressTracker, emit_phase_start
 
@@ -628,7 +370,7 @@ class Crawler:
         )
         emit_phase_start("crawl", message="Crawling pages")
         futures = []
-        db_writer: Optional[_CrawlDbWriter] = None
+        db_writer: Optional[CrawlDbWriter] = None
         pages_crawled = 0
         if stream_crawl_run_id is not None:
             db_writer = _CrawlDbWriter(stream_crawl_run_id, stream_batch_size)
@@ -650,12 +392,10 @@ class Crawler:
                         and len(self.results) + len(futures) < self.max_pages
                     ):
                         url = self.queue.get()
-                        if _url_matches_exclude(url, self.exclude_urls):
+                        if self.frontier.should_skip_dequeued(url):
                             continue
-                        with self.lock:
-                            if url in self.visited:
-                                continue
-                            self.visited.add(url)
+                        if not self.frontier.mark_visited(url):
+                            continue
                         futures.append(ex.submit(self.worker, url))
 
                     remaining = []
@@ -664,60 +404,7 @@ class Crawler:
                             try:
                                 res = f.result()
                             except Exception:
-                                res = {
-                                    "url": None,
-                                    "status": "error",
-                                    "content_type": "",
-                                    "title": "",
-                                    "outlinks": 0,
-                                    "response_time_ms": "",
-                                    "content_length": 0,
-                                    "final_url": "",
-                                    "meta_description": "",
-                                    "meta_description_len": 0,
-                                    "h1": "",
-                                    "h1_count": 0,
-                                    "canonical_url": "",
-                                    "viewport_present": False,
-                                    "viewport_content": "",
-                                    "noindex": False,
-                                    "has_schema": False,
-                                    "heading_sequence": "",
-            "heading_text": "",
-                                    "images_without_alt": 0,
-                                    "images_total": 0,
-                                    "img_without_lazy": 0,
-                                    "img_without_dimensions": 0,
-                                    "aria_count": 0,
-                                    "mixed_content_count": 0,
-                                    "redirect_chain_length": 0,
-                                    "cache_control": "",
-                                    "etag": "",
-                                    "x_robots_tag": "",
-                                    "strict_transport_security": "",
-                                    "x_content_type_options": "",
-                                    "x_frame_options": "",
-                                    "content_security_policy": "",
-                                    "script_count": 0,
-                                    "link_stylesheet_count": 0,
-                                    "total_js_bytes": 0,
-                                    "total_css_bytes": 0,
-                                    "word_count": 0,
-                                    "reading_level": 0.0,
-                                    "content_html_ratio": 0.0,
-                                    "top_keywords": "[]",
-                                    "content_excerpt": "",
-                                    "og_title": "",
-                                    "og_description": "",
-                                    "og_image": "",
-                                    "og_type": "",
-                                    "twitter_card": "",
-                                    "twitter_title": "",
-                                    "twitter_image": "",
-                                    "tech_stack": "[]",
-                                    "depth": None,
-                                    "page_analysis": "{}",
-                                }
+                                res = empty_crawl_row(status="error")
                                 if self.store_outlinks:
                                     res["outlink_targets"] = "[]"
                             self.results.append(res)
@@ -729,10 +416,7 @@ class Crawler:
                                 db_writer.enqueue(res)
                             if use_tqdm:
                                 pbar.update(1)
-                            progress_tracker.maybe_emit(
-                                pages_crawled,
-                                page_url,
-                            )
+                            progress_tracker.maybe_emit(pages_crawled, page_url)
                         else:
                             remaining.append(f)
                     futures = remaining
@@ -758,112 +442,9 @@ class Crawler:
         elapsed = time.time() - start_time
         df = pd.DataFrame(self.results)
         if df.empty:
-            cols = [
-                "url",
-                "status",
-                "content_type",
-                "title",
-                "outlinks",
-                "response_time_ms",
-                "content_length",
-                "final_url",
-                "meta_description",
-                "meta_description_len",
-                "h1",
-                "h1_count",
-                "canonical_url",
-                "viewport_present",
-                "viewport_content",
-                "noindex",
-                "has_schema",
-                "heading_sequence",
-                "heading_text",
-                "images_without_alt",
-                "images_total",
-                "img_without_lazy",
-                "img_without_dimensions",
-                "aria_count",
-                "mixed_content_count",
-                "redirect_chain_length",
-                "cache_control",
-                "etag",
-                "x_robots_tag",
-                "strict_transport_security",
-                "x_content_type_options",
-                "x_frame_options",
-                "content_security_policy",
-                "script_count",
-                "link_stylesheet_count",
-                "total_js_bytes",
-                "total_css_bytes",
-                "word_count",
-                "reading_level",
-                "content_html_ratio",
-                "top_keywords",
-                "content_excerpt",
-                "og_title",
-                "og_description",
-                "og_image",
-                "og_type",
-                "twitter_card",
-                "twitter_title",
-                "twitter_image",
-                "tech_stack",
-                "depth",
-                "page_analysis",
-                "fetch_method",
-            ]
-            if self.store_outlinks:
-                cols.append("outlink_targets")
-            df = pd.DataFrame(columns=cols)
+            df = pd.DataFrame(columns=crawl_dataframe_columns(store_outlinks=self.store_outlinks))
         df["crawl_time_s"] = elapsed
         return df
-
-
-class _CrawlDbWriter(threading.Thread):
-    """Background thread: batch-insert crawl rows via PostgreSQL connection pool."""
-
-    def __init__(self, crawl_run_id: int, batch_size: int = 500) -> None:
-        super().__init__(daemon=True)
-        self.crawl_run_id = crawl_run_id
-        self.batch_size = max(50, batch_size)
-        self._queue: Queue = Queue()
-        self._error: Optional[BaseException] = None
-
-    def enqueue(self, record: dict) -> None:
-        self._queue.put(record)
-
-    def finish(self) -> None:
-        self._queue.put(None)
-
-    def run(self) -> None:
-        from ..db import db_session
-        from ..db.crawl_store import _crawl_rows_from_df, write_crawl_batch
-
-        buffer: list[dict] = []
-        try:
-            while True:
-                item = self._queue.get()
-                if item is None:
-                    if buffer:
-                        chunk = pd.DataFrame(buffer)
-                        with db_session() as conn:
-                            rows = _crawl_rows_from_df(chunk, self.crawl_run_id)
-                            write_crawl_batch(conn, rows, self.crawl_run_id, commit=True)
-                    break
-                buffer.append(item)
-                if len(buffer) >= self.batch_size:
-                    chunk = pd.DataFrame(buffer)
-                    buffer = []
-                    with db_session() as conn:
-                        rows = _crawl_rows_from_df(chunk, self.crawl_run_id)
-                        write_crawl_batch(conn, rows, self.crawl_run_id, commit=True)
-        except BaseException as e:
-            self._error = e
-
-    def raise_if_failed(self) -> None:
-        if self._error is not None:
-            raise self._error
 
 
 def run_crawler(
@@ -998,7 +579,6 @@ def run_crawler(
             with db_session() as conn:
                 write_link_edges(conn, crawler.link_edges_accum, crawl_run_id=run_id)
     if output_db and not df.empty and stream_run_id is None:
-        import sys
         console_print("  Writing crawl results to DB...", flush=True)
         from ..db import backup_db_if_exists, create_crawl_run, db_session, read_historical_data, restore_historical_data, write_crawl
         from ..db.storage import ensure_crawl_tables_cleared

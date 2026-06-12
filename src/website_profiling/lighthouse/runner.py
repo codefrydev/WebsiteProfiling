@@ -1,68 +1,38 @@
 """
 Run Lighthouse locally via CLI for a given URL; return machine-readable summary with median metrics.
-Writes raw_runs/, summary.json, diagnostics.json, human_summary.txt, and optionally report.html.
-Uses global lighthouse if on PATH (or LIGHTHOUSE_PATH), otherwise runs via npx (serialized to avoid cache races).
-Requires: Node + npm, Chrome/Chromium.
 """
+from __future__ import annotations
+
 import json
 import os
 import re
 import shutil
-import statistics
 import subprocess
 import sys
-import threading
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 from ..console_io import console_print
-
-# Lighthouse "good" thresholds for human summary
-LCP_GOOD_MS = 2500
-CLS_GOOD = 0.1
-TBT_GOOD_MS = 200
-FCP_GOOD_MS = 1800
-
-_LIGHTHOUSE_INSTALL_MSG = (
-    "Lighthouse not found. Install Node/npm (https://nodejs.org), then run: npm install -g lighthouse. "
-    "Chrome or Chromium is also required for headless mode."
+from .config import (
+    CLS_GOOD,
+    FCP_GOOD_MS,
+    LCP_GOOD_MS,
+    TBT_GOOD_MS,
+    _LIGHTHOUSE_INSTALL_MSG,
+    _LIGHTHOUSE_FLOW_MODES,
+    _NPX_LIGHTHOUSE_LOCK,
+    _lighthouse_cmd,
+    _lighthouse_flow_script,
+    _node_cmd,
+    _normalize_lighthouse_mode,
+    _parse_categories,
+    _preset_for_strategy,
+    _repo_root,
+    _url_safe,
+    _uses_npx,
+    is_lighthouse_available,
 )
-
-# Serialise npx-on-demand installs — parallel npx runs corrupt /root/.npm/_npx cache in Docker.
-_NPX_LIGHTHOUSE_LOCK = threading.Lock()
-
-_LIGHTHOUSE_FLOW_MODES = frozenset({"snapshot", "timespan"})
-
-
-def _repo_root() -> str:
-    explicit = (os.environ.get("WEBSITE_PROFILING_ROOT") or "").strip()
-    if explicit:
-        return explicit
-    return str(Path(__file__).resolve().parents[3])
-
-
-def _lighthouse_flow_script() -> str:
-    return os.path.join(_repo_root(), "scripts", "lighthouse_user_flow.mjs")
-
-
-def _normalize_lighthouse_mode(mode: str | None) -> str:
-    m = (mode or "navigation").strip().lower() or "navigation"
-    if m not in ("navigation", "snapshot", "timespan"):
-        raise RuntimeError(
-            f"Invalid lighthouse_mode {m!r}; use navigation, snapshot, or timespan."
-        )
-    return m
-
-
-def _node_cmd() -> str:
-    node = shutil.which("node")
-    if node is None:
-        raise RuntimeError(
-            "Node.js not found. Install Node.js (https://nodejs.org) for Lighthouse user flows."
-        )
-    return node
-
+from .result_parser import _evidence_from_audit, extract_from_lighthouse_json, median_or_none
 
 def _build_report_html_content(summary: dict[str, Any]) -> str:
     """Build report.html content (for DB or file). Returns HTML string."""
@@ -271,108 +241,6 @@ def run_lighthouse_once(
         return subprocess.run(cmd, **run_kwargs)
     except FileNotFoundError as e:
         raise RuntimeError(_LIGHTHOUSE_INSTALL_MSG) from e
-
-
-def _evidence_from_audit(audit: dict[str, Any]) -> list[str]:
-    """Extract resource URLs or selectors from audit details."""
-    evidence: list[str] = []
-    details = audit.get("details")
-    if not details or not isinstance(details, dict):
-        return evidence
-    items = details.get("items") or details.get("nodes") or []
-    if not isinstance(items, list):
-        return evidence
-    for item in items[:5]:
-        if isinstance(item, dict):
-            url = item.get("url")
-            if url and isinstance(url, str) and not str(url).startswith("data:"):
-                evidence.append(str(url)[:500])
-            node = item.get("node")
-            if isinstance(node, dict) and node.get("selector"):
-                evidence.append(str(node["selector"])[:200])
-            if item.get("selector"):
-                evidence.append(str(item["selector"])[:200])
-    return evidence[:15]
-
-
-def extract_from_lighthouse_json(data: dict) -> dict[str, Any]:
-    """Extract LCP, CLS, TBT, FCP, Speed Index, category scores (all 5), and top 10 failing audits with impact and evidence."""
-    out: dict[str, Any] = {
-        "lcp_ms": None,
-        "cls": None,
-        "tbt_ms": None,
-        "fcp_ms": None,
-        "speed_index_ms": None,
-        "performance_score": None,
-        "accessibility_score": None,
-        "seo_score": None,
-        "best_practices_score": None,
-        "pwa_score": None,
-        "category_scores": {},
-        "top_failures": [],
-    }
-    lr = data.get("lighthouseResult") or data
-    audits = lr.get("audits") or {}
-    cats = lr.get("categories") or {}
-
-    for audit_id, key in [
-        ("largest-contentful-paint", "lcp_ms"),
-        ("cumulative-layout-shift", "cls"),
-        ("total-blocking-time", "tbt_ms"),
-        ("first-contentful-paint", "fcp_ms"),
-        ("speed-index", "speed_index_ms"),
-    ]:
-        a = audits.get(audit_id)
-        if a is not None and "numericValue" in a:
-            out[key] = a["numericValue"]
-
-    for cat_id, key in [
-        ("performance", "performance_score"),
-        ("accessibility", "accessibility_score"),
-        ("seo", "seo_score"),
-        ("best-practices", "best_practices_score"),
-        ("pwa", "pwa_score"),
-    ]:
-        c = cats.get(cat_id)
-        if c is not None and "score" in c:
-            s = c["score"]
-            out[key] = s
-            out["category_scores"][cat_id] = round((s * 100)) if s is not None else None
-
-    # Resolve impact from warning_mapper for each failure
-    from ..tools.warnings import resolve_impact
-    failures = []
-    for aid, a in audits.items():
-        if a is None:
-            continue
-        score = a.get("score")
-        if score is None:
-            continue
-        if score < 1:
-            title = a.get("title") or aid
-            help_text = a.get("helpText") or ""
-            impact = resolve_impact(aid, title, help_text)
-            evidence = _evidence_from_audit(a)
-            failures.append({
-                "id": aid,
-                "score": score,
-                "helpText": help_text,
-                "impact": impact,
-                "evidence": evidence,
-            })
-    failures.sort(key=lambda x: (x["score"] or 0))
-    out["top_failures"] = failures[:10]
-
-    return out
-
-
-def median_or_none(values: list[float]) -> float | None:
-    """Return median of list; None if empty or all None."""
-    clean = [v for v in values if v is not None]
-    if not clean:
-        return None
-    return statistics.median(clean)
-
 
 def run_lighthouse_audit(
     url: str,
