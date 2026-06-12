@@ -49,8 +49,21 @@ def active_property_id_from_cfg(cfg: dict | None = None) -> int | None:
         return None
 
 
+def _is_scheduled_spawn() -> bool:
+    """True when this process was spawned by schedule_runner (cron audit)."""
+    return os.environ.get("WP_SCHEDULED_SPAWN", "").strip().lower() in ("1", "true", "yes")
+
+
 def apply_property_spawn_overlay(cfg: dict[str, str]) -> dict[str, str]:
-    """When WP_PROPERTY_ID is set, overlay property site_url and crawl preset onto cfg."""
+    """Build scheduled audit config from the property row; never mutate pipeline_config.
+
+    Manual Run audit uses saved pipeline_config unchanged. Scheduled jobs set
+    WP_SCHEDULED_SPAWN=1 and WP_PROPERTY_ID: crawl settings come from the property
+    preset only; integration keys (e.g. Google) are read from pipeline_config
+    without overwriting saved crawl/workspace keys in the database.
+    """
+    if not _is_scheduled_spawn():
+        return cfg
     raw = os.environ.get("WP_PROPERTY_ID", "").strip()
     if not raw:
         return cfg
@@ -61,6 +74,11 @@ def apply_property_spawn_overlay(cfg: dict[str, str]) -> dict[str, str]:
     if prop_id <= 0:
         return cfg
 
+    from ..crawl_presets import (
+        DEFAULT_CRAWL_PRESET_ID,
+        PRESET_OWNED_CONFIG_KEYS,
+        apply_crawl_preset,
+    )
     from ..db import db_session
     from ..db.property_store import get_property_by_id
 
@@ -69,17 +87,15 @@ def apply_property_spawn_overlay(cfg: dict[str, str]) -> dict[str, str]:
     if not prop:
         return cfg
 
-    merged = dict(cfg)
-    merged["active_property_id"] = str(prop_id)
+    property_cfg: dict[str, str] = {"active_property_id": str(prop_id)}
     site_url = str(prop.get("site_url") or "").strip()
     if site_url:
-        merged["start_url"] = site_url
-    preset = str(prop.get("default_crawl_preset") or "").strip()
-    if preset:
-        from ..crawl_presets import apply_crawl_preset
+        property_cfg["start_url"] = site_url
+    preset = str(prop.get("default_crawl_preset") or "").strip() or DEFAULT_CRAWL_PRESET_ID
+    property_cfg = apply_crawl_preset(preset, property_cfg)
 
-        merged = apply_crawl_preset(preset, merged)
-    return merged
+    passthrough = {k: v for k, v in cfg.items() if k not in PRESET_OWNED_CONFIG_KEYS}
+    return {**passthrough, **property_cfg}
 
 
 def resolve_property_id_from_cfg(cfg: dict | None = None, conn=None) -> int | None:

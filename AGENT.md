@@ -12,7 +12,7 @@
 - `web/app/` -- routes; `web/src/` -- React; pipeline: `PipelineRunnerFab`, `server/pipelineJobs.ts`, `server/pipelineConfig.ts`, `server/llmConfig.ts`, `server/db.ts`
 - `alembic/` -- schema migrations
 
-**Local dev:** `./local-run` (Postgres in Docker `wp-pg`, Next.js on host). See `scripts/local-run.sh`. **Local tests (CI parity):** `./local-test` runs **three** Python coverage gates (core 100%, reporting 100%, tools 95%); `./local-test browser` for `@pytest.mark.browser` integration tests — see `scripts/local-test.sh`. Mocked browser unit tests: `tests/test_browser_fetcher_unit.py`.
+**Local dev:** `./local-run` (Postgres in Docker `wp-pg`, Next.js on host). See `scripts/local-run.sh`. **Local tests (CI parity):** `./local-test` runs **three** Python coverage gates (core 100%, reporting 100%, tools 100%); `./local-test browser` for `@pytest.mark.browser` integration tests — see `scripts/local-test.sh`. Mocked browser unit tests: `tests/test_browser_fetcher_unit.py`.
 
 **JavaScript crawl (optional):** Config keys `crawl_render_mode` (`static` | `javascript` | `auto`) and `crawl_js_*` in pipeline config / `pipelineConfigSchema.ts`. JS/auto crawls can capture browser console errors and uncaught exceptions (`crawl_js_capture_console`, stored under `page_analysis.browser`). **Auto mode** uses static-first fetch, pre-parse SPA heuristics (`needs_js_render`), then post-parse low-outlink fallback (`needs_js_render_after_parse`) in `crawler.py`. **Preflight:** `GET /api/crawl/browser-status` (localhost) spawns Python `browser_status()`; Run audit settings/run validation calls it when render mode is `javascript` or `auto`. Browser deps: `requirements-browser.txt` (installed by `./local-run setup` and `./local-test`). Runtime needs Chromium on `PATH` or `CHROME_PATH` (Docker sets `CHROME_PATH=/usr/bin/chromium`). Integration tests: `@pytest.mark.browser` — excluded by default in `pytest.ini`; Docker CI runs `tests/test_crawl_fetchers.py` and `tests/test_crawler_browser_e2e.py -m browser`; locally `./local-test browser`.
 
@@ -90,7 +90,7 @@ These recur when adding features. Verify explicitly — do not assume tests caug
      |------|--------|--------|-----------|------------|
      | Core | `.coveragerc` | all packages **except** `tools/` and `reporting/` | 100% | `pytest tests/ -m "not browser"` |
      | Reporting | `.coveragerc.reporting` | `website_profiling.reporting` | 100% | fixed test file list |
-     | Tools | `.coveragerc.tools` | `website_profiling.tools` | 95% | fixed test file list |
+     | Tools | `.coveragerc.tools` | `website_profiling.tools` | 100% | fixed test file list |
    - **Symptom:** `./local-test` or core pytest passes at 100%, but CI fails on tools/reporting (e.g. 84% tools).
    - **Causes:** (a) only ran core pytest, not reporting/tools gates; (b) added tests under `tests/test_<module>_coverage.py` but did not add the file to the tools gate list in **both** `scripts/local-test.sh`, `scripts/local-test.ps1`, and `.github/workflows/ci.yml`; (c) changed code under `website_profiling/tools/` without tests that hit those lines in the tools gate subset.
    - **Do:** Run full `./local-test` before push. When adding tools coverage tests, name them `tests/test_<module>_coverage.py` (repo convention) and register the file in all three places above. Keep bash and PowerShell local-test scripts in sync.

@@ -106,6 +106,100 @@ def test_pipeline_lighthouse_on_pages_uses_selected_urls(monkeypatch) -> None:
     assert urls_seen["urls"] == ["https://a.com"]
 
 
+def _patch_lighthouse_on_pages_db(monkeypatch):
+    from website_profiling.commands import pipeline_cmd
+
+    class _Ctx:
+        def __enter__(self):
+            return object()
+
+        def __exit__(self, _t, _v, _tb):
+            return False
+
+    import website_profiling.db as db
+
+    monkeypatch.setattr(db, "db_session", lambda: _Ctx())
+    monkeypatch.setattr(db, "get_latest_crawl_run_id", lambda _c: 1)
+    monkeypatch.setattr(
+        db,
+        "read_crawl",
+        lambda _c, _rid: pd.DataFrame([{"url": "https://a.com", "status": 200}]),
+    )
+    monkeypatch.setattr(pipeline_cmd, "lighthouse_work_dir", lambda: "/tmp/lh")
+    monkeypatch.setattr(pipeline_cmd, "cleanup_lighthouse_work_dir", lambda _p: None)
+    return pipeline_cmd
+
+
+def test_pipeline_lighthouse_on_pages_all_failures_emit_error(monkeypatch) -> None:
+    pipeline_cmd = _patch_lighthouse_on_pages_db(monkeypatch)
+
+    def fake_get_int(cfg, key, default=None):
+        if key == "crawl_js_extra_wait_ms":
+            return None
+        from website_profiling.config import get_int as real_get_int
+
+        return real_get_int(cfg, key, default)
+
+    monkeypatch.setattr(pipeline_cmd, "get_int", fake_get_int)
+    progress: list[tuple] = []
+    monkeypatch.setattr(
+        pipeline_cmd,
+        "emit_progress",
+        lambda phase, step, **kw: progress.append((phase, step, kw)),
+    )
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "website_profiling.lighthouse.runner",
+        types.SimpleNamespace(
+            run_lighthouse_on_pages=lambda **_k: {"attempted": 2, "succeeded": 0, "failed": 2},
+        ),
+    )
+    pipeline_cmd._run_lighthouse_on_pages({"crawl_js_extra_wait_ms": ""}, lighthouse_max_pages=5)
+    assert ("lighthouse", "error") in [(p, s) for p, s, _ in progress]
+
+
+def test_pipeline_lighthouse_on_pages_partial_failures_emit_done_with_message(monkeypatch) -> None:
+    pipeline_cmd = _patch_lighthouse_on_pages_db(monkeypatch)
+    done_messages: list[str | None] = []
+    monkeypatch.setattr(
+        pipeline_cmd,
+        "emit_phase_done",
+        lambda phase, message=None: done_messages.append(message),
+    )
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "website_profiling.lighthouse.runner",
+        types.SimpleNamespace(
+            run_lighthouse_on_pages=lambda **_k: {"attempted": 2, "succeeded": 1, "failed": 1},
+        ),
+    )
+    pipeline_cmd._run_lighthouse_on_pages({}, lighthouse_max_pages=5)
+    assert done_messages == ["Lighthouse complete with 1 failure(s)"]
+
+
+def test_is_2xx_status_branches() -> None:
+    from website_profiling.commands import pipeline_cmd
+
+    class RegexStatus:
+        def __float__(self):
+            raise ValueError("not numeric")
+
+        def __str__(self) -> str:
+            return "208"
+
+    assert pipeline_cmd._is_2xx_status(None) is False
+    assert pipeline_cmd._is_2xx_status(200.0) is True
+    assert pipeline_cmd._is_2xx_status(RegexStatus()) is True
+    assert pipeline_cmd._is_2xx_status(object()) is False
+
+
+def test_cfg_int_returns_default_when_get_int_none(monkeypatch) -> None:
+    from website_profiling.commands import pipeline_cmd
+
+    monkeypatch.setattr(pipeline_cmd, "get_int", lambda _c, _k, _d: None)
+    assert pipeline_cmd._cfg_int({}, "lighthouse_iterations", 3) == 3
+
+
 def test_lighthouse_on_pages_swallows_google_data_errors(monkeypatch) -> None:
     from website_profiling.commands import pipeline_cmd
 

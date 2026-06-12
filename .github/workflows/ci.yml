@@ -24,6 +24,7 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgres://profiling:profiling@localhost:5432/website_profiling
+      WEBSITE_PROFILING_ROOT: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

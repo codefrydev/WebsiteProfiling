@@ -43,6 +43,7 @@ def _repo_root() -> str:
 
 
 def _spawn_audit_for_property(prop_id: int, conn) -> None:
+    """Spawn audit for one property. Never writes to pipeline_config."""
     from ..db.property_store import get_property_by_id
 
     prop = get_property_by_id(conn, int(prop_id))
@@ -55,6 +56,7 @@ def _spawn_audit_for_property(prop_id: int, conn) -> None:
     env = {
         **os.environ,
         "WP_PROPERTY_ID": str(prop_id),
+        "WP_SCHEDULED_SPAWN": "1",
         "WEBSITE_PROFILING_ROOT": repo_root,
         "PYTHONPATH": os.path.join(repo_root, "src"),
         "PYTHONIOENCODING": "utf-8",

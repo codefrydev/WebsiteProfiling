@@ -98,8 +98,49 @@ def test_spawn_audit_sets_env_and_cwd() -> None:
     assert kwargs["cwd"] == repo_root
     env = kwargs["env"]
     assert env["WP_PROPERTY_ID"] == "5"
+    assert env["WP_SCHEDULED_SPAWN"] == "1"
     assert env["PYTHONPATH"] == f"{repo_root}/src"
     assert env["WEBSITE_PROFILING_ROOT"] == repo_root
+
+
+def test_repo_root_prefers_website_profiling_root_env(monkeypatch) -> None:
+    from website_profiling.tools.schedule_runner import _repo_root
+
+    monkeypatch.setenv("WEBSITE_PROFILING_ROOT", "/custom/root")
+    assert _repo_root() == "/custom/root"
+
+
+def test_repo_root_falls_back_to_package_parents(monkeypatch) -> None:
+    from pathlib import Path
+
+    from website_profiling.tools import schedule_runner
+
+    monkeypatch.delenv("WEBSITE_PROFILING_ROOT", raising=False)
+    expected = str(Path(schedule_runner.__file__).resolve().parents[3])
+    assert schedule_runner._repo_root() == expected
+
+
+def test_run_due_scheduled_audits_logs_when_multiple_properties_due(capsys) -> None:
+    now = datetime(2026, 6, 7, 14, 30, tzinfo=timezone.utc)
+    rows = [
+        (1, "Site A", "30 14 * * *"),
+        (2, "Site B", "30 14 * * *"),
+    ]
+    conn = MagicMock()
+    cur = MagicMock()
+    cur.fetchall.return_value = rows
+    conn.execute.return_value = cur
+
+    with patch("website_profiling.db.storage.db_session") as mock_session:
+        mock_session.return_value.__enter__.return_value = conn
+        with patch("website_profiling.tools.schedule_runner.datetime") as mock_dt:
+            mock_dt.now.return_value = now
+            with patch("website_profiling.tools.schedule_runner._spawn_audit_for_property") as mock_spawn:
+                started = run_due_scheduled_audits()
+
+    assert started == 2
+    assert mock_spawn.call_count == 2
+    assert "2 properties due this minute" in capsys.readouterr().out
 
 
 def test_spawn_audit_skips_missing_property(capsys) -> None:
@@ -108,6 +149,16 @@ def test_spawn_audit_skips_missing_property(capsys) -> None:
     with patch("website_profiling.db.property_store.get_property_by_id", return_value=None):
         schedule_runner._spawn_audit_for_property(99, MagicMock())
     assert "not found" in capsys.readouterr().out
+
+
+def test_schedule_runner_never_writes_pipeline_config() -> None:
+    """Regression: cron must not mutate global pipeline_config in PostgreSQL."""
+    import inspect
+
+    from website_profiling.tools import schedule_runner
+
+    source = inspect.getsource(schedule_runner)
+    assert "write_pipeline_config" not in source
 
 
 def test_cron_matches_wrong_hour() -> None:

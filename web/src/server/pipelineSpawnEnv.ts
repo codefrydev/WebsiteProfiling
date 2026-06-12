@@ -8,6 +8,7 @@ export function getRepoRoot(): string {
 /** Env for spawning `python -m src` so CLI loads config from PostgreSQL. */
 export function getPipelineSpawnEnv(
   repoRootOverride?: string,
+  /** For property-scoped CLI calls (Google, chat), not full pipeline runs. */
   propertyId?: number | null,
 ): NodeJS.ProcessEnv {
   const repoRoot = repoRootOverride || getRepoRoot();

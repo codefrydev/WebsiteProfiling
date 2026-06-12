@@ -40,6 +40,12 @@ CRAWL_PRESET_PATCHES: dict[str, dict[str, str]] = {
 
 DEFAULT_CRAWL_PRESET_ID = "starter"
 
+# Keys owned by property presets / scheduled spawns — not taken from saved pipeline_config.
+PRESET_OWNED_CONFIG_KEYS: frozenset[str] = frozenset(
+    {k for patch in CRAWL_PRESET_PATCHES.values() for k in patch}
+    | {"active_property_id", "start_url"}
+)
+
 
 def apply_crawl_preset(preset_id: str, config: dict[str, Any]) -> dict[str, str]:
     """Merge preset patch into pipeline config (string values only)."""

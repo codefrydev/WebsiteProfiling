@@ -191,7 +191,7 @@ export function startPipelineJob(
 
   const proc = spawn(pythonExe, args, {
     cwd: repoRoot,
-    env: getPipelineSpawnEnv(repoRoot, options.propertyId ?? null),
+    env: getPipelineSpawnEnv(repoRoot),
     shell: false,
   });
   getProcessMap().set(id, proc);
