@@ -2,8 +2,9 @@
 
 import { Bar } from 'react-chartjs-2';
 import type { ChartData, ChartOptions } from 'chart.js';
-import { barOptionsHorizontal } from '@/utils/chartJsDefaults';
+import { barOptionsHorizontal, registerChartJsBase } from '@/utils/chartJsDefaults';
 import { ChartAccessibleFallback } from './ChartAccessibleFallback';
+import { ChartPanel } from './ChartPanel';
 
 export interface RankedBarChartProps {
   data: ChartData<'bar'>;
@@ -25,9 +26,9 @@ export function RankedBarChart({
 
   return (
     <ChartAccessibleFallback summary={ariaSummary} rows={rows}>
-      <div className={heightClass} role="presentation">
-        <Bar data={data} options={options ?? barOptionsHorizontal()} />
-      </div>
+      <ChartPanel heightClass={heightClass}>
+        <Bar data={data} options={options ?? barOptionsHorizontal(undefined, labels)} />
+      </ChartPanel>
     </ChartAccessibleFallback>
   );
 }

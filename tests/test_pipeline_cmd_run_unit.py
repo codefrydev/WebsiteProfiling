@@ -1,7 +1,10 @@
 import argparse
+import io
+import sys
 import types
 
 import pandas as pd
+import pytest
 
 
 def test_pipeline_run_calls_crawl_with_minimal_config(monkeypatch) -> None:
@@ -133,4 +136,119 @@ def test_lighthouse_on_pages_swallows_google_data_errors(monkeypatch) -> None:
     )
     pipeline_cmd._run_lighthouse_on_pages({}, lighthouse_max_pages=5)
     assert urls_seen["urls"] == ["https://a.com"]
+
+
+def test_pipeline_continues_to_report_when_lighthouse_fails(monkeypatch) -> None:
+    from website_profiling.commands import pipeline_cmd
+
+    called = {"report": 0}
+
+    monkeypatch.setattr(pipeline_cmd, "_run_crawl", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        pipeline_cmd,
+        "_run_single_lighthouse",
+        lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("lighthouse boom")),
+    )
+    monkeypatch.setattr(pipeline_cmd, "_run_lighthouse_on_pages", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "_run_plot", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        pipeline_cmd,
+        "_run_report",
+        lambda *_a, **_k: called.__setitem__("report", called["report"] + 1),
+    )
+
+    cfg = {
+        "start_url": "https://site.com",
+        "run_crawl": "false",
+        "run_report": "true",
+        "run_plot": "false",
+        "run_lighthouse": "true",
+        "run_lighthouse_on_pages": "false",
+    }
+    args = argparse.Namespace(command=None)
+
+    pipeline_cmd.run(cfg, args)
+    assert called["report"] == 1
+
+
+def test_pipeline_exits_when_report_fails(monkeypatch) -> None:
+    from website_profiling.commands import pipeline_cmd
+
+    monkeypatch.setattr(pipeline_cmd, "_run_crawl", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "_run_single_lighthouse", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "_run_lighthouse_on_pages", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "_run_plot", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        pipeline_cmd,
+        "_run_report",
+        lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("report boom")),
+    )
+
+    cfg = {
+        "start_url": "https://site.com",
+        "run_crawl": "false",
+        "run_report": "true",
+        "run_plot": "false",
+        "run_lighthouse": "false",
+        "run_lighthouse_on_pages": "false",
+    }
+    args = argparse.Namespace(command=None)
+
+    with pytest.raises(SystemExit) as exc:
+        pipeline_cmd.run(cfg, args)
+    assert exc.value.code == 1
+
+
+def test_finalize_pipeline_run_warns_on_optional_failure() -> None:
+    from website_profiling.commands import pipeline_cmd
+
+    pipeline_cmd._finalize_pipeline_run(
+        [
+            pipeline_cmd.PhaseResult("lighthouse", "failed", error="boom"),
+            pipeline_cmd.PhaseResult("report", "ok"),
+        ]
+    )
+
+
+def test_finalize_pipeline_run_exits_on_critical_failure() -> None:
+    from website_profiling.commands import pipeline_cmd
+
+    with pytest.raises(SystemExit) as exc:
+        pipeline_cmd._finalize_pipeline_run(
+            [
+                pipeline_cmd.PhaseResult("crawl", "failed", error="boom"),
+                pipeline_cmd.PhaseResult("report", "ok"),
+            ]
+        )
+    assert exc.value.code == 1
+
+
+def test_lighthouse_main_prints_unicode_summary_on_cp1252(monkeypatch, tmp_path) -> None:
+    from website_profiling.lighthouse import runner as lh_runner
+
+    summary = {
+        "human_summary": "LCP meets good threshold (≤2500ms).",
+        "human_summary_full": "LCP meets good threshold (≤2500ms).",
+        "raw_reports": [],
+        "diagnostics": [],
+        "median_metrics": {},
+        "category_scores": {},
+        "top_failures": [],
+    }
+    monkeypatch.setattr(lh_runner, "run_lighthouse_audit", lambda **_k: summary)
+    monkeypatch.setattr(lh_runner, "_build_report_html_content", lambda _s: "<html></html>")
+
+    buffer = io.BytesIO()
+    stream = io.TextIOWrapper(buffer, encoding="cp1252", errors="strict")
+    monkeypatch.setattr(sys, "stdout", stream)
+
+    code = lh_runner.main(
+        url="https://example.com",
+        output_dir=str(tmp_path),
+        use_database=False,
+        iterations=1,
+    )
+    assert code == 0
+    output = buffer.getvalue().decode("utf-8", errors="replace")
+    assert "2500" in output
 

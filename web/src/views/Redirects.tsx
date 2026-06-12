@@ -41,7 +41,7 @@ export default function Redirects({ searchQuery = '' }: ViewProps) {
   }, [redirects]);
 
   const barOpts = useMemo(() => {
-    const base = barOptionsHorizontal();
+    const base = barOptionsHorizontal(undefined, statusLabels);
     return {
       ...base,
       plugins: {
@@ -56,7 +56,7 @@ export default function Redirects({ searchQuery = '' }: ViewProps) {
         },
       },
     };
-  }, []);
+  }, [statusLabels]);
 
   if (!data) return null;
 
@@ -64,10 +64,10 @@ export default function Redirects({ searchQuery = '' }: ViewProps) {
     <PageLayout className="space-y-6">
       <PageHeader title={vr.title} subtitle={vr.subtitle} />
       {redirects.length > 0 && statusLabels.length > 0 && (
-        <Card padding="tight" shadow>
+        <Card padding="tight" shadow overflowHidden className="min-w-0 max-w-full">
           <h2 className="text-sm font-bold text-foreground mb-1">{vr.chartTitle}</h2>
           <p className="text-xs text-muted-foreground mb-3">{vr.chartHint}</p>
-          <div className="h-48 max-w-xl">
+          <div className="relative h-48 min-w-0 w-full max-w-xl overflow-hidden">
             <Bar
               data={{
                 labels: statusLabels,

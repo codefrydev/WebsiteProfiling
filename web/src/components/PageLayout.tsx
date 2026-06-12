@@ -29,7 +29,7 @@ export default function PageLayout({
   const fullHeightAttr = variant === 'fullHeight' ? { 'data-full-height': true } : {};
   return (
     <div
-      className={`${PADDING[variant]} ${maxWidthClass} ${className}`.trim()}
+      className={`min-w-0 max-w-full w-full ${PADDING[variant]} ${maxWidthClass} ${className}`.trim()}
       {...fullHeightAttr}
     >
       {children}

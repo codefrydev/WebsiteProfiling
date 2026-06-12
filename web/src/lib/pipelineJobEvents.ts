@@ -1,6 +1,6 @@
 import { apiUrl } from '@/lib/publicBase';
 import type { PipelineJob } from '@/types/api';
-import { formatPipelineJobLog, logPipelineFailure } from '@/lib/pipelineDebug';
+import { logPipelineFailure } from '@/lib/pipelineDebug';
 
 export interface PipelineJobStartedDetail {
   jobId: string;
@@ -83,15 +83,6 @@ export function pollPipelineJob(
       const error = data.error ?? null;
       onUpdate({ status, log, error });
       if (status === 'success' || status === 'error') {
-        if (status === 'error') {
-          logPipelineFailure('Job poll terminal error', {
-            jobId,
-            status,
-            error,
-            logLength: log.length,
-            displayLog: formatPipelineJobLog(log, error),
-          });
-        }
         finish();
       }
     } catch (e) {

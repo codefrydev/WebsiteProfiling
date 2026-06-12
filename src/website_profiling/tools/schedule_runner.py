@@ -43,7 +43,12 @@ def _spawn_audit_for_property(prop_id: int, conn) -> None:
         known = apply_crawl_preset(preset, known)
     write_pipeline_config(conn, known, unknown)
 
-    env = {**os.environ, "WP_PROPERTY_ID": str(prop_id)}
+    env = {
+        **os.environ,
+        "WP_PROPERTY_ID": str(prop_id),
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONUTF8": "1",
+    }
     subprocess.Popen([sys.executable, "-m", "src"], env=env)
     print(f"[Schedule] Spawned audit for property {prop_id} ({site_url or 'no site_url'})", flush=True)
 
@@ -76,6 +81,9 @@ def run_gsc_links_staleness_alerts() -> list[dict]:
 
 
 def main() -> None:
+    from ..console_io import configure_stdio
+
+    configure_stdio()
     n = run_due_scheduled_audits()
     stale = run_gsc_links_staleness_alerts()
     print(f"Started {n} scheduled audit(s).")

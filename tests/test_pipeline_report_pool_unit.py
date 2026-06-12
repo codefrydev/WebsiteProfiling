@@ -41,7 +41,7 @@ def test_pipeline_run_single_lighthouse_when_enabled_in_config(monkeypatch):
     assert called["lh"] == 1
 
 
-def test_run_single_lighthouse_exits_on_nonzero(monkeypatch):
+def test_run_single_lighthouse_raises_on_nonzero(monkeypatch):
     from website_profiling.commands import pipeline_cmd
 
     monkeypatch.setattr(pipeline_cmd, "require_lighthouse_url", lambda _cfg: "https://a.com")
@@ -50,9 +50,22 @@ def test_run_single_lighthouse_exits_on_nonzero(monkeypatch):
     monkeypatch.setitem(__import__("sys").modules, "website_profiling.lighthouse.runner", types.SimpleNamespace(main=lambda **_k: 2))
     import pytest
 
-    with pytest.raises(SystemExit) as e:
+    with pytest.raises(RuntimeError, match="Lighthouse failed with exit code 2"):
         pipeline_cmd._run_single_lighthouse({}, True)
-    assert e.value.code == 2
+
+
+def test_run_single_lighthouse_completes_on_zero(monkeypatch):
+    from website_profiling.commands import pipeline_cmd
+
+    monkeypatch.setattr(pipeline_cmd, "require_lighthouse_url", lambda _cfg: "https://a.com")
+    monkeypatch.setattr(pipeline_cmd, "lighthouse_work_dir", lambda: "/tmp/w")
+    monkeypatch.setattr(pipeline_cmd, "cleanup_lighthouse_work_dir", lambda _p: None)
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "website_profiling.lighthouse.runner",
+        types.SimpleNamespace(main=lambda **_k: 0),
+    )
+    pipeline_cmd._run_single_lighthouse({}, True)
 
 
 def test_run_plot_passes_render_mode_to_run_plot(monkeypatch):

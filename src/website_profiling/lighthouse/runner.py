@@ -15,6 +15,8 @@ import threading
 from datetime import datetime, timezone
 from typing import Any
 
+from ..console_io import console_print
+
 # Lighthouse "good" thresholds for human summary
 LCP_GOOD_MS = 2500
 CLS_GOOD = 0.1
@@ -166,20 +168,16 @@ def run_lighthouse_once(
     if categories:
         cmd.append("--only-categories=" + ",".join(categories))
     try:
+        run_kwargs = {
+            "capture_output": True,
+            "encoding": "utf-8",
+            "errors": "replace",
+            "timeout": 300,
+        }
         if _uses_npx(base):
             with _NPX_LIGHTHOUSE_LOCK:
-                return subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    timeout=300,
-                )
-        return subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=300,
-        )
+                return subprocess.run(cmd, **run_kwargs)
+        return subprocess.run(cmd, **run_kwargs)
     except FileNotFoundError as e:
         raise RuntimeError(_LIGHTHOUSE_INSTALL_MSG) from e
 
@@ -307,11 +305,11 @@ def run_lighthouse_audit(
     if strategy not in ("mobile", "desktop"):
         strategy = "mobile"
     iterations = max(1, int(iterations))
-    print(f"Lighthouse audit: {url} (strategy={strategy}, iterations={iterations})", flush=True)
+    console_print(f"Lighthouse audit: {url} (strategy={strategy}, iterations={iterations})", flush=True)
     os.makedirs(output_dir, exist_ok=True)
     raw_runs_dir = os.path.join(output_dir, "raw_runs")
     os.makedirs(raw_runs_dir, exist_ok=True)
-    print("  Output directory ready.", flush=True)
+    console_print("  Output directory ready.", flush=True)
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     url_slug = _url_safe(url)
 
@@ -320,10 +318,10 @@ def run_lighthouse_audit(
 
     categories = _parse_categories(categories) if categories else None
     if categories:
-        print(f"  Categories: {', '.join(categories)}", flush=True)
+        console_print(f"  Categories: {', '.join(categories)}", flush=True)
 
     for i in range(iterations):
-        print(f"  Lighthouse run {i + 1}/{iterations} ({strategy})...", flush=True)
+        console_print(f"  Lighthouse run {i + 1}/{iterations} ({strategy})...", flush=True)
         out_name = f"lighthouse_{url_slug}_{ts}_run{i + 1}.json"
         out_path = os.path.join(raw_runs_dir, out_name)
         proc = run_lighthouse_once(url, strategy, out_path, categories=categories)
@@ -340,9 +338,9 @@ def run_lighthouse_audit(
         except (json.JSONDecodeError, OSError) as e:
             raise RuntimeError(f"Failed to parse Lighthouse JSON {out_path}: {e}") from e
         runs.append(extract_from_lighthouse_json(data))
-        print(f"  Run {i + 1}/{iterations} done.", flush=True)
+        console_print(f"  Run {i + 1}/{iterations} done.", flush=True)
 
-    print("  Computing medians and category scores...", flush=True)
+    console_print("  Computing medians and category scores...", flush=True)
     # Medians
     lcps = [r["lcp_ms"] for r in runs if r["lcp_ms"] is not None]
     clss = [r["cls"] for r in runs if r["cls"] is not None]
@@ -390,7 +388,7 @@ def run_lighthouse_audit(
     human_summary = " ".join(parts) if parts else "No Core Web Vitals metrics extracted."
 
     # Diagnostics from first raw run (full Lighthouse JSON)
-    print("  Building diagnostics from audit results...", flush=True)
+    console_print("  Building diagnostics from audit results...", flush=True)
     diagnostics: list[dict[str, Any]] = []
     first_raw = raw_paths[0] if raw_paths else None
     if first_raw and os.path.isfile(first_raw):
@@ -401,7 +399,7 @@ def run_lighthouse_audit(
             diagnostics = parse_lighthouse_to_diagnostics(raw_data)[:15]
         except Exception:
             pass
-    print(f"  Found {len(diagnostics)} diagnostics.", flush=True)
+    console_print(f"  Found {len(diagnostics)} diagnostics.", flush=True)
 
     # Human summary for file: CWV verdict + Top 5 fixes + quick wins (<400 words)
     human_lines = [human_summary, ""]
@@ -473,7 +471,7 @@ def run_lighthouse_on_pages(
     workers = max(1, min(int(concurrency or 2), 8))
 
     def _audit_one(url: str) -> None:
-        print(f"[Lighthouse on pages] {url}", flush=True)
+        console_print(f"[Lighthouse on pages] {url}", flush=True)
         summary = run_lighthouse_audit(
             url=url,
             strategy=strategy,
@@ -508,7 +506,7 @@ def run_lighthouse_on_pages(
     if workers == 1:
         for idx, url in enumerate(urls):
             try:
-                print(f"[Lighthouse on pages] {idx + 1}/{total}: {url}", flush=True)
+                console_print(f"[Lighthouse on pages] {idx + 1}/{total}: {url}", flush=True)
                 emit_progress(
                     "lighthouse",
                     "audit",
@@ -518,7 +516,7 @@ def run_lighthouse_on_pages(
                 )
                 _audit_one(url)
             except Exception as e:
-                print(f"  Skipped (error): {e}", file=sys.stderr, flush=True)
+                console_print(f"  Skipped (error): {e}", file=sys.stderr, flush=True)
     else:
         completed = 0
         with ThreadPoolExecutor(max_workers=workers) as pool:
@@ -528,7 +526,7 @@ def run_lighthouse_on_pages(
                 try:
                     future.result()
                 except Exception as e:
-                    print(f"  Skipped {url} (error): {e}", file=sys.stderr, flush=True)
+                    console_print(f"  Skipped {url} (error): {e}", file=sys.stderr, flush=True)
                 completed += 1
                 emit_progress(
                     "lighthouse",
@@ -538,7 +536,7 @@ def run_lighthouse_on_pages(
                     url=url,
                 )
 
-    print(f"[Lighthouse on pages] Done. Wrote {total} URL(s) to DB.", flush=True)
+    console_print(f"[Lighthouse on pages] Done. Wrote {total} URL(s) to DB.", flush=True)
 
 
 def main(
@@ -564,11 +562,37 @@ def main(
             categories=categories,
         )
     except RuntimeError as e:
-        print(str(e), file=sys.stderr)
+        console_print(str(e), file=sys.stderr)
+        return 1
+    except Exception as e:
+        console_print(f"Lighthouse audit failed: {e}", file=sys.stderr)
         return 1
 
-    # Store report HTML in summary so it is saved to PostgreSQL when DATABASE_URL is set
-    print("  Building report HTML...", flush=True)
+    try:
+        return _persist_lighthouse_summary(
+            summary,
+            url=url,
+            strategy=strategy,
+            output_dir=output_dir,
+            summary_path=summary_path,
+            use_database=use_database,
+        )
+    except Exception as e:
+        console_print(f"Lighthouse persist failed: {e}", file=sys.stderr)
+        return 1
+
+
+def _persist_lighthouse_summary(
+    summary: dict[str, Any],
+    *,
+    url: str,
+    strategy: str,
+    output_dir: str,
+    summary_path: str | None,
+    use_database: bool,
+) -> int:
+    """Write Lighthouse artifacts; printing failures do not fail a successful audit."""
+    console_print("  Building report HTML...", flush=True)
     summary["report_html"] = _build_report_html_content(summary)
 
     if use_database:
@@ -578,13 +602,13 @@ def main(
             write_lighthouse_summary,
             write_lighthouse_run,
         )
-        print("  Saving summary to DB...", flush=True)
+        console_print("  Saving summary to DB...", flush=True)
         with db_session() as conn:
             write_lighthouse_summary(conn, summary)
             raw_reports = summary.get("raw_reports") or []
             for i, raw_path in enumerate(raw_reports):
                 if os.path.isfile(raw_path):
-                    print(f"  Saving raw run {i + 1}/{len(raw_reports)} to DB...", flush=True)
+                    console_print(f"  Saving raw run {i + 1}/{len(raw_reports)} to DB...", flush=True)
                     try:
                         with open(raw_path, "r", encoding="utf-8") as f:
                             run_data = json.load(f)
@@ -596,29 +620,31 @@ def main(
                             pass
                     except (OSError, json.JSONDecodeError):
                         pass
-        print("  Lighthouse DB write complete.", flush=True)
-        print(summary.get("human_summary", ""))
-        print(f"All Lighthouse data saved to PostgreSQL (summary, diagnostics, human summary, report HTML, raw runs)")
+        console_print("  Lighthouse DB write complete.", flush=True)
+        console_print(summary.get("human_summary", ""))
+        console_print(
+            "All Lighthouse data saved to PostgreSQL (summary, diagnostics, human summary, report HTML, raw runs)"
+        )
     else:
         # No DB: write all artifacts to output_dir
-        print("  Writing summary.json...", flush=True)
+        console_print("  Writing summary.json...", flush=True)
         summary_file = os.path.join(output_dir, "summary.json")
         with open(summary_file, "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2, default=str)
-        print("  Writing human_summary.txt...", flush=True)
+        console_print("  Writing human_summary.txt...", flush=True)
         human_file = os.path.join(output_dir, "human_summary.txt")
         with open(human_file, "w", encoding="utf-8") as f:
             f.write(summary.get("human_summary_full", summary.get("human_summary", "")))
-        print("  Writing diagnostics.json...", flush=True)
+        console_print("  Writing diagnostics.json...", flush=True)
         diag_file = os.path.join(output_dir, "diagnostics.json")
         with open(diag_file, "w", encoding="utf-8") as f:
             json.dump(summary.get("diagnostics", []), f, indent=2, default=str)
-        print("  Writing lighthouse_summary.json...", flush=True)
+        console_print("  Writing lighthouse_summary.json...", flush=True)
         out_file = summary_path or os.path.join(output_dir, "lighthouse_summary.json")
         with open(out_file, "w", encoding="utf-8") as f:
             json.dump(summary, f, indent=2, default=str)
-        print("  Writing report.html...", flush=True)
+        console_print("  Writing report.html...", flush=True)
         _write_report_html(output_dir, summary)
-        print(summary.get("human_summary", ""))
-        print(f"Summary: {summary_file}; diagnostics: {diag_file}; human summary: {human_file}")
+        console_print(summary.get("human_summary", ""))
+        console_print(f"Summary: {summary_file}; diagnostics: {diag_file}; human summary: {human_file}")
     return 0

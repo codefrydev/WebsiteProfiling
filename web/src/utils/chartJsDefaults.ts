@@ -49,10 +49,29 @@ export function registerChartJsBase(): void {
   registered = true;
 }
 
+/** Truncate long axis labels so horizontal bar charts do not widen the page. */
+export function truncateChartLabel(label: string, maxLength = 28): string {
+  if (label.length <= maxLength) return label;
+  return `${label.slice(0, Math.max(1, maxLength - 1))}…`;
+}
+
 /** Horizontal bar defaults: frequency on X, labels on Y */
-export function barOptionsHorizontal(tooltipLabel?: string): ChartOptionsLoose {
+export function barOptionsHorizontal(
+  tooltipLabel?: string,
+  yAxisLabels?: readonly string[],
+  maxLabelLength = 28,
+): ChartOptionsLoose {
   const grid = getGridColor();
   const titleColor = getChartTitleColor();
+  const yScale: Record<string, unknown> = { grid: { color: grid } };
+  if (yAxisLabels?.length) {
+    yScale.ticks = {
+      callback: (_value: unknown, index: number) => {
+        const label = yAxisLabels[index];
+        return label ? truncateChartLabel(String(label), maxLabelLength) : '';
+      },
+    };
+  }
   return {
     indexAxis: 'y',
     responsive: true,
@@ -68,7 +87,7 @@ export function barOptionsHorizontal(tooltipLabel?: string): ChartOptionsLoose {
     },
     scales: {
       x: { grid: { color: grid }, beginAtZero: true, title: { display: true, text: 'Count', color: titleColor } },
-      y: { grid: { color: grid } },
+      y: yScale,
     },
   };
 }

@@ -136,8 +136,10 @@ export default function Security({ searchQuery = '' }: ViewProps) {
     return { typeLabels: pairs.map((p) => p[0]), typeValues: pairs.map((p) => p[1]) };
   }, [allFindings]);
 
+  const vs = strings.views.security;
+
   const typeBarOpts = useMemo(() => {
-    const base = barOptionsHorizontal();
+    const base = barOptionsHorizontal(undefined, typeLabels);
     return {
       ...base,
       plugins: {
@@ -146,16 +148,14 @@ export default function Security({ searchQuery = '' }: ViewProps) {
           callbacks: {
             label: (ctx: TooltipItem<'bar'>) => {
               const n = Number(ctx.raw);
-              const vs = strings.views.security;
               return ` ${format(vs.findingTooltip, { n: n.toLocaleString(), s: n !== 1 ? 's' : '' })}`;
             },
           },
         },
       },
     };
-  }, []);
+  }, [vs.findingTooltip, typeLabels]);
 
-  const vs = strings.views.security;
   const vsp = vs.pagination;
 
   const filteredFindings = useMemo(() => {
@@ -237,11 +237,11 @@ export default function Security({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'charts' && allFindings.length > 0 && (
         <ViewTabPanel idPrefix="security" tabId="charts" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <Card padding="tight" shadow>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-w-0">
+            <Card padding="tight" shadow overflowHidden className="min-w-0">
               <h2 className="text-sm font-bold text-foreground mb-1">{vs.findingsBySeverity}</h2>
               <p className="text-xs text-muted-foreground mb-3">{vs.findingsBySeverityHint}</p>
-              <div className="h-56 flex items-center justify-center">
+              <div className="h-56 flex items-center justify-center min-w-0 overflow-hidden">
                 <div className="w-full max-w-[260px] h-48">
                   <ChartAccessibleFallback summary={severityChart.aria} rows={severityChart.rows}>
                     <Doughnut
@@ -263,10 +263,10 @@ export default function Security({ searchQuery = '' }: ViewProps) {
               </div>
             </Card>
             {typeLabels.length > 0 && (
-              <Card padding="tight" shadow>
+              <Card padding="tight" shadow overflowHidden className="min-w-0">
                 <h2 className="text-sm font-bold text-foreground mb-1">{vs.findingsByType}</h2>
                 <p className="text-xs text-muted-foreground mb-3">{vs.findingsByTypeHint}</p>
-                <div className="h-56">
+                <div className="relative h-56 min-w-0 w-full overflow-hidden">
                   <Bar
                     data={{
                       labels: typeLabels,

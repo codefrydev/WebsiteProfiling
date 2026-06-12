@@ -6,6 +6,7 @@ import { palette } from '@/utils/chartPalette';
 import { barOptionsHorizontal } from '@/utils/chartJsDefaults';
 import { doughnutOptionsWithPercentTooltip } from '@/lib/chartDoughnutUtils';
 import { ChartAccessibleFallback } from './ChartAccessibleFallback';
+import { ChartPanel } from './ChartPanel';
 
 export interface StatusDistributionChartProps {
   distribution: StatusDistribution;
@@ -45,15 +46,15 @@ export function StatusDistributionChart({ distribution, heightClass = 'h-56' }: 
 
   return (
     <ChartAccessibleFallback summary={aria} rows={rows}>
-      <div className={heightClass} role="presentation">
+      <ChartPanel heightClass={heightClass}>
         <Bar
           data={{
             labels,
             datasets: [{ data: values, backgroundColor: colors }],
           }}
-          options={barOptionsHorizontal()}
+          options={barOptionsHorizontal(undefined, labels)}
         />
-      </div>
+      </ChartPanel>
     </ChartAccessibleFallback>
   );
 }

@@ -1,9 +1,10 @@
 """Structured pipeline progress events for the web UI (@progress JSON lines)."""
 from __future__ import annotations
 
-import json
 import time
 from typing import Any
+
+from .console_io import emit_machine_line
 
 PREFIX = "@progress "
 
@@ -40,7 +41,7 @@ def emit_progress(
         payload["elapsed_ms"] = elapsed_ms
     if avg_ms is not None:
         payload["avg_ms"] = round(avg_ms, 1)
-    print(f"{PREFIX}{json.dumps(payload, ensure_ascii=False)}", flush=True)
+    emit_machine_line(PREFIX, payload)
 
 
 def emit_phase_start(phase: str, message: str | None = None) -> None:

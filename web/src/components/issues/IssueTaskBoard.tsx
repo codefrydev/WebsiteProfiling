@@ -118,13 +118,13 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
         return (
           <div
             key={`${msg}-${item.issue.url}-${i}`}
-            className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-default bg-brand-800"
+            className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-default bg-brand-800 min-w-0 max-w-full overflow-hidden"
           >
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground">{msg}</p>
               {item.issue.url ? (
                 <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs text-muted-foreground truncate">{item.issue.url}</span>
+                  <span className="font-mono text-xs text-muted-foreground break-all min-w-0">{item.issue.url}</span>
                   <UrlInspectorButton url={item.issue.url} />
                 </div>
               ) : null}
