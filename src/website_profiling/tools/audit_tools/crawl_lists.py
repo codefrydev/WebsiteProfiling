@@ -7,7 +7,7 @@ import pandas as pd
 from psycopg import Connection
 
 from ...reporting.categories import REDIRECT_CHAIN_LONG
-from ._slice import cap_list, parse_limit
+from ._slice import _parse_page_analysis, cap_list, parse_limit
 from .context import AuditToolContext
 
 _REDIRECT_CHAIN_MIN = REDIRECT_CHAIN_LONG
@@ -279,3 +279,269 @@ def get_top_pages_by_pagerank(conn: Connection, ctx: AuditToolContext, args: dic
     ranked.sort(key=lambda x: float(x.get("pagerank") or 0), reverse=True)
     sliced = cap_list(ranked, limit, max_cap=50)
     return {"pages": sliced["items"], "total": sliced["total"], "truncated": sliced["truncated"]}
+
+
+_SOFT_404_MARKERS = ("not found", "404", "page not found", "doesn't exist", "does not exist")
+
+
+def list_pages_soft_404(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    def _soft(r: dict[str, Any]) -> bool:
+        title = str(r.get("title") or "").lower()
+        return any(m in title for m in _SOFT_404_MARKERS)
+
+    return _filter_crawl_pages(
+        conn,
+        ctx,
+        args,
+        predicate=_soft,
+        projection=lambda r: {
+            "url": str(r.get("url") or ""),
+            "title": str(r.get("title") or ""),
+            "status": str(r.get("status") or ""),
+        },
+    )
+
+
+def list_pages_with_axe_violations(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    def _has_axe(r: dict[str, Any]) -> bool:
+        pa = _parse_page_analysis(r)
+        axe = pa.get("axe_violations")
+        return isinstance(axe, list) and len(axe) > 0
+
+    return _filter_crawl_pages(
+        conn,
+        ctx,
+        args,
+        predicate=_has_axe,
+        projection=lambda r: {
+            "url": str(r.get("url") or ""),
+            "violation_count": len(_parse_page_analysis(r).get("axe_violations") or []),
+            "title": str(r.get("title") or ""),
+        },
+    )
+
+
+def get_axe_audit_summary(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    df = scoped.load_crawl_df(conn)
+    if df is None or df.empty:
+        return {"pages_with_violations": 0, "violations_by_rule": [], "total_violations": 0}
+    rule_counts: dict[str, int] = {}
+    pages = 0
+    total = 0
+    for _, row in df.iterrows():
+        pa = _parse_page_analysis(row.to_dict())
+        axe = pa.get("axe_violations")
+        if not isinstance(axe, list) or not axe:
+            continue
+        pages += 1
+        for v in axe:
+            if not isinstance(v, dict):
+                continue
+            rule = str(v.get("id") or v.get("description") or "unknown")
+            rule_counts[rule] = rule_counts.get(rule, 0) + 1
+            total += 1
+    ranked = sorted(
+        [{"rule_id": k, "count": v} for k, v in rule_counts.items()],
+        key=lambda x: -x["count"],
+    )[:30]
+    return {
+        "pages_with_violations": pages,
+        "total_violations": total,
+        "violations_by_rule": ranked,
+        "provenance": "Crawl",
+    }
+
+
+def list_pages_with_mixed_content(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    def _mixed(r: dict[str, Any]) -> bool:
+        try:
+            return int(r.get("mixed_content_count") or 0) > 0
+        except (TypeError, ValueError):
+            return False
+
+    return _filter_crawl_pages(
+        conn,
+        ctx,
+        args,
+        predicate=_mixed,
+        projection=lambda r: {
+            "url": str(r.get("url") or ""),
+            "mixed_content_count": int(r.get("mixed_content_count") or 0),
+            "title": str(r.get("title") or ""),
+        },
+    )
+
+
+def list_dead_end_pages(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    payload = scoped.load_payload(conn)
+    orphan_set = set()
+    if payload:
+        for u in payload.get("orphan_urls") or []:
+            if u:
+                orphan_set.add(_norm_url(str(u)))
+    inlink_by_url: dict[str, int] = {}
+    if payload:
+        for rec in payload.get("top_pages") or payload.get("links") or []:
+            if isinstance(rec, dict) and rec.get("url"):
+                inlink_by_url[_norm_url(str(rec["url"]))] = int(rec.get("inlinks") or 0)
+
+    def _dead_end(r: dict[str, Any]) -> bool:
+        url = _norm_url(str(r.get("url") or ""))
+        if not url or url in orphan_set:
+            return False
+        try:
+            outlinks = int(r.get("outlinks") or 0)
+        except (TypeError, ValueError):
+            outlinks = 0
+        if outlinks > 0:
+            return False
+        inlinks = inlink_by_url.get(url, 0)
+        return inlinks > 0
+
+    return _filter_crawl_pages(
+        conn,
+        ctx,
+        args,
+        predicate=_dead_end,
+        projection=lambda r: {
+            "url": str(r.get("url") or ""),
+            "outlinks": int(r.get("outlinks") or 0),
+            "title": str(r.get("title") or ""),
+        },
+    )
+
+
+def list_duplicate_title_groups(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    df = scoped.load_crawl_df(conn)
+    if df is None or df.empty:
+        return {"groups": [], "total": 0, "truncated": False}
+    work = _success_df(df)
+    buckets: dict[str, list[str]] = {}
+    for _, row in work.iterrows():
+        title = str(row.get("title") or "").strip()
+        meta = str(row.get("meta_description") or "").strip()
+        if not title:
+            continue
+        key = f"{title}|{meta}"
+        url = str(row.get("url") or "")
+        if url:
+            buckets.setdefault(key, []).append(url)
+    groups = [
+        {"title": k.split("|", 1)[0], "meta_description": k.split("|", 1)[1] if "|" in k else "", "urls": urls, "count": len(urls)}
+        for k, urls in buckets.items()
+        if len(urls) > 1
+    ]
+    groups.sort(key=lambda g: -g["count"])
+    limit = parse_limit(args.get("limit"), 20, 50)
+    sliced = cap_list(groups, limit, max_cap=50)
+    return {"groups": sliced["items"], "total": sliced["total"], "truncated": sliced["truncated"], "provenance": "Crawl"}
+
+
+def list_heavy_pages_by_bytes(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    df = scoped.load_crawl_df(conn)
+    if df is None or df.empty:
+        return {"pages": [], "total": 0, "truncated": False}
+    pages: list[dict[str, Any]] = []
+    for _, row in _success_df(df).iterrows():
+        rec = row.to_dict()
+        try:
+            js = int(rec.get("total_js_bytes") or 0)
+            css = int(rec.get("total_css_bytes") or 0)
+            scripts = int(rec.get("script_count") or 0)
+        except (TypeError, ValueError):
+            continue
+        total_bytes = js + css
+        if total_bytes <= 0 and scripts <= 0:
+            continue
+        pages.append({
+            "url": str(rec.get("url") or ""),
+            "total_js_bytes": js,
+            "total_css_bytes": css,
+            "script_count": scripts,
+            "total_asset_bytes": total_bytes,
+            "title": str(rec.get("title") or ""),
+        })
+    pages.sort(key=lambda p: -int(p.get("total_asset_bytes") or 0))
+    limit = parse_limit(args.get("limit"), 30, 50)
+    sliced = cap_list(pages, limit, max_cap=50)
+    return {"pages": sliced["items"], "total": sliced["total"], "truncated": sliced["truncated"], "provenance": "Crawl"}
+
+
+def list_pages_poor_cache_headers(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    def _poor_cache(r: dict[str, Any]) -> bool:
+        cache = str(r.get("cache_control") or "").strip().lower()
+        etag = str(r.get("etag") or "").strip()
+        if not cache and not etag:
+            return True
+        if cache in ("no-cache", "no-store") and not etag:
+            return True
+        return False
+
+    return _filter_crawl_pages(
+        conn,
+        ctx,
+        args,
+        predicate=_poor_cache,
+        projection=lambda r: {
+            "url": str(r.get("url") or ""),
+            "cache_control": str(r.get("cache_control") or ""),
+            "etag": str(r.get("etag") or ""),
+            "title": str(r.get("title") or ""),
+        },
+    )
+
+
+def list_pages_low_content_ratio(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    try:
+        threshold = float(args.get("max_content_html_ratio", 15))
+    except (TypeError, ValueError):
+        threshold = 15.0
+
+    def _low_ratio(r: dict[str, Any]) -> bool:
+        try:
+            ratio = float(r.get("content_html_ratio") or 0)
+        except (TypeError, ValueError):
+            return False
+        return 0 < ratio < threshold
+
+    return _filter_crawl_pages(
+        conn,
+        ctx,
+        args,
+        predicate=_low_ratio,
+        projection=lambda r: {
+            "url": str(r.get("url") or ""),
+            "content_html_ratio": r.get("content_html_ratio"),
+            "word_count": r.get("word_count"),
+            "title": str(r.get("title") or ""),
+        },
+    )
+
+
+def get_heading_outline_for_url(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    url = str(args.get("url") or "").strip()
+    if not url:
+        return {"error": "url is required"}
+    df = scoped.load_crawl_df(conn)
+    if df is None or df.empty:
+        return {"error": "no crawl data", "url": url}
+    needle = url.rstrip("/").lower()
+    for _, row in df.iterrows():
+        row_url = str(row.get("url") or "").rstrip("/").lower()
+        if row_url != needle:
+            continue
+        rec = row.to_dict()
+        pa = _parse_page_analysis(rec)
+        return {
+            "url": str(rec.get("url") or ""),
+            "heading_sequence": str(rec.get("heading_sequence") or ""),
+            "heading_text": str(rec.get("heading_text") or ""),
+            "headings": pa.get("headings") if isinstance(pa.get("headings"), list) else [],
+            "provenance": "Crawl",
+        }
+    return {"error": "url not found in crawl", "url": url}

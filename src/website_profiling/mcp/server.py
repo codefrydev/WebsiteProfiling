@@ -82,6 +82,11 @@ def _tools_catalog_json() -> str:
         "ops": [],
         "export": [],
         "images": [],
+        "geo": [],
+        "accessibility": [],
+        "assets": [],
+        "ctr": [],
+        "integrations": [],
     }
     for tool in TOOL_DEFINITIONS:
         name = tool["name"]
@@ -93,10 +98,29 @@ def _tools_catalog_json() -> str:
             "get_ads_txt_status",
             "get_security_txt_status",
             "get_contact_intelligence",
+            "get_rich_results_summary",
+            "list_rich_results_failures",
+            "get_competitor_keyword_gap",
+            "get_pagination_audit_summary",
         ):
             domains["portfolio"].append(name)
-        elif "issue" in name or "category" in name or "workflow" in name:
+        elif name in (
+            "list_top_impact_issues",
+            "prioritize_fix_roadmap",
+            "generate_issue_fix",
+            "summarize_category_for_client",
+        ) or "issue" in name or "category" in name or "workflow" in name:
             domains["issues"].append(name)
+        elif name.startswith(("get_geo_", "get_aeo_", "get_llms_", "get_eeat_", "get_faq_", "list_pages_missing_faq", "draft_llms", "check_ai_citation")):
+            domains["geo"].append(name)
+        elif "axe" in name or "mixed_content" in name or name == "get_heading_outline_for_url":
+            domains["accessibility"].append(name)
+        elif name in ("get_asset_weight_summary", "get_readability_summary", "list_heavy_pages_by_bytes", "list_pages_poor_cache_headers", "list_pages_low_content_ratio"):
+            domains["assets"].append(name)
+        elif "ctr" in name or name in ("list_keywords_ctr_opportunity", "analyze_serp_snippet_for_url"):
+            domains["ctr"].append(name)
+        elif name in ("get_gsc_url_inspection", "get_gsc_index_coverage", "get_bing_index_status", "get_serp_feature_overlay"):
+            domains["integrations"].append(name)
         elif name.startswith(("list_pages_", "list_canonical", "list_long_", "list_robots_", "get_top_pages_by", "search_pages", "get_page_", "list_redirects", "list_broken", "list_status_", "get_status_code", "get_response_time", "get_depth", "get_crawl_", "get_browser", "list_pages_with", "list_pages_by")):
             domains["crawl"].append(name)
         elif "schema" in name or name == "get_seo_health":

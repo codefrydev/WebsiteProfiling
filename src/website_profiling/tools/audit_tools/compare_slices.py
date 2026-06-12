@@ -10,9 +10,11 @@ from ...reporting.compare_payload import (
     build_content_metrics,
     build_duplicate_deltas,
     build_google_metrics,
+    build_indexation_deltas,
     build_issue_deltas,
     build_lighthouse_url_deltas,
     build_link_metric_deltas,
+    build_orphan_deltas,
     build_priority_counts,
     build_redirect_deltas,
     build_security_deltas,
@@ -229,4 +231,26 @@ def compare_health_score_delta(conn: Connection, ctx: AuditToolContext, args: di
             "baseline": base_health,
             "delta": (cur_health - base_health) if cur_health is not None and base_health is not None else None,
         },
+    }
+
+
+def compare_indexation_deltas(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    current, baseline, cur_rid, base_rid, err = load_compare_pair(conn, ctx, args)
+    if err:
+        return err
+    assert current is not None and baseline is not None
+    return {
+        **_compare_meta(cur_rid, base_rid, current, baseline),
+        **build_indexation_deltas(current, baseline),
+    }
+
+
+def compare_orphan_deltas(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    current, baseline, cur_rid, base_rid, err = load_compare_pair(conn, ctx, args)
+    if err:
+        return err
+    assert current is not None and baseline is not None
+    return {
+        **_compare_meta(cur_rid, base_rid, current, baseline),
+        **build_orphan_deltas(current, baseline),
     }

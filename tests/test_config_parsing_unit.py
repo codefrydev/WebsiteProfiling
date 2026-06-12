@@ -24,9 +24,12 @@ def test_load_config_parses_equals_and_colon_and_ignores_comments(tmp_path) -> N
 
 
 def test_getters_bool_int_float_list() -> None:
-    from website_profiling.config import get_bool, get_float, get_int, get_list
+    from website_profiling.config import get_bool, get_float, get_int, get_list, get_str
 
-    cfg = {"b1": "true", "b2": "0", "i": "10", "f": "1.25", "l": " a, b , ,c "}
+    cfg = {"b1": "true", "b2": "0", "i": "10", "f": "1.25", "l": " a, b , ,c ", "s": "hello"}
+    assert get_str(cfg, "s") == "hello"
+    assert get_str(cfg, "missing", "default") == "default"
+    assert get_str(cfg, "missing") == ""
     assert get_bool(cfg, "b1", False) is True
     assert get_bool(cfg, "b2", True) is False
     assert get_int(cfg, "i") == 10

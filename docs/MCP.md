@@ -43,7 +43,7 @@ Add to `.cursor/mcp.json` (or Cursor MCP settings):
 | `audit://glossary` | Excerpt from `docs/GLOSSARY.md` |
 | `audit://tools` | Tool catalog grouped by SEO domain |
 
-## Tools (176 read-only + export)
+## Tools (221 read-only + export)
 
 ### Export and deliverables
 
@@ -63,7 +63,7 @@ Size-based tools require `probe_image_inventory=true` in pipeline config when bu
 
 ### Issues and workflow
 
-`list_issues`, `search_issues`, `list_issues_by_category`, `get_category_issues`, `list_issue_workflow`, `list_issues_with_ai_fixes`, `list_seo_onpage_issues`
+`list_issues`, `search_issues`, `list_top_impact_issues`, `prioritize_fix_roadmap`, `list_issues_by_category`, `get_category_issues`, `list_issue_workflow`, `list_issues_with_ai_fixes`, `generate_issue_fix`, `summarize_category_for_client`, `list_seo_onpage_issues`
 
 ### On-page SEO
 
@@ -71,7 +71,15 @@ Size-based tools require `probe_image_inventory=true` in pipeline config when bu
 
 ### Crawl and pages
 
-`search_pages`, `search_pages_advanced`, `get_page_details`, `get_page_analysis`, `get_internal_links`, `list_redirects`, `list_broken_links`, `list_status_4xx_pages`, `list_status_5xx_pages`, `get_status_code_breakdown`, `get_response_time_stats`, `get_depth_distribution`, `get_crawl_segments`, `get_browser_diagnostics_summary`, `list_pages_with_console_errors`, `list_pages_by_fetch_method`, `get_crawl_links_table`, `get_graph_edges_sample`, `list_long_redirect_chains`, `list_robots_blocked_urls`, `get_top_pages_by_pagerank`
+`search_pages`, `search_pages_advanced`, `get_page_details`, `get_page_analysis`, `get_internal_links`, `list_redirects`, `list_broken_links`, `list_status_4xx_pages`, `list_status_5xx_pages`, `list_pages_soft_404`, `list_dead_end_pages`, `list_duplicate_title_groups`, `list_heavy_pages_by_bytes`, `list_pages_poor_cache_headers`, `list_pages_low_content_ratio`, `get_heading_outline_for_url`, `get_status_code_breakdown`, `get_response_time_stats`, `get_depth_distribution`, `get_crawl_segments`, `get_browser_diagnostics_summary`, `list_pages_with_console_errors`, `list_pages_by_fetch_method`, `get_crawl_links_table`, `get_graph_edges_sample`, `list_long_redirect_chains`, `list_robots_blocked_urls`, `get_top_pages_by_pagerank`, `get_pagination_audit_summary`, `get_js_rendering_delta`
+
+### Accessibility and assets
+
+`list_pages_with_axe_violations`, `get_axe_audit_summary`, `list_pages_with_mixed_content`, `get_asset_weight_summary`, `get_readability_summary`
+
+### Rich results and portfolio extras
+
+`get_rich_results_summary`, `list_rich_results_failures`, `get_competitor_keyword_gap`, `get_portfolio_benchmark`, `get_site_anchor_text_summary`
 
 ### Schema and technical
 
@@ -91,11 +99,11 @@ Size-based tools require `probe_image_inventory=true` in pipeline config when bu
 
 ### Keywords
 
-`get_keyword_summary`, `search_keywords`, `get_striking_distance_keywords`, `get_keyword_cannibalisation`, `get_query_page_misalignment`, `get_semantic_keyword_clusters`, `get_keyword_history`, `get_keyword_serp_overlay`, `list_keywords_by_action`, `list_keywords_by_position`, `list_keywords_by_impressions`, `expand_keywords`, `generate_content_brief`
+`get_keyword_summary`, `search_keywords`, `get_striking_distance_keywords`, `get_keyword_cannibalisation`, `get_query_page_misalignment`, `get_semantic_keyword_clusters`, `get_keyword_history`, `get_keyword_serp_overlay`, `get_serp_feature_overlay`, `list_keywords_by_action`, `list_keywords_by_position`, `list_keywords_by_impressions`, `list_keywords_ctr_opportunity`, `expand_keywords`, `generate_content_brief`
 
-### Google
+### Google and CTR
 
-`get_google_summary`, `get_google_integration_status`, `get_gsc_top_queries`, `get_gsc_top_pages`, `get_ga4_summary`, `get_ga4_page_metrics`, `get_gsc_page_query_slice`
+`get_google_summary`, `get_google_integration_status`, `get_gsc_top_queries`, `get_gsc_top_pages`, `get_gsc_ctr_opportunity_pages`, `get_ga4_summary`, `get_ga4_page_metrics`, `get_gsc_page_query_slice`, `get_gsc_url_inspection`, `get_gsc_index_coverage`, `analyze_serp_snippet_for_url`
 
 ### Backlinks
 
@@ -107,21 +115,27 @@ Size-based tools require `probe_image_inventory=true` in pipeline config when bu
 
 ### Drift, health, and compare
 
-`get_health_history`, `get_category_health_history`, `compare_reports`, `compare_issue_deltas`, `compare_category_deltas`, `compare_seo_health_deltas`, `compare_lighthouse_deltas`, `compare_url_set_diff`, `compare_redirect_deltas`, `compare_link_metric_deltas`, `compare_security_deltas`, `compare_duplicate_deltas`, `compare_tech_deltas`, `compare_content_metrics`, `compare_google_metrics`, `compare_priority_counts`, `compare_health_score_delta`
+`get_health_history`, `get_category_health_history`, `compare_reports`, `compare_issue_deltas`, `compare_category_deltas`, `compare_seo_health_deltas`, `compare_lighthouse_deltas`, `compare_url_set_diff`, `compare_redirect_deltas`, `compare_link_metric_deltas`, `compare_security_deltas`, `compare_duplicate_deltas`, `compare_tech_deltas`, `compare_content_metrics`, `compare_google_metrics`, `compare_priority_counts`, `compare_health_score_delta`, `compare_indexation_deltas`, `compare_orphan_deltas`
+
+### GEO / AEO
+
+`get_geo_readiness_score`, `get_aeo_content_signals_for_url`, `get_llms_txt_status`, `draft_llms_txt`, `get_faq_schema_coverage`, `list_pages_missing_faq_schema`, `get_eeat_signals_summary`, `get_internal_link_suggestions`, `check_ai_citation_presence`
+
+### Integrations
+
+`get_bing_index_status` (requires `bing_webmaster_api_key` in audit settings)
 
 ### Ops and logs
 
 `get_integration_alerts`, `get_property_ops`, `list_crawl_runs`, `list_log_uploads`, `get_latest_log_analysis`, `get_log_top_paths`, `list_log_only_paths`, `list_crawl_only_paths`, `get_log_googlebot_stats`, `get_log_analysis_by_id`, `get_page_coach`
 
-## Future pipeline items (not yet exposed as tools)
-
-These require additional third-party integrations or product scope beyond current crawl data:
+## Future pipeline items
 
 - Full backlink index and anchor-text analytics (beyond GSC Links import)
 - SERP rank tracking beyond GSC position snapshots
-- Standalone Google Rich Results Test API (current `validate_rich_results` uses crawl heuristics + GSC URL Inspection)
+- Live AI citation checks across ChatGPT/Perplexity (current `check_ai_citation_presence` uses on-site heuristics)
 
-Already available: `validate_rich_results`, `export_sitemap_xml`, workbook export, axe audits via `enable_axe` on browser crawls.
+Already available: `validate_rich_results`, `get_gsc_url_inspection`, `export_sitemap_xml`, workbook export, axe audits via `enable_axe` on browser crawls.
 
 ## Example prompts
 
@@ -138,6 +152,11 @@ Already available: `validate_rich_results`, `export_sitemap_xml`, workbook expor
 - "Compare report 38 to the current audit and give me a CSV diff"
 - "Build a client report with executive summary, category scores, and top critical issues as PDF"
 - "Which images are largest and unoptimized?"
+- "What should we fix first on high-traffic pages?" (use `list_top_impact_issues` or `prioritize_fix_roadmap`)
+- "What's our GEO readiness score?"
+- "Inspect GSC indexing for https://example.com/page"
+- "Which pages are soft 404s or dead ends?"
+- "Suggest internal links for our top blog post"
 - "List pages with images missing alt or lazy loading"
 
 ## In-app chat

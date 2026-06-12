@@ -29,6 +29,13 @@ def load_config(path: str) -> dict[str, str]:
     return result
 
 
+def get_str(cfg: dict, key: str, default: str = "") -> str:
+    raw = cfg.get(key)
+    if raw is None:
+        return default
+    return str(raw)
+
+
 def get_bool(cfg: dict, key: str, default: bool = False) -> bool:
     return str(cfg.get(key, default)).lower() in ("true", "1", "yes")
 

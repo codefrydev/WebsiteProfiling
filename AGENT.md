@@ -25,7 +25,7 @@
 - **Pipeline data** (crawl, edges, nodes, report payload, Lighthouse, keywords, warnings) is stored in **PostgreSQL only** — no JSON/CSV/HTML exports from the main pipeline.
 - **Pool tuning:** `DB_POOL_MIN` / `DB_POOL_MAX` (Python), `PGPOOL_MAX` (Node). Bulk crawl writes via `executemany`; optional **`crawl_stream_to_db`** streams rows during fetch.
 - **`web/`:** `/api/report/*` (PostgreSQL); `/api/run` spawns Python (localhost only); `/api/crawl/browser-status` GET (localhost, Playwright/Chromium preflight); `/api/pipeline-config` GET/PUT; `/api/llm-config` GET/PUT (AI only); `/api/chat` POST (SSE agent); `/api/chat/sessions` GET/POST; `/api/properties/{id}/google/links/import` POST (GSC Links CSV); `PipelineRunnerFab` saves pipeline + LLM state before each run
-- **MCP:** `python -m website_profiling.mcp` (stdio, **121 read-only audit tools** + MCP resources). See `docs/MCP.md`. Requires `pip install -r requirements-mcp.txt`.
+- **MCP:** `python -m website_profiling.mcp` (stdio, **221 read-only audit tools** + MCP resources). See `docs/MCP.md`. Requires `pip install -r requirements-mcp.txt`.
 - **AI Chat UI:** `/chat` — property-scoped chat with saved sessions (`chat_sessions`, `chat_messages` tables, migration `012_chat_sessions`).
 - **Job store:** in-memory on `globalThis` in `web/src/server/pipelineJobs.ts` — job status/log is lost on server restart (single-process dev/Docker only).
 - **Docker:** `Dockerfile` + `docker-compose.yml` (postgres + web); **`docker-compose.pull.yml`** for pre-built images (`WEB_IMAGE`); **`LIGHTHOUSE_CHROME_FLAGS`**
