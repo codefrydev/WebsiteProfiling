@@ -181,10 +181,6 @@ function Invoke-Venv {
     Write-Log "Installing Python dependencies"
     & $VENV_PIP install -q -r (Join-Path $ROOT "requirements.txt")
     Assert-LastExitCode "Failed to install requirements.txt"
-    & $VENV_PIP install -q -r (Join-Path $ROOT "requirements-browser.txt")
-    Assert-LastExitCode "Failed to install requirements-browser.txt"
-    & $VENV_PIP install -q -r (Join-Path $ROOT "requirements-llm.txt")
-    Assert-LastExitCode "Failed to install requirements-llm.txt"
 }
 
 function Invoke-Migrate {

@@ -199,7 +199,7 @@ def main() -> None:
         from mcp.types import Resource, TextContent, Tool
     except ImportError as e:
         raise SystemExit(
-            "MCP SDK not installed. Run: pip install -r requirements-mcp.txt",
+            "MCP SDK not installed. Run: pip install -r requirements.txt",
         ) from e
 
     server = Server("site-audit")

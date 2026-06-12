@@ -298,7 +298,6 @@ def test_discover_sitemap_nested_and_external_filter(monkeypatch):
 def test_pip_install_browser_requirements_runs_subprocess(monkeypatch, tmp_path):
     from website_profiling.crawl.fetchers import browser_deps
 
-    (tmp_path / "requirements-browser.txt").write_text("playwright\n", encoding="utf-8")
     monkeypatch.setenv("WEBSITE_PROFILING_ROOT", str(tmp_path))
     called: list = []
 
@@ -307,7 +306,7 @@ def test_pip_install_browser_requirements_runs_subprocess(monkeypatch, tmp_path)
 
     monkeypatch.setattr(browser_deps.subprocess, "run", fake_run)
     browser_deps._pip_install_browser_requirements()
-    assert called and "requirements-browser.txt" in called[0][-1]
+    assert called and "playwright>=1.49.0" in called[0]
 
 
 def test_playwright_install_chromium_runs_subprocess(monkeypatch, tmp_path):

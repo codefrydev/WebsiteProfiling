@@ -15,7 +15,7 @@ from .browser_diagnostics import finalize_browser_diagnostics, truncate_diag_tex
 
 _BROWSER_INSTALL_MSG = (
     "JavaScript crawl requires Playwright and Chromium. Install: "
-    "pip install -r requirements-browser.txt. "
+    "pip install -r requirements.txt. "
     "Chrome or Chromium must be available (set CHROME_PATH if needed)."
 )
 

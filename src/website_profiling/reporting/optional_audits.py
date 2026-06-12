@@ -100,7 +100,7 @@ def spell_check_issues(df: pd.DataFrame, *, max_pages: int = 50) -> tuple[list[d
     try:
         from spellchecker import SpellChecker  # type: ignore[import-untyped]
     except ImportError:
-        return issues, "pyspellchecker not installed (pip install -r requirements-optional.txt)"
+        return issues, "pyspellchecker not installed (pip install -r requirements.txt)"
     spell = SpellChecker()
     checked = 0
     for _, row in df.iterrows():

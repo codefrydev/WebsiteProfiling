@@ -1,2 +1,0 @@
-# MCP server for Cursor / Claude Desktop (optional)
-mcp>=1.0.0

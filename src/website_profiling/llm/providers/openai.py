@@ -21,7 +21,7 @@ class OpenAIClient:
         try:
             import httpx
         except ImportError as e:
-            raise ImportError("pip install httpx (or requirements-llm.txt)") from e
+            raise ImportError("pip install -r requirements.txt") from e
 
         payload = {
             "model": self._model,
@@ -53,7 +53,7 @@ class OpenAIClient:
         try:
             import httpx
         except ImportError as e:
-            raise ImportError("pip install httpx (or requirements-llm.txt)") from e
+            raise ImportError("pip install -r requirements.txt") from e
 
         payload: dict[str, Any] = {
             "model": self._model,

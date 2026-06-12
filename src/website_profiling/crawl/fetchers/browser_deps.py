@@ -67,11 +67,8 @@ def browser_status() -> dict[str, str | bool]:
 
 
 def _pip_install_browser_requirements() -> None:
-    req = _repo_root() / "requirements-browser.txt"
-    if not req.is_file():
-        raise RuntimeError(f"Missing {req.name}; cannot auto-install Playwright.")
     subprocess.run(
-        [sys.executable, "-m", "pip", "install", "-q", "-r", str(req)],
+        [sys.executable, "-m", "pip", "install", "-q", "playwright>=1.49.0"],
         check=True,
         cwd=_repo_root(),
     )

@@ -30,6 +30,21 @@ alembic>=1.13
 # Audit export (PDF)
 reportlab>=4.0.0
 
+# JavaScript rendering crawl (headless Chromium via Playwright)
+playwright>=1.49.0
+
+# LLM providers for AI enrichment (configure via web UI AI tab)
+httpx>=0.27.0
+openai>=1.0.0
+anthropic>=0.25.0
+
+# Spell-check / HTML validation extras
+pyspellchecker>=0.8.1
+html5lib>=1.1
+
+# MCP server for Cursor / Claude Desktop
+mcp>=1.0.0
+
 # Dev / test
 pytest>=7.0.0
 pytest-cov>=5.0.0

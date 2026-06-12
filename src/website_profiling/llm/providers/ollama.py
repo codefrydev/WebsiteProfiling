@@ -112,7 +112,7 @@ class OllamaClient:
         try:
             import httpx
         except ImportError as e:
-            raise ImportError("pip install httpx (or requirements-llm.txt)") from e
+            raise ImportError("pip install -r requirements.txt") from e
         return httpx.Client(timeout=self._timeout)
 
     def _raise_for_status(self, response: Any) -> None:
