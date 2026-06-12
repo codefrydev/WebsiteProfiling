@@ -27,14 +27,20 @@ export default function PropertyOpsSection({ propertyId }: PropertyOpsSectionPro
     let cancelled = false;
     setLoading(true);
     void fetch(apiUrl(`/properties/${propertyId}/ops`))
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (cancelled || !data) return;
+      .then(async (res) => {
+        if (cancelled) return;
+        if (!res.ok) {
+          setMessage(s.loadFailed);
+          return;
+        }
+        const data = await res.json();
         setScheduleCron(String(data.schedule_cron || ''));
         setAlertWebhookUrl(String(data.alert_webhook_url || ''));
         setAlertEmail(String(data.alert_email || ''));
       })
-      .catch(() => {})
+      .catch(() => {
+        if (!cancelled) setMessage(s.loadFailed);
+      })
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
@@ -47,9 +53,11 @@ export default function PropertyOpsSection({ propertyId }: PropertyOpsSectionPro
     if (propertyId == null) return undefined;
     let cancelled = false;
     void fetch(apiUrl(`/properties/${propertyId}/google/links/status`))
-      .then((res) => (res.ok ? res.json() : null))
-      .then((status) => {
-        if (cancelled || !status) return;
+      .then(async (res) => {
+        if (cancelled) return;
+        if (!res.ok) return;
+        const status = await res.json();
+        if (!status) return;
         if (!status.hasData) {
           setGscLinksStale(s.gscLinksMissing);
           return;
@@ -63,11 +71,13 @@ export default function PropertyOpsSection({ propertyId }: PropertyOpsSectionPro
           setGscLinksStale(null);
         }
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setGscLinksStale(s.loadFailed);
+      });
     return () => {
       cancelled = true;
     };
-  }, [propertyId, s.gscLinksMissing, s.gscLinksStale]);
+  }, [propertyId, s.gscLinksMissing, s.gscLinksStale, s.loadFailed]);
 
   const handleSave = useCallback(async () => {
     if (propertyId == null || readOnly) return;

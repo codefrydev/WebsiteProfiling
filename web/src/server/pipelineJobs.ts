@@ -5,14 +5,20 @@ import { randomUUID } from 'crypto';
 import { getPipelineSpawnEnv } from '@/server/pipelineSpawnEnv';
 import { formatPythonSpawnError, resolvePythonExecutable } from '@/server/resolvePython';
 import { buildPipelineJobErrorMessage } from '@/lib/pipelineJobErrorMessage';
+import { logPipelineDbError } from '@/lib/pipelineDebug';
 import {
   appendPipelineJobLog,
   cancelPipelineJobInDb,
   finishPipelineJob,
+  getActiveRunningJob,
   getPipelineJobFromDb,
-  insertPipelineJob,
-  isAnyPipelineJobRunning,
+  listRecentPipelineJobs,
+  markRunningJobOrphaned,
+  PIPELINE_LOG_MAX,
+  PIPELINE_LOG_TRIM,
   reconcileStaleRunningJobs,
+  tryClaimRunningPipelineJob,
+  type PipelineJobListItem,
 } from '@/server/pipelineJobsDb';
 import type { PipelineJob, PipelineJobEntry, PipelineJobStore } from '@/types/api';
 
@@ -22,6 +28,7 @@ function isDbJobsEnabled(): boolean {
 
 const WEB_CWD = process.cwd();
 const DEFAULT_REPO_ROOT = process.env.WEBSITE_PROFILING_ROOT || path.resolve(WEB_CWD, '..');
+const ORPHAN_JOB_MINUTES = Number(process.env.PIPELINE_JOB_ORPHAN_MINUTES || '5');
 
 const ALLOWED_COMMANDS = new Set<string | null | undefined>([
   null,
@@ -38,11 +45,6 @@ const ALLOWED_COMMANDS = new Set<string | null | undefined>([
   'google',
 ]);
 
-/**
- * Next may bundle this module into separate server chunks per API route, so module-level
- * `Map` instances are not shared. Persist store on globalThis so POST /api/run and GET
- * /api/jobs/[id] always see the same jobs (also survives dev Fast Refresh better).
- */
 function getStore(): PipelineJobStore {
   if (!globalThis.__websiteProfilingPipelineJobs) {
     globalThis.__websiteProfilingPipelineJobs = {
@@ -62,6 +64,14 @@ function getProcessMap(): Map<string, ChildProcess> {
 
 const CANCELLED_MESSAGE = 'Cancelled by user';
 
+function trimInMemoryLog(entry: PipelineJobEntry, chunk: string): void {
+  entry.log += chunk;
+  if (entry.log.length > PIPELINE_LOG_MAX) {
+    entry.log = entry.log.slice(-PIPELINE_LOG_TRIM);
+    entry.logTruncated = true;
+  }
+}
+
 function markJobFinished(
   id: string,
   entry: PipelineJobEntry,
@@ -77,7 +87,9 @@ function markJobFinished(
   getStore().running = false;
   getProcessMap().delete(id);
   if (isDbJobsEnabled()) {
-    void finishPipelineJob(id, status, exitCode, error).catch(() => {});
+    void finishPipelineJob(id, status, exitCode, error, entry.logTruncated).catch((err) =>
+      logPipelineDbError('finishPipelineJob', err),
+    );
   }
 }
 
@@ -103,13 +115,6 @@ function resolveRepoRoot(override: string | undefined | null): string {
   return normalized;
 }
 
-/**
- * Resolve and validate an absolute config file path.
- *
- * Allowed locations:
- *   - Under repoRoot (always)
- *   - Under DATA_DIR — the data volume (/data) in Docker
- */
 function validateConfigPath(absPath: string, repoRoot: string): string {
   const normalized = path.resolve(absPath);
 
@@ -127,40 +132,70 @@ export interface StartPipelineJobOptions {
   propertyId?: number | null;
 }
 
+function hasLiveProcess(jobId: string): boolean {
+  const proc = getProcessMap().get(jobId);
+  return Boolean(proc && !proc.killed);
+}
+
+async function reconcileOrphanedActiveJob(active: PipelineJobListItem): Promise<boolean> {
+  if (hasLiveProcess(active.id)) return false;
+  const started = new Date(active.startedAt).getTime();
+  if (Number.isNaN(started) || Date.now() - started < ORPHAN_JOB_MINUTES * 60 * 1000) {
+    return false;
+  }
+  const updated = await markRunningJobOrphaned(active.id);
+  if (updated) {
+    getStore().running = false;
+    const entry = getStore().jobs.get(active.id);
+    if (entry && !entry.finished) {
+      markJobFinished(active.id, entry, 'error', -1, 'Job process not found (server restarted)');
+    }
+  }
+  return updated;
+}
+
+export interface PipelineJobsListResult {
+  jobs: PipelineJobListItem[];
+  active: PipelineJobListItem | null;
+  reconciled: number;
+}
+
+/** List jobs for GET /api/jobs with stale + orphan reconciliation. */
+export async function listPipelineJobsForApi(limit: number): Promise<PipelineJobsListResult> {
+  let reconciled = await reconcileStaleRunningJobs();
+  let active = await getActiveRunningJob();
+  if (active) {
+    const orphanReconciled = await reconcileOrphanedActiveJob(active);
+    if (orphanReconciled) {
+      reconciled += 1;
+      active = await getActiveRunningJob();
+    }
+  }
+  const jobs = await listRecentPipelineJobs(limit);
+  return { jobs, active, reconciled };
+}
+
 /**
  * Start a pipeline job. When configAbsPath is omitted (the normal UI flow),
  * Python picks up settings from the pipeline_config table via DATABASE_URL.
  */
-export async function assertNoRunningJob(): Promise<void> {
-  if (isDbJobsEnabled()) {
-    await reconcileStaleRunningJobs();
-    if (await isAnyPipelineJobRunning()) {
-      throw new Error('An audit job is already running');
-    }
-    return;
-  }
-  if (getStore().running) {
-    throw new Error('An audit job is already running');
-  }
-}
-
-export function startPipelineJob(
+export async function startPipelineJobAsync(
   command: string | null | undefined,
   configAbsPath: string | null | undefined,
   options: StartPipelineJobOptions = {},
-): string {
+): Promise<string> {
   if (command != null && command !== '' && !ALLOWED_COMMANDS.has(command)) {
     throw new Error('Invalid command');
   }
+
   const store = getStore();
-  if (!isDbJobsEnabled() && store.running) {
+  if (store.running) {
     throw new Error('An audit job is already running');
   }
 
   const repoRoot = resolveRepoRoot(options.repoRoot);
   const pythonExe = sanitizePython(options.python, repoRoot);
 
-  // Validate config path only when explicitly provided
   let cfgPath: string | null = null;
   if (configAbsPath != null && String(configAbsPath).trim() !== '') {
     cfgPath = validateConfigPath(String(configAbsPath), repoRoot);
@@ -170,23 +205,31 @@ export function startPipelineJob(
   }
 
   const id = randomUUID();
+  const jobType = command?.split(/\s+/)[0] || 'full';
+
+  if (isDbJobsEnabled()) {
+    const claimed = await tryClaimRunningPipelineJob(
+      id,
+      jobType,
+      options.propertyId ?? null,
+      null,
+    );
+    if (!claimed) {
+      throw new Error('An audit job is already running');
+    }
+  }
+
   const entry: PipelineJobEntry = {
     status: 'running',
     exitCode: null,
     log: '',
+    logTruncated: false,
   };
   store.jobs.set(id, entry);
   store.running = true;
 
-  const jobType = command?.split(/\s+/)[0] || 'full';
-  if (isDbJobsEnabled()) {
-    void insertPipelineJob(id, jobType, options.propertyId ?? null, null).catch(() => {});
-  }
-
-  // When no explicit config path is given, Python reads from PostgreSQL via DATABASE_URL.
   const args = ['-m', 'src'];
   if (cfgPath) args.push('--config', cfgPath);
-  // Support multi-word commands like "keywords --enrich-google"
   if (command) args.push(...command.split(/\s+/).filter(Boolean));
 
   const proc = spawn(pythonExe, args, {
@@ -198,12 +241,13 @@ export function startPipelineJob(
 
   const append = (chunk: Buffer | string): void => {
     const text = chunk.toString();
-    entry.log += text;
-    if (entry.log.length > 256_000) {
-      entry.log = entry.log.slice(-200_000);
-    }
+    trimInMemoryLog(entry, text);
     if (isDbJobsEnabled()) {
-      void appendPipelineJobLog(id, text).catch(() => {});
+      void appendPipelineJobLog(id, text)
+        .then((truncated) => {
+          if (truncated) entry.logTruncated = true;
+        })
+        .catch((err) => logPipelineDbError('appendPipelineJobLog', err));
     }
   };
 
@@ -233,17 +277,45 @@ export function startPipelineJob(
   return id;
 }
 
-export async function getJob(id: string): Promise<PipelineJob | null> {
+/** @deprecated Use startPipelineJobAsync */
+export async function assertNoRunningJob(): Promise<void> {
   if (isDbJobsEnabled()) {
-    const fromDb = await getPipelineJobFromDb(id);
-    if (fromDb) return fromDb;
-    // Fall back to in-memory for jobs started in this process before DB insert completes.
-    return getStore().jobs.get(id) ?? null;
+    await reconcileStaleRunningJobs();
+    const active = await getActiveRunningJob();
+    if (active) {
+      await reconcileOrphanedActiveJob(active);
+      const stillActive = await getActiveRunningJob();
+      if (stillActive) throw new Error('An audit job is already running');
+    }
+    return;
   }
-  return getStore().jobs.get(id) ?? null;
+  if (getStore().running) {
+    throw new Error('An audit job is already running');
+  }
 }
 
-/** Sync read from in-memory cache only (legacy). */
+export async function getJob(id: string): Promise<PipelineJob | null> {
+  const memory = getStore().jobs.get(id);
+  if (isDbJobsEnabled()) {
+    const fromDb = await getPipelineJobFromDb(id);
+    if (fromDb) {
+      if (memory) {
+        return {
+          ...fromDb,
+          log: memory.log.length >= fromDb.log.length ? memory.log : fromDb.log,
+          logTruncated: memory.logTruncated || fromDb.logTruncated,
+          status: memory.finished ? memory.status : fromDb.status,
+          exitCode: memory.finished ? memory.exitCode : fromDb.exitCode,
+          error: memory.error ?? fromDb.error,
+        };
+      }
+      return fromDb;
+    }
+    return memory ?? null;
+  }
+  return memory ?? null;
+}
+
 export function getJobSync(id: string): PipelineJob | null {
   return getStore().jobs.get(id) ?? null;
 }
@@ -254,10 +326,6 @@ export interface CancelPipelineJobResult {
   error?: string;
 }
 
-/**
- * Stop a running pipeline job. Kills the child process when this server instance
- * spawned it; otherwise marks the DB row cancelled (best effort after restart).
- */
 export async function cancelPipelineJob(id: string): Promise<CancelPipelineJobResult> {
   const trimmed = id.trim();
   if (!trimmed) {
@@ -272,9 +340,13 @@ export async function cancelPipelineJob(id: string): Promise<CancelPipelineJobRe
     entry.cancelled = true;
     entry.error = CANCELLED_MESSAGE;
     const cancelLine = `\n[Cancelled] ${CANCELLED_MESSAGE}\n`;
-    entry.log += cancelLine;
+    trimInMemoryLog(entry, cancelLine);
     if (isDbJobsEnabled()) {
-      void appendPipelineJobLog(trimmed, cancelLine).catch(() => {});
+      void appendPipelineJobLog(trimmed, cancelLine)
+        .then((truncated) => {
+          if (truncated) entry.logTruncated = true;
+        })
+        .catch((err) => logPipelineDbError('appendPipelineJobLog', err));
     }
     try {
       proc.kill();

@@ -28,6 +28,7 @@ export interface PipelineLogViewerProps {
   log: string;
   autoScroll?: boolean;
   status?: PipelineJobStatus | '';
+  logTruncated?: boolean;
   className?: string;
 }
 
@@ -206,6 +207,7 @@ export default function PipelineLogViewer({
   log,
   autoScroll = true,
   status = '',
+  logTruncated = false,
   className = '',
 }: PipelineLogViewerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -392,6 +394,13 @@ export default function PipelineLogViewer({
               style={{ width: `${stats.lastProgress.progress.percent}%` }}
             />
           </div>
+        </div>
+      ) : null}
+
+      {logTruncated ? (
+        <div className="mb-2 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-200">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+          <span>{strings.pipelineRunner.logTruncatedBanner}</span>
         </div>
       ) : null}
 

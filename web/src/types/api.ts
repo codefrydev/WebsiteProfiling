@@ -23,6 +23,7 @@ export interface PipelineJob {
   exitCode: number | null;
   log: string;
   error?: string;
+  logTruncated?: boolean;
 }
 
 /** In-memory job entry (server only). */
@@ -81,6 +82,7 @@ export interface JobStatusResponse {
   exitCode: number | null;
   log: string;
   error: string | null;
+  logTruncated?: boolean;
 }
 
 export interface RunPostResponse {

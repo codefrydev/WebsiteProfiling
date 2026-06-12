@@ -343,11 +343,14 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                     a.click();
                     URL.revokeObjectURL(url);
                   })
-                  .catch(() => {});
+                  .catch(() => setCopyHint(vc.exportCsvFailed));
               }}
             >
               Export issue diff (CSV)
             </button>
+            {copyHint ? (
+              <span className="text-xs text-rose-600 dark:text-rose-400">{copyHint}</span>
+            ) : null}
           </div>
         ) : null}
         {reportList.length >= 2 && compareReportId == null && !loading && !error ? (

@@ -44,6 +44,7 @@ export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount 
   const sj = strings.common;
   const searchParams = useSearchParams();
   const [healthDelta, setHealthDelta] = useState<number | null>(null);
+  const [historyError, setHistoryError] = useState<string | null>(null);
   const keywordsHref = useMemo(
     () => buildKeywordsHref(searchParams.toString()),
     [searchParams],
@@ -62,16 +63,21 @@ export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount 
   useEffect(() => {
     const domain = data.site_name || '';
     if (!domain) return;
+    setHistoryError(null);
     void fetch(`/api/report/history?domain=${encodeURIComponent(domain)}&limit=2`)
-      .then((r) => r.json())
-      .then((payload: { history?: Array<{ healthScore?: number | null }> }) => {
+      .then(async (r) => {
+        if (!r.ok) {
+          setHistoryError(vo.historyTrendUnavailable ?? 'Could not load health trend.');
+          return;
+        }
+        const payload = (await r.json()) as { history?: Array<{ healthScore?: number | null }> };
         const hist = payload.history || [];
         if (hist.length >= 2 && currentHealth != null && hist[1]?.healthScore != null) {
           setHealthDelta(currentHealth - Number(hist[1].healthScore));
         }
       })
-      .catch(() => {});
-  }, [data.site_name, currentHealth]);
+      .catch(() => setHistoryError(vo.historyTrendUnavailable ?? 'Could not load health trend.'));
+  }, [data.site_name, currentHealth, vo.historyTrendUnavailable]);
 
   const execTopIssues = (data.executive_summary?.top_issues || []).slice(0, 5);
   const execPriorities = (data.executive_summary?.priorities || []).filter(Boolean);
@@ -126,6 +132,9 @@ export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount 
                     {healthDelta} vs prior run)
                   </span>
                 )}
+                {historyError ? (
+                  <span className="block text-xs text-muted-foreground mt-1">{historyError}</span>
+                ) : null}
               </p>
             )}
             {execSummary ? (

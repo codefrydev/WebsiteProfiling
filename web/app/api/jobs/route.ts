@@ -1,10 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
-import {
-  getActiveRunningJob,
-  listRecentPipelineJobs,
-  reconcileStaleRunningJobs,
-} from '@/server/pipelineJobsDb';
+import { listPipelineJobsForApi } from '@/server/pipelineJobs';
 import type { ApiRouteHandler } from '@/types/api';
 
 export const runtime = 'nodejs';
@@ -24,11 +20,7 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
   );
 
   try {
-    const reconciled = await reconcileStaleRunningJobs();
-    const [jobs, active] = await Promise.all([
-      listRecentPipelineJobs(limit),
-      getActiveRunningJob(),
-    ]);
+    const { jobs, active, reconciled } = await listPipelineJobsForApi(limit);
     return NextResponse.json({ jobs, active, reconciled });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

@@ -147,6 +147,10 @@ Open [http://localhost:3000/home](http://localhost:3000/home).
 ./local-run stop    # stop Postgres container
 ```
 
+`requirements.txt` pins direct Python dependencies to versions verified by `./local-test python`. Re-run the full test suite after intentional upgrades.
+
+Pipeline jobs: stuck `running` rows are reconciled after **1 hour** by default (`PIPELINE_JOB_STALE_HOURS`). Orphan jobs with no live server process are cleared after **5 minutes** (`PIPELINE_JOB_ORPHAN_MINUTES`). Increase `PIPELINE_JOB_STALE_HOURS` for crawls that routinely run longer than an hour.
+
 **Tests**
 
 ```bash

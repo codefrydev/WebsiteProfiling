@@ -200,6 +200,9 @@
     "stopJobFailed": "Could not stop the audit: {message}",
     "outputLabel": "Audit run log",
     "outputTitle": "Audit run log",
+    "logTruncatedBanner": "Older log lines were trimmed to save memory. Download log for the tail snapshot.",
+    "presetSaveFailed": "Could not save crawl preset for this property.",
+    "resumeJobFailed": "Could not resume the active audit job.",
     "setupStepsAria": "Run audit setup steps",
     "consoleFilterHint": "Site Audit run",
     "statusLabel": "Status",
@@ -306,6 +309,7 @@
       "saving": "Saving…",
       "saved": "Ops settings saved.",
       "saveFailed": "Could not save ops settings.",
+      "loadFailed": "Could not load ops settings.",
       "cronEndpointsHint": "Wire cron: curl -X POST http://localhost:3000/api/schedule/check and /api/alerts/check?propertyId={id}",
       "gscLinksMissing": "No GSC Links CSV imported yet — upload from Search Console → Links for backlink velocity and competitor gap.",
       "gscLinksStale": "GSC Links import is {days} days old — re-import weekly for accurate velocity."
@@ -1990,6 +1994,7 @@
       "baselineLabel": "Baseline (older)",
       "needTwoReports": "Run at least two full site audits (not crawl-only) for this domain to compare snapshots.",
       "pickBaseline": "Select a baseline report to compare against the current report.",
+      "exportCsvFailed": "Could not export issue diff CSV.",
       "noDifferences": "No URL-level changes between these two audits.",
       "noneInCategory": "None in this category.",
       "urlChangeListsUnavailable": "Per-URL change lists are missing from one or both audits. Site-wide metrics below may still apply. Run a full site audit to enable URL-level comparison.",
@@ -2126,6 +2131,7 @@
         "browserPageErrorsLine": "{pages} page(s) had uncaught JavaScript errors during rendering.",
         "viewJavaScriptErrors": "View JavaScript errors"
       },
+      "historyTrendUnavailable": "Could not load health trend vs prior run.",
       "googleStaleWarning": "Search Console & Analytics data is older than 7 days. Refresh from Integrations.",
       "googlePartialWarning": "Search Console or Analytics data is missing from the last sync.",
       "mlErrors": "AI insights reported {count} error{plural}",
