@@ -126,6 +126,10 @@ run_pytest_reporting() {
     tests/test_optional_audits.py \
     tests/test_property_profile.py \
     tests/test_reporting_gaps.py \
+    tests/test_text_content_analysis.py \
+    tests/test_builder_image_buckets.py \
+    tests/test_pipeline_report_pool_unit.py \
+    tests/test_reporting_builder_modules.py \
     --cov=website_profiling.reporting \
     --cov-config=.coveragerc.reporting \
     --cov-report=term-missing \
@@ -149,6 +153,7 @@ run_pytest_tools() {
     tests/test_audit_tools_links_extras.py \
     tests/test_audit_tools_expansion.py \
     tests/test_audit_tools_expansion_coverage.py \
+    tests/test_audit_tools_batch100_coverage.py \
     tests/test_export_custom_coverage.py \
     tests/test_export_artifacts_coverage.py \
     tests/test_export_compare_coverage.py \
@@ -161,6 +166,9 @@ run_pytest_tools() {
     tests/test_export_sitemap.py \
     tests/test_mcp_registry.py \
     tests/test_mcp_resources.py \
+    tests/test_router_tools.py \
+    tests/test_tool_selector.py \
+    tests/test_tools_gate100_coverage.py \
     tests/test_tools_branch_coverage.py \
     --cov=website_profiling.tools \
     --cov-config=.coveragerc.tools \

@@ -24,6 +24,7 @@ export interface LivePipelineEstimate {
 const PIPELINE_PHASE_ORDER: ProgressPhase[] = [
   'config',
   'crawl',
+  'content_analysis',
   'lighthouse',
   'report',
   'keywords',

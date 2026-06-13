@@ -36,7 +36,7 @@ def _app_client_credentials() -> tuple[str, str]:
     return app_client_credentials()
 
 
-def _property_refresh_token(property_id: int) -> tuple[str, str | None]:
+def _property_google_auth(property_id: int) -> tuple[str, str | None, str]:
     from ...db import db_session
     from ...db.property_store import get_property_by_id
 
@@ -44,21 +44,16 @@ def _property_refresh_token(property_id: int) -> tuple[str, str | None]:
         prop = get_property_by_id(conn, property_id)
     if not prop:
         raise RuntimeError(f"Property id {property_id} not found.")
-    domain = prop.get("canonical_domain") or "this site"
     token = (prop.get("google_refresh_token") or "").strip()
-    if not token:
-        raise RuntimeError(
-            f"Google not connected for {domain}. "
-            "Set Site URL, open Integrations, and click Connect with Google for this site."
-        )
-    return token, prop.get("google_auth_mode")
+    domain = prop.get("canonical_domain") or "this site"
+    return token, prop.get("google_auth_mode"), domain
 
 
 def build_credentials(property_id: int | None = None):
     """
     Load Google OAuth2 credentials.
     property_id is required for OAuth user tokens.
-    Service account uses google_app_settings.service_account_json when property_id is None.
+    Service account uses google_app_settings.service_account_json (app-wide).
     """
     try:
         from google.oauth2.credentials import Credentials
@@ -66,11 +61,17 @@ def build_credentials(property_id: int | None = None):
     except ImportError as e:
         raise ImportError(f"{INSTALL_HINT}\n({e})") from e
 
+    from ...db.google_app_store import has_service_account, build_service_account_credentials
+
     if property_id is not None:
-        refresh_token, prop_auth_mode = _property_refresh_token(property_id)
-        if prop_auth_mode == "service_account":
+        refresh_token, prop_auth_mode, domain = _property_google_auth(property_id)
+        if prop_auth_mode == "service_account" or (not refresh_token and has_service_account()):
+            return build_service_account_credentials()
+        if not refresh_token:
             raise RuntimeError(
-                "Per-property service account is not implemented yet. Use OAuth Connect."
+                f"Google not connected for {domain}. "
+                "Set Site URL, open Integrations, and click Connect with Google for this site, "
+                "or upload an app-wide service account JSON in Integrations."
             )
         client_id, client_secret = _app_client_credentials()
         creds = Credentials(
@@ -82,8 +83,6 @@ def build_credentials(property_id: int | None = None):
         )
         creds.refresh(Request())
         return creds
-
-    from ...db.google_app_store import has_service_account, build_service_account_credentials
 
     if has_service_account():
         return build_service_account_credentials()

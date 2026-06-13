@@ -10,6 +10,14 @@ def test_parse_access_log_lines_counts_googlebot() -> None:
     assert out["top_paths"][0]["path"] == "/page"
 
 
+def test_parse_access_log_lines_tracks_5xx_paths() -> None:
+    lines = [
+        '127.0.0.1 - - [10/Oct/2023:13:55:36 +0000] "GET /broken HTTP/1.1" 503 0 "-" "curl/8.0"',
+    ]
+    out = parse_access_log_lines(lines)
+    assert out["paths_5xx"] == [{"path": "/broken", "hits": 1}]
+
+
 def test_parse_access_log_lines_skips_blank_and_comments() -> None:
     lines = ["", "# comment", "not-a-log-line"]
     out = parse_access_log_lines(lines)

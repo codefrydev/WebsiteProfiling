@@ -13,6 +13,7 @@ import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import Button from '@/components/Button';
 import GoogleIntegrationsPanel from '@/components/GoogleIntegrationsPanel';
 import ConfigField from './ConfigField';
+import CrawlPageHtmlManager from './CrawlPageHtmlManager';
 import PipelineSettingsSectionTabs from './PipelineSettingsSectionTabs';
 import {
   PIPELINE_SETTINGS_GROUPS,
@@ -334,12 +335,15 @@ export default function PipelineSettingsPanel({
     const pipelineSection = PIPELINE_CONFIG_SECTIONS.find((sec) => sec.id === sectionId);
     if (pipelineSection) {
       return (
-        <ConfigSectionFields
-          section={pipelineSection}
-          values={configState}
-          disabled={fieldsDisabled}
-          onChange={(key, value) => handlePipelineFieldChange(sectionId, key, value)}
-        />
+        <>
+          <ConfigSectionFields
+            section={pipelineSection}
+            values={configState}
+            disabled={fieldsDisabled}
+            onChange={(key, value) => handlePipelineFieldChange(sectionId, key, value)}
+          />
+          {sectionId === 'crawl' ? <CrawlPageHtmlManager disabled={fieldsDisabled} /> : null}
+        </>
       );
     }
 

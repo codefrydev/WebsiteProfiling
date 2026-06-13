@@ -63,6 +63,7 @@ export interface PipelineContextValue {
   stopping: boolean;
   activeJobId: string;
   log: string;
+  logTruncated: boolean;
   status: PipelineJobStatus | '';
   backgroundMode: boolean;
   startUrl: string;
@@ -125,6 +126,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
   const [busy, setBusy] = useState(false);
   const [stopping, setStopping] = useState(false);
   const [log, setLog] = useState('');
+  const [logTruncated, setLogTruncated] = useState(false);
   const [status, setStatus] = useState<PipelineJobStatus | ''>('');
   const [backgroundMode, setBackgroundMode] = useState(false);
   const [configLoaded, setConfigLoaded] = useState(false);
@@ -191,6 +193,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       setBusy(true);
       setStopping(false);
       setLog('');
+      setLogTruncated(false);
       setStatus('running');
       setBackgroundMode(false);
       if (jobCommand) {
@@ -210,6 +213,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       pollStopRef.current = pollPipelineJob(jobId, (job) => {
         const displayLog = formatPipelineJobLog(job.log, job.error);
         setLog(displayLog);
+        setLogTruncated(Boolean(job.logTruncated));
         setStatus(job.status);
         if (job.status === 'success' || job.status === 'error') {
           stopPoll();
@@ -310,13 +314,23 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       try {
         const res = await fetch(apiUrl('/jobs?limit=1'));
         const data = await res.json().catch(() => ({}));
-        if (cancelled || !res.ok) return;
-        const active = data.active as { id?: string; jobType?: string } | null;
-        if (active?.id) {
+        if (cancelled) return;
+        if (!res.ok) {
+          const errMsg = String(data.error || res.statusText || s.resumeJobFailed);
+          setLoadError(errMsg);
+          logPipelineFailure('Resume active job failed', { status: res.status, error: errMsg });
+          return;
+        }
+        const active = data.active as { id?: string; jobType?: string; status?: string } | null;
+        if (active?.id && active.status === 'running') {
           watchJob(active.id, { navigate: false, jobCommand: active.jobType || '' });
         }
-      } catch {
-        /* non-fatal */
+      } catch (e) {
+        if (!cancelled) {
+          const errMsg = e instanceof Error ? e.message : s.resumeJobFailed;
+          setLoadError(errMsg);
+          logPipelineFailure('Resume active job failed', { error: e, message: errMsg });
+        }
       }
     })();
     return () => {
@@ -398,7 +412,14 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ preset }),
-      }).catch(() => {});
+      })
+        .then(async (res) => {
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            setSaveMsg(String(data.error || s.presetSaveFailed));
+          }
+        })
+        .catch(() => setSaveMsg(s.presetSaveFailed));
     }
   }, [configState.active_property_id]);
 
@@ -492,6 +513,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     stopPoll();
     setBusy(true);
     setLog('');
+    setLogTruncated(false);
     setStatus('starting');
     setBackgroundMode(false);
     try {
@@ -597,6 +619,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       stopping,
       activeJobId: activeJobIdRef.current,
       log,
+      logTruncated,
       status,
       backgroundMode,
       startUrl: String(configState.start_url ?? ''),
@@ -640,6 +663,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       busy,
       stopping,
       log,
+      logTruncated,
       status,
       backgroundMode,
       browserCrawlStatus,

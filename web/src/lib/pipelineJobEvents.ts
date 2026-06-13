@@ -39,6 +39,7 @@ type JobPollUpdate = {
   status: PipelineJob['status'];
   log: string;
   error?: string | null;
+  logTruncated?: boolean;
 };
 
 /**
@@ -64,8 +65,12 @@ export function pollPipelineJob(
     if (cancelled) return;
     try {
       const res = await fetch(jobPath);
-      const data: { status?: string; log?: string; error?: string | null } =
-        await res.json().catch(() => ({}));
+      const data: {
+        status?: string;
+        log?: string;
+        error?: string | null;
+        logTruncated?: boolean;
+      } = await res.json().catch(() => ({}));
       if (cancelled) return;
       if (!res.ok) {
         const errMsg = data.error || res.statusText;
@@ -81,7 +86,7 @@ export function pollPipelineJob(
       const status = (data.status as PipelineJob['status']) || 'error';
       const log = data.log || '';
       const error = data.error ?? null;
-      onUpdate({ status, log, error });
+      onUpdate({ status, log, error, logTruncated: Boolean(data.logTruncated) });
       if (status === 'success' || status === 'error') {
         finish();
       }

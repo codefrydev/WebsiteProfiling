@@ -73,7 +73,7 @@ Repository: [codefrydev/WebsiteProfiling](https://github.com/codefrydev/WebsiteP
   </tr>
 </table>
 
-Also included: **AI chat** over audit data (optional), **221 MCP tools**, keyword explorer, backlinks, compare runs, and portfolio management for agencies.
+Also included: **AI chat** over audit data (optional), **340 MCP tools** (domain-scoped servers), keyword explorer, backlinks, compare runs, and portfolio management for agencies.
 
 <p align="center">
   <img src="docs/assets/social-preview.png" alt="Site Audit preview" width="640">
@@ -91,7 +91,7 @@ WebsiteProfiling/
 │   ├── integrations/          # Google Search Console, GA4, Bing, CrUX
 │   ├── llm/                   # AI enrich + chat agent
 │   ├── tools/                 # Exports, audit query tools, MCP helpers
-│   ├── mcp/                   # MCP server (221 read-only tools)
+│   ├── mcp/                   # MCP server (340 read-only tools, domain bundles)
 │   ├── db/                    # PostgreSQL storage layer
 │   ├── commands/              # CLI subcommands
 │   ├── cli.py                 # Pipeline entrypoint
@@ -147,6 +147,10 @@ Open [http://localhost:3000/home](http://localhost:3000/home).
 ./local-run stop    # stop Postgres container
 ```
 
+`requirements.txt` pins direct Python dependencies to versions verified by `./local-test python`. Re-run the full test suite after intentional upgrades.
+
+Pipeline jobs: stuck `running` rows are reconciled after **1 hour** by default (`PIPELINE_JOB_STALE_HOURS`). Orphan jobs with no live server process are cleared after **5 minutes** (`PIPELINE_JOB_ORPHAN_MINUTES`). Increase `PIPELINE_JOB_STALE_HOURS` for crawls that routinely run longer than an hour.
+
 **Tests**
 
 ```bash
@@ -182,7 +186,7 @@ Google Search Console / Analytics: connect via **Integrations** (gear icon) in t
 | **Ollama** | Local daemon at `http://127.0.0.1:11434`. Chat UI lists installed models plus the live Ollama cloud catalog (billing: free local, account free tier, Pro). Native tool calling when supported; otherwise ReAct fallback. Pick the model in-chat without leaving the page. |
 | **OpenAI** / **Anthropic** | API key in AI settings; native tool calling with streaming. |
 
-The agent uses the same **221 read-only audit tools** as the MCP server (`docs/MCP.md`). Responses stream over SSE (`POST /api/chat`) with status, tool activity, and tokens. Sessions are saved per property (`chat_sessions` / `chat_messages`).
+The agent uses the same **340 read-only audit tools** as the MCP server (`docs/MCP.md`), with **dynamic routing** (~45 tools per turn plus router meta-tools). Responses stream over SSE (`POST /api/chat`) with status, tool activity, and tokens. Sessions are saved per property (`chat_sessions` / `chat_messages`).
 
 Production: `docker-compose.prod.yml` (set `POSTGRES_PASSWORD`, `AUTH_SECRET`).
 

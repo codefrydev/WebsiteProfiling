@@ -9,7 +9,14 @@ from typing import Any
 
 from ..db.storage import db_session
 from ..tools.audit_tools import AuditToolContext
-from ..tools.audit_tools.registry import TOOL_DEFINITIONS, dispatch_tool, tool_handler_names
+from ..tools.audit_tools.registry import (
+    TOOL_DEFINITIONS,
+    dispatch_tool,
+    list_domains_catalog,
+    mcp_tool_names,
+    tools_catalog_by_domain,
+)
+from ..tools.audit_tools.tool_domains import MCP_DOMAIN_BUNDLES
 
 _URI_PROPERTY = re.compile(r"^audit://property/(\d+)$")
 _URI_REPORT_LATEST = re.compile(r"^audit://property/(\d+)/report/latest$")
@@ -64,90 +71,41 @@ def _read_glossary_excerpt() -> str:
     return text[:12000]
 
 
+def _mcp_domain() -> str:
+    return (os.environ.get("WP_MCP_DOMAIN") or "core").strip().lower()
+
+
+def _exposed_tool_names() -> set[str]:
+    return mcp_tool_names(_mcp_domain())
+
+
 def _tools_catalog_json() -> str:
-    domains: dict[str, list[str]] = {
-        "portfolio": [],
-        "issues": [],
-        "crawl": [],
-        "schema": [],
-        "links": [],
-        "indexation": [],
-        "content": [],
-        "keywords": [],
-        "google": [],
-        "backlinks": [],
-        "performance": [],
-        "drift": [],
-        "security": [],
-        "ops": [],
-        "export": [],
-        "images": [],
-        "geo": [],
-        "accessibility": [],
-        "assets": [],
-        "ctr": [],
-        "integrations": [],
-    }
-    for tool in TOOL_DEFINITIONS:
-        name = tool["name"]
-        if name.startswith("export_") or name == "compose_custom_report" or name == "list_export_formats":
-            domains["export"].append(name)
-        elif name.startswith(("get_image_", "list_pages_without_lazy", "list_pages_with_images_missing", "list_site_image", "list_lighthouse_image", "list_largest_images", "list_unoptimized_images", "list_images_needing")):
-            domains["images"].append(name)
-        elif name.startswith(("list_propert", "get_propert", "get_report", "get_executive", "get_site", "list_report", "get_portfolio")) or name in (
-            "get_ads_txt_status",
-            "get_security_txt_status",
-            "get_contact_intelligence",
-            "get_rich_results_summary",
-            "list_rich_results_failures",
-            "get_competitor_keyword_gap",
-            "get_pagination_audit_summary",
-        ):
-            domains["portfolio"].append(name)
-        elif name in (
-            "list_top_impact_issues",
-            "prioritize_fix_roadmap",
-            "generate_issue_fix",
-            "summarize_category_for_client",
-        ) or "issue" in name or "category" in name or "workflow" in name:
-            domains["issues"].append(name)
-        elif name.startswith(("get_geo_", "get_aeo_", "get_llms_", "get_eeat_", "get_faq_", "list_pages_missing_faq", "draft_llms", "check_ai_citation")):
-            domains["geo"].append(name)
-        elif "axe" in name or "mixed_content" in name or name == "get_heading_outline_for_url":
-            domains["accessibility"].append(name)
-        elif name in ("get_asset_weight_summary", "get_readability_summary", "list_heavy_pages_by_bytes", "list_pages_poor_cache_headers", "list_pages_low_content_ratio"):
-            domains["assets"].append(name)
-        elif "ctr" in name or name in ("list_keywords_ctr_opportunity", "analyze_serp_snippet_for_url"):
-            domains["ctr"].append(name)
-        elif name in ("get_gsc_url_inspection", "get_gsc_index_coverage", "get_bing_index_status", "get_serp_feature_overlay"):
-            domains["integrations"].append(name)
-        elif name.startswith(("list_pages_", "list_canonical", "list_long_", "list_robots_", "get_top_pages_by", "search_pages", "get_page_", "list_redirects", "list_broken", "list_status_", "get_status_code", "get_response_time", "get_depth", "get_crawl_", "get_browser", "list_pages_with", "list_pages_by")):
-            domains["crawl"].append(name)
-        elif "schema" in name or name == "get_seo_health":
-            domains["schema"].append(name)
-        elif "orphan" in name or "link" in name or "fingerprint" in name or "pagerank" in name:
-            domains["links"].append(name)
-        elif "indexation" in name or "hreflang" in name or "language" in name or name == "list_subdomains":
-            domains["indexation"].append(name)
-        elif "content" in name or "social" in name or "ner" in name or "thin" in name or "opportunit" in name or "duplicate" in name:
-            domains["content"].append(name)
-        elif "keyword" in name or "cannibal" in name or "misalignment" in name or "striking" in name or "semantic" in name or name == "expand_keywords" or name == "generate_content_brief":
-            domains["keywords"].append(name)
-        elif "google" in name or "gsc" in name or "ga4" in name:
-            domains["google"].append(name)
-        elif "backlink" in name or "competitor" in name or "bing" in name or "gsc_links" in name:
-            domains["backlinks"].append(name)
-        elif "lighthouse" in name or "crux" in name or "slow" in name or "cwv" in name:
-            domains["performance"].append(name)
-        elif "health" in name or "compare" in name or "alert" in name or "tech_stack" in name or name == "list_pages_by_technology":
-            domains["drift"].append(name)
-        elif "security" in name:
-            domains["security"].append(name)
-        elif "log" in name or name in ("get_property_ops", "list_crawl_runs", "list_log_uploads", "get_page_coach"):
-            domains["ops"].append(name)
-        else:
-            domains["portfolio"].append(name)
-    return json.dumps({"tool_count": len(TOOL_DEFINITIONS), "handlers": sorted(tool_handler_names()), "domains": domains}, indent=2)
+    domain = _mcp_domain()
+    exposed = _exposed_tool_names()
+    by_domain = tools_catalog_by_domain()
+    scoped: dict[str, list[str]] = {}
+    for d, names in by_domain.items():
+        filtered = [n for n in names if n in exposed]
+        if filtered:
+            scoped[d] = filtered
+    return json.dumps({
+        "mcp_domain": domain,
+        "tool_count": len(exposed),
+        "handlers": sorted(exposed),
+        "domains": scoped,
+        "available_mcp_domains": sorted(MCP_DOMAIN_BUNDLES.keys()),
+    }, indent=2)
+
+
+def _domains_resource_json() -> str:
+    return json.dumps({
+        "current_mcp_domain": _mcp_domain(),
+        "bundles": {
+            key: sorted(domains)
+            for key, domains in MCP_DOMAIN_BUNDLES.items()
+        },
+        "catalog": list_domains_catalog(),
+    }, indent=2)
 
 
 def _resolve_resource(uri: str) -> str:
@@ -160,6 +118,9 @@ def _resolve_resource(uri: str) -> str:
 
     if uri == "audit://tools":
         return _tools_catalog_json()
+
+    if uri == "audit://domains":
+        return _domains_resource_json()
 
     m = _URI_PROPERTY.match(uri)
     if m:
@@ -202,13 +163,16 @@ def main() -> None:
             "MCP SDK not installed. Run: pip install -r requirements.txt",
         ) from e
 
-    server = Server("site-audit")
+    server = Server(f"site-audit-{_mcp_domain()}")
     default_pid = _default_property_id()
+    exposed = _exposed_tool_names()
 
     @server.list_tools()
     async def list_tools() -> list[Tool]:
         out: list[Tool] = []
         for spec in TOOL_DEFINITIONS:
+            if spec["name"] not in exposed:
+                continue
             out.append(
                 Tool(
                     name=spec["name"],
@@ -220,6 +184,12 @@ def main() -> None:
 
     @server.call_tool()
     async def call_tool(name: str, arguments: dict[str, Any] | None) -> list[TextContent]:
+        if name not in exposed:
+            result = {
+                "error": f"tool not exposed in MCP domain {_mcp_domain()}: {name}",
+                "hint": "Connect WP_MCP_DOMAIN=full or the domain server that includes this tool.",
+            }
+            return [TextContent(type="text", text=json.dumps(result, indent=2, default=str))]
         args = dict(arguments or {})
         ctx = _merge_context(args)
         result = dispatch_tool(name, args, context=ctx)
@@ -231,7 +201,8 @@ def main() -> None:
         resources = [
             Resource(uri="audit://properties", name="Properties", description="All configured site properties", mimeType="application/json"),
             Resource(uri="audit://glossary", name="Glossary", description="Site Audit field glossary excerpt", mimeType="text/markdown"),
-            Resource(uri="audit://tools", name="Tool catalog", description="MCP tool catalog grouped by domain", mimeType="application/json"),
+            Resource(uri="audit://tools", name="Tool catalog", description="MCP tool catalog for the connected domain server", mimeType="application/json"),
+            Resource(uri="audit://domains", name="MCP domain servers", description="Available WP_MCP_DOMAIN bundles and domain groupings", mimeType="application/json"),
         ]
         if default_pid:
             resources.extend([

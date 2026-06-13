@@ -12,7 +12,46 @@ export PYTHONPATH=src
 
 ## Cursor configuration
 
+Site Audit exposes **domain-scoped MCP servers** (like Cursor optional plugins). Connect only the bundles you need instead of loading all 340 tools in one server.
+
+| `WP_MCP_DOMAIN` | Typical tools | Use when |
+|-----------------|---------------|----------|
+| `core` (default) | Router, workflows, insight (~12) | General chat, tool search, coverage |
+| `crawl` | Crawl, on-page, schema, accessibility | Technical crawl audits |
+| `google` | Google, insight, CTR, keywords | GSC/GA4 analysis |
+| `links` | Links, backlinks, indexation | Link architecture |
+| `full` | All 340 tools | Debugging / legacy single-server setup |
+
 Add to `.cursor/mcp.json` (or Cursor MCP settings):
+
+```json
+{
+  "mcpServers": {
+    "site-audit-core": {
+      "command": "python",
+      "args": ["-m", "website_profiling.mcp"],
+      "env": {
+        "DATABASE_URL": "postgres://profiling:profiling@localhost:5432/website_profiling",
+        "PYTHONPATH": "src",
+        "WP_MCP_DOMAIN": "core",
+        "WP_PROPERTY_ID": "1"
+      }
+    },
+    "site-audit-google": {
+      "command": "python",
+      "args": ["-m", "website_profiling.mcp"],
+      "env": {
+        "DATABASE_URL": "postgres://profiling:profiling@localhost:5432/website_profiling",
+        "PYTHONPATH": "src",
+        "WP_MCP_DOMAIN": "google",
+        "WP_PROPERTY_ID": "1"
+      }
+    }
+  }
+}
+```
+
+Single-server legacy setup (all tools):
 
 ```json
 {
@@ -23,6 +62,7 @@ Add to `.cursor/mcp.json` (or Cursor MCP settings):
       "env": {
         "DATABASE_URL": "postgres://profiling:profiling@localhost:5432/website_profiling",
         "PYTHONPATH": "src",
+        "WP_MCP_DOMAIN": "full",
         "WP_PROPERTY_ID": "1"
       }
     }
@@ -41,9 +81,14 @@ Add to `.cursor/mcp.json` (or Cursor MCP settings):
 | `audit://property/{id}/report/latest` | Payload key index (counts, not full blob) |
 | `audit://property/{id}/report/{report_id}` | Payload key index for a specific report |
 | `audit://glossary` | Excerpt from `docs/GLOSSARY.md` |
-| `audit://tools` | Tool catalog grouped by SEO domain |
+| `audit://tools` | Tool catalog for the connected `WP_MCP_DOMAIN` server |
+| `audit://domains` | Available MCP domain bundles and tool groupings |
 
-## Tools (221 read-only + export)
+## Tools (340 read-only + export)
+
+### Router and insight (Tier 0 — `WP_MCP_DOMAIN=core`)
+
+`search_audit_tools`, `list_tool_domains`, `get_data_coverage_report`, `run_insight_workflow`, `run_technical_workflow`, `run_keyword_workflow`, `run_domain_agent`, `get_landing_page_blended_table`, `get_opportunity_matrix`, `get_traffic_health_check`, `get_landing_page_full_diagnosis`, `get_issue_to_traffic_map`
 
 ### Export and deliverables
 
@@ -99,11 +144,11 @@ Size-based tools require `probe_image_inventory=true` in pipeline config when bu
 
 ### Keywords
 
-`get_keyword_summary`, `search_keywords`, `get_striking_distance_keywords`, `get_keyword_cannibalisation`, `get_query_page_misalignment`, `get_semantic_keyword_clusters`, `get_keyword_history`, `get_keyword_serp_overlay`, `get_serp_feature_overlay`, `list_keywords_by_action`, `list_keywords_by_position`, `list_keywords_by_impressions`, `list_keywords_ctr_opportunity`, `expand_keywords`, `generate_content_brief`
+`get_keyword_summary`, `search_keywords`, `get_striking_distance_keywords`, `get_keyword_cannibalisation`, `get_query_page_misalignment`, `get_semantic_keyword_clusters`, `get_keyword_history`, `get_keyword_serp_overlay`, `get_serp_feature_overlay`, `list_keywords_by_action`, `list_keywords_by_position`, `list_keywords_by_impressions`, `list_keywords_ctr_opportunity`, `expand_keywords`, `generate_content_brief`, `get_brand_keyword_split`, `list_keywords_by_intent`
 
 ### Google and CTR
 
-`get_google_summary`, `get_google_integration_status`, `get_gsc_top_queries`, `get_gsc_top_pages`, `get_gsc_ctr_opportunity_pages`, `get_ga4_summary`, `get_ga4_page_metrics`, `get_gsc_page_query_slice`, `get_gsc_url_inspection`, `get_gsc_index_coverage`, `analyze_serp_snippet_for_url`
+`get_google_summary`, `get_google_integration_status`, `get_gsc_top_queries`, `get_gsc_top_pages`, `get_gsc_ctr_opportunity_pages`, `get_ga4_summary`, `get_ga4_page_metrics`, `get_gsc_page_query_slice`, `get_gsc_url_inspection`, `get_gsc_index_coverage`, `analyze_serp_snippet_for_url`, `get_gsc_daily_trend`, `get_ga4_daily_trend`, `get_ga4_by_device`, `get_ga4_by_channel`, `get_gsc_page_queries`
 
 ### Backlinks
 
@@ -162,6 +207,8 @@ Already available: `validate_rich_results`, `get_gsc_url_inspection`, `export_si
 ## In-app chat
 
 The same tools power **AI Chat** at [http://localhost:3000/chat](http://localhost:3000/chat). Enable AI in Run audit → AI settings.
+
+In-app chat uses **dynamic tool routing**: each turn loads Tier 0 router tools plus a domain-scoped subset (~45 tools), not the full catalog. Set `CHAT_TOOL_MODE=full` to load all tools for debugging.
 
 ## Ollama note
 

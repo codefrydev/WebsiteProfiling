@@ -61,6 +61,7 @@ export default function PipelineRunPanel() {
     loading,
     status,
     log,
+    logTruncated,
     startUrl,
     configState,
     customCommand,
@@ -459,6 +460,7 @@ export default function PipelineRunPanel() {
                     <PipelineLogViewer
                       log={log}
                       status={status}
+                      logTruncated={logTruncated}
                       autoScroll={busy || status === 'running' || status === 'starting'}
                       className="mt-2"
                     />

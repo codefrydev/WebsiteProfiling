@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
-import { assertNoRunningJob, startPipelineJob } from '@/server/pipelineJobs';
+import { startPipelineJobAsync } from '@/server/pipelineJobs';
+import { logPipelineDbError } from '@/lib/pipelineDebug';
 import { requireApiAuth } from '@/server/auth';
 import { writeAuditLog } from '@/server/pipelineJobsDb';
 import { loadPipelineConfig, savePipelineConfig } from '@/server/pipelineConfig';
@@ -154,8 +155,7 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
   }
 
   try {
-    await assertNoRunningJob();
-    const id = startPipelineJob(command ?? null, null, {
+    const id = await startPipelineJobAsync(command ?? null, null, {
       python,
       repoRoot,
       propertyId: resolvedPropertyId,
@@ -163,10 +163,11 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
     void writeAuditLog('audit_run_started', null, resolvedPropertyId, {
       command: command ?? null,
       jobId: id,
-    }).catch(() => {});
+    }).catch((err) => logPipelineDbError('writeAuditLog', err));
     return NextResponse.json({ jobId: id });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: msg }, { status: 400 });
+    const isSlotTaken = msg === 'An audit job is already running';
+    return NextResponse.json({ error: msg }, { status: isSlotTaken ? 400 : 500 });
   }
 };

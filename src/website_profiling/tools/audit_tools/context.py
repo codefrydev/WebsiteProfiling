@@ -11,7 +11,11 @@ from ...db.property_store import get_property_by_id
 from ...db.report_store import read_report_payload
 from ...integrations.google.gsc_links_store import read_latest_gsc_links_data
 from ...integrations.google.keyword_store import read_latest_keyword_data
-from ...integrations.google.store import read_latest_google_data
+from ...integrations.google.store import (
+    read_google_data_full,
+    read_latest_google_data,
+    read_prior_google_snapshot,
+)
 
 
 @dataclass
@@ -49,6 +53,24 @@ class AuditToolContext:
         payload = self.load_payload(conn)
         embedded = payload.get("keywords")
         return embedded if isinstance(embedded, dict) else None
+
+    def load_google_full(self, conn: Connection) -> Optional[dict[str, Any]]:
+        full = read_google_data_full(conn, self.property_id)
+        if full:
+            return full
+        payload = self.load_payload(conn)
+        embedded = payload.get("google")
+        return embedded if isinstance(embedded, dict) else None
+
+    def load_google_pair(self, conn: Connection) -> tuple[Optional[dict[str, Any]], Optional[dict[str, Any]]]:
+        """Return (current, prior) full Google snapshots for decay/compare tools."""
+        current = read_google_data_full(conn, self.property_id)
+        prior = read_prior_google_snapshot(conn, self.property_id, skip=1)
+        if current is None:
+            payload = self.load_payload(conn)
+            embedded = payload.get("google")
+            current = embedded if isinstance(embedded, dict) else None
+        return current, prior
 
     def load_gsc_links(self, conn: Connection) -> Optional[dict[str, Any]]:
         links = read_latest_gsc_links_data(conn, self.property_id, for_report=False)

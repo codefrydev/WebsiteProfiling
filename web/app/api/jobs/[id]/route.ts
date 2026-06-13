@@ -21,5 +21,6 @@ export const GET: ApiRouteHandlerWithParams<{ id: string }> = async (
     exitCode: job.exitCode,
     log: job.log,
     error: job.error ?? null,
+    logTruncated: job.logTruncated ?? false,
   });
 };

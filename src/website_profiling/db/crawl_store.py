@@ -234,6 +234,10 @@ def write_crawl(conn: Connection, df: pd.DataFrame, crawl_run_id: Optional[int] 
     with conn.transaction():
         if crawl_run_id is not None:
             conn.execute("DELETE FROM crawl_results WHERE crawl_run_id = %s", (crawl_run_id,))
+            try:
+                conn.execute("DELETE FROM crawl_page_html WHERE crawl_run_id = %s", (crawl_run_id,))
+            except Exception:
+                pass
             target_run_id = crawl_run_id
         else:
             conn.execute("DELETE FROM crawl_results")
@@ -249,6 +253,39 @@ def write_crawl(conn: Connection, df: pd.DataFrame, crawl_run_id: Optional[int] 
         rows = _crawl_rows_from_df(df, target_run_id)
         if rows:
             _write_crawl_rows(conn, rows)
+
+
+_MERGE_FIELDS_BATCH_SIZE = 200
+_MERGE_FIELDS_SQL = """UPDATE crawl_results
+SET data = COALESCE(data, '{}'::jsonb) || %s::jsonb
+WHERE crawl_run_id = %s AND url = %s"""
+
+
+def merge_crawl_result_fields_batch(
+    conn: Connection,
+    crawl_run_id: int,
+    updates: list[dict[str, Any]],
+    *,
+    commit: bool = True,
+) -> int:
+    """Merge per-URL content fields into crawl_results.data JSONB. Returns rows updated."""
+    if not updates:
+        return 0
+    params: list[tuple] = []
+    for item in updates:
+        url = str(item.get("url") or "").rstrip("/")
+        if not url:
+            continue
+        fields = {k: _sanitize_for_json(v) for k, v in item.items() if k != "url"}
+        if not fields:
+            continue
+        params.append((_json_val(fields), crawl_run_id, url))
+    if not params:
+        return 0
+    _executemany(conn, _MERGE_FIELDS_SQL, params, page_size=_MERGE_FIELDS_BATCH_SIZE)
+    if commit:
+        conn.commit()
+    return len(params)
 
 
 def read_crawl(conn: Connection, run_id: Optional[int] = None) -> pd.DataFrame:

@@ -320,6 +320,46 @@ def search_pages_advanced(conn: Connection, ctx: AuditToolContext, args: dict[st
     return {"pages": sliced["items"], "total": sliced["total"], "truncated": sliced["truncated"]}
 
 
+def _console_error_entries(pa: dict[str, Any]) -> list[dict[str, Any]]:
+    entries: list[dict[str, Any]] = []
+    browser = pa.get("browser") if isinstance(pa.get("browser"), dict) else {}
+    for msg in browser.get("console") or []:
+        if isinstance(msg, dict):
+            entries.append({
+                "error_type": str(msg.get("type") or msg.get("level") or "console"),
+                "message": str(msg.get("text") or msg.get("message") or ""),
+                "source": "console",
+            })
+    for msg in browser.get("page_errors") or []:
+        if isinstance(msg, dict):
+            entries.append({
+                "error_type": "page_error",
+                "message": str(msg.get("message") or msg.get("name") or ""),
+                "source": "page_error",
+            })
+    for msg in browser.get("failed_requests") or []:
+        if isinstance(msg, dict):
+            entries.append({
+                "error_type": "failed_request",
+                "message": str(msg.get("url") or msg.get("failure") or ""),
+                "source": "failed_request",
+            })
+    raw = pa.get("console_errors") or pa.get("js_errors") or []
+    if isinstance(raw, str):
+        raw = [raw]
+    if isinstance(raw, list):
+        for item in raw:
+            if isinstance(item, dict):
+                entries.append({
+                    "error_type": str(item.get("type") or item.get("level") or "console"),
+                    "message": str(item.get("text") or item.get("message") or item),
+                    "source": "console_errors",
+                })
+            elif item:
+                entries.append({"error_type": "console", "message": str(item), "source": "console_errors"})
+    return entries
+
+
 def list_pages_with_console_errors(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
     scoped = ctx.with_args(args)
     df = scoped.load_crawl_df(conn)
@@ -328,19 +368,88 @@ def list_pages_with_console_errors(conn: Connection, ctx: AuditToolContext, args
     pages = []
     for _, row in df.iterrows():
         pa = _parse_page_analysis(row.to_dict())
-        errors = pa.get("console_errors") or pa.get("js_errors") or []
+        errors = _console_error_entries(pa)
         if not errors:
             continue
-        if isinstance(errors, str):
-            errors = [errors]
         pages.append({
             "url": str(row.get("url") or ""),
-            "error_count": len(errors) if isinstance(errors, list) else 1,
-            "errors": (errors[:5] if isinstance(errors, list) else [errors]),
+            "error_count": len(errors),
+            "errors": errors[:5],
         })
     limit = parse_limit(args.get("limit"), 30, 50)
     sliced = cap_list(pages, limit, max_cap=50)
     return {"pages": sliced["items"], "total": sliced["total"], "truncated": sliced["truncated"]}
+
+
+def list_pages_console_errors_by_type(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    error_type = str(args.get("error_type") or "").strip().lower()
+    if not error_type:
+        return {"error": "error_type is required", "pages": [], "total": 0, "truncated": False}
+    scoped = ctx.with_args(args)
+    df = scoped.load_crawl_df(conn)
+    if df is None or df.empty:
+        return {"pages": [], "total": 0, "truncated": False}
+    pages: list[dict[str, Any]] = []
+    for _, row in df.iterrows():
+        pa = _parse_page_analysis(row.to_dict())
+        matched = [
+            e for e in _console_error_entries(pa)
+            if error_type in str(e.get("error_type") or "").lower()
+            or error_type in str(e.get("source") or "").lower()
+        ]
+        if not matched:
+            continue
+        pages.append({
+            "url": str(row.get("url") or ""),
+            "error_type": error_type,
+            "error_count": len(matched),
+            "errors": matched[:5],
+        })
+    limit = parse_limit(args.get("limit"), 30, 50)
+    sliced = cap_list(pages, limit, max_cap=50)
+    return {"pages": sliced["items"], "total": sliced["total"], "truncated": sliced["truncated"]}
+
+
+def list_pages_js_rendering_delta(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    df = scoped.load_crawl_df(conn)
+    if df is None or df.empty or "fetch_method" not in df.columns:
+        return {"pages": [], "total": 0, "truncated": False, "note": "fetch_method not in crawl — use javascript or auto render mode"}
+    by_url: dict[str, dict[str, dict[str, Any]]] = {}
+    for _, row in df.iterrows():
+        url = str(row.get("url") or "").rstrip("/").lower()
+        method = str(row.get("fetch_method") or "static").lower()
+        if not url:
+            continue
+        try:
+            word_count = int(row.get("word_count") or 0)
+        except (TypeError, ValueError):
+            word_count = 0
+        by_url.setdefault(url, {})[method] = {
+            "title": str(row.get("title") or ""),
+            "word_count": word_count,
+            "h1": str(row.get("h1") or ""),
+        }
+    pages: list[dict[str, Any]] = []
+    for url, methods in by_url.items():
+        static = methods.get("static")
+        rendered = methods.get("rendered") or methods.get("javascript")
+        if not static or not rendered:
+            continue
+        title_diff = static.get("title") != rendered.get("title")
+        wc_diff = abs(int(static.get("word_count") or 0) - int(rendered.get("word_count") or 0))
+        h1_diff = static.get("h1") != rendered.get("h1")
+        if title_diff or wc_diff > 50 or h1_diff:
+            pages.append({
+                "url": url,
+                "title_differs": title_diff,
+                "word_count_delta": wc_diff,
+                "h1_differs": h1_diff,
+            })
+    pages.sort(key=lambda p: -int(p.get("word_count_delta") or 0))
+    limit = parse_limit(args.get("limit"), 30, 50)
+    sliced = cap_list(pages, limit, max_cap=50)
+    return {"pages": sliced["items"], "total": sliced["total"], "truncated": sliced["truncated"], "provenance": "Crawl"}
 
 
 def list_pages_by_fetch_method(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:

@@ -1,1181 +1,77 @@
 """
 Generate report data from crawl and write to PostgreSQL. The Next.js UI in web/ reads via /api/report/*.
 """
-import hashlib
+from __future__ import annotations
+
 import json
 import os
-import socket
-import ssl
-import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from typing import Any, Optional
 from urllib.parse import urlparse
 
 import pandas as pd
 import requests
-from bs4 import BeautifulSoup
-from tqdm.auto import tqdm
 
-from ..common import (
-    LINK_COLUMN_NAMES,
-    load_edges,
-    normalize_link,
-    parse_links_serialized,
-)
-from ..tools.keywords import cluster_keywords, extract_candidates_from_df, score_keywords
-from ..config import get_bool, get_int
 from ..analysis import merge_bundles, run_local_enrichment
-from ..analysis.text_hygiene import filter_topic_clusters, is_junk_semantic_term
+from ..analysis.text_hygiene import is_junk_semantic_term
+from ..config import get_bool, get_int
 from ..llm.enrich import cluster_keywords_llm, run_llm_enrichment
 from ..llm_config import load_llm_config_from_db, llm_is_enabled
-from .categories import build_categories
 from ..security_scanner import run_security_scan
-
-# SEO thresholds for recommendations
-TITLE_LEN_MIN = 30
-TITLE_LEN_MAX = 60
-META_DESC_LEN_MIN = 70
-META_DESC_LEN_MAX = 160
-THIN_CONTENT_CHARS = 300
-
-
-def fetch_site_ssl_expires_iso(hostname: str, timeout: float = 5.0) -> Optional[str]:
-    """Return certificate notAfter as ISO 8601 UTC, or None on failure."""
-    host = (hostname or "").strip().lower()
-    if not host:
-        return None
-    try:
-        ctx = ssl.create_default_context()
-        with socket.create_connection((host, 443), timeout=timeout) as sock:
-            with ctx.wrap_socket(sock, server_hostname=host) as ssock:
-                cert = ssock.getpeercert()
-        if not cert:
-            return None
-        na = cert.get("notAfter")
-        if not na:
-            return None
-        ts = ssl.cert_time_to_seconds(na)
-        return datetime.fromtimestamp(ts, tz=timezone.utc).isoformat()
-    except Exception:
-        return None
-
-
-def _strip_www(host: str) -> str:
-    h = (host or "").strip().lower()
-    return h[4:] if h.startswith("www.") else h
-
-
-def _url_hostname(url: str) -> str:
-    if not url:
-        return ""
-    try:
-        return (urlparse(str(url).strip()).hostname or "").lower()
-    except Exception:
-        return ""
-
-
-def _hosts_match(a: str, b: str) -> bool:
-    if not a or not b:
-        return False
-    a, b = a.lower(), b.lower()
-    return a == b or _strip_www(a) == _strip_www(b)
-
-
-def filter_lighthouse_by_host(by_url: dict[str, Any], expected_host: str) -> dict[str, Any]:
-    """Keep only Lighthouse entries whose URL hostname matches expected_host (www.-tolerant)."""
-    if not by_url or not expected_host:
-        return by_url or {}
-    return {u: v for u, v in by_url.items() if _hosts_match(_url_hostname(u), expected_host)}
-
-
-def _derive_expected_host(start_url: str, df: pd.DataFrame) -> str:
-    host = _url_hostname(start_url)
-    if host:
-        return host
-    if df is not None and not df.empty and "url" in df.columns:
-        for u in df["url"]:
-            h = _url_hostname(str(u))
-            if h:
-                return h
-    return ""
-
-
-def _pick_lighthouse_summary(
-    lighthouse_by_url: dict[str, Any],
-    start_url: str,
-    global_summary: Optional[dict[str, Any]],
-    expected_host: str,
-) -> Optional[dict[str, Any]]:
-    """Prefer per-URL summary for this crawl; only use global summary if hostname matches."""
-    if lighthouse_by_url and start_url:
-        match = lighthouse_for_url(lighthouse_by_url, start_url)
-        if match:
-            return match
-    if lighthouse_by_url:
-        first_key = next(iter(lighthouse_by_url), None)
-        if first_key is not None:
-            return lighthouse_by_url[first_key]
-    if global_summary:
-        if not expected_host or _hosts_match(_url_hostname(str(global_summary.get("url") or "")), expected_host):
-            return global_summary
-    return None
-
-
-def build_lighthouse_by_url_for_report(conn: Any) -> dict[str, Any]:
-    """
-    Merge per-URL Lighthouse page summaries with latest lighthouse_runs row: full audits/items
-    from normalized tables, uncapped top_failures and diagnostics from stored LHR JSON.
-    """
-    from ..db import (
-        read_lh_audits_with_items,
-        read_lh_runs_by_url,
-        read_lighthouse_page_summaries,
-        read_lighthouse_run_json,
-    )
-    from ..lighthouse.runner import _evidence_from_audit, extract_from_lighthouse_json
-    from ..tools.warnings import parse_lighthouse_to_diagnostics, resolve_impact
-
-    summaries = read_lighthouse_page_summaries(conn)
-    runs_map = read_lh_runs_by_url(conn)
-
-    summaries_norm: dict[str, Any] = {}
-    for k, v in summaries.items():
-        nk = str(k).strip().rstrip("/")
-        summaries_norm[nk] = v
-
-    all_urls = set(summaries_norm.keys()) | set(runs_map.keys())
-    out: dict[str, Any] = {}
-
-    for u in sorted(all_urls):
-        base: dict[str, Any] = dict(summaries_norm[u]) if u in summaries_norm else {}
-        run_ids = runs_map.get(u, [])
-        run_id = run_ids[-1] if run_ids else None
-
-        if run_id is not None:
-            raw = read_lighthouse_run_json(conn, run_id)
-            if not base and raw:
-                ex = extract_from_lighthouse_json(raw)
-                lr = raw.get("lighthouseResult") or raw
-                final_u = lr.get("finalUrl") or lr.get("requestedUrl") or u
-                base = {
-                    "url": str(final_u).strip().rstrip("/"),
-                    "median_metrics": {
-                        "lcp_ms": ex.get("lcp_ms"),
-                        "cls": ex.get("cls"),
-                        "tbt_ms": ex.get("tbt_ms"),
-                        "fcp_ms": ex.get("fcp_ms"),
-                        "speed_index_ms": ex.get("speed_index_ms"),
-                        "performance_score": ex.get("performance_score"),
-                        "accessibility_score": ex.get("accessibility_score"),
-                        "seo_score": ex.get("seo_score"),
-                        "best_practices_score": ex.get("best_practices_score"),
-                        "pwa_score": ex.get("pwa_score"),
-                    },
-                    "category_scores": dict(ex.get("category_scores") or {}),
-                    "strategy": "mobile",
-                    "device": "mobile",
-                    "mode": "navigation",
-                }
-            base["audits"] = read_lh_audits_with_items(conn, run_id)
-            if raw:
-                lr = raw.get("lighthouseResult") or raw
-                audits_map = lr.get("audits") or {}
-                failures: list[dict[str, Any]] = []
-                for aid, a in audits_map.items():
-                    if not isinstance(a, dict):
-                        continue
-                    score = a.get("score")
-                    if score is None or score >= 1:
-                        continue
-                    title = a.get("title") or aid
-                    help_text = a.get("helpText") or ""
-                    failures.append(
-                        {
-                            "id": aid,
-                            "score": score,
-                            "helpText": help_text,
-                            "impact": resolve_impact(aid, title, help_text),
-                            "evidence": _evidence_from_audit(a),
-                        }
-                    )
-                failures.sort(key=lambda x: (x["score"] or 0))
-                base["top_failures"] = failures
-                base["diagnostics"] = parse_lighthouse_to_diagnostics(raw, max_nodes_in_refs=None)
-        elif not base:
-            continue
-
-        if not base.get("url"):
-            base["url"] = u
-        out[u] = base
-
-    return out
-
-
-def lighthouse_for_url(lighthouse_by_url: dict[str, Any], url: str) -> Optional[dict[str, Any]]:
-    """Resolve Lighthouse summary for a crawled URL (trailing-slash tolerant)."""
-    if not lighthouse_by_url or not url:
-        return None
-    u = str(url).strip().rstrip("/")
-    if u in lighthouse_by_url:
-        return lighthouse_by_url[u]
-    for k, v in lighthouse_by_url.items():
-        if str(k).strip().rstrip("/") == u:
-            return v
-    return None
-
-
-def build_edges_from_df(
-    df: pd.DataFrame,
-    edges_csv: str,
-    same_domain_only: bool,
-    max_fetch_for_edges: int,
-    concurrency: int,
-    timeout: int,
-    polite_delay: float,
-    render_mode: str = "static",
-    js_timeout: int = 30,
-    js_concurrency: int = 3,
-    js_wait_until: str = "domcontentloaded",
-    js_extra_wait_ms: int = 1500,
-    js_block_resources: bool = True,
-) -> list[tuple[str, str]]:
-    """Build or load edges; return list of (from, to) tuples."""
-    edges = load_edges(edges_csv) if (edges_csv or "").strip() else []
-    if edges:
-        return edges
-
-    # Prefer columns that hold URL lists (e.g. outlink_targets); skip "outlinks" (numeric count)
-    candidate_cols = [
-        c for c in df.columns
-        if c.lower() in LINK_COLUMN_NAMES and c.lower() != "outlinks"
-    ]
-    if candidate_cols:
-        for col in candidate_cols:
-            if df[col].notna().sum() == 0:
-                continue
-            for src, raw in zip(df["url"], df[col].fillna("")):
-                for t in parse_links_serialized(raw):
-                    if not t:
-                        continue
-                    if same_domain_only and urlparse(src).netloc != urlparse(t).netloc:
-                        continue
-                    edges.append((src, t))
-            if edges:
-                return edges
-
-    session = requests.Session()
-    session.headers.update({"User-Agent": "WebsiteProfiling/1.0"})
-    urls = df["url"].tolist()[:max_fetch_for_edges]
-    mode = (render_mode or "static").strip().lower()
-    use_js = mode in ("javascript", "auto")
-    fetcher = None
-    if use_js:
-        from ..crawl.fetchers import build_fetcher
-
-        fetcher = build_fetcher(
-            render_mode="javascript" if mode == "javascript" else "auto",
-            timeout=timeout,
-            user_agent="WebsiteProfiling/1.0",
-            session=session,
-            js_timeout=js_timeout,
-            js_concurrency=js_concurrency,
-            js_wait_until=js_wait_until,
-            js_extra_wait_ms=js_extra_wait_ms,
-            js_block_resources=js_block_resources,
-        )
-
-    def fetch(src):
-        try:
-            if fetcher is not None:
-                r = fetcher.fetch(src)
-                if r.status != 200 or not r.text:
-                    return []
-                html = r.text
-            else:
-                resp = session.get(src, timeout=timeout, allow_redirects=True)
-                if resp.status_code != 200 or not resp.headers.get("Content-Type", "").lower().startswith("text/html"):
-                    return []
-                html = resp.text
-            soup = BeautifulSoup(html, "lxml")
-            out = set()
-            for a in soup.find_all("a", href=True):
-                ln = normalize_link(src, a["href"])
-                if not ln or (same_domain_only and urlparse(src).netloc != urlparse(ln).netloc):
-                    continue
-                out.add(ln)
-            if polite_delay:
-                time.sleep(polite_delay)
-            return list(out)
-        except Exception:
-            return []
-
-    try:
-        with ThreadPoolExecutor(max_workers=concurrency) as ex:
-            futures = {ex.submit(fetch, u): u for u in urls}
-            for f in tqdm(as_completed(futures), total=len(futures), desc="Extracting links"):
-                src = futures[f]
-                try:
-                    outs = f.result()
-                except Exception:
-                    outs = []
-                for t in outs:
-                    edges.append((src, t))
-    finally:
-        if fetcher is not None:
-            fetcher.close()
-    return edges
-
-
-def _fetch_site_level(start_url: str, timeout: int = 8) -> dict:
-    """Fetch robots.txt, sitemap.xml, ads.txt, and security.txt from start_url origin."""
-    from .site_files import fetch_ads_txt, fetch_security_txt, merge_site_file_fields
-
-    parsed = urlparse(start_url)
-    if not parsed.scheme or not parsed.netloc:
-        return {
-            "robots_present": False,
-            "sitemap_present": False,
-            "sitemap_valid": False,
-            "ads_txt_present": False,
-            "security_txt_present": False,
-        }
-    base = f"{parsed.scheme}://{parsed.netloc}"
-    session = requests.Session()
-    session.headers.update({"User-Agent": "WebsiteProfiling/1.0"})
-    out: dict[str, Any] = {
-        "robots_present": False,
-        "sitemap_present": False,
-        "sitemap_valid": False,
-    }
-    try:
-        r = session.get(f"{base}/robots.txt", timeout=timeout)
-        if r.status_code == 200 and r.text:
-            out["robots_present"] = True
-            for line in r.text.splitlines():
-                line = line.strip()
-                if line.lower().startswith("sitemap:"):
-                    break
-    except Exception:
-        pass
-    try:
-        r = session.get(f"{base}/sitemap.xml", timeout=timeout)
-        if r.status_code == 200 and r.text:
-            out["sitemap_present"] = True
-            out["sitemap_valid"] = "<" in r.text and ">" in r.text and ("urlset" in r.text or "sitemapindex" in r.text)
-    except Exception:
-        pass
-    merge_site_file_fields(out, fetch_ads_txt(session, base, timeout=timeout))
-    merge_site_file_fields(out, fetch_security_txt(session, base, timeout=timeout))
-    return out
-
-
-def _compute_summary_seo_issues(df: pd.DataFrame) -> dict:
-    """Compute crawl summary, SEO health metrics, issues list, and recommendations from crawl DataFrame."""
-    total = len(df)
-    status_str = df["status"].astype(str) if "status" in df.columns else pd.Series(["unknown"] * len(df))
-    count_2xx = int((status_str.str.match(r"2\d{2}").fillna(False)).sum())
-    count_3xx = int((status_str.str.match(r"3\d{2}").fillna(False)).sum())
-    count_4xx = int((status_str.str.match(r"4\d{2}").fillna(False)).sum())
-    count_5xx = int((status_str.str.match(r"5\d{2}").fillna(False)).sum())
-    count_error = int((status_str.isin(["error", "blocked_by_robots"])).sum())
-    success_rate = round(100 * count_2xx / total, 1) if total else 0
-
-    outlinks = (
-        pd.to_numeric(df["outlinks"], errors="coerce").fillna(0).astype(int)
-        if "outlinks" in df.columns
-        else pd.Series([0] * len(df))
-    )
-    title_len = (
-        df["title"].fillna("").astype(str).apply(len)
-        if "title" in df.columns
-        else pd.Series([0] * len(df))
-    )
-    crawl_time_s = float(df["crawl_time_s"].iloc[0]) if "crawl_time_s" in df.columns and len(df) else None
-
-    summary = {
-        "total_urls": total,
-        "count_2xx": count_2xx,
-        "count_3xx": count_3xx,
-        "count_4xx": count_4xx,
-        "count_5xx": count_5xx,
-        "count_error": count_error,
-        "success_rate": success_rate,
-        "avg_outlinks": round(float(outlinks.mean()), 1) if total else 0,
-        "avg_title_len": round(float(title_len.mean()), 1) if total else 0,
-        "crawl_time_s": round(crawl_time_s, 1) if crawl_time_s is not None else None,
-    }
-
-    # SEO health (when columns exist)
-    seo_health = {}
-    if "title" in df.columns:
-        titles = df["title"].fillna("").astype(str)
-        seo_health["missing_title"] = int((titles.str.len() == 0).sum())
-        seo_health["title_short"] = int(((title_len > 0) & (title_len < TITLE_LEN_MIN)).sum())
-        seo_health["title_long"] = int((title_len > TITLE_LEN_MAX).sum())
-        seo_health["title_ok"] = int(((title_len >= TITLE_LEN_MIN) & (title_len <= TITLE_LEN_MAX)).sum())
-    if "meta_description_len" in df.columns:
-        md_len = pd.to_numeric(df["meta_description_len"], errors="coerce").fillna(0).astype(int)
-        seo_health["missing_meta_desc"] = int((md_len == 0).sum())
-        seo_health["meta_desc_short"] = int(((md_len > 0) & (md_len < META_DESC_LEN_MIN)).sum())
-        seo_health["meta_desc_long"] = int((md_len > META_DESC_LEN_MAX).sum())
-        seo_health["meta_desc_ok"] = int(((md_len >= META_DESC_LEN_MIN) & (md_len <= META_DESC_LEN_MAX)).sum())
-    if "h1_count" in df.columns:
-        h1c = pd.to_numeric(df["h1_count"], errors="coerce").fillna(-1).astype(int)
-        seo_health["h1_zero"] = int((h1c == 0).sum())
-        seo_health["h1_one"] = int((h1c == 1).sum())
-        seo_health["h1_multi"] = int((h1c > 1).sum())
-    if "content_length" in df.columns:
-        cl = pd.to_numeric(df["content_length"], errors="coerce").fillna(0).astype(int)
-        seo_health["thin_content"] = int(((cl > 0) & (cl < THIN_CONTENT_CHARS)).sum())
-
-    # Issues: broken, redirects, SEO
-    issues = {"broken": [], "redirects": [], "seo": []}
-    for _, row in df.iterrows():
-        u = row.get("url")
-        if pd.isna(u) or not u:
-            continue
-        u = str(u).strip()
-        st = str(row.get("status", "")).strip()
-        if st.startswith("4") or st.startswith("5") or st in ("error", "blocked_by_robots"):
-            issues["broken"].append({"url": u, "status": st})
-        elif st.startswith("3"):
-            final = row.get("final_url") or ""
-            issues["redirects"].append({"url": u, "status": st, "final_url": str(final) if pd.notna(final) else ""})
-
-    if "title" in df.columns:
-        for _, row in df.iterrows():
-            u = row.get("url")
-            if pd.isna(u):
-                continue
-            u = str(u).strip()
-            t = row.get("title") or ""
-            tl = len(str(t).strip())
-            if tl == 0:
-                issues["seo"].append({"type": "missing_title", "url": u, "message": "Missing title"})
-            elif tl < TITLE_LEN_MIN:
-                issues["seo"].append({"type": "title_short", "url": u, "message": f"Title too short ({tl} chars)"})
-            elif tl > TITLE_LEN_MAX:
-                issues["seo"].append({"type": "title_long", "url": u, "message": f"Title too long ({tl} chars)"})
-    if "meta_description_len" in df.columns:
-        for _, row in df.iterrows():
-            md_len = pd.to_numeric(row.get("meta_description_len"), errors="coerce")
-            if pd.isna(md_len) or md_len == 0:
-                continue
-            u = row.get("url")
-            if pd.isna(u):
-                continue
-            u = str(u).strip()
-            ml = int(md_len)
-            if ml < META_DESC_LEN_MIN:
-                issues["seo"].append({"type": "meta_desc_short", "url": u, "message": f"Meta description too short ({ml} chars)"})
-            elif ml > META_DESC_LEN_MAX:
-                issues["seo"].append({"type": "meta_desc_long", "url": u, "message": f"Meta description too long ({ml} chars)"})
-    if "h1_count" in df.columns:
-        for _, row in df.iterrows():
-            h1c = pd.to_numeric(row.get("h1_count"), errors="coerce")
-            if pd.isna(h1c) or h1c == 1:
-                continue
-            u = row.get("url")
-            if pd.isna(u):
-                continue
-            u = str(u).strip()
-            if int(h1c) == 0:
-                issues["seo"].append({"type": "h1_missing", "url": u, "message": "Missing H1"})
-            else:
-                issues["seo"].append({"type": "h1_multi", "url": u, "message": f"Multiple H1s ({int(h1c)})"})
-    if "content_length" in df.columns:
-        for _, row in df.iterrows():
-            cl = pd.to_numeric(row.get("content_length"), errors="coerce")
-            cl = 0 if pd.isna(cl) else int(cl)
-            if cl >= THIN_CONTENT_CHARS or cl == 0:
-                continue
-            u = row.get("url")
-            if pd.isna(u):
-                continue
-            issues["seo"].append({"type": "thin_content", "url": str(u).strip(), "message": f"Thin content ({int(cl)} chars)"})
-
-    # Recommendations (actionable bullets)
-    recommendations = []
-    if issues["broken"]:
-        recommendations.append(f"Fix {len(issues['broken'])} broken or error URL(s).")
-    if issues["redirects"]:
-        recommendations.append(f"Review {len(issues['redirects'])} redirect(s); consolidate if possible.")
-    if seo_health.get("missing_title", 0) > 0:
-        recommendations.append(f"Add titles to {seo_health['missing_title']} page(s).")
-    if seo_health.get("title_short", 0) + seo_health.get("title_long", 0) > 0:
-        n = seo_health.get("title_short", 0) + seo_health.get("title_long", 0)
-        recommendations.append(f"Optimize title length on {n} page(s) (aim 30–60 chars).")
-    if seo_health.get("missing_meta_desc", 0) > 0:
-        recommendations.append(f"Add meta descriptions to {seo_health['missing_meta_desc']} page(s).")
-    if seo_health.get("meta_desc_short", 0) + seo_health.get("meta_desc_long", 0) > 0:
-        n = seo_health.get("meta_desc_short", 0) + seo_health.get("meta_desc_long", 0)
-        recommendations.append(f"Optimize meta description length on {n} page(s) (aim 70–160 chars).")
-    if seo_health.get("h1_zero", 0) > 0:
-        recommendations.append(f"Add one H1 per page on {seo_health['h1_zero']} page(s).")
-    if seo_health.get("h1_multi", 0) > 0:
-        recommendations.append(f"Use a single H1 per page on {seo_health['h1_multi']} page(s).")
-    if seo_health.get("thin_content", 0) > 0:
-        recommendations.append(f"Expand thin content on {seo_health['thin_content']} page(s) (under {THIN_CONTENT_CHARS} chars).")
-
-    return {
-        "summary": summary,
-        "seo_health": seo_health,
-        "issues": issues,
-        "recommendations": recommendations,
-    }
-
-
-def _build_content_analytics(df: pd.DataFrame) -> dict:
-    """Build content analytics: word count stats, reading level distribution, content ratio, top keywords."""
-    from collections import Counter
-
-    result = {
-        "word_count_stats": {"mean": 0, "median": 0, "p25": 0, "p75": 0, "min": 0, "max": 0},
-        "word_count_distribution": {},
-        "reading_level_distribution": {},
-        "content_ratio_distribution": {},
-        "top_keywords_site": [],
-        "thin_pages": [],
-    }
-    if "word_count" not in df.columns or df.empty:
-        return result
-
-    success_df = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns else df
-    if success_df.empty:
-        return result
-
-    wc = pd.to_numeric(success_df["word_count"], errors="coerce").fillna(0).astype(int)
-    result["word_count_stats"] = {
-        "mean": round(float(wc.mean()), 1),
-        "median": round(float(wc.median()), 1),
-        "p25": round(float(wc.quantile(0.25)), 1),
-        "p75": round(float(wc.quantile(0.75)), 1),
-        "min": int(wc.min()),
-        "max": int(wc.max()),
-    }
-
-    wc_bins = [(0, 100), (101, 300), (301, 600), (601, 1000), (1001, 2000), (2001, 999999)]
-    wc_labels = ["0-100", "101-300", "301-600", "601-1000", "1001-2000", "2001+"]
-    result["word_count_distribution"] = {
-        lbl: int(((wc >= lo) & (wc <= hi)).sum()) for (lo, hi), lbl in zip(wc_bins, wc_labels)
-    }
-
-    if "reading_level" in success_df.columns:
-        rl = pd.to_numeric(success_df["reading_level"], errors="coerce").fillna(0)
-        rl_bins = [(0, 5), (6, 8), (9, 12), (13, 99)]
-        rl_labels = ["Elementary (0-5)", "Middle School (6-8)", "High School (9-12)", "College (13+)"]
-        result["reading_level_distribution"] = {
-            lbl: int(((rl >= lo) & (rl <= hi)).sum()) for (lo, hi), lbl in zip(rl_bins, rl_labels)
-        }
-
-    if "content_html_ratio" in success_df.columns:
-        cr = pd.to_numeric(success_df["content_html_ratio"], errors="coerce").fillna(0)
-        cr_bins = [(0, 10), (10.01, 20), (20.01, 40), (40.01, 100)]
-        cr_labels = ["<10%", "10-20%", "20-40%", ">40%"]
-        result["content_ratio_distribution"] = {
-            lbl: int(((cr >= lo) & (cr <= hi)).sum()) for (lo, hi), lbl in zip(cr_bins, cr_labels)
-        }
-
-    if "top_keywords" in success_df.columns:
-        kw_counter = Counter()
-        for raw in success_df["top_keywords"].fillna("[]"):
-            try:
-                items = json.loads(str(raw)) if isinstance(raw, str) else raw
-                if isinstance(items, list):
-                    for item in items:
-                        if isinstance(item, dict):
-                            kw_counter[item.get("word", "")] += item.get("count", 0)
-            except (json.JSONDecodeError, TypeError):
-                pass
-        result["top_keywords_site"] = [
-            {"word": w, "count": c}
-            for w, c in kw_counter.most_common(50)
-            if w and not is_junk_semantic_term(str(w))
-        ][:30]
-
-    for _, row in success_df.iterrows():
-        u = row.get("url")
-        if pd.isna(u) or not u:
-            continue
-        w = int(pd.to_numeric(row.get("word_count"), errors="coerce") or 0)
-        if 0 < w < 300:
-            result["thin_pages"].append({"url": str(u).strip(), "word_count": w})
-
-    return result
-
-
-def _parse_top_keywords_items(raw: Any) -> list[dict[str, Any]]:
-    """Parse per-page top_keywords JSON into dict items with word/count."""
-    if raw is None or (isinstance(raw, float) and pd.isna(raw)):
-        return []
-    try:
-        items = json.loads(str(raw)) if isinstance(raw, str) else raw
-    except (json.JSONDecodeError, TypeError, ValueError):
-        return []
-    if not isinstance(items, list):
-        return []
-    out: list[dict[str, Any]] = []
-    for item in items:
-        if isinstance(item, dict):
-            word = str(item.get("word") or "").strip()
-            if word:
-                out.append({"word": word, "count": int(item.get("count") or 1)})
-    return out
-
-
-def _build_text_content_analysis(df: pd.DataFrame) -> dict:
-    """Cross-page keyword aggregates for the text content analysis view."""
-    empty = {
-        "vocabulary_stats": {
-            "unique_terms": 0,
-            "pages_with_keywords": 0,
-            "avg_terms_per_page": 0.0,
-            "total_term_occurrences": 0,
-        },
-        "keyword_index": [],
-        "keyword_frequency_histogram": {"1": 0, "2-5": 0, "6-20": 0, "21+": 0},
-    }
-    if df.empty or "top_keywords" not in df.columns:
-        return empty
-
-    success_df = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns else df
-    if success_df.empty:
-        return empty
-
-    # word -> { total_count, pages: { url -> count } }
-    index: dict[str, dict[str, Any]] = {}
-    pages_with_keywords = 0
-    total_occurrences = 0
-
-    for _, row in success_df.iterrows():
-        url = row.get("url")
-        if pd.isna(url) or not url:
-            continue
-        url_str = str(url).strip()
-        items = _parse_top_keywords_items(row.get("top_keywords"))
-        page_had_kw = False
-        for item in items:
-            word = item["word"].lower()
-            if is_junk_semantic_term(word):
-                continue
-            count = max(1, int(item.get("count") or 1))
-            if word not in index:
-                index[word] = {"total_count": 0, "pages": {}}
-            index[word]["total_count"] += count
-            index[word]["pages"][url_str] = index[word]["pages"].get(url_str, 0) + count
-            total_occurrences += count
-            page_had_kw = True
-        if page_had_kw:
-            pages_with_keywords += 1
-
-    unique_terms = len(index)
-    avg_terms = round(total_occurrences / pages_with_keywords, 1) if pages_with_keywords else 0.0
-
-    histogram = {"1": 0, "2-5": 0, "6-20": 0, "21+": 0}
-    for data in index.values():
-        pc = len(data["pages"])
-        if pc == 1:
-            histogram["1"] += 1
-        elif pc <= 5:
-            histogram["2-5"] += 1
-        elif pc <= 20:
-            histogram["6-20"] += 1
-        else:
-            histogram["21+"] += 1
-
-    sorted_words = sorted(index.items(), key=lambda x: x[1]["total_count"], reverse=True)
-    keyword_index: list[dict[str, Any]] = []
-    for word, data in sorted_words:
-        top_pages = sorted(data["pages"].items(), key=lambda x: x[1], reverse=True)[:5]
-        keyword_index.append(
-            {
-                "word": word,
-                "total_count": data["total_count"],
-                "page_count": len(data["pages"]),
-                "top_pages": [{"url": u, "count": c} for u, c in top_pages],
-            }
-        )
-
-    return {
-        "vocabulary_stats": {
-            "unique_terms": unique_terms,
-            "pages_with_keywords": pages_with_keywords,
-            "avg_terms_per_page": avg_terms,
-            "total_term_occurrences": total_occurrences,
-        },
-        "keyword_index": keyword_index,
-        "keyword_frequency_histogram": histogram,
-    }
-
-
-def _build_social_coverage(df: pd.DataFrame) -> dict:
-    """Build social meta coverage stats: OG and Twitter Card presence percentages."""
-    result = {
-        "og_coverage_pct": 0,
-        "twitter_coverage_pct": 0,
-        "og_image_coverage_pct": 0,
-        "missing_og": [],
-        "missing_twitter": [],
-        "og_image_missing": [],
-    }
-    if df.empty:
-        return result
-
-    success_df = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns else df
-    html_df = success_df
-    if "content_type" in success_df.columns:
-        html_df = success_df[success_df["content_type"].fillna("").str.contains("text/html", case=False, na=False)]
-    if html_df.empty:
-        return result
-
-    total = len(html_df)
-
-    if "og_title" in html_df.columns:
-        has_og = (html_df["og_title"].fillna("").astype(str).str.strip() != "").sum()
-        result["og_coverage_pct"] = round(100 * int(has_og) / total, 1)
-        for _, row in html_df.iterrows():
-            u = row.get("url")
-            if pd.isna(u):
-                continue
-            u = str(u).strip()
-            og = str(row.get("og_title") or "").strip()
-            if not og:
-                result["missing_og"].append(u)
-
-    if "twitter_card" in html_df.columns:
-        has_tw = (html_df["twitter_card"].fillna("").astype(str).str.strip() != "").sum()
-        result["twitter_coverage_pct"] = round(100 * int(has_tw) / total, 1)
-        for _, row in html_df.iterrows():
-            u = row.get("url")
-            if pd.isna(u):
-                continue
-            u = str(u).strip()
-            tw = str(row.get("twitter_card") or "").strip()
-            if not tw:
-                result["missing_twitter"].append(u)
-
-    if "og_image" in html_df.columns:
-        has_og_img = (html_df["og_image"].fillna("").astype(str).str.strip() != "").sum()
-        result["og_image_coverage_pct"] = round(100 * int(has_og_img) / total, 1)
-        for _, row in html_df.iterrows():
-            u = row.get("url")
-            if pd.isna(u):
-                continue
-            u = str(u).strip()
-            img = str(row.get("og_image") or "").strip()
-            if not img:
-                result["og_image_missing"].append(u)
-
-    result["missing_og"] = result["missing_og"][:100]
-    result["missing_twitter"] = result["missing_twitter"][:100]
-    result["og_image_missing"] = result["og_image_missing"][:100]
-    return result
-
-
-def _build_tech_stack_summary(df: pd.DataFrame) -> dict:
-    """Build tech stack summary: detected technologies with counts and sample URLs."""
-    from collections import defaultdict
-
-    result = {"technologies": [], "total_pages_analyzed": 0}
-    if "tech_stack" not in df.columns or df.empty:
-        return result
-
-    success_df = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns else df
-    html_df = success_df
-    if "content_type" in success_df.columns:
-        html_df = success_df[success_df["content_type"].fillna("").str.contains("text/html", case=False, na=False)]
-    if html_df.empty:
-        return result
-
-    result["total_pages_analyzed"] = len(html_df)
-    tech_urls = defaultdict(list)
-
-    for _, row in html_df.iterrows():
-        u = str(row.get("url", "")).strip()
-        raw = row.get("tech_stack") or "[]"
-        try:
-            techs = json.loads(str(raw)) if isinstance(raw, str) else raw
-            if isinstance(techs, list):
-                for t in techs:
-                    if isinstance(t, str) and t:
-                        tech_urls[t].append(u)
-        except (json.JSONDecodeError, TypeError):
-            pass
-
-    result["technologies"] = sorted(
-        [{"name": name, "count": len(urls), "sample_urls": urls[:3]} for name, urls in tech_urls.items()],
-        key=lambda x: x["count"],
-        reverse=True,
-    )
-    return result
-
-
-def _build_response_time_stats(df: pd.DataFrame) -> dict:
-    """Build response time statistics and distribution."""
-    result = {
-        "p25": 0, "p50": 0, "p75": 0, "p95": 0, "p99": 0,
-        "slow_pages": [],
-        "distribution": {},
-    }
-    if "response_time_ms" not in df.columns or df.empty:
-        return result
-
-    rt = pd.to_numeric(df["response_time_ms"], errors="coerce").dropna()
-    if rt.empty:
-        return result
-
-    result["p25"] = round(float(rt.quantile(0.25)), 0)
-    result["p50"] = round(float(rt.quantile(0.50)), 0)
-    result["p75"] = round(float(rt.quantile(0.75)), 0)
-    result["p95"] = round(float(rt.quantile(0.95)), 0)
-    result["p99"] = round(float(rt.quantile(0.99)), 0)
-
-    rt_bins = [(0, 200), (200, 500), (500, 1000), (1000, 2000), (2000, 999999)]
-    rt_labels = ["<200ms", "200-500ms", "500ms-1s", "1-2s", ">2s"]
-    rt_full = pd.to_numeric(df["response_time_ms"], errors="coerce").fillna(0)
-    result["distribution"] = {
-        lbl: int(((rt_full >= lo) & (rt_full < hi)).sum()) for (lo, hi), lbl in zip(rt_bins, rt_labels)
-    }
-
-    for _, row in df.iterrows():
-        u = row.get("url")
-        ms = pd.to_numeric(row.get("response_time_ms"), errors="coerce")
-        if pd.isna(u) or pd.isna(ms) or ms <= 2000:
-            continue
-        result["slow_pages"].append({"url": str(u).strip(), "response_time_ms": int(ms)})
-    result["slow_pages"] = sorted(result["slow_pages"], key=lambda x: x["response_time_ms"], reverse=True)[:50]
-    return result
-
-
-def _build_depth_distribution(df: pd.DataFrame) -> dict:
-    """Build crawl depth distribution."""
-    result = {"by_depth": {}, "max_depth": 0, "avg_depth": 0}
-    if "depth" not in df.columns or df.empty:
-        return result
-
-    depths = pd.to_numeric(df["depth"], errors="coerce").dropna().astype(int)
-    if depths.empty:
-        return result
-
-    result["max_depth"] = int(depths.max())
-    result["avg_depth"] = round(float(depths.mean()), 1)
-    counts = depths.value_counts().sort_index()
-    result["by_depth"] = {str(int(k)): int(v) for k, v in counts.items()}
-    return result
-
-
-def _parse_page_analysis_cell(raw: object) -> dict[str, Any]:
-    if raw is None or (isinstance(raw, float) and pd.isna(raw)):
-        return {}
-    s = str(raw).strip()
-    if not s or s == "{}":
-        return {}
-    try:
-        o = json.loads(s)
-        return o if isinstance(o, dict) else {}
-    except json.JSONDecodeError:
-        return {}
-
-
-def _build_outbound_link_domains(
-    df: pd.DataFrame,
-    start_url: str,
-    max_rows: int,
-) -> list[dict[str, Any]]:
-    """Aggregate external hosts linked from crawled pages (outbound), not referring domains."""
-    site_host = urlparse((start_url or "").strip()).netloc.lower()
-    host_pages: dict[str, set[str]] = {}
-    host_link_count: dict[str, int] = {}
-    for _, row in df.iterrows():
-        st = str(row.get("status", "")).strip()
-        if st.startswith(("4", "5")):
-            continue
-        u = str(row.get("url") or "").strip().rstrip("/")
-        if not u:
-            continue
-        seen_on_page: set[str] = set()
-        pa = _parse_page_analysis_cell(row.get("page_analysis")) if "page_analysis" in df.columns else {}
-        for link in pa.get("external_links") or []:
-            if not isinstance(link, str):
-                continue
-            h = urlparse(link).netloc.lower()
-            if not h or h == site_host:
-                continue
-            host_pages.setdefault(h, set()).add(u)
-            host_link_count[h] = host_link_count.get(h, 0) + 1
-            seen_on_page.add(link)
-        if "outlink_targets" in df.columns:
-            for link in parse_links_serialized(row.get("outlink_targets")):
-                h = urlparse(link).netloc.lower()
-                if not h or h == site_host:
-                    continue
-                host_pages.setdefault(h, set()).add(u)
-                if link not in seen_on_page:
-                    host_link_count[h] = host_link_count.get(h, 0) + 1
-                    seen_on_page.add(link)
-    rows: list[dict[str, Any]] = []
-    for h in host_pages:
-        rows.append({
-            "host": h,
-            "page_count": len(host_pages[h]),
-            "link_count": host_link_count.get(h, 0),
-        })
-    rows.sort(key=lambda x: (-x["link_count"], -x["page_count"], x["host"]))
-    return rows[:max_rows]
-
-
-def _build_url_fingerprints(df: pd.DataFrame) -> list[dict[str, Any]]:
-    """Stable fingerprints for comparing page content/structure between report runs (no raw HTML stored)."""
-    out: list[dict[str, Any]] = []
-    for _, row in df.iterrows():
-        u = str(row.get("url") or "").strip().rstrip("/")
-        if not u:
-            continue
-        title = str(row.get("title") or "")
-        meta = str(row.get("meta_description") or "")
-        h1 = str(row.get("h1") or "")
-        headings = str(row.get("heading_sequence") or "")
-        wc = int(pd.to_numeric(row.get("word_count"), errors="coerce") or 0)
-        cl = int(pd.to_numeric(row.get("content_length"), errors="coerce") or 0)
-        h1c = int(pd.to_numeric(row.get("h1_count"), errors="coerce") or 0)
-        sc = int(pd.to_numeric(row.get("script_count"), errors="coerce") or 0)
-        lc = int(pd.to_numeric(row.get("link_stylesheet_count"), errors="coerce") or 0)
-        # heading_sequence is structural (h1,h2,...) — keep it in structure fingerprint only.
-        raw_c = "|".join([title, meta, h1, str(wc), str(cl)]).encode("utf-8")
-        content_fp = hashlib.sha256(raw_c).hexdigest()
-        raw_s = "|".join([str(cl), str(sc), str(lc), str(h1c), headings]).encode("utf-8")
-        structure_fp = hashlib.sha256(raw_s).hexdigest()
-        out.append({
-            "url": u,
-            "content_fingerprint": content_fp,
-            "structure_fingerprint": structure_fp,
-        })
-    return out
-
-
-def _build_hreflang_summary(df: pd.DataFrame) -> dict[str, Any]:
-    total = 0
-    missing_lang = 0
-    with_hreflang = 0
-    for _, row in df.iterrows():
-        st = str(row.get("status", "")).strip()
-        if not st.startswith("2"):
-            continue
-        total += 1
-        pa = _parse_page_analysis_cell(row.get("page_analysis")) if "page_analysis" in df.columns else {}
-        if not (pa.get("html_lang") or "").strip():
-            missing_lang += 1
-        if pa.get("hreflang_alternates"):
-            with_hreflang += 1
-    return {
-        "pages_200": total,
-        "pages_missing_html_lang": missing_lang,
-        "pages_with_hreflang_links": with_hreflang,
-    }
-
-
-def _validate_report_url_counts(report_data: dict[str, Any], df_row_count: int) -> None:
-    """Ensure crawled URL counts are consistent across report payload fields."""
-    links = report_data.get("links") or []
-    summary = report_data.get("summary") or {}
-    scope = (report_data.get("report_meta") or {}).get("crawl_scope") or {}
-    link_count = len(links) if isinstance(links, list) else 0
-    total_urls = int(summary.get("total_urls") or 0)
-    pages_crawled = int(scope.get("pages_crawled") or 0)
-    counts = {link_count, total_urls, pages_crawled, df_row_count}
-    if len(counts) > 1:
-        msg = (
-            f"report count mismatch: links={link_count}, "
-            f"summary.total_urls={total_urls}, "
-            f"pages_crawled={pages_crawled}, df_rows={df_row_count}"
-        )
-        print(f"  WARNING: {msg}", flush=True)
-        report_data.setdefault("ml_errors", []).append(msg)
-
-
-def _build_report_metadata(
-    df: pd.DataFrame,
-    config: Optional[dict[str, str]],
-    lighthouse_summary: Optional[dict[str, Any]],
-    google_data: Optional[dict[str, Any]],
-    keywords_data: Optional[dict[str, Any]],
-    ml_bundle: dict[str, Any],
-    run_id: Optional[int],
-    crawl_run_created_at: Optional[str],
-    gsc_links_data: Optional[dict[str, Any]] = None,
-) -> dict[str, Any]:
-    """Provenance and crawl scope for agency-facing audits."""
-    sources: list[str] = ["crawl"]
-    if lighthouse_summary:
-        sources.append("lighthouse")
-    if google_data:
-        if google_data.get("gsc") or google_data.get("gsc_summary"):
-            sources.append("search_console")
-        if google_data.get("ga4") or google_data.get("ga4_summary"):
-            sources.append("analytics")
-    if gsc_links_data and "search_console" not in sources:
-        sources.append("search_console")
-    llm_meta = ml_bundle.get("llm_meta")
-    if isinstance(llm_meta, dict) and llm_meta.get("model"):
-        sources.append("ai")
-    kw_rows = (keywords_data or {}).get("rows") or []
-    has_gsc_kw = any(
-        (r.get("gsc_impressions") or r.get("gsc_clicks")) and r.get("source") in ("gsc", "site+gsc", None)
-        for r in kw_rows[:500]
-        if isinstance(r, dict)
-    )
-    if kw_rows and not has_gsc_kw and "estimated" not in sources:
-        sources.append("estimated")
-
-    max_pages_cfg = get_int(config or {}, "max_pages", 0) or 0
-    pages_crawled = len(df)
-    blocked = 0
-    if not df.empty and "status" in df.columns:
-        blocked = int((df["status"].astype(str) == "blocked_by_robots").sum())
-
-    render_mode = (str((config or {}).get("crawl_render_mode") or "static")).strip().lower()
-    js_concurrency = get_int(config or {}, "crawl_js_concurrency", 3) or 3
-    static_html_only = render_mode == "static"
-
-    crawl_scope: dict[str, Any] = {
-        "pages_crawled": pages_crawled,
-        "max_pages_configured": max_pages_cfg or pages_crawled,
-        "robots_blocked_count": blocked,
-        "static_html_only": static_html_only,
-        "render_mode": render_mode,
-        "js_concurrency": js_concurrency if not static_html_only else None,
-        "crawl_limited": bool(max_pages_cfg and pages_crawled >= max_pages_cfg),
-    }
-    if not df.empty and "fetch_method" in df.columns:
-        fm = df["fetch_method"].astype(str).str.strip().str.lower()
-        pages_static = int((fm == "static").sum())
-        pages_rendered = int((fm == "rendered").sum())
-        if render_mode == "auto" or pages_rendered > 0:
-            crawl_scope["pages_static"] = pages_static
-            crawl_scope["pages_rendered"] = pages_rendered
-
-    from ..crawl.fetchers.browser_diagnostics import aggregate_browser_diagnostics_df
-
-    browser_agg = aggregate_browser_diagnostics_df(df)
-    if browser_agg and (render_mode != "static" or browser_agg.get("total_console_errors", 0) > 0):
-        crawl_scope["browser_diagnostics"] = browser_agg
-
-    meta: dict[str, Any] = {
-        "data_sources": sources,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "crawl_scope": crawl_scope,
-    }
-    if run_id is not None:
-        meta["crawl_run_id"] = run_id
-    if crawl_run_created_at:
-        meta["crawl_run_created_at"] = crawl_run_created_at
-    if google_data:
-        meta["google_fetched_at"] = google_data.get("fetched_at")
-        meta["google_date_range_days"] = google_data.get("date_range_days")
-        gsc = google_data.get("gsc") or {}
-        if isinstance(gsc, dict) and gsc.get("row_count") is not None:
-            meta["gsc_row_count"] = gsc.get("row_count")
-    if keywords_data:
-        meta["keywords_enriched_at"] = keywords_data.get("enriched_at") or keywords_data.get("fetched_at")
-    if gsc_links_data:
-        meta["gsc_links_imported_at"] = gsc_links_data.get("imported_at")
-        meta["gsc_links_referring_domains"] = len(gsc_links_data.get("top_linking_sites") or [])
-        sample_n = len(gsc_links_data.get("sample_links") or [])
-        latest_n = len(gsc_links_data.get("latest_links") or [])
-        meta["gsc_links_sample_count"] = sample_n + latest_n
-    if isinstance(llm_meta, dict):
-        meta["llm"] = llm_meta
-    logo_url = (str((config or {}).get("export_logo_url") or "")).strip()
-    if logo_url:
-        meta["export_logo_url"] = logo_url
-    return meta
-
-
-def _build_keyword_opportunities(df: pd.DataFrame, config: dict[str, str] | None) -> dict[str, Any]:
-    if not get_bool(config or {}, "include_keyword_opportunities", True):
-        return {}
-    if "status" not in df.columns or df.empty:
-        return {"quick_wins": [], "high_value": [], "token_topic_clusters": []}
-    success_df = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)]
-    if success_df.empty:
-        return {"quick_wins": [], "high_value": [], "token_topic_clusters": []}
-    candidates = extract_candidates_from_df(success_df)
-    if not candidates:
-        return {"quick_wins": [], "high_value": [], "token_topic_clusters": []}
-    corpus_size = len(success_df)
-    scored = score_keywords(candidates, corpus_size=corpus_size)
-    clusters = cluster_keywords(scored)
-    quick_wins = [s for s in scored if s.get("difficulty", 100) < 60][:10]
-    high_value = [s for s in scored if (s.get("volume") or 0) >= 0.5][:10]
-    if not high_value:
-        high_value = scored[:10]
-    return {
-        "quick_wins": quick_wins[:10],
-        "high_value": high_value[:10],
-        "token_topic_clusters": filter_topic_clusters(clusters)[:50],
-    }
-
-
-def _build_image_inventory(
-    links: list[dict[str, Any]],
-    config: Optional[dict[str, str]],
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    from ..analysis.image_probe import collect_image_refs_from_links, probe_image_urls
-
-    refs = collect_image_refs_from_links(links)
-    unoptimized_min_kb = get_int(config or {}, "image_unoptimized_min_kb", 200) or 200
-    summary: dict[str, Any] = {
-        "probed": 0,
-        "failed": 0,
-        "total_bytes": 0,
-        "over_threshold_count": 0,
-        "unoptimized_min_kb": unoptimized_min_kb,
-        "inventory_available": False,
-    }
-    if not get_bool(config or {}, "probe_image_inventory", False):
-        return [], summary
-
-    max_urls = get_int(config or {}, "max_image_probe_urls", 500) or 500
-    concurrency = get_int(config or {}, "image_probe_concurrency", 6) or 6
-    probe_timeout = get_int(config or {}, "image_probe_timeout", 8) or 8
-    url_list = list(refs.keys())[:max_urls]
-    if not url_list:
-        return [], summary
-
-    print(f"  Probing up to {len(url_list)} image URL(s)...", flush=True)
-    probed = probe_image_urls(
-        url_list,
-        concurrency=concurrency,
-        timeout=probe_timeout,
-    )
-    threshold_bytes = unoptimized_min_kb * 1024
-    inventory: list[dict[str, Any]] = []
-    for row in probed:
-        url = row.get("url")
-        meta = refs.get(str(url or ""), {"source_pages": set(), "kinds": set()})
-        size = row.get("size_bytes")
-        entry = {
-            "url": url,
-            "status": row.get("status"),
-            "content_type": row.get("content_type"),
-            "size_bytes": size,
-            "error": row.get("error"),
-            "source_pages": sorted(meta.get("source_pages") or []),
-            "kinds": sorted(meta.get("kinds") or []),
-        }
-        inventory.append(entry)
-        summary["probed"] += 1
-        if row.get("error") or row.get("status") is None:
-            summary["failed"] += 1
-        if size is not None:
-            summary["total_bytes"] += int(size)
-            if int(size) >= threshold_bytes:
-                summary["over_threshold_count"] += 1
-    summary["inventory_available"] = True
-    print(f"  Image probe complete ({summary['probed']} URLs, {summary['failed']} failed).", flush=True)
-    return inventory, summary
-
+from .categories import build_categories
+from .content_analytics import (
+    _build_content_analytics,
+    _build_depth_distribution,
+    _build_image_inventory,
+    _build_keyword_opportunities,
+    _build_response_time_stats,
+    _build_social_coverage,
+    _build_tech_stack_summary,
+    _build_text_content_analysis,
+    _parse_top_keywords_items,
+)
+from .edges_report import build_edges_from_df
+from .lighthouse_report import (
+    _derive_expected_host,
+    _pick_lighthouse_summary,
+    build_lighthouse_by_url_for_report,
+    fetch_site_ssl_expires_iso,
+    filter_lighthouse_by_host,
+    lighthouse_for_url,
+)
+from .report_metadata import (
+    _build_hreflang_summary,
+    _build_outbound_link_domains,
+    _build_report_metadata,
+    _build_url_fingerprints,
+    _parse_page_analysis_cell,
+    _validate_report_url_counts,
+)
+from .seo_summary import (
+    META_DESC_LEN_MAX,
+    META_DESC_LEN_MIN,
+    THIN_CONTENT_CHARS,
+    TITLE_LEN_MAX,
+    TITLE_LEN_MIN,
+    _compute_summary_seo_issues,
+)
+from .site_level import _fetch_site_level
+
+# Backward-compatible re-exports for tests and external imports.
+__all__ = [
+    "run_simple_report",
+    "build_edges_from_df",
+    "build_lighthouse_by_url_for_report",
+    "fetch_site_ssl_expires_iso",
+    "filter_lighthouse_by_host",
+    "lighthouse_for_url",
+    "_fetch_site_level",
+    "_compute_summary_seo_issues",
+    "_build_content_analytics",
+    "_build_text_content_analysis",
+    "_build_image_inventory",
+    "_build_report_metadata",
+]
 
 def run_simple_report(
     max_fetch_for_edges: int = 300,
@@ -1737,6 +633,79 @@ def run_simple_report(
                 "images_total": int(pd.to_numeric(row.get("images_total"), errors="coerce") or 0),
             })
 
+    title_short: list[dict[str, Any]] = []
+    title_long: list[dict[str, Any]] = []
+    if "title" in df.columns:
+        titles = df["title"].fillna("").astype(str)
+        tl = titles.str.len()
+        for i, row in df.iterrows():
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            u = str(u).strip()
+            title_str = titles.iloc[i].strip()
+            n = int(tl.iloc[i])
+            if n == 0:
+                continue
+            if n < TITLE_LEN_MIN:
+                title_short.append({"url": u, "title": title_str, "title_length": n})
+            elif n > TITLE_LEN_MAX:
+                title_long.append({"url": u, "title": title_str, "title_length": n})
+
+    slow_response: list[dict[str, Any]] = []
+    if "response_time_ms" in df.columns:
+        rt = pd.to_numeric(df["response_time_ms"], errors="coerce")
+        for i, row in df.iterrows():
+            ms = rt.iloc[i]
+            if pd.isna(ms) or float(ms) <= 2000:
+                continue
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            slow_response.append({"url": str(u).strip(), "response_time_ms": int(ms)})
+
+    missing_html_lang: list[dict[str, Any]] = []
+    invalid_viewport: list[dict[str, Any]] = []
+    if "html_lang" in success_df_urls.columns:
+        for _, row in success_df_urls.iterrows():
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            lang = str(row.get("html_lang") or "").strip()
+            if not lang:
+                missing_html_lang.append({"url": str(u).strip()})
+    if "viewport_present" in success_df_urls.columns:
+        vp = success_df_urls["viewport_present"]
+        for _, row in success_df_urls.iterrows():
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            if not bool(row.get("viewport_present")):
+                invalid_viewport.append({"url": str(u).strip()})
+
+    high_reading_level: list[dict[str, Any]] = []
+    very_thin_content: list[dict[str, Any]] = []
+    if "reading_level" in success_df_urls.columns:
+        rl = pd.to_numeric(success_df_urls["reading_level"], errors="coerce")
+        for i, row in success_df_urls.iterrows():
+            val = rl.loc[i]
+            if pd.isna(val) or float(val) <= 12:
+                continue
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            high_reading_level.append({"url": str(u).strip(), "reading_level": float(val)})
+    if "word_count" in success_df_urls.columns:
+        wc = pd.to_numeric(success_df_urls["word_count"], errors="coerce").fillna(0).astype(int)
+        for i, row in success_df_urls.iterrows():
+            w = int(wc.loc[i])
+            if w <= 0 or w >= 100:
+                continue
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            very_thin_content.append({"url": str(u).strip(), "word_count": w})
+
     content_urls = {
         "missing_h1": missing_h1,
         "missing_title": missing_title,
@@ -1750,6 +719,13 @@ def run_simple_report(
         "missing_alt": missing_alt,
         "missing_lazy": missing_lazy,
         "missing_dimensions": missing_dimensions,
+        "title_short": title_short,
+        "title_long": title_long,
+        "slow_response": slow_response,
+        "missing_html_lang": missing_html_lang,
+        "invalid_viewport": invalid_viewport,
+        "high_reading_level": high_reading_level,
+        "very_thin_content": very_thin_content,
     }
 
     emit_progress("report", "content_analytics", message="Building content analytics")
@@ -1781,6 +757,65 @@ def run_simple_report(
     depth_distribution = _build_depth_distribution(df)
     image_inventory, image_inventory_summary = _build_image_inventory(links, config)
 
+    hreflang_issue_urls: list[dict[str, Any]] = []
+    try:
+        from .categories._helpers import _hreflang_issues
+
+        for issue in _hreflang_issues(success_df_urls if len(success_df_urls) else df):
+            hreflang_issue_urls.append({
+                "url": issue.get("url") or "",
+                "message": issue.get("message") or "",
+                "priority": issue.get("priority") or "Medium",
+            })
+    except Exception:
+        hreflang_issue_urls = []
+
+    lighthouse_failure_urls: dict[str, list[dict[str, Any]]] = {
+        "lcp": [], "inp": [], "cls": [], "seo": [],
+    }
+    if lighthouse_by_url:
+        audit_map = {
+            "lcp": "largest-contentful-paint",
+            "inp": "interaction-to-next-paint",
+            "cls": "cumulative-layout-shift",
+            "seo": "seo",
+        }
+        for url, lh in lighthouse_by_url.items():
+            if not isinstance(lh, dict):
+                continue
+            audits = lh.get("audits") if isinstance(lh.get("audits"), dict) else {}
+            for bucket, audit_id in audit_map.items():
+                audit = audits.get(audit_id) if isinstance(audits, dict) else None
+                if not isinstance(audit, dict):
+                    continue
+                score = audit.get("score")
+                if score is not None and float(score) < 0.9:
+                    lighthouse_failure_urls[bucket].append({
+                        "url": str(url),
+                        "score": score,
+                        "displayValue": audit.get("displayValue"),
+                    })
+
+    optional_audit_urls: dict[str, list[dict[str, Any]]] = {
+        "spell": [], "html": [], "amp": [], "pagination": [],
+    }
+    for cat in categories:
+        if not isinstance(cat, dict):
+            continue
+        for issue in cat.get("issues") or []:
+            if not isinstance(issue, dict):
+                continue
+            msg = str(issue.get("message") or "").lower()
+            rec = {"url": issue.get("url") or "", "message": issue.get("message") or ""}
+            if "spell" in msg:
+                optional_audit_urls["spell"].append(rec)
+            elif "html" in msg and "validation" in msg:
+                optional_audit_urls["html"].append(rec)
+            elif "amp" in msg:
+                optional_audit_urls["amp"].append(rec)
+            elif "pagination" in msg or "rel=prev" in msg or "rel=next" in msg:
+                optional_audit_urls["pagination"].append(rec)
+
     report_data = {
         "site_name": site_display,
         "report_title": report_display_title,
@@ -1809,6 +844,9 @@ def run_simple_report(
         "top_pages": top_pages,
         "links": links,
         "content_urls": content_urls,
+        "hreflang_issue_urls": hreflang_issue_urls,
+        "lighthouse_failure_urls": lighthouse_failure_urls,
+        "optional_audit_urls": optional_audit_urls,
         "security_findings": security_findings,
         "content_analytics": content_analytics,
         "text_content_analysis": text_content_analysis,

@@ -268,6 +268,7 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="?",
         choices=[
             "crawl",
+            "content_analysis",
             "report",
             "plot",
             "lighthouse",

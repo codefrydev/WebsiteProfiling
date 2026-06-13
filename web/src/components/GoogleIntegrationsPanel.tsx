@@ -796,7 +796,7 @@ export default function GoogleIntegrationsPanel({
   ) : null;
 
   const infoBannerText =
-    'Google Client ID/Secret and service account keys are stored in the database. Each site keeps its own OAuth connection and Search Console / Analytics property IDs.';
+    'Google Client ID/Secret and service account JSON are stored app-wide in the database. Upload a service account for API access without per-site OAuth, or connect each site with OAuth for user-delegated access. Search Console and Analytics property IDs remain per site.';
 
   const infoBanner = (
     <p className="rounded-lg border border-default bg-brand-800/50 px-4 py-2.5 text-xs leading-relaxed text-muted-foreground">

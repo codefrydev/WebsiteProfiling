@@ -553,7 +553,7 @@ def test_fetch_site_level_includes_ads_and_security(monkeypatch):
 
     session = MagicMock()
     session.get.side_effect = fake_get
-    monkeypatch.setattr("website_profiling.reporting.builder.requests.Session", lambda: session)
+    monkeypatch.setattr("website_profiling.reporting.site_level.requests.Session", lambda: session)
     out = _fetch_site_level("https://example.com/", timeout=1)
     assert out["ads_txt_present"] is True
     assert out["security_txt_present"] is True

@@ -125,6 +125,10 @@ def run(cfg: dict, args: argparse.Namespace) -> None:
     use_database = True
 
     run_crawl = args.command == "crawl" or (args.command is None and get_bool(cfg, "run_crawl", True))
+    run_content_analysis = (
+        args.command == "content_analysis"
+        or (args.command is None and get_bool(cfg, "run_content_analysis", False))
+    )
     run_report = args.command == "report" or (args.command is None and get_bool(cfg, "run_report", True))
     run_plot = args.command == "plot" or (args.command is None and get_bool(cfg, "run_plot", False))
     run_lighthouse = args.command is None and get_bool(cfg, "run_lighthouse", False)
@@ -132,12 +136,14 @@ def run(cfg: dict, args: argparse.Namespace) -> None:
     lighthouse_max_pages = _cfg_int(cfg, "lighthouse_max_pages", 20)
 
     if args.command is None and (
-        run_crawl or run_lighthouse or run_lighthouse_on_pages or run_report or run_plot
+        run_crawl or run_content_analysis or run_lighthouse or run_lighthouse_on_pages or run_report or run_plot
     ):
         emit_phase_start("config", message="Resolving pipeline configuration")
         steps = []
         if run_crawl:
             steps.append("crawl")
+        if run_content_analysis:
+            steps.append("content-analysis")
         if run_lighthouse_on_pages:
             steps.append("lighthouse-on-pages")
         elif run_lighthouse:
@@ -153,6 +159,11 @@ def run(cfg: dict, args: argparse.Namespace) -> None:
 
     if run_crawl:
         phase_results.append(run_pipeline_phase("crawl", lambda: _run_crawl(cfg, use_database)))
+
+    if run_content_analysis and use_database:
+        phase_results.append(
+            run_pipeline_phase("content_analysis", lambda: _run_content_analysis(cfg, use_database))
+        )
 
     if run_lighthouse_on_pages and use_database:
         phase_results.append(
@@ -215,6 +226,11 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
     preserve_crawl_history = get_bool(cfg, "preserve_crawl_history", True)
     store_content_excerpt = get_bool(cfg, "store_content_excerpt", False)
     content_excerpt_max_chars = _cfg_int(cfg, "content_excerpt_max_chars", 4096)
+    store_page_html = get_bool(cfg, "store_page_html", False)
+    max_stored_html_bytes = _cfg_int(cfg, "max_stored_html_bytes", 2_097_152)
+    run_content_analysis = get_bool(cfg, "run_content_analysis", False)
+    content_analysis_strategy = (cfg.get("content_analysis_strategy") or "main_only").strip()
+    content_analysis_workers = _cfg_int(cfg, "content_analysis_workers", 4)
     crawl_stream_to_db = get_bool(cfg, "crawl_stream_to_db", False)
     property_id = active_property_id_from_cfg(cfg)
     render_mode = _normalize_render_mode(cfg)
@@ -258,6 +274,11 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
         preserve_crawl_history=preserve_crawl_history,
         store_content_excerpt=store_content_excerpt,
         content_excerpt_max_chars=content_excerpt_max_chars,
+        store_page_html=store_page_html,
+        max_stored_html_bytes=max_stored_html_bytes,
+        run_content_analysis=run_content_analysis,
+        content_analysis_strategy=content_analysis_strategy,
+        content_analysis_workers=content_analysis_workers,
         crawl_stream_to_db=crawl_stream_to_db,
         property_id=property_id,
         render_mode=render_mode,
@@ -287,6 +308,33 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
     console_print("[Crawl] Done.", flush=True)
     emit_phase_done("crawl")
     console_print("Crawl results: PostgreSQL")
+
+
+def _run_content_analysis(cfg: dict, use_database: bool) -> None:
+    if not use_database:
+        console_print("[Content analysis] Skipped (database required).", flush=True)
+        return
+    if not get_bool(cfg, "store_page_html", False):
+        console_print(
+            "[Content analysis] Skipped: enable store_page_html to persist HTML for analysis.",
+            flush=True,
+        )
+        return
+
+    from ..content_analysis import run_content_analysis
+
+    store_content_excerpt = get_bool(cfg, "store_content_excerpt", False)
+    excerpt_max = _cfg_int(cfg, "content_excerpt_max_chars", 4096)
+    strategy = (cfg.get("content_analysis_strategy") or "main_only").strip().lower()
+    workers = _cfg_int(cfg, "content_analysis_workers", 4)
+
+    console_print("[Content analysis] Starting...", flush=True)
+    run_content_analysis(
+        excerpt_max_chars=excerpt_max if store_content_excerpt else 0,
+        strategy=strategy,
+        workers=workers,
+    )
+    console_print("[Content analysis] Done.", flush=True)
 
 
 def _run_lighthouse_on_pages(cfg: dict, lighthouse_max_pages: int) -> None:
