@@ -276,6 +276,7 @@ function Invoke-PytestTools {
         tests/test_export_sitemap.py `
         tests/test_mcp_registry.py `
         tests/test_mcp_resources.py `
+        tests/test_tools_gate100_coverage.py `
         tests/test_tools_branch_coverage.py `
         --cov=website_profiling.tools `
         --cov-config=.coveragerc.tools `

@@ -51,6 +51,8 @@ from .seo_summary import (
     META_DESC_LEN_MAX,
     META_DESC_LEN_MIN,
     THIN_CONTENT_CHARS,
+    TITLE_LEN_MAX,
+    TITLE_LEN_MIN,
     _compute_summary_seo_issues,
 )
 from .site_level import _fetch_site_level
@@ -631,6 +633,79 @@ def run_simple_report(
                 "images_total": int(pd.to_numeric(row.get("images_total"), errors="coerce") or 0),
             })
 
+    title_short: list[dict[str, Any]] = []
+    title_long: list[dict[str, Any]] = []
+    if "title" in df.columns:
+        titles = df["title"].fillna("").astype(str)
+        tl = titles.str.len()
+        for i, row in df.iterrows():
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            u = str(u).strip()
+            title_str = titles.iloc[i].strip()
+            n = int(tl.iloc[i])
+            if n == 0:
+                continue
+            if n < TITLE_LEN_MIN:
+                title_short.append({"url": u, "title": title_str, "title_length": n})
+            elif n > TITLE_LEN_MAX:
+                title_long.append({"url": u, "title": title_str, "title_length": n})
+
+    slow_response: list[dict[str, Any]] = []
+    if "response_time_ms" in df.columns:
+        rt = pd.to_numeric(df["response_time_ms"], errors="coerce")
+        for i, row in df.iterrows():
+            ms = rt.iloc[i]
+            if pd.isna(ms) or float(ms) <= 2000:
+                continue
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            slow_response.append({"url": str(u).strip(), "response_time_ms": int(ms)})
+
+    missing_html_lang: list[dict[str, Any]] = []
+    invalid_viewport: list[dict[str, Any]] = []
+    if "html_lang" in success_df_urls.columns:
+        for _, row in success_df_urls.iterrows():
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            lang = str(row.get("html_lang") or "").strip()
+            if not lang:
+                missing_html_lang.append({"url": str(u).strip()})
+    if "viewport_present" in success_df_urls.columns:
+        vp = success_df_urls["viewport_present"]
+        for _, row in success_df_urls.iterrows():
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            if not bool(row.get("viewport_present")):
+                invalid_viewport.append({"url": str(u).strip()})
+
+    high_reading_level: list[dict[str, Any]] = []
+    very_thin_content: list[dict[str, Any]] = []
+    if "reading_level" in success_df_urls.columns:
+        rl = pd.to_numeric(success_df_urls["reading_level"], errors="coerce")
+        for i, row in success_df_urls.iterrows():
+            val = rl.loc[i]
+            if pd.isna(val) or float(val) <= 12:
+                continue
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            high_reading_level.append({"url": str(u).strip(), "reading_level": float(val)})
+    if "word_count" in success_df_urls.columns:
+        wc = pd.to_numeric(success_df_urls["word_count"], errors="coerce").fillna(0).astype(int)
+        for i, row in success_df_urls.iterrows():
+            w = int(wc.loc[i])
+            if w <= 0 or w >= 100:
+                continue
+            u = row.get("url")
+            if pd.isna(u) or not u:
+                continue
+            very_thin_content.append({"url": str(u).strip(), "word_count": w})
+
     content_urls = {
         "missing_h1": missing_h1,
         "missing_title": missing_title,
@@ -644,6 +719,13 @@ def run_simple_report(
         "missing_alt": missing_alt,
         "missing_lazy": missing_lazy,
         "missing_dimensions": missing_dimensions,
+        "title_short": title_short,
+        "title_long": title_long,
+        "slow_response": slow_response,
+        "missing_html_lang": missing_html_lang,
+        "invalid_viewport": invalid_viewport,
+        "high_reading_level": high_reading_level,
+        "very_thin_content": very_thin_content,
     }
 
     emit_progress("report", "content_analytics", message="Building content analytics")
@@ -675,6 +757,65 @@ def run_simple_report(
     depth_distribution = _build_depth_distribution(df)
     image_inventory, image_inventory_summary = _build_image_inventory(links, config)
 
+    hreflang_issue_urls: list[dict[str, Any]] = []
+    try:
+        from .categories._helpers import _hreflang_issues
+
+        for issue in _hreflang_issues(success_df_urls if len(success_df_urls) else df):
+            hreflang_issue_urls.append({
+                "url": issue.get("url") or "",
+                "message": issue.get("message") or "",
+                "priority": issue.get("priority") or "Medium",
+            })
+    except Exception:
+        hreflang_issue_urls = []
+
+    lighthouse_failure_urls: dict[str, list[dict[str, Any]]] = {
+        "lcp": [], "inp": [], "cls": [], "seo": [],
+    }
+    if lighthouse_by_url:
+        audit_map = {
+            "lcp": "largest-contentful-paint",
+            "inp": "interaction-to-next-paint",
+            "cls": "cumulative-layout-shift",
+            "seo": "seo",
+        }
+        for url, lh in lighthouse_by_url.items():
+            if not isinstance(lh, dict):
+                continue
+            audits = lh.get("audits") if isinstance(lh.get("audits"), dict) else {}
+            for bucket, audit_id in audit_map.items():
+                audit = audits.get(audit_id) if isinstance(audits, dict) else None
+                if not isinstance(audit, dict):
+                    continue
+                score = audit.get("score")
+                if score is not None and float(score) < 0.9:
+                    lighthouse_failure_urls[bucket].append({
+                        "url": str(url),
+                        "score": score,
+                        "displayValue": audit.get("displayValue"),
+                    })
+
+    optional_audit_urls: dict[str, list[dict[str, Any]]] = {
+        "spell": [], "html": [], "amp": [], "pagination": [],
+    }
+    for cat in categories:
+        if not isinstance(cat, dict):
+            continue
+        for issue in cat.get("issues") or []:
+            if not isinstance(issue, dict):
+                continue
+            msg = str(issue.get("message") or "").lower()
+            rec = {"url": issue.get("url") or "", "message": issue.get("message") or ""}
+            if "spell" in msg:
+                optional_audit_urls["spell"].append(rec)
+            elif "html" in msg and "validation" in msg:
+                optional_audit_urls["html"].append(rec)
+            elif "amp" in msg:
+                optional_audit_urls["amp"].append(rec)
+            elif "pagination" in msg or "rel=prev" in msg or "rel=next" in msg:
+                optional_audit_urls["pagination"].append(rec)
+
     report_data = {
         "site_name": site_display,
         "report_title": report_display_title,
@@ -703,6 +844,9 @@ def run_simple_report(
         "top_pages": top_pages,
         "links": links,
         "content_urls": content_urls,
+        "hreflang_issue_urls": hreflang_issue_urls,
+        "lighthouse_failure_urls": lighthouse_failure_urls,
+        "optional_audit_urls": optional_audit_urls,
         "security_findings": security_findings,
         "content_analytics": content_analytics,
         "text_content_analysis": text_content_analysis,

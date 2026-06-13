@@ -89,3 +89,77 @@ def read_google_data_full(
         return data if isinstance(data, dict) else None
     except Exception:
         return None
+
+
+def read_prior_google_snapshot(
+    conn: Connection,
+    property_id: int | None = None,
+    *,
+    skip: int = 1,
+) -> Optional[dict[str, Any]]:
+    """Return the Nth-most-recent google_data row (skip=1 → prior snapshot)."""
+    try:
+        offset = max(0, int(skip))
+        if property_id is not None:
+            cur = conn.execute(
+                """
+                SELECT data FROM google_data
+                WHERE property_id = %s
+                ORDER BY id DESC
+                OFFSET %s LIMIT 1
+                """,
+                (property_id, offset),
+            )
+        else:
+            cur = conn.execute(
+                """
+                SELECT data FROM google_data
+                ORDER BY id DESC
+                OFFSET %s LIMIT 1
+                """,
+                (offset,),
+            )
+        row = cur.fetchone()
+        if row is None:
+            return None
+        data = _parse_row_json(row)
+        return data if isinstance(data, dict) else None
+    except Exception:
+        return None
+
+
+def gsc_row_deltas(
+    current_rows: list[dict[str, Any]],
+    prior_rows: list[dict[str, Any]],
+    *,
+    key_field: str,
+) -> list[dict[str, Any]]:
+    """Compute click/impression/position deltas keyed by page or query field."""
+    prior_by_key: dict[str, dict[str, Any]] = {}
+    for row in prior_rows:
+        if not isinstance(row, dict):
+            continue
+        key = str(row.get(key_field) or "").strip().lower()
+        if key:
+            prior_by_key[key] = row
+
+    deltas: list[dict[str, Any]] = []
+    for row in current_rows:
+        if not isinstance(row, dict):
+            continue
+        key = str(row.get(key_field) or "").strip().lower()
+        if not key:
+            continue
+        prior = prior_by_key.get(key) or {}
+        cur_clicks = float(row.get("clicks") or 0)
+        pri_clicks = float(prior.get("clicks") or 0)
+        cur_impr = float(row.get("impressions") or 0)
+        pri_impr = float(prior.get("impressions") or 0)
+        cur_pos = float(row.get("position") or row.get("avg_position") or 0)
+        pri_pos = float(prior.get("position") or prior.get("avg_position") or 0)
+        out = dict(row)
+        out["clicks_delta"] = cur_clicks - pri_clicks
+        out["impressions_delta"] = cur_impr - pri_impr
+        out["position_delta"] = cur_pos - pri_pos if pri_pos else None
+        deltas.append(out)
+    return deltas

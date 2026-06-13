@@ -73,7 +73,7 @@ Repository: [codefrydev/WebsiteProfiling](https://github.com/codefrydev/WebsiteP
   </tr>
 </table>
 
-Also included: **AI chat** over audit data (optional), **240 MCP tools** (domain-scoped servers), keyword explorer, backlinks, compare runs, and portfolio management for agencies.
+Also included: **AI chat** over audit data (optional), **340 MCP tools** (domain-scoped servers), keyword explorer, backlinks, compare runs, and portfolio management for agencies.
 
 <p align="center">
   <img src="docs/assets/social-preview.png" alt="Site Audit preview" width="640">
@@ -91,7 +91,7 @@ WebsiteProfiling/
 │   ├── integrations/          # Google Search Console, GA4, Bing, CrUX
 │   ├── llm/                   # AI enrich + chat agent
 │   ├── tools/                 # Exports, audit query tools, MCP helpers
-│   ├── mcp/                   # MCP server (240 read-only tools, domain bundles)
+│   ├── mcp/                   # MCP server (340 read-only tools, domain bundles)
 │   ├── db/                    # PostgreSQL storage layer
 │   ├── commands/              # CLI subcommands
 │   ├── cli.py                 # Pipeline entrypoint
@@ -186,7 +186,7 @@ Google Search Console / Analytics: connect via **Integrations** (gear icon) in t
 | **Ollama** | Local daemon at `http://127.0.0.1:11434`. Chat UI lists installed models plus the live Ollama cloud catalog (billing: free local, account free tier, Pro). Native tool calling when supported; otherwise ReAct fallback. Pick the model in-chat without leaving the page. |
 | **OpenAI** / **Anthropic** | API key in AI settings; native tool calling with streaming. |
 
-The agent uses the same **240 read-only audit tools** as the MCP server (`docs/MCP.md`), with **dynamic routing** (~45 tools per turn plus router meta-tools). Responses stream over SSE (`POST /api/chat`) with status, tool activity, and tokens. Sessions are saved per property (`chat_sessions` / `chat_messages`).
+The agent uses the same **340 read-only audit tools** as the MCP server (`docs/MCP.md`), with **dynamic routing** (~45 tools per turn plus router meta-tools). Responses stream over SSE (`POST /api/chat`) with status, tool activity, and tokens. Sessions are saved per property (`chat_sessions` / `chat_messages`).
 
 Production: `docker-compose.prod.yml` (set `POSTGRES_PASSWORD`, `AUTH_SECRET`).
 

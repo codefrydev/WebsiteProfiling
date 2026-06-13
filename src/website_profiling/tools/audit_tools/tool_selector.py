@@ -27,7 +27,7 @@ DOMAIN_KEYWORDS: dict[str, tuple[str, ...]] = {
     "security": ("security", "tls", "hsts", "ssl"),
     "indexation": ("indexation", "sitemap", "hreflang", "indexed"),
     "content": ("duplicate content", "thin content", "word count", "readability"),
-    "ops": ("access log", "log analysis", "log upload", "crawl run", "integration status"),
+    "ops": ("access log", "log analysis", "log upload", "crawl run", "integration status", "5xx", "googlebot"),
     "portfolio": ("overview", "health score", "category scores", "executive", "portfolio", "audit summary"),
     "ctr": ("ctr", "snippet", "title meta ctr"),
 }
@@ -38,9 +38,13 @@ PLAYBOOK_ANCHORS: dict[str, tuple[str, ...]] = {
     "export": ("export_audit_report", "export_list_as_csv"),
     "issues": ("get_critical_issues", "get_issue_priority_breakdown", "list_issues"),
     "portfolio": ("get_category_scores", "list_audit_categories"),
-    "performance": ("get_lighthouse_summary",),
-    "drift": ("compare_reports", "compare_issue_deltas"),
-    "google": ("get_gsc_top_queries", "get_ga4_page_metrics"),
+    "performance": ("get_lighthouse_summary", "list_pages_slow_response", "list_lighthouse_failure_lcp"),
+    "drift": ("compare_reports", "compare_issue_deltas", "list_compare_traffic_losers"),
+    "google": ("get_gsc_top_queries", "get_ga4_page_metrics", "list_gsc_decaying_queries", "list_gsc_decaying_pages"),
+    "keywords": ("get_striking_distance_keywords", "get_keyword_cannibalisation", "list_keyword_rank_declines"),
+    "indexation": ("list_hreflang_issue_pages", "list_indexation_gaps"),
+    "backlinks": ("list_referring_domains", "list_backlinks_by_anchor_text"),
+    "ops": ("list_log_paths_by_hits", "list_log_5xx_paths"),
 }
 
 

@@ -12,7 +12,7 @@ export PYTHONPATH=src
 
 ## Cursor configuration
 
-Site Audit exposes **domain-scoped MCP servers** (like Cursor optional plugins). Connect only the bundles you need instead of loading all 240 tools in one server.
+Site Audit exposes **domain-scoped MCP servers** (like Cursor optional plugins). Connect only the bundles you need instead of loading all 340 tools in one server.
 
 | `WP_MCP_DOMAIN` | Typical tools | Use when |
 |-----------------|---------------|----------|
@@ -20,7 +20,7 @@ Site Audit exposes **domain-scoped MCP servers** (like Cursor optional plugins).
 | `crawl` | Crawl, on-page, schema, accessibility | Technical crawl audits |
 | `google` | Google, insight, CTR, keywords | GSC/GA4 analysis |
 | `links` | Links, backlinks, indexation | Link architecture |
-| `full` | All 240 tools | Debugging / legacy single-server setup |
+| `full` | All 340 tools | Debugging / legacy single-server setup |
 
 Add to `.cursor/mcp.json` (or Cursor MCP settings):
 
@@ -84,7 +84,7 @@ Single-server legacy setup (all tools):
 | `audit://tools` | Tool catalog for the connected `WP_MCP_DOMAIN` server |
 | `audit://domains` | Available MCP domain bundles and tool groupings |
 
-## Tools (240 read-only + export)
+## Tools (340 read-only + export)
 
 ### Router and insight (Tier 0 — `WP_MCP_DOMAIN=core`)
 

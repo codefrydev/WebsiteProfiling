@@ -26,6 +26,7 @@ def get_data_coverage_report(conn: Connection, ctx: AuditToolContext, args: dict
     google = scoped.load_google(conn)
     keywords = scoped.load_keywords(conn)
     gsc_links = scoped.load_gsc_links(conn)
+    google_full = scoped.load_google_full(conn)
 
     checks: list[dict[str, Any]] = []
     checks.append(_check(
@@ -78,6 +79,43 @@ def get_data_coverage_report(conn: Connection, ctx: AuditToolContext, args: dict
         "audit_report",
         bool(payload),
         "Run a site audit crawl and report build.",
+    ))
+    checks.append(_check(
+        "gsc_full_blob",
+        bool(google_full and isinstance(google_full.get("gsc_full"), dict)),
+        "Re-run Google fetch to populate gsc_full for list/decay tools.",
+    ))
+    checks.append(_check(
+        "ga4_full_blob",
+        bool(google_full and isinstance(google_full.get("ga4_full"), dict)),
+        "Re-run GA4 fetch to populate ga4_full for landing-page list tools.",
+    ))
+    checks.append(_check(
+        "keyword_history",
+        bool(keywords and keywords.get("fetched_at")),
+        "Run keyword enrichment twice for rank delta tools.",
+    ))
+    checks.append(_check(
+        "text_content_analysis",
+        bool(payload.get("text_content_analysis")),
+        "Report build includes text_content_analysis from crawl.",
+    ))
+    checks.append(_check(
+        "semantic_keyword_clusters",
+        bool(payload.get("semantic_keyword_clusters")),
+        "Enable llm_enable_keyword_clusters for cluster list tools.",
+    ))
+    checks.append(_check(
+        "access_log",
+        bool(payload.get("log_analysis") or payload.get("access_log_summary")),
+        "Upload access logs in Integrations for log list tools.",
+    ))
+    from ...integrations.google.store import read_prior_google_snapshot
+    prior_google = read_prior_google_snapshot(conn, scoped.property_id, skip=1) if scoped.property_id else None
+    checks.append(_check(
+        "prior_google_snapshot",
+        bool(prior_google),
+        "Run at least two Google data fetches for decay/compare period tools.",
     ))
 
     missing = [c["signal"] for c in checks if not c["populated"]]

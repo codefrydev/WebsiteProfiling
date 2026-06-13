@@ -153,6 +153,7 @@ run_pytest_tools() {
     tests/test_audit_tools_links_extras.py \
     tests/test_audit_tools_expansion.py \
     tests/test_audit_tools_expansion_coverage.py \
+    tests/test_audit_tools_batch100_coverage.py \
     tests/test_export_custom_coverage.py \
     tests/test_export_artifacts_coverage.py \
     tests/test_export_compare_coverage.py \
@@ -165,6 +166,9 @@ run_pytest_tools() {
     tests/test_export_sitemap.py \
     tests/test_mcp_registry.py \
     tests/test_mcp_resources.py \
+    tests/test_router_tools.py \
+    tests/test_tool_selector.py \
+    tests/test_tools_gate100_coverage.py \
     tests/test_tools_branch_coverage.py \
     --cov=website_profiling.tools \
     --cov-config=.coveragerc.tools \

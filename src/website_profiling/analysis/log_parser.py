@@ -15,6 +15,8 @@ def parse_access_log_lines(lines: list[str]) -> dict[str, Any]:
     """Return hit counts and URL sets from access log lines."""
     url_hits: Counter[str] = Counter()
     status_hits: Counter[str] = Counter()
+    paths_5xx: Counter[str] = Counter()
+    googlebot_path_hits: Counter[str] = Counter()
     googlebot_hits = 0
     parsed_lines = 0
 
@@ -29,16 +31,23 @@ def parse_access_log_lines(lines: list[str]) -> dict[str, Any]:
         path, status, ua = m.group(1), m.group(2), m.group(3).lower()
         url_hits[path] += 1
         status_hits[status] += 1
+        if status.startswith("5"):
+            paths_5xx[path] += 1
         if "googlebot" in ua:
             googlebot_hits += 1
+            googlebot_path_hits[path] += 1
 
     top_urls = [{"path": p, "hits": c} for p, c in url_hits.most_common(100)]
+    paths_5xx_rows = [{"path": p, "hits": c} for p, c in paths_5xx.most_common(100)]
+    googlebot_paths = [{"path": p, "hits": c} for p, c in googlebot_path_hits.most_common(100)]
     return {
         "parsed_lines": parsed_lines,
         "unique_paths": len(url_hits),
         "googlebot_hits": googlebot_hits,
         "status_counts": dict(status_hits),
         "top_paths": top_urls,
+        "paths_5xx": paths_5xx_rows,
+        "googlebot_paths": googlebot_paths,
     }
 
 

@@ -97,6 +97,35 @@ def append_keyword_history(
     conn.commit()
 
 
+def read_keyword_snapshots_for_property(
+    conn: Connection,
+    property_id: int | None,
+    *,
+    limit: int = 2,
+) -> list[dict[str, Any]]:
+    """Return the most recent keyword_data snapshots for rank delta tools."""
+    if property_id is None:
+        return []
+    try:
+        cur = conn.execute(
+            """
+            SELECT fetched_at, data FROM keyword_data
+            WHERE property_id = %s
+            ORDER BY id DESC
+            LIMIT %s
+            """,
+            (property_id, max(1, int(limit))),
+        )
+        out: list[dict[str, Any]] = []
+        for row in cur.fetchall():
+            data = _parse_row_json(row)
+            if isinstance(data, dict):
+                out.append({"fetched_at": row["fetched_at"], **data})
+        return out
+    except Exception:
+        return []
+
+
 def read_keyword_history(
     conn: Connection,
     keyword: str,

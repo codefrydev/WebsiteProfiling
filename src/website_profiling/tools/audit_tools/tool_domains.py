@@ -102,6 +102,35 @@ _DOMAIN_OVERRIDES: dict[str, str] = {
     "list_keywords_ctr_opportunity": "ctr",
     "analyze_serp_snippet_for_url": "ctr",
     "compare_reports": "drift",
+    "compare_gsc_periods": "google",
+    "list_pages_title_too_short": "onpage",
+    "list_pages_title_too_long": "onpage",
+    "list_pages_slow_response": "performance",
+    "list_pages_color_contrast_failures": "accessibility",
+    "list_pages_high_reading_level": "content",
+    "list_pages_very_thin_content": "content",
+    "list_hreflang_issue_pages": "indexation",
+    "list_pages_mixed_language": "content",
+    "list_misaligned_queries": "keywords",
+    "list_referring_domains": "backlinks",
+    "get_anchor_text_distribution": "backlinks",
+    "list_backlinks_by_anchor_text": "backlinks",
+    "list_backlinks_to_url": "backlinks",
+    "list_backlinks_from_domain": "backlinks",
+    "get_keyword_opportunity_score": "keywords",
+    "list_sitemap_urls_not_in_crawl": "indexation",
+    "list_crawl_urls_not_in_sitemap": "indexation",
+    "list_log_googlebot_low_crawl": "ops",
+    "list_redirect_chains_by_length": "crawl",
+    "list_compare_new_issues": "drift",
+    "list_compare_resolved_issues": "drift",
+    "list_compare_lighthouse_regressions": "drift",
+    "list_pages_ai_citation_signals": "geo",
+    "list_pages_missing_llms_txt_reference": "geo",
+    "list_robots_blocked_ai_crawlers": "geo",
+    "list_pages_missing_howto_schema": "geo",
+    "list_pages_missing_article_schema": "geo",
+    "list_gsc_ctr_underperformers": "google",
 }
 
 _ONPAGE_PREFIXES = (
@@ -153,6 +182,8 @@ def classify_tool_domain(name: str) -> str:
     if name in _DOMAIN_OVERRIDES:
         return _DOMAIN_OVERRIDES[name]
     if name.startswith("compare_"):
+        return "drift"
+    if name.startswith("list_compare_"):
         return "drift"
     if name in TIER_0_TOOLS:
         return _DOMAIN_OVERRIDES.get(name, "core")

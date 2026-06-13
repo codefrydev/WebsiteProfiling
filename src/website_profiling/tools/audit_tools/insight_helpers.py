@@ -163,7 +163,7 @@ def composite_page_score(
     issue_flags: list[dict[str, Any]],
     lighthouse: dict[str, Any] | None,
 ) -> dict[str, Any]:
-    score = 70.0
+    score = 75.0
     flags_out: list[str] = []
 
     site_pos = _num((gsc_site or {}).get("position"), 10)
