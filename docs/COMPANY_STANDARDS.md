@@ -1,52 +1,100 @@
-# Company standards
+# Company Standards
 
-WebsiteProfiling (UI: **Site Audit**) is an agency-grade technical SEO and site analysis tool. This document defines how data must be presented and how the product may be used in a professional context.
+This document defines data presentation requirements, crawl scope, and acceptable use for **Site Audit** (repository: WebsiteProfiling) in professional and agency contexts.
+
+**Related documentation:** [README.md](../README.md) · [GLOSSARY.md](GLOSSARY.md) · [Documentation index](README.md)
+
+---
+
+## Purpose
+
+Site Audit is an agency-grade technical SEO and site analysis platform. Reports must clearly distinguish measured data from estimates and third-party integrations. Category scores and heuristics must never be presented as guaranteed ranking or traffic outcomes.
+
+---
 
 ## Data classification
 
-| Class | Meaning | Examples |
-|-------|---------|----------|
-| **Measured** | Direct observation from HTTP crawl or Lighthouse | Status codes, title tags, LCP, header presence |
-| **Search Console** | Google Search Console API | Impressions, clicks, average position |
-| **Analytics** | Google Analytics 4 API | Sessions, users, engagement rate |
-| **Estimated** | Heuristic when external APIs are unavailable | On-site keyword frequency, fixed difficulty placeholder |
-| **AI insight** | LLM enrichment (optional) | Summaries, semantic clusters — always labeled |
+All metrics displayed in the UI or exports must align with one of the following classes:
 
-Audit category scores (0–100) are **internal audit scores**, not Google rankings or guaranteed traffic impact.
+| Class | Definition | Examples |
+|-------|------------|----------|
+| **Measured** | Direct observation from HTTP crawl or Lighthouse | Status codes, title tags, LCP, response headers |
+| **Search Console** | Data retrieved via Google Search Console API | Impressions, clicks, average position |
+| **Analytics** | Data retrieved via Google Analytics 4 API | Sessions, users, engagement rate |
+| **Estimated** | Heuristic derived when external APIs are unavailable | On-site keyword frequency, difficulty placeholders |
+| **AI insight** | Optional LLM-generated content | Summaries, semantic clusters — always labeled |
 
-## Crawl limitations
+**Audit category scores (0–100)** are internal prioritization scores. They are not Google rankings, PageRank, or predicted traffic impact.
 
-- Default crawl uses **HTTP GET + static HTML parsing** (no JavaScript execution). `crawl_render_mode = static` (default).
-- Optional **JavaScript rendering** (`crawl_render_mode = javascript`) loads every page in headless Chromium before parsing — slower (~10–20×) and heavier on memory, but required for many React, Vue, Next.js, Angular, Svelte, and Shopify themes.
-- **Auto rendering** (`crawl_render_mode = auto`) fetches static HTML first, then uses browser fallback when SPA shell heuristics or low outlink counts suggest client-rendered content. Per-page `fetch_method` (`static` vs `rendered`) is stored on crawl rows for provenance.
-- Client-rendered links and SPAs may be under-represented in static-only mode; reports show crawl scope (pages crawled vs limit, robots blocks, render mode, browser diagnostic counts when applicable).
-- JS and auto modes require Playwright + Chromium; the Run audit UI checks availability via `GET /api/crawl/browser-status` before starting a job.
-- Only crawl sites you are **authorized** to test. Respect `robots.txt` unless an admin explicitly overrides for owned properties.
+---
+
+## Crawl scope and rendering
+
+| Mode | Config value | Behavior |
+|------|--------------|----------|
+| Static (default) | `crawl_render_mode = static` | HTTP GET with HTML parsing; no JavaScript execution |
+| JavaScript | `crawl_render_mode = javascript` | Every page loaded in headless Chromium before parsing |
+| Auto | `crawl_render_mode = auto` | Static fetch first; browser fallback when SPA heuristics or low outlink counts indicate client-rendered content |
+
+**Rendering notes:**
+
+- JavaScript mode is approximately 10–20× slower and more memory-intensive than static mode. It is required for many React, Vue, Next.js, Angular, Svelte, and Shopify implementations.
+- Auto mode stores per-page `fetch_method` (`static` or `rendered`) on crawl rows for provenance.
+- Static-only crawls may under-represent client-rendered links and single-page applications. Reports include crawl scope metadata: pages crawled versus limit, robots blocks, render mode, and browser diagnostic counts when applicable.
+- JavaScript and auto modes require Playwright and Chromium. The Run audit UI validates availability via `GET /api/crawl/browser-status` before starting a job.
+
+**Authorization:** Crawl only properties you own or have written permission to test. Respect `robots.txt` unless an administrator explicitly overrides for owned properties.
+
+---
 
 ## Security scanning
 
-- **Passive** checks use crawl response headers (default).
-- **Active** probes (`security_scan_active`) send controlled requests — enable only with written authorization for the target property.
+| Mode | Config | Requirements |
+|------|--------|--------------|
+| Passive | Default | Analysis of response headers from crawl requests |
+| Active | `security_scan_active` | Sends controlled probe requests — enable only with written authorization for the target property |
+
+---
 
 ## Google integrations
 
-- Use official names in client-facing copy: **Google Search Console**, **Google Analytics 4**.
-- Snapshots include fetch time and date range; stale or partial data must not appear as current without a warning.
+- Use official product names in client-facing copy: **Google Search Console**, **Google Analytics 4**.
+- Snapshots must include fetch time and date range.
+- Stale or partial integration data must not appear as current without an explicit warning.
+
+---
 
 ## Agency workflow
 
-- **Properties** group client sites (canonical domain, optional GSC/GA4 binding).
-- An **audit run** is a stored report snapshot (crawl + analysis + optional Lighthouse/Google).
-- Exports (PDF/CSV) include a data source legend.
-- Category titles and issue copy in Python use agency vocabulary (`src/website_profiling/reporting/terminology.py`); see [GLOSSARY.md](GLOSSARY.md).
+| Concept | Definition |
+|---------|------------|
+| **Property** | A client site grouped by canonical domain, with optional GSC/GA4 binding |
+| **Audit run** | A stored report snapshot comprising crawl, analysis, and optional Lighthouse or Google data |
+| **Export** | PDF, CSV, or HTML deliverable including a data source legend |
 
-## Production expectations
+Category titles and issue copy in Python use agency vocabulary (`src/website_profiling/reporting/terminology.py`). See [GLOSSARY.md](GLOSSARY.md) for UI term mappings.
 
-- Do not use default database passwords in production.
-- Protect pipeline and integration APIs with authentication when not on localhost.
-- Back up PostgreSQL regularly (`pg_dump` — see [README.md](../README.md)).
+---
 
-## CI and releases
+## Production requirements
 
-- All PRs should pass Python tests, web typecheck/lint/test, migrations on empty DB, and Docker image build (see `.github/workflows/ci.yml`).
-- Prefer branch protection on `master`: require CI checks before merge.
+| Requirement | Guidance |
+|-------------|----------|
+| Database credentials | Do not use default passwords in production (`POSTGRES_USER`, `POSTGRES_PASSWORD`) |
+| Session auth | Set `AUTH_SECRET`; optionally `AUTH_USER`, `AUTH_PASSWORD`, `AUTH_DEFAULT_ROLE` |
+| API access | Protect pipeline and integration endpoints when not bound to localhost |
+| Backups | Back up PostgreSQL regularly — e.g. `pg_dump -Fc "$DATABASE_URL" > site-audit-$(date +%F).dump` |
+| Client dashboards | `AUTH_DEFAULT_ROLE=client-readonly` (view + chat) or `viewer` (view only, no chat) |
+
+---
+
+## Continuous integration
+
+Pull requests should pass:
+
+- Python tests (three 100% coverage gates: core, reporting, tools)
+- Web typecheck, lint, and Vitest
+- Alembic migrations on an empty database
+- Docker image build
+
+Configuration: [.github/workflows/ci.yml](../.github/workflows/ci.yml). Branch protection on `master` with required CI checks is recommended.

@@ -25,5 +25,5 @@ If you find a vulnerability **in Site Audit itself** (e.g. remote code execution
 ## Safe defaults
 
 - Run production deployments with strong `POSTGRES_PASSWORD` and `AUTH_SECRET` (see `docker-compose.prod.yml`).
-- For client-facing dashboards, set `AUTH_DEFAULT_ROLE=client-readonly` so logins cannot run audits or mutate settings (API enforces 403; UI hides Run audit).
+- For client-facing dashboards, set `AUTH_DEFAULT_ROLE=client-readonly` (view reports and use chat) or `viewer` (view reports only). API enforces 403 on mutations; UI hides **Run audit** for read-only roles.
 - Do not commit `.env`, `.secrets/`, or OAuth client secrets. Google credentials are stored in PostgreSQL (`google_app_settings` and per-property columns on `properties`).

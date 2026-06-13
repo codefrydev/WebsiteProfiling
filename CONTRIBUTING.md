@@ -17,7 +17,7 @@ Thank you for helping improve this project. All contributions are welcome under 
 ./local-run         # dev server → http://localhost:3000/home
 ```
 
-Details: [README.md](README.md), [AGENT.md](AGENT.md).
+Details: [README.md](README.md), [AGENT.md](AGENT.md), [docs/README.md](docs/README.md).
 
 JavaScript/auto crawl needs Playwright (from `requirements.txt`, installed by `./local-run setup`) and Chromium on `PATH` or `CHROME_PATH`. Unit tests mock the browser fetcher; integration tests use `@pytest.mark.browser` and run in the Docker CI job (`tests/test_crawl_fetchers.py`, `tests/test_crawler_browser_e2e.py`). Locally: `./local-test browser` (skips gracefully if Chromium is missing).
 
@@ -26,14 +26,16 @@ JavaScript/auto crawl needs Playwright (from `requirements.txt`, installed by `.
 Match CI before opening a pull request:
 
 ```bash
-./local-test              # full check (recommended)
-./local-test python       # backend only
+./local-test              # full check — three Python 100% gates + web (recommended)
+./local-test python       # backend: core, reporting, and tools coverage gates
 ./local-test browser      # JS crawl integration tests (skips if Chromium unavailable)
-./local-test web            # frontend only
-./local-test quick          # faster; DB must already be running
+./local-test web          # frontend only
+./local-test quick        # faster; DB must already be running
 ```
 
-CI runs Python tests (PostgreSQL + Alembic, 80% coverage gate), web typecheck/lint/vitest, CLI smoke, and a Docker build that also runs browser-marked pytest inside the image (see [.github/workflows/ci.yml](.github/workflows/ci.yml)).
+CI also runs a **Docker** job (image build, browser pytest in container, compose smoke). `./local-test` does not run that job — see [.github/workflows/ci.yml](.github/workflows/ci.yml).
+
+When adding tools coverage tests, register new files in `scripts/local-test.sh`, `scripts/local-test.ps1`, and `.github/workflows/ci.yml` (see [AGENT.md](AGENT.md)).
 
 ## How to contribute
 
@@ -58,13 +60,13 @@ Per-URL GSC/GA4 in Link Explorer uses two histories:
 | Store | How it is created | Compare |
 |-------|-------------------|---------|
 | `google_data` | Site-wide **Fetch data now** (scoped to the `properties` row for the audit Site URL) | Pick an older site snapshot in the tab |
-
-**Google OAuth:** App Client ID/Secret and optional service account JSON live in PostgreSQL (`google_app_settings`, migration `006_google_app_settings`). Each **property** (domain) has its own refresh token and GSC/GA4 IDs on the `properties` table. Set a Site URL, then connect Google from Pipeline → Integrations. Configure via the UI or `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` env vars for bootstrap only.
 | `page_google_snapshots` | **Fetch live data** on the Search & retention tab | Defaults to previous live fetch for the same URL |
 
-**Prerequisites:** Google connected with GSC site URL and GA4 property saved; at least one site-wide fetch for snapshot defaults; two or more live fetches on the same URL to compare live periods. AI page coach requires **Enable AI insights** and **Link Explorer page coach** in Pipeline → Content & AI.
+**Google OAuth:** App Client ID/Secret and optional service account JSON live in PostgreSQL (`google_app_settings`, migration `006_google_app_settings`). Each **property** (domain) has its own refresh token and GSC/GA4 IDs on the `properties` table. Set a Site URL, then connect Google from **Integrations**. Configure via the UI or `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` env vars for bootstrap only.
 
-Apply migration `004_page_google_snapshots` (`alembic upgrade head`) before using live fetch.
+**Prerequisites:** Google connected with GSC site URL and GA4 property saved; at least one site-wide fetch for snapshot defaults; two or more live fetches on the same URL to compare live periods. AI page coach requires **Enable AI insights** and **Link Explorer page coach** under Run audit → **Content quality & AI insights**.
+
+Apply migrations before using live fetch: `./local-run migrate` or `alembic upgrade head`.
 
 ### PostgreSQL JSONB rows
 

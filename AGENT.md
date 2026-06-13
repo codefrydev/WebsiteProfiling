@@ -1,8 +1,10 @@
 # Agent instructions — Site Audit (WebsiteProfiling)
 
+Developer reference for agents and contributors. User-facing overview: [README.md](README.md). Full doc index: [docs/README.md](docs/README.md).
+
 **What it is:** `python -m src` from repo root (`src/__main__.py` -> package **`website_profiling`**). Config: stored in **PostgreSQL** (`pipeline_config` table, `key/value/is_unknown/updated_at`). A shadow **`pipeline-config.txt`** is auto-written to `DATA_DIR` on every Save/Run. CLI loads DB first (`DATABASE_URL`), then shadow file; `--config` overrides with a file. Reference keys: `input.txt.example` and `pipeline-config.example.txt` (not auto-loaded).
 
-**LLM / AI:** Settings live in **`llm_config`** table in PostgreSQL. Configure only via web UI **AI** tab (`GET/PUT /api/llm-config`, localhost). Never in `pipeline-config.txt` or `--config`.
+**LLM / AI:** Settings live in **`llm_config`** table in PostgreSQL. Providers: OpenAI, Google Gemini, Anthropic, Ollama (`web/src/lib/llmConfigSchema.ts`). Configure only via web UI **AI** tab (`GET/PUT /api/llm-config`, localhost). Never in `pipeline-config.txt` or `--config`.
 
 **Frontend:** **`web/`** (Next.js) -- server reads PostgreSQL via `/api/report/*`.
 
@@ -12,7 +14,7 @@
 - `web/app/` -- routes; `web/src/` -- React; pipeline: `PipelineRunnerFab`, `server/pipelineJobs.ts`, `server/pipelineConfig.ts`, `server/llmConfig.ts`, `server/db.ts`
 - `alembic/` -- schema migrations
 
-**Local dev:** `./local-run` (Postgres in Docker `wp-pg`, Next.js on host). See `scripts/local-run.sh`. **Local tests (CI parity):** `./local-test` runs **three** Python coverage gates (core 100%, reporting 100%, tools 100%); `./local-test browser` for `@pytest.mark.browser` integration tests — see `scripts/local-test.sh`. Mocked browser unit tests: `tests/test_browser_fetcher_unit.py`.
+**Local dev:** `./local-run` (Postgres in Docker `wp-pg`, Next.js on host; default `DATABASE_URL`: `postgres://postgres:dev@127.0.0.1:5432/website_profiling`). See `scripts/local-run.sh`. **Local tests:** `./local-test` runs **three** Python coverage gates (core 100%, reporting 100%, tools 100%) plus web checks — mirrors CI **python** and **web** jobs; Docker CI is separate (see `.github/workflows/ci.yml`). `./local-test browser` for `@pytest.mark.browser` integration tests — see `scripts/local-test.sh`. Mocked browser unit tests: `tests/test_browser_fetcher_unit.py`.
 
 **JavaScript crawl (optional):** Config keys `crawl_render_mode` (`static` | `javascript` | `auto`) and `crawl_js_*` in pipeline config / `pipelineConfigSchema.ts`. JS/auto crawls can capture browser console errors and uncaught exceptions (`crawl_js_capture_console`, stored under `page_analysis.browser`). **Auto mode** uses static-first fetch, pre-parse SPA heuristics (`needs_js_render`), then post-parse low-outlink fallback (`needs_js_render_after_parse`) in `crawler.py`. **Preflight:** `GET /api/crawl/browser-status` (localhost) spawns Python `browser_status()`; Run audit settings/run validation calls it when render mode is `javascript` or `auto`. Browser deps: Playwright from `requirements.txt` (installed by `./local-run setup` and `./local-test`). Runtime needs Chromium on `PATH` or `CHROME_PATH` (Docker sets `CHROME_PATH=/usr/bin/chromium`). Integration tests: `@pytest.mark.browser` — excluded by default in `pytest.ini`; Docker CI runs `tests/test_crawl_fetchers.py` and `tests/test_crawler_browser_e2e.py -m browser`; locally `./local-test browser`.
 
@@ -22,13 +24,14 @@
 - Optional step: `crawl` | `report` | `plot` | `lighthouse` | `keywords` | `warnings` | `enrich` | `google` | `chat`
 - **`preserve_crawl_history`** (default true): append crawls; `false` truncates crawl tables but restores `report_payload`, Lighthouse, `google_data`, `keyword_data`, `keyword_history`, `keyword_suggest_cache`, and `crawl_runs`
 - **`DATABASE_URL`** env: PostgreSQL connection string (required). **`DATA_DIR`**: secrets + shadow config (Docker: `/data`).
-- **Pipeline data** (crawl, edges, nodes, report payload, Lighthouse, keywords, warnings) is stored in **PostgreSQL only** — no JSON/CSV/HTML exports from the main pipeline.
-- **Pool tuning:** `DB_POOL_MIN` / `DB_POOL_MAX` (Python), `PGPOOL_MAX` (Node). Bulk crawl writes via `executemany`; optional **`crawl_stream_to_db`** streams rows during fetch.
-- **`web/`:** `/api/report/*` (PostgreSQL); `/api/run` spawns Python (localhost only); `/api/crawl/browser-status` GET (localhost, Playwright/Chromium preflight); `/api/pipeline-config` GET/PUT; `/api/llm-config` GET/PUT (AI only); `/api/chat` POST (SSE agent); `/api/chat/sessions` GET/POST; `/api/properties/{id}/google/links/import` POST (GSC Links CSV); `PipelineRunnerFab` saves pipeline + LLM state before each run
+- **Pipeline storage** (crawl, edges, nodes, report payload, Lighthouse, keywords, warnings) lives in **PostgreSQL only**. Deliverables use the Export view, `GET /api/report/export`, or MCP `export_*` tools — not files written by the main pipeline step.
+- **Pool tuning:** `DB_POOL_MIN` / `DB_POOL_MAX` (Python), `PGPOOL_MAX` (Node). Bulk crawl writes via `executemany`; optional **`crawl_stream_to_db`** streams rows during fetch. Per-URL raw HTML: `crawl_page_html` table (migration `015`); API `GET/POST /api/crawl/page-html` (localhost).
+- **`web/` APIs:** `/api/report/*` read routes (payload, meta, history — not localhost-guarded; protect with `AUTH_*` when exposed); `/api/run` spawns Python (localhost); `/api/jobs`, `/api/jobs/[id]`, `/api/jobs/[id]/cancel` (localhost); `/api/crawl/browser-status`, `/api/crawl/page-html` (localhost); `/api/pipeline-config` GET/PUT; `/api/llm-config` GET/PUT; `/api/chat` POST (SSE); `/api/chat/sessions` GET/POST; `/api/ollama/status` (localhost); `/api/properties/{id}/google/links/import` POST; `PipelineRunnerFab` saves pipeline + LLM state before each run. Full route list: `web/app/api/**/route.ts`.
 - **MCP:** `python -m website_profiling.mcp` (stdio, **340 read-only audit tools**, domain-scoped via `WP_MCP_DOMAIN`). See `docs/MCP.md`. Requires `pip install -r requirements.txt`.
-- **AI Chat UI:** `/chat` — property-scoped chat with saved sessions (`chat_sessions`, `chat_messages` tables, migration `012_chat_sessions`).
-- **Job store:** in-memory on `globalThis` in `web/src/server/pipelineJobs.ts` — job status/log is lost on server restart (single-process dev/Docker only).
-- **Docker:** `Dockerfile` + `docker-compose.yml` (postgres + web); **`docker-compose.pull.yml`** for pre-built images (`WEB_IMAGE`); **`LIGHTHOUSE_CHROME_FLAGS`**
+- **AI Chat UI:** `/chat` — property-scoped chat with saved sessions (`chat_sessions`, `chat_messages`; migration `012_chat_sessions`).
+- **Job store:** PostgreSQL `pipeline_jobs` when `DATABASE_URL` is set (`pipelineJobsDb.ts` — status, timestamps, truncated logs). In-memory map in `pipelineJobs.ts` holds live log tail and child process handles; stale rows reconciled via `PIPELINE_JOB_STALE_HOURS`.
+- **Schema head:** `015_crawl_page_html` (recent: `013` link_edges/discovery, `014` job log truncation, `015` per-URL HTML storage).
+- **Docker:** `Dockerfile` + `docker-compose.yml` (postgres + web); **`docker-compose.prod.yml`** (production); **`docker-compose.pull.yml`** for pre-built images (`WEB_IMAGE`); **`LIGHTHOUSE_CHROME_FLAGS`**
 
 **Where to edit**
 
