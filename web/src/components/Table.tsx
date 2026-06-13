@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import HelpHint, { normalizeHintContent, type HelpHintContent } from './HelpHint';
 
 interface TableProps {
   children?: ReactNode;
@@ -31,9 +32,32 @@ export const TableHead = ({ children, sticky = false }: TableHeadProps) => (
   </thead>
 );
 
-export const TableHeadCell = ({ children, className = '', title }: { children?: ReactNode; className?: string; title?: string }) => (
-  <th className={`px-4 py-3.5 whitespace-nowrap ${className}`.trim()} title={title}>{children}</th>
-);
+export const TableHeadCell = ({
+  children,
+  className = '',
+  title,
+  hint,
+}: {
+  children?: ReactNode;
+  className?: string;
+  /** @deprecated Use hint for metric explanations; reserve title for native browser tooltip on truncation. */
+  title?: string;
+  hint?: HelpHintContent;
+}) => {
+  const hintContent = normalizeHintContent(hint);
+  return (
+    <th className={`px-4 py-3.5 whitespace-nowrap ${className}`.trim()} title={title}>
+      <div className="inline-flex items-center gap-1 normal-case">
+        {children}
+        {hintContent ? (
+          <HelpHint title={hintContent.title} className="normal-case">
+            {hintContent.body}
+          </HelpHint>
+        ) : null}
+      </div>
+    </th>
+  );
+};
 
 interface TableBodyProps {
   children?: ReactNode;

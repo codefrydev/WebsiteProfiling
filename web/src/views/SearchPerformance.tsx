@@ -7,6 +7,7 @@ import type { TableColumn } from '@/types/components';
 import { TrendingUp, Search, AlertCircle, Settings2, Download } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
+import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs } from '../components';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import GoogleTableToolbar from '../components/google/GoogleTableToolbar';
@@ -97,21 +98,25 @@ export default function SearchPerformance() {
       {
         key: 'clicks',
         label: sp.table.clicks,
+        hint: 'shared.clicks',
         render: (v) => <span className="tabular-nums">{Number(v ?? 0).toLocaleString()}</span>,
       },
       {
         key: 'impressions',
         label: sp.table.impressions,
+        hint: 'shared.impressions',
         render: (v) => <span className="tabular-nums">{Number(v ?? 0).toLocaleString()}</span>,
       },
       {
         key: 'ctr',
         label: sp.table.ctr,
+        hint: 'shared.ctr',
         render: (v) => <span className="tabular-nums">{v != null ? `${v}%` : '—'}</span>,
       },
       {
         key: 'position',
         label: sp.table.position,
+        hint: 'shared.position',
         render: (v) => <PositionBadge pos={v as number | string | null} />,
       },
     ],
@@ -137,21 +142,25 @@ export default function SearchPerformance() {
       {
         key: 'clicks',
         label: sp.table.clicks,
+        hint: 'shared.clicks',
         render: (v) => <span className="tabular-nums">{Number(v ?? 0).toLocaleString()}</span>,
       },
       {
         key: 'impressions',
         label: sp.table.impressions,
+        hint: 'shared.impressions',
         render: (v) => <span className="tabular-nums">{Number(v ?? 0).toLocaleString()}</span>,
       },
       {
         key: 'ctr',
         label: sp.table.ctr,
+        hint: 'shared.ctr',
         render: (v) => <span className="tabular-nums">{v != null ? `${v}%` : '—'}</span>,
       },
       {
         key: 'position',
         label: sp.table.position,
+        hint: 'shared.position',
         render: (v) => <PositionBadge pos={v as number | string | null} />,
       },
       {
@@ -267,10 +276,26 @@ export default function SearchPerformance() {
 
       {gsc?.summary && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <StatCard label={sp.kpi.clicks} value={gsc.summary.clicks?.toLocaleString()} />
-          <StatCard label={sp.kpi.impressions} value={gsc.summary.impressions?.toLocaleString()} />
-          <StatCard label={sp.kpi.ctr} value={gsc.summary.ctr != null ? `${gsc.summary.ctr}%` : null} />
-          <StatCard label={sp.kpi.position} value={gsc.summary.position} />
+          <StatCard
+            label={sp.kpi.clicks}
+            value={gsc.summary.clicks?.toLocaleString()}
+            hint={metricHelpHint('shared.clicks')}
+          />
+          <StatCard
+            label={sp.kpi.impressions}
+            value={gsc.summary.impressions?.toLocaleString()}
+            hint={metricHelpHint('shared.impressions')}
+          />
+          <StatCard
+            label={sp.kpi.ctr}
+            value={gsc.summary.ctr != null ? `${gsc.summary.ctr}%` : null}
+            hint={metricHelpHint('shared.ctr')}
+          />
+          <StatCard
+            label={sp.kpi.position}
+            value={gsc.summary.position}
+            hint={metricHelpHint('shared.position')}
+          />
         </div>
       )}
 
@@ -429,21 +454,25 @@ export default function SearchPerformance() {
                         label={sp.urlJoin.matched}
                         value={urlJoin.matched}
                         sub={sp.urlJoin.matchedSub}
+                        hint={metricHelpHint('views.overview.urlJoinMatched')}
                       />
                       <StatCard
                         label={sp.urlJoin.crawlOnly}
                         value={urlJoin.crawl_only}
                         sub={sp.urlJoin.crawlOnlySub}
+                        hint={metricHelpHint('views.overview.urlJoinCrawlOnly')}
                       />
                       <StatCard
                         label={sp.urlJoin.gscOnly}
                         value={urlJoin.gsc_only}
                         sub={sp.urlJoin.gscOnlySub}
+                        hint={metricHelpHint('views.overview.urlJoinGscOnly')}
                       />
                       <StatCard
                         label={sp.urlJoin.ga4Only}
                         value={urlJoin.ga4_only}
                         sub={sp.urlJoin.ga4OnlySub}
+                        hint={metricHelpHint('views.overview.urlJoinGa4Only')}
                       />
                     </div>
                   </div>

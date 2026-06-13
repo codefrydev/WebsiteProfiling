@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, type ReactNode } from 'react';
+import { useMemo } from 'react';
 import type { ChartOptions, TooltipItem } from 'chart.js';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, PointElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar, Scatter } from 'react-chartjs-2';
@@ -14,7 +14,7 @@ import {
 import { strings } from '../../lib/strings';
 import { buildPositionBuckets } from './gscTableUtils';
 import { truncateLabel } from '../google/tableUtils';
-import GoogleChartCard from '../google/GoogleChartCard';
+import ChartCard from '../ChartCard';
 import GoogleTimeSeriesChart from '../google/GoogleTimeSeriesChart';
 import type { GscDailyRow, GscPageRow, GscQueryRow, ScatterPoint } from '@/types/components';
 
@@ -23,26 +23,6 @@ ChartJS.register(PointElement);
 
 const TOP_N = 10;
 const SCATTER_MAX = 50;
-
-interface ChartCardProps {
-  title: string;
-  hint?: string;
-  ariaLabel: string;
-  heightClass?: string;
-  children?: ReactNode;
-}
-
-function ChartCard({ title, hint, ariaLabel, heightClass = 'h-56', children }: ChartCardProps) {
-  return (
-    <div className="bg-brand-800 border border-default rounded-xl p-4">
-      <h3 className="text-sm font-bold text-foreground mb-1">{title}</h3>
-      {hint && <p className="text-xs text-muted-foreground mb-3">{hint}</p>}
-      <div className={heightClass} role="img" aria-label={ariaLabel}>
-        {children}
-      </div>
-    </div>
-  );
-}
 
 function useTopBarChart(
   rows: Array<Record<string, unknown>> | null | undefined,
@@ -199,14 +179,14 @@ export function GscDailyTrendChart({ daily }: GscDailyTrendChartProps) {
   ];
   if (!daily?.length) return null;
   return (
-    <GoogleChartCard
+    <ChartCard
       title={sp.charts.dailyTitle}
       hint={sp.charts.dailyHint}
       ariaLabel={sp.charts.dailyAria}
       heightClass="h-64"
     >
       <GoogleTimeSeriesChart rows={daily} xKey="date" series={series} dualAxis />
-    </GoogleChartCard>
+    </ChartCard>
   );
 }
 

@@ -5,6 +5,8 @@ import type { KeywordHistoryRow } from '@/types/api';
 export interface TableColumn {
   key: string;
   label: string;
+  /** Metric help tooltip content for column header. */
+  hint?: string | { title?: string; body: string };
   render?: (v: unknown, row?: Record<string, unknown>) => ReactNode;
 }
 

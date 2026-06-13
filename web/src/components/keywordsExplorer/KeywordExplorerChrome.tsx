@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { strings, format } from '../../lib/strings';
-import { Card } from '../index';
+import { Card, LabelWithHint } from '../index';
 import type { KeywordTabId } from './keywordTabMeta';
 
 interface KeywordExplorerChromeProps {
@@ -55,6 +55,7 @@ interface KpiDef {
   value: string;
   sub: string;
   accent: string;
+  helpKey: string;
 }
 
 function KeywordKpiTile({
@@ -93,7 +94,7 @@ function KeywordKpiTile({
         />
       </div>
       <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-bold leading-tight">
-        {def.label}
+        <LabelWithHint label={def.label} helpKey={def.helpKey} />
       </p>
       <p className="text-xl sm:text-2xl font-bold text-bright tabular-nums mt-0.5">{def.value}</p>
       <p className="text-[11px] sm:text-xs text-muted-foreground mt-1 line-clamp-2">{def.sub}</p>
@@ -129,6 +130,7 @@ export default function KeywordExplorerChrome({
       value: kpis.totalDisplay,
       sub: format(k.totalSub, { n: kpis.sourceCount }),
       accent: 'bg-blue-500/15 text-blue-400',
+      helpKey: 'views.keywordsExplorer.totalKeywords',
     },
     {
       key: 'gsc',
@@ -138,6 +140,7 @@ export default function KeywordExplorerChrome({
       value: kpis.gscCount.toLocaleString(),
       sub: k.gscSub,
       accent: 'bg-emerald-500/15 text-emerald-400',
+      helpKey: 'views.keywordsExplorer.gscKeywords',
     },
     {
       key: 'quickwins',
@@ -147,6 +150,7 @@ export default function KeywordExplorerChrome({
       value: kpis.quickWins.toLocaleString(),
       sub: k.quickWinsSub,
       accent: 'bg-amber-500/15 text-amber-400',
+      helpKey: 'views.keywordsExplorer.quickWins',
     },
     {
       key: 'cannib',
@@ -156,6 +160,7 @@ export default function KeywordExplorerChrome({
       value: kpis.cannib.toLocaleString(),
       sub: k.cannibSub,
       accent: 'bg-red-500/15 text-red-400',
+      helpKey: 'views.keywordsExplorer.cannibalisation',
     },
   ];
 
@@ -168,6 +173,7 @@ export default function KeywordExplorerChrome({
       value: kpis.lostClicks.toLocaleString(),
       sub: k.lostClicksSub,
       accent: 'bg-orange-500/15 text-orange-400',
+      helpKey: 'views.keywordsExplorer.lostClicks',
     },
     {
       key: 'questions',
@@ -177,6 +183,7 @@ export default function KeywordExplorerChrome({
       value: kpis.questions.toLocaleString(),
       sub: k.questionsSub,
       accent: 'bg-violet-500/15 text-violet-400',
+      helpKey: 'views.keywordsExplorer.questions',
     },
   ];
 

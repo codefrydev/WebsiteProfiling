@@ -31,6 +31,7 @@ import {
   getChartTitleColor,
   getChartLegendLabelColor,
 } from '@/utils/chartJsDefaults';
+import ChartCard from '@/components/ChartCard';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend);
 
@@ -38,26 +39,6 @@ const COLOR_BASELINE = '#94a3b8';
 const COLOR_CURRENT = '#3b82f6';
 
 type CompareChartStrings = (typeof import('@/lib/strings').strings)['views']['compare'];
-
-function ChartCard({
-  title,
-  hint,
-  children,
-}: {
-  title: string;
-  hint?: string;
-  children: ReactNode;
-}) {
-  return (
-    <div className="bg-brand-800 border border-default rounded-xl p-4">
-      <h3 className="text-sm font-bold text-foreground mb-0.5">{title}</h3>
-      {hint ? <p className="text-xs text-muted-foreground mb-3">{hint}</p> : <div className="mb-3" />}
-      <div className="h-52 sm:h-56" role="img" aria-label={title}>
-        {children}
-      </div>
-    </div>
-  );
-}
 
 function useChartOptions() {
   return useMemo(() => {

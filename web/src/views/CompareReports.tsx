@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
+import { metricHelpHint } from '@/lib/metricHelp';
 import { formatReportGeneratedAt } from '../lib/reportTimestamps';
 import {
   PageLayout,
@@ -26,6 +27,7 @@ import {
   TableRow,
   TableCell,
   Badge,
+  LabelWithHint,
 } from '../components';
 import ReportCompareControls from '../components/ReportCompareControls';
 import { CompareMetricCard } from '../components/compare/CompareDeltaBadge';
@@ -446,11 +448,15 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                 </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   <Card className="p-4">
-                    <div className="text-muted-foreground text-xs uppercase tracking-wider">{vo.newUrls}</div>
+                    <div className="text-muted-foreground text-xs uppercase tracking-wider">
+                      <LabelWithHint label={vo.newUrls} helpKey="views.compare.newUrls" />
+                    </div>
                     <div className="text-2xl font-bold text-emerald-700 dark:text-emerald-400">{urlLists.newUrls.length}</div>
                   </Card>
                   <Card className="p-4">
-                    <div className="text-muted-foreground text-xs uppercase tracking-wider">{vo.removedUrls}</div>
+                    <div className="text-muted-foreground text-xs uppercase tracking-wider">
+                      <LabelWithHint label={vo.removedUrls} helpKey="views.compare.removedUrls" />
+                    </div>
                     <div className="text-2xl font-bold text-rose-700 dark:text-rose-400">{urlLists.removedUrls.length}</div>
                   </Card>
                   <Card className="p-4">
@@ -520,8 +526,8 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                     <TableHead sticky>
                       <TableRow>
                         <TableHeadCell>{vc.statusColUrl}</TableHeadCell>
-                        <TableHeadCell>{vc.statusColBefore}</TableHeadCell>
-                        <TableHeadCell>{vc.statusColAfter}</TableHeadCell>
+                        <TableHeadCell hint={metricHelpHint('views.compare.baselineValue')}>{vc.statusColBefore}</TableHeadCell>
+                        <TableHeadCell hint={metricHelpHint('views.compare.currentValue')}>{vc.statusColAfter}</TableHeadCell>
                       </TableRow>
                     </TableHead>
                     <TableBody striped>
@@ -562,9 +568,9 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                     <TableHead>
                       <TableRow>
                         <TableHeadCell>Category</TableHeadCell>
-                        <TableHeadCell>Current</TableHeadCell>
-                        <TableHeadCell>Baseline</TableHeadCell>
-                        <TableHeadCell>Δ</TableHeadCell>
+                        <TableHeadCell hint={metricHelpHint('views.compare.currentValue')}>Current</TableHeadCell>
+                        <TableHeadCell hint={metricHelpHint('views.compare.baselineValue')}>Baseline</TableHeadCell>
+                        <TableHeadCell hint={metricHelpHint('views.compare.metricDelta')}>Δ</TableHeadCell>
                       </TableRow>
                     </TableHead>
                     <TableBody striped>
@@ -594,9 +600,9 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                     <TableHead>
                       <TableRow>
                         <TableHeadCell>Signal</TableHeadCell>
-                        <TableHeadCell>Current</TableHeadCell>
-                        <TableHeadCell>Baseline</TableHeadCell>
-                        <TableHeadCell>Δ</TableHeadCell>
+                        <TableHeadCell hint={metricHelpHint('views.compare.currentValue')}>Current</TableHeadCell>
+                        <TableHeadCell hint={metricHelpHint('views.compare.baselineValue')}>Baseline</TableHeadCell>
+                        <TableHeadCell hint={metricHelpHint('views.compare.metricDelta')}>Δ</TableHeadCell>
                       </TableRow>
                     </TableHead>
                     <TableBody striped>

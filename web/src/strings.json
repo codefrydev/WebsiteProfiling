@@ -1,4 +1,662 @@
 {
+  "metricHelp": {
+    "shared": {
+      "clicks": {
+        "title": "Clicks",
+        "body": "Total clicks from Google Search Console for the selected date range and property. Organic search traffic only."
+      },
+      "impressions": {
+        "title": "Impressions",
+        "body": "How often pages from this site appeared in Google Search results during the selected date range."
+      },
+      "ctr": {
+        "title": "CTR",
+        "body": "Click-through rate: clicks divided by impressions, shown as a percentage. Higher means more searchers clicked after seeing your result."
+      },
+      "position": {
+        "title": "Average position",
+        "body": "Mean ranking position in Google Search for the selected queries or pages. Lower numbers are better (1 is top)."
+      },
+      "sessions": {
+        "title": "Sessions",
+        "body": "GA4 sessions: grouped visits to your site during the selected date range. One user can have multiple sessions."
+      },
+      "activeUsers": {
+        "title": "Active users",
+        "body": "GA4 active users: distinct people who engaged with your site during the selected date range."
+      },
+      "inlinks": {
+        "title": "Inlinks",
+        "body": "Internal links pointing to this URL discovered in this crawl. Counts all qualifying anchor links in scope."
+      },
+      "outlinks": {
+        "title": "Outlinks",
+        "body": "Links from this URL to other URLs (internal or external) found in this crawl."
+      },
+      "linkEdges": {
+        "title": "Link edges",
+        "body": "All discovered anchor relationships in this crawl, including rel attributes (nofollow, sponsored, etc.)."
+      },
+      "healthScore": {
+        "title": "Site health",
+        "body": "Score from 0–100 based on issue category weights in this audit. Higher is better. Reflects technical SEO health, not Google rankings."
+      },
+      "impactScore": {
+        "title": "Impact score",
+        "body": "Prioritization score: priority weight + (GSC clicks × 10) + (GA4 sessions × 5). Weights: Critical 1000, High 100, Medium 10, Low 1. Higher means fix sooner."
+      },
+      "statusCode": {
+        "title": "HTTP status",
+        "body": "Response code returned when this URL was crawled (e.g. 200 OK, 301 redirect, 404 not found)."
+      },
+      "successRate": {
+        "title": "2xx rate",
+        "body": "Share of crawled URLs that returned a successful HTTP 2xx response."
+      },
+      "referringDomains": {
+        "title": "Referring domains",
+        "body": "Domains linking to your site from a Google Search Console Links export. This is a sample, not a complete backlink index."
+      },
+      "sampleLinks": {
+        "title": "Sample links",
+        "body": "Example external links to your site from GSC Links CSV import. Google provides a sample, not all backlinks."
+      },
+      "onSiteFrequency": {
+        "title": "On-site frequency",
+        "body": "Heuristic count estimated from this crawl (page occurrences, anchors, etc.). Not Google search volume."
+      },
+      "fetchMethod": {
+        "title": "Fetch method",
+        "body": "How this URL was retrieved: static HTTP fetch or rendered with a browser (JavaScript). Depends on crawl render mode."
+      },
+      "readingLevel": {
+        "title": "Reading level",
+        "body": "Flesch-Kincaid grade level estimated from visible text on the page. Higher grades mean more advanced reading."
+      },
+      "wordCount": {
+        "title": "Word count",
+        "body": "Visible words extracted from main content in this crawl. Used for thin-content checks."
+      },
+      "crawlDepth": {
+        "title": "Crawl depth",
+        "body": "Minimum number of link hops from the start URL to reach this page in the crawl graph."
+      },
+      "responseTime": {
+        "title": "Response time",
+        "body": "Server response time in milliseconds when this URL was fetched during the crawl."
+      },
+      "lighthouseScore": {
+        "title": "Lighthouse score",
+        "body": "Lab performance or category score from 0–100 from a Lighthouse run on this URL. Not the same as CrUX field data."
+      },
+      "titleCoverage": {
+        "title": "Title coverage",
+        "body": "Percentage of crawled URLs that have a non-empty HTML title element."
+      },
+      "thinPages": {
+        "title": "Thin pages",
+        "body": "URLs flagged as thin content based on word count and body-text thresholds in this audit."
+      },
+      "medianWords": {
+        "title": "Median words",
+        "body": "Median visible word count across crawled pages in this audit."
+      },
+      "avgWords": {
+        "title": "Average words",
+        "body": "Mean visible word count across crawled pages in this audit."
+      },
+      "pageViews": {
+        "title": "Page views",
+        "body": "GA4 screen page views: total times pages were viewed during the selected date range."
+      }
+    },
+    "views": {
+      "home": {
+        "totalBrands": {
+          "body": "Number of properties (client sites) in your portfolio."
+        },
+        "totalUrls": {
+          "body": "Total URLs crawled across all properties in the portfolio summary."
+        },
+        "avgHealth": {
+          "body": "Average site health score (0–100) across properties with audit data."
+        },
+        "urlCount": {
+          "body": "URLs discovered in the latest crawl for this property."
+        },
+        "totalIssues": {
+          "body": "Total issues flagged in the latest audit for this property."
+        },
+        "perfScore": {
+          "body": "Lighthouse performance category score averaged or summarized for this property."
+        },
+        "seoScore": {
+          "body": "Lighthouse SEO category score for this property."
+        },
+        "trendHealth": {
+          "body": "Site health score over recent audit runs for this property."
+        },
+        "trendIssues": {
+          "body": "Total issue count trend across recent audit runs."
+        },
+        "trendUrgent": {
+          "body": "Count of Critical + High priority issues over recent audits."
+        }
+      },
+      "overview": {
+        "linkScore": {
+          "title": "Link score",
+          "body": "Internal link importance from this crawl's link graph (PageRank-style). The bar shows share of the top page in this table. Not a Google ranking signal."
+        },
+        "connections": {
+          "title": "Inlinks + outlinks",
+          "body": "Total internal link connections for this page in the crawl graph (indegree plus outdegree where available)."
+        },
+        "totalUrls": {
+          "body": "URLs included in this audit report from the crawl."
+        },
+        "brokenLinks": {
+          "body": "Internal links pointing to URLs that returned 4xx or 5xx in this crawl."
+        },
+        "missingH1": {
+          "body": "Pages missing an H1 heading or with multiple H1s, per audit rules."
+        },
+        "ogCoverage": {
+          "body": "Share of pages with Open Graph meta tags for social sharing."
+        },
+        "responseP50": {
+          "body": "Median (50th percentile) server response time across crawled URLs."
+        },
+        "urlJoinMatched": {
+          "body": "URLs present in both this crawl and Google Search Console data for the selected property."
+        },
+        "urlJoinCrawlOnly": {
+          "body": "URLs found in the crawl but not in GSC data for the date range (may be non-indexed or low traffic)."
+        },
+        "urlJoinGscOnly": {
+          "body": "URLs with GSC data but not reached in this crawl (outside scope, blocked, or crawl limit)."
+        },
+        "urlJoinGa4Only": {
+          "body": "URLs with GA4 traffic but not matched to crawl or GSC rows in the join."
+        },
+        "twitterCoverage": {
+          "body": "Share of crawled pages with Twitter Card meta tags (twitter:card, twitter:title, etc.)."
+        },
+        "ogImageCoverage": {
+          "body": "Share of crawled pages with an og:image tag for social link previews."
+        },
+        "statusDistChart": {
+          "body": "HTTP status code distribution for all URLs in this crawl (2xx, 3xx, 4xx, 5xx)."
+        },
+        "contentDepthChart": {
+          "body": "Pages grouped by visible word-count bands — used to spot thin content at a glance."
+        },
+        "serverLatencyChart": {
+          "body": "Histogram of server response times (TTFB) measured during the crawl."
+        },
+        "crawlDepthChart": {
+          "body": "How many clicks from the start URL each page sits in the internal link graph."
+        },
+        "titleMetaChart": {
+          "body": "Title and meta description length buckets vs SEO best-practice ranges."
+        },
+        "readingLevelChart": {
+          "body": "Flesch-Kincaid grade-level distribution across crawled page text."
+        },
+        "mimeChart": {
+          "body": "Most common MIME types returned by crawled URLs."
+        },
+        "outlinksChart": {
+          "body": "External outlink counts bucketed per page — links leaving your site."
+        },
+        "topDomainsChart": {
+          "body": "Most-linked external domains from your pages in this crawl."
+        },
+        "lhCategoryChart": {
+          "body": "Average Lighthouse category scores (0–100) across audited sample URLs."
+        }
+      },
+      "links": {
+        "explorerStatus": {
+          "body": "HTTP status code returned when this URL was crawled."
+        },
+        "explorerInlinks": {
+          "body": "Count of internal links pointing to this URL in this crawl. Bar width is relative to the highest count in the current results."
+        },
+        "explorerDepth": {
+          "body": "Shortest path length from the crawl start URL to this page via internal links."
+        },
+        "explorerLoadTime": {
+          "body": "Time to first byte or total fetch time recorded during crawl, in milliseconds."
+        },
+        "explorerWords": {
+          "body": "Extracted visible word count used for content-quality checks."
+        },
+        "explorerExtract": {
+          "body": "Share of page content successfully extracted for analysis (text vs boilerplate)."
+        },
+        "explorerJsErrors": {
+          "body": "JavaScript console errors captured when the page was rendered (if JS crawl mode was used)."
+        },
+        "chartStatus": {
+          "body": "Full crawled URL list by HTTP status — ignores table filters above."
+        },
+        "chartWc": {
+          "body": "Word-count bands matching the word-count filter dropdown in Link Explorer."
+        },
+        "chartLinkScope": {
+          "body": "All link edges discovered in this crawl — internal vs external."
+        },
+        "chartInternalAttrs": {
+          "body": "Internal link rel attributes (nofollow, sponsored, ugc, etc.) from this crawl."
+        },
+        "chartTopAnchors": {
+          "body": "Most-used anchor text on internal links pointing into your site."
+        },
+        "chartTopTargets": {
+          "body": "Pages receiving the most internal inlinks in this crawl."
+        }
+      },
+      "siteStructure": {
+        "urlsInView": {
+          "body": "Total crawled pages under the selected path prefix or site root."
+        },
+        "pathPrefixes": {
+          "body": "Distinct URL path segments (folders) in the structure tree."
+        },
+        "totalInlinks": {
+          "body": "Sum of internal inlinks to pages in the current structure view."
+        },
+        "avgPerf": {
+          "body": "Average Lighthouse performance score for pages in this path segment."
+        },
+        "changePages": {
+          "body": "Change in page count under this path vs the baseline audit in Compare mode."
+        },
+        "changeInlinks": {
+          "body": "Change in total inlinks under this path vs the baseline audit."
+        },
+        "colPath": {
+          "body": "URL path prefix in the crawl tree. Expand folders to drill into nested segments."
+        },
+        "colPages": {
+          "body": "Number of crawled pages rolled up under this path prefix."
+        },
+        "colInlinks": {
+          "body": "Sum of internal inlinks to all pages under this path prefix."
+        },
+        "colSeo": {
+          "body": "Average Lighthouse SEO category score for pages under this path."
+        },
+        "avgResponse": {
+          "body": "Mean server response time in milliseconds across pages in the current structure view."
+        }
+      },
+      "content": {
+        "duplicateCluster": {
+          "body": "Duplicate-content cluster ID from near-duplicate detection in this crawl."
+        },
+        "duplicateRepresentative": {
+          "body": "Canonical or chosen representative URL for this duplicate cluster."
+        },
+        "duplicateUrlCount": {
+          "body": "Number of URLs grouped as near-duplicates of the representative page."
+        },
+        "metaDescLength": {
+          "body": "Meta description length in characters. Short or long descriptions may hurt CTR in search."
+        },
+        "h1Count": {
+          "body": "Number of H1 headings on the page. SEO best practice is exactly one H1."
+        },
+        "contentLength": {
+          "body": "Visible body text length in characters. Used to flag thin-content pages."
+        }
+      },
+      "contentAnalytics": {
+        "twitterCoverage": {
+          "body": "Share of crawled pages with Twitter Card meta tags for social previews."
+        },
+        "crawlHealth": {
+          "body": "HTTP status mix and response-time distribution from this crawl — not Google rankings."
+        },
+        "onPageQuality": {
+          "body": "On-page SEO issue counts, optimal-range coverage, and thin-content signals from the crawl."
+        },
+        "contentMetrics": {
+          "body": "Word counts, reading levels, HTML-to-text ratio, and on-site keyword frequency from extracted page text."
+        },
+        "onPageSignals": {
+          "body": "Title tag, meta description, and H1 heading quality buckets across crawled pages."
+        },
+        "socialMetaCoverage": {
+          "body": "Open Graph and Twitter Card tag coverage for social sharing previews."
+        },
+        "siteArchitecture": {
+          "body": "How pages are distributed by crawl depth — hops from the start URL via internal links."
+        },
+        "thinSmallBody": {
+          "body": "Pages flagged as thin by visible character count thresholds (separate from the under-300-word list)."
+        },
+        "wordCountDist": {
+          "body": "Pages grouped by visible word-count bands from extracted crawl text."
+        },
+        "readingLevelDist": {
+          "body": "Pages grouped by Flesch-Kincaid reading grade estimated from visible text."
+        },
+        "contentHtmlRatio": {
+          "body": "Pages grouped by ratio of visible text to total HTML size — low ratios may indicate boilerplate-heavy pages."
+        },
+        "topKeywords": {
+          "body": "Most frequent on-site keywords from extracted page text in this crawl — not Google search volume."
+        },
+        "wordCountLadder": {
+          "body": "Word-count percentiles across crawled pages (min through max) to show content depth spread."
+        },
+        "wordCountPercentiles": {
+          "body": "Statistical word-count summary (min, quartiles, median, mean, max) across crawled pages."
+        },
+        "urlsByStatus": {
+          "body": "HTTP status code mix for all URLs in this crawl."
+        },
+        "responseTimeDist": {
+          "body": "Pages grouped by server response-time buckets measured during the crawl."
+        },
+        "issuesByType": {
+          "body": "Count of crawled URLs flagged for each on-page SEO issue category."
+        },
+        "seoOptimalRanges": {
+          "body": "Share of pages whose title, meta description, and H1 fall in recommended length or count ranges."
+        },
+        "thinSignals": {
+          "body": "Comparison of thin-content signals: under 300 words vs small visible body character count."
+        },
+        "h1Dist": {
+          "body": "Pages grouped by H1 heading count — SEO best practice is exactly one H1 per page."
+        },
+        "titleTagQuality": {
+          "body": "Title tag length buckets (too short, optimal, too long) across crawled pages."
+        },
+        "metaDescQuality": {
+          "body": "Meta description length buckets across crawled pages."
+        },
+        "titleVsMetaBuckets": {
+          "body": "Combined title and meta description quality buckets for on-page SEO coverage."
+        },
+        "seoOptimalVsGapCounts": {
+          "body": "Pages meeting vs missing optimal title, meta, and H1 ranges side by side."
+        },
+        "missingSocialCompare": {
+          "body": "Pages missing Open Graph or Twitter Card tags compared to pages that have them."
+        },
+        "crawlDepthDist": {
+          "body": "Pages grouped by crawl depth — link hops from the start URL in the internal link graph."
+        }
+      },
+      "gallery": {
+        "uniqueImages": {
+          "body": "Distinct image URLs discovered in this crawl (on-page, Open Graph, and Twitter images combined)."
+        },
+        "shownFiltered": {
+          "body": "Images currently visible after source-type and header search filters."
+        }
+      },
+      "network": {
+        "legendOk": {
+          "body": "Crawled pages that returned a successful HTTP 2xx response."
+        },
+        "legendBroken": {
+          "body": "Crawled pages that returned HTTP 4xx or 5xx errors."
+        },
+        "legendLink": {
+          "body": "Internal anchor link between two pages in the crawl graph."
+        }
+      },
+      "indexation": {
+        "crawled": {
+          "body": "URLs successfully crawled in this audit."
+        },
+        "sitemap": {
+          "body": "URLs listed in the site's XML sitemap(s) discovered during the audit."
+        },
+        "gscPages": {
+          "body": "URLs with impressions in Google Search Console for the selected period."
+        },
+        "sitemapOnly": {
+          "body": "URLs in the sitemap but not found in the crawl (orphaned sitemap entries)."
+        }
+      },
+      "subdomains": {
+        "apex": {
+          "body": "Primary registered domain (apex) for this property's subdomain inventory."
+        },
+        "inScopeHosts": {
+          "body": "Hosts included in this audit scope (crawl and/or GSC data)."
+        },
+        "gscNotCrawled": {
+          "body": "Hosts with GSC data but no URLs reached in this crawl — often separate subdomains or out-of-scope properties."
+        },
+        "outOfScope": {
+          "body": "Hosts discovered via certificate transparency or DNS but excluded from this crawl."
+        },
+        "colHost": {
+          "body": "Subdomain or hostname discovered for this property."
+        },
+        "colSources": {
+          "body": "Where this host was seen: crawl, GSC, certificate transparency (crt.sh), etc."
+        },
+        "colCrawl": {
+          "body": "Whether any URL on this host was reached in the latest crawl."
+        },
+        "colGsc": {
+          "body": "Whether Search Console reports data for this host."
+        },
+        "colCrawlUrls": {
+          "body": "Count of crawled URLs on this host in the latest audit."
+        },
+        "colGscUrls": {
+          "body": "Count of URLs with GSC impressions on this host in the selected period."
+        }
+      },
+      "keywords": {
+        "serpCompetition": {
+          "body": "Estimated SERP competition from optional SerpAPI overlay. Heuristic, not official keyword difficulty."
+        },
+        "gscClicks": {
+          "body": "Search Console clicks attributed to this query or query–page pair in the selected range."
+        },
+        "gscImpressions": {
+          "body": "Search Console impressions for this query in the selected date range."
+        },
+        "gscCtr": {
+          "body": "Click-through rate from Search Console for this query (clicks ÷ impressions)."
+        },
+        "gscPosition": {
+          "body": "Average ranking position in Google Search for this query. Lower is better."
+        }
+      },
+      "keywordsExplorer": {
+        "totalKeywords": {
+          "body": "All keywords in this audit from crawl seeds, expansion sources, and Search Console."
+        },
+        "gscKeywords": {
+          "body": "Keywords with measured ranking data from Google Search Console in the selected range."
+        },
+        "quickWins": {
+          "body": "Keywords in positions 4–20 with meaningful estimated click upside if improved to top 3."
+        },
+        "cannibalisation": {
+          "body": "Queries ranking on multiple URLs — consolidate or canonicalise to one primary page."
+        },
+        "lostClicks": {
+          "body": "Keywords that lost clicks compared to the prior Search Console period."
+        },
+        "questions": {
+          "body": "Question-style queries (who, what, how, etc.) useful for FAQ and content ideas."
+        }
+      },
+      "lighthouse": {
+        "categoryScores": {
+          "body": "Lighthouse category scores (Performance, Accessibility, Best Practices, SEO) from 0–100 for audited URLs."
+        },
+        "cruxLcp": {
+          "body": "Largest Contentful Paint from Chrome UX Report field data (real users). Good: ≤2.5s."
+        },
+        "cruxInp": {
+          "body": "Interaction to Next Paint from CrUX field data. Good: ≤200ms."
+        },
+        "cruxCls": {
+          "body": "Cumulative Layout Shift from CrUX field data. Good: ≤0.1."
+        }
+      },
+      "compare": {
+        "metricDelta": {
+          "body": "Difference between baseline and current audit values. Positive or negative depends on the metric."
+        },
+        "currentValue": {
+          "body": "Value from the latest (current) audit in this comparison."
+        },
+        "baselineValue": {
+          "body": "Value from the baseline audit you selected for comparison."
+        },
+        "newUrls": {
+          "body": "URLs present in the current crawl but not in the baseline audit."
+        },
+        "removedUrls": {
+          "body": "URLs in the baseline audit but missing from the current crawl."
+        }
+      },
+      "jsErrors": {
+        "consolePages": {
+          "body": "Pages where at least one browser console message was recorded during crawl."
+        },
+        "consoleTotal": {
+          "body": "Total browser console error messages captured across all rendered pages in this crawl."
+        },
+        "exceptionPages": {
+          "body": "Pages where an uncaught JavaScript exception was recorded during browser render."
+        },
+        "exceptionTotal": {
+          "body": "Total uncaught JavaScript exceptions captured during this crawl."
+        },
+        "renderMode": {
+          "body": "Crawl render mode for this audit: static HTML only, JavaScript rendering, or auto."
+        }
+      },
+      "logAnalyzer": {
+        "parsedLines": {
+          "body": "Log file lines successfully parsed from your upload."
+        },
+        "uniquePaths": {
+          "body": "Distinct URL paths found in the uploaded access log sample."
+        },
+        "googlebotHits": {
+          "body": "Log lines identified as Googlebot requests in the uploaded sample."
+        },
+        "logOnly": {
+          "body": "URLs seen in access logs but not in the crawl (may be blocked or out of scope)."
+        },
+        "crawlOnly": {
+          "body": "URLs crawled but not seen in the uploaded log sample."
+        }
+      },
+      "redirects": {
+        "httpStatus": {
+          "body": "HTTP status code returned for the redirect response (e.g. 301 permanent, 302 temporary)."
+        }
+      },
+      "techStack": {
+        "pagesDetected": {
+          "body": "Number of crawled pages where this technology fingerprint was detected."
+        },
+        "categoryCount": {
+          "body": "Technologies detected in this category across the crawl, counted by distinct fingerprints."
+        },
+        "detectedChart": {
+          "body": "Pages per detected technology — bar length shows how many crawled URLs matched each fingerprint."
+        }
+      },
+      "contacts": {
+        "sources": {
+          "body": "Where this contact detail was discovered (e.g. schema.org JSON-LD, visible page text, meta tags)."
+        }
+      },
+      "backlinks": {
+        "referringDomain": {
+          "body": "External domain linking to your site in the GSC Links sample — not a complete backlink index."
+        },
+        "linkCount": {
+          "body": "Number of sample links from this referring domain in the GSC Links export."
+        },
+        "targetPages": {
+          "body": "Distinct pages on your site linked from this referring domain in the sample."
+        },
+        "targetPage": {
+          "body": "Your page receiving external links in the GSC Links sample."
+        },
+        "linkingSites": {
+          "body": "Count of distinct referring domains linking to this page in the sample."
+        },
+        "anchorText": {
+          "body": "Anchor text used in external links to your site in the GSC Links sample."
+        },
+        "sourcePage": {
+          "body": "External URL linking to your site in the GSC Links sample."
+        },
+        "linkedPages": {
+          "body": "Distinct pages on your site that received external links in the GSC Links sample."
+        },
+        "latestLinks": {
+          "body": "Most recently discovered sample backlinks from GSC Links export."
+        }
+      },
+      "security": {
+        "severityCount": {
+          "body": "Security findings at this severity from HTTP headers, TLS, and optional probes in this audit."
+        },
+        "findingType": {
+          "body": "Category of security check that produced this finding (headers, TLS, mixed content, etc.)."
+        },
+        "findingsBySeverityChart": {
+          "body": "Security findings grouped by severity (Critical, High, Medium, Low, Info) from this audit scan."
+        },
+        "findingsByTypeChart": {
+          "body": "Count of findings per security check type (headers, TLS, cookies, etc.)."
+        }
+      },
+      "textContentAnalysis": {
+        "byPageSection": {
+          "body": "Per-URL extracted text stats — word counts and reading levels from this crawl."
+        },
+        "analyticsSection": {
+          "body": "Site-wide text analytics: keyword frequency, clusters, and reading-level distribution."
+        },
+        "thWord": {
+          "body": "Keyword or phrase extracted from visible page text in this crawl."
+        },
+        "thTotalCount": {
+          "body": "Estimated on-site frequency — heuristic from crawl text, not Google search volume."
+        },
+        "thPageCount": {
+          "body": "Number of crawled pages where this term appears."
+        },
+        "thCluster": {
+          "body": "Semantic topic cluster grouping related keywords from crawl + NLP analysis."
+        },
+        "wordCountDist": {
+          "body": "Pages grouped by visible word-count bands from extracted crawl text."
+        },
+        "readingLevelDist": {
+          "body": "Pages grouped by Flesch-Kincaid reading grade estimated from visible text."
+        },
+        "contentHtmlRatio": {
+          "body": "Pages grouped by ratio of visible text to total HTML size."
+        },
+        "wordCountLadder": {
+          "body": "Word-count percentiles across crawled pages (min through max)."
+        }
+      }
+    }
+  },
   "app": {
     "loading": "Loading…",
     "failedTitle": "Failed to load report",

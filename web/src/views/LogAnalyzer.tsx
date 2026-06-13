@@ -6,7 +6,8 @@ import { useOptionalPipeline } from '@/context/PipelineContext';
 import { useReport } from '@/context/useReport';
 import { apiUrl } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
-import { PageLayout, PageHeader, Card } from '@/components';
+import { metricHelpHint } from '@/lib/metricHelp';
+import { PageLayout, PageHeader, Card, StatCard } from '@/components';
 import type { ViewProps } from '@/types';
 
 const vl = strings.views.logAnalyzer;
@@ -110,31 +111,32 @@ export default function LogAnalyzer(_props: ViewProps) {
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
           {analysis ? (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-sm">
-                <div>
-                  <p className="text-muted-foreground">{vl.parsedLines}</p>
-                  <p className="font-bold tabular-nums">{Number(analysis.parsed_lines || 0).toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">{vl.uniquePaths}</p>
-                  <p className="font-bold tabular-nums">{Number(analysis.unique_paths || 0).toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">{vl.googlebotHits}</p>
-                  <p className="font-bold tabular-nums">{Number(analysis.googlebot_hits || 0).toLocaleString()}</p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">{vl.logOnlyUrls}</p>
-                  <p className="font-bold tabular-nums">
-                    {Number(compare?.log_only_count ?? logOnlyPaths.length).toLocaleString()}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-muted-foreground">{vl.crawlOnlyUrls}</p>
-                  <p className="font-bold tabular-nums">
-                    {Number(compare?.crawl_only_count ?? crawlOnlyPaths.length).toLocaleString()}
-                  </p>
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                <StatCard
+                  label={vl.parsedLines}
+                  value={Number(analysis.parsed_lines || 0).toLocaleString()}
+                  hint={metricHelpHint('views.logAnalyzer.parsedLines')}
+                />
+                <StatCard
+                  label={vl.uniquePaths}
+                  value={Number(analysis.unique_paths || 0).toLocaleString()}
+                  hint={metricHelpHint('views.logAnalyzer.uniquePaths')}
+                />
+                <StatCard
+                  label={vl.googlebotHits}
+                  value={Number(analysis.googlebot_hits || 0).toLocaleString()}
+                  hint={metricHelpHint('views.logAnalyzer.googlebotHits')}
+                />
+                <StatCard
+                  label={vl.logOnlyUrls}
+                  value={Number(compare?.log_only_count ?? logOnlyPaths.length).toLocaleString()}
+                  hint={metricHelpHint('views.logAnalyzer.logOnly')}
+                />
+                <StatCard
+                  label={vl.crawlOnlyUrls}
+                  value={Number(compare?.crawl_only_count ?? crawlOnlyPaths.length).toLocaleString()}
+                  hint={metricHelpHint('views.logAnalyzer.crawlOnly')}
+                />
               </div>
               {(logOnlyPaths.length > 0 || crawlOnlyPaths.length > 0) ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

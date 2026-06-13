@@ -5,7 +5,8 @@ import type { TooltipItem } from 'chart.js';
 import { Shield, Flame, AlertTriangle, AlertCircle, Info, ExternalLink, BarChart3, List } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Badge, ViewTabs, ViewTabPanel, Button } from '../components';
+import { PageLayout, PageHeader, Card, Badge, ViewTabs, ViewTabPanel, Button, StatCard, ChartTitleWithHint } from '../components';
+import { metricHelpHint } from '@/lib/metricHelp';
 import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import type { ViewTabItem } from '../components';
 import { palette } from '../utils/chartPalette';
@@ -239,8 +240,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
         <ViewTabPanel idPrefix="security" tabId="charts" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-w-0">
             <Card padding="tight" shadow overflowHidden className="min-w-0">
-              <h2 className="text-sm font-bold text-foreground mb-1">{vs.findingsBySeverity}</h2>
-              <p className="text-xs text-muted-foreground mb-3">{vs.findingsBySeverityHint}</p>
+              <ChartTitleWithHint as="h2" title={vs.findingsBySeverity} helpKey="views.security.findingsBySeverityChart" />
               <div className="h-56 flex items-center justify-center min-w-0 overflow-hidden">
                 <div className="w-full max-w-[260px] h-48">
                   <ChartAccessibleFallback summary={severityChart.aria} rows={severityChart.rows}>
@@ -264,8 +264,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
             </Card>
             {typeLabels.length > 0 && (
               <Card padding="tight" shadow overflowHidden className="min-w-0">
-                <h2 className="text-sm font-bold text-foreground mb-1">{vs.findingsByType}</h2>
-                <p className="text-xs text-muted-foreground mb-3">{vs.findingsByTypeHint}</p>
+                <ChartTitleWithHint as="h2" title={vs.findingsByType} helpKey="views.security.findingsByTypeChart" />
                 <div className="relative h-56 min-w-0 w-full overflow-hidden">
                   <Bar
                     data={{
@@ -296,21 +295,34 @@ export default function Security({ searchQuery = '' }: ViewProps) {
               const count = severityCounts[sev] || 0;
               const isActive = severityFilter === sev;
               return (
-                <Card
+                <div
                   key={sev}
-                  shadow
-                  className={`cursor-pointer transition-all select-none ${
-                    isActive
-                      ? `${cfg.ring || `ring-1 ring-neutral-500/20`} ${cfg.border}`
-                      : 'hover:border-brand-700/80'
+                  className={`cursor-pointer transition-all select-none rounded-xl ${
+                    isActive ? `${cfg.ring || `ring-1 ring-neutral-500/20`} ring-2` : ''
                   }`}
                   onClick={() => setSeverityFilter((prev) => (prev === sev ? 'All' : sev))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSeverityFilter((prev) => (prev === sev ? 'All' : sev));
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
                 >
-                  <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${cfg.text}`}>
-                    <Icon className="h-4 w-4" /> {sev}
-                  </div>
-                  <div className={`text-3xl font-bold ${count > 0 ? cfg.text : 'text-muted-foreground'}`}>{count}</div>
-                </Card>
+                  <StatCard
+                    label={
+                      <span className={`inline-flex items-center gap-2 ${cfg.text}`}>
+                        <Icon className="h-4 w-4" aria-hidden /> {sev}
+                      </span>
+                    }
+                    value={<span className={count > 0 ? cfg.text : 'text-muted-foreground'}>{count}</span>}
+                    hint={metricHelpHint('views.security.severityCount')}
+                    size="lg"
+                    shadow
+                    className={isActive ? `${cfg.border} border-2` : undefined}
+                  />
+                </div>
               );
             })}
           </div>

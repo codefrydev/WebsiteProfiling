@@ -3,7 +3,7 @@ import ForceGraph3D from '3d-force-graph';
 import { Maximize, Minimize, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Button, DataViewLayout } from '../components';
+import { PageLayout, PageHeader, Card, Button, DataViewLayout, LabelWithHint } from '../components';
 import type { GraphEdge, GraphNode, ViewProps } from '@/types';
 
 interface GraphNodeData {
@@ -284,15 +284,15 @@ export default function Network({ searchQuery = '' }: ViewProps) {
               <div className="absolute top-4 left-4 bg-brand-900 border border-default p-3 rounded-xl text-xs space-y-2 z-10">
                 <div className="flex items-center gap-2 text-bright">
                   <div className="w-3 h-3 rounded-full bg-blue-500 border border-blue-400" />
-                  {vn.legendOk}
+                  <LabelWithHint label={vn.legendOk} helpKey="views.network.legendOk" />
                 </div>
                 <div className="flex items-center gap-2 text-bright">
                   <div className="w-3 h-3 rounded-full bg-red-500 border border-red-400" />
-                  {vn.legendBroken}
+                  <LabelWithHint label={vn.legendBroken} helpKey="views.network.legendBroken" />
                 </div>
                 <div className="flex items-center gap-2 text-bright">
                   <div className="w-4 h-0.5 bg-brand-700" />
-                  {vn.legendLink}
+                  <LabelWithHint label={vn.legendLink} helpKey="views.network.legendLink" />
                 </div>
               </div>
               <Button

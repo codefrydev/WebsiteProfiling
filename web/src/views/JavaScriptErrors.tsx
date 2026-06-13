@@ -7,6 +7,7 @@ import { useUrlTab } from '@/hooks/useUrlTab';
 import { Bug, ChevronDown, ChevronRight, ExternalLink, BarChart3, List } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
+import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, Button, StatCard, Select, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, ViewTabs, ViewTabPanel } from '../components';
 import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import type { ViewTabItem } from '../components';
@@ -159,11 +160,11 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
       {activeTab === 'summary' && (
         <ViewTabPanel idPrefix="javascript-errors" tabId="summary" className="space-y-6">
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            <StatCard label={vj.consolePagesCard} value={pagesWithConsole.toLocaleString()} />
-            <StatCard label={vj.consoleTotalCard} value={totalConsole.toLocaleString()} />
-            <StatCard label={vj.exceptionPagesCard} value={pagesWithExceptions.toLocaleString()} />
-            <StatCard label={vj.exceptionTotalCard} value={totalExceptions.toLocaleString()} />
-            <StatCard label={vj.renderMode} value={<span className="capitalize">{scopeInfo.renderMode}</span>} />
+            <StatCard label={vj.consolePagesCard} value={pagesWithConsole.toLocaleString()} hint={metricHelpHint('views.jsErrors.consolePages')} />
+            <StatCard label={vj.consoleTotalCard} value={totalConsole.toLocaleString()} hint={metricHelpHint('views.jsErrors.consoleTotal')} />
+            <StatCard label={vj.exceptionPagesCard} value={pagesWithExceptions.toLocaleString()} hint={metricHelpHint('views.jsErrors.exceptionPages')} />
+            <StatCard label={vj.exceptionTotalCard} value={totalExceptions.toLocaleString()} hint={metricHelpHint('views.jsErrors.exceptionTotal')} />
+            <StatCard label={vj.renderMode} value={<span className="capitalize">{scopeInfo.renderMode}</span>} hint={metricHelpHint('views.jsErrors.renderMode')} />
           </div>
 
           {topMessages.length > 0 ? (

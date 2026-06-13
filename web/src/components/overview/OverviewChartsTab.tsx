@@ -3,7 +3,8 @@
 import { BarChart3 } from 'lucide-react';
 import { Bar } from 'react-chartjs-2';
 import { strings, format } from '@/lib/strings';
-import { Card, StatCard } from '@/components';
+import { Card, StatCard, ChartTitleWithHint } from '@/components';
+import { metricHelpHint } from '@/lib/metricHelp';
 import { StatusDistributionChart, LighthouseScoreGrid } from '@/components/charts';
 import { ChartPanel } from '@/components/charts';
 import { barOptionsHorizontal } from '@/utils/chartJsDefaults';
@@ -72,29 +73,25 @@ export function OverviewChartsTab({ charts, depth }: OverviewChartsTabProps) {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
             {statusDistribution && (
               <Card shadow>
-                <h3 className="text-sm font-bold text-foreground mb-1">{vo.statusDist}</h3>
-                <p className="text-xs text-muted-foreground mb-3">{vo.statusDistHint}</p>
+                <ChartTitleWithHint title={vo.statusDist} helpKey="views.overview.statusDistChart" />
                 <StatusDistributionChart distribution={statusDistribution} />
               </Card>
             )}
             {wordCountChart && (
               <Card shadow>
-                <h3 className="text-sm font-bold text-foreground mb-1">{vo.contentDepth}</h3>
-                <p className="text-xs text-muted-foreground mb-3">{vo.contentDepthHint}</p>
+                <ChartTitleWithHint title={vo.contentDepth} helpKey="views.overview.contentDepthChart" />
                 <OverviewBarChart chart={wordCountChart} yTitle={vo.chartPages} />
               </Card>
             )}
             {responseTimeChart && (
               <Card shadow>
-                <h3 className="text-sm font-bold text-foreground mb-1">{vo.serverLatency}</h3>
-                <p className="text-xs text-muted-foreground mb-3">{vo.serverLatencyHint}</p>
+                <ChartTitleWithHint title={vo.serverLatency} helpKey="views.overview.serverLatencyChart" />
                 <OverviewBarChart chart={responseTimeChart} yTitle={vo.chartUrls} />
               </Card>
             )}
             {depthChart && (
               <Card shadow>
-                <h3 className="text-sm font-bold text-foreground mb-1">{vo.crawlDepth}</h3>
-                <p className="text-xs text-muted-foreground mb-3">{vo.crawlDepthHint}</p>
+                <ChartTitleWithHint title={vo.crawlDepth} helpKey="views.overview.crawlDepthChart" />
                 <div className="text-xs text-muted-foreground mb-2 tabular-nums">
                   {format(vo.depthSummaryLine, {
                     maxDepth: depth.max_depth ?? sj.emDash,
@@ -110,8 +107,7 @@ export function OverviewChartsTab({ charts, depth }: OverviewChartsTabProps) {
             )}
             {titleMetaChart && (
               <Card shadow>
-                <h3 className="text-sm font-bold text-foreground mb-1">{vo.titleMetaHealth}</h3>
-                <p className="text-xs text-muted-foreground mb-3">{vo.titleMetaHint}</p>
+                <ChartTitleWithHint title={vo.titleMetaHealth} helpKey="views.overview.titleMetaChart" />
                 <ChartPanel heightClass="h-64">
                   <div className="h-full w-full" role="img" aria-label={titleMetaChart.aria}>
                     <Bar data={titleMetaChart.data} options={barOptsGrouped(vo.chartPages)} />
@@ -121,53 +117,62 @@ export function OverviewChartsTab({ charts, depth }: OverviewChartsTabProps) {
             )}
             {socialStats && (
               <Card shadow>
-                <h3 className="text-sm font-bold text-foreground mb-1">{vo.socialPreview}</h3>
-                <p className="text-xs text-muted-foreground mb-3">{vo.socialPreviewHint}</p>
+                <ChartTitleWithHint title={vo.socialPreview} hint={vo.socialPreviewHint} />
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3" role="group" aria-label={socialStats.aria}>
                   {socialStats.og != null && (
-                    <StatCard label={vo.socialLabelsOg} value={`${socialStats.og.toFixed(1)}%`} sub={pct} />
+                    <StatCard
+                      label={vo.socialLabelsOg}
+                      value={`${socialStats.og.toFixed(1)}%`}
+                      sub={pct}
+                      hint={metricHelpHint('views.overview.ogCoverage')}
+                    />
                   )}
                   {socialStats.twitter != null && (
-                    <StatCard label={vo.socialLabelsTwitter} value={`${socialStats.twitter.toFixed(1)}%`} sub={pct} />
+                    <StatCard
+                      label={vo.socialLabelsTwitter}
+                      value={`${socialStats.twitter.toFixed(1)}%`}
+                      sub={pct}
+                      hint={metricHelpHint('views.overview.twitterCoverage')}
+                    />
                   )}
                   {socialStats.ogImage != null && (
-                    <StatCard label={vo.socialLabelsOgImage} value={`${socialStats.ogImage.toFixed(1)}%`} sub={pct} />
+                    <StatCard
+                      label={vo.socialLabelsOgImage}
+                      value={`${socialStats.ogImage.toFixed(1)}%`}
+                      sub={pct}
+                      hint={metricHelpHint('views.overview.ogImageCoverage')}
+                    />
                   )}
                 </div>
               </Card>
             )}
             {readingLevelChart && (
               <Card shadow>
-                <h3 className="text-sm font-bold text-foreground mb-1">{vo.readingLevel}</h3>
-                <p className="text-xs text-muted-foreground mb-3">{vo.readingLevelHint}</p>
+                <ChartTitleWithHint title={vo.readingLevel} hint={vo.readingLevelHint} />
                 <OverviewBarChart chart={readingLevelChart} yTitle={vo.chartPages} />
               </Card>
             )}
             {mimeChart && (
               <Card shadow>
-                <h3 className="text-sm font-bold text-foreground mb-1">{vo.topMime}</h3>
-                <p className="text-xs text-muted-foreground mb-3">{vo.topMimeHint}</p>
+                <ChartTitleWithHint title={vo.topMime} helpKey="views.overview.mimeChart" />
                 <OverviewBarChart chart={mimeChart} yTitle={vo.chartUrls} />
               </Card>
             )}
             {outlinksChart && (
               <Card shadow>
-                <h3 className="text-sm font-bold text-foreground mb-1">{vo.outlinksTitle}</h3>
-                <p className="text-xs text-muted-foreground mb-3">{vo.outlinksHint}</p>
+                <ChartTitleWithHint title={vo.outlinksTitle} helpKey="views.overview.outlinksChart" />
                 <OverviewBarChart chart={outlinksChart} yTitle={vo.chartUrls} />
               </Card>
             )}
             {domainsChart && (
               <Card shadow className="lg:col-span-2">
-                <h3 className="text-sm font-bold text-foreground mb-1">{vo.topDomains}</h3>
-                <p className="text-xs text-muted-foreground mb-3">{vo.topDomainsHint}</p>
+                <ChartTitleWithHint title={vo.topDomains} helpKey="views.overview.topDomainsChart" />
                 <OverviewBarChart chart={domainsChart} yTitle={vo.chartUrls} />
               </Card>
             )}
             {lighthouseScores && (
               <Card shadow className="lg:col-span-2">
-                <h3 className="text-sm font-bold text-foreground mb-1">{vo.lhCategoryScores}</h3>
-                <p className="text-xs text-muted-foreground mb-3">{vo.lhCategoryHint}</p>
+                <ChartTitleWithHint title={vo.lhCategoryScores} helpKey="views.overview.lhCategoryChart" />
                 <LighthouseScoreGrid
                   scores={lighthouseScores.scores}
                   categoryLabels={lhLabels}

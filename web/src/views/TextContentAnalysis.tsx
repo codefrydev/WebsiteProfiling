@@ -1,7 +1,7 @@
 'use client';
 
 import type { Chart, TooltipItem } from 'chart.js';
-import { Fragment, useState, useMemo, useEffect, type ComponentType, type ReactNode } from 'react';
+import { Fragment, useState, useMemo, useEffect } from 'react';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import type {
   ContentAnalyticsData,
@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
+import { metricHelpHint } from '@/lib/metricHelp';
 import {
   PageLayout,
   PageHeader,
@@ -44,6 +45,8 @@ import {
   ViewTabs,
   ViewTabPanel,
   Button,
+  SectionHeader,
+  ChartTitleWithHint,
 } from '../components';
 import type { ViewTabItem } from '../components';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
@@ -145,29 +148,6 @@ function barOptsH(xTitle?: string, yAxisLabels?: readonly string[]) {
   });
 }
 
-function SectionHeader({
-  icon,
-  title,
-  description,
-}: {
-  icon: ComponentType<{ className?: string }>;
-  title: ReactNode;
-  description?: ReactNode;
-}) {
-  const Icon = icon;
-  return (
-    <div className="flex items-start gap-3 border-b border-muted pb-4">
-      <div className="p-2 bg-brand-800 border border-default rounded-lg">
-        <Icon className="h-5 w-5 text-link" />
-      </div>
-      <div>
-        <h2 className="text-lg font-bold text-bright">{title}</h2>
-        {description ? <p className="text-sm text-muted-foreground mt-0.5">{description}</p> : null}
-      </div>
-    </div>
-  );
-}
-
 function KeywordIndexTable({
   rows,
   vtca,
@@ -198,9 +178,13 @@ function KeywordIndexTable({
         <TableHead sticky>
           <tr>
             <TableHeadCell className="w-8" />
-            <TableHeadCell>{vtca.thWord}</TableHeadCell>
-            <TableHeadCell className="text-right w-28">{vtca.thTotalCount}</TableHeadCell>
-            <TableHeadCell className="text-right w-24">{vtca.thPageCount}</TableHeadCell>
+            <TableHeadCell hint={metricHelpHint('views.textContentAnalysis.thWord')}>{vtca.thWord}</TableHeadCell>
+            <TableHeadCell className="text-right w-28" hint={metricHelpHint('views.textContentAnalysis.thTotalCount')}>
+              {vtca.thTotalCount}
+            </TableHeadCell>
+            <TableHeadCell className="text-right w-24" hint={metricHelpHint('views.textContentAnalysis.thPageCount')}>
+              {vtca.thPageCount}
+            </TableHeadCell>
           </tr>
         </TableHead>
         <TableBody striped>
@@ -445,7 +429,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
           </div>
 
           <div className="space-y-4">
-            <SectionHeader icon={AlignLeft} title={vtca.byPageTitle} description={vtca.byPageDesc} />
+            <SectionHeader icon={AlignLeft} title={vtca.byPageTitle} description={vtca.byPageDesc} helpKey="views.textContentAnalysis.byPageSection" size="sm" />
             <SortablePaginatedTable
               columns={byPageColumns}
               rows={byPageRows}
@@ -558,10 +542,10 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
             <p className="text-sm text-muted-foreground">{vtca.noKeywordData}</p>
           )}
 
-          <SectionHeader icon={BarChart2} title={vtca.tabs.analytics} />
+          <SectionHeader icon={BarChart2} title={vtca.tabs.analytics} helpKey="views.textContentAnalysis.analyticsSection" size="sm" />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-foreground mb-3">{vtca.wordCountDist}</h3>
+              <ChartTitleWithHint title={vtca.wordCountDist} helpKey="views.textContentAnalysis.wordCountDist" />
               <ChartPanel heightClass="h-64">
                 {wcLabels.length > 0 ? (
                   <Bar
@@ -576,7 +560,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
             </Card>
 
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-foreground mb-3">{vtca.readingLevelDist}</h3>
+              <ChartTitleWithHint title={vtca.readingLevelDist} helpKey="views.textContentAnalysis.readingLevelDist" />
               <ChartPanel heightClass="h-64">
                 {rlLabels.length > 0 ? (
                   <Bar
@@ -600,7 +584,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
             </Card>
 
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-foreground mb-3">{vtca.contentHtmlRatio}</h3>
+              <ChartTitleWithHint title={vtca.contentHtmlRatio} helpKey="views.textContentAnalysis.contentHtmlRatio" />
               <ChartPanel heightClass="h-64">
                 {crLabels.length > 0 ? (
                   <Bar
@@ -616,7 +600,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
 
             {hasWcPercBar ? (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-foreground mb-3">{vtca.wordCountLadder}</h3>
+                <ChartTitleWithHint title={vtca.wordCountLadder} helpKey="views.textContentAnalysis.wordCountLadder" />
                 <ChartPanel>
                   <Bar
                     data={{
@@ -698,7 +682,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableHeadCell>{vtca.thRepresentative}</TableHeadCell>
+                      <TableHeadCell hint={metricHelpHint('views.textContentAnalysis.thCluster')}>{vtca.thRepresentative}</TableHeadCell>
                       <TableHeadCell>{vtca.thClusterScore}</TableHeadCell>
                       <TableHeadCell>{vtca.thKeywords}</TableHeadCell>
                     </TableRow>
@@ -733,7 +717,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableHeadCell>{vtca.thRepresentative}</TableHeadCell>
+                      <TableHeadCell hint={metricHelpHint('views.textContentAnalysis.thCluster')}>{vtca.thRepresentative}</TableHeadCell>
                       <TableHeadCell>{vtca.thClusterScore}</TableHeadCell>
                       <TableHeadCell>{vtca.thKeywords}</TableHeadCell>
                     </TableRow>

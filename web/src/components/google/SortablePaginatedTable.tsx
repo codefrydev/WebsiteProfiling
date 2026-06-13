@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { format } from '../../lib/strings';
+import { metricHelpHint } from '@/lib/metricHelp';
+import HelpHint, { normalizeHintContent } from '../HelpHint';
 import { Button } from '../index';
 import { PAGE_SIZE, paginateSlice } from './tableUtils';
 import type { PaginationLabels, TableColumn } from '@/types/components';
@@ -71,18 +73,40 @@ export default function SortablePaginatedTable({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-default">
-              {columns.map((col) => (
+              {columns.map((col) => {
+                const hintContent = normalizeHintContent(
+                  col.hint == null
+                    ? undefined
+                    : typeof col.hint === 'string'
+                      ? metricHelpHint(col.hint)
+                      : col.hint,
+                );
+                return (
                 <th
                   key={col.key}
                   onClick={() => toggle(col.key)}
                   className="px-3 py-2 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider cursor-pointer select-none hover:text-foreground whitespace-nowrap"
                 >
-                  {col.label}
+                  <span className="inline-flex items-center gap-1 normal-case">
+                    {col.label}
+                    {hintContent ? (
+                      <span
+                        className="inline-flex"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      >
+                        <HelpHint title={hintContent.title} ariaLabel={`About ${col.label}`}>
+                          {hintContent.body}
+                        </HelpHint>
+                      </span>
+                    ) : null}
+                  </span>
                   {sortKey === col.key && (
                     <span className="ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
                   )}
                 </th>
-              ))}
+              );
+              })}
             </tr>
           </thead>
           <tbody>

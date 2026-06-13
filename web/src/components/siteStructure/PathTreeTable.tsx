@@ -3,6 +3,7 @@ import { ChevronRight, ChevronDown, Folder, Home, FileText } from 'lucide-react'
 import Table, { TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '../Table';
 import InlinksMetricCell from '../links/InlinksMetricCell';
 import { rtColor } from '../../utils/linkUtils';
+import { metricHelpHint } from '@/lib/metricHelp';
 import type { PathTreeTableRow } from '@/types/report';
 
 interface ComparePairBarProps {
@@ -256,26 +257,40 @@ export default function PathTreeTable({
     <Table wrapperClassName={tableWrapperClassName}>
       <TableHead sticky>
         <TableRow>
-          <TableHeadCell className="min-w-[200px] sticky left-0 z-20 bg-brand-900 border-r border-muted/60 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.35)]">
+          <TableHeadCell className="min-w-[200px] sticky left-0 z-20 bg-brand-900 border-r border-muted/60 shadow-[2px_0_8px_-4px_rgba(0,0,0,0.35)]" hint={metricHelpHint('views.siteStructure.colPath')}>
             {s.colPath}
           </TableHeadCell>
-          <TableHeadCell className="text-right whitespace-nowrap">{s.colPages}</TableHeadCell>
+          <TableHeadCell className="text-right whitespace-nowrap" hint={metricHelpHint('views.siteStructure.colPages')}>
+            {s.colPages}
+          </TableHeadCell>
           {hasCompare && showCompareCharts ? (
-            <TableHeadCell className="w-14 px-2 text-center" title={s.changePagesHint}>
+            <TableHeadCell className="w-14 px-2 text-center" hint={metricHelpHint('views.siteStructure.changePages')}>
               Δ
             </TableHeadCell>
           ) : null}
-          <TableHeadCell className="text-right whitespace-nowrap">{s.colInlinks}</TableHeadCell>
+          <TableHeadCell className="text-right whitespace-nowrap" hint={metricHelpHint('views.siteStructure.colInlinks')}>
+            {s.colInlinks}
+          </TableHeadCell>
           {hasCompare && showCompareCharts ? (
-            <TableHeadCell className="w-14 px-2 text-center" title={s.changeInlinksHint}>
+            <TableHeadCell className="w-14 px-2 text-center" hint={metricHelpHint('views.siteStructure.changeInlinks')}>
               Δ
             </TableHeadCell>
           ) : null}
-          <TableHeadCell className="hidden md:table-cell text-right whitespace-nowrap">{s.colOutlinks}</TableHeadCell>
-          <TableHeadCell className="hidden lg:table-cell text-right whitespace-nowrap">{s.colAvgWords}</TableHeadCell>
-          <TableHeadCell className="text-right whitespace-nowrap">{s.colAvgRt}</TableHeadCell>
-          <TableHeadCell className="hidden sm:table-cell text-right whitespace-nowrap">{s.colPerf}</TableHeadCell>
-          <TableHeadCell className="hidden lg:table-cell text-right whitespace-nowrap">{s.colSeo}</TableHeadCell>
+          <TableHeadCell className="hidden md:table-cell text-right whitespace-nowrap" hint={metricHelpHint('shared.outlinks')}>
+            {s.colOutlinks}
+          </TableHeadCell>
+          <TableHeadCell className="hidden lg:table-cell text-right whitespace-nowrap" hint={metricHelpHint('shared.avgWords')}>
+            {s.colAvgWords}
+          </TableHeadCell>
+          <TableHeadCell className="text-right whitespace-nowrap" hint={metricHelpHint('shared.responseTime')}>
+            {s.colAvgRt}
+          </TableHeadCell>
+          <TableHeadCell className="hidden sm:table-cell text-right whitespace-nowrap" hint={metricHelpHint('views.siteStructure.avgPerf')}>
+            {s.colPerf}
+          </TableHeadCell>
+          <TableHeadCell className="hidden lg:table-cell text-right whitespace-nowrap" hint={metricHelpHint('views.siteStructure.colSeo')}>
+            {s.colSeo}
+          </TableHeadCell>
         </TableRow>
       </TableHead>
       <TableBody>

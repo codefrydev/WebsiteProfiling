@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import type { TooltipItem } from 'chart.js';
-import { Card } from '@/components';
+import { Card, ChartTitleWithHint } from '@/components';
 import { ChartAccessibleFallback } from '@/components/charts';
 import { strings } from '@/lib/strings';
 import type { InlinkAnchorRow, LinkRelSummary } from '@/types/report';
@@ -155,8 +155,7 @@ export default function LinkAttributesCharts({ summary, anchors, labels }: LinkA
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-w-0">
       {scopeChart ? (
         <Card padding="tight" shadow className="min-w-0 overflow-hidden">
-          <h2 className="text-sm font-bold text-foreground mb-1">{vl.chartLinkScopeTitle}</h2>
-          <p className="text-xs text-muted-foreground mb-3">{vl.chartLinkScopeHint}</p>
+          <ChartTitleWithHint as="h2" title={vl.chartLinkScopeTitle} helpKey="views.links.chartLinkScope" />
           <div className="h-56 flex items-center justify-center">
             <div className="w-full max-w-[260px] h-48">
               <ChartAccessibleFallback
@@ -185,8 +184,7 @@ export default function LinkAttributesCharts({ summary, anchors, labels }: LinkA
 
       {internalAttrsChart ? (
         <Card padding="tight" shadow className="min-w-0 overflow-hidden">
-          <h2 className="text-sm font-bold text-foreground mb-1">{vl.chartInternalAttrsTitle}</h2>
-          <p className="text-xs text-muted-foreground mb-3">{vl.chartInternalAttrsHint}</p>
+          <ChartTitleWithHint as="h2" title={vl.chartInternalAttrsTitle} helpKey="views.links.chartInternalAttrs" />
           <div className="h-56 flex items-center justify-center">
             <div className="w-full max-w-[260px] h-48">
               <ChartAccessibleFallback
@@ -215,8 +213,7 @@ export default function LinkAttributesCharts({ summary, anchors, labels }: LinkA
 
       {topAnchors.length > 0 ? (
         <Card padding="tight" shadow className="min-w-0 overflow-hidden">
-          <h2 className="text-sm font-bold text-foreground mb-1">{vl.chartTopAnchorsTitle}</h2>
-          <p className="text-xs text-muted-foreground mb-3">{vl.chartTopAnchorsHint}</p>
+          <ChartTitleWithHint as="h2" title={vl.chartTopAnchorsTitle} helpKey="views.links.chartTopAnchors" />
           <div className="relative h-72 min-w-0 w-full overflow-hidden">
             <ChartAccessibleFallback
               summary={formatCompositionAria(
@@ -246,8 +243,7 @@ export default function LinkAttributesCharts({ summary, anchors, labels }: LinkA
 
       {topTargets.length > 0 ? (
         <Card padding="tight" shadow className="min-w-0 overflow-hidden">
-          <h2 className="text-sm font-bold text-foreground mb-1">{vl.chartTopTargetsTitle}</h2>
-          <p className="text-xs text-muted-foreground mb-3">{vl.chartTopTargetsHint}</p>
+          <ChartTitleWithHint as="h2" title={vl.chartTopTargetsTitle} helpKey="views.links.chartTopTargets" />
           <div className="relative h-72 min-w-0 w-full overflow-hidden">
             <ChartAccessibleFallback
               summary={formatCompositionAria(

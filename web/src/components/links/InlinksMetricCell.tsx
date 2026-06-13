@@ -30,11 +30,6 @@ export default function InlinksMetricCell({
       ) : null}
       <span
         className={`order-1 sm:order-2 shrink-0 inline-flex items-center justify-end gap-1.5 text-sm tabular-nums ${inlinksTextClass(inl, maxInSection)}`}
-        title={
-          maxInSection > 0 && inl > 0
-            ? `${Math.round(pct)}% of the strongest inlinks count in this view (${maxInSection}).`
-            : undefined
-        }
       >
         {showIcon ? <Link2 className="h-3.5 w-3.5 shrink-0 opacity-70 hidden sm:inline" aria-hidden /> : null}
         {inl.toLocaleString()}

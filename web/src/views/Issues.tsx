@@ -5,7 +5,7 @@ import { AlertTriangle, AlertCircle, Info, ExternalLink, Flame, BarChart2, ListC
 import { useReport } from '../context/useReport';
 import { useOptionalPipeline } from '../context/PipelineContext';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Badge, ViewTabs, ViewTabPanel, Button } from '../components';
+import { PageLayout, PageHeader, Card, Badge, ViewTabs, ViewTabPanel, Button, LabelWithHint } from '../components';
 import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
 import IssueTaskBoard from '@/components/issues/IssueTaskBoard';
@@ -75,6 +75,12 @@ function IssueCard({ item, vi, emDash }: IssueCardProps) {
             <UrlInspectorButton url={iss.url} />
           </div>
         )}
+        {iss.impact_score != null && Number(iss.impact_score) > 0 ? (
+          <p className="mt-2 text-xs text-muted-foreground tabular-nums">
+            <LabelWithHint label="Impact score" helpKey="shared.impactScore" />:{' '}
+            <span className="font-semibold text-foreground">{Number(iss.impact_score).toLocaleString()}</span>
+          </p>
+        ) : null}
       </div>
       <div className="flex-1 min-w-0 bg-brand-900 rounded-lg p-3 border border-muted space-y-2">
         <div className="text-xs text-link font-bold uppercase mb-1 tracking-wide">{vi.fixRecommendation}</div>

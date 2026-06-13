@@ -18,7 +18,7 @@ import {
 } from '../lib/domainSlug';
 import { goToPipeline } from '../lib/pipelineReturn';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Button, ViewTabs, ViewTabPanel, Select } from '../components';
+import { PageLayout, PageHeader, Card, Button, ViewTabs, ViewTabPanel, Select, LabelWithHint } from '../components';
 import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import type { ViewTabItem } from '../components';
 import {
@@ -391,9 +391,17 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
               const p75 = data.crux_summary?.metrics?.[
                 metric === 'lcp' ? 'largest_contentful_paint' : metric === 'inp' ? 'interaction_to_next_paint' : 'cumulative_layout_shift'
               ]?.p75;
+              const cruxHelpKey =
+                metric === 'lcp'
+                  ? 'views.lighthouse.cruxLcp'
+                  : metric === 'inp'
+                    ? 'views.lighthouse.cruxInp'
+                    : 'views.lighthouse.cruxCls';
               return (
                 <div key={metric}>
-                  <span className="text-muted-foreground uppercase text-xs">{metric}</span>
+                  <span className="text-muted-foreground uppercase text-xs">
+                    <LabelWithHint label={metric} helpKey={cruxHelpKey} />
+                  </span>
                   <p className={`font-medium ${pass ? 'text-emerald-600' : 'text-amber-600'}`}>
                     {p75 != null ? String(p75) : '—'} {pass === false ? '(needs improvement)' : pass ? '(good)' : ''}
                   </p>
@@ -415,7 +423,9 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
       {activeTab === 'overview' && (
         <div id="lh-tab-overview" role="tabpanel" aria-labelledby="lh-tab-btn-overview" className="space-y-6">
           <div>
-            <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-4">{vlh.categoriesSection}</h2>
+            <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-4">
+              <LabelWithHint label={vlh.categoriesSection} helpKey="views.lighthouse.categoryScores" />
+            </h2>
             <div className="flex flex-wrap gap-6 justify-start items-center">
               {CATEGORIES.map(({ id, label }) => (
                 <ScoreRing key={id} label={label} score={cs[id] != null ? Number(cs[id]) : null} />
@@ -447,7 +457,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
             <div ref={pageDetailRef} className="space-y-6">
               <div>
                 <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-4">
-                  {vlh.categoriesSection}
+                  <LabelWithHint label={vlh.categoriesSection} helpKey="views.lighthouse.categoryScores" />
                 </h2>
                 <div className="flex flex-wrap gap-6 justify-start items-center">
                   {CATEGORIES.map(({ id, label }) => {

@@ -6,7 +6,8 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 import { Bar } from 'react-chartjs-2';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, ViewTabs, ViewTabPanel } from '../components';
+import { metricHelpHint } from '@/lib/metricHelp';
+import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, ViewTabs, ViewTabPanel, StatCard, ChartTitleWithHint } from '../components';
 import type { ViewTabItem } from '../components';
 import { palette } from '../utils/chartPalette';
 import { getGridColor, getChartCanvasTextColor } from '../utils/chartJsDefaults';
@@ -123,17 +124,19 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
         <ViewTabPanel idPrefix="tech-stack" tabId="overview" className="space-y-6">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {Object.entries(categoryCounts).slice(0, 4).map(([cat, count]) => (
-              <Card key={cat} shadow>
-                <div className="text-xs text-muted-foreground uppercase font-bold mb-1">{cat}</div>
-                <div className="text-2xl font-bold text-bright">{String(count)}</div>
-                <div className="text-[10px] text-muted-foreground mt-1">{vr.techDetectedSuffix}</div>
-              </Card>
+              <StatCard
+                key={cat}
+                label={cat}
+                value={String(count)}
+                sub={vr.techDetectedSuffix}
+                hint={metricHelpHint('views.techStack.categoryCount')}
+                shadow
+              />
             ))}
           </div>
 
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-foreground mb-1">{vr.cardDetected}</h3>
-            <p className="text-xs text-muted-foreground mb-3">{vr.cardHint}</p>
+            <ChartTitleWithHint as="h3" title={vr.cardDetected} helpKey="views.techStack.detectedChart" />
             <div style={{ height: Math.max(200, techs.length * 28 + 40) }}>
               {chartLabels.length > 0 ? (
                 <Bar
@@ -177,7 +180,7 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
                   <tr>
                     <TableHeadCell className="text-left">{vr.colTechnology}</TableHeadCell>
                     <TableHeadCell className="text-left">{vr.colCategory}</TableHeadCell>
-                    <TableHeadCell className="text-right">{vr.colPages}</TableHeadCell>
+                    <TableHeadCell className="text-right" hint={metricHelpHint('views.techStack.pagesDetected')}>{vr.colPages}</TableHeadCell>
                     <TableHeadCell className="text-left">{vr.colSampleUrls}</TableHeadCell>
                   </tr>
                 </TableHead>

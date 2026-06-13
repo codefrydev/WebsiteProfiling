@@ -5,6 +5,7 @@ import { FileSearch } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, StatCard } from '../components';
+import { metricHelpHint } from '@/lib/metricHelp';
 import UrlGapListsPanel from '../components/google/UrlGapListsPanel';
 import type { UrlJoinData, ViewProps } from '@/types';
 
@@ -37,10 +38,10 @@ export default function Indexation(_props: ViewProps) {
     <PageLayout>
       <PageHeader title={vi.title} subtitle={vi.subtitle} icon={<FileSearch className="h-7 w-7 text-link shrink-0" />} />
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        <StatCard label={vi.crawled} value={counts?.crawled ?? '—'} />
-        <StatCard label={vi.sitemap} value={counts?.sitemap ?? '—'} />
-        <StatCard label={vi.gscPages} value={counts?.gsc_pages ?? '—'} />
-        <StatCard label={vi.sitemapOnly} value={counts?.sitemap_only ?? '—'} />
+        <StatCard label={vi.crawled} value={counts?.crawled ?? '—'} hint={metricHelpHint('views.indexation.crawled')} />
+        <StatCard label={vi.sitemap} value={counts?.sitemap ?? '—'} hint={metricHelpHint('views.indexation.sitemap')} />
+        <StatCard label={vi.gscPages} value={counts?.gsc_pages ?? '—'} hint={metricHelpHint('views.indexation.gscPages')} />
+        <StatCard label={vi.sitemapOnly} value={counts?.sitemap_only ?? '—'} hint={metricHelpHint('views.indexation.sitemapOnly')} />
       </div>
       <Card className="mb-6">
         <h3 className="text-sm font-semibold text-foreground mb-2">{vi.gapsTitle}</h3>

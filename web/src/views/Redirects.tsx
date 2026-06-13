@@ -3,6 +3,7 @@ import { Bar } from 'react-chartjs-2';
 import type { TooltipItem } from 'chart.js';
 import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
+import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, Badge } from '../components';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
@@ -84,7 +85,7 @@ export default function Redirects({ searchQuery = '' }: ViewProps) {
             <TableHead>
               <tr>
                 <TableHeadCell>{vr.colFrom}</TableHeadCell>
-                <TableHeadCell>{vr.colStatus}</TableHeadCell>
+                <TableHeadCell hint={metricHelpHint('views.redirects.httpStatus')}>{vr.colStatus}</TableHeadCell>
                 <TableHeadCell>{vr.colTo}</TableHeadCell>
                 <TableHeadCell className="w-36" />
               </tr>

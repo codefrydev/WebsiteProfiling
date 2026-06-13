@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { Contact2, ExternalLink } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
+import { metricHelpHint } from '@/lib/metricHelp';
 import {
   PageLayout,
   PageHeader,
@@ -60,7 +61,7 @@ function ContactSectionTable({
           <TableHead>
             <TableRow>
               <TableHeadCell>{vc.colValue}</TableHeadCell>
-              <TableHeadCell>{vc.colSources}</TableHeadCell>
+              <TableHeadCell hint={metricHelpHint('views.contacts.sources')}>{vc.colSources}</TableHeadCell>
               <TableHeadCell>{vc.colPages}</TableHeadCell>
             </TableRow>
           </TableHead>
