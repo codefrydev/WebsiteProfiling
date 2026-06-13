@@ -26,6 +26,7 @@
 <p align="center">
   <a href="#quick-start">Quick start</a> ·
   <a href="#features">Features</a> ·
+  <a href="#what-it-does-not-do">Limitations</a> ·
   <a href="#project-structure">Structure</a> ·
   <a href="#contributing">Contributing</a> ·
   <a href="#docs">Docs</a> ·
@@ -45,6 +46,20 @@ Repository: [codefrydev/WebsiteProfiling](https://github.com/codefrydev/WebsiteP
 **Why this project** — Most site-audit and SEO tools are paid, limited, or built to upsell: paywalls, capped crawls, teaser scores, and “subscribe to see how to fix this.” Many free options give shallow or unreliable reports that push you toward a paid plan instead of real answers.
 
 **Goal** — A free, self-hosted audit you control: crawl your sites, see honest technical SEO issues, connect Search Console and Analytics when you want, and export reports for clients — without a vendor sitting between you and the data.
+
+## What it does not do
+
+Site Audit is built for **honest, self-hosted technical SEO** — not as a drop-in replacement for every paid SaaS data product.
+
+- **No live backlink index** — Backlink tools read **Google Search Console Links CSV imports** (and optional third-party CSV overlays). There is no Ahrefs, Semrush, Moz, or Majestic API integration.
+- **No daily rank tracking** — Keyword positions come from **GSC snapshots** on your connected property, not a proprietary SERP tracker or rank-history database.
+- **No live AI citation checks** — GEO/AEO tools use **on-site heuristics**; they do not query ChatGPT, Perplexity, or other AI search engines in real time.
+- **No third-party keyword volume APIs** — Keyword explorer uses **on-site frequency plus Search Console**; difficulty and SERP feature overlays are estimated unless you supply your own data.
+- **No managed cloud** — You run it (Docker or local dev). This repo is not a hosted multi-tenant SaaS.
+- **No substitute for Google access** — Search Console, Analytics, and Bing Webmaster require **your credentials**; missing or stale integrations show empty states with provenance labels, not fabricated metrics.
+- **Not a ranking guarantee** — Category scores (0–100) are **internal audit scores**, not Google rankings or predicted traffic impact.
+
+Planned extensions (not shipped yet): full backlink index beyond GSC import, SERP rank tracking beyond GSC snapshots, and live AI citation APIs. See [docs/MCP.md](docs/MCP.md#future-pipeline-items).
 
 ## Features
 
@@ -73,7 +88,7 @@ Repository: [codefrydev/WebsiteProfiling](https://github.com/codefrydev/WebsiteP
   </tr>
 </table>
 
-Also included: **AI chat** over audit data (optional), **340 MCP tools** (domain-scoped servers), keyword explorer, backlinks, compare runs, and portfolio management for agencies.
+Also included: **AI chat** over audit data (optional), **340 MCP tools** (domain-scoped servers), keyword explorer (GSC + on-site), backlinks (GSC Links import), compare runs, and portfolio management for agencies.
 
 <p align="center">
   <img src="docs/assets/social-preview.png" alt="Site Audit preview" width="640">
