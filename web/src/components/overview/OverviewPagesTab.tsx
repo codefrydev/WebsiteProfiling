@@ -3,6 +3,7 @@
 import { ExternalLink, Medal, TrendingUp } from 'lucide-react';
 import type { ReportTopPage } from '@/types';
 import { strings, format } from '@/lib/strings';
+import { metricHelpHint } from '@/lib/metricHelp';
 import { formatPageHrefLines } from '@/utils/linkUtils';
 import {
   Card,
@@ -66,8 +67,12 @@ function TopPagesTable({ pages }: { pages: ReportTopPage[] }) {
             <TableHeadCell className="text-left sticky left-14 top-0 z-30 min-w-[min(200px,55vw)] max-w-[min(280px,78vw)] bg-brand-900 border-r border-default shadow-[4px_0_12px_-4px_rgba(0,0,0,0.45)]">
               {vo.thPage}
             </TableHeadCell>
-            <TableHeadCell className="text-right min-w-0">{vo.thImportance}</TableHeadCell>
-            <TableHeadCell className="text-right min-w-0">{vo.thConnections}</TableHeadCell>
+            <TableHeadCell className="text-right min-w-0" hint={metricHelpHint('views.overview.linkScore')}>
+              {vo.thImportance}
+            </TableHeadCell>
+            <TableHeadCell className="text-right min-w-0" hint={metricHelpHint('views.overview.connections')}>
+              {vo.thConnections}
+            </TableHeadCell>
           </tr>
         </TableHead>
         <TableBody striped>

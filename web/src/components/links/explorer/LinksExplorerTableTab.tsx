@@ -4,6 +4,8 @@ import { type MouseEvent, type RefObject } from 'react';
 import { Search, ExternalLink } from 'lucide-react';
 import type { ReportLink } from '@/types';
 import { strings, format } from '@/lib/strings';
+import { metricHelpHint } from '@/lib/metricHelp';
+import HelpHint, { normalizeHintContent } from '@/components/HelpHint';
 import { Card, Badge, Button } from '@/components';
 import { formatMs, rtColor, formatPageHrefLines } from '@/utils/linkUtils';
 import { linkHasBrowserErrors } from '@/lib/browserErrors';
@@ -13,6 +15,7 @@ import SavedCrawlFiltersBar from '@/components/links/SavedCrawlFiltersBar';
 import type { LinksFilterValues } from '@/components/links/LinksFilterBar';
 import type { LinkSortKey } from './types';
 import { LinksExplorerTabPanel } from './LinksExplorerTabPanel';
+import { LinksExplorerSummaryCharts } from './LinksExplorerSummaryCharts';
 
 export interface LinksExplorerTableTabProps {
   filterValues: LinksFilterValues;
@@ -69,6 +72,8 @@ export function LinksExplorerTableTab({
   const sj = strings.common;
   const hasCustomExtract = links.some((l) => l.custom_extract);
   const customFieldKeys = collectCustomFieldKeys(links);
+  const customExtractHint = normalizeHintContent(metricHelpHint('views.links.explorerExtract'));
+  const jsErrorsHint = normalizeHintContent(metricHelpHint('views.links.explorerJsErrors'));
 
   return (
     <LinksExplorerTabPanel tabId="urls" className="flex flex-col gap-4">
@@ -85,6 +90,8 @@ export function LinksExplorerTableTab({
           onLoad={onLoadSavedFilter}
         />
       ) : null}
+
+      <LinksExplorerSummaryCharts links={links} />
 
       <Card overflowHidden padding="none" className="flex flex-col min-h-[min(500px,70vh)] sm:min-h-[500px]">
         <div
@@ -113,8 +120,22 @@ export function LinksExplorerTableTab({
                   onSort={onToggleSort}
                   className="px-3 sm:px-6 sticky left-0 z-30 bg-brand-900 border-r border-default shadow-[4px_0_16px_-8px_rgba(0,0,0,0.55)]"
                 />
-                <SortTh label={vl.thStatus} field="status" sortBy={sortBy} sortDesc={sortDesc} onSort={onToggleSort} />
-                <SortTh label={vl.thLinksIn} field="inlinks" sortBy={sortBy} sortDesc={sortDesc} onSort={onToggleSort} />
+                <SortTh
+                  label={vl.thStatus}
+                  field="status"
+                  sortBy={sortBy}
+                  sortDesc={sortDesc}
+                  onSort={onToggleSort}
+                  hint={metricHelpHint('views.links.explorerStatus')}
+                />
+                <SortTh
+                  label={vl.thLinksIn}
+                  field="inlinks"
+                  sortBy={sortBy}
+                  sortDesc={sortDesc}
+                  onSort={onToggleSort}
+                  hint={metricHelpHint('views.links.explorerInlinks')}
+                />
                 <SortTh
                   label={vl.thCrawlDepth}
                   field="depth"
@@ -122,8 +143,16 @@ export function LinksExplorerTableTab({
                   sortDesc={sortDesc}
                   onSort={onToggleSort}
                   className="hidden md:table-cell"
+                  hint={metricHelpHint('views.links.explorerDepth')}
                 />
-                <SortTh label={vl.thLoadTime} field="response_time_ms" sortBy={sortBy} sortDesc={sortDesc} onSort={onToggleSort} />
+                <SortTh
+                  label={vl.thLoadTime}
+                  field="response_time_ms"
+                  sortBy={sortBy}
+                  sortDesc={sortDesc}
+                  onSort={onToggleSort}
+                  hint={metricHelpHint('views.links.explorerLoadTime')}
+                />
                 <SortTh
                   label={vl.thWords}
                   field="word_count"
@@ -131,10 +160,18 @@ export function LinksExplorerTableTab({
                   sortDesc={sortDesc}
                   onSort={onToggleSort}
                   className="hidden md:table-cell"
+                  hint={metricHelpHint('views.links.explorerWords')}
                 />
                 {hasCustomExtract ? (
                   <th className="hidden lg:table-cell px-4 py-4 text-muted-foreground uppercase text-xs whitespace-nowrap">
-                    {vl.thCustomExtract}
+                    <span className="inline-flex items-center gap-1 normal-case">
+                      {vl.thCustomExtract}
+                      {customExtractHint ? (
+                        <HelpHint title={customExtractHint.title} ariaLabel={`About ${vl.thCustomExtract}`}>
+                          {customExtractHint.body}
+                        </HelpHint>
+                      ) : null}
+                    </span>
                   </th>
                 ) : null}
                 {customFieldKeys.map((key) => (
@@ -146,7 +183,14 @@ export function LinksExplorerTableTab({
                   </th>
                 ))}
                 <th className="hidden lg:table-cell px-4 py-4 text-muted-foreground uppercase text-xs whitespace-nowrap">
-                  {vl.thJsErrors}
+                  <span className="inline-flex items-center gap-1 normal-case">
+                    {vl.thJsErrors}
+                    {jsErrorsHint ? (
+                      <HelpHint title={jsErrorsHint.title} ariaLabel={`About ${vl.thJsErrors}`}>
+                        {jsErrorsHint.body}
+                      </HelpHint>
+                    ) : null}
+                  </span>
                 </th>
                 <th className="px-3 sm:px-4 py-4 text-center text-muted-foreground uppercase text-xs whitespace-nowrap">
                   {vl.thActions}

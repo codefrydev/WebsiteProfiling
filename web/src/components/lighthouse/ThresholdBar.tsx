@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
+import HelpHint from '../HelpHint';
 import { METRIC_THRESHOLDS, metricStatus, formatMetric } from '../../utils/lighthouseUtils';
 
 export interface ThresholdBarProps {
@@ -8,9 +9,7 @@ export interface ThresholdBarProps {
 
 export default function ThresholdBar({ metricKey, value }: ThresholdBarProps) {
   const t = METRIC_THRESHOLDS[metricKey];
-  const [hovered, setHovered] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const barRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const id = setTimeout(() => setMounted(true), 50);
@@ -37,15 +36,16 @@ export default function ThresholdBar({ metricKey, value }: ThresholdBarProps) {
         : 'text-red-600 dark:text-red-400';
   const refVal = t.good * 1.5;
   const pct = Math.min(100, (v / refVal) * 100);
+  const hintBody = `${t.desc} Good: ≤${formatMetric(metricKey, t.good)}. Needs improvement: ≤${formatMetric(metricKey, t.warn)}.`;
 
   return (
-    <div
-      className="flex items-center gap-4 px-5 py-4 hover:bg-brand-800 transition-colors relative"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      ref={barRef}
-    >
-      <span className="text-foreground text-sm w-44 shrink-0">{t.label}</span>
+    <div className="flex items-center gap-4 px-5 py-4 hover:bg-brand-800 transition-colors">
+      <span className="text-foreground text-sm w-44 shrink-0 inline-flex items-center gap-1">
+        {t.label}
+        <HelpHint title={t.label} ariaLabel={`About ${t.label}`}>
+          {hintBody}
+        </HelpHint>
+      </span>
       <div className="flex-1 flex items-center gap-3">
         <div className="flex-1 bg-track rounded-full h-2.5 overflow-hidden">
           <div
@@ -60,21 +60,6 @@ export default function ThresholdBar({ metricKey, value }: ThresholdBarProps) {
           {formatMetric(metricKey, v)}
         </span>
       </div>
-
-      {hovered && (
-        <div className="absolute left-0 bottom-full mb-2 ml-4 z-50 bg-brand-800 border border-default rounded-xl shadow-2xl p-3 w-72 pointer-events-none">
-          <div className="font-semibold text-bright text-sm mb-1">{t.label}</div>
-          <p className="text-xs text-muted-foreground mb-2">{t.desc}</p>
-          <div className="flex gap-4 text-xs">
-            <span><span className="text-muted-foreground">Value:</span> <span className={textColor}>{formatMetric(metricKey, v)}</span></span>
-            <span><span className="text-muted-foreground">Good:</span> <span className="text-green-700 dark:text-green-400">≤{formatMetric(metricKey, t.good)}</span></span>
-            <span><span className="text-muted-foreground">Warn:</span> <span className="text-yellow-800 dark:text-yellow-400">≤{formatMetric(metricKey, t.warn)}</span></span>
-          </div>
-          <div className={`mt-2 text-xs font-semibold ${textColor}`}>
-            {status === 'good' ? '✓ Good' : status === 'warn' ? '⚠ Needs improvement' : '✕ Poor'}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

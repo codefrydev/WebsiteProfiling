@@ -82,6 +82,8 @@ impact_score = priority_weight + (gsc_clicks × 10) + (ga4_sessions × 5)
 
 Priority weights: Critical = 1000, High = 100, Medium = 10, Low = 1.
 
+**UI hints:** Metric explanations in the app (circled **?** tooltips on KPIs, table headers, and chart titles) are sourced from `web/src/strings.json` under `metricHelp`. Shared keys live in `metricHelp.shared.*` (e.g. `metricHelp.shared.impactScore`); view-specific keys under `metricHelp.views.{viewId}.*`. Keep glossary definitions and `metricHelp` copy aligned when changing formulas or data sources.
+
 ---
 
 ## Provenance badges

@@ -138,11 +138,27 @@ export function buildKeywordColumns(
     cols.push({
       key: 'serp_estimated_competition',
       label: ke.table.serpCompetition,
+      hint: 'views.keywords.serpCompetition',
       render: (v) =>
         v != null && typeof v === 'number' ? (
-          <span className="tabular-nums text-orange-700 dark:text-orange-300 font-semibold" title={ke.table.serpCompetitionHint}>
+          <span className="tabular-nums text-orange-700 dark:text-orange-300 font-semibold">
             {v}
           </span>
+        ) : (
+          '—'
+        ),
+    });
+  }
+
+  const showOnSiteFreq = allRows.some((r) => r.on_site_frequency != null);
+  if (showOnSiteFreq) {
+    cols.push({
+      key: 'on_site_frequency',
+      label: ke.table.onSiteFrequency,
+      hint: 'shared.onSiteFrequency',
+      render: (v) =>
+        v != null && typeof v === 'number' ? (
+          <span className="tabular-nums">{Number(v).toLocaleString()}</span>
         ) : (
           '—'
         ),
@@ -163,6 +179,7 @@ export function buildKeywordColumns(
     {
       key: 'gsc_position',
       label: ke.table.position,
+      hint: 'views.keywords.gscPosition',
       render: (v, row) => {
         const r = row as KeywordRow | undefined;
         const kw = String(r?.keyword ?? '');
@@ -178,18 +195,21 @@ export function buildKeywordColumns(
     {
       key: 'gsc_impressions',
       label: ke.table.impressions,
+      hint: 'views.keywords.gscImpressions',
       render: (v) =>
         v != null ? <span className="tabular-nums">{Number(v).toLocaleString()}</span> : '—',
     },
     {
       key: 'gsc_clicks',
       label: ke.table.clicks,
+      hint: 'views.keywords.gscClicks',
       render: (v) =>
         v != null ? <span className="tabular-nums">{Number(v).toLocaleString()}</span> : '—',
     },
     {
       key: 'gsc_ctr',
       label: ke.table.ctr,
+      hint: 'views.keywords.gscCtr',
       render: (v) => <span className="tabular-nums">{formatGscCtr(v as number | null | undefined)}</span>,
     },
     {

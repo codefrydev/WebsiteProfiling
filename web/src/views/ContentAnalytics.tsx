@@ -1,5 +1,5 @@
 import type { Chart, TooltipItem } from 'chart.js';
-import { useState, useMemo, type ComponentType, type ReactNode } from 'react';
+import { useState, useMemo } from 'react';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import type {
   ContentAnalyticsData,
@@ -40,7 +40,8 @@ import {
 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, ViewTabs, ViewTabPanel, StatCard } from '../components';
+import { metricHelpHint } from '@/lib/metricHelp';
+import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, ViewTabs, ViewTabPanel, StatCard, SectionHeader, ChartTitleWithHint } from '../components';
 import { StatusDistributionChart, CoverageBar, ChartAccessibleFallback, ChartPanel } from '../components/charts';
 import { crawledUrlCount } from '@/lib/crawlCounts';
 import { statusDistributionFromSummary } from '../lib/statusDistribution';
@@ -198,29 +199,6 @@ function qualityBarColors(labels: string[]) {
     if (l.toLowerCase().includes('multiple')) return '#DD8452';
     return '#4C72B0';
   });
-}
-
-function SectionHeader({
-  icon,
-  title,
-  description,
-}: {
-  icon: ComponentType<{ className?: string }>;
-  title: ReactNode;
-  description?: ReactNode;
-}) {
-  const Icon = icon;
-  return (
-    <div className="flex items-start gap-3 border-b border-muted pb-4">
-      <div className="p-2 bg-brand-800 border border-default rounded-lg">
-        <Icon className="h-5 w-5 text-link" />
-      </div>
-      <div>
-        <h2 className="text-lg font-bold text-bright">{title}</h2>
-        {description && <p className="text-sm text-muted-foreground mt-0.5">{description}</p>}
-      </div>
-    </div>
-  );
 }
 
 function ThinPagesSection({ pages }: { pages: ThinPageEntry[] }) {
@@ -539,58 +517,49 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
         <ViewTabPanel idPrefix="content-analytics" tabId="summary" className="space-y-6">
       {/* KPI stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <Card shadow>
-          <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <BookOpen className="h-4 w-4" /> {vca.meanWords}
-          </div>
-          <div className="text-3xl font-bold text-bright">
-            {wcStats.mean != null ? Math.round(wcStats.mean).toLocaleString() : sj.emDash}
-          </div>
-          <div className="text-xs text-muted-foreground mt-1">{vca.perPage}</div>
-        </Card>
-
-        <Card shadow>
-          <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <FileText className="h-4 w-4" /> {vca.medianWords}
-          </div>
-          <div className="text-3xl font-bold text-bright">
-            {wcStats.median != null ? Math.round(wcStats.median).toLocaleString() : sj.emDash}
-          </div>
-          <div className="text-xs text-muted-foreground mt-1">{vca.perPage}</div>
-        </Card>
-
-        <Card shadow>
-          <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <Globe className="h-4 w-4 text-link" /> {vca.ogCoverage}
-          </div>
-          <div className="text-3xl font-bold text-link">
-            {sc.og_coverage_pct != null ? `${sc.og_coverage_pct}%` : sj.emDash}
-          </div>
-          <div className="text-xs text-muted-foreground mt-1">{vca.ogTags}</div>
-        </Card>
-
-        <Card shadow>
-          <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <Share2 className="h-4 w-4 text-sky-700 dark:text-sky-400" /> {vca.twitterCoverage}
-          </div>
-          <div className="text-3xl font-bold text-sky-700 dark:text-sky-400">
-            {sc.twitter_coverage_pct != null ? `${sc.twitter_coverage_pct}%` : sj.emDash}
-          </div>
-          <div className="text-xs text-muted-foreground mt-1">{vca.twitterTags}</div>
-        </Card>
-
-        <Card
+        <StatCard
+          label={vca.meanWords}
+          value={wcStats.mean != null ? Math.round(wcStats.mean).toLocaleString() : sj.emDash}
+          sub={vca.perPage}
+          icon={<BookOpen className="h-4 w-4" aria-hidden />}
+          hint={metricHelpHint('shared.avgWords')}
           shadow
-          className={hasThinPages ? 'ring-1 ring-amber-500/20 border-amber-900/30' : ''}
-        >
-          <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${hasThinPages ? 'text-amber-800/90 dark:text-amber-400/80' : 'text-muted-foreground'}`}>
-            <AlertTriangle className={`h-4 w-4 ${hasThinPages ? 'text-amber-700 dark:text-amber-400' : ''}`} /> {vca.thinPages}
-          </div>
-          <div className={`text-3xl font-bold ${hasThinPages ? 'text-amber-700 dark:text-amber-400' : 'text-muted-foreground'}`}>
-            {thinPages.length}
-          </div>
-          <div className="text-xs text-muted-foreground mt-1">{vca.under300}</div>
-        </Card>
+        />
+        <StatCard
+          label={vca.medianWords}
+          value={wcStats.median != null ? Math.round(wcStats.median).toLocaleString() : sj.emDash}
+          sub={vca.perPage}
+          icon={<FileText className="h-4 w-4" aria-hidden />}
+          hint={metricHelpHint('shared.medianWords')}
+          shadow
+        />
+        <StatCard
+          label={vca.ogCoverage}
+          value={sc.og_coverage_pct != null ? `${sc.og_coverage_pct}%` : sj.emDash}
+          sub={vca.ogTags}
+          icon={<Globe className="h-4 w-4 text-link" aria-hidden />}
+          hint={metricHelpHint('views.overview.ogCoverage')}
+          shadow
+          className="[&_.text-2xl]:text-link"
+        />
+        <StatCard
+          label={vca.twitterCoverage}
+          value={sc.twitter_coverage_pct != null ? `${sc.twitter_coverage_pct}%` : sj.emDash}
+          sub={vca.twitterTags}
+          icon={<Share2 className="h-4 w-4 text-sky-700 dark:text-sky-400" aria-hidden />}
+          hint={metricHelpHint('views.contentAnalytics.twitterCoverage')}
+          shadow
+          className="[&_.text-2xl]:text-sky-700 [&_.text-2xl]:dark:text-sky-400"
+        />
+        <StatCard
+          label={vca.thinPages}
+          value={thinPages.length}
+          sub={vca.under300}
+          icon={<AlertTriangle className={`h-4 w-4 ${hasThinPages ? 'text-amber-700 dark:text-amber-400' : ''}`} aria-hidden />}
+          hint={metricHelpHint('shared.thinPages')}
+          shadow
+          className={hasThinPages ? 'ring-1 ring-amber-500/20 border-amber-900/30 [&_.text-2xl]:text-amber-700 [&_.text-2xl]:dark:text-amber-400' : ''}
+        />
       </div>
 
       {richResultsRows.length > 0 ? (
@@ -769,11 +738,11 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
         <ViewTabPanel idPrefix="content-analytics" tabId="analytics" className="space-y-6">
       {(hasStatusChart || hasRtDist) && (
         <div className="space-y-6">
-          <SectionHeader icon={Activity} title={vca.crawlHealth} />
+          <SectionHeader icon={Activity} title={vca.crawlHealth} hint={metricHelpHint('views.contentAnalytics.crawlHealth')} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {hasStatusChart && (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-foreground mb-1">{vca.urlsByStatus}</h3>
+                <ChartTitleWithHint title={vca.urlsByStatus} helpKey="views.contentAnalytics.urlsByStatus" className="mb-1" />
                 <p className="text-xs text-muted-foreground mb-3">
                   {vca.totalCrawled}{' '}
                   <span className="text-foreground font-semibold">{crawledCount.toLocaleString()}</span>
@@ -789,7 +758,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             )}
             {hasRtDist && (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-foreground mb-1">{vca.responseTimeDist}</h3>
+                <ChartTitleWithHint title={vca.responseTimeDist} helpKey="views.contentAnalytics.responseTimeDist" className="mb-1" />
                 <p className="text-xs text-muted-foreground mb-3">
                   Pages per latency band
                   {rtStats.p50 != null && (
@@ -828,11 +797,11 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
 
       {(hasIssueBar || hasSeoOptimalBar || hasThinCompare) && (
         <div className="space-y-6">
-          <SectionHeader icon={ListChecks} title={vca.onPageQuality} />
+          <SectionHeader icon={ListChecks} title={vca.onPageQuality} hint={metricHelpHint('views.contentAnalytics.onPageQuality')} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {hasIssueBar && (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-foreground mb-3">URLs flagged by issue type</h3>
+                <ChartTitleWithHint title="URLs flagged by issue type" helpKey="views.contentAnalytics.issuesByType" />
                 <ChartPanel heightClass="h-80">
                   <Bar
                     data={{
@@ -853,7 +822,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             )}
             {hasSeoOptimalBar && (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-foreground mb-3">Pages in “good” ranges</h3>
+                <ChartTitleWithHint title='Pages in “good” ranges' helpKey="views.contentAnalytics.seoOptimalRanges" />
                 <ChartPanel>
                   <Bar
                     data={{
@@ -878,17 +847,19 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             )}
             {hasThinCompare && (
               <Card padding="tight" className={hasIssueBar && hasSeoOptimalBar ? 'lg:col-span-2' : ''}>
-                <h3 className="text-sm font-bold text-foreground mb-3">{vca.thinSignals}</h3>
+                <ChartTitleWithHint title={vca.thinSignals} helpKey="views.contentAnalytics.thinSignals" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
                   <StatCard
                     label={vca.thinUnder300}
                     value={thinByWords.toLocaleString()}
                     sub={sj.pages}
+                    hint={metricHelpHint('shared.thinPages')}
                   />
                   <StatCard
                     label={vca.thinSmallBody}
                     value={thinByChars.toLocaleString()}
                     sub={sj.pages}
+                    hint={metricHelpHint('views.contentAnalytics.thinSmallBody')}
                   />
                 </div>
               </Card>
@@ -918,10 +889,10 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
 
       {/* Content Metrics section */}
       <div className="space-y-6">
-        <SectionHeader icon={BarChart2} title={vca.contentMetrics} />
+        <SectionHeader icon={BarChart2} title={vca.contentMetrics} hint={metricHelpHint('views.contentAnalytics.contentMetrics')} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-foreground mb-3">{vca.wordCountDist}</h3>
+            <ChartTitleWithHint title={vca.wordCountDist} helpKey="views.contentAnalytics.wordCountDist" />
             <ChartPanel heightClass="h-64">
               {wcLabels.length > 0 ? (
                 <Bar
@@ -936,7 +907,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
           </Card>
 
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-foreground mb-3">{vca.readingLevelDist}</h3>
+            <ChartTitleWithHint title={vca.readingLevelDist} helpKey="views.contentAnalytics.readingLevelDist" />
             <ChartPanel heightClass="h-64">
               {rlLabels.length > 0 ? (
                 <Bar
@@ -954,7 +925,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
           </Card>
 
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-foreground mb-3">{vca.contentHtmlRatio}</h3>
+            <ChartTitleWithHint title={vca.contentHtmlRatio} helpKey="views.contentAnalytics.contentHtmlRatio" />
             <ChartPanel heightClass="h-64">
               {crLabels.length > 0 ? (
                 <Bar
@@ -969,7 +940,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
           </Card>
 
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-foreground mb-3">{vca.topKeywords}</h3>
+            <ChartTitleWithHint title={vca.topKeywords} helpKey="views.contentAnalytics.topKeywords" />
             <ChartPanel heightClass="h-[28rem]">
               {kwLabels.length > 0 ? (
                 <Bar
@@ -985,7 +956,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
 
           {hasWcPercBar && (
             <Card padding="tight" className="lg:col-span-2">
-              <h3 className="text-sm font-bold text-foreground mb-3">{vca.wordCountLadder}</h3>
+              <ChartTitleWithHint title={vca.wordCountLadder} helpKey="views.contentAnalytics.wordCountLadder" />
               <ChartPanel>
                 <Bar
                   data={{
@@ -1028,11 +999,11 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
       {/* On-Page SEO Signals section */}
       {(hasH1Data || hasTitleData || hasMetaData) && (
         <div className="space-y-6">
-          <SectionHeader icon={Tag} title={vca.onPageSignals} />
+          <SectionHeader icon={Tag} title={vca.onPageSignals} hint={metricHelpHint('views.contentAnalytics.onPageSignals')} />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* H1 Distribution Doughnut */}
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-foreground mb-3">{vca.h1Dist}</h3>
+              <ChartTitleWithHint title={vca.h1Dist} helpKey="views.contentAnalytics.h1Dist" />
               <ChartPanel>
                 {hasH1Data ? (
                   <ChartAccessibleFallback
@@ -1064,7 +1035,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
 
             {/* Title Length Quality */}
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-foreground mb-3">{vca.titleTagQuality}</h3>
+              <ChartTitleWithHint title={vca.titleTagQuality} helpKey="views.contentAnalytics.titleTagQuality" />
               <ChartPanel>
                 {hasTitleData ? (
                   <Bar
@@ -1086,7 +1057,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
 
             {/* Meta Description Quality */}
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-foreground mb-3">{vca.metaDescQuality}</h3>
+              <ChartTitleWithHint title={vca.metaDescQuality} helpKey="views.contentAnalytics.metaDescQuality" />
               <ChartPanel>
                 {hasMetaData ? (
                   <Bar
@@ -1111,7 +1082,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
               {hasTitleMetaCompare && (
                 <Card padding="tight">
-                  <h3 className="text-sm font-bold text-foreground mb-3">{vca.titleVsMetaBuckets}</h3>
+                  <ChartTitleWithHint title={vca.titleVsMetaBuckets} helpKey="views.contentAnalytics.titleVsMetaBuckets" />
                   <ChartPanel heightClass="h-64">
                     <Bar
                       data={{
@@ -1137,7 +1108,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
               )}
               {hasSeoGapCountCompare && (
                 <Card padding="tight">
-                  <h3 className="text-sm font-bold text-foreground mb-3">{vca.seoOptimalVsGapCounts}</h3>
+                  <ChartTitleWithHint title={vca.seoOptimalVsGapCounts} helpKey="views.contentAnalytics.seoOptimalVsGapCounts" />
                   <ChartPanel heightClass="h-64">
                     <Bar
                       data={{
@@ -1168,7 +1139,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
 
       {/* Social Meta Coverage section */}
       <div className="space-y-6">
-        <SectionHeader icon={Share2} title={vca.socialMetaCoverage} />
+        <SectionHeader icon={Share2} title={vca.socialMetaCoverage} hint={metricHelpHint('views.contentAnalytics.socialMetaCoverage')} />
 
         {/* Coverage progress bars */}
         {(sc.og_coverage_pct != null || sc.twitter_coverage_pct != null || hasOgImgData) && (
@@ -1226,7 +1197,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
 
         {hasSocialMissCompare && (
           <Card padding="tight" shadow>
-            <h3 className="text-sm font-bold text-foreground mb-3">{vca.missingSocialUrlCompare}</h3>
+            <ChartTitleWithHint title={vca.missingSocialUrlCompare} helpKey="views.contentAnalytics.missingSocialCompare" />
             <ChartPanel className="max-w-lg">
               <Bar
                 data={{
@@ -1373,10 +1344,10 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
       {/* Site Architecture section */}
       {hasDepthData && (
         <div className="space-y-6">
-          <SectionHeader icon={Layers} title={vca.siteArchitecture} />
+          <SectionHeader icon={Layers} title={vca.siteArchitecture} hint={metricHelpHint('views.contentAnalytics.siteArchitecture')} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card padding="tight">
-              <h3 className="text-sm font-bold text-foreground mb-3">Crawl Depth Distribution</h3>
+              <ChartTitleWithHint title="Crawl Depth Distribution" helpKey="views.contentAnalytics.crawlDepthDist" />
               {(depthDist.max_depth != null || depthDist.avg_depth != null) && (
                 <p className="text-xs text-muted-foreground mb-3">
                   {depthDist.max_depth != null && (
@@ -1413,7 +1384,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             {/* Word count percentile summary */}
             {wcStats.median != null && (
               <Card padding="tight">
-                <h3 className="text-sm font-bold text-foreground mb-3">{vca.wordCountPercentiles}</h3>
+                <ChartTitleWithHint title={vca.wordCountPercentiles} helpKey="views.contentAnalytics.wordCountPercentiles" />
                 <div className="space-y-3">
                   {[
                     { label: 'Min', value: wcStats.min, color: 'text-muted-foreground', barW: 0 },

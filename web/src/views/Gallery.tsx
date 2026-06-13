@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
-import { PageLayout, PageHeader, Card } from '../components';
+import { PageLayout, PageHeader, Card, LabelWithHint } from '../components';
 import type { GalleryImageItem, ReportLink, ViewProps } from '@/types';
 
 type GalleryKind = 'content' | 'og' | 'twitter' | string;
@@ -415,11 +415,19 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
 
       <Card className="p-4 flex flex-wrap gap-6 text-sm">
         <div>
-          <div className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">{vg.statUnique}</div>
+          <LabelWithHint
+            label={vg.statUnique}
+            helpKey="views.gallery.uniqueImages"
+            className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5"
+          />
           <div className="text-2xl font-bold text-bright tabular-nums">{items.length}</div>
         </div>
         <div>
-          <div className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5">{vg.statShown}</div>
+          <LabelWithHint
+            label={vg.statShown}
+            helpKey="views.gallery.shownFiltered"
+            className="text-xs text-muted-foreground uppercase tracking-wider mb-0.5"
+          />
           <div className="text-2xl font-bold text-foreground tabular-nums">{filtered.length}</div>
         </div>
         <div className="text-xs text-muted-foreground max-w-xl leading-relaxed">{vg.helpBlurb}</div>

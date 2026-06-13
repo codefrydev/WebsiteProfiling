@@ -19,6 +19,7 @@ import {
   TableRow,
   TableCell,
 } from '../components';
+import { metricHelpHint } from '@/lib/metricHelp';
 import type { SubdomainHostEntry, ViewProps } from '@/types';
 
 function yesNo(value: boolean | undefined): string {
@@ -79,10 +80,10 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
         </Card>
       ) : null}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-        <StatCard label={vs.apex} value={inv.apex || '—'} />
-        <StatCard label={vs.inScopeHosts} value={inScopeHosts.length} />
-        <StatCard label={vs.gscNotCrawled} value={gscGapHosts.length} />
-        <StatCard label={vs.outOfScope} value={outOfScope.length} />
+        <StatCard label={vs.apex} value={inv.apex || '—'} hint={metricHelpHint('views.subdomains.apex')} />
+        <StatCard label={vs.inScopeHosts} value={inScopeHosts.length} hint={metricHelpHint('views.subdomains.inScopeHosts')} />
+        <StatCard label={vs.gscNotCrawled} value={gscGapHosts.length} hint={metricHelpHint('views.subdomains.gscNotCrawled')} />
+        <StatCard label={vs.outOfScope} value={outOfScope.length} hint={metricHelpHint('views.subdomains.outOfScope')} />
       </div>
       {gscGapHosts.length > 0 ? (
         <Card className="mb-6">
@@ -111,12 +112,12 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
           <Table>
             <TableHead>
               <TableRow>
-                <TableHeadCell>{vs.colHost}</TableHeadCell>
-                <TableHeadCell>{vs.colSources}</TableHeadCell>
-                <TableHeadCell>{vs.colCrawl}</TableHeadCell>
-                <TableHeadCell>{vs.colGsc}</TableHeadCell>
-                <TableHeadCell>{vs.colCrawlUrls}</TableHeadCell>
-                <TableHeadCell>{vs.colGscUrls}</TableHeadCell>
+                <TableHeadCell hint={metricHelpHint('views.subdomains.colHost')}>{vs.colHost}</TableHeadCell>
+                <TableHeadCell hint={metricHelpHint('views.subdomains.colSources')}>{vs.colSources}</TableHeadCell>
+                <TableHeadCell hint={metricHelpHint('views.subdomains.colCrawl')}>{vs.colCrawl}</TableHeadCell>
+                <TableHeadCell hint={metricHelpHint('views.subdomains.colGsc')}>{vs.colGsc}</TableHeadCell>
+                <TableHeadCell hint={metricHelpHint('views.subdomains.colCrawlUrls')}>{vs.colCrawlUrls}</TableHeadCell>
+                <TableHeadCell hint={metricHelpHint('views.subdomains.colGscUrls')}>{vs.colGscUrls}</TableHeadCell>
               </TableRow>
             </TableHead>
             <TableBody>

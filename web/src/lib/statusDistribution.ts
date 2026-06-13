@@ -94,3 +94,25 @@ export function statusDistributionFromCounts(
 
   return buildFromBuckets(buckets);
 }
+
+/** From per-URL link rows (Link Explorer — full crawl list, ignores table filters). */
+export function statusDistributionFromLinks(
+  links: Array<{ status?: string | number | null }>,
+): StatusDistribution | null {
+  if (!links.length) return null;
+
+  const buckets: Record<keyof typeof STATUS_GROUP_LABELS, number> = {
+    ok2xx: 0,
+    redirect3xx: 0,
+    client4xx: 0,
+    server5xx: 0,
+    error: 0,
+  };
+
+  for (const link of links) {
+    const group = classifyStatusCode(String(link.status ?? '').trim());
+    if (group) buckets[group] += 1;
+  }
+
+  return buildFromBuckets(buckets);
+}

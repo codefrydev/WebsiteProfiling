@@ -8,7 +8,7 @@ import {
   Timer,
   Trash2,
 } from 'lucide-react';
-import { Card } from '@/components';
+import { Card, LabelWithHint } from '@/components';
 import Sparkline, { type SparklineMode } from '@/components/Sparkline';
 import { DataSourceBadgeRow } from '@/components/DataSourceBadge';
 import { PRIORITY_CONFIG } from '@/lib/issuePriority';
@@ -42,18 +42,22 @@ export interface PortfolioPropertyCardProps {
 
 function PortfolioTrendCell({
   label,
+  helpKey,
   values,
   displayValue,
   mode,
 }: {
   label: string;
+  helpKey?: string;
   values: number[];
   displayValue: string;
   mode: SparklineMode;
 }) {
   return (
     <div className="min-w-0 flex-1 rounded-md border border-default/60 bg-brand-900/25 px-2 py-1.5">
-      <p className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">{label}</p>
+      <p className="text-[10px] uppercase tracking-wider text-muted-foreground truncate">
+        {helpKey ? <LabelWithHint label={label} helpKey={helpKey} /> : label}
+      </p>
       <div className="flex items-end justify-between gap-1 mt-1 min-h-[22px]">
         <Sparkline values={values} mode={mode} width={92} height={22} />
         <span className="text-sm font-semibold tabular-nums text-foreground shrink-0 leading-none pb-0.5">
@@ -145,7 +149,11 @@ export default function PortfolioPropertyCard({
               </div>
               <div className="text-right shrink-0">
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                  {group.crawlOnly ? vh.titleCoverageLabel : vh.healthScoreLabel}
+                  {group.crawlOnly ? (
+                    <LabelWithHint label={vh.titleCoverageLabel} helpKey="shared.titleCoverage" />
+                  ) : (
+                    <LabelWithHint label={vh.healthScoreLabel} helpKey="shared.healthScore" />
+                  )}
                 </p>
                 <div className="flex items-center justify-end gap-1.5">
                   {group.crawlOnly && trends.titleTrend.length >= 1 ? (
@@ -267,13 +275,17 @@ export default function PortfolioPropertyCard({
               <div className="rounded-md bg-brand-900/35 px-2 py-1.5 border border-default space-y-2">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{vh.urlCountLabel}</p>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <LabelWithHint label={vh.urlCountLabel} helpKey="views.home.urlCount" />
+                    </p>
                     <p className="text-lg leading-none font-semibold text-bright tabular-nums mt-1">
                       {group.urlCount.toLocaleString()}
                     </p>
                   </div>
                   <div className="min-w-0 text-right">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{vh.titleCoverageLabel}</p>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <LabelWithHint label={vh.titleCoverageLabel} helpKey="shared.titleCoverage" />
+                    </p>
                     <p className="text-lg leading-none font-semibold text-foreground tabular-nums mt-1">
                       {group.titleCoverage != null ? `${group.titleCoverage}%` : sj.emDash}
                     </p>
@@ -319,7 +331,9 @@ export default function PortfolioPropertyCard({
 
               <div className="grid grid-cols-3 gap-2">
                 <div className="rounded-md bg-brand-900/35 px-2 py-1.5 border border-default">
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{vh.urlCountLabel}</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                    <LabelWithHint label={vh.urlCountLabel} helpKey="views.home.urlCount" />
+                  </p>
                   <p className="text-lg font-semibold text-bright tabular-nums mt-1">{group.urlCount.toLocaleString()}</p>
                   {group.medianWordCount != null ? (
                     <p className="text-[10px] text-muted-foreground mt-1 tabular-nums">
@@ -335,7 +349,7 @@ export default function PortfolioPropertyCard({
                 <div className="rounded-md bg-brand-900/35 px-2 py-1.5 border border-default">
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3" aria-hidden />
-                    {vh.totalIssuesLabel}
+                    <LabelWithHint label={vh.totalIssuesLabel} helpKey="views.home.totalIssues" />
                   </p>
                   <p className="text-lg font-semibold text-bright tabular-nums mt-1">{group.totalIssues.toLocaleString()}</p>
                   <div className="flex flex-wrap gap-1 mt-1">
@@ -360,11 +374,15 @@ export default function PortfolioPropertyCard({
                   </p>
                   <div className="mt-1 space-y-0.5">
                     <p className="text-sm font-semibold tabular-nums">
-                      <span className="text-[10px] text-muted-foreground uppercase mr-1">{vh.perfScoreLabel}</span>
+                      <span className="text-[10px] text-muted-foreground uppercase mr-1">
+                        <LabelWithHint label={vh.perfScoreLabel} helpKey="views.home.perfScore" />
+                      </span>
                       {group.perfScore ?? sj.emDash}
                     </p>
                     <p className="text-sm font-semibold tabular-nums">
-                      <span className="text-[10px] text-muted-foreground uppercase mr-1">{vh.seoScoreLabel}</span>
+                      <span className="text-[10px] text-muted-foreground uppercase mr-1">
+                        <LabelWithHint label={vh.seoScoreLabel} helpKey="views.home.seoScore" />
+                      </span>
                       {group.seoScore ?? sj.emDash}
                     </p>
                   </div>
@@ -430,6 +448,7 @@ export default function PortfolioPropertyCard({
                   />
                   <PortfolioTrendCell
                     label={vh.trendTitleCoverageLabel}
+                    helpKey="shared.titleCoverage"
                     values={trends.titleTrend}
                     displayValue={group.titleCoverage != null ? `${group.titleCoverage}%` : sj.emDash}
                     mode="higher-better"
@@ -452,24 +471,28 @@ export default function PortfolioPropertyCard({
                 <div className="grid grid-cols-2 gap-1.5">
                   <PortfolioTrendCell
                     label={vh.trendHealthLabel}
+                    helpKey="views.home.trendHealth"
                     values={trends.healthTrend}
                     displayValue={String(group.healthScore)}
                     mode="higher-better"
                   />
                   <PortfolioTrendCell
                     label={vh.trendIssuesLabel}
+                    helpKey="views.home.trendIssues"
                     values={trends.issuesTrend}
                     displayValue={group.totalIssues.toLocaleString()}
                     mode="lower-better"
                   />
                   <PortfolioTrendCell
                     label={vh.perfScoreLabel}
+                    helpKey="views.home.perfScore"
                     values={trends.perfTrend}
                     displayValue={group.perfScore != null ? String(group.perfScore) : sj.emDash}
                     mode="higher-better"
                   />
                   <PortfolioTrendCell
                     label={vh.seoScoreLabel}
+                    helpKey="views.home.seoScore"
                     values={trends.seoTrend}
                     displayValue={group.seoScore != null ? String(group.seoScore) : sj.emDash}
                     mode="higher-better"

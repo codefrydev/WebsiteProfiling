@@ -7,6 +7,7 @@ import type { TableColumn } from '@/types/components';
 import { Users, AlertCircle, Settings2, Download } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
+import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs } from '../components';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import GoogleTableToolbar from '../components/google/GoogleTableToolbar';
@@ -91,11 +92,13 @@ export default function Traffic() {
       {
         key: 'sessions',
         label: tf.table.sessions,
+        hint: 'shared.sessions',
         render: (v) => <span className="tabular-nums">{Number(v ?? 0).toLocaleString()}</span>,
       },
       {
         key: 'activeUsers',
         label: tf.table.users,
+        hint: 'shared.activeUsers',
         render: (v) => <span className="tabular-nums">{Number(v ?? 0).toLocaleString()}</span>,
       },
       {
@@ -238,9 +241,17 @@ export default function Traffic() {
 
       {ga4?.summary && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          <StatCard label={tf.kpi.sessions} value={ga4.summary.sessions?.toLocaleString()} />
-          <StatCard label={tf.kpi.users} value={ga4.summary.activeUsers?.toLocaleString()} />
-          <StatCard label={tf.kpi.pageViews} value={ga4.summary.screenPageViews?.toLocaleString()} />
+          <StatCard
+            label={tf.kpi.sessions}
+            value={ga4.summary.sessions?.toLocaleString()}
+            hint={metricHelpHint('shared.sessions')}
+          />
+          <StatCard
+            label={tf.kpi.users}
+            value={ga4.summary.activeUsers?.toLocaleString()}
+            hint={metricHelpHint('shared.activeUsers')}
+          />
+          <StatCard label={tf.kpi.pageViews} value={ga4.summary.screenPageViews?.toLocaleString()} hint={metricHelpHint('shared.pageViews')} />
         </div>
       )}
 
@@ -395,21 +406,25 @@ export default function Traffic() {
                         label={sp.urlJoin.matched}
                         value={urlJoin.matched}
                         sub={sp.urlJoin.matchedSub}
+                        hint={metricHelpHint('views.overview.urlJoinMatched')}
                       />
                       <StatCard
                         label={sp.urlJoin.crawlOnly}
                         value={urlJoin.crawl_only}
                         sub={sp.urlJoin.crawlOnlySub}
+                        hint={metricHelpHint('views.overview.urlJoinCrawlOnly')}
                       />
                       <StatCard
                         label={sp.urlJoin.gscOnly}
                         value={urlJoin.gsc_only}
                         sub={sp.urlJoin.gscOnlySub}
+                        hint={metricHelpHint('views.overview.urlJoinGscOnly')}
                       />
                       <StatCard
                         label={sp.urlJoin.ga4Only}
                         value={urlJoin.ga4_only}
                         sub={sp.urlJoin.ga4OnlySub}
+                        hint={metricHelpHint('views.overview.urlJoinGa4Only')}
                       />
                     </div>
                   </div>

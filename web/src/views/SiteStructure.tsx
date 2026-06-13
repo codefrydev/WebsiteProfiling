@@ -27,6 +27,7 @@ import {
   linkMatchesPathKey,
 } from '../lib/siteStructureTree';
 import { PageLayout, PageHeader, Card, Button, StatCard, AlertBanner, ViewTabs, ViewTabPanel } from '../components';
+import { metricHelpHint } from '@/lib/metricHelp';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
 import type { ViewTabItem } from '../components';
 import PathTreeTable from '../components/siteStructure/PathTreeTable';
@@ -379,31 +380,37 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
                 label={s.stats.urls}
                 value={fmtMetric(rootMetrics?.pages ?? filteredLinks.length)}
                 icon={<Layers className="h-3.5 w-3.5" aria-hidden />}
+                hint={metricHelpHint('views.siteStructure.urlsInView')}
               />
               <StatCard
                 label={s.stats.pathPrefixes}
                 value={fmtMetric(merged.size)}
                 icon={<FolderTree className="h-3.5 w-3.5" aria-hidden />}
+                hint={metricHelpHint('views.siteStructure.pathPrefixes')}
               />
               <StatCard
                 label={s.stats.totalInlinks}
                 value={fmtMetric(rootMetrics?.inlinks)}
                 icon={<Link2 className="h-3.5 w-3.5" aria-hidden />}
+                hint={metricHelpHint('views.siteStructure.totalInlinks')}
               />
               <StatCard
                 label={s.stats.avgWords}
                 value={fmtMetric(rootMetrics?.avgWordCount)}
                 icon={<AlignLeft className="h-3.5 w-3.5" aria-hidden />}
+                hint={metricHelpHint('shared.avgWords')}
               />
               <StatCard
                 label={s.stats.avgResponse}
                 value={fmtMetric(rootMetrics?.avgResponseMs)}
                 icon={<Timer className="h-3.5 w-3.5" aria-hidden />}
+                hint={metricHelpHint('views.siteStructure.avgResponse')}
               />
               <StatCard
                 label={s.stats.avgPerf}
                 value={fmtMetric(rootMetrics?.avgPerfScore)}
                 icon={<Gauge className="h-3.5 w-3.5" aria-hidden />}
+                hint={metricHelpHint('views.siteStructure.avgPerf')}
               />
             </div>
           ) : null}

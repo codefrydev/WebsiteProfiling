@@ -1,7 +1,7 @@
 import { Building2, ChevronDown, Search } from 'lucide-react';
 import { useMemo, useState, useEffect, useCallback } from 'react';
 import AppLogo from '@/components/AppLogo';
-import { PageLayout, Card } from '../components';
+import { PageLayout, Card, LabelWithHint } from '../components';
 import PortfolioPropertyCard from '@/components/portfolio/PortfolioPropertyCard';
 import { healthScoreClass, portfolioCardKey } from '@/components/portfolio/portfolioCardUtils';
 import { Skeleton, SkeletonDomainCard } from '../components/Skeleton';
@@ -237,7 +237,9 @@ export default function Home({ onNavigate }: ViewProps) {
 
           <div className="grid grid-cols-3 gap-1.5 mt-2.5">
             <div className="rounded-md border border-default bg-brand-900/25 px-2 py-1.5">
-              <p className="text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground">{vh.totalBrandsLabel}</p>
+              <p className="text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground">
+                <LabelWithHint label={vh.totalBrandsLabel} helpKey="views.home.totalBrands" />
+              </p>
               {portfolioLoading ? (
                 <Skeleton className="h-5 w-10 mt-1" />
               ) : (
@@ -245,7 +247,9 @@ export default function Home({ onNavigate }: ViewProps) {
               )}
             </div>
             <div className="rounded-md border border-default bg-brand-900/25 px-2 py-1.5">
-              <p className="text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground">{vh.totalUrlsLabel}</p>
+              <p className="text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground">
+                <LabelWithHint label={vh.totalUrlsLabel} helpKey="views.home.totalUrls" />
+              </p>
               {portfolioLoading ? (
                 <Skeleton className="h-5 w-14 mt-1" />
               ) : (
@@ -253,7 +257,9 @@ export default function Home({ onNavigate }: ViewProps) {
               )}
             </div>
             <div className="rounded-md border border-default bg-brand-900/25 px-2 py-1.5">
-              <p className="text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground">{vh.avgHealthLabel}</p>
+              <p className="text-[10px] sm:text-[11px] uppercase tracking-wider text-muted-foreground">
+                <LabelWithHint label={vh.avgHealthLabel} helpKey="views.home.avgHealth" />
+              </p>
               {portfolioLoading ? (
                 <Skeleton className="h-5 w-8 mt-1" />
               ) : (

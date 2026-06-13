@@ -14,6 +14,7 @@ const ComparePerformanceCharts = dynamic(
 import type { IssueDeltaRow } from '@/lib/reportCompareExtras';
 import { ScoreDelta } from '@/components/charts/ScoreDelta';
 import type { CompareMetricRow, ReportCompareSummary } from '@/lib/reportCompare';
+import { metricHelpHint } from '@/lib/metricHelp';
 import { Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, Badge } from '@/components';
 import { CompareMetricCard } from './CompareDeltaBadge';
 import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
@@ -296,8 +297,8 @@ export function ComparePerformancePanel({
                 <TableHeadCell>URL</TableHeadCell>
                 <TableHeadCell>Perf Δ</TableHeadCell>
                 <TableHeadCell>SEO Δ</TableHeadCell>
-                <TableHeadCell>{vc.colCurrent}</TableHeadCell>
-                <TableHeadCell>{vc.colBaseline}</TableHeadCell>
+                <TableHeadCell hint={metricHelpHint('views.compare.currentValue')}>{vc.colCurrent}</TableHeadCell>
+                <TableHeadCell hint={metricHelpHint('views.compare.baselineValue')}>{vc.colBaseline}</TableHeadCell>
               </TableRow>
             </TableHead>
             <TableBody striped>
@@ -383,8 +384,8 @@ export function CompareContentPanel({ compare, searchQuery, vc, emptyLabel }: Pa
               <TableRow>
                 <TableHeadCell>{vc.colKind}</TableHeadCell>
                 <TableHeadCell>Representative URL</TableHeadCell>
-                <TableHeadCell>{vc.colCurrent}</TableHeadCell>
-                <TableHeadCell>{vc.colBaseline}</TableHeadCell>
+                <TableHeadCell hint={metricHelpHint('views.compare.currentValue')}>{vc.colCurrent}</TableHeadCell>
+                <TableHeadCell hint={metricHelpHint('views.compare.baselineValue')}>{vc.colBaseline}</TableHeadCell>
               </TableRow>
             </TableHead>
             <TableBody striped>
@@ -453,9 +454,9 @@ export function CompareLinksPanel({ compare, searchQuery, vc, emptyLabel }: Pane
           <TableRow>
             <TableHeadCell>URL</TableHeadCell>
             <TableHeadCell>{vc.colMetric}</TableHeadCell>
-            <TableHeadCell>{vc.colBaseline}</TableHeadCell>
-            <TableHeadCell>{vc.colCurrent}</TableHeadCell>
-            <TableHeadCell>Δ</TableHeadCell>
+            <TableHeadCell hint={metricHelpHint('views.compare.baselineValue')}>{vc.colBaseline}</TableHeadCell>
+            <TableHeadCell hint={metricHelpHint('views.compare.currentValue')}>{vc.colCurrent}</TableHeadCell>
+            <TableHeadCell hint={metricHelpHint('views.compare.metricDelta')}>Δ</TableHeadCell>
           </TableRow>
         </TableHead>
         <TableBody striped>

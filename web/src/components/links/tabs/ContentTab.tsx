@@ -1,10 +1,10 @@
-import { useMemo, useState, createElement, type ComponentType } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, type TooltipItem } from 'chart.js';
 import { BookOpen, BarChart2, Check, FileText, Layers, Share2, Tag, X } from 'lucide-react';
 import type { LinkDetail } from '@/types/report';
 import { useReport } from '../../../context/useReport';
-import { Card } from '../../../components';
+import { Card, SectionHeader, LabelWithHint, ChartTitleWithHint } from '../../../components';
 import { RatioBar, RankedBarChart } from '../../../components/charts';
 import { wcLabel, readingLabel, parseKeywords, normaliseKw } from '../../../utils/linkUtils';
 import { PALETTE_CATEGORICAL } from '../../../utils/chartPalette';
@@ -99,26 +99,6 @@ function h1QualityIndex(count: number | string | undefined): number {
   if (c === 0 || Number.isNaN(c)) return 0;
   if (c === 1) return 1;
   return 2;
-}
-
-interface SectionHeaderProps {
-  icon: ComponentType<{ className?: string }>;
-  title: string;
-  description?: string;
-}
-
-function SectionHeader({ icon, title, description }: SectionHeaderProps) {
-  return (
-    <div className="flex items-start gap-3 border-b border-muted pb-3 mb-1">
-      <div className="p-2 bg-brand-800 border border-default rounded-lg shrink-0">
-        {createElement(icon, { className: 'h-4 w-4 text-link' })}
-      </div>
-      <div className="min-w-0">
-        <h2 className="text-base font-bold text-bright">{title}</h2>
-        {description && <p className="text-xs text-muted-foreground mt-0.5">{description}</p>}
-      </div>
-    </div>
-  );
 }
 
 function QualityStatusRow({
@@ -249,7 +229,8 @@ export default function ContentTab({ link }: ContentTabProps) {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <Card shadow className="!p-4">
           <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
-            <BookOpen className="h-3.5 w-3.5" /> {lc.kpiWords}
+            <BookOpen className="h-3.5 w-3.5" />
+            <LabelWithHint label={lc.kpiWords} helpKey="shared.wordCount" />
           </div>
           <div className={`text-2xl font-bold tabular-nums ${wcInfo.color}`}>{wc.toLocaleString()}</div>
           <div className="text-[10px] text-muted-foreground mt-0.5">{wcInfo.label}</div>
@@ -262,7 +243,8 @@ export default function ContentTab({ link }: ContentTabProps) {
         </Card>
         <Card shadow className="!p-4">
           <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
-            <FileText className="h-3.5 w-3.5" /> {lc.kpiReading}
+            <FileText className="h-3.5 w-3.5" />
+            <LabelWithHint label={lc.kpiReading} helpKey="shared.readingLevel" />
           </div>
           <div className={`text-2xl font-bold tabular-nums ${rlInfo.color}`}>
             {rl > 0 ? format(lo.readingGrade, { n: rl }) : sj.emDash}
@@ -276,7 +258,8 @@ export default function ContentTab({ link }: ContentTabProps) {
         </Card>
         <Card shadow className="!p-4">
           <div className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
-            <Layers className="h-3.5 w-3.5" /> {lc.kpiDepth}
+            <Layers className="h-3.5 w-3.5" />
+            <LabelWithHint label={lc.kpiDepth} helpKey="shared.crawlDepth" />
           </div>
           <div className="text-2xl font-bold text-bright tabular-nums">{link.depth != null ? link.depth : sj.emDash}</div>
           <div className="text-[10px] text-muted-foreground mt-0.5">{lc.crawlDepth}</div>
@@ -291,11 +274,10 @@ export default function ContentTab({ link }: ContentTabProps) {
       </div>
 
       <div className="space-y-4">
-        <SectionHeader icon={BarChart2} title={lc.vsSiteTitle} description={lc.vsSiteDesc} />
+        <SectionHeader icon={BarChart2} title={lc.vsSiteTitle} description={lc.vsSiteDesc} size="sm" />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card padding="tight">
-            <h3 className="text-sm font-bold text-foreground mb-1">{lc.wordCountComparison}</h3>
-            <p className="text-xs text-muted-foreground mb-2">{lc.vsSiteAggregates}</p>
+            <ChartTitleWithHint title={lc.wordCountComparison} hint={lc.vsSiteAggregates} />
             <div className="h-56">
               {compareBarData.values.length > 0 ? (
                 <RankedBarChart
@@ -327,7 +309,7 @@ export default function ContentTab({ link }: ContentTabProps) {
 
       {kwSorted.length > 0 && (
         <div className="space-y-4">
-          <SectionHeader icon={BarChart2} title={lc.topKeywordsPage} description={lc.freqThisUrl} />
+          <SectionHeader icon={BarChart2} title={lc.topKeywordsPage} description={lc.freqThisUrl} size="sm" />
           <Card padding="tight">
             <div className="h-56">
               <RankedBarChart
@@ -345,7 +327,7 @@ export default function ContentTab({ link }: ContentTabProps) {
       )}
 
       <div className="space-y-4">
-        <SectionHeader icon={Tag} title={lc.onPageSignalsTitle} description={lc.onPageSignalsDesc} />
+        <SectionHeader icon={Tag} title={lc.onPageSignalsTitle} description={lc.onPageSignalsDesc} size="sm" />
         <Card padding="tight" className="divide-y divide-muted/50 space-y-0">
           <div className="py-4 first:pt-0 last:pb-0">
             <QualityStatusRow
@@ -392,7 +374,7 @@ export default function ContentTab({ link }: ContentTabProps) {
 
       {link.content_excerpt && String(link.content_excerpt).trim() && (
         <div className="space-y-4">
-          <SectionHeader icon={FileText} title={lc.contentExcerpt} description={lc.contentExcerptHint} />
+          <SectionHeader icon={FileText} title={lc.contentExcerpt} description={lc.contentExcerptHint} size="sm" />
           <Card padding="tight">
             <p className="text-xs text-foreground whitespace-pre-wrap break-words max-h-72 overflow-y-auto leading-relaxed">
               {String(link.content_excerpt).trim()}
@@ -402,7 +384,7 @@ export default function ContentTab({ link }: ContentTabProps) {
       )}
 
       <div className="space-y-4">
-        <SectionHeader icon={Share2} title={lc.socialMetaTitle} description={lc.socialMetaDesc} />
+        <SectionHeader icon={Share2} title={lc.socialMetaTitle} description={lc.socialMetaDesc} size="sm" />
         <Card padding="tight">
           <SocialCheckItem label={vca.openGraph} present={hasOg} />
           <SocialCheckItem label={vca.twitterCard} present={hasTw} />

@@ -5,6 +5,7 @@ import { apiUrl } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
 import type { ReportIssue } from '@/types';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
+import { LabelWithHint } from '@/components';
 import IssueAiFixButton from '@/components/issues/IssueAiFixButton';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 
@@ -107,7 +108,8 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
   return (
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
-        {vi.taskBoardHint || 'Sorted by Search Console clicks to affected URLs when available.'}
+        {vi.taskBoardHint || 'Sorted by Search Console clicks to affected URLs when available.'}{' '}
+        <LabelWithHint label="Impact score" helpKey="shared.impactScore" />
       </p>
       {sorted.map((item, i) => {
         const msg = item.issue.message || '';
@@ -133,6 +135,12 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
                   GSC clicks: {item.clicks!.toLocaleString()}
                 </p>
               )}
+              {item.issue.impact_score != null && Number(item.issue.impact_score) > 0 ? (
+                <p className="text-xs text-muted-foreground mt-1 tabular-nums">
+                  <LabelWithHint label="Impact score" helpKey="shared.impactScore" />:{' '}
+                  <span className="font-semibold text-foreground">{Number(item.issue.impact_score).toLocaleString()}</span>
+                </p>
+              ) : null}
               {(item.issue.llm_recommendation || item.issue.recommendation) ? (
                 <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
                   {item.issue.llm_recommendation || item.issue.recommendation}

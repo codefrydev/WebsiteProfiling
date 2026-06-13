@@ -115,15 +115,17 @@ export default function Backlinks(_props: ViewProps) {
 
   const domainColumns = useMemo(
     (): TableColumn[] => [
-      { key: 'site', label: vb.table.site, render: (v) => <span className="font-mono text-xs">{String(v ?? '')}</span> },
+      { key: 'site', label: vb.table.site, hint: 'views.backlinks.referringDomain', render: (v) => <span className="font-mono text-xs">{String(v ?? '')}</span> },
       {
         key: 'link_count',
         label: vb.table.links,
+        hint: 'views.backlinks.linkCount',
         render: (v) => <span className="tabular-nums">{Number(v ?? 0).toLocaleString()}</span>,
       },
       {
         key: 'target_page_count',
         label: vb.table.targetPages,
+        hint: 'views.backlinks.targetPages',
         render: (v) => <span className="tabular-nums">{Number(v ?? 0).toLocaleString()}</span>,
       },
     ],
@@ -135,6 +137,7 @@ export default function Backlinks(_props: ViewProps) {
       {
         key: 'target_page',
         label: vb.table.targetPage,
+        hint: 'views.backlinks.targetPage',
         render: (v, row) => {
           const url = String(v ?? '');
           const inCrawl = row?.target_in_crawl === true;
@@ -153,11 +156,13 @@ export default function Backlinks(_props: ViewProps) {
       {
         key: 'link_count',
         label: vb.table.links,
+        hint: 'views.backlinks.linkCount',
         render: (v) => <span className="tabular-nums">{Number(v ?? 0).toLocaleString()}</span>,
       },
       {
         key: 'linking_site_count',
         label: vb.table.linkingSites,
+        hint: 'views.backlinks.linkingSites',
         render: (v) => <span className="tabular-nums">{Number(v ?? 0).toLocaleString()}</span>,
       },
     ],
@@ -169,6 +174,7 @@ export default function Backlinks(_props: ViewProps) {
       {
         key: 'anchor_text',
         label: vb.table.anchorText,
+        hint: 'views.backlinks.anchorText',
         render: (v) => (
           <span className="text-sm">{String(v ?? '').trim() || '—'}</span>
         ),
@@ -176,6 +182,7 @@ export default function Backlinks(_props: ViewProps) {
       {
         key: 'link_count',
         label: vb.table.links,
+        hint: 'views.backlinks.linkCount',
         render: (v) => <span className="tabular-nums">{Number(v ?? 0).toLocaleString()}</span>,
       },
     ],
@@ -187,6 +194,7 @@ export default function Backlinks(_props: ViewProps) {
       {
         key: 'source_page',
         label: vb.table.sourcePage,
+        hint: 'views.backlinks.sourcePage',
         render: (v) => (
           <a
             href={String(v ?? '')}
@@ -201,6 +209,7 @@ export default function Backlinks(_props: ViewProps) {
       {
         key: 'target_page',
         label: vb.table.targetPage,
+        hint: 'views.backlinks.targetPage',
         render: (v, row) => {
           const url = String(v ?? '');
           const inspectHref =
@@ -220,6 +229,7 @@ export default function Backlinks(_props: ViewProps) {
       {
         key: 'anchor_text',
         label: vb.table.anchorText,
+        hint: 'views.backlinks.anchorText',
         render: (v) => <span className="text-sm">{String(v ?? '').trim() || '—'}</span>,
       },
       {

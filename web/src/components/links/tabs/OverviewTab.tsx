@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Check, ChevronRight, Gauge, X } from 'lucide-react';
-import { Badge } from '../../index';
+import { Badge, LabelWithHint } from '../../index';
 import type { LinkDetail, LinkLighthouseData, PageAnalysis } from '@/types/report';
 import { useReport } from '../../../context/useReport';
 import { strings, format } from '../../../lib/strings';
@@ -86,17 +86,19 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
   const sslExp = (data?.site_ssl_expires_at || null) as string | null;
 
   const crawlStats = [
-    { label: o.statStatus, value: <Badge value={link.status ?? ''} />, raw: true },
+    { key: 'status', label: o.statStatus, value: <Badge value={link.status ?? ''} />, raw: true },
     {
-      label: o.statResponseTime,
+      key: 'responseTime',
+      label: <LabelWithHint label={o.statResponseTime} helpKey="shared.responseTime" />,
       value: <span className={`font-bold ${rtColor(link.response_time_ms)}`}>{formatMs(link.response_time_ms)}</span>,
       raw: true,
     },
-    { label: o.statDepth, value: link.depth != null ? link.depth : sj.emDash },
-    { label: o.statInlinks, value: link.inlinks ?? 0 },
-    { label: o.statOutlinks, value: link.outlinks ?? 0 },
+    { key: 'depth', label: <LabelWithHint label={o.statDepth} helpKey="shared.crawlDepth" />, value: link.depth != null ? link.depth : sj.emDash },
+    { key: 'inlinks', label: <LabelWithHint label={o.statInlinks} helpKey="shared.inlinks" />, value: link.inlinks ?? 0 },
+    { key: 'outlinks', label: <LabelWithHint label={o.statOutlinks} helpKey="shared.outlinks" />, value: link.outlinks ?? 0 },
     {
-      label: o.statWords,
+      key: 'words',
+      label: <LabelWithHint label={o.statWords} helpKey="shared.wordCount" />,
       value:
         wc > 0 ? (
           <span className={wcInfo.color}>
@@ -108,7 +110,8 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
       raw: true,
     },
     {
-      label: o.statReadingLevel,
+      key: 'readingLevel',
+      label: <LabelWithHint label={o.statReadingLevel} helpKey="shared.readingLevel" />,
       value:
         rl > 0 ? (
           <span className={rlInfo.color}>
@@ -120,6 +123,7 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
       raw: true,
     },
     {
+      key: 'redirects',
       label: o.statRedirects,
       value:
         (link.redirect_chain_length ?? 0) > 0 ? (
@@ -158,8 +162,8 @@ export default function OverviewTab({ link, lhData, onOpenTab }: OverviewTabProp
       <div>
         <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">{o.crawlHeading}</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {crawlStats.map(({ label, value, raw }) => (
-            <div key={label} className="bg-brand-900 border border-default rounded-xl p-3">
+          {crawlStats.map(({ key, label, value, raw }) => (
+            <div key={key} className="bg-brand-900 border border-default rounded-xl p-3">
               <div className="text-xs text-muted-foreground mb-1">{label}</div>
               <div className="text-sm font-semibold">
                 {raw ? value : <span className="text-bright">{value}</span>}

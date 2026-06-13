@@ -21,9 +21,10 @@ import {
 import type { ReportPayload } from '@/types';
 import type { DataSourceId } from '@/lib/dataProvenance';
 import { strings, format } from '@/lib/strings';
+import { metricHelpHint } from '@/lib/metricHelp';
 import { crawledUrlCount } from '@/lib/crawlCounts';
 import { googleSnapshotStatus } from '@/lib/googleSnapshot';
-import { Card, AlertBanner, StatCard } from '@/components';
+import { Card, AlertBanner, StatCard, LabelWithHint } from '@/components';
 import { DataSourceBadgeRow } from '@/components/DataSourceBadge';
 import LlmDisclosure from '@/components/LlmDisclosure';
 import { OverviewTabPanel } from './OverviewTabPanel';
@@ -218,14 +219,30 @@ export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {googleData.gsc ? (
               <>
-                <StatCard label={vo.gscClicksCard} value={googleData.gsc.summary?.clicks?.toLocaleString()} />
-                <StatCard label={vo.gscImpressionsCard} value={googleData.gsc.summary?.impressions?.toLocaleString()} />
+                <StatCard
+                  label={vo.gscClicksCard}
+                  value={googleData.gsc.summary?.clicks?.toLocaleString()}
+                  hint={metricHelpHint('shared.clicks')}
+                />
+                <StatCard
+                  label={vo.gscImpressionsCard}
+                  value={googleData.gsc.summary?.impressions?.toLocaleString()}
+                  hint={metricHelpHint('shared.impressions')}
+                />
               </>
             ) : null}
             {googleData.ga4 ? (
               <>
-                <StatCard label={vo.ga4SessionsCard} value={googleData.ga4.summary?.sessions?.toLocaleString()} />
-                <StatCard label={vo.ga4UsersCard} value={googleData.ga4.summary?.activeUsers?.toLocaleString()} />
+                <StatCard
+                  label={vo.ga4SessionsCard}
+                  value={googleData.ga4.summary?.sessions?.toLocaleString()}
+                  hint={metricHelpHint('shared.sessions')}
+                />
+                <StatCard
+                  label={vo.ga4UsersCard}
+                  value={googleData.ga4.summary?.activeUsers?.toLocaleString()}
+                  hint={metricHelpHint('shared.activeUsers')}
+                />
               </>
             ) : null}
           </div>
@@ -252,20 +269,20 @@ export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Card shadow>
           <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <Globe className="h-4 w-4" /> {vo.totalUrls}
+            <Globe className="h-4 w-4" /> <LabelWithHint label={vo.totalUrls} helpKey="views.overview.totalUrls" />
           </div>
           <div className="text-3xl font-bold text-bright">{crawledCount.toLocaleString()}</div>
           <div className="text-xs text-muted-foreground mt-2">{s.avg_outlinks ?? 0} {vo.avgOutlinks}</div>
         </Card>
         <Card shadow>
           <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-green-500" /> {vo.successRate}
+            <CheckCircle className="h-4 w-4 text-green-500" /> <LabelWithHint label={vo.successRate} helpKey="shared.successRate" />
           </div>
           <div className="text-3xl font-bold text-green-700 dark:text-green-400">{s.success_rate ?? 0}%</div>
         </Card>
         <Card shadow className="border-red-900/30 ring-1 ring-red-500/20">
           <div className="text-red-700 dark:text-red-400/90 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4" /> {vo.broken}
+            <AlertTriangle className="h-4 w-4" /> <LabelWithHint label={vo.broken} helpKey="views.overview.brokenLinks" />
           </div>
           <div className="text-3xl font-bold text-red-500">{brokenCount}</div>
           <div className="text-xs text-muted-foreground mt-2">
@@ -274,7 +291,7 @@ export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount 
         </Card>
         <Card shadow>
           <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <FileCode className="h-4 w-4" /> {vo.missingH1s}
+            <FileCode className="h-4 w-4" /> <LabelWithHint label={vo.missingH1s} helpKey="views.overview.missingH1" />
           </div>
           <div className="text-3xl font-bold text-yellow-500">{h1Zero}</div>
         </Card>
@@ -283,7 +300,7 @@ export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <Card shadow>
           <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <BookOpen className="h-4 w-4" /> {vo.medianWordCount}
+            <BookOpen className="h-4 w-4" /> <LabelWithHint label={vo.medianWordCount} helpKey="shared.medianWords" />
           </div>
           <div className="text-3xl font-bold text-bright">
             {data.content_analytics?.word_count_stats?.median != null
@@ -294,7 +311,7 @@ export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount 
         </Card>
         <Card shadow>
           <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <Share className="h-4 w-4 text-link" /> {vo.ogCoverage}
+            <Share className="h-4 w-4 text-link" /> <LabelWithHint label={vo.ogCoverage} helpKey="views.overview.ogCoverage" />
           </div>
           <div className="text-3xl font-bold text-link">
             {data.social_coverage?.og_coverage_pct != null ? `${data.social_coverage.og_coverage_pct}%` : sj.emDash}
@@ -312,7 +329,7 @@ export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount 
         </Card>
         <Card shadow>
           <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-            <Timer className="h-4 w-4 text-amber-700 dark:text-amber-400" /> {vo.responseP50}
+            <Timer className="h-4 w-4 text-amber-700 dark:text-amber-400" /> <LabelWithHint label={vo.responseP50} helpKey="views.overview.responseP50" />
           </div>
           <div className="text-3xl font-bold text-amber-700 dark:text-amber-400">
             {data.response_time_stats?.p50 != null ? `${Math.round(data.response_time_stats.p50)}ms` : sj.emDash}

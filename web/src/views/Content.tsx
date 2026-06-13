@@ -5,6 +5,7 @@ import type { TooltipItem } from 'chart.js';
 import { ExternalLink, CheckCircle2, FileText, Copy, BarChart3, List } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
+import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, Button, ViewTabs, ViewTabPanel } from '../components';
 import type { ViewTabItem } from '../components';
 import { palette } from '../utils/chartPalette';
@@ -149,9 +150,9 @@ export default function Content({ searchQuery = '' }: ViewProps) {
                 <Table>
                   <TableHead sticky>
                     <tr>
-                      <TableHeadCell>{vc.colCluster}</TableHeadCell>
-                      <TableHeadCell>{vc.colRepresentative}</TableHeadCell>
-                      <TableHeadCell className="text-right">{vc.colUrls}</TableHeadCell>
+                      <TableHeadCell hint={metricHelpHint('views.content.duplicateCluster')}>{vc.colCluster}</TableHeadCell>
+                      <TableHeadCell hint={metricHelpHint('views.content.duplicateRepresentative')}>{vc.colRepresentative}</TableHeadCell>
+                      <TableHeadCell className="text-right" hint={metricHelpHint('views.content.duplicateUrlCount')}>{vc.colUrls}</TableHeadCell>
                       <TableHeadCell className="w-36" />
                     </tr>
                   </TableHead>
@@ -298,13 +299,13 @@ export default function Content({ searchQuery = '' }: ViewProps) {
                     {vc.tablePage}
                   </TableHeadCell>
                   {(filter === 'meta_desc_short' || filter === 'meta_desc_long') && (
-                    <TableHeadCell className="hidden md:table-cell text-center px-3 sm:px-4">{vc.tableLength}</TableHeadCell>
+                    <TableHeadCell className="hidden md:table-cell text-center px-3 sm:px-4" hint={metricHelpHint('views.content.metaDescLength')}>{vc.tableLength}</TableHeadCell>
                   )}
                   {filter === 'multiple_h1' && (
-                    <TableHeadCell className="hidden md:table-cell text-center px-3 sm:px-4">{vc.tableH1Count}</TableHeadCell>
+                    <TableHeadCell className="hidden md:table-cell text-center px-3 sm:px-4" hint={metricHelpHint('views.content.h1Count')}>{vc.tableH1Count}</TableHeadCell>
                   )}
                   {filter === 'thin_content' && (
-                    <TableHeadCell className="hidden md:table-cell text-center px-3 sm:px-4">{vc.tableChars}</TableHeadCell>
+                    <TableHeadCell className="hidden md:table-cell text-center px-3 sm:px-4" hint={metricHelpHint('views.content.contentLength')}>{vc.tableChars}</TableHeadCell>
                   )}
                 </tr>
               </TableHead>
