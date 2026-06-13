@@ -1,28 +1,67 @@
-# Site Audit MCP server
+# MCP Server Reference
 
-Read-only [Model Context Protocol](https://modelcontextprotocol.io) tools for querying audit data from Cursor, Claude Desktop, or other MCP clients.
+Site Audit exposes **340 read-only tools** via the [Model Context Protocol (MCP)](https://modelcontextprotocol.io). Connect from Cursor, Claude Desktop, or any MCP-compatible client to query audit data programmatically.
 
-## Install
+The same tool catalog powers in-app **AI Chat** at `/chat`.
+
+**Related documentation:** [GLOSSARY.md](GLOSSARY.md) · [Documentation index](README.md)
+
+---
+
+## Table of contents
+
+- [Prerequisites](#prerequisites)
+- [Domain-scoped servers](#domain-scoped-servers)
+- [Configuration](#configuration)
+- [MCP resources](#mcp-resources)
+- [Tool reference](#tool-reference)
+- [In-app chat](#in-app-chat)
+- [Provider notes](#provider-notes)
+- [Roadmap](#roadmap)
+- [Example prompts](#example-prompts)
+
+---
+
+## Prerequisites
 
 ```bash
 pip install -r requirements.txt
-export DATABASE_URL=postgres://profiling:profiling@localhost:5432/website_profiling
+export DATABASE_URL=postgres://profiling:profiling@localhost:5432/website_profiling  # Docker default
+# ./local-run default: postgres://postgres:dev@127.0.0.1:5432/website_profiling
 export PYTHONPATH=src
 ```
 
-## Cursor configuration
+Start the server:
 
-Site Audit exposes **domain-scoped MCP servers** (like Cursor optional plugins). Connect only the bundles you need instead of loading all 340 tools in one server.
+```bash
+python -m website_profiling.mcp
+```
 
-| `WP_MCP_DOMAIN` | Typical tools | Use when |
-|-----------------|---------------|----------|
-| `core` (default) | Router, workflows, insight (~12) | General chat, tool search, coverage |
-| `crawl` | Crawl, on-page, schema, accessibility | Technical crawl audits |
-| `google` | Google, insight, CTR, keywords | GSC/GA4 analysis |
-| `links` | Links, backlinks, indexation | Link architecture |
-| `full` | All 340 tools | Debugging / legacy single-server setup |
+---
 
-Add to `.cursor/mcp.json` (or Cursor MCP settings):
+## Domain-scoped servers
+
+Rather than loading all 340 tools in a single server, Site Audit supports **domain-scoped bundles**. Connect only the domains relevant to your workflow.
+
+| `WP_MCP_DOMAIN` | Tool count | Scope | Recommended use |
+|-----------------|------------|-------|-----------------|
+| `core` (default) | Tier 0 + `core`/`insight` domains | Router, workflows, insight | General queries, tool search, coverage reports |
+| `crawl` | Domain subset | Crawl, on-page, schema, accessibility | Technical crawl audits |
+| `google` | Domain subset | Google, insight, CTR, keywords | GSC/GA4 analysis |
+| `links` | Domain subset | Links, backlinks, indexation | Link architecture |
+| `full` | 340 | All tools | Debugging, legacy single-server setup |
+
+Tier 0 alone includes 16 router/insight tools (`TIER_0_TOOLS` in `tool_domains.py`). Use the `audit://tools` resource or `WP_MCP_DOMAIN=full` for the complete catalog.
+
+Set `WP_PROPERTY_ID` to the default property when tools omit an explicit `property_id` argument.
+
+---
+
+## Configuration
+
+### Multi-domain setup (recommended)
+
+Add to `.cursor/mcp.json` or your MCP client settings:
 
 ```json
 {
@@ -51,7 +90,7 @@ Add to `.cursor/mcp.json` (or Cursor MCP settings):
 }
 ```
 
-Single-server legacy setup (all tools):
+### Single-server setup (all tools)
 
 ```json
 {
@@ -70,37 +109,43 @@ Single-server legacy setup (all tools):
 }
 ```
 
-`WP_PROPERTY_ID` sets the default property when tools omit `property_id`.
+---
 
 ## MCP resources
 
 | URI | Content |
 |-----|---------|
 | `audit://properties` | JSON list of properties |
-| `audit://property/{id}` | Property details + latest report summary |
+| `audit://property/{id}` | Property details and latest report summary |
 | `audit://property/{id}/report/latest` | Payload key index (counts, not full blob) |
 | `audit://property/{id}/report/{report_id}` | Payload key index for a specific report |
-| `audit://glossary` | Excerpt from `docs/GLOSSARY.md` |
-| `audit://tools` | Tool catalog for the connected `WP_MCP_DOMAIN` server |
+| `audit://glossary` | Excerpt from [GLOSSARY.md](GLOSSARY.md) |
+| `audit://tools` | Tool catalog for the connected `WP_MCP_DOMAIN` |
 | `audit://domains` | Available MCP domain bundles and tool groupings |
 
-## Tools (340 read-only + export)
+---
 
-### Router and insight (Tier 0 — `WP_MCP_DOMAIN=core`)
+## Tool reference
 
-`search_audit_tools`, `list_tool_domains`, `get_data_coverage_report`, `run_insight_workflow`, `run_technical_workflow`, `run_keyword_workflow`, `run_domain_agent`, `get_landing_page_blended_table`, `get_opportunity_matrix`, `get_traffic_health_check`, `get_landing_page_full_diagnosis`, `get_issue_to_traffic_map`
+All tools are read-only. This section is a **curated subset** of the 340-tool registry. For the complete catalog, connect with `WP_MCP_DOMAIN=full` or read the `audit://tools` MCP resource.
+
+Export tools write artifact files with a 24-hour TTL; in-app chat renders download buttons via `/api/chat/artifacts/{id}`.
+
+### Router and insight (Tier 0 — included in every chat turn)
+
+`search_audit_tools`, `list_tool_domains`, `get_data_coverage_report`, `run_insight_workflow`, `run_technical_workflow`, `run_keyword_workflow`, `run_domain_agent`, `get_report_summary`, `list_top_impact_issues`, `prioritize_fix_roadmap`, `get_landing_page_blended_table`, `get_opportunity_matrix`, `get_traffic_health_check`, `get_landing_page_full_diagnosis`, `get_issue_to_traffic_map`, `get_google_summary`
 
 ### Export and deliverables
 
 `export_audit_report`, `export_compare_csv`, `export_list_as_csv`, `export_sitemap_xml`, `validate_rich_results`, `compose_custom_report`, `export_custom_report`, `list_export_formats`
 
-Full audit exports reuse the same generators as the Export view (PDF requires `reportlab`). Export tools store files as artifacts (24h TTL); in-app chat renders download buttons via `/api/chat/artifacts/{id}`.
+Full audit exports use the same generators as the Export view. PDF export requires `reportlab`.
 
 ### Image audit
 
 `get_image_audit_summary`, `list_pages_without_lazy_images`, `list_pages_with_images_missing_dimensions`, `list_site_image_urls`, `list_lighthouse_image_opportunities`, `list_largest_images`, `list_unoptimized_images`, `list_images_needing_attention`
 
-Size-based tools require `probe_image_inventory=true` in pipeline config when building the report. Keys: `max_image_probe_urls` (default 500), `image_probe_concurrency`, `image_probe_timeout`, `image_unoptimized_min_kb` (default 200).
+Size-based tools require `probe_image_inventory=true` in pipeline config. Related keys: `max_image_probe_urls` (default 500), `image_probe_concurrency`, `image_probe_timeout`, `image_unoptimized_min_kb` (default 200).
 
 ### Portfolio and report
 
@@ -170,46 +215,66 @@ Size-based tools require `probe_image_inventory=true` in pipeline config when bu
 
 `get_bing_index_status` (requires `bing_webmaster_api_key` in audit settings)
 
-### Ops and logs
+### Operations and logs
 
 `get_integration_alerts`, `get_property_ops`, `list_crawl_runs`, `list_log_uploads`, `get_latest_log_analysis`, `get_log_top_paths`, `list_log_only_paths`, `list_crawl_only_paths`, `get_log_googlebot_stats`, `get_log_analysis_by_id`, `get_page_coach`
 
-## Future pipeline items
-
-- Full backlink index and anchor-text analytics (beyond GSC Links import)
-- SERP rank tracking beyond GSC position snapshots
-- Live AI citation checks across ChatGPT/Perplexity (current `check_ai_citation_presence` uses on-site heuristics)
-
-Already available: `validate_rich_results`, `get_gsc_url_inspection`, `export_sitemap_xml`, workbook export, axe audits via `enable_axe` on browser crawls.
-
-## Example prompts
-
-- "What indexation gaps exist between crawl and GSC?"
-- "List pages missing canonical tags or with canonical mismatches"
-- "Which paths appear in access logs but were not crawled?"
-- "Compare GSC clicks vs the previous audit"
-- "List pages failing Core Web Vitals thresholds"
-- "Show security finding changes since report 38"
-- "Which pages link to broken URLs?"
-- "Generate a content brief for keyword X"
-- "Download the audit as PDF"
-- "Export broken links as CSV"
-- "Compare report 38 to the current audit and give me a CSV diff"
-- "Build a client report with executive summary, category scores, and top critical issues as PDF"
-- "Which images are largest and unoptimized?"
-- "What should we fix first on high-traffic pages?" (use `list_top_impact_issues` or `prioritize_fix_roadmap`)
-- "What's our GEO readiness score?"
-- "Inspect GSC indexing for https://example.com/page"
-- "Which pages are soft 404s or dead ends?"
-- "Suggest internal links for our top blog post"
-- "List pages with images missing alt or lazy loading"
+---
 
 ## In-app chat
 
-The same tools power **AI Chat** at [http://localhost:3000/chat](http://localhost:3000/chat). Enable AI in Run audit → AI settings.
+The same tools power **AI Chat** at [http://localhost:3000/chat](http://localhost:3000/chat). Enable a provider under **Run audit → AI settings**.
 
-In-app chat uses **dynamic tool routing**: each turn loads Tier 0 router tools plus a domain-scoped subset (~45 tools), not the full catalog. Set `CHAT_TOOL_MODE=full` to load all tools for debugging.
+In-app chat uses **dynamic tool routing**: each turn loads Tier 0 router tools plus a domain-scoped subset (default ~45 tools via `CHAT_TOOL_MAX`). Set `CHAT_TOOL_MODE=full` to load all tools for debugging. Optional: `CHAT_TOOL_MAX` (default 45, max 120).
 
-## Ollama note
+Responses stream over SSE via `POST /api/chat`. Sessions persist per property in `chat_sessions` and `chat_messages`.
 
-When the local Ollama daemon supports native tools (most current models, including Ollama cloud refs like `minimax-m3:cloud`), chat uses Ollama’s `/api/chat` tool format. Older or tool-less models fall back to JSON ReAct parsing. OpenAI and Anthropic always use native tool calling with streaming in the chat UI.
+---
+
+## Provider notes
+
+| Provider | Tool calling | Notes |
+|----------|--------------|-------|
+| **Ollama** | Native when supported; ReAct fallback otherwise | Local daemon at `http://127.0.0.1:11434` |
+| **OpenAI** | Native with streaming | API key in AI settings or `OPENAI_API_KEY` |
+| **Anthropic** | Native with streaming | API key in AI settings or `ANTHROPIC_API_KEY` |
+| **Google Gemini** | Native with streaming | API key in AI settings or `GEMINI_API_KEY`; REST via `httpx` |
+
+---
+
+## Roadmap
+
+The following capabilities are planned but not yet available:
+
+| Capability | Current state |
+|------------|---------------|
+| Full backlink index and anchor-text analytics | GSC Links CSV import only |
+| SERP rank tracking | GSC position snapshots only |
+| Live AI citation checks | On-site heuristics via `check_ai_citation_presence` |
+
+**Already available:** `validate_rich_results`, `get_gsc_url_inspection`, `export_sitemap_xml`, workbook export, axe audits via `enable_axe` on browser crawls.
+
+---
+
+## Example prompts
+
+| Goal | Example prompt |
+|------|----------------|
+| Indexation | "What indexation gaps exist between crawl and GSC?" |
+| On-page | "List pages missing canonical tags or with canonical mismatches" |
+| Log analysis | "Which paths appear in access logs but were not crawled?" |
+| Google data | "Compare GSC clicks vs the previous audit" |
+| Performance | "List pages failing Core Web Vitals thresholds" |
+| Security | "Show security finding changes since report 38" |
+| Links | "Which pages link to broken URLs?" |
+| Content | "Generate a content brief for keyword X" |
+| Export | "Download the audit as PDF" |
+| Compare | "Compare report 38 to the current audit and give me a CSV diff" |
+| Client report | "Build a client report with executive summary, category scores, and top critical issues as PDF" |
+| Images | "Which images are largest and unoptimized?" |
+| Prioritization | "What should we fix first on high-traffic pages?" |
+| GEO | "What's our GEO readiness score?" |
+| GSC inspection | "Inspect GSC indexing for https://example.com/page" |
+| Crawl quality | "Which pages are soft 404s or dead ends?" |
+| Internal links | "Suggest internal links for our top blog post" |
+| Accessibility | "List pages with images missing alt or lazy loading" |

@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Site Audit — Open Source SEO Crawl &amp; Audit</strong><br>
-  <sub>Free, self-hosted — no vendor paywalls.</sub>
+  <sub>Self-hosted technical SEO — your infrastructure, your data.</sub>
 </p>
 
 <p align="center">
@@ -24,12 +24,12 @@
 </p>
 
 <p align="center">
-  <a href="#quick-start">Quick start</a> ·
+  <a href="#getting-started">Quick start</a> ·
   <a href="#features">Features</a> ·
-  <a href="#what-it-does-not-do">Limitations</a> ·
-  <a href="#project-structure">Structure</a> ·
+  <a href="#scope-and-limitations">Limitations</a> ·
+  <a href="#architecture">Structure</a> ·
   <a href="#contributing">Contributing</a> ·
-  <a href="#docs">Docs</a> ·
+  <a href="#documentation">Docs</a> ·
   <a href="#license">License</a>
 </p>
 
@@ -37,19 +37,25 @@
 
 # Site Audit
 
-**Open Source SEO Crawl & Audit** — self-hosted UI built with **Next.js + Python + PostgreSQL**.
+**Open-source SEO crawl and technical audit platform** — self-hosted UI built with **Next.js, Python, and PostgreSQL**.
 
 Repository: [codefrydev/WebsiteProfiling](https://github.com/codefrydev/WebsiteProfiling)
 
 ## Overview
 
-**Why this project** — Most site-audit and SEO tools are paid, limited, or built to upsell: paywalls, capped crawls, teaser scores, and “subscribe to see how to fix this.” Many free options give shallow or unreliable reports that push you toward a paid plan instead of real answers.
+Site Audit is a self-hosted alternative to commercial SEO audit tools. It runs on your infrastructure, stores data in your PostgreSQL database, and produces transparent technical reports without subscription tiers or gated exports.
 
-**Goal** — A free, self-hosted audit you control: crawl your sites, see honest technical SEO issues, connect Search Console and Analytics when you want, and export reports for clients — without a vendor sitting between you and the data.
+**Use cases**
 
-## What it does not do
+- Technical SEO audits for owned or client properties
+- Crawl analysis with static and JavaScript rendering
+- Search Console, GA4, and Bing Webmaster integration
+- Agency portfolio management and run comparison
+- Optional AI-assisted analysis over audit data via MCP-compatible tools
 
-Site Audit is built for **honest, self-hosted technical SEO** — not as a drop-in replacement for every paid SaaS data product.
+## Scope and limitations
+
+Site Audit focuses on **honest, self-hosted technical SEO**. It is not a drop-in replacement for every paid SaaS data product.
 
 - **No live backlink index** — Backlink tools read **Google Search Console Links CSV imports** (and optional third-party CSV overlays). There is no Ahrefs, Semrush, Moz, or Majestic API integration.
 - **No daily rank tracking** — Keyword positions come from **GSC snapshots** on your connected property, not a proprietary SERP tracker or rank-history database.
@@ -59,7 +65,7 @@ Site Audit is built for **honest, self-hosted technical SEO** — not as a drop-
 - **No substitute for Google access** — Search Console, Analytics, and Bing Webmaster require **your credentials**; missing or stale integrations show empty states with provenance labels, not fabricated metrics.
 - **Not a ranking guarantee** — Category scores (0–100) are **internal audit scores**, not Google rankings or predicted traffic impact.
 
-Planned extensions (not shipped yet): full backlink index beyond GSC import, SERP rank tracking beyond GSC snapshots, and live AI citation APIs. See [docs/MCP.md](docs/MCP.md#future-pipeline-items).
+**Planned extensions** (not yet shipped): full backlink index beyond GSC import, SERP rank tracking beyond GSC snapshots, and live AI citation APIs. See [docs/MCP.md](docs/MCP.md#future-pipeline-items).
 
 ## Features
 
@@ -94,7 +100,7 @@ Also included: **AI chat** over audit data (optional), **340 MCP tools** (domain
   <img src="docs/assets/social-preview.png" alt="Site Audit preview" width="640">
 </p>
 
-## Project structure
+## Architecture
 
 ```
 WebsiteProfiling/
@@ -123,6 +129,8 @@ WebsiteProfiling/
 ├── scripts/                   # local-run.sh, local-test.sh helpers
 ├── .github/workflows/         # CI (Python + web + browser crawl)
 ├── docker-compose.yml         # Dev stack (Postgres + web)
+├── docker-compose.prod.yml    # Production stack (requires AUTH_SECRET)
+├── docker-compose.pull.yml    # Pre-built WEB_IMAGE
 ├── Dockerfile                 # Production image
 ├── local-run                  # Dev setup & start script
 ├── local-test                 # Full test suite (CI parity)
@@ -137,14 +145,18 @@ WebsiteProfiling/
 | `web/src/lib/pipelineConfigSchema.ts` | Audit settings schema (UI ↔ PostgreSQL) |
 | `alembic/versions/` | Database migrations — run `./local-run migrate` |
 | `tests/` | Backend tests; `./local-test browser` for Playwright crawl integration |
-| `docs/MCP.md` | MCP server setup for IDE / agent integrations |
-| `data/` | Local secrets + shadow `pipeline-config.txt` (gitignored) |
+| `docs/MCP.md` | MCP server setup for IDE and agent integrations |
+| `data/` | Local secrets and shadow `pipeline-config.txt` (gitignored) |
+| `docker-compose.prod.yml` | Production stack (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `AUTH_SECRET`) |
+| `docker-compose.pull.yml` | Pre-built `WEB_IMAGE` deployment |
 
-For deeper layout notes and edit targets, see [AGENT.md](AGENT.md).
+For layout details and common development patterns, see [AGENT.md](AGENT.md).
 
-## Quick start
+## Getting started
 
-**Docker (build from source)**
+### Docker
+
+Build and run from source:
 
 ```bash
 docker compose up --build
@@ -152,30 +164,65 @@ docker compose up --build
 
 Open [http://localhost:3000/home](http://localhost:3000/home).
 
-**Local dev**
+Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `AUTH_SECRET`. Pre-built images: `docker-compose.pull.yml` (`WEB_IMAGE`).
+
+### Local development
 
 ```bash
-./local-run setup   # first time: Postgres, Python venv, migrations, npm deps
-./local-run         # daily: start DB + Next.js dev server → http://localhost:3000/home
+./local-run setup   # First time: Postgres, Python venv, migrations, npm deps
+./local-run         # Start DB + Next.js dev server → http://localhost:3000/home
 ./local-run db      # Postgres only (no app)
-./local-run migrate # apply Alembic migrations only
-./local-run stop    # stop Postgres container
+./local-run migrate # Apply Alembic migrations only
+./local-run stop    # Stop Postgres container
 ```
+
+Default local `DATABASE_URL`: `postgres://postgres:dev@127.0.0.1:5432/website_profiling` (Docker Compose dev stack uses `profiling:profiling`).
 
 `requirements.txt` pins direct Python dependencies to versions verified by `./local-test python`. Re-run the full test suite after intentional upgrades.
 
-Pipeline jobs: stuck `running` rows are reconciled after **1 hour** by default (`PIPELINE_JOB_STALE_HOURS`). Orphan jobs with no live server process are cleared after **5 minutes** (`PIPELINE_JOB_ORPHAN_MINUTES`). Increase `PIPELINE_JOB_STALE_HOURS` for crawls that routinely run longer than an hour.
+### Pipeline job timeouts
 
-**Tests**
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `PIPELINE_JOB_STALE_HOURS` | 1 hour | Reconciles stuck `running` rows |
+| `PIPELINE_JOB_ORPHAN_MINUTES` | 5 minutes | Clears orphan jobs with no live server process |
+
+Increase `PIPELINE_JOB_STALE_HOURS` for crawls that routinely exceed one hour.
+
+### Testing
 
 ```bash
-./local-test              # before push: full CI parity (DB + pytest + web)
-./local-test python       # backend: pytest (80% coverage) + browser pytest + CLI smoke
+./local-test              # Python + web (matches CI python and web jobs)
+./local-test python       # Backend: three 100% coverage gates + browser pytest + CLI smoke
 ./local-test browser      # JS crawl integration tests (skips if Chromium unavailable)
-./local-test web          # frontend: typecheck, lint, vitest
-./local-test quick        # fast loop; needs DB already up (no coverage gate)
-./local-test all --no-cov # full run without pytest coverage gate
+./local-test web          # Frontend: typecheck, lint, vitest
+./local-test quick        # Fast loop; requires DB already running (no coverage gate)
+./local-test all --no-cov # Full run without pytest coverage gate
 ```
+
+CI also runs a **Docker** job (image build, browser pytest in container, compose smoke). See [.github/workflows/ci.yml](.github/workflows/ci.yml).
+
+## Configuration
+
+### Integrations
+
+Connect Google Search Console and Analytics via **Integrations** (gear icon) in the application UI.
+
+### JavaScript crawl (optional)
+
+In Audit settings, set **Crawl rendering** to `javascript` (always headless Chromium) or `auto` (static first, browser when SPA heuristics match). Requires Playwright from `requirements.txt` and Chromium on `PATH` or `CHROME_PATH` (included in Docker). The UI preflights via `GET /api/crawl/browser-status` before runs when JS or auto mode is selected.
+
+### AI chat (optional)
+
+Ask questions about audit data at [http://localhost:3000/chat](http://localhost:3000/chat). Enable a provider under **Run audit → AI settings** (`llm_enabled`, provider, model). `./local-run setup` installs Python deps from `requirements.txt` (including `httpx`, OpenAI, and Anthropic SDKs; Gemini uses `httpx` via REST).
+
+| Provider | Notes |
+|----------|-------|
+| **Ollama** | Local daemon at `http://127.0.0.1:11434`. Chat UI lists installed models plus the live Ollama cloud catalog. Native tool calling when supported; ReAct fallback otherwise. |
+| **OpenAI** / **Anthropic** | API key in AI settings or env (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`); native tool calling with streaming. |
+| **Google Gemini** | API key in AI settings or `GEMINI_API_KEY`; REST via `httpx`. |
+
+The agent uses the same **340 read-only audit tools** as the MCP server ([docs/MCP.md](docs/MCP.md)), with **dynamic routing** (~45 tools per turn). Responses stream over SSE (`POST /api/chat`). Sessions persist per property (`chat_sessions` / `chat_messages`).
 
 ## Contributing
 
@@ -184,28 +231,16 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and 
 - [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) — community standards
 - [SECURITY.md](SECURITY.md) — report vulnerabilities privately
 
-## Docs
+## Documentation
 
-- [AGENT.md](AGENT.md) — repo layout and dev commands
-- [docs/GLOSSARY.md](docs/GLOSSARY.md) — UI terminology
-- [docs/COMPANY_STANDARDS.md](docs/COMPANY_STANDARDS.md) — data and security policy
-
-Google Search Console / Analytics: connect via **Integrations** (gear icon) in the app.
-
-**JavaScript crawl (optional):** In Audit settings, set **Crawl rendering** to `javascript` (always headless Chromium) or `auto` (static first, browser when SPA heuristics match). Requires Playwright from `requirements.txt` and Chromium on `PATH` or `CHROME_PATH` (included in Docker). The UI preflights via `GET /api/crawl/browser-status` before runs when JS/auto is selected.
-
-**AI Chat (optional):** Ask questions about your audit data at [http://localhost:3000/chat](http://localhost:3000/chat). Enable a provider under **Run audit → AI settings** (`llm_enabled`, provider, model). `./local-run setup` installs all Python deps from `requirements.txt` (including `httpx`, OpenAI, and Anthropic SDKs).
-
-| Provider | Notes |
-|----------|--------|
-| **Ollama** | Local daemon at `http://127.0.0.1:11434`. Chat UI lists installed models plus the live Ollama cloud catalog (billing: free local, account free tier, Pro). Native tool calling when supported; otherwise ReAct fallback. Pick the model in-chat without leaving the page. |
-| **OpenAI** / **Anthropic** | API key in AI settings; native tool calling with streaming. |
-
-The agent uses the same **340 read-only audit tools** as the MCP server (`docs/MCP.md`), with **dynamic routing** (~45 tools per turn plus router meta-tools). Responses stream over SSE (`POST /api/chat`) with status, tool activity, and tokens. Sessions are saved per property (`chat_sessions` / `chat_messages`).
-
-Production: `docker-compose.prod.yml` (set `POSTGRES_PASSWORD`, `AUTH_SECRET`).
-
-
+| Document | Description |
+|----------|-------------|
+| [docs/README.md](docs/README.md) | Documentation index and brand assets |
+| [AGENT.md](AGENT.md) | Repository layout and development commands |
+| [docs/GLOSSARY.md](docs/GLOSSARY.md) | UI terminology |
+| [docs/COMPANY_STANDARDS.md](docs/COMPANY_STANDARDS.md) | Data and security policy |
+| [docs/MCP.md](docs/MCP.md) | MCP server setup |
+| [docs/OPS.md](docs/OPS.md) | Scheduled audits, alerts, production ops |
 
 ## Star History
 
@@ -213,4 +248,6 @@ Production: `docker-compose.prod.yml` (set `POSTGRES_PASSWORD`, `AUTH_SECRET`).
 
 ## License
 
-Copyright (c) 2026 [codefrydev](https://github.com/codefrydev). Released under the **MIT License** — see [LICENSE](LICENSE). Issues and pull requests: [codefrydev/WebsiteProfiling](https://github.com/codefrydev/WebsiteProfiling).
+Copyright © 2026 [codefrydev](https://github.com/codefrydev). Released under the [MIT License](LICENSE).
+
+Issues and pull requests: [codefrydev/WebsiteProfiling](https://github.com/codefrydev/WebsiteProfiling)
