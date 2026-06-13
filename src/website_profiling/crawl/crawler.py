@@ -61,6 +61,11 @@ class Crawler:
         use_wappalyzer: bool = True,
         store_content_excerpt: bool = False,
         content_excerpt_max_chars: int = 4096,
+        store_page_html: bool = False,
+        max_stored_html_bytes: int = 2_097_152,
+        run_content_analysis: bool = False,
+        content_analysis_strategy: str = "main_only",
+        content_analysis_workers: int = 4,
         render_mode: str = "static",
         js_concurrency: int = 3,
         js_timeout: int = 30,
@@ -103,6 +108,11 @@ class Crawler:
                 use_wappalyzer=use_wappalyzer,
                 store_content_excerpt=store_content_excerpt,
                 content_excerpt_max_chars=content_excerpt_max_chars,
+                store_page_html=store_page_html,
+                max_stored_html_bytes=max_stored_html_bytes,
+                run_content_analysis=run_content_analysis,
+                content_analysis_strategy=content_analysis_strategy,
+                content_analysis_workers=content_analysis_workers,
                 render_mode=render_mode,
                 js_concurrency=js_concurrency,
                 js_timeout=js_timeout,
@@ -145,11 +155,16 @@ class Crawler:
         self.crawl_ignore_params = config.crawl_ignore_params
         self.custom_extraction_regex = config.custom_extraction_regex
         self.custom_extractors = config.custom_extractors
+        self.store_page_html = config.store_page_html
+        self.max_stored_html_bytes = config.max_stored_html_bytes
+        self._html_buffer: list[dict] = []
+        self._db_writer: Optional[CrawlDbWriter] = None
 
         self.page_builder = PageRecordBuilder(
             use_wappalyzer=config.use_wappalyzer,
             store_content_excerpt=config.store_content_excerpt,
             content_excerpt_max_chars=config.content_excerpt_max_chars,
+            defer_content_analysis=config.defer_content_analysis,
             custom_extraction_regex=config.custom_extraction_regex,
             custom_extractors=config.custom_extractors,
         )
@@ -228,6 +243,32 @@ class Crawler:
 
     def fetch(self, url: str) -> FetchResult:
         return self.fetcher.fetch(url)
+
+    def _capture_page_html(
+        self,
+        url: str,
+        text: str | None,
+        status: object,
+        content_type: str | None,
+        fetch_method: str,
+    ) -> None:
+        from .html_capture import build_page_html_record
+
+        record = build_page_html_record(
+            url=url,
+            html=text or "",
+            status=status,
+            content_type=content_type,
+            fetch_method=fetch_method,
+            max_bytes=self.max_stored_html_bytes,
+            enabled=self.store_page_html,
+        )
+        if record is None:
+            return
+        if self._db_writer is not None:
+            self._db_writer.enqueue_html(record)
+        else:
+            self._html_buffer.append(record)
 
     def worker(self, url: str) -> dict:
         if not self.allowed_by_robots(url):
@@ -340,6 +381,9 @@ class Crawler:
 
         PageRecordBuilder.merge_browser_diagnostics(ext, result)
 
+        if text:
+            self._capture_page_html(url, text, status, ct, fetch_method)
+
         res = {
             "url": url,
             "status": status,
@@ -372,8 +416,15 @@ class Crawler:
         futures = []
         db_writer: Optional[CrawlDbWriter] = None
         pages_crawled = 0
+        self._db_writer = None
+        self._html_buffer = []
         if stream_crawl_run_id is not None:
-            db_writer = _CrawlDbWriter(stream_crawl_run_id, stream_batch_size)
+            db_writer = _CrawlDbWriter(
+                stream_crawl_run_id,
+                stream_batch_size,
+                store_page_html=self.store_page_html,
+            )
+            self._db_writer = db_writer
             db_writer.start()
         use_tqdm = show_progress and stream_crawl_run_id is None
         pbar = tqdm(
@@ -439,6 +490,7 @@ class Crawler:
             db_writer.finish()
             db_writer.join()
             db_writer.raise_if_failed()
+        self._db_writer = None
         elapsed = time.time() - start_time
         df = pd.DataFrame(self.results)
         if df.empty:
@@ -464,6 +516,11 @@ def run_crawler(
     preserve_crawl_history: bool = True,
     store_content_excerpt: bool = False,
     content_excerpt_max_chars: int = 4096,
+    store_page_html: bool = False,
+    max_stored_html_bytes: int = 2_097_152,
+    run_content_analysis: bool = False,
+    content_analysis_strategy: str = "main_only",
+    content_analysis_workers: int = 4,
     crawl_stream_to_db: bool = False,
     property_id: Optional[int] = None,
     render_mode: str = "static",
@@ -513,6 +570,11 @@ def run_crawler(
         exclude_urls=exclude_urls,
         store_content_excerpt=store_content_excerpt,
         content_excerpt_max_chars=content_excerpt_max_chars,
+        store_page_html=store_page_html,
+        max_stored_html_bytes=max_stored_html_bytes,
+        run_content_analysis=run_content_analysis,
+        content_analysis_strategy=content_analysis_strategy,
+        content_analysis_workers=content_analysis_workers,
         render_mode=render_mode,
         js_concurrency=js_concurrency,
         js_timeout=js_timeout,
@@ -602,6 +664,11 @@ def run_crawler(
                 discovery_mode=disc_label,
             )
             write_crawl(conn, df, crawl_run_id=run_id)
+            html_buffer = getattr(crawler, "_html_buffer", None) or []
+            if getattr(crawler, "store_page_html", False) and html_buffer:
+                from ..db.html_store import write_page_html_batch
+
+                write_page_html_batch(conn, html_buffer, run_id, commit=True)
             if crawler.link_edges_accum:
                 from ..db.crawl_store import write_link_edges
 

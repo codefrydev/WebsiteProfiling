@@ -191,7 +191,7 @@ def test_ensure_crawl_tables_cleared_commits():
     conn = _Conn()
     ensure_crawl_tables_cleared(conn)  # type: ignore[arg-type]
     assert conn.commits == 1
-    assert any("TRUNCATE crawl_results, edges, nodes" in s for s, _ in conn.executed)
+    assert any("TRUNCATE crawl_results, crawl_page_html, edges, nodes" in s for s, _ in conn.executed)
 
 
 def test_read_lh_runs_by_url_and_page_summaries():

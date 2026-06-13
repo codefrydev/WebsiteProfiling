@@ -13,6 +13,7 @@ export type PipelineLogLineKind =
 export type PipelinePhase =
   | 'config'
   | 'crawl'
+  | 'content_analysis'
   | 'lighthouse'
   | 'report'
   | 'keywords'
@@ -101,6 +102,7 @@ const ANSI_RE = /\x1b\[[0-9;]*m/g;
 export const PHASE_LABELS: Record<PipelinePhase, string> = {
   config: 'Settings',
   crawl: 'Crawl',
+  content_analysis: 'Content analysis',
   lighthouse: 'Lighthouse',
   report: 'Site audit',
   keywords: 'Keywords',
@@ -133,6 +135,7 @@ const STEP_LABELS: Record<string, string> = {
 export const PIPELINE_STEPPER_PHASES: ProgressPhase[] = [
   'config',
   'crawl',
+  'content_analysis',
   'lighthouse',
   'report',
   'keywords',
@@ -148,6 +151,7 @@ export function phaseFromSectionTag(tag: string): PipelinePhase {
   const t = tag.toLowerCase();
   if (t.includes('config')) return 'config';
   if (t.includes('crawl')) return 'crawl';
+  if (t.includes('content')) return 'content_analysis';
   if (t.includes('lighthouse')) return 'lighthouse';
   if (t.includes('report')) return 'report';
   if (t.includes('plot')) return 'plot';
@@ -300,7 +304,7 @@ export function resolveActiveProgress(
 
 function phaseFromProgressEvent(phase: string): PipelinePhase {
   const p = phase.toLowerCase();
-  if (p === 'config' || p === 'crawl' || p === 'lighthouse' || p === 'report' || p === 'keywords' || p === 'plot') {
+  if (p === 'config' || p === 'crawl' || p === 'content_analysis' || p === 'lighthouse' || p === 'report' || p === 'keywords' || p === 'plot') {
     return p;
   }
   if (p === 'optional') return 'optional';
@@ -561,6 +565,7 @@ export const PIPELINE_LOG_LINE_CLASS: Record<PipelineLogLineKind, string> = {
 export const PHASE_CHIP_CLASS: Record<PipelinePhase, string> = {
   config: 'border-violet-500/40 bg-violet-500/10 text-violet-200',
   crawl: 'border-blue-500/40 bg-blue-500/10 text-blue-200',
+  content_analysis: 'border-teal-500/40 bg-teal-500/10 text-teal-200',
   lighthouse: 'border-amber-500/40 bg-amber-500/10 text-amber-200',
   report: 'border-green-500/40 bg-green-500/10 text-green-200',
   keywords: 'border-pink-500/40 bg-pink-500/10 text-pink-200',

@@ -207,7 +207,7 @@ def restore_historical_data(conn: Connection, data: dict[str, list]) -> None:
 
 def ensure_crawl_tables_cleared(conn: Connection) -> None:
     """Clear crawl-scoped tables before a non-append crawl (preserves reports, Google, etc.)."""
-    conn.execute("TRUNCATE crawl_results, edges, nodes RESTART IDENTITY CASCADE")
+    conn.execute("TRUNCATE crawl_results, crawl_page_html, edges, nodes RESTART IDENTITY CASCADE")
     conn.commit()
 
 

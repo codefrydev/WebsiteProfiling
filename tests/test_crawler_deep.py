@@ -359,9 +359,10 @@ def test_crawl_streams_rows_to_db_writer(monkeypatch):
     class FakeDbWriter:
         instances: list["FakeDbWriter"] = []
 
-        def __init__(self, crawl_run_id: int, batch_size: int) -> None:
+        def __init__(self, crawl_run_id: int, batch_size: int, *, store_page_html: bool = False) -> None:
             self.crawl_run_id = crawl_run_id
             self.batch_size = batch_size
+            self.store_page_html = store_page_html
             self.enqueued: list[dict] = []
             self.started = False
             self.finished = False
@@ -539,4 +540,83 @@ def test_run_crawler_streaming_db_path(monkeypatch):
 
     df = mod.run_crawler("https://a.com", output_db=True, crawl_stream_to_db=True, show_progress=False)
     assert not df.empty
+
+
+def test_run_crawler_flushes_buffered_html(monkeypatch):
+    import website_profiling.crawl.crawler as mod
+
+    class FakeCrawler:
+        def __init__(self, **_kwargs):
+            self.link_edges_accum = []
+            self.store_page_html = True
+            self._html_buffer = [
+                {"url": "https://a.com", "html": "<html></html>", "status": "200"},
+            ]
+
+        def crawl(self, **_kwargs):
+            return pd.DataFrame([{"url": "https://a.com", "status": 200}])
+
+    class _Ctx:
+        def __enter__(self):
+            return object()
+
+        def __exit__(self, _t, _v, _tb):
+            return False
+
+    html_writes: list[tuple] = []
+
+    fake_db = types.SimpleNamespace(
+        backup_db_if_exists=lambda: None,
+        create_crawl_run=lambda *_a, **_k: 7,
+        db_session=lambda: _Ctx(),
+        read_historical_data=lambda: {},
+        restore_historical_data=lambda *_a, **_k: None,
+        write_crawl=lambda *_a, **_k: None,
+    )
+    fake_storage = types.SimpleNamespace(ensure_crawl_tables_cleared=lambda *_a, **_k: None)
+    monkeypatch.setattr(mod, "Crawler", FakeCrawler)
+    monkeypatch.setitem(__import__("sys").modules, "website_profiling.db", fake_db)
+    monkeypatch.setitem(__import__("sys").modules, "website_profiling.db.storage", fake_storage)
+    monkeypatch.setattr(
+        "website_profiling.db.html_store.write_page_html_batch",
+        lambda _conn, rows, run_id, commit=True: html_writes.append((len(rows), run_id)),
+    )
+
+    mod.run_crawler(
+        "https://a.com",
+        output_db=True,
+        preserve_crawl_history=False,
+        show_progress=False,
+        store_page_html=True,
+    )
+    assert html_writes == [(1, 7)]
+
+
+def test_capture_page_html_enqueues_to_stream_writer():
+    import website_profiling.crawl.crawler as mod
+
+    class _Writer:
+        def __init__(self):
+            self.records: list[dict] = []
+
+        def enqueue_html(self, record: dict) -> None:
+            self.records.append(record)
+
+    crawler = mod.Crawler(
+        start_url="https://site.com",
+        ignore_robots=True,
+        store_page_html=True,
+        max_pages=1,
+    )
+    writer = _Writer()
+    crawler._db_writer = writer
+    crawler._capture_page_html(
+        "https://site.com",
+        "<html><body>Hello</body></html>",
+        200,
+        "text/html",
+        "static",
+    )
+    assert len(writer.records) == 1
+    assert writer.records[0]["url"] == "https://site.com"
 

@@ -1,5 +1,6 @@
 import type { PoolClient } from 'pg';
 import type {
+  CrawlPageHtmlRunRow,
   CrawlRunRow,
   CrawlRunSummary,
   ReportListRow,
@@ -36,6 +37,69 @@ export async function getCrawlRunsRows(client: PoolClient): Promise<CrawlRunRow[
     }));
   } catch {
     return [];
+  }
+}
+
+export async function getPageHtmlStatsByRunIds(
+  client: PoolClient,
+  crawlRunIds: number[],
+): Promise<Map<number, { page_count: number; total_bytes: number }>> {
+  const stats = new Map<number, { page_count: number; total_bytes: number }>();
+  if (!crawlRunIds.length) return stats;
+  try {
+    const { rows } = await client.query<{
+      crawl_run_id: string | number;
+      page_count: string | number;
+      total_bytes: string | number;
+    }>(
+      `SELECT crawl_run_id,
+              COUNT(*)::int AS page_count,
+              COALESCE(SUM(byte_length), 0)::bigint AS total_bytes
+       FROM crawl_page_html
+       WHERE crawl_run_id = ANY($1::bigint[])
+       GROUP BY crawl_run_id`,
+      [crawlRunIds],
+    );
+    for (const row of rows) {
+      stats.set(Number(row.crawl_run_id), {
+        page_count: Number(row.page_count) || 0,
+        total_bytes: Number(row.total_bytes) || 0,
+      });
+    }
+  } catch {
+    /* crawl_page_html may be missing */
+  }
+  return stats;
+}
+
+export async function listCrawlPageHtmlRuns(
+  client: PoolClient,
+  options: { limit?: number } = {},
+): Promise<CrawlPageHtmlRunRow[]> {
+  const limit = options.limit ?? 30;
+  const runs = await getCrawlRunsRows(client);
+  const slice = runs.slice(0, Math.max(1, limit));
+  const ids = slice.map((r) => r.id);
+  const stats = await getPageHtmlStatsByRunIds(client, ids);
+  return slice.map((run) => {
+    const s = stats.get(run.id);
+    return {
+      crawl_run_id: run.id,
+      start_url: run.start_url,
+      created_at: run.created_at,
+      render_mode: run.render_mode,
+      page_count: s?.page_count ?? 0,
+      total_bytes: s?.total_bytes ?? 0,
+    };
+  });
+}
+
+export async function deletePageHtmlForRun(client: PoolClient, crawlRunId: number): Promise<number> {
+  try {
+    const res = await client.query('DELETE FROM crawl_page_html WHERE crawl_run_id = $1', [crawlRunId]);
+    return res.rowCount ?? 0;
+  } catch {
+    return 0;
   }
 }
 

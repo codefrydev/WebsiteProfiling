@@ -352,3 +352,49 @@ def test_lighthouse_main_prints_unicode_summary_on_cp1252(monkeypatch, tmp_path)
     output = buffer.getvalue().decode("utf-8", errors="replace")
     assert "2500" in output
 
+
+def test_pipeline_run_content_analysis_command(monkeypatch) -> None:
+    from website_profiling.commands import pipeline_cmd
+
+    called = {"content": 0}
+
+    monkeypatch.setattr(pipeline_cmd, "_run_crawl", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "_run_report", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "_run_plot", lambda *_a, **_k: None)
+    monkeypatch.setattr(
+        pipeline_cmd,
+        "_run_content_analysis",
+        lambda *_a, **_k: called.__setitem__("content", called["content"] + 1),
+    )
+
+    cfg = {
+        "start_url": "https://site.com",
+        "run_crawl": "false",
+        "run_content_analysis": "true",
+        "store_page_html": "true",
+        "run_report": "false",
+        "run_plot": "false",
+    }
+    pipeline_cmd.run(cfg, argparse.Namespace(command="content_analysis"))
+    assert called["content"] == 1
+
+
+def test_pipeline_lists_content_analysis_in_steps(monkeypatch, capsys) -> None:
+    from website_profiling.commands import pipeline_cmd
+
+    monkeypatch.setattr(pipeline_cmd, "_run_crawl", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "_run_content_analysis", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "_run_report", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "_run_plot", lambda *_a, **_k: None)
+
+    cfg = {
+        "start_url": "https://site.com",
+        "run_crawl": "false",
+        "run_content_analysis": "true",
+        "store_page_html": "true",
+        "run_report": "false",
+        "run_plot": "false",
+    }
+    pipeline_cmd.run(cfg, argparse.Namespace(command=None))
+    assert "content-analysis" in capsys.readouterr().out
+

@@ -29,8 +29,15 @@ from .crawl_store import (
     read_nodes,
     write_crawl,
     write_crawl_batch,
+    merge_crawl_result_fields_batch,
     write_edges,
     write_nodes,
+)
+from .html_store import (
+    delete_page_html_for_run,
+    read_page_html,
+    read_page_html_for_run,
+    write_page_html_batch,
 )
 from .historical import backup_db_if_exists, ensure_crawl_tables_cleared, read_historical_data, restore_historical_data
 from .lighthouse_store import (
@@ -59,6 +66,7 @@ __all__ = [
     "close_db_pool",
     "create_crawl_run",
     "create_session",
+    "delete_page_html_for_run",
     "delete_session",
     "db_session",
     "ensure_crawl_tables_cleared",
@@ -70,7 +78,10 @@ __all__ = [
     "get_latest_crawl_run_id",
     "init_schema",
     "list_sessions",
+    "merge_crawl_result_fields_batch",
     "read_crawl",
+    "read_page_html",
+    "read_page_html_for_run",
     "read_edges",
     "read_historical_data",
     "read_latest_lighthouse_run_json",
@@ -90,6 +101,7 @@ __all__ = [
     "update_session_title",
     "write_crawl",
     "write_crawl_batch",
+    "write_page_html_batch",
     "write_edges",
     "write_lh_audits_from_run",
     "write_lighthouse_page_summary",

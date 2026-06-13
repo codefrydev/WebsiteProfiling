@@ -763,6 +763,16 @@ export interface CrawlRunSummary {
   discovery_mode?: string;
 }
 
+/** Stored raw HTML footprint for one crawl run (crawl_page_html). */
+export interface CrawlPageHtmlRunRow {
+  crawl_run_id: number;
+  start_url: string;
+  created_at: string;
+  render_mode?: string;
+  page_count: number;
+  total_bytes: number;
+}
+
 export interface PortfolioCrawlConfig {
   pages_crawled?: number;
   max_pages_configured?: number;

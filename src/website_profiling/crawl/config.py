@@ -41,6 +41,11 @@ class CrawlConfig:
     use_wappalyzer: bool = True
     store_content_excerpt: bool = False
     content_excerpt_max_chars: int = 4096
+    store_page_html: bool = False
+    max_stored_html_bytes: int = 2_097_152
+    run_content_analysis: bool = False
+    content_analysis_strategy: str = "main_only"
+    content_analysis_workers: int = 4
     render_mode: str = "static"
     js_concurrency: int = 3
     js_timeout: int = 30
@@ -85,6 +90,12 @@ class CrawlConfig:
         self.exclude_urls = list(self.exclude_urls) if self.exclude_urls else []
         self.store_content_excerpt = bool(self.store_content_excerpt)
         self.content_excerpt_max_chars = max(0, int(self.content_excerpt_max_chars or 0))
+        self.store_page_html = bool(self.store_page_html)
+        self.max_stored_html_bytes = max(1, int(self.max_stored_html_bytes or 2_097_152))
+        self.run_content_analysis = bool(self.run_content_analysis)
+        strat = (self.content_analysis_strategy or "main_only").strip().lower()
+        self.content_analysis_strategy = strat if strat in ("main_only", "full_body") else "main_only"
+        self.content_analysis_workers = max(1, int(self.content_analysis_workers or 4))
         self.custom_extraction_regex = (self.custom_extraction_regex or "").strip()
         self.custom_extractors = list(self.custom_extractors or [])
         self.crawl_ignore_params = list(self.crawl_ignore_params or [])
@@ -97,6 +108,10 @@ class CrawlConfig:
             self.user_agent,
         )
         return self
+
+    @property
+    def defer_content_analysis(self) -> bool:
+        return self.store_page_html and self.run_content_analysis
 
     @property
     def effective_concurrency(self) -> int:

@@ -837,3 +837,13 @@ def test_build_edges_remaining_lines(monkeypatch) -> None:
         5,
         0.0,
     ) == []
+
+
+def test_builder_exposes_llm_keyword_cluster_imports() -> None:
+    """Regression: LLM keyword cluster branch must not NameError after builder split."""
+    import website_profiling.reporting.builder as builder_mod
+    from website_profiling.analysis.text_hygiene import is_junk_semantic_term
+    from website_profiling.llm.enrich import cluster_keywords_llm
+
+    assert builder_mod.is_junk_semantic_term is is_junk_semantic_term
+    assert builder_mod.cluster_keywords_llm is cluster_keywords_llm

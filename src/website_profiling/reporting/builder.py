@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import datetime, timezone
 from typing import Any, Optional
 from urllib.parse import urlparse
 
@@ -12,8 +13,9 @@ import pandas as pd
 import requests
 
 from ..analysis import merge_bundles, run_local_enrichment
+from ..analysis.text_hygiene import is_junk_semantic_term
 from ..config import get_bool, get_int
-from ..llm.enrich import run_llm_enrichment
+from ..llm.enrich import cluster_keywords_llm, run_llm_enrichment
 from ..llm_config import load_llm_config_from_db, llm_is_enabled
 from ..security_scanner import run_security_scan
 from .categories import build_categories
@@ -45,7 +47,12 @@ from .report_metadata import (
     _parse_page_analysis_cell,
     _validate_report_url_counts,
 )
-from .seo_summary import _compute_summary_seo_issues
+from .seo_summary import (
+    META_DESC_LEN_MAX,
+    META_DESC_LEN_MIN,
+    THIN_CONTENT_CHARS,
+    _compute_summary_seo_issues,
+)
 from .site_level import _fetch_site_level
 
 # Backward-compatible re-exports for tests and external imports.

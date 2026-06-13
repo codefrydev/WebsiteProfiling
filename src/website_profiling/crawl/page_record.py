@@ -34,12 +34,14 @@ class PageRecordBuilder:
         use_wappalyzer: bool = True,
         store_content_excerpt: bool = False,
         content_excerpt_max_chars: int = 4096,
+        defer_content_analysis: bool = False,
         custom_extraction_regex: str = "",
         custom_extractors: Optional[list[dict]] = None,
     ) -> None:
         self.use_wappalyzer = use_wappalyzer
         self.store_content_excerpt = store_content_excerpt
         self.content_excerpt_max_chars = content_excerpt_max_chars
+        self.defer_content_analysis = defer_content_analysis
         self.custom_extraction_regex = custom_extraction_regex
         self.custom_extractors = list(custom_extractors or [])
         self._wappalyzer_instance = None
@@ -89,12 +91,13 @@ class PageRecordBuilder:
 
         _soup = _BS(text, "lxml")
         excerpt_max = self.content_excerpt_max_chars if self.store_content_excerpt else 0
-        ct_data = parse_content_text(_soup, text, excerpt_max_chars=excerpt_max)
-        ext["word_count"] = ct_data.get("word_count", 0)
-        ext["reading_level"] = ct_data.get("reading_level", 0.0)
-        ext["content_html_ratio"] = ct_data.get("content_html_ratio", 0.0)
-        ext["top_keywords"] = ct_data.get("top_keywords", "[]")
-        ext["content_excerpt"] = ct_data.get("content_excerpt") or ""
+        if not self.defer_content_analysis:
+            ct_data = parse_content_text(_soup, text, excerpt_max_chars=excerpt_max)
+            ext["word_count"] = ct_data.get("word_count", 0)
+            ext["reading_level"] = ct_data.get("reading_level", 0.0)
+            ext["content_html_ratio"] = ct_data.get("content_html_ratio", 0.0)
+            ext["top_keywords"] = ct_data.get("top_keywords", "[]")
+            ext["content_excerpt"] = ct_data.get("content_excerpt") or ""
         social = parse_social_meta(_soup)
         ext["og_title"] = social.get("og_title", "")
         ext["og_description"] = social.get("og_description", "")
