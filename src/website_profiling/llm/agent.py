@@ -8,6 +8,12 @@ from ..llm_config import llm_is_enabled, load_llm_config_from_db
 from ..text_sanitize import sanitize_unicode_deep, strip_surrogates
 from ..tools.audit_tools import AuditToolContext
 from ..tools.audit_tools.registry import TOOL_DEFINITIONS, dispatch_tool, openai_tools_schema
+from ..tools.audit_tools.tool_selector import (
+    apply_tool_cap,
+    chat_tool_mode,
+    chat_tool_search_cap,
+    select_tools_for_turn,
+)
 from .base import ChatResult, ToolCall, get_llm_client
 
 MAX_TOOL_ROUNDS = 10
@@ -15,24 +21,13 @@ MAX_TOOL_ROUNDS = 10
 SYSTEM_PROMPT = """You are Site Audit AI, a technical SEO assistant for a self-hosted site audit platform.
 You help users understand crawl results, audit issues, Lighthouse scores, keywords, and Search Console data.
 
-Tool domains (prefer specific tools over generic list_issues):
-- Portfolio/report: get_report_summary, get_category_scores, list_audit_categories, get_executive_summary, get_audit_recommendations, list_report_history, get_portfolio_summary
-- Issues: list_issues, search_issues, list_top_impact_issues, prioritize_fix_roadmap, get_critical_issues, list_issues_by_category, get_category_issues, list_issues_with_ai_fixes, generate_issue_fix, list_issue_workflow
-- On-page: list_pages_missing_title, list_pages_noindex, list_seo_onpage_issues, list_content_url_issues, list_pages_missing_canonical, list_canonical_mismatch, list_pages_with_missing_alt, list_pages_missing_viewport
-- Crawl/pages: search_pages, search_pages_advanced, get_page_details, get_page_analysis, list_status_4xx_pages, list_pages_soft_404, list_dead_end_pages, list_duplicate_title_groups, list_heavy_pages_by_bytes, get_asset_weight_summary, get_readability_summary, get_status_code_breakdown, get_depth_distribution, list_long_redirect_chains, list_robots_blocked_urls, get_top_pages_by_pagerank
-- Schema/technical: get_schema_coverage, get_seo_health, get_security_findings, get_security_findings_summary, get_tech_stack_summary, list_pages_by_technology
-- Indexation: get_indexation_coverage, list_indexation_gaps, get_indexation_url_join
-- Keywords: get_keyword_summary, get_striking_distance_keywords, list_keywords_ctr_opportunity, list_keywords_by_position, get_keyword_serp_overlay, get_serp_feature_overlay, expand_keywords, generate_content_brief
-- Google: get_google_summary, get_gsc_top_queries, get_gsc_top_pages, get_gsc_ctr_opportunity_pages, get_google_integration_status, get_gsc_page_query_slice, get_gsc_url_inspection, get_gsc_index_coverage, get_ga4_page_metrics, analyze_serp_snippet_for_url
-- Links/backlinks: get_gsc_sample_links, get_backlinks_velocity, get_third_party_links_overlay, list_broken_link_sources, get_page_coach
-- Performance: get_lighthouse_summary, list_slow_pages, get_crux_summary, get_lighthouse_human_summary, list_lighthouse_poor_accessibility_pages, list_lighthouse_cwv_failures
-- Content/charts: get_issue_priority_breakdown, get_mime_type_breakdown, get_title_length_distribution, get_domain_link_distribution, get_outlink_distribution, get_content_analytics, get_top_crawled_pages, get_duplicate_cluster
-- Ops/logs: get_property_ops, list_crawl_runs, get_latest_log_analysis, get_log_top_paths, list_log_only_paths, list_crawl_only_paths, get_log_googlebot_stats
-- Drift: compare_reports, compare_category_deltas, compare_issue_deltas, compare_indexation_deltas, compare_orphan_deltas, compare_url_set_diff, compare_google_metrics, compare_security_deltas, compare_health_score_delta, get_health_history, get_category_health_history
-- GEO/AEO: get_geo_readiness_score, get_aeo_content_signals_for_url, get_llms_txt_status, draft_llms_txt, get_faq_schema_coverage, get_eeat_signals_summary, get_internal_link_suggestions, check_ai_citation_presence
-- Accessibility/assets: list_pages_with_axe_violations, get_axe_audit_summary, list_pages_with_mixed_content, list_pages_poor_cache_headers, get_rich_results_summary, list_rich_results_failures
-- Export/deliverables: export_audit_report, export_compare_csv, export_list_as_csv, compose_custom_report, export_custom_report, list_export_formats
-- Images: get_image_audit_summary, list_pages_with_missing_alt, list_pages_without_lazy_images, list_pages_with_images_missing_dimensions, list_site_image_urls, list_lighthouse_image_opportunities, list_largest_images, list_unoptimized_images, list_images_needing_attention
+Tool routing (only a subset of tools is loaded each turn):
+- Always available: search_audit_tools, list_tool_domains, get_data_coverage_report, run_insight_workflow, run_technical_workflow, run_keyword_workflow, run_domain_agent, plus top insight tools (get_report_summary, get_opportunity_matrix, get_traffic_health_check, etc.)
+- Use search_audit_tools(query) to discover specialized tools by topic (e.g. "broken links", "GSC CTR", "export PDF").
+- Use list_tool_domains to see domain groupings and example prompts.
+- Use run_*_workflow for common multi-step analyses (insight, technical, keyword).
+- Use run_domain_agent(task, domain) for deep exploration within one domain.
+- Use get_data_coverage_report when tools return empty or missing data.
 
 Image playbook:
 - Overview: get_image_audit_summary first — the UI renders summary cards, page preview lists (alt/lazy/OG/dimensions), and Lighthouse image findings. Write only ### Power Insights and ### Recommended actions (interpretation). Never repeat counts, URL lists, or markdown tables of pages.
@@ -120,14 +115,51 @@ def _react_step(
     return ChatResult(content=text)
 
 
-def _tools_description(*, compact: bool = False) -> str:
+def _tools_description(*, names: set[str] | None = None, compact: bool = False) -> str:
     lines = []
     for t in TOOL_DEFINITIONS:
+        if names is not None and t["name"] not in names:
+            continue
         if compact:
             lines.append(f"- {t['name']}")
         else:
             lines.append(f"- {t['name']}: {t.get('description', '')}")
     return "\n".join(lines)
+
+
+def _last_user_message(messages: list[dict[str, str]]) -> str:
+    for msg in reversed(messages):
+        if msg.get("role") == "user":
+            return str(msg.get("content") or "")
+    return ""
+
+
+def _expand_active_tools_from_result(
+    tc_name: str,
+    tool_result: dict[str, Any],
+    active: set[str],
+) -> set[str]:
+    expanded = set(active)
+    pinned: set[str] = set()
+
+    if tc_name == "search_audit_tools":
+        names = tool_result.get("tool_names")
+        if isinstance(names, list):
+            for name in names[:12]:
+                if isinstance(name, str) and name:
+                    expanded.add(name)
+                    pinned.add(name)
+    elif tc_name == "run_domain_agent":
+        names = tool_result.get("tools_used")
+        if isinstance(names, list):
+            for name in names:
+                if isinstance(name, str) and name:
+                    expanded.add(name)
+                    pinned.add(name)
+
+    if chat_tool_mode() != "full" and pinned:
+        expanded = apply_tool_cap(expanded, chat_tool_search_cap(), pinned=pinned)
+    return expanded
 
 
 def _build_openai_messages(history: list[dict[str, str]]) -> list[dict[str, Any]]:
@@ -164,7 +196,9 @@ def run_agent_turn(
         return {"ok": False, "error": msg}
 
     openai_messages = _build_openai_messages(messages)
-    tools = openai_tools_schema()
+    last_user = _last_user_message(messages)
+    active_names = select_tools_for_turn(last_user, messages)
+    tools = openai_tools_schema(active_names)
     tool_events: list[dict[str, Any]] = []
     final_message = ""
 
@@ -182,7 +216,12 @@ def run_agent_turn(
             if _supports_native_tools(client):
                 result = client.chat_with_tools(llm_messages, tools, on_token=on_token)
             else:
-                result = _react_step(client, llm_messages, _tools_description(compact=True), on_token)
+                result = _react_step(
+                    client,
+                    llm_messages,
+                    _tools_description(names=active_names, compact=True),
+                    on_token,
+                )
         except Exception as e:
             msg = str(e).strip() or type(e).__name__
             if "httpx" in msg.lower() or "requirements.txt" in msg.lower():
@@ -227,11 +266,21 @@ def run_agent_turn(
 
             for tc in result.tool_calls:
                 _emit(on_event, {"type": "tool_start", "name": tc.name, "args": tc.arguments})
-                tool_result = sanitize_unicode_deep(
-                    dispatch_tool(tc.name, tc.arguments, context=context),
-                )
+                if chat_tool_mode() != "full" and tc.name not in active_names:
+                    tool_result = {
+                        "error": f"tool not loaded this turn: {tc.name}",
+                        "hint": "Call search_audit_tools to load specialized tools, or rephrase your request.",
+                    }
+                else:
+                    tool_result = sanitize_unicode_deep(
+                        dispatch_tool(tc.name, tc.arguments, context=context),
+                    )
                 _emit(on_event, {"type": "tool_end", "name": tc.name, "result": tool_result})
                 tool_events.append({"name": tc.name, "args": tc.arguments, "result": tool_result})
+
+                active_names = _expand_active_tools_from_result(tc.name, tool_result, active_names)
+                if chat_tool_mode() != "full":
+                    tools = openai_tools_schema(active_names)
 
                 tool_content = json.dumps(tool_result, default=str)
                 if ollama_format:

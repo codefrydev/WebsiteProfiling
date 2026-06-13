@@ -25,6 +25,22 @@ from .charts import (
     get_title_length_distribution,
     get_top_crawled_pages,
 )
+from .data_coverage import get_data_coverage_report
+from .insight_tools import (
+    get_issue_to_traffic_map,
+    get_landing_page_blended_table,
+    get_landing_page_full_diagnosis,
+    get_opportunity_matrix,
+    get_traffic_health_check,
+)
+from .router_tools import (
+    list_tool_domains,
+    run_domain_agent,
+    run_insight_workflow,
+    run_keyword_workflow,
+    run_technical_workflow,
+    search_audit_tools,
+)
 from .compare import compare_reports
 from .compare_slices import (
     compare_category_deltas,
@@ -108,10 +124,15 @@ from .crawl import (
     search_pages_advanced,
 )
 from .google import (
+    get_ga4_by_channel,
+    get_ga4_by_device,
+    get_ga4_daily_trend,
     get_ga4_page_metrics,
     get_ga4_summary,
     get_google_summary,
     get_gsc_ctr_opportunity_pages,
+    get_gsc_daily_trend,
+    get_gsc_page_queries,
     get_gsc_page_query_slice,
     get_gsc_top_pages,
     get_gsc_top_queries,
@@ -128,6 +149,7 @@ from .indexation_tools import get_indexation_coverage, get_indexation_url_join, 
 from .international import get_hreflang_summary, get_language_summary
 from .issues import get_category_issues, list_issues_by_category
 from .keywords import (
+    get_brand_keyword_split,
     get_keyword_cannibalisation,
     get_keyword_history,
     get_keyword_serp_overlay,
@@ -137,6 +159,7 @@ from .keywords import (
     get_striking_distance_keywords,
     list_keywords_by_action,
     list_keywords_by_impressions,
+    list_keywords_by_intent,
     list_keywords_by_position,
     list_keywords_ctr_opportunity,
     search_keywords,
@@ -260,6 +283,16 @@ from .security import (
 )
 from .tech import get_tech_stack_summary, list_pages_by_technology
 from .tool_catalog import TOOL_DEFINITIONS
+from .tool_domains import (
+    TIER_0_TOOLS,
+    build_tool_meta,
+    classify_tool_domain,
+    domains_catalog,
+    tool_names_for_domain as _meta_tool_names_for_domain,
+    tool_names_for_mcp_bundle,
+    tool_names_for_tier as _meta_tool_names_for_tier,
+    tools_by_domain,
+)
 from .workflow import list_issue_workflow
 
 ToolHandler = Callable[[Connection, AuditToolContext, dict[str, Any]], dict[str, Any]]
@@ -486,6 +519,25 @@ _TOOL_HANDLERS: dict[str, ToolHandler] = {
     "get_bing_index_status": get_bing_index_status,
     "get_serp_feature_overlay": get_serp_feature_overlay,
     "check_ai_citation_presence": check_ai_citation_presence,
+    "search_audit_tools": search_audit_tools,
+    "list_tool_domains": list_tool_domains,
+    "get_data_coverage_report": get_data_coverage_report,
+    "run_insight_workflow": run_insight_workflow,
+    "run_technical_workflow": run_technical_workflow,
+    "run_keyword_workflow": run_keyword_workflow,
+    "run_domain_agent": run_domain_agent,
+    "get_landing_page_blended_table": get_landing_page_blended_table,
+    "get_opportunity_matrix": get_opportunity_matrix,
+    "get_traffic_health_check": get_traffic_health_check,
+    "get_landing_page_full_diagnosis": get_landing_page_full_diagnosis,
+    "get_issue_to_traffic_map": get_issue_to_traffic_map,
+    "get_gsc_daily_trend": get_gsc_daily_trend,
+    "get_ga4_daily_trend": get_ga4_daily_trend,
+    "get_ga4_by_device": get_ga4_by_device,
+    "get_ga4_by_channel": get_ga4_by_channel,
+    "get_gsc_page_queries": get_gsc_page_queries,
+    "get_brand_keyword_split": get_brand_keyword_split,
+    "list_keywords_by_intent": list_keywords_by_intent,
 }
 
 
@@ -512,10 +564,85 @@ def dispatch_tool(
         return handler(session, merged_ctx, payload_args)
 
 
-def openai_tools_schema() -> list[dict[str, Any]]:
-    """Convert TOOL_DEFINITIONS to OpenAI function-calling format."""
+_TOOL_DEFINITIONS_BY_NAME: dict[str, dict[str, Any]] = {t["name"]: t for t in TOOL_DEFINITIONS}
+_TOOL_META: dict[str, dict[str, Any]] = build_tool_meta(set(_TOOL_HANDLERS.keys()))
+
+
+def tool_meta() -> dict[str, dict[str, Any]]:
+    return _TOOL_META
+
+
+def tool_definition(name: str) -> dict[str, Any] | None:
+    return _TOOL_DEFINITIONS_BY_NAME.get(name)
+
+
+def tool_names_for_domain(domain: str) -> list[str]:
+    return _meta_tool_names_for_domain(_TOOL_META, domain)
+
+
+def tool_names_for_tier(tier: int) -> list[str]:
+    return _meta_tool_names_for_tier(_TOOL_META, tier)
+
+
+def tier0_tool_names() -> set[str]:
+    return set(TIER_0_TOOLS) & set(_TOOL_HANDLERS.keys())
+
+
+def mcp_tool_names(bundle: str) -> set[str]:
+    return tool_names_for_mcp_bundle(_TOOL_META, bundle) & set(_TOOL_HANDLERS.keys())
+
+
+def tools_catalog_by_domain() -> dict[str, list[str]]:
+    return tools_by_domain(_TOOL_META)
+
+
+def list_domains_catalog() -> list[dict[str, Any]]:
+    return domains_catalog(_TOOL_META)
+
+
+def search_tools(query: str, limit: int = 10) -> list[dict[str, Any]]:
+    """Keyword search over tool name, description, tags, and domain."""
+    q = (query or "").strip().lower()
+    if not q:
+        return []
+    tokens = [t for t in q.replace("/", " ").split() if t]
+    scored: list[tuple[int, str, dict[str, Any]]] = []
+    for tool in TOOL_DEFINITIONS:
+        name = tool["name"]
+        desc = str(tool.get("description") or "").lower()
+        meta = _TOOL_META.get(name) or {}
+        domain = str(meta.get("domain") or classify_tool_domain(name))
+        tags = " ".join(str(t) for t in (meta.get("tags") or []))
+        haystack = f"{name} {desc} {domain} {tags}".lower()
+        score = 0
+        if q in name:
+            score += 100
+        if q in haystack:
+            score += 40
+        for tok in tokens:
+            if tok in name:
+                score += 30
+            elif tok in haystack:
+                score += 10
+        if score <= 0:
+            continue
+        scored.append((score, name, {
+            "name": name,
+            "description": tool.get("description", ""),
+            "domain": domain,
+            "tier": meta.get("tier", 1),
+        }))
+    scored.sort(key=lambda x: (-x[0], x[1]))
+    cap = max(1, min(int(limit or 10), 50))
+    return [row for _, _, row in scored[:cap]]
+
+
+def openai_tools_schema(names: set[str] | None = None) -> list[dict[str, Any]]:
+    """Convert TOOL_DEFINITIONS to OpenAI function-calling format (optional name filter)."""
     out: list[dict[str, Any]] = []
     for tool in TOOL_DEFINITIONS:
+        if names is not None and tool["name"] not in names:
+            continue
         out.append({
             "type": "function",
             "function": {
@@ -529,3 +656,19 @@ def openai_tools_schema() -> list[dict[str, Any]]:
 
 def tool_handler_names() -> set[str]:
     return set(_TOOL_HANDLERS.keys())
+
+
+def validate_tool_registry() -> list[str]:
+    """Return validation errors for catalog/handler/meta parity."""
+    errors: list[str] = []
+    handler_names = tool_handler_names()
+    catalog_names = {t["name"] for t in TOOL_DEFINITIONS}
+    meta_names = set(_TOOL_META.keys())
+    if handler_names != catalog_names:
+        errors.append(f"handler/catalog mismatch: handlers={len(handler_names)} catalog={len(catalog_names)}")
+    if handler_names != meta_names:
+        errors.append(f"handler/meta mismatch: handlers={len(handler_names)} meta={len(meta_names)}")
+    missing_t0 = TIER_0_TOOLS - handler_names
+    if missing_t0:
+        errors.append(f"tier0 tools missing handlers: {sorted(missing_t0)}")
+    return errors

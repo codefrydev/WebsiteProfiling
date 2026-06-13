@@ -11,7 +11,7 @@ from ...db.property_store import get_property_by_id
 from ...db.report_store import read_report_payload
 from ...integrations.google.gsc_links_store import read_latest_gsc_links_data
 from ...integrations.google.keyword_store import read_latest_keyword_data
-from ...integrations.google.store import read_latest_google_data
+from ...integrations.google.store import read_latest_google_data, read_google_data_full
 
 
 @dataclass
@@ -48,6 +48,14 @@ class AuditToolContext:
             return kw
         payload = self.load_payload(conn)
         embedded = payload.get("keywords")
+        return embedded if isinstance(embedded, dict) else None
+
+    def load_google_full(self, conn: Connection) -> Optional[dict[str, Any]]:
+        full = read_google_data_full(conn, self.property_id)
+        if full:
+            return full
+        payload = self.load_payload(conn)
+        embedded = payload.get("google")
         return embedded if isinstance(embedded, dict) else None
 
     def load_gsc_links(self, conn: Connection) -> Optional[dict[str, Any]]:

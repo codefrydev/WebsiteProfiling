@@ -95,7 +95,7 @@ def get_gsc_page_query_slice(conn: Connection, ctx: AuditToolContext, args: dict
     url = str(args.get("url") or "").strip()
     if not url:
         return {"error": "url is required"}
-    data = scoped.load_google(conn)
+    data = scoped.load_google_full(conn) or scoped.load_google(conn)
     if not data:
         return {"error": "no google data found"}
     slice_data = slice_from_google_row(data, url)
@@ -183,6 +183,61 @@ def get_gsc_ctr_opportunity_pages(conn: Connection, ctx: AuditToolContext, args:
     sliced = cap_list(opportunities, limit, max_cap=50)
     return {
         "pages": sliced["items"],
+        "total": sliced["total"],
+        "truncated": sliced["truncated"],
+        "provenance": "Search Console",
+    }
+
+
+def _google_series(data: dict[str, Any] | None, section: str, key: str) -> dict[str, Any]:
+    if not data:
+        return {"error": "no google data found", "missing": True}
+    block = data.get(section) if isinstance(data.get(section), dict) else {}
+    series = block.get(key) or []
+    return {
+        key: series if isinstance(series, list) else [],
+        "fetched_at": data.get("fetched_at"),
+        "date_range": data.get("date_range"),
+        "provenance": "Search Console" if section == "gsc" else "Google Analytics 4",
+    }
+
+
+def get_gsc_daily_trend(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    return _google_series(scoped.load_google(conn), "gsc", "daily")
+
+
+def get_ga4_daily_trend(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    return _google_series(scoped.load_google(conn), "ga4", "daily")
+
+
+def get_ga4_by_device(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    return _google_series(scoped.load_google(conn), "ga4", "by_device")
+
+
+def get_ga4_by_channel(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    return _google_series(scoped.load_google(conn), "ga4", "by_channel")
+
+
+def get_gsc_page_queries(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    url = str(args.get("url") or "").strip()
+    if not url:
+        return {"error": "url is required"}
+    raw = scoped.load_google_full(conn) or scoped.load_google(conn)
+    if not raw:
+        return {"error": "no google data found", "missing": True}
+    slice_data = slice_from_google_row(raw, url)
+    gsc = slice_data.get("gsc") if isinstance(slice_data.get("gsc"), dict) else {}
+    queries = gsc.get("queries") or []
+    limit = parse_limit(args.get("limit"), 25, 50)
+    sliced = cap_list(queries if isinstance(queries, list) else [], limit, max_cap=50)
+    return {
+        "url": url,
+        "queries": sliced["items"],
         "total": sliced["total"],
         "truncated": sliced["truncated"],
         "provenance": "Search Console",

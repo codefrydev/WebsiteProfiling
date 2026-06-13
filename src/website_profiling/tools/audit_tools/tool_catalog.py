@@ -378,4 +378,27 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
     _tool("get_bing_index_status", "Bing Webmaster URL info (requires bing_webmaster_api_key).", {"url": _URL, "property_id": _PID}, ["url", "property_id"]),
     _tool("get_serp_feature_overlay", "Keywords with SERP feature / competition overlay data.", {"property_id": _PID, "limit": _LIMIT}, ["property_id"]),
     _tool("check_ai_citation_presence", "On-site citation readiness estimate for brand/query (no live LLM API).", {"property_id": _PID, "query": {"type": "string"}, "brand": {"type": "string"}}),
+    # Router / Tier 0 (Cursor-style)
+    _tool("search_audit_tools", "Search the audit tool catalog by keyword. Returns matching tool names to call next.", {"query": {"type": "string"}, "limit": {"type": "integer", "maximum": 50}}, ["query"]),
+    _tool("list_tool_domains", "List SEO tool domains with counts and example prompts.", {}),
+    _tool("get_data_coverage_report", "Report which integrations and optional audit data are populated for a property.", {"property_id": _PID}, ["property_id"]),
+    _tool("run_insight_workflow", "Run insight workflow: type=traffic|landing_pages|priorities (default).", {"property_id": _PID, "report_id": _RID, "type": {"type": "string"}, "limit": _LIMIT}),
+    _tool("run_technical_workflow", "Run technical workflow: report summary, critical issues, priority chart; optional baseline compare.", {"property_id": _PID, "report_id": _RID, "baseline_report_id": {"type": "integer"}}),
+    _tool("run_keyword_workflow", "Run keyword workflow: brand split, striking distance, CTR opportunities.", {"property_id": _PID, "limit": _LIMIT}, ["property_id"]),
+    _tool("run_domain_agent", "Subagent-style: run up to max_steps tools in one domain for a task description.", {"property_id": _PID, "report_id": _RID, "task": {"type": "string"}, "domain": {"type": "string"}, "max_steps": {"type": "integer", "maximum": 8}}, ["task"]),
+    # Cross-platform insight (Tier 0)
+    _tool("get_landing_page_blended_table", "GSC clicks + GA4 sessions per landing page with opportunity quadrant.", {"property_id": _PID, "limit": {"type": "integer", "maximum": 100}, "min_impressions": {"type": "integer"}}, ["property_id"]),
+    _tool("get_opportunity_matrix", "Landing pages grouped by rank vs conversion opportunity quadrants.", {"property_id": _PID, "limit": _LIMIT}, ["property_id"]),
+    _tool("get_traffic_health_check", "GSC clicks vs GA4 sessions ratio and tracking health diagnosis.", {"property_id": _PID}, ["property_id"]),
+    _tool("get_landing_page_full_diagnosis", "One URL: GSC+GA4 slice, crawl, issues, Lighthouse, composite score.", {"url": _URL, "property_id": _PID, "report_id": _RID}, ["url"]),
+    _tool("get_issue_to_traffic_map", "Audit issues ranked by traffic-weighted impact with GSC/GA4 columns.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    # Google dimensions
+    _tool("get_gsc_daily_trend", "GSC daily clicks/impressions trend from latest fetch.", {"property_id": _PID}, ["property_id"]),
+    _tool("get_ga4_daily_trend", "GA4 daily sessions trend from latest fetch.", {"property_id": _PID}, ["property_id"]),
+    _tool("get_ga4_by_device", "GA4 sessions breakdown by device category.", {"property_id": _PID}, ["property_id"]),
+    _tool("get_ga4_by_channel", "GA4 sessions breakdown by channel.", {"property_id": _PID}, ["property_id"]),
+    _tool("get_gsc_page_queries", "GSC queries for a single page URL (full by_page blob).", {"url": _URL, "property_id": _PID, "limit": _LIMIT}, ["url"]),
+    # Keyword dimensions
+    _tool("get_brand_keyword_split", "Branded vs non-branded keyword counts and samples.", {"property_id": _PID}, ["property_id"]),
+    _tool("list_keywords_by_intent", "Keywords filtered by intent (informational, commercial, etc.).", {"property_id": _PID, "intent": {"type": "string"}, "limit": _LIMIT}, ["property_id", "intent"]),
 ]

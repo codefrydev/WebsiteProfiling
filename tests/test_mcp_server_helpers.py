@@ -60,23 +60,26 @@ def test_read_glossary_excerpt_missing(monkeypatch) -> None:
 
 
 def test_tools_catalog_json_includes_security_tools() -> None:
-    catalog = json.loads(mcp_server._tools_catalog_json())
-    assert catalog["tool_count"] >= 221
+    with patch.dict(os.environ, {"WP_MCP_DOMAIN": "full"}):
+        catalog = json.loads(mcp_server._tools_catalog_json())
+    assert catalog["tool_count"] >= 240
     assert "get_security_findings" in catalog["domains"]["security"]
     assert "get_geo_readiness_score" in catalog["domains"]["geo"]
     assert "get_gsc_url_inspection" in catalog["domains"]["integrations"]
+    assert catalog["mcp_domain"] == "full"
 
 
 def test_tools_catalog_json_backlinks_domain() -> None:
-    fake_tools = [
-        {
-            "name": "get_bing_overview",
-            "description": "Bing overview without link in name.",
-            "inputSchema": {"type": "object", "properties": {}},
-        },
-    ]
-    with patch("website_profiling.mcp.server.TOOL_DEFINITIONS", fake_tools):
-        catalog = json.loads(mcp_server._tools_catalog_json())
+    with patch.dict(os.environ, {"WP_MCP_DOMAIN": "full"}):
+        with patch(
+            "website_profiling.mcp.server.mcp_tool_names",
+            return_value={"get_bing_overview"},
+        ):
+            with patch(
+                "website_profiling.mcp.server.tools_catalog_by_domain",
+                return_value={"backlinks": ["get_bing_overview"]},
+            ):
+                catalog = json.loads(mcp_server._tools_catalog_json())
     assert catalog["domains"]["backlinks"] == ["get_bing_overview"]
 
 
@@ -164,21 +167,85 @@ def test_mcp_main_registers_handlers(monkeypatch) -> None:
     monkeypatch.setitem(sys.modules, "mcp.server.stdio", fake_stdio_mod)
     monkeypatch.setitem(sys.modules, "mcp.types", fake_types_mod)
 
-    with patch.dict(os.environ, {"WP_PROPERTY_ID": "7"}, clear=False):
+    with patch.dict(os.environ, {"WP_PROPERTY_ID": "7", "WP_MCP_DOMAIN": "full"}, clear=False):
         mcp_server.main()
 
-    assert captured["name"] == "site-audit"
+    assert captured["name"] == "site-audit-full"
     assert captured["ran"] is True
     tools = asyncio.run(captured["list_tools"]())  # type: ignore[arg-type]
-    assert len(tools) >= 221
+    assert len(tools) >= 240
     resources = asyncio.run(captured["list_resources"]())  # type: ignore[arg-type]
     assert any(r["uri"] == "audit://property/7" for r in resources)
+    assert any(r["uri"] == "audit://domains" for r in resources)
 
     with patch("website_profiling.mcp.server.dispatch_tool", return_value={"ok": True}):
         content = asyncio.run(captured["call_tool"]("list_properties", {"property_id": 1}))  # type: ignore[arg-type]
     assert content[0]["text"] == json.dumps({"ok": True}, indent=2, default=str)
     read_text = asyncio.run(captured["read_resource"]("audit://tools"))  # type: ignore[arg-type]
     assert read_text.startswith("{")
+
+
+def test_mcp_call_tool_rejects_tools_outside_domain(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeServer:
+        def __init__(self, name: str) -> None:
+            captured["name"] = name
+
+        def list_tools(self):
+            def decorator(fn):
+                captured["list_tools"] = fn
+                return fn
+            return decorator
+
+        def call_tool(self):
+            def decorator(fn):
+                captured["call_tool"] = fn
+                return fn
+            return decorator
+
+        def list_resources(self):
+            def decorator(fn):
+                return fn
+            return decorator
+
+        def read_resource(self):
+            def decorator(fn):
+                return fn
+            return decorator
+
+        def create_initialization_options(self):
+            return {}
+
+        async def run(self, *_args, **_kwargs) -> None:
+            return None
+
+    class FakeStdioCM:
+        async def __aenter__(self):
+            return (MagicMock(), MagicMock())
+
+        async def __aexit__(self, *_args):
+            return False
+
+    fake_server_mod = MagicMock()
+    fake_server_mod.Server = FakeServer
+    fake_stdio_mod = MagicMock()
+    fake_stdio_mod.stdio_server = MagicMock(return_value=FakeStdioCM())
+    fake_types_mod = MagicMock()
+    fake_types_mod.TextContent = lambda **kwargs: kwargs
+    fake_types_mod.Resource = lambda **kwargs: kwargs
+    fake_types_mod.Tool = lambda **kwargs: kwargs
+
+    monkeypatch.setitem(sys.modules, "mcp", MagicMock())
+    monkeypatch.setitem(sys.modules, "mcp.server", fake_server_mod)
+    monkeypatch.setitem(sys.modules, "mcp.server.stdio", fake_stdio_mod)
+    monkeypatch.setitem(sys.modules, "mcp.types", fake_types_mod)
+
+    with patch.dict(os.environ, {"WP_MCP_DOMAIN": "core"}, clear=False):
+        mcp_server.main()
+
+    blocked = asyncio.run(captured["call_tool"]("export_audit_report", {"format": "pdf"}))  # type: ignore[arg-type]
+    assert "not exposed" in blocked[0]["text"]
 
 
 def test_mcp_package_main(monkeypatch) -> None:

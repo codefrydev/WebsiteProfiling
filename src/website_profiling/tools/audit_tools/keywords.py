@@ -250,3 +250,33 @@ def list_keywords_by_impressions(conn: Connection, ctx: AuditToolContext, args: 
         conn, ctx, args,
         lambda r: _impressions(r) >= min_v,
     )
+
+
+def get_brand_keyword_split(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    if scoped.property_id is None:
+        return {"error": "property_id is required"}
+    data = scoped.load_keywords(conn)
+    if not data:
+        return {"error": "no keyword data found", "missing": True}
+    rows = [r for r in (data.get("rows") or []) if isinstance(r, dict)]
+    branded = [r for r in rows if r.get("is_branded")]
+    non_branded = [r for r in rows if not r.get("is_branded")]
+    return {
+        "brand_name": data.get("brand_name"),
+        "branded_count": len(branded),
+        "non_branded_count": len(non_branded),
+        "branded_sample": branded[:10],
+        "non_branded_sample": non_branded[:10],
+        "provenance": "Keywords enrichment",
+    }
+
+
+def list_keywords_by_intent(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    intent = str(args.get("intent") or "").strip().lower()
+    if not intent:
+        return {"error": "intent is required"}
+    return _filter_keyword_rows(
+        conn, ctx, args,
+        lambda r: str(r.get("intent") or "").lower() == intent,
+    )
