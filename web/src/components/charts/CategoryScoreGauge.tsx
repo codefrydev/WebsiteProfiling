@@ -9,7 +9,7 @@ const sj = strings.common;
 export interface CategoryScoreGaugeProps {
   name: string;
   score?: number | null;
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
   onClick?: () => void;
 }
 
@@ -27,8 +27,9 @@ export function CategoryScoreGauge({ name, score, size = 'md', onClick }: Catego
           : 'text-red-600 dark:text-red-500';
   const color = scoreBandColor(score);
   const isCritical = score != null && score < 50;
-  const dim = size === 'sm' ? 'w-16 h-16' : 'w-20 h-20';
-  const textSize = size === 'sm' ? 'text-lg' : 'text-xl';
+  const dim =
+    size === 'lg' ? 'w-28 h-28' : size === 'sm' ? 'w-16 h-16' : 'w-20 h-20';
+  const textSize = size === 'lg' ? 'text-3xl' : size === 'sm' ? 'text-lg' : 'text-xl';
 
   const inner = (
     <>
@@ -71,7 +72,7 @@ export function CategoryScoreGauge({ name, score, size = 'md', onClick }: Catego
         </div>
       </div>
       <div className="min-w-0 flex-1">
-        <h3 className={`font-bold text-foreground ${size === 'sm' ? 'text-sm' : 'text-base'}`}>{name}</h3>
+        <h3 className={`font-bold text-foreground ${size === 'lg' ? 'text-lg' : size === 'sm' ? 'text-sm' : 'text-base'}`}>{name}</h3>
         <p className={`mt-0.5 text-xs ${labelCls}`}>{label}</p>
       </div>
     </>

@@ -2,6 +2,9 @@ import type { KeywordRow } from '@/types/components';
 import type { KeywordOpportunityItem, TopicCluster } from '@/types/report';
 import { isJunkSemanticTerm } from '@/lib/semanticTextHygiene';
 
+/** Max keyword rows shown on Overview summary preview. */
+export const KEYWORD_PREVIEW_LIMIT = 5;
+
 /** @deprecated Use isJunkSemanticTerm */
 export const isJunkCrawlKeyword = isJunkSemanticTerm;
 
@@ -104,4 +107,13 @@ export function formatCrawlPagesSuffix(item: KeywordOpportunityItem, onPagesLabe
   if (count != null && count > 0) return onPagesLabel(count);
   if (item.volume != null && item.volume > 0) return `${Math.round(item.volume * 100)}% site freq.`;
   return '';
+}
+
+export function sumGscQuickWinClicks(rows: KeywordRow[]): number {
+  return selectGscQuickWins(rows, 200).reduce((total, row) => total + (row.opportunity_clicks || 0), 0);
+}
+
+export function buildKeywordsTabHref(keywordsHref: string, tab: string): string {
+  const joiner = keywordsHref.includes('?') ? '&' : '?';
+  return `${keywordsHref}${joiner}tab=${encodeURIComponent(tab)}`;
 }

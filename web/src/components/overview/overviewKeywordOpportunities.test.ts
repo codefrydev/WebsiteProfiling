@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildKeywordsTabHref,
   formatCrawlPagesSuffix,
   formatGscQuickWinSuffix,
   isJunkCrawlKeyword,
@@ -8,6 +9,7 @@ import {
   selectGscOpportunities,
   selectGscQuickWins,
   selectSiteTopKeywords,
+  sumGscQuickWinClicks,
 } from './overviewKeywordOpportunities';
 
 describe('overviewKeywordOpportunities', () => {
@@ -78,5 +80,18 @@ describe('overviewKeywordOpportunities', () => {
       { word: 'reviews', count: 18 },
     ];
     expect(selectSiteTopKeywords(items).map((k) => k.keyword)).toEqual(['games', 'reviews']);
+  });
+
+  it('sums quick win opportunity clicks', () => {
+    const rows = [
+      { keyword: 'a', gsc_position: 8, opportunity_clicks: 20 },
+      { keyword: 'b', gsc_position: 12, opportunity_clicks: 40 },
+    ];
+    expect(sumGscQuickWinClicks(rows)).toBe(60);
+  });
+
+  it('builds keywords tab href', () => {
+    expect(buildKeywordsTabHref('/keywords?domain=x', 'quickwins')).toBe('/keywords?domain=x&tab=quickwins');
+    expect(buildKeywordsTabHref('/keywords', 'opportunities')).toBe('/keywords?tab=opportunities');
   });
 });

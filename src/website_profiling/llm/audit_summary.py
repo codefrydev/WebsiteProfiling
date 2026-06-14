@@ -51,17 +51,10 @@ def generate_audit_executive_summary(
     gsc_pages = gsc.get("pages") if isinstance(gsc, dict) else []
     top_issues = rank_issues_by_traffic(categories, gsc_pages)[:5]
 
-    lines = []
     scores = [c.get("score") for c in categories if isinstance(c.get("score"), (int, float))]
-    if scores:
-        avg = round(sum(scores) / len(scores))
-        lines.append(f"Overall audit health score: {avg}/100.")
-    if top_issues:
-        lines.append("Top traffic-impacting issues:")
-        for i, iss in enumerate(top_issues[:3], 1):
-            lines.append(f"{i}. [{iss.get('priority')}] {iss.get('message')} ({iss.get('url') or 'site-wide'})")
+    avg = round(sum(scores) / len(scores)) if scores else None
 
-    fallback = "\n".join(lines) if lines else "No major issues detected in this audit run."
+    fallback = _deterministic_summary_text(avg, top_issues)
 
     source = "deterministic"
     priorities: list[str] = []
@@ -72,11 +65,13 @@ def generate_audit_executive_summary(
             fallback = str(llm_result["summary"])
             priorities = llm_result.get("priorities") or []
         else:
-            lines.append("(LLM summary unavailable — using deterministic summary.)")
-            fallback = "\n".join(lines)
+            fallback = _deterministic_summary_text(avg, top_issues, llm_unavailable=True)
     elif llm_is_enabled(cfg or {}):
-        lines.append("(Enable audit executive summary in AI task settings for LLM narrative.)")
-        fallback = "\n".join(lines)
+        fallback = _deterministic_summary_text(
+            avg,
+            top_issues,
+            hint_enable_llm=True,
+        )
 
     return {
         "ok": True,
@@ -85,6 +80,30 @@ def generate_audit_executive_summary(
         "top_issues": top_issues,
         "priorities": priorities,
     }
+
+
+def _deterministic_summary_text(
+    avg: int | None,
+    top_issues: list[dict[str, Any]],
+    *,
+    llm_unavailable: bool = False,
+    hint_enable_llm: bool = False,
+) -> str:
+    """Short narrative for UI; structured score/issues render separately in the app."""
+    if top_issues:
+        msg = "Prioritize fixes below by severity and Search Console traffic impact."
+    elif avg is not None and avg >= 80:
+        msg = "Site health looks strong. Keep monitoring crawl and Search Console trends."
+    elif avg is not None:
+        msg = "Review category scores and address high-priority issues to improve overall health."
+    else:
+        msg = "No major issues detected in this audit run."
+
+    if llm_unavailable:
+        msg = f"{msg} (AI summary unavailable — showing structured overview only.)"
+    elif hint_enable_llm:
+        msg = f"{msg} Enable audit executive summary in AI settings for an AI narrative."
+    return msg
 
 
 def _audit_summary_llm_enabled(cfg: dict[str, str]) -> bool:
