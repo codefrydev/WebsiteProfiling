@@ -7,6 +7,7 @@ import type { CompareMetricRow } from '@/lib/reportCompare';
 import type { PageGa4Slice, PageGscSlice } from '@/server/pageGoogleData';
 import { buildPageTrafficHints } from '@/lib/pageTrafficHints';
 import { strings, format } from '../../../lib/strings';
+import { useOptionalPipeline } from '@/context/PipelineContext';
 import { CompareMetricCard } from '../../compare/CompareDeltaBadge';
 import CopyBtn from '../CopyBtn';
 
@@ -76,6 +77,14 @@ function compareLabel(row: HistoryRow): string {
 
 export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
   const pageUrl = link.url || '';
+  const pipeline = useOptionalPipeline();
+  const propertyId = Number(pipeline?.configState.active_property_id || 0);
+
+  const pageGoogleQuery = useMemo(() => {
+    const q = new URLSearchParams({ url: pageUrl });
+    if (propertyId > 0) q.set('propertyId', String(propertyId));
+    return q;
+  }, [pageUrl, propertyId]);
 
   const [loading, setLoading] = useState(true);
   const [pageData, setPageData] = useState<PageDataResponse | null>(null);
@@ -97,16 +106,16 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
   const [coachCached, setCoachCached] = useState(false);
 
   const loadSnapshot = useCallback(async (googleSnapshotId?: number | null) => {
-    const q = new URLSearchParams({ url: pageUrl });
+    const q = new URLSearchParams(pageGoogleQuery);
     if (googleSnapshotId != null) q.set('googleSnapshotId', String(googleSnapshotId));
     const res = await fetch(`/api/integrations/google/page-data?${q}`);
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
     return (await res.json()) as PageDataResponse;
-  }, [pageUrl]);
+  }, [pageGoogleQuery]);
 
   const loadHistories = useCallback(async () => {
     const [siteRes, liveRes] = await Promise.all([
-      fetch(`/api/integrations/google/page-data/history?url=${encodeURIComponent(pageUrl)}`),
+      fetch(`/api/integrations/google/page-data/history?${pageGoogleQuery}`),
       fetch(`/api/integrations/google/page-live/history?url=${encodeURIComponent(pageUrl)}`),
     ]);
     const site = siteRes.ok ? ((await siteRes.json()) as { history?: HistoryRow[] }).history || [] : [];
@@ -114,7 +123,7 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
     setSiteHistory(site);
     setLiveHistory(live);
     return { site, live };
-  }, [pageUrl]);
+  }, [pageGoogleQuery, pageUrl]);
 
   const refreshAll = useCallback(async () => {
     setLoading(true);

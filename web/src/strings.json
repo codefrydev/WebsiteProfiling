@@ -3857,7 +3857,8 @@
           "SEO",
           "Content",
           "Category",
-          "Security"
+          "Security",
+          "Browser"
         ],
         "issueTooltip": "{n} issue{s}",
         "redirectWithFinal": "Redirect {status} → {finalUrl}"

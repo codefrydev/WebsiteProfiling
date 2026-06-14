@@ -97,7 +97,7 @@ export default function IssuesTab({ lhData, inspectorDetails, pageUrl }: IssuesT
   }, [allIssues, issueFilter]);
 
   const typeChart = useMemo(() => {
-    const order = ['broken', 'redirect', 'seo', 'content', 'category', 'security'] as const;
+    const order = ['broken', 'redirect', 'seo', 'content', 'category', 'security', 'browser'] as const;
     const labels = [...it.typeLabels];
     const values = order.map((t) => allIssues.filter((i) => i.type === t).length);
     const filteredLabels: string[] = [];

@@ -1,20 +1,43 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { spawn } from 'child_process';
-import path from 'path';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
-import { resolvePythonExecutable } from '@/server/resolvePython';
-import { withDb } from '@/server/db';
+import { getRepoRoot, getPipelineSpawnEnv } from '@/server/pipelineSpawnEnv';
+import { resolvePythonExecutable, parsePythonJsonStdout } from '@/server/resolvePython';
+import type { ApiRouteHandler } from '@/types/api';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const REPO_ROOT = process.env.WEBSITE_PROFILING_ROOT || path.resolve(process.cwd(), '..');
+const MERGE_SCRIPT = `
+import json, sys
+from website_profiling.integrations.keywords.competitor_csv import parse_competitor_keyword_csv
+from website_profiling.integrations.keywords.competitor_gap_store import merge_competitor_keyword_import
+from website_profiling.db.storage import db_session
 
-export async function POST(request: NextRequest) {
+payload = json.load(sys.stdin)
+property_id = int(payload["propertyId"])
+competitor = payload.get("competitor") or ""
+rows = parse_competitor_keyword_csv(payload.get("csvText") or "", competitor=competitor)
+with db_session() as conn:
+    merged = merge_competitor_keyword_import(conn, property_id, competitor, rows)
+print(json.dumps({"count": len(rows), "rows": rows[:500], "mergedCount": len(merged), "mergedRows": merged[:500]}))
+`;
+
+/**
+ * POST /api/keywords/competitor-import
+ * Body: { propertyId, competitor, csvText }
+ */
+export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Response> => {
   const denied = forbiddenIfNotLocal(request);
   if (denied) return denied;
 
-  const body = await request.json().catch(() => ({}));
+  let body: { propertyId?: number; competitor?: string; csvText?: string };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
+  }
+
   const propertyId = Number(body.propertyId || 0);
   const competitor = String(body.competitor || '').trim();
   const csvText = String(body.csvText || '');
@@ -22,44 +45,40 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'propertyId, competitor, and csvText required' }, { status: 400 });
   }
 
-  const python = resolvePythonExecutable(process.env.PYTHON, REPO_ROOT);
-  const script = `
-import json, sys
-from website_profiling.integrations.keywords.competitor_csv import parse_competitor_keyword_csv
-rows = parse_competitor_keyword_csv(sys.stdin.read(), competitor=sys.argv[1])
-print(json.dumps({"count": len(rows), "rows": rows[:500]}))
-`;
+  const repoRoot = getRepoRoot();
+  const pythonExe = resolvePythonExecutable(null, repoRoot);
+
   return new Promise<Response>((resolve) => {
-    const proc = spawn(python, ['-c', script, competitor], {
-      cwd: REPO_ROOT,
-      env: { ...process.env, PYTHONPATH: path.join(REPO_ROOT, 'src') },
+    const proc = spawn(pythonExe, ['-c', MERGE_SCRIPT], {
+      cwd: repoRoot,
+      env: getPipelineSpawnEnv(repoRoot),
+      shell: false,
     });
-    let out = '';
-    let err = '';
-    proc.stdout.on('data', (c) => { out += c.toString(); });
-    proc.stderr.on('data', (c) => { err += c.toString(); });
-    proc.stdin.write(csvText);
-    proc.stdin.end();
+    let stdout = '';
+    let stderr = '';
+    proc.stdout?.on('data', (c: Buffer | string) => { stdout += c.toString(); });
+    proc.stderr?.on('data', (c: Buffer | string) => { stderr += c.toString(); });
+    proc.stdin?.write(JSON.stringify({ propertyId, competitor, csvText }));
+    proc.stdin?.end();
     proc.on('close', (code) => {
-      if (code !== 0) {
-        resolve(NextResponse.json({ error: err.trim() || 'import failed' }, { status: 500 }));
+      const parsed = parsePythonJsonStdout(stdout);
+      if (code === 0 && parsed) {
+        resolve(
+          NextResponse.json({
+            count: parsed.count ?? 0,
+            rows: parsed.rows ?? [],
+            mergedCount: parsed.mergedCount ?? parsed.count ?? 0,
+            mergedRows: parsed.mergedRows ?? parsed.rows ?? [],
+          }),
+        );
         return;
       }
-      try {
-        const parsed = JSON.parse(out) as { count?: number; rows?: unknown[] };
-        const rows = Array.isArray(parsed.rows) ? parsed.rows : [];
-        void withDb(async (client) => {
-          await client.query(
-            `INSERT INTO pipeline_config (key, value, is_unknown, updated_at)
-             VALUES ('competitor_keyword_gap_json', $1, false, now())
-             ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now()`,
-            [JSON.stringify(rows)],
-          );
-        }).catch(() => {});
-        resolve(NextResponse.json(parsed));
-      } catch {
-        resolve(NextResponse.json({ error: 'invalid response' }, { status: 500 }));
-      }
+      resolve(
+        NextResponse.json(
+          { error: (stderr || stdout).trim() || 'Import failed' },
+          { status: 500 },
+        ),
+      );
     });
   });
-}
+};

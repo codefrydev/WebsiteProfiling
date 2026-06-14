@@ -911,14 +911,16 @@ def run_simple_report(
         except Exception as e:
             report_data.setdefault("ml_errors", []).append(f"rich_results: {e}")
     try:
-        from ..config import get_str
-        import json as _json
+        from ..db import db_session as _ck_db
+        from ..commands.config_resolve import resolve_property_id_from_cfg
+        from ..integrations.keywords.competitor_gap_store import read_competitor_keyword_gap
 
-        comp_kw = (get_str(config or {}, "competitor_keyword_gap_json", "") or "").strip()
-        if comp_kw:
-            parsed = _json.loads(comp_kw)
-            if isinstance(parsed, list):
-                report_data["competitor_keyword_gap"] = parsed
+        with _ck_db() as conn:
+            property_id_ck = resolve_property_id_from_cfg(config, conn)
+            if property_id_ck is not None:
+                gap_rows = read_competitor_keyword_gap(conn, property_id_ck)
+                if gap_rows:
+                    report_data["competitor_keyword_gap"] = gap_rows
     except Exception as e:
         report_data.setdefault("ml_errors", []).append(f"competitor_keywords: {e}")
     if run_id is not None:
