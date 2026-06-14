@@ -26,9 +26,17 @@ export interface OverviewHealthTabProps {
   data: ReportPayload;
   categoriesFiltered: ReportCategory[];
   recommendationsFiltered: string[];
+  compareHref?: string;
+  reportCount?: number;
 }
 
-export function OverviewHealthTab({ data, categoriesFiltered, recommendationsFiltered }: OverviewHealthTabProps) {
+export function OverviewHealthTab({
+  data,
+  categoriesFiltered,
+  recommendationsFiltered,
+  compareHref,
+  reportCount = 0,
+}: OverviewHealthTabProps) {
   const vo = strings.views.overview;
   const sj = strings.common;
   const searchParams = useSearchParams();
@@ -45,8 +53,12 @@ export function OverviewHealthTab({ data, categoriesFiltered, recommendationsFil
 
   return (
     <OverviewTabPanel tabId="health" className="space-y-8">
-      <PortfolioBenchmarkCard benchmark={data.portfolio_benchmark} />
-      <div>
+      <PortfolioBenchmarkCard
+        benchmark={data.portfolio_benchmark}
+        compareHref={compareHref}
+        reportCount={reportCount}
+      />
+      <div id="overview-health-categories">
         <h2 className="text-xl font-bold text-bright mb-4">{vo.healthByCategory}</h2>
         {data.categories && data.categories.length > 0 ? (
           categoriesFiltered.length > 0 ? (

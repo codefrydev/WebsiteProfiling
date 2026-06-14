@@ -4,27 +4,37 @@ import type { StatusDistribution } from '@/lib/statusDistribution';
 export const OVERVIEW_TABS = ['summary', 'charts', 'health', 'pages'] as const;
 export type OverviewTabId = (typeof OVERVIEW_TABS)[number];
 
-export interface OverviewChartBlock {
+export interface OverviewChartInsightMeta {
+  takeaway?: string;
+  viewHref?: string;
+  viewLabel?: string;
+}
+
+export interface OverviewChartBlock extends OverviewChartInsightMeta {
   data: ChartData<'bar'>;
   aria: string;
   /** Render with horizontal bars (indexAxis y). */
   horizontal?: boolean;
 }
 
-export interface OverviewSocialStats {
+export interface OverviewStatusChart extends OverviewChartInsightMeta {
+  distribution: StatusDistribution;
+}
+
+export interface OverviewSocialStats extends OverviewChartInsightMeta {
   og: number | null;
   twitter: number | null;
   ogImage: number | null;
   aria: string;
 }
 
-export interface OverviewLighthouseScores {
+export interface OverviewLighthouseScores extends OverviewChartInsightMeta {
   scores: Record<string, number | null>;
   aria: string;
 }
 
 export interface OverviewCharts {
-  statusDistribution: StatusDistribution | null;
+  statusDistribution: OverviewStatusChart | null;
   wordCountChart: OverviewChartBlock | null;
   responseTimeChart: OverviewChartBlock | null;
   depthChart: OverviewChartBlock | null;
@@ -36,5 +46,6 @@ export interface OverviewCharts {
   domainsChart: OverviewChartBlock | null;
   lighthouseScores: OverviewLighthouseScores | null;
   chartCount: number;
+  concernCount: number;
   hasInsightCharts: boolean;
 }

@@ -67,18 +67,20 @@ export default function Overview({ searchQuery = '' }: ViewProps) {
     });
   }, [data?.top_pages, q]);
 
-  const charts = useOverviewCharts(data, expectedHost);
+  const charts = useOverviewCharts(data, expectedHost, searchParams.toString());
 
   const overviewTabItems = useMemo((): ViewTabItem[] => {
     const catCount = data?.categories?.length ?? 0;
     const pageCount = data?.top_pages?.length ?? 0;
+    const chartsBadge =
+      charts.concernCount > 0 ? charts.concernCount : charts.chartCount > 0 ? charts.chartCount : null;
     return [
       { id: 'summary', label: vo.tabs.summary, icon: <Globe className="h-3.5 w-3.5 shrink-0" aria-hidden /> },
       {
         id: 'charts',
         label: vo.tabs.charts,
         icon: <BarChart3 className="h-3.5 w-3.5 shrink-0" aria-hidden />,
-        badge: charts.chartCount > 0 ? charts.chartCount : null,
+        badge: chartsBadge,
       },
       {
         id: 'health',
@@ -93,7 +95,7 @@ export default function Overview({ searchQuery = '' }: ViewProps) {
         badge: pageCount > 0 ? pageCount : null,
       },
     ];
-  }, [vo.tabs, charts.chartCount, data?.categories?.length, data?.top_pages?.length]);
+  }, [vo.tabs, charts.concernCount, charts.chartCount, data?.categories?.length, data?.top_pages?.length]);
 
   if (!data) return null;
 
@@ -134,13 +136,22 @@ export default function Overview({ searchQuery = '' }: ViewProps) {
         />
       )}
 
-      {activeTab === 'charts' && <OverviewChartsTab charts={charts} depth={depth} />}
+      {activeTab === 'charts' && (
+        <OverviewChartsTab
+          charts={charts}
+          depth={depth}
+          data={data}
+          querySuffix={searchParams.toString() ? `?${searchParams.toString()}` : ''}
+        />
+      )}
 
       {activeTab === 'health' && (
         <OverviewHealthTab
           data={data}
           categoriesFiltered={categoriesFiltered}
           recommendationsFiltered={recommendationsFiltered}
+          compareHref={compareHref}
+          reportCount={reportList.length}
         />
       )}
 
