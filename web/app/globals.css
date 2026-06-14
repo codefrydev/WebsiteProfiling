@@ -518,3 +518,60 @@ select:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* Landing page polish */
+.landing-grid-bg {
+  background-image:
+    radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--app-text-subtle) 14%, transparent) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.landing-gradient-text {
+  background: linear-gradient(135deg, var(--app-link) 0%, #8b5cf6 55%, var(--app-link-soft) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.landing-mock-glow {
+  position: relative;
+}
+
+.landing-mock-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--app-link) 45%, transparent),
+    color-mix(in srgb, #8b5cf6 35%, transparent),
+    color-mix(in srgb, var(--app-link) 20%, transparent)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .landing-float {
+    animation: landingFloat 6s ease-in-out infinite;
+  }
+
+  @keyframes landingFloat {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+}
+
+.landing-section-alt {
+  background: color-mix(in srgb, var(--app-bg-muted) 35%, transparent);
+}

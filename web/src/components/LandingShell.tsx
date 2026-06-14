@@ -12,19 +12,18 @@ export interface LandingShellProps {
 }
 
 const NAV_ITEMS = [
-  { href: '#how-it-works', labelKey: 'navHowItWorks' as const },
+  { href: '#features', labelKey: 'navFeatures' as const },
   { href: '#quick-start', labelKey: 'navQuickStart' as const },
   { href: '#google-setup', labelKey: 'navGoogleSetup' as const },
-  { href: '#features', labelKey: 'navFeatures' as const },
-];
+] as const;
 
 export default function LandingShell({ children, footer }: LandingShellProps) {
   const vl = strings.views.landing;
   const app = strings.app;
 
   return (
-    <div className="h-dvh overflow-y-auto overscroll-y-contain bg-brand-900 text-foreground">
-      <header className="sticky top-0 z-40 border-b border-muted bg-brand-900/95 backdrop-blur-md">
+    <div className="landing-grid-bg h-dvh overflow-y-auto overscroll-y-contain bg-brand-900 text-foreground">
+      <header className="sticky top-0 z-40 border-b border-muted/80 bg-brand-900/90 backdrop-blur-lg backdrop-saturate-150">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-[var(--spacing-page-x)] sm:px-6 lg:px-8">
           <Link href="/" className="flex min-w-0 items-center gap-2.5">
             <AppLogo size={22} />
@@ -43,6 +42,14 @@ export default function LandingShell({ children, footer }: LandingShellProps) {
                 {vl[labelKey]}
               </a>
             ))}
+            <a
+              href={vl.githubRepoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-brand-700/60 hover:text-foreground lg:px-3 lg:text-sm"
+            >
+              {vl.navGithub}
+            </a>
           </nav>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             <ThemeToggle />
@@ -73,6 +80,14 @@ export default function LandingShell({ children, footer }: LandingShellProps) {
               {vl[labelKey]}
             </a>
           ))}
+          <a
+            href={vl.githubRepoUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 rounded-full border border-default bg-brand-800/50 px-3 py-1 text-xs font-medium text-muted-foreground"
+          >
+            {vl.navGithub}
+          </a>
         </nav>
       </header>
 

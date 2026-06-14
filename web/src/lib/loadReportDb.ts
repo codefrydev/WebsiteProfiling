@@ -3,11 +3,12 @@ import type {
   CrawlPageHtmlRunRow,
   CrawlRunRow,
   CrawlRunSummary,
+  CompetitorKeywordGapRow,
   ReportListRow,
   ReportLink,
   ReportPayload,
 } from '@/types/report';
-import { normalizeDomainQueryParam } from '@/lib/domainSlug';
+import { normalizeDomainQueryParam, domainQueryMatchesRow } from '@/lib/domainSlug';
 import { googlePayloadMatchesDomain, stripGoogleIfDomainMismatch } from '@/lib/filterGoogleForDomain';
 
 async function crawlRunStartUrlsMap(client: PoolClient): Promise<Map<number, string>> {
@@ -279,7 +280,29 @@ export async function readLatestGscLinksPayload(
   }
 }
 
-async function lookupPropertyIdByDomain(
+/** Per-property competitor keyword gap rows from import UI. */
+export async function readCompetitorKeywordGap(
+  client: PoolClient,
+  propertyId: number | null,
+): Promise<CompetitorKeywordGapRow[]> {
+  if (propertyId == null) return [];
+  try {
+    const { rows } = await client.query<{ data: unknown }>(
+      'SELECT data FROM competitor_keyword_gap WHERE property_id = $1',
+      [propertyId],
+    );
+    if (!rows.length) return [];
+    const raw = parseJsonField(rows[0].data);
+    if (!Array.isArray(raw)) return [];
+    return raw.filter((r): r is CompetitorKeywordGapRow =>
+      r != null && typeof r === 'object' && !Array.isArray(r),
+    );
+  } catch {
+    return [];
+  }
+}
+
+export async function lookupPropertyIdByDomain(
   client: PoolClient,
   domainRaw: string,
 ): Promise<number | null> {
@@ -346,6 +369,11 @@ export async function mergeSidecarPayloadData(
   const gscLinks = await readLatestGscLinksPayload(client, propertyId);
   if (gscLinks) merged.gsc_links = gscLinks as ReportPayload['gsc_links'];
 
+  const competitorGap = await readCompetitorKeywordGap(client, propertyId);
+  if (competitorGap.length > 0) {
+    merged.competitor_keyword_gap = competitorGap;
+  }
+
   if (scopedDomain) {
     merged = stripGoogleIfDomainMismatch(merged, scopedDomain);
   }
@@ -358,8 +386,20 @@ export async function readReportPayloadFromDatabase(
   domainSlug?: string | null,
 ): Promise<ReportPayload> {
   let row;
-  if (reportId != null) {
-    const res = await client.query('SELECT data FROM report_payload WHERE id = $1', [reportId]);
+  let resolvedReportId = reportId;
+
+  if (resolvedReportId == null && domainSlug) {
+    const reports = await listReportsFromDatabase(client);
+    const normalized = normalizeDomainQueryParam(domainSlug);
+    const match = reports.find((r) => domainQueryMatchesRow(r, normalized));
+    if (!match) {
+      throw new Error('No report for domain');
+    }
+    resolvedReportId = match.id;
+  }
+
+  if (resolvedReportId != null) {
+    const res = await client.query('SELECT data FROM report_payload WHERE id = $1', [resolvedReportId]);
     row = res.rows[0];
   } else {
     const res = await client.query(
@@ -368,7 +408,9 @@ export async function readReportPayloadFromDatabase(
     row = res.rows[0];
   }
   if (!row) {
-    throw new Error(reportId != null ? 'Report not found' : 'No report_payload in DB');
+    throw new Error(
+      resolvedReportId != null ? 'Report not found' : 'No report_payload in DB',
+    );
   }
   const payload = parseJsonField(row.data) as ReportPayload;
   return mergeSidecarPayloadData(client, payload, domainSlug);

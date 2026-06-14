@@ -1,15 +1,20 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
 import { withDb } from '@/server/db';
-import { historySummary, parseJsonField, sliceFromGoogleRow } from '@/server/pageGoogleData';
+import {
+  historySummary,
+  parseJsonField,
+  resolvePropertyIdForPageGoogle,
+  sliceFromGoogleRow,
+} from '@/server/pageGoogleData';
 import type { ApiRouteHandler } from '@/types/api';
 import type { PoolClient } from 'pg';
 
 export const runtime = 'nodejs';
 
 /**
- * GET /api/integrations/google/page-data/history?url=...
- * Lists site-wide google_data rows that have metrics for this page.
+ * GET /api/integrations/google/page-data/history?url=...&propertyId=...
+ * Lists property-scoped google_data rows that have metrics for this page.
  */
 export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Response> => {
   const denied = forbiddenIfNotLocal(request);
@@ -22,8 +27,20 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
 
   try {
     return await withDb(async (client: PoolClient) => {
+      const propertyId = await resolvePropertyIdForPageGoogle(
+        client,
+        url,
+        request.nextUrl.searchParams.get('propertyId'),
+        request.nextUrl.searchParams.get('domain'),
+      );
+
+      if (propertyId == null) {
+        return NextResponse.json({ url, history: [] });
+      }
+
       const { rows } = await client.query(
-        'SELECT id, fetched_at, data FROM google_data ORDER BY id DESC LIMIT 10',
+        'SELECT id, fetched_at, data FROM google_data WHERE property_id = $1 ORDER BY id DESC LIMIT 10',
+        [propertyId],
       );
       const history: Array<{
         id: number;

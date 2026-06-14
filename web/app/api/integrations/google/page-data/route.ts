@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
 import { withDb } from '@/server/db';
-import { loadGoogleDataRow, sliceFromGoogleRow } from '@/server/pageGoogleData';
+import { loadGoogleDataRow, resolvePropertyIdForPageGoogle, sliceFromGoogleRow } from '@/server/pageGoogleData';
 import type { ApiRouteHandler } from '@/types/api';
 import type { PoolClient } from 'pg';
 
@@ -24,9 +24,16 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
 
   try {
     return await withDb(async (client: PoolClient) => {
+      const propertyId = await resolvePropertyIdForPageGoogle(
+        client,
+        url,
+        request.nextUrl.searchParams.get('propertyId'),
+        request.nextUrl.searchParams.get('domain'),
+      );
       const row = await loadGoogleDataRow(
         client,
         googleSnapshotId != null && Number.isFinite(googleSnapshotId) ? googleSnapshotId : null,
+        propertyId,
       );
       if (!row) {
         return NextResponse.json({

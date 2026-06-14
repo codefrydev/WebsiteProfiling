@@ -54,7 +54,7 @@ const EMPTY_HISTORY: KeywordHistoryMap = {};
 
 export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
   const router = useRouter();
-  const { data, startUrlByRunId, selectedReportId } = useReport();
+  const { data, startUrlByRunId, selectedReportId, loadReport } = useReport();
   const pipeline = useOptionalPipeline();
   const propertyId = Number(pipeline?.configState.active_property_id || 0);
   const ke = strings.views.keywordsExplorer;
@@ -444,7 +444,10 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
             />
           ) : activeTab === 'competitor' ? (
             <>
-              <CompetitorKeywordImport propertyId={propertyId} />
+              <CompetitorKeywordImport
+                propertyId={propertyId}
+                onImported={() => void loadReport()}
+              />
               <CompetitorKeywordGapPanel
                 rows={Array.isArray(data?.competitor_keyword_gap) ? data.competitor_keyword_gap : []}
               />

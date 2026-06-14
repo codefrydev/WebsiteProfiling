@@ -215,11 +215,26 @@ export function sliceFromGoogleRow(
 export async function loadGoogleDataRow(
   client: PoolClient,
   googleSnapshotId: number | null,
+  propertyId?: number | null,
 ): Promise<{ id: number; fetchedAt: string | null; raw: Record<string, unknown> } | null> {
   if (googleSnapshotId != null) {
     const { rows } = await client.query(
       'SELECT id, fetched_at, data FROM google_data WHERE id = $1',
       [googleSnapshotId],
+    );
+    if (!rows.length) return null;
+    const raw = parseJsonField(rows[0].data);
+    if (!raw) return null;
+    return {
+      id: Number(rows[0].id),
+      fetchedAt: rows[0].fetched_at ? String(rows[0].fetched_at) : null,
+      raw,
+    };
+  }
+  if (propertyId != null && propertyId > 0) {
+    const { rows } = await client.query(
+      'SELECT id, fetched_at, data FROM google_data WHERE property_id = $1 ORDER BY id DESC LIMIT 1',
+      [propertyId],
     );
     if (!rows.length) return null;
     const raw = parseJsonField(rows[0].data);
@@ -241,6 +256,30 @@ export async function loadGoogleDataRow(
     fetchedAt: rows[0].fetched_at ? String(rows[0].fetched_at) : null,
     raw,
   };
+}
+
+export async function resolvePropertyIdForPageGoogle(
+  client: PoolClient,
+  pageUrl: string,
+  propertyIdParam: string | null,
+  domainParam: string | null,
+): Promise<number | null> {
+  const { resolvePropertyIdFromRequest } = await import('./resolvePropertyId');
+  if (propertyIdParam) {
+    const { propertyId } = await resolvePropertyIdFromRequest(propertyIdParam, null);
+    return propertyId;
+  }
+  if (domainParam) {
+    const { propertyId } = await resolvePropertyIdFromRequest(null, domainParam);
+    return propertyId;
+  }
+  try {
+    const host = new URL(pageUrl).hostname;
+    const { lookupPropertyIdByDomain } = await import('@/lib/loadReportDb');
+    return await lookupPropertyIdByDomain(client, host);
+  } catch {
+    return null;
+  }
 }
 
 export function historySummary(gsc: PageGscSlice | null, ga4: PageGa4Slice | null) {
