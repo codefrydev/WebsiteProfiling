@@ -4,6 +4,8 @@ import { useEffect, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import {
+  ChevronLeft,
+  ChevronRight,
   ExternalLink,
   Menu,
   Search,
@@ -41,6 +43,20 @@ interface ReportCategoryWithIssues {
   issues?: unknown[];
 }
 
+const SIDEBAR_COLLAPSED_KEY = 'app-sidebar-collapsed';
+
+function navItemBadgeCount(
+  itemId: NavItemId,
+  issueCount: number,
+  securityCount: number,
+  jsErrorPageCount: number,
+): number {
+  if (itemId === 'issues') return issueCount;
+  if (itemId === 'security') return securityCount;
+  if (itemId === 'javascript-errors') return jsErrorPageCount;
+  return 0;
+}
+
 export interface AppShellProps {
   children: ReactNode;
   showSidebar?: boolean;
@@ -62,6 +78,7 @@ export default function AppShell({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
   const [integrationsToast, setIntegrationsToast] = useState<IntegrationsToast | null>(null);
   const { data, startUrlByRunId } = useReport();
@@ -69,6 +86,28 @@ export default function AppShell({
 
   const trailing = searchParams.toString() ? `?${searchParams.toString()}` : '';
   const closeSidebar = () => setSidebarOpen(false);
+
+  const toggleSidebarCollapsed = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? '1' : '0');
+      } catch {
+        /* ignore storage errors */
+      }
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1') {
+        setSidebarCollapsed(true);
+      }
+    } catch {
+      /* ignore storage errors */
+    }
+  }, []);
 
   useEffect(() => {
     const intParam = searchParams.get('integrations');
@@ -144,14 +183,25 @@ export default function AppShell({
 
       {showSidebar ? (
         <aside
-          className={`inset-y-0 left-0 w-64 bg-brand-800 border-r border-muted flex flex-col h-screen shrink-0 z-40 shadow-xl print:hidden transition-transform duration-200 ease-out fixed md:relative ${
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-          }`}
+          className={`inset-y-0 left-0 w-64 bg-brand-800 border-r border-muted flex flex-col h-screen shrink-0 z-40 shadow-xl print:hidden transition-[width,transform] duration-200 ease-out fixed md:relative ${
+            sidebarCollapsed ? 'md:w-14' : 'md:w-64'
+          } ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
         >
-          <div className="h-16 flex items-center justify-between px-6 border-b border-muted bg-brand-900/30 shrink-0">
-            <Link href="/home" className="flex items-center min-w-0" onClick={closeSidebar}>
-              <AppLogo className="mr-3" />
-              <div className="min-w-0">
+          <div
+            className={`flex shrink-0 items-center border-b border-muted bg-brand-900/30 ${
+              sidebarCollapsed
+                ? 'h-16 justify-between px-6 md:h-auto md:flex-col md:justify-center md:gap-2 md:px-0 md:py-3'
+                : 'h-16 justify-between px-6'
+            }`}
+          >
+            <Link
+              href="/home"
+              className={`flex items-center min-w-0 ${sidebarCollapsed ? 'md:justify-center' : ''}`}
+              onClick={closeSidebar}
+              title={sidebarCollapsed ? strings.app.productName : undefined}
+            >
+              <AppLogo className={sidebarCollapsed ? 'md:mr-0 mr-3' : 'mr-3'} />
+              <div className={`min-w-0 ${sidebarCollapsed ? 'md:hidden' : ''}`}>
                 <div className="font-bold text-bright leading-tight truncate">
                   {strings.app.productName}
                 </div>
@@ -161,44 +211,70 @@ export default function AppShell({
             <button
               type="button"
               aria-label={strings.app.ariaCloseMenu}
-              className="md:hidden p-2 -mr-2 text-muted-foreground hover:text-bright rounded-lg"
+              className="md:hidden p-2 -mr-2 text-muted-foreground hover:text-bright rounded-lg shrink-0"
               onClick={closeSidebar}
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          <nav className="flex-1 overflow-y-auto p-4 space-y-1">
+          <nav
+            className={`flex-1 overflow-y-auto space-y-1 ${
+              sidebarCollapsed ? 'p-4 md:px-2 md:py-3' : 'p-4'
+            }`}
+          >
             {APP_NAV_SECTIONS.map((section) => (
               <div key={section}>
-                <div className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 mt-4 px-2 first:mt-0">
+                <div
+                  className={`text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2 mt-4 px-2 first:mt-0 ${
+                    sidebarCollapsed ? 'md:hidden' : ''
+                  }`}
+                >
                   {section}
                 </div>
                 {APP_NAV_ITEMS.filter((item) => item.section === section).map((item) => {
                   const Icon = item.icon;
                   const href = navHref(item, trailing);
                   const isActive = isNavItemActive(item, pathname);
+                  const badgeCount = navItemBadgeCount(
+                    item.id,
+                    issueCount,
+                    securityCount,
+                    jsErrorPageCount,
+                  );
                   return (
                     <Link
                       key={item.id}
                       href={href}
                       onClick={closeSidebar}
-                      className={`nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                      title={sidebarCollapsed ? item.label : undefined}
+                      aria-label={sidebarCollapsed ? item.label : undefined}
+                      className={`nav-btn relative w-full flex items-center rounded-lg text-sm font-medium transition-all ${
+                        sidebarCollapsed
+                          ? 'gap-3 px-3 py-2.5 md:justify-center md:gap-0 md:px-0 md:py-2.5'
+                          : 'gap-3 px-3 py-2.5'
+                      } ${
                         isActive
                           ? 'tab-active bg-blue-500/10 border border-blue-500/25 text-link'
                           : 'text-muted-foreground hover:text-foreground hover:bg-brand-700/80'
                       }`}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
-                      <span className="flex-1 text-left">{item.label}</span>
-                      {item.id === 'issues' && issueCount > 0 ? (
-                        <Badge variant="high" label={String(issueCount)} className="shrink-0" />
+                      <span className={`flex-1 text-left ${sidebarCollapsed ? 'md:hidden' : ''}`}>
+                        {item.label}
+                      </span>
+                      {badgeCount > 0 && !sidebarCollapsed ? (
+                        <Badge
+                          variant={item.id === 'security' ? 'medium' : 'high'}
+                          label={String(badgeCount)}
+                          className="shrink-0"
+                        />
                       ) : null}
-                      {item.id === 'security' && securityCount > 0 ? (
-                        <Badge variant="medium" label={String(securityCount)} className="shrink-0" />
-                      ) : null}
-                      {item.id === 'javascript-errors' && jsErrorPageCount > 0 ? (
-                        <Badge variant="high" label={String(jsErrorPageCount)} className="shrink-0" />
+                      {badgeCount > 0 && sidebarCollapsed ? (
+                        <span
+                          className="absolute top-1.5 right-1.5 hidden md:block h-2 w-2 rounded-full bg-red-500"
+                          aria-hidden
+                        />
                       ) : null}
                     </Link>
                   );
@@ -207,26 +283,48 @@ export default function AppShell({
             ))}
           </nav>
 
-          <div className="p-4 border-t border-muted bg-brand-900/30">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white text-xs shrink-0">
+          <div
+            className={`border-t border-muted bg-brand-900/30 ${
+              sidebarCollapsed ? 'p-4 md:p-2' : 'p-4'
+            }`}
+          >
+            <div
+              className={`flex items-center ${sidebarCollapsed ? 'gap-3 md:justify-center md:gap-0' : 'gap-3'}`}
+            >
+              <div
+                className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white text-xs shrink-0"
+                title={sidebarCollapsed ? auditedHost : undefined}
+              >
                 {auditedInitials}
               </div>
-              <div className="text-xs min-w-0">
+              <div className={`text-xs min-w-0 ${sidebarCollapsed ? 'md:hidden' : ''}`}>
                 <div className="text-bright font-bold truncate">{auditedHost}</div>
                 <div className="text-muted-foreground">{lastCrawlText}</div>
               </div>
             </div>
             {auditedStartUrl ? (
-              <a
-                href={auditedStartUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-3 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-                <span>{strings.app.viewSiteLabel}</span>
-              </a>
+              sidebarCollapsed ? (
+                <a
+                  href={auditedStartUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={strings.app.viewSiteLabel}
+                  aria-label={strings.app.viewSiteLabel}
+                  className="mt-3 hidden md:flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                </a>
+              ) : (
+                <a
+                  href={auditedStartUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-3 flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                  <span>{strings.app.viewSiteLabel}</span>
+                </a>
+              )
             ) : null}
           </div>
         </aside>
@@ -243,14 +341,24 @@ export default function AppShell({
         ) : null}
         {showSidebar ? (
           <header className="h-16 border-b border-muted bg-brand-800/80 backdrop-blur-md flex items-center justify-between gap-3 px-4 sm:px-6 shrink-0 z-10 print:hidden">
-            <button
-              type="button"
-              aria-label={strings.app.ariaOpenMenu}
-              className="md:hidden p-2 -ml-2 text-muted-foreground hover:text-bright rounded-lg shrink-0"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu className="h-6 w-6" />
-            </button>
+            <div className="flex items-center shrink-0">
+              <button
+                type="button"
+                aria-label={strings.app.ariaOpenMenu}
+                className="md:hidden p-2 -ml-2 text-muted-foreground hover:text-bright rounded-lg"
+                onClick={() => setSidebarOpen(true)}
+              >
+                <Menu className="h-6 w-6" />
+              </button>
+              <button
+                type="button"
+                aria-label={sidebarCollapsed ? strings.app.sidebarExpand : strings.app.sidebarCollapse}
+                className="hidden md:flex p-2 -ml-2 text-muted-foreground hover:text-bright rounded-lg"
+                onClick={toggleSidebarCollapsed}
+              >
+                {sidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+              </button>
+            </div>
             {showSearch && onSearchChange ? (
               <div className="min-w-0 relative flex-1 max-w-xl">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

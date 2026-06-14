@@ -668,6 +668,8 @@
     "productSubtitle": "SEO & technical analysis",
     "ariaCloseMenu": "Close menu",
     "ariaOpenMenu": "Open menu",
+    "sidebarCollapse": "Collapse sidebar",
+    "sidebarExpand": "Expand sidebar",
     "viewSiteLabel": "View site",
     "searchPlaceholder": "Search URLs, issues...",
     "themeLight": "Light theme",
