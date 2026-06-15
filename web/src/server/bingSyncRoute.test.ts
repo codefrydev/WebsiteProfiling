@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { localRequest, makeSpawnChild } from '@/server/testHelpers/routeTestUtils';
+import { localRequest, makeSpawnChild, makeSpawnError } from '@/server/testHelpers/routeTestUtils';
 
 const spawnMock = vi.fn();
 const loadPipelineConfigMock = vi.fn();
@@ -40,5 +40,17 @@ describe('integrations/bing/sync route', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.linked_page_count).toBe(3);
+  });
+
+  it('returns 500 (not a hang) when the Python process fails to spawn', async () => {
+    loadPipelineConfigMock.mockResolvedValue({
+      state: { bing_webmaster_api_key: 'key', start_url: 'https://example.com' },
+    });
+    spawnMock.mockImplementation(() => makeSpawnError('spawn python3 ENOENT'));
+    const { POST } = await import('../../app/api/integrations/bing/sync/route');
+    const res = await POST(localRequest('/api/integrations/bing/sync', { method: 'POST' }));
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toMatch(/ENOENT/);
   });
 });

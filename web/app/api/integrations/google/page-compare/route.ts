@@ -147,6 +147,9 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
       let current = await defaultCurrent(client, url, urlNorm);
       if (currentIdParam && currentType) {
         const id = parseInt(currentIdParam, 10);
+        if (!Number.isFinite(id) || id <= 0) {
+          return NextResponse.json({ error: 'Invalid currentId' }, { status: 400 });
+        }
         if (currentType === 'live') {
           const s = await loadLiveSlice(client, id);
           if (s) current = { type: 'live', ...s };
@@ -167,6 +170,9 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
 
       if (baselineIdParam && baselineType) {
         const id = parseInt(baselineIdParam, 10);
+        if (!Number.isFinite(id) || id <= 0) {
+          return NextResponse.json({ error: 'Invalid baselineId' }, { status: 400 });
+        }
         if (baselineType === 'live') {
           const s = await loadLiveSlice(client, id);
           if (s) baseline = { type: 'live', ...s };

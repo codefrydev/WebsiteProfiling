@@ -3,7 +3,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
 import { requireApiAuthForChat } from '@/server/auth';
-import { resolvePythonExecutable } from '@/server/resolvePython';
+import { resolvePythonExecutable, formatPythonSpawnError } from '@/server/resolvePython';
 import type { ApiRouteHandlerWithParams } from '@/types/api';
 
 export const runtime = 'nodejs';
@@ -61,6 +61,9 @@ export const GET: ApiRouteHandlerWithParams<{ id: string }> = async (
     });
     proc.stderr.on('data', (c) => {
       err += c.toString();
+    });
+    proc.on('error', (spawnErr: Error) => {
+      resolve(NextResponse.json({ error: formatPythonSpawnError(spawnErr, python, REPO_ROOT) }, { status: 500 }));
     });
     proc.on('close', (code) => {
       if (code !== 0) {

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { localRequest, remoteRequest, makeSpawnChild } from '@/server/testHelpers/routeTestUtils';
+import { localRequest, remoteRequest, makeSpawnChild, makeSpawnError } from '@/server/testHelpers/routeTestUtils';
 
 const spawnMock = vi.fn();
 vi.mock('child_process', () => ({
@@ -33,5 +33,14 @@ describe('alerts/check route', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.alerts).toHaveLength(1);
+  });
+
+  it('returns 500 (not a hang) when the Python process fails to spawn', async () => {
+    spawnMock.mockImplementation(() => makeSpawnError('spawn python3 ENOENT'));
+    const { POST } = await import('../../app/api/alerts/check/route');
+    const res = await POST(localRequest('/api/alerts/check?propertyId=3', { method: 'POST' }));
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error).toMatch(/ENOENT/);
   });
 });

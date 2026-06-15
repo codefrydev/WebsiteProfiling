@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Shield, Zap, Image } from 'lucide-react';
+import { Shield, Zap, Image as ImageIcon } from 'lucide-react';
 import type { LinkDetail } from '@/types/report';
 import { strings, format } from '../../../lib/strings';
 import SecHeaderRow from '../SecHeaderRow';
@@ -99,7 +99,7 @@ export default function TechnicalTab({ link }: TechnicalTabProps) {
 
       <div>
         <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-2">
-          <Image className="h-3.5 w-3.5" /> {lt.imagesA11y}
+          <ImageIcon className="h-3.5 w-3.5" /> {lt.imagesA11y}
         </h3>
         <div className="bg-brand-900 border border-default rounded-xl p-4 space-y-3">
           <MiniBar
