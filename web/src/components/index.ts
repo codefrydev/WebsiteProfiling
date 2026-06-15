@@ -4,6 +4,8 @@ export { default as Card } from './Card';
 export { default as Button } from './Button';
 export { default as Badge } from './Badge';
 export { default as AlertBanner } from './AlertBanner';
+export { default as EmptyState } from './EmptyState';
+export type { EmptyStateProps } from './EmptyState';
 export { default as StatCard } from './StatCard';
 export { default as HelpHint, normalizeHintContent, LabelWithHint, ChartTitleWithHint } from './HelpHint';
 export type { HelpHintProps, HelpHintContent } from './HelpHint';

@@ -1709,7 +1709,21 @@
       "deleteConfirm": "Remove",
       "deleteCancel": "Cancel",
       "deleteFailed": "Could not remove property. Try again.",
-      "deleting": "Removing…"
+      "deleting": "Removing…",
+      "greetingMorning": "Good morning",
+      "greetingAfternoon": "Good afternoon",
+      "greetingEvening": "Good evening",
+      "greetingTagline": "Here's your site portfolio at a glance.",
+      "quickActionRunLabel": "Run new audit",
+      "quickActionChatLabel": "Ask AI",
+      "resumeHeading": "Jump back in",
+      "resumeReopen": "Reopen",
+      "emptyTitle": "Welcome to Site Audit",
+      "emptyBody": "Run your first crawl to surface technical SEO issues, Lighthouse scores, content gaps, and more — all self-hosted, no signup required.",
+      "emptyCta": "Run your first audit",
+      "emptyHighlightCrawl": "Crawl & technical SEO",
+      "emptyHighlightLighthouse": "Lighthouse performance",
+      "emptyHighlightAi": "AI-assisted insights"
     },
     "issues": {
       "title": "Issues",

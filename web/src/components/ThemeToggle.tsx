@@ -30,13 +30,16 @@ export default function ThemeToggle() {
             title={label()}
             aria-label={label()}
             aria-pressed={active}
-            className={`p-2 rounded-md transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${
+            className={`press p-2 rounded-md transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${
               active
                 ? 'bg-brand-700 text-bright shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Icon className="h-4 w-4" strokeWidth={2} />
+            <Icon
+              className={`h-4 w-4 transition-transform duration-200 ${active ? 'scale-110' : ''}`}
+              strokeWidth={2}
+            />
           </button>
         );
       })}

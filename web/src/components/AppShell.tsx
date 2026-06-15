@@ -249,7 +249,7 @@ export default function AppShell({
                       onClick={closeSidebar}
                       title={sidebarCollapsed ? item.label : undefined}
                       aria-label={sidebarCollapsed ? item.label : undefined}
-                      className={`nav-btn relative w-full flex items-center rounded-lg text-sm font-medium transition-all ${
+                      className={`nav-btn press relative w-full flex items-center rounded-lg text-sm font-medium transition-all ${
                         sidebarCollapsed
                           ? 'gap-3 px-3 py-2.5 md:justify-center md:gap-0 md:px-0 md:py-2.5'
                           : 'gap-3 px-3 py-2.5'
@@ -259,6 +259,12 @@ export default function AppShell({
                           : 'text-muted-foreground hover:text-foreground hover:bg-brand-700/80'
                       }`}
                     >
+                      {isActive ? (
+                        <span
+                          aria-hidden
+                          className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-link"
+                        />
+                      ) : null}
                       <Icon className="h-4 w-4 shrink-0" />
                       <span className={`flex-1 text-left ${sidebarCollapsed ? 'md:hidden' : ''}`}>
                         {item.label}
@@ -341,7 +347,7 @@ export default function AppShell({
           </div>
         ) : null}
         {showSidebar ? (
-          <header className="h-16 border-b border-muted bg-brand-800/80 backdrop-blur-md flex items-center justify-between gap-3 px-4 sm:px-6 shrink-0 z-10 print:hidden">
+          <header className="h-16 border-b border-muted bg-brand-800/80 backdrop-blur-md shadow-[var(--elevation-1)] flex items-center justify-between gap-3 px-4 sm:px-6 shrink-0 z-10 print:hidden">
             <div className="flex items-center shrink-0">
               <button
                 type="button"

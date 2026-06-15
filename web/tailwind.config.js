@@ -17,7 +17,7 @@ export default {
         },
       },
       borderRadius: {
-        card: '0.75rem',
+        card: '1rem',
       },
       spacing: {
         'page-x': '1.5rem',

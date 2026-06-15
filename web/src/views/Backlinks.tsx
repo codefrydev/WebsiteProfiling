@@ -9,7 +9,7 @@ import { useReport } from '../context/useReport';
 import { useOptionalPipeline } from '../context/PipelineContext';
 import { apiUrl } from '../lib/publicBase';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, ViewTabs } from '../components';
+import { PageLayout, PageHeader, ViewTabs, EmptyState } from '../components';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import GoogleTableToolbar from '../components/google/GoogleTableToolbar';
 import GscLinksSummaryCards from '../components/backlinks/GscLinksSummaryCards';
@@ -244,15 +244,19 @@ export default function Backlinks(_props: ViewProps) {
   if (!gscLinks?.export_types?.length) {
     return (
       <PageLayout className="space-y-6">
-        <div className="max-w-md mx-auto text-center py-16">
-          <Link2 className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-bright mb-2">{vb.emptyTitle}</h2>
-          <p className="text-muted-foreground text-sm mb-6">{vb.emptyBody}</p>
-          <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
-            <Settings2 className="h-3.5 w-3.5 shrink-0" />
-            {vb.emptyIntegrationsHint}
-          </p>
-        </div>
+        <EmptyState
+          icon={Link2}
+          title={vb.emptyTitle}
+          description={
+            <>
+              {vb.emptyBody}
+              <span className="mt-3 flex items-center justify-center gap-1 text-xs">
+                <Settings2 className="h-3.5 w-3.5 shrink-0" />
+                {vb.emptyIntegrationsHint}
+              </span>
+            </>
+          }
+        />
       </PageLayout>
     );
   }
