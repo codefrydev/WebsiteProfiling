@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import AppLogo from '@/components/AppLogo';
 import Button from '@/components/Button';
+import Reveal from '@/components/Reveal';
 import LandingCodeBlock from '@/components/landing/LandingCodeBlock';
 import LandingFeatureSpotlight from '@/components/landing/LandingFeatureSpotlight';
 import LandingFinalCta from '@/components/landing/LandingFinalCta';
@@ -45,12 +46,7 @@ export default function LandingPage() {
     <LandingShell footer={<LandingFooter />}>
       <div className="relative overflow-hidden">
         <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 landing-grid-bg opacity-40" />
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute -top-32 -left-24 h-96 w-96 rounded-full bg-blue-500/12 blur-3xl" />
-          <div className="absolute top-10 right-0 h-[28rem] w-[28rem] rounded-full bg-violet-500/10 blur-3xl" />
-          <div className="absolute bottom-0 left-1/4 h-72 w-72 rounded-full bg-cyan-500/8 blur-3xl" />
-          <div className="absolute inset-0 bg-gradient-to-b from-blue-500/5 via-transparent to-brand-900/30" />
-        </div>
+        <div aria-hidden className="aurora-bg" />
 
         <section className="mx-auto grid max-w-6xl gap-10 px-[var(--spacing-page-x)] pb-6 pt-10 sm:px-6 sm:pt-12 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:gap-14 lg:px-8 lg:pt-16 lg:pb-10">
           <div className="text-center lg:text-left">
@@ -105,13 +101,14 @@ export default function LandingPage() {
         </section>
       </div>
 
-      <LandingStatsStrip />
-      <LandingPathStrip />
+      <Reveal>
+        <LandingStatsStrip />
+      </Reveal>
+      <Reveal>
+        <LandingPathStrip />
+      </Reveal>
 
-      <section
-        id="spotlights"
-        className="scroll-mt-24 landing-section-alt border-y border-muted/60 py-16 sm:py-20"
-      >
+      <Reveal as="section" id="spotlights" className="scroll-mt-24 landing-section-alt border-y border-muted/60 py-16 sm:py-20">
         <div className="mx-auto max-w-6xl space-y-16 px-[var(--spacing-page-x)] sm:space-y-20 sm:px-6 lg:px-8">
           <LandingSectionHeader
             eyebrow={vl.sectionCapabilities}
@@ -138,11 +135,14 @@ export default function LandingPage() {
             reversed
           />
         </div>
-      </section>
+      </Reveal>
 
-      <LandingUseCases />
+      <Reveal>
+        <LandingUseCases />
+      </Reveal>
 
-      <section
+      <Reveal
+        as="section"
         id="quick-start"
         className="scroll-mt-24 mx-auto max-w-6xl px-[var(--spacing-page-x)] py-16 sm:px-6 sm:py-20 lg:px-8"
       >
@@ -160,11 +160,14 @@ export default function LandingPage() {
           </div>
         </div>
         <p className="mt-6 text-sm text-muted-foreground">{vl.quickStartDocsHint}</p>
-      </section>
+      </Reveal>
 
-      <LandingGoogleSetup />
+      <Reveal>
+        <LandingGoogleSetup />
+      </Reveal>
 
-      <section
+      <Reveal
+        as="section"
         id="features"
         className="scroll-mt-24 landing-section-alt border-y border-muted/60 py-16 sm:px-6 sm:py-20"
       >
@@ -178,10 +181,10 @@ export default function LandingPage() {
             {FEATURES.map(({ icon: Icon, title, description }) => (
               <article
                 key={title}
-                className="rounded-2xl border border-default bg-brand-800/40 p-5 transition-all hover:-translate-y-0.5 hover:border-blue-500/30 hover:bg-brand-800/60 hover:shadow-[var(--shadow-elevated)]"
+                className="hover-lift group relative rounded-2xl border border-default bg-brand-800/40 p-5 hover:border-blue-500/30 hover:bg-brand-800/60"
               >
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-default bg-brand-900/80">
-                  <Icon className="h-4 w-4 text-link" aria-hidden />
+                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-default bg-brand-900/80 text-link transition-colors group-hover:border-blue-500/40 group-hover:text-link">
+                  <Icon className="h-4 w-4" aria-hidden />
                 </span>
                 <h3 className="mt-4 text-sm font-semibold text-foreground">{title}</h3>
                 <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
@@ -189,10 +192,14 @@ export default function LandingPage() {
             ))}
           </div>
         </div>
-      </section>
+      </Reveal>
 
-      <LandingLimitations />
-      <LandingFinalCta />
+      <Reveal>
+        <LandingLimitations />
+      </Reveal>
+      <Reveal>
+        <LandingFinalCta />
+      </Reveal>
     </LandingShell>
   );
 }

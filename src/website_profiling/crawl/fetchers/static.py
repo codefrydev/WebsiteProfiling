@@ -49,7 +49,7 @@ class StaticFetcher:
                 redirect_chain_length=redirect_chain_length,
                 fetch_method="static",
             )
-        except Exception:
+        except requests.RequestException:
             return FetchResult(
                 status=None,
                 content_type=None,

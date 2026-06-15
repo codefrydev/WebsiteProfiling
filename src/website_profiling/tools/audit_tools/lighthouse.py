@@ -234,7 +234,7 @@ def list_lighthouse_poor_best_practices_pages(conn: Connection, ctx: AuditToolCo
 
 
 def list_lighthouse_cwv_failures(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
-    from ...lighthouse.runner import CLS_GOOD, LCP_GOOD_MS
+    from ...lighthouse.runner import CLS_GOOD, LCP_GOOD_MS, TBT_GOOD_MS
 
     scoped = ctx.with_args(args)
     payload = scoped.load_payload(conn)
@@ -263,7 +263,7 @@ def list_lighthouse_cwv_failures(conn: Connection, ctx: AuditToolContext, args: 
             except (TypeError, ValueError):
                 pass
             try:
-                if tbt is not None and float(tbt) > 200:
+                if tbt is not None and float(tbt) > TBT_GOOD_MS:
                     failed.append("tbt")
             except (TypeError, ValueError):
                 pass

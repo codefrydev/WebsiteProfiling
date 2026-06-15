@@ -77,18 +77,16 @@ print(json.dumps(result))
       }),
     );
     proc.stdin?.end();
+    proc.on('error', () => {
+      resolve(NextResponse.json({ error: 'Import failed: could not start Python process' }, { status: 500 }));
+    });
     proc.on('close', (code) => {
       const parsed = parsePythonJsonStdout(stdout);
       if (code === 0 && parsed) {
         resolve(NextResponse.json(parsed));
         return;
       }
-      resolve(
-        NextResponse.json(
-          { error: (stderr || stdout).trim() || 'Import failed' },
-          { status: 500 },
-        ),
-      );
+      resolve(NextResponse.json({ error: 'Third-party backlink import failed' }, { status: 500 }));
     });
   });
 };

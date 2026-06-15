@@ -21,6 +21,7 @@ Writes results to keyword_data + keyword_history tables.
 from __future__ import annotations
 
 import json
+import math
 import re
 from datetime import datetime, timezone
 from typing import Any
@@ -34,14 +35,19 @@ CTR_CURVE_DEFAULT = 0.008  # position > 10
 
 
 def ctr_as_fraction(ctr: Any) -> float:
-    """GSC rows use CTR percent (2.8); normalize to fraction for comparisons."""
+    """GSC rows use CTR as percent (e.g. 2.8 for 2.8%); normalize to fraction.
+
+    Invariant: ingest always stores percent — see gsc._to_query_record / _to_page_record (* 100).
+    """
     if ctr is None:
         return 0.0
     try:
         v = float(ctr)
     except (TypeError, ValueError):
         return 0.0
-    return v / 100.0 if v > 1 else v
+    if v > 100:
+        return 1.0
+    return v / 100.0
 
 QUESTION_STARTS = re.compile(
     r"^(how|what|why|when|where|who|can|does|is|are|should|will|do)\s", re.I
@@ -143,13 +149,15 @@ def estimate_difficulty(kw: str, gsc_row: dict | None, branded: bool = False) ->
 # ── CTR curve ─────────────────────────────────────────────────────────────────
 
 def opportunity_clicks(impressions: int, current_pos: float, target_pos: int = 3) -> int:
-    cur_ctr = CTR_CURVE.get(round(current_pos), CTR_CURVE_DEFAULT)
+    pos_slot = max(1, math.ceil(current_pos)) if current_pos > 0 else 1
+    cur_ctr = CTR_CURVE.get(pos_slot, CTR_CURVE_DEFAULT)
     tgt_ctr = CTR_CURVE.get(target_pos, CTR_CURVE.get(3, 0.103))
     return max(0, int((impressions or 0) * (tgt_ctr - cur_ctr)))
 
 
 def industry_ctr(pos: float) -> float:
-    return CTR_CURVE.get(round(pos), CTR_CURVE_DEFAULT)
+    pos_slot = max(1, math.ceil(pos)) if pos > 0 else 1
+    return CTR_CURVE.get(pos_slot, CTR_CURVE_DEFAULT)
 
 
 # ── Cannibalisation ───────────────────────────────────────────────────────────

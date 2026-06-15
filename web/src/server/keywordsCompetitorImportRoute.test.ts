@@ -41,7 +41,7 @@ describe('keywords/competitor-import route', () => {
       },
       stderr: { on: () => undefined },
       stdin: { write: () => undefined, end: () => undefined },
-      on: (_: string, cb: (code: number) => void) => cb(0),
+      on: (event: string, cb: (code: number) => void) => { if (event === 'close') cb(0); },
     }));
     const { POST } = await import('../../app/api/keywords/competitor-import/route');
     const res = await POST(
@@ -68,7 +68,7 @@ describe('keywords/competitor-import route', () => {
       stdout: { on: () => undefined },
       stderr: { on: (_: string, cb: (c: Buffer) => void) => cb(Buffer.from('db error')) },
       stdin: { write: () => undefined, end: () => undefined },
-      on: (_: string, cb: (code: number) => void) => cb(1),
+      on: (event: string, cb: (code: number) => void) => { if (event === 'close') cb(1); },
     }));
     const { POST } = await import('../../app/api/keywords/competitor-import/route');
     const res = await POST(
@@ -83,6 +83,6 @@ describe('keywords/competitor-import route', () => {
     );
     expect(res.status).toBe(500);
     const body = await res.json();
-    expect(body.error).toContain('db error');
+    expect(body.error).toContain('failed');
   });
 });

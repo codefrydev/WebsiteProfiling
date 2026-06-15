@@ -8,7 +8,7 @@ import { Users, AlertCircle, Settings2, Download } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
-import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs } from '../components';
+import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs, EmptyState } from '../components';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import GoogleTableToolbar from '../components/google/GoogleTableToolbar';
 import { filterBySearch, exportCsv } from '../components/google/tableUtils';
@@ -185,15 +185,19 @@ export default function Traffic() {
   if (!google) {
     return (
       <PageLayout className="space-y-6">
-        <div className="max-w-md mx-auto text-center py-16">
-          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-bright mb-2">{tf.emptyTitle}</h2>
-          <p className="text-muted-foreground text-sm mb-6">{tf.emptyBody}</p>
-          <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
-            <Settings2 className="h-3.5 w-3.5 shrink-0" />
-            {tf.emptyIntegrationsHint}
-          </p>
-        </div>
+        <EmptyState
+          icon={Users}
+          title={tf.emptyTitle}
+          description={
+            <>
+              {tf.emptyBody}
+              <span className="mt-3 flex items-center justify-center gap-1 text-xs">
+                <Settings2 className="h-3.5 w-3.5 shrink-0" />
+                {tf.emptyIntegrationsHint}
+              </span>
+            </>
+          }
+        />
       </PageLayout>
     );
   }

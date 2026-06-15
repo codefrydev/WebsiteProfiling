@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from website_profiling.analysis.local import compute_duplicate_groups, simhash_64
+from website_profiling.analysis.local import compute_duplicate_groups, run_local_enrichment, simhash_64
 
 
 def test_simhash_identical_text_same_hash():
@@ -39,6 +39,40 @@ def test_duplicate_groups_fuzzy_merge():
         "analysis_fuzzy_threshold": "90",
         "analysis_dup_max_pages": "100",
     }
-    groups, url_gid = compute_duplicate_groups(df, cfg)
+    groups, url_gid, warnings = compute_duplicate_groups(df, cfg)
     assert len(groups) >= 1
     assert url_gid.get("https://example.com/a") == url_gid.get("https://example.com/b")
+    assert warnings == []
+
+
+def test_duplicate_groups_emit_warnings_when_url_caps_exceeded(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "website_profiling.analysis.local._import_rapidfuzz",
+        lambda: type("F", (), {"token_set_ratio": staticmethod(lambda _a, _b: 0)})(),
+    )
+    rows = []
+    for i in range(3):
+        rows.append(
+            {
+                "url": f"https://example.com/p{i}",
+                "status": "200",
+                "content_type": "text/html",
+                "title": f"Unique page title number {i}",
+                "meta_description": "desc",
+                "h1": "h1",
+                "content_excerpt": " ".join(["content"] * 50),
+            }
+        )
+    df = pd.DataFrame(rows)
+    cfg = {
+        "enable_duplicate_detection": "true",
+        "analysis_simhash_hamming": "3",
+        "analysis_simhash_max_urls": "1",
+        "analysis_fuzzy_max_urls": "1",
+    }
+    _groups, _url_gid, warnings = compute_duplicate_groups(df, cfg)
+    assert any("SimHash" in w for w in warnings)
+    assert any("fuzzy" in w for w in warnings)
+
+    bundle = run_local_enrichment(df, cfg)
+    assert any("SimHash" in w for w in bundle.get("ml_errors") or [])

@@ -263,25 +263,26 @@ class BrowserFetcher:
 
         workers = [asyncio.create_task(worker()) for _ in range(self.js_concurrency)]
         self._ready.set()
-        await asyncio.gather(*workers)
-
-        for page in pages:
+        try:
+            await asyncio.gather(*workers)
+        finally:
+            for page in pages:
+                try:
+                    await page.close()
+                except Exception:
+                    pass
             try:
-                await page.close()
+                await context.close()
             except Exception:
                 pass
-        try:
-            await context.close()
-        except Exception:
-            pass
-        try:
-            await browser.close()
-        except Exception:
-            pass
-        try:
-            await playwright.stop()
-        except Exception:
-            pass
+            try:
+                await browser.close()
+            except Exception:
+                pass
+            try:
+                await playwright.stop()
+            except Exception:
+                pass
 
     def _diagnostics_enabled(self) -> bool:
         return self.capture_console or self.capture_failed_requests

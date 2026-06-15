@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
 import { spawn } from 'child_process';
 import path from 'path';
-import { resolvePythonExecutable } from '@/server/resolvePython';
+import { resolvePythonExecutable, formatPythonSpawnError } from '@/server/resolvePython';
 import { getRepoRoot } from '@/server/pipelineSpawnEnv';
 import type { ApiRouteHandler } from '@/types/api';
 
@@ -50,6 +50,9 @@ print(json.dumps({"alerts": alerts, "webhook_sent": webhook_sent}))
     });
     let stdout = '';
     proc.stdout?.on('data', (c: Buffer | string) => { stdout += c.toString(); });
+    proc.on('error', (err: Error) => {
+      resolve(NextResponse.json({ error: formatPythonSpawnError(err, pythonExe, repoRoot) }, { status: 500 }));
+    });
     proc.on('close', (code) => {
       try {
         const parsed = JSON.parse(stdout.trim() || '{}');

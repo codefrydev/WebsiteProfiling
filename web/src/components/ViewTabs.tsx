@@ -47,16 +47,16 @@ export default function ViewTabs({
             aria-selected={isActive}
             aria-controls={panelId}
             onClick={() => onChange(tab.id)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+            className={`press px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
               isActive
-                ? 'bg-brand-700 text-foreground'
+                ? 'bg-brand-700 text-foreground shadow-[var(--elevation-1)]'
                 : 'text-muted-foreground hover:text-foreground hover:bg-brand-800'
             }`}
           >
             {tab.icon}
             {tab.label}
             {badge != null && badge > 0 ? (
-              <span className="bg-amber-600/80 text-white text-xs px-1.5 py-0.5 rounded-full tabular-nums leading-none">
+              <span className="bg-accent-warm/90 text-white text-xs px-1.5 py-0.5 rounded-full tabular-nums leading-none">
                 {badge}
               </span>
             ) : null}

@@ -97,9 +97,11 @@ def _import_langdetect():
 def compute_duplicate_groups(
     df: pd.DataFrame,
     cfg: dict[str, str] | None,
-) -> tuple[list[dict[str, Any]], dict[str, str]]:
+) -> tuple[list[dict[str, Any]], dict[str, str], list[str]]:
     if df.empty or not _cfg_bool(cfg, "enable_duplicate_detection", False):
-        return [], {}
+        return [], {}, []
+
+    warnings: list[str] = []
 
     success = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns else df
     if "content_type" in success.columns:
@@ -126,6 +128,8 @@ def compute_duplicate_groups(
     fuzz = _import_rapidfuzz()
     fuzzy_threshold = _cfg_int(cfg, "analysis_fuzzy_threshold", 92) or 92
     hamming_max = _cfg_int(cfg, "analysis_simhash_hamming", 0) or 0
+    simhash_max_urls = _cfg_int(cfg, "analysis_simhash_max_urls", 800) or 800
+    fuzzy_max_urls = _cfg_int(cfg, "analysis_fuzzy_max_urls", 600) or 600
 
     parent: dict[str, str] = {}
 
@@ -150,20 +154,30 @@ def compute_duplicate_groups(
         for m in members[1:]:
             union(base, m)
 
-    if hamming_max > 0 and len(urls) <= 800:
+    if hamming_max > 0 and len(urls) <= simhash_max_urls:
         sh_list = [(u, url_to_sh[u]) for u in urls]
         for i, (u1, h1) in enumerate(sh_list):
             for u2, h2 in sh_list[i + 1 :]:
                 if _hamming(h1, h2) <= hamming_max:
                     union(u1, u2)
+    elif hamming_max > 0 and len(urls) > simhash_max_urls:
+        warnings.append(
+            f"Duplicate detection: SimHash similarity skipped for {len(urls)} URLs "
+            f"(cap {simhash_max_urls}); results may be incomplete."
+        )
 
-    if len(urls) <= 600:
+    if len(urls) <= fuzzy_max_urls:
         for i, u1 in enumerate(urls):
             fp1 = url_to_fp.get(u1, "")
             for u2 in urls[i + 1 :]:
                 fp2 = url_to_fp.get(u2, "")
                 if fp1 and fp2 and fuzz.token_set_ratio(fp1, fp2) >= fuzzy_threshold:
                     union(u1, u2)
+    elif len(urls) > fuzzy_max_urls:
+        warnings.append(
+            f"Duplicate detection: fuzzy title matching skipped for {len(urls)} URLs "
+            f"(cap {fuzzy_max_urls}); results may be incomplete."
+        )
 
     clusters: dict[str, list[str]] = defaultdict(list)
     for u in urls:
@@ -196,7 +210,7 @@ def compute_duplicate_groups(
         if gid >= max_groups:
             break
 
-    return groups_out[:max_groups], url_to_gid
+    return groups_out[:max_groups], url_to_gid, warnings
 
 
 def compute_language_signals(df: pd.DataFrame, cfg: dict[str, str] | None) -> tuple[dict[str, str], dict[str, Any]]:
@@ -243,9 +257,10 @@ def run_local_enrichment(df: pd.DataFrame, cfg: dict[str, str] | None) -> dict[s
         return bundle
 
     try:
-        dups, url_gid = compute_duplicate_groups(df, cfg)
+        dups, url_gid, dup_warnings = compute_duplicate_groups(df, cfg)
         bundle["content_duplicates"] = dups
         bundle["url_duplicate_group_id"] = url_gid
+        bundle["ml_errors"].extend(dup_warnings)
     except ImportError as e:
         bundle["ml_errors"].append(str(e))
 

@@ -50,13 +50,16 @@ def _iter_category_issues(payload: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
+from ...scoring import round_half_up
+
+
 def _health_score(payload: dict[str, Any]) -> int | None:
     scores = [
         float(c.get("score"))
         for c in (payload.get("categories") or [])
         if isinstance(c, dict) and isinstance(c.get("score"), (int, float))
     ]
-    return round(sum(scores) / len(scores)) if scores else None
+    return round_half_up(sum(scores) / len(scores)) if scores else None
 
 
 def _issue_counts(issues: list[dict[str, Any]]) -> dict[str, int]:

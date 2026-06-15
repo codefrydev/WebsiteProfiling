@@ -4,6 +4,8 @@ from __future__ import annotations
 from typing import Any
 from urllib.parse import urlparse
 
+from ..scoring import round_half_up
+
 _PRIORITY_ORDER = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
 _LH_DELTA_THRESHOLD = 5
 _ISSUE_DELTA_CAP = 100
@@ -50,7 +52,7 @@ def _score_from_categories(categories: list[Any]) -> int | None:
         for c in categories
         if isinstance(c, dict) and isinstance(c.get("score"), (int, float))
     ]
-    return round(sum(scores) / len(scores)) if scores else None
+    return round_half_up(sum(scores) / len(scores)) if scores else None
 
 
 def _issue_key(url: str, category: str, message: str) -> str:

@@ -22,20 +22,42 @@ def test_success_urls_filters_non_200() -> None:
     assert urls == ["https://example.com/a"]
 
 
-def test_gsc_page_urls_extracts_pages() -> None:
-    google = {"gsc": {"pages": [{"page": "https://example.com/x"}, {"url": "https://example.com/y"}]}}
+def test_gsc_page_urls_extracts_top_pages() -> None:
+    google = {
+        "gsc": {
+            "top_pages": [
+                {"page": "https://example.com/x"},
+                {"url": "https://example.com/y"},
+            ]
+        }
+    }
     assert len(_gsc_page_urls(google)) == 2
+
+
+def test_gsc_page_urls_legacy_pages_fallback() -> None:
+    google = {"gsc": {"pages": [{"page": "https://example.com/x"}]}}
+    assert _gsc_page_urls(google) == ["https://example.com/x"]
 
 
 @patch("website_profiling.reporting.indexation.discover_sitemap_urls")
 def test_build_indexation_coverage_lists(mock_sitemap) -> None:
     mock_sitemap.return_value = ["https://example.com/", "https://example.com/sitemap-only"]
     df = pd.DataFrame([{"url": "https://example.com/", "status": "200"}])
-    google = {"gsc": {"pages": [{"page": "https://example.com/gsc-only"}]}}
+    google = {"gsc": {"top_pages": [{"page": "https://example.com/gsc-only"}]}}
     out = build_indexation_coverage(df, "https://example.com/", google)
     assert out["counts"]["crawled"] == 1
     assert out["counts"]["sitemap_only"] >= 1
     assert "sitemap_only" in out["lists"]
+
+
+@patch("website_profiling.reporting.indexation.discover_sitemap_urls")
+def test_build_indexation_coverage_gsc_not_crawled(mock_sitemap) -> None:
+    mock_sitemap.return_value = []
+    df = pd.DataFrame([{"url": "https://example.com/", "status": "200"}])
+    google = {"gsc": {"top_pages": [{"page": "https://example.com/gsc-only"}]}}
+    out = build_indexation_coverage(df, "https://example.com/", google)
+    assert out["counts"]["gsc_pages"] == 1
+    assert "https://example.com/gsc-only" in out["lists"]["gsc_not_crawled"]
 
 
 def test_success_urls_empty_dataframe() -> None:

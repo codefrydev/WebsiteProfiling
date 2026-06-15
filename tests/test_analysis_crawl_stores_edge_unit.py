@@ -85,7 +85,7 @@ def test_analysis_local_duplicate_and_language_paths(monkeypatch) -> None:
             {"url": "https://a.com/3", "status": "404", "content_type": "text/html", "title": long_text},
         ]
     )
-    groups, mapping = local.compute_duplicate_groups(
+    groups, mapping, _warnings = local.compute_duplicate_groups(
         df,
         {
             "enable_duplicate_detection": "true",
@@ -529,7 +529,7 @@ def test_remaining_in_scope_edge_cases(monkeypatch) -> None:
             {"url": "https://a.com/3", "status": "200", "content_type": "text/html", "title": "word " * 20},
         ]
     )
-    groups, _ = local.compute_duplicate_groups(
+    groups, _mapping, _warnings = local.compute_duplicate_groups(
         dup_df, {"enable_duplicate_detection": "true", "analysis_simhash_hamming": "64"}
     )
     assert groups
@@ -543,7 +543,7 @@ def test_remaining_in_scope_edge_cases(monkeypatch) -> None:
         title = f"unique duplicate group title number {i} " * 4
         many_rows.append({"url": f"https://a.com/{i}a", "status": "200", "content_type": "text/html", "title": title})
         many_rows.append({"url": f"https://a.com/{i}b", "status": "200", "content_type": "text/html", "title": title})
-    many_groups, _ = local.compute_duplicate_groups(
+    many_groups, _mapping, _warnings = local.compute_duplicate_groups(
         pd.DataFrame(many_rows),
         {"enable_duplicate_detection": "true", "analysis_fuzzy_threshold": "90"},
     )

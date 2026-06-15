@@ -97,6 +97,8 @@ enable_duplicate_detection = true
 enable_language_detection = true
 analysis_fuzzy_threshold = 92
 analysis_simhash_hamming = 0
+analysis_simhash_max_urls = 800
+analysis_fuzzy_max_urls = 600
 analysis_dup_max_pages = 2000
 
 # --- Pipeline ---

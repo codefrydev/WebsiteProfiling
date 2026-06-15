@@ -1,14 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildKeywordsTabHref,
   formatCrawlPagesSuffix,
   formatGscQuickWinSuffix,
-  isJunkCrawlKeyword,
   selectCrawlHighEmphasis,
   selectCrawlQuickWins,
   selectGscOpportunities,
   selectGscQuickWins,
   selectSiteTopKeywords,
+  sumGscQuickWinClicks,
 } from './overviewKeywordOpportunities';
+import { isJunkSemanticTerm as isJunkCrawlKeyword } from '@/lib/semanticTextHygiene';
 
 describe('overviewKeywordOpportunities', () => {
   it('selects GSC quick wins by position and opportunity clicks', () => {
@@ -28,6 +30,27 @@ describe('overviewKeywordOpportunities', () => {
       { keyword: 'other', sources: ['site'], traffic_potential: 50 },
     ];
     expect(selectGscOpportunities(rows).map((r) => r.keyword)).toEqual(['new', 'other']);
+  });
+
+  it('selectGscQuickWins excludes rows with missing gsc_position', () => {
+    const rows = [
+      { keyword: 'no-pos', opportunity_clicks: 200 },
+      { keyword: 'has-pos', gsc_position: 10, opportunity_clicks: 20 },
+    ];
+    expect(selectGscQuickWins(rows).map((r) => r.keyword)).toEqual(['has-pos']);
+  });
+
+  it('selectGscOpportunities does not flag position-0 rows as opportunities', () => {
+    const rows = [
+      { keyword: 'ranked-zero', gsc_position: 0, sources: ['gsc'] },
+      { keyword: 'no-pos', sources: ['suggest'] },
+    ];
+    expect(selectGscOpportunities(rows).map((r) => r.keyword)).toEqual(['no-pos']);
+  });
+
+  it('formatGscQuickWinSuffix omits click count when zero', () => {
+    expect(formatGscQuickWinSuffix({ keyword: 'x', gsc_position: 9, opportunity_clicks: 0 })).toBe('pos 9.0');
+    expect(formatGscQuickWinSuffix({ keyword: 'x', opportunity_clicks: 0 })).toBe('');
   });
 
   it('sorts crawl quick wins by sources_count', () => {
@@ -78,5 +101,18 @@ describe('overviewKeywordOpportunities', () => {
       { word: 'reviews', count: 18 },
     ];
     expect(selectSiteTopKeywords(items).map((k) => k.keyword)).toEqual(['games', 'reviews']);
+  });
+
+  it('sums quick win opportunity clicks', () => {
+    const rows = [
+      { keyword: 'a', gsc_position: 8, opportunity_clicks: 20 },
+      { keyword: 'b', gsc_position: 12, opportunity_clicks: 40 },
+    ];
+    expect(sumGscQuickWinClicks(rows)).toBe(60);
+  });
+
+  it('builds keywords tab href', () => {
+    expect(buildKeywordsTabHref('/keywords?domain=x', 'quickwins')).toBe('/keywords?domain=x&tab=quickwins');
+    expect(buildKeywordsTabHref('/keywords', 'opportunities')).toBe('/keywords?tab=opportunities');
   });
 });

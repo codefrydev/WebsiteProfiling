@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 from typing import Optional
 
 import pandas as pd
@@ -449,6 +449,10 @@ class Crawler:
                             continue
                         futures.append(ex.submit(self.worker, url))
 
+                    if futures and self.queue.empty():
+                        # Block until at least one future completes instead of busy-polling.
+                        wait(futures, return_when=FIRST_COMPLETED)
+
                     remaining = []
                     for f in futures:
                         if f.done():
@@ -471,7 +475,6 @@ class Crawler:
                         else:
                             remaining.append(f)
                     futures = remaining
-                    time.sleep(0.01)
 
                     if self.queue.empty() and not futures:
                         break

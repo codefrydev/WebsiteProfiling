@@ -4,11 +4,26 @@ import {
   filterLighthouseByHost,
   lighthouseSummaryMatchesHost,
 } from '@/lib/domainSlug';
+import { crawledUrlCount } from '@/lib/crawlCounts';
 import { palette, sortByValue, PALETTE_CATEGORICAL } from '@/utils/chartPalette';
 import type { ReportPayload } from '@/types';
 import type { OverviewCharts } from './types';
 import { statusDistributionFromCounts } from '@/lib/statusDistribution';
-
+import {
+  buildChartViewHrefs,
+  depthTakeaway,
+  dominantBucketLabel,
+  lighthouseTakeaway,
+  responseTimeBucketColors,
+  responseTimeTakeaway,
+  selectChartConcerns,
+  socialTakeaway,
+  statusDistributionTakeaway,
+  titleMetaBucketColors,
+  titleMetaTakeaway,
+  wordCountBucketColors,
+  wordCountTakeaway,
+} from './overviewChartInsights';
 import { sumObject } from './chartUtils';
 
 const LH_CAT_ORDER = ['performance', 'accessibility', 'best-practices', 'seo'] as const;
@@ -16,12 +31,27 @@ const LH_CAT_ORDER = ['performance', 'accessibility', 'best-practices', 'seo'] a
 export function useOverviewCharts(
   data: ReportPayload | null | undefined,
   expectedHost: string,
+  querySuffix = '',
 ): OverviewCharts {
   const vo = strings.views.overview;
+  const hrefs = buildChartViewHrefs(querySuffix);
+  const crawledCount = crawledUrlCount(data);
+
+  const concernCount = useMemo(() => {
+    if (!data) return 0;
+    return selectChartConcerns({ data, querySuffix }).length;
+  }, [data, querySuffix]);
 
   const statusDistribution = useMemo(() => {
-    return statusDistributionFromCounts(data?.status_counts);
-  }, [data?.status_counts]);
+    const distribution = statusDistributionFromCounts(data?.status_counts);
+    if (!distribution) return null;
+    return {
+      distribution,
+      takeaway: statusDistributionTakeaway(data?.status_counts, crawledCount),
+      viewHref: hrefs.links,
+      viewLabel: vo.chartsViewLinks,
+    };
+  }, [data?.status_counts, crawledCount, hrefs.links, vo.chartsViewLinks]);
 
   const wordCountChart = useMemo(() => {
     const dist = data?.content_analytics?.word_count_distribution;
@@ -37,14 +67,17 @@ export function useOverviewCharts(
           {
             label: vo.chartPages,
             data: values,
-            backgroundColor: PALETTE_CATEGORICAL[0],
+            backgroundColor: wordCountBucketColors(labels),
             borderRadius: 4,
           },
         ],
       },
       aria,
+      takeaway: wordCountTakeaway(dist, crawledCount),
+      viewHref: hrefs.contentAnalytics,
+      viewLabel: vo.chartsViewContentAnalytics,
     };
-  }, [data?.content_analytics?.word_count_distribution, vo]);
+  }, [data?.content_analytics?.word_count_distribution, crawledCount, hrefs.contentAnalytics, vo]);
 
   const responseTimeChart = useMemo(() => {
     const dist = data?.response_time_stats?.distribution;
@@ -60,14 +93,17 @@ export function useOverviewCharts(
           {
             label: vo.chartUrls,
             data: values,
-            backgroundColor: PALETTE_CATEGORICAL[5],
+            backgroundColor: responseTimeBucketColors(labels),
             borderRadius: 4,
           },
         ],
       },
       aria,
+      takeaway: responseTimeTakeaway(dist),
+      viewHref: hrefs.network,
+      viewLabel: vo.chartsViewNetwork,
     };
-  }, [data?.response_time_stats?.distribution, vo]);
+  }, [data?.response_time_stats?.distribution, hrefs.network, vo]);
 
   const depthChart = useMemo(() => {
     const by = data?.depth_distribution?.by_depth;
@@ -93,8 +129,11 @@ export function useOverviewCharts(
         ],
       },
       aria,
+      takeaway: depthTakeaway(by, data?.depth_distribution?.max_depth, data?.depth_distribution?.avg_depth),
+      viewHref: hrefs.links,
+      viewLabel: vo.chartsViewLinks,
     };
-  }, [data?.depth_distribution?.by_depth, vo]);
+  }, [data?.depth_distribution, hrefs.links, vo]);
 
   const titleMetaChart = useMemo(() => {
     const seo = data?.seo_health || {};
@@ -110,6 +149,7 @@ export function useOverviewCharts(
       seo.meta_desc_ok != null;
     if (!hasTitle && !hasMeta) return null;
     const labels = [...vo.titleMetaLabels];
+    const metaColors = titleMetaBucketColors();
     const titleData = hasTitle
       ? [
           Number(seo.missing_title || 0),
@@ -131,7 +171,7 @@ export function useOverviewCharts(
       datasets.push({
         label: vo.chartTitleTags,
         data: titleData,
-        backgroundColor: PALETTE_CATEGORICAL[0],
+        backgroundColor: metaColors,
         borderRadius: 4,
       });
     }
@@ -139,7 +179,7 @@ export function useOverviewCharts(
       datasets.push({
         label: vo.chartMetaDesc,
         data: metaData,
-        backgroundColor: PALETTE_CATEGORICAL[1],
+        backgroundColor: metaColors,
         borderRadius: 4,
       });
     }
@@ -148,8 +188,11 @@ export function useOverviewCharts(
     return {
       data: { labels, datasets },
       aria: vo.groupedTitleMetaAria,
+      takeaway: titleMetaTakeaway(seo, crawledCount),
+      viewHref: hrefs.content,
+      viewLabel: vo.chartsViewContent,
     };
-  }, [data?.seo_health, vo]);
+  }, [data?.seo_health, crawledCount, hrefs.content, vo]);
 
   const socialStats = useMemo(() => {
     const social = data?.social_coverage || {};
@@ -167,8 +210,11 @@ export function useOverviewCharts(
       twitter: tw != null ? Number(tw) : null,
       ogImage: img != null ? Number(img) : null,
       aria: `${vo.ariaSocialIntro} ${parts.join(', ')}.`,
+      takeaway: socialTakeaway(social),
+      viewHref: hrefs.content,
+      viewLabel: vo.chartsViewContent,
     };
-  }, [data?.social_coverage, vo]);
+  }, [data?.social_coverage, hrefs.content, vo]);
 
   const readingLevelChart = useMemo(() => {
     const dist = data?.content_analytics?.reading_level_distribution;
@@ -176,6 +222,7 @@ export function useOverviewCharts(
     const labels = vo.rlBuckets.filter((k) => k in dist);
     const values = labels.map((k) => Number(dist[k] || 0));
     if (!labels.length || sumObject(dist) === 0) return null;
+    const dominant = dominantBucketLabel(labels, values);
     return {
       data: {
         labels,
@@ -183,14 +230,23 @@ export function useOverviewCharts(
           {
             label: vo.chartPages,
             data: values,
-            backgroundColor: PALETTE_CATEGORICAL[6],
+            backgroundColor: palette(labels.length),
             borderRadius: 4,
           },
         ],
       },
       aria: `${vo.ariaReadingIntro} ${labels.map((l, i) => `${values[i]} ${l}`).join(', ')}.`,
+      takeaway: dominant
+        ? format(vo.chartsTakeawayReadingDominant, {
+            bucket: dominant.label,
+            count: dominant.count.toLocaleString(),
+            pct: dominant.pct,
+          })
+        : undefined,
+      viewHref: hrefs.contentAnalytics,
+      viewLabel: vo.chartsViewContentAnalytics,
     };
-  }, [data?.content_analytics?.reading_level_distribution, vo]);
+  }, [data?.content_analytics?.reading_level_distribution, hrefs.contentAnalytics, vo]);
 
   const mimeChart = useMemo(() => {
     let labels = data?.mime_labels || [];
@@ -213,13 +269,20 @@ export function useOverviewCharts(
         ],
       },
       aria: `${vo.ariaMimeIntro} ${labels.map((l, i) => `${values[i]} ${l}`).join(', ')}.`,
+      takeaway: format(vo.chartsTakeawayMimeTop, {
+        mime: labels[0],
+        count: values[0].toLocaleString(),
+      }),
+      viewHref: hrefs.links,
+      viewLabel: vo.chartsViewLinks,
     };
-  }, [data?.mime_labels, data?.mime_values, vo]);
+  }, [data?.mime_labels, data?.mime_values, hrefs.links, vo]);
 
   const outlinksChart = useMemo(() => {
     const labels = data?.outlink_labels || [];
     const values = (data?.outlink_counts || []).map(Number);
     if (!labels.length || !values.some((v) => v > 0)) return null;
+    const dominant = dominantBucketLabel(labels, values);
     return {
       data: {
         labels,
@@ -233,8 +296,17 @@ export function useOverviewCharts(
         ],
       },
       aria: vo.ariaOutlinks,
+      takeaway: dominant
+        ? format(vo.chartsTakeawayOutlinksDominant, {
+            bucket: dominant.label,
+            count: dominant.count.toLocaleString(),
+            pct: dominant.pct,
+          })
+        : undefined,
+      viewHref: hrefs.links,
+      viewLabel: vo.chartsViewLinks,
     };
-  }, [data?.outlink_labels, data?.outlink_counts, vo]);
+  }, [data?.outlink_labels, data?.outlink_counts, hrefs.links, vo]);
 
   const domainsChart = useMemo(() => {
     let labels = data?.domain_labels || [];
@@ -258,8 +330,14 @@ export function useOverviewCharts(
       },
       aria: `${vo.ariaDomainsPrefix} ${labels[0]}: ${values[0]}.`,
       horizontal: true,
+      takeaway: format(vo.chartsTakeawayDomainsTop, {
+        domain: labels[0],
+        count: values[0].toLocaleString(),
+      }),
+      viewHref: hrefs.links,
+      viewLabel: vo.chartsViewLinks,
     };
-  }, [data?.domain_labels, data?.domain_values, vo]);
+  }, [data?.domain_labels, data?.domain_values, hrefs.links, vo]);
 
   const lighthouseScores = useMemo(() => {
     let cs = null;
@@ -289,8 +367,11 @@ export function useOverviewCharts(
     return {
       scores,
       aria: `${vo.ariaLighthouseIntro} ${ariaParts.join(', ')}.`,
+      takeaway: lighthouseTakeaway(scores),
+      viewHref: hrefs.lighthouse,
+      viewLabel: vo.chartsViewLighthouse,
     };
-  }, [data?.lighthouse_summary, data?.lighthouse_by_url, expectedHost, vo]);
+  }, [data?.lighthouse_summary, data?.lighthouse_by_url, expectedHost, hrefs.lighthouse, vo]);
 
   const chartCount = useMemo(() => {
     let n = 0;
@@ -347,6 +428,7 @@ export function useOverviewCharts(
     domainsChart,
     lighthouseScores,
     chartCount,
+    concernCount,
     hasInsightCharts,
   };
 }

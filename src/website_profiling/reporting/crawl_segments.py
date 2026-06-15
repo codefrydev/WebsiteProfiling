@@ -4,6 +4,8 @@ from __future__ import annotations
 from typing import Any
 from urllib.parse import urlparse
 
+from ..scoring import round_half_up
+
 
 def build_crawl_segments(
     df,
@@ -18,7 +20,7 @@ def build_crawl_segments(
         for c in categories
         if isinstance(c, dict) and isinstance(c.get("score"), (int, float))
     ]
-    overall = round(sum(overall_scores) / len(overall_scores)) if overall_scores else None
+    overall = round_half_up(sum(overall_scores) / len(overall_scores)) if overall_scores else None
 
     segments: list[dict[str, Any]] = []
     for prefix in path_prefixes:

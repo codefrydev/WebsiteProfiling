@@ -20,7 +20,7 @@ _QA_URL_HINTS = ("/faq", "/faqs", "/help", "/support", "/questions")
 def _fetch_llms_txt(domain: str) -> dict[str, Any]:
     if not domain:
         return {"found": False, "error": "domain unknown"}
-    base = f"https://{domain.lstrip('https://').lstrip('http://').split('/')[0]}"
+    base = f"https://{re.sub(r'^https?://', '', domain).split('/')[0]}"
     paths = ("/llms.txt", "/.well-known/llms.txt")
     for path in paths:
         url = urljoin(base + "/", path.lstrip("/"))

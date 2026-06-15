@@ -60,13 +60,22 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
     proc.stdout?.on('data', (c: Buffer | string) => { stdout += c.toString(); });
     proc.stdin?.write(JSON.stringify(payload));
     proc.stdin?.end();
+    proc.on('error', () => {
+      clearTimeout(timer);
+      resolve(NextResponse.json({ error: 'Fix suggestion failed: could not start Python process' }, { status: 500 }));
+    });
     proc.on('close', (code) => {
+      clearTimeout(timer);
       const parsed = parsePythonJsonStdout(stdout);
       if (code === 0 && parsed) {
         resolve(NextResponse.json(parsed));
         return;
       }
-      resolve(NextResponse.json({ error: stdout.trim() || 'Fix suggestion failed' }, { status: 500 }));
+      resolve(NextResponse.json({ error: 'Fix suggestion failed' }, { status: 500 }));
     });
+    const timer = setTimeout(() => {
+      try { proc.kill(); } catch { /* ignore */ }
+      resolve(NextResponse.json({ error: 'Fix suggestion timed out after 90s' }, { status: 504 }));
+    }, 90_000);
   });
 };

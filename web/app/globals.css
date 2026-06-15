@@ -49,6 +49,24 @@
   --chat-surface-hover: var(--app-bg-muted);
   --chat-glow: rgba(66, 97, 255, 0.08);
   --chat-glow-secondary: rgba(138, 79, 255, 0.04);
+
+  /* Warm secondary accent (welcome moments / highlights) — complements the cool blue */
+  --accent-warm: #f97316;
+  --accent-warm-soft: #fb923c;
+  --accent-2: #8b5cf6;
+  --surface-warm: rgba(249, 115, 22, 0.06);
+
+  /* Elevation scale (depth) */
+  --elevation-1: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --elevation-2: 0 6px 16px -4px rgba(15, 23, 42, 0.1);
+  --elevation-3: 0 16px 36px -8px rgba(15, 23, 42, 0.18);
+
+  /* Motion tokens (theme-independent) */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 120ms;
+  --dur-base: 220ms;
+  --dur-slow: 420ms;
 }
 
 html.dark {
@@ -91,6 +109,17 @@ html.dark {
   --chat-surface-hover: #28292a;
   --chat-glow: rgba(66, 97, 255, 0.12);
   --chat-glow-secondary: rgba(138, 79, 255, 0.06);
+
+  /* Warm secondary accent — brighter on dark surfaces */
+  --accent-warm: #fb923c;
+  --accent-warm-soft: #fdba74;
+  --accent-2: #a78bfa;
+  --surface-warm: rgba(251, 146, 60, 0.08);
+
+  /* Elevation scale — deeper shadows on dark */
+  --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --elevation-2: 0 6px 16px -4px rgba(0, 0, 0, 0.45);
+  --elevation-3: 0 16px 36px -8px rgba(0, 0, 0, 0.55);
 }
 
 @theme {
@@ -113,7 +142,14 @@ html.dark {
   --color-link: var(--app-link);
   --color-link-soft: var(--app-link-soft);
 
-  --radius-card: 0.75rem;
+  --color-accent-warm: var(--accent-warm);
+  --color-accent-warm-soft: var(--accent-warm-soft);
+  --color-accent-2: var(--accent-2);
+
+  --radius-sm: 0.5rem;
+  --radius-card: 1rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.5rem;
 
   --spacing-page-x: 1.5rem;
   --spacing-page-y: 1.5rem;
@@ -177,7 +213,7 @@ body {
 }
 
 .fade-in {
-  animation: fadeIn 0.3s ease-in-out;
+  animation: fadeIn var(--dur-base, 0.3s) var(--ease-out, ease-in-out);
 }
 @keyframes fadeIn {
   from {
@@ -187,6 +223,12 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    animation: none;
   }
 }
 
@@ -527,7 +569,7 @@ select:focus-visible {
 }
 
 .landing-gradient-text {
-  background: linear-gradient(135deg, var(--app-link) 0%, #8b5cf6 55%, var(--app-link-soft) 100%);
+  background: linear-gradient(135deg, var(--app-link) 0%, var(--accent-2) 52%, var(--accent-warm-soft) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -574,4 +616,132 @@ select:focus-visible {
 
 .landing-section-alt {
   background: color-mix(in srgb, var(--app-bg-muted) 35%, transparent);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Reusable redesign utilities — depth, motion, warmth
+   ───────────────────────────────────────────────────────────── */
+
+/* Ambient "aurora" backdrop — generalizes the hand-rolled blob layers
+   previously inlined on Landing/Home. Drop <div aria-hidden className="aurora-bg" />
+   into any `relative overflow-hidden` container. */
+.aurora-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  pointer-events: none;
+}
+.aurora-bg::before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  background:
+    radial-gradient(38% 38% at 18% 20%, color-mix(in srgb, var(--app-link) 22%, transparent), transparent 70%),
+    radial-gradient(42% 42% at 84% 10%, color-mix(in srgb, var(--accent-2) 20%, transparent), transparent 70%),
+    radial-gradient(40% 40% at 62% 96%, color-mix(in srgb, var(--accent-warm) 16%, transparent), transparent 72%);
+  filter: blur(64px);
+  opacity: 0.85;
+}
+
+/* Reusable gradient hairline border (generalizes .landing-mock-glow).
+   Apply to an element with a border-radius; ::before paints a 1px ring. */
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--app-link) 45%, transparent),
+    color-mix(in srgb, var(--accent-2) 35%, transparent),
+    color-mix(in srgb, var(--accent-warm) 22%, transparent)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Enter animation — single element */
+  .animate-in {
+    animation: fadeRise var(--dur-slow) var(--ease-out) both;
+  }
+
+  /* Scroll-reveal (driven by <Reveal> + useInView). Guarded by reduced-motion,
+     so motion-averse users always see content regardless of scroll state. */
+  [data-reveal='hidden'] {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  [data-reveal='shown'] {
+    animation: fadeRise var(--dur-slow) var(--ease-out) both;
+  }
+
+  /* Staggered children — set style={{ '--i': index }} on each child */
+  .stagger > * {
+    animation: fadeRise var(--dur-slow) var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 60ms);
+  }
+
+  @keyframes fadeRise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Hover elevation */
+  .hover-lift {
+    transition:
+      transform var(--dur-base) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out),
+      border-color var(--dur-base) var(--ease-out);
+  }
+  .hover-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--elevation-3);
+  }
+
+  /* Tactile press feedback */
+  .press {
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .press:active {
+    transform: scale(0.97);
+  }
+
+  /* Skeleton shimmer sweep (replaces animate-pulse) */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--app-text-subtle) 16%, transparent),
+      transparent
+    );
+    animation: shimmerSweep 1.6s ease-in-out infinite;
+  }
+  @keyframes shimmerSweep {
+    100% {
+      transform: translateX(100%);
+    }
+  }
 }

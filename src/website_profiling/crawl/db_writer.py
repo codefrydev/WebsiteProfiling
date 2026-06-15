@@ -21,10 +21,12 @@ class CrawlDbWriter(threading.Thread):
         self._error: Optional[BaseException] = None
 
     def enqueue(self, record: dict) -> None:
+        if self._error is not None:
+            return
         self._queue.put(("crawl", record))
 
     def enqueue_html(self, record: dict) -> None:
-        if not self.store_page_html:
+        if not self.store_page_html or self._error is not None:
             return
         self._queue.put(("html", record))
 

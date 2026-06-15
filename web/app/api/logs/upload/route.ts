@@ -49,13 +49,21 @@ print(json.dumps(analysis))
       const meta = JSON.stringify({ start_url: startUrl, crawl_urls: crawlUrls });
       const proc = spawn('python3', ['-c', script, meta], { cwd: repoRoot, shell: false });
       let out = '';
+      let errOut = '';
       proc.stdout?.on('data', (c: Buffer) => { out += c.toString(); });
-      proc.stderr?.on('data', (c: Buffer) => { out += c.toString(); });
+      proc.stderr?.on('data', (c: Buffer) => { errOut += c.toString(); });
       proc.stdin?.write(text);
       proc.stdin?.end();
+      proc.on('error', (e) => reject(e));
       proc.on('close', (code) => {
-        if (code !== 0) reject(new Error(out || 'parse failed'));
-        else resolve(JSON.parse(out.trim() || '{}') as Record<string, unknown>);
+        if (code !== 0) reject(new Error(errOut || out || 'parse failed'));
+        else {
+          try {
+            resolve(JSON.parse(out.trim() || '{}') as Record<string, unknown>);
+          } catch {
+            reject(new Error('Invalid JSON response from log parser'));
+          }
+        }
       });
     });
     await withDb(async (client) => {

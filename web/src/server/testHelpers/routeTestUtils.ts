@@ -33,6 +33,24 @@ export function makeSpawnChild(stdout: string, exitCode: number) {
   return proc;
 }
 
+/** A spawned child that fails to launch — emits 'error' (e.g. ENOENT) instead of 'close'. */
+export function makeSpawnError(message = 'spawn python3 ENOENT') {
+  const proc = new EventEmitter() as EventEmitter & {
+    stdout: EventEmitter;
+    stderr: EventEmitter;
+    stdin: { write: ReturnType<typeof vi.fn>; end: ReturnType<typeof vi.fn> };
+    kill: ReturnType<typeof vi.fn>;
+  };
+  proc.stdout = new EventEmitter();
+  proc.stderr = new EventEmitter();
+  proc.stdin = { write: vi.fn(), end: vi.fn() };
+  proc.kill = vi.fn();
+  setTimeout(() => {
+    proc.emit('error', new Error(message));
+  }, 10);
+  return proc;
+}
+
 export function withAuthSecret(secret = 'test-secret-for-vitest') {
   const prev = process.env.AUTH_SECRET;
   process.env.AUTH_SECRET = secret;

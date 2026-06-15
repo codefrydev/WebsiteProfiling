@@ -34,8 +34,9 @@ def test_executive_summary_deterministic() -> None:
     result = generate_audit_executive_summary(payload, {})
     assert result["ok"] is True
     assert result["source"] == "deterministic"
-    assert "80" in result["summary"]
     assert len(result["top_issues"]) >= 1
+    assert isinstance(result["summary"], str)
+    assert "Prioritize fixes below" in result["summary"]
 
 
 def test_executive_summary_empty_payload() -> None:

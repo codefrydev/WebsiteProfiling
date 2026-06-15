@@ -18,7 +18,7 @@ def test_compute_duplicate_groups_disabled_returns_empty() -> None:
     from website_profiling.analysis.local import compute_duplicate_groups
 
     df = pd.DataFrame([{"url": "https://a.com", "status": "200", "content_type": "text/html"}])
-    groups, mapping = compute_duplicate_groups(df, {"enable_duplicate_detection": "false"})
+    groups, mapping, _warnings = compute_duplicate_groups(df, {"enable_duplicate_detection": "false"})
     assert groups == []
     assert mapping == {}
 
@@ -35,7 +35,7 @@ def test_compute_duplicate_groups_basic_cluster(monkeypatch) -> None:
             {"url": "https://a.com/2", "status": "200", "content_type": "text/html"},
         ]
     )
-    groups, mapping = local.compute_duplicate_groups(df, {"enable_duplicate_detection": "true"})
+    groups, mapping, _warnings = local.compute_duplicate_groups(df, {"enable_duplicate_detection": "true"})
     assert len(groups) == 1
     assert mapping["https://a.com/1"].startswith("dup_")
 

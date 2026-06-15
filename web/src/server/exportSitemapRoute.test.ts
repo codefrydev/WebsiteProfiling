@@ -16,7 +16,7 @@ describe('report/export-sitemap route', () => {
     spawnMock.mockImplementation(() => ({
       stdout: { on: (_: string, cb: (c: Buffer) => void) => cb(Buffer.from('<urlset></urlset>')) },
       stderr: { on: () => undefined },
-      on: (_: string, cb: (code: number) => void) => cb(0),
+      on: (event: string, cb: (code: number) => void) => { if (event === 'close') cb(0); },
     }));
     const { GET } = await import('../../app/api/report/export-sitemap/route');
     const res = await GET(localRequest('/api/report/export-sitemap?reportId=12'));
@@ -30,7 +30,7 @@ describe('report/export-sitemap route', () => {
     spawnMock.mockImplementation(() => ({
       stdout: { on: () => undefined },
       stderr: { on: (_: string, cb: (c: Buffer) => void) => cb(Buffer.from('boom')) },
-      on: (_: string, cb: (code: number) => void) => cb(1),
+      on: (event: string, cb: (code: number) => void) => { if (event === 'close') cb(1); },
     }));
     const { GET } = await import('../../app/api/report/export-sitemap/route');
     const res = await GET(localRequest('/api/report/export-sitemap?reportId=12'));

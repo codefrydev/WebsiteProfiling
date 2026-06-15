@@ -4,7 +4,7 @@
 export function Skeleton({ className = '' }: { className?: string }) {
   return (
     <div
-      className={`animate-pulse rounded-md bg-brand-800/90 dark:bg-white/[0.07] ${className}`.trim()}
+      className={`shimmer rounded-md bg-brand-800/90 dark:bg-white/[0.07] ${className}`.trim()}
       aria-hidden
     />
   );

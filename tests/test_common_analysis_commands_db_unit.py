@@ -361,7 +361,7 @@ def test_compute_duplicate_groups_hamming_and_fuzzy(monkeypatch) -> None:
         "analysis_fuzzy_threshold": "90",
         "analysis_dup_max_pages": "10",
     }
-    groups, mapping = local.compute_duplicate_groups(df, cfg)
+    groups, mapping, _warnings = local.compute_duplicate_groups(df, cfg)
     assert len(groups) >= 1
     assert any(k.startswith("dup_") for k in mapping.values())
 
@@ -384,7 +384,7 @@ def test_compute_language_signals_enabled(monkeypatch) -> None:
 def test_run_local_enrichment_success(monkeypatch) -> None:
     from website_profiling.analysis import local
 
-    monkeypatch.setattr(local, "compute_duplicate_groups", lambda *_a, **_k: ([{"id": "dup_0"}], {"https://a.com": "dup_0"}))
+    monkeypatch.setattr(local, "compute_duplicate_groups", lambda *_a, **_k: ([{"id": "dup_0"}], {"https://a.com": "dup_0"}, []))
     monkeypatch.setattr(
         local,
         "compute_language_signals",
@@ -911,7 +911,7 @@ def test_historical_backup_success_and_restore_fallback(monkeypatch, tmp_path) -
     from website_profiling.db import historical as h
 
     monkeypatch.setattr(h, "get_data_dir", lambda: str(tmp_path))
-    monkeypatch.setattr(h, "get_database_url", lambda: "postgres://u:p@h/db")
+    monkeypatch.setattr(h, "get_database_url", lambda: "postgres://u:p@h:5432/db")
 
     dump_path = tmp_path / "backups" / "out.dump"
 

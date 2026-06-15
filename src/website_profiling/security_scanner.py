@@ -256,7 +256,9 @@ def _passive_html_checks(
                                 evidence=pname,
                             ))
                             break
-        except Exception:
+        except Exception as exc:
+            import sys
+            print(f"  security_scanner: skipping {url}: {type(exc).__name__}: {exc}", file=sys.stderr)
             continue
 
     return findings

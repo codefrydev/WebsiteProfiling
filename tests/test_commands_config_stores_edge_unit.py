@@ -68,7 +68,7 @@ def test_compute_duplicate_groups_full_paths(monkeypatch) -> None:
             },
         ]
     )
-    groups, mapping = local.compute_duplicate_groups(
+    groups, mapping, _warnings = local.compute_duplicate_groups(
         df, {"enable_duplicate_detection": "true", "analysis_simhash_hamming": "3", "analysis_fuzzy_threshold": "90"}
     )
     assert len(groups) >= 1
@@ -76,7 +76,7 @@ def test_compute_duplicate_groups_full_paths(monkeypatch) -> None:
 
     # short fingerprint skipped
     df_short = pd.DataFrame([{"url": "https://a.com/x", "status": "200", "content_type": "text/html", "title": "hi"}])
-    g2, m2 = local.compute_duplicate_groups(df_short, {"enable_duplicate_detection": "true"})
+    g2, m2, _w2 = local.compute_duplicate_groups(df_short, {"enable_duplicate_detection": "true"})
     assert g2 == []
 
 
