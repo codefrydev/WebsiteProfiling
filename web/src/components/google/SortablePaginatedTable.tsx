@@ -85,6 +85,7 @@ export default function SortablePaginatedTable({
                 <th
                   key={col.key}
                   onClick={() => toggle(col.key)}
+                  aria-sort={sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   className="px-3 py-2 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider cursor-pointer select-none hover:text-foreground whitespace-nowrap"
                 >
                   <span className="inline-flex items-center gap-1 normal-case">
@@ -102,8 +103,15 @@ export default function SortablePaginatedTable({
                     ) : null}
                   </span>
                   {sortKey === col.key && (
-                    <span className="ml-1">{sortDir === 'asc' ? '↑' : '↓'}</span>
+                    <span className="ml-1" aria-hidden>
+                      {sortDir === 'asc' ? '↑' : '↓'}
+                    </span>
                   )}
+                  {sortKey === col.key ? (
+                    <span className="sr-only">
+                      {sortDir === 'asc' ? 'sorted ascending' : 'sorted descending'}
+                    </span>
+                  ) : null}
                 </th>
               );
               })}

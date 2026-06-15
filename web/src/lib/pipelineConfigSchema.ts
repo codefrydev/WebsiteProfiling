@@ -484,6 +484,8 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
       { key: 'enable_language_detection', label: 'Language detection', type: 'bool', defaultValue: true },
       { key: 'analysis_fuzzy_threshold', label: 'Near-duplicate similarity (%)', type: 'number', defaultValue: '92' },
       { key: 'analysis_simhash_hamming', label: 'Near-duplicate hash distance', type: 'number', defaultValue: '0' },
+      { key: 'analysis_simhash_max_urls', label: 'Max URLs for SimHash duplicate pass', type: 'number', defaultValue: '800' },
+      { key: 'analysis_fuzzy_max_urls', label: 'Max URLs for fuzzy duplicate pass', type: 'number', defaultValue: '600' },
       { key: 'analysis_dup_max_pages', label: 'Max pages for duplicate scan', type: 'number', defaultValue: '2000' },
     ],
   },

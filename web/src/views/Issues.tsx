@@ -190,7 +190,7 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
 
   let filtered = list;
   if (priorityFilter !== sj.all) {
-    filtered = filtered.filter((item) => (item.issue.priority || 'Medium') === priorityFilter);
+    filtered = filtered.filter((item) => normalizePriority(item.issue.priority) === priorityFilter);
   }
 
   filtered.sort((a, b) => {

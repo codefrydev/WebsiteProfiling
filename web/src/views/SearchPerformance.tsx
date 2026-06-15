@@ -133,6 +133,7 @@ export default function SearchPerformance() {
             href={String(v ?? '')}
             target="_blank"
             rel="noreferrer"
+            title={String(v ?? '')}
             className="text-link hover:underline font-mono text-xs truncate block min-w-0 max-w-none"
           >
             {String(v ?? '')}

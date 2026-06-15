@@ -268,6 +268,7 @@ export default function AppShell({
                           variant={item.id === 'security' ? 'medium' : 'high'}
                           label={String(badgeCount)}
                           className="shrink-0"
+                          live
                         />
                       ) : null}
                       {badgeCount > 0 && sidebarCollapsed ? (

@@ -18,6 +18,7 @@ from ..config import get_bool, get_int
 from ..llm.enrich import cluster_keywords_llm, run_llm_enrichment
 from ..llm_config import load_llm_config_from_db, llm_is_enabled
 from ..security_scanner import run_security_scan
+from ..scoring import round_half_up
 from .categories import build_categories
 from .content_analytics import (
     _build_content_analytics,
@@ -1079,7 +1080,7 @@ def run_simple_report(
                         scores.append(int(float(c.get("score"))))
                 except (TypeError, ValueError):
                     continue
-            prop_health = round(sum(scores) / len(scores)) if scores else None
+            prop_health = round_half_up(sum(scores) / len(scores)) if scores else None
             prop_count = int(portfolio.get("count") or 0)
             median = portfolio.get("median_health_score")
             bench: dict[str, Any] = {

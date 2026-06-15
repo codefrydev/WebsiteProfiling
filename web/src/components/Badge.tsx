@@ -19,11 +19,13 @@ export default function Badge({
   value,
   label,
   className = '',
+  live = false,
 }: {
   variant?: string;
   value?: string | number | null;
   label?: string;
   className?: string;
+  live?: boolean;
 }) {
   const v = variant || getBadgeVariant(value);
   const display = label != null ? label : (value != null && value !== '' ? String(value) : '—');
@@ -31,6 +33,7 @@ export default function Badge({
   return (
     <span
       className={`inline-flex items-center px-2 py-1 rounded text-xs font-bold uppercase ${classes} ${className}`.trim()}
+      {...(live ? { role: 'status' as const, 'aria-live': 'polite' as const } : {})}
     >
       {display}
     </span>

@@ -6,6 +6,10 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
+_MAX_ORGANIC = 10
+_MAX_FEATURES = 4
+_RAW_MAX = _MAX_ORGANIC * 8 + _MAX_FEATURES * 12  # 128
+
 
 def fetch_serp_features(keyword: str, api_key: str) -> dict[str, Any]:
     """Fetch SERP metadata from SerpAPI (Estimated competition proxy)."""
@@ -38,13 +42,14 @@ def fetch_serp_features(keyword: str, api_key: str) -> dict[str, Any]:
     if data.get("top_stories"):
         features.append("top_stories")
 
-    competition = min(100, len(organic) * 8 + len(features) * 12)
+    raw_score = len(organic) * 8 + len(features) * 12
+    competition = min(100, round(raw_score / _RAW_MAX * 100))
     return {
         "ok": True,
         "organic_count": len(organic),
         "serp_features": features,
         "estimated_competition": competition,
-        "provenance": "Estimated",
+        "provenance": "Estimated (heuristic-v1)",
     }
 
 

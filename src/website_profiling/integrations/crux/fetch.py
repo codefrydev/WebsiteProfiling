@@ -49,9 +49,18 @@ def fetch_crux_origin_metrics(origin_or_url: str, api_key: str | None = None) ->
     lcp = parsed["metrics"].get("largest_contentful_paint", {}).get("p75")
     inp = parsed["metrics"].get("interaction_to_next_paint", {}).get("p75")
     cls = parsed["metrics"].get("cumulative_layout_shift", {}).get("p75")
+
+    def _pass_threshold(value: Any, limit: float) -> bool:
+        if value is None:
+            return False
+        try:
+            return float(value) <= limit
+        except (TypeError, ValueError):
+            return False
+
     parsed["pass"] = {
-        "lcp": lcp is not None and float(lcp) <= 2500,
-        "inp": inp is not None and float(inp) <= 200,
-        "cls": cls is not None and float(cls) <= 0.1,
+        "lcp": _pass_threshold(lcp, 2500),
+        "inp": _pass_threshold(inp, 200),
+        "cls": _pass_threshold(cls, 0.1),
     }
     return parsed

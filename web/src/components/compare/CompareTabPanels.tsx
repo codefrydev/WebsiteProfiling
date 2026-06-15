@@ -467,7 +467,7 @@ export function CompareLinksPanel({ compare, searchQuery, vc, emptyLabel }: Pane
               <TableCell className="tabular-nums text-muted-foreground">{row.baseline}</TableCell>
               <TableCell className="tabular-nums">{row.current}</TableCell>
               <TableCell>
-                <ScoreDelta delta={row.delta} />
+                <ScoreDelta delta={row.delta} higherIsBetter={row.higherIsBetter} />
               </TableCell>
             </TableRow>
           ))}

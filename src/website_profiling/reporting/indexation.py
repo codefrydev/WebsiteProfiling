@@ -31,7 +31,8 @@ def _gsc_page_urls(google_data: dict[str, Any] | None) -> list[str]:
     if not google_data:
         return []
     gsc = google_data.get("gsc") if isinstance(google_data.get("gsc"), dict) else {}
-    pages = gsc.get("pages") if isinstance(gsc.get("pages"), list) else []
+    raw = gsc.get("top_pages") or gsc.get("pages")
+    pages = raw if isinstance(raw, list) else []
     out: list[str] = []
     for row in pages:
         if isinstance(row, dict):
@@ -45,7 +46,8 @@ def _gsc_by_page(google_data: dict[str, Any] | None) -> dict[str, dict]:
     if not google_data:
         return {}
     gsc = google_data.get("gsc") if isinstance(google_data.get("gsc"), dict) else {}
-    pages = gsc.get("pages") if isinstance(gsc.get("pages"), list) else []
+    raw = gsc.get("top_pages") or gsc.get("pages")
+    pages = raw if isinstance(raw, list) else []
     out: dict[str, dict] = {}
     for row in pages:
         if isinstance(row, dict):

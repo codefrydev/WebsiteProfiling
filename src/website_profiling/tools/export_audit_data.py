@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from ..reporting.terminology import category_display_name
+from ..scoring import round_half_up
 
 _GLOSSARY_ROWS: list[tuple[str, str]] = [
     ("Crawl", "URLs fetched by the site spider (status codes, titles, inlinks)."),
@@ -191,7 +192,7 @@ def _overall_score(payload: dict[str, Any]) -> Optional[int]:
             continue
     if not scores:
         return None
-    return int(round(sum(scores) / len(scores)))
+    return round_half_up(sum(scores) / len(scores))
 
 
 def _score_band(score: Optional[float]) -> tuple[str, str]:

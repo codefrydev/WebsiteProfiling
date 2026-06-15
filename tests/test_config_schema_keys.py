@@ -89,6 +89,8 @@ SCHEMA_KEYS = {
     "enable_language_detection",
     "analysis_fuzzy_threshold",
     "analysis_simhash_hamming",
+    "analysis_simhash_max_urls",
+    "analysis_fuzzy_max_urls",
     "analysis_dup_max_pages",
     "run_crawl",
     "run_report",

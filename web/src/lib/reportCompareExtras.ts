@@ -41,6 +41,7 @@ export interface LinkMetricRow {
   current: number;
   baseline: number;
   delta: number;
+  higherIsBetter: boolean;
 }
 
 export interface RedirectDeltaRow {
@@ -216,11 +217,17 @@ export function buildLinkMetricDeltas(
   baseline: ReportPayload,
   labels: { inlinks: string; outlinks: string; wordCount: string; responseMs: string },
 ): LinkMetricRow[] {
-  const specs: { key: keyof ReportLink; metric: string; label: string; minDelta: number }[] = [
-    { key: 'inlinks', metric: 'inlinks', label: labels.inlinks, minDelta: 1 },
-    { key: 'outlinks', metric: 'outlinks', label: labels.outlinks, minDelta: 1 },
-    { key: 'word_count', metric: 'word_count', label: labels.wordCount, minDelta: 25 },
-    { key: 'response_time_ms', metric: 'response_ms', label: labels.responseMs, minDelta: 150 },
+  const specs: {
+    key: keyof ReportLink;
+    metric: string;
+    label: string;
+    minDelta: number;
+    higherIsBetter: boolean;
+  }[] = [
+    { key: 'inlinks', metric: 'inlinks', label: labels.inlinks, minDelta: 1, higherIsBetter: true },
+    { key: 'outlinks', metric: 'outlinks', label: labels.outlinks, minDelta: 1, higherIsBetter: true },
+    { key: 'word_count', metric: 'word_count', label: labels.wordCount, minDelta: 25, higherIsBetter: true },
+    { key: 'response_time_ms', metric: 'response_ms', label: labels.responseMs, minDelta: 150, higherIsBetter: false },
   ];
   const curMap = new Map<string, ReportLink>();
   for (const l of current.links ?? []) {
@@ -246,6 +253,7 @@ export function buildLinkMetricDeltas(
           current: c,
           baseline: b,
           delta,
+          higherIsBetter: spec.higherIsBetter,
         });
       }
     }

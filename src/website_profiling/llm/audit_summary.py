@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from ..scoring import round_half_up
+
 
 def rank_issues_by_traffic(
     categories: list[dict[str, Any]],
@@ -52,7 +54,7 @@ def generate_audit_executive_summary(
     top_issues = rank_issues_by_traffic(categories, gsc_pages)[:5]
 
     scores = [c.get("score") for c in categories if isinstance(c.get("score"), (int, float))]
-    avg = round(sum(scores) / len(scores)) if scores else None
+    avg = round_half_up(sum(scores) / len(scores)) if scores else None
 
     fallback = _deterministic_summary_text(avg, top_issues)
 
@@ -123,7 +125,7 @@ def _generate_llm_executive_summary(
 
     categories = report_payload.get("categories") or []
     scores = [c.get("score") for c in categories if isinstance(c.get("score"), (int, float))]
-    avg = round(sum(scores) / len(scores)) if scores else None
+    avg = round_half_up(sum(scores) / len(scores)) if scores else None
     payload = {
         "health_score": avg,
         "category_scores": [

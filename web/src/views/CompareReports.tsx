@@ -7,9 +7,6 @@ import { useUrlTab } from '@/hooks/useUrlTab';
 import {
   ArrowLeftRight,
   FolderTree,
-  TrendingDown,
-  TrendingUp,
-  Minus,
 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
@@ -39,6 +36,7 @@ import {
   CompareGooglePanel,
 } from '../components/compare/CompareTabPanels';
 import CompareUrlMetadataTable from '../components/compare/CompareUrlMetadataTable';
+import { ScoreDelta } from '@/components/charts/ScoreDelta';
 import dynamic from 'next/dynamic';
 
 const CompareOverviewCharts = dynamic(
@@ -69,26 +67,6 @@ function filterUrls(urls: string[], query: string): string[] {
   const q = query.trim().toLowerCase();
   if (!q) return urls;
   return urls.filter((u) => u.toLowerCase().includes(q));
-}
-
-function ScoreDelta({ delta }: { delta: number | null }) {
-  if (delta == null || delta === 0) {
-    return (
-      <span className="inline-flex items-center gap-0.5 text-muted-foreground text-xs">
-        <Minus className="h-3 w-3" /> 0
-      </span>
-    );
-  }
-  const up = delta > 0;
-  const Icon = up ? TrendingUp : TrendingDown;
-  const color = up ? 'text-emerald-700 dark:text-emerald-400' : 'text-rose-700 dark:text-rose-400';
-  return (
-    <span className={`inline-flex items-center gap-0.5 text-xs font-semibold tabular-nums ${color}`}>
-      <Icon className="h-3 w-3" />
-      {up ? '+' : ''}
-      {delta}
-    </span>
-  );
 }
 
 function UrlDiffTable({
@@ -612,16 +590,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                           <TableCell className="tabular-nums">{row.current}</TableCell>
                           <TableCell className="tabular-nums text-muted-foreground">{row.baseline}</TableCell>
                           <TableCell>
-                            <span
-                              className={
-                                (row.higherIsBetter ? row.delta > 0 : row.delta < 0)
-                                  ? 'text-emerald-700 dark:text-emerald-400 text-xs font-semibold'
-                                  : 'text-rose-700 dark:text-rose-400 text-xs font-semibold'
-                              }
-                            >
-                              {row.delta > 0 ? '+' : ''}
-                              {row.delta}
-                            </span>
+                            <ScoreDelta delta={row.delta} higherIsBetter={row.higherIsBetter} />
                           </TableCell>
                         </TableRow>
                       ))}
