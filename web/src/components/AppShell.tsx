@@ -9,13 +9,11 @@ import {
   ExternalLink,
   Menu,
   Search,
-  Settings2,
   X,
 } from 'lucide-react';
 import AppLogo from '@/components/AppLogo';
 import IntegrationsModal from '@/components/IntegrationsModal';
 import { Badge, ReportSelector } from '@/components';
-import ThemeToggle from '@/components/ThemeToggle';
 import { useReport } from '@/context/useReport';
 import { useSession } from '@/context/SessionContext';
 import { strings, format } from '@/lib/strings';
@@ -141,11 +139,6 @@ export default function AppShell({
     window.addEventListener(OPEN_INTEGRATIONS, onOpen);
     return () => window.removeEventListener(OPEN_INTEGRATIONS, onOpen);
   }, []);
-
-  const openIntegrations = () => {
-    setIntegrationsToast(null);
-    setIntegrationsOpen(true);
-  };
 
   const issueCount =
     (data?.categories as ReportCategoryWithIssues[] | undefined)?.reduce(
@@ -382,16 +375,6 @@ export default function AppShell({
             )}
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">
               {headerExtra}
-              <button
-                type="button"
-                title="Integrations (Search Console & Analytics 4)"
-                aria-label="Open Integrations"
-                onClick={openIntegrations}
-                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-brand-700 transition-colors"
-              >
-                <Settings2 className="h-4 w-4" />
-              </button>
-              <ThemeToggle />
               <ReportSelector />
             </div>
           </header>

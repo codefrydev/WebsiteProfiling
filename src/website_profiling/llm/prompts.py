@@ -31,6 +31,17 @@ Return JSON:
 }
 Focus retention on engagement, clarity, next-step paths, and reducing bounce. Reference compare trends when present."""
 
+CONTENT_STUDIO_ANALYZE_SYSTEM = """You are an SEO content editor coaching a writer on a draft article.
+Use ONLY the keyword, score metrics, missing terms, and draft excerpt provided. Do not invent SERP data.
+Return JSON:
+{
+  "summary": "2-3 sentences on draft quality and top priority",
+  "suggestions": [{"text": "specific actionable suggestion", "priority": "high|medium|low", "type": "term|structure|seo|readability"}],
+  "outline": ["optional H2 heading ideas"],
+  "title_ideas": ["optional title tag ideas"]
+}
+Prioritize missing high-importance GSC terms, failed on-page checks, and clarity improvements."""
+
 ISSUE_FIX_SYSTEM = """You are a technical SEO consultant. Given one audit issue, return a concise, actionable fix.
 Use ONLY the facts provided. Do not invent URLs or metrics.
 Return JSON: {"fix": "2-4 sentences with specific steps", "effort": "low|medium|high"}"""

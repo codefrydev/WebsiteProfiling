@@ -31,6 +31,7 @@ import {
   Globe2,
   Contact2,
   TextSearch,
+  PenLine,
 } from 'lucide-react';
 import { UrlInspectorProvider } from './context/UrlInspectorContext';
 import AppShell from './components/AppShell';
@@ -79,6 +80,7 @@ const Indexation = dynamic(() => import('./views/Indexation'), { loading: () => 
 const Backlinks = dynamic(() => import('./views/Backlinks'), { loading: () => viewLoading() });
 const Traffic = dynamic(() => import('./views/Traffic'), { loading: () => viewLoading() });
 const KeywordsExplorer = dynamic(() => import('./views/KeywordsExplorer'), { loading: () => viewLoading() });
+const ContentStudio = dynamic(() => import('./views/ContentStudio'), { loading: () => viewLoading() });
 const ExportReport = dynamic(() => import('./views/ExportReport'), { loading: () => viewLoading() });
 const LogAnalyzer = dynamic(() => import('./views/LogAnalyzer'), { loading: () => viewLoading() });
 const Subdomains = dynamic(() => import('./views/Subdomains'), { loading: () => viewLoading() });
@@ -142,6 +144,7 @@ const VIEW_CONFIG: ViewConfigEntry[] = [
   { id: 'backlinks', component: Backlinks as ComponentType<CurrentViewProps>, icon: Link2 },
   { id: 'traffic', component: Traffic as ComponentType<CurrentViewProps>, icon: BarChart2 },
   { id: 'keywords-explorer', component: KeywordsExplorer as ComponentType<CurrentViewProps>, icon: Key },
+  { id: 'content-studio', component: ContentStudio as ComponentType<CurrentViewProps>, icon: PenLine },
 ];
 
 const VIEWS = VIEW_CONFIG.map((v) => ({

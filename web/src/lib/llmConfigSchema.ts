@@ -82,6 +82,13 @@ export const LLM_CONFIG_SECTIONS = [
         defaultValue: true,
         help: 'On-demand retention and SEO suggestions when inspecting a URL in Link Explorer.',
       },
+      {
+        key: 'llm_enable_content_studio',
+        label: 'Content studio AI suggestions',
+        type: 'bool',
+        defaultValue: true,
+        help: 'AI writing coach in Content studio (/write) when AI suggestions are enabled in the editor.',
+      },
     ],
   },
   {

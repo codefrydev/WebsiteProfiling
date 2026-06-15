@@ -25,6 +25,7 @@ export type ViewId =
   | 'backlinks'
   | 'traffic'
   | 'keywords-explorer'
+  | 'content-studio'
   | 'compare'
   | 'export'
   | 'log-analyzer';
@@ -34,6 +35,7 @@ export const REPORT_PATH_SLUGS = [
   'home',
   'dashboard',
   'keywords',
+  'content-studio',
   'issues',
   'links',
   'site-structure',

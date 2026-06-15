@@ -716,6 +716,10 @@
       "label": "AI Chat",
       "section": "AI"
     },
+    "write": {
+      "label": "Content studio",
+      "section": "AI"
+    },
     "issues": {
       "label": "Issues",
       "section": "Overview"
@@ -810,6 +814,10 @@
     },
     "keywords-explorer": {
       "label": "Keywords",
+      "section": "Search & analytics"
+    },
+    "content-studio": {
+      "label": "Content studio",
       "section": "Search & analytics"
     },
     "log-analyzer": {
@@ -2632,6 +2640,130 @@
         "previous": "Previous",
         "next": "Next",
         "rowsPerPage": "{n} per page"
+      }
+    },
+    "contentStudio": {
+      "title": "Content studio",
+      "subtitle": "Write and optimize content with live SEO scoring from Search Console and on-page heuristics",
+      "noProperty": "Open a property audit first, or set a Site URL under Run audit → Settings.",
+      "resolvingProperty": "Loading property for this site…",
+      "openRunAuditSettings": "Open Run audit settings",
+      "loadFailed": "Could not load drafts",
+      "createFailed": "Could not create draft",
+      "saveFailed": "Could not save draft",
+      "deleteFailed": "Could not delete draft",
+      "loadingList": "Loading drafts…",
+      "loadingDraft": "Loading draft…",
+      "newDraftButton": "New draft",
+      "welcomeTitle": "Start writing",
+      "welcomeBody": "Pick a draft from the sidebar or create a new one. SEO scoring updates as you type.",
+      "shell": {
+        "title": "Content studio",
+        "propertyLabel": "Property",
+        "noProperties": "No properties",
+        "newDraft": "New draft",
+        "draftsLabel": "Drafts",
+        "loadingDrafts": "Loading…",
+        "noDrafts": "No drafts yet",
+        "untitled": "Untitled",
+        "deleteDraft": "Delete draft",
+        "navHome": "Properties",
+        "navPipeline": "Run audit",
+        "expandSidebar": "Show sidebar",
+        "collapseSidebar": "Hide sidebar"
+      },
+      "table": {
+        "empty": "No drafts yet. Create one to start writing.",
+        "colTitle": "Title",
+        "colKeyword": "Target keyword",
+        "colGrade": "Grade",
+        "colStatus": "Status",
+        "colUpdated": "Updated",
+        "colActions": "Actions",
+        "noKeyword": "—",
+        "noGrade": "—",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "newDraft": {
+        "title": "New content draft",
+        "targetKeyword": "Target keyword",
+        "keywordPlaceholder": "primary keyword",
+        "draftTitle": "Draft title (optional)",
+        "titlePlaceholder": "defaults to keyword",
+        "landingUrl": "Landing URL (optional)",
+        "create": "Create draft",
+        "creating": "Creating…",
+        "cancel": "Cancel",
+        "close": "Close"
+      },
+      "editor": {
+        "subtitle": "Edit content and review SEO score in the sidebar",
+        "back": "All drafts",
+        "save": "Save",
+        "saving": "Saving…",
+        "draftTitle": "Draft title",
+        "draftTitlePlaceholder": "Document title",
+        "targetKeyword": "Target keyword",
+        "landingUrl": "Landing URL",
+        "titleTag": "Title tag",
+        "metaDescription": "Meta description",
+        "showSeoFields": "Show title tag & meta",
+        "hideSeoFields": "Hide title tag & meta",
+        "body": "Body",
+        "bodyPlaceholder": "Start writing…",
+        "toolbar": {
+          "visual": "Visual",
+          "markdown": "Markdown",
+          "visualMode": "Rich text editor",
+          "markdownMode": "Edit raw Markdown (GFM)",
+          "markdownPlaceholder": "# Heading\n\nWrite in **Markdown** — tables, task lists, links, images, code blocks…",
+          "bold": "Bold",
+          "italic": "Italic",
+          "underline": "Underline",
+          "strike": "Strikethrough",
+          "code": "Inline code",
+          "heading1": "Heading 1",
+          "heading2": "Heading 2",
+          "heading3": "Heading 3",
+          "quote": "Blockquote",
+          "codeBlock": "Code block",
+          "horizontalRule": "Horizontal rule",
+          "bulletList": "Bullet list",
+          "orderedList": "Numbered list",
+          "taskList": "Task list",
+          "link": "Link",
+          "linkPrompt": "Link URL",
+          "image": "Image",
+          "imagePrompt": "Image URL",
+          "table": "Insert table",
+          "undo": "Undo",
+          "redo": "Redo"
+        }
+      },
+      "ai": {
+        "title": "AI suggestions",
+        "toggleLabel": "AI suggestions",
+        "analyzeButton": "Analyze",
+        "analyzing": "Analyzing…",
+        "analyzeFailed": "Analysis failed",
+        "clickAnalyze": "Click Analyze for SEO tips, outline ideas, and title suggestions.",
+        "disabledHint": "AI suggestions are off. Turn them on to include LLM insights when you analyze.",
+        "noSuggestions": "No suggestions yet — keep writing or adjust your keyword.",
+        "outlineTitle": "Suggested outline",
+        "titleIdeas": "Title ideas",
+        "toolsUsed": "Analysis steps"
+      },
+      "sidebar": {
+        "provenanceBanner": "Estimated — GSC terms and on-site heuristics. Not SERP competitor analysis.",
+        "noKeyword": "Enter a target keyword to see SEO scoring.",
+        "scoring": "Scoring…",
+        "wordCount": "Words",
+        "readingLevel": "Reading level",
+        "termsTitle": "Terms to cover",
+        "noTerms": "No related GSC terms found for this keyword.",
+        "checksTitle": "On-page checks",
+        "startWriting": "Start writing to see your content grade."
       }
     },
     "keywordsExplorer": {

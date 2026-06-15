@@ -16,6 +16,7 @@ import {
   Home as HomeIcon,
   Images,
   Key,
+  PenLine,
   LayoutDashboard,
   Link as LinkIcon,
   Repeat,
@@ -31,7 +32,7 @@ import {
 import { strings } from '@/lib/strings';
 import { viewIdToPathSlug, type ViewId } from '@/routes';
 
-export type NavItemId = ViewId | 'pipeline' | 'chat';
+export type NavItemId = ViewId | 'pipeline' | 'chat' | 'write';
 
 export interface AppNavItem {
   id: NavItemId;
@@ -88,6 +89,14 @@ const CHAT_NAV: AppNavItem = {
   hrefPath: '/chat',
 };
 
+const WRITE_NAV: AppNavItem = {
+  id: 'write',
+  label: strings.nav.write.label,
+  section: strings.nav.write.section,
+  icon: PenLine,
+  hrefPath: '/write',
+};
+
 export const APP_NAV_ITEMS: AppNavItem[] = [
   ...VIEW_NAV.map(({ id, icon }) => ({
     id,
@@ -97,13 +106,14 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
     hrefPath: id === 'home' ? '/home' : `/${viewIdToPathSlug(id)}`,
   })),
   PIPELINE_NAV,
+  WRITE_NAV,
   CHAT_NAV,
 ];
 
 export const APP_NAV_SECTIONS = [...new Set(APP_NAV_ITEMS.map((item) => item.section))];
 
 export function navHref(item: AppNavItem, trailingQuery: string): string {
-  if (item.id === 'home' || item.id === 'pipeline' || item.id === 'chat') {
+  if (item.id === 'home' || item.id === 'pipeline' || item.id === 'chat' || item.id === 'write') {
     return item.hrefPath;
   }
   return trailingQuery ? `${item.hrefPath}${trailingQuery}` : item.hrefPath;
@@ -115,6 +125,9 @@ export function isNavItemActive(item: AppNavItem, pathname: string): boolean {
   }
   if (item.id === 'chat') {
     return pathname === '/chat' || pathname.startsWith('/chat/');
+  }
+  if (item.id === 'write') {
+    return pathname === '/write' || pathname.startsWith('/write/');
   }
   if (item.id === 'home') {
     return pathname === '/home';
