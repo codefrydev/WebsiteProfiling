@@ -45,7 +45,7 @@ export default function HelpHint({
   const [mounted, setMounted] = useState(false);
   const id = useId();
   const rootRef = useRef<HTMLSpanElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
+  const buttonRef = useRef<HTMLSpanElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -151,16 +151,31 @@ export default function HelpHint({
     </div>
   ) : null;
 
+  const toggleOpen = useCallback(() => {
+    setOpen((v) => !v);
+  }, []);
+
   return (
     <span ref={rootRef} className={`relative inline-flex items-center ${className}`.trim()}>
-      <button
+      <span
         ref={buttonRef}
-        type="button"
-        className="rounded-full p-0.5 text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 align-middle"
+        role="button"
+        tabIndex={0}
+        className="rounded-full p-0.5 text-muted-foreground hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 align-middle cursor-pointer"
         aria-expanded={open}
         aria-describedby={open ? id : undefined}
         aria-label={ariaLabel}
-        onClick={() => setOpen((v) => !v)}
+        onClick={(e) => {
+          e.stopPropagation();
+          toggleOpen();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleOpen();
+          }
+        }}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
         onBlur={(e) => {
@@ -168,7 +183,7 @@ export default function HelpHint({
         }}
       >
         <CircleHelp className="h-3.5 w-3.5" aria-hidden />
-      </button>
+      </span>
       {mounted && tooltip ? createPortal(tooltip, document.body) : null}
     </span>
   );
