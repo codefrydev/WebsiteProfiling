@@ -66,8 +66,11 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
     [issues],
   );
 
-  const updateStatus = useCallback(
-    async (item: { category: string; issue: ReportIssue }, status: WorkflowStatus) => {
+  const saveIssueRow = useCallback(
+    async (
+      item: { category: string; issue: ReportIssue },
+      patch: { status: WorkflowStatus; assignee?: string | null; note?: string | null },
+    ) => {
       if (!propertyId || readOnly) return;
       const message = String(item.issue.message || '').trim();
       if (!message) return;
@@ -81,7 +84,9 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
           url: item.issue.url,
           priority: item.issue.priority,
           categoryId: item.category,
-          status,
+          status: patch.status,
+          assignee: patch.assignee ?? null,
+          note: patch.note ?? null,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -116,12 +121,16 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
         const fp = Object.values(statusByFingerprint).find(
           (r) => r.message === msg && (r.url || '') === (item.issue.url || ''),
         )?.issueFingerprint;
-        const current = fp ? statusByFingerprint[fp]?.status : 'open';
+        const row = fp ? statusByFingerprint[fp] : undefined;
+        const current = row?.status ?? 'open';
+        const assignee = row?.assignee ?? '';
+        const note = row?.note ?? '';
         return (
           <div
             key={`${msg}-${item.issue.url}-${i}`}
-            className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-default bg-brand-800 min-w-0 max-w-full overflow-hidden"
+            className="flex flex-col gap-3 p-4 rounded-xl border border-default bg-brand-800 min-w-0 max-w-full overflow-hidden"
           >
+            <div className="flex flex-col sm:flex-row sm:items-start gap-3">
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground">{msg}</p>
               {item.issue.url ? (
@@ -152,7 +161,13 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
             </div>
             <select
               value={current}
-              onChange={(e) => void updateStatus(item, e.target.value as WorkflowStatus)}
+              onChange={(e) =>
+                void saveIssueRow(item, {
+                  status: e.target.value as WorkflowStatus,
+                  assignee: assignee || null,
+                  note: note || null,
+                })
+              }
               disabled={readOnly}
               className="bg-brand-900 border border-default rounded-lg px-2 py-1.5 text-xs text-foreground shrink-0 disabled:opacity-60"
               aria-label={vi.taskBoardStatus || 'Issue status'}
@@ -163,6 +178,43 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
                 </option>
               ))}
             </select>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 border-t border-default/60 pt-3">
+              <label className="block space-y-1">
+                <span className="text-[11px] font-medium text-muted-foreground">{vi.taskBoardAssignee}</span>
+                <input
+                  type="text"
+                  defaultValue={assignee}
+                  key={`${fp}-assignee-${assignee}`}
+                  maxLength={120}
+                  disabled={readOnly}
+                  placeholder={vi.taskBoardAssigneePlaceholder}
+                  onBlur={(e) => {
+                    const next = e.target.value.trim();
+                    if (next === (assignee || '').trim()) return;
+                    void saveIssueRow(item, { status: current, assignee: next || null, note: note || null });
+                  }}
+                  className="w-full rounded-lg border border-default bg-brand-900 px-2 py-1.5 text-xs text-foreground disabled:opacity-60"
+                />
+              </label>
+              <label className="block space-y-1 sm:col-span-2">
+                <span className="text-[11px] font-medium text-muted-foreground">{vi.taskBoardNote}</span>
+                <textarea
+                  defaultValue={note}
+                  key={`${fp}-note-${note}`}
+                  maxLength={2000}
+                  rows={2}
+                  disabled={readOnly}
+                  placeholder={vi.taskBoardNotePlaceholder}
+                  onBlur={(e) => {
+                    const next = e.target.value.trim();
+                    if (next === (note || '').trim()) return;
+                    void saveIssueRow(item, { status: current, assignee: assignee || null, note: next || null });
+                  }}
+                  className="w-full resize-y rounded-lg border border-default bg-brand-900 px-2 py-1.5 text-xs text-foreground disabled:opacity-60"
+                />
+              </label>
+            </div>
           </div>
         );
       })}

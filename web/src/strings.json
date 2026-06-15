@@ -748,6 +748,18 @@
       "label": "JavaScript errors",
       "section": "Site crawl"
     },
+    "accessibility": {
+      "label": "Accessibility (axe)",
+      "section": "On-page & content"
+    },
+    "image-seo": {
+      "label": "Image SEO",
+      "section": "On-page & content"
+    },
+    "geo-readiness": {
+      "label": "GEO / AEO readiness",
+      "section": "Discoverability"
+    },
     "content-analytics": {
       "label": "Content quality",
       "section": "On-page & content"
@@ -994,7 +1006,7 @@
       "alertWebhookLabel": "Alert webhook URL",
       "alertWebhookHelp": "POST JSON when health score drops or critical issues appear.",
       "alertEmailLabel": "Alert email",
-      "alertEmailHelp": "Optional email for alert notifications (requires mail setup).",
+      "alertEmailHelp": "Optional email when alerts fire. Requires SMTP_HOST and SMTP_FROM on the server (see docs/OPS.md).",
       "saveLabel": "Save ops settings",
       "saving": "Saving…",
       "saved": "Ops settings saved.",
@@ -1761,6 +1773,10 @@
       "taskBoardHint": "Sorted by Search Console clicks to affected URLs when available.",
       "taskBoardNoProperty": "Link an active property in Integrations to track issue workflow.",
       "taskBoardStatus": "Issue status",
+      "taskBoardAssignee": "Assignee",
+      "taskBoardAssigneePlaceholder": "Name or email",
+      "taskBoardNote": "Note",
+      "taskBoardNotePlaceholder": "Internal note for this issue",
       "categoryOther": "Other",
       "priorityOrder": [
         "Critical",
@@ -2162,6 +2178,63 @@
         "next": "Next",
         "rowsPerPage": "{n} per page"
       }
+    },
+    "accessibility": {
+      "title": "Accessibility (axe)",
+      "subtitle": "axe-core violations captured during browser crawls when enable_axe is on.",
+      "browserRequiredHint": "Static crawls do not run axe. Re-run with JavaScript or Auto rendering.",
+      "axeEnableHint": "Enable Run axe accessibility scan in audit settings, then re-crawl to populate this view.",
+      "noDataHint": "No axe data in this audit. Enable axe on a JavaScript crawl and re-run.",
+      "tabSummary": "Summary",
+      "tabPages": "Pages",
+      "statPages": "Pages with violations",
+      "statViolations": "Total violations",
+      "statRules": "Distinct rules",
+      "topRulesTitle": "Top rules by occurrence",
+      "noViolations": "No axe violations found in this crawl.",
+      "colUrl": "URL",
+      "colCount": "Violations",
+      "nodesLabel": "nodes",
+      "pageOf": "Showing",
+      "of": "of"
+    },
+    "imageSeo": {
+      "title": "Image SEO",
+      "subtitle": "Alt text, lazy loading, dimensions, OG images, and optional size/format probes.",
+      "galleryLinkPrefix": "Browse visual previews in",
+      "galleryLinkLabel": "Page previews",
+      "tabOverview": "Overview",
+      "tabAlt": "Missing alt",
+      "tabLazy": "Missing lazy-load",
+      "tabDimensions": "Missing dimensions",
+      "tabLargest": "Largest files",
+      "tabUnoptimized": "Unoptimized",
+      "inventoryRequiredHint": "Enable probe image inventory in Run audit settings, then re-run to list largest and unoptimized images.",
+      "emptyList": "No pages in this category for the current audit.",
+      "colUrl": "URL",
+      "colDetails": "Details",
+      "pageOf": "Showing",
+      "of": "of"
+    },
+    "geoReadiness": {
+      "title": "GEO / AEO readiness",
+      "subtitle": "On-site signals for generative and answer-engine visibility — estimated from crawl heuristics, not live AI queries.",
+      "provenanceBanner": "Estimated — scores and signals are crawl heuristics. They do not query ChatGPT, Perplexity, or other AI search engines.",
+      "scoreLabel": "GEO readiness",
+      "faqCoverageLabel": "FAQ schema coverage",
+      "llmsLabel": "llms.txt",
+      "llmsFound": "Found",
+      "llmsMissing": "Not found",
+      "faqPagesLabel": "Pages with FAQ schema",
+      "componentsTitle": "Score components",
+      "llmsPanelTitle": "llms.txt status",
+      "llmsNotFoundHint": "No llms.txt at /llms.txt or /.well-known/llms.txt for this domain.",
+      "eeatTitle": "E-E-A-T signals (summary)",
+      "missingFaqTitle": "Pages missing FAQ schema",
+      "missingFaqEmpty": "All crawled 2xx pages include FAQ-style schema, or none were checked.",
+      "colUrl": "URL",
+      "pageOf": "Showing",
+      "of": "of"
     },
     "lighthouse": {
       "emptyTitle": "Page Speed",
@@ -2900,7 +2973,27 @@
       "downloadCsv": "Download CSV",
       "downloadJson": "Download JSON",
       "downloadWorkbook": "Download crawl workbook (ZIP)",
-      "downloadSitemap": "Download XML sitemap"
+      "downloadSitemap": "Download XML sitemap",
+      "tabStandard": "Standard export",
+      "tabCustom": "Custom report",
+      "customTitle": "Build a custom client report",
+      "customHint": "Combine executive summary, category scores, audit tool sections, and notes. Export as HTML or PDF.",
+      "customReportTitleLabel": "Report title",
+      "customReportTitlePlaceholder": "Client audit — June 2026",
+      "customAddSection": "Add section",
+      "customSectionType": "Section type",
+      "customSectionExecutive": "Executive summary",
+      "customSectionCategories": "Category scores",
+      "customSectionTool": "Audit data (tool)",
+      "customSectionNotes": "Notes (markdown)",
+      "customToolLabel": "Tool",
+      "customNotesLabel": "Notes markdown",
+      "customNotesPlaceholder": "Optional client-facing notes…",
+      "customPreview": "Preview HTML",
+      "customDownloadHtml": "Download HTML",
+      "customDownloadPdf": "Download PDF",
+      "customSaveFailed": "Could not compose report",
+      "customMaxSections": "Maximum 12 sections"
     },
     "overview": {
       "openExportPage": "Export report",

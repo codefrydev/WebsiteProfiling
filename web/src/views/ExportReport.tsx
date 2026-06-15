@@ -3,17 +3,25 @@
 import { useCallback, useRef, useState } from 'react';
 import { Download, FileText, Printer } from 'lucide-react';
 import Button from '@/components/Button';
+import CustomReportBuilder from '@/components/export/CustomReportBuilder';
 import { useReport } from '@/context/useReport';
+import { useOptionalPipeline } from '@/context/PipelineContext';
 import { buildAuditExportUrl, buildWorkbookExportUrl, buildSitemapExportUrl } from '@/lib/exportAudit';
 import { strings } from '@/lib/strings';
+import { ViewTabs, ViewTabPanel } from '@/components';
 import type { ViewProps } from '@/types/report';
 
 const ve = strings.views.exportReport;
+const EXPORT_TABS = ['standard', 'custom'] as const;
+type ExportTabId = (typeof EXPORT_TABS)[number];
 
 export default function ExportReport(_props: ViewProps) {
   const { selectedReportId, reportList, data } = useReport();
+  const pipeline = useOptionalPipeline();
+  const propertyId = Number(pipeline?.configState.active_property_id || 0) || null;
   const reportId = selectedReportId ?? reportList?.[0]?.id ?? null;
   const [previewError, setPreviewError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<ExportTabId>('standard');
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const previewUrl = buildAuditExportUrl('html', reportId, { inline: true });
@@ -42,6 +50,7 @@ export default function ExportReport(_props: ViewProps) {
             </p>
             <p className="text-sm text-muted-foreground mt-2 max-w-2xl">{ve.description}</p>
           </div>
+          {activeTab === 'standard' ? (
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="secondary" type="button" onClick={handlePrint} className="!py-1.5 !px-3">
               <Printer className="h-4 w-4" />
@@ -86,9 +95,26 @@ export default function ExportReport(_props: ViewProps) {
               {ve.downloadJson}
             </a>
           </div>
+          ) : null}
         </div>
+        <ViewTabs
+          tabs={[
+            { id: 'standard', label: ve.tabStandard },
+            { id: 'custom', label: ve.tabCustom },
+          ]}
+          activeTab={activeTab}
+          onChange={(id) => setActiveTab(id as ExportTabId)}
+          ariaLabel={ve.title}
+          idPrefix="export-report"
+          className="mt-4"
+        />
+        {activeTab === 'custom' ? (
+          <CustomReportBuilder propertyId={propertyId} reportId={reportId} />
+        ) : null}
       </div>
 
+      {activeTab === 'standard' ? (
+      <ViewTabPanel idPrefix="export-report" tabId="standard" className="flex flex-col flex-1 min-h-0">
       <div className="flex-1 min-h-0 flex flex-col bg-slate-200/80 dark:bg-zinc-200 p-3 sm:p-4 print:p-0 print:bg-white">
         {previewError ? (
           <p className="p-6 text-red-700 text-sm bg-white rounded-xl">{previewError}</p>
@@ -103,6 +129,8 @@ export default function ExportReport(_props: ViewProps) {
           />
         )}
       </div>
+      </ViewTabPanel>
+      ) : null}
     </div>
   );
 }

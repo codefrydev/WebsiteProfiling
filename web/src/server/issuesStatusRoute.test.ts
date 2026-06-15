@@ -67,4 +67,37 @@ describe('issues/status route', () => {
     const body = await res.json();
     expect(body.issue.status).toBe('open');
   });
+
+  it('PUT forwards assignee and note to upsert', async () => {
+    upsertIssueStatusMock.mockResolvedValue({
+      id: 2,
+      status: 'open',
+      message: 'Missing title',
+      assignee: 'alex@example.com',
+      note: 'Fix in sprint 3',
+    });
+    const { PUT } = await import('../../app/api/issues/status/route');
+    const res = await PUT(
+      localRequest('/api/issues/status', {
+        method: 'PUT',
+        body: JSON.stringify({
+          propertyId: 1,
+          message: 'Missing title',
+          status: 'open',
+          assignee: 'alex@example.com',
+          note: 'Fix in sprint 3',
+        }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(upsertIssueStatusMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        assignee: 'alex@example.com',
+        note: 'Fix in sprint 3',
+      }),
+    );
+    const body = await res.json();
+    expect(body.issue.assignee).toBe('alex@example.com');
+    expect(body.issue.note).toBe('Fix in sprint 3');
+  });
 });

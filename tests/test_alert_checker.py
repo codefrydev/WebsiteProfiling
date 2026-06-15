@@ -10,7 +10,9 @@ from website_profiling.tools.alert_checker import (
     check_all_alerts,
     check_gsc_links_stale_alerts,
     check_health_alerts,
+    dispatch_email,
     dispatch_webhook,
+    smtp_configured,
 )
 
 
@@ -103,6 +105,76 @@ def test_dispatch_webhook_failure(_mock_urlopen) -> None:
 
 def test_dispatch_webhook_empty_url() -> None:
     assert dispatch_webhook("  ", {"alerts": []}) is False
+
+
+def test_smtp_configured_requires_host_and_from(monkeypatch) -> None:
+    monkeypatch.delenv("SMTP_HOST", raising=False)
+    monkeypatch.delenv("SMTP_FROM", raising=False)
+    assert smtp_configured() is False
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+    monkeypatch.setenv("SMTP_FROM", "alerts@example.com")
+    assert smtp_configured() is True
+
+
+def test_dispatch_email_empty_recipient() -> None:
+    assert dispatch_email("  ", {"alerts": []}) is False
+
+
+def test_dispatch_email_skips_when_smtp_not_configured(monkeypatch) -> None:
+    monkeypatch.delenv("SMTP_HOST", raising=False)
+    monkeypatch.delenv("SMTP_FROM", raising=False)
+    assert dispatch_email("ops@example.com", {"alerts": [{"message": "x"}]}) is False
+
+
+@patch("website_profiling.tools.alert_checker.smtplib.SMTP")
+def test_dispatch_email_success(mock_smtp_cls, monkeypatch) -> None:
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+    monkeypatch.setenv("SMTP_FROM", "alerts@example.com")
+    monkeypatch.setenv("SMTP_PORT", "587")
+    monkeypatch.setenv("SMTP_USE_TLS", "true")
+    smtp = MagicMock()
+    mock_smtp_cls.return_value.__enter__.return_value = smtp
+    payload = {"property_id": 1, "alerts": [{"severity": "high", "message": "Health drop"}]}
+    assert dispatch_email("ops@example.com", payload) is True
+    smtp.starttls.assert_called_once()
+    smtp.send_message.assert_called_once()
+
+
+@patch("website_profiling.tools.alert_checker.smtplib.SMTP")
+def test_dispatch_email_with_auth(mock_smtp_cls, monkeypatch) -> None:
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+    monkeypatch.setenv("SMTP_FROM", "alerts@example.com")
+    monkeypatch.setenv("SMTP_USER", "alerts@example.com")
+    monkeypatch.setenv("SMTP_PASS", "secret")
+    monkeypatch.setenv("SMTP_USE_TLS", "false")
+    smtp = MagicMock()
+    mock_smtp_cls.return_value.__enter__.return_value = smtp
+    assert dispatch_email("ops@example.com", {"alerts": [{"message": "x"}]}) is True
+    smtp.login.assert_called_once_with("alerts@example.com", "secret")
+    smtp.starttls.assert_not_called()
+
+
+def test_format_alert_email_body_empty_alerts() -> None:
+    from website_profiling.tools.alert_checker import _format_alert_email_body
+
+    body = _format_alert_email_body({"property_id": 5, "alerts": []})
+    assert "No alerts." in body
+    assert "Property ID: 5" in body
+
+
+def test_format_alert_email_body_skips_non_dict_alerts() -> None:
+    from website_profiling.tools.alert_checker import _format_alert_email_body
+
+    body = _format_alert_email_body({"alerts": ["bad", {"severity": "low", "message": "ok"}]})
+    assert "2. [low] ok" in body
+    assert "bad" not in body
+
+
+@patch("website_profiling.tools.alert_checker.smtplib.SMTP", side_effect=OSError("smtp down"))
+def test_dispatch_email_failure(_mock_smtp, monkeypatch) -> None:
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+    monkeypatch.setenv("SMTP_FROM", "alerts@example.com")
+    assert dispatch_email("ops@example.com", {"alerts": [{"message": "x"}]}) is False
 
 
 @pytest.fixture

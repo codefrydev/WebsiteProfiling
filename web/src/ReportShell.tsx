@@ -13,6 +13,8 @@ import {
   FileText,
   ShieldAlert,
   Bug,
+  Accessibility,
+  Image,
   Gauge,
   Share2,
   BarChart2,
@@ -60,6 +62,9 @@ const Redirects = dynamic(() => import('./views/Redirects'), { loading: () => vi
 const Content = dynamic(() => import('./views/Content'), { loading: () => viewLoading() });
 const Security = dynamic(() => import('./views/Security'), { loading: () => viewLoading() });
 const JavaScriptErrors = dynamic(() => import('./views/JavaScriptErrors'), { loading: () => viewLoading() });
+const AccessibilityView = dynamic(() => import('./views/Accessibility'), { loading: () => viewLoading() });
+const ImageSeo = dynamic(() => import('./views/ImageSeo'), { loading: () => viewLoading() });
+const GeoReadiness = dynamic(() => import('./views/GeoReadiness'), { loading: () => viewLoading() });
 const Lighthouse = dynamic(() => import('./views/Lighthouse'), { loading: () => viewLoading() });
 const Network = dynamic(() => import('./views/Network'), {
   ssr: false,
@@ -122,6 +127,9 @@ const VIEW_CONFIG: ViewConfigEntry[] = [
   { id: 'lighthouse', component: Lighthouse as ComponentType<CurrentViewProps>, icon: Gauge },
   { id: 'security', component: Security as ComponentType<CurrentViewProps>, icon: ShieldAlert },
   { id: 'javascript-errors', component: JavaScriptErrors as ComponentType<CurrentViewProps>, icon: Bug },
+  { id: 'accessibility', component: AccessibilityView as ComponentType<CurrentViewProps>, icon: Accessibility },
+  { id: 'image-seo', component: ImageSeo as ComponentType<CurrentViewProps>, icon: Image },
+  { id: 'geo-readiness', component: GeoReadiness as ComponentType<CurrentViewProps>, icon: Globe2 },
   { id: 'content-analytics', component: ContentAnalytics as ComponentType<CurrentViewProps>, icon: BarChart2 },
   { id: 'text-content-analysis', component: TextContentAnalysis as ComponentType<CurrentViewProps>, icon: TextSearch },
   { id: 'tech-stack', component: TechStack as ComponentType<CurrentViewProps>, icon: Cpu },

@@ -2,7 +2,80 @@
 from __future__ import annotations
 
 import json
+import logging
+import os
+import smtplib
+from email.message import EmailMessage
 from typing import Any
+
+logger = logging.getLogger(__name__)
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None or str(raw).strip() == "":
+        return default
+    return str(raw).strip().lower() in ("1", "true", "yes", "on")
+
+
+def smtp_configured() -> bool:
+    host = (os.environ.get("SMTP_HOST") or "").strip()
+    from_addr = (os.environ.get("SMTP_FROM") or "").strip()
+    return bool(host and from_addr)
+
+
+def _format_alert_email_body(payload: dict[str, Any]) -> str:
+    lines = ["Site Audit property alerts", ""]
+    prop_id = payload.get("property_id")
+    if prop_id is not None:
+        lines.append(f"Property ID: {prop_id}")
+        lines.append("")
+    alerts = payload.get("alerts") or []
+    if not alerts:
+        lines.append("No alerts.")
+        return "\n".join(lines)
+    for i, alert in enumerate(alerts, start=1):
+        if not isinstance(alert, dict):
+            continue
+        severity = alert.get("severity") or "info"
+        msg = alert.get("message") or alert.get("type") or "Alert"
+        lines.append(f"{i}. [{severity}] {msg}")
+    return "\n".join(lines)
+
+
+def dispatch_email(to: str, payload: dict[str, Any]) -> bool:
+    """Send alert summary via SMTP. Returns False when unconfigured or on failure."""
+    recipient = (to or "").strip()
+    if not recipient:
+        return False
+    if not smtp_configured():
+        logger.info("SMTP not configured (SMTP_HOST and SMTP_FROM required); skipping alert email")
+        return False
+
+    host = os.environ.get("SMTP_HOST", "").strip()
+    port = int(os.environ.get("SMTP_PORT") or "587")
+    user = (os.environ.get("SMTP_USER") or "").strip()
+    password = os.environ.get("SMTP_PASS") or ""
+    from_addr = os.environ.get("SMTP_FROM", "").strip()
+    use_tls = _env_bool("SMTP_USE_TLS", True)
+
+    msg = EmailMessage()
+    msg["Subject"] = "Site Audit alerts"
+    msg["From"] = from_addr
+    msg["To"] = recipient
+    msg.set_content(_format_alert_email_body(payload))
+
+    try:
+        with smtplib.SMTP(host, port, timeout=20) as smtp:
+            if use_tls:
+                smtp.starttls()
+            if user:
+                smtp.login(user, password)
+            smtp.send_message(msg)
+        return True
+    except Exception:
+        logger.exception("Failed to send alert email to %s", recipient)
+        return False
 
 
 def check_health_alerts(property_id: int, threshold_drop: int = 10) -> list[dict[str, Any]]:

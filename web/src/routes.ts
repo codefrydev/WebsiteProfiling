@@ -10,6 +10,9 @@ export type ViewId =
   | 'lighthouse'
   | 'security'
   | 'javascript-errors'
+  | 'accessibility'
+  | 'image-seo'
+  | 'geo-readiness'
   | 'content-analytics'
   | 'text-content-analysis'
   | 'tech-stack'
@@ -39,6 +42,9 @@ export const REPORT_PATH_SLUGS = [
   'lighthouse',
   'security',
   'javascript-errors',
+  'accessibility',
+  'image-seo',
+  'geo-readiness',
   'content-analytics',
   'text-content-analysis',
   'tech-stack',

@@ -25,22 +25,28 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
   const pythonExe = resolvePythonExecutable(null, repoRoot);
   const script = `
 import json, sys
-from website_profiling.tools.alert_checker import check_all_alerts, dispatch_webhook
+from website_profiling.tools.alert_checker import check_all_alerts, dispatch_webhook, dispatch_email
 from website_profiling.db.storage import db_session
+from website_profiling.db._common import _row_field
 
 property_id = int(sys.argv[1])
 alerts = check_all_alerts(property_id)
 webhook_sent = False
+email_sent = False
 with db_session() as conn:
     cur = conn.execute(
-        "SELECT alert_webhook_url FROM properties WHERE id = %s",
+        "SELECT alert_webhook_url, alert_email FROM properties WHERE id = %s",
         (property_id,),
     )
     row = cur.fetchone()
-    url = (row[0] if row and not hasattr(row, "keys") else (row.get("alert_webhook_url") if row else "")) or ""
+    url = (_row_field(row, "alert_webhook_url", index=0) or "") if row else ""
+    email = (_row_field(row, "alert_email", index=1) or "") if row else ""
+    payload = {"property_id": property_id, "alerts": alerts}
     if url and alerts:
-        webhook_sent = dispatch_webhook(url, {"property_id": property_id, "alerts": alerts})
-print(json.dumps({"alerts": alerts, "webhook_sent": webhook_sent}))
+        webhook_sent = dispatch_webhook(url, payload)
+    if email and alerts:
+        email_sent = dispatch_email(email, payload)
+print(json.dumps({"alerts": alerts, "webhook_sent": webhook_sent, "email_sent": email_sent}))
 `;
 
   return new Promise<Response>((resolve) => {
