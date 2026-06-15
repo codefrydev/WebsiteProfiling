@@ -41,9 +41,12 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
     let err = '';
     proc.stdout.on('data', (c) => { out += c.toString(); });
     proc.stderr.on('data', (c) => { err += c.toString(); });
+    proc.on('error', () => {
+      resolve(NextResponse.json({ error: 'Sitemap export failed: could not start Python process' }, { status: 500 }));
+    });
     proc.on('close', (code) => {
       if (code !== 0) {
-        resolve(NextResponse.json({ error: err.trim() || 'Sitemap export failed' }, { status: 500 }));
+        resolve(NextResponse.json({ error: 'Sitemap export failed' }, { status: 500 }));
         return;
       }
       resolve(

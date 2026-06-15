@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import re
 import sys
+import threading
 from typing import Any, Optional
 from urllib.parse import urlparse
 
@@ -15,6 +16,7 @@ from ..progress import emit_progress
 from .categories import _issue, _sort_issues
 
 _WAYBACK_CACHE: dict[str, bool] = {}
+_WAYBACK_LOCK: threading.Lock = threading.Lock()
 
 
 def _parse_page_analysis(raw: object) -> dict[str, Any]:
@@ -221,8 +223,10 @@ def wayback_issues(df: pd.DataFrame, *, max_lookups: int = 15) -> list[dict]:
         if not url:
             continue
         cache_key = url.rstrip("/")
-        if cache_key in _WAYBACK_CACHE:
-            if _WAYBACK_CACHE[cache_key]:
+        with _WAYBACK_LOCK:
+            cached = _WAYBACK_CACHE.get(cache_key, None)
+        if cached is not None:
+            if cached:
                 issues.append(_issue(
                     "404 URL has Wayback snapshot (Estimated).",
                     url=url,
@@ -240,7 +244,8 @@ def wayback_issues(df: pd.DataFrame, *, max_lookups: int = 15) -> list[dict]:
             data = resp.json()
             snap = (data.get("archived_snapshots") or {}).get("closest") or {}
             available = bool(snap.get("available"))
-            _WAYBACK_CACHE[cache_key] = available
+            with _WAYBACK_LOCK:
+                _WAYBACK_CACHE[cache_key] = available
             if available:
                 ts = snap.get("timestamp") or "unknown"
                 issues.append(_issue(
@@ -251,7 +256,8 @@ def wayback_issues(df: pd.DataFrame, *, max_lookups: int = 15) -> list[dict]:
                 ))
                 looked += 1
         except Exception:
-            _WAYBACK_CACHE[cache_key] = False
+            with _WAYBACK_LOCK:
+                _WAYBACK_CACHE[cache_key] = False
             continue
     return issues
 

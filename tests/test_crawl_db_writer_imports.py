@@ -101,6 +101,31 @@ def test_crawl_db_writer_records_run_errors(monkeypatch: pytest.MonkeyPatch) -> 
         writer.raise_if_failed()
 
 
+def test_crawl_db_writer_enqueue_short_circuits_after_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    """enqueue/enqueue_html should be no-ops once _error is set (avoids unbounded queue growth)."""
+    from website_profiling.crawl.crawler import _CrawlDbWriter
+
+    class _BrokenCtx:
+        def __enter__(self):
+            raise RuntimeError("db down")
+
+        def __exit__(self, _t, _v, _tb):
+            return False
+
+    monkeypatch.setattr("website_profiling.db.db_session", lambda: _BrokenCtx())
+
+    writer = _CrawlDbWriter(crawl_run_id=1, batch_size=50, store_page_html=True)
+    writer.enqueue({"url": "https://a.com"})
+    writer.finish()
+    writer.run()  # sets _error
+
+    # Queue should be empty now; further enqueues must be dropped
+    assert not writer._queue.qsize()
+    writer.enqueue({"url": "https://b.com"})
+    writer.enqueue_html({"url": "https://b.com", "html": "<html></html>"})
+    assert not writer._queue.qsize()
+
+
 def test_crawl_db_writer_run_does_not_import_error() -> None:
     """
     Regression: during the db/ split, _CrawlDbWriter.run() imported helpers from

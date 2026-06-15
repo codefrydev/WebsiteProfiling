@@ -49,9 +49,12 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
     proc.stderr.on('data', (c) => {
       err += c.toString();
     });
+    proc.on('error', () => {
+      resolve(NextResponse.json({ error: 'Workbook export failed: could not start Python process' }, { status: 500 }));
+    });
     proc.on('close', (code) => {
       if (code !== 0) {
-        resolve(NextResponse.json({ error: err.trim() || 'Workbook export failed' }, { status: 500 }));
+        resolve(NextResponse.json({ error: 'Workbook export failed' }, { status: 500 }));
         return;
       }
       const body = Buffer.concat(chunks);

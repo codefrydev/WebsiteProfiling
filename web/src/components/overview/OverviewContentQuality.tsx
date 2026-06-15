@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   AlertTriangle,
@@ -29,7 +29,7 @@ import {
   stripUrlForDisplay,
   totalDuplicateMemberPages,
 } from './contentQualityMetrics';
-import { bandClassName, metricBandLabel, valueClassNameForBand } from './crawlSnapshotMetrics';
+import { bandClassName, metricBandLabel } from './crawlSnapshotMetrics';
 
 const vo = strings.views.overview;
 
@@ -96,53 +96,79 @@ function ContentQualityColumn({
 }
 
 export function OverviewContentQuality({ data, querySuffix, keywordsHref }: OverviewContentQualityProps) {
-  if (!shouldShowContentQuality(data)) return null;
-
-  const duplicateGroups = data.content_duplicates || [];
-  const duplicateGroupCount = duplicateGroups.length;
-  const duplicatePages = totalDuplicateMemberPages(duplicateGroups);
-  const topDuplicates = selectTopDuplicateClusters(duplicateGroups, 2);
-  const languageCounts = data.language_summary?.counts || {};
-  const languagesDetected = languageCount(languageCounts);
-  const mixedLanguage = Boolean(data.language_summary?.mixed_site);
-  const semanticTopics = data.semantic_keyword_clusters?.length ?? 0;
-  const entityTotal = data.ner_site_summary?.total_entities ?? 0;
-  const pagesWithNer = data.ner_site_summary?.pages_with_ner ?? 0;
-  const hasNer = entityTotal > 0 || pagesWithNer > 0;
-
-  const contentOverviewHref = buildViewHref('content', querySuffix, { tab: 'overview' });
-  const textAnalysisHref = buildViewHref('text-content-analysis', querySuffix);
-  const contentAnalyticsHref = buildViewHref('content-analytics', querySuffix);
-  const topicsHref = buildKeywordsTabHref(keywordsHref, 'topics');
-
-  const duplicateBand = duplicateGroupsBand(duplicateGroupCount);
-  const languageShareRows = languageShares(languageCounts, 1);
-  const dominantLanguage = languageShareRows[0];
-
-  const kpiParts: string[] = [];
-  if (duplicateGroupCount > 0) {
-    kpiParts.push(format(vo.contentQualityKpiDuplicates, { groups: duplicateGroupCount.toLocaleString() }));
-  }
-  if (languagesDetected > 0) {
-    kpiParts.push(format(vo.contentQualityKpiLanguages, { count: languagesDetected.toLocaleString() }));
-  }
-  if (mixedLanguage) {
-    kpiParts.push(vo.contentQualityKpiMixedLanguage);
-  }
-
-  const concerns = selectContentConcerns({
-    duplicateGroups: duplicateGroupCount,
+  const {
+    duplicateGroupCount,
     duplicatePages,
+    topDuplicates,
+    languageCounts,
+    languagesDetected,
     mixedLanguage,
-    languageCount: languagesDetected,
-    contentHref: contentOverviewHref,
+    duplicateBand,
+    languageShareRows,
+    dominantLanguage,
+    kpiParts,
+    concerns,
+    showAdvancedInsights,
+    semanticTopics,
+    hasNer,
+    entityTotal,
+    pagesWithNer,
+    contentOverviewHref,
     textAnalysisHref,
-    formatDuplicateGroups: (groups, pages) =>
-      format(vo.contentConcernDuplicates, { groups, pages }),
-    formatMixedLanguage: (languages) => format(vo.contentConcernMixedLanguage, { languages }),
-  });
+    contentAnalyticsHref,
+    topicsHref,
+  } = useMemo(() => {
+    const dupeGroups = data.content_duplicates || [];
+    const dupeCount = dupeGroups.length;
+    const dupePages = totalDuplicateMemberPages(dupeGroups);
+    const langCounts = data.language_summary?.counts || {};
+    const langDetected = languageCount(langCounts);
+    const mixed = Boolean(data.language_summary?.mixed_site);
+    const semanticTopics = data.semantic_keyword_clusters?.length ?? 0;
+    const entityTotal = data.ner_site_summary?.total_entities ?? 0;
+    const pagesWithNer = data.ner_site_summary?.pages_with_ner ?? 0;
+    const contentHref = buildViewHref('content', querySuffix, { tab: 'overview' });
+    const textHref = buildViewHref('text-content-analysis', querySuffix);
+    const analyticsHref = buildViewHref('content-analytics', querySuffix);
+    const shareRows = languageShares(langCounts, 1);
+    const parts: string[] = [];
+    if (dupeCount > 0) parts.push(format(vo.contentQualityKpiDuplicates, { groups: dupeCount.toLocaleString() }));
+    if (langDetected > 0) parts.push(format(vo.contentQualityKpiLanguages, { count: langDetected.toLocaleString() }));
+    if (mixed) parts.push(vo.contentQualityKpiMixedLanguage);
+    return {
+      duplicateGroupCount: dupeCount,
+      duplicatePages: dupePages,
+      topDuplicates: selectTopDuplicateClusters(dupeGroups, 2),
+      languageCounts: langCounts,
+      languagesDetected: langDetected,
+      mixedLanguage: mixed,
+      duplicateBand: duplicateGroupsBand(dupeCount),
+      languageShareRows: shareRows,
+      dominantLanguage: shareRows[0],
+      kpiParts: parts,
+      concerns: selectContentConcerns({
+        duplicateGroups: dupeCount,
+        duplicatePages: dupePages,
+        mixedLanguage: mixed,
+        languageCount: langDetected,
+        contentHref,
+        textAnalysisHref: textHref,
+        formatDuplicateGroups: (groups, pages) => format(vo.contentConcernDuplicates, { groups, pages }),
+        formatMixedLanguage: (languages) => format(vo.contentConcernMixedLanguage, { languages }),
+      }),
+      showAdvancedInsights: semanticTopics > 0 || entityTotal > 0 || pagesWithNer > 0,
+      semanticTopics,
+      hasNer: entityTotal > 0 || pagesWithNer > 0,
+      entityTotal,
+      pagesWithNer,
+      contentOverviewHref: contentHref,
+      textAnalysisHref: textHref,
+      contentAnalyticsHref: analyticsHref,
+      topicsHref: buildKeywordsTabHref(keywordsHref, 'topics'),
+    };
+  }, [data, querySuffix, keywordsHref]);
 
-  const showAdvancedInsights = semanticTopics > 0 || hasNer;
+  if (!shouldShowContentQuality(data)) return null;
 
   return (
     <Card shadow className="mb-8 overflow-hidden border border-default">
@@ -220,7 +246,7 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
                 sub={format(vo.contentQualityDuplicatePages, { pages: duplicatePages.toLocaleString() })}
                 band={metricBandLabel(duplicateBand, vo)}
                 bandClassName={bandClassName(duplicateBand)}
-                valueClassName={valueClassNameForBand(duplicateBand)}
+                valueClassName={bandClassName(duplicateBand)}
                 className={
                   duplicateBand === 'critical'
                     ? 'border-amber-500/25 ring-1 ring-inset ring-amber-500/15'

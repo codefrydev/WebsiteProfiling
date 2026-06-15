@@ -42,38 +42,42 @@ export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount 
     [searchParams],
   );
 
-  const healthScore = (data.categories || [])
-    .map((c) => Number(c?.score))
-    .filter((n) => Number.isFinite(n));
-  const currentHealth =
-    healthScore.length > 0
-      ? Math.round(healthScore.reduce((a, b) => a + b, 0) / healthScore.length)
-      : null;
+  const { currentHealth, topIssues } = useMemo(() => {
+    const scores = (data.categories || [])
+      .map((c) => Number(c?.score))
+      .filter((n) => Number.isFinite(n));
+    const health =
+      scores.length > 0
+        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+        : null;
+    const exec = (data.executive_summary?.top_issues || []).slice(0, 5);
+    const fallback = (data.categories || [])
+      .flatMap((cat) =>
+        (cat.issues || []).map((iss) => ({
+          ...iss,
+          category: cat.name || cat.id,
+        })),
+      )
+      .filter((iss) => iss.priority === 'Critical' || iss.priority === 'High')
+      .slice(0, 3);
+    return { currentHealth: health, topIssues: exec.length > 0 ? exec : fallback };
+  }, [data.categories, data.executive_summary]);
 
-  const execTopIssues = (data.executive_summary?.top_issues || []).slice(0, 5);
-  const fallbackTopIssues = (data.categories || [])
-    .flatMap((cat) =>
-      (cat.issues || []).map((iss) => ({
-        ...iss,
-        category: cat.name || cat.id,
-      })),
-    )
-    .filter((iss) => iss.priority === 'Critical' || iss.priority === 'High')
-    .slice(0, 3);
-  const topIssues = execTopIssues.length > 0 ? execTopIssues : fallbackTopIssues;
   const googleData = data.google;
   const googleSnap = googleSnapshotStatus(googleData);
-  const metaSources = (data.report_meta?.data_sources || []) as string[];
-  const provenanceSources: DataSourceId[] = metaSources
-    .map((src) => {
-      if (src === 'search_console') return 'search_console';
-      if (src === 'analytics') return 'analytics';
-      if (src === 'lighthouse') return 'lighthouse';
-      if (src === 'estimated') return 'estimated';
-      if (src === 'ai') return 'ai';
-      return 'crawl';
-    })
-    .filter((v, i, a) => a.indexOf(v) === i) as DataSourceId[];
+  const provenanceSources: DataSourceId[] = useMemo(() => {
+    const metaSources = (data.report_meta?.data_sources || []) as string[];
+    return metaSources
+      .map((src) => {
+        if (src === 'search_console') return 'search_console';
+        if (src === 'analytics') return 'analytics';
+        if (src === 'lighthouse') return 'lighthouse';
+        if (src === 'estimated') return 'estimated';
+        if (src === 'ai') return 'ai';
+        return 'crawl';
+      })
+      .filter((v, i, a) => a.indexOf(v) === i) as DataSourceId[];
+  }, [data.report_meta]);
 
   return (
     <OverviewTabPanel tabId="summary" className="space-y-6">

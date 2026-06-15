@@ -176,10 +176,12 @@ export function statusDistributionTakeaway(
 
 export function wordCountTakeaway(dist: Record<string, number> | undefined, crawledCount: number): string | undefined {
   if (!dist) return undefined;
-  const thin = thinWordCountPages(dist);
-  const total = Object.values(dist).reduce((a, v) => a + Number(v || 0), 0);
+  const knownKeys = vo.wcBuckets.filter((k) => k in dist);
+  const knownValues = knownKeys.map((k) => Number(dist[k] || 0));
+  const total = knownValues.reduce((a, v) => a + v, 0);
   if (total <= 0) return undefined;
-  const dominant = dominantBucketLabel(vo.wcBuckets.filter((k) => k in dist), vo.wcBuckets.filter((k) => k in dist).map((k) => Number(dist[k] || 0)));
+  const thin = thinWordCountPages(dist);
+  const dominant = dominantBucketLabel(knownKeys, knownValues);
   if (thin > 0 && thin / total >= 0.25) {
     const pct = Math.round((thin / total) * 1000) / 10;
     return format(vo.chartsTakeawayThinContent, { count: thin.toLocaleString(), pct });

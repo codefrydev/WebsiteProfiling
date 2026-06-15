@@ -21,16 +21,10 @@ from .config import (
     _LIGHTHOUSE_INSTALL_MSG,
     _LIGHTHOUSE_FLOW_MODES,
     _NPX_LIGHTHOUSE_LOCK,
-    _lighthouse_cmd,
     _lighthouse_flow_script,
     _node_cmd,
     _normalize_lighthouse_mode,
-    _parse_categories,
-    _preset_for_strategy,
     _repo_root,
-    _url_safe,
-    _uses_npx,
-    is_lighthouse_available,
 )
 from .result_parser import _evidence_from_audit, extract_from_lighthouse_json, median_or_none
 
@@ -175,10 +169,8 @@ def run_lighthouse_flow_once(
         flow_args.append("--categories=" + ",".join(categories))
     if npx is not None:
         cmd = [npx, "-y", "-p", "lighthouse", "-p", "puppeteer", "node", script, *flow_args]
-        use_lock = True
     else:
         cmd = [node, script, *flow_args]
-        use_lock = False
     try:
         run_kwargs = {
             "capture_output": True,
@@ -187,10 +179,8 @@ def run_lighthouse_flow_once(
             "timeout": 300,
             "cwd": _repo_root(),
         }
-        if use_lock:
-            with _NPX_LIGHTHOUSE_LOCK:
-                return subprocess.run(cmd, **run_kwargs)
-        return subprocess.run(cmd, **run_kwargs)
+        with _NPX_LIGHTHOUSE_LOCK:
+            return subprocess.run(cmd, **run_kwargs)
     except FileNotFoundError as e:
         raise RuntimeError(_LIGHTHOUSE_INSTALL_MSG) from e
 
@@ -205,6 +195,10 @@ def run_lighthouse_once(
     wait_ms: int = 1500,
 ) -> subprocess.CompletedProcess:
     """Run lighthouse once; navigation uses CLI, snapshot/timespan use User Flow API."""
+    from urllib.parse import urlparse as _urlparse
+    parsed_scheme = _urlparse(url).scheme.lower()
+    if parsed_scheme not in ("http", "https"):
+        raise ValueError(f"Lighthouse URL must use http or https, got: {url!r}")
     lh_mode = _normalize_lighthouse_mode(mode)
     if lh_mode in _LIGHTHOUSE_FLOW_MODES:
         return run_lighthouse_flow_once(
@@ -235,10 +229,8 @@ def run_lighthouse_once(
             "errors": "replace",
             "timeout": 300,
         }
-        if _uses_npx(base):
-            with _NPX_LIGHTHOUSE_LOCK:
-                return subprocess.run(cmd, **run_kwargs)
-        return subprocess.run(cmd, **run_kwargs)
+        with _NPX_LIGHTHOUSE_LOCK:
+            return subprocess.run(cmd, **run_kwargs)
     except FileNotFoundError as e:
         raise RuntimeError(_LIGHTHOUSE_INSTALL_MSG) from e
 

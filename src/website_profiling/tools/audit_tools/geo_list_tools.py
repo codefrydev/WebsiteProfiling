@@ -74,7 +74,7 @@ def _aeo_score(rec: dict[str, Any]) -> dict[str, Any]:
 def _parse_robots_txt(domain: str) -> str:
     if not domain:
         return ""
-    base = f"https://{domain.lstrip('https://').lstrip('http://').split('/')[0]}"
+    base = f"https://{re.sub(r'^https?://', '', domain).split('/')[0]}"
     url = urljoin(base + "/", "robots.txt")
     try:
         resp = requests.get(url, timeout=8, headers={"User-Agent": "SiteAudit/1.0"})

@@ -297,7 +297,7 @@ export function useOverviewCharts(
       },
       aria: vo.ariaOutlinks,
       takeaway: dominant
-        ? format(vo.chartsTakeawayWordCountDominant, {
+        ? format(vo.chartsTakeawayOutlinksDominant, {
             bucket: dominant.label,
             count: dominant.count.toLocaleString(),
             pct: dominant.pct,

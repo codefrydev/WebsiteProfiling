@@ -58,13 +58,16 @@ print(json.dumps(build_competitor_domain_gap(our, payload.get("competitor") or "
       }),
     );
     proc.stdin?.end();
+    proc.on('error', () => {
+      resolve(NextResponse.json({ error: 'Import failed: could not start Python process' }, { status: 500 }));
+    });
     proc.on('close', (code) => {
       const parsed = parsePythonJsonStdout(stdout);
       if (code === 0 && parsed) {
         resolve(NextResponse.json({ gap: parsed }));
         return;
       }
-      resolve(NextResponse.json({ error: stdout.trim() || 'Import failed' }, { status: 500 }));
+      resolve(NextResponse.json({ error: 'Competitor backlink import failed' }, { status: 500 }));
     });
   });
 };

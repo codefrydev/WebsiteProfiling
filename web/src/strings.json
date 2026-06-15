@@ -3089,6 +3089,7 @@
       "chartsTakeawayLhGood": "Lighthouse categories average {score}/100.",
       "chartsTakeawayReadingDominant": "Most pages read at {bucket} level ({count} pages, {pct}%).",
       "chartsTakeawayMimeTop": "Top MIME: {mime} ({count} URLs).",
+      "chartsTakeawayOutlinksDominant": "Most pages have {bucket} outlinks ({count} pages, {pct}%).",
       "chartsTakeawayDomainsTop": "Most-linked external domain: {domain} ({count} URLs).",
       "contentDepth": "Content depth (word count)",
       "contentDepthHint": "2xx HTML pages by word-count bucket. Heavy left skew often means thin or template-heavy indexable URLs.",

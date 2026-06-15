@@ -30,7 +30,6 @@ import {
   responseTimeBand,
   selectCrawlConcerns,
   successRateBand,
-  valueClassNameForBand,
 } from './crawlSnapshotMetrics';
 
 const vo = strings.views.overview;
@@ -78,7 +77,7 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
   const crawledCount = crawledUrlCount(data);
   const brokenCount = (s.count_4xx || 0) + (s.count_5xx || 0);
   const h1Zero = data.seo_health?.h1_zero ?? 0;
-  const successRate = s.success_rate ?? 0;
+  const successRate = s.success_rate ?? null;
   const medianWords =
     data.content_analytics?.word_count_stats?.median != null
       ? Math.round(data.content_analytics.word_count_stats.median)
@@ -175,10 +174,10 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
             href={linksHref}
             icon={<CheckCircle className="h-4 w-4 shrink-0 text-green-500" aria-hidden />}
             label={vo.successRate}
-            value={`${successRate}%`}
-            band={metricBandLabel(successBand, vo)}
-            bandClassName={bandClassName(successBand)}
-            valueClassName={valueClassNameForBand(successBand)}
+            value={successRate != null ? `${successRate}%` : '—'}
+            band={successRate != null ? metricBandLabel(successBand, vo) : undefined}
+            bandClassName={successRate != null ? bandClassName(successBand) : undefined}
+            valueClassName={successRate != null ? bandClassName(successBand) : 'text-muted-foreground'}
             hint={metricHelpHint('shared.successRate')}
             fillHeight
           />
@@ -197,7 +196,7 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
             )}
             band={brokenCount > 0 ? vo.metricBandCritical : vo.metricBandGood}
             bandClassName={brokenCount > 0 ? bandClassName('critical') : bandClassName('good')}
-            valueClassName={brokenCount > 0 ? valueClassNameForBand('critical') : valueClassNameForBand('good')}
+            valueClassName={brokenCount > 0 ? bandClassName('critical') : bandClassName('good')}
             className={brokenCount > 0 ? 'border-red-900/30 ring-1 ring-inset ring-red-500/20' : ''}
             hint={metricHelpHint('views.overview.brokenLinks')}
             fillHeight
@@ -215,7 +214,7 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
             }
             band={h1Zero > 0 ? vo.metricBandNeedsAttention : vo.metricBandGood}
             bandClassName={h1Zero > 0 ? bandClassName('fair') : bandClassName('good')}
-            valueClassName={h1Zero > 0 ? valueClassNameForBand('fair') : valueClassNameForBand('good')}
+            valueClassName={h1Zero > 0 ? bandClassName('fair') : bandClassName('good')}
             hint={metricHelpHint('views.overview.missingH1')}
             fillHeight
           />
@@ -234,9 +233,9 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
             label={vo.medianWordCount}
             value={medianWords != null ? medianWords.toLocaleString() : sj.emDash}
             sub={vo.perPage2xx}
-            band={metricBandLabel(wordsBand, vo)}
-            bandClassName={bandClassName(wordsBand)}
-            valueClassName={medianWords != null ? valueClassNameForBand(wordsBand) : 'text-bright'}
+            band={medianWords != null ? metricBandLabel(wordsBand, vo) : undefined}
+            bandClassName={medianWords != null ? bandClassName(wordsBand) : undefined}
+            valueClassName={medianWords != null ? bandClassName(wordsBand) : 'text-bright'}
             hint={metricHelpHint('shared.medianWords')}
             fillHeight
           />
@@ -247,9 +246,9 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
             label={vo.ogCoverage}
             value={ogPct != null ? `${ogPct}%` : sj.emDash}
             sub={vo.ogPagesWith}
-            band={metricBandLabel(ogBand, vo)}
-            bandClassName={bandClassName(ogBand)}
-            valueClassName={ogPct != null ? valueClassNameForBand(ogBand) : 'text-bright'}
+            band={ogPct != null ? metricBandLabel(ogBand, vo) : undefined}
+            bandClassName={ogPct != null ? bandClassName(ogBand) : undefined}
+            valueClassName={ogPct != null ? bandClassName(ogBand) : 'text-bright'}
             hint={metricHelpHint('views.overview.ogCoverage')}
             fillHeight
           />
@@ -274,9 +273,9 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
                 ? `${vo.p95Label} ${Math.round(p95)}ms`
                 : undefined
             }
-            band={metricBandLabel(responseBand, vo)}
-            bandClassName={bandClassName(responseBand)}
-            valueClassName={p50 != null ? valueClassNameForBand(responseBand) : 'text-bright'}
+            band={p50 != null ? metricBandLabel(responseBand, vo) : undefined}
+            bandClassName={p50 != null ? bandClassName(responseBand) : undefined}
+            valueClassName={p50 != null ? bandClassName(responseBand) : 'text-bright'}
             hint={metricHelpHint('views.overview.responseP50')}
             fillHeight
           />

@@ -42,9 +42,6 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
   const pythonExe = resolvePythonExecutable(null, repoRoot);
   const args = ['-m', 'src', 'page-coach', '--url', url];
   if (body.refresh) args.push('--refresh');
-  if (body.currentType && body.currentId != null) {
-    process.env.WP_PAGE_COACH_CURRENT = `${body.currentType}:${body.currentId}`;
-  }
 
   return new Promise<Response>((resolve) => {
     let log = '';
@@ -73,6 +70,7 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
     proc.stderr?.on('data', append);
 
     proc.on('error', (err: Error) => {
+      clearTimeout(timer);
       resolve(
         NextResponse.json(
           { ok: false, error: formatPythonSpawnError(err, pythonExe, repoRoot), log },
@@ -82,6 +80,7 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
     });
 
     proc.on('close', (code: number | null) => {
+      clearTimeout(timer);
       try {
         const lines = stdout.trim().split('\n').filter(Boolean);
         const last = lines[lines.length - 1] || '{}';
@@ -108,7 +107,7 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
       }
     });
 
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       try {
         proc.kill();
       } catch {

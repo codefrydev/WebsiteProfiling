@@ -5,8 +5,6 @@ import { isJunkSemanticTerm } from '@/lib/semanticTextHygiene';
 /** Max keyword rows shown on Overview summary preview. */
 export const KEYWORD_PREVIEW_LIMIT = 5;
 
-/** @deprecated Use isJunkSemanticTerm */
-export const isJunkCrawlKeyword = isJunkSemanticTerm;
 
 function filterCrawlItems(items: KeywordOpportunityItem[] | undefined): KeywordOpportunityItem[] {
   return (items ?? []).filter((item) => !isJunkSemanticTerm(item.keyword));
@@ -41,7 +39,8 @@ export function selectSiteTopKeywords(
 export function selectGscQuickWins(rows: KeywordRow[], limit = 8): KeywordRow[] {
   return [...rows]
     .filter((r) => {
-      const pos = parseFloat(String(r.gsc_position ?? 0));
+      if (r.gsc_position == null) return false;
+      const pos = parseFloat(String(r.gsc_position));
       return pos >= 4 && pos <= 20 && (r.opportunity_clicks || 0) > 5;
     })
     .sort((a, b) => (b.opportunity_clicks || 0) - (a.opportunity_clicks || 0))
@@ -50,7 +49,7 @@ export function selectGscQuickWins(rows: KeywordRow[], limit = 8): KeywordRow[] 
 
 export function selectGscOpportunities(rows: KeywordRow[], limit = 8): KeywordRow[] {
   return [...rows]
-    .filter((r) => !r.gsc_position && (r.sources || []).length > 0)
+    .filter((r) => r.gsc_position == null && (r.sources || []).length > 0)
     .sort((a, b) => (b.traffic_potential || 0) - (a.traffic_potential || 0))
     .slice(0, limit);
 }
@@ -82,8 +81,9 @@ export function selectTopTopicClusters(clusters: TopicCluster[] | undefined, lim
 export function formatGscQuickWinSuffix(row: KeywordRow): string {
   const clicks = row.opportunity_clicks || 0;
   const pos = row.gsc_position != null ? Number(row.gsc_position).toFixed(1) : null;
-  if (pos != null) return `+${clicks.toLocaleString()} est. clicks · pos ${pos}`;
-  return `+${clicks.toLocaleString()} est. clicks`;
+  const clicksSuffix = clicks > 0 ? `+${clicks.toLocaleString()} est. clicks` : '';
+  if (pos != null) return clicksSuffix ? `${clicksSuffix} · pos ${pos}` : `pos ${pos}`;
+  return clicksSuffix;
 }
 
 export function formatGscOpportunitySuffix(row: KeywordRow): string {

@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import Link from 'next/link';
 import {
   AlertTriangle,
@@ -153,7 +153,7 @@ export interface OverviewChartsTabProps {
 }
 
 export function OverviewChartsTab({ charts, depth, data, querySuffix }: OverviewChartsTabProps) {
-  const concerns = selectChartConcerns({ data, querySuffix });
+  const concerns = useMemo(() => selectChartConcerns({ data, querySuffix }), [data, querySuffix]);
   const {
     statusDistribution,
     wordCountChart,

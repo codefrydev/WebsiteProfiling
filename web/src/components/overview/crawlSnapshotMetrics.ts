@@ -12,7 +12,7 @@ export interface CrawlConcern {
 
 export function pctOfCrawl(count: number, total: number): number | null {
   if (total <= 0 || count <= 0) return null;
-  return Math.round((count / total) * 1000) / 10;
+  return Math.min(100, Math.round((count / total) * 1000) / 10);
 }
 
 export function successRateBand(rate: number | null | undefined): MetricBand {
@@ -58,11 +58,6 @@ export function metricBandLabel(
   return labels.metricBandCritical;
 }
 
-export function valueClassNameForBand(band: MetricBand): string {
-  if (band === 'good') return 'text-green-700 dark:text-green-400';
-  if (band === 'fair') return 'text-yellow-700 dark:text-yellow-400';
-  return 'text-red-600 dark:text-red-400';
-}
 
 export function buildViewHref(
   viewId: ViewId,

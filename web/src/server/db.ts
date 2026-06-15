@@ -23,6 +23,9 @@ export function getPool(): Pool {
       connectionString: getDatabaseUrl(),
       max: Number.isFinite(max) && max > 0 ? max : 20,
     });
+    pool.on('error', (err) => {
+      console.error('pg pool idle client error:', err);
+    });
   }
   return pool;
 }

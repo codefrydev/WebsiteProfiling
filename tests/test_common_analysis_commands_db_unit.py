@@ -911,7 +911,7 @@ def test_historical_backup_success_and_restore_fallback(monkeypatch, tmp_path) -
     from website_profiling.db import historical as h
 
     monkeypatch.setattr(h, "get_data_dir", lambda: str(tmp_path))
-    monkeypatch.setattr(h, "get_database_url", lambda: "postgres://u:p@h/db")
+    monkeypatch.setattr(h, "get_database_url", lambda: "postgres://u:p@h:5432/db")
 
     dump_path = tmp_path / "backups" / "out.dump"
 

@@ -156,8 +156,10 @@ export function OverviewExecutiveSummary({
 
   useEffect(() => {
     const domain = data.site_name || '';
-    if (!domain) return;
+    setHealthDelta(null);
+    setHealthTrend([]);
     setHistoryError(null);
+    if (!domain) return;
     void fetch(`/api/report/history?domain=${encodeURIComponent(domain)}&limit=8`)
       .then(async (r) => {
         if (!r.ok) {

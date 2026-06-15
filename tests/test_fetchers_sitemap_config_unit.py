@@ -39,11 +39,13 @@ def test_fetch_result_as_tuple():
 
 
 def test_static_fetcher_network_error_returns_empty_result():
+    import requests as req_module
+
     class BoomSession:
         headers = {}
 
         def get(self, *_a, **_k):
-            raise ConnectionError("offline")
+            raise req_module.exceptions.ConnectionError("offline")
 
         def close(self):
             pass

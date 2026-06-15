@@ -14,6 +14,10 @@ describe('crawlSnapshotMetrics', () => {
     expect(pctOfCrawl(0, 1500)).toBeNull();
   });
 
+  it('clamps pctOfCrawl to 100 when sources disagree', () => {
+    expect(pctOfCrawl(2000, 1500)).toBe(100);
+  });
+
   it('bands success rate', () => {
     expect(successRateBand(95)).toBe('good');
     expect(successRateBand(85)).toBe('fair');

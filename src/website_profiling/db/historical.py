@@ -4,14 +4,17 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Any, Optional
 
 import pandas as pd
 from psycopg import Connection
+from psycopg.sql import SQL, Identifier
 from urllib.parse import urlparse
 
+from ..console_io import console_print
 from ._common import (
     _executemany,
     _json_val,
@@ -33,17 +36,26 @@ def backup_db_if_exists(skip_in_ci: bool = True) -> Optional[str]:
     suffix = time.strftime("%Y%m%d-%H%M%S")
     out_path = backup_dir / f"website_profiling-{suffix}.dump"
     try:
+        parsed = urlparse(get_database_url())
+        pg_env = {**os.environ}
+        if parsed.hostname:
+            pg_env["PGHOST"] = parsed.hostname
+        if parsed.port:
+            pg_env["PGPORT"] = str(parsed.port)
+        if parsed.username:
+            pg_env["PGUSER"] = parsed.username
+        if parsed.password:
+            pg_env["PGPASSWORD"] = parsed.password
+        dbname = (parsed.path or "").lstrip("/")
+        cmd = ["pg_dump", "-Fc", "-f", str(out_path)]
+        if dbname:
+            cmd.append(dbname)
         subprocess.run(
-            [
-                "pg_dump",
-                "-Fc",
-                "-f",
-                str(out_path),
-                get_database_url(),
-            ],
+            cmd,
             check=True,
             capture_output=True,
             timeout=300,
+            env=pg_env,
         )
         return str(out_path)
     except (FileNotFoundError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
@@ -72,12 +84,18 @@ def read_historical_data() -> dict[str, list]:
             for table in tables:
                 try:
                     with conn.cursor() as cur:
-                        cur.execute(f"SELECT * FROM {table}")
+                        cur.execute(SQL("SELECT * FROM {}").format(Identifier(table)))
                         result[table] = [dict(row) for row in cur.fetchall()]
-                except Exception:
-                    pass
-    except Exception:
-        pass
+                except Exception as e:
+                    console_print(
+                        f"  Warning: could not read historical table '{table}': {e}",
+                        file=sys.stderr,
+                    )
+    except Exception as e:
+        console_print(
+            f"  Warning: could not read historical data (a DB backup is still taken before any overwrite): {e}",
+            file=sys.stderr,
+        )
     return result
 
 

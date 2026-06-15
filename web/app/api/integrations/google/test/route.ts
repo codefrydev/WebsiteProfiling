@@ -34,6 +34,7 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
     proc.stderr?.on('data', append);
 
     proc.on('error', (err: Error) => {
+      clearTimeout(timer);
       const message = formatPythonSpawnError(err, pythonExe, repoRoot);
       resolve(
         NextResponse.json({ ok: false, log, error: message }, { status: 500 }),
@@ -41,11 +42,12 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
     });
 
     proc.on('close', (code: number | null) => {
+      clearTimeout(timer);
       resolve(NextResponse.json({ ok: code === 0, log, exitCode: code }));
     });
 
     // Safety timeout: 30s
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       try { proc.kill(); } catch { /* ignore */ }
       resolve(
         NextResponse.json({ ok: false, log, error: 'Test timed out after 30s' }, { status: 504 }),
