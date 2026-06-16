@@ -16,6 +16,7 @@ import ChatImageAuditBlock from './ChatImageAuditBlock';
 import ChatImagePagesTableBlock from './ChatImagePagesTableBlock';
 import ChatImageAttentionTableBlock from './ChatImageAttentionTableBlock';
 import ChatImageLighthouseBlock from './ChatImageLighthouseBlock';
+import ChatToolStatusBlock, { ChatToolTruncatedBlock } from './ChatToolStatusBlock';
 
 export interface ChatBlocksProps {
   blocks: ChatBlock[];
@@ -57,6 +58,10 @@ export default function ChatBlocks({ blocks }: ChatBlocksProps) {
             return <ChatImageAttentionTableBlock key={key} block={block} />;
           case 'image_lighthouse_list':
             return <ChatImageLighthouseBlock key={key} block={block} />;
+          case 'tool_status':
+            return <ChatToolStatusBlock key={key} block={block} />;
+          case 'tool_truncated':
+            return <ChatToolTruncatedBlock key={key} block={block} />;
           default:
             return null;
         }

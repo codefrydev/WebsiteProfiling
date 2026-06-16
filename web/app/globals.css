@@ -551,6 +551,42 @@ code {
   font-size: 0.8125rem;
 }
 
+.chat-assistant-card {
+  border-color: var(--app-border-muted);
+  background: rgb(255 255 255 / 0.02);
+}
+
+.chat-assistant-card-partial {
+  border-top: 3px solid rgb(245 158 11 / 0.55);
+}
+
+.chat-prose-nested {
+  font-size: 0.8125rem;
+}
+
+.chat-prose-nested .chat-prose-h1,
+.chat-prose-nested .chat-prose-h2,
+.chat-prose-nested .chat-prose-h3 {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.chat-insight-sections .chat-prose {
+  margin-top: 0;
+}
+
+.chat-prose-table-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.chat-prose-pre pre,
+.chat-prose pre {
+  max-height: 16rem;
+  overflow: auto;
+}
+
 /* Focus visibility for keyboard users */
 .nav-btn:focus-visible,
 button:focus-visible,

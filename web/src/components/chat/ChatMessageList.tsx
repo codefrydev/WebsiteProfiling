@@ -1,24 +1,19 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { Sparkles } from 'lucide-react';
-import ChatBlocks from '@/components/chat/blocks/ChatBlocks';
-import ChatMarkdown from '@/components/chat/ChatMarkdown';
-import type { ChatBlock } from '@/components/chat/deriveChatBlocks';
-import { stripRedundantMarkdown } from '@/components/chat/stripRedundantMarkdown';
-import ChatToolActivity, { type ToolActivityItem } from './ChatToolActivity';
-import { strings } from '@/lib/strings';
-
-const c = strings.components.chat;
+import ChatAssistantMessage from '@/components/chat/ChatAssistantMessage';
+import type { ToolActivityItem } from '@/components/chat/ChatToolActivity';
+import { toolEventsToActivity } from '@/components/chat/deriveChatBlocks';
 
 export interface ChatMessage {
   id: string | number;
   role: 'user' | 'assistant';
   content: string;
   toolActivity?: ToolActivityItem[];
-  blocks?: ChatBlock[];
   streaming?: boolean;
   error?: boolean;
+  partialError?: boolean;
+  agentError?: string | null;
   statusText?: string;
 }
 
@@ -49,56 +44,41 @@ export default function ChatMessageList({ messages, empty }: ChatMessageListProp
             key={msg.id}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div
-              className={`w-full space-y-3 text-sm leading-relaxed ${
-                msg.role === 'user'
-                  ? 'max-w-[90%] rounded-2xl bg-brand-700/50 px-4 py-2.5 text-foreground'
-                  : msg.error
-                    ? 'max-w-[90%] rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-red-200'
-                    : 'max-w-full text-foreground'
-              }`}
-            >
-              {msg.role === 'assistant' && (msg.streaming || !msg.content) && !msg.error ? (
-                <Sparkles
-                  className={`h-4 w-4 text-muted-foreground ${msg.streaming ? 'animate-pulse' : ''}`}
-                  aria-hidden
+            {msg.role === 'user' ? (
+              <div className="max-w-[90%] rounded-2xl bg-brand-700/50 px-4 py-2.5 text-sm leading-relaxed text-foreground">
+                <p>{msg.content}</p>
+              </div>
+            ) : (
+              <div className="w-full max-w-full">
+                <ChatAssistantMessage
+                  content={msg.content}
+                  toolActivity={msg.toolActivity}
+                  streaming={msg.streaming}
+                  error={msg.error}
+                  partialError={msg.partialError}
+                  agentError={msg.agentError}
+                  statusText={msg.statusText}
                 />
-              ) : null}
-              {msg.toolActivity?.length ? (
-                <ChatToolActivity items={msg.toolActivity} />
-              ) : null}
-              {msg.role === 'assistant' && msg.blocks?.length ? (
-                <ChatBlocks blocks={msg.blocks} />
-              ) : null}
-              {msg.content ? (
-                msg.role === 'user' ? (
-                  <p>{msg.content}</p>
-                ) : msg.streaming ? (
-                  <p className="whitespace-pre-wrap text-muted-foreground">{msg.content}</p>
-                ) : (
-                  <ChatMarkdown
-                    content={
-                      msg.blocks?.length
-                        ? stripRedundantMarkdown(msg.content, msg.blocks)
-                        : msg.content
-                    }
-                  />
-                )
-              ) : msg.streaming ? (
-                <span className={msg.error ? 'text-red-200' : 'text-muted-foreground'}>
-                  {msg.statusText ||
-                    (msg.toolActivity?.some((t) => t.status === 'running')
-                      ? c.queryingData
-                      : c.thinking)}
-                </span>
-              ) : msg.error && !msg.content ? (
-                <span className="text-red-200">{c.responseFailed}</span>
-              ) : null}
-            </div>
+              </div>
+            )}
           </div>
         ))}
         <div aria-hidden className="h-px" />
       </div>
     </div>
   );
+}
+
+export function toolResultToActivity(
+  toolResult: Record<string, unknown> | null | undefined,
+): ToolActivityItem[] {
+  return toolEventsToActivity(toolResult);
+}
+
+export function agentErrorFromToolResult(
+  toolResult: Record<string, unknown> | null | undefined,
+): string | null {
+  if (!toolResult) return null;
+  const err = toolResult.agent_error;
+  return typeof err === 'string' && err.trim() ? err.trim() : null;
 }

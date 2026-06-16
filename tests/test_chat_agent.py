@@ -180,3 +180,11 @@ def test_max_tool_rounds() -> None:
 def test_max_tool_rounds_extended_when_unlimited_enabled() -> None:
     assert _max_tool_rounds({"llm_chat_unlimited_tool_rounds": "true"}) == MAX_TOOL_ROUNDS_EXTENDED
     assert _max_tool_rounds({"llm_chat_unlimited_tool_rounds": "false"}) == MAX_TOOL_ROUNDS
+
+
+def test_system_prompt_has_output_template() -> None:
+    from website_profiling.llm.agent import SYSTEM_PROMPT
+
+    assert "### Power Insights" in SYSTEM_PROMPT
+    assert "### Recommended actions" in SYSTEM_PROMPT
+    assert "no emojis in headings" in SYSTEM_PROMPT.lower()

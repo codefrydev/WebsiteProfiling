@@ -7,7 +7,10 @@ import { AlertCircle } from 'lucide-react';
 import ChatContextBar from '@/components/chat/ChatContextBar';
 import ChatShell from '@/components/chat/ChatShell';
 import ChatSidebar from '@/components/chat/ChatSidebar';
-import ChatMessageList, { type ChatMessage } from '@/components/chat/ChatMessageList';
+import ChatMessageList, {
+  agentErrorFromToolResult,
+  type ChatMessage,
+} from '@/components/chat/ChatMessageList';
 import ChatComposer from '@/components/chat/ChatComposer';
 import SuggestedPrompts from '@/components/chat/SuggestedPrompts';
 import ChatModelPicker from '@/components/chat/ChatModelPicker';
@@ -19,7 +22,7 @@ import { usePipeline } from '@/context/PipelineContext';
 import { apiUrl } from '@/lib/publicBase';
 import { format, strings } from '@/lib/strings';
 import { consumeChatSse } from '@/components/chat/parseChatSse';
-import { deriveChatBlocks, toolEventsToActivity } from '@/components/chat/deriveChatBlocks';
+import { toolEventsToActivity } from '@/components/chat/deriveChatBlocks';
 import type { ToolActivityItem } from '@/components/chat/ChatToolActivity';
 import {
   buildChatSearchQuery,
@@ -194,13 +197,14 @@ export default function ChatPage() {
           .filter((m) => m.role === 'user' || m.role === 'assistant')
           .map((m) => {
             const toolActivity = toolEventsToActivity(m.tool_result);
-            const blocks = toolActivity.length ? deriveChatBlocks(toolActivity) : undefined;
+            const agentError = agentErrorFromToolResult(m.tool_result);
             return {
               id: m.id,
               role: m.role as 'user' | 'assistant',
               content: m.content,
               toolActivity: toolActivity.length ? toolActivity : undefined,
-              blocks: blocks?.length ? blocks : undefined,
+              partialError: Boolean(agentError && toolActivity.length > 0),
+              agentError,
             };
           }),
       );
@@ -371,7 +375,6 @@ export default function ChatPage() {
           });
           patchAssistant({
             toolActivity: [...tools],
-            blocks: deriveChatBlocks(tools),
             streaming: true,
             statusText: format(c.toolStatus, { name: evt.name || 'tool' }),
           });
@@ -382,34 +385,34 @@ export default function ChatPage() {
           }
           patchAssistant({
             toolActivity: [...tools],
-            blocks: deriveChatBlocks(tools),
             streaming: true,
           });
         } else if (evt.type === 'done' && evt.message) {
           content = evt.message;
-          patchAssistant({ content: evt.message, streaming: true, error: false });
+          patchAssistant({ content: evt.message, streaming: true, error: false, partialError: false });
         } else if (evt.type === 'partial_done' && evt.message) {
           content = evt.message;
           patchAssistant({
             content: evt.message,
             streaming: true,
             error: false,
+            partialError: true,
             toolActivity: tools,
-            blocks: deriveChatBlocks(tools),
           });
         } else if (evt.type === 'error') {
           streamError = evt.message || c.agentError;
           setError(streamError);
+          const hasTools = tools.length > 0;
           const fallbackContent =
-            content.trim() ||
-            (tools.length > 0 ? c.partialToolsSaved : streamError);
+            content.trim() || (hasTools ? c.partialToolsSaved : streamError);
           patchAssistant({
             content: fallbackContent,
             streaming: false,
-            error: true,
+            error: !hasTools,
+            partialError: hasTools,
+            agentError: streamError,
             statusText: undefined,
             toolActivity: tools,
-            blocks: deriveChatBlocks(tools),
           });
         }
       });
@@ -430,10 +433,17 @@ export default function ChatPage() {
             content: finalContent,
             streaming: false,
             error: false,
+            partialError: false,
             toolActivity: tools,
-            blocks: deriveChatBlocks(tools),
           });
         }
+      } else if (tools.length > 0) {
+        patchAssistant({
+          streaming: false,
+          partialError: true,
+          agentError: streamError,
+          toolActivity: tools,
+        });
       }
       if (sid) await loadMessages(sid);
       if (propertyId) await loadSessions(propertyId);
