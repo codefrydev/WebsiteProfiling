@@ -47,8 +47,6 @@ function sseLine(event: string, data: Record<string, unknown>): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
-import type { ChatNarrative } from '@/types/chatNarrative';
-
 function buildPersistedAssistantContent(
   assistantText: string,
   toolEvents: Array<{ name: string; args?: Record<string, unknown>; result?: Record<string, unknown> }>,
