@@ -69,6 +69,10 @@ def get_llm_client(cfg: dict[str, str]) -> LLMClient:
         from .providers.gemini import GeminiClient
 
         return GeminiClient(cfg)
+    if provider == "groq":
+        from .providers.groq import GroqClient
+
+        return GroqClient(cfg)
     if provider == "ollama":
         from .providers.ollama import OllamaClient
 

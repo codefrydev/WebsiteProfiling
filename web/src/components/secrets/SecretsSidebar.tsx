@@ -5,48 +5,41 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   ChevronLeft,
-  FileText,
-  History,
+  KeyRound,
+  Lock,
   PanelLeft,
-  Plus,
+  Plug,
   Settings,
-  Trash2,
+  Sparkles,
+  type LucideIcon,
 } from 'lucide-react';
 import AppLogo from '@/components/AppLogo';
 import ThemeToggle from '@/components/ThemeToggle';
-import type { WriteLayoutState } from '@/components/contentStudio/WriteStudioShell';
-import { formatChatPropertyOption } from '@/lib/chatPropertyLabel';
+import type { ChatLayoutState } from '@/components/chat/ChatShell';
 import {
+  SECRETS_SIDEBAR_NAV_IDS,
   isMiniNavLinkActive,
   miniNavLinks,
-  WRITE_SIDEBAR_NAV_IDS,
 } from '@/lib/appNav';
+import { SECRETS_SECTIONS, type SecretsNavId } from '@/lib/secretsConfigSchema';
 import { strings } from '@/lib/strings';
-import type { ContentDraftListItem } from '@/types/contentStudio';
 
-const s = strings.views.contentStudio.shell;
+const s = strings.secrets;
 const c = strings.components.chat;
 
-export interface WritePropertyOption {
-  id: number;
-  name: string;
-  canonical_domain: string;
-}
+const NAV_LINKS = miniNavLinks(SECRETS_SIDEBAR_NAV_IDS);
 
-export interface WriteStudioSidebarProps extends WriteLayoutState {
-  properties: WritePropertyOption[];
-  propertyId: number | null;
-  onPropertyChange: (id: number) => void;
-  drafts: ContentDraftListItem[];
-  activeDraftId: number | null;
-  onSelectDraft: (id: number) => void;
-  onNewDraft: () => void;
-  onDeleteDraft: (id: number) => void;
-  loadingDrafts?: boolean;
-  readOnly?: boolean;
-}
+const SECTION_ICONS: Record<SecretsNavId, LucideIcon> = {
+  ai: Sparkles,
+  google: KeyRound,
+  integrations: Plug,
+  crawl: Lock,
+};
 
-const NAV_LINKS = miniNavLinks(WRITE_SIDEBAR_NAV_IDS);
+export interface SecretsSidebarProps extends ChatLayoutState {
+  activeSection: SecretsNavId;
+  onSectionChange: (section: SecretsNavId) => void;
+}
 
 function RailButton({
   label,
@@ -85,31 +78,23 @@ function SettingsMenu({ onClose }: { onClose: () => void }) {
         <ThemeToggle />
       </div>
       <Link
-        href="/secrets"
+        href="/pipeline"
         className="mt-1 block rounded-lg px-2 py-1.5 text-xs text-link hover:bg-[var(--chat-surface-hover)]"
         onClick={onClose}
       >
-        {c.aiSettingsLink}
+        {s.pipelineSettingsLink}
       </Link>
     </div>
   );
 }
 
-export default function WriteStudioSidebar({
-  properties,
-  propertyId,
-  onPropertyChange,
-  drafts,
-  activeDraftId,
-  onSelectDraft,
-  onNewDraft,
-  onDeleteDraft,
-  loadingDrafts,
-  readOnly,
+export default function SecretsSidebar({
+  activeSection,
+  onSectionChange,
   expanded,
   toggle,
   setExpanded,
-}: WriteStudioSidebarProps) {
+}: SecretsSidebarProps) {
   const pathname = usePathname();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
@@ -132,46 +117,33 @@ export default function WriteStudioSidebar({
     };
   }, [settingsOpen]);
 
-  const draftList = (
-    <>
-      {loadingDrafts ? (
-        <p className="px-2 py-4 text-xs text-muted-foreground">{s.loadingDrafts}</p>
-      ) : drafts.length === 0 ? (
-        <p className="px-2 py-4 text-xs text-muted-foreground">{s.noDrafts}</p>
-      ) : (
-        <ul className="space-y-0.5">
-          {drafts.map((d) => (
-            <li key={d.id} className="group flex items-center gap-1">
-              <button
-                type="button"
-                onClick={() => onSelectDraft(d.id)}
-                className={`min-w-0 flex-1 truncate rounded-lg px-2.5 py-2 text-left text-xs transition-colors ${
-                  activeDraftId === d.id
-                    ? 'bg-brand-700/60 text-foreground'
-                    : 'text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground'
-                }`}
-                title={d.title}
-              >
-                {d.title}
-              </button>
-              {!readOnly ? (
-                <button
-                  type="button"
-                  aria-label={s.deleteDraft}
-                  onClick={() => onDeleteDraft(d.id)}
-                  className="rounded p-1.5 text-muted-foreground opacity-0 transition-opacity hover:text-red-400 group-hover:opacity-100"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
+  const sectionList = (
+    <ul className="space-y-0.5">
+      {SECRETS_SECTIONS.map((section) => {
+        const Icon = SECTION_ICONS[section.id as SecretsNavId] ?? KeyRound;
+        const selected = activeSection === section.id;
+        return (
+          <li key={section.id}>
+            <button
+              type="button"
+              onClick={() => onSectionChange(section.id as SecretsNavId)}
+              className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-colors ${
+                selected
+                  ? 'bg-brand-700/60 text-foreground'
+                  : 'text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground'
+              }`}
+            >
+              <Icon className="h-4 w-4 shrink-0" aria-hidden />
+              <span className="truncate">{section.label}</span>
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 
   if (!expanded) {
+    const ActiveIcon = SECTION_ICONS[activeSection] ?? KeyRound;
     return (
       <div className="chat-sidebar-rail">
         <Link href="/home" className="mb-2 flex h-10 w-10 items-center justify-center" title={c.navHome}>
@@ -182,14 +154,8 @@ export default function WriteStudioSidebar({
           <PanelLeft className="h-5 w-5" />
         </RailButton>
 
-        {!readOnly ? (
-          <RailButton label={s.newDraft} onClick={onNewDraft}>
-            <Plus className="h-5 w-5" />
-          </RailButton>
-        ) : null}
-
-        <RailButton label={s.recentDrafts} onClick={() => setExpanded(true)}>
-          <History className="h-5 w-5" />
+        <RailButton label={s.sectionsLabel} onClick={() => setExpanded(true)} active>
+          <ActiveIcon className="h-5 w-5" />
         </RailButton>
 
         <div className="relative mt-auto" ref={settingsRef}>
@@ -223,7 +189,7 @@ export default function WriteStudioSidebar({
         <div className="flex items-center justify-between gap-2 px-3 py-3">
           <Link href="/home" className="flex min-w-0 items-center gap-2">
             <AppLogo size={20} />
-            <span className="truncate text-sm font-medium text-bright">{s.title}</span>
+            <span className="truncate text-sm font-medium text-bright">{s.sidebarTitle}</span>
           </Link>
           <button
             type="button"
@@ -233,44 +199,6 @@ export default function WriteStudioSidebar({
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
-        </div>
-
-        <div className="space-y-3 border-b border-muted/30 px-3 pb-3">
-          {!readOnly ? (
-            <button
-              type="button"
-              onClick={onNewDraft}
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-default px-3 py-2 text-sm text-foreground transition-colors hover:bg-[var(--chat-surface-hover)]"
-            >
-              <FileText className="h-4 w-4" />
-              {s.newDraft}
-            </button>
-          ) : null}
-
-          <div>
-            <label
-              htmlFor="write-property-select"
-              className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
-            >
-              {s.propertyLabel}
-            </label>
-            <select
-              id="write-property-select"
-              value={propertyId ?? ''}
-              onChange={(e) => onPropertyChange(Number(e.target.value))}
-              className="w-full truncate rounded-lg border border-default bg-[var(--chat-bg)] px-2.5 py-1.5 text-xs text-foreground"
-            >
-              {properties.length === 0 ? (
-                <option value="">{s.noProperties}</option>
-              ) : (
-                properties.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {formatChatPropertyOption(p)}
-                  </option>
-                ))
-              )}
-            </select>
-          </div>
         </div>
 
         <nav className="border-b border-muted/30 px-2 py-2">
@@ -298,9 +226,9 @@ export default function WriteStudioSidebar({
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <p className="px-3 pb-1 pt-2 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            {s.recentDrafts}
+            {s.sectionsLabel}
           </p>
-          <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">{draftList}</div>
+          <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">{sectionList}</div>
         </div>
 
         <div className="relative border-t border-muted/30 p-2" ref={settingsRef}>

@@ -263,7 +263,7 @@ export default function ChatModelPicker({
                 <span />
               )}
               <Link
-                href="/pipeline?group=llm"
+                href="/secrets"
                 className="text-link hover:underline"
                 onClick={() => setOpen(false)}
               >

@@ -712,6 +712,10 @@
       "label": "Run audit",
       "section": "Overview"
     },
+    "secrets": {
+      "label": "Secrets",
+      "section": "Overview"
+    },
     "chat": {
       "label": "AI Chat",
       "section": "AI"
@@ -827,6 +831,31 @@
     "titleLoadReport": "Load a previous audit",
     "titleCompareBaseline": "Older audit to compare against (new, removed, and changed URLs)"
   },
+  "secrets": {
+    "pageTitle": "Secrets",
+    "pageSubtitle": "API keys and credentials stored in the database. Values are masked after save.",
+    "sidebarTitle": "Secrets",
+    "expandSidebar": "Show sidebar",
+    "collapseSidebar": "Hide sidebar",
+    "sectionsLabel": "Secret categories",
+    "pipelineSettingsLink": "Pipeline settings",
+    "backToPipeline": "Run audit",
+    "saveButton": "Save secrets",
+    "saving": "Saving…",
+    "saveHint": "Changes are stored in PostgreSQL only — not in audit settings files.",
+    "loading": "Loading secrets…",
+    "envConfigured": "Environment variables set",
+    "serviceAccountSaved": "Service account key saved. Paste new JSON to replace.",
+    "serviceAccountReplacePlaceholder": "Paste service account JSON to replace the saved key",
+    "googleConnectHint": "After saving Client ID and Secret, connect your Google account on",
+    "googleConnectLink": "Pipeline → Google",
+    "aiProviderHint": "Choose provider and model on",
+    "aiProviderLink": "Pipeline → Content & AI",
+    "pipelineBanner": "API keys and credentials are managed on the",
+    "googleConfigured": "Google Cloud credentials are configured.",
+    "googleNotConfigured": "Google Cloud credentials are not configured yet.",
+    "googleCredentialsHint": "Add OAuth Client ID, Client Secret, or service account JSON on the"
+  },
   "pipelineRunner": {
     "fabTitle": "Run audit",
     "fabAriaOpen": "Open Run audit",
@@ -868,6 +897,8 @@
     "wizardUrlHint": "Enter the site you want to analyze.",
     "wizardWorkflowHint": "Choose what to include: full site audit, crawl only, Lighthouse, Google data, or keywords.",
     "pageTitle": "Run audit",
+    "expandSidebar": "Show sidebar",
+    "collapseSidebar": "Hide sidebar",
     "pageTabsLabel": "Run audit sections",
     "tabRun": "Run",
     "tabSettings": "Settings",
@@ -1434,13 +1465,16 @@
       "navGithub": "GitHub",
       "navOpenApp": "Dashboard",
       "navRunAudit": "Run audit",
-      "heroBadge": "Open source · Self-hosted",
-      "heroTitleLine1": "Self-hosted technical SEO",
-      "heroTitleAccent": "audits you control",
+      "heroEyebrow": "Open source · Self-hosted",
+      "heroTitle": "Technical SEO audits you control",
       "heroSubtitle": "Crawl every URL, prioritize real issues, connect Search Console and Analytics, and export client reports — on infrastructure you own.",
+      "heroBullets": [
+        "No subscription tiers — MIT licensed and self-hosted",
+        "Your crawl data and reports stay on your infrastructure",
+        "Export HTML and PDF reports ready for clients"
+      ],
       "heroProofNoSubscription": "No subscription tiers",
       "heroProofLocalData": "Your data stays local",
-      "heroProofExport": "Export HTML & PDF",
       "ctaDashboard": "Open dashboard",
       "ctaRunAudit": "Run your first audit",
       "ctaGoogleGuide": "Google setup guide",

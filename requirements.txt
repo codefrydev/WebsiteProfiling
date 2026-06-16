@@ -37,6 +37,7 @@ playwright==1.60.0
 httpx==0.28.1
 openai==2.41.0
 anthropic==0.107.0
+groq==1.4.0
 
 # Spell-check / HTML validation extras
 pyspellchecker==0.9.0

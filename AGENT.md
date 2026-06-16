@@ -4,7 +4,7 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 
 **What it is:** `python -m src` from repo root (`src/__main__.py` -> package **`website_profiling`**). Config: stored in **PostgreSQL** (`pipeline_config` table, `key/value/is_unknown/updated_at`). A shadow **`pipeline-config.txt`** is auto-written to `DATA_DIR` on every Save/Run. CLI loads DB first (`DATABASE_URL`), then shadow file; `--config` overrides with a file. Reference keys: `input.txt.example` and `pipeline-config.example.txt` (not auto-loaded).
 
-**LLM / AI:** Settings live in **`llm_config`** table in PostgreSQL. Providers: OpenAI, Google Gemini, Anthropic, Ollama (`web/src/lib/llmConfigSchema.ts`). Configure only via web UI **AI** tab (`GET/PUT /api/llm-config`, localhost). Never in `pipeline-config.txt` or `--config`.
+**LLM / AI:** Settings live in **`llm_config`** table in PostgreSQL. Providers: OpenAI, Google Gemini, Anthropic, Groq, Ollama (`web/src/lib/llmConfigSchema.ts`). Configure only via web UI **AI** tab (`GET/PUT /api/llm-config`, localhost). Never in `pipeline-config.txt` or `--config`.
 
 **Frontend:** **`web/`** (Next.js) -- server reads PostgreSQL via `/api/report/*`.
 

@@ -14,7 +14,7 @@ export const LLM_CONFIG_SECTIONS = [
         label: 'Enable AI insights',
         type: 'bool',
         defaultValue: false,
-        help: 'Uses the provider below during report generation. Configure API keys here or via environment variables.',
+        help: 'Uses the provider below during report generation. API keys are managed on the Secrets page or via environment variables.',
       },
       {
         key: 'llm_provider',
@@ -26,6 +26,7 @@ export const LLM_CONFIG_SECTIONS = [
           { value: 'openai', label: 'OpenAI' },
           { value: 'gemini', label: 'Google Gemini' },
           { value: 'anthropic', label: 'Anthropic Claude' },
+          { value: 'groq', label: 'Groq' },
           { value: 'ollama', label: 'Ollama (local)' },
         ],
       },
@@ -34,7 +35,7 @@ export const LLM_CONFIG_SECTIONS = [
         label: 'Model',
         type: 'text',
         defaultValue: '',
-        placeholder: 'e.g. gpt-4o-mini, gemini-2.0-flash, claude-3-5-haiku-latest, llama3.2',
+        placeholder: 'e.g. gpt-4o-mini, gemini-2.0-flash, claude-3-5-haiku-latest, llama-3.3-70b-versatile, llama3.2',
         help: 'Leave blank to use provider default.',
       },
       {
@@ -49,7 +50,7 @@ export const LLM_CONFIG_SECTIONS = [
         label: 'API key',
         type: 'secret',
         defaultValue: '',
-        help: 'Optional when OPENAI_API_KEY, GEMINI_API_KEY, or ANTHROPIC_API_KEY is set in the environment. Stored only in the database, not in saved audit settings files.',
+        help: 'Optional when OPENAI_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY, or GROQ_API_KEY is set in the environment. Stored only in the database, not in saved audit settings files.',
       },
     ],
   },
@@ -129,7 +130,7 @@ export function isLlmFieldVisible(
 ): boolean {
   const provider = String(values.llm_provider || 'none');
   if (key === 'llm_api_key') {
-    return provider !== 'none' && provider !== 'ollama';
+    return false;
   }
   if (key === 'llm_base_url') {
     return provider === 'ollama';

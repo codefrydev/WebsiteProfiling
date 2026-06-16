@@ -49,7 +49,7 @@ export default function ChatPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { configState, configLoaded } = usePipeline();
+  const { configState, configLoaded, llmConfigState } = usePipeline();
   const initialUrlCtx = parseChatUrlContext(searchParams);
   const [properties, setProperties] = useState<PropertyOption[]>([]);
   const [propertyId, setPropertyId] = useState<number | null>(initialUrlCtx.propertyId);
@@ -524,7 +524,7 @@ export default function ChatPage() {
                 <div>
                   <p className="font-medium text-amber-100">{c.aiDisabledTitle}</p>
                   <p className="mt-1 text-muted-foreground">{c.aiDisabledHint}</p>
-                  <Link href="/pipeline?group=llm" className="mt-2 inline-block text-link text-xs">
+                  <Link href="/pipeline?group=content-ai" className="mt-2 inline-block text-link text-xs">
                     {c.openAiSettings}
                   </Link>
                 </div>

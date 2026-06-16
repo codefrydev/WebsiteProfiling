@@ -11,6 +11,7 @@ _ENV_KEY_BY_PROVIDER = {
     "openai": "OPENAI_API_KEY",
     "gemini": "GEMINI_API_KEY",
     "anthropic": "ANTHROPIC_API_KEY",
+    "groq": "GROQ_API_KEY",
 }
 
 
