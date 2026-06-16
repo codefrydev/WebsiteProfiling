@@ -3,6 +3,12 @@
  * Values are stored in llm_config, pipeline_config, or google_app_settings.
  */
 import type { SecretsState } from '@/types/api';
+import {
+  LLM_CLOUD_PROVIDERS,
+  LLM_PROVIDER_ENV_VARS,
+  LLM_PROVIDER_LABELS,
+  llmProviderApiKeyField,
+} from '@/lib/llmProviderApiKeys';
 
 export type SecretsStorage = 'llm' | 'pipeline' | 'google';
 
@@ -38,16 +44,14 @@ export const SECRETS_SECTIONS: SecretsSection[] = [
   {
     id: 'ai',
     label: 'AI providers',
-    fields: [
-      {
-        key: 'llm_api_key',
-        label: 'LLM API key',
-        type: 'secret',
-        storage: 'llm',
-        help: 'For the provider selected in Pipeline → Content & AI. Or set provider keys in the environment (see hints below).',
-        envVars: ['OPENAI_API_KEY', 'GEMINI_API_KEY', 'ANTHROPIC_API_KEY', 'GROQ_API_KEY'],
-      },
-    ],
+    fields: LLM_CLOUD_PROVIDERS.map((provider) => ({
+      key: llmProviderApiKeyField(provider),
+      label: `${LLM_PROVIDER_LABELS[provider]} API key`,
+      type: 'secret' as const,
+      storage: 'llm' as const,
+      help: 'Saved per provider. Pipeline → Content & AI uses the key for the active provider automatically.',
+      envVars: [LLM_PROVIDER_ENV_VARS[provider]],
+    })),
   },
   {
     id: 'google',

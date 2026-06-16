@@ -11,8 +11,13 @@ import {
   isSecretsSecretKey,
   maskSecretForClient,
 } from '@/lib/secretsConfigSchema';
+import {
+  ALL_LLM_PROVIDER_API_KEY_KEYS,
+  isLlmCloudProvider,
+  llmProviderApiKeyField,
+} from '@/lib/llmProviderApiKeys';
 import { loadGoogleAppSettings, saveGoogleAppSettings } from '@/server/googleAppSettings';
-import { loadLlmConfig, saveLlmConfig } from '@/server/llmConfig';
+import { readLlmConfigRaw, saveLlmConfig } from '@/server/llmConfig';
 import { loadPipelineConfig, savePipelineConfig } from '@/server/pipelineConfig';
 import type { GoogleServiceAccount, SecretsLoadResult, SecretsState } from '@/types/api';
 
@@ -36,19 +41,36 @@ function isServiceAccount(value: unknown): value is GoogleServiceAccount {
   );
 }
 
+function loadLlmProviderSecrets(rawLlm: Record<string, string>, state: SecretsState): void {
+  for (const key of ALL_LLM_PROVIDER_API_KEY_KEYS) {
+    const raw = String(rawLlm[key] || '').trim();
+    if (!raw) continue;
+    state[key] = maskSecretForClient(raw);
+    state[`${key}_masked`] = true;
+  }
+
+  const legacy = String(rawLlm.llm_api_key || '').trim();
+  if (!legacy) return;
+
+  const provider = String(rawLlm.llm_provider || '').trim().toLowerCase();
+  if (!isLlmCloudProvider(provider)) return;
+
+  const field = llmProviderApiKeyField(provider);
+  if (state[field] && String(state[field]).trim() !== '') return;
+
+  state[field] = maskSecretForClient(legacy);
+  state[`${field}_masked`] = true;
+}
+
 export async function loadSecrets(): Promise<SecretsLoadResult> {
-  const [llm, pipeline, google] = await Promise.all([
-    loadLlmConfig(),
+  const [rawLlm, pipeline, google] = await Promise.all([
+    readLlmConfigRaw(),
     loadPipelineConfig(),
     loadGoogleAppSettings(),
   ]);
 
   const state = buildInitialSecretsState();
-
-  state.llm_api_key = String(llm.state.llm_api_key || '');
-  if (llm.state.llm_api_key_masked) {
-    state.llm_api_key_masked = true;
-  }
+  loadLlmProviderSecrets(rawLlm, state);
 
   for (const key of ALL_SECRETS_KEYS) {
     const field = getSecretsFieldByKey(key);
@@ -80,19 +102,17 @@ export async function loadSecrets(): Promise<SecretsLoadResult> {
 }
 
 export async function saveSecrets(rawState: SecretsState): Promise<void> {
-  const [llmLoaded, pipelineLoaded, googleLoaded] = await Promise.all([
-    loadLlmConfig(),
+  const [pipelineLoaded, googleLoaded] = await Promise.all([
     loadPipelineConfig(),
     loadGoogleAppSettings(),
   ]);
 
-  const llmState = { ...llmLoaded.state };
-  if (rawState.llm_api_key !== undefined) {
-    llmState.llm_api_key = String(rawState.llm_api_key ?? '');
-    if (rawState.llm_api_key_masked === true) {
-      llmState.llm_api_key_masked = true;
-    } else {
-      delete llmState.llm_api_key_masked;
+  const llmState: SecretsState = {};
+  for (const key of ALL_LLM_PROVIDER_API_KEY_KEYS) {
+    if (rawState[key] === undefined) continue;
+    llmState[key] = String(rawState[key] ?? '');
+    if (rawState[`${key}_masked`] === true) {
+      llmState[`${key}_masked`] = true;
     }
   }
 

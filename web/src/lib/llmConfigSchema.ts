@@ -50,7 +50,7 @@ export const LLM_CONFIG_SECTIONS = [
         label: 'API key',
         type: 'secret',
         defaultValue: '',
-        help: 'Optional when OPENAI_API_KEY, GEMINI_API_KEY, ANTHROPIC_API_KEY, or GROQ_API_KEY is set in the environment. Stored only in the database, not in saved audit settings files.',
+        help: 'Managed on the Secrets page (one key per provider). Or set provider keys in the environment.',
       },
     ],
   },

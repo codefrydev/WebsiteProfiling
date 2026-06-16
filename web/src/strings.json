@@ -849,7 +849,7 @@
     "serviceAccountReplacePlaceholder": "Paste service account JSON to replace the saved key",
     "googleConnectHint": "After saving Client ID and Secret, connect your Google account on",
     "googleConnectLink": "Pipeline → Google",
-    "aiProviderHint": "Choose provider and model on",
+    "aiProviderHint": "Save a key for each provider you use, then switch on",
     "aiProviderLink": "Pipeline → Content & AI",
     "pipelineBanner": "API keys and credentials are managed on the",
     "googleConfigured": "Google Cloud credentials are configured.",

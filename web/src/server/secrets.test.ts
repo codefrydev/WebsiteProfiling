@@ -54,9 +54,11 @@ describe('loadSecrets', () => {
 
   it('aggregates masked secrets from stores', async () => {
     vi.doMock('@/server/llmConfig', () => ({
-      loadLlmConfig: vi.fn().mockResolvedValue({
-        state: { llm_api_key: '••••cdef', llm_api_key_masked: true },
+      readLlmConfigRaw: vi.fn().mockResolvedValue({
+        llm_provider: 'openai',
+        llm_api_key_openai: 'sk-openai-secret',
       }),
+      saveLlmConfig: vi.fn(),
     }));
     vi.doMock('@/server/pipelineConfig', () => ({
       loadPipelineConfig: vi.fn().mockResolvedValue({
@@ -78,7 +80,8 @@ describe('loadSecrets', () => {
 
     const { loadSecrets } = await import('@/server/secrets');
     const result = await loadSecrets();
-    expect(result.state.llm_api_key).toBe('••••cdef');
+    expect(result.state.llm_api_key_openai).toBe('••••cret');
+    expect(result.state.llm_api_key_openai_masked).toBe(true);
     expect(result.state.google_client_id).toBe('client.apps.googleusercontent.com');
     expect(result.state.google_client_secret).toBe('••••cret');
     expect(result.envHints).toBeTypeOf('object');
