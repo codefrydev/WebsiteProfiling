@@ -11,7 +11,7 @@ import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { useTabSections } from '@/hooks/useTabSections';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { BACKLINKS_TAB_SECTIONS } from '@/lib/reportViewSections';
-import { useOptionalPipeline } from '../context/PipelineContext';
+import { useActivePropertyContext } from '@/hooks/useActivePropertyContext';
 import { apiUrl } from '../lib/publicBase';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, ViewTabs, EmptyState } from '../components';
@@ -42,16 +42,15 @@ export default function Backlinks(_props: ViewProps) {
   const { data, loadReport } = useReport();
   useSectionData('gsc-links');
   const gscLinksReady = useSectionsViewReady(['gsc-links']);
-  const pipeline = useOptionalPipeline();
-  const propertyId = Number(pipeline?.configState.active_property_id || 0);
+  const { propertyId, contextReady } = useActivePropertyContext();
   const gscLinks = data?.gsc_links;
   const bingBacklinks = data?.bing_backlinks;
   const competitorGap = data?.competitor_link_gap;
   const [velocity, setVelocity] = useState<Array<{ capturedAt: string; referringDomains: number }>>([]);
 
   useEffect(() => {
-    if (!propertyId) {
-      setVelocity([]);
+    if (!contextReady || !propertyId) {
+      if (contextReady) setVelocity([]);
       return;
     }
     let cancelled = false;
@@ -66,7 +65,7 @@ export default function Backlinks(_props: ViewProps) {
     return () => {
       cancelled = true;
     };
-  }, [propertyId]);
+  }, [contextReady, propertyId]);
 
   const paginationLabels = {
     showingSlice: vb.table.showingSlice,

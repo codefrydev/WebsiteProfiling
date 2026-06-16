@@ -57,6 +57,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   cardByKeyRef.current = cardByKey;
   const cacheKeyRef = useRef('');
   const groupsLoadedRef = useRef(false);
+  const groupsPendingCacheKeyRef = useRef<string | null>(null);
 
   const reportIdsKey = useMemo(
     () => reportList.map((r) => r.id).join(','),
@@ -81,10 +82,14 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
 
     const cacheKey = `${reportIdsKey}:${crawlRuns.length}`;
     if (groupsLoadedRef.current && cacheKeyRef.current === cacheKey) return;
-    if (groupsInFlightRef.current) return;
+    if (groupsInFlightRef.current) {
+      groupsPendingCacheKeyRef.current = cacheKey;
+      return;
+    }
 
     groupsInFlightRef.current = true;
     cacheKeyRef.current = cacheKey;
+    groupsPendingCacheKeyRef.current = null;
     setWidgetStatus((prev) => ({ ...prev, groups: 'loading', summary: 'loading' }));
 
     try {
@@ -93,6 +98,10 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       const res = await fetch(reportApi(`/portfolio${qs}`));
       const body = (await res.json().catch(() => ({}))) as GroupsApiResponse;
       if (!res.ok) throw new Error(body.error || res.statusText);
+
+      if (cacheKeyRef.current !== cacheKey) {
+        return;
+      }
 
       const nextGroups = Array.isArray(body.groups) ? body.groups : [];
       const crawlHistory =
@@ -106,6 +115,9 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       setWidgetStatus({ groups: 'loaded', summary: 'loaded' });
       groupsLoadedRef.current = true;
     } catch {
+      if (cacheKeyRef.current !== cacheKey) {
+        return;
+      }
       setGroups([]);
       setCrawlHistoryByDomain({});
       setSummary(computePortfolioSummary([]));
@@ -114,6 +126,11 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       cacheKeyRef.current = '';
     } finally {
       groupsInFlightRef.current = false;
+      const pending = groupsPendingCacheKeyRef.current;
+      if (pending && pending !== cacheKeyRef.current) {
+        groupsPendingCacheKeyRef.current = null;
+        void loadGroups();
+      }
     }
   }, [metaLoaded, reportList, crawlRuns.length, reportIdsKey]);
 

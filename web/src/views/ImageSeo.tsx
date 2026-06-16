@@ -3,11 +3,10 @@
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ImageIcon } from 'lucide-react';
-import { useReport } from '@/context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
 import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
-import { useOptionalPipeline } from '@/context/PipelineContext';
+import { useActivePropertyContext } from '@/hooks/useActivePropertyContext';
 import { PageLayout, PageHeader, Card, ViewTabs, ViewTabPanel, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '@/components';
 import ImageAuditSummaryCards, { type ImageAuditSummaryData } from '@/components/imageSeo/ImageAuditSummaryCards';
 import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
@@ -45,12 +44,9 @@ function summaryFromApi(raw: Record<string, unknown>): ImageAuditSummaryData {
 
 export default function ImageSeo({ searchQuery = '' }: ViewProps) {
   const vi = strings.views.imageSeo;
-  const { selectedReportId } = useReport();
   useSectionData('content');
   const contentReady = useSectionsViewReady(['content']);
-  const pipeline = useOptionalPipeline();
-  const propertyId = Number(pipeline?.configState.active_property_id || 0) || null;
-  const reportId = selectedReportId ?? null;
+  const { propertyId, reportId, contextReady } = useActivePropertyContext();
 
   const [activeTab, setActiveTab] = useUrlTab(TABS, 'overview');
   const [summary, setSummary] = useState<ImageAuditSummaryData | null>(null);
@@ -63,7 +59,7 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
   const q = (searchQuery || '').toLowerCase().trim();
 
   useEffect(() => {
-    if (!propertyId) return;
+    if (!contextReady || !propertyId) return;
     let cancelled = false;
     void fetchAuditTool({ toolName: 'get_image_audit_summary', propertyId, reportId })
       .then((data) => {
@@ -75,11 +71,11 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
     return () => {
       cancelled = true;
     };
-  }, [propertyId, reportId]);
+  }, [contextReady, propertyId, reportId]);
 
   const loadList = useCallback(async () => {
     const tool = TAB_TOOLS[activeTab];
-    if (!tool || !propertyId) {
+    if (!contextReady || !tool || !propertyId) {
       setListRows([]);
       setListTotal(0);
       return;
@@ -103,7 +99,7 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, propertyId, reportId]);
+  }, [activeTab, contextReady, propertyId, reportId]);
 
   useEffect(() => {
     if (activeTab === 'overview') return;

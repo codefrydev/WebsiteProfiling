@@ -55,6 +55,8 @@ export interface PipelineContextValue {
   legacyBannerDismissed: boolean;
   loadError: string;
   loading: boolean;
+  /** True after the first pipeline/LLM config fetch completes. */
+  configLoaded: boolean;
   saving: boolean;
   saveMsg: string;
   pythonExe: string;
@@ -611,6 +613,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       legacyBannerDismissed,
       loadError,
       loading,
+      configLoaded,
       saving,
       saveMsg,
       pythonExe,
@@ -656,6 +659,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       legacyBannerDismissed,
       loadError,
       loading,
+      configLoaded,
       saving,
       saveMsg,
       pythonExe,

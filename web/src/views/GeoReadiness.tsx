@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Globe2 } from 'lucide-react';
-import { useReport } from '@/context/useReport';
-import { useOptionalPipeline } from '@/context/PipelineContext';
+import { useActivePropertyContext } from '@/hooks/useActivePropertyContext';
 import {
   PageLayout,
   PageHeader,
@@ -24,10 +23,7 @@ import type { ViewProps } from '@/types';
 
 export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
   const vg = strings.views.geoReadiness;
-  const { selectedReportId } = useReport();
-  const pipeline = useOptionalPipeline();
-  const propertyId = Number(pipeline?.configState.active_property_id || 0) || null;
-  const reportId = selectedReportId ?? null;
+  const { propertyId, reportId, contextReady } = useActivePropertyContext();
 
   const [geoScore, setGeoScore] = useState<Record<string, unknown> | null>(null);
   const [llms, setLlms] = useState<Record<string, unknown> | null>(null);
@@ -38,6 +34,10 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
+    if (!contextReady) {
+      setLoading(true);
+      return;
+    }
     if (!propertyId) {
       setLoading(false);
       return;
@@ -74,7 +74,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
     return () => {
       cancelled = true;
     };
-  }, [propertyId, reportId]);
+  }, [contextReady, propertyId, reportId]);
 
   const q = (searchQuery || '').toLowerCase().trim();
   const filteredFaq = useMemo(() => {

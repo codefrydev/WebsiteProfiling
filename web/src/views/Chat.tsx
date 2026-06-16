@@ -49,7 +49,7 @@ export default function ChatPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { configState, llmConfigState } = usePipeline();
+  const { configState, configLoaded } = usePipeline();
   const initialUrlCtx = parseChatUrlContext(searchParams);
   const [properties, setProperties] = useState<PropertyOption[]>([]);
   const [propertyId, setPropertyId] = useState<number | null>(initialUrlCtx.propertyId);
@@ -100,6 +100,7 @@ export default function ChatPage() {
   const activeSession = sessions.find((s) => s.id === sessionId) ?? null;
 
   const loadProperties = useCallback(async () => {
+    if (!configLoaded) return;
     setLoadingProperties(true);
     try {
       const res = await fetch(apiUrl('/properties'));
@@ -138,7 +139,7 @@ export default function ChatPage() {
     } finally {
       setLoadingProperties(false);
     }
-  }, [configState.active_property_id, configState.start_url, searchParams]);
+  }, [configLoaded, configState.active_property_id, configState.start_url, searchParams]);
 
   const resolveSessionFromUrl = useCallback(async (sid: number, pid: number | null) => {
     try {
@@ -211,8 +212,9 @@ export default function ChatPage() {
   }, []);
 
   useEffect(() => {
+    if (!configLoaded) return;
     void loadProperties();
-  }, [loadProperties]);
+  }, [configLoaded, loadProperties]);
 
   useEffect(() => {
     if (propertyId) void loadSessions(propertyId);
