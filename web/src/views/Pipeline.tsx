@@ -3,19 +3,22 @@
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import type { IntegrationToast } from '@/types/api';
+import ChatShell from '@/components/chat/ChatShell';
 import PageLayout from '@/components/PageLayout';
+import PipelineContextBar from '@/components/pipeline/PipelineContextBar';
 import PipelineRunPanel from '@/components/pipeline/PipelineRunPanel';
 import PipelineSettingsPanel, { PipelineSettingsSaveBar } from '@/components/pipeline/PipelineSettingsPanel';
-import PipelineShell, {
-  pipelineHrefForNav,
-  pipelineNavFromSearchParams,
-  type PipelineNavId,
-} from '@/components/pipeline/PipelineShell';
+import PipelineSidebar from '@/components/pipeline/PipelineSidebar';
 import { PipelineStatusBadge, PipelineStopButton } from '@/components/pipeline/pipelineUi';
 import { isPipelinePresetId } from '@/components/pipeline/pipelinePresets';
 import { usePipeline } from '@/context/PipelineContext';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import { OPEN_INTEGRATIONS } from '@/lib/pipelineJobEvents';
+import {
+  pipelineHrefForNav,
+  pipelineNavFromSearchParams,
+  type PipelineNavId,
+} from '@/lib/pipelineNav';
 
 export default function PipelinePage() {
   const router = useRouter();
@@ -97,22 +100,33 @@ export default function PipelinePage() {
     ) : null;
 
   return (
-    <PipelineShell
-      activeNav={activeNav}
-      onNavChange={setNav}
-      headerExtra={headerExtra}
-      footer={activeNav !== 'run' ? <PipelineSettingsSaveBar /> : undefined}
+    <ChatShell
+      sidebar={(layout) => (
+        <PipelineSidebar {...layout} activeNav={activeNav} onNavChange={setNav} />
+      )}
     >
-      <PageLayout maxWidth className={activeNav === 'run' ? 'pb-8' : 'pb-6'}>
-        {activeNav === 'run' ? (
-          <PipelineRunPanel />
-        ) : (
-          <PipelineSettingsPanel
-            activeGroup={activeNav}
-            googleIntegrationsToast={googleIntegrationsToast}
-          />
-        )}
-      </PageLayout>
-    </PipelineShell>
+      <div className="chat-main-panel">
+        <PipelineContextBar activeNav={activeNav} headerExtra={headerExtra} />
+
+        <div className="chat-messages-scroll min-h-0 flex-1">
+          <PageLayout maxWidth className={activeNav === 'run' ? 'pb-8' : 'pb-6'}>
+            {activeNav === 'run' ? (
+              <PipelineRunPanel />
+            ) : (
+              <PipelineSettingsPanel
+                activeGroup={activeNav}
+                googleIntegrationsToast={googleIntegrationsToast}
+              />
+            )}
+          </PageLayout>
+        </div>
+
+        {activeNav !== 'run' ? (
+          <footer className="chat-composer-dock shrink-0">
+            <PipelineSettingsSaveBar />
+          </footer>
+        ) : null}
+      </div>
+    </ChatShell>
   );
 }
