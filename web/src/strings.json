@@ -1062,6 +1062,40 @@
       "contentAi": "Content quality & AI insights",
       "advanced": "Advanced"
     },
+    "settingsGroupDescriptions": {
+      "crawlReport": "Spider depth, page limits, and report sections",
+      "lighthouse": "Core Web Vitals and category scores",
+      "keywords": "Expansion sources and enrichment",
+      "google": "Search Console site and GA4 property",
+      "contentAi": "AI insights and content scoring",
+      "advanced": "Runner command, Python path, repo root"
+    },
+    "sectionIntros": {
+      "crawl": "Tell the crawler what to fetch and how. Set the Site URL and limits — everything else has sensible defaults.",
+      "report": "Choose what the audit report includes and which extra checks to run.",
+      "lighthouse": "Performance and quality scans. Most are off by default except the core run.",
+      "analysis": "Thresholds for near-duplicate and language detection.",
+      "pipeline": "Pick which stages of the audit run.",
+      "keywords_basics": "Inputs that seed keyword research.",
+      "keywords_expansion": "Optional free sources to widen the keyword set.",
+      "advanced": "Low-level inputs for the warning mapper step."
+    },
+    "tabRunHint": "Start a new audit run",
+    "breadcrumbAudits": "Audits",
+    "advancedOptionsLabel": "Advanced options",
+    "advancedOptionsHint": "{count} more settings",
+    "wizardRunExplainerTitle": "What happens when you run",
+    "wizardRunExplainerSteps": [
+      "Crawl your site and collect every page",
+      "Build an SEO audit report with charts",
+      "Score performance, accessibility, and SEO"
+    ],
+    "wizardRunExplainerNote": "Exact steps depend on the audit type you pick next.",
+    "firstRunTitle": "Run your first audit",
+    "firstRunBody": "Enter a site URL and choose what to analyze. We crawl the site, build a report, and score performance — all in one run.",
+    "firstRunHighlightCrawl": "Crawl",
+    "firstRunHighlightReport": "Report",
+    "firstRunHighlightPerf": "Performance",
     "crawlPresets": {
       "small": { "label": "Small site", "maxPages": "50" },
       "medium": { "label": "Medium site", "maxPages": "500" },

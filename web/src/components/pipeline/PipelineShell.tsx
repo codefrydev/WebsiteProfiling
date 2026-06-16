@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ArrowLeft, Menu, Play, X } from 'lucide-react';
 import AppLogo from '@/components/AppLogo';
 import ThemeToggle from '@/components/ThemeToggle';
+import Breadcrumb from '@/components/Breadcrumb';
 import { strings } from '@/lib/strings';
 import { readPipelineReturnPath } from '@/lib/pipelineReturn';
 import {
@@ -15,9 +16,14 @@ import { SETTINGS_GROUP_ICONS } from '@/components/pipeline/pipelineUi';
 
 const s = strings.pipelineRunner;
 const groupLabels = s.settingsGroups;
+const groupDescriptions = s.settingsGroupDescriptions;
 
 function settingsGroupLabel(labelKey: string): string {
   return (groupLabels as Record<string, string>)[labelKey] ?? labelKey;
+}
+
+function settingsGroupDescription(labelKey: string): string {
+  return (groupDescriptions as Record<string, string>)[labelKey] ?? '';
 }
 
 export type PipelineNavId = 'run' | PipelineSettingsGroupId;
@@ -39,15 +45,27 @@ export default function PipelineShell({
 }: PipelineShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const backHref = readPipelineReturnPath();
+  const currentLabel =
+    activeNav === 'run'
+      ? s.runTitle
+      : settingsGroupLabel(PIPELINE_SETTINGS_GROUPS.find((g) => g.id === activeNav)?.labelKey ?? '');
+  const subtitle = activeNav === 'run' ? s.runSubtitle : s.settingsSubtitle;
 
   const closeSidebar = () => setSidebarOpen(false);
 
   const navItemClass = (selected: boolean) =>
-    `nav-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+    `nav-btn press relative w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
       selected
         ? 'tab-active bg-blue-500/10 border border-blue-500/25 text-link'
         : 'text-muted-foreground hover:text-foreground hover:bg-brand-700/80'
     }`;
+
+  const activeRail = (
+    <span
+      aria-hidden
+      className="absolute left-0 top-1/2 h-5 w-1 -translate-y-1/2 rounded-r-full bg-link"
+    />
+  );
 
   const selectNav = (nav: PipelineNavId) => {
     onNavChange(nav);
@@ -101,8 +119,20 @@ export default function PipelineShell({
             onClick={() => selectNav('run')}
             className={navItemClass(activeNav === 'run')}
           >
-            <Play className="h-4 w-4 shrink-0" aria-hidden />
-            <span className="flex-1 text-left">{s.tabRun}</span>
+            {activeNav === 'run' ? activeRail : null}
+            <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-500/15 text-link">
+              <Play className="h-4 w-4" aria-hidden />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col text-left">
+              <span className="truncate leading-tight">{s.tabRun}</span>
+              <span
+                className={`truncate text-[11px] font-normal leading-tight ${
+                  activeNav === 'run' ? 'text-link/70' : 'text-muted-foreground'
+                }`}
+              >
+                {s.tabRunHint}
+              </span>
+            </span>
           </button>
 
           <div className="mb-2 mt-5 px-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
@@ -111,6 +141,7 @@ export default function PipelineShell({
           {PIPELINE_SETTINGS_GROUPS.map((group) => {
             const Icon = SETTINGS_GROUP_ICONS[group.id];
             const selected = activeNav === group.id;
+            const description = settingsGroupDescription(group.labelKey);
             return (
               <button
                 key={group.id}
@@ -118,8 +149,20 @@ export default function PipelineShell({
                 onClick={() => selectNav(group.id)}
                 className={navItemClass(selected)}
               >
+                {selected ? activeRail : null}
                 <Icon className="h-4 w-4 shrink-0" aria-hidden />
-                <span className="flex-1 text-left">{settingsGroupLabel(group.labelKey)}</span>
+                <span className="flex min-w-0 flex-1 flex-col text-left">
+                  <span className="truncate leading-tight">{settingsGroupLabel(group.labelKey)}</span>
+                  {description ? (
+                    <span
+                      className={`truncate text-[11px] font-normal leading-tight ${
+                        selected ? 'text-link/70' : 'text-muted-foreground'
+                      }`}
+                    >
+                      {description}
+                    </span>
+                  ) : null}
+                </span>
               </button>
             );
           })}
@@ -145,16 +188,14 @@ export default function PipelineShell({
               <ArrowLeft className="h-5 w-5" aria-hidden />
             </Link>
             <div className="min-w-0">
-              <h1 className="truncate text-sm font-semibold text-bright sm:text-base">
-                {activeNav === 'run'
-                  ? s.runTitle
-                  : settingsGroupLabel(
-                      PIPELINE_SETTINGS_GROUPS.find((g) => g.id === activeNav)?.labelKey ?? '',
-                    )}
-              </h1>
-              <p className="hidden truncate text-xs text-muted-foreground sm:block">
-                {activeNav === 'run' ? s.runSubtitle : s.settingsSubtitle}
-              </p>
+              <h1 className="sr-only">{currentLabel}</h1>
+              <Breadcrumb
+                items={[
+                  { label: s.breadcrumbAudits, href: backHref },
+                  { label: currentLabel },
+                ]}
+              />
+              <p className="hidden truncate text-xs text-muted-foreground sm:block">{subtitle}</p>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">

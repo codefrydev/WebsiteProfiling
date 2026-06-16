@@ -40,7 +40,48 @@ export interface AppNavItem {
   section: string;
   icon: LucideIcon;
   hrefPath: string;
+  /** Short one-line description shown under the label in the sidebar. */
+  description?: string;
 }
+
+/**
+ * One-line descriptions for nav items. Kept in TS (not strings.json) because
+ * `strings.nav[id]` is typed across the union of all nav keys, so adding a
+ * `description` to only some entries would not type-check.
+ */
+const NAV_DESCRIPTIONS: Partial<Record<NavItemId, string>> = {
+  home: 'Pick a property to audit',
+  overview: 'Audit health at a glance',
+  compare: 'Compare two audit runs',
+  export: 'Download reports & data',
+  'log-analyzer': 'Server log file insights',
+  issues: 'Problems found, by severity',
+  links: 'Every crawled URL & status',
+  'site-structure': 'Folder depth & hierarchy',
+  redirects: 'Redirect chains & status codes',
+  content: 'Titles, meta & headings',
+  lighthouse: 'Core Web Vitals & scores',
+  security: 'TLS, headers & findings',
+  'javascript-errors': 'Console & runtime errors',
+  accessibility: 'WCAG issues from axe',
+  'image-seo': 'Alt text & image weight',
+  'geo-readiness': 'AI answer-engine readiness',
+  'content-analytics': 'Content quality signals',
+  'text-content-analysis': 'Readability & keyword use',
+  'tech-stack': 'Detected frameworks & tools',
+  network: 'Internal link relationships',
+  gallery: 'Page preview screenshots',
+  'search-performance': 'Clicks, impressions & queries',
+  indexation: 'Index coverage & canonicals',
+  subdomains: 'Discovered subdomains',
+  contacts: 'Emails & contact details',
+  backlinks: 'External sites linking in',
+  traffic: 'GA4 sessions & users',
+  'keywords-explorer': 'Keyword research & expansion',
+  pipeline: 'Crawl a site and build a report',
+  chat: 'Ask questions about this audit',
+  write: 'Draft content from audit data',
+};
 
 const VIEW_NAV: { id: ViewId; icon: LucideIcon }[] = [
   { id: 'home', icon: HomeIcon },
@@ -79,6 +120,7 @@ const PIPELINE_NAV: AppNavItem = {
   section: strings.nav.pipeline.section,
   icon: Terminal,
   hrefPath: '/pipeline',
+  description: NAV_DESCRIPTIONS.pipeline,
 };
 
 const CHAT_NAV: AppNavItem = {
@@ -87,6 +129,7 @@ const CHAT_NAV: AppNavItem = {
   section: strings.nav.chat.section,
   icon: MessageSquare,
   hrefPath: '/chat',
+  description: NAV_DESCRIPTIONS.chat,
 };
 
 const WRITE_NAV: AppNavItem = {
@@ -95,6 +138,7 @@ const WRITE_NAV: AppNavItem = {
   section: strings.nav.write.section,
   icon: PenLine,
   hrefPath: '/write',
+  description: NAV_DESCRIPTIONS.write,
 };
 
 export const APP_NAV_ITEMS: AppNavItem[] = [
@@ -104,6 +148,7 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
     label: strings.nav[id].label,
     section: strings.nav[id].section,
     hrefPath: id === 'home' ? '/home' : `/${viewIdToPathSlug(id)}`,
+    description: NAV_DESCRIPTIONS[id],
   })),
   PIPELINE_NAV,
   WRITE_NAV,

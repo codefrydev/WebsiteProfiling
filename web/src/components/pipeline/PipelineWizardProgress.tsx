@@ -40,7 +40,7 @@ export default function PipelineWizardProgress({
                 disabled={!clickable}
                 onClick={() => clickable && onStepClick?.(step.id)}
                 className={`group flex min-w-0 flex-1 flex-col items-center gap-2 sm:flex-row sm:gap-3 ${
-                  clickable ? 'cursor-pointer' : 'cursor-default'
+                  clickable ? 'press cursor-pointer' : 'cursor-default'
                 }`}
                 aria-current={active ? 'step' : undefined}
               >
@@ -49,7 +49,7 @@ export default function PipelineWizardProgress({
                     done
                       ? 'border-blue-600 bg-blue-600 text-white'
                       : active
-                        ? 'border-blue-500 bg-blue-500/10 text-blue-700 dark:text-blue-300'
+                        ? 'border-blue-500 bg-blue-500/10 text-blue-700 ring-2 ring-blue-500/20 dark:text-blue-300'
                         : reachable
                           ? 'border-muted-foreground/30 bg-brand-800 text-muted-foreground group-hover:border-muted-foreground/50'
                           : 'border-muted/60 bg-brand-900/50 text-muted-foreground/60'

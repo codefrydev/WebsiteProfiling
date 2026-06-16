@@ -53,6 +53,16 @@ export function getPresetLabel(id: PipelinePresetId): string {
   return PRESET_COPY[id]?.label ?? id;
 }
 
+/** Short "what this preset includes" chips shown on each preset card. */
+export const PRESET_INCLUDES: Record<PipelinePresetId, string[]> = {
+  'full-audit': ['Crawl', 'Report', 'Charts', 'Lighthouse'],
+  'crawl-only': ['Crawl'],
+  'report-only': ['Report', 'Charts'],
+  lighthouse: ['Lighthouse'],
+  'google-sync': ['Search Console', 'Analytics 4'],
+  'keywords-explorer': ['Keywords', 'Enrichment'],
+};
+
 export const PRESET_ICONS: Record<PipelinePresetId, LucideIcon> = {
   'full-audit': ScanSearch,
   'crawl-only': Globe,

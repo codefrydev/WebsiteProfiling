@@ -21,6 +21,9 @@ import type { PipelineConfigState } from '@/types/api';
 export const BROWSER_CRAWL_UNAVAILABLE_MSG =
   'JavaScript crawl requires Playwright and Chromium. Install: pip install -r requirements.txt. Chrome or Chromium must be on PATH or set CHROME_PATH.';
 
+/** Disclosure tier: 'basic' fields show up-front, 'advanced' behind a disclosure. */
+export type FieldTier = 'basic' | 'advanced';
+
 export interface PipelineConfigField {
   key: string;
   label: string;
@@ -32,27 +35,46 @@ export interface PipelineConfigField {
   span?: 1 | 2;
   unit?: string;
   required?: boolean;
+  /** Optional per-field override; otherwise derived from the central tier table. */
+  tier?: FieldTier;
+  /** Optional per-field override; otherwise derived from the central subgroup table. */
+  group?: string;
   visibleWhen?: { key: string; not?: readonly string[] };
 }
 
 const JS_FIELD_VISIBLE_WHEN = { key: 'crawl_render_mode', not: ['static'] as const };
 
+export interface PipelineConfigSubgroup {
+  id: string;
+  label: string;
+}
+
 export interface PipelineConfigSection {
   id: string;
   label: string;
   fields: PipelineConfigField[];
+  /** Ordered subgroup definitions; fields map in via fieldSubgroup(). */
+  subgroups?: PipelineConfigSubgroup[];
 }
 
 export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
   {
     id: 'crawl',
     label: 'Crawl',
+    subgroups: [
+      { id: 'scope', label: 'Scope & limits' },
+      { id: 'js', label: 'JavaScript rendering' },
+      { id: 'auth', label: 'Authentication & headers' },
+      { id: 'storage', label: 'Content storage & extraction' },
+      { id: 'output', label: 'Output & history' },
+    ],
     fields: [
       {
         key: 'start_url',
         label: 'Site URL',
         type: 'url',
         defaultValue: '',
+        required: true,
         placeholder: 'https://example.com',
         help: 'Required before running a crawl or audit. Enter the property site to analyze.',
       },
@@ -138,9 +160,27 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
         help: 'JSON array: [{\"name\":\"sku\",\"type\":\"css\",\"selector\":\"[data-sku]\",\"attr\":\"data-sku\"}]',
       },
       { key: 'max_pages', label: 'Crawl limit (URLs)', type: 'number', defaultValue: '500' },
-      { key: 'concurrency', label: 'Concurrent requests', type: 'number', defaultValue: '8' },
-      { key: 'timeout', label: 'Timeout (s)', type: 'number', defaultValue: '12' },
-      { key: 'max_depth', label: 'Crawl depth', type: 'number', defaultValue: '6' },
+      {
+        key: 'concurrency',
+        label: 'Concurrent requests',
+        type: 'number',
+        defaultValue: '8',
+        help: 'How many pages to fetch in parallel. Higher is faster but heavier on the target server.',
+      },
+      {
+        key: 'timeout',
+        label: 'Timeout (s)',
+        type: 'number',
+        defaultValue: '12',
+        help: 'Seconds to wait for each page before giving up.',
+      },
+      {
+        key: 'max_depth',
+        label: 'Crawl depth',
+        type: 'number',
+        defaultValue: '6',
+        help: 'How many link-hops from the start URL to follow.',
+      },
       { key: 'polite_delay', label: 'Crawl delay (seconds)', type: 'float', defaultValue: '0.2' },
       { key: 'ignore_robots', label: 'Ignore robots.txt', type: 'bool', defaultValue: false },
       { key: 'allow_external', label: 'Allow external links', type: 'bool', defaultValue: false },
@@ -673,6 +713,129 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
     ],
   },
 ];
+
+// ─── Field tiering & subgrouping ────────────────────────────────────────────────
+// Render-time only: controls which fields show up-front vs. behind an "Advanced
+// options" disclosure, and how dense sections are grouped into labeled blocks.
+// Does NOT affect serialization, validation, or field order. Default tier = basic.
+
+const ADVANCED_FIELD_KEYS = new Set<string>([
+  // Crawl
+  'crawl_user_agent_preset', 'crawl_user_agent_custom', 'crawl_auth_username', 'crawl_auth_password',
+  'crawl_extra_headers', 'crawl_cookies', 'crawl_robots_txt_override', 'custom_extractors',
+  'polite_delay', 'store_outlinks', 'store_content_excerpt', 'content_excerpt_max_chars',
+  'store_page_html', 'max_stored_html_bytes', 'run_content_analysis', 'content_analysis_strategy',
+  'content_analysis_workers', 'custom_extraction_regex', 'crawl_path_segments', 'crawl_ignore_params',
+  'competitor_domains', 'export_logo_url', 'crawl_stream_to_db', 'crawl_exclude_urls',
+  'crawl_js_concurrency', 'crawl_js_timeout', 'crawl_js_wait_until', 'crawl_js_extra_wait_ms',
+  'crawl_js_block_resources', 'crawl_js_capture_console', 'crawl_js_console_levels',
+  'crawl_js_capture_failed_requests', 'crawl_js_console_max_per_page',
+  // Report
+  'outbound_domain_max_rows', 'max_fetch_for_edges', 'same_domain_only', 'max_nodes_plot',
+  'security_scan_active', 'security_max_urls_probe', 'probe_image_inventory', 'max_image_probe_urls',
+  'image_probe_concurrency', 'image_probe_timeout', 'image_unoptimized_min_kb', 'subdomain_ct_lookup',
+  'enable_rdap_org_lookup',
+  // Lighthouse
+  'lighthouse_iterations', 'enable_crux', 'enable_rich_results_validation', 'google_rich_results_api_key',
+  'enable_axe', 'enable_spell_check', 'enable_html_validation', 'enable_amp_audit', 'enable_wayback_lookup',
+  'lighthouse_max_pages', 'lighthouse_concurrency',
+  // Content analysis
+  'analysis_fuzzy_threshold', 'analysis_simhash_hamming', 'analysis_simhash_max_urls',
+  'analysis_fuzzy_max_urls', 'analysis_dup_max_pages',
+  // Google
+  'google_url_gap_list_limit', 'bing_webmaster_api_key', 'serp_api_key',
+  // Keywords
+  'keyword_max_pages', 'keyword_gsc_max_rows', 'keyword_suggest_top_n', 'keyword_max_suggest_results',
+]);
+
+const FIELD_SUBGROUP: Record<string, string> = {
+  // Scope & limits
+  start_url: 'scope', crawl_discovery_mode: 'scope', crawl_url_list: 'scope', crawl_render_mode: 'scope',
+  max_pages: 'scope', max_depth: 'scope', concurrency: 'scope', timeout: 'scope', polite_delay: 'scope',
+  ignore_robots: 'scope', allow_external: 'scope', crawl_exclude_urls: 'scope', crawl_ignore_params: 'scope',
+  crawl_path_segments: 'scope',
+  // JavaScript rendering
+  crawl_js_concurrency: 'js', crawl_js_timeout: 'js', crawl_js_wait_until: 'js', crawl_js_extra_wait_ms: 'js',
+  crawl_js_block_resources: 'js', crawl_js_capture_console: 'js', crawl_js_console_levels: 'js',
+  crawl_js_capture_failed_requests: 'js', crawl_js_console_max_per_page: 'js',
+  // Authentication & headers
+  crawl_user_agent_preset: 'auth', crawl_user_agent_custom: 'auth', crawl_auth_username: 'auth',
+  crawl_auth_password: 'auth', crawl_extra_headers: 'auth', crawl_cookies: 'auth',
+  crawl_robots_txt_override: 'auth',
+  // Content storage & extraction
+  store_page_html: 'storage', max_stored_html_bytes: 'storage', store_content_excerpt: 'storage',
+  content_excerpt_max_chars: 'storage', store_outlinks: 'storage', run_content_analysis: 'storage',
+  content_analysis_strategy: 'storage', content_analysis_workers: 'storage', custom_extractors: 'storage',
+  custom_extraction_regex: 'storage',
+  // Output & history
+  preserve_crawl_history: 'output', crawl_stream_to_db: 'output', competitor_domains: 'output',
+  export_logo_url: 'output',
+};
+
+/** Effective tier for a field (per-field override wins, else the central table). */
+export function fieldTier(field: PipelineConfigField): FieldTier {
+  if (field.tier) return field.tier;
+  return ADVANCED_FIELD_KEYS.has(field.key) ? 'advanced' : 'basic';
+}
+
+/** Effective subgroup id for a field (per-field override wins, else the central table). */
+export function fieldSubgroup(field: PipelineConfigField): string | undefined {
+  return field.group ?? FIELD_SUBGROUP[field.key];
+}
+
+/** Split fields into basic vs. advanced, preserving order. */
+export function partitionFieldsByTier(fields: PipelineConfigField[]): {
+  basic: PipelineConfigField[];
+  advanced: PipelineConfigField[];
+} {
+  const basic: PipelineConfigField[] = [];
+  const advanced: PipelineConfigField[] = [];
+  for (const f of fields) {
+    if (fieldTier(f) === 'advanced') advanced.push(f);
+    else basic.push(f);
+  }
+  return { basic, advanced };
+}
+
+export interface PipelineFieldGroup {
+  id: string;
+  label: string | null;
+  fields: PipelineConfigField[];
+}
+
+/**
+ * Group fields into the ordered subgroups defined on the section. Ungrouped
+ * fields (or sections without subgroups) collapse into a single leading
+ * null-label bucket so callers can render them as a plain grid. Order-stable.
+ */
+export function groupFieldsBySubgroup(
+  section: PipelineConfigSection,
+  fields: PipelineConfigField[],
+): PipelineFieldGroup[] {
+  const subgroups = section.subgroups;
+  if (!subgroups || subgroups.length === 0) {
+    return fields.length ? [{ id: '_all', label: null, fields }] : [];
+  }
+  const buckets = new Map<string, PipelineConfigField[]>();
+  const ungrouped: PipelineConfigField[] = [];
+  for (const f of fields) {
+    const sub = fieldSubgroup(f);
+    if (sub && subgroups.some((g) => g.id === sub)) {
+      const arr = buckets.get(sub) ?? [];
+      arr.push(f);
+      buckets.set(sub, arr);
+    } else {
+      ungrouped.push(f);
+    }
+  }
+  const out: PipelineFieldGroup[] = [];
+  if (ungrouped.length) out.push({ id: '_ungrouped', label: null, fields: ungrouped });
+  for (const g of subgroups) {
+    const arr = buckets.get(g.id);
+    if (arr && arr.length) out.push({ id: g.id, label: g.label, fields: arr });
+  }
+  return out;
+}
 
 // ─── Derived helpers ──────────────────────────────────────────────────────────
 
