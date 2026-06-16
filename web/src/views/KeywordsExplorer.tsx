@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { useTabSections } from '@/hooks/useTabSections';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { KEYWORDS_EXPLORER_TAB_SECTIONS } from '@/lib/reportViewSections';
@@ -59,7 +60,8 @@ const EMPTY_HISTORY: KeywordHistoryMap = {};
 export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
   const router = useRouter();
   const { data, startUrlByRunId, selectedReportId, loadReport } = useReport();
-  const keywordsStatus = useSectionData('keywords');
+  useSectionData('keywords');
+  const keywordsReady = useSectionsViewReady(['keywords']);
   const pipeline = useOptionalPipeline();
   const propertyId = Number(pipeline?.configState.active_property_id || 0);
   const ke = strings.views.keywordsExplorer;
@@ -304,7 +306,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
     );
   }, [activeTab, tableRows.length, hasActiveFilters, tabBaseCount, ke, clearFilters]);
 
-  if (keywordsStatus === 'loading' || keywordsStatus === 'idle') {
+  if (!keywordsReady) {
     return <ViewSectionLoading title={ke.title} />;
   }
 

@@ -5,7 +5,7 @@ import { Fragment, useState, useMemo, useEffect } from 'react';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { useTabSections } from '@/hooks/useTabSections';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
-import { isSectionPending } from '@/lib/reportViewSections';
+import { shouldBlockViewForSections } from '@/lib/reportViewSections';
 import type {
   ContentAnalyticsData,
   TextContentAnalysisData,
@@ -374,7 +374,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
     [vtca],
   );
 
-  if (isSectionPending(['content', 'indexation', 'keywords'], sectionStatus)) {
+  if (shouldBlockViewForSections(['content', 'indexation', 'keywords'], sectionStatus, data)) {
     return <ViewSectionLoading title={vtca.title} />;
   }
 

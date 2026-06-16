@@ -10,6 +10,7 @@ import { useUrlTab } from '@/hooks/useUrlTab';
 import { Gauge, Globe, Play, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import {
   canonicalDomainFromPayload,
@@ -44,7 +45,8 @@ const EMPTY_LH: LighthousePageSummary = {};
 export default function Lighthouse({ searchQuery = '' }: ViewProps) {
   const router = useRouter();
   const { data, startUrlByRunId } = useReport();
-  const lighthouseStatus = useSectionData('lighthouse');
+  useSectionData('lighthouse');
+  const lighthouseReady = useSectionsViewReady(['lighthouse']);
   const searchParams = useSearchParams();
   const detailRef = useRef<HTMLDivElement>(null);
   const pageDetailRef = useRef<HTMLDivElement>(null);
@@ -318,7 +320,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
     </div>
   ) : null;
 
-  if (lighthouseStatus === 'idle' || lighthouseStatus === 'loading') {
+  if (!lighthouseReady) {
     return <ViewSectionLoading title={vlh.pageSpeedTitle} />;
   }
 

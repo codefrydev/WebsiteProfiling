@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { useTabSections } from '@/hooks/useTabSections';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { BACKLINKS_TAB_SECTIONS } from '@/lib/reportViewSections';
@@ -39,7 +40,8 @@ export default function Backlinks(_props: ViewProps) {
   const vb = strings.views.backlinks;
   const searchParams = useSearchParams();
   const { data, loadReport } = useReport();
-  const gscLinksStatus = useSectionData('gsc-links');
+  useSectionData('gsc-links');
+  const gscLinksReady = useSectionsViewReady(['gsc-links']);
   const pipeline = useOptionalPipeline();
   const propertyId = Number(pipeline?.configState.active_property_id || 0);
   const gscLinks = data?.gsc_links;
@@ -248,7 +250,7 @@ export default function Backlinks(_props: ViewProps) {
   );
 
   if (!gscLinks?.export_types?.length) {
-    if (gscLinksStatus === 'loading' || gscLinksStatus === 'idle') {
+    if (!gscLinksReady) {
       return <ViewSectionLoading title={vb.title} />;
     }
     return (

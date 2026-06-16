@@ -5,6 +5,7 @@ import type { TooltipItem } from 'chart.js';
 import { Shield, Flame, AlertTriangle, AlertCircle, Info, ExternalLink, BarChart3, List, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Badge, ViewTabs, ViewTabPanel, Button, StatCard, ChartTitleWithHint } from '../components';
@@ -99,7 +100,8 @@ type SecurityTabId = (typeof SECURITY_TABS)[number];
 
 export default function Security({ searchQuery = '' }: ViewProps) {
   const { data } = useReport();
-  const securityStatus = useSectionData('security');
+  useSectionData('security');
+  const securityReady = useSectionsViewReady(['security']);
   const [severityFilter, setSeverityFilter] = useState('All');
   const [activeTab, setActiveTab] = useUrlTab(SECURITY_TABS, 'findings');
   const [findingsPage, setFindingsPage] = useState(1);
@@ -217,7 +219,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
     ];
   }, [vs.tabs, allFindings.length, typeLabels.length]);
 
-  if (securityStatus === 'idle' || securityStatus === 'loading') {
+  if (!securityReady) {
     return <ViewSectionLoading title={vs.title} />;
   }
 

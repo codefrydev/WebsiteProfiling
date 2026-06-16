@@ -6,6 +6,7 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Toolti
 import { Bar } from 'react-chartjs-2';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
@@ -66,7 +67,8 @@ type TechStackTabId = (typeof TECH_STACK_TABS)[number];
 export default function TechStack({ searchQuery = '' }: ViewProps) {
   const vr = strings.views.techStack;
   const { data } = useReport();
-  const techStatus = useSectionData('tech');
+  useSectionData('tech');
+  const techReady = useSectionsViewReady(['tech']);
   const [activeTab, setActiveTab] = useUrlTab(TECH_STACK_TABS, 'overview');
   const q = (searchQuery || '').toLowerCase().trim();
   const ts: TechStackSummary = data?.tech_stack_summary ?? EMPTY_TS;
@@ -96,7 +98,7 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
     },
   ], [vr.tabs, techs.length]);
 
-  if (techStatus === 'idle' || techStatus === 'loading') {
+  if (!techReady) {
     return <ViewSectionLoading title={vr.title} />;
   }
 

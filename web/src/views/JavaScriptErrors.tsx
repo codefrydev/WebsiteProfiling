@@ -7,6 +7,7 @@ import { useUrlTab } from '@/hooks/useUrlTab';
 import { Bug, ChevronDown, ChevronRight, ExternalLink, BarChart3, List } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
@@ -32,7 +33,8 @@ type JsErrorsTabId = (typeof JS_ERRORS_TABS)[number];
 
 export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
   const { data } = useReport();
-  const linksStatus = useSectionData('links');
+  useSectionData('links');
+  const linksReady = useSectionsViewReady(['links']);
   const searchParams = useSearchParams();
   const trailingQuery = searchParams.toString() ? `?${searchParams.toString()}` : '';
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('All');
@@ -104,7 +106,7 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
     },
   ], [vj.tabs, topMessages.length, filteredRows.length]);
 
-  if (linksStatus === 'idle' || linksStatus === 'loading') {
+  if (!linksReady) {
     return <ViewSectionLoading title={vj.title} />;
   }
 

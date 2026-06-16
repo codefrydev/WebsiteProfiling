@@ -1,6 +1,8 @@
 import type { OverviewTabId } from '@/components/overview/types';
 import type { SectionKey } from '@/lib/reportSections';
+import { sectionFieldsPresent } from '@/lib/reportSections';
 import type { ViewId } from '@/routes';
+import type { ReportPayload } from '@/types';
 
 export const OVERVIEW_TAB_SECTIONS: Record<OverviewTabId, readonly SectionKey[]> = {
   summary: ['traffic', 'keywords', 'content', 'indexation', 'tech'],
@@ -75,4 +77,23 @@ export function isSectionPending(
 ): boolean {
   const status = sectionStatusFor(sections, statusMap);
   return status === 'idle' || status === 'loading' || status === 'error';
+}
+
+/**
+ * Whether a view should show the full-page section loading state.
+ * Skips blocking when section data is already present (stale-while-revalidate).
+ */
+export function shouldBlockViewForSections(
+  sections: readonly SectionKey[],
+  statusMap: Partial<Record<SectionKey, SectionLoadStatus>>,
+  data: ReportPayload | null | undefined,
+): boolean {
+  if (!sections.length) return false;
+  for (const section of sections) {
+    const status = statusMap[section] ?? 'idle';
+    if (status === 'loaded' || status === 'error') continue;
+    if (sectionFieldsPresent(section, data)) continue;
+    return true;
+  }
+  return false;
 }

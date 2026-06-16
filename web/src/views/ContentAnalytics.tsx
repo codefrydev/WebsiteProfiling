@@ -3,7 +3,7 @@ import { useState, useMemo } from 'react';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { useTabSections } from '@/hooks/useTabSections';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
-import { isSectionPending } from '@/lib/reportViewSections';
+import { shouldBlockViewForSections } from '@/lib/reportViewSections';
 import type {
   ContentAnalyticsData,
   ContentUrlsMap,
@@ -370,7 +370,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
     [data?.semantic_keyword_clusters],
   );
 
-  if (isSectionPending(['content', 'indexation'], sectionStatus)) {
+  if (shouldBlockViewForSections(['content', 'indexation'], sectionStatus, data)) {
     return <ViewSectionLoading title={vca.title} />;
   }
 

@@ -3,6 +3,7 @@ import { Bar } from 'react-chartjs-2';
 import type { TooltipItem } from 'chart.js';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
@@ -18,7 +19,8 @@ registerChartJsBase();
 export default function Redirects({ searchQuery = '' }: ViewProps) {
   const vr = strings.views.redirects;
   const { data } = useReport();
-  const issuesStatus = useSectionData('issues');
+  useSectionData('issues');
+  const issuesReady = useSectionsViewReady(['issues']);
   const q = (searchQuery || '').toLowerCase().trim();
   const redirects = useMemo((): ReportRedirect[] => {
     const all = (data?.redirects || []) as ReportRedirect[];
@@ -62,7 +64,7 @@ export default function Redirects({ searchQuery = '' }: ViewProps) {
     };
   }, [statusLabels]);
 
-  if (issuesStatus === 'idle' || issuesStatus === 'loading') {
+  if (!issuesReady) {
     return <ViewSectionLoading title={vr.title} />;
   }
 

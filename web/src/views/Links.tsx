@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect, useRef, useCallback, type MouseEvent } fr
 import { Link as LinkIcon, ArrowLeft, AlertTriangle, Download, List, TextQuote, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { useTabSections } from '@/hooks/useTabSections';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { LINKS_TAB_SECTIONS } from '@/lib/reportViewSections';
@@ -78,7 +79,8 @@ export default function Links({ searchQuery = '' }: ViewProps) {
   const vl = strings.views.links;
   const sj = strings.common;
   const { data } = useReport();
-  const linksStatus = useSectionData('links');
+  useSectionData('links');
+  const linksReady = useSectionsViewReady(['links']);
   useTabSections(LINKS_TAB_SECTIONS, true);
   const pipeline = useOptionalPipeline();
   const propertyId = Number(pipeline?.configState.active_property_id || 0);
@@ -399,7 +401,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
     setHoveredRow(link.url);
   }, []);
 
-  if (linksStatus === 'idle' || linksStatus === 'loading') {
+  if (!linksReady) {
     return <ViewSectionLoading title={vl.title} />;
   }
 

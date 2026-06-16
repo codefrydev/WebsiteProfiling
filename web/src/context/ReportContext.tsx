@@ -137,6 +137,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
   >({});
   const inFlightSectionsRef = useRef(new Set<SectionKey>());
   const sectionCacheKeyRef = useRef<string>('');
+  const loadedPayloadKeyRef = useRef<string | null>(null);
 
   const { startUrlByRunId } = useMemo(() => crawlMaps(crawlRuns), [crawlRuns]);
 
@@ -178,7 +179,15 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
         error?: string;
       };
       if (!res.ok) throw new Error(body.error || res.statusText);
-      if (sectionCacheKeyRef.current !== cacheKeySnapshot) return;
+      if (sectionCacheKeyRef.current !== cacheKeySnapshot) {
+        setSectionStatus((prev) => {
+          if (prev[section] !== 'loading') return prev;
+          const next = { ...prev };
+          delete next[section];
+          return next;
+        });
+        return;
+      }
       const slice = sanitizePayloadForDomain(
         body.payload as ReportPayload | null,
         domainSlugRef.current,
@@ -271,6 +280,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
 
       if (reps.length === 0) {
         setData(null);
+        loadedPayloadKeyRef.current = null;
         setError((prev) => (
           prev === 'No report_payload in DB' || prev === strings.app.noReportForDomain ? null : prev
         ));
@@ -282,6 +292,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       if (scoped && list.length === 0) {
         setError(strings.app.noReportForDomain);
         setData(null);
+        loadedPayloadKeyRef.current = null;
         setLoading(false);
         return;
       }
@@ -296,6 +307,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
         setLoading(false);
         return;
       }
+      loadedPayloadKeyRef.current = `${latestId ?? 'null'}:${scoped ?? ''}`;
       await applyPayload(latestId);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -311,6 +323,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     setError(null);
     inFlightSectionsRef.current = new Set();
     sectionCacheKeyRef.current = `crawl:${crawlRunId}`;
+    loadedPayloadKeyRef.current = `crawl:${crawlRunId}`;
     setSectionStatus({});
     try {
       const res = await fetch(
@@ -387,6 +400,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     if (domainSlug && scopedList.length === 0) {
       setError(strings.app.noReportForDomain);
       setData(null);
+      loadedPayloadKeyRef.current = null;
       setLoading(false);
       return;
     }
@@ -403,6 +417,11 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
         return;
       }
     }
+    const payloadKey = `${id ?? 'null'}:${domainSlug ?? ''}`;
+    if (loadedPayloadKeyRef.current === payloadKey) {
+      return;
+    }
+    loadedPayloadKeyRef.current = payloadKey;
     if (id == null) {
       applyPayload(null);
       return;

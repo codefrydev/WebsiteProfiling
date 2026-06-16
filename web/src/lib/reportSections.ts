@@ -105,3 +105,17 @@ export function slicePayloadForSection(
   }
   return slice;
 }
+
+/** True when merged report data already includes at least one field for this section. */
+export function sectionFieldsPresent(
+  section: SectionKey,
+  data: ReportPayload | null | undefined,
+): boolean {
+  if (!data) return false;
+  for (const field of SECTION_FIELDS[section]) {
+    if (field in data && data[field as keyof ReportPayload] != null) {
+      return true;
+    }
+  }
+  return false;
+}

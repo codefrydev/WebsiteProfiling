@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, LabelWithHint } from '../components';
@@ -255,8 +256,9 @@ const MASONRY_CHUNK = 48;
 export default function Gallery({ searchQuery = '' }: ViewProps) {
   const vg = strings.views.gallery;
   const { data } = useReport();
-  const linksStatus = useSectionData('links');
-  const galleryStatus = useSectionData('gallery');
+  useSectionData('links');
+  useSectionData('gallery');
+  const galleryReady = useSectionsViewReady(['gallery', 'links']);
   const [density, setDensity] = useState<GalleryDensity>('md');
   const [layoutMode, setLayoutMode] = useState<'grid' | 'masonry'>('grid');
   const [kindFilter, setKindFilter] = useState<'all' | GalleryKind>('all');
@@ -315,10 +317,7 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
     };
   }, [lightbox, closeLightbox]);
 
-  if (
-    linksStatus === 'idle' || linksStatus === 'loading' ||
-    galleryStatus === 'idle' || galleryStatus === 'loading'
-  ) {
+  if (!galleryReady) {
     return <ViewSectionLoading title={vg.title} />;
   }
 

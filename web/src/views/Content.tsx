@@ -5,6 +5,7 @@ import type { TooltipItem } from 'chart.js';
 import { ExternalLink, CheckCircle2, FileText, Copy, BarChart3, List } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
@@ -28,7 +29,8 @@ export default function Content({ searchQuery = '' }: ViewProps) {
   const vlp = strings.views.links;
   const CONTENT_FILTERS = vc.filters;
   const { data } = useReport();
-  const contentStatus = useSectionData('content');
+  useSectionData('content');
+  const contentReady = useSectionsViewReady(['content']);
   const [filter, setFilter] = useState('missing_h1');
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useUrlTab(CONTENT_TABS, 'issues');
@@ -112,7 +114,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
     },
   ], [vc.tabs, totalIssues, list.length]);
 
-  if (contentStatus === 'idle' || contentStatus === 'loading') {
+  if (!contentReady) {
     return <ViewSectionLoading title={vc.title} />;
   }
 

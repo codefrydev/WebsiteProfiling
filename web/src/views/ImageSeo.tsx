@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ImageIcon } from 'lucide-react';
 import { useReport } from '@/context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { useOptionalPipeline } from '@/context/PipelineContext';
 import { PageLayout, PageHeader, Card, ViewTabs, ViewTabPanel, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '@/components';
@@ -45,7 +46,8 @@ function summaryFromApi(raw: Record<string, unknown>): ImageAuditSummaryData {
 export default function ImageSeo({ searchQuery = '' }: ViewProps) {
   const vi = strings.views.imageSeo;
   const { selectedReportId } = useReport();
-  const contentStatus = useSectionData('content');
+  useSectionData('content');
+  const contentReady = useSectionsViewReady(['content']);
   const pipeline = useOptionalPipeline();
   const propertyId = Number(pipeline?.configState.active_property_id || 0) || null;
   const reportId = selectedReportId ?? null;
@@ -124,7 +126,7 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
 
   const inventoryGated = activeTab === 'largest' || activeTab === 'unoptimized';
 
-  if (contentStatus === 'idle' || contentStatus === 'loading') {
+  if (!contentReady) {
     return <ViewSectionLoading title={vi.title} />;
   }
 

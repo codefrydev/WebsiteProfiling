@@ -7,6 +7,7 @@ import type { TableColumn } from '@/types/components';
 import { TrendingUp, Search, AlertCircle, Settings2, Download, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { useTabSections } from '@/hooks/useTabSections';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { SEARCH_PERFORMANCE_TAB_SECTIONS } from '@/lib/reportViewSections';
@@ -57,7 +58,8 @@ function PositionBadge({ pos }: { pos?: number | string | null }) {
 
 export default function SearchPerformance() {
   const { data } = useReport();
-  const trafficStatus = useSectionData('traffic');
+  useSectionData('traffic');
+  const trafficReady = useSectionsViewReady(['traffic']);
   const sp = strings.views.searchPerformance;
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useUrlTab(TABS, 'overview');
@@ -225,7 +227,7 @@ export default function SearchPerformance() {
   ) : null;
 
   if (!google) {
-    if (trafficStatus === 'loading' || trafficStatus === 'idle') {
+    if (!trafficReady) {
       return <ViewSectionLoading title={sp.title} />;
     }
     return (

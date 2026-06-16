@@ -7,6 +7,7 @@ import type { TableColumn } from '@/types/components';
 import { Users, AlertCircle, Settings2, Download, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { useTabSections } from '@/hooks/useTabSections';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { TRAFFIC_TAB_SECTIONS } from '@/lib/reportViewSections';
@@ -56,7 +57,8 @@ function EngagementBadge({ rate }: { rate?: number | null }) {
 
 export default function Traffic() {
   const { data } = useReport();
-  const trafficStatus = useSectionData('traffic');
+  useSectionData('traffic');
+  const trafficReady = useSectionsViewReady(['traffic']);
   const tf = strings.views.traffic;
   const sp = strings.views.searchPerformance;
   const searchParams = useSearchParams();
@@ -189,7 +191,7 @@ export default function Traffic() {
   ) : null;
 
   if (!google) {
-    if (trafficStatus === 'loading' || trafficStatus === 'idle') {
+    if (!trafficReady) {
       return <ViewSectionLoading title={tf.title} />;
     }
     return (

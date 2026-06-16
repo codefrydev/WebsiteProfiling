@@ -161,7 +161,15 @@ export function navHref(item: AppNavItem, trailingQuery: string): string {
   if (item.id === 'home' || item.id === 'pipeline' || item.id === 'chat' || item.id === 'write') {
     return item.hrefPath;
   }
-  return trailingQuery ? `${item.hrefPath}${trailingQuery}` : item.hrefPath;
+  const raw = trailingQuery.startsWith('?') ? trailingQuery.slice(1) : trailingQuery;
+  const params = new URLSearchParams(raw);
+  const preserved = new URLSearchParams();
+  const domain = params.get('domain');
+  const brand = params.get('brand');
+  if (domain) preserved.set('domain', domain);
+  if (brand) preserved.set('brand', brand);
+  const q = preserved.toString();
+  return q ? `${item.hrefPath}?${q}` : item.hrefPath;
 }
 
 export function isNavItemActive(item: AppNavItem, pathname: string): boolean {

@@ -4,6 +4,7 @@ import { Maximize, Minimize, ExternalLink, X } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useOptionalUrlInspector } from '@/context/UrlInspectorContext';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { shortPath } from '@/lib/linkGraph';
 import { strings } from '../lib/strings';
@@ -100,8 +101,9 @@ export default function Network({ searchQuery = '' }: ViewProps) {
   const [selected, setSelected] = useState<string | null>(null);
   const { data } = useReport();
   const inspector = useOptionalUrlInspector();
-  const structureStatus = useSectionData('structure');
-  const linksStatus = useSectionData('links');
+  useSectionData('structure');
+  useSectionData('links');
+  const networkReady = useSectionsViewReady(['structure', 'links']);
 
   // Refs read by the (long-lived) graph callbacks so they never go stale.
   const selectionRef = useRef<{ id: string; neighbors: Set<string> } | null>(null);
@@ -333,10 +335,7 @@ export default function Network({ searchQuery = '' }: ViewProps) {
     return () => document.removeEventListener('fullscreenchange', onFs);
   }, []);
 
-  if (
-    structureStatus === 'idle' || structureStatus === 'loading' ||
-    linksStatus === 'idle' || linksStatus === 'loading'
-  ) {
+  if (!networkReady) {
     return <ViewSectionLoading title={vn.title} />;
   }
 
