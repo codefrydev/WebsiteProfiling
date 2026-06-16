@@ -4,9 +4,9 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from ..base import ChatResult, TokenCallback, ToolCall, parse_json_response
+from ..base import ChatResult, TokenCallback, ToolCall, optional_cloud_base_url, parse_json_response
 
-DEFAULT_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_MODEL = "openai/gpt-oss-120b"
 _MISSING_KEY_MSG = "Groq API key missing. Set it in the AI tab or GROQ_API_KEY."
 
 
@@ -15,8 +15,7 @@ class GroqClient:
         self._model = (cfg.get("llm_model") or DEFAULT_MODEL).strip()
         self._timeout = float(cfg.get("llm_timeout_s") or 120)
         self._api_key = (cfg.get("llm_api_key") or "").strip()
-        base = (cfg.get("llm_base_url") or "").strip().rstrip("/")
-        self._base_url = base or None
+        self._base_url = optional_cloud_base_url(cfg)
 
     def _client(self) -> Any:
         if not self._api_key:

@@ -23,6 +23,27 @@ class ChatResult:
 
 TokenCallback = Callable[[str], None]
 
+OLLAMA_DEFAULT_BASES = frozenset({
+    "http://127.0.0.1:11434",
+    "http://localhost:11434",
+})
+
+
+def is_ollama_base_url(url: str) -> bool:
+    """True when llm_base_url points at a local Ollama daemon (not a cloud proxy)."""
+    normalized = (url or "").strip().rstrip("/").lower()
+    if normalized in OLLAMA_DEFAULT_BASES:
+        return True
+    return normalized.endswith(":11434")
+
+
+def optional_cloud_base_url(cfg: dict[str, str]) -> str | None:
+    """Custom OpenAI-compatible base URL; excludes Ollama's local default."""
+    base = (cfg.get("llm_base_url") or "").strip().rstrip("/")
+    if not base or is_ollama_base_url(base):
+        return None
+    return base
+
 
 class LLMClient(Protocol):
     def complete_json(self, system: str, user: str) -> dict[str, Any]: ...

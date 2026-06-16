@@ -8,7 +8,12 @@ from ..concurrency import map_parallel, tool_concurrency
 from ..llm_config import llm_is_enabled, load_llm_config_from_db
 from ..text_sanitize import sanitize_unicode_deep, strip_surrogates
 from ..tools.audit_tools import AuditToolContext
-from ..tools.audit_tools.registry import TOOL_DEFINITIONS, dispatch_tool, openai_tools_schema
+from ..tools.audit_tools.registry import (
+    TOOL_DEFINITIONS,
+    _normalize_tool_args,
+    dispatch_tool,
+    openai_tools_schema,
+)
 from ..tools.audit_tools.tool_selector import (
     apply_tool_cap,
     chat_tool_mode,
@@ -66,6 +71,7 @@ Rules:
 - When tools return issue lists, scores, or breakdowns, keep the narrative short. Do not re-list every issue or duplicate data in markdown tables—the UI renders structured blocks from tool data.
 - Use markdown headings and bullets for structure. Do not emit fake chart JSON or custom visualization blocks.
 - You are read-only: you cannot run crawls or change settings.
+- Do not pass property_id or report_id in tool calls — they are injected from the active chat property.
 - If data is missing, say what integration or crawl step is needed.
 """
 
@@ -199,7 +205,7 @@ def run_agent_turn(
     openai_messages = _build_openai_messages(messages)
     last_user = _last_user_message(messages)
     active_names = select_tools_for_turn(last_user, messages)
-    tools = openai_tools_schema(active_names)
+    tools = openai_tools_schema(active_names, context_scoped=True)
     tool_events: list[dict[str, Any]] = []
     final_message = ""
 
@@ -225,7 +231,13 @@ def run_agent_turn(
                 )
         except Exception as e:
             msg = str(e).strip() or type(e).__name__
-            if "httpx" in msg.lower() or "requirements.txt" in msg.lower():
+            if "Connection error" in msg and (cfg.get("llm_provider") or "").strip().lower() == "groq":
+                msg = (
+                    "Could not reach Groq. Check your Groq API key on the Secrets page and "
+                    "that outbound HTTPS to api.groq.com is allowed. "
+                    f"Details: {msg}"
+                )
+            elif "httpx" in msg.lower() or "requirements.txt" in msg.lower():
                 msg = (
                     "LLM dependencies are missing. Run: pip install -r requirements.txt "
                     f"(or restart with ./local-run setup). Details: {msg}"
@@ -282,9 +294,10 @@ def run_agent_turn(
                         "error": f"tool not loaded this turn: {tc.name}",
                         "hint": "Call search_audit_tools to load specialized tools, or rephrase your request.",
                     }
+                tool_args = _normalize_tool_args(tc.arguments)
                 try:
                     return sanitize_unicode_deep(
-                        dispatch_tool(tc.name, tc.arguments, context=context),
+                        dispatch_tool(tc.name, tool_args, context=context),
                     )
                 except Exception as e:  # noqa: BLE001 - isolate one tool's failure from the batch
                     return {"error": str(e).strip() or type(e).__name__}
@@ -313,7 +326,7 @@ def run_agent_turn(
                     })
 
             if gated:
-                tools = openai_tools_schema(active_names)
+                tools = openai_tools_schema(active_names, context_scoped=True)
             continue
 
         final_message = strip_surrogates(result.content).strip()

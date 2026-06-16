@@ -35,7 +35,7 @@ export const LLM_CONFIG_SECTIONS = [
         label: 'Model',
         type: 'text',
         defaultValue: '',
-        placeholder: 'e.g. gpt-4o-mini, gemini-2.0-flash, claude-3-5-haiku-latest, llama-3.3-70b-versatile, llama3.2',
+        placeholder: 'e.g. gpt-4o-mini, gemini-2.0-flash, claude-3-5-haiku-latest, openai/gpt-oss-120b, llama3.2',
         help: 'Leave blank to use provider default.',
       },
       {

@@ -1,6 +1,7 @@
 """Tool registry and dispatch for MCP and chat agent."""
 from __future__ import annotations
 
+import copy
 from typing import Any, Callable
 
 from psycopg import Connection
@@ -760,6 +761,31 @@ _TOOL_HANDLERS: dict[str, ToolHandler] = {
 }
 
 
+_CONTEXT_SCOPED_PARAMS = frozenset({"property_id", "report_id"})
+
+
+def _schema_for_llm(input_schema: dict[str, Any], *, context_scoped: bool) -> dict[str, Any]:
+    """Drop session-scoped IDs from LLM tool schemas (chat injects them from AuditToolContext)."""
+    if not context_scoped:
+        return input_schema
+    schema = copy.deepcopy(input_schema)
+    props = dict(schema.get("properties") or {})
+    for key in _CONTEXT_SCOPED_PARAMS:
+        props.pop(key, None)
+    schema["properties"] = props
+    schema["required"] = [
+        key for key in (schema.get("required") or []) if key not in _CONTEXT_SCOPED_PARAMS
+    ]
+    return schema
+
+
+def _normalize_tool_args(args: dict[str, Any] | None) -> dict[str, Any]:
+    """Remove explicit nulls so strict providers do not reject tool-call JSON."""
+    if not isinstance(args, dict):
+        return {}
+    return {key: value for key, value in args.items() if value is not None}
+
+
 def dispatch_tool(
     name: str,
     args: dict[str, Any] | None,
@@ -773,7 +799,7 @@ def dispatch_tool(
         return {"error": f"unknown tool: {name}"}
 
     ctx = context or AuditToolContext()
-    payload_args = dict(args or {})
+    payload_args = _normalize_tool_args(args)
     merged_ctx = ctx.with_args(payload_args)
 
     if conn is not None:
@@ -856,18 +882,23 @@ def search_tools(query: str, limit: int = 10) -> list[dict[str, Any]]:
     return [row for _, _, row in scored[:cap]]
 
 
-def openai_tools_schema(names: set[str] | None = None) -> list[dict[str, Any]]:
+def openai_tools_schema(
+    names: set[str] | None = None,
+    *,
+    context_scoped: bool = False,
+) -> list[dict[str, Any]]:
     """Convert TOOL_DEFINITIONS to OpenAI function-calling format (optional name filter)."""
     out: list[dict[str, Any]] = []
     for tool in TOOL_DEFINITIONS:
         if names is not None and tool["name"] not in names:
             continue
+        input_schema = tool.get("inputSchema", {"type": "object", "properties": {}})
         out.append({
             "type": "function",
             "function": {
                 "name": tool["name"],
                 "description": tool.get("description", ""),
-                "parameters": tool.get("inputSchema", {"type": "object", "properties": {}}),
+                "parameters": _schema_for_llm(input_schema, context_scoped=context_scoped),
             },
         })
     return out

@@ -40,6 +40,14 @@ def test_explicit_model_and_base_url() -> None:
     assert client._base_url == "https://custom.example/v1"
 
 
+def test_ignores_ollama_base_url() -> None:
+    client = GroqClient({
+        "llm_api_key": "gsk-test",
+        "llm_base_url": "http://127.0.0.1:11434",
+    })
+    assert client._base_url is None
+
+
 def test_complete_json_missing_key_raises_groq_error() -> None:
     client = GroqClient({"llm_provider": "groq"})
     with pytest.raises(RuntimeError, match="Groq API key"):

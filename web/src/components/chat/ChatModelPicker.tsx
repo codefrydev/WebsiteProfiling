@@ -5,6 +5,11 @@ import Link from 'next/link';
 import { Check, ChevronDown, Circle, Loader2, RefreshCw } from 'lucide-react';
 import { useOllamaModels, type OllamaModelEntry } from '@/hooks/useOllamaModels';
 import {
+  cloudModelPresets,
+  effectiveLlmModel,
+  modelChipLabel,
+} from '@/lib/llmProviderDefaults';
+import {
   ollamaBillingLabel,
   ollamaModelOptionLabel,
   ollamaModelShortLabel,
@@ -31,18 +36,20 @@ function groupModels(models: OllamaModelEntry[]) {
 }
 
 function ModelRow({
-  entry,
+  label,
   active,
   onSelect,
+  hint,
 }: {
-  entry: OllamaModelEntry;
+  label: string;
   active: boolean;
-  onSelect: (name: string) => void;
+  onSelect: () => void;
+  hint?: string;
 }) {
   return (
     <button
       type="button"
-      onClick={() => onSelect(entry.name)}
+      onClick={onSelect}
       className={`flex w-full items-start gap-2 rounded-xl px-3 py-2 text-left transition-colors hover:bg-[var(--chat-surface-hover)] ${
         active ? 'bg-[var(--chat-surface-hover)]' : ''
       }`}
@@ -51,10 +58,10 @@ function ModelRow({
         {active ? <Check className="h-4 w-4 text-foreground" /> : null}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm text-bright">{entry.name}</span>
-        <span className="block truncate text-xs text-muted-foreground">
-          {ollamaModelOptionLabel(entry.name, entry.billing, entry.capabilities)}
-        </span>
+        <span className="block truncate text-sm text-bright">{label}</span>
+        {hint ? (
+          <span className="block truncate text-xs text-muted-foreground">{hint}</span>
+        ) : null}
       </span>
     </button>
   );
@@ -74,6 +81,9 @@ export default function ChatModelPicker({
   const [query, setQuery] = useState('');
   const rootRef = useRef<HTMLDivElement>(null);
 
+  const effectiveModel = effectiveLlmModel(provider, model);
+  const cloudPresets = useMemo(() => cloudModelPresets(provider), [provider]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return models;
@@ -88,7 +98,7 @@ export default function ChatModelPicker({
     ? model
       ? ollamaModelShortLabel(model)
       : c.ollamaNoModel
-    : ollamaModelShortLabel(model || provider || 'AI');
+    : modelChipLabel(provider, effectiveModel) || c.cloudNoModel;
 
   useEffect(() => {
     if (!open) return;
@@ -169,9 +179,10 @@ export default function ChatModelPicker({
                     {installed.map((m) => (
                       <ModelRow
                         key={m.name}
-                        entry={m}
+                        label={m.name}
+                        hint={ollamaModelOptionLabel(m.name, m.billing, m.capabilities)}
                         active={m.name === model}
-                        onSelect={(name) => void handleModelChange(name)}
+                        onSelect={() => void handleModelChange(m.name)}
                       />
                     ))}
                   </div>
@@ -184,9 +195,10 @@ export default function ChatModelPicker({
                     {cloud.map((m) => (
                       <ModelRow
                         key={m.name}
-                        entry={m}
+                        label={m.name}
+                        hint={ollamaModelOptionLabel(m.name, m.billing, m.capabilities)}
                         active={m.name === model}
-                        onSelect={(name) => void handleModelChange(name)}
+                        onSelect={() => void handleModelChange(m.name)}
                       />
                     ))}
                   </div>
@@ -199,15 +211,27 @@ export default function ChatModelPicker({
                     {local.map((m) => (
                       <ModelRow
                         key={m.name}
-                        entry={m}
+                        label={m.name}
+                        hint={ollamaModelOptionLabel(m.name, m.billing, m.capabilities)}
                         active={m.name === model}
-                        onSelect={(name) => void handleModelChange(name)}
+                        onSelect={() => void handleModelChange(m.name)}
                       />
                     ))}
                   </div>
                 ) : null}
               </div>
             </>
+          ) : !isOllama && cloudPresets.length ? (
+            <div className="min-h-0 flex-1 overflow-y-auto p-1">
+              {cloudPresets.map((preset) => (
+                <ModelRow
+                  key={preset}
+                  label={preset}
+                  active={effectiveModel === preset}
+                  onSelect={() => void handleModelChange(preset)}
+                />
+              ))}
+            </div>
           ) : (
             <div className="p-3 text-xs text-muted-foreground">
               {isOllama ? (
@@ -217,9 +241,7 @@ export default function ChatModelPicker({
                   <p className="text-red-400">{c.ollamaUnreachable}</p>
                 )
               ) : (
-                <p>
-                  {model || provider}
-                </p>
+                <p>{effectiveModel || c.cloudNoModel}</p>
               )}
             </div>
           )}
@@ -263,7 +285,7 @@ export default function ChatModelPicker({
                 <span />
               )}
               <Link
-                href="/secrets"
+                href="/pipeline?group=content-ai"
                 className="text-link hover:underline"
                 onClick={() => setOpen(false)}
               >

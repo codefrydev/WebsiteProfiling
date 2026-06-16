@@ -15,6 +15,7 @@ import {
   isLlmProviderApiKeyField,
   resolveLlmApiKey,
 } from '@/lib/llmProviderApiKeys';
+import { defaultLlmModelForProvider, ensurePersistedLlmModel } from '@/lib/llmProviderDefaults';
 import { withDb } from '@/server/db';
 import type { LlmConfigLoadResult, LlmConfigState } from '@/types/api';
 
@@ -98,7 +99,7 @@ export async function readLlmConfigRaw(): Promise<Record<string, string>> {
 }
 
 export async function loadLlmConfig(): Promise<LlmConfigLoadResult> {
-  return withDb(async (client: PoolClient) => {
+  const loaded = await withDb(async (client: PoolClient) => {
     const known = await readLlmConfigFromDb(client);
     if (Object.keys(known).length > 0) {
       const state = applyLlmDefaults(known);
@@ -107,10 +108,32 @@ export async function loadLlmConfig(): Promise<LlmConfigLoadResult> {
       if (resolved) {
         state.llm_api_key = resolved;
       }
-      return { state: maskLlmStateForClient(state), source: 'store' };
+      const provider = String(state.llm_provider || 'none');
+      const dbModelEmpty = !String(known.llm_model || '').trim();
+      if (!String(state.llm_model || '').trim() && provider !== 'none') {
+        state.llm_model = defaultLlmModelForProvider(provider);
+      }
+      return {
+        state,
+        source: 'store' as const,
+        backfillModel: dbModelEmpty && provider !== 'none',
+      };
     }
-    return { state: maskLlmStateForClient(buildInitialLlmConfigState()), source: 'defaults' };
+    return {
+      state: buildInitialLlmConfigState(),
+      source: 'defaults' as const,
+      backfillModel: false,
+    };
   });
+
+  if (loaded.backfillModel) {
+    await saveLlmConfig(loaded.state);
+  }
+
+  return {
+    state: maskLlmStateForClient(loaded.state),
+    source: loaded.source,
+  };
 }
 
 export interface SaveLlmConfigOptions {
@@ -161,12 +184,14 @@ export async function saveLlmConfig(
       }
     }
 
+    const persistedEntries = ensurePersistedLlmModel(entries);
+
     const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     await client.query('BEGIN');
     try {
       await client.query('DELETE FROM llm_config');
-      for (const [k, v] of Object.entries(entries)) {
+      for (const [k, v] of Object.entries(persistedEntries)) {
         await client.query(
           'INSERT INTO llm_config (key, value, is_secret, updated_at) VALUES ($1, $2, $3, $4)',
           [k, v, secretKeys.has(k), now],

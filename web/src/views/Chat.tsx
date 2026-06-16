@@ -11,6 +11,7 @@ import ChatMessageList, { type ChatMessage } from '@/components/chat/ChatMessage
 import ChatComposer from '@/components/chat/ChatComposer';
 import SuggestedPrompts from '@/components/chat/SuggestedPrompts';
 import ChatModelPicker from '@/components/chat/ChatModelPicker';
+import ChatProviderPicker from '@/components/chat/ChatProviderPicker';
 import ChatActivityBar from '@/components/chat/ChatActivityBar';
 import { ChatFollowUpProvider } from '@/components/chat/ChatFollowUpContext';
 import { usePipeline } from '@/context/PipelineContext';
@@ -449,12 +450,18 @@ export default function ChatPage() {
   };
 
   const modelPicker = llmEnabled ? (
-    <ChatModelPicker
-      provider={String(llmConfigState.llm_provider || 'none')}
-      model={String(llmConfigState.llm_model || '')}
-      baseUrl={String(llmConfigState.llm_base_url || '')}
-      disabled={busy}
-    />
+    <>
+      <ChatProviderPicker
+        provider={String(llmConfigState.llm_provider || 'none')}
+        disabled={busy}
+      />
+      <ChatModelPicker
+        provider={String(llmConfigState.llm_provider || 'none')}
+        model={String(llmConfigState.llm_model || '')}
+        baseUrl={String(llmConfigState.llm_base_url || '')}
+        disabled={busy}
+      />
+    </>
   ) : null;
 
   const composer = (
