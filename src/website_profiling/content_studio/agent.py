@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from ..concurrency import map_parallel, tool_concurrency
 from ..llm.base import ChatResult, ToolCall, get_llm_client, parse_json_response
 from ..text_sanitize import sanitize_unicode_deep, strip_surrogates
 from .context import ContentStudioContext
@@ -186,10 +187,14 @@ def run_content_studio_analyze(
                     "content": f"Calling tool {result.tool_calls[0].name}",
                 })
 
-            for tc in result.tool_calls:
-                tool_result = sanitize_unicode_deep(
-                    dispatch_content_studio_tool(tc.name, ctx),
-                )
+            # Parallel tool execution: the analyze tools are independent, so dispatch
+            # them concurrently (bounded), then apply results in request order.
+            cs_results = map_parallel(
+                result.tool_calls,
+                lambda tc: sanitize_unicode_deep(dispatch_content_studio_tool(tc.name, ctx)),
+                max_workers=tool_concurrency(),
+            )
+            for tc, tool_result in zip(result.tool_calls, cs_results):
                 called.add(tc.name)
                 tool_events.append({"name": tc.name, "args": tc.arguments, "result": tool_result})
                 payload = json.dumps(tool_result, default=str)

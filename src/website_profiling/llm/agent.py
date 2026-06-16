@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 from typing import Any, Callable
 
+from ..concurrency import map_parallel, tool_concurrency
 from ..llm_config import llm_is_enabled, load_llm_config_from_db
 from ..text_sanitize import sanitize_unicode_deep, strip_surrogates
 from ..tools.audit_tools import AuditToolContext
@@ -264,23 +265,38 @@ def run_agent_turn(
                     "content": f"Calling tool {result.tool_calls[0].name}",
                 })
 
+            # Parallel tool execution (Claude Code-style): independent, read-only tool
+            # calls in a single turn run concurrently on a bounded pool. Each dispatch
+            # opens its own pooled DB connection, AuditToolContext is immutable, and
+            # results are applied back in request order so OpenAI tool_call_id / Anthropic
+            # tool_use_id pairing stays correct.
             for tc in result.tool_calls:
                 _emit(on_event, {"type": "tool_start", "name": tc.name, "args": tc.arguments})
-                if chat_tool_mode() != "full" and tc.name not in active_names:
-                    tool_result = {
+
+            gated = chat_tool_mode() != "full"
+            pre_round_active = set(active_names)
+
+            def _run_tool(tc: ToolCall) -> dict[str, Any]:
+                if gated and tc.name not in pre_round_active:
+                    return {
                         "error": f"tool not loaded this turn: {tc.name}",
                         "hint": "Call search_audit_tools to load specialized tools, or rephrase your request.",
                     }
-                else:
-                    tool_result = sanitize_unicode_deep(
+                try:
+                    return sanitize_unicode_deep(
                         dispatch_tool(tc.name, tc.arguments, context=context),
                     )
+                except Exception as e:  # noqa: BLE001 - isolate one tool's failure from the batch
+                    return {"error": str(e).strip() or type(e).__name__}
+
+            results = map_parallel(
+                result.tool_calls, _run_tool, max_workers=tool_concurrency(),
+            )
+
+            for tc, tool_result in zip(result.tool_calls, results):
                 _emit(on_event, {"type": "tool_end", "name": tc.name, "result": tool_result})
                 tool_events.append({"name": tc.name, "args": tc.arguments, "result": tool_result})
-
                 active_names = _expand_active_tools_from_result(tc.name, tool_result, active_names)
-                if chat_tool_mode() != "full":
-                    tools = openai_tools_schema(active_names)
 
                 tool_content = json.dumps(tool_result, default=str)
                 if ollama_format:
@@ -295,6 +311,9 @@ def run_agent_turn(
                         "tool_call_id": tc.id,
                         "content": tool_content,
                     })
+
+            if gated:
+                tools = openai_tools_schema(active_names)
             continue
 
         final_message = strip_surrogates(result.content).strip()

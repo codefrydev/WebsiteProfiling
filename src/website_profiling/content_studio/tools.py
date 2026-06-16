@@ -237,13 +237,16 @@ def dispatch_content_studio_tool(name: str, ctx: ContentStudioContext) -> dict[s
 
 
 def run_all_content_studio_tools(ctx: ContentStudioContext) -> list[dict[str, Any]]:
-    """Deterministic fallback: execute every analyze tool in fixed order."""
-    events: list[dict[str, Any]] = []
-    for name in CONTENT_STUDIO_TOOL_DEFINITIONS:
-        tool_name = str(name["name"])
-        events.append({
-            "name": tool_name,
-            "args": {},
-            "result": dispatch_content_studio_tool(tool_name, ctx),
-        })
-    return events
+    """Deterministic fallback: execute every analyze tool, in declaration order."""
+    from ..concurrency import map_parallel, tool_concurrency
+
+    names = [str(t["name"]) for t in CONTENT_STUDIO_TOOL_DEFINITIONS]
+    results = map_parallel(
+        names,
+        lambda name: dispatch_content_studio_tool(name, ctx),
+        max_workers=tool_concurrency(),
+    )
+    return [
+        {"name": name, "args": {}, "result": result}
+        for name, result in zip(names, results)
+    ]
