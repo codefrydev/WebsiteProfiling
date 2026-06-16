@@ -1,3 +1,5 @@
+'use client';
+
 import {
   AlertTriangle,
   ArrowRight,
@@ -10,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Card, LabelWithHint } from '@/components';
 import Sparkline, { type SparklineMode } from '@/components/Sparkline';
+import { SkeletonDomainCard } from '@/components/Skeleton';
 import { DataSourceBadgeRow } from '@/components/DataSourceBadge';
 import { PRIORITY_CONFIG } from '@/lib/issuePriority';
 import { format, strings } from '@/lib/strings';
@@ -17,20 +20,21 @@ import {
   formatPortfolioCrawlSummary,
   hasPortfolioCrawlConfig,
 } from '@/lib/portfolioCrawlConfig';
-import type { PortfolioAuditHistoryPoint } from '@/lib/portfolioAuditHistory';
-import type { PortfolioCrawlHistoryPoint } from '@/types/api';
 import type { PortfolioCategorySnapshot, PortfolioGroup } from '@/types';
 import {
   derivePortfolioCardTrends,
   healthScoreClass,
   shortCategoryLabel,
 } from '@/components/portfolio/portfolioCardUtils';
+import { useOptionalPortfolio } from '@/context/usePortfolio';
+import { usePortfolioCard } from '@/hooks/usePortfolioCard';
+import { usePortfolioCardHistory } from '@/hooks/usePortfolioCardHistory';
+import { useInView } from '@/lib/useInView';
 
 export interface PortfolioPropertyCardProps {
-  group: PortfolioGroup;
+  liteGroup: PortfolioGroup;
   cardKey: string;
-  auditHistory: PortfolioAuditHistoryPoint[];
-  crawlHistory: PortfolioCrawlHistoryPoint[];
+  fetchEnabled: boolean;
   confirmOpen: boolean;
   isDeleting: boolean;
   isOpening: boolean;
@@ -94,11 +98,19 @@ function PortfolioSignalPill({ label, value }: { label: string; value: number })
   );
 }
 
+function SparklineSkeleton() {
+  return (
+    <span
+      className="shimmer inline-block h-5 w-[72px] rounded bg-brand-800/90 dark:bg-white/[0.07]"
+      aria-hidden
+    />
+  );
+}
+
 export default function PortfolioPropertyCard({
-  group,
+  liteGroup,
   cardKey,
-  auditHistory,
-  crawlHistory,
+  fetchEnabled,
   confirmOpen,
   isDeleting,
   isOpening,
@@ -107,6 +119,34 @@ export default function PortfolioPropertyCard({
   onDeleteCancel,
   onDeleteConfirm,
 }: PortfolioPropertyCardProps) {
+  const { ref, inView } = useInView<HTMLDivElement>({ once: true, rootMargin: '200px' });
+  const { group, status: cardStatus, isFullCard } = usePortfolioCard(liteGroup, fetchEnabled);
+  const { auditHistory, status: historyStatus } = usePortfolioCardHistory(
+    liteGroup.domainParam,
+    fetchEnabled && isFullCard && inView && !liteGroup.crawlOnly,
+  );
+  const portfolio = useOptionalPortfolio();
+  const crawlHistory = portfolio?.crawlHistoryByDomain[liteGroup.domainParam] || [];
+  const historyLoading =
+    fetchEnabled &&
+    isFullCard &&
+    inView &&
+    !liteGroup.crawlOnly &&
+    (historyStatus === 'loading' || historyStatus === 'idle');
+
+  if (fetchEnabled && !isFullCard && cardStatus !== 'error') {
+    return (
+      <div
+        ref={ref}
+        className="relative min-w-[520px] max-w-[600px] shrink-0"
+        role="status"
+        aria-busy="true"
+        aria-label={strings.app.loading}
+      >
+        <SkeletonDomainCard />
+      </div>
+    );
+  }
   const vh = strings.views.home;
   const sj = strings.common;
   const disabled = isOpening || isDeleting;
@@ -121,7 +161,7 @@ export default function PortfolioPropertyCard({
   const showDataSources = !group.crawlOnly && (group.dataSources?.length ?? 0) > 0;
 
   return (
-    <div className="relative min-w-[520px] max-w-[600px] shrink-0 text-left">
+    <div ref={ref} className="relative min-w-[520px] max-w-[600px] shrink-0 text-left">
       <Card
         shadow
         padding="none"
@@ -159,7 +199,10 @@ export default function PortfolioPropertyCard({
                   {group.crawlOnly && trends.titleTrend.length >= 1 ? (
                     <Sparkline values={trends.titleTrend} mode="higher-better" width={72} height={20} />
                   ) : null}
-                  {!group.crawlOnly && trends.healthTrend.length >= 1 ? (
+                  {!group.crawlOnly && historyLoading ? (
+                    <SparklineSkeleton />
+                  ) : null}
+                  {!group.crawlOnly && !historyLoading && trends.healthTrend.length >= 1 ? (
                     <Sparkline values={trends.healthTrend} mode="higher-better" width={72} height={20} />
                   ) : null}
                   <p className={`text-base font-bold tabular-nums ${healthScoreClass(group.healthScore)}`}>

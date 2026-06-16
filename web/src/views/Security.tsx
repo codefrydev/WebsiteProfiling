@@ -5,6 +5,7 @@ import type { TooltipItem } from 'chart.js';
 import { Shield, Flame, AlertTriangle, AlertCircle, Info, ExternalLink, BarChart3, List, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Badge, ViewTabs, ViewTabPanel, Button, StatCard, ChartTitleWithHint } from '../components';
 import { metricHelpHint } from '@/lib/metricHelp';
@@ -216,21 +217,8 @@ export default function Security({ searchQuery = '' }: ViewProps) {
     ];
   }, [vs.tabs, allFindings.length, typeLabels.length]);
 
-  if (!data) return null;
-
-  if ((securityStatus === 'loading' || securityStatus === 'idle') && !allFindings.length) {
-    return (
-      <PageLayout className="space-y-6">
-        <PageHeader
-          icon={<Shield className="h-7 w-7 text-link shrink-0" />}
-          title={vs.title}
-        />
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          {strings.app.loading}
-        </div>
-      </PageLayout>
-    );
+  if (securityStatus === 'idle' || securityStatus === 'loading') {
+    return <ViewSectionLoading title={vs.title} />;
   }
 
   const severityCounts = SEVERITY_ORDER.reduce<Record<string, number>>((acc, s) => {

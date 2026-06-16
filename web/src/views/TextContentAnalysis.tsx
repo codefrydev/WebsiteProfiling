@@ -3,6 +3,9 @@
 import type { Chart, TooltipItem } from 'chart.js';
 import { Fragment, useState, useMemo, useEffect } from 'react';
 import { useUrlTab } from '@/hooks/useUrlTab';
+import { useTabSections } from '@/hooks/useTabSections';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
+import { isSectionPending } from '@/lib/reportViewSections';
 import type {
   ContentAnalyticsData,
   TextContentAnalysisData,
@@ -250,6 +253,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
   const ch = strings.charts;
   const { data } = useReport();
   const [activeTab, setActiveTab] = useUrlTab(TEXT_TABS, 'overview');
+  const sectionStatus = useTabSections(['content', 'indexation', 'keywords'], true);
   const [keywordsChartPage, setKeywordsChartPage] = useState(1);
 
   const tca: TextContentAnalysisData = data?.text_content_analysis ?? EMPTY_TCA;
@@ -370,7 +374,9 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
     [vtca],
   );
 
-  if (!data) return null;
+  if (isSectionPending(['content', 'indexation', 'keywords'], sectionStatus)) {
+    return <ViewSectionLoading title={vtca.title} />;
+  }
 
   return (
     <PageLayout className="space-y-6">

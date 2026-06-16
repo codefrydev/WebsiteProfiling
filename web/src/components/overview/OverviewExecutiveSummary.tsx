@@ -13,6 +13,8 @@ import {
 import type { ReportPayload } from '@/types';
 import { strings, format } from '@/lib/strings';
 import { Card, Badge } from '@/components';
+import { Skeleton } from '@/components/Skeleton';
+import { useInView } from '@/lib/useInView';
 import { CategoryScoreGauge } from '@/components/charts/CategoryScoreGauge';
 
 const vo = strings.views.overview;
@@ -141,6 +143,10 @@ export function OverviewExecutiveSummary({
   reportCount,
   querySuffix,
 }: OverviewExecutiveSummaryProps) {
+  const { ref: historyRef, inView: historyInView } = useInView<HTMLDivElement>({
+    once: true,
+    rootMargin: '200px',
+  });
   const [healthDelta, setHealthDelta] = useState<number | null>(null);
   const [healthTrend, setHealthTrend] = useState<number[]>([]);
   const [historyError, setHistoryError] = useState<string | null>(null);
@@ -159,7 +165,7 @@ export function OverviewExecutiveSummary({
     setHealthDelta(null);
     setHealthTrend([]);
     setHistoryError(null);
-    if (!domain) return;
+    if (!domain || !historyInView) return;
     void fetch(`/api/report/history?domain=${encodeURIComponent(domain)}&limit=8`)
       .then(async (r) => {
         if (!r.ok) {
@@ -177,7 +183,7 @@ export function OverviewExecutiveSummary({
         }
       })
       .catch(() => setHistoryError(vo.historyTrendUnavailable));
-  }, [data.site_name, currentHealth]);
+  }, [data.site_name, currentHealth, historyInView]);
 
   if (!showHero) return null;
 
@@ -186,7 +192,7 @@ export function OverviewExecutiveSummary({
       {(currentHealth != null || topIssues.length > 0) && (
         <Card shadow className="border border-default overflow-hidden">
           {currentHealth != null ? (
-            <div className="flex flex-col gap-5 border-b border-muted/60 p-4 sm:p-5 lg:flex-row lg:items-center">
+            <div className="flex flex-col gap-5 border-b border-muted/60 p-4 sm:p-5 lg:flex-row lg:items-center" ref={historyRef}>
               <CategoryScoreGauge name={vo.auditHealth} score={currentHealth} size="lg" />
 
               <div className="min-w-0 flex-1 space-y-3">
@@ -229,6 +235,14 @@ export function OverviewExecutiveSummary({
                       <p className="mt-2 text-sm text-muted-foreground">{vo.executiveNoIssues}</p>
                     )}
                   </div>
+                  {historyInView && healthTrend.length < 2 && !historyError ? (
+                    <div className="sm:text-right">
+                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        {vo.healthTrendLabel}
+                      </p>
+                      <Skeleton className="h-8 w-[140px] max-w-full" />
+                    </div>
+                  ) : null}
                   {healthTrend.length >= 2 ? (
                     <div className="sm:text-right">
                       <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">

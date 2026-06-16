@@ -7,6 +7,9 @@ import type { TableColumn } from '@/types/components';
 import { Users, AlertCircle, Settings2, Download, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useTabSections } from '@/hooks/useTabSections';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
+import { TRAFFIC_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs, EmptyState } from '../components';
@@ -58,6 +61,7 @@ export default function Traffic() {
   const sp = strings.views.searchPerformance;
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useUrlTab(TABS, 'overview');
+  useTabSections(TRAFFIC_TAB_SECTIONS, true);
   const [pathSearch, setPathSearch] = useState('');
 
   useEffect(() => {
@@ -186,15 +190,7 @@ export default function Traffic() {
 
   if (!google) {
     if (trafficStatus === 'loading' || trafficStatus === 'idle') {
-      return (
-        <PageLayout className="space-y-6">
-          <PageHeader title={tf.title} />
-          <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {strings.app.loading}
-          </div>
-        </PageLayout>
-      );
+      return <ViewSectionLoading title={tf.title} />;
     }
     return (
       <PageLayout className="space-y-6">

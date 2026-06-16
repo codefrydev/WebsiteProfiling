@@ -130,6 +130,22 @@ function toLocalDateTime(value: string | null | undefined): string {
 
 type GetPayloadFn = (reportId: number) => Promise<ReportPayload> | ReportPayload;
 
+export interface PortfolioSummary {
+  totalBrands: number;
+  totalUrls: number;
+  avgHealth: number | null;
+}
+
+/** Aggregate stats for the Home stat row. */
+export function computePortfolioSummary(groups: PortfolioGroup[]): PortfolioSummary {
+  const totalBrands = groups.length;
+  const totalUrls = groups.reduce((sum, g) => sum + g.urlCount, 0);
+  const avgHealth = totalBrands
+    ? Math.round(groups.reduce((sum, g) => sum + g.healthScore, 0) / totalBrands)
+    : null;
+  return { totalBrands, totalUrls, avgHealth };
+}
+
 export type CrawlRunMeta = {
   render_mode?: string;
   discovery_mode?: string;
@@ -365,4 +381,63 @@ export function mergePortfolioGroups(
   crawlOnlyGroups: PortfolioGroup[],
 ): PortfolioGroup[] {
   return [...reportGroups, ...crawlOnlyGroups].sort((a, b) => b.generatedAtMs - a.generatedAtMs);
+}
+
+export interface BuildPortfolioCardOpts {
+  reportId?: number;
+  crawlRunId?: number;
+}
+
+/**
+ * Build a single full portfolio card (full report payload) for the card widget.
+ */
+export async function buildPortfolioCard(
+  reportList: ReportListRow[],
+  startUrlByRunId: Map<number, string>,
+  runCreatedAtByRunId: Map<number, string>,
+  runMetaByRunId: Map<number, CrawlRunMeta>,
+  crawlSummaries: CrawlRunSummary[],
+  unknownBrand: string,
+  emDash: string,
+  getPayload: GetPayloadFn,
+  opts: BuildPortfolioCardOpts,
+): Promise<PortfolioGroup | null> {
+  const reportId = opts.reportId;
+  const crawlRunId = opts.crawlRunId;
+
+  if (reportId != null && Number.isFinite(reportId)) {
+    const row = reportList.find((r) => r.id === reportId);
+    if (!row) return null;
+    const groups = await computeDomainGroups(
+      [row],
+      startUrlByRunId,
+      runCreatedAtByRunId,
+      unknownBrand,
+      emDash,
+      getPayload,
+      runMetaByRunId,
+    );
+    return groups[0] ?? null;
+  }
+
+  if (crawlRunId != null && Number.isFinite(crawlRunId)) {
+    const reportGroups = await computeDomainGroups(
+      reportList,
+      startUrlByRunId,
+      runCreatedAtByRunId,
+      unknownBrand,
+      emDash,
+      getPayload,
+      runMetaByRunId,
+    );
+    const fromReport = reportGroups.find((g) => g.crawlRunId === crawlRunId);
+    if (fromReport) return fromReport;
+
+    const summary = crawlSummaries.find((s) => Number(s.crawl_run_id) === crawlRunId);
+    if (!summary) return null;
+    const crawlOnly = computeCrawlOnlyGroups([summary], reportGroups, unknownBrand, emDash);
+    return crawlOnly[0] ?? null;
+  }
+
+  return null;
 }

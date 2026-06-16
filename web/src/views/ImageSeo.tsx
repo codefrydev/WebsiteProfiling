@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ImageIcon } from 'lucide-react';
 import { useReport } from '@/context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { useOptionalPipeline } from '@/context/PipelineContext';
 import { PageLayout, PageHeader, Card, ViewTabs, ViewTabPanel, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '@/components';
 import ImageAuditSummaryCards, { type ImageAuditSummaryData } from '@/components/imageSeo/ImageAuditSummaryCards';
@@ -43,6 +45,7 @@ function summaryFromApi(raw: Record<string, unknown>): ImageAuditSummaryData {
 export default function ImageSeo({ searchQuery = '' }: ViewProps) {
   const vi = strings.views.imageSeo;
   const { selectedReportId } = useReport();
+  const contentStatus = useSectionData('content');
   const pipeline = useOptionalPipeline();
   const propertyId = Number(pipeline?.configState.active_property_id || 0) || null;
   const reportId = selectedReportId ?? null;
@@ -120,6 +123,10 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
   );
 
   const inventoryGated = activeTab === 'largest' || activeTab === 'unoptimized';
+
+  if (contentStatus === 'idle' || contentStatus === 'loading') {
+    return <ViewSectionLoading title={vi.title} />;
+  }
 
   return (
     <PageLayout>

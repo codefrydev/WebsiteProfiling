@@ -3,6 +3,7 @@ import ForceGraph3D from '3d-force-graph';
 import { Maximize, Minimize, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Button, DataViewLayout, LabelWithHint } from '../components';
 import type { GraphEdge, GraphNode, ViewProps } from '@/types';
@@ -78,6 +79,7 @@ export default function Network({ searchQuery = '' }: ViewProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { data } = useReport();
   const structureStatus = useSectionData('structure');
+  const linksStatus = useSectionData('links');
 
   const deferredSearch = useDeferredValue(searchQuery);
 
@@ -241,22 +243,15 @@ export default function Network({ searchQuery = '' }: ViewProps) {
     return () => document.removeEventListener('fullscreenchange', onFs);
   }, []);
 
-  if (!data) return null;
-
-  if (structureStatus === 'loading' || structureStatus === 'idle') {
-    return (
-      <PageLayout variant="fullHeight" className="space-y-6">
-        <PageHeader title={vn.title} subtitle={vn.subtitle} />
-        <Card className="flex-1 min-h-[50vh] flex flex-col items-center justify-center gap-4 border-dashed">
-          <Loader2 className="h-10 w-10 animate-spin text-link" aria-hidden />
-          <p className="text-muted-foreground">{strings.app.loading}</p>
-        </Card>
-      </PageLayout>
-    );
+  if (
+    structureStatus === 'idle' || structureStatus === 'loading' ||
+    linksStatus === 'idle' || linksStatus === 'loading'
+  ) {
+    return <ViewSectionLoading title={vn.title} />;
   }
 
   const hasGraph =
-    (data.graph_nodes?.length ?? 0) > 0 || (data.graph_edges?.length ?? 0) > 0;
+    (data?.graph_nodes?.length ?? 0) > 0 || (data?.graph_edges?.length ?? 0) > 0;
 
   const searchEmpty =
     graphPayload?.searchActive &&

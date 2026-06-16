@@ -42,6 +42,8 @@ import { pathSlugToViewId, viewIdToPathSlug, type ViewId } from './routes';
 import { dispatchOpenIntegrations } from './lib/pipelineJobEvents';
 import ReportShellSkeleton from './components/ReportShellSkeleton';
 import { ReportProvider as ReportProviderBase } from './context/ReportContext';
+import { PortfolioProvider } from './context/PortfolioContext';
+import ViewSectionLoader from './components/ViewSectionLoader';
 import type { ReportPayload } from '@/types';
 function viewLoading(label = 'Loading view…') {
   return (
@@ -193,7 +195,7 @@ function AppContent({ slug }: SlugProps): ReactNode {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
-  const { loading, error, setSelectedReportId } = useReport() as ReportShellReportContext;
+  const { loading, error, data, setSelectedReportId } = useReport() as ReportShellReportContext;
 
   const view = pathSlugToViewId(slug ?? '');
 
@@ -225,8 +227,8 @@ function AppContent({ slug }: SlugProps): ReactNode {
   const showSidebar = view !== 'home';
   const showSearch = showSidebar && view !== 'export';
 
-  if (loading) {
-    return <ReportShellSkeleton variant={view === 'home' ? 'home' : 'dashboard'} />;
+  if (loading && view !== 'home' && !data) {
+    return <ReportShellSkeleton variant="dashboard" />;
   }
 
   if (error && view !== 'home') {
@@ -261,11 +263,21 @@ function AppContent({ slug }: SlugProps): ReactNode {
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
     >
-      <CurrentView
-        searchQuery={searchQuery}
-        onNavigate={selectView}
-        onOpenIntegrations={dispatchOpenIntegrations}
-      />
+      {view === 'home' ? (
+        <PortfolioProvider>
+          <CurrentView
+            searchQuery={searchQuery}
+            onNavigate={selectView}
+            onOpenIntegrations={dispatchOpenIntegrations}
+          />
+        </PortfolioProvider>
+      ) : (
+        <CurrentView
+          searchQuery={searchQuery}
+          onNavigate={selectView}
+          onOpenIntegrations={dispatchOpenIntegrations}
+        />
+      )}
     </AppShell>
   );
 }
@@ -274,6 +286,7 @@ function RoutedShell({ slug }: SlugProps): ReactNode {
   return (
     <>
       <BrandUrlSync slug={slug} />
+      <ViewSectionLoader slug={slug} />
       <AppContent slug={slug} />
     </>
   );

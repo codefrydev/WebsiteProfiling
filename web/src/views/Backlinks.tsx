@@ -7,6 +7,9 @@ import { useSearchParams } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useTabSections } from '@/hooks/useTabSections';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
+import { BACKLINKS_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { useOptionalPipeline } from '../context/PipelineContext';
 import { apiUrl } from '../lib/publicBase';
 import { strings, format } from '../lib/strings';
@@ -73,6 +76,7 @@ export default function Backlinks(_props: ViewProps) {
   };
 
   const [activeTab, setActiveTab] = useUrlTab(TABS, 'overview');
+  useTabSections(BACKLINKS_TAB_SECTIONS, true);
   const [domainSearch, setDomainSearch] = useState('');
   const [pageSearch, setPageSearch] = useState('');
   const [anchorSearch, setAnchorSearch] = useState('');
@@ -245,15 +249,7 @@ export default function Backlinks(_props: ViewProps) {
 
   if (!gscLinks?.export_types?.length) {
     if (gscLinksStatus === 'loading' || gscLinksStatus === 'idle') {
-      return (
-        <PageLayout className="space-y-6">
-          <PageHeader title={vb.title} />
-          <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {strings.app.loading}
-          </div>
-        </PageLayout>
-      );
+      return <ViewSectionLoading title={vb.title} />;
     }
     return (
       <PageLayout className="space-y-6">

@@ -6,6 +6,8 @@ import { useSearchParams } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { Bug, ChevronDown, ChevronRight, ExternalLink, BarChart3, List } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, Button, StatCard, Select, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, ViewTabs, ViewTabPanel } from '../components';
@@ -30,6 +32,7 @@ type JsErrorsTabId = (typeof JS_ERRORS_TABS)[number];
 
 export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
   const { data } = useReport();
+  const linksStatus = useSectionData('links');
   const searchParams = useSearchParams();
   const trailingQuery = searchParams.toString() ? `?${searchParams.toString()}` : '';
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('All');
@@ -101,7 +104,9 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
     },
   ], [vj.tabs, topMessages.length, filteredRows.length]);
 
-  if (!data) return null;
+  if (linksStatus === 'idle' || linksStatus === 'loading') {
+    return <ViewSectionLoading title={vj.title} />;
+  }
 
   const agg = scopeInfo.browserDiagnostics;
   const pagesWithConsole = Number(agg?.pages_with_console_errors ?? 0);

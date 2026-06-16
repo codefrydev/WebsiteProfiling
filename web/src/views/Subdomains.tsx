@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Globe2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings, format } from '../lib/strings';
 import {
   PageLayout,
@@ -28,6 +30,7 @@ function yesNo(value: boolean | undefined): string {
 
 export default function Subdomains({ searchQuery = '' }: ViewProps) {
   const { data } = useReport();
+  const techStatus = useSectionData('tech');
   const searchParams = useSearchParams();
   const vs = strings.views.subdomains;
   const inv = data?.subdomains;
@@ -48,6 +51,10 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
 
   const gscGapHosts = inv?.gsc_hosts_not_crawled || [];
   const outOfScope = inv?.out_of_scope_discovered || [];
+
+  if (techStatus === 'idle' || techStatus === 'loading') {
+    return <ViewSectionLoading title={vs.title} />;
+  }
 
   if (!inv || inv.disabled) {
     return (

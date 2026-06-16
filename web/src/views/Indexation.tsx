@@ -3,6 +3,8 @@
 import { useMemo } from 'react';
 import { FileSearch } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, StatCard } from '../components';
 import { metricHelpHint } from '@/lib/metricHelp';
@@ -11,6 +13,7 @@ import type { UrlJoinData, ViewProps } from '@/types';
 
 export default function Indexation(_props: ViewProps) {
   const { data } = useReport();
+  const indexationStatus = useSectionData('indexation');
   const vi = strings.views.indexation;
   const cov = data?.indexation_coverage;
   const counts = cov?.counts;
@@ -33,6 +36,10 @@ export default function Indexation(_props: ViewProps) {
       },
     };
   }, [cov]);
+
+  if (indexationStatus === 'idle' || indexationStatus === 'loading') {
+    return <ViewSectionLoading title={vi.title} />;
+  }
 
   return (
     <PageLayout>

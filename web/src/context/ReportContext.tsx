@@ -49,6 +49,10 @@ function viewNeedsFullComparePayload(pathname: string): boolean {
   return pathname.includes('compare') || pathname.includes('site-structure');
 }
 
+function isHomeRoute(pathname: string): boolean {
+  return pathname === '/home';
+}
+
 interface MetaApiResponse extends Partial<ReportMetaResponse> {
   error?: string;
 }
@@ -125,6 +129,8 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
   const compareSummaryKeyRef = useRef<string>('');
   const domainSlugRef = useRef(domainSlug);
   domainSlugRef.current = domainSlug;
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
 
   const [sectionStatus, setSectionStatus] = useState<
     Partial<Record<SectionKey, 'loading' | 'loaded' | 'error'>>
@@ -244,11 +250,6 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       }
     } finally {
       setLoading(false);
-      // Background-prefetch remaining sections in priority order (fire-and-forget)
-      const nonCore = SECTION_KEYS.filter((s) => s !== 'core');
-      for (const section of nonCore) {
-        void loadSection(section, reportId);
-      }
     }
   }, [loadSection]);
 
@@ -290,6 +291,10 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       const latestId = list[0]?.id ?? null;
       if (latestId != null) {
         setSelectedReportId(latestId);
+      }
+      if (isHomeRoute(pathnameRef.current)) {
+        setLoading(false);
+        return;
       }
       await applyPayload(latestId);
     } catch (e) {
@@ -374,6 +379,11 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       return;
     }
 
+    if (isHomeRoute(pathname)) {
+      setLoading(false);
+      return;
+    }
+
     if (domainSlug && scopedList.length === 0) {
       setError(strings.app.noReportForDomain);
       setData(null);
@@ -398,7 +408,16 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       return;
     }
     applyPayload(id);
-  }, [reportListFull, crawlRuns, domainSlug, scopedList, selectedReportId, applyPayload, crawlPreviewRunId]);
+  }, [
+    reportListFull,
+    crawlRuns,
+    domainSlug,
+    scopedList,
+    selectedReportId,
+    applyPayload,
+    crawlPreviewRunId,
+    pathname,
+  ]);
 
   const setSelectedReportIdWrapped = useCallback((id: number | null) => {
     setCrawlPreviewRunId(null);

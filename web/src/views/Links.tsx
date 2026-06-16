@@ -4,6 +4,9 @@ import { useState, useMemo, useEffect, useRef, useCallback, type MouseEvent } fr
 import { Link as LinkIcon, ArrowLeft, AlertTriangle, Download, List, TextQuote, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useTabSections } from '@/hooks/useTabSections';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
+import { LINKS_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Button, AlertBanner, ViewTabs } from '../components';
 import type { ViewTabItem } from '../components';
@@ -76,6 +79,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
   const sj = strings.common;
   const { data } = useReport();
   const linksStatus = useSectionData('links');
+  useTabSections(LINKS_TAB_SECTIONS, true);
   const pipeline = useOptionalPipeline();
   const propertyId = Number(pipeline?.configState.active_property_id || 0);
   const searchParams = useSearchParams();
@@ -395,18 +399,8 @@ export default function Links({ searchQuery = '' }: ViewProps) {
     setHoveredRow(link.url);
   }, []);
 
-  if (!data) return null;
-
-  if ((linksStatus === 'loading' || linksStatus === 'idle') && !data.links?.length) {
-    return (
-      <PageLayout className="space-y-6">
-        <PageHeader title={vl.title} />
-        <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          {strings.app.loading}
-        </div>
-      </PageLayout>
-    );
+  if (linksStatus === 'idle' || linksStatus === 'loading') {
+    return <ViewSectionLoading title={vl.title} />;
   }
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
@@ -579,7 +573,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
             {linkForInspector ? (
               <InspectorTabs
                 link={linkForInspector}
-                lhData={(data.lighthouse_by_url?.[matchedInspectUrl] ?? null) as LinkLighthouseData | null}
+                lhData={(data?.lighthouse_by_url?.[matchedInspectUrl] ?? null) as LinkLighthouseData | null}
                 inspectorDetails={inspectorDetails}
                 activeTab={inspectorTab}
                 onTabChange={setInspectorTab}

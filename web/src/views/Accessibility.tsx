@@ -3,6 +3,8 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Accessibility, ChevronDown, ChevronRight, List } from 'lucide-react';
 import { useReport } from '@/context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { useOptionalPipeline } from '@/context/PipelineContext';
 import {
   PageLayout,
@@ -36,6 +38,7 @@ type TabId = (typeof TABS)[number];
 
 export default function AccessibilityView({ searchQuery = '' }: ViewProps) {
   const { data, selectedReportId } = useReport();
+  const linksStatus = useSectionData('links');
   const pipeline = useOptionalPipeline();
   const va = strings.views.accessibility;
   const [activeTab, setActiveTab] = useUrlTab(TABS, 'summary');
@@ -104,6 +107,10 @@ export default function AccessibilityView({ searchQuery = '' }: ViewProps) {
   }, [apiSummary, clientRules]);
 
   const emptyBecauseNoAxe = allRows.length === 0 && !scope.usesBrowser;
+
+  if (linksStatus === 'idle' || linksStatus === 'loading') {
+    return <ViewSectionLoading title={va.title} />;
+  }
 
   return (
     <PageLayout>

@@ -8,6 +8,8 @@ import { strings, format } from '@/lib/strings';
 import { categoryDisplayName } from '@/lib/categoryDisplayNames';
 import { CategoryScoreGauge } from '@/components/charts/CategoryScoreGauge';
 import { Card } from '@/components';
+import { SectionLoadingGate } from '@/components/SectionLoadingGate';
+import { CardBlockSkeleton } from '@/components/SectionWidgetSkeleton';
 import { OverviewTabPanel } from './OverviewTabPanel';
 import { PortfolioBenchmarkCard } from './PortfolioBenchmarkCard';
 import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
@@ -127,22 +129,24 @@ export function OverviewHealthTab({
               </div>
             )}
           </Card>
-          {(hasSubdomains || hasContacts) && (
-            <div className="flex flex-wrap gap-4 mt-3 text-sm">
-              {hasSubdomains ? (
-                <Link href={`/subdomains${querySuffix}`} className="text-link hover:underline inline-flex items-center gap-1">
-                  {vo.viewSubdomains}
-                  <ChevronRight className="h-4 w-4" aria-hidden />
-                </Link>
-              ) : null}
-              {hasContacts ? (
-                <Link href={`/contacts${querySuffix}`} className="text-link hover:underline inline-flex items-center gap-1">
-                  {vo.viewContacts}
-                  <ChevronRight className="h-4 w-4" aria-hidden />
-                </Link>
-              ) : null}
-            </div>
-          )}
+          <SectionLoadingGate sections={['tech']} fallback={<CardBlockSkeleton lines={2} />}>
+            {(hasSubdomains || hasContacts) ? (
+              <div className="flex flex-wrap gap-4 mt-3 text-sm">
+                {hasSubdomains ? (
+                  <Link href={`/subdomains${querySuffix}`} className="text-link hover:underline inline-flex items-center gap-1">
+                    {vo.viewSubdomains}
+                    <ChevronRight className="h-4 w-4" aria-hidden />
+                  </Link>
+                ) : null}
+                {hasContacts ? (
+                  <Link href={`/contacts${querySuffix}`} className="text-link hover:underline inline-flex items-center gap-1">
+                    {vo.viewContacts}
+                    <ChevronRight className="h-4 w-4" aria-hidden />
+                  </Link>
+                ) : null}
+              </div>
+            ) : null}
+          </SectionLoadingGate>
         </div>
       )}
 

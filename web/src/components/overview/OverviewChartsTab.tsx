@@ -15,6 +15,9 @@ import {
 import { Bar } from 'react-chartjs-2';
 import { strings, format } from '@/lib/strings';
 import { Card, ChartTitleWithHint } from '@/components';
+import { ChartBlockSkeleton } from '@/components/SectionWidgetSkeleton';
+import { OVERVIEW_TAB_SECTIONS, isSectionPending } from '@/lib/reportViewSections';
+import { useTabSections } from '@/hooks/useTabSections';
 import { ScoreRing } from '@/components/lighthouse';
 import { StatusDistributionChart, LighthouseScoreGrid } from '@/components/charts';
 import { ChartPanel } from '@/components/charts';
@@ -172,6 +175,22 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
   const hasCrawlSection = statusDistribution || responseTimeChart || depthChart;
   const hasContentSection = wordCountChart || titleMetaChart || readingLevelChart;
   const hasDiscoverySection = mimeChart || outlinksChart || domainsChart;
+
+  const chartSectionStatus = useTabSections(OVERVIEW_TAB_SECTIONS.charts, true);
+  const chartsPending = isSectionPending(OVERVIEW_TAB_SECTIONS.charts, chartSectionStatus);
+
+  if (chartsPending && !hasInsightCharts) {
+    return (
+      <OverviewTabPanel tabId="charts" className="space-y-4">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <ChartBlockSkeleton />
+          <ChartBlockSkeleton />
+          <ChartBlockSkeleton />
+          <ChartBlockSkeleton />
+        </div>
+      </OverviewTabPanel>
+    );
+  }
 
   return (
     <OverviewTabPanel tabId="charts" className="space-y-8">

@@ -5,6 +5,8 @@ import { Cpu, List } from 'lucide-react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
 import { Bar } from 'react-chartjs-2';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, ViewTabs, ViewTabPanel, StatCard, ChartTitleWithHint } from '../components';
@@ -64,6 +66,7 @@ type TechStackTabId = (typeof TECH_STACK_TABS)[number];
 export default function TechStack({ searchQuery = '' }: ViewProps) {
   const vr = strings.views.techStack;
   const { data } = useReport();
+  const techStatus = useSectionData('tech');
   const [activeTab, setActiveTab] = useUrlTab(TECH_STACK_TABS, 'overview');
   const q = (searchQuery || '').toLowerCase().trim();
   const ts: TechStackSummary = data?.tech_stack_summary ?? EMPTY_TS;
@@ -93,7 +96,9 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
     },
   ], [vr.tabs, techs.length]);
 
-  if (!data) return null;
+  if (techStatus === 'idle' || techStatus === 'loading') {
+    return <ViewSectionLoading title={vr.title} />;
+  }
 
   const totalAnalyzed = ts.total_pages_analyzed || 0;
   const chartLabels = techs.map((t) => t.name);

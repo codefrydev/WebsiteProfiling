@@ -7,6 +7,9 @@ import type { TableColumn } from '@/types/components';
 import { TrendingUp, Search, AlertCircle, Settings2, Download, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useTabSections } from '@/hooks/useTabSections';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
+import { SEARCH_PERFORMANCE_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs } from '../components';
@@ -58,6 +61,7 @@ export default function SearchPerformance() {
   const sp = strings.views.searchPerformance;
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useUrlTab(TABS, 'overview');
+  useTabSections(SEARCH_PERFORMANCE_TAB_SECTIONS, true);
   const [querySearch, setQuerySearch] = useState('');
   const [pageSearch, setPageSearch] = useState('');
 
@@ -222,15 +226,7 @@ export default function SearchPerformance() {
 
   if (!google) {
     if (trafficStatus === 'loading' || trafficStatus === 'idle') {
-      return (
-        <PageLayout className="space-y-6">
-          <PageHeader title={sp.title} />
-          <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {strings.app.loading}
-          </div>
-        </PageLayout>
-      );
+      return <ViewSectionLoading title={sp.title} />;
     }
     return (
       <PageLayout className="space-y-6">

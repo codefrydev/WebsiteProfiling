@@ -10,6 +10,7 @@ import { useUrlTab } from '@/hooks/useUrlTab';
 import { Gauge, Globe, Play, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import {
   canonicalDomainFromPayload,
   filterLighthouseByHost,
@@ -317,21 +318,11 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
     </div>
   ) : null;
 
+  if (lighthouseStatus === 'idle' || lighthouseStatus === 'loading') {
+    return <ViewSectionLoading title={vlh.pageSpeedTitle} />;
+  }
+
   if (!hasData) {
-    if (lighthouseStatus === 'loading' || lighthouseStatus === 'idle') {
-      return (
-        <PageLayout className="space-y-6">
-          <PageHeader
-            icon={<Gauge className="h-7 w-7 text-link shrink-0" />}
-            title={vlh.emptyTitle}
-          />
-          <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {strings.app.loading}
-          </div>
-        </PageLayout>
-      );
-    }
     return (
       <PageLayout className="space-y-6">
         <PageHeader

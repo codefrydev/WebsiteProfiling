@@ -4,6 +4,8 @@ import { Bar } from 'react-chartjs-2';
 import type { TooltipItem } from 'chart.js';
 import { ExternalLink, CheckCircle2, FileText, Copy, BarChart3, List } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, Button, ViewTabs, ViewTabPanel } from '../components';
@@ -26,6 +28,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
   const vlp = strings.views.links;
   const CONTENT_FILTERS = vc.filters;
   const { data } = useReport();
+  const contentStatus = useSectionData('content');
   const [filter, setFilter] = useState('missing_h1');
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useUrlTab(CONTENT_TABS, 'issues');
@@ -109,7 +112,9 @@ export default function Content({ searchQuery = '' }: ViewProps) {
     },
   ], [vc.tabs, totalIssues, list.length]);
 
-  if (!data) return null;
+  if (contentStatus === 'idle' || contentStatus === 'loading') {
+    return <ViewSectionLoading title={vc.title} />;
+  }
 
   const activeFilter = CONTENT_FILTERS.find((f) => f.key === filter);
 
@@ -140,7 +145,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'overview' && (
         <ViewTabPanel idPrefix="content" tabId="overview" className="space-y-6">
-          {(data.content_duplicates?.length ?? 0) > 0 && (
+          {(data?.content_duplicates?.length ?? 0) > 0 && (
             <Card shadow>
               <div className="flex items-center gap-2 mb-3">
                 <Copy className="h-4 w-4 text-violet-700 dark:text-violet-400" />
@@ -157,7 +162,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
                     </tr>
                   </TableHead>
                   <TableBody striped>
-                    {(data.content_duplicates || []).slice(0, 40).map((g) => (
+                    {(data?.content_duplicates || []).slice(0, 40).map((g) => (
                       <TableRow key={g.id} className="align-top">
                         <TableCell className="font-mono text-xs text-violet-800 dark:text-violet-300">{g.id}</TableCell>
                         <TableCell className="max-w-md">

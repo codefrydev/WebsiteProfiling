@@ -15,6 +15,9 @@ import {
 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useTabSections } from '@/hooks/useTabSections';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
+import { SITE_STRUCTURE_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { strings, format } from '../lib/strings';
 import { canonicalDomainFromPayload } from '../lib/domainSlug';
 import {
@@ -251,11 +254,12 @@ function fmtMetric(n: unknown): string {
 export default function SiteStructure({ searchQuery = '' }: ViewProps) {
   const s = strings.views.siteStructure;
   const { data, compareData, startUrlByRunId, selectedReportId, compareReportId } = useReport();
-  useSectionData('links');
-  useSectionData('structure');
+  const linksStatus = useSectionData('links');
+  const structureStatus = useSectionData('structure');
   const [showCompareCharts, setShowCompareCharts] = useState(true);
   const [pathPrefixFilter, setPathPrefixFilter] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useUrlTab(SITE_STRUCTURE_TABS, 'overview');
+  useTabSections(SITE_STRUCTURE_TAB_SECTIONS[activeTab] ?? ['structure'], true);
 
   const expectedHost = useMemo(
     () => canonicalDomainFromPayload(data, startUrlByRunId),
@@ -347,7 +351,10 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
     ];
   }, [s.tabs, merged.size, filteredLinks.length, data?.graph_nodes?.length]);
 
-  if (!data) return null;
+  const primaryStatus = activeTab === 'overview' ? linksStatus : structureStatus;
+  if (primaryStatus === 'idle' || primaryStatus === 'loading') {
+    return <ViewSectionLoading title={s.title} />;
+  }
 
   return (
     <PageLayout className="space-y-6">
