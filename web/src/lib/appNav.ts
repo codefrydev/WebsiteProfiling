@@ -155,7 +155,68 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
   CHAT_NAV,
 ];
 
+/** View ids rendered inside ReportShell — keep in sync with `VIEW_CONFIG`. */
+export const REPORT_VIEW_IDS: ViewId[] = VIEW_NAV.map(({ id }) => id);
+
 export const APP_NAV_SECTIONS = [...new Set(APP_NAV_ITEMS.map((item) => item.section))];
+
+/** Routes with their own app pages — not resolved by `pathSlugToViewId`. */
+export const STANDALONE_NAV_IDS = ['pipeline', 'chat', 'write'] as const satisfies readonly NavItemId[];
+
+export type StandaloneNavId = (typeof STANDALONE_NAV_IDS)[number];
+
+const STANDALONE_NAV_ID_SET = new Set<string>(STANDALONE_NAV_IDS);
+
+export function isStandaloneNavId(id: NavItemId): id is StandaloneNavId {
+  return STANDALONE_NAV_ID_SET.has(id);
+}
+
+export interface MiniNavLink {
+  id: NavItemId;
+  href: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+/** Compact sidebar links shared by chat and write studio shells. */
+export function miniNavLinks(ids: readonly NavItemId[]): MiniNavLink[] {
+  return ids.map((id) => {
+    const item = APP_NAV_ITEMS.find((entry) => entry.id === id);
+    if (!item) {
+      throw new Error(`Unknown nav item: ${id}`);
+    }
+    return {
+      id: item.id,
+      href: item.hrefPath,
+      label: item.label,
+      icon: item.icon,
+    };
+  });
+}
+
+export const CHAT_SIDEBAR_NAV_IDS = [
+  'home',
+  'search-performance',
+  'links',
+  'pipeline',
+  'write',
+] as const satisfies readonly NavItemId[];
+
+export const WRITE_SIDEBAR_NAV_IDS = [
+  'home',
+  'search-performance',
+  'links',
+  'pipeline',
+  'chat',
+  'write',
+] as const satisfies readonly NavItemId[];
+
+export function isMiniNavLinkActive(href: string, pathname: string): boolean {
+  if (href === '/write') return pathname.startsWith('/write');
+  if (href === '/chat') return pathname.startsWith('/chat');
+  if (href === '/pipeline') return pathname.startsWith('/pipeline');
+  return pathname === href;
+}
 
 export function navHref(item: AppNavItem, trailingQuery: string): string {
   if (item.id === 'home' || item.id === 'pipeline' || item.id === 'chat' || item.id === 'write') {

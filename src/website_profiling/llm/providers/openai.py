@@ -38,7 +38,10 @@ class OpenAIClient:
             r = client.post(url, headers=headers, json=payload)
             r.raise_for_status()
             data = r.json()
-        content = data["choices"][0]["message"]["content"]
+        choice = (data.get("choices") or [{}])[0]
+        content = (choice.get("message") or {}).get("content")
+        if content is None:
+            raise RuntimeError("OpenAI response contained no content.")
         return parse_json_response(content if isinstance(content, str) else json.dumps(content))
 
     def chat_with_tools(

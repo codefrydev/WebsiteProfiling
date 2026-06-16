@@ -180,6 +180,48 @@ def test_crawl_keeps_pending_futures_between_iterations(monkeypatch):
     assert len(df) == 2
 
 
+def test_crawl_waits_when_pool_saturated_instead_of_busy_spinning(monkeypatch):
+    # Regression: when every worker slot is busy AND the frontier still has URLs,
+    # the loop must block on wait() rather than busy-spin. We record the queue size
+    # at each wait() call; on the buggy version wait() only fired once the queue was
+    # empty (qsize == 0), so observing a wait() with a non-empty queue proves the fix.
+    import time
+    import website_profiling.crawl.crawler as mod
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
+        lambda *_a, **_k: [],
+    )
+    c = mod.Crawler(
+        start_url="https://site.com",
+        ignore_robots=True,
+        use_wappalyzer=False,
+        concurrency=2,
+        max_pages=4,
+    )
+    for path in ("/a", "/b", "/c"):
+        c.queue.put(f"https://site.com{path}")
+
+    qsizes_at_wait: list[int] = []
+    real_wait = mod.wait
+
+    def _recording_wait(fs, **kwargs):
+        qsizes_at_wait.append(c.queue.qsize())
+        return real_wait(fs, **kwargs)
+
+    monkeypatch.setattr(mod, "wait", _recording_wait)
+
+    def _slow_worker(url):
+        time.sleep(0.02)
+        return {"url": url, "status": 200, "content_type": "text/html", "title": "ok", "outlinks": 0}
+
+    monkeypatch.setattr(c, "worker", _slow_worker)
+    df = c.crawl(show_progress=False)
+
+    assert len(df) == 4
+    assert any(q > 0 for q in qsizes_at_wait)
+
+
 def test_crawl_runs_and_handles_done_futures(monkeypatch):
     import website_profiling.crawl.crawler as mod
 

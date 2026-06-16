@@ -776,10 +776,6 @@
       "label": "Technologies",
       "section": "On-page & content"
     },
-    "charts": {
-      "label": "Crawl summary",
-      "section": "Explore"
-    },
     "network": {
       "label": "Internal links",
       "section": "Explore"
@@ -814,10 +810,6 @@
     },
     "keywords-explorer": {
       "label": "Keywords",
-      "section": "Search & analytics"
-    },
-    "content-studio": {
-      "label": "Content studio",
       "section": "Search & analytics"
     },
     "log-analyzer": {

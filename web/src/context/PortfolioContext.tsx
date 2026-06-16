@@ -6,6 +6,7 @@ import {
   useCallback,
   useRef,
   useMemo,
+  useEffect,
   type ReactNode,
 } from 'react';
 import { portfolioCardKey } from '@/components/portfolio/portfolioCardUtils';
@@ -19,6 +20,7 @@ import type {
 } from './portfolioContextTypes';
 import type { PortfolioCrawlHistoryPoint } from '@/types/api';
 import type { PortfolioGroup } from '@/types/report';
+import { portfolioGroupsLoadPlan } from './portfolioLoadPlan';
 
 export const PortfolioContext = createContext<PortfolioContextValue | null>(null);
 
@@ -34,7 +36,7 @@ interface CardApiResponse {
 }
 
 export function PortfolioProvider({ children }: { children: ReactNode }) {
-  const { reportList, crawlRuns } = useReport();
+  const { reportList, crawlRuns, metaLoaded } = useReport();
   const [groups, setGroups] = useState<PortfolioGroup[]>([]);
   const [crawlHistoryByDomain, setCrawlHistoryByDomain] = useState<
     Record<string, PortfolioCrawlHistoryPoint[]>
@@ -62,12 +64,18 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   );
 
   const loadGroups = useCallback(async () => {
-    if (!reportList.length && !crawlRuns.length) {
+    const plan = portfolioGroupsLoadPlan(metaLoaded, reportList.length, crawlRuns.length);
+    if (plan === 'wait-meta') {
+      return;
+    }
+
+    if (plan === 'show-empty') {
       setGroups([]);
       setCrawlHistoryByDomain({});
       setSummary(computePortfolioSummary([]));
       setWidgetStatus({ groups: 'loaded', summary: 'loaded' });
       groupsLoadedRef.current = true;
+      cacheKeyRef.current = 'empty';
       return;
     }
 
@@ -103,10 +111,16 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       setSummary(computePortfolioSummary([]));
       setWidgetStatus({ groups: 'error', summary: 'error' });
       groupsLoadedRef.current = false;
+      cacheKeyRef.current = '';
     } finally {
       groupsInFlightRef.current = false;
     }
-  }, [reportList, crawlRuns.length, reportIdsKey]);
+  }, [metaLoaded, reportList, crawlRuns.length, reportIdsKey]);
+
+  useEffect(() => {
+    if (!metaLoaded) return;
+    void loadGroups();
+  }, [metaLoaded, reportIdsKey, crawlRuns.length, loadGroups]);
 
   const fetchCardData = useCallback(async (group: PortfolioGroup, key: string) => {
     const params = new URLSearchParams({ widget: 'card' });

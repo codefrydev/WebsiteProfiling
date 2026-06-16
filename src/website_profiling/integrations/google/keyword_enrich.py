@@ -73,7 +73,8 @@ def _normalize_kw(kw: str) -> str:
 # ── Intent ────────────────────────────────────────────────────────────────────
 
 def classify_intent(kw: str, brand_name: str = "") -> str:
-    if brand_name and brand_name.lower().split()[0] in kw.lower():
+    brand_tokens = brand_name.lower().split()
+    if brand_tokens and brand_tokens[0] in kw.lower():
         return "navigational"
     if QUESTION_STARTS.match(kw):
         return "informational"

@@ -449,8 +449,15 @@ class Crawler:
                             continue
                         futures.append(ex.submit(self.worker, url))
 
-                    if futures and self.queue.empty():
+                    can_submit_more = (
+                        not self.queue.empty()
+                        and len(futures) < self.concurrency
+                        and (len(self.results) + len(futures)) < self.max_pages
+                    )
+                    if futures and not can_submit_more:
                         # Block until at least one future completes instead of busy-polling.
+                        # Covers both an empty frontier and a saturated worker pool; wait()
+                        # returns immediately if a future is already done.
                         wait(futures, return_when=FIRST_COMPLETED)
 
                     remaining = []

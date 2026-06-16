@@ -29,8 +29,10 @@ def _browser_auth_from_session(
         headers[str(key)] = str(value)
     credentials: Optional[dict[str, str]] = None
     auth = getattr(session, "auth", None)
-    if auth and auth[0]:
-        credentials = {"username": str(auth[0]), "password": str(auth[1] or "")}
+    # requests also allows a callable auth handler; only basic (user, pass) tuples map here.
+    if isinstance(auth, (tuple, list)) and len(auth) >= 1 and auth[0]:
+        password = str(auth[1] or "") if len(auth) > 1 else ""
+        credentials = {"username": str(auth[0]), "password": password}
     return headers, credentials
 
 

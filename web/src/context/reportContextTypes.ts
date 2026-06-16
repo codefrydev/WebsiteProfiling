@@ -11,6 +11,8 @@ import type { SectionKey } from '@/lib/reportSections';
 export interface ReportContextValue {
   data: ReportPayload | null;
   loading: boolean;
+  /** True after the first `/meta` fetch completes (success or failure). */
+  metaLoaded: boolean;
   error: string | null;
   reportList: ReportListRow[];
   selectedReportId: number | null;

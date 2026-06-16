@@ -7,21 +7,20 @@ import {
   ChevronLeft,
   FileText,
   History,
-  Home,
-  Link as LinkIcon,
-  MessageSquarePlus,
   PanelLeft,
-  PenLine,
   Plus,
   Settings,
-  Terminal,
   Trash2,
-  TrendingUp,
 } from 'lucide-react';
 import AppLogo from '@/components/AppLogo';
 import ThemeToggle from '@/components/ThemeToggle';
 import type { WriteLayoutState } from '@/components/contentStudio/WriteStudioShell';
 import { formatChatPropertyOption } from '@/lib/chatPropertyLabel';
+import {
+  isMiniNavLinkActive,
+  miniNavLinks,
+  WRITE_SIDEBAR_NAV_IDS,
+} from '@/lib/appNav';
 import { strings } from '@/lib/strings';
 import type { ContentDraftListItem } from '@/types/contentStudio';
 
@@ -47,14 +46,7 @@ export interface WriteStudioSidebarProps extends WriteLayoutState {
   readOnly?: boolean;
 }
 
-const NAV_LINKS = [
-  { href: '/home', label: c.navHome, icon: Home },
-  { href: '/search-performance', label: c.navGsc, icon: TrendingUp },
-  { href: '/links', label: c.navLinks, icon: LinkIcon },
-  { href: '/pipeline', label: c.navPipeline, icon: Terminal },
-  { href: '/chat', label: c.pageTitle, icon: MessageSquarePlus },
-  { href: '/write', label: strings.nav.write.label, icon: PenLine },
-] as const;
+const NAV_LINKS = miniNavLinks(WRITE_SIDEBAR_NAV_IDS);
 
 function RailButton({
   label,
@@ -284,7 +276,7 @@ export default function WriteStudioSidebar({
         <nav className="border-b border-muted/30 px-2 py-2">
           <ul className="space-y-0.5">
             {NAV_LINKS.map(({ href, label, icon: Icon }) => {
-              const isActive = href === '/write' ? pathname.startsWith('/write') : pathname === href;
+              const isActive = isMiniNavLinkActive(href, pathname);
               return (
                 <li key={href}>
                   <Link
