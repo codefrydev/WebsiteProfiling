@@ -1,4 +1,4 @@
-/** Shared nav/shell class strings — matches AppShell & PipelineShell. */
+/** Shared nav/shell class strings — matches AppShell & chat-style sidebars. */
 
 export const shellSidebarAsideClass =
   'flex shrink-0 flex-col border-r border-muted bg-brand-800';

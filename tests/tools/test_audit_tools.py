@@ -73,6 +73,15 @@ def test_openai_tools_schema() -> None:
     assert schema[0]["type"] == "function"
 
 
+def test_openai_tools_schema_context_scoped_strips_property_id() -> None:
+    schema = openai_tools_schema({"run_technical_workflow"}, context_scoped=True)
+    assert len(schema) == 1
+    params = schema[0]["function"]["parameters"]
+    assert "property_id" not in params.get("properties", {})
+    assert "report_id" not in params.get("properties", {})
+    assert "property_id" not in (params.get("required") or [])
+
+
 def test_dispatch_unknown_tool() -> None:
     conn = MagicMock()
     result = dispatch_tool("nonexistent", {}, conn=conn)

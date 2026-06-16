@@ -239,6 +239,7 @@ Responses stream over SSE via `POST /api/chat`. Sessions persist per property in
 | **OpenAI** | Native with streaming | API key in AI settings or `OPENAI_API_KEY` |
 | **Anthropic** | Native with streaming | API key in AI settings or `ANTHROPIC_API_KEY` |
 | **Google Gemini** | Native with streaming | API key in AI settings or `GEMINI_API_KEY`; REST via `httpx` |
+| **Groq** | Native with streaming | API key in AI settings or `GROQ_API_KEY`; official Groq Python SDK; default model `openai/gpt-oss-120b` |
 
 ---
 

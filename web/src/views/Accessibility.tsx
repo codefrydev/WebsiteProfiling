@@ -6,7 +6,7 @@ import { useReport } from '@/context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
 import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
-import { useOptionalPipeline } from '@/context/PipelineContext';
+import { useActivePropertyContext } from '@/hooks/useActivePropertyContext';
 import {
   PageLayout,
   PageHeader,
@@ -38,19 +38,16 @@ const TABS = ['summary', 'pages'] as const;
 type TabId = (typeof TABS)[number];
 
 export default function AccessibilityView({ searchQuery = '' }: ViewProps) {
-  const { data, selectedReportId } = useReport();
+  const { data } = useReport();
   useSectionData('links');
   const linksReady = useSectionsViewReady(['links']);
-  const pipeline = useOptionalPipeline();
+  const { propertyId, reportId, contextReady } = useActivePropertyContext();
   const va = strings.views.accessibility;
   const [activeTab, setActiveTab] = useUrlTab(TABS, 'summary');
   const [page, setPage] = useState(1);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [apiSummary, setApiSummary] = useState<Record<string, unknown> | null>(null);
   const [summaryError, setSummaryError] = useState<string | null>(null);
-
-  const propertyId = Number(pipeline?.configState.active_property_id || 0) || null;
-  const reportId = selectedReportId ?? null;
   const scope = useMemo(() => getAxeScopeInfo(data), [data]);
   const allRows = useMemo(() => flattenAxePages(data?.links), [data?.links]);
   const clientRules = useMemo(() => aggregateAxeRules(allRows), [allRows]);
@@ -76,7 +73,7 @@ export default function AccessibilityView({ searchQuery = '' }: ViewProps) {
   }, [q, activeTab]);
 
   useEffect(() => {
-    if (!propertyId) return;
+    if (!contextReady || !propertyId) return;
     let cancelled = false;
     setSummaryError(null);
     void fetchAuditTool({
@@ -93,7 +90,7 @@ export default function AccessibilityView({ searchQuery = '' }: ViewProps) {
     return () => {
       cancelled = true;
     };
-  }, [propertyId, reportId]);
+  }, [contextReady, propertyId, reportId]);
 
   const pagesWithViolations =
     Number(apiSummary?.pages_with_violations) || allRows.length;

@@ -12,6 +12,7 @@ from typing import Any, Callable, Optional
 import pandas as pd
 
 from ..analysis.text import normalize_fingerprint_text
+from ..console_io import console_print
 from ..llm_config import llm_is_enabled
 from .base import get_llm_client
 from .prompts import (
@@ -147,8 +148,11 @@ def _run_llm_batches(
 
     if workers <= 1 or len(pending) <= 1:
         for item in pending:
-            _, payload, result = _one(item)
-            apply_batch(payload, result)
+            try:
+                _, payload, result = _one(item)
+                apply_batch(payload, result)
+            except Exception as exc:  # noqa: BLE001 - one batch failing must not abort the rest
+                console_print(f"  LLM enrichment batch failed: {exc}", flush=True)
         return
 
     with ThreadPoolExecutor(max_workers=workers) as pool:
@@ -157,8 +161,8 @@ def _run_llm_batches(
             try:
                 _, payload, result = future.result()
                 apply_batch(payload, result)
-            except Exception:
-                pass
+            except Exception as exc:  # noqa: BLE001 - one batch failing must not abort the rest
+                console_print(f"  LLM enrichment batch failed: {exc}", flush=True)
 
 
 def _call_cached(

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
   AlertOctagon,
@@ -14,8 +14,10 @@ import type { ReportPayload } from '@/types';
 import { strings, format } from '@/lib/strings';
 import { Card, Badge } from '@/components';
 import { Skeleton } from '@/components/Skeleton';
+import { CompactAreaSparkline } from '@/components/charts/compact';
 import { useInView } from '@/lib/useInView';
 import { CategoryScoreGauge } from '@/components/charts/CategoryScoreGauge';
+import { countIssuesByPriority } from './overviewAtAGlanceMetrics';
 
 const vo = strings.views.overview;
 
@@ -36,68 +38,11 @@ export interface OverviewExecutiveSummaryProps {
   querySuffix: string;
 }
 
-function countIssuesByPriority(categories: ReportPayload['categories']) {
-  const counts = { critical: 0, high: 0, medium: 0, low: 0, total: 0 };
-  for (const cat of categories || []) {
-    for (const iss of cat?.issues || []) {
-      counts.total += 1;
-      const p = String(iss?.priority || '');
-      if (p === 'Critical') counts.critical += 1;
-      else if (p === 'High') counts.high += 1;
-      else if (p === 'Medium') counts.medium += 1;
-      else counts.low += 1;
-    }
-  }
-  return counts;
-}
-
 function priorityBadgeVariant(priority?: string): string {
   if (priority === 'Critical') return 'critical';
   if (priority === 'High') return 'high';
   if (priority === 'Medium') return 'medium';
   return 'low';
-}
-
-function HealthTrendSparkline({ scores }: { scores: number[] }) {
-  const fillId = useId();
-  if (scores.length < 2) return null;
-
-  const ordered = [...scores].reverse();
-  const max = Math.max(...ordered);
-  const min = Math.min(...ordered);
-  const range = max - min || 1;
-  const coords = ordered
-    .map((score, i) => {
-      const x = (i / (ordered.length - 1)) * 100;
-      const y = 100 - ((score - min) / range) * 100;
-      return `${x},${y}`;
-    })
-    .join(' ');
-
-  return (
-    <svg
-      viewBox="0 0 100 32"
-      className="h-8 w-full max-w-[140px] text-link/80"
-      preserveAspectRatio="none"
-      aria-hidden
-    >
-      <polyline
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        points={coords}
-      />
-      <polyline fill={`url(#${fillId})`} stroke="none" points={`0,32 ${coords} 100,32`} />
-      <defs>
-        <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgb(59 130 246 / 0.25)" />
-          <stop offset="100%" stopColor="rgb(59 130 246 / 0)" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
 }
 
 function ExecutiveIssueRow({
@@ -248,7 +193,11 @@ export function OverviewExecutiveSummary({
                       <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                         {vo.healthTrendLabel}
                       </p>
-                      <HealthTrendSparkline scores={healthTrend} />
+                      <CompactAreaSparkline
+                        points={[...healthTrend].reverse()}
+                        className="max-w-[140px] sm:ml-auto"
+                        strokeClassName="text-link/80"
+                      />
                     </div>
                   ) : null}
                 </div>

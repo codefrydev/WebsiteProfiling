@@ -31,6 +31,7 @@ import {
   validateRequiredPipelineFields,
 } from '@/lib/pipelineConfigSchema';
 import { buildInitialLlmConfigState } from '@/lib/llmConfigSchema';
+import { defaultLlmModelForProvider } from '@/lib/llmProviderDefaults';
 import {
   applyPreset,
   commandToPresetId,
@@ -55,6 +56,8 @@ export interface PipelineContextValue {
   legacyBannerDismissed: boolean;
   loadError: string;
   loading: boolean;
+  /** True after the first pipeline/LLM config fetch completes. */
+  configLoaded: boolean;
   saving: boolean;
   saveMsg: string;
   pythonExe: string;
@@ -85,6 +88,8 @@ export interface PipelineContextValue {
   loadConfig: () => Promise<void>;
   saveSettings: () => Promise<boolean>;
   saveLlmModel: (model: string) => Promise<boolean>;
+  saveLlmProvider: (provider: string) => Promise<boolean>;
+  saveLlmChatUnlimitedTools: (enabled: boolean) => Promise<boolean>;
   run: () => Promise<void>;
   cancelJob: () => Promise<boolean>;
   continueInBackground: () => void;
@@ -491,6 +496,75 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     [buildLlmPayload],
   );
 
+  const saveLlmProvider = useCallback(
+    async (provider: string): Promise<boolean> => {
+      const trimmed = provider.trim();
+      if (!trimmed || trimmed === 'none') return false;
+      setLlmConfigState((prev) => {
+        const providerChanged = trimmed !== String(prev.llm_provider || '');
+        const nextModel = providerChanged
+          ? defaultLlmModelForProvider(trimmed)
+          : String(prev.llm_model || '');
+        return {
+          ...prev,
+          llm_provider: trimmed,
+          llm_model: nextModel,
+        };
+      });
+      setSaving(true);
+      try {
+        const payload = buildLlmPayload();
+        const providerChanged = trimmed !== String(payload.llm_provider || '');
+        const nextModel = providerChanged
+          ? defaultLlmModelForProvider(trimmed)
+          : String(payload.llm_model || '');
+        const res = await fetch(apiUrl('/llm-config'), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            state: {
+              ...payload,
+              llm_provider: trimmed,
+              llm_model: nextModel,
+            },
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || res.statusText);
+        return true;
+      } catch {
+        return false;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [buildLlmPayload],
+  );
+
+  const saveLlmChatUnlimitedTools = useCallback(
+    async (enabled: boolean): Promise<boolean> => {
+      setLlmConfigState((prev) => ({ ...prev, llm_chat_unlimited_tool_rounds: enabled }));
+      setSaving(true);
+      try {
+        const res = await fetch(apiUrl('/llm-config'), {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            state: { ...buildLlmPayload(), llm_chat_unlimited_tool_rounds: enabled },
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(data.error || res.statusText);
+        return true;
+      } catch {
+        return false;
+      } finally {
+        setSaving(false);
+      }
+    },
+    [buildLlmPayload],
+  );
+
   const run = useCallback(async () => {
     const command = effectiveCommand || null;
     let browserStatus = browserCrawlStatus;
@@ -611,6 +685,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       legacyBannerDismissed,
       loadError,
       loading,
+      configLoaded,
       saving,
       saveMsg,
       pythonExe,
@@ -641,6 +716,8 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       loadConfig,
       saveSettings,
       saveLlmModel,
+      saveLlmProvider,
+      saveLlmChatUnlimitedTools,
       run,
       cancelJob,
       continueInBackground,
@@ -656,6 +733,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       legacyBannerDismissed,
       loadError,
       loading,
+      configLoaded,
       saving,
       saveMsg,
       pythonExe,
@@ -678,6 +756,8 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       loadConfig,
       saveSettings,
       saveLlmModel,
+      saveLlmProvider,
+      saveLlmChatUnlimitedTools,
       run,
       cancelJob,
       continueInBackground,

@@ -13,6 +13,7 @@ import {
 } from '@/server/chatDb';
 import { loadLlmConfig } from '@/server/llmConfig';
 import type { ApiRouteHandler } from '@/types/api';
+import type { ChatNarrative } from '@/types/chatNarrative';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -44,6 +45,32 @@ interface ChatBody {
 
 function sseLine(event: string, data: Record<string, unknown>): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+
+function buildPersistedAssistantContent(
+  assistantText: string,
+  toolEvents: Array<{ name: string; args?: Record<string, unknown>; result?: Record<string, unknown> }>,
+  narrative: ChatNarrative | null,
+  sawError: boolean,
+  lastErrorMessage: string,
+): string | null {
+  if (narrative) {
+    if (toolEvents.length > 0) {
+      return 'Tool results from this turn are shown below.';
+    }
+    return '';
+  }
+  const text = assistantText.trim();
+  if (text) return text;
+  if (toolEvents.length > 0) {
+    return sawError
+      ? 'Tool results were saved from this turn. The assistant did not produce a final summary.'
+      : 'Tool results from this turn are shown below.';
+  }
+  if (sawError && lastErrorMessage.trim()) {
+    return lastErrorMessage.trim();
+  }
+  return null;
 }
 
 /** POST /api/chat — stream agent response via SSE. */
@@ -99,6 +126,8 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
       let assistantText = '';
       let buffer = '';
       let stderrAcc = '';
+      let lastErrorMessage = '';
+      let narrative: ChatNarrative | null = null;
       const toolEvents: Array<{
         name: string;
         args?: Record<string, unknown>;
@@ -121,7 +150,10 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
 
       const push = (event: string, data: Record<string, unknown>) => {
         if (closed) return;
-        if (event === 'error') sawError = true;
+        if (event === 'error') {
+          sawError = true;
+          lastErrorMessage = String(data.message || 'Agent error');
+        }
         try {
           controller.enqueue(encoder.encode(sseLine(event, data)));
         } catch {
@@ -170,6 +202,7 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
               name?: string;
               args?: Record<string, unknown>;
               result?: Record<string, unknown>;
+              narrative?: ChatNarrative;
             };
             if (evt.type === 'token' && evt.text) {
               assistantText += evt.text;
@@ -197,9 +230,17 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
                 toolEvents.push({ name, result: evt.result || {} });
               }
               push('tool_end', evt as Record<string, unknown>);
-            } else if (evt.type === 'done' && evt.message) {
+            } else if (evt.type === 'narrative' && evt.narrative) {
+              narrative = evt.narrative;
+              push('narrative', { narrative: evt.narrative });
+            } else if (evt.type === 'done') {
+              if (evt.message) {
+                assistantText = evt.message;
+              }
+              push('done', { message: evt.message || '' });
+            } else if (evt.type === 'partial_done' && evt.message) {
               assistantText = evt.message;
-              push('done', { message: evt.message });
+              push('partial_done', { message: evt.message });
             } else if (evt.type === 'error') {
               push('error', { message: evt.message || 'Agent error' });
             }
@@ -227,7 +268,7 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
         if (timedOut) return;
         exitCode = code;
 
-        if (!sawError && !assistantText.trim()) {
+        if (!sawError && !assistantText.trim() && !narrative) {
           const stderrLine = stderrAcc
             .split('\n')
             .map((l) => l.trim())
@@ -248,11 +289,32 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
           }
         }
 
-        if (assistantText.trim()) {
+        const contentToSave = buildPersistedAssistantContent(
+          assistantText,
+          toolEvents,
+          narrative,
+          sawError,
+          lastErrorMessage,
+        );
+
+        if (contentToSave !== null || narrative || toolEvents.length > 0) {
           try {
-            await appendChatMessage(sessionId, 'assistant', assistantText.trim(), {
-              toolResult: toolEvents.length ? { tool_events: toolEvents } : null,
-            });
+            const toolResultPayload =
+              toolEvents.length || narrative || (sawError && lastErrorMessage)
+                ? {
+                    ...(toolEvents.length ? { tool_events: toolEvents } : {}),
+                    ...(narrative ? { narrative } : {}),
+                    ...(sawError && lastErrorMessage ? { agent_error: lastErrorMessage } : {}),
+                  }
+                : null;
+            await appendChatMessage(
+              sessionId,
+              'assistant',
+              contentToSave ?? '',
+              {
+                toolResult: toolResultPayload,
+              },
+            );
             if (session.title === 'New chat') {
               const title = message.slice(0, 60) + (message.length > 60 ? '…' : '');
               await updateChatSessionTitle(sessionId, title);

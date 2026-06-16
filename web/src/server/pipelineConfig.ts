@@ -13,6 +13,11 @@ import {
   INTERNAL_PIPELINE_KEYS,
   getFieldByKey,
 } from '@/lib/pipelineConfigSchema';
+import {
+  isPipelineSecretKey,
+  maskSecretForClient,
+  SECRETS_MASK_SENTINEL,
+} from '@/lib/secretsConfigSchema';
 import { getDataDir, withDb } from '@/server/db';
 import type {
   PipelineConfigLoadResult,
@@ -69,6 +74,14 @@ export function applySchemaDefaults(parsedMap: Record<string, string>): {
   state: PipelineConfigState;
   unknownKeys: PipelineUnknownKey[];
 } {
+  const { state, unknownKeys } = applySchemaDefaultsRaw(parsedMap);
+  return { state: maskPipelineSecretsForClient(state), unknownKeys };
+}
+
+function applySchemaDefaultsRaw(parsedMap: Record<string, string>): {
+  state: PipelineConfigState;
+  unknownKeys: PipelineUnknownKey[];
+} {
   const state = buildDefaults();
   const unknownKeys: PipelineUnknownKey[] = [];
 
@@ -95,6 +108,33 @@ export function applySchemaDefaults(parsedMap: Record<string, string>): {
   return { state, unknownKeys };
 }
 
+export function maskPipelineSecretsForClient(state: PipelineConfigState): PipelineConfigState {
+  const out: PipelineConfigState = { ...state };
+  for (const key of Object.keys(out)) {
+    if (!isPipelineSecretKey(key)) continue;
+    const masked = maskSecretForClient(out[key]);
+    if (masked) {
+      out[key] = masked;
+      out[`${key}_masked`] = true;
+    }
+  }
+  return out;
+}
+
+function isMaskedSecretInput(
+  raw: string,
+  state: PipelineConfigState,
+  key: string,
+): boolean {
+  const trimmed = raw.trim();
+  return (
+    trimmed === '' ||
+    trimmed === SECRETS_MASK_SENTINEL ||
+    trimmed.startsWith('••••') ||
+    state[`${key}_masked`] === true
+  );
+}
+
 export function serializeConfig(
   state: PipelineConfigState,
   unknownKeys: PipelineUnknownKey[] = [],
@@ -111,6 +151,7 @@ export function serializeConfig(
     seenIds.add(section.id);
     lines.push(`# --- ${section.label} ---`);
     for (const f of section.fields) {
+      if (isPipelineSecretKey(f.key)) continue;
       const v = state[f.key];
       if (f.type === 'bool') {
         lines.push(`${f.key} = ${v === true ? 'true' : 'false'}`);
@@ -185,9 +226,9 @@ export async function loadPipelineConfig(): Promise<PipelineConfigLoadResult> {
     const { known, unknown } = await readPipelineConfigFromDb(client);
 
     if (Object.keys(known).length > 0 || unknown.length > 0) {
-      const { state, unknownKeys: schemaUnknown } = applySchemaDefaults(known);
+      const { state, unknownKeys: schemaUnknown } = applySchemaDefaultsRaw(known);
       const allUnknown = filterUnknownKeys([...unknown, ...schemaUnknown]);
-      return { state, unknownKeys: allUnknown, source: 'store' };
+      return { state: maskPipelineSecretsForClient(state), unknownKeys: allUnknown, source: 'store' };
     }
 
     const shadowPath = getShadowConfigPath();
@@ -196,8 +237,8 @@ export async function loadPipelineConfig(): Promise<PipelineConfigLoadResult> {
         const raw = fs.readFileSync(shadowPath, 'utf8');
         const parsed = parseInputTxt(raw);
         if (Object.keys(parsed).length > 0) {
-          const { state, unknownKeys } = applySchemaDefaults(parsed);
-          return { state, unknownKeys: filterUnknownKeys(unknownKeys), source: 'legacy' };
+          const { state, unknownKeys } = applySchemaDefaultsRaw(parsed);
+          return { state: maskPipelineSecretsForClient(state), unknownKeys: filterUnknownKeys(unknownKeys), source: 'legacy' };
         }
       } catch {
         /* fall through */
@@ -210,12 +251,17 @@ export async function loadPipelineConfig(): Promise<PipelineConfigLoadResult> {
 
 export interface SavePipelineConfigOptions {
   unknownKeys?: PipelineUnknownKey[];
+  preserveSecrets?: boolean;
 }
 
 export async function savePipelineConfig(
   state: PipelineConfigState,
-  { unknownKeys = [] }: SavePipelineConfigOptions = {},
+  { unknownKeys = [], preserveSecrets = true }: SavePipelineConfigOptions = {},
 ): Promise<string> {
+  const existingKnown = preserveSecrets
+    ? (await withDb(async (client) => readPipelineConfigFromDb(client))).known
+    : {};
+
   const entries: Record<string, string> = {};
   for (const section of PIPELINE_CONFIG_SECTIONS) {
     for (const f of section.fields) {
@@ -225,6 +271,15 @@ export async function savePipelineConfig(
         entries[f.key] = 'auto';
       } else if (f.type === 'bool') {
         entries[f.key] = v === true ? 'true' : 'false';
+      } else if (f.type === 'secret' || isPipelineSecretKey(f.key)) {
+        const raw = v == null ? '' : String(v).trim();
+        if (preserveSecrets && isMaskedSecretInput(raw, state, f.key) && existingKnown[f.key]) {
+          entries[f.key] = existingKnown[f.key];
+        } else if (raw && !raw.startsWith('••••')) {
+          entries[f.key] = raw;
+        } else {
+          entries[f.key] = existingKnown[f.key] || '';
+        }
       } else {
         entries[f.key] = v == null ? '' : String(v);
       }
@@ -263,6 +318,16 @@ export async function savePipelineConfig(
     }
   });
 
-  writeShadowFile(state, unknownKeys);
+  const shadowState: PipelineConfigState = { ...state };
+  for (const key of Object.keys(entries)) {
+    shadowState[key] = entries[key];
+  }
+  for (const key of Object.keys(shadowState)) {
+    if (isPipelineSecretKey(key)) {
+      delete shadowState[key];
+      delete shadowState[`${key}_masked`];
+    }
+  }
+  writeShadowFile(shadowState, unknownKeys);
   return 'postgresql';
 }

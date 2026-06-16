@@ -30,9 +30,10 @@ function insightHeadingClass(children: unknown, base: string): string {
 export interface ChatMarkdownProps {
   content: string;
   streaming?: boolean;
+  nested?: boolean;
 }
 
-export default function ChatMarkdown({ content, streaming }: ChatMarkdownProps) {
+export default function ChatMarkdown({ content, streaming, nested }: ChatMarkdownProps) {
   const normalized = useMemo(() => preprocessChatMarkdown(content), [content]);
 
   const components = useMemo<Components>(
@@ -102,7 +103,9 @@ export default function ChatMarkdown({ content, streaming }: ChatMarkdownProps) 
   if (!normalized.trim()) return null;
 
   return (
-    <div className={`chat-prose ${streaming ? 'opacity-90' : ''}`}>
+    <div
+      className={`chat-prose ${streaming ? 'opacity-90' : ''} ${nested ? 'chat-prose-nested' : ''}`}
+    >
       <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]} components={components}>
         {normalized}
       </ReactMarkdown>

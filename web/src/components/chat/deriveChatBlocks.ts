@@ -134,6 +134,19 @@ export type ChatBlock =
       }[];
       total?: number;
       truncated?: boolean;
+    }
+  | {
+      type: 'tool_status';
+      variant: 'error' | 'empty' | 'missing_data';
+      toolName: string;
+      message: string;
+      hint?: string;
+    }
+  | {
+      type: 'tool_truncated';
+      toolName: string;
+      shown: number;
+      total: number;
     };
 
 const SUMMARY_TOOLS = new Set(['get_report_summary', 'get_executive_summary']);
@@ -210,6 +223,10 @@ export function blockKey(block: ChatBlock): string {
       return `image_attention:${block.title}`;
     case 'image_lighthouse_list':
       return 'image_lighthouse';
+    case 'tool_status':
+      return `tool_status:${block.toolName}:${block.variant}`;
+    case 'tool_truncated':
+      return `tool_truncated:${block.toolName}`;
     default:
       return block.type;
   }

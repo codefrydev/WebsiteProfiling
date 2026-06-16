@@ -115,6 +115,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
   const pathname = usePathname();
   const [data, setData] = useState<ReportPayload | null>(null);
   const [loading, setLoading] = useState(true);
+  const [metaLoaded, setMetaLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [reportListFull, setReportListFull] = useState<ReportListRow[]>([]);
   const [crawlRuns, setCrawlRuns] = useState<CrawlRunRow[]>([]);
@@ -377,6 +378,9 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
           setError(e instanceof Error ? e.message : String(e));
           setLoading(false);
         }
+      })
+      .finally(() => {
+        if (!cancelled) setMetaLoaded(true);
       });
 
     return () => {
@@ -584,6 +588,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     () => ({
       data,
       loading,
+      metaLoaded,
       error,
       reportList,
       selectedReportId,
@@ -607,6 +612,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     [
       data,
       loading,
+      metaLoaded,
       error,
       reportList,
       selectedReportId,

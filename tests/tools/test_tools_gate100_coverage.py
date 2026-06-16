@@ -450,6 +450,9 @@ def test_registry_helpers_and_validation_errors() -> None:
     assert registry.list_domains_catalog()
     assert registry.search_tools("") == []
     assert registry.search_tools("get_report_summary", limit=5)[0]["name"] == "get_report_summary"
+    assert registry._normalize_tool_args(None) == {}
+    assert registry._normalize_tool_args("not-a-dict") == {}
+    assert registry._normalize_tool_args({"keep": 1, "drop": None}) == {"keep": 1}
 
     filtered = registry.openai_tools_schema({"get_report_summary"})
     assert len(filtered) == 1

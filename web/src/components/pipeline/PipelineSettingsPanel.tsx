@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import Link from 'next/link';
 import { Loader2, Save, X } from 'lucide-react';
 import { strings, format } from '@/lib/strings';
 import type { IntegrationToast, PipelineUnknownKey } from '@/types/api';
@@ -11,6 +12,7 @@ import {
   partitionFieldsByTier,
 } from '@/lib/pipelineConfigSchema';
 import { LLM_CONFIG_SECTIONS, isLlmFieldVisible } from '@/lib/llmConfigSchema';
+import { isPipelineFieldVisibleOnPipeline } from '@/lib/secretsConfigSchema';
 import OllamaModelPicker from '@/components/pipeline/OllamaModelPicker';
 import SectionFieldLayout from './SectionFieldLayout';
 import { usePipeline } from '@/context/PipelineContext';
@@ -27,6 +29,20 @@ import {
 } from './pipelineSettingsGroups';
 
 const s = strings.pipelineRunner;
+
+const SECRETS_BANNER_SECTIONS = new Set(['crawl', 'lighthouse', 'google', 'llm_provider']);
+
+function SecretsLinkBanner() {
+  return (
+    <p className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-xs text-muted-foreground">
+      {strings.secrets.pipelineBanner}{' '}
+      <Link href="/secrets" className="text-link hover:underline">
+        {strings.secrets.pageTitle}
+      </Link>
+      .
+    </p>
+  );
+}
 
 type ConfigSection = (typeof PIPELINE_CONFIG_SECTIONS)[number];
 type LlmSection = (typeof LLM_CONFIG_SECTIONS)[number];
@@ -227,7 +243,7 @@ export function PipelineSettingsSaveBar({ onSaved }: { onSaved?: () => void }) {
       : s.settingsSubtitle;
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6 lg:px-8">
+    <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
       <div className="min-w-0 flex-1">
         <span
           className={`text-sm ${saveMsg ? (saveFailed ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400') : 'text-xs text-muted-foreground'}`}
@@ -239,7 +255,7 @@ export function PipelineSettingsSaveBar({ onSaved }: { onSaved?: () => void }) {
         variant="primary"
         onClick={() => void handleSave()}
         disabled={saveDisabled}
-        className="shrink-0"
+        className="shrink-0 rounded-full"
       >
         <Save className="h-4 w-4" aria-hidden />
         {readOnly ? strings.app.readonlyBanner : saving ? s.saving : s.saveSettings}
@@ -344,11 +360,13 @@ export default function PipelineSettingsPanel({
     if (pipelineSection) {
       return (
         <>
+          {SECRETS_BANNER_SECTIONS.has(sectionId) ? <SecretsLinkBanner /> : null}
           <ConfigSectionFields
             section={pipelineSection}
             values={configState}
             disabled={fieldsDisabled}
             onChange={(key, value) => handlePipelineFieldChange(sectionId, key, value)}
+            fieldFilter={(key) => isPipelineFieldVisibleOnPipeline({ key })}
           />
           {sectionId === 'crawl' ? <CrawlPageHtmlManager disabled={fieldsDisabled} /> : null}
         </>
@@ -359,23 +377,26 @@ export default function PipelineSettingsPanel({
     if (llmSection) {
       const isOllama = String(llmConfigState.llm_provider || 'none') === 'ollama';
       return (
-        <ConfigSectionFields
-          section={llmSection}
-          values={llmConfigState}
-          disabled={fieldsDisabled}
-          onChange={(key, value) => setLlmField(key, value)}
-          fieldFilter={(key) => isLlmFieldVisible(key, llmConfigState)}
-          extra={
-            llmSection.id === 'llm_provider' && isOllama ? (
-              <OllamaModelPicker
-                model={String(llmConfigState.llm_model || '')}
-                baseUrl={String(llmConfigState.llm_base_url || 'http://127.0.0.1:11434')}
-                disabled={fieldsDisabled}
-                onModelChange={(v) => setLlmField('llm_model', v)}
-              />
-            ) : null
-          }
-        />
+        <>
+          {SECRETS_BANNER_SECTIONS.has(sectionId) ? <SecretsLinkBanner /> : null}
+          <ConfigSectionFields
+            section={llmSection}
+            values={llmConfigState}
+            disabled={fieldsDisabled}
+            onChange={(key, value) => setLlmField(key, value)}
+            fieldFilter={(key) => isLlmFieldVisible(key, llmConfigState)}
+            extra={
+              llmSection.id === 'llm_provider' && isOllama ? (
+                <OllamaModelPicker
+                  model={String(llmConfigState.llm_model || '')}
+                  baseUrl={String(llmConfigState.llm_base_url || 'http://127.0.0.1:11434')}
+                  disabled={fieldsDisabled}
+                  onModelChange={(v) => setLlmField('llm_model', v)}
+                />
+              ) : null
+            }
+          />
+        </>
       );
     }
 
@@ -386,7 +407,7 @@ export default function PipelineSettingsPanel({
     return null;
   }
 
-  const settingsCardClass = 'rounded-xl border border-default bg-brand-800/60 p-5 sm:p-6';
+  const settingsCardClass = 'rounded-2xl border border-muted/30 bg-[var(--chat-surface)] p-5 sm:p-6';
 
   return (
     <div className="mx-auto max-w-4xl space-y-4">
@@ -437,13 +458,13 @@ export default function PipelineSettingsPanel({
       ) : (
         <div className={group.id === 'google' && !useSectionTabs ? 'space-y-6' : 'space-y-4'}>
           {group.id === 'content-ai' ? (
-            <p className="rounded-lg border border-default bg-brand-900/50 px-4 py-3 text-xs text-muted-foreground">
+            <p className="rounded-lg border border-muted/30 bg-[var(--chat-bg)] px-4 py-3 text-xs text-muted-foreground">
               {s.contentAiHint}
             </p>
           ) : null}
 
           {group.id === 'google' ? (
-            <p className="rounded-lg border border-default bg-brand-900/50 px-4 py-3 text-xs text-muted-foreground">
+            <p className="rounded-lg border border-muted/30 bg-[var(--chat-bg)] px-4 py-3 text-xs text-muted-foreground">
               {s.googleGroupHint}
             </p>
           ) : null}

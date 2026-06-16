@@ -27,15 +27,23 @@ import {
   OverviewKeywordOpportunitiesCard,
   buildKeywordsHref,
 } from './OverviewKeywordOpportunitiesCard';
+import { OverviewAtAGlance } from './OverviewAtAGlance';
 
 export interface OverviewSummaryTabProps {
   data: ReportPayload;
   exportHref: string;
   compareHref: string;
   reportCount: number;
+  lighthouseScores?: Record<string, number | null | undefined> | null;
 }
 
-export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount }: OverviewSummaryTabProps) {
+export function OverviewSummaryTab({
+  data,
+  exportHref,
+  compareHref,
+  reportCount,
+  lighthouseScores,
+}: OverviewSummaryTabProps) {
   const vo = strings.views.overview;
   const searchParams = useSearchParams();
   const querySuffix = searchParams.toString() ? `?${searchParams.toString()}` : '';
@@ -92,6 +100,14 @@ export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount 
           reportCount={reportCount}
           querySuffix={querySuffix}
         />
+        <SectionLoadingGate sections={['traffic', 'tech']} fallback={<CardBlockSkeleton lines={4} />}>
+          <OverviewAtAGlance
+            data={data}
+            querySuffix={querySuffix}
+            lighthouseScores={lighthouseScores}
+            variant="summary"
+          />
+        </SectionLoadingGate>
         <SectionLoadingGate
           sections={['keywords', 'content']}
           fallback={<CardBlockSkeleton lines={6} />}

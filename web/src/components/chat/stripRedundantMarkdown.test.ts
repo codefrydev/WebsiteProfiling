@@ -88,4 +88,19 @@ https://example.com/long-path/page-two`;
     expect(out).not.toContain('Issue details');
     expect(out).not.toContain('https://example.com/long-path');
   });
+
+  it('strips lighthouse prose when lighthouse block exists', () => {
+    const content = `### Insights
+Performance score: 42. SEO score: 91.
+Poor performance pages listed below.`;
+    const blocks: ChatBlock[] = [
+      {
+        type: 'lighthouse_scores',
+        scores: { performance: 42, seo: 91 },
+        poorPages: [],
+      },
+    ];
+    const out = stripRedundantMarkdown(content, blocks);
+    expect(out.toLowerCase()).not.toContain('performance score');
+  });
 });

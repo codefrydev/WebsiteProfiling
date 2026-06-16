@@ -44,6 +44,16 @@ export interface PipelineUnknownKey {
 
 export type PipelineConfigState = Record<string, string | boolean>;
 export type LlmConfigState = Record<string, string | boolean>;
+export type SecretsState = Record<string, string | boolean>;
+
+export interface SecretsLoadResult {
+  state: SecretsState;
+  envHints: Record<string, boolean>;
+}
+
+export interface SecretsPutBody {
+  state?: SecretsState;
+}
 
 export type PipelineConfigSource = 'store' | 'legacy' | 'defaults';
 

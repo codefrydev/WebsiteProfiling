@@ -128,7 +128,7 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
       {
         key: 'crawl_auth_password',
         label: 'HTTP Basic auth password',
-        type: 'text',
+        type: 'secret',
         defaultValue: '',
       },
       {
@@ -141,7 +141,7 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
       {
         key: 'crawl_cookies',
         label: 'Cookie header value',
-        type: 'text',
+        type: 'secret',
         defaultValue: '',
       },
       {
@@ -496,7 +496,7 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
       {
         key: 'google_rich_results_api_key',
         label: 'Google Rich Results API key',
-        type: 'text',
+        type: 'secret',
         defaultValue: '',
         help: 'Optional API key for Rich Results Test API when GSC OAuth is unavailable.',
         placeholder: 'AIza…',
@@ -576,7 +576,7 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
       {
         key: 'bing_webmaster_api_key',
         label: 'Bing Webmaster API key',
-        type: 'text',
+        type: 'secret',
         defaultValue: '',
         help: 'Optional. Fetches Bing backlinks summary on audit build and via Integrations sync.',
         placeholder: 'Bing API key',
@@ -584,7 +584,7 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
       {
         key: 'serp_api_key',
         label: 'SerpAPI key (keyword SERP overlay)',
-        type: 'text',
+        type: 'secret',
         defaultValue: '',
         help: 'Optional. Adds Estimated SERP competition signals to top keywords during enrichment.',
         placeholder: 'SerpAPI key',

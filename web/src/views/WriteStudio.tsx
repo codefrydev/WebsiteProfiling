@@ -33,7 +33,7 @@ export default function WriteStudio() {
   const vs = strings.views.contentStudio;
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { configState } = usePipeline();
+  const { configState, configLoaded } = usePipeline();
   const { readOnly } = useReadOnlySession();
 
   const [properties, setProperties] = useState<WritePropertyOption[]>([]);
@@ -74,6 +74,7 @@ export default function WriteStudio() {
   );
 
   const loadProperties = useCallback(async () => {
+    if (!configLoaded) return;
     setLoadingProperties(true);
     try {
       const res = await fetch(apiUrl('/properties'));
@@ -102,7 +103,7 @@ export default function WriteStudio() {
     } finally {
       setLoadingProperties(false);
     }
-  }, [configState.active_property_id, configState.start_url, searchParams]);
+  }, [configLoaded, configState.active_property_id, configState.start_url, searchParams]);
 
   const loadDrafts = useCallback(async () => {
     if (!propertyId) {
@@ -140,8 +141,9 @@ export default function WriteStudio() {
   }, [vs.loadFailed]);
 
   useEffect(() => {
+    if (!configLoaded) return;
     void loadProperties();
-  }, [loadProperties]);
+  }, [configLoaded, loadProperties]);
 
   useEffect(() => {
     void loadDrafts();

@@ -20,7 +20,7 @@ export function usePortfolioCard(
   useEffect(() => {
     if (!fetchEnabled) return;
     if (loaded) return;
-    if (status === 'loaded' || status === 'loading') return;
+    if (status === 'loading' || status === 'loaded') return;
     loadCard(liteGroup);
   }, [fetchEnabled, liteGroup, loaded, status, loadCard]);
 

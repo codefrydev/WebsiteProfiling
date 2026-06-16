@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from 'react';
+import Link from 'next/link';
 import {
   CheckCircle2,
   AlertCircle,
@@ -341,13 +342,6 @@ export default function GoogleIntegrationsPanel({
   );
   const [status, setStatus] = useState<GoogleStatusResponse | null>(null);
   const [loadingStatus, setLoadingStatus] = useState(false);
-
-  // Phase 1 fields
-  const [clientId, setClientId] = useState('');
-  const [clientSecret, setClientSecret] = useState('');
-  const [savingCreds, setSavingCreds] = useState(false);
-
-  // Phase 2 fields
   const [gscSiteUrl, setGscSiteUrl] = useState('');
   const [ga4PropertyId, setGa4PropertyId] = useState('');
   const [dateRangeDays, setDateRangeDays] = useState('28');
@@ -538,30 +532,6 @@ export default function GoogleIntegrationsPanel({
       // ignore
     } finally {
       setLoadingGoogleLists(false);
-    }
-  };
-
-  const handleSaveClientCreds = async () => {
-    if (readOnly || !clientId.trim() || !clientSecret.trim()) return;
-    setSavingCreds(true);
-    try {
-      const res = await fetch(apiUrl('/integrations/google/credentials'), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId: clientId.trim(), clientSecret: clientSecret.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setToast({ type: 'error', message: data.error || 'Save failed' });
-      } else {
-        setStatus(data.status);
-        setClientSecret(''); // clear secret from UI after save
-        setToast({ type: 'success', message: 'Client credentials saved.' });
-      }
-    } catch (e) {
-      setToast({ type: 'error', message: e instanceof Error ? e.message : String(e) });
-    } finally {
-      setSavingCreds(false);
     }
   };
 
@@ -1012,34 +982,16 @@ export default function GoogleIntegrationsPanel({
                 Google Cloud guide <ExternalLink className="h-3 w-3" />
               </a>
             </p>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <InputField
-                id="clientId"
-                label="Client ID"
-                value={clientId}
-                onChange={setClientId}
-                placeholder={hasClientId ? '••••••••••••.apps.googleusercontent.com' : 'xxxxxxxx.apps.googleusercontent.com'}
-                disabled={savingCreds}
-              />
-              <InputField
-                id="clientSecret"
-                type="password"
-                label="Client Secret"
-                value={clientSecret}
-                onChange={setClientSecret}
-                placeholder={hasClientId ? '(saved — enter to replace)' : 'GOCSPX-...'}
-                disabled={savingCreds}
-              />
-            </div>
-            <div className="flex flex-wrap items-center justify-end gap-2 pt-1">
-              <Button
-                variant="primary"
-                onClick={() => void handleSaveClientCreds()}
-                disabled={readOnly || savingCreds || (!clientId.trim() && !clientSecret.trim())}
-              >
-                {savingCreds ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
-                Save credentials
-              </Button>
+            <div className="rounded-lg border border-default bg-brand-900/40 px-4 py-3 text-sm">
+              <p className="text-foreground">
+                {hasClientId ? strings.secrets.googleConfigured : strings.secrets.googleNotConfigured}
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                {strings.secrets.googleCredentialsHint}{' '}
+                <Link href="/secrets" className="text-link hover:underline">
+                  {strings.secrets.pageTitle}
+                </Link>
+              </p>
             </div>
           </SetupStep>
   );
@@ -1048,7 +1000,7 @@ export default function GoogleIntegrationsPanel({
           <SetupStep
             step={2}
             title="Connect Google account"
-            description={step1Done ? 'Sign in to authorize Search Console and Analytics access.' : 'Save credentials in step 1 first.'}
+            description={step1Done ? 'Sign in to authorize Search Console and Analytics access.' : 'Configure Google Cloud credentials on the Secrets page first.'}
             done={step2Done}
             icon={Link2}
           >

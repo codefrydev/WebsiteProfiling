@@ -35,3 +35,21 @@ def test_load_llm_config_from_db(require_database_url):
 def test_llm_disabled_by_default():
     assert not llm_is_enabled({})
     assert not llm_is_enabled({"llm_enabled": "false", "llm_provider": "openai"})
+
+
+def test_resolve_llm_api_key_per_provider():
+    from website_profiling.llm_config import _resolve_llm_api_key
+
+    cfg = {
+        "llm_provider": "groq",
+        "llm_api_key_groq": "gsk-test",
+        "llm_api_key_openai": "sk-openai",
+        "llm_api_key": "legacy",
+    }
+    assert _resolve_llm_api_key(cfg) == "gsk-test"
+
+    cfg["llm_provider"] = "openai"
+    assert _resolve_llm_api_key(cfg) == "sk-openai"
+
+    del cfg["llm_api_key_openai"]
+    assert _resolve_llm_api_key(cfg) == "legacy"

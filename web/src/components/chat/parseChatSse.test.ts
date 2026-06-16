@@ -28,4 +28,15 @@ describe('parseSseChunk', () => {
     expect(events).toHaveLength(0);
     expect(rest).toContain('event: token');
   });
+
+  it('parses narrative events', () => {
+    const chunk =
+      'event: narrative\ndata: {"narrative":{"power_insights":["A"],"recommended_actions":["B"]}}\n\n';
+    const { events } = parseSseChunk(chunk);
+    expect(events).toHaveLength(1);
+    expect(events[0]).toEqual({
+      type: 'narrative',
+      narrative: { power_insights: ['A'], recommended_actions: ['B'] },
+    });
+  });
 });

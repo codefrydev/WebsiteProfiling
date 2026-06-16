@@ -2,23 +2,24 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import {
   ChevronLeft,
   History,
-  Home,
-  Link as LinkIcon,
   MessageSquarePlus,
   PanelLeft,
-  PenLine,
   Settings,
-  Terminal,
   Trash2,
-  TrendingUp,
 } from 'lucide-react';
 import AppLogo from '@/components/AppLogo';
 import ThemeToggle from '@/components/ThemeToggle';
 import type { ChatLayoutState } from '@/components/chat/ChatShell';
 import { formatChatPropertyOption } from '@/lib/chatPropertyLabel';
+import {
+  CHAT_SIDEBAR_NAV_IDS,
+  isMiniNavLinkActive,
+  miniNavLinks,
+} from '@/lib/appNav';
 import { strings } from '@/lib/strings';
 
 const c = strings.components.chat;
@@ -46,13 +47,7 @@ export interface ChatSidebarProps extends ChatLayoutState {
   loading?: boolean;
 }
 
-const NAV_LINKS = [
-  { href: '/home', label: c.navHome, icon: Home },
-  { href: '/search-performance', label: c.navGsc, icon: TrendingUp },
-  { href: '/links', label: c.navLinks, icon: LinkIcon },
-  { href: '/pipeline', label: c.navPipeline, icon: Terminal },
-  { href: '/write', label: strings.nav.write.label, icon: PenLine },
-] as const;
+const NAV_LINKS = miniNavLinks(CHAT_SIDEBAR_NAV_IDS);
 
 function RailButton({
   label,
@@ -91,7 +86,7 @@ function SettingsMenu({ onClose }: { onClose: () => void }) {
         <ThemeToggle />
       </div>
       <Link
-        href="/pipeline?group=llm"
+        href="/secrets"
         className="mt-1 block rounded-lg px-2 py-1.5 text-xs text-link hover:bg-[var(--chat-surface-hover)]"
         onClick={onClose}
       >
@@ -115,6 +110,7 @@ export default function ChatSidebar({
   toggle,
   setExpanded,
 }: ChatSidebarProps) {
+  const pathname = usePathname();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -276,17 +272,24 @@ export default function ChatSidebar({
 
         <nav className="border-b border-muted/30 px-2 py-2">
           <ul className="space-y-0.5">
-            {NAV_LINKS.map(({ href, label, icon: Icon }) => (
-              <li key={href}>
-                <Link
-                  href={href}
-                  className="flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-[var(--chat-surface-hover)] hover:text-foreground"
-                >
-                  <Icon className="h-4 w-4 shrink-0" />
-                  {label}
-                </Link>
-              </li>
-            ))}
+            {NAV_LINKS.map(({ href, label, icon: Icon }) => {
+              const isActive = isMiniNavLinkActive(href, pathname);
+              return (
+                <li key={href}>
+                  <Link
+                    href={href}
+                    className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors ${
+                      isActive
+                        ? 'bg-brand-700/60 text-foreground'
+                        : 'text-muted-foreground hover:bg-[var(--chat-surface-hover)] hover:text-foreground'
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 shrink-0" />
+                    {label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         </nav>
 

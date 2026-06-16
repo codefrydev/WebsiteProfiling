@@ -32,7 +32,7 @@ import {
 import { strings } from '@/lib/strings';
 import { viewIdToPathSlug, type ViewId } from '@/routes';
 
-export type NavItemId = ViewId | 'pipeline' | 'chat' | 'write';
+export type NavItemId = ViewId | 'pipeline' | 'secrets' | 'chat' | 'write';
 
 export interface AppNavItem {
   id: NavItemId;
@@ -79,6 +79,7 @@ const NAV_DESCRIPTIONS: Partial<Record<NavItemId, string>> = {
   traffic: 'GA4 sessions & users',
   'keywords-explorer': 'Keyword research & expansion',
   pipeline: 'Crawl a site and build a report',
+  secrets: 'API keys and credentials',
   chat: 'Ask questions about this audit',
   write: 'Draft content from audit data',
 };
@@ -123,6 +124,15 @@ const PIPELINE_NAV: AppNavItem = {
   description: NAV_DESCRIPTIONS.pipeline,
 };
 
+const SECRETS_NAV: AppNavItem = {
+  id: 'secrets',
+  label: strings.nav.secrets.label,
+  section: strings.nav.secrets.section,
+  icon: Key,
+  hrefPath: '/secrets',
+  description: NAV_DESCRIPTIONS.secrets,
+};
+
 const CHAT_NAV: AppNavItem = {
   id: 'chat',
   label: strings.nav.chat.label,
@@ -151,14 +161,83 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
     description: NAV_DESCRIPTIONS[id],
   })),
   PIPELINE_NAV,
+  SECRETS_NAV,
   WRITE_NAV,
   CHAT_NAV,
 ];
 
+/** View ids rendered inside ReportShell — keep in sync with `VIEW_CONFIG`. */
+export const REPORT_VIEW_IDS: ViewId[] = VIEW_NAV.map(({ id }) => id);
+
 export const APP_NAV_SECTIONS = [...new Set(APP_NAV_ITEMS.map((item) => item.section))];
 
+/** Routes with their own app pages — not resolved by `pathSlugToViewId`. */
+export const STANDALONE_NAV_IDS = ['pipeline', 'secrets', 'chat', 'write'] as const satisfies readonly NavItemId[];
+
+export type StandaloneNavId = (typeof STANDALONE_NAV_IDS)[number];
+
+const STANDALONE_NAV_ID_SET = new Set<string>(STANDALONE_NAV_IDS);
+
+export function isStandaloneNavId(id: NavItemId): id is StandaloneNavId {
+  return STANDALONE_NAV_ID_SET.has(id);
+}
+
+export interface MiniNavLink {
+  id: NavItemId;
+  href: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+/** Compact sidebar links shared by chat and write studio shells. */
+export function miniNavLinks(ids: readonly NavItemId[]): MiniNavLink[] {
+  return ids.map((id) => {
+    const item = APP_NAV_ITEMS.find((entry) => entry.id === id);
+    if (!item) {
+      throw new Error(`Unknown nav item: ${id}`);
+    }
+    return {
+      id: item.id,
+      href: item.hrefPath,
+      label: item.label,
+      icon: item.icon,
+    };
+  });
+}
+
+export const CHAT_SIDEBAR_NAV_IDS = [
+  'home',
+  'search-performance',
+  'links',
+  'pipeline',
+  'secrets',
+  'write',
+] as const satisfies readonly NavItemId[];
+
+export const WRITE_SIDEBAR_NAV_IDS = [
+  'home',
+  'search-performance',
+  'links',
+  'pipeline',
+  'secrets',
+  'chat',
+  'write',
+] as const satisfies readonly NavItemId[];
+
+export const SECRETS_SIDEBAR_NAV_IDS = WRITE_SIDEBAR_NAV_IDS;
+
+export const PIPELINE_SIDEBAR_NAV_IDS = WRITE_SIDEBAR_NAV_IDS;
+
+export function isMiniNavLinkActive(href: string, pathname: string): boolean {
+  if (href === '/secrets') return pathname.startsWith('/secrets');
+  if (href === '/write') return pathname.startsWith('/write');
+  if (href === '/chat') return pathname.startsWith('/chat');
+  if (href === '/pipeline') return pathname.startsWith('/pipeline');
+  return pathname === href;
+}
+
 export function navHref(item: AppNavItem, trailingQuery: string): string {
-  if (item.id === 'home' || item.id === 'pipeline' || item.id === 'chat' || item.id === 'write') {
+  if (item.id === 'home' || item.id === 'pipeline' || item.id === 'secrets' || item.id === 'chat' || item.id === 'write') {
     return item.hrefPath;
   }
   const raw = trailingQuery.startsWith('?') ? trailingQuery.slice(1) : trailingQuery;
@@ -175,6 +254,9 @@ export function navHref(item: AppNavItem, trailingQuery: string): string {
 export function isNavItemActive(item: AppNavItem, pathname: string): boolean {
   if (item.id === 'pipeline') {
     return pathname === '/pipeline' || pathname.startsWith('/pipeline/');
+  }
+  if (item.id === 'secrets') {
+    return pathname === '/secrets' || pathname.startsWith('/secrets/');
   }
   if (item.id === 'chat') {
     return pathname === '/chat' || pathname.startsWith('/chat/');

@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from ..base import ChatResult, TokenCallback, ToolCall, parse_json_response
+from ..base import ChatResult, TokenCallback, ToolCall, optional_cloud_base_url, parse_json_response
 
 
 class OpenAIClient:
@@ -13,7 +13,8 @@ class OpenAIClient:
         self._model = (cfg.get("llm_model") or "gpt-4o-mini").strip()
         self._timeout = float(cfg.get("llm_timeout_s") or 120)
         self._api_key = (cfg.get("llm_api_key") or "").strip()
-        self._base = (cfg.get("llm_base_url") or "https://api.openai.com/v1").strip().rstrip("/")
+        custom_base = optional_cloud_base_url(cfg)
+        self._base = custom_base or "https://api.openai.com/v1"
 
     def complete_json(self, system: str, user: str) -> dict[str, Any]:
         if not self._api_key:
@@ -38,7 +39,10 @@ class OpenAIClient:
             r = client.post(url, headers=headers, json=payload)
             r.raise_for_status()
             data = r.json()
-        content = data["choices"][0]["message"]["content"]
+        choice = (data.get("choices") or [{}])[0]
+        content = (choice.get("message") or {}).get("content")
+        if content is None:
+            raise RuntimeError("OpenAI response contained no content.")
         return parse_json_response(content if isinstance(content, str) else json.dumps(content))
 
     def chat_with_tools(

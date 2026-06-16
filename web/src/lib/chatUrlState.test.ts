@@ -41,8 +41,10 @@ describe('chatUrlState', () => {
   it('isChatFabVisiblePath matches report routes only', () => {
     expect(isChatFabVisiblePath('/dashboard')).toBe(true);
     expect(isChatFabVisiblePath('/issues')).toBe(true);
+    expect(isChatFabVisiblePath('/write')).toBe(true);
     expect(isChatFabVisiblePath('/home')).toBe(false);
     expect(isChatFabVisiblePath('/chat')).toBe(false);
     expect(isChatFabVisiblePath('/pipeline')).toBe(false);
+    expect(isChatFabVisiblePath('/content-studio')).toBe(false);
   });
 });

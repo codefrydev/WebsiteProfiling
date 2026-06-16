@@ -1,7 +1,7 @@
 import { DM_Sans } from 'next/font/google';
-import Script from 'next/script';
 import type { ReactNode } from 'react';
 import './globals.css';
+import ChunkLoadRecovery from './chunk-load-recovery';
 import ClientProviders from './client-providers';
 
 const dmSans = DM_Sans({
@@ -25,10 +25,13 @@ const themeInit = `(function(){try{var v=localStorage.getItem('wp-theme');var d=
 export default function RootLayout({ children }: { children: ReactNode }): ReactNode {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInit }} />
+      </head>
       <body
         className={`${dmSans.variable} font-sans selection:bg-blue-500/30 overflow-hidden antialiased`}
       >
-        <Script id="wp-theme-init" strategy="beforeInteractive" dangerouslySetInnerHTML={{ __html: themeInit }} />
+        <ChunkLoadRecovery />
         <ClientProviders>{children}</ClientProviders>
       </body>
     </html>

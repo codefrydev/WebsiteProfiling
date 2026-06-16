@@ -31,13 +31,13 @@ import {
   Globe2,
   Contact2,
   TextSearch,
-  PenLine,
 } from 'lucide-react';
 import { UrlInspectorProvider } from './context/UrlInspectorContext';
 import AppShell from './components/AppShell';
 import { useReport } from './context/useReport';
 import { strings } from './lib/strings';
 import { canonicalDomainFromPayload, slugifyDomain } from './lib/domainSlug';
+import { REPORT_VIEW_IDS } from './lib/appNav';
 import { pathSlugToViewId, viewIdToPathSlug, type ViewId } from './routes';
 import { dispatchOpenIntegrations } from './lib/pipelineJobEvents';
 import ReportShellSkeleton from './components/ReportShellSkeleton';
@@ -82,7 +82,6 @@ const Indexation = dynamic(() => import('./views/Indexation'), { loading: () => 
 const Backlinks = dynamic(() => import('./views/Backlinks'), { loading: () => viewLoading() });
 const Traffic = dynamic(() => import('./views/Traffic'), { loading: () => viewLoading() });
 const KeywordsExplorer = dynamic(() => import('./views/KeywordsExplorer'), { loading: () => viewLoading() });
-const ContentStudio = dynamic(() => import('./views/ContentStudio'), { loading: () => viewLoading() });
 const ExportReport = dynamic(() => import('./views/ExportReport'), { loading: () => viewLoading() });
 const LogAnalyzer = dynamic(() => import('./views/LogAnalyzer'), { loading: () => viewLoading() });
 const Subdomains = dynamic(() => import('./views/Subdomains'), { loading: () => viewLoading() });
@@ -146,8 +145,21 @@ const VIEW_CONFIG: ViewConfigEntry[] = [
   { id: 'backlinks', component: Backlinks as ComponentType<CurrentViewProps>, icon: Link2 },
   { id: 'traffic', component: Traffic as ComponentType<CurrentViewProps>, icon: BarChart2 },
   { id: 'keywords-explorer', component: KeywordsExplorer as ComponentType<CurrentViewProps>, icon: Key },
-  { id: 'content-studio', component: ContentStudio as ComponentType<CurrentViewProps>, icon: PenLine },
 ];
+
+if (process.env.NODE_ENV !== 'production') {
+  const configIds = new Set(VIEW_CONFIG.map((entry) => entry.id));
+  for (const id of REPORT_VIEW_IDS) {
+    if (!configIds.has(id)) {
+      throw new Error(`ReportShell VIEW_CONFIG missing view id: ${id}`);
+    }
+  }
+  for (const entry of VIEW_CONFIG) {
+    if (!REPORT_VIEW_IDS.includes(entry.id)) {
+      throw new Error(`ReportShell VIEW_CONFIG has unknown view id: ${entry.id}`);
+    }
+  }
+}
 
 const VIEWS = VIEW_CONFIG.map((v) => ({
   ...v,

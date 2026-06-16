@@ -7,17 +7,24 @@ import { AlertCircle } from 'lucide-react';
 import ChatContextBar from '@/components/chat/ChatContextBar';
 import ChatShell from '@/components/chat/ChatShell';
 import ChatSidebar from '@/components/chat/ChatSidebar';
-import ChatMessageList, { type ChatMessage } from '@/components/chat/ChatMessageList';
+import ChatMessageList, {
+  agentErrorFromToolResult,
+  narrativeFromToolResult,
+  type ChatMessage,
+} from '@/components/chat/ChatMessageList';
 import ChatComposer from '@/components/chat/ChatComposer';
 import SuggestedPrompts from '@/components/chat/SuggestedPrompts';
 import ChatModelPicker from '@/components/chat/ChatModelPicker';
+import ChatProviderPicker from '@/components/chat/ChatProviderPicker';
+import ChatUnlimitedToolsToggle from '@/components/chat/ChatUnlimitedToolsToggle';
 import ChatActivityBar from '@/components/chat/ChatActivityBar';
 import { ChatFollowUpProvider } from '@/components/chat/ChatFollowUpContext';
 import { usePipeline } from '@/context/PipelineContext';
 import { apiUrl } from '@/lib/publicBase';
 import { format, strings } from '@/lib/strings';
 import { consumeChatSse } from '@/components/chat/parseChatSse';
-import { deriveChatBlocks, toolEventsToActivity } from '@/components/chat/deriveChatBlocks';
+import { toolEventsToActivity } from '@/components/chat/deriveChatBlocks';
+import type { ChatNarrative } from '@/types/chatNarrative';
 import type { ToolActivityItem } from '@/components/chat/ChatToolActivity';
 import {
   buildChatSearchQuery,
@@ -49,7 +56,7 @@ export default function ChatPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { configState, llmConfigState } = usePipeline();
+  const { configState, configLoaded, llmConfigState } = usePipeline();
   const initialUrlCtx = parseChatUrlContext(searchParams);
   const [properties, setProperties] = useState<PropertyOption[]>([]);
   const [propertyId, setPropertyId] = useState<number | null>(initialUrlCtx.propertyId);
@@ -100,6 +107,7 @@ export default function ChatPage() {
   const activeSession = sessions.find((s) => s.id === sessionId) ?? null;
 
   const loadProperties = useCallback(async () => {
+    if (!configLoaded) return;
     setLoadingProperties(true);
     try {
       const res = await fetch(apiUrl('/properties'));
@@ -138,7 +146,7 @@ export default function ChatPage() {
     } finally {
       setLoadingProperties(false);
     }
-  }, [configState.active_property_id, configState.start_url, searchParams]);
+  }, [configLoaded, configState.active_property_id, configState.start_url, searchParams]);
 
   const resolveSessionFromUrl = useCallback(async (sid: number, pid: number | null) => {
     try {
@@ -191,13 +199,16 @@ export default function ChatPage() {
           .filter((m) => m.role === 'user' || m.role === 'assistant')
           .map((m) => {
             const toolActivity = toolEventsToActivity(m.tool_result);
-            const blocks = toolActivity.length ? deriveChatBlocks(toolActivity) : undefined;
+            const agentError = agentErrorFromToolResult(m.tool_result);
+            const narrative = narrativeFromToolResult(m.tool_result);
             return {
               id: m.id,
               role: m.role as 'user' | 'assistant',
               content: m.content,
+              narrative,
               toolActivity: toolActivity.length ? toolActivity : undefined,
-              blocks: blocks?.length ? blocks : undefined,
+              partialError: Boolean(agentError && toolActivity.length > 0),
+              agentError,
             };
           }),
       );
@@ -211,8 +222,9 @@ export default function ChatPage() {
   }, []);
 
   useEffect(() => {
+    if (!configLoaded) return;
     void loadProperties();
-  }, [loadProperties]);
+  }, [configLoaded, loadProperties]);
 
   useEffect(() => {
     if (propertyId) void loadSessions(propertyId);
@@ -340,6 +352,7 @@ export default function ChatPage() {
       }
 
       let content = '';
+      let narrative: ChatNarrative | undefined;
       let streamError = '';
       const tools: ToolActivityItem[] = [];
 
@@ -367,7 +380,6 @@ export default function ChatPage() {
           });
           patchAssistant({
             toolActivity: [...tools],
-            blocks: deriveChatBlocks(tools),
             streaming: true,
             statusText: format(c.toolStatus, { name: evt.name || 'tool' }),
           });
@@ -378,19 +390,46 @@ export default function ChatPage() {
           }
           patchAssistant({
             toolActivity: [...tools],
-            blocks: deriveChatBlocks(tools),
             streaming: true,
           });
-        } else if (evt.type === 'done' && evt.message) {
+        } else if (evt.type === 'narrative') {
+          narrative = evt.narrative;
+          patchAssistant({
+            narrative: evt.narrative,
+            streaming: true,
+            error: false,
+            partialError: false,
+          });
+        } else if (evt.type === 'done') {
+          patchAssistant({
+            content: evt.message || content,
+            narrative,
+            streaming: true,
+            error: false,
+            partialError: false,
+          });
+        } else if (evt.type === 'partial_done' && evt.message) {
           content = evt.message;
-          patchAssistant({ content: evt.message, streaming: true, error: false });
+          patchAssistant({
+            content: evt.message,
+            streaming: true,
+            error: false,
+            partialError: true,
+            toolActivity: tools,
+          });
         } else if (evt.type === 'error') {
           streamError = evt.message || c.agentError;
           setError(streamError);
+          const hasTools = tools.length > 0;
+          const fallbackContent =
+            content.trim() || (hasTools ? c.partialToolsSaved : streamError);
           patchAssistant({
-            content: streamError,
+            content: fallbackContent,
+            narrative,
             streaming: false,
-            error: true,
+            error: !hasTools,
+            partialError: hasTools,
+            agentError: streamError,
             statusText: undefined,
             toolActivity: tools,
           });
@@ -398,8 +437,12 @@ export default function ChatPage() {
       });
 
       if (!streamError) {
+        const hasNarrative = Boolean(
+          narrative &&
+            (narrative.power_insights.length > 0 || narrative.recommended_actions.length > 0),
+        );
         const finalContent = content.trim();
-        if (!finalContent) {
+        if (!hasNarrative && !finalContent && tools.length === 0) {
           const emptyMsg = c.emptyResponse;
           setError(emptyMsg);
           patchAssistant({
@@ -411,14 +454,23 @@ export default function ChatPage() {
         } else {
           patchAssistant({
             content: finalContent,
+            narrative,
             streaming: false,
             error: false,
+            partialError: false,
             toolActivity: tools,
-            blocks: deriveChatBlocks(tools),
           });
         }
-        if (sid) await loadMessages(sid);
+      } else if (tools.length > 0) {
+        patchAssistant({
+          narrative,
+          streaming: false,
+          partialError: true,
+          agentError: streamError,
+          toolActivity: tools,
+        });
       }
+      if (sid) await loadMessages(sid);
       if (propertyId) await loadSessions(propertyId);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -447,12 +499,19 @@ export default function ChatPage() {
   };
 
   const modelPicker = llmEnabled ? (
-    <ChatModelPicker
-      provider={String(llmConfigState.llm_provider || 'none')}
-      model={String(llmConfigState.llm_model || '')}
-      baseUrl={String(llmConfigState.llm_base_url || '')}
-      disabled={busy}
-    />
+    <>
+      <ChatUnlimitedToolsToggle disabled={busy} />
+      <ChatProviderPicker
+        provider={String(llmConfigState.llm_provider || 'none')}
+        disabled={busy}
+      />
+      <ChatModelPicker
+        provider={String(llmConfigState.llm_provider || 'none')}
+        model={String(llmConfigState.llm_model || '')}
+        baseUrl={String(llmConfigState.llm_base_url || '')}
+        disabled={busy}
+      />
+    </>
   ) : null;
 
   const composer = (
@@ -522,7 +581,7 @@ export default function ChatPage() {
                 <div>
                   <p className="font-medium text-amber-100">{c.aiDisabledTitle}</p>
                   <p className="mt-1 text-muted-foreground">{c.aiDisabledHint}</p>
-                  <Link href="/pipeline?group=llm" className="mt-2 inline-block text-link text-xs">
+                  <Link href="/pipeline?group=content-ai" className="mt-2 inline-block text-link text-xs">
                     {c.openAiSettings}
                   </Link>
                 </div>

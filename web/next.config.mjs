@@ -22,6 +22,11 @@ const nextConfig = {
         destination: '/dashboard?tab=charts',
         permanent: false,
       },
+      {
+        source: '/content-studio',
+        destination: '/write',
+        permanent: true,
+      },
     ];
   },
 };

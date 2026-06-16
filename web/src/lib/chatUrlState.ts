@@ -58,10 +58,11 @@ export function buildChatSearchQuery(
   return params.toString();
 }
 
-/** Report views that carry ?domain= (not home, chat, or pipeline). */
+/** Report views that carry ?domain= (not home, chat, pipeline, or write). */
 export function isChatFabVisiblePath(pathname: string): boolean {
   if (pathname === '/chat' || pathname.startsWith('/chat/')) return false;
   if (pathname === '/pipeline' || pathname.startsWith('/pipeline/')) return false;
+  if (pathname === '/write' || pathname.startsWith('/write/')) return true;
   if (pathname === '/home') return false;
   const slug = pathname.replace(/^\//, '').split('/')[0] ?? '';
   const viewId = pathSlugToViewId(slug);

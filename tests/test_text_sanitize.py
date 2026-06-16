@@ -9,6 +9,11 @@ from website_profiling.llm.base import ChatResult, ToolCall
 from website_profiling.text_sanitize import sanitize_unicode_deep, strip_surrogates
 from website_profiling.tools.audit_tools import AuditToolContext
 
+VALID_NARRATIVE = {
+    "power_insights": ["High-priority issues were found in the audit."],
+    "recommended_actions": ["Review the listed URLs and fix sitemap coverage gaps."],
+}
+
 
 def test_strip_surrogates_replaces_lone_surrogate() -> None:
     bad = "URL issue\udc9d here"
@@ -62,6 +67,9 @@ def test_agent_surrogate_tool_result_does_not_break_llm_request() -> None:
                 tool_calls=[ToolCall(id="tc1", name="list_issues", arguments={"priority": "High"})],
             )
 
+        def complete_json(self, system, user):
+            return VALID_NARRATIVE
+
     client = RecordingClient()
     events: list[dict] = []
 
@@ -69,15 +77,16 @@ def test_agent_surrogate_tool_result_does_not_break_llm_request() -> None:
         "llm_enabled": True, "llm_provider": "openai", "llm_api_key": "sk-test",
     }):
         with patch("website_profiling.llm.agent.get_llm_client", return_value=client):
-            with patch(
-                "website_profiling.llm.agent.dispatch_tool",
-                return_value=tool_payload,
-            ):
-                result = run_agent_turn(
-                    [{"role": "user", "content": "high risk audit issues"}],
-                    AuditToolContext(property_id=1),
-                    on_event=events.append,
-                )
+            with patch("website_profiling.llm.chat_narrative.get_llm_client", return_value=client):
+                with patch(
+                    "website_profiling.llm.agent.dispatch_tool",
+                    return_value=tool_payload,
+                ):
+                    result = run_agent_turn(
+                        [{"role": "user", "content": "high risk audit issues"}],
+                        AuditToolContext(property_id=1),
+                        on_event=events.append,
+                    )
 
     assert result["ok"] is True
     assert client.last_messages is not None

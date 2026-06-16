@@ -214,13 +214,14 @@ In Audit settings, set **Crawl rendering** to `javascript` (always headless Chro
 
 ### AI chat (optional)
 
-Ask questions about audit data at [http://localhost:3000/chat](http://localhost:3000/chat). Enable a provider under **Run audit → AI settings** (`llm_enabled`, provider, model). `./local-run setup` installs Python deps from `requirements.txt` (including `httpx`, OpenAI, and Anthropic SDKs; Gemini uses `httpx` via REST).
+Ask questions about audit data at [http://localhost:3000/chat](http://localhost:3000/chat). Enable a provider under **Run audit → AI settings** (`llm_enabled`, provider, model). `./local-run setup` installs Python deps from `requirements.txt` (including `httpx`, OpenAI, Anthropic, and Groq SDKs; Gemini uses `httpx` via REST).
 
 | Provider | Notes |
 |----------|-------|
 | **Ollama** | Local daemon at `http://127.0.0.1:11434`. Chat UI lists installed models plus the live Ollama cloud catalog. Native tool calling when supported; ReAct fallback otherwise. |
 | **OpenAI** / **Anthropic** | API key in AI settings or env (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`); native tool calling with streaming. |
 | **Google Gemini** | API key in AI settings or `GEMINI_API_KEY`; REST via `httpx`. |
+| **Groq** | API key in AI settings or `GROQ_API_KEY`; official Groq Python SDK; native tool calling with streaming. Default model `openai/gpt-oss-120b`. |
 
 The agent uses the same **340 read-only audit tools** as the MCP server ([docs/MCP.md](docs/MCP.md)), with **dynamic routing** (~45 tools per turn). Responses stream over SSE (`POST /api/chat`). Sessions persist per property (`chat_sessions` / `chat_messages`).
 
