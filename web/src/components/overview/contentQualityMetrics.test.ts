@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildLanguageBarChartData,
+  buildLanguageBarHeights,
+  buildLanguageMixSegments,
   duplicateGroupsBand,
   languageShares,
   selectContentConcerns,
@@ -42,6 +45,30 @@ describe('contentQualityMetrics', () => {
     expect(shares).toHaveLength(2);
     expect(shares[0]?.lang).toBe('en');
     expect(shares[0]?.pct).toBe(90);
+  });
+
+  it('builds language mix donut segments', () => {
+    const segments = buildLanguageMixSegments({ en: 90, fr: 10 });
+    expect(segments).toHaveLength(2);
+    expect(segments[0]?.label).toBe('en');
+    expect(segments[0]?.value).toBe(90);
+  });
+
+  it('builds language bar heights normalized to max locale', () => {
+    expect(buildLanguageBarHeights({ en: 10 })).toBeNull();
+    const heights = buildLanguageBarHeights({ en: 80, fr: 40 });
+    expect(heights).toHaveLength(2);
+    expect(heights![0]).toBe(100);
+    expect(heights![1]).toBeGreaterThanOrEqual(22);
+  });
+
+  it('builds language bar chart data with labels and sqrt scaling', () => {
+    const data = buildLanguageBarChartData({ en: 900, fr: 10, de: 5 });
+    expect(data).toHaveLength(3);
+    expect(data![0]?.label).toBe('en');
+    expect(data![0]?.height).toBe(100);
+    expect(data![1]?.height).toBeGreaterThanOrEqual(22);
+    expect(data![2]?.height).toBeGreaterThanOrEqual(22);
   });
 
   it('selects content concerns', () => {

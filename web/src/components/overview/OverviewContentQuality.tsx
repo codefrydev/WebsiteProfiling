@@ -16,8 +16,10 @@ import { strings, format } from '@/lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import HelpHint from '@/components/HelpHint';
 import { Card, StatCard } from '@/components';
+import { CompactBarChart } from '@/components/charts/compact';
 import { buildKeywordsTabHref } from './overviewKeywordOpportunities';
 import {
+  buildLanguageBarChartData,
   buildViewHref,
   duplicateGroupsBand,
   duplicateMemberCount,
@@ -39,32 +41,18 @@ export interface OverviewContentQualityProps {
   keywordsHref: string;
 }
 
-function LanguageMixBars({ counts }: { counts: Record<string, number> }) {
-  const shares = languageShares(counts, 5);
-  if (!shares.length) return null;
+function LanguageMixCharts({ counts }: { counts: Record<string, number> }) {
+  const barChart = useMemo(() => buildLanguageBarChartData(counts), [counts]);
+
+  if (!barChart) return null;
 
   return (
-    <div className="space-y-2">
-      {shares.map((row) => (
-        <div key={row.lang}>
-          <div className="mb-1 flex items-center justify-between gap-2 text-xs">
-            <span className="font-mono text-foreground">{row.lang}</span>
-            <span className="tabular-nums text-muted-foreground">
-              {format(vo.contentQualityLanguageShare, {
-                count: row.count.toLocaleString(),
-                pct: row.pct,
-              })}
-            </span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-brand-900">
-            <div
-              className="h-full rounded-full bg-link/80"
-              style={{ width: `${Math.min(100, row.pct)}%` }}
-            />
-          </div>
-        </div>
-      ))}
-    </div>
+    <CompactBarChart
+      variant="chubby"
+      heights={barChart.map((row) => row.height)}
+      labels={barChart.map((row) => row.label)}
+      colors={barChart.map((row) => row.color)}
+    />
   );
 }
 
@@ -332,7 +320,7 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
                   {vo.contentQualityMixedLanguageHint}
                 </p>
               ) : null}
-              <LanguageMixBars counts={languageCounts} />
+              <LanguageMixCharts counts={languageCounts} />
             </div>
           </ContentQualityColumn>
         ) : null}

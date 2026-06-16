@@ -1,6 +1,15 @@
 'use client';
 
-import { useId, type ReactNode } from 'react';
+import { useId } from 'react';
+import {
+  CompactWidget,
+  CompactKpi,
+  CompactDonut,
+  CompactBarChart,
+  CompactAreaSparkline,
+  CompactHorizontalBars,
+  CompactStackedBar,
+} from '@/components/charts/compact';
 
 export type LandingProductMockVariant = 'default' | 'crawl' | 'issues';
 
@@ -18,83 +27,7 @@ const NAV_ITEMS = [
   { label: 'Export', activeFor: [] as const },
 ];
 
-function MockWidget({
-  title,
-  children,
-  className = '',
-}: {
-  title: string;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={`rounded-lg border border-default/60 bg-brand-900/40 p-2.5 ${className}`.trim()}>
-      <p className="mb-2 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
-      {children}
-    </div>
-  );
-}
-
-function MockKpi({
-  label,
-  value,
-  accent,
-  delta,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-  delta?: string;
-}) {
-  return (
-    <div className="rounded-lg border border-default/80 bg-brand-900/50 px-2.5 py-2">
-      <p className="text-[9px] font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
-      <div className="mt-0.5 flex items-end justify-between gap-1">
-        <p className={`text-sm font-bold tabular-nums ${accent ? 'text-link' : 'text-bright'}`}>{value}</p>
-        {delta ? <span className="text-[9px] font-medium text-emerald-400">{delta}</span> : null}
-      </div>
-    </div>
-  );
-}
-
-function MockSparkline({ points, className = '' }: { points: number[]; className?: string }) {
-  const fillId = useId();
-  const max = Math.max(...points);
-  const min = Math.min(...points);
-  const range = max - min || 1;
-  const coords = points
-    .map((p, i) => {
-      const x = (i / (points.length - 1)) * 100;
-      const y = 100 - ((p - min) / range) * 100;
-      return `${x},${y}`;
-    })
-    .join(' ');
-
-  return (
-    <svg viewBox="0 0 100 32" className={`h-8 w-full ${className}`.trim()} preserveAspectRatio="none" aria-hidden>
-      <polyline
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="text-link/70"
-        points={coords}
-      />
-      <polyline
-        fill={`url(#${fillId})`}
-        stroke="none"
-        points={`0,32 ${coords} 100,32`}
-      />
-      <defs>
-        <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgb(59 130 246 / 0.25)" />
-          <stop offset="100%" stopColor="rgb(59 130 246 / 0)" />
-        </linearGradient>
-      </defs>
-    </svg>
-  );
-}
+const MOCK_GSC_BAR_HEIGHTS = [40, 65, 52, 78, 45, 88, 60, 72, 55, 80, 68, 92];
 
 function MockLineChart({ label }: { label?: string }) {
   const fillId = useId();
@@ -105,7 +38,7 @@ function MockLineChart({ label }: { label?: string }) {
     .join(' ');
 
   return (
-    <MockWidget title={label ?? 'Trend'}>
+    <CompactWidget title={label ?? 'Trend'}>
       <svg viewBox="0 0 100 40" className="h-16 w-full" preserveAspectRatio="none" aria-hidden>
         {[25, 50, 75].map((y) => (
           <line key={y} x1="0" y1={y} x2="100" y2={y} stroke="currentColor" strokeOpacity="0.12" strokeWidth="0.5" />
@@ -130,58 +63,7 @@ function MockLineChart({ label }: { label?: string }) {
         <span>Week 1</span>
         <span>Week 4</span>
       </div>
-    </MockWidget>
-  );
-}
-
-function MockDonut({
-  segments,
-  centerLabel,
-  centerValue,
-}: {
-  segments: { label: string; value: number; color: string }[];
-  centerLabel?: string;
-  centerValue?: string;
-}) {
-  const total = segments.reduce((sum, s) => sum + s.value, 0);
-  let cumulative = 0;
-  const gradient = segments
-    .map((s) => {
-      const start = (cumulative / total) * 100;
-      cumulative += s.value;
-      const end = (cumulative / total) * 100;
-      return `${s.color} ${start}% ${end}%`;
-    })
-    .join(', ');
-
-  return (
-    <div className="flex items-center gap-2">
-      <div className="relative h-14 w-14 shrink-0">
-        <div
-          className="h-full w-full rounded-full"
-          style={{ background: `conic-gradient(${gradient})` }}
-        />
-        <div className="absolute inset-[22%] flex flex-col items-center justify-center rounded-full bg-brand-900/95">
-          {centerValue ? (
-            <span className="text-[10px] font-bold tabular-nums text-bright">{centerValue}</span>
-          ) : null}
-          {centerLabel ? (
-            <span className="text-[7px] uppercase text-muted-foreground">{centerLabel}</span>
-          ) : null}
-        </div>
-      </div>
-      <ul className="min-w-0 flex-1 space-y-1">
-        {segments.map((s) => (
-          <li key={s.label} className="flex items-center justify-between gap-1 text-[9px]">
-            <span className="flex min-w-0 items-center gap-1 text-muted-foreground">
-              <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: s.color }} />
-              <span className="truncate">{s.label}</span>
-            </span>
-            <span className="shrink-0 font-semibold tabular-nums text-foreground">{s.value}%</span>
-          </li>
-        ))}
-      </ul>
-    </div>
+    </CompactWidget>
   );
 }
 
@@ -230,79 +112,6 @@ function MockScoreRing({
   );
 }
 
-function MockHorizontalBars({
-  items,
-}: {
-  items: { label: string; value: number; color: string }[];
-}) {
-  const max = Math.max(...items.map((i) => i.value));
-  return (
-    <ul className="space-y-1.5">
-      {items.map((item) => (
-        <li key={item.label}>
-          <div className="mb-0.5 flex justify-between text-[9px]">
-            <span className="text-muted-foreground">{item.label}</span>
-            <span className="font-semibold tabular-nums text-foreground">{item.value.toLocaleString()}</span>
-          </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-brand-700/60">
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: `${(item.value / max) * 100}%`,
-                background: item.color,
-              }}
-            />
-          </div>
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function MockStackedBar({
-  segments,
-}: {
-  segments: { label: string; value: number; color: string }[];
-}) {
-  const total = segments.reduce((sum, s) => sum + s.value, 0);
-  return (
-    <div>
-      <div className="flex h-2.5 overflow-hidden rounded-full">
-        {segments.map((s) => (
-          <div
-            key={s.label}
-            style={{ width: `${(s.value / total) * 100}%`, background: s.color }}
-            title={`${s.label}: ${s.value}`}
-          />
-        ))}
-      </div>
-      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
-        {segments.map((s) => (
-          <span key={s.label} className="inline-flex items-center gap-1 text-[8px] text-muted-foreground">
-            <span className="h-1.5 w-1.5 rounded-full" style={{ background: s.color }} />
-            {s.label} ({s.value})
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function MockBarChart() {
-  const heights = [40, 65, 52, 78, 45, 88, 60, 72, 55, 80, 68, 92];
-  return (
-    <div className="flex h-20 items-end gap-0.5 rounded-md bg-brand-950/30 px-1 pb-1 pt-2">
-      {heights.map((h, i) => (
-        <div
-          key={i}
-          className="min-w-0 flex-1 rounded-sm bg-gradient-to-t from-blue-600/55 to-blue-400/25"
-          style={{ height: `${h}%` }}
-        />
-      ))}
-    </div>
-  );
-}
-
 function MockIssueRow({ severity, title }: { severity: string; title: string }) {
   const severityClass =
     severity === 'Critical'
@@ -338,13 +147,13 @@ function CrawlPanel() {
   return (
     <>
       <div className="mb-2.5 grid grid-cols-3 gap-1.5">
-        <MockKpi label="URLs" value="4,821" delta="+12%" />
-        <MockKpi label="2xx rate" value="96%" accent />
-        <MockKpi label="Redirects" value="142" />
+        <CompactKpi label="URLs" value="4,821" delta="+12%" />
+        <CompactKpi label="2xx rate" value="96%" accent />
+        <CompactKpi label="Redirects" value="142" />
       </div>
       <div className="mb-2.5 grid grid-cols-2 gap-2">
-        <MockWidget title="Status codes">
-          <MockDonut
+        <CompactWidget title="Status codes">
+          <CompactDonut
             centerValue="96%"
             centerLabel="2xx"
             segments={[
@@ -353,9 +162,9 @@ function CrawlPanel() {
               { label: '4xx', value: 1, color: 'rgb(248 113 113 / 0.85)' },
             ]}
           />
-        </MockWidget>
-        <MockWidget title="Crawl depth">
-          <MockHorizontalBars
+        </CompactWidget>
+        <CompactWidget title="Crawl depth">
+          <CompactHorizontalBars
             items={[
               { label: 'Depth 0', value: 1, color: 'rgb(59 130 246 / 0.7)' },
               { label: 'Depth 1', value: 48, color: 'rgb(59 130 246 / 0.55)' },
@@ -363,15 +172,15 @@ function CrawlPanel() {
               { label: 'Depth 3+', value: 890, color: 'rgb(59 130 246 / 0.35)' },
             ]}
           />
-        </MockWidget>
+        </CompactWidget>
       </div>
-      <MockWidget title="Recent URLs" className="mb-0">
+      <CompactWidget title="Recent URLs" className="mb-0">
         <div className="space-y-1">
           <MockUrlRow path="/products/widget-a" status={200} />
           <MockUrlRow path="/blog/seo-guide" status={200} />
           <MockUrlRow path="/old-page" status={301} />
         </div>
-      </MockWidget>
+      </CompactWidget>
     </>
   );
 }
@@ -383,12 +192,12 @@ function IssuesPanel() {
         <div className="flex items-center justify-center rounded-lg border border-default/60 bg-brand-900/40 px-2">
           <MockScoreRing score={78} label="Health" color="text-link" />
         </div>
-        <MockKpi label="Open issues" value="234" />
-        <MockKpi label="Critical" value="12" accent />
+        <CompactKpi label="Open issues" value="234" />
+        <CompactKpi label="Critical" value="12" accent />
       </div>
       <div className="mb-2.5 grid grid-cols-2 gap-2">
-        <MockWidget title="By severity">
-          <MockStackedBar
+        <CompactWidget title="By severity">
+          <CompactStackedBar
             segments={[
               { label: 'Critical', value: 12, color: 'rgb(248 113 113 / 0.9)' },
               { label: 'High', value: 48, color: 'rgb(251 191 36 / 0.9)' },
@@ -396,24 +205,24 @@ function IssuesPanel() {
               { label: 'Low', value: 80, color: 'rgb(100 116 139 / 0.6)' },
             ]}
           />
-        </MockWidget>
-        <MockWidget title="Issue trend">
-          <MockSparkline points={[42, 38, 35, 40, 32, 28, 26, 24]} />
+        </CompactWidget>
+        <CompactWidget title="Issue trend">
+          <CompactAreaSparkline points={[42, 38, 35, 40, 32, 28, 26, 24]} />
           <p className="mt-1 text-[8px] text-emerald-400">↓ 18% vs last crawl</p>
-        </MockWidget>
+        </CompactWidget>
       </div>
       <div className="mb-2.5 grid grid-cols-3 gap-1.5 rounded-lg border border-default/60 bg-brand-900/40 p-2">
         <MockScoreRing score={72} label="Perf" color="text-amber-400" />
         <MockScoreRing score={91} label="SEO" color="text-emerald-400" />
         <MockScoreRing score={88} label="A11y" color="text-link" />
       </div>
-      <MockWidget title="Top issues">
+      <CompactWidget title="Top issues">
         <div className="space-y-1">
           <MockIssueRow severity="Critical" title="Missing title tags (48)" />
           <MockIssueRow severity="High" title="Slow LCP mobile (23)" />
           <MockIssueRow severity="Medium" title="Duplicate meta desc." />
         </div>
-      </MockWidget>
+      </CompactWidget>
     </>
   );
 }
@@ -422,39 +231,39 @@ function OverviewPanel() {
   return (
     <>
       <div className="mb-2.5 grid grid-cols-3 gap-1.5">
-        <MockKpi label="Health" value="82" accent delta="+4" />
-        <MockKpi label="URLs" value="1,247" />
-        <MockKpi label="Issues" value="89" delta="-11" />
+        <CompactKpi label="Health" value="82" accent delta="+4" />
+        <CompactKpi label="URLs" value="1,247" />
+        <CompactKpi label="Issues" value="89" delta="-11" />
       </div>
       <div className="mb-2.5 grid grid-cols-2 gap-2">
-        <MockWidget title="GSC clicks (28d)">
-          <MockBarChart />
-        </MockWidget>
-        <MockWidget title="Issue mix">
-          <MockDonut
+        <CompactWidget title="GSC clicks (28d)">
+          <CompactBarChart heights={MOCK_GSC_BAR_HEIGHTS} />
+        </CompactWidget>
+        <CompactWidget title="Issue mix">
+          <CompactDonut
             segments={[
               { label: 'High', value: 22, color: 'rgb(251 191 36 / 0.9)' },
               { label: 'Medium', value: 45, color: 'rgb(59 130 246 / 0.75)' },
               { label: 'Low', value: 33, color: 'rgb(100 116 139 / 0.55)' },
             ]}
           />
-        </MockWidget>
+        </CompactWidget>
       </div>
       <div className="mb-2.5 grid grid-cols-2 gap-2">
         <MockLineChart label="Organic trend" />
-        <MockWidget title="Lighthouse">
+        <CompactWidget title="Lighthouse">
           <div className="flex justify-around px-1">
             <MockScoreRing score={84} label="Perf" color="text-emerald-400" />
             <MockScoreRing score={96} label="SEO" color="text-link" />
           </div>
-        </MockWidget>
+        </CompactWidget>
       </div>
-      <MockWidget title="Needs attention">
+      <CompactWidget title="Needs attention">
         <div className="space-y-1">
           <MockIssueRow severity="High" title="Missing canonical /blog/*" />
           <MockIssueRow severity="Medium" title="Images missing alt text" />
         </div>
-      </MockWidget>
+      </CompactWidget>
     </>
   );
 }

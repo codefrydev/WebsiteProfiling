@@ -1,4 +1,5 @@
 export { default as ScoreRing }      from './ScoreRing';
+export type { ScoreRingProps, ScoreRingSize } from './ScoreRing';
 export { default as ThresholdBar }   from './ThresholdBar';
 export { default as DiagnosticItem } from './DiagnosticItem';
 export { default as DiagnosticGroup }from './DiagnosticGroup';

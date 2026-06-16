@@ -1,4 +1,6 @@
+import type { CompactDonutSegment } from '@/components/charts/compact';
 import type { ContentDuplicateCluster } from '@/types/report';
+import { palette } from '@/utils/chartPalette';
 import { buildViewHref } from './crawlSnapshotMetrics';
 
 export interface LanguageShare {
@@ -60,6 +62,60 @@ export function languageShares(counts: Record<string, number> | undefined, limit
 
 export function languageCount(counts: Record<string, number> | undefined): number {
   return Object.keys(counts || {}).filter((lang) => Number(counts?.[lang] ?? 0) > 0).length;
+}
+
+const PALETTE_FALLBACK = '#4C72B0';
+
+/** Donut segments for top sampled languages (page counts). */
+export function buildLanguageMixSegments(
+  counts: Record<string, number> | undefined,
+  limit = 5,
+): CompactDonutSegment[] {
+  const shares = languageShares(counts, limit);
+  const colors = palette(shares.length);
+  return shares.map((row, i) => ({
+    label: row.lang,
+    value: row.count,
+    color: colors[i] ?? PALETTE_FALLBACK,
+  }));
+}
+
+export interface LanguageBarChartDatum {
+  label: string;
+  height: number;
+  color: string;
+}
+
+/** Sqrt-scaled bar heights so minor locales stay visible; null if fewer than 2 locales. */
+export function buildLanguageBarChartData(
+  counts: Record<string, number> | undefined,
+  limit = 6,
+): LanguageBarChartDatum[] | null {
+  const shares = languageShares(counts, limit);
+  if (shares.length < 2) return null;
+  const max = Math.max(...shares.map((s) => s.count));
+  if (max <= 0) return null;
+  const sqrtMax = Math.sqrt(max);
+  const colors = palette(shares.length);
+  const MIN_HEIGHT = 22;
+
+  return shares.map((row, i) => {
+    const scaled = (Math.sqrt(row.count) / sqrtMax) * 100;
+    return {
+      label: row.lang,
+      height: Math.round(Math.max(MIN_HEIGHT, scaled)),
+      color: colors[i] ?? PALETTE_FALLBACK,
+    };
+  });
+}
+
+/** @deprecated Use buildLanguageBarChartData for labeled chubby charts */
+export function buildLanguageBarHeights(
+  counts: Record<string, number> | undefined,
+  limit = 8,
+): number[] | null {
+  const data = buildLanguageBarChartData(counts, limit);
+  return data?.map((row) => row.height) ?? null;
 }
 
 export function duplicateGroupsBand(groupCount: number): 'good' | 'fair' | 'critical' {
