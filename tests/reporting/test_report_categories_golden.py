@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import pandas as pd
 
 from website_profiling.reporting.categories import build_categories, merge_indexation_issues
 
-FIXTURES = Path(__file__).resolve().parent / "fixtures" / "report"
+from tests.conftest import FIXTURES
+
+REPORT_FIXTURES = FIXTURES / "report"
 
 
 def _issue_fingerprints(categories: list[dict]) -> set[tuple[str, str, str]]:
@@ -23,7 +24,7 @@ def _issue_fingerprints(categories: list[dict]) -> set[tuple[str, str, str]]:
 
 
 def test_build_categories_golden_fingerprints() -> None:
-    rows = json.loads((FIXTURES / "minimal_crawl.json").read_text(encoding="utf-8"))
+    rows = json.loads((REPORT_FIXTURES / "minimal_crawl.json").read_text(encoding="utf-8"))
     df = pd.DataFrame(rows)
     edges = [
         ("https://example.com/", "https://example.com/thin"),
@@ -69,7 +70,7 @@ def test_build_categories_golden_fingerprints() -> None:
 
 
 def test_build_categories_missing_site_files_low_issues() -> None:
-    rows = json.loads((FIXTURES / "minimal_crawl.json").read_text(encoding="utf-8"))
+    rows = json.loads((REPORT_FIXTURES / "minimal_crawl.json").read_text(encoding="utf-8"))
     df = pd.DataFrame(rows)
     site_level = {
         "robots_present": True,

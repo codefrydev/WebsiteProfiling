@@ -1,8 +1,13 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef, useCallback, type MouseEvent } from 'react';
-import { Link as LinkIcon, ArrowLeft, AlertTriangle, Download, List, TextQuote } from 'lucide-react';
+import { Link as LinkIcon, ArrowLeft, AlertTriangle, Download, List, TextQuote, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
+import { useTabSections } from '@/hooks/useTabSections';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
+import { LINKS_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Button, AlertBanner, ViewTabs } from '../components';
 import type { ViewTabItem } from '../components';
@@ -74,6 +79,9 @@ export default function Links({ searchQuery = '' }: ViewProps) {
   const vl = strings.views.links;
   const sj = strings.common;
   const { data } = useReport();
+  useSectionData('links');
+  const linksReady = useSectionsViewReady(['links']);
+  useTabSections(LINKS_TAB_SECTIONS, true);
   const pipeline = useOptionalPipeline();
   const propertyId = Number(pipeline?.configState.active_property_id || 0);
   const searchParams = useSearchParams();
@@ -393,7 +401,9 @@ export default function Links({ searchQuery = '' }: ViewProps) {
     setHoveredRow(link.url);
   }, []);
 
-  if (!data) return null;
+  if (!linksReady) {
+    return <ViewSectionLoading title={vl.title} />;
+  }
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const pageLinks = filtered.slice((page - 1) * perPage, page * perPage);
@@ -565,7 +575,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
             {linkForInspector ? (
               <InspectorTabs
                 link={linkForInspector}
-                lhData={(data.lighthouse_by_url?.[matchedInspectUrl] ?? null) as LinkLighthouseData | null}
+                lhData={(data?.lighthouse_by_url?.[matchedInspectUrl] ?? null) as LinkLighthouseData | null}
                 inspectorDetails={inspectorDetails}
                 activeTab={inspectorTab}
                 onTabChange={setInspectorTab}

@@ -12,6 +12,9 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, LabelWithHint } from '../components';
 import type { GalleryImageItem, ReportLink, ViewProps } from '@/types';
@@ -252,7 +255,10 @@ const MASONRY_CHUNK = 48;
 
 export default function Gallery({ searchQuery = '' }: ViewProps) {
   const vg = strings.views.gallery;
-  const { data, loading } = useReport();
+  const { data } = useReport();
+  useSectionData('links');
+  useSectionData('gallery');
+  const galleryReady = useSectionsViewReady(['gallery', 'links']);
   const [density, setDensity] = useState<GalleryDensity>('md');
   const [layoutMode, setLayoutMode] = useState<'grid' | 'masonry'>('grid');
   const [kindFilter, setKindFilter] = useState<'all' | GalleryKind>('all');
@@ -311,16 +317,8 @@ export default function Gallery({ searchQuery = '' }: ViewProps) {
     };
   }, [lightbox, closeLightbox]);
 
-  if (loading) {
-    return (
-      <PageLayout className="space-y-8 pb-16">
-        <PageHeader title={vg.title} subtitle={vg.subtitle} />
-        <Card className="p-16 flex flex-col items-center justify-center gap-4 text-center border-dashed">
-          <Loader2 className="h-10 w-10 animate-spin text-link" aria-hidden />
-          <p className="text-muted-foreground">{strings.app.loading}</p>
-        </Card>
-      </PageLayout>
-    );
+  if (!galleryReady) {
+    return <ViewSectionLoading title={vg.title} />;
   }
 
   const masonryColsClass =

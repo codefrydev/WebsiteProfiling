@@ -51,7 +51,8 @@ describe('REPORT_PATH_SLUGS', () => {
 describe('nav href round-trip', () => {
   it('resolves every report nav item href back to its view id', () => {
     const reportItems = APP_NAV_ITEMS.filter(
-      (item) => item.id !== 'pipeline' && item.id !== 'chat',
+      (item) =>
+        item.id !== 'pipeline' && item.id !== 'chat' && item.id !== 'write',
     );
 
     for (const item of reportItems) {

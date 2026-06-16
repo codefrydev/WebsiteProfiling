@@ -15,6 +15,8 @@ import { strings, format } from '@/lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { googleSnapshotStatus } from '@/lib/googleSnapshot';
 import { Card, AlertBanner, StatCard } from '@/components';
+import { SectionLoadingGate } from '@/components/SectionLoadingGate';
+import { CardBlockSkeleton, StatRowSkeleton } from '@/components/SectionWidgetSkeleton';
 import { DataSourceBadgeRow } from '@/components/DataSourceBadge';
 import LlmDisclosure from '@/components/LlmDisclosure';
 import { OverviewTabPanel } from './OverviewTabPanel';
@@ -90,13 +92,18 @@ export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount 
           reportCount={reportCount}
           querySuffix={querySuffix}
         />
-        <OverviewKeywordOpportunitiesCard
-          keywords={data.keywords}
-          keywordOpportunities={data.keyword_opportunities}
-          contentAnalytics={data.content_analytics}
-          keywordsHref={keywordsHref}
-          hasGoogleConnected={Boolean(googleData)}
-        />
+        <SectionLoadingGate
+          sections={['keywords', 'content']}
+          fallback={<CardBlockSkeleton lines={6} />}
+        >
+          <OverviewKeywordOpportunitiesCard
+            keywords={data.keywords}
+            keywordOpportunities={data.keyword_opportunities}
+            contentAnalytics={data.content_analytics}
+            keywordsHref={keywordsHref}
+            hasGoogleConnected={Boolean(googleData)}
+          />
+        </SectionLoadingGate>
         {provenanceSources.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2 text-sm">
             <span className="text-muted-foreground">{vo.dataSourcesLabel}:</span>
@@ -119,46 +126,48 @@ export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount 
             {vo.openExportPage}
           </Link>
         </div>
-        {!googleData ? (
-          <AlertBanner
-            variant="info"
-            icon={<TrendingUp className="h-4 w-4 text-link shrink-0" aria-hidden />}
-            title={vo.googleConnectTitle}
-          >
-            <p className="text-xs text-muted-foreground">{vo.googleConnectSubtitle}</p>
-          </AlertBanner>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {googleData.gsc ? (
-              <>
-                <StatCard
-                  label={vo.gscClicksCard}
-                  value={googleData.gsc.summary?.clicks?.toLocaleString()}
-                  hint={metricHelpHint('shared.clicks')}
-                />
-                <StatCard
-                  label={vo.gscImpressionsCard}
-                  value={googleData.gsc.summary?.impressions?.toLocaleString()}
-                  hint={metricHelpHint('shared.impressions')}
-                />
-              </>
-            ) : null}
-            {googleData.ga4 ? (
-              <>
-                <StatCard
-                  label={vo.ga4SessionsCard}
-                  value={googleData.ga4.summary?.sessions?.toLocaleString()}
-                  hint={metricHelpHint('shared.sessions')}
-                />
-                <StatCard
-                  label={vo.ga4UsersCard}
-                  value={googleData.ga4.summary?.activeUsers?.toLocaleString()}
-                  hint={metricHelpHint('shared.activeUsers')}
-                />
-              </>
-            ) : null}
-          </div>
-        )}
+        <SectionLoadingGate sections={['traffic']} fallback={<StatRowSkeleton count={4} />}>
+          {!googleData ? (
+            <AlertBanner
+              variant="info"
+              icon={<TrendingUp className="h-4 w-4 text-link shrink-0" aria-hidden />}
+              title={vo.googleConnectTitle}
+            >
+              <p className="text-xs text-muted-foreground">{vo.googleConnectSubtitle}</p>
+            </AlertBanner>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {googleData.gsc ? (
+                <>
+                  <StatCard
+                    label={vo.gscClicksCard}
+                    value={googleData.gsc.summary?.clicks?.toLocaleString()}
+                    hint={metricHelpHint('shared.clicks')}
+                  />
+                  <StatCard
+                    label={vo.gscImpressionsCard}
+                    value={googleData.gsc.summary?.impressions?.toLocaleString()}
+                    hint={metricHelpHint('shared.impressions')}
+                  />
+                </>
+              ) : null}
+              {googleData.ga4 ? (
+                <>
+                  <StatCard
+                    label={vo.ga4SessionsCard}
+                    value={googleData.ga4.summary?.sessions?.toLocaleString()}
+                    hint={metricHelpHint('shared.sessions')}
+                  />
+                  <StatCard
+                    label={vo.ga4UsersCard}
+                    value={googleData.ga4.summary?.activeUsers?.toLocaleString()}
+                    hint={metricHelpHint('shared.activeUsers')}
+                  />
+                </>
+              ) : null}
+            </div>
+          )}
+        </SectionLoadingGate>
 
         {(data.ml_errors?.length ?? 0) > 0 ? (
           <AlertBanner
@@ -178,9 +187,16 @@ export function OverviewSummaryTab({ data, exportHref, compareHref, reportCount 
         ) : null}
       </div>
 
-      <OverviewCrawlMetrics data={data} querySuffix={querySuffix} />
+      <SectionLoadingGate sections={['content', 'tech']} fallback={<StatRowSkeleton count={4} />}>
+        <OverviewCrawlMetrics data={data} querySuffix={querySuffix} />
+      </SectionLoadingGate>
 
-      <OverviewContentQuality data={data} querySuffix={querySuffix} keywordsHref={keywordsHref} />
+      <SectionLoadingGate
+        sections={['content', 'indexation', 'keywords']}
+        fallback={<CardBlockSkeleton lines={5} />}
+      >
+        <OverviewContentQuality data={data} querySuffix={querySuffix} keywordsHref={keywordsHref} />
+      </SectionLoadingGate>
 
       {reportCount >= 2 ? (
         <Card shadow className="mb-8 border border-cyan-600/35 dark:border-cyan-900/40 bg-cyan-100/45 dark:bg-cyan-950/10">

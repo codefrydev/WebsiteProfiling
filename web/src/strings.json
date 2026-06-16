@@ -716,6 +716,10 @@
       "label": "AI Chat",
       "section": "AI"
     },
+    "write": {
+      "label": "Content studio",
+      "section": "AI"
+    },
     "issues": {
       "label": "Issues",
       "section": "Overview"
@@ -747,6 +751,18 @@
     "javascript-errors": {
       "label": "JavaScript errors",
       "section": "Site crawl"
+    },
+    "accessibility": {
+      "label": "Accessibility (axe)",
+      "section": "On-page & content"
+    },
+    "image-seo": {
+      "label": "Image SEO",
+      "section": "On-page & content"
+    },
+    "geo-readiness": {
+      "label": "GEO / AEO readiness",
+      "section": "Discoverability"
     },
     "content-analytics": {
       "label": "Content quality",
@@ -798,6 +814,10 @@
     },
     "keywords-explorer": {
       "label": "Keywords",
+      "section": "Search & analytics"
+    },
+    "content-studio": {
+      "label": "Content studio",
       "section": "Search & analytics"
     },
     "log-analyzer": {
@@ -994,7 +1014,7 @@
       "alertWebhookLabel": "Alert webhook URL",
       "alertWebhookHelp": "POST JSON when health score drops or critical issues appear.",
       "alertEmailLabel": "Alert email",
-      "alertEmailHelp": "Optional email for alert notifications (requires mail setup).",
+      "alertEmailHelp": "Optional email when alerts fire. Requires SMTP_HOST and SMTP_FROM on the server (see docs/OPS.md).",
       "saveLabel": "Save ops settings",
       "saving": "Saving…",
       "saved": "Ops settings saved.",
@@ -1042,6 +1062,40 @@
       "contentAi": "Content quality & AI insights",
       "advanced": "Advanced"
     },
+    "settingsGroupDescriptions": {
+      "crawlReport": "Spider depth, page limits, and report sections",
+      "lighthouse": "Core Web Vitals and category scores",
+      "keywords": "Expansion sources and enrichment",
+      "google": "Search Console site and GA4 property",
+      "contentAi": "AI insights and content scoring",
+      "advanced": "Runner command, Python path, repo root"
+    },
+    "sectionIntros": {
+      "crawl": "Tell the crawler what to fetch and how. Set the Site URL and limits — everything else has sensible defaults.",
+      "report": "Choose what the audit report includes and which extra checks to run.",
+      "lighthouse": "Performance and quality scans. Most are off by default except the core run.",
+      "analysis": "Thresholds for near-duplicate and language detection.",
+      "pipeline": "Pick which stages of the audit run.",
+      "keywords_basics": "Inputs that seed keyword research.",
+      "keywords_expansion": "Optional free sources to widen the keyword set.",
+      "advanced": "Low-level inputs for the warning mapper step."
+    },
+    "tabRunHint": "Start a new audit run",
+    "breadcrumbAudits": "Audits",
+    "advancedOptionsLabel": "Advanced options",
+    "advancedOptionsHint": "{count} more settings",
+    "wizardRunExplainerTitle": "What happens when you run",
+    "wizardRunExplainerSteps": [
+      "Crawl your site and collect every page",
+      "Build an SEO audit report with charts",
+      "Score performance, accessibility, and SEO"
+    ],
+    "wizardRunExplainerNote": "Exact steps depend on the audit type you pick next.",
+    "firstRunTitle": "Run your first audit",
+    "firstRunBody": "Enter a site URL and choose what to analyze. We crawl the site, build a report, and score performance — all in one run.",
+    "firstRunHighlightCrawl": "Crawl",
+    "firstRunHighlightReport": "Report",
+    "firstRunHighlightPerf": "Performance",
     "crawlPresets": {
       "small": { "label": "Small site", "maxPages": "50" },
       "medium": { "label": "Medium site", "maxPages": "500" },
@@ -1761,6 +1815,10 @@
       "taskBoardHint": "Sorted by Search Console clicks to affected URLs when available.",
       "taskBoardNoProperty": "Link an active property in Integrations to track issue workflow.",
       "taskBoardStatus": "Issue status",
+      "taskBoardAssignee": "Assignee",
+      "taskBoardAssigneePlaceholder": "Name or email",
+      "taskBoardNote": "Note",
+      "taskBoardNotePlaceholder": "Internal note for this issue",
       "categoryOther": "Other",
       "priorityOrder": [
         "Critical",
@@ -1887,7 +1945,7 @@
     },
     "network": {
       "title": "Internal Linking Map",
-      "subtitle": "Physics-based graph of internal link structure. Red nodes indicate 4xx/5xx errors.",
+      "subtitle": "Physics-based graph of internal link structure. Click a node to inspect the page and highlight its links. Red nodes indicate 4xx/5xx errors.",
       "searchEmpty": "No pages match your search.",
       "legendOk": "OK (2xx)",
       "legendBroken": "Broken (4xx/5xx)",
@@ -1896,7 +1954,11 @@
       "exitFullscreen": "Exit full screen",
       "titleFullscreen": "Full screen",
       "titleExitFullscreen": "Exit full screen",
-      "noEdges": "No edge data available."
+      "noEdges": "No edge data available.",
+      "clickHint": "Click a node to inspect · drag to rotate",
+      "openLive": "Open live site",
+      "clearSelection": "Clear",
+      "selectedLabel": "Selected page"
     },
     "charts": {
       "title": "Crawl Analytics",
@@ -2162,6 +2224,63 @@
         "next": "Next",
         "rowsPerPage": "{n} per page"
       }
+    },
+    "accessibility": {
+      "title": "Accessibility (axe)",
+      "subtitle": "axe-core violations captured during browser crawls when enable_axe is on.",
+      "browserRequiredHint": "Static crawls do not run axe. Re-run with JavaScript or Auto rendering.",
+      "axeEnableHint": "Enable Run axe accessibility scan in audit settings, then re-crawl to populate this view.",
+      "noDataHint": "No axe data in this audit. Enable axe on a JavaScript crawl and re-run.",
+      "tabSummary": "Summary",
+      "tabPages": "Pages",
+      "statPages": "Pages with violations",
+      "statViolations": "Total violations",
+      "statRules": "Distinct rules",
+      "topRulesTitle": "Top rules by occurrence",
+      "noViolations": "No axe violations found in this crawl.",
+      "colUrl": "URL",
+      "colCount": "Violations",
+      "nodesLabel": "nodes",
+      "pageOf": "Showing",
+      "of": "of"
+    },
+    "imageSeo": {
+      "title": "Image SEO",
+      "subtitle": "Alt text, lazy loading, dimensions, OG images, and optional size/format probes.",
+      "galleryLinkPrefix": "Browse visual previews in",
+      "galleryLinkLabel": "Page previews",
+      "tabOverview": "Overview",
+      "tabAlt": "Missing alt",
+      "tabLazy": "Missing lazy-load",
+      "tabDimensions": "Missing dimensions",
+      "tabLargest": "Largest files",
+      "tabUnoptimized": "Unoptimized",
+      "inventoryRequiredHint": "Enable probe image inventory in Run audit settings, then re-run to list largest and unoptimized images.",
+      "emptyList": "No pages in this category for the current audit.",
+      "colUrl": "URL",
+      "colDetails": "Details",
+      "pageOf": "Showing",
+      "of": "of"
+    },
+    "geoReadiness": {
+      "title": "GEO / AEO readiness",
+      "subtitle": "On-site signals for generative and answer-engine visibility — estimated from crawl heuristics, not live AI queries.",
+      "provenanceBanner": "Estimated — scores and signals are crawl heuristics. They do not query ChatGPT, Perplexity, or other AI search engines.",
+      "scoreLabel": "GEO readiness",
+      "faqCoverageLabel": "FAQ schema coverage",
+      "llmsLabel": "llms.txt",
+      "llmsFound": "Found",
+      "llmsMissing": "Not found",
+      "faqPagesLabel": "Pages with FAQ schema",
+      "componentsTitle": "Score components",
+      "llmsPanelTitle": "llms.txt status",
+      "llmsNotFoundHint": "No llms.txt at /llms.txt or /.well-known/llms.txt for this domain.",
+      "eeatTitle": "E-E-A-T signals (summary)",
+      "missingFaqTitle": "Pages missing FAQ schema",
+      "missingFaqEmpty": "All crawled 2xx pages include FAQ-style schema, or none were checked.",
+      "colUrl": "URL",
+      "pageOf": "Showing",
+      "of": "of"
     },
     "lighthouse": {
       "emptyTitle": "Page Speed",
@@ -2561,6 +2680,141 @@
         "rowsPerPage": "{n} per page"
       }
     },
+    "contentStudio": {
+      "title": "Content studio",
+      "subtitle": "Write and optimize content with live SEO scoring from Search Console and on-page heuristics",
+      "noProperty": "Open a property audit first, or set a Site URL under Run audit → Settings.",
+      "resolvingProperty": "Loading property for this site…",
+      "openRunAuditSettings": "Open Run audit settings",
+      "loadFailed": "Could not load drafts",
+      "createFailed": "Could not create draft",
+      "saveFailed": "Could not save draft",
+      "deleteFailed": "Could not delete draft",
+      "loadingList": "Loading drafts…",
+      "loadingDraft": "Loading draft…",
+      "newDraftButton": "New draft",
+      "welcomeHeadline": "What will you write today?",
+      "welcomeSubline": "Pick a draft from the sidebar or start with a keyword below.",
+      "welcomeTitle": "Start writing",
+      "welcomeBody": "Pick a draft from the sidebar or create a new one. SEO scoring updates as you type.",
+      "suggestedStarters": [
+        { "label": "Blog post for a high-impression GSC keyword", "keyword": "blog post" },
+        { "label": "Landing page targeting a commercial term", "keyword": "landing page" },
+        { "label": "Product comparison article", "keyword": "comparison" },
+        { "label": "How-to guide for a topic cluster", "keyword": "how to" },
+        { "label": "Refresh underperforming page content", "keyword": "content refresh" },
+        { "label": "FAQ page for indexation gaps", "keyword": "faq" }
+      ],
+      "shell": {
+        "title": "Content studio",
+        "propertyLabel": "Property",
+        "noProperties": "No properties",
+        "newDraft": "New draft",
+        "draftsLabel": "Drafts",
+        "recentDrafts": "Recent drafts",
+        "loadingDrafts": "Loading…",
+        "noDrafts": "No drafts yet",
+        "untitled": "Untitled",
+        "deleteDraft": "Delete draft",
+        "navHome": "Properties",
+        "navPipeline": "Run audit",
+        "expandSidebar": "Show sidebar",
+        "collapseSidebar": "Hide sidebar"
+      },
+      "table": {
+        "empty": "No drafts yet. Create one to start writing.",
+        "colTitle": "Title",
+        "colKeyword": "Target keyword",
+        "colGrade": "Grade",
+        "colStatus": "Status",
+        "colUpdated": "Updated",
+        "colActions": "Actions",
+        "noKeyword": "—",
+        "noGrade": "—",
+        "edit": "Edit",
+        "delete": "Delete"
+      },
+      "newDraft": {
+        "title": "New content draft",
+        "targetKeyword": "Target keyword",
+        "keywordPlaceholder": "primary keyword",
+        "draftTitle": "Draft title (optional)",
+        "titlePlaceholder": "defaults to keyword",
+        "landingUrl": "Landing URL (optional)",
+        "create": "Create draft",
+        "creating": "Creating…",
+        "cancel": "Cancel",
+        "close": "Close"
+      },
+      "editor": {
+        "subtitle": "Edit content and review SEO score in the sidebar",
+        "back": "All drafts",
+        "save": "Save",
+        "saving": "Saving…",
+        "draftTitle": "Draft title",
+        "draftTitlePlaceholder": "Document title",
+        "targetKeyword": "Target keyword",
+        "landingUrl": "Landing URL",
+        "titleTag": "Title tag",
+        "metaDescription": "Meta description",
+        "showSeoFields": "Show title tag & meta",
+        "hideSeoFields": "Hide title tag & meta",
+        "body": "Body",
+        "bodyPlaceholder": "Start writing…",
+        "toolbar": {
+          "visual": "Visual",
+          "markdown": "Markdown",
+          "visualMode": "Rich text editor",
+          "markdownMode": "Edit raw Markdown (GFM)",
+          "markdownPlaceholder": "# Heading\n\nWrite in **Markdown** — tables, task lists, links, images, code blocks…",
+          "bold": "Bold",
+          "italic": "Italic",
+          "underline": "Underline",
+          "strike": "Strikethrough",
+          "code": "Inline code",
+          "heading1": "Heading 1",
+          "heading2": "Heading 2",
+          "heading3": "Heading 3",
+          "quote": "Blockquote",
+          "codeBlock": "Code block",
+          "horizontalRule": "Horizontal rule",
+          "bulletList": "Bullet list",
+          "orderedList": "Numbered list",
+          "taskList": "Task list",
+          "link": "Link",
+          "linkPrompt": "Link URL",
+          "image": "Image",
+          "imagePrompt": "Image URL",
+          "table": "Insert table",
+          "undo": "Undo",
+          "redo": "Redo"
+        }
+      },
+      "ai": {
+        "title": "AI suggestions",
+        "toggleLabel": "AI suggestions",
+        "analyzeButton": "Analyze",
+        "analyzing": "Analyzing…",
+        "analyzeFailed": "Analysis failed",
+        "clickAnalyze": "Click Analyze for SEO tips, outline ideas, and title suggestions.",
+        "disabledHint": "AI suggestions are off. Turn them on to include LLM insights when you analyze.",
+        "noSuggestions": "No suggestions yet — keep writing or adjust your keyword.",
+        "outlineTitle": "Suggested outline",
+        "titleIdeas": "Title ideas",
+        "toolsUsed": "Analysis steps"
+      },
+      "sidebar": {
+        "provenanceBanner": "Estimated — GSC terms and on-site heuristics. Not SERP competitor analysis.",
+        "noKeyword": "Enter a target keyword to see SEO scoring.",
+        "scoring": "Scoring…",
+        "wordCount": "Words",
+        "readingLevel": "Reading level",
+        "termsTitle": "Terms to cover",
+        "noTerms": "No related GSC terms found for this keyword.",
+        "checksTitle": "On-page checks",
+        "startWriting": "Start writing to see your content grade."
+      }
+    },
     "keywordsExplorer": {
       "title": "Keywords",
       "subtitle": "Keyword opportunities from crawl, Search Console, and expansion sources",
@@ -2900,7 +3154,27 @@
       "downloadCsv": "Download CSV",
       "downloadJson": "Download JSON",
       "downloadWorkbook": "Download crawl workbook (ZIP)",
-      "downloadSitemap": "Download XML sitemap"
+      "downloadSitemap": "Download XML sitemap",
+      "tabStandard": "Standard export",
+      "tabCustom": "Custom report",
+      "customTitle": "Build a custom client report",
+      "customHint": "Combine executive summary, category scores, audit tool sections, and notes. Export as HTML or PDF.",
+      "customReportTitleLabel": "Report title",
+      "customReportTitlePlaceholder": "Client audit — June 2026",
+      "customAddSection": "Add section",
+      "customSectionType": "Section type",
+      "customSectionExecutive": "Executive summary",
+      "customSectionCategories": "Category scores",
+      "customSectionTool": "Audit data (tool)",
+      "customSectionNotes": "Notes (markdown)",
+      "customToolLabel": "Tool",
+      "customNotesLabel": "Notes markdown",
+      "customNotesPlaceholder": "Optional client-facing notes…",
+      "customPreview": "Preview HTML",
+      "customDownloadHtml": "Download HTML",
+      "customDownloadPdf": "Download PDF",
+      "customSaveFailed": "Could not compose report",
+      "customMaxSections": "Maximum 12 sections"
     },
     "overview": {
       "openExportPage": "Export report",
@@ -3633,9 +3907,54 @@
       "content": "Content",
       "technical": "Technical",
       "issues": "Issues",
+      "connections": "Connections",
       "searchRetention": "Search & retention",
       "brokenMessage": "Broken / error response ({status})",
       "redirectMessage": "Redirect {status}"
+    },
+    "urlInspector": {
+      "label": "URL inspector",
+      "back": "Back",
+      "forward": "Forward",
+      "close": "Close",
+      "trailAria": "Inspected URL trail"
+    },
+    "connectionsTab": {
+      "intro": "Walk this page's link graph. Click any audited URL to dive into it — your trail appears in the header so you can step back.",
+      "inboundTitle": "Inbound links",
+      "outboundTitle": "Outbound links",
+      "inboundEmpty": "No crawled page links to this URL.",
+      "outboundEmpty": "This page has no recorded outbound links.",
+      "inboundHint": "Pages that link here, with anchor text and link count.",
+      "outboundHint": "Pages this page links to.",
+      "internalBadge": "Internal",
+      "externalBadge": "External",
+      "nofollowBadge": "nofollow",
+      "openLive": "Open live site",
+      "drillHint": "Inspect in app",
+      "noData": "Link relationship data is not available for this report.",
+      "loading": "Loading link graph…",
+      "showAll": "Show all {count}",
+      "showLess": "Show less",
+      "anchorJoin": "“{anchor}”",
+      "anchorMore": "+{count} more",
+      "insightsTitle": "Link insights",
+      "inboundShort": "Inbound",
+      "outboundShort": "Outbound",
+      "balanceTitle": "Link balance",
+      "anchorsTitle": "Top inbound anchor text",
+      "anchorsHint": "How other pages describe this page when linking to it.",
+      "noAnchors": "No inbound anchor text recorded."
+    },
+    "linkFlow": {
+      "title": "Link flow",
+      "inbound": "Inbound",
+      "outbound": "Outbound",
+      "more": "+{count} more",
+      "empty": "No connections to visualize yet.",
+      "centerHint": "Now inspecting",
+      "noInbound": "No inbound links",
+      "noOutbound": "No outbound links"
     },
     "pageImprove": {
       "coachButton": "Get AI coach",

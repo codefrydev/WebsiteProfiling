@@ -7,8 +7,11 @@ import type {
 } from '@/types';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
-import { Gauge, Globe, Play } from 'lucide-react';
+import { Gauge, Globe, Play, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import {
   canonicalDomainFromPayload,
   filterLighthouseByHost,
@@ -42,6 +45,8 @@ const EMPTY_LH: LighthousePageSummary = {};
 export default function Lighthouse({ searchQuery = '' }: ViewProps) {
   const router = useRouter();
   const { data, startUrlByRunId } = useReport();
+  useSectionData('lighthouse');
+  const lighthouseReady = useSectionsViewReady(['lighthouse']);
   const searchParams = useSearchParams();
   const detailRef = useRef<HTMLDivElement>(null);
   const pageDetailRef = useRef<HTMLDivElement>(null);
@@ -314,6 +319,10 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
       )}
     </div>
   ) : null;
+
+  if (!lighthouseReady) {
+    return <ViewSectionLoading title={vlh.pageSpeedTitle} />;
+  }
 
   if (!hasData) {
     return (

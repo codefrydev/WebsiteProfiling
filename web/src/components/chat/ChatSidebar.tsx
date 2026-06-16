@@ -9,6 +9,7 @@ import {
   Link as LinkIcon,
   MessageSquarePlus,
   PanelLeft,
+  PenLine,
   Settings,
   Terminal,
   Trash2,
@@ -50,6 +51,7 @@ const NAV_LINKS = [
   { href: '/search-performance', label: c.navGsc, icon: TrendingUp },
   { href: '/links', label: c.navLinks, icon: LinkIcon },
   { href: '/pipeline', label: c.navPipeline, icon: Terminal },
+  { href: '/write', label: strings.nav.write.label, icon: PenLine },
 ] as const;
 
 function RailButton({

@@ -2,6 +2,9 @@ import { useMemo } from 'react';
 import { Bar } from 'react-chartjs-2';
 import type { TooltipItem } from 'chart.js';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, Badge } from '../components';
@@ -16,6 +19,8 @@ registerChartJsBase();
 export default function Redirects({ searchQuery = '' }: ViewProps) {
   const vr = strings.views.redirects;
   const { data } = useReport();
+  useSectionData('issues');
+  const issuesReady = useSectionsViewReady(['issues']);
   const q = (searchQuery || '').toLowerCase().trim();
   const redirects = useMemo((): ReportRedirect[] => {
     const all = (data?.redirects || []) as ReportRedirect[];
@@ -59,7 +64,9 @@ export default function Redirects({ searchQuery = '' }: ViewProps) {
     };
   }, [statusLabels]);
 
-  if (!data) return null;
+  if (!issuesReady) {
+    return <ViewSectionLoading title={vr.title} />;
+  }
 
   return (
     <PageLayout className="space-y-6">
@@ -113,7 +120,7 @@ export default function Redirects({ searchQuery = '' }: ViewProps) {
               ))}
             </TableBody>
           </Table>
-        ) : (data.redirects || []).length > 0 ? (
+        ) : (data?.redirects || []).length > 0 ? (
           <p className="p-6 text-center text-muted-foreground">{vr.noSearchMatch}</p>
         ) : (
           <p className="p-6 text-center text-muted-foreground">{vr.noneFound}</p>

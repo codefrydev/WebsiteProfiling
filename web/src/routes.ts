@@ -10,6 +10,9 @@ export type ViewId =
   | 'lighthouse'
   | 'security'
   | 'javascript-errors'
+  | 'accessibility'
+  | 'image-seo'
+  | 'geo-readiness'
   | 'content-analytics'
   | 'text-content-analysis'
   | 'tech-stack'
@@ -22,6 +25,7 @@ export type ViewId =
   | 'backlinks'
   | 'traffic'
   | 'keywords-explorer'
+  | 'content-studio'
   | 'compare'
   | 'export'
   | 'log-analyzer';
@@ -31,6 +35,7 @@ export const REPORT_PATH_SLUGS = [
   'home',
   'dashboard',
   'keywords',
+  'content-studio',
   'issues',
   'links',
   'site-structure',
@@ -39,6 +44,9 @@ export const REPORT_PATH_SLUGS = [
   'lighthouse',
   'security',
   'javascript-errors',
+  'accessibility',
+  'image-seo',
+  'geo-readiness',
   'content-analytics',
   'text-content-analysis',
   'tech-stack',

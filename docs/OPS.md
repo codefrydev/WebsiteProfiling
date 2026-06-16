@@ -65,7 +65,24 @@ POST /api/alerts/check?propertyId={id}
 
 ### Behavior
 
-Evaluates health-score changes and stale GSC Links imports for the specified property. When `alert_webhook_url` is configured on the property, sends a POST notification to that URL.
+Evaluates health-score changes and stale GSC Links imports for the specified property. When `alert_webhook_url` is configured on the property, sends a POST notification to that URL. When `alert_email` is set and SMTP is configured on the server, sends a plain-text email summary.
+
+Response JSON includes `alerts`, `webhook_sent`, and `email_sent`.
+
+### SMTP (optional, for alert email)
+
+Set on the host running the web app (Docker: web service environment):
+
+| Variable | Required | Default | Purpose |
+|----------|----------|---------|---------|
+| `SMTP_HOST` | Yes (with `SMTP_FROM`) | — | SMTP server hostname |
+| `SMTP_FROM` | Yes (with `SMTP_HOST`) | — | From address |
+| `SMTP_PORT` | No | `587` | SMTP port |
+| `SMTP_USER` | No | — | Login user (if auth required) |
+| `SMTP_PASS` | No | — | Login password |
+| `SMTP_USE_TLS` | No | `true` | Use STARTTLS |
+
+If SMTP is not configured, alert checks still succeed; `email_sent` is `false`.
 
 ### Example
 

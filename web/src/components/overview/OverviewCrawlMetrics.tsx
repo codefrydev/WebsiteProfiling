@@ -19,6 +19,7 @@ import { strings, format } from '@/lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { crawledUrlCount } from '@/lib/crawlCounts';
 import { Card, StatCard } from '@/components';
+import CountUp from '@/components/CountUp';
 import {
   bandClassName,
   brokenSubline,
@@ -164,7 +165,7 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
             href={linksHref}
             icon={<Globe className="h-4 w-4 shrink-0" aria-hidden />}
             label={vo.totalUrls}
-            value={crawledCount.toLocaleString()}
+            value={<CountUp value={crawledCount} />}
             sub={vo.crawlPagesDiscovered}
             hint={metricHelpHint('views.overview.totalUrls')}
             fillHeight
@@ -186,7 +187,7 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
             href={linksHref}
             icon={<AlertTriangle className="h-4 w-4 shrink-0 text-red-500" aria-hidden />}
             label={vo.broken}
-            value={brokenCount.toLocaleString()}
+            value={<CountUp value={brokenCount} />}
             sub={brokenSubline(
               s.count_4xx ?? 0,
               s.count_5xx ?? 0,
@@ -206,7 +207,7 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
             href={contentHref}
             icon={<FileCode className="h-4 w-4 shrink-0 text-yellow-500" aria-hidden />}
             label={vo.missingH1s}
-            value={h1Zero.toLocaleString()}
+            value={<CountUp value={h1Zero} />}
             sub={
               h1Pct != null
                 ? format(vo.crawlMetricCountPct, { count: h1Zero.toLocaleString(), pct: `${h1Pct}%` })
@@ -231,7 +232,7 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
             href={contentAnalyticsHref}
             icon={<BookOpen className="h-4 w-4 shrink-0" aria-hidden />}
             label={vo.medianWordCount}
-            value={medianWords != null ? medianWords.toLocaleString() : sj.emDash}
+            value={medianWords != null ? <CountUp value={medianWords} /> : sj.emDash}
             sub={vo.perPage2xx}
             band={medianWords != null ? metricBandLabel(wordsBand, vo) : undefined}
             bandClassName={medianWords != null ? bandClassName(wordsBand) : undefined}
@@ -257,7 +258,7 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
             href={techHref}
             icon={<Cpu className="h-4 w-4 shrink-0 text-purple-700 dark:text-purple-400" aria-hidden />}
             label={vo.technologies}
-            value={techCount ?? sj.emDash}
+            value={techCount != null ? <CountUp value={techCount} /> : sj.emDash}
             sub={vo.techDetectedAcross}
             hint={metricHelpHint('views.overview.technologies')}
             fillHeight

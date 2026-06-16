@@ -3,10 +3,15 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { KeywordRow, KeywordReportData, ViewProps } from '@/types';
 import type { CannibalisationItem, KeywordHistoryMap, QueryPageMisalignmentItem } from '@/types/components';
-import { Key, Settings2, Play } from 'lucide-react';
+import { Key, Settings2, Play, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
+import { useTabSections } from '@/hooks/useTabSections';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
+import { KEYWORDS_EXPLORER_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { useOptionalPipeline } from '../context/PipelineContext';
 import { useKeywordBrandQuery } from '@/hooks/useKeywordBrandQuery';
 import { filterKeywordRowsForDomain } from '@/lib/filterKeywordsForDomain';
@@ -55,6 +60,8 @@ const EMPTY_HISTORY: KeywordHistoryMap = {};
 export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
   const router = useRouter();
   const { data, startUrlByRunId, selectedReportId, loadReport } = useReport();
+  useSectionData('keywords');
+  const keywordsReady = useSectionsViewReady(['keywords']);
   const pipeline = useOptionalPipeline();
   const propertyId = Number(pipeline?.configState.active_property_id || 0);
   const ke = strings.views.keywordsExplorer;
@@ -73,6 +80,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
   const brandName = String(kwData?.brand_name || deriveBrandFromUrl(startUrl) || '').trim();
 
   const [activeTab, setActiveTab] = useUrlTab(KEYWORD_TABS, 'overview');
+  useTabSections(KEYWORDS_EXPLORER_TAB_SECTIONS, true);
   const [intentFilter, setIntentFilter] = useState('');
   const [brandedFilter, setBrandedFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
@@ -297,6 +305,10 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
       />
     );
   }, [activeTab, tableRows.length, hasActiveFilters, tabBaseCount, ke, clearFilters]);
+
+  if (!keywordsReady) {
+    return <ViewSectionLoading title={ke.title} />;
+  }
 
   if (!kwData || rows.length === 0) {
     return (

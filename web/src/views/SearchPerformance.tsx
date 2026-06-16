@@ -4,8 +4,13 @@ import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import type { GscPageRow, UrlJoinData } from '@/types';
 import type { TableColumn } from '@/types/components';
-import { TrendingUp, Search, AlertCircle, Settings2, Download } from 'lucide-react';
+import { TrendingUp, Search, AlertCircle, Settings2, Download, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
+import { useTabSections } from '@/hooks/useTabSections';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
+import { SEARCH_PERFORMANCE_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs } from '../components';
@@ -53,9 +58,12 @@ function PositionBadge({ pos }: { pos?: number | string | null }) {
 
 export default function SearchPerformance() {
   const { data } = useReport();
+  useSectionData('traffic');
+  const trafficReady = useSectionsViewReady(['traffic']);
   const sp = strings.views.searchPerformance;
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useUrlTab(TABS, 'overview');
+  useTabSections(SEARCH_PERFORMANCE_TAB_SECTIONS, true);
   const [querySearch, setQuerySearch] = useState('');
   const [pageSearch, setPageSearch] = useState('');
 
@@ -219,6 +227,9 @@ export default function SearchPerformance() {
   ) : null;
 
   if (!google) {
+    if (!trafficReady) {
+      return <ViewSectionLoading title={sp.title} />;
+    }
     return (
       <PageLayout className="space-y-6">
         <div className="max-w-md mx-auto text-center py-16">

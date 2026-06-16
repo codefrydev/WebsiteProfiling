@@ -3,6 +3,9 @@ import { Bar, Doughnut } from 'react-chartjs-2';
 import type { TooltipItem } from 'chart.js';
 import { AlertTriangle, AlertCircle, Info, ExternalLink, Flame, BarChart2, ListChecks } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { useOptionalPipeline } from '../context/PipelineContext';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Badge, ViewTabs, ViewTabPanel, Button, LabelWithHint } from '../components';
@@ -101,6 +104,9 @@ function IssueCard({ item, vi, emDash }: IssueCardProps) {
 
 export default function Issues({ searchQuery = '' }: ViewProps) {
   const { data, selectedReportId } = useReport();
+  useSectionData('issues');
+  useSectionData('traffic');
+  const issuesReady = useSectionsViewReady(['issues']);
   const pipeline = useOptionalPipeline();
   const propertyId = Number(pipeline?.configState.active_property_id || 0) || null;
   const vi = strings.views.issues;
@@ -269,7 +275,9 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
     };
   }, [vi, categoryChartLabels]);
 
-  if (!data) return null;
+  if (!issuesReady) {
+    return <ViewSectionLoading title={vi.title} />;
+  }
 
   const showCharts = list.length > 0 && forCharts.length > 0;
   const subtitle = `${vi.subtitlePrefix} ${format(vi.subtitleTotal, {

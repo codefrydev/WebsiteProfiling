@@ -1,6 +1,9 @@
 import type { Chart, TooltipItem } from 'chart.js';
 import { useState, useMemo } from 'react';
 import { useUrlTab } from '@/hooks/useUrlTab';
+import { useTabSections } from '@/hooks/useTabSections';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
+import { shouldBlockViewForSections } from '@/lib/reportViewSections';
 import type {
   ContentAnalyticsData,
   ContentUrlsMap,
@@ -281,6 +284,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
   const ch = strings.charts;
   const { data } = useReport();
   const [activeTab, setActiveTab] = useUrlTab(CONTENT_ANALYTICS_TABS, 'summary');
+  const sectionStatus = useTabSections(['content', 'indexation'], true);
   const q = (searchQuery || '').toLowerCase().trim();
 
   const thinPages = useMemo((): ThinPageEntry[] => {
@@ -366,18 +370,20 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
     [data?.semantic_keyword_clusters],
   );
 
-  if (!data) return null;
+  if (shouldBlockViewForSections(['content', 'indexation'], sectionStatus, data)) {
+    return <ViewSectionLoading title={vca.title} />;
+  }
 
-  const summary: ReportSummary = data.summary ?? EMPTY_SUMMARY;
+  const summary: ReportSummary = data?.summary ?? EMPTY_SUMMARY;
   const crawledCount = crawledUrlCount(data);
-  const rtStats: ResponseTimeStats = data.response_time_stats ?? EMPTY_RT;
+  const rtStats: ResponseTimeStats = data?.response_time_stats ?? EMPTY_RT;
   const rtDist = rtStats.distribution || {};
-  const contentUrls: ContentUrlsMap = data.content_urls ?? EMPTY_CONTENT_URLS;
+  const contentUrls: ContentUrlsMap = data?.content_urls ?? EMPTY_CONTENT_URLS;
 
-  const ca: ContentAnalyticsData = data.content_analytics ?? EMPTY_CA;
-  const sc: SocialCoverageStats = data.social_coverage ?? EMPTY_SC;
-  const seoHealth: SeoHealthStats = data.seo_health ?? EMPTY_SEO;
-  const depthDist: DepthDistribution = data.depth_distribution ?? EMPTY_DEPTH;
+  const ca: ContentAnalyticsData = data?.content_analytics ?? EMPTY_CA;
+  const sc: SocialCoverageStats = data?.social_coverage ?? EMPTY_SC;
+  const seoHealth: SeoHealthStats = data?.seo_health ?? EMPTY_SEO;
+  const depthDist: DepthDistribution = data?.depth_distribution ?? EMPTY_DEPTH;
   const wcStats = ca.word_count_stats || {};
   const wcDist = ca.word_count_distribution || {};
   const rlDist = ca.reading_level_distribution || {};
@@ -498,8 +504,8 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
   const wcPercValues = wcPercRaw.map((v) => (v != null && !Number.isNaN(Number(v)) ? Number(v) : null));
   const hasWcPercBar = wcPercValues.every((v) => v != null) && (wcStats.max ?? 0) > 0;
 
-  const hreflang = data.hreflang_summary;
-  const outboundDomains = data.outbound_link_domains ?? [];
+  const hreflang = data?.hreflang_summary;
+  const outboundDomains = data?.outbound_link_domains ?? [];
 
   return (
     <PageLayout className="space-y-6">

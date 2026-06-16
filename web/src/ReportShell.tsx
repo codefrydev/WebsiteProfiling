@@ -13,6 +13,8 @@ import {
   FileText,
   ShieldAlert,
   Bug,
+  Accessibility,
+  Image,
   Gauge,
   Share2,
   BarChart2,
@@ -29,6 +31,7 @@ import {
   Globe2,
   Contact2,
   TextSearch,
+  PenLine,
 } from 'lucide-react';
 import { UrlInspectorProvider } from './context/UrlInspectorContext';
 import AppShell from './components/AppShell';
@@ -39,6 +42,8 @@ import { pathSlugToViewId, viewIdToPathSlug, type ViewId } from './routes';
 import { dispatchOpenIntegrations } from './lib/pipelineJobEvents';
 import ReportShellSkeleton from './components/ReportShellSkeleton';
 import { ReportProvider as ReportProviderBase } from './context/ReportContext';
+import { PortfolioProvider } from './context/PortfolioContext';
+import ViewSectionLoader from './components/ViewSectionLoader';
 import type { ReportPayload } from '@/types';
 function viewLoading(label = 'Loading view…') {
   return (
@@ -60,6 +65,9 @@ const Redirects = dynamic(() => import('./views/Redirects'), { loading: () => vi
 const Content = dynamic(() => import('./views/Content'), { loading: () => viewLoading() });
 const Security = dynamic(() => import('./views/Security'), { loading: () => viewLoading() });
 const JavaScriptErrors = dynamic(() => import('./views/JavaScriptErrors'), { loading: () => viewLoading() });
+const AccessibilityView = dynamic(() => import('./views/Accessibility'), { loading: () => viewLoading() });
+const ImageSeo = dynamic(() => import('./views/ImageSeo'), { loading: () => viewLoading() });
+const GeoReadiness = dynamic(() => import('./views/GeoReadiness'), { loading: () => viewLoading() });
 const Lighthouse = dynamic(() => import('./views/Lighthouse'), { loading: () => viewLoading() });
 const Network = dynamic(() => import('./views/Network'), {
   ssr: false,
@@ -74,6 +82,7 @@ const Indexation = dynamic(() => import('./views/Indexation'), { loading: () => 
 const Backlinks = dynamic(() => import('./views/Backlinks'), { loading: () => viewLoading() });
 const Traffic = dynamic(() => import('./views/Traffic'), { loading: () => viewLoading() });
 const KeywordsExplorer = dynamic(() => import('./views/KeywordsExplorer'), { loading: () => viewLoading() });
+const ContentStudio = dynamic(() => import('./views/ContentStudio'), { loading: () => viewLoading() });
 const ExportReport = dynamic(() => import('./views/ExportReport'), { loading: () => viewLoading() });
 const LogAnalyzer = dynamic(() => import('./views/LogAnalyzer'), { loading: () => viewLoading() });
 const Subdomains = dynamic(() => import('./views/Subdomains'), { loading: () => viewLoading() });
@@ -122,6 +131,9 @@ const VIEW_CONFIG: ViewConfigEntry[] = [
   { id: 'lighthouse', component: Lighthouse as ComponentType<CurrentViewProps>, icon: Gauge },
   { id: 'security', component: Security as ComponentType<CurrentViewProps>, icon: ShieldAlert },
   { id: 'javascript-errors', component: JavaScriptErrors as ComponentType<CurrentViewProps>, icon: Bug },
+  { id: 'accessibility', component: AccessibilityView as ComponentType<CurrentViewProps>, icon: Accessibility },
+  { id: 'image-seo', component: ImageSeo as ComponentType<CurrentViewProps>, icon: Image },
+  { id: 'geo-readiness', component: GeoReadiness as ComponentType<CurrentViewProps>, icon: Globe2 },
   { id: 'content-analytics', component: ContentAnalytics as ComponentType<CurrentViewProps>, icon: BarChart2 },
   { id: 'text-content-analysis', component: TextContentAnalysis as ComponentType<CurrentViewProps>, icon: TextSearch },
   { id: 'tech-stack', component: TechStack as ComponentType<CurrentViewProps>, icon: Cpu },
@@ -134,6 +146,7 @@ const VIEW_CONFIG: ViewConfigEntry[] = [
   { id: 'backlinks', component: Backlinks as ComponentType<CurrentViewProps>, icon: Link2 },
   { id: 'traffic', component: Traffic as ComponentType<CurrentViewProps>, icon: BarChart2 },
   { id: 'keywords-explorer', component: KeywordsExplorer as ComponentType<CurrentViewProps>, icon: Key },
+  { id: 'content-studio', component: ContentStudio as ComponentType<CurrentViewProps>, icon: PenLine },
 ];
 
 const VIEWS = VIEW_CONFIG.map((v) => ({
@@ -182,7 +195,7 @@ function AppContent({ slug }: SlugProps): ReactNode {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
-  const { loading, error, setSelectedReportId } = useReport() as ReportShellReportContext;
+  const { loading, error, data, setSelectedReportId } = useReport() as ReportShellReportContext;
 
   const view = pathSlugToViewId(slug ?? '');
 
@@ -214,8 +227,8 @@ function AppContent({ slug }: SlugProps): ReactNode {
   const showSidebar = view !== 'home';
   const showSearch = showSidebar && view !== 'export';
 
-  if (loading) {
-    return <ReportShellSkeleton variant={view === 'home' ? 'home' : 'dashboard'} />;
+  if (loading && view !== 'home' && !data) {
+    return <ReportShellSkeleton variant="dashboard" />;
   }
 
   if (error && view !== 'home') {
@@ -250,11 +263,21 @@ function AppContent({ slug }: SlugProps): ReactNode {
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
     >
-      <CurrentView
-        searchQuery={searchQuery}
-        onNavigate={selectView}
-        onOpenIntegrations={dispatchOpenIntegrations}
-      />
+      {view === 'home' ? (
+        <PortfolioProvider>
+          <CurrentView
+            searchQuery={searchQuery}
+            onNavigate={selectView}
+            onOpenIntegrations={dispatchOpenIntegrations}
+          />
+        </PortfolioProvider>
+      ) : (
+        <CurrentView
+          searchQuery={searchQuery}
+          onNavigate={selectView}
+          onOpenIntegrations={dispatchOpenIntegrations}
+        />
+      )}
     </AppShell>
   );
 }
@@ -263,6 +286,7 @@ function RoutedShell({ slug }: SlugProps): ReactNode {
   return (
     <>
       <BrandUrlSync slug={slug} />
+      <ViewSectionLoader slug={slug} />
       <AppContent slug={slug} />
     </>
   );

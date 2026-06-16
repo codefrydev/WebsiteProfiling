@@ -5,9 +5,14 @@ import { Loader2, Save, X } from 'lucide-react';
 import { strings, format } from '@/lib/strings';
 import type { IntegrationToast, PipelineUnknownKey } from '@/types/api';
 import { crawlRenderModeUsesBrowser } from '@/lib/browserCrawlStatus';
-import { PIPELINE_CONFIG_SECTIONS, isPipelineFieldVisible } from '@/lib/pipelineConfigSchema';
+import {
+  PIPELINE_CONFIG_SECTIONS,
+  isPipelineFieldVisible,
+  partitionFieldsByTier,
+} from '@/lib/pipelineConfigSchema';
 import { LLM_CONFIG_SECTIONS, isLlmFieldVisible } from '@/lib/llmConfigSchema';
 import OllamaModelPicker from '@/components/pipeline/OllamaModelPicker';
+import SectionFieldLayout from './SectionFieldLayout';
 import { usePipeline } from '@/context/PipelineContext';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import Button from '@/components/Button';
@@ -47,21 +52,24 @@ function ConfigSectionFields({
   fieldFilter?: (key: string) => boolean;
   extra?: ReactNode;
 }) {
+  const visible = section.fields
+    .filter((f) => isPipelineFieldVisible(f, values))
+    .filter((f) => (fieldFilter ? fieldFilter(f.key) : true));
+  const { basic, advanced } = partitionFieldsByTier(visible);
+  const intro = (s.sectionIntros as Record<string, string>)[section.id];
+
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      {section.fields
-        .filter((f) => isPipelineFieldVisible(f, values))
-        .filter((f) => (fieldFilter ? fieldFilter(f.key) : true))
-        .map((f) => (
-          <ConfigField
-            key={f.key}
-            field={f}
-            value={values[f.key]}
-            disabled={disabled}
-            onChange={(v) => onChange(f.key, v)}
-          />
-        ))}
-      {extra}
+    <div className="space-y-4">
+      {intro ? <p className="text-xs leading-relaxed text-muted-foreground">{intro}</p> : null}
+      <SectionFieldLayout
+        section={section}
+        basicFields={basic}
+        advancedFields={advanced}
+        values={values}
+        disabled={disabled}
+        onChange={onChange}
+        extra={extra}
+      />
     </div>
   );
 }

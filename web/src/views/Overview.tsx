@@ -2,6 +2,7 @@ import { Globe, CheckCircle, TrendingUp, BarChart3 } from 'lucide-react';
 import { useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
+import { useTabSections } from '@/hooks/useTabSections';
 import { useReport } from '../context/useReport';
 import {
   canonicalDomainFromPayload,
@@ -13,6 +14,8 @@ import { PageLayout, PageHeader, ViewTabs } from '../components';
 import type { ViewTabItem } from '../components';
 import type { ReportCategory, ViewProps } from '@/types';
 import CrawlScopeBanner from '../components/CrawlScopeBanner';
+import { OverviewHeaderSkeleton } from '@/components/ViewSectionLoading';
+import { OVERVIEW_TAB_SECTIONS, isSectionPending } from '@/lib/reportViewSections';
 import { viewIdToPathSlug } from '@/routes';
 import {
   type OverviewTabId,
@@ -25,9 +28,11 @@ import {
 } from '../components/overview';
 
 export default function Overview({ searchQuery = '' }: ViewProps) {
-  const { data, reportList, startUrlByRunId } = useReport();
+  const { data, reportList, startUrlByRunId, sectionStatus } = useReport();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useUrlTab(OVERVIEW_TABS, 'summary');
+  useTabSections(OVERVIEW_TAB_SECTIONS[activeTab], Boolean(data));
+  const chartsSectionsPending = isSectionPending(OVERVIEW_TAB_SECTIONS.charts, sectionStatus);
   const vo = strings.views.overview;
   const q = (searchQuery || '').toLowerCase().trim();
 
@@ -73,7 +78,13 @@ export default function Overview({ searchQuery = '' }: ViewProps) {
     const catCount = data?.categories?.length ?? 0;
     const pageCount = data?.top_pages?.length ?? 0;
     const chartsBadge =
-      charts.concernCount > 0 ? charts.concernCount : charts.chartCount > 0 ? charts.chartCount : null;
+      !chartsSectionsPending
+        ? charts.concernCount > 0
+          ? charts.concernCount
+          : charts.chartCount > 0
+            ? charts.chartCount
+            : null
+        : null;
     return [
       { id: 'summary', label: vo.tabs.summary, icon: <Globe className="h-3.5 w-3.5 shrink-0" aria-hidden /> },
       {
@@ -95,9 +106,15 @@ export default function Overview({ searchQuery = '' }: ViewProps) {
         badge: pageCount > 0 ? pageCount : null,
       },
     ];
-  }, [vo.tabs, charts.concernCount, charts.chartCount, data?.categories?.length, data?.top_pages?.length]);
+  }, [vo.tabs, charts.concernCount, charts.chartCount, data?.categories?.length, data?.top_pages?.length, chartsSectionsPending]);
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <PageLayout className="space-y-6">
+        <OverviewHeaderSkeleton />
+      </PageLayout>
+    );
+  }
 
   const s = data.summary || {};
   const siteName = data.site_name || strings.app.defaultSiteName;

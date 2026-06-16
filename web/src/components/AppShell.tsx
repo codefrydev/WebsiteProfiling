@@ -9,13 +9,11 @@ import {
   ExternalLink,
   Menu,
   Search,
-  Settings2,
   X,
 } from 'lucide-react';
 import AppLogo from '@/components/AppLogo';
 import IntegrationsModal from '@/components/IntegrationsModal';
-import { Badge, ReportSelector } from '@/components';
-import ThemeToggle from '@/components/ThemeToggle';
+import { Badge, Breadcrumb, ReportSelector } from '@/components';
 import { useReport } from '@/context/useReport';
 import { useSession } from '@/context/SessionContext';
 import { strings, format } from '@/lib/strings';
@@ -142,11 +140,6 @@ export default function AppShell({
     return () => window.removeEventListener(OPEN_INTEGRATIONS, onOpen);
   }, []);
 
-  const openIntegrations = () => {
-    setIntegrationsToast(null);
-    setIntegrationsOpen(true);
-  };
-
   const issueCount =
     (data?.categories as ReportCategoryWithIssues[] | undefined)?.reduce(
       (n: number, c: ReportCategoryWithIssues) => n + (c.issues?.length ?? 0),
@@ -169,6 +162,8 @@ export default function AppShell({
     crawlSummary?.crawl_time_s != null
       ? format(strings.app.crawlCompletedSeconds, { seconds: crawlSummary.crawl_time_s })
       : strings.app.crawlCompleted;
+
+  const activeNavItem = APP_NAV_ITEMS.find((item) => isNavItemActive(item, pathname));
 
   return (
     <div className={`min-h-screen bg-brand-900 text-foreground overflow-hidden ${showSidebar ? 'flex' : 'block'}`}>
@@ -247,12 +242,18 @@ export default function AppShell({
                       key={item.id}
                       href={href}
                       onClick={closeSidebar}
-                      title={sidebarCollapsed ? item.label : undefined}
+                      title={
+                        sidebarCollapsed
+                          ? item.description
+                            ? `${item.label} — ${item.description}`
+                            : item.label
+                          : undefined
+                      }
                       aria-label={sidebarCollapsed ? item.label : undefined}
                       className={`nav-btn press relative w-full flex items-center rounded-lg text-sm font-medium transition-all ${
                         sidebarCollapsed
                           ? 'gap-3 px-3 py-2.5 md:justify-center md:gap-0 md:px-0 md:py-2.5'
-                          : 'gap-3 px-3 py-2.5'
+                          : 'gap-3 px-3 py-2'
                       } ${
                         isActive
                           ? 'tab-active bg-blue-500/10 border border-blue-500/25 text-link'
@@ -266,8 +267,19 @@ export default function AppShell({
                         />
                       ) : null}
                       <Icon className="h-4 w-4 shrink-0" />
-                      <span className={`flex-1 text-left ${sidebarCollapsed ? 'md:hidden' : ''}`}>
-                        {item.label}
+                      <span
+                        className={`flex min-w-0 flex-1 flex-col text-left ${sidebarCollapsed ? 'md:hidden' : ''}`}
+                      >
+                        <span className="truncate leading-tight">{item.label}</span>
+                        {item.description ? (
+                          <span
+                            className={`truncate text-[11px] font-normal leading-tight ${
+                              isActive ? 'text-link/70' : 'text-muted-foreground'
+                            }`}
+                          >
+                            {item.description}
+                          </span>
+                        ) : null}
                       </span>
                       {badgeCount > 0 && !sidebarCollapsed ? (
                         <Badge
@@ -366,6 +378,15 @@ export default function AppShell({
                 {sidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
               </button>
             </div>
+            {activeNavItem ? (
+              <Breadcrumb
+                items={[
+                  { label: activeNavItem.section },
+                  { label: activeNavItem.label, icon: activeNavItem.icon },
+                ]}
+                className="hidden min-w-0 shrink lg:flex"
+              />
+            ) : null}
             {showSearch && onSearchChange ? (
               <div className="min-w-0 relative flex-1 max-w-xl">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -382,16 +403,6 @@ export default function AppShell({
             )}
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">
               {headerExtra}
-              <button
-                type="button"
-                title="Integrations (Search Console & Analytics 4)"
-                aria-label="Open Integrations"
-                onClick={openIntegrations}
-                className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-brand-700 transition-colors"
-              >
-                <Settings2 className="h-4 w-4" />
-              </button>
-              <ThemeToggle />
               <ReportSelector />
             </div>
           </header>

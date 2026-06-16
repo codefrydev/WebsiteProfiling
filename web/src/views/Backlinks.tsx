@@ -2,10 +2,15 @@
 
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link2, Settings2 } from 'lucide-react';
+import { Link2, Settings2, Loader2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
+import { useTabSections } from '@/hooks/useTabSections';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
+import { BACKLINKS_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { useOptionalPipeline } from '../context/PipelineContext';
 import { apiUrl } from '../lib/publicBase';
 import { strings, format } from '../lib/strings';
@@ -35,6 +40,8 @@ export default function Backlinks(_props: ViewProps) {
   const vb = strings.views.backlinks;
   const searchParams = useSearchParams();
   const { data, loadReport } = useReport();
+  useSectionData('gsc-links');
+  const gscLinksReady = useSectionsViewReady(['gsc-links']);
   const pipeline = useOptionalPipeline();
   const propertyId = Number(pipeline?.configState.active_property_id || 0);
   const gscLinks = data?.gsc_links;
@@ -71,6 +78,7 @@ export default function Backlinks(_props: ViewProps) {
   };
 
   const [activeTab, setActiveTab] = useUrlTab(TABS, 'overview');
+  useTabSections(BACKLINKS_TAB_SECTIONS, true);
   const [domainSearch, setDomainSearch] = useState('');
   const [pageSearch, setPageSearch] = useState('');
   const [anchorSearch, setAnchorSearch] = useState('');
@@ -242,6 +250,9 @@ export default function Backlinks(_props: ViewProps) {
   );
 
   if (!gscLinks?.export_types?.length) {
+    if (!gscLinksReady) {
+      return <ViewSectionLoading title={vb.title} />;
+    }
     return (
       <PageLayout className="space-y-6">
         <EmptyState

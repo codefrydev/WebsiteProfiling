@@ -29,7 +29,7 @@ export default function ViewTabs({
 }: ViewTabsProps) {
   return (
     <div
-      className={`flex gap-1 w-full max-w-full min-w-0 overflow-x-auto flex-wrap sm:flex-nowrap touch-pan-x overscroll-x-contain pb-1 ${className}`.trim()}
+      className={`flex gap-1 w-full max-w-full min-w-0 overflow-x-auto flex-nowrap touch-pan-x overscroll-x-contain pb-1 ${className}`.trim()}
       role="tablist"
       aria-label={ariaLabel}
     >

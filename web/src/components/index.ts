@@ -11,6 +11,8 @@ export { default as HelpHint, normalizeHintContent, LabelWithHint, ChartTitleWit
 export type { HelpHintProps, HelpHintContent } from './HelpHint';
 export { default as ChartCard } from './ChartCard';
 export { default as SectionHeader } from './SectionHeader';
+export { default as Breadcrumb } from './Breadcrumb';
+export type { BreadcrumbItem, BreadcrumbProps } from './Breadcrumb';
 export { default as Select, SELECT_CLASS } from './Select';
 export { default as ViewTabs } from './ViewTabs';
 export type { ViewTabItem } from './ViewTabs';

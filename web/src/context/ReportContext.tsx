@@ -22,6 +22,7 @@ import { buildReportCompareSummary } from '../lib/reportCompare';
 import { strings } from '../lib/strings';
 import { reportApi } from '../lib/publicBase';
 import type { ReportContextValue } from './reportContextTypes';
+import { SECTION_KEYS, type SectionKey } from '../lib/reportSections';
 import type {
   CrawlRunRow,
   ReportListRow,
@@ -46,6 +47,10 @@ interface CompareApiResponse {
 
 function viewNeedsFullComparePayload(pathname: string): boolean {
   return pathname.includes('compare') || pathname.includes('site-structure');
+}
+
+function isHomeRoute(pathname: string): boolean {
+  return pathname === '/home';
 }
 
 interface MetaApiResponse extends Partial<ReportMetaResponse> {
@@ -124,6 +129,15 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
   const compareSummaryKeyRef = useRef<string>('');
   const domainSlugRef = useRef(domainSlug);
   domainSlugRef.current = domainSlug;
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
+
+  const [sectionStatus, setSectionStatus] = useState<
+    Partial<Record<SectionKey, 'loading' | 'loaded' | 'error'>>
+  >({});
+  const inFlightSectionsRef = useRef(new Set<SectionKey>());
+  const sectionCacheKeyRef = useRef<string>('');
+  const loadedPayloadKeyRef = useRef<string | null>(null);
 
   const { startUrlByRunId } = useMemo(() => crawlMaps(crawlRuns), [crawlRuns]);
 
@@ -137,8 +151,64 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     return scopedList;
   }, [domainSlug, reportListFull, scopedList]);
 
+  const loadSection = useCallback(async (section: SectionKey, reportId: number | null) => {
+    if (inFlightSectionsRef.current.has(section)) return;
+    inFlightSectionsRef.current.add(section);
+    setSectionStatus((prev) => {
+      if (prev[section] === 'loaded') return prev;
+      return { ...prev, [section]: 'loading' };
+    });
+    const cacheKeySnapshot = sectionCacheKeyRef.current;
+    try {
+      const scoped = domainSlugRef.current;
+      const domainQ =
+        scoped != null && scoped !== '' ? `&domain=${encodeURIComponent(scoped)}` : '';
+      const url =
+        reportId != null
+          ? reportApi(
+              `/payload?reportId=${encodeURIComponent(String(reportId))}&section=${section}${domainQ}`,
+            )
+          : reportApi(
+              scoped
+                ? `/payload?domain=${encodeURIComponent(scoped)}&section=${section}`
+                : `/payload?section=${section}`,
+            );
+      const res = await fetch(url);
+      const body = (await res.json().catch(() => ({}))) as {
+        payload?: Partial<ReportPayload>;
+        error?: string;
+      };
+      if (!res.ok) throw new Error(body.error || res.statusText);
+      if (sectionCacheKeyRef.current !== cacheKeySnapshot) {
+        setSectionStatus((prev) => {
+          if (prev[section] !== 'loading') return prev;
+          const next = { ...prev };
+          delete next[section];
+          return next;
+        });
+        return;
+      }
+      const slice = sanitizePayloadForDomain(
+        body.payload as ReportPayload | null,
+        domainSlugRef.current,
+      );
+      if (slice) {
+        setData((prev) => (prev == null ? (slice as ReportPayload) : { ...prev, ...slice }));
+      }
+      setSectionStatus((prev) => ({ ...prev, [section]: 'loaded' }));
+    } catch {
+      setSectionStatus((prev) => ({ ...prev, [section]: 'error' }));
+    } finally {
+      inFlightSectionsRef.current.delete(section);
+    }
+  }, []); // all dependencies are stable refs or stable setters
+
   const applyPayload = useCallback(async (reportId: number | null) => {
     const scoped = domainSlugRef.current;
+    // Reset section cache for the new report
+    inFlightSectionsRef.current = new Set();
+    sectionCacheKeyRef.current = `${reportId ?? 'latest'}:${scoped ?? ''}`;
+    setSectionStatus({});
     setLoading(true);
     setError(null);
     try {
@@ -148,12 +218,20 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
           : '';
       const url =
         reportId != null
-          ? reportApi(`/payload?reportId=${encodeURIComponent(String(reportId))}${domainQ}`)
-          : reportApi(scoped ? `/payload?domain=${encodeURIComponent(scoped)}` : '/payload');
+          ? reportApi(
+              `/payload?reportId=${encodeURIComponent(String(reportId))}&section=core${domainQ}`,
+            )
+          : reportApi(
+              scoped
+                ? `/payload?domain=${encodeURIComponent(scoped)}&section=core`
+                : '/payload?section=core',
+            );
       const res = await fetch(url);
       const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
       if (!res.ok) throw new Error(body.error || res.statusText);
-      setData(sanitizePayloadForDomain(body.payload ?? null, scoped));
+      const coreData = sanitizePayloadForDomain(body.payload ?? null, scoped);
+      setData((prev) => (prev == null ? coreData : { ...prev, ...(coreData ?? {}) }));
+      setSectionStatus((prev) => ({ ...prev, core: 'loaded' }));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       const allowGlobalFallback =
@@ -165,12 +243,14 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
         try {
           const res = await fetch(
             scoped
-              ? reportApi(`/payload?domain=${encodeURIComponent(scoped)}`)
-              : reportApi('/payload'),
+              ? reportApi(`/payload?domain=${encodeURIComponent(scoped)}&section=core`)
+              : reportApi('/payload?section=core'),
           );
           const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
           if (!res.ok) throw new Error(body.error || res.statusText);
-          setData(sanitizePayloadForDomain(body.payload ?? null, scoped));
+          const coreData = sanitizePayloadForDomain(body.payload ?? null, scoped);
+          setData((prev) => (prev == null ? coreData : { ...prev, ...(coreData ?? {}) }));
+          setSectionStatus((prev) => ({ ...prev, core: 'loaded' }));
         } catch (e2) {
           setError(e2 instanceof Error ? e2.message : String(e2));
         }
@@ -180,7 +260,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadSection]);
 
   const refreshReports = useCallback(async () => {
     const scoped = domainSlugRef.current;
@@ -200,6 +280,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
 
       if (reps.length === 0) {
         setData(null);
+        loadedPayloadKeyRef.current = null;
         setError((prev) => (
           prev === 'No report_payload in DB' || prev === strings.app.noReportForDomain ? null : prev
         ));
@@ -211,6 +292,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       if (scoped && list.length === 0) {
         setError(strings.app.noReportForDomain);
         setData(null);
+        loadedPayloadKeyRef.current = null;
         setLoading(false);
         return;
       }
@@ -221,6 +303,11 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       if (latestId != null) {
         setSelectedReportId(latestId);
       }
+      if (isHomeRoute(pathnameRef.current)) {
+        setLoading(false);
+        return;
+      }
+      loadedPayloadKeyRef.current = `${latestId ?? 'null'}:${scoped ?? ''}`;
       await applyPayload(latestId);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -234,6 +321,10 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     if (crawlRunId == null || !Number.isFinite(Number(crawlRunId))) return false;
     setLoading(true);
     setError(null);
+    inFlightSectionsRef.current = new Set();
+    sectionCacheKeyRef.current = `crawl:${crawlRunId}`;
+    loadedPayloadKeyRef.current = `crawl:${crawlRunId}`;
+    setSectionStatus({});
     try {
       const res = await fetch(
         reportApi(`/crawl-payload?crawlRunId=${encodeURIComponent(String(crawlRunId))}`),
@@ -247,6 +338,8 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       setCompareData(null);
       setCompareSummary(null);
       setServerReportDiff(null);
+      // Crawl preview provides core + links fields inline
+      setSectionStatus({ core: 'loaded', links: 'loaded' });
       return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -299,9 +392,15 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       return;
     }
 
+    if (isHomeRoute(pathname)) {
+      setLoading(false);
+      return;
+    }
+
     if (domainSlug && scopedList.length === 0) {
       setError(strings.app.noReportForDomain);
       setData(null);
+      loadedPayloadKeyRef.current = null;
       setLoading(false);
       return;
     }
@@ -318,12 +417,26 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
         return;
       }
     }
+    const payloadKey = `${id ?? 'null'}:${domainSlug ?? ''}`;
+    if (loadedPayloadKeyRef.current === payloadKey) {
+      return;
+    }
+    loadedPayloadKeyRef.current = payloadKey;
     if (id == null) {
       applyPayload(null);
       return;
     }
     applyPayload(id);
-  }, [reportListFull, crawlRuns, domainSlug, scopedList, selectedReportId, applyPayload, crawlPreviewRunId]);
+  }, [
+    reportListFull,
+    crawlRuns,
+    domainSlug,
+    scopedList,
+    selectedReportId,
+    applyPayload,
+    crawlPreviewRunId,
+    pathname,
+  ]);
 
   const setSelectedReportIdWrapped = useCallback((id: number | null) => {
     setCrawlPreviewRunId(null);
@@ -488,6 +601,8 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       crawlRuns,
       startUrlByRunId,
       domainSlug: domainSlug ?? null,
+      sectionStatus,
+      loadSection,
     }),
     [
       data,
@@ -508,6 +623,8 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       crawlRuns,
       startUrlByRunId,
       domainSlug,
+      sectionStatus,
+      loadSection,
     ],
   );
 

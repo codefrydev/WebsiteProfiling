@@ -3,6 +3,9 @@
 import { useMemo } from 'react';
 import { Contact2, ExternalLink } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import {
@@ -109,6 +112,8 @@ function ContactSectionTable({
 
 export default function Contacts({ searchQuery = '' }: ViewProps) {
   const { data } = useReport();
+  useSectionData('tech');
+  const techReady = useSectionsViewReady(['tech']);
   const vc = strings.views.contacts;
   const intel = data?.contact_intelligence;
   const q = (searchQuery || '').toLowerCase().trim();
@@ -128,6 +133,10 @@ export default function Contacts({ searchQuery = '' }: ViewProps) {
     (intel?.phones?.length ?? 0) +
     (intel?.addresses?.length ?? 0) +
     (intel?.organization_names?.length ?? 0);
+
+  if (!techReady) {
+    return <ViewSectionLoading title={vc.title} />;
+  }
 
   if (!intel || totalSignals === 0) {
     return (

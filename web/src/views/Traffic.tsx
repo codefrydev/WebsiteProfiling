@@ -4,8 +4,13 @@ import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import type { Ga4PageRow, UrlJoinData } from '@/types';
 import type { TableColumn } from '@/types/components';
-import { Users, AlertCircle, Settings2, Download } from 'lucide-react';
+import { Users, AlertCircle, Settings2, Download, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
+import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
+import { useTabSections } from '@/hooks/useTabSections';
+import { ViewSectionLoading } from '@/components/ViewSectionLoading';
+import { TRAFFIC_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs, EmptyState } from '../components';
@@ -52,10 +57,13 @@ function EngagementBadge({ rate }: { rate?: number | null }) {
 
 export default function Traffic() {
   const { data } = useReport();
+  useSectionData('traffic');
+  const trafficReady = useSectionsViewReady(['traffic']);
   const tf = strings.views.traffic;
   const sp = strings.views.searchPerformance;
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useUrlTab(TABS, 'overview');
+  useTabSections(TRAFFIC_TAB_SECTIONS, true);
   const [pathSearch, setPathSearch] = useState('');
 
   useEffect(() => {
@@ -183,6 +191,9 @@ export default function Traffic() {
   ) : null;
 
   if (!google) {
+    if (!trafficReady) {
+      return <ViewSectionLoading title={tf.title} />;
+    }
     return (
       <PageLayout className="space-y-6">
         <EmptyState

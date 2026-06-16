@@ -7,20 +7,27 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  FileText,
+  Gauge,
   Globe,
   Loader2,
   Play,
+  ScanSearch,
   Terminal,
 } from 'lucide-react';
 import { strings } from '@/lib/strings';
 import Button from '@/components/Button';
 import Card from '@/components/Card';
+import AlertBanner from '@/components/AlertBanner';
+import EmptyState from '@/components/EmptyState';
+import { Skeleton } from '@/components/Skeleton';
 import { usePipeline } from '@/context/PipelineContext';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import {
   PipelineStatusBadge,
   PipelineStopButton,
   PRESET_COPY,
+  PRESET_INCLUDES,
   PresetIcon,
 } from './pipelineUi';
 import { PIPELINE_PRESETS } from './pipelinePresets';
@@ -112,6 +119,7 @@ export default function PipelineRunPanel() {
   const crawlOnlyNote =
     presetId === 'crawl-only' ? strings.reportSelector.crawlOnlyNote : null;
   const showProgress = busy || Boolean(status) || Boolean(log);
+  const isFirstRun = step === 1 && !startUrl.trim() && !status && !log && !busy;
 
   const runPreview = useMemo(
     () =>
@@ -151,6 +159,20 @@ export default function PipelineRunPanel() {
 
   return (
     <div className="mx-auto max-w-3xl pb-8">
+      {isFirstRun ? (
+        <EmptyState
+          aurora
+          icon={ScanSearch}
+          title={s.firstRunTitle}
+          description={s.firstRunBody}
+          highlights={[
+            { icon: Globe, label: s.firstRunHighlightCrawl },
+            { icon: FileText, label: s.firstRunHighlightReport },
+            { icon: Gauge, label: s.firstRunHighlightPerf },
+          ]}
+          className="mb-6"
+        />
+      ) : null}
       <Card padding="tight" className="mb-6">
         <PipelineWizardProgress
           currentStep={step}
@@ -244,6 +266,20 @@ export default function PipelineRunPanel() {
               })}
             </div>
           </div>
+          <AlertBanner
+            variant="info"
+            collapsible
+            defaultOpen={false}
+            title={s.wizardRunExplainerTitle}
+            className="mt-4"
+          >
+            <ol className="ml-1 list-inside list-decimal space-y-1 text-sm text-muted-foreground">
+              {s.wizardRunExplainerSteps.map((stepText) => (
+                <li key={stepText}>{stepText}</li>
+              ))}
+            </ol>
+            <p className="mt-1.5 text-xs text-muted-foreground">{s.wizardRunExplainerNote}</p>
+          </AlertBanner>
           <div className="mt-6 flex flex-wrap items-center justify-end gap-3">
             <Button
               variant="primary"
@@ -292,6 +328,16 @@ export default function PipelineRunPanel() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-foreground">{copy.label}</p>
                       <p className="mt-0.5 text-xs leading-snug text-muted-foreground">{copy.description}</p>
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {PRESET_INCLUDES[preset.id].map((item) => (
+                          <span
+                            key={item}
+                            className="rounded bg-brand-700/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                          >
+                            {item}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                     {selected ? (
                       <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white">
@@ -327,14 +373,14 @@ export default function PipelineRunPanel() {
             <h2 className="text-base font-semibold text-foreground">{s.wizardReviewTitle}</h2>
             <p className="mt-1 text-xs text-muted-foreground">{s.wizardReviewHint}</p>
 
-            <dl className="mt-5 space-y-4">
-              <div>
+            <dl className="mt-5 divide-y divide-[color:var(--app-border-muted)]">
+              <div className="py-3 first:pt-0">
                 <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   {s.startUrlLabel}
                 </dt>
                 <dd className="mt-1 truncate text-sm text-foreground">{normalizeUrl(startUrl)}</dd>
               </div>
-              <div>
+              <div className="py-3">
                 <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   {s.presetsLabel}
                 </dt>
@@ -411,6 +457,11 @@ export default function PipelineRunPanel() {
                 </Button>
               </div>
             </div>
+            {!crawlAuthorized && !busy && !readOnly ? (
+              <p className="mt-2 text-right text-xs text-muted-foreground">
+                {strings.components.crawlAuthorize.required}
+              </p>
+            ) : null}
           </Card>
 
           {showProgress ? (
@@ -467,14 +518,21 @@ export default function PipelineRunPanel() {
                   ) : null}
                 </div>
               ) : status === 'error' ? (
-                <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-800 dark:text-red-300">
+                <AlertBanner variant="error">
                   No log output was returned. Open the browser developer console for the full error
                   (filter by <span className="font-mono">{strings.pipelineRunner.consoleFilterHint}</span>).
-                </p>
+                </AlertBanner>
               ) : busy ? (
-                <div className="flex items-center gap-2 rounded-lg border border-dashed border-default bg-brand-900/50 px-4 py-6 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin text-link" aria-hidden />
-                  Waiting for output…
+                <div className="rounded-lg border border-dashed border-default bg-brand-900/50 px-4 py-4">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-4 w-4 animate-spin text-link" aria-hidden />
+                    Waiting for output…
+                  </div>
+                  <div className="mt-3 space-y-2">
+                    <Skeleton className="h-2.5 w-3/4" />
+                    <Skeleton className="h-2.5 w-1/2" />
+                    <Skeleton className="h-2.5 w-2/3" />
+                  </div>
                 </div>
               ) : null}
             </Card>
