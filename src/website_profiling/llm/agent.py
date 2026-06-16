@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 from typing import Any, Callable
 
 from ..concurrency import map_parallel, tool_concurrency
@@ -22,7 +23,33 @@ from ..tools.audit_tools.tool_selector import (
 )
 from .base import ChatResult, ToolCall, get_llm_client
 
-MAX_TOOL_ROUNDS = 10
+MAX_TOOL_ROUNDS_DEFAULT = 10
+MAX_TOOL_ROUNDS_EXTENDED = 100
+# Back-compat for tests and imports
+MAX_TOOL_ROUNDS = MAX_TOOL_ROUNDS_DEFAULT
+
+
+def _truthy_cfg(cfg: dict[str, str], key: str) -> bool:
+    return str(cfg.get(key, "")).lower() in ("true", "1", "yes")
+
+
+def _max_tool_rounds(cfg: dict[str, str]) -> int:
+    """Resolve per-turn tool loop cap from llm_config and optional env overrides."""
+    if _truthy_cfg(cfg, "llm_chat_unlimited_tool_rounds"):
+        raw = (os.environ.get("CHAT_MAX_TOOL_ROUNDS_EXTENDED") or "").strip()
+        if raw:
+            try:
+                return max(1, int(raw))
+            except ValueError:
+                pass
+        return MAX_TOOL_ROUNDS_EXTENDED
+    raw = (os.environ.get("CHAT_MAX_TOOL_ROUNDS") or "").strip()
+    if raw:
+        try:
+            return max(1, int(raw))
+        except ValueError:
+            pass
+    return MAX_TOOL_ROUNDS_DEFAULT
 
 SYSTEM_PROMPT = """You are Site Audit AI, a technical SEO assistant for a self-hosted site audit platform.
 You help users understand crawl results, audit issues, Lighthouse scores, keywords, and Search Console data.
@@ -208,15 +235,16 @@ def run_agent_turn(
     tools = openai_tools_schema(active_names, context_scoped=True)
     tool_events: list[dict[str, Any]] = []
     final_message = ""
+    max_rounds = _max_tool_rounds(cfg)
 
     def on_token(text: str) -> None:
         _emit(on_event, {"type": "token", "text": strip_surrogates(text)})
 
-    for _round in range(MAX_TOOL_ROUNDS):
+    for _round in range(max_rounds):
         _emit(on_event, {
             "type": "status",
             "phase": "model",
-            "detail": f"Thinking (step {_round + 1}/{MAX_TOOL_ROUNDS})…",
+            "detail": f"Thinking (step {_round + 1}/{max_rounds})…",
         })
         try:
             llm_messages = sanitize_unicode_deep(openai_messages)
@@ -337,5 +365,18 @@ def run_agent_turn(
         break
 
     err = "Agent stopped after maximum tool rounds without a final answer."
+    partial = final_message
+    if not partial and tool_events:
+        partial = (
+            f"The agent completed {len(tool_events)} tool step(s) but did not finish "
+            "with a final summary. Tool results are preserved below."
+        )
+    if partial:
+        _emit(on_event, {"type": "partial_done", "message": partial})
     _emit(on_event, {"type": "error", "message": err})
-    return {"ok": False, "error": err, "tool_events": tool_events}
+    return {
+        "ok": False,
+        "error": err,
+        "message": partial,
+        "tool_events": tool_events,
+    }

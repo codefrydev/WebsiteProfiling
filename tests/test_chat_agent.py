@@ -3,7 +3,12 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-from website_profiling.llm.agent import MAX_TOOL_ROUNDS, run_agent_turn
+from website_profiling.llm.agent import (
+    MAX_TOOL_ROUNDS,
+    MAX_TOOL_ROUNDS_EXTENDED,
+    _max_tool_rounds,
+    run_agent_turn,
+)
 from website_profiling.llm.base import ChatResult, ToolCall
 from website_profiling.tools.audit_tools import AuditToolContext
 
@@ -148,9 +153,11 @@ def test_max_tool_rounds() -> None:
     )
     client = FakeToolClient([always_tool] * (MAX_TOOL_ROUNDS + 1))
     ctx = AuditToolContext()
+    events: list[dict] = []
 
     with patch("website_profiling.llm.agent.load_llm_config_from_db", return_value={
         "llm_enabled": True, "llm_provider": "openai", "llm_api_key": "sk-test",
+        "llm_chat_unlimited_tool_rounds": "false",
     }):
         with patch("website_profiling.llm.agent.get_llm_client", return_value=client):
             with patch(
@@ -160,7 +167,16 @@ def test_max_tool_rounds() -> None:
                 result = run_agent_turn(
                     [{"role": "user", "content": "List properties"}],
                     ctx,
+                    on_event=events.append,
                 )
 
     assert result["ok"] is False
     assert "maximum tool rounds" in result["error"].lower()
+    assert result.get("message")
+    assert events[-1]["type"] == "error"
+    assert any(e["type"] == "partial_done" for e in events)
+
+
+def test_max_tool_rounds_extended_when_unlimited_enabled() -> None:
+    assert _max_tool_rounds({"llm_chat_unlimited_tool_rounds": "true"}) == MAX_TOOL_ROUNDS_EXTENDED
+    assert _max_tool_rounds({"llm_chat_unlimited_tool_rounds": "false"}) == MAX_TOOL_ROUNDS

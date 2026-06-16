@@ -4,6 +4,7 @@ export type ChatSseEvent =
   | { type: 'tool_start'; name?: string; args?: Record<string, unknown> }
   | { type: 'tool_end'; name?: string; result?: Record<string, unknown> }
   | { type: 'done'; message?: string }
+  | { type: 'partial_done'; message?: string }
   | { type: 'error'; message?: string };
 
 export function parseSseChunk(buffer: string): { events: ChatSseEvent[]; rest: string } {
@@ -47,6 +48,8 @@ export function parseSseChunk(buffer: string): { events: ChatSseEvent[]; rest: s
         });
       } else if (eventType === 'done') {
         events.push({ type: 'done', message: String(data.message || '') });
+      } else if (eventType === 'partial_done') {
+        events.push({ type: 'partial_done', message: String(data.message || '') });
       } else if (eventType === 'error') {
         events.push({ type: 'error', message: String(data.message || 'Error') });
       }

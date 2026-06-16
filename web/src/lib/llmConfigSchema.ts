@@ -93,6 +93,19 @@ export const LLM_CONFIG_SECTIONS = [
     ],
   },
   {
+    id: 'llm_chat',
+    label: 'Chat agent',
+    fields: [
+      {
+        key: 'llm_chat_unlimited_tool_rounds',
+        label: 'Extended tool rounds (chat)',
+        type: 'bool',
+        defaultValue: false,
+        help: 'When enabled, the chat agent may run up to 100 tool steps per message instead of 10. Use for deep multi-step audits.',
+      },
+    ],
+  },
+  {
     id: 'llm_limits',
     label: 'Limits',
     fields: [

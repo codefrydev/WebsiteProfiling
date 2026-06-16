@@ -46,6 +46,25 @@ function sseLine(event: string, data: Record<string, unknown>): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
+function buildPersistedAssistantContent(
+  assistantText: string,
+  toolEvents: Array<{ name: string; args?: Record<string, unknown>; result?: Record<string, unknown> }>,
+  sawError: boolean,
+  lastErrorMessage: string,
+): string | null {
+  const text = assistantText.trim();
+  if (text) return text;
+  if (toolEvents.length > 0) {
+    return sawError
+      ? 'Tool results were saved from this turn. The assistant did not produce a final summary.'
+      : 'Tool results from this turn are shown below.';
+  }
+  if (sawError && lastErrorMessage.trim()) {
+    return lastErrorMessage.trim();
+  }
+  return null;
+}
+
 /** POST /api/chat — stream agent response via SSE. */
 export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Response> => {
   const denied = forbiddenIfNotLocal(request);
@@ -99,6 +118,7 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
       let assistantText = '';
       let buffer = '';
       let stderrAcc = '';
+      let lastErrorMessage = '';
       const toolEvents: Array<{
         name: string;
         args?: Record<string, unknown>;
@@ -121,7 +141,10 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
 
       const push = (event: string, data: Record<string, unknown>) => {
         if (closed) return;
-        if (event === 'error') sawError = true;
+        if (event === 'error') {
+          sawError = true;
+          lastErrorMessage = String(data.message || 'Agent error');
+        }
         try {
           controller.enqueue(encoder.encode(sseLine(event, data)));
         } catch {
@@ -200,6 +223,9 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
             } else if (evt.type === 'done' && evt.message) {
               assistantText = evt.message;
               push('done', { message: evt.message });
+            } else if (evt.type === 'partial_done' && evt.message) {
+              assistantText = evt.message;
+              push('partial_done', { message: evt.message });
             } else if (evt.type === 'error') {
               push('error', { message: evt.message || 'Agent error' });
             }
@@ -248,10 +274,24 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
           }
         }
 
-        if (assistantText.trim()) {
+        const contentToSave = buildPersistedAssistantContent(
+          assistantText,
+          toolEvents,
+          sawError,
+          lastErrorMessage,
+        );
+
+        if (contentToSave) {
           try {
-            await appendChatMessage(sessionId, 'assistant', assistantText.trim(), {
-              toolResult: toolEvents.length ? { tool_events: toolEvents } : null,
+            const toolResultPayload =
+              toolEvents.length || (sawError && lastErrorMessage)
+                ? {
+                    ...(toolEvents.length ? { tool_events: toolEvents } : {}),
+                    ...(sawError && lastErrorMessage ? { agent_error: lastErrorMessage } : {}),
+                  }
+                : null;
+            await appendChatMessage(sessionId, 'assistant', contentToSave, {
+              toolResult: toolResultPayload,
             });
             if (session.title === 'New chat') {
               const title = message.slice(0, 60) + (message.length > 60 ? '…' : '');

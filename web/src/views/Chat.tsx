@@ -12,6 +12,7 @@ import ChatComposer from '@/components/chat/ChatComposer';
 import SuggestedPrompts from '@/components/chat/SuggestedPrompts';
 import ChatModelPicker from '@/components/chat/ChatModelPicker';
 import ChatProviderPicker from '@/components/chat/ChatProviderPicker';
+import ChatUnlimitedToolsToggle from '@/components/chat/ChatUnlimitedToolsToggle';
 import ChatActivityBar from '@/components/chat/ChatActivityBar';
 import { ChatFollowUpProvider } from '@/components/chat/ChatFollowUpContext';
 import { usePipeline } from '@/context/PipelineContext';
@@ -387,15 +388,28 @@ export default function ChatPage() {
         } else if (evt.type === 'done' && evt.message) {
           content = evt.message;
           patchAssistant({ content: evt.message, streaming: true, error: false });
+        } else if (evt.type === 'partial_done' && evt.message) {
+          content = evt.message;
+          patchAssistant({
+            content: evt.message,
+            streaming: true,
+            error: false,
+            toolActivity: tools,
+            blocks: deriveChatBlocks(tools),
+          });
         } else if (evt.type === 'error') {
           streamError = evt.message || c.agentError;
           setError(streamError);
+          const fallbackContent =
+            content.trim() ||
+            (tools.length > 0 ? c.partialToolsSaved : streamError);
           patchAssistant({
-            content: streamError,
+            content: fallbackContent,
             streaming: false,
             error: true,
             statusText: undefined,
             toolActivity: tools,
+            blocks: deriveChatBlocks(tools),
           });
         }
       });
@@ -420,8 +434,8 @@ export default function ChatPage() {
             blocks: deriveChatBlocks(tools),
           });
         }
-        if (sid) await loadMessages(sid);
       }
+      if (sid) await loadMessages(sid);
       if (propertyId) await loadSessions(propertyId);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -451,6 +465,7 @@ export default function ChatPage() {
 
   const modelPicker = llmEnabled ? (
     <>
+      <ChatUnlimitedToolsToggle disabled={busy} />
       <ChatProviderPicker
         provider={String(llmConfigState.llm_provider || 'none')}
         disabled={busy}
