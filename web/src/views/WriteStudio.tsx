@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { RefreshCw } from 'lucide-react';
+import { FileText, RefreshCw } from 'lucide-react';
 import { usePipeline } from '@/context/PipelineContext';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import { apiUrl } from '@/lib/publicBase';
@@ -16,6 +16,8 @@ import WriteStudioShell from '@/components/contentStudio/WriteStudioShell';
 import WriteStudioSidebar, {
   type WritePropertyOption,
 } from '@/components/contentStudio/WriteStudioSidebar';
+import WriteContextBar from '@/components/contentStudio/WriteContextBar';
+import WriteSuggestedStarters from '@/components/contentStudio/WriteSuggestedStarters';
 import ContentEditor from '@/components/contentStudio/ContentEditor';
 import NewDraftModal from '@/components/contentStudio/NewDraftModal';
 import AnalyzerSidebar from '@/components/contentStudio/AnalyzerSidebar';
@@ -34,7 +36,6 @@ export default function WriteStudio() {
   const { configState } = usePipeline();
   const { readOnly } = useReadOnlySession();
 
-  const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [properties, setProperties] = useState<WritePropertyOption[]>([]);
   const [propertyId, setPropertyId] = useState<number | null>(
     normalizePropertyId(searchParams.get('propertyId')),
@@ -52,6 +53,7 @@ export default function WriteStudio() {
   const [loadingDraft, setLoadingDraft] = useState(false);
   const [draftError, setDraftError] = useState<string | null>(null);
   const [showNewModal, setShowNewModal] = useState(draftParam === 'new');
+  const [modalKeyword, setModalKeyword] = useState(keywordParam);
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [liveScore, setLiveScore] = useState<ContentScoreResult | null>(null);
@@ -160,8 +162,16 @@ export default function WriteStudio() {
   }, [draftId, loadDraft]);
 
   useEffect(() => {
-    if (draftParam === 'new') setShowNewModal(true);
-  }, [draftParam]);
+    if (draftParam === 'new') {
+      setModalKeyword(keywordParam);
+      setShowNewModal(true);
+    }
+  }, [draftParam, keywordParam]);
+
+  const openNewDraft = useCallback((keyword = '') => {
+    setModalKeyword(keyword);
+    setShowNewModal(true);
+  }, []);
 
   const handlePropertyChange = (id: number) => {
     setPropertyId(id);
@@ -246,32 +256,76 @@ export default function WriteStudio() {
   );
 
   const emptyState = !loadingProperties && !propertyId;
+  const isHero = !emptyState && !draftId && !loadingDraft;
+  const showEditor = Boolean(draftId && activeDraft && propertyId && !loadingDraft && !draftError);
 
-  const editorContent = (() => {
-    if (emptyState) {
-      return (
-        <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
-          <p className="text-sm text-muted-foreground max-w-md">{vs.noProperty}</p>
+  const seoPanel =
+    showEditor && activeDraft ? (
+      <AnalyzerSidebar
+        score={liveScore}
+        scoreLoading={!liveScore && Boolean(draftId)}
+        scoreError={null}
+        keyword={activeDraft.target_keyword}
+        analysis={analysis}
+        analyzeLoading={analyzeLoading}
+        analyzeError={analyzeError}
+        aiVisible={aiSuggestionsEnabled}
+      />
+    ) : null;
+
+  const mainPanel = (
+    <div className="chat-main-panel">
+      {!showEditor ? (
+        <WriteContextBar
+          property={activeProperty}
+          propertyId={propertyId}
+          draftTitle={activeDraft?.title}
+          loading={loadingProperties}
+        />
+      ) : null}
+
+      {emptyState ? (
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-8 text-center">
+          <p className="max-w-md text-sm text-muted-foreground">{vs.noProperty}</p>
         </div>
-      );
-    }
-    if (draftId && loadingDraft) {
-      return (
-        <div className="flex flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
+      ) : isHero ? (
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 pb-[10vh] pt-4">
+          <div className="flex w-full max-w-3xl flex-col items-center">
+            <h1 className="text-center text-[2rem] font-normal tracking-tight text-bright sm:text-5xl sm:font-light">
+              {vs.welcomeHeadline}
+            </h1>
+            <p className="mt-3 max-w-md text-center text-sm text-muted-foreground">
+              {vs.welcomeSubline}
+            </p>
+            {!readOnly && propertyId ? (
+              <div className="mt-10 w-full">
+                <button
+                  type="button"
+                  onClick={() => openNewDraft()}
+                  className="mx-auto flex w-full max-w-3xl items-center justify-center gap-2 rounded-full border border-default bg-[var(--chat-surface)] px-4 py-3 text-sm text-foreground shadow-lg ring-1 ring-white/[0.06] transition-shadow hover:bg-[var(--chat-surface-hover)] chat-hero-input min-h-[3.25rem]"
+                >
+                  <FileText className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+                  {vs.newDraftButton}
+                </button>
+              </div>
+            ) : null}
+            <WriteSuggestedStarters
+              onSelect={(keyword) => openNewDraft(keyword)}
+              disabled={readOnly || !propertyId}
+            />
+            {listError ? <p className="mt-4 text-xs text-red-500">{listError}</p> : null}
+          </div>
+        </div>
+      ) : draftId && loadingDraft ? (
+        <div className="flex min-h-0 flex-1 items-center justify-center gap-2 text-sm text-muted-foreground">
           <RefreshCw className="h-4 w-4 animate-spin" aria-hidden />
           {vs.loadingDraft}
         </div>
-      );
-    }
-    if (draftId && (draftError || !activeDraft)) {
-      return (
-        <div className="flex flex-1 flex-col items-center justify-center p-8">
+      ) : draftId && (draftError || !activeDraft) ? (
+        <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-8">
           <p className="text-sm text-red-700 dark:text-red-400">{draftError || vs.loadFailed}</p>
         </div>
-      );
-    }
-    if (draftId && activeDraft && propertyId) {
-      return (
+      ) : showEditor && activeDraft && propertyId ? (
         <ContentEditor
           layout="page"
           draft={activeDraft}
@@ -290,67 +344,36 @@ export default function WriteStudio() {
           analyzeLoading={analyzeLoading}
           analyzeError={analyzeError}
         />
-      );
-    }
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
-        <p className="text-lg font-medium text-foreground mb-2">{vs.welcomeTitle}</p>
-        <p className="text-sm text-muted-foreground max-w-md mb-6">{vs.welcomeBody}</p>
-        {!readOnly && propertyId ? (
-          <button
-            type="button"
-            onClick={() => setShowNewModal(true)}
-            className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
-          >
-            {vs.newDraftButton}
-          </button>
-        ) : null}
-        {listError ? <p className="mt-4 text-xs text-red-500">{listError}</p> : null}
-      </div>
-    );
-  })();
-
-  const seoPanel =
-    draftId && activeDraft ? (
-      <AnalyzerSidebar
-        score={liveScore}
-        scoreLoading={!liveScore && Boolean(draftId)}
-        scoreError={null}
-        keyword={activeDraft.target_keyword}
-        analysis={analysis}
-        analyzeLoading={analyzeLoading}
-        analyzeError={analyzeError}
-        aiVisible={aiSuggestionsEnabled}
-      />
-    ) : null;
+      ) : null}
+    </div>
+  );
 
   return (
     <>
       <WriteStudioShell
-        sidebar={
+        sidebar={(layout) => (
           <WriteStudioSidebar
-            expanded={sidebarExpanded}
-            onToggle={() => setSidebarExpanded((v) => !v)}
+            {...layout}
             properties={properties}
             propertyId={propertyId}
             onPropertyChange={handlePropertyChange}
             drafts={drafts}
             activeDraftId={draftId}
             onSelectDraft={handleSelectDraft}
-            onNewDraft={() => setShowNewModal(true)}
+            onNewDraft={() => openNewDraft()}
             onDeleteDraft={(id) => void handleDelete(id)}
             loadingDrafts={loadingList}
             readOnly={readOnly}
           />
-        }
-        seoPanel={draftId && activeDraft ? seoPanel : undefined}
+        )}
+        seoPanel={seoPanel ?? undefined}
       >
-        {editorContent}
+        {mainPanel}
       </WriteStudioShell>
 
       <NewDraftModal
         open={showNewModal}
-        initialKeyword={keywordParam}
+        initialKeyword={modalKeyword}
         creating={creating}
         onClose={() => {
           setShowNewModal(false);

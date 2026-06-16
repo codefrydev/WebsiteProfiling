@@ -31,14 +31,14 @@ export default function SeoScoreSidebar({ score, loading, error, keyword }: SeoS
 
   if (!keyword.trim()) {
     return (
-      <aside className="rounded-xl border border-default bg-brand-900/40 p-4 text-sm text-muted-foreground">
+      <aside className="rounded-xl border border-default bg-[var(--chat-bg)] p-4 text-sm text-muted-foreground">
         {s.noKeyword}
       </aside>
     );
   }
 
   return (
-    <aside className="rounded-xl border border-default bg-brand-900/40 p-4 space-y-4 text-sm">
+    <aside className="space-y-4 rounded-xl border border-default bg-[var(--chat-bg)] p-4 text-sm">
       <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{s.provenanceBanner}</p>
 
       {loading && !score ? (

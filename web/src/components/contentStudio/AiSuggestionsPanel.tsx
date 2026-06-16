@@ -28,7 +28,7 @@ export default function AiSuggestionsPanel({
 
   if (!visible) {
     return (
-      <div className="rounded-lg border border-dashed border-default bg-brand-900/30 p-3 text-xs text-muted-foreground">
+      <div className="rounded-lg border border-dashed border-default bg-[var(--chat-bg)]/80 p-3 text-xs text-muted-foreground">
         {s.disabledHint}
       </div>
     );
@@ -55,7 +55,7 @@ export default function AiSuggestionsPanel({
 
   return (
     <div className="space-y-3 text-sm">
-      <div className="flex items-center gap-1.5 text-xs font-semibold text-fuchsia-700 dark:text-fuchsia-300">
+      <div className="flex items-center gap-1.5 text-xs font-semibold text-link">
         <Sparkles className="h-3.5 w-3.5" aria-hidden />
         {s.title}
       </div>

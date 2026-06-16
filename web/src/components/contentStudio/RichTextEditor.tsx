@@ -396,7 +396,7 @@ export default function RichTextEditor({
             disabled={disabled}
             placeholder={t.markdownPlaceholder}
             spellCheck
-            className={`w-full resize-none bg-brand-950/40 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:outline-none ${
+            className={`w-full resize-none bg-brand-800/50 font-mono text-sm text-foreground placeholder:text-muted-foreground focus:outline-none ${
               fillHeight ? 'min-h-full h-full px-4 py-4' : 'min-h-[320px] px-3 py-2'
             }`}
           />

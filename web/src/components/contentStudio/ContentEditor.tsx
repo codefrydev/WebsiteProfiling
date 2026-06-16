@@ -158,7 +158,7 @@ export default function ContentEditor({
 
   const gradeBadge =
     score != null ? (
-      <span className="rounded-md border border-default bg-brand-800 px-2 py-1 text-xs font-bold tabular-nums">
+      <span className="shrink-0 rounded border border-default bg-brand-800 px-1.5 py-0.5 text-[10px] font-bold tabular-nums sm:text-xs">
         {score.grade_label} · {score.grade_score}
       </span>
     ) : null;
@@ -166,70 +166,86 @@ export default function ContentEditor({
   if (isPage) {
     return (
       <div className="flex h-full min-h-0 flex-col">
-        <header className="flex shrink-0 items-center gap-2 border-b border-default bg-brand-950/80 px-4 py-2">
-          <div className="min-w-0 flex-1">
-            {siteLabel ? (
-              <p className="text-[10px] text-muted-foreground truncate">{siteLabel}</p>
+        <div className="shrink-0 border-b border-muted/30 bg-[var(--chat-bg)]">
+          <div className="flex items-center gap-2 px-3 py-1.5 sm:px-4">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+              {siteLabel ? (
+                <span
+                  className="hidden shrink-0 truncate text-[10px] text-muted-foreground sm:inline-block sm:max-w-[7rem]"
+                  title={siteLabel}
+                >
+                  {siteLabel}
+                </span>
+              ) : null}
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                disabled={readOnly}
+                placeholder={s.draftTitlePlaceholder}
+                className="min-w-0 flex-1 bg-transparent text-base font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-60 sm:text-lg"
+              />
+            </div>
+            <label
+              className="flex shrink-0 cursor-pointer select-none items-center gap-1.5 text-xs text-muted-foreground"
+              title={ai.toggleLabel}
+            >
+              <Sparkles className="h-3.5 w-3.5 text-link" aria-hidden />
+              <button
+                type="button"
+                role="switch"
+                aria-checked={aiSuggestionsEnabled}
+                aria-label={ai.toggleLabel}
+                onClick={() => onAiSuggestionsEnabledChange?.(!aiSuggestionsEnabled)}
+                className={`relative h-4 w-7 rounded-full transition-colors ${
+                  aiSuggestionsEnabled ? 'bg-blue-600' : 'bg-brand-700'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 h-3 w-3 rounded-full bg-white transition-transform ${
+                    aiSuggestionsEnabled ? 'translate-x-3' : ''
+                  }`}
+                />
+              </button>
+            </label>
+            {!readOnly ? (
+              <Button
+                type="button"
+                variant="secondary"
+                className="!px-2 !py-1 !text-xs"
+                onClick={() => void runAnalyze(false)}
+                loading={analyzing}
+                disabled={!keyword.trim()}
+                title={analyzing ? ai.analyzing : ai.analyzeButton}
+              >
+                <ScanSearch className="h-3.5 w-3.5" aria-hidden />
+                <span className="hidden sm:inline">{analyzing ? ai.analyzing : ai.analyzeButton}</span>
+              </Button>
+            ) : null}
+            {gradeBadge}
+            {!readOnly ? (
+              <Button
+                type="button"
+                variant="primary"
+                className="!px-2 !py-1 !text-xs"
+                onClick={handleSave}
+                loading={saving}
+                title={saving ? s.saving : s.save}
+              >
+                <Save className="h-3.5 w-3.5" aria-hidden />
+                <span className="hidden sm:inline">{saving ? s.saving : s.save}</span>
+              </Button>
             ) : null}
           </div>
-          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
-            <Sparkles className="h-3.5 w-3.5 text-fuchsia-500" aria-hidden />
-            <span className="hidden sm:inline">{ai.toggleLabel}</span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={aiSuggestionsEnabled}
-              onClick={() => onAiSuggestionsEnabledChange?.(!aiSuggestionsEnabled)}
-              className={`relative h-5 w-9 rounded-full transition-colors ${
-                aiSuggestionsEnabled ? 'bg-fuchsia-600' : 'bg-brand-700'
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white transition-transform ${
-                  aiSuggestionsEnabled ? 'translate-x-4' : ''
-                }`}
-              />
-            </button>
-          </label>
-          {!readOnly ? (
-            <Button
-              type="button"
-              variant="secondary"
-              className="!py-1.5 !text-xs"
-              onClick={() => void runAnalyze(false)}
-              loading={analyzing}
-              disabled={!keyword.trim()}
-            >
-              <ScanSearch className="h-3.5 w-3.5" aria-hidden />
-              {analyzing ? ai.analyzing : ai.analyzeButton}
-            </Button>
-          ) : null}
-          {gradeBadge}
-          {!readOnly ? (
-            <Button type="button" variant="primary" className="!py-1.5 !text-xs" onClick={handleSave} loading={saving}>
-              <Save className="h-3.5 w-3.5" aria-hidden />
-              {saving ? s.saving : s.save}
-            </Button>
-          ) : null}
-        </header>
 
-        <div className="shrink-0 border-b border-default px-6 py-4 space-y-3 bg-brand-900/40">
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            disabled={readOnly}
-            placeholder={s.draftTitlePlaceholder}
-            className="w-full bg-transparent text-2xl font-semibold text-foreground placeholder:text-muted-foreground focus:outline-none disabled:opacity-60"
-          />
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap items-center gap-2 px-3 pb-2 sm:px-4">
             <input
               type="text"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
               disabled={readOnly}
               placeholder={s.targetKeyword}
-              className="min-w-[140px] flex-1 rounded-md border border-default bg-brand-900 px-3 py-1.5 text-sm text-foreground disabled:opacity-60"
+              className="min-w-[7rem] flex-1 rounded-md border border-default bg-[var(--chat-surface)] px-2 py-1 text-xs text-foreground focus:border-blue-500 focus:outline-none disabled:opacity-60"
             />
             <input
               type="url"
@@ -237,25 +253,26 @@ export default function ContentEditor({
               onChange={(e) => setLandingUrl(e.target.value)}
               disabled={readOnly}
               placeholder={s.landingUrl}
-              className="min-w-[180px] flex-[2] rounded-md border border-default bg-brand-900 px-3 py-1.5 text-sm text-foreground disabled:opacity-60"
+              className="min-w-[9rem] flex-[2] rounded-md border border-default bg-[var(--chat-surface)] px-2 py-1 text-xs text-foreground focus:border-blue-500 focus:outline-none disabled:opacity-60"
             />
+            <button
+              type="button"
+              onClick={() => setSeoOpen((v) => !v)}
+              className="shrink-0 text-xs text-link hover:underline"
+            >
+              {seoOpen ? s.hideSeoFields : s.showSeoFields}
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setSeoOpen((v) => !v)}
-            className="text-xs text-link hover:underline"
-          >
-            {seoOpen ? s.hideSeoFields : s.showSeoFields}
-          </button>
+
           {seoOpen ? (
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2 px-3 pb-2 sm:grid-cols-2 sm:px-4">
               <input
                 type="text"
                 value={titleTag}
                 onChange={(e) => setTitleTag(e.target.value)}
                 disabled={readOnly}
                 placeholder={s.titleTag}
-                className="rounded-md border border-default bg-brand-900 px-3 py-1.5 text-sm text-foreground disabled:opacity-60"
+                className="rounded-md border border-default bg-[var(--chat-surface)] px-2 py-1 text-xs text-foreground focus:border-blue-500 focus:outline-none disabled:opacity-60"
               />
               <input
                 type="text"
@@ -263,13 +280,13 @@ export default function ContentEditor({
                 onChange={(e) => setMetaDescription(e.target.value)}
                 disabled={readOnly}
                 placeholder={s.metaDescription}
-                className="rounded-md border border-default bg-brand-900 px-3 py-1.5 text-sm text-foreground disabled:opacity-60"
+                className="rounded-md border border-default bg-[var(--chat-surface)] px-2 py-1 text-xs text-foreground focus:border-blue-500 focus:outline-none disabled:opacity-60"
               />
             </div>
           ) : null}
         </div>
 
-        <div className="flex min-h-0 flex-1 flex-col px-4 py-3 xl:pr-4">
+        <div className="flex min-h-0 flex-1 flex-col px-3 py-2 sm:px-4 xl:pr-4">
           <RichTextEditor
             value={bodyHtml}
             onChange={setBodyHtml}
@@ -279,7 +296,7 @@ export default function ContentEditor({
           />
         </div>
 
-        <div className="xl:hidden border-t border-default p-3 max-h-64 overflow-y-auto space-y-3">
+        <div className="max-h-64 space-y-3 overflow-y-auto border-t border-muted/30 bg-[var(--chat-surface)]/40 p-3 xl:hidden">
           <SeoScoreSidebar score={score} loading={scoreLoading} error={scoreError} keyword={keyword} />
           <AiSuggestionsPanel
             analysis={analysis}
