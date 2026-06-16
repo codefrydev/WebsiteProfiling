@@ -7,8 +7,9 @@ import type {
 } from '@/types';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
-import { Gauge, Globe, Play } from 'lucide-react';
+import { Gauge, Globe, Play, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
 import {
   canonicalDomainFromPayload,
   filterLighthouseByHost,
@@ -42,6 +43,7 @@ const EMPTY_LH: LighthousePageSummary = {};
 export default function Lighthouse({ searchQuery = '' }: ViewProps) {
   const router = useRouter();
   const { data, startUrlByRunId } = useReport();
+  const lighthouseStatus = useSectionData('lighthouse');
   const searchParams = useSearchParams();
   const detailRef = useRef<HTMLDivElement>(null);
   const pageDetailRef = useRef<HTMLDivElement>(null);
@@ -316,6 +318,20 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
   ) : null;
 
   if (!hasData) {
+    if (lighthouseStatus === 'loading' || lighthouseStatus === 'idle') {
+      return (
+        <PageLayout className="space-y-6">
+          <PageHeader
+            icon={<Gauge className="h-7 w-7 text-link shrink-0" />}
+            title={vlh.emptyTitle}
+          />
+          <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {strings.app.loading}
+          </div>
+        </PageLayout>
+      );
+    }
     return (
       <PageLayout className="space-y-6">
         <PageHeader

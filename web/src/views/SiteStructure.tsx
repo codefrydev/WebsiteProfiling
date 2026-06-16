@@ -14,6 +14,7 @@ import {
   Share2,
 } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
 import { strings, format } from '../lib/strings';
 import { canonicalDomainFromPayload } from '../lib/domainSlug';
 import {
@@ -250,6 +251,8 @@ function fmtMetric(n: unknown): string {
 export default function SiteStructure({ searchQuery = '' }: ViewProps) {
   const s = strings.views.siteStructure;
   const { data, compareData, startUrlByRunId, selectedReportId, compareReportId } = useReport();
+  useSectionData('links');
+  useSectionData('structure');
   const [showCompareCharts, setShowCompareCharts] = useState(true);
   const [pathPrefixFilter, setPathPrefixFilter] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useUrlTab(SITE_STRUCTURE_TABS, 'overview');

@@ -22,6 +22,7 @@ import { buildReportCompareSummary } from '../lib/reportCompare';
 import { strings } from '../lib/strings';
 import { reportApi } from '../lib/publicBase';
 import type { ReportContextValue } from './reportContextTypes';
+import { SECTION_KEYS, type SectionKey } from '../lib/reportSections';
 import type {
   CrawlRunRow,
   ReportListRow,
@@ -125,6 +126,12 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
   const domainSlugRef = useRef(domainSlug);
   domainSlugRef.current = domainSlug;
 
+  const [sectionStatus, setSectionStatus] = useState<
+    Partial<Record<SectionKey, 'loading' | 'loaded' | 'error'>>
+  >({});
+  const inFlightSectionsRef = useRef(new Set<SectionKey>());
+  const sectionCacheKeyRef = useRef<string>('');
+
   const { startUrlByRunId } = useMemo(() => crawlMaps(crawlRuns), [crawlRuns]);
 
   const scopedList = useMemo(
@@ -137,8 +144,56 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     return scopedList;
   }, [domainSlug, reportListFull, scopedList]);
 
+  const loadSection = useCallback(async (section: SectionKey, reportId: number | null) => {
+    if (inFlightSectionsRef.current.has(section)) return;
+    inFlightSectionsRef.current.add(section);
+    setSectionStatus((prev) => {
+      if (prev[section] === 'loaded') return prev;
+      return { ...prev, [section]: 'loading' };
+    });
+    const cacheKeySnapshot = sectionCacheKeyRef.current;
+    try {
+      const scoped = domainSlugRef.current;
+      const domainQ =
+        scoped != null && scoped !== '' ? `&domain=${encodeURIComponent(scoped)}` : '';
+      const url =
+        reportId != null
+          ? reportApi(
+              `/payload?reportId=${encodeURIComponent(String(reportId))}&section=${section}${domainQ}`,
+            )
+          : reportApi(
+              scoped
+                ? `/payload?domain=${encodeURIComponent(scoped)}&section=${section}`
+                : `/payload?section=${section}`,
+            );
+      const res = await fetch(url);
+      const body = (await res.json().catch(() => ({}))) as {
+        payload?: Partial<ReportPayload>;
+        error?: string;
+      };
+      if (!res.ok) throw new Error(body.error || res.statusText);
+      if (sectionCacheKeyRef.current !== cacheKeySnapshot) return;
+      const slice = sanitizePayloadForDomain(
+        body.payload as ReportPayload | null,
+        domainSlugRef.current,
+      );
+      if (slice) {
+        setData((prev) => (prev == null ? (slice as ReportPayload) : { ...prev, ...slice }));
+      }
+      setSectionStatus((prev) => ({ ...prev, [section]: 'loaded' }));
+    } catch {
+      setSectionStatus((prev) => ({ ...prev, [section]: 'error' }));
+    } finally {
+      inFlightSectionsRef.current.delete(section);
+    }
+  }, []); // all dependencies are stable refs or stable setters
+
   const applyPayload = useCallback(async (reportId: number | null) => {
     const scoped = domainSlugRef.current;
+    // Reset section cache for the new report
+    inFlightSectionsRef.current = new Set();
+    sectionCacheKeyRef.current = `${reportId ?? 'latest'}:${scoped ?? ''}`;
+    setSectionStatus({});
     setLoading(true);
     setError(null);
     try {
@@ -148,12 +203,20 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
           : '';
       const url =
         reportId != null
-          ? reportApi(`/payload?reportId=${encodeURIComponent(String(reportId))}${domainQ}`)
-          : reportApi(scoped ? `/payload?domain=${encodeURIComponent(scoped)}` : '/payload');
+          ? reportApi(
+              `/payload?reportId=${encodeURIComponent(String(reportId))}&section=core${domainQ}`,
+            )
+          : reportApi(
+              scoped
+                ? `/payload?domain=${encodeURIComponent(scoped)}&section=core`
+                : '/payload?section=core',
+            );
       const res = await fetch(url);
       const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
       if (!res.ok) throw new Error(body.error || res.statusText);
-      setData(sanitizePayloadForDomain(body.payload ?? null, scoped));
+      const coreData = sanitizePayloadForDomain(body.payload ?? null, scoped);
+      setData((prev) => (prev == null ? coreData : { ...prev, ...(coreData ?? {}) }));
+      setSectionStatus((prev) => ({ ...prev, core: 'loaded' }));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       const allowGlobalFallback =
@@ -165,12 +228,14 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
         try {
           const res = await fetch(
             scoped
-              ? reportApi(`/payload?domain=${encodeURIComponent(scoped)}`)
-              : reportApi('/payload'),
+              ? reportApi(`/payload?domain=${encodeURIComponent(scoped)}&section=core`)
+              : reportApi('/payload?section=core'),
           );
           const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
           if (!res.ok) throw new Error(body.error || res.statusText);
-          setData(sanitizePayloadForDomain(body.payload ?? null, scoped));
+          const coreData = sanitizePayloadForDomain(body.payload ?? null, scoped);
+          setData((prev) => (prev == null ? coreData : { ...prev, ...(coreData ?? {}) }));
+          setSectionStatus((prev) => ({ ...prev, core: 'loaded' }));
         } catch (e2) {
           setError(e2 instanceof Error ? e2.message : String(e2));
         }
@@ -179,8 +244,13 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       }
     } finally {
       setLoading(false);
+      // Background-prefetch remaining sections in priority order (fire-and-forget)
+      const nonCore = SECTION_KEYS.filter((s) => s !== 'core');
+      for (const section of nonCore) {
+        void loadSection(section, reportId);
+      }
     }
-  }, []);
+  }, [loadSection]);
 
   const refreshReports = useCallback(async () => {
     const scoped = domainSlugRef.current;
@@ -234,6 +304,9 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     if (crawlRunId == null || !Number.isFinite(Number(crawlRunId))) return false;
     setLoading(true);
     setError(null);
+    inFlightSectionsRef.current = new Set();
+    sectionCacheKeyRef.current = `crawl:${crawlRunId}`;
+    setSectionStatus({});
     try {
       const res = await fetch(
         reportApi(`/crawl-payload?crawlRunId=${encodeURIComponent(String(crawlRunId))}`),
@@ -247,6 +320,8 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       setCompareData(null);
       setCompareSummary(null);
       setServerReportDiff(null);
+      // Crawl preview provides core + links fields inline
+      setSectionStatus({ core: 'loaded', links: 'loaded' });
       return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -488,6 +563,8 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       crawlRuns,
       startUrlByRunId,
       domainSlug: domainSlug ?? null,
+      sectionStatus,
+      loadSection,
     }),
     [
       data,
@@ -508,6 +585,8 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       crawlRuns,
       startUrlByRunId,
       domainSlug,
+      sectionStatus,
+      loadSection,
     ],
   );
 

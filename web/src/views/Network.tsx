@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useDeferredValue } from 'react';
 import ForceGraph3D from '3d-force-graph';
 import { Maximize, Minimize, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
 import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Button, DataViewLayout, LabelWithHint } from '../components';
 import type { GraphEdge, GraphNode, ViewProps } from '@/types';
@@ -75,7 +76,8 @@ export default function Network({ searchQuery = '' }: ViewProps) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const graphRef = useRef<ForceGraphInstance | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const { data, loading } = useReport();
+  const { data } = useReport();
+  const structureStatus = useSectionData('structure');
 
   const deferredSearch = useDeferredValue(searchQuery);
 
@@ -239,7 +241,9 @@ export default function Network({ searchQuery = '' }: ViewProps) {
     return () => document.removeEventListener('fullscreenchange', onFs);
   }, []);
 
-  if (loading) {
+  if (!data) return null;
+
+  if (structureStatus === 'loading' || structureStatus === 'idle') {
     return (
       <PageLayout variant="fullHeight" className="space-y-6">
         <PageHeader title={vn.title} subtitle={vn.subtitle} />
@@ -250,8 +254,6 @@ export default function Network({ searchQuery = '' }: ViewProps) {
       </PageLayout>
     );
   }
-
-  if (!data) return null;
 
   const hasGraph =
     (data.graph_nodes?.length ?? 0) > 0 || (data.graph_edges?.length ?? 0) > 0;

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef, useCallback, type MouseEvent } from 'react';
-import { Link as LinkIcon, ArrowLeft, AlertTriangle, Download, List, TextQuote } from 'lucide-react';
+import { Link as LinkIcon, ArrowLeft, AlertTriangle, Download, List, TextQuote, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
 import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Button, AlertBanner, ViewTabs } from '../components';
 import type { ViewTabItem } from '../components';
@@ -74,6 +75,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
   const vl = strings.views.links;
   const sj = strings.common;
   const { data } = useReport();
+  const linksStatus = useSectionData('links');
   const pipeline = useOptionalPipeline();
   const propertyId = Number(pipeline?.configState.active_property_id || 0);
   const searchParams = useSearchParams();
@@ -394,6 +396,18 @@ export default function Links({ searchQuery = '' }: ViewProps) {
   }, []);
 
   if (!data) return null;
+
+  if ((linksStatus === 'loading' || linksStatus === 'idle') && !data.links?.length) {
+    return (
+      <PageLayout className="space-y-6">
+        <PageHeader title={vl.title} />
+        <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          {strings.app.loading}
+        </div>
+      </PageLayout>
+    );
+  }
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const pageLinks = filtered.slice((page - 1) * perPage, page * perPage);

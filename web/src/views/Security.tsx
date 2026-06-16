@@ -2,8 +2,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { Bar, Doughnut } from 'react-chartjs-2';
 import type { TooltipItem } from 'chart.js';
-import { Shield, Flame, AlertTriangle, AlertCircle, Info, ExternalLink, BarChart3, List } from 'lucide-react';
+import { Shield, Flame, AlertTriangle, AlertCircle, Info, ExternalLink, BarChart3, List, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Badge, ViewTabs, ViewTabPanel, Button, StatCard, ChartTitleWithHint } from '../components';
 import { metricHelpHint } from '@/lib/metricHelp';
@@ -97,6 +98,7 @@ type SecurityTabId = (typeof SECURITY_TABS)[number];
 
 export default function Security({ searchQuery = '' }: ViewProps) {
   const { data } = useReport();
+  const securityStatus = useSectionData('security');
   const [severityFilter, setSeverityFilter] = useState('All');
   const [activeTab, setActiveTab] = useUrlTab(SECURITY_TABS, 'findings');
   const [findingsPage, setFindingsPage] = useState(1);
@@ -215,6 +217,21 @@ export default function Security({ searchQuery = '' }: ViewProps) {
   }, [vs.tabs, allFindings.length, typeLabels.length]);
 
   if (!data) return null;
+
+  if ((securityStatus === 'loading' || securityStatus === 'idle') && !allFindings.length) {
+    return (
+      <PageLayout className="space-y-6">
+        <PageHeader
+          icon={<Shield className="h-7 w-7 text-link shrink-0" />}
+          title={vs.title}
+        />
+        <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          {strings.app.loading}
+        </div>
+      </PageLayout>
+    );
+  }
 
   const severityCounts = SEVERITY_ORDER.reduce<Record<string, number>>((acc, s) => {
     acc[s] = allFindings.filter((f) => (f.severity || 'Info') === s).length;

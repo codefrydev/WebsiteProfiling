@@ -6,6 +6,7 @@ import type {
   ReportPayload,
 } from '@/types/report';
 import type { ReportCompareSummary } from '@/lib/reportCompare';
+import type { SectionKey } from '@/lib/reportSections';
 
 export interface ReportContextValue {
   data: ReportPayload | null;
@@ -29,4 +30,8 @@ export interface ReportContextValue {
   startUrlByRunId: Map<number, string>;
   /** From ?domain= query when viewing a single-brand portfolio. */
   domainSlug: string | null;
+  /** Per-section loading status. Undefined means the section hasn't been requested yet. */
+  sectionStatus: Partial<Record<SectionKey, 'loading' | 'loaded' | 'error'>>;
+  /** Trigger loading of a specific section. Idempotent — skips if already loading or loaded. */
+  loadSection: (section: SectionKey, reportId: number | null) => Promise<void>;
 }

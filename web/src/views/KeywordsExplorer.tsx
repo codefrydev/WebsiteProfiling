@@ -3,10 +3,11 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { KeywordRow, KeywordReportData, ViewProps } from '@/types';
 import type { CannibalisationItem, KeywordHistoryMap, QueryPageMisalignmentItem } from '@/types/components';
-import { Key, Settings2, Play } from 'lucide-react';
+import { Key, Settings2, Play, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
 import { useOptionalPipeline } from '../context/PipelineContext';
 import { useKeywordBrandQuery } from '@/hooks/useKeywordBrandQuery';
 import { filterKeywordRowsForDomain } from '@/lib/filterKeywordsForDomain';
@@ -55,6 +56,7 @@ const EMPTY_HISTORY: KeywordHistoryMap = {};
 export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
   const router = useRouter();
   const { data, startUrlByRunId, selectedReportId, loadReport } = useReport();
+  const keywordsStatus = useSectionData('keywords');
   const pipeline = useOptionalPipeline();
   const propertyId = Number(pipeline?.configState.active_property_id || 0);
   const ke = strings.views.keywordsExplorer;
@@ -299,6 +301,21 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
   }, [activeTab, tableRows.length, hasActiveFilters, tabBaseCount, ke, clearFilters]);
 
   if (!kwData || rows.length === 0) {
+    if (keywordsStatus === 'loading' || keywordsStatus === 'idle') {
+      return (
+        <PageLayout className="space-y-6">
+          <PageHeader
+            icon={<Key className="h-7 w-7 text-link shrink-0" />}
+            title={ke.title}
+            subtitle={ke.subtitle}
+          />
+          <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {strings.app.loading}
+          </div>
+        </PageLayout>
+      );
+    }
     return (
       <PageLayout className="space-y-6">
         <PageHeader

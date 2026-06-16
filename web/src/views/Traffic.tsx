@@ -4,8 +4,9 @@ import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import type { Ga4PageRow, UrlJoinData } from '@/types';
 import type { TableColumn } from '@/types/components';
-import { Users, AlertCircle, Settings2, Download } from 'lucide-react';
+import { Users, AlertCircle, Settings2, Download, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs, EmptyState } from '../components';
@@ -52,6 +53,7 @@ function EngagementBadge({ rate }: { rate?: number | null }) {
 
 export default function Traffic() {
   const { data } = useReport();
+  const trafficStatus = useSectionData('traffic');
   const tf = strings.views.traffic;
   const sp = strings.views.searchPerformance;
   const searchParams = useSearchParams();
@@ -183,6 +185,17 @@ export default function Traffic() {
   ) : null;
 
   if (!google) {
+    if (trafficStatus === 'loading' || trafficStatus === 'idle') {
+      return (
+        <PageLayout className="space-y-6">
+          <PageHeader title={tf.title} />
+          <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {strings.app.loading}
+          </div>
+        </PageLayout>
+      );
+    }
     return (
       <PageLayout className="space-y-6">
         <EmptyState

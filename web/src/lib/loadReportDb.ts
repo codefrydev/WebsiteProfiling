@@ -10,6 +10,7 @@ import type {
 } from '@/types/report';
 import { normalizeDomainQueryParam, domainQueryMatchesRow } from '@/lib/domainSlug';
 import { googlePayloadMatchesDomain, stripGoogleIfDomainMismatch } from '@/lib/filterGoogleForDomain';
+import { type SectionKey, slicePayloadForSection } from '@/lib/reportSections';
 
 async function crawlRunStartUrlsMap(client: PoolClient): Promise<Map<number, string>> {
   const m = new Map<number, string>();
@@ -380,38 +381,89 @@ export async function mergeSidecarPayloadData(
   return merged;
 }
 
-export async function readReportPayloadFromDatabase(
+async function resolveReportRow(
   client: PoolClient,
-  reportId: number | null = null,
+  reportId: number | null,
   domainSlug?: string | null,
-): Promise<ReportPayload> {
-  let row;
+): Promise<{ row: { data: unknown }; resolvedReportId: number | null }> {
   let resolvedReportId = reportId;
 
   if (resolvedReportId == null && domainSlug) {
     const reports = await listReportsFromDatabase(client);
     const normalized = normalizeDomainQueryParam(domainSlug);
     const match = reports.find((r) => domainQueryMatchesRow(r, normalized));
-    if (!match) {
-      throw new Error('No report for domain');
-    }
+    if (!match) throw new Error('No report for domain');
     resolvedReportId = match.id;
   }
 
+  let row: { data: unknown } | undefined;
   if (resolvedReportId != null) {
-    const res = await client.query('SELECT data FROM report_payload WHERE id = $1', [resolvedReportId]);
+    const res = await client.query<{ data: unknown }>(
+      'SELECT data FROM report_payload WHERE id = $1',
+      [resolvedReportId],
+    );
     row = res.rows[0];
   } else {
-    const res = await client.query(
+    const res = await client.query<{ data: unknown }>(
       'SELECT data FROM report_payload ORDER BY id DESC LIMIT 1',
     );
     row = res.rows[0];
   }
+
   if (!row) {
     throw new Error(
       resolvedReportId != null ? 'Report not found' : 'No report_payload in DB',
     );
   }
+
+  return { row, resolvedReportId };
+}
+
+export async function readReportSectionFromDatabase(
+  client: PoolClient,
+  section: SectionKey,
+  reportId: number | null = null,
+  domainSlug?: string | null,
+): Promise<Partial<ReportPayload>> {
+  const { row } = await resolveReportRow(client, reportId, domainSlug);
+  const base = parseJsonField(row.data) as ReportPayload;
+  const slice = slicePayloadForSection(base, section);
+
+  if (section === 'traffic') {
+    const propertyId = await propertyIdForPayload(client, base, domainSlug);
+    const google = await readLatestGooglePayload(client, propertyId);
+    if (google) {
+      if (!domainSlug || googlePayloadMatchesDomain(google as ReportPayload['google'], domainSlug)) {
+        slice.google = google as ReportPayload['google'];
+      }
+    } else if (domainSlug && base.google && !googlePayloadMatchesDomain(base.google, domainSlug)) {
+      delete slice.google;
+    }
+  }
+
+  if (section === 'keywords') {
+    const propertyId = await propertyIdForPayload(client, base, domainSlug);
+    const keywords = await readLatestKeywordPayload(client, propertyId);
+    if (keywords) slice.keywords = keywords as ReportPayload['keywords'];
+    const competitorGap = await readCompetitorKeywordGap(client, propertyId);
+    if (competitorGap.length > 0) slice.competitor_keyword_gap = competitorGap;
+  }
+
+  if (section === 'gsc-links') {
+    const propertyId = await propertyIdForPayload(client, base, domainSlug);
+    const gscLinks = await readLatestGscLinksPayload(client, propertyId);
+    if (gscLinks) slice.gsc_links = gscLinks as ReportPayload['gsc_links'];
+  }
+
+  return slice;
+}
+
+export async function readReportPayloadFromDatabase(
+  client: PoolClient,
+  reportId: number | null = null,
+  domainSlug?: string | null,
+): Promise<ReportPayload> {
+  const { row } = await resolveReportRow(client, reportId, domainSlug);
   const payload = parseJsonField(row.data) as ReportPayload;
   return mergeSidecarPayloadData(client, payload, domainSlug);
 }

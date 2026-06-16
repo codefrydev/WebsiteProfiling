@@ -2,10 +2,11 @@
 
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
-import { Link2, Settings2 } from 'lucide-react';
+import { Link2, Settings2, Loader2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
 import { useOptionalPipeline } from '../context/PipelineContext';
 import { apiUrl } from '../lib/publicBase';
 import { strings, format } from '../lib/strings';
@@ -35,6 +36,7 @@ export default function Backlinks(_props: ViewProps) {
   const vb = strings.views.backlinks;
   const searchParams = useSearchParams();
   const { data, loadReport } = useReport();
+  const gscLinksStatus = useSectionData('gsc-links');
   const pipeline = useOptionalPipeline();
   const propertyId = Number(pipeline?.configState.active_property_id || 0);
   const gscLinks = data?.gsc_links;
@@ -242,6 +244,17 @@ export default function Backlinks(_props: ViewProps) {
   );
 
   if (!gscLinks?.export_types?.length) {
+    if (gscLinksStatus === 'loading' || gscLinksStatus === 'idle') {
+      return (
+        <PageLayout className="space-y-6">
+          <PageHeader title={vb.title} />
+          <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {strings.app.loading}
+          </div>
+        </PageLayout>
+      );
+    }
     return (
       <PageLayout className="space-y-6">
         <EmptyState

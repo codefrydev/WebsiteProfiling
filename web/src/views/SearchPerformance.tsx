@@ -4,8 +4,9 @@ import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect } from 'react';
 import type { GscPageRow, UrlJoinData } from '@/types';
 import type { TableColumn } from '@/types/components';
-import { TrendingUp, Search, AlertCircle, Settings2, Download } from 'lucide-react';
+import { TrendingUp, Search, AlertCircle, Settings2, Download, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useSectionData } from '@/hooks/useSectionData';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs } from '../components';
@@ -53,6 +54,7 @@ function PositionBadge({ pos }: { pos?: number | string | null }) {
 
 export default function SearchPerformance() {
   const { data } = useReport();
+  const trafficStatus = useSectionData('traffic');
   const sp = strings.views.searchPerformance;
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useUrlTab(TABS, 'overview');
@@ -219,6 +221,17 @@ export default function SearchPerformance() {
   ) : null;
 
   if (!google) {
+    if (trafficStatus === 'loading' || trafficStatus === 'idle') {
+      return (
+        <PageLayout className="space-y-6">
+          <PageHeader title={sp.title} />
+          <div className="flex items-center justify-center gap-2 py-16 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {strings.app.loading}
+          </div>
+        </PageLayout>
+      );
+    }
     return (
       <PageLayout className="space-y-6">
         <div className="max-w-md mx-auto text-center py-16">
