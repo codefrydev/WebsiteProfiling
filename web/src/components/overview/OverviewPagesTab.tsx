@@ -14,6 +14,7 @@ import {
   TableRow,
   TableCell,
 } from '@/components';
+import UrlInspectorButton from '@/components/UrlInspectorButton';
 import { InlinksMetricCell, RelativeMetricBar } from '@/components/links';
 import { OverviewTabPanel } from './OverviewTabPanel';
 
@@ -119,6 +120,7 @@ function TopPagesTable({ pages }: { pages: ReportTopPage[] }) {
                       <span className="truncate font-mono">{hrefLines.label}</span>
                       <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" />
                     </a>
+                    <UrlInspectorButton url={p.url} label={strings.views.links.inspect} className="self-start" />
                   </div>
                 </TableCell>
                 <TableCell className="text-right align-middle min-w-0">

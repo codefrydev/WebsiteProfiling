@@ -1,9 +1,13 @@
 'use client';
 
-import { useMemo } from 'react';
-import { X } from 'lucide-react';
+import { Fragment, useMemo } from 'react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useReport } from '@/context/useReport';
+import { useUrlInspector } from '@/context/UrlInspectorContext';
+import { useSectionData } from '@/hooks/useSectionData';
 import InspectorTabs from '@/components/links/InspectorTabs';
+import { shortPath } from '@/lib/linkGraph';
+import { strings } from '@/lib/strings';
 import type { InspectorDetails, LinkDetail, ReportLink } from '@/types/report';
 
 interface UrlInspectorDrawerProps {
@@ -60,6 +64,11 @@ function buildInspectorDetails(data: NonNullable<ReturnType<typeof useReport>['d
 
 export default function UrlInspectorDrawer({ url, onClose }: UrlInspectorDrawerProps) {
   const { data } = useReport();
+  const { trail, back, forward, goTo, canGoBack, canGoForward } = useUrlInspector();
+  const ui = strings.components.urlInspector;
+  // Ensure link-graph data (link_edges, inlink_anchor_matrix) is loaded while the
+  // inspector is open, even if it was launched from a view that didn't need it.
+  useSectionData('links', Boolean(url));
   const links = (data?.links || []) as ReportLink[];
 
   const link = useMemo((): LinkDetail | null => {
@@ -77,12 +86,68 @@ export default function UrlInspectorDrawer({ url, onClose }: UrlInspectorDrawerP
   if (!url || !link) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label="URL inspector">
-      <button type="button" className="flex-1 bg-black/40" onClick={onClose} aria-label="Close inspector" />
-      <div className="w-full max-w-2xl h-full bg-background border-l border-default shadow-xl flex flex-col">
-        <div className="shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-b border-default">
-          <p className="text-sm font-mono truncate text-foreground">{url}</p>
-          <button type="button" onClick={onClose} className="p-1 rounded hover:bg-brand-700" aria-label="Close">
+    <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={ui.label}>
+      <button type="button" className="flex-1 bg-black/40" onClick={onClose} aria-label={ui.close} />
+      <div className="w-full max-w-2xl h-full bg-brand-800 border-l border-default shadow-xl flex flex-col fade-in">
+        <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-b border-default">
+          <div className="flex items-center gap-0.5 shrink-0">
+            <button
+              type="button"
+              onClick={back}
+              disabled={!canGoBack}
+              title={ui.back}
+              aria-label={ui.back}
+              className="p-1.5 rounded-lg text-muted-foreground enabled:hover:bg-brand-700 enabled:hover:text-bright disabled:opacity-30 disabled:cursor-not-allowed press"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              onClick={forward}
+              disabled={!canGoForward}
+              title={ui.forward}
+              aria-label={ui.forward}
+              className="p-1.5 rounded-lg text-muted-foreground enabled:hover:bg-brand-700 enabled:hover:text-bright disabled:opacity-30 disabled:cursor-not-allowed press"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+          <nav aria-label={ui.trailAria} className="flex-1 min-w-0 overflow-x-auto">
+            <ol className="flex items-center gap-1 whitespace-nowrap">
+              {trail.map((u, i) => {
+                const isLast = i === trail.length - 1;
+                return (
+                  <Fragment key={`${u}-${i}`}>
+                    {i > 0 && (
+                      <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/50" aria-hidden />
+                    )}
+                    <li className="min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => goTo(i)}
+                        disabled={isLast}
+                        title={u}
+                        aria-current={isLast ? 'page' : undefined}
+                        className={
+                          isLast
+                            ? 'font-mono text-xs text-bright truncate max-w-[18rem] block'
+                            : 'font-mono text-xs text-muted-foreground hover:text-foreground truncate max-w-[9rem] block transition-colors'
+                        }
+                      >
+                        {shortPath(u) || u}
+                      </button>
+                    </li>
+                  </Fragment>
+                );
+              })}
+            </ol>
+          </nav>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1 rounded hover:bg-brand-700 shrink-0"
+            aria-label={ui.close}
+          >
             <X className="h-5 w-5" />
           </button>
         </div>

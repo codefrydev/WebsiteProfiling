@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef, useMemo, useDeferredValue } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, useDeferredValue } from 'react';
 import ForceGraph3D from '3d-force-graph';
-import { Maximize, Minimize, Loader2 } from 'lucide-react';
+import { Maximize, Minimize, ExternalLink, X } from 'lucide-react';
 import { useReport } from '../context/useReport';
+import { useOptionalUrlInspector } from '@/context/UrlInspectorContext';
 import { useSectionData } from '@/hooks/useSectionData';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
+import { shortPath } from '@/lib/linkGraph';
 import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Button, DataViewLayout, LabelWithHint } from '../components';
 import type { GraphEdge, GraphNode, ViewProps } from '@/types';
@@ -18,6 +20,12 @@ interface GraphNodeData {
 interface GraphLinkData {
   source: string;
   target: string;
+}
+
+/** After the force simulation runs, 3d-force-graph mutates source/target into node objects. */
+interface GraphLinkRuntime {
+  source: string | { id?: string };
+  target: string | { id?: string };
 }
 
 interface GraphPayload {
@@ -36,14 +44,20 @@ interface ForceGraphInstance {
   graphData: (data: { nodes: GraphNodeData[]; links: GraphLinkData[] }) => ForceGraphInstance;
   nodeColor: (fn: (node: GraphNodeData) => string) => ForceGraphInstance;
   nodeLabel: (fn: (node: GraphNodeData) => string) => ForceGraphInstance;
-  linkColor: (fn: () => string) => ForceGraphInstance;
+  linkColor: (fn: (link: GraphLinkRuntime) => string) => ForceGraphInstance;
   onNodeClick: (fn: (node: GraphNodeData) => void) => ForceGraphInstance;
+  onBackgroundClick: (fn: () => void) => ForceGraphInstance;
   backgroundColor: (color: string) => ForceGraphInstance;
   showNavInfo: (show: boolean) => ForceGraphInstance;
   warmupTicks: (n: number) => ForceGraphInstance;
   cooldownTicks: (n: number) => ForceGraphInstance;
   d3AlphaDecay: (n: number) => ForceGraphInstance;
   d3VelocityDecay: (n: number) => ForceGraphInstance;
+  cameraPosition?: (
+    pos: { x: number; y: number; z: number },
+    lookAt?: unknown,
+    ms?: number,
+  ) => void;
 }
 
 /** Fewer simulation ticks + faster decay for large graphs (less CPU / quicker settle). */
@@ -71,15 +85,29 @@ function applyGraphPhysics(
   }
 }
 
+const BASE_LINK_COLOR = 'rgba(148, 163, 184, 0.3)';
+const SELECTED_NODE_COLOR = '#fbbf24';
+const DIM_NODE_COLOR = 'rgba(100, 116, 139, 0.12)';
+const NEIGHBOR_LINK_COLOR = 'rgba(96, 165, 250, 0.85)';
+const DIM_LINK_COLOR = 'rgba(148, 163, 184, 0.05)';
+
 export default function Network({ searchQuery = '' }: ViewProps) {
   const vn = strings.views.network;
   const containerRef = useRef<HTMLDivElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const graphRef = useRef<ForceGraphInstance | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selected, setSelected] = useState<string | null>(null);
   const { data } = useReport();
+  const inspector = useOptionalUrlInspector();
   const structureStatus = useSectionData('structure');
   const linksStatus = useSectionData('links');
+
+  // Refs read by the (long-lived) graph callbacks so they never go stale.
+  const selectionRef = useRef<{ id: string; neighbors: Set<string> } | null>(null);
+  const neighborIndexRef = useRef<Map<string, Set<string>>>(new Map());
+  const openUrlRef = useRef<((url: string) => void) | null>(null);
+  const recolorRef = useRef<() => void>(() => {});
 
   const deferredSearch = useDeferredValue(searchQuery);
 
@@ -153,6 +181,32 @@ export default function Network({ searchQuery = '' }: ViewProps) {
     };
   }, [data, deferredSearch]);
 
+  // Undirected neighbour index for click-to-highlight.
+  const neighborIndex = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    graphPayload?.links.forEach((l) => {
+      if (!m.has(l.source)) m.set(l.source, new Set());
+      if (!m.has(l.target)) m.set(l.target, new Set());
+      m.get(l.source)!.add(l.target);
+      m.get(l.target)!.add(l.source);
+    });
+    return m;
+  }, [graphPayload]);
+
+  useEffect(() => {
+    neighborIndexRef.current = neighborIndex;
+  }, [neighborIndex]);
+
+  useEffect(() => {
+    openUrlRef.current = inspector?.openUrl ?? null;
+  }, [inspector]);
+
+  const clearSelection = useCallback(() => {
+    selectionRef.current = null;
+    setSelected(null);
+    recolorRef.current();
+  }, []);
+
   useEffect(() => {
     const prev = graphRef.current;
     if (prev?._destructor) {
@@ -163,35 +217,71 @@ export default function Network({ searchQuery = '' }: ViewProps) {
       }
       graphRef.current = null;
     }
+    // Reset any highlight when the graph is rebuilt (e.g. on search).
+    selectionRef.current = null;
+    setSelected(null);
 
     if (!data || !containerRef.current || !graphPayload || graphPayload.nodes.length === 0) {
       return undefined;
     }
 
     const el = containerRef.current;
-    type ForceGraphFactory = () => (container: HTMLElement) => ForceGraphInstance & {
-      graphData: (data: { nodes: GraphNodeData[]; links: GraphLinkData[] }) => ForceGraphInstance & Record<string, unknown>;
-      nodeColor: (fn: (node: GraphNodeData) => string) => ForceGraphInstance & Record<string, unknown>;
-      nodeLabel: (fn: (node: GraphNodeData) => string) => ForceGraphInstance & Record<string, unknown>;
-      linkColor: (fn: () => string) => ForceGraphInstance & Record<string, unknown>;
-      onNodeClick: (fn: (node: GraphNodeData) => void) => ForceGraphInstance & Record<string, unknown>;
-      backgroundColor: (color: string) => ForceGraphInstance & Record<string, unknown>;
-      showNavInfo: (show: boolean) => ForceGraphInstance & Record<string, unknown>;
-      width: (w: number) => ForceGraphInstance & Record<string, unknown>;
-      height: (h: number) => ForceGraphInstance & Record<string, unknown>;
-      pauseAnimation: () => void;
-      resumeAnimation: () => void;
-      _destructor?: () => void;
-    };
+    type ForceGraphFactory = () => (container: HTMLElement) => ForceGraphInstance;
     const createGraph = ForceGraph3D as unknown as ForceGraphFactory;
+
+    const nodeColorFn = (node: GraphNodeData): string => {
+      const sel = selectionRef.current;
+      if (!sel) return node.color;
+      if (node.id === sel.id) return SELECTED_NODE_COLOR;
+      if (sel.neighbors.has(node.id)) return node.color;
+      return DIM_NODE_COLOR;
+    };
+    const linkColorFn = (link: GraphLinkRuntime): string => {
+      const sel = selectionRef.current;
+      if (!sel) return BASE_LINK_COLOR;
+      const s = typeof link.source === 'object' ? link.source?.id : link.source;
+      const t = typeof link.target === 'object' ? link.target?.id : link.target;
+      return s === sel.id || t === sel.id ? NEIGHBOR_LINK_COLOR : DIM_LINK_COLOR;
+    };
+
     const graph = createGraph()(el)
       .graphData({ nodes: graphPayload.nodes, links: graphPayload.links })
-      .nodeColor((node: GraphNodeData) => node.color)
+      .nodeColor(nodeColorFn)
       .nodeLabel((node: GraphNodeData) => node.title || node.id)
-      .linkColor(() => 'rgba(148, 163, 184, 0.3)')
-      .onNodeClick((node: GraphNodeData) => { if (node?.id) window.open(node.id, '_blank'); })
+      .linkColor(linkColorFn)
+      .onNodeClick((node: GraphNodeData) => {
+        if (!node?.id) return;
+        selectionRef.current = {
+          id: node.id,
+          neighbors: neighborIndexRef.current.get(node.id) || new Set<string>(),
+        };
+        setSelected(node.id);
+        recolorRef.current();
+        const open = openUrlRef.current;
+        if (open) open(node.id);
+        else window.open(node.id, '_blank');
+        try {
+          const n = node as GraphNodeData & { x?: number; y?: number; z?: number };
+          if (graph.cameraPosition && n.x != null && n.y != null && n.z != null) {
+            const hyp = Math.hypot(n.x, n.y, n.z) || 1;
+            const ratio = 1 + 160 / hyp;
+            graph.cameraPosition({ x: n.x * ratio, y: n.y * ratio, z: n.z * ratio }, n, 700);
+          }
+        } catch {
+          /* camera focus is best-effort */
+        }
+      })
+      .onBackgroundClick(() => {
+        selectionRef.current = null;
+        setSelected(null);
+        recolorRef.current();
+      })
       .backgroundColor('#05080f')
       .showNavInfo(false);
+
+    recolorRef.current = () => {
+      graph.nodeColor(nodeColorFn).linkColor(linkColorFn);
+    };
 
     applyGraphPhysics(graph, graphPayload.nodes.length, graphPayload.links.length);
 
@@ -291,6 +381,7 @@ export default function Network({ searchQuery = '' }: ViewProps) {
                   <div className="w-4 h-0.5 bg-brand-700" />
                   <LabelWithHint label={vn.legendLink} helpKey="views.network.legendLink" />
                 </div>
+                <p className="pt-1 text-[11px] text-muted-foreground border-t border-default">{vn.clickHint}</p>
               </div>
               <Button
                 variant="secondary"
@@ -301,6 +392,35 @@ export default function Network({ searchQuery = '' }: ViewProps) {
                 {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
                 {isFullscreen ? vn.exitFullscreen : vn.fullscreen}
               </Button>
+              {selected && (
+                <div className="absolute bottom-4 left-4 z-10 max-w-[min(28rem,80vw)] rounded-xl border border-default bg-brand-900/95 p-3 shadow-lg fade-in">
+                  <div className="mb-1.5 flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      {vn.selectedLabel}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={clearSelection}
+                      className="inline-flex items-center gap-1 rounded p-0.5 text-muted-foreground hover:text-bright"
+                      aria-label={vn.clearSelection}
+                      title={vn.clearSelection}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <p className="mb-2 break-all font-mono text-xs text-bright" title={selected}>
+                    {shortPath(selected) || selected}
+                  </p>
+                  <a
+                    href={selected}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-link hover:underline"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5" /> {vn.openLive}
+                  </a>
+                </div>
+              )}
             </>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center p-5 text-muted-foreground">

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
-import { Gauge, Share2, Code2, Shield, AlertTriangle, FileBarChart, LineChart } from 'lucide-react';
+import { Gauge, Share2, Code2, Shield, AlertTriangle, FileBarChart, LineChart, Network } from 'lucide-react';
 import ViewTabs from '@/components/ViewTabs';
 import type { InspectorDetails, InspectorIssueRow, LinkDetail, LinkLighthouseData } from '@/types/report';
 import { strings, format } from '../../lib/strings';
@@ -12,6 +12,7 @@ import ContentTab from './tabs/ContentTab';
 import TechnicalTab from './tabs/TechnicalTab';
 import IssuesTab from './tabs/IssuesTab';
 import PageAnalysisTab from './tabs/PageAnalysisTab';
+import ConnectionsTab from './tabs/ConnectionsTab';
 import SearchRetentionTab from './tabs/SearchRetentionTab';
 import PageImprovePanel from './PageImprovePanel';
 import { Sparkles } from 'lucide-react';
@@ -21,6 +22,7 @@ const ci = strings.components.inspectorTabs;
 const TAB_ICONS: Record<string, ReactNode> = {
   overview: <Gauge className="h-3.5 w-3.5" />,
   analysis: <FileBarChart className="h-3.5 w-3.5" />,
+  connections: <Network className="h-3.5 w-3.5" />,
   search: <LineChart className="h-3.5 w-3.5" />,
   seo: <Share2 className="h-3.5 w-3.5" />,
   content: <Code2 className="h-3.5 w-3.5" />,
@@ -29,11 +31,12 @@ const TAB_ICONS: Record<string, ReactNode> = {
   improve: <Sparkles className="h-3.5 w-3.5" />,
 };
 
-const TAB_IDS = ['overview', 'analysis', 'search', 'seo', 'content', 'technical', 'issues', 'improve'] as const;
+const TAB_IDS = ['overview', 'analysis', 'connections', 'search', 'seo', 'content', 'technical', 'issues', 'improve'] as const;
 
 const TAB_LABELS: Record<string, string> = {
   overview: ci.overview,
   analysis: ci.pageAnalysis,
+  connections: ci.connections,
   search: ci.searchRetention,
   seo: ci.seoSocial,
   content: ci.content,
@@ -142,11 +145,12 @@ export default function InspectorTabs({
         />
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto p-6">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
         {activeTab === 'overview'  && (
           <OverviewTab link={link} lhData={effectiveLh} onOpenTab={isControlled ? handleOpenTab : undefined} />
         )}
         {activeTab === 'analysis'  && <PageAnalysisTab link={link} />}
+        {activeTab === 'connections' && <ConnectionsTab link={link} />}
         {activeTab === 'search'    && <SearchRetentionTab link={link} />}
         {activeTab === 'seo'       && <SeoSocialTab link={link} />}
         {activeTab === 'content'   && <ContentTab   link={link} />}

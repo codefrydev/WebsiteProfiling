@@ -1945,7 +1945,7 @@
     },
     "network": {
       "title": "Internal Linking Map",
-      "subtitle": "Physics-based graph of internal link structure. Red nodes indicate 4xx/5xx errors.",
+      "subtitle": "Physics-based graph of internal link structure. Click a node to inspect the page and highlight its links. Red nodes indicate 4xx/5xx errors.",
       "searchEmpty": "No pages match your search.",
       "legendOk": "OK (2xx)",
       "legendBroken": "Broken (4xx/5xx)",
@@ -1954,7 +1954,11 @@
       "exitFullscreen": "Exit full screen",
       "titleFullscreen": "Full screen",
       "titleExitFullscreen": "Exit full screen",
-      "noEdges": "No edge data available."
+      "noEdges": "No edge data available.",
+      "clickHint": "Click a node to inspect · drag to rotate",
+      "openLive": "Open live site",
+      "clearSelection": "Clear",
+      "selectedLabel": "Selected page"
     },
     "charts": {
       "title": "Crawl Analytics",
@@ -3892,9 +3896,54 @@
       "content": "Content",
       "technical": "Technical",
       "issues": "Issues",
+      "connections": "Connections",
       "searchRetention": "Search & retention",
       "brokenMessage": "Broken / error response ({status})",
       "redirectMessage": "Redirect {status}"
+    },
+    "urlInspector": {
+      "label": "URL inspector",
+      "back": "Back",
+      "forward": "Forward",
+      "close": "Close",
+      "trailAria": "Inspected URL trail"
+    },
+    "connectionsTab": {
+      "intro": "Walk this page's link graph. Click any audited URL to dive into it — your trail appears in the header so you can step back.",
+      "inboundTitle": "Inbound links",
+      "outboundTitle": "Outbound links",
+      "inboundEmpty": "No crawled page links to this URL.",
+      "outboundEmpty": "This page has no recorded outbound links.",
+      "inboundHint": "Pages that link here, with anchor text and link count.",
+      "outboundHint": "Pages this page links to.",
+      "internalBadge": "Internal",
+      "externalBadge": "External",
+      "nofollowBadge": "nofollow",
+      "openLive": "Open live site",
+      "drillHint": "Inspect in app",
+      "noData": "Link relationship data is not available for this report.",
+      "loading": "Loading link graph…",
+      "showAll": "Show all {count}",
+      "showLess": "Show less",
+      "anchorJoin": "“{anchor}”",
+      "anchorMore": "+{count} more",
+      "insightsTitle": "Link insights",
+      "inboundShort": "Inbound",
+      "outboundShort": "Outbound",
+      "balanceTitle": "Link balance",
+      "anchorsTitle": "Top inbound anchor text",
+      "anchorsHint": "How other pages describe this page when linking to it.",
+      "noAnchors": "No inbound anchor text recorded."
+    },
+    "linkFlow": {
+      "title": "Link flow",
+      "inbound": "Inbound",
+      "outbound": "Outbound",
+      "more": "+{count} more",
+      "empty": "No connections to visualize yet.",
+      "centerHint": "Now inspecting",
+      "noInbound": "No inbound links",
+      "noOutbound": "No outbound links"
     },
     "pageImprove": {
       "coachButton": "Get AI coach",
