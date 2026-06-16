@@ -14,6 +14,7 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
+TESTS_DIR = Path(__file__).resolve().parent
 
 
 class _FixtureHandler(SimpleHTTPRequestHandler):

@@ -226,21 +226,7 @@ function Invoke-PytestCore {
 function Invoke-PytestReporting {
     Write-Log "Pytest (reporting coverage gate, 100%)"
     & $VENV_PYTEST `
-        tests/test_categories_roadmap.py `
-        tests/test_report_categories_golden.py `
-        tests/test_categories_coverage.py `
-        tests/test_contrast_issues.py `
-        tests/test_indexation_coverage.py `
-        tests/test_crawl_segments.py `
-        tests/test_terminology.py `
-        tests/test_compare_payload.py `
-        tests/test_optional_audits.py `
-        tests/test_property_profile.py `
-        tests/test_reporting_gaps.py `
-        tests/test_text_content_analysis.py `
-        tests/test_builder_image_buckets.py `
-        tests/test_pipeline_report_pool_unit.py `
-        tests/test_reporting_builder_modules.py `
+        tests/reporting/ `
         --cov=website_profiling.reporting `
         --cov-config=.coveragerc.reporting `
         --cov-report=term-missing `
@@ -253,31 +239,7 @@ function Invoke-PytestReporting {
 function Invoke-PytestTools {
     Write-Log "Pytest (tools coverage gate, 100%)"
     & $VENV_PYTEST `
-        tests/test_alert_checker.py `
-        tests/test_schedule_runner.py `
-        tests/test_export_audit.py `
-        tests/test_export_audit_coverage.py `
-        tests/test_audit_tools.py `
-        tests/test_audit_tools_expanded.py `
-        tests/test_audit_tools_coverage.py `
-        tests/test_audit_tools_dispatch_coverage.py `
-        tests/test_audit_tools_links_extras.py `
-        tests/test_audit_tools_expansion.py `
-        tests/test_audit_tools_expansion_coverage.py `
-        tests/test_export_custom_coverage.py `
-        tests/test_export_artifacts_coverage.py `
-        tests/test_export_compare_coverage.py `
-        tests/test_export_tools_coverage.py `
-        tests/test_image_tools.py `
-        tests/test_export_custom.py `
-        tests/test_export_artifacts.py `
-        tests/test_export_compare.py `
-        tests/test_export_workbook.py `
-        tests/test_export_sitemap.py `
-        tests/test_mcp_registry.py `
-        tests/test_mcp_resources.py `
-        tests/test_tools_gate100_coverage.py `
-        tests/test_tools_branch_coverage.py `
+        tests/tools/ `
         --cov=website_profiling.tools `
         --cov-config=.coveragerc.tools `
         --cov-report=term-missing `

@@ -92,12 +92,12 @@ These recur when adding features. Verify explicitly — do not assume tests caug
      | Gate | Config | Source | Threshold | Test scope |
      |------|--------|--------|-----------|------------|
      | Core | `.coveragerc` | all packages **except** `tools/` and `reporting/` | 100% | `pytest tests/ -m "not browser"` |
-     | Reporting | `.coveragerc.reporting` | `website_profiling.reporting` | 100% | fixed test file list |
-     | Tools | `.coveragerc.tools` | `website_profiling.tools` | 100% | fixed test file list |
+     | Reporting | `.coveragerc.reporting` | `website_profiling.reporting` | 100% | `pytest tests/reporting/` |
+     | Tools | `.coveragerc.tools` | `website_profiling.tools` | 100% | `pytest tests/tools/` |
    - **Symptom:** `./local-test` or core pytest passes at 100%, but CI fails on tools/reporting (e.g. 84% tools).
-   - **Causes:** (a) only ran core pytest, not reporting/tools gates; (b) added tests under `tests/test_<module>_coverage.py` but did not add the file to the tools gate list in **both** `scripts/local-test.sh`, `scripts/local-test.ps1`, and `.github/workflows/ci.yml`; (c) changed code under `website_profiling/tools/` without tests that hit those lines in the tools gate subset.
-   - **Do:** Run full `./local-test` before push. When adding tools coverage tests, name them `tests/test_<module>_coverage.py` (repo convention) and register the file in all three places above. Keep bash and PowerShell local-test scripts in sync.
-   - **Don't:** Assume `pytest tests/` alone matches CI. Don't rely on a single mega `test_tools_coverage_gaps.py` — split by module.
+   - **Causes:** (a) only ran core pytest, not reporting/tools gates; (b) added reporting/tools tests outside `tests/reporting/` or `tests/tools/`; (c) changed code under `website_profiling/tools/` without tests that hit those lines in the tools gate subset.
+   - **Do:** Run full `./local-test` before push. Put reporting coverage tests in `tests/reporting/` and tools coverage tests in `tests/tools/` (one module per file, e.g. `test_<module>_coverage.py`). Keep bash and PowerShell local-test scripts in sync.
+   - **Don't:** Assume `pytest tests/` alone matches CI. Don't maintain long per-file lists in CI — use the directory gates above.
 
 5. **Python — `runpy.run_module` / `__main__` guard tests**
    - Tests that execute a module as `__main__` via `runpy.run_module(..., run_name="__main__")` emit:
