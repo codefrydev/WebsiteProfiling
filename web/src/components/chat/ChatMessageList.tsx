@@ -5,10 +5,14 @@ import ChatAssistantMessage from '@/components/chat/ChatAssistantMessage';
 import type { ToolActivityItem } from '@/components/chat/ChatToolActivity';
 import { toolEventsToActivity } from '@/components/chat/deriveChatBlocks';
 
+import type { ChatNarrative } from '@/types/chatNarrative';
+import { narrativeFromToolResult } from '@/types/chatNarrative';
+
 export interface ChatMessage {
   id: string | number;
   role: 'user' | 'assistant';
   content: string;
+  narrative?: ChatNarrative;
   toolActivity?: ToolActivityItem[];
   streaming?: boolean;
   error?: boolean;
@@ -52,6 +56,7 @@ export default function ChatMessageList({ messages, empty }: ChatMessageListProp
               <div className="w-full max-w-full">
                 <ChatAssistantMessage
                   content={msg.content}
+                  narrative={msg.narrative}
                   toolActivity={msg.toolActivity}
                   streaming={msg.streaming}
                   error={msg.error}
@@ -82,3 +87,5 @@ export function agentErrorFromToolResult(
   const err = toolResult.agent_error;
   return typeof err === 'string' && err.trim() ? err.trim() : null;
 }
+
+export { narrativeFromToolResult };

@@ -9,6 +9,7 @@ import ChatShell from '@/components/chat/ChatShell';
 import ChatSidebar from '@/components/chat/ChatSidebar';
 import ChatMessageList, {
   agentErrorFromToolResult,
+  narrativeFromToolResult,
   type ChatMessage,
 } from '@/components/chat/ChatMessageList';
 import ChatComposer from '@/components/chat/ChatComposer';
@@ -23,6 +24,7 @@ import { apiUrl } from '@/lib/publicBase';
 import { format, strings } from '@/lib/strings';
 import { consumeChatSse } from '@/components/chat/parseChatSse';
 import { toolEventsToActivity } from '@/components/chat/deriveChatBlocks';
+import type { ChatNarrative } from '@/types/chatNarrative';
 import type { ToolActivityItem } from '@/components/chat/ChatToolActivity';
 import {
   buildChatSearchQuery,
@@ -198,10 +200,12 @@ export default function ChatPage() {
           .map((m) => {
             const toolActivity = toolEventsToActivity(m.tool_result);
             const agentError = agentErrorFromToolResult(m.tool_result);
+            const narrative = narrativeFromToolResult(m.tool_result);
             return {
               id: m.id,
               role: m.role as 'user' | 'assistant',
               content: m.content,
+              narrative,
               toolActivity: toolActivity.length ? toolActivity : undefined,
               partialError: Boolean(agentError && toolActivity.length > 0),
               agentError,
@@ -348,6 +352,7 @@ export default function ChatPage() {
       }
 
       let content = '';
+      let narrative: ChatNarrative | undefined;
       let streamError = '';
       const tools: ToolActivityItem[] = [];
 
@@ -387,9 +392,22 @@ export default function ChatPage() {
             toolActivity: [...tools],
             streaming: true,
           });
-        } else if (evt.type === 'done' && evt.message) {
-          content = evt.message;
-          patchAssistant({ content: evt.message, streaming: true, error: false, partialError: false });
+        } else if (evt.type === 'narrative') {
+          narrative = evt.narrative;
+          patchAssistant({
+            narrative: evt.narrative,
+            streaming: true,
+            error: false,
+            partialError: false,
+          });
+        } else if (evt.type === 'done') {
+          patchAssistant({
+            content: evt.message || content,
+            narrative,
+            streaming: true,
+            error: false,
+            partialError: false,
+          });
         } else if (evt.type === 'partial_done' && evt.message) {
           content = evt.message;
           patchAssistant({
@@ -407,6 +425,7 @@ export default function ChatPage() {
             content.trim() || (hasTools ? c.partialToolsSaved : streamError);
           patchAssistant({
             content: fallbackContent,
+            narrative,
             streaming: false,
             error: !hasTools,
             partialError: hasTools,
@@ -418,8 +437,12 @@ export default function ChatPage() {
       });
 
       if (!streamError) {
+        const hasNarrative = Boolean(
+          narrative &&
+            (narrative.power_insights.length > 0 || narrative.recommended_actions.length > 0),
+        );
         const finalContent = content.trim();
-        if (!finalContent) {
+        if (!hasNarrative && !finalContent && tools.length === 0) {
           const emptyMsg = c.emptyResponse;
           setError(emptyMsg);
           patchAssistant({
@@ -431,6 +454,7 @@ export default function ChatPage() {
         } else {
           patchAssistant({
             content: finalContent,
+            narrative,
             streaming: false,
             error: false,
             partialError: false,
@@ -439,6 +463,7 @@ export default function ChatPage() {
         }
       } else if (tools.length > 0) {
         patchAssistant({
+          narrative,
           streaming: false,
           partialError: true,
           agentError: streamError,

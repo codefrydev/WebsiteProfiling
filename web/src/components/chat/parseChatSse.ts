@@ -3,6 +3,7 @@ export type ChatSseEvent =
   | { type: 'status'; phase?: string; detail?: string }
   | { type: 'tool_start'; name?: string; args?: Record<string, unknown> }
   | { type: 'tool_end'; name?: string; result?: Record<string, unknown> }
+  | { type: 'narrative'; narrative: { power_insights: string[]; recommended_actions: string[] } }
   | { type: 'done'; message?: string }
   | { type: 'partial_done'; message?: string }
   | { type: 'error'; message?: string };
@@ -45,6 +46,18 @@ export function parseSseChunk(buffer: string): { events: ChatSseEvent[]; rest: s
           type: 'tool_end',
           name: String(data.name || ''),
           result: (data.result as Record<string, unknown>) || {},
+        });
+      } else if (eventType === 'narrative') {
+        const narrative = data.narrative as Record<string, unknown> | undefined;
+        const insights = Array.isArray(narrative?.power_insights)
+          ? (narrative.power_insights as unknown[]).map(String)
+          : [];
+        const actions = Array.isArray(narrative?.recommended_actions)
+          ? (narrative.recommended_actions as unknown[]).map(String)
+          : [];
+        events.push({
+          type: 'narrative',
+          narrative: { power_insights: insights, recommended_actions: actions },
         });
       } else if (eventType === 'done') {
         events.push({ type: 'done', message: String(data.message || '') });

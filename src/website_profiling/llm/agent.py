@@ -22,6 +22,7 @@ from ..tools.audit_tools.tool_selector import (
     select_tools_for_turn,
 )
 from .base import ChatResult, ToolCall, get_llm_client
+from .chat_narrative import ChatNarrativeError, synthesize_chat_narrative
 
 MAX_TOOL_ROUNDS_DEFAULT = 10
 MAX_TOOL_ROUNDS_EXTENDED = 100
@@ -51,6 +52,8 @@ def _max_tool_rounds(cfg: dict[str, str]) -> int:
             pass
     return MAX_TOOL_ROUNDS_DEFAULT
 
+NARRATIVE_FAILED_MSG = "Could not generate a summary. Tool results are shown below."
+
 SYSTEM_PROMPT = """You are Site Audit AI, a technical SEO assistant for a self-hosted site audit platform.
 You help users understand crawl results, audit issues, Lighthouse scores, keywords, and Search Console data.
 
@@ -63,7 +66,7 @@ Tool routing (only a subset of tools is loaded each turn):
 - Use get_data_coverage_report when tools return empty or missing data.
 
 Image playbook:
-- Overview: get_image_audit_summary first — the UI renders summary cards, page preview lists (alt/lazy/OG/dimensions), and Lighthouse image findings. Write only ### Power Insights and ### Recommended actions (interpretation). Never repeat counts, URL lists, or markdown tables of pages.
+- Overview: get_image_audit_summary first — the UI renders summary cards, page preview lists (alt/lazy/OG/dimensions), and Lighthouse image findings. Call tools only; the app generates user-facing narrative separately.
 - Missing alt / lazy / OG / dimensions: get_image_audit_summary includes previews; call list_pages_* only if the user wants the full exportable list
 - All image URLs: list_site_image_urls (optional kind filter)
 - Lighthouse image issues: list_lighthouse_image_opportunities
@@ -95,22 +98,14 @@ Rules:
 - When citing issues, include the URL when available.
 - The chat UI automatically renders charts, gauges, and tables from tool results. Never tell the user you cannot show graphs or charts, and never send them to other app pages for data you can fetch with tools.
 - For visual or chart requests, always call the appropriate tools first, then give a short interpretation (2–4 sentences) with recommendations.
-- When tools return issue lists, scores, or breakdowns, keep the narrative short. Do not re-list every issue or duplicate data in markdown tables—the UI renders structured blocks from tool data.
-- Use markdown headings and bullets for structure. Do not emit fake chart JSON or custom visualization blocks.
-- After tool calls that return summary data, respond using this template only (no emojis in headings, max 5 bullets/items per section, total prose under ~150 words):
-
-### Power Insights
-- (interpretation bullets)
-
-### Recommended actions
-1. (numbered actions)
-
-- Do not repeat health scores, URL counts, success rates, category scores, priority counts, or URL lists in prose when the UI already shows them in cards or tables.
-- Never mention internal tool names (e.g. run_technical_workflow, export_audit_report) in user-facing text — describe actions in plain language ("run a technical workflow", "export the audit as PDF").
-- Do not use pipe-table rows for category scores; the UI renders category score cards automatically.
+- When tools return issue lists, scores, or breakdowns, do not re-list them in prose—the UI renders structured blocks from tool data.
+- Do not emit markdown headings, bullet lists, or pipe tables for the user. The app synthesizes the final narrative from tool results.
+- After gathering enough data via tools, stop calling tools. A brief internal acknowledgment is enough; user-facing text is generated separately.
+- Do not repeat health scores, URL counts, success rates, category scores, priority counts, or URL lists when the UI already shows them in cards or tables.
+- Never mention internal tool names (e.g. run_technical_workflow, export_audit_report) in user-facing text.
 - You are read-only: you cannot run crawls or change settings.
 - Do not pass property_id or report_id in tool calls — they are injected from the active chat property.
-- If data is missing, say what integration or crawl step is needed.
+- If data is missing, say what integration or crawl step is needed (briefly; narrative will be expanded separately).
 """
 
 REACT_PROMPT_SUFFIX = """
@@ -155,8 +150,6 @@ def _react_step(
             tool_calls=[ToolCall(id="react-0", name=name, arguments=args)],
         )
     text = str(data.get("text") or data.get("answer") or data.get("content") or "")
-    if on_token and text:
-        on_token(text)
     return ChatResult(content=text)
 
 
@@ -217,6 +210,41 @@ def _build_openai_messages(history: list[dict[str, str]]) -> list[dict[str, Any]
     return out
 
 
+def _finish_with_narrative(
+    cfg: dict[str, str],
+    user_message: str,
+    tool_events: list[dict[str, Any]],
+    on_event: Callable[[dict], None] | None,
+    *,
+    partial_note: str | None = None,
+) -> dict[str, Any]:
+    if partial_note:
+        _emit(on_event, {"type": "partial_done", "message": partial_note})
+
+    def on_status(phase: str) -> None:
+        detail = "Retrying summary…" if phase == "retrying" else "Summarizing insights…"
+        _emit(on_event, {"type": "status", "phase": "synthesizing", "detail": detail})
+
+    try:
+        narrative = synthesize_chat_narrative(
+            cfg,
+            user_message,
+            tool_events,
+            on_status=on_status,
+        )
+    except ChatNarrativeError:
+        _emit(on_event, {"type": "error", "message": NARRATIVE_FAILED_MSG})
+        return {
+            "ok": False,
+            "error": NARRATIVE_FAILED_MSG,
+            "tool_events": tool_events,
+        }
+
+    _emit(on_event, {"type": "narrative", "narrative": narrative})
+    _emit(on_event, {"type": "done"})
+    return {"ok": True, "tool_events": tool_events, "narrative": narrative}
+
+
 def run_agent_turn(
     messages: list[dict[str, str]],
     context: AuditToolContext,
@@ -225,7 +253,7 @@ def run_agent_turn(
 ) -> dict[str, Any]:
     """
     Run the agent loop. Emits NDJSON-style events via on_event.
-    Returns final result dict with ok, message, tool_events.
+    Returns final result dict with ok, tool_events, and narrative on success.
     """
     cfg = load_llm_config_from_db()
     if not llm_is_enabled(cfg):
@@ -245,11 +273,8 @@ def run_agent_turn(
     active_names = select_tools_for_turn(last_user, messages)
     tools = openai_tools_schema(active_names, context_scoped=True)
     tool_events: list[dict[str, Any]] = []
-    final_message = ""
     max_rounds = _max_tool_rounds(cfg)
-
-    def on_token(text: str) -> None:
-        _emit(on_event, {"type": "token", "text": strip_surrogates(text)})
+    partial_note: str | None = None
 
     for _round in range(max_rounds):
         _emit(on_event, {
@@ -260,13 +285,13 @@ def run_agent_turn(
         try:
             llm_messages = sanitize_unicode_deep(openai_messages)
             if _supports_native_tools(client):
-                result = client.chat_with_tools(llm_messages, tools, on_token=on_token)
+                result = client.chat_with_tools(llm_messages, tools, on_token=None)
             else:
                 result = _react_step(
                     client,
                     llm_messages,
                     _tools_description(names=active_names, compact=True),
-                    on_token,
+                    None,
                 )
         except Exception as e:
             msg = str(e).strip() or type(e).__name__
@@ -368,26 +393,18 @@ def run_agent_turn(
                 tools = openai_tools_schema(active_names, context_scoped=True)
             continue
 
-        final_message = strip_surrogates(result.content).strip()
-        if final_message:
-            _emit(on_event, {"type": "done", "message": final_message})
-            return {"ok": True, "message": final_message, "tool_events": tool_events}
-
         break
+    else:
+        if tool_events:
+            partial_note = (
+                f"The agent completed {len(tool_events)} tool step(s) but did not finish "
+                "all planned steps. Tool results are preserved below."
+            )
 
-    err = "Agent stopped after maximum tool rounds without a final answer."
-    partial = final_message
-    if not partial and tool_events:
-        partial = (
-            f"The agent completed {len(tool_events)} tool step(s) but did not finish "
-            "with a final summary. Tool results are preserved below."
-        )
-    if partial:
-        _emit(on_event, {"type": "partial_done", "message": partial})
-    _emit(on_event, {"type": "error", "message": err})
-    return {
-        "ok": False,
-        "error": err,
-        "message": partial,
-        "tool_events": tool_events,
-    }
+    return _finish_with_narrative(
+        cfg,
+        last_user,
+        tool_events,
+        on_event,
+        partial_note=partial_note,
+    )

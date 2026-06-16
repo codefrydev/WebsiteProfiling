@@ -3,17 +3,20 @@
 import { Sparkles } from 'lucide-react';
 import ChatBlocks from '@/components/chat/blocks/ChatBlocks';
 import ChatInsightSections from '@/components/chat/ChatInsightSections';
+import ChatNarrativeSections from '@/components/chat/ChatNarrativeSections';
 import ChatToolActivity, { type ToolActivityItem } from '@/components/chat/ChatToolActivity';
 import { preprocessChatMarkdown } from '@/components/chat/preprocessChatMarkdown';
 import { postprocessChatContent } from '@/components/chat/postprocessChatContent';
 import { sanitizeChatProse } from '@/components/chat/sanitizeChatProse';
 import type { ChatBlock } from '@/components/chat/deriveChatBlocks';
+import type { ChatNarrative } from '@/types/chatNarrative';
 import { strings } from '@/lib/strings';
 
 const c = strings.components.chat;
 
 export interface ChatAssistantMessageProps {
   content: string;
+  narrative?: ChatNarrative;
   toolActivity?: ToolActivityItem[];
   blocks?: ChatBlock[];
   streaming?: boolean;
@@ -25,6 +28,7 @@ export interface ChatAssistantMessageProps {
 
 export default function ChatAssistantMessage({
   content,
+  narrative,
   toolActivity,
   blocks: blocksOverride,
   streaming,
@@ -33,15 +37,25 @@ export default function ChatAssistantMessage({
   agentError,
   statusText,
 }: ChatAssistantMessageProps) {
-  const processed = postprocessChatContent(content, toolActivity, {
-    agentError,
-    partialError,
-  });
+  const useStructuredNarrative = Boolean(narrative);
+
+  const processed = postprocessChatContent(
+    useStructuredNarrative ? '' : content,
+    toolActivity,
+    {
+      agentError,
+      partialError: useStructuredNarrative ? false : partialError,
+    },
+  );
   const blocks = blocksOverride ?? processed.blocks;
   const prose = processed.prose;
-  const showProse = prose.trim() && !processed.proseHidden;
+  const showProse = !useStructuredNarrative && prose.trim() && !processed.proseHidden;
   const fatalError = Boolean(error && !partialError && !processed.hasPartialError);
   const showPartialNote = processed.hasPartialError || partialError;
+  const showNarrative = Boolean(
+    narrative &&
+      (narrative.power_insights.length > 0 || narrative.recommended_actions.length > 0),
+  );
 
   const cardClass = fatalError
     ? 'chat-assistant-card border-red-500/30 bg-red-500/10'
@@ -51,6 +65,7 @@ export default function ChatAssistantMessage({
 
   const hasBody =
     blocks.length > 0 ||
+    showNarrative ||
     showProse ||
     (toolActivity?.length ?? 0) > 0 ||
     streaming ||
@@ -59,14 +74,14 @@ export default function ChatAssistantMessage({
   if (!hasBody && fatalError) {
     return (
       <div className={`${cardClass} rounded-xl border px-4 py-2.5 text-sm text-red-200`}>
-        {content || c.responseFailed}
+        {content || agentError || c.responseFailed}
       </div>
     );
   }
 
   return (
     <div className={`${cardClass} space-y-3 rounded-xl border p-4 text-sm leading-relaxed`}>
-      {(streaming || (!content && !blocks.length)) && !fatalError ? (
+      {(streaming || (!content && !blocks.length && !showNarrative)) && !fatalError ? (
         <Sparkles
           className={`h-4 w-4 text-muted-foreground ${streaming ? 'animate-pulse' : ''}`}
           aria-hidden
@@ -85,13 +100,17 @@ export default function ChatAssistantMessage({
         <p className="text-xs text-amber-200/90">{c.partialResponseNote}</p>
       ) : null}
 
+      {showNarrative && narrative ? (
+        <ChatNarrativeSections narrative={narrative} streaming={streaming} />
+      ) : null}
+
       {showProse ? (
         streaming && !prose.includes('###') ? (
           <p className="whitespace-pre-wrap text-muted-foreground">{prose}</p>
         ) : (
           <ChatInsightSections content={prose} streaming={streaming} />
         )
-      ) : content.trim() && !blocks.length ? (
+      ) : !useStructuredNarrative && content.trim() && !blocks.length ? (
         <ChatInsightSections
           content={sanitizeChatProse(preprocessChatMarkdown(content))}
           streaming={streaming}

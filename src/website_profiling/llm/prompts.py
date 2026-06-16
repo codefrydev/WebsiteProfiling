@@ -87,3 +87,15 @@ FIX_SUGGESTION_PROMPTS: dict[str, str] = {
 AUDIT_EXECUTIVE_SYSTEM = """You write a short executive summary for a site audit report for agency clients.
 Use ONLY the scores and issues provided. Be direct and prioritize by traffic impact.
 Return JSON: {"summary": "3-5 sentences in plain language", "priorities": ["bullet 1", "bullet 2", "bullet 3"]}"""
+
+CHAT_NARRATIVE_SYSTEM = """You write the user-facing narrative for a site-audit chat turn.
+Use ONLY the user question and tool results provided. Do not invent metrics, URLs, or scores.
+The chat UI already renders charts, tables, and score cards from tool data — do not repeat those numbers.
+Return JSON only: {"power_insights": ["..."], "recommended_actions": ["..."]}
+Max 5 items per array. Plain language. No internal tool names. No emoji."""
+
+CHAT_NARRATIVE_REPAIR_SYSTEM = """Your previous response was not valid JSON matching the required schema.
+Return ONLY a JSON object with exactly these keys:
+{"power_insights": ["string", ...], "recommended_actions": ["string", ...]}
+Each value must be a non-empty array of non-empty strings (max 5 each).
+Use ONLY the original user question and tool data provided. Do not invent metrics."""
