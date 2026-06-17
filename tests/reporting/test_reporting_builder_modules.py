@@ -122,6 +122,40 @@ def test_compute_summary_seo_issues() -> None:
     assert out["recommendations"]
 
 
+def test_status_text_normalization() -> None:
+    assert seo_summary._status_text(400) == "400"
+    assert seo_summary._status_text(400.0) == "400"
+    assert seo_summary._status_text("301") == "301"
+    assert seo_summary._status_text("error") == "error"
+    assert seo_summary._status_text(None) == ""
+    assert seo_summary._status_text(float("nan")) == ""
+
+
+def test_compute_summary_classifies_numeric_and_float_statuses() -> None:
+    df = pd.DataFrame(
+        [
+            {"url": "https://example.com/ok", "status": 200.0},
+            {"url": "https://example.com/redir", "status": 301, "final_url": "https://example.com/dest"},
+            {"url": "https://example.com/bad", "status": 400.0},
+            {"url": "https://example.com/boom", "status": 500},
+        ]
+    )
+    out = seo_summary._compute_summary_seo_issues(df)
+    summary = out["summary"]
+    assert summary["count_2xx"] == 1
+    assert summary["count_3xx"] == 1
+    assert summary["count_4xx"] == 1
+    assert summary["count_5xx"] == 1
+
+    broken = {b["url"] for b in out["issues"]["broken"]}
+    assert {"https://example.com/bad", "https://example.com/boom"} <= broken
+
+    redirects = {r["url"]: r for r in out["issues"]["redirects"]}
+    assert "https://example.com/redir" in redirects
+    assert redirects["https://example.com/redir"]["status"] == "301"
+    assert redirects["https://example.com/redir"]["final_url"] == "https://example.com/dest"
+
+
 def test_content_analytics_helpers() -> None:
     df = _crawl_df()
     content = content_analytics._build_content_analytics(df)

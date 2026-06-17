@@ -654,6 +654,119 @@ select:focus-visible {
   background: color-mix(in srgb, var(--app-bg-muted) 35%, transparent);
 }
 
+/* Quantized full-page scroll — one section per viewport (minus header). */
+.landing-scroll-container {
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.landing-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-scroll-container {
+    scroll-snap-type: y proximity;
+    scroll-behavior: auto;
+  }
+}
+
+.landing-section {
+  display: flex;
+  width: 100%;
+  height: calc(100dvh - var(--landing-header-h, 3.5rem));
+  flex-shrink: 0;
+  flex-direction: column;
+  overflow: hidden;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.landing-section-body {
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.landing-section-body-centered {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.landing-section-split {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  align-items: stretch;
+  gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .landing-section-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0;
+  }
+}
+
+.landing-split-copy {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.landing-split-visual {
+  display: flex;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (min-width: 768px) {
+  .landing-split-visual {
+    height: 100%;
+    padding: 0.75rem 1.5rem 0.75rem 0.75rem;
+  }
+
+  .landing-section-split--reversed .landing-split-visual {
+    padding: 0.75rem 0.75rem 0.75rem 1.5rem;
+  }
+}
+
+.landing-split-mock {
+  height: 100%;
+  max-height: 100%;
+  width: 100%;
+  min-height: 0;
+}
+
+.landing-footer-snap {
+  flex-shrink: 0;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .landing-scroll-cue {
+    animation: landingScrollCue 2.2s ease-in-out infinite;
+  }
+
+  @keyframes landingScrollCue {
+    0%,
+    100% {
+      transform: translateY(0);
+      opacity: 0.55;
+    }
+    50% {
+      transform: translateY(4px);
+      opacity: 1;
+    }
+  }
+}
+
 /* ─────────────────────────────────────────────────────────────
    Reusable redesign utilities — depth, motion, warmth
    ───────────────────────────────────────────────────────────── */
@@ -778,6 +891,30 @@ select:focus-visible {
   @keyframes shimmerSweep {
     100% {
       transform: translateX(100%);
+    }
+  }
+
+  .shimmer-text {
+    background: linear-gradient(
+      90deg,
+      var(--app-text-subtle) 0%,
+      var(--app-text-heading) 45%,
+      var(--app-link) 55%,
+      var(--app-text-subtle) 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmerText 2.2s ease-in-out infinite;
+  }
+  @keyframes shimmerText {
+    0%,
+    100% {
+      background-position: 0% center;
+    }
+    50% {
+      background-position: 100% center;
     }
   }
 }

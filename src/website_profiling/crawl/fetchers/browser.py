@@ -299,6 +299,21 @@ class BrowserFetcher:
                 max_per_page=self.console_max_per_page,
             )
             collector.attach(page)
+
+        # Record main-frame navigation responses in order so that (a) a response
+        # that was received is not lost when goto raises, and (b) we can report
+        # the URL's OWN status (e.g. a 301) instead of the followed destination.
+        nav_responses: list[Any] = []
+
+        def _on_response(resp: Any) -> None:
+            try:
+                req = resp.request
+                if req.is_navigation_request() and resp.frame == page.main_frame:
+                    nav_responses.append(resp)
+            except Exception:
+                pass
+
+        page.on("response", _on_response)
         try:
             try:
                 response = await page.goto(
@@ -312,15 +327,21 @@ class BrowserFetcher:
             if self.extra_wait_ms and response is not None:
                 await asyncio.sleep(self.extra_wait_ms / 1000.0)
         finally:
+            try:
+                page.remove_listener("response", _on_response)
+            except Exception:
+                pass
             if collector is not None:
                 collector.detach(page)
 
         response_time_ms = int((time.perf_counter() - t0) * 1000)
         final_url = page.url or url
-        redirect_chain_length = 1 if final_url.rstrip("/") != url.rstrip("/") else 0
         browser_diagnostics = collector.build() if collector is not None else None
 
-        if response is None:
+        # Prefer the first observed main-frame response: this is the URL's own
+        # response (a 3xx redirect or an error status), not the final hop.
+        own_response = nav_responses[0] if nav_responses else response
+        if own_response is None:
             return FetchResult(
                 status=None,
                 content_type=None,
@@ -329,20 +350,27 @@ class BrowserFetcher:
                 content_length=0,
                 final_url=final_url,
                 headers_dict={},
-                redirect_chain_length=redirect_chain_length,
+                redirect_chain_length=1 if final_url.rstrip("/") != url.rstrip("/") else 0,
                 fetch_method="rendered",
                 browser_diagnostics=browser_diagnostics,
             )
 
-        status = response.status
-        headers = response.headers or {}
+        status = own_response.status
+        redirect_chain_length = sum(
+            1 for r in nav_responses if 300 <= int(getattr(r, "status", 0) or 0) < 400
+        )
+        headers = own_response.headers or {}
         lower_headers = {str(k).lower(): v for k, v in headers.items()}
         ct = lower_headers.get("content-type", "")
         headers_dict = {
             k: (headers.get(k) or lower_headers.get(k.lower(), "")) for k in HEADER_KEYS
         }
 
-        is_html = status == 200 and ("text/html" in ct or "application/xhtml+xml" in ct)
+        is_redirect = 300 <= status < 400
+        # Capture body for 2xx and error (4xx/5xx) HTML pages; skip redirects.
+        is_html = (not is_redirect) and (
+            "text/html" in ct or "application/xhtml+xml" in ct
+        )
         text: Optional[str] = None
         content_length = 0
         if is_html:

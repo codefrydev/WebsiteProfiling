@@ -2,6 +2,7 @@
 
 import { Briefcase, Building2, Code2 } from 'lucide-react';
 import LandingSectionHeader from '@/components/landing/LandingSectionHeader';
+import { landingContentClass } from '@/components/landing/landingLayout';
 import { strings } from '@/lib/strings';
 
 const vl = strings.views.landing;
@@ -26,28 +27,29 @@ const USE_CASES = [
 
 export default function LandingUseCases() {
   return (
-    <section className="landing-section-alt border-y border-muted/60 py-16 sm:py-20">
-      <div className="mx-auto max-w-6xl px-[var(--spacing-page-x)] sm:px-6 lg:px-8">
-        <LandingSectionHeader
-          eyebrow={vl.useCasesEyebrow}
-          title={vl.useCasesTitle}
-          subtitle={vl.useCasesSubtitle}
-        />
-        <div className="grid gap-4 md:grid-cols-3 md:gap-5">
-          {USE_CASES.map(({ icon: Icon, title, description }) => (
-            <article
-              key={title}
-              className="rounded-2xl border border-default bg-brand-800/50 p-5 transition-all hover:-translate-y-0.5 hover:border-blue-500/30 hover:shadow-[var(--shadow-elevated)]"
-            >
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10">
-                <Icon className="h-5 w-5 text-link" aria-hidden />
-              </span>
-              <h3 className="mt-4 text-base font-semibold text-foreground">{title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
-            </article>
-          ))}
-        </div>
+    <div className={landingContentClass}>
+      <LandingSectionHeader
+        eyebrow={vl.useCasesEyebrow}
+        title={vl.useCasesTitle}
+        subtitle={vl.useCasesSubtitle}
+        compact
+      />
+      <div className="grid gap-3 md:grid-cols-3">
+        {USE_CASES.map(({ icon: Icon, title, description }) => (
+          <article
+            key={title}
+            className="rounded-xl border border-default/60 p-3.5 transition-colors hover:border-blue-500/25 sm:p-4"
+          >
+            <span className="inline-flex h-8 w-8 items-center justify-center text-link">
+              <Icon className="h-4 w-4" aria-hidden />
+            </span>
+            <h3 className="mt-2 text-sm font-semibold text-foreground">{title}</h3>
+            <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+              {description}
+            </p>
+          </article>
+        ))}
       </div>
-    </section>
+    </div>
   );
 }

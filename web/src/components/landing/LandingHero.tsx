@@ -3,50 +3,73 @@
 import Link from 'next/link';
 import { CheckCircle2, ChevronRight } from 'lucide-react';
 import LandingProductMock from '@/components/landing/LandingProductMock';
+import LandingScrollCue from '@/components/landing/LandingScrollCue';
+import {
+  LANDING_SECTION_IDS,
+  landingGutterClass,
+  landingSectionClass,
+  landingSectionPad,
+  landingSectionSplitClass,
+  landingSplitCopyClass,
+  landingSplitMockClass,
+  landingSplitVisualClass,
+} from '@/components/landing/landingLayout';
 import { strings } from '@/lib/strings';
 
 const vl = strings.views.landing;
 
 export default function LandingHero() {
   return (
-    <section className="mx-auto max-w-6xl px-[var(--spacing-page-x)] pb-12 pt-12 sm:px-6 sm:pt-16 lg:px-8 lg:pb-16 lg:pt-20">
-      <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-14">
-        <div className="min-w-0">
+    <section className={`${landingSectionClass} ${landingSectionPad}`}>
+      <div className={landingSectionSplitClass}>
+        <div className={`${landingSplitCopyClass} ${landingGutterClass} md:pr-6 lg:pr-10`}>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-link">{vl.heroEyebrow}</p>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-[2.75rem] lg:leading-tight">
+          <h1 className="landing-gradient-text text-3xl font-bold tracking-tight sm:text-4xl md:text-[2.5rem] md:leading-[1.1] lg:text-[2.75rem] xl:text-5xl">
             {vl.heroTitle}
           </h1>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground sm:text-base">{vl.heroSubtitle}</p>
-          <ul className="mt-5 space-y-2.5">
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground sm:text-base lg:text-lg">
+            {vl.heroSubtitle}
+          </p>
+          <ul className="mt-4 space-y-1.5">
             {vl.heroBullets.map((bullet) => (
-              <li key={bullet} className="flex items-start gap-2.5 text-sm text-foreground">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-link" aria-hidden />
-                <span>{bullet}</span>
+              <li key={bullet} className="flex items-start gap-2 text-sm text-foreground">
+                <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-link" aria-hidden />
+                <span className="line-clamp-2">{bullet}</span>
               </li>
             ))}
           </ul>
-          <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-2">
+          <div className="mt-5 flex flex-wrap items-center gap-2.5">
             <Link
               href="/pipeline"
-              className="inline-flex items-center gap-1 text-sm font-semibold text-link transition-colors hover:underline"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
             >
               {vl.ctaRunAudit}
               <ChevronRight className="h-4 w-4" aria-hidden />
             </Link>
             <Link
               href="/home"
-              className="inline-flex items-center gap-1 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground hover:underline"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-default px-3.5 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-brand-800"
             >
               {vl.ctaDashboard}
               <ChevronRight className="h-4 w-4" aria-hidden />
             </Link>
           </div>
+          <p className="mt-3 text-[11px] text-muted-foreground sm:text-xs">
+            {vl.heroProofNoSubscription} · {vl.heroProofLocalData}
+          </p>
         </div>
 
-        <div className="landing-mock-glow landing-float rounded-2xl">
-          <LandingProductMock variant="default" className="w-full" elevated />
+        <div className={`${landingSplitVisualClass} px-5 pb-2 sm:px-8 md:px-0`}>
+          <div className={landingSplitMockClass}>
+            <LandingProductMock variant="default" className="h-full min-h-0 w-full" elevated fillHeight />
+          </div>
         </div>
       </div>
+
+      <LandingScrollCue
+        href={`#${LANDING_SECTION_IDS.stats}`}
+        label="Scroll to highlights"
+      />
     </section>
   );
 }

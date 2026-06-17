@@ -302,6 +302,8 @@ class Crawler:
             )
 
         status = result.status
+        is_success = isinstance(status, int) and 200 <= status < 300
+        is_redirect = isinstance(status, int) and 300 <= status < 400
         ct = result.content_type
         text = result.text
         response_time_ms = result.response_time_ms
@@ -371,7 +373,15 @@ class Crawler:
                 if self.store_outlinks:
                     outlink_list.append(link)
                     self.link_edges_accum.append({"from_url": url, **edge})
-                self.frontier.try_enqueue_link(link, url)
+                # Only crawl links discovered on successful (2xx) pages; links
+                # parsed from custom 4xx/5xx error pages should not be followed.
+                if is_success:
+                    self.frontier.try_enqueue_link(link, url)
+
+        # A redirect (3xx) has no crawlable body; enqueue its target so the
+        # destination is fetched and recorded as its own row (per-hop chain).
+        if is_redirect and final_url and final_url.rstrip("/") != url.rstrip("/"):
+            self.frontier.try_enqueue_link(final_url, url)
 
         ext["response_time_ms"] = response_time_ms if response_time_ms is not None else ""
         ext["content_length"] = content_length or 0

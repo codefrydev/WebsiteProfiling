@@ -40,6 +40,84 @@ def test_static_fetcher_parses_html():
     assert result.browser_diagnostics is None
 
 
+class _FakeResp:
+    def __init__(self, status_code, headers=None, text="", url=""):
+        self.status_code = status_code
+        self.headers = headers or {}
+        self.text = text
+        self.content = text.encode("utf-8")
+        self.url = url
+        self.history = []
+
+    @property
+    def is_redirect(self):
+        return self.status_code in (301, 302, 303, 307, 308) and "Location" in self.headers
+
+    @property
+    def is_permanent_redirect(self):
+        return self.status_code in (301, 308) and "Location" in self.headers
+
+
+class _FakeSession:
+    def __init__(self, resp):
+        self._resp = resp
+        self.headers = {}
+        self.calls = []
+
+    def get(self, url, timeout=None, allow_redirects=True):
+        self.calls.append({"url": url, "allow_redirects": allow_redirects})
+        return self._resp
+
+    def close(self):
+        pass
+
+
+def test_static_fetcher_records_permanent_redirect_without_following():
+    resp = _FakeResp(
+        301,
+        headers={"Location": "https://example.com/new", "Content-Type": "text/html"},
+        text="<html>ignored redirect body</html>",
+        url="https://example.com/old",
+    )
+    session = _FakeSession(resp)
+    fetcher = StaticFetcher(timeout=5, session=session)
+    result = fetcher.fetch("https://example.com/old")
+
+    # The redirect must NOT be followed: status is the real 301, not the dest's 200.
+    assert session.calls[0]["allow_redirects"] is False
+    assert result.status == 301
+    assert result.final_url == "https://example.com/new"
+    assert result.text is None
+    assert result.redirect_chain_length == 1
+
+
+def test_static_fetcher_resolves_relative_redirect_location():
+    resp = _FakeResp(
+        308,
+        headers={"Location": "/moved"},
+        url="https://example.com/old",
+    )
+    fetcher = StaticFetcher(timeout=5, session=_FakeSession(resp))
+    result = fetcher.fetch("https://example.com/old")
+    assert result.status == 308
+    assert result.final_url == "https://example.com/moved"
+
+
+def test_static_fetcher_records_client_error_and_captures_body():
+    resp = _FakeResp(
+        400,
+        headers={"Content-Type": "text/html"},
+        text="<html><head><title>Bad Request</title></head></html>",
+        url="https://example.com/bad",
+    )
+    fetcher = StaticFetcher(timeout=5, session=_FakeSession(resp))
+    result = fetcher.fetch("https://example.com/bad")
+    assert result.status == 400
+    # Non-200 HTML body is now captured so custom error pages can be analysed.
+    assert result.text is not None and "Bad Request" in result.text
+    assert result.redirect_chain_length == 0
+
+
 def test_page_diagnostics_collector_builds_summary():
     from website_profiling.crawl.fetchers.browser import _PageDiagnosticsCollector
 

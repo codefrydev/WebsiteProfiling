@@ -1,6 +1,13 @@
 'use client';
 
-import { ArrowRight, BarChart2, Download, Play, Settings2 } from 'lucide-react';
+import { BarChart2, ChevronRight, Download, Play, Settings2 } from 'lucide-react';
+import LandingSectionHeader from '@/components/landing/LandingSectionHeader';
+import {
+  landingContentClass,
+  landingGutterClass,
+  landingSectionSplitClass,
+  landingSplitCopyClass,
+} from '@/components/landing/landingLayout';
 import { strings } from '@/lib/strings';
 
 const vl = strings.views.landing;
@@ -14,46 +21,72 @@ const STEPS = [
 
 export default function LandingPathStrip() {
   return (
-    <section
-      id="get-started"
-      className="scroll-mt-24 mx-auto max-w-6xl px-[var(--spacing-page-x)] pb-10 sm:px-6 lg:px-8"
-    >
-      <p className="mb-4 text-center text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        {vl.pathTitle}
-      </p>
-      <div className="relative flex flex-col gap-2 sm:flex-row sm:items-stretch">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute left-[12.5%] right-[12.5%] top-8 hidden h-px bg-gradient-to-r from-transparent via-blue-500/25 to-transparent sm:block"
-        />
-        {STEPS.map(({ step, id, icon: Icon, label, hint }, index) => (
-          <div key={id} className="relative flex min-w-0 flex-1 items-center gap-2 sm:flex-col sm:gap-0">
-            <a
-              href={`#${id}`}
-              className="group relative z-10 flex min-w-0 flex-1 flex-col items-start gap-3 rounded-2xl border border-default bg-brand-800/50 px-4 py-4 transition-all hover:-translate-y-0.5 hover:border-blue-500/35 hover:bg-brand-800/80 hover:shadow-[var(--shadow-elevated)] sm:w-full"
-            >
-              <span className="flex w-full items-center justify-between gap-2">
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10 text-link">
-                  <Icon className="h-4 w-4" aria-hidden />
+    <div className={`${landingContentClass} flex h-full min-h-0 flex-col justify-center gap-6 lg:gap-8`}>
+      <div className={landingSectionSplitClass}>
+        <div className={`${landingSplitCopyClass} ${landingGutterClass} md:pr-6 lg:pr-10`}>
+          <LandingSectionHeader
+            eyebrow={vl.pathEyebrow}
+            title={vl.pathTitle}
+            subtitle={vl.pathSubtitle}
+            centered={false}
+            compact
+          />
+          <ol className="mt-5 hidden space-y-2 md:block">
+            {STEPS.map(({ step, id, label }) => (
+              <li key={id}>
+                <a
+                  href={`#${id}`}
+                  className="group flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm transition-colors hover:bg-brand-800/60"
+                >
+                  <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-blue-500/30 bg-blue-500/10 text-xs font-bold text-link">
+                    {step}
+                  </span>
+                  <span className="font-medium text-foreground group-hover:text-link">{label}</span>
+                  <ChevronRight
+                    className="ml-auto h-3.5 w-3.5 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100"
+                    aria-hidden
+                  />
+                </a>
+              </li>
+            ))}
+          </ol>
+        </div>
+
+        <div className="flex min-h-0 flex-col justify-center px-5 sm:px-8 md:px-6 lg:px-10">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {STEPS.map(({ step, id, icon: Icon, label, hint }) => (
+              <a
+                key={id}
+                href={`#${id}`}
+                className="group flex min-h-[7.5rem] flex-col rounded-xl border border-default/60 px-4 py-4 transition-colors hover:border-blue-500/25 sm:min-h-[8.25rem] sm:px-5 sm:py-5"
+              >
+                <span className="flex items-center justify-between gap-2">
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-link">
+                    <Icon className="h-4 w-4" aria-hidden />
+                  </span>
+                  <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-default/60 text-xs font-bold text-link">
+                    {step}
+                  </span>
                 </span>
-                <span className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-blue-500/30 bg-blue-500/10 text-[11px] font-bold text-link">
-                  {step}
-                </span>
-              </span>
-              <span className="min-w-0">
-                <span className="block text-sm font-semibold text-foreground group-hover:text-link">{label}</span>
-                <span className="mt-0.5 block text-xs leading-relaxed text-muted-foreground">{hint}</span>
-              </span>
-            </a>
-            {index < STEPS.length - 1 ? (
-              <ArrowRight
-                className="mx-auto h-4 w-4 shrink-0 rotate-90 text-muted-foreground/50 sm:absolute sm:-right-3 sm:top-1/2 sm:z-20 sm:mx-0 sm:-translate-y-1/2 sm:rotate-0"
-                aria-hidden
-              />
-            ) : null}
+                <p className="mt-3 text-base font-bold leading-snug text-foreground group-hover:text-link sm:text-lg">
+                  {label}
+                </p>
+                <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">{hint}</p>
+              </a>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
-    </section>
+
+      <div className={`flex justify-center border-t border-muted/40 pt-5 ${landingGutterClass}`}>
+        <a
+          href="#quick-start"
+          className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/10 px-4 py-1.5 text-xs font-medium text-link transition-colors hover:bg-blue-500/20 sm:text-sm"
+        >
+          {vl.pathCtaLabel}
+          <ChevronRight className="h-3.5 w-3.5" aria-hidden />
+        </a>
+      </div>
+    </div>
   );
 }
