@@ -11,9 +11,11 @@ import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import { Placeholder } from '@tiptap/extensions';
 import type { Extensions } from '@tiptap/core';
+import { TermHighlight } from './termHighlight';
 
 export function buildContentEditorExtensions(placeholder: string): Extensions {
   return [
+    TermHighlight,
     StarterKit.configure({
       heading: { levels: [1, 2, 3] },
     }),

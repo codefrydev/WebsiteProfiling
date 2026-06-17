@@ -34,6 +34,16 @@ def _rule_suggestions(score: dict[str, Any]) -> list[dict[str, Any]]:
                 "type": "term",
                 "source": "rule",
             })
+        elif term.get("status") == "included":
+            count = int(term.get("count") or 0)
+            target = int(term.get("target") or 0)
+            if target and count < target and term.get("importance") == "high":
+                items.append({
+                    "text": f"Use “{term.get('term')}” {target - count} more time(s) ({count}/{target}) to fully cover it.",
+                    "priority": "low",
+                    "type": "term",
+                    "source": "rule",
+                })
     for check in score.get("checks") or []:
         if isinstance(check, dict) and not check.get("pass"):
             items.append({

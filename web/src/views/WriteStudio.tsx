@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FileText, RefreshCw } from 'lucide-react';
+import { FileText, RefreshCw, Sparkles } from 'lucide-react';
 import { usePipeline } from '@/context/PipelineContext';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import { apiUrl } from '@/lib/publicBase';
@@ -20,7 +20,8 @@ import WriteContextBar from '@/components/contentStudio/WriteContextBar';
 import WriteSuggestedStarters from '@/components/contentStudio/WriteSuggestedStarters';
 import ContentEditor from '@/components/contentStudio/ContentEditor';
 import NewDraftModal from '@/components/contentStudio/NewDraftModal';
-import AnalyzerSidebar from '@/components/contentStudio/AnalyzerSidebar';
+import GuidedDraftWizard from '@/components/contentStudio/GuidedDraftWizard';
+import EditorInsightsPanel from '@/components/contentStudio/EditorInsightsPanel';
 import { useContentStudioAiToggle } from '@/hooks/useContentStudioAiToggle';
 import type { ContentAnalyzeResult, ContentDraftDetail, ContentDraftListItem, ContentScoreResult } from '@/types/contentStudio';
 
@@ -54,9 +55,12 @@ export default function WriteStudio() {
   const [draftError, setDraftError] = useState<string | null>(null);
   const [showNewModal, setShowNewModal] = useState(draftParam === 'new');
   const [modalKeyword, setModalKeyword] = useState(keywordParam);
+  const [showWizard, setShowWizard] = useState(false);
+  const [wizardKeyword, setWizardKeyword] = useState('');
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
   const [liveScore, setLiveScore] = useState<ContentScoreResult | null>(null);
+  const [liveBody, setLiveBody] = useState('');
   const [analysis, setAnalysis] = useState<ContentAnalyzeResult | null>(null);
   const [analyzeLoading, setAnalyzeLoading] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
@@ -152,12 +156,14 @@ export default function WriteStudio() {
   useEffect(() => {
     if (draftId && Number.isFinite(draftId)) {
       setLiveScore(null);
+      setLiveBody('');
       setAnalysis(null);
       setAnalyzeError(null);
       void loadDraft(draftId);
     } else {
       setActiveDraft(null);
       setLiveScore(null);
+      setLiveBody('');
       setAnalysis(null);
       setAnalyzeError(null);
     }
@@ -174,6 +180,20 @@ export default function WriteStudio() {
     setModalKeyword(keyword);
     setShowNewModal(true);
   }, []);
+
+  const openWizard = useCallback((keyword = '') => {
+    setWizardKeyword(keyword);
+    setShowWizard(true);
+  }, []);
+
+  const handleWizardComplete = useCallback(
+    async (id: number) => {
+      setShowWizard(false);
+      syncUrl({ draft: id });
+      await loadDrafts();
+    },
+    [loadDrafts, syncUrl],
+  );
 
   const handlePropertyChange = (id: number) => {
     setPropertyId(id);
@@ -263,11 +283,13 @@ export default function WriteStudio() {
 
   const seoPanel =
     showEditor && activeDraft ? (
-      <AnalyzerSidebar
+      <EditorInsightsPanel
         score={liveScore}
         scoreLoading={!liveScore && Boolean(draftId)}
         scoreError={null}
         keyword={activeDraft.target_keyword}
+        title={activeDraft.title}
+        bodyHtml={liveBody || activeDraft.body_html}
         analysis={analysis}
         analyzeLoading={analyzeLoading}
         analyzeError={analyzeError}
@@ -300,11 +322,20 @@ export default function WriteStudio() {
               {vs.welcomeSubline}
             </p>
             {!readOnly && propertyId ? (
-              <div className="mt-10 w-full">
+              <div className="mt-10 flex w-full max-w-3xl flex-col gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => openWizard()}
+                  title={vs.wizard.launchHint}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-full bg-blue-600 px-4 py-3 text-sm font-medium text-white shadow-lg transition-colors hover:bg-blue-500 min-h-[3.25rem]"
+                >
+                  <Sparkles className="h-4 w-4 shrink-0" aria-hidden />
+                  {vs.wizard.launchButton}
+                </button>
                 <button
                   type="button"
                   onClick={() => openNewDraft()}
-                  className="mx-auto flex w-full max-w-3xl items-center justify-center gap-2 rounded-full border border-default bg-[var(--chat-surface)] px-4 py-3 text-sm text-foreground shadow-lg ring-1 ring-white/[0.06] transition-shadow hover:bg-[var(--chat-surface-hover)] chat-hero-input min-h-[3.25rem]"
+                  className="flex flex-1 items-center justify-center gap-2 rounded-full border border-default bg-[var(--chat-surface)] px-4 py-3 text-sm text-foreground shadow-lg ring-1 ring-white/[0.06] transition-shadow hover:bg-[var(--chat-surface-hover)] chat-hero-input min-h-[3.25rem]"
                 >
                   <FileText className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
                   {vs.newDraftButton}
@@ -337,6 +368,7 @@ export default function WriteStudio() {
           onSave={handleSave}
           siteLabel={activeProperty ? siteUrlFromProperty(activeProperty) : undefined}
           onScoreChange={setLiveScore}
+          onBodyChange={setLiveBody}
           aiSuggestionsEnabled={aiSuggestionsEnabled}
           onAiSuggestionsEnabledChange={setAiSuggestionsEnabled}
           onAnalysisChange={setAnalysis}
@@ -383,6 +415,16 @@ export default function WriteStudio() {
         }}
         onCreate={(fields) => void handleCreate(fields)}
       />
+
+      {propertyId ? (
+        <GuidedDraftWizard
+          open={showWizard}
+          propertyId={propertyId}
+          initialKeyword={wizardKeyword}
+          onClose={() => setShowWizard(false)}
+          onComplete={(id) => void handleWizardComplete(id)}
+        />
+      ) : null}
     </>
   );
 }

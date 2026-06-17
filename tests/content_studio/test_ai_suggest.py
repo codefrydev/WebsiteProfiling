@@ -50,6 +50,24 @@ def test_analyze_without_ai_runs_all_tools() -> None:
     assert "Rule-based" in result["provenance"]
 
 
+def test_rule_suggestions_under_target_high_term() -> None:
+    score = {
+        "terms": [
+            {"term": "best crm", "status": "included", "importance": "high", "count": 1, "target": 3},
+            {"term": "crm software", "status": "included", "importance": "high", "count": 3, "target": 3},
+            {"term": "sales pipeline", "status": "included", "importance": "medium", "count": 1, "target": 2},
+        ],
+        "checks": [],
+        "word_count": 800,
+    }
+    items = _rule_suggestions(score)
+    texts = [i["text"] for i in items]
+    # Only the under-target high-importance term gets a "use it more" tip.
+    assert any("best crm" in t and "more time" in t for t in texts)
+    assert not any("crm software" in t for t in texts)
+    assert not any("sales pipeline" in t for t in texts)
+
+
 def test_rule_suggestions_skips_non_dict_terms() -> None:
     score = {
         "terms": ["bad", {"term": "crm", "status": "missing", "importance": "high"}],

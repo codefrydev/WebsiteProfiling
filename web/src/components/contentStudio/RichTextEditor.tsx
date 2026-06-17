@@ -34,6 +34,8 @@ interface RichTextEditorProps {
   disabled?: boolean;
   placeholder?: string;
   fillHeight?: boolean;
+  /** Target terms to highlight inline in the document body. */
+  highlightTerms?: string[];
 }
 
 type ViewMode = 'rich' | 'markdown';
@@ -87,6 +89,7 @@ export default function RichTextEditor({
   disabled = false,
   placeholder = '',
   fillHeight = false,
+  highlightTerms,
 }: RichTextEditorProps) {
   const t = strings.views.contentStudio.editor.toolbar;
   const [viewMode, setViewMode] = useState<ViewMode>('rich');
@@ -129,6 +132,12 @@ export default function RichTextEditor({
     if (!editor) return;
     editor.setEditable(!disabled && viewMode === 'rich');
   }, [editor, disabled, viewMode]);
+
+  const termsKey = (highlightTerms ?? []).join('');
+  useEffect(() => {
+    if (!editor) return;
+    editor.commands.setHighlightTerms(termsKey ? termsKey.split('') : []);
+  }, [editor, termsKey, value, viewMode]);
 
   useEffect(() => {
     if (!editor || viewMode !== 'markdown' || disabled) return;
@@ -439,6 +448,13 @@ export default function RichTextEditor({
         }
         .tiptap ul[data-type='taskList'] li > label {
           margin-top: 0.2rem;
+        }
+        .tiptap .cs-term-hl {
+          background-color: rgba(250, 204, 21, 0.32);
+          border-radius: 2px;
+          padding: 0 1px;
+          box-decoration-break: clone;
+          -webkit-box-decoration-break: clone;
         }
       `}</style>
     </div>
