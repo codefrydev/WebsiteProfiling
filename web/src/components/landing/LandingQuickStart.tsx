@@ -9,7 +9,9 @@ import {
   landingSectionSplitClass,
   landingSplitCopyClass,
 } from '@/components/landing/landingLayout';
+import { useInView } from '@/lib/useInView';
 import { strings } from '@/lib/strings';
+import type { CSSProperties } from 'react';
 
 const vl = strings.views.landing;
 
@@ -20,6 +22,8 @@ const QUICK_START_BULLETS = [
 ] as const;
 
 export default function LandingQuickStart() {
+  const { ref: bulletsRef, inView: bulletsInView } = useInView<HTMLUListElement>();
+
   return (
     <div className={`${landingContentClass} flex h-full min-h-0 flex-col justify-center gap-6 lg:gap-8`}>
       <div className={landingSectionSplitClass}>
@@ -31,9 +35,16 @@ export default function LandingQuickStart() {
             centered={false}
             compact
           />
-          <ul className="mt-5 space-y-2">
-            {QUICK_START_BULLETS.map((bullet) => (
-              <li key={bullet} className="flex items-start gap-2 text-sm text-muted-foreground">
+          <ul
+            ref={bulletsRef}
+            className={`mt-5 space-y-2${bulletsInView ? ' stagger' : ''}`}
+          >
+            {QUICK_START_BULLETS.map((bullet, index) => (
+              <li
+                key={bullet}
+                className="flex items-start gap-2 text-sm text-muted-foreground"
+                style={{ '--i': index } as CSSProperties}
+              >
                 <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-link" aria-hidden />
                 <span>{bullet}</span>
               </li>

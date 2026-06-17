@@ -37,10 +37,15 @@ const FEATURES = [
 
 export default function LandingPage() {
   return (
-    <LandingShell footer={<LandingFooter />}>
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 landing-grid-bg opacity-40" />
-      <div aria-hidden className="aurora-bg" />
-
+    <LandingShell
+      footer={<LandingFooter />}
+      backdrop={
+        <>
+          <div aria-hidden className="landing-grid-bg absolute inset-0 opacity-40" />
+          <div aria-hidden className="aurora-bg absolute inset-0" />
+        </>
+      }
+    >
       <LandingHero />
 
       <LandingPageSection

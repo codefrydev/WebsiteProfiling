@@ -1,6 +1,8 @@
 'use client';
 
-import { ChevronDown } from 'lucide-react';
+import { useLandingDeckContext } from '@/components/landing/LandingDeckContext';
+import { LANDING_DECK_SECTION_ORDER } from '@/components/landing/landingLayout';
+import { strings } from '@/lib/strings';
 
 interface LandingScrollCueProps {
   href: string;
@@ -11,14 +13,28 @@ export default function LandingScrollCue({
   href,
   label = 'Scroll to next section',
 }: LandingScrollCueProps) {
+  const vl = strings.views.landing;
+  const deck = useLandingDeckContext();
+  const nextId = href.startsWith('#') ? href.slice(1) : href;
+  const nextIndex = LANDING_DECK_SECTION_ORDER.indexOf(nextId);
+  const slideLabel =
+    deck && nextIndex >= 0
+      ? `${vl.deckNext} · ${nextIndex + 1}/${deck.total}`
+      : label;
+  const ariaLabel =
+    deck && nextIndex >= 0
+      ? vl.deckSlideOf
+          .replace('{current}', String(nextIndex + 1))
+          .replace('{total}', String(deck.total))
+      : label;
+
   return (
     <a
       href={href}
-      className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 flex-col items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-      aria-label={label}
+      className={`landing-scroll-cue absolute left-1/2 z-10 -translate-x-1/2 tabular-nums font-medium text-muted-foreground transition-colors hover:text-foreground${deck?.presenterMode ? ' landing-scroll-cue--presenter text-sm' : ' text-xs'}`}
+      aria-label={ariaLabel}
     >
-      <span className="sr-only">{label}</span>
-      <ChevronDown className="landing-scroll-cue h-5 w-5" aria-hidden />
+      {slideLabel}
     </a>
   );
 }

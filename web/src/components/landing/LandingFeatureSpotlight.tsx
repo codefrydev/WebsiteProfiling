@@ -10,6 +10,8 @@ import {
   landingSplitMockClass,
   landingSplitVisualClass,
 } from '@/components/landing/landingLayout';
+import { useInView } from '@/lib/useInView';
+import type { CSSProperties } from 'react';
 
 interface LandingFeatureSpotlightProps {
   eyebrow: string;
@@ -32,14 +34,23 @@ export default function LandingFeatureSpotlight({
   ctaLabel,
   reversed = false,
 }: LandingFeatureSpotlightProps) {
+  const { ref: bulletsRef, inView: bulletsInView } = useInView<HTMLUListElement>();
+
   const copy = (
     <>
       <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-link">{eyebrow}</p>
       <h3 className="text-xl font-bold tracking-tight text-foreground sm:text-2xl lg:text-3xl">{title}</h3>
       <p className="mt-2 text-sm leading-snug text-muted-foreground line-clamp-2 sm:text-base">{description}</p>
-      <ul className="mt-3 space-y-1.5">
-        {bullets.slice(0, 3).map((bullet) => (
-          <li key={bullet} className="flex items-start gap-2 text-xs text-foreground sm:text-sm">
+      <ul
+        ref={bulletsRef}
+        className={`mt-3 space-y-1.5${bulletsInView ? ' stagger' : ''}`}
+      >
+        {bullets.slice(0, 3).map((bullet, index) => (
+          <li
+            key={bullet}
+            className="flex items-start gap-2 text-xs text-foreground sm:text-sm"
+            style={{ '--i': index } as CSSProperties}
+          >
             <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-link" aria-hidden />
             <span className="line-clamp-2">{bullet}</span>
           </li>
