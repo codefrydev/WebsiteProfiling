@@ -35,9 +35,13 @@ def test_score_empty_body_low_grade() -> None:
     )
     assert 0 <= result["grade_score"] <= 100
     assert result["word_count"] == 0
-    assert result["grade_label"] in ("A", "B", "C", "D", "F")
+    assert result["grade_label"] == "F"
     assert result["provenance"] == "Search Console + on-site heuristics"
-    assert any(t["term"] == "best crm" for t in result["terms"])
+    assert result["word_count_target"] > 0
+    assert result["reading_level_target"] > 0
+    kw_term = next(t for t in result["terms"] if t["term"] == "best crm")
+    assert kw_term["count"] == 0
+    assert kw_term["target"] >= 1
 
 
 def test_score_rich_content_higher() -> None:
@@ -67,8 +71,12 @@ def test_score_rich_content_higher() -> None:
         ],
     )
     assert rich["grade_score"] >= sparse["grade_score"]
-    assert rich["checks"][2]["id"] == "h1_single"
-    assert rich["checks"][2]["pass"] is True
+    h1_check = next(c for c in rich["checks"] if c["id"] == "h1_single")
+    assert h1_check["pass"] is True
+    # Frequency: "crm software" appears twice in the rich body.
+    crm_software = next(t for t in rich["terms"] if t["term"] == "crm software")
+    assert crm_software["status"] == "included"
+    assert crm_software["count"] == 2
 
 
 def test_meta_title_checks() -> None:
@@ -83,10 +91,14 @@ def test_meta_title_checks() -> None:
 def test_grade_label_bounds() -> None:
     from website_profiling.content_studio.score import _grade_label
 
-    assert _grade_label(95) == "A"
-    assert _grade_label(85) == "B"
-    assert _grade_label(75) == "C"
-    assert _grade_label(65) == "D"
+    assert _grade_label(100) == "A++"
+    assert _grade_label(95) == "A+"
+    assert _grade_label(90) == "A"
+    assert _grade_label(88) == "A-"
+    assert _grade_label(81) == "B"
+    assert _grade_label(70) == "C"
+    assert _grade_label(60) == "D"
+    assert _grade_label(57) == "D-"
     assert _grade_label(40) == "F"
 
 
@@ -177,6 +189,93 @@ def test_score_loads_keyword_rows_from_db() -> None:
                 meta_description="x" * 130,
             )
     assert any(t["term"] == "best crm" for t in result["terms"])
+
+
+def test_term_in_corpus_no_substring_false_positive() -> None:
+    """Word-boundary matching: a short term must not match inside a longer word."""
+    from website_profiling.content_studio.score import _term_in_corpus
+
+    assert _term_in_corpus("ai", "the brain explained this domain") == "missing"
+    assert _term_in_corpus("ai", "the best ai tools available") == "included"
+
+
+def test_term_match_counts_occurrences() -> None:
+    from website_profiling.content_studio.score import _match_tokens, _term_match
+
+    tokens = _match_tokens("crm software is the best crm software for teams")
+    status, count = _term_match("crm software", tokens, set(tokens))
+    assert status == "included"
+    assert count == 2
+
+
+def test_phrase_count_edges() -> None:
+    from website_profiling.content_studio.score import _phrase_count
+
+    assert _phrase_count([], ["a", "b"]) == 0
+    assert _phrase_count(["a", "b", "c"], ["a"]) == 0
+    assert _phrase_count(["a", "a"], ["a", "a", "a"]) == 1  # non-overlapping
+
+
+def test_term_target_scales_with_importance_and_length() -> None:
+    from website_profiling.content_studio.score import _term_target
+
+    assert _term_target("crm", "high") == 3
+    assert _term_target("crm", "medium") == 2
+    assert _term_target("best crm software guide", "high") == 1  # long phrase
+
+
+def test_keyword_present_phrase_words_and_fallback() -> None:
+    from website_profiling.content_studio.score import _keyword_present
+
+    assert _keyword_present("best crm", "the best crm tool") is True  # phrase
+    assert _keyword_present("best crm", "crm picks ranked from best to worst") is True  # words
+    assert _keyword_present("best crm", "spreadsheet tips") is False
+    assert _keyword_present("", "anything") is False
+    assert _keyword_present("to by", "go to and come by") is True  # stopword fallback
+
+
+def test_keyword_placement_checks() -> None:
+    from website_profiling.content_studio.score import (
+        _keyword_in_h1_check,
+        _keyword_in_intro_check,
+        _keyword_in_title_check,
+    )
+
+    assert _keyword_in_title_check("best crm", "Best CRM Guide")["pass"] is True
+    assert _keyword_in_title_check("best crm", "Spreadsheet Guide")["pass"] is False
+    assert _keyword_in_h1_check("best crm", "<h1>Best CRM</h1>")["pass"] is True
+    assert _keyword_in_h1_check("best crm", "<p>no heading</p>")["pass"] is False
+    assert _keyword_in_intro_check("best crm", "The best crm options today.")["pass"] is True
+    assert _keyword_in_intro_check("best crm", "")["pass"] is False
+    assert _keyword_in_intro_check("best crm", "Spreadsheets are fine.")["pass"] is False
+
+
+def test_first_h1_text() -> None:
+    from website_profiling.content_studio.score import _first_h1_text
+
+    assert _first_h1_text("") == ""
+    assert _first_h1_text("<h1>Hello World</h1>") == "Hello World"
+    assert _first_h1_text("<p>no heading here</p>") == ""
+
+
+def test_reading_level_check_branches() -> None:
+    from website_profiling.content_studio.score import _reading_level_check
+
+    assert _reading_level_check(9.0, 20)["pass"] is False  # too short
+    assert _reading_level_check(15.0, 500)["pass"] is False  # too complex
+    assert _reading_level_check(9.0, 500)["pass"] is True
+
+
+def test_term_coverage_frequency_aware() -> None:
+    from website_profiling.content_studio.score import _term_coverage_score
+
+    # Below target earns a fraction; at/above target earns full credit.
+    below = _term_coverage_score([{"importance": "high", "status": "included", "count": 1, "target": 3}])
+    full = _term_coverage_score([{"importance": "high", "status": "included", "count": 3, "target": 3}])
+    missing = _term_coverage_score([{"importance": "high", "status": "missing", "count": 0, "target": 3}])
+    assert below == 1 / 3
+    assert full == 1.0
+    assert missing == 0.0
 
 
 def test_score_db_returns_non_list_rows() -> None:

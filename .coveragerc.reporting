@@ -2,6 +2,7 @@
 source = website_profiling.reporting
 omit =
     */website_profiling/reporting/builder.py
+    */website_profiling/reporting/builder_sections/*
 
 [report]
 show_missing = True

@@ -5,12 +5,14 @@ from __future__ import annotations
 
 from urllib.parse import urlparse
 
+from ...common import strip_www_prefix
+
 
 def normalize_url(url: str) -> str:
     """Strip scheme, www., trailing slash, lowercase -- for join key."""
     url = url.strip()
     parsed = urlparse(url)
-    host = parsed.netloc.lower().lstrip("www.")
+    host = strip_www_prefix(parsed.netloc.lower())
     path = parsed.path.rstrip("/") or "/"
     return f"{host}{path}"
 

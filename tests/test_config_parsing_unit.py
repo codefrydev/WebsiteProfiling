@@ -32,6 +32,10 @@ def test_getters_bool_int_float_list() -> None:
     assert get_str(cfg, "missing") == ""
     assert get_bool(cfg, "b1", False) is True
     assert get_bool(cfg, "b2", True) is False
+    # Missing or empty value honors the default (must not silently disable a default-on flag).
+    assert get_bool(cfg, "missing", True) is True
+    assert get_bool({"e": ""}, "e", True) is True
+    assert get_bool({"e": "   "}, "e", True) is True
     assert get_int(cfg, "i") == 10
     assert get_int(cfg, "missing", 7) == 7
     assert get_int(cfg, "bad", 3) == 3

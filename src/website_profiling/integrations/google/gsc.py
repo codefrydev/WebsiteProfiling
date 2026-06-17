@@ -8,6 +8,8 @@ from datetime import date, timedelta
 from typing import Any
 from urllib.parse import urlparse
 
+from ...common import strip_www_prefix
+
 
 INSTALL_HINT = (
     "pip install google-api-python-client"
@@ -205,7 +207,7 @@ def _url_prefix_key(site_url: str) -> str | None:
     if not site_url.startswith(("http://", "https://")):
         return None
     parsed = urlparse(site_url)
-    host = parsed.netloc.lower().lstrip("www.")
+    host = strip_www_prefix(parsed.netloc.lower())
     path = parsed.path.rstrip("/") or ""
     return f"{parsed.scheme.lower()}://{host}{path}/"
 
@@ -213,9 +215,9 @@ def _url_prefix_key(site_url: str) -> str | None:
 def _domain_from_site_url(site_url: str) -> str | None:
     site_url = site_url.strip()
     if site_url.startswith("sc-domain:"):
-        return site_url.split(":", 1)[1].lower().lstrip("www.")
+        return strip_www_prefix(site_url.split(":", 1)[1].lower())
     if site_url.startswith(("http://", "https://")):
-        return urlparse(site_url).netloc.lower().lstrip("www.")
+        return strip_www_prefix(urlparse(site_url).netloc.lower())
     return None
 
 

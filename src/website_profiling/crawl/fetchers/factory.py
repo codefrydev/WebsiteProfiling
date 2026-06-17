@@ -85,6 +85,7 @@ def build_fetcher(
     timeout: int = 12,
     user_agent: str = "WebsiteProfilingCrawler/1.0",
     session: Optional[requests.Session] = None,
+    session_factory: Optional[Callable[[], requests.Session]] = None,
     js_concurrency: int = 3,
     js_timeout: int = 30,
     js_wait_until: str = "domcontentloaded",
@@ -117,7 +118,12 @@ def build_fetcher(
     if mode == "javascript":
         validate_browser_available()
         return _browser_factory(**browser_kwargs)()
-    static = StaticFetcher(timeout=timeout, user_agent=user_agent, session=session)
+    static = StaticFetcher(
+        timeout=timeout,
+        user_agent=user_agent,
+        session=session,
+        session_factory=session_factory,
+    )
     if mode == "static":
         return static
     if mode == "auto":

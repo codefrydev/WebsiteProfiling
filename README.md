@@ -37,18 +37,17 @@
 
 # Site Audit
 
-**Open-source SEO crawl and technical audit platform** — self-hosted UI built with **Next.js, Python, and PostgreSQL**.
-
-Repository: [codefrydev/WebsiteProfiling](https://github.com/codefrydev/WebsiteProfiling)
+**Open-source SEO crawl and technical audit platform** — built with **Next.js, Python, and PostgreSQL**.
 
 ## Overview
 
-Site Audit is a self-hosted alternative to commercial SEO audit tools. It runs on your infrastructure, stores data in your PostgreSQL database, and produces transparent technical reports without subscription tiers or gated exports.
+Site Audit is a self-hosted alternative to commercial SEO suites. It runs on your own infrastructure, stores data in your PostgreSQL database, and produces transparent technical reports — no subscription tiers, no gated exports.
 
 **Use cases**
 
 - Technical SEO audits for owned or client properties
 - Crawl analysis with static and JavaScript rendering
+- Content writing and optimization with live SEO scoring
 - Search Console, GA4, and Bing Webmaster integration
 - Agency portfolio management and run comparison
 - Optional AI-assisted analysis over audit data via MCP-compatible tools
@@ -79,7 +78,7 @@ Site Audit focuses on **honest, self-hosted technical SEO**. It is not a drop-in
     <td align="center" width="25%">
       <img src="docs/assets/icon-audit.svg" width="48" alt=""><br>
       <strong>Technical audit</strong><br>
-      <sub>Issues, Lighthouse, on-page checks, workbooks</sub>
+      <sub>Issues, Lighthouse, accessibility (axe), on-page checks</sub>
     </td>
     <td align="center" width="25%">
       <img src="docs/assets/icon-integrations.svg" width="48" alt=""><br>
@@ -94,7 +93,7 @@ Site Audit focuses on **honest, self-hosted technical SEO**. It is not a drop-in
   </tr>
 </table>
 
-Also included: **AI chat** over audit data (optional), **340 MCP tools** (domain-scoped servers), keyword explorer (GSC + on-site), backlinks (GSC Links import), compare runs, and portfolio management for agencies.
+Also included: **AI chat** over audit data (optional), **Content studio** (write &amp; optimize with live SEO scoring), **340 MCP tools** (domain-scoped servers), image SEO, GEO/AEO readiness, keyword explorer (GSC + on-site), backlinks (GSC Links import), compare runs, and portfolio management for agencies.
 
 <p align="center">
   <img src="docs/assets/social-preview.png" alt="Site Audit preview" width="640">
@@ -147,8 +146,6 @@ WebsiteProfiling/
 | `tests/` | Backend tests; `./local-test browser` for Playwright crawl integration |
 | `docs/MCP.md` | MCP server setup for IDE and agent integrations |
 | `data/` | Local secrets and shadow `pipeline-config.txt` (gitignored) |
-| `docker-compose.prod.yml` | Production stack (`POSTGRES_USER`, `POSTGRES_PASSWORD`, `AUTH_SECRET`) |
-| `docker-compose.pull.yml` | Pre-built `WEB_IMAGE` deployment |
 
 For layout details and common development patterns, see [AGENT.md](AGENT.md).
 
@@ -224,6 +221,10 @@ Ask questions about audit data at [http://localhost:3000/chat](http://localhost:
 | **Groq** | API key in AI settings or `GROQ_API_KEY`; official Groq Python SDK; native tool calling with streaming. Default model `openai/gpt-oss-120b`. |
 
 The agent uses the same **340 read-only audit tools** as the MCP server ([docs/MCP.md](docs/MCP.md)), with **dynamic routing** (~45 tools per turn). Responses stream over SSE (`POST /api/chat`). Sessions persist per property (`chat_sessions` / `chat_messages`).
+
+### Content studio (optional)
+
+Write and optimize content at [http://localhost:3000/write](http://localhost:3000/write) with **live SEO scoring** from Search Console and on-page heuristics. Drafts persist per property; an optional AI assist (same providers as AI chat) drafts and rewrites copy. Backed by `/api/content-drafts`, `/api/content/score`, and `/api/content/analyze`.
 
 ## Contributing
 

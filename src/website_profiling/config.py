@@ -37,7 +37,12 @@ def get_str(cfg: dict, key: str, default: str = "") -> str:
 
 
 def get_bool(cfg: dict, key: str, default: bool = False) -> bool:
-    return str(cfg.get(key, default)).lower() in ("true", "1", "yes")
+    raw = cfg.get(key)
+    # Missing or empty value falls back to the default (consistent with get_int/get_float);
+    # an empty string must not silently disable a default-on flag.
+    if raw is None or str(raw).strip() == "":
+        return default
+    return str(raw).strip().lower() in ("true", "1", "yes")
 
 
 def get_int(cfg: dict, key: str, default: int | None = None) -> int | None:

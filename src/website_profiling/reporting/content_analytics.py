@@ -47,10 +47,12 @@ def _build_content_analytics(df: pd.DataFrame) -> dict:
 
     if "reading_level" in success_df.columns:
         rl = pd.to_numeric(success_df["reading_level"], errors="coerce").fillna(0)
-        rl_bins = [(0, 5), (6, 8), (9, 12), (13, 99)]
+        # Half-open contiguous bins: reading_level is a float (Flesch-Kincaid grade),
+        # so inclusive bins like (0,5)/(6,8) silently dropped fractional grades (5.5, 8.7).
+        rl_bins = [(0, 6), (6, 9), (9, 13), (13, float("inf"))]
         rl_labels = ["Elementary (0-5)", "Middle School (6-8)", "High School (9-12)", "College (13+)"]
         result["reading_level_distribution"] = {
-            lbl: int(((rl >= lo) & (rl <= hi)).sum()) for (lo, hi), lbl in zip(rl_bins, rl_labels)
+            lbl: int(((rl >= lo) & (rl < hi)).sum()) for (lo, hi), lbl in zip(rl_bins, rl_labels)
         }
 
     if "content_html_ratio" in success_df.columns:

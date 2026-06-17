@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { Save, ScanSearch, Sparkles } from 'lucide-react';
 import { apiUrl } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
 import { Button } from '@/components';
 import SeoScoreSidebar from './SeoScoreSidebar';
-import AiSuggestionsPanel from './AiSuggestionsPanel';
+import EditorInsightsPanel from './EditorInsightsPanel';
 import { useContentScore } from './useContentScore';
 import type { ContentAnalyzeResult, ContentDraftDetail, ContentScoreResult } from '@/types/contentStudio';
 
@@ -29,6 +29,7 @@ export interface ContentEditorProps {
   aiSuggestionsEnabled?: boolean;
   onAiSuggestionsEnabledChange?: (enabled: boolean) => void;
   onScoreChange?: (score: ContentScoreResult | null) => void;
+  onBodyChange?: (html: string) => void;
   onAnalysisChange?: (analysis: ContentAnalyzeResult | null) => void;
   onAnalyzeLoading?: (loading: boolean) => void;
   onAnalyzeError?: (error: string | null) => void;
@@ -58,6 +59,7 @@ export default function ContentEditor({
   aiSuggestionsEnabled = true,
   onAiSuggestionsEnabledChange,
   onScoreChange,
+  onBodyChange,
   onAnalysisChange,
   onAnalyzeLoading,
   onAnalyzeError,
@@ -92,6 +94,21 @@ export default function ContentEditor({
   useEffect(() => {
     onScoreChange?.(score);
   }, [score, onScoreChange]);
+
+  const handleBodyChange = useCallback(
+    (html: string) => {
+      setBodyHtml(html);
+      onBodyChange?.(html);
+    },
+    [onBodyChange],
+  );
+
+  // Emit the initial body so the side panel can diff against it before any edit.
+  useEffect(() => {
+    onBodyChange?.(draft.body_html);
+  }, [draft.body_html, onBodyChange]);
+
+  const highlightTerms = useMemo(() => (score?.terms ?? []).map((t) => t.term), [score]);
 
   const runAnalyze = useCallback(async (refresh = false) => {
     if (!keyword.trim()) return;
@@ -289,20 +306,26 @@ export default function ContentEditor({
         <div className="flex min-h-0 flex-1 flex-col px-3 py-2 sm:px-4 xl:pr-4">
           <RichTextEditor
             value={bodyHtml}
-            onChange={setBodyHtml}
+            onChange={handleBodyChange}
             disabled={readOnly}
             placeholder={s.bodyPlaceholder}
+            highlightTerms={highlightTerms}
             fillHeight
           />
         </div>
 
-        <div className="max-h-64 space-y-3 overflow-y-auto border-t border-muted/30 bg-[var(--chat-surface)]/40 p-3 xl:hidden">
-          <SeoScoreSidebar score={score} loading={scoreLoading} error={scoreError} keyword={keyword} />
-          <AiSuggestionsPanel
+        <div className="max-h-72 space-y-3 overflow-y-auto border-t border-muted/30 bg-[var(--chat-surface)]/40 p-3 xl:hidden">
+          <EditorInsightsPanel
+            score={score}
+            scoreLoading={scoreLoading}
+            scoreError={scoreError}
+            keyword={keyword}
+            title={title}
+            bodyHtml={bodyHtml}
             analysis={analysis}
-            loading={analyzeLoading}
-            error={analyzeError}
-            visible={aiSuggestionsEnabled}
+            analyzeLoading={analyzeLoading}
+            analyzeError={analyzeError}
+            aiVisible={aiSuggestionsEnabled}
           />
         </div>
       </div>
@@ -384,9 +407,10 @@ export default function ContentEditor({
             <p className="text-xs text-muted-foreground mb-1">{s.body}</p>
             <RichTextEditor
               value={bodyHtml}
-              onChange={setBodyHtml}
+              onChange={handleBodyChange}
               disabled={readOnly}
               placeholder={s.bodyPlaceholder}
+              highlightTerms={highlightTerms}
             />
           </div>
         </div>
