@@ -21,6 +21,17 @@ _wappalyzer_instance = _tech._wappalyzer_instance
 _wappalyzer_disabled = _tech._wappalyzer_disabled
 
 
+def strip_www_prefix(host: str) -> str:
+    """Remove a single leading ``www.`` label from a host.
+
+    Use this instead of ``host.lstrip("www.")`` — ``str.lstrip`` strips any
+    leading characters in the *set* ``{'w', '.'}``, so e.g.
+    ``"www.washington.edu".lstrip("www.")`` wrongly yields ``"ashington.edu"``.
+    """
+    h = host or ""
+    return h[4:] if h.lower().startswith("www.") else h
+
+
 def detect_tech_wappalyzer(url, html, headers, soup, wappalyzer=None):
     """Detect technologies; syncs wappalyzer module state with this facade for tests."""
     _tech._wappalyzer_disabled = _wappalyzer_disabled
@@ -37,6 +48,7 @@ __all__ = [
     "load_edges",
     "save_edges",
     "strip_crawl_query_params",
+    "strip_www_prefix",
     "normalize_link",
     "parse_link_edges",
     "parse_links",

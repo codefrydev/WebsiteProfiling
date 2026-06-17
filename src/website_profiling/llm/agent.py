@@ -135,10 +135,12 @@ def _react_step(
     on_token: Callable[[str], None] | None,
 ) -> ChatResult:
     """JSON ReAct fallback for providers without native tool calling."""
+    # Include "tool" messages so the model sees prior tool results; otherwise it
+    # keeps re-issuing the same call and loops until MAX_TOOL_ROUNDS.
     convo = "\n".join(
         f"{m.get('role')}: {m.get('content')}"
         for m in messages
-        if m.get("role") in ("user", "assistant", "system")
+        if m.get("role") in ("user", "assistant", "system", "tool")
     )
     user = f"Available tools:\n{tools_desc}\n\nConversation:\n{convo}\n\nNext action JSON:"
     data = client.complete_json(SYSTEM_PROMPT + REACT_PROMPT_SUFFIX, user)

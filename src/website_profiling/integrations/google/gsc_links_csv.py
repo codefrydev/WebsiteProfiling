@@ -11,6 +11,8 @@ import io
 from datetime import datetime, timezone
 from typing import Any
 
+from ...common import strip_www_prefix
+
 from .normalize import build_crawl_norm_map, normalize_url
 
 _SECTION_KEYS = (
@@ -193,7 +195,7 @@ def parse_row(
         try:
             from urllib.parse import urlparse
 
-            host = urlparse(source).netloc.lower().lstrip("www.")
+            host = strip_www_prefix(urlparse(source).netloc.lower())
             if host:
                 row["linking_site"] = host
         except Exception:

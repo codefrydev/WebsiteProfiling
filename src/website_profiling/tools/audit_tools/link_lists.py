@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 
 from psycopg import Connection
 
+from ...common import strip_www_prefix
 from ._slice import cap_list, parse_limit
 from .context import AuditToolContext
 
@@ -87,10 +88,10 @@ def list_outbound_links(conn: Connection, ctx: AuditToolContext, args: dict[str,
     ]
     if not items:
         start = str(payload.get("start_url") or payload.get("origin") or "").strip()
-        origin_host = urlparse(start).netloc.lower().lstrip("www.") if start else ""
+        origin_host = strip_www_prefix(urlparse(start).netloc.lower()) if start else ""
         for e in edges:
             to_url = str(e.get("to_url") or "")
-            host = urlparse(to_url).netloc.lower().lstrip("www.")
+            host = strip_www_prefix(urlparse(to_url).netloc.lower())
             if origin_host and host and host != origin_host:
                 items.append({
                     "from_url": e.get("from_url"),

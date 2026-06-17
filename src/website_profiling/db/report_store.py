@@ -99,7 +99,10 @@ def write_report_payload(conn: Connection, report_data: dict[str, Any]) -> None:
     report_id = int(rid) if rid is not None else None
     if report_id is not None:
         try:
-            _write_audit_health_snapshot(conn, report_id, canonical_domain, report_data)
+            # Savepoint: a failed snapshot insert must not poison/roll back the
+            # report_payload write that precedes it in this transaction.
+            with conn.transaction():
+                _write_audit_health_snapshot(conn, report_id, canonical_domain, report_data)
         except Exception:
             pass
     conn.commit()

@@ -44,6 +44,27 @@ __all__ = [
 ]
 
 
+def _build_configured_session(config: CrawlConfig) -> requests.Session:
+    """Build a session configured from crawl auth/headers/cookies.
+
+    Called once per thread (and once for the main-thread template) so each
+    worker thread fetches with its own session — see ``StaticFetcher``.
+    """
+    session = requests.Session()
+    session.headers.update({"User-Agent": config.user_agent})
+    if config.crawl_auth_username:
+        session.auth = (config.crawl_auth_username, config.crawl_auth_password or "")
+    for line in (config.crawl_extra_headers or "").replace("\r", "").split("\n"):
+        if ":" in line:
+            key, val = line.split(":", 1)
+            k, v = key.strip(), val.strip()
+            if k:
+                session.headers[k] = v
+    if config.crawl_cookies and str(config.crawl_cookies).strip():
+        session.headers["Cookie"] = str(config.crawl_cookies).strip()
+    return session
+
+
 class Crawler:
     def __init__(
         self,
@@ -185,24 +206,19 @@ class Crawler:
         self.lock = self.frontier.lock
 
         self.results: list[dict] = []
-        self.session = requests.Session()
-        self.session.headers.update({"User-Agent": config.user_agent})
-        if config.crawl_auth_username:
-            self.session.auth = (config.crawl_auth_username, config.crawl_auth_password or "")
-        for line in (config.crawl_extra_headers or "").replace("\r", "").split("\n"):
-            if ":" in line:
-                key, val = line.split(":", 1)
-                k, v = key.strip(), val.strip()
-                if k:
-                    self.session.headers[k] = v
-        if config.crawl_cookies and str(config.crawl_cookies).strip():
-            self.session.headers["Cookie"] = str(config.crawl_cookies).strip()
+        # `requests.Session` is not thread-safe, so worker threads each build
+        # their own session from this factory (see StaticFetcher). The template
+        # `self.session` below is only touched on the main thread (sitemap
+        # seeding and Playwright auth mapping).
+        self._session_factory = lambda: _build_configured_session(config)
+        self.session = self._session_factory()
 
         self.fetcher = build_fetcher(
             render_mode=config.fetcher_render_mode,
             timeout=config.timeout,
             user_agent=config.user_agent,
             session=self.session,
+            session_factory=self._session_factory,
             js_concurrency=config.js_concurrency,
             js_timeout=config.js_timeout,
             js_wait_until=config.js_wait_until,

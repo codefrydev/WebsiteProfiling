@@ -149,7 +149,7 @@ class OpenAIClient:
                             acc["arguments"] += fn["arguments"]
 
         tool_calls: list[ToolCall] = []
-        for acc in tool_calls_acc.values():
+        for idx, acc in tool_calls_acc.items():
             raw_args = acc.get("arguments") or "{}"
             try:
                 args = json.loads(raw_args) if isinstance(raw_args, str) else dict(raw_args)
@@ -157,7 +157,9 @@ class OpenAIClient:
                 args = {}
             tool_calls.append(
                 ToolCall(
-                    id=str(acc.get("id") or ""),
+                    # OpenAI-compatible endpoints (Groq, etc.) may omit the id; synthesize
+                    # a stable one from the stream index so tool_call_id pairing still works.
+                    id=str(acc.get("id") or "") or f"call_{idx}",
                     name=str(acc.get("name") or ""),
                     arguments=args if isinstance(args, dict) else {},
                 ),

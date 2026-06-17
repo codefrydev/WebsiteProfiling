@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 
 from psycopg import Connection
 
+from ...common import strip_www_prefix
 from ._slice import cap_list, parse_limit
 from .context import AuditToolContext
 
@@ -95,7 +96,7 @@ def list_backlinks_from_domain(conn: Connection, ctx: AuditToolContext, args: di
     scoped = ctx.with_args(args)
     if scoped.property_id is None:
         return {"error": "property_id is required", "links": [], "total": 0, "truncated": False}
-    domain = str(args.get("domain") or args.get("linking_site") or "").strip().lower().lstrip("www.")
+    domain = strip_www_prefix(str(args.get("domain") or args.get("linking_site") or "").strip().lower())
     if not domain:
         return {"error": "domain is required", "links": [], "total": 0, "truncated": False}
     data = _load_links(scoped, conn)

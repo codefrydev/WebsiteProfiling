@@ -12,7 +12,8 @@ def snapshot_gsc_links(property_id: int, gsc_links_data: dict[str, Any]) -> None
     domains = gsc_links_data.get("top_linking_sites") or []
     count = len(domains)
     top = [
-        {"site": d.get("site"), "links": d.get("links")}
+        # top_linking_sites entries use the "link_count" key (see gsc_links_csv.py).
+        {"site": d.get("site"), "links": d.get("link_count")}
         for d in domains[:50]
         if isinstance(d, dict)
     ]

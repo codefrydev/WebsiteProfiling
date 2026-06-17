@@ -120,11 +120,16 @@ def restore_historical_data(conn: Connection, data: dict[str, list]) -> None:
                 vals.append(v)
             params.append(tuple(vals))
         try:
-            _executemany(conn, sql, params, page_size=500)
+            # Savepoint: a bulk failure must not poison the outer transaction, or the
+            # per-row fallback below would itself fail (current transaction is aborted)
+            # and silently drop every preserved row.
+            with conn.transaction():
+                _executemany(conn, sql, params, page_size=500)
         except Exception:
             for p in params:
                 try:
-                    conn.execute(sql, p)
+                    with conn.transaction():
+                        conn.execute(sql, p)
                 except Exception:
                     pass
 
