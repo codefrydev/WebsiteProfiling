@@ -48,27 +48,15 @@ export default function LandingPage() {
     >
       <LandingHero />
 
-      <LandingPageSection
-        id={LANDING_SECTION_IDS.stats}
-        nextSectionId={LANDING_SECTION_IDS.getStarted}
-        fullBleed
-      >
+      <LandingPageSection id={LANDING_SECTION_IDS.stats} fullBleed>
         <LandingStatsStrip />
       </LandingPageSection>
 
-      <LandingPageSection
-        id={LANDING_SECTION_IDS.getStarted}
-        nextSectionId={LANDING_SECTION_IDS.spotlights}
-        fullBleed
-      >
+      <LandingPageSection id={LANDING_SECTION_IDS.getStarted} fullBleed>
         <LandingPathStrip />
       </LandingPageSection>
 
-      <LandingPageSection
-        id={LANDING_SECTION_IDS.spotlights}
-        nextSectionId={LANDING_SECTION_IDS.spotlightIssues}
-        fullBleed
-      >
+      <LandingPageSection id={LANDING_SECTION_IDS.spotlights} fullBleed>
         <div className="flex min-h-0 w-full flex-1 flex-col justify-center gap-4">
           <div className={landingGutterClass}>
             <LandingSectionHeader
@@ -90,11 +78,7 @@ export default function LandingPage() {
         </div>
       </LandingPageSection>
 
-      <LandingPageSection
-        id={LANDING_SECTION_IDS.spotlightIssues}
-        nextSectionId={LANDING_SECTION_IDS.useCases}
-        fullBleed
-      >
+      <LandingPageSection id={LANDING_SECTION_IDS.spotlightIssues} fullBleed>
         <LandingFeatureSpotlight
             eyebrow={vl.spotlight2Eyebrow}
             title={vl.spotlight2Title}
@@ -107,23 +91,19 @@ export default function LandingPage() {
         />
       </LandingPageSection>
 
-      <LandingPageSection id={LANDING_SECTION_IDS.useCases} nextSectionId={LANDING_SECTION_IDS.quickStart}>
+      <LandingPageSection id={LANDING_SECTION_IDS.useCases}>
         <LandingUseCases />
       </LandingPageSection>
 
-      <LandingPageSection
-        id={LANDING_SECTION_IDS.quickStart}
-        nextSectionId={LANDING_SECTION_IDS.googleSetup}
-        fullBleed
-      >
+      <LandingPageSection id={LANDING_SECTION_IDS.quickStart} fullBleed>
         <LandingQuickStart />
       </LandingPageSection>
 
-      <LandingPageSection id={LANDING_SECTION_IDS.googleSetup} nextSectionId={LANDING_SECTION_IDS.features}>
+      <LandingPageSection id={LANDING_SECTION_IDS.googleSetup}>
         <LandingGoogleSetup />
       </LandingPageSection>
 
-      <LandingPageSection id={LANDING_SECTION_IDS.features} nextSectionId={LANDING_SECTION_IDS.limitations}>
+      <LandingPageSection id={LANDING_SECTION_IDS.features}>
         <div className="w-full min-w-0">
           <LandingSectionHeader
             eyebrow={vl.sectionCapabilities}
@@ -150,17 +130,12 @@ export default function LandingPage() {
         </div>
       </LandingPageSection>
 
-      <LandingPageSection
-        id={LANDING_SECTION_IDS.limitations}
-        nextSectionId={LANDING_SECTION_IDS.finalCta}
-        fullBleed
-      >
+      <LandingPageSection id={LANDING_SECTION_IDS.limitations} fullBleed>
         <LandingLimitations />
       </LandingPageSection>
 
       <LandingPageSection
         id={LANDING_SECTION_IDS.finalCta}
-        nextSectionId={LANDING_SECTION_IDS.siteFooter}
         fullBleed
         className="border-t border-muted/40"
       >

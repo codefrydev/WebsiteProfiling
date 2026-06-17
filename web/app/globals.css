@@ -908,14 +908,6 @@ select:focus-visible {
   padding-bottom: 2.5rem;
 }
 
-.landing-scroll-cue--presenter {
-  bottom: 6.5rem;
-}
-
-.landing-scroll-cue {
-  bottom: 2.25rem;
-}
-
 /* ─────────────────────────────────────────────────────────────
    Reusable redesign utilities — depth, motion, warmth
    ───────────────────────────────────────────────────────────── */

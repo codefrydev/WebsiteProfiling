@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { CheckCircle2, ChevronRight } from 'lucide-react';
 import LandingHeroTopBar from '@/components/landing/LandingHeroTopBar';
 import LandingProductMock from '@/components/landing/LandingProductMock';
-import LandingScrollCue from '@/components/landing/LandingScrollCue';
 import {
   LANDING_SECTION_IDS,
   landingGutterClass,
@@ -80,8 +79,6 @@ export default function LandingHero() {
           </div>
         </div>
       </div>
-
-      <LandingScrollCue href={`#${LANDING_SECTION_IDS.stats}`} label={vl.deckNext} />
     </section>
   );
 }
