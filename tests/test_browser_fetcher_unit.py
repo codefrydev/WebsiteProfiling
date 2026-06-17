@@ -846,3 +846,180 @@ def test_browser_fetcher_close_when_loop_unavailable(fake_playwright) -> None:
     fetcher._loop = None
     fetcher._closed = False
     fetcher.close()
+
+
+class _NavRequest:
+    def __init__(self, *, is_navigation: bool) -> None:
+        self._is_navigation = is_navigation
+
+    def is_navigation_request(self) -> bool:
+        return self._is_navigation
+
+
+class _NavResponse:
+    def __init__(self, page: "_NavResponsePage", *, status: int, is_navigation: bool) -> None:
+        self.status = status
+        self.headers = {"content-type": "text/html", "Location": "https://example.com/new"}
+        self.request = _NavRequest(is_navigation=is_navigation)
+        self.frame = page.main_frame
+
+
+class _NavResponsePage(_FakePage):
+    def __init__(self) -> None:
+        super().__init__()
+        self.main_frame = object()
+        self.url = "https://example.com/new"
+
+    async def goto(self, _url: str, **_kwargs: Any) -> _FakeResponse:
+        for handler in self._handlers.get("response", []):
+            handler(_NavResponse(self, status=301, is_navigation=True))
+        return _FakeResponse()
+
+
+class _NavResponseContext(_FakeContext):
+    async def new_page(self) -> _NavResponsePage:
+        return _NavResponsePage()
+
+
+class _NavResponseBrowser(_FakeBrowser):
+    async def new_context(self, **_kwargs: Any) -> _NavResponseContext:
+        return _NavResponseContext()
+
+
+class _NavResponseChromium:
+    async def launch(self, **_kwargs: Any) -> _NavResponseBrowser:
+        return _NavResponseBrowser()
+
+
+class _NavResponsePlaywright:
+    chromium = _NavResponseChromium()
+
+    async def stop(self) -> None:
+        return None
+
+
+class _NavResponsePlaywrightContext:
+    async def start(self) -> _NavResponsePlaywright:
+        return _NavResponsePlaywright()
+
+
+def test_browser_fetcher_prefers_recorded_navigation_response(monkeypatch: pytest.MonkeyPatch) -> None:
+    from website_profiling.crawl.fetchers.browser import BrowserFetcher
+
+    fake_api = MagicMock()
+    fake_api.async_playwright = lambda: _NavResponsePlaywrightContext()
+    monkeypatch.setitem(__import__("sys").modules, "playwright", MagicMock(async_api=fake_api))
+    monkeypatch.setitem(__import__("sys").modules, "playwright.async_api", fake_api)
+
+    fetcher = BrowserFetcher(timeout=5, js_concurrency=1, extra_wait_ms=0, block_resources=False)
+    try:
+        result = fetcher.fetch("https://example.com/old")
+        assert result.status == 301
+        assert result.redirect_chain_length == 1
+        assert result.text is None
+    finally:
+        fetcher.close()
+
+
+class _BrokenNavResponse:
+    @property
+    def request(self) -> None:
+        raise RuntimeError("response handler failed")
+
+
+class _BrokenNavResponsePage(_FakePage):
+    async def goto(self, _url: str, **_kwargs: Any) -> _FakeResponse:
+        for handler in self._handlers.get("response", []):
+            handler(_BrokenNavResponse())
+        return _FakeResponse()
+
+
+class _BrokenNavResponseContext(_FakeContext):
+    async def new_page(self) -> _BrokenNavResponsePage:
+        return _BrokenNavResponsePage()
+
+
+class _BrokenNavResponseBrowser(_FakeBrowser):
+    async def new_context(self, **_kwargs: Any) -> _BrokenNavResponseContext:
+        return _BrokenNavResponseContext()
+
+
+class _BrokenNavResponseChromium:
+    async def launch(self, **_kwargs: Any) -> _BrokenNavResponseBrowser:
+        return _BrokenNavResponseBrowser()
+
+
+class _BrokenNavResponsePlaywright:
+    chromium = _BrokenNavResponseChromium()
+
+    async def stop(self) -> None:
+        return None
+
+
+class _BrokenNavResponsePlaywrightContext:
+    async def start(self) -> _BrokenNavResponsePlaywright:
+        return _BrokenNavResponsePlaywright()
+
+
+def test_browser_fetcher_response_handler_swallows_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+    from website_profiling.crawl.fetchers.browser import BrowserFetcher
+
+    fake_api = MagicMock()
+    fake_api.async_playwright = lambda: _BrokenNavResponsePlaywrightContext()
+    monkeypatch.setitem(__import__("sys").modules, "playwright", MagicMock(async_api=fake_api))
+    monkeypatch.setitem(__import__("sys").modules, "playwright.async_api", fake_api)
+
+    fetcher = BrowserFetcher(timeout=5, js_concurrency=1, extra_wait_ms=0, block_resources=False)
+    try:
+        result = fetcher.fetch("https://example.com/")
+        assert result.status == 200
+    finally:
+        fetcher.close()
+
+
+class _RemoveListenerFailPage(_FakePage):
+    def remove_listener(self, event: str, handler: Any) -> None:
+        raise RuntimeError("listener missing")
+
+
+class _RemoveListenerFailContext(_FakeContext):
+    async def new_page(self) -> _RemoveListenerFailPage:
+        return _RemoveListenerFailPage()
+
+
+class _RemoveListenerFailBrowser(_FakeBrowser):
+    async def new_context(self, **_kwargs: Any) -> _RemoveListenerFailContext:
+        return _RemoveListenerFailContext()
+
+
+class _RemoveListenerFailChromium:
+    async def launch(self, **_kwargs: Any) -> _RemoveListenerFailBrowser:
+        return _RemoveListenerFailBrowser()
+
+
+class _RemoveListenerFailPlaywright:
+    chromium = _RemoveListenerFailChromium()
+
+    async def stop(self) -> None:
+        return None
+
+
+class _RemoveListenerFailPlaywrightContext:
+    async def start(self) -> _RemoveListenerFailPlaywright:
+        return _RemoveListenerFailPlaywright()
+
+
+def test_browser_fetcher_remove_listener_failure_swallowed(monkeypatch: pytest.MonkeyPatch) -> None:
+    from website_profiling.crawl.fetchers.browser import BrowserFetcher
+
+    fake_api = MagicMock()
+    fake_api.async_playwright = lambda: _RemoveListenerFailPlaywrightContext()
+    monkeypatch.setitem(__import__("sys").modules, "playwright", MagicMock(async_api=fake_api))
+    monkeypatch.setitem(__import__("sys").modules, "playwright.async_api", fake_api)
+
+    fetcher = BrowserFetcher(timeout=5, js_concurrency=1, extra_wait_ms=0, block_resources=False)
+    try:
+        result = fetcher.fetch("https://example.com/")
+        assert result.status == 200
+    finally:
+        fetcher.close()

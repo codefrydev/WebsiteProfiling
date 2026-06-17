@@ -10,10 +10,29 @@ META_DESC_LEN_MIN = 70
 META_DESC_LEN_MAX = 160
 THIN_CONTENT_CHARS = 300
 
+
+def _status_text(value: object) -> str:
+    """Normalize a status value to a clean string (e.g. 400.0 -> "400").
+
+    Numeric statuses can arrive as ints, strings, or floats (when pandas coerces
+    a column containing NaN); non-numeric markers like "error"/"blocked_by_robots"
+    pass through unchanged. Keeps status-code matching robust across all of them.
+    """
+    if value is None:
+        return ""
+    try:
+        f = float(value)  # type: ignore[arg-type]
+    except (TypeError, ValueError):
+        return str(value).strip()
+    if f != f:  # NaN
+        return ""
+    return str(int(f))
+
+
 def _compute_summary_seo_issues(df: pd.DataFrame) -> dict:
     """Compute crawl summary, SEO health metrics, issues list, and recommendations from crawl DataFrame."""
     total = len(df)
-    status_str = df["status"].astype(str) if "status" in df.columns else pd.Series(["unknown"] * len(df))
+    status_str = df["status"].map(_status_text) if "status" in df.columns else pd.Series(["unknown"] * len(df))
     count_2xx = int((status_str.str.match(r"2\d{2}").fillna(False)).sum())
     count_3xx = int((status_str.str.match(r"3\d{2}").fillna(False)).sum())
     count_4xx = int((status_str.str.match(r"4\d{2}").fillna(False)).sum())
@@ -76,7 +95,7 @@ def _compute_summary_seo_issues(df: pd.DataFrame) -> dict:
         if pd.isna(u) or not u:
             continue
         u = str(u).strip()
-        st = str(row.get("status", "")).strip()
+        st = _status_text(row.get("status", ""))
         if st.startswith("4") or st.startswith("5") or st in ("error", "blocked_by_robots"):
             issues["broken"].append({"url": u, "status": st})
         elif st.startswith("3"):

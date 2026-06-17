@@ -11,21 +11,44 @@ import {
   CompactStackedBar,
 } from '@/components/charts/compact';
 
-export type LandingProductMockVariant = 'default' | 'crawl' | 'issues';
+export type LandingProductMockVariant =
+  | 'default'
+  | 'crawl'
+  | 'issues'
+  | 'google'
+  | 'contentStudio'
+  | 'aiChat'
+  | 'compareExport';
 
 interface LandingProductMockProps {
   variant?: LandingProductMockVariant;
   className?: string;
   elevated?: boolean;
+  compact?: boolean;
+  /** Stretch to fill a split-column visual area (hero / spotlights). */
+  fillHeight?: boolean;
 }
 
 const NAV_ITEMS = [
   { label: 'Overview', activeFor: ['default'] as const },
   { label: 'Issues', activeFor: ['issues'] as const },
   { label: 'All URLs', activeFor: ['crawl'] as const },
-  { label: 'Search', activeFor: [] as const },
-  { label: 'Export', activeFor: [] as const },
+  { label: 'Search', activeFor: ['google'] as const },
+  { label: 'Write', activeFor: ['contentStudio'] as const },
+  { label: 'Chat', activeFor: ['aiChat'] as const },
+  { label: 'Compare', activeFor: ['compareExport'] as const },
+  { label: 'Export', activeFor: ['compareExport'] as const },
 ];
+
+const MOCK_PATHS: Record<LandingProductMockVariant, string> = {
+  default: 'overview',
+  crawl: 'links',
+  issues: 'issues',
+  google: 'search-performance',
+  contentStudio: 'write',
+  aiChat: 'chat',
+  compareExport: 'compare',
+};
 
 const MOCK_GSC_BAR_HEIGHTS = [40, 65, 52, 78, 45, 88, 60, 72, 55, 80, 68, 92];
 
@@ -268,34 +291,209 @@ function OverviewPanel() {
   );
 }
 
+function GooglePanel() {
+  return (
+    <>
+      <div className="mb-2.5 grid grid-cols-3 gap-1.5">
+        <CompactKpi label="Clicks" value="12.4k" delta="+8%" accent />
+        <CompactKpi label="Impressions" value="284k" />
+        <CompactKpi label="CTR" value="4.4%" />
+      </div>
+      <div className="mb-2.5 grid grid-cols-2 gap-2">
+        <CompactWidget title="GSC clicks (28d)">
+          <CompactBarChart heights={MOCK_GSC_BAR_HEIGHTS} />
+        </CompactWidget>
+        <CompactWidget title="GA4 traffic">
+          <div className="grid grid-cols-2 gap-2">
+            <CompactKpi label="Sessions" value="8,412" delta="+5%" />
+            <CompactKpi label="Users" value="6,203" />
+          </div>
+        </CompactWidget>
+      </div>
+      <CompactWidget title="Top queries" className="mb-0">
+        <div className="space-y-1">
+          <MockUrlRow path="technical seo audit" status={200} />
+          <MockUrlRow path="screaming frog alternative" status={200} />
+          <MockUrlRow path="self hosted seo tool" status={200} />
+        </div>
+      </CompactWidget>
+    </>
+  );
+}
+
+function MockTermRow({ term, count, target, tone }: { term: string; count: number; target: number; tone: 'ok' | 'warn' | 'bad' }) {
+  const toneClass =
+    tone === 'ok' ? 'bg-emerald-500' : tone === 'warn' ? 'bg-amber-500' : 'bg-red-500';
+  const pct = Math.min(100, Math.round((count / Math.max(target, 1)) * 100));
+  return (
+    <div className="space-y-0.5">
+      <div className="flex items-center justify-between gap-2 text-[9px]">
+        <span className="truncate text-foreground">{term}</span>
+        <span className="shrink-0 tabular-nums text-muted-foreground">
+          {count}/{target}
+        </span>
+      </div>
+      <div className="h-1 overflow-hidden rounded-full bg-brand-700/80">
+        <div className={`h-full rounded-full ${toneClass}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function ContentStudioPanel() {
+  return (
+    <div className="flex h-full min-h-0 gap-2">
+      <div className="min-w-0 flex-1 space-y-2">
+        <div className="rounded-lg border border-default/60 bg-brand-900/40 p-2">
+          <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Title</p>
+          <p className="mt-0.5 truncate text-[10px] font-medium text-foreground">Technical SEO Audit Guide 2026</p>
+        </div>
+        <div className="rounded-lg border border-default/60 bg-brand-900/40 p-2">
+          <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Body</p>
+          <div className="mt-1 space-y-1">
+            <span className="block h-1.5 w-full rounded bg-brand-700/80" />
+            <span className="block h-1.5 w-[92%] rounded bg-brand-700/80" />
+            <span className="block h-1.5 w-[78%] rounded bg-blue-500/40" />
+            <span className="block h-1.5 w-[85%] rounded bg-brand-700/80" />
+          </div>
+        </div>
+      </div>
+      <aside className="w-[38%] shrink-0 rounded-lg border border-default/60 bg-brand-900/50 p-2">
+        <p className="text-[8px] font-semibold uppercase tracking-wide text-muted-foreground">SEO grade</p>
+        <p className="mt-0.5 text-lg font-bold text-emerald-400">B+</p>
+        <p className="mt-2 text-[8px] font-semibold uppercase tracking-wide text-muted-foreground">Terms</p>
+        <div className="mt-1.5 space-y-2">
+          <MockTermRow term="technical seo" count={4} target={3} tone="ok" />
+          <MockTermRow term="site audit" count={1} target={2} tone="warn" />
+          <MockTermRow term="crawl budget" count={0} target={1} tone="bad" />
+        </div>
+      </aside>
+    </div>
+  );
+}
+
+function AiChatPanel() {
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-2">
+      <div className="ml-auto max-w-[88%] rounded-lg rounded-tr-sm border border-blue-500/30 bg-blue-500/15 px-2 py-1.5">
+        <p className="text-[9px] text-foreground">Summarize site health and export a PDF report.</p>
+      </div>
+      <div className="max-w-[92%] rounded-lg rounded-tl-sm border border-default/60 bg-brand-900/50 px-2 py-1.5">
+        <p className="text-[9px] text-muted-foreground">Health score 82 (+4). 12 critical issues remain…</p>
+        <div className="mt-2 grid grid-cols-3 gap-1">
+          <CompactKpi label="Health" value="82" accent />
+          <CompactKpi label="Issues" value="89" delta="-11" />
+          <CompactKpi label="URLs" value="1.2k" />
+        </div>
+      </div>
+      <div className="mt-auto flex flex-wrap gap-1.5">
+        <span className="rounded-full border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[8px] font-medium text-link">
+          Download PDF
+        </span>
+        <span className="rounded-full border border-default/60 px-2 py-0.5 text-[8px] text-muted-foreground">
+          View issues table
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function CompareExportPanel() {
+  return (
+    <>
+      <div className="mb-2.5 grid grid-cols-3 gap-1.5">
+        <CompactKpi label="Health" value="82" delta="+4" accent />
+        <CompactKpi label="Issues" value="89" delta="-11" />
+        <CompactKpi label="URLs" value="1,247" delta="+38" />
+      </div>
+      <div className="mb-2.5 grid grid-cols-2 gap-2">
+        <CompactWidget title="Category deltas">
+          <CompactHorizontalBars
+            items={[
+              { label: 'On-page', value: 8, color: 'rgb(52 211 153 / 0.85)' },
+              { label: 'Perf', value: 5, color: 'rgb(52 211 153 / 0.7)' },
+              { label: 'Security', value: -2, color: 'rgb(248 113 113 / 0.85)' },
+              { label: 'Index', value: 3, color: 'rgb(59 130 246 / 0.7)' },
+            ]}
+          />
+        </CompactWidget>
+        <CompactWidget title="Issue diff">
+          <CompactStackedBar
+            segments={[
+              { label: 'Fixed', value: 24, color: 'rgb(52 211 153 / 0.9)' },
+              { label: 'New', value: 8, color: 'rgb(251 191 36 / 0.9)' },
+              { label: 'Open', value: 57, color: 'rgb(100 116 139 / 0.6)' },
+            ]}
+          />
+        </CompactWidget>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        <span className="rounded-lg border border-blue-500/30 bg-blue-500/10 px-2.5 py-1 text-[9px] font-semibold text-link">
+          Export PDF
+        </span>
+        <span className="rounded-lg border border-default/60 px-2.5 py-1 text-[9px] font-semibold text-foreground">
+          Export HTML
+        </span>
+      </div>
+    </>
+  );
+}
+
+function renderPanel(variant: LandingProductMockVariant) {
+  switch (variant) {
+    case 'crawl':
+      return <CrawlPanel />;
+    case 'issues':
+      return <IssuesPanel />;
+    case 'google':
+      return <GooglePanel />;
+    case 'contentStudio':
+      return <ContentStudioPanel />;
+    case 'aiChat':
+      return <AiChatPanel />;
+    case 'compareExport':
+      return <CompareExportPanel />;
+    default:
+      return <OverviewPanel />;
+  }
+}
+
 export default function LandingProductMock({
   variant = 'default',
   className = '',
   elevated = false,
+  compact = false,
+  fillHeight = false,
 }: LandingProductMockProps) {
+  const bodyMinH = fillHeight
+    ? 'min-h-0 flex-1'
+    : compact
+      ? 'min-h-[200px] sm:min-h-[220px]'
+      : 'min-h-[320px] sm:min-h-[360px]';
+
   return (
     <div
       aria-hidden
       className={`overflow-hidden rounded-2xl border border-default bg-brand-800/70 ${
         elevated ? 'shadow-[var(--shadow-elevated)]' : 'shadow-[var(--shadow-elevated)]'
-      } ${className}`.trim()}
+      } ${fillHeight ? 'flex h-full min-h-0 flex-col' : ''} ${className}`.trim()}
     >
-      <div className="flex items-center gap-2 border-b border-default/80 bg-brand-900/90 px-3 py-2.5">
+      <div className={`flex items-center gap-2 border-b border-default/80 bg-brand-900/90 px-3 ${compact ? 'py-1.5' : 'py-2.5'}`}>
         <span className="flex gap-1.5">
-          <span className="h-2.5 w-2.5 rounded-full bg-red-500/80" />
-          <span className="h-2.5 w-2.5 rounded-full bg-amber-500/80" />
-          <span className="h-2.5 w-2.5 rounded-full bg-emerald-500/80" />
+          <span className={`rounded-full bg-red-500/80 ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`} />
+          <span className={`rounded-full bg-amber-500/80 ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`} />
+          <span className={`rounded-full bg-emerald-500/80 ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`} />
         </span>
-        <span className="min-w-0 flex-1 truncate rounded-md border border-default/60 bg-brand-950/60 px-3 py-1 text-center text-[10px] text-muted-foreground">
-          https://site-audit.local/{variant === 'crawl' ? 'links' : variant === 'issues' ? 'issues' : 'overview'}
+        <span className="min-w-0 flex-1 truncate rounded-md border border-default/60 bg-brand-950/60 px-2 py-0.5 text-center text-[9px] text-muted-foreground sm:text-[10px]">
+          https://site-audit.local/{MOCK_PATHS[variant]}
         </span>
       </div>
 
-      <div className="flex min-h-[320px] sm:min-h-[360px]">
-        <aside className="hidden w-28 shrink-0 border-r border-default/60 bg-brand-900/60 p-2.5 sm:block">
-          <div className="mb-3 flex items-center gap-1.5">
-            <span className="h-5 w-5 rounded-md bg-blue-500/20" />
-            <span className="h-2 w-14 rounded bg-brand-700/80" />
+      <div className={`flex ${bodyMinH}`}>
+        <aside className={`hidden shrink-0 border-r border-default/60 bg-brand-900/60 p-2 sm:block ${compact ? 'w-20' : 'w-28 p-2.5'}`}>
+          <div className={`flex items-center gap-1.5 ${compact ? 'mb-2' : 'mb-3'}`}>
+            <span className={`rounded-md bg-blue-500/20 ${compact ? 'h-4 w-4' : 'h-5 w-5'}`} />
+            <span className={`rounded bg-brand-700/80 ${compact ? 'h-1.5 w-10' : 'h-2 w-14'}`} />
           </div>
           <ul className="space-y-0.5">
             {NAV_ITEMS.map(({ label, activeFor }) => {
@@ -303,7 +501,7 @@ export default function LandingProductMock({
               return (
                 <li
                   key={label}
-                  className={`rounded-md px-2 py-1.5 text-[10px] ${
+                  className={`rounded-md px-1.5 py-1 text-[9px] sm:text-[10px] ${
                     active ? 'bg-blue-500/15 font-semibold text-link' : 'text-muted-foreground'
                   }`}
                 >
@@ -314,8 +512,8 @@ export default function LandingProductMock({
           </ul>
         </aside>
 
-        <div className="min-w-0 flex-1 overflow-hidden p-3 sm:p-3.5">
-          {variant === 'crawl' ? <CrawlPanel /> : variant === 'issues' ? <IssuesPanel /> : <OverviewPanel />}
+        <div className={`min-w-0 flex-1 overflow-hidden ${compact ? 'p-2' : 'p-3 sm:p-3.5'}`}>
+          {renderPanel(variant)}
         </div>
       </div>
     </div>

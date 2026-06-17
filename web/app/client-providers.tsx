@@ -7,13 +7,10 @@ import { PipelineProvider } from '@/context/PipelineContext';
 import { SessionProvider } from '@/context/SessionContext';
 import ChatFab from '@/components/chat/ChatFab';
 import PipelineRunnerFab from '@/components/pipeline/PipelineRunnerFab';
+import AppLoadingScreen from '@/components/AppLoadingScreen';
 
 function LoadingFallback() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-brand-900 text-foreground">
-      <p>Loading…</p>
-    </div>
-  );
+  return <AppLoadingScreen />;
 }
 
 export default function ClientProviders({ children }: { children: ReactNode }): ReactNode {

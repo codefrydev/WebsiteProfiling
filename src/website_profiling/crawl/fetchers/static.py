@@ -5,6 +5,7 @@ from __future__ import annotations
 import threading
 import time
 from typing import Callable, Optional
+from urllib.parse import urljoin
 
 import requests
 
@@ -71,16 +72,30 @@ class StaticFetcher:
         session = self.session
         try:
             t0 = time.perf_counter()
-            resp = session.get(url, timeout=self.timeout, allow_redirects=True)
+            # Do NOT auto-follow redirects: we want to record the URL's own
+            # response (e.g. 301/308) rather than collapsing the chain into the
+            # final 200. The crawler enqueues the Location target so each hop is
+            # crawled and recorded as its own row.
+            resp = session.get(url, timeout=self.timeout, allow_redirects=False)
             response_time_ms = int((time.perf_counter() - t0) * 1000)
             ct = resp.headers.get("Content-Type", "")
-            is_html = resp.status_code == 200 and (
+            location = resp.headers.get("Location") or resp.headers.get("location") or ""
+            # A redirect is a 3xx with a Location header (matches requests' own
+            # definition; excludes 304 Not Modified).
+            is_redirect = resp.status_code in (301, 302, 303, 307, 308) and bool(location)
+            # Capture the body for 2xx and error (4xx/5xx) HTML pages so custom
+            # error pages can be analysed; redirects have no meaningful body.
+            is_html = (not is_redirect) and (
                 "text/html" in ct or "application/xhtml+xml" in ct
             )
             text = resp.text if is_html else None
             content_length = len(resp.content) if resp.content is not None else 0
-            final_url = resp.url or url
-            redirect_chain_length = len(resp.history)
+            if is_redirect:
+                final_url = urljoin(url, location)
+                redirect_chain_length = 1
+            else:
+                final_url = resp.url or url
+                redirect_chain_length = len(resp.history)
             headers_dict = {k: (resp.headers.get(k) or "") for k in HEADER_KEYS}
             return FetchResult(
                 status=resp.status_code,

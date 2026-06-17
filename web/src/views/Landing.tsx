@@ -8,19 +8,19 @@ import {
   MessageSquare,
   TrendingUp,
 } from 'lucide-react';
-import Reveal from '@/components/Reveal';
 import LandingHero from '@/components/landing/LandingHero';
-import LandingCodeBlock from '@/components/landing/LandingCodeBlock';
 import LandingFeatureSpotlight from '@/components/landing/LandingFeatureSpotlight';
 import LandingFinalCta from '@/components/landing/LandingFinalCta';
 import LandingFooter from '@/components/landing/LandingFooter';
-import LandingGoogleSetup from '@/components/landing/LandingGoogleSetup';
 import LandingLimitations from '@/components/landing/LandingLimitations';
 import LandingPathStrip from '@/components/landing/LandingPathStrip';
+import LandingQuickStart from '@/components/landing/LandingQuickStart';
+import LandingPageSection from '@/components/landing/LandingPageSection';
 import LandingSectionHeader from '@/components/landing/LandingSectionHeader';
 import LandingShell from '@/components/LandingShell';
 import LandingStatsStrip from '@/components/landing/LandingStatsStrip';
 import LandingUseCases from '@/components/landing/LandingUseCases';
+import { LANDING_SECTION_IDS, landingGutterClass } from '@/components/landing/landingLayout';
 import { strings } from '@/lib/strings';
 
 const vl = strings.views.landing;
@@ -36,28 +36,39 @@ const FEATURES = [
 
 export default function LandingPage() {
   return (
-    <LandingShell footer={<LandingFooter />}>
-      <div className="relative overflow-hidden">
-        <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 landing-grid-bg opacity-40" />
-        <div aria-hidden className="aurora-bg" />
+    <LandingShell
+      footer={<LandingFooter />}
+      backdrop={
+        <>
+          <div aria-hidden className="landing-grid-bg absolute inset-0 opacity-40" />
+          <div aria-hidden className="aurora-bg absolute inset-0" />
+        </>
+      }
+    >
+      <LandingHero />
 
-        <LandingHero />
-      </div>
-
-      <Reveal>
+      <LandingPageSection id={LANDING_SECTION_IDS.stats} fullBleed>
         <LandingStatsStrip />
-      </Reveal>
-      <Reveal>
-        <LandingPathStrip />
-      </Reveal>
+      </LandingPageSection>
 
-      <Reveal as="section" id="spotlights" className="scroll-mt-24 landing-section-alt border-y border-muted/60 py-16 sm:py-20">
-        <div className="mx-auto max-w-6xl space-y-16 px-[var(--spacing-page-x)] sm:space-y-20 sm:px-6 lg:px-8">
-          <LandingSectionHeader
-            eyebrow={vl.sectionCapabilities}
-            title={vl.spotlightsSectionTitle}
-            subtitle={vl.spotlightsSectionSubtitle}
-          />
+      <LandingPageSection id={LANDING_SECTION_IDS.getStarted} fullBleed>
+        <LandingPathStrip />
+      </LandingPageSection>
+
+      <LandingPageSection id={LANDING_SECTION_IDS.quickStart} fullBleed>
+        <LandingQuickStart />
+      </LandingPageSection>
+
+      <LandingPageSection id={LANDING_SECTION_IDS.spotlights} fullBleed>
+        <div className="flex min-h-0 w-full flex-1 flex-col justify-center gap-4">
+          <div className={landingGutterClass}>
+            <LandingSectionHeader
+              eyebrow={vl.sectionCapabilities}
+              title={vl.spotlightsSectionTitle}
+              subtitle={vl.spotlightsSectionSubtitle}
+              compact
+            />
+          </div>
           <LandingFeatureSpotlight
             eyebrow={vl.spotlight1Eyebrow}
             title={vl.spotlight1Title}
@@ -67,82 +78,117 @@ export default function LandingPage() {
             ctaHref="/pipeline"
             ctaLabel={vl.spotlight1Cta}
           />
-          <LandingFeatureSpotlight
-            eyebrow={vl.spotlight2Eyebrow}
-            title={vl.spotlight2Title}
-            description={vl.spotlight2Description}
-            bullets={vl.spotlight2Bullets}
-            mockVariant="issues"
-            ctaHref="/home"
-            ctaLabel={vl.spotlight2Cta}
-            reversed
-          />
         </div>
-      </Reveal>
+      </LandingPageSection>
 
-      <Reveal>
-        <LandingUseCases />
-      </Reveal>
-
-      <Reveal
-        as="section"
-        id="quick-start"
-        className="scroll-mt-24 mx-auto max-w-6xl px-[var(--spacing-page-x)] py-16 sm:px-6 sm:py-20 lg:px-8"
-      >
-        <LandingSectionHeader
-          eyebrow={vl.sectionGettingStarted}
-          title={vl.quickStartTitle}
-          subtitle={vl.quickStartSubtitle}
-          centered={false}
+      <LandingPageSection id={LANDING_SECTION_IDS.spotlightIssues} fullBleed>
+        <LandingFeatureSpotlight
+          eyebrow={vl.spotlight2Eyebrow}
+          title={vl.spotlight2Title}
+          description={vl.spotlight2Description}
+          bullets={vl.spotlight2Bullets}
+          mockVariant="issues"
+          ctaHref="/home"
+          ctaLabel={vl.spotlight2Cta}
+          reversed
         />
-        <div className="grid gap-4 md:grid-cols-2">
-          <LandingCodeBlock label={vl.quickStartDockerLabel} command={vl.quickStartDockerCommand} />
-          <div className="space-y-4">
-            <LandingCodeBlock label={vl.quickStartLocalLabel} command={vl.quickStartLocalSetup} />
-            <LandingCodeBlock command={vl.quickStartLocalRun} />
-          </div>
-        </div>
-        <p className="mt-6 text-sm text-muted-foreground">{vl.quickStartDocsHint}</p>
-      </Reveal>
+      </LandingPageSection>
 
-      <Reveal>
-        <LandingGoogleSetup />
-      </Reveal>
+      <LandingPageSection id={LANDING_SECTION_IDS.spotlightGoogle} fullBleed>
+        <LandingFeatureSpotlight
+          eyebrow={vl.spotlight3Eyebrow}
+          title={vl.spotlight3Title}
+          description={vl.spotlight3Description}
+          bullets={vl.spotlight3Bullets}
+          mockVariant="google"
+          ctaHref={vl.spotlight3CtaHref}
+          ctaLabel={vl.spotlight3Cta}
+          secondaryCtaHref={vl.spotlight3SecondaryCtaHref}
+          secondaryCtaLabel={vl.spotlight3SecondaryCta}
+          secondaryCtaExternal
+        />
+      </LandingPageSection>
 
-      <Reveal
-        as="section"
-        id="features"
-        className="scroll-mt-24 landing-section-alt border-y border-muted/60 py-16 sm:px-6 sm:py-20"
-      >
-        <div className="mx-auto max-w-6xl px-[var(--spacing-page-x)] lg:px-8">
+      <LandingPageSection id={LANDING_SECTION_IDS.spotlightContentStudio} fullBleed>
+        <LandingFeatureSpotlight
+          eyebrow={vl.spotlight4Eyebrow}
+          title={vl.spotlight4Title}
+          description={vl.spotlight4Description}
+          bullets={vl.spotlight4Bullets}
+          mockVariant="contentStudio"
+          ctaHref={vl.spotlight4CtaHref}
+          ctaLabel={vl.spotlight4Cta}
+          reversed
+        />
+      </LandingPageSection>
+
+      <LandingPageSection id={LANDING_SECTION_IDS.spotlightAiChat} fullBleed>
+        <LandingFeatureSpotlight
+          eyebrow={vl.spotlight5Eyebrow}
+          title={vl.spotlight5Title}
+          description={vl.spotlight5Description}
+          bullets={vl.spotlight5Bullets}
+          mockVariant="aiChat"
+          ctaHref={vl.spotlight5CtaHref}
+          ctaLabel={vl.spotlight5Cta}
+        />
+      </LandingPageSection>
+
+      <LandingPageSection id={LANDING_SECTION_IDS.spotlightCompareExport} fullBleed>
+        <LandingFeatureSpotlight
+          eyebrow={vl.spotlight6Eyebrow}
+          title={vl.spotlight6Title}
+          description={vl.spotlight6Description}
+          bullets={vl.spotlight6Bullets}
+          mockVariant="compareExport"
+          ctaHref={vl.spotlight6CtaHref}
+          ctaLabel={vl.spotlight6Cta}
+          reversed
+        />
+      </LandingPageSection>
+
+      <LandingPageSection id={LANDING_SECTION_IDS.useCases}>
+        <LandingUseCases />
+      </LandingPageSection>
+
+      <LandingPageSection id={LANDING_SECTION_IDS.features}>
+        <div className="w-full min-w-0">
           <LandingSectionHeader
             eyebrow={vl.sectionCapabilities}
             title={vl.featuresTitle}
             subtitle={vl.featuresSubtitle}
+            compact
           />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             {FEATURES.map(({ icon: Icon, title, description }) => (
               <article
                 key={title}
-                className="hover-lift group relative rounded-2xl border border-default bg-brand-800/40 p-5 hover:border-blue-500/30 hover:bg-brand-800/60"
+                className="group rounded-xl border border-default/60 p-3 transition-colors hover:border-blue-500/25"
               >
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-default bg-brand-900/80 text-link transition-colors group-hover:border-blue-500/40 group-hover:text-link">
-                  <Icon className="h-4 w-4" aria-hidden />
+                <span className="inline-flex h-8 w-8 items-center justify-center text-link">
+                  <Icon className="h-3.5 w-3.5" aria-hidden />
                 </span>
-                <h3 className="mt-4 text-sm font-semibold text-foreground">{title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{description}</p>
+                <h3 className="mt-2 text-xs font-semibold text-foreground sm:text-sm">{title}</h3>
+                <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground sm:text-xs">
+                  {description}
+                </p>
               </article>
             ))}
           </div>
         </div>
-      </Reveal>
+      </LandingPageSection>
 
-      <Reveal>
+      <LandingPageSection id={LANDING_SECTION_IDS.limitations} fullBleed>
         <LandingLimitations />
-      </Reveal>
-      <Reveal>
+      </LandingPageSection>
+
+      <LandingPageSection
+        id={LANDING_SECTION_IDS.finalCta}
+        fullBleed
+        className="border-t border-muted/40"
+      >
         <LandingFinalCta />
-      </Reveal>
+      </LandingPageSection>
     </LandingShell>
   );
 }

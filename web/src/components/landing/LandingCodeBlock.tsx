@@ -9,9 +9,10 @@ const vl = strings.views.landing;
 interface LandingCodeBlockProps {
   label?: string;
   command: string;
+  prominent?: boolean;
 }
 
-export default function LandingCodeBlock({ label, command }: LandingCodeBlockProps) {
+export default function LandingCodeBlock({ label, command, prominent = false }: LandingCodeBlockProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
@@ -25,24 +26,36 @@ export default function LandingCodeBlock({ label, command }: LandingCodeBlockPro
   }, [command]);
 
   return (
-    <div className="group rounded-xl border border-default bg-brand-900/60 p-4 transition-colors hover:border-blue-500/25">
-      <div className="mb-2 flex items-center justify-between gap-2">
+    <div
+      className={`group border border-default/60 transition-colors hover:border-blue-500/25 ${
+        prominent ? 'rounded-xl p-4 sm:p-5' : 'rounded-lg p-3'
+      }`}
+    >
+      <div className={`flex items-center justify-between gap-2 ${prominent ? 'mb-2' : 'mb-1.5'}`}>
         {label ? (
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</p>
+          <p
+            className={`font-medium uppercase tracking-wider text-muted-foreground ${
+              prominent ? 'text-xs sm:text-sm' : 'text-[10px] sm:text-xs'
+            }`}
+          >
+            {label}
+          </p>
         ) : (
           <span />
         )}
         <button
           type="button"
           onClick={() => { void handleCopy(); }}
-          className="inline-flex items-center gap-1 rounded-md border border-default/80 bg-brand-800/60 px-2 py-1 text-[11px] font-medium text-muted-foreground opacity-0 transition-all group-hover:opacity-100 hover:border-blue-500/30 hover:text-foreground focus:opacity-100"
+          className={`inline-flex items-center gap-1 rounded-md border border-default/60 font-medium text-muted-foreground opacity-0 transition-all group-hover:opacity-100 hover:border-blue-500/25 hover:text-foreground focus:opacity-100 ${
+            prominent ? 'px-2.5 py-1.5 text-xs' : 'px-2 py-1 text-[11px]'
+          }`}
         >
           {copied ? <Check className="h-3 w-3 text-emerald-500" aria-hidden /> : <Copy className="h-3 w-3" aria-hidden />}
           {copied ? vl.copyCommandDone : vl.copyCommand}
         </button>
       </div>
-      <pre className="overflow-x-auto font-mono text-sm text-foreground">
-        <code>
+      <pre className={`overflow-hidden font-mono text-foreground ${prominent ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'}`}>
+        <code className={prominent ? 'break-all' : 'line-clamp-3 break-all'}>
           <span className="select-none text-muted-foreground">$ </span>
           {command}
         </code>

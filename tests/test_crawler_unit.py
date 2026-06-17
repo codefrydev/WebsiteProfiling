@@ -743,3 +743,59 @@ def test_worker_custom_extraction_invalid_regex_is_ignored(monkeypatch) -> None:
     out = c.worker("https://site.com/a")
     assert "custom_extract" not in out
 
+
+def test_worker_records_redirect_and_enqueues_target(monkeypatch) -> None:
+    from website_profiling.crawl.crawler import Crawler
+    from website_profiling.crawl.fetchers.base import FetchResult
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
+        lambda *_a, **_k: [],
+    )
+    c = Crawler(start_url="https://site.com", ignore_robots=True, use_wappalyzer=False)
+    c.fetch = lambda _url: FetchResult(  # type: ignore[method-assign]
+        status=301,
+        content_type="",
+        text=None,
+        response_time_ms=1,
+        content_length=0,
+        final_url="https://site.com/new",
+        headers_dict={},
+        redirect_chain_length=1,
+        fetch_method="static",
+    )
+    out = c.worker("https://site.com/old")
+    # The redirect is recorded as a 3xx row (not collapsed to the destination).
+    assert str(out["status"]) == "301"
+    assert out["final_url"] == "https://site.com/new"
+    # ...and the redirect target is enqueued so the destination is crawled too.
+    assert c.frontier.queue_contains("https://site.com/new")
+
+
+def test_worker_does_not_enqueue_links_from_error_page(monkeypatch) -> None:
+    from website_profiling.crawl.crawler import Crawler
+    from website_profiling.crawl.fetchers.base import FetchResult
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
+        lambda *_a, **_k: [],
+    )
+    c = Crawler(start_url="https://site.com", ignore_robots=True, use_wappalyzer=False)
+    html = '<html><body><a href="https://site.com/error-link">x</a></body></html>'
+    c.fetch = lambda _url: FetchResult(  # type: ignore[method-assign]
+        status=404,
+        content_type="text/html",
+        text=html,
+        response_time_ms=1,
+        content_length=len(html),
+        final_url="https://site.com/bad",
+        headers_dict={},
+        redirect_chain_length=0,
+        fetch_method="static",
+    )
+    out = c.worker("https://site.com/bad")
+    # The 404 is recorded with its real numeric status...
+    assert str(out["status"]) == "404"
+    # ...but links discovered on an error page are NOT followed.
+    assert not c.frontier.queue_contains("https://site.com/error-link")
+

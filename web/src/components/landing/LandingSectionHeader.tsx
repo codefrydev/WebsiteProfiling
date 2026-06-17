@@ -6,6 +6,7 @@ interface LandingSectionHeaderProps {
   subtitle?: string;
   action?: ReactNode;
   centered?: boolean;
+  compact?: boolean;
 }
 
 export default function LandingSectionHeader({
@@ -14,21 +15,26 @@ export default function LandingSectionHeader({
   subtitle,
   action,
   centered = true,
+  compact = false,
 }: LandingSectionHeaderProps) {
   const align = centered ? 'text-center' : 'text-left';
+  const spacing = compact ? 'mb-4 gap-2' : 'mb-8 gap-4';
+  const titleClass = compact ? 'text-xl font-bold sm:text-2xl' : 'text-2xl font-bold sm:text-3xl';
+  const subtitleClass = compact ? 'mt-1 text-xs sm:text-sm' : 'mt-2 text-sm sm:text-base';
+
   return (
     <div
-      className={`mb-8 flex flex-col gap-4 ${centered ? 'items-center sm:flex-row sm:items-end sm:justify-between' : 'sm:flex-row sm:items-end sm:justify-between'}`}
+      className={`flex flex-col ${spacing} ${centered ? 'items-center sm:flex-row sm:items-end sm:justify-between' : 'sm:flex-row sm:items-end sm:justify-between'}`}
     >
-      <div className={centered ? 'max-w-2xl sm:text-left' : 'max-w-2xl'}>
+      <div className={centered ? 'w-full min-w-0 sm:text-left' : 'w-full min-w-0'}>
         {eyebrow ? (
-          <p className={`mb-2 text-xs font-medium uppercase tracking-wider text-link ${align} sm:text-left`}>
+          <p className={`mb-1 text-xs font-semibold uppercase tracking-wider text-link ${align} sm:text-left`}>
             {eyebrow}
           </p>
         ) : null}
-        <h2 className={`text-2xl font-bold text-foreground sm:text-3xl ${align} sm:text-left`}>{title}</h2>
+        <h2 className={`${titleClass} text-foreground ${align} sm:text-left`}>{title}</h2>
         {subtitle ? (
-          <p className={`mt-2 text-sm text-muted-foreground sm:text-base ${align} sm:text-left`}>{subtitle}</p>
+          <p className={`${subtitleClass} text-muted-foreground ${align} sm:text-left`}>{subtitle}</p>
         ) : null}
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}

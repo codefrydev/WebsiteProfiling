@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { ExternalLink } from 'lucide-react';
+import { landingGutterClass } from '@/components/landing/landingLayout';
 import { strings } from '@/lib/strings';
 
 const vl = strings.views.landing;
@@ -35,7 +36,7 @@ function FooterLink({
 
 export default function LandingFooter() {
   return (
-    <div className="mx-auto max-w-6xl px-[var(--spacing-page-x)] py-10 sm:px-6 lg:px-8">
+    <div className={`w-full py-6 sm:py-8 ${landingGutterClass}`}>
       <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
         <div className="lg:col-span-1">
           <p className="font-semibold text-foreground">{app.productName}</p>
