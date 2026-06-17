@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { CheckCircle2, ChevronRight } from 'lucide-react';
 import LandingHeroTopBar from '@/components/landing/LandingHeroTopBar';
 import LandingProductMock from '@/components/landing/LandingProductMock';
+import LandingSlideBadge from '@/components/landing/LandingSlideBadge';
 import {
   LANDING_SECTION_IDS,
   landingGutterClass,
@@ -24,6 +25,7 @@ export default function LandingHero() {
 
   return (
     <section id={LANDING_SECTION_IDS.hero} className={`${landingSectionClass} !pt-0`}>
+      <LandingSlideBadge label={(vl.deckBadges as Record<string, string>).hero ?? ''} />
       <LandingHeroTopBar />
 
       <div className={`flex min-h-0 flex-1 flex-col justify-center pb-11 pt-4 sm:pb-12 sm:pt-5 ${landingGutterClass}`}>

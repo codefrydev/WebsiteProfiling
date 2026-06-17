@@ -15,8 +15,8 @@ const vl = strings.views.landing;
 const STEPS = [
   { step: 1, id: 'quick-start', icon: Download, label: vl.pathStepInstall, hint: vl.pathStepInstallHint },
   { step: 2, id: 'spotlights', icon: Play, label: vl.pathStepCrawl, hint: vl.pathStepCrawlHint },
-  { step: 3, id: 'google-setup', icon: Settings2, label: vl.pathStepGoogle, hint: vl.pathStepGoogleHint },
-  { step: 4, id: 'features', icon: BarChart2, label: vl.pathStepReport, hint: vl.pathStepReportHint },
+  { step: 3, id: 'spotlight-google', icon: Settings2, label: vl.pathStepGoogle, hint: vl.pathStepGoogleHint },
+  { step: 4, id: 'spotlight-compare-export', icon: BarChart2, label: vl.pathStepReport, hint: vl.pathStepReportHint },
 ] as const;
 
 export default function LandingPathStrip() {

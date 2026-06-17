@@ -20,6 +20,7 @@ export default function LandingDeckControls() {
   const {
     activeIndex,
     total,
+    activeId,
     goNext,
     goPrev,
     presenterMode,
@@ -29,6 +30,9 @@ export default function LandingDeckControls() {
     autoAdvanceMs,
     setAutoAdvanceMs,
   } = useLandingDeckRequired();
+
+  const deckNotes = vl.deckNotes as Record<string, string> | undefined;
+  const speakerNote = activeId && deckNotes ? deckNotes[activeId] ?? '' : '';
 
   const atStart = activeIndex <= 0;
   const atEnd = activeIndex >= total - 1;
@@ -124,6 +128,9 @@ export default function LandingDeckControls() {
             </button>
           </div>
           <p className="landing-deck-shortcuts-hint">{vl.deckShortcutsHint}</p>
+          {speakerNote ? (
+            <p className="landing-deck-speaker-note line-clamp-2">{speakerNote}</p>
+          ) : null}
         </div>
       ) : null}
     </>

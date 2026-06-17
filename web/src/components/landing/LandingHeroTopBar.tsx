@@ -11,7 +11,7 @@ import { strings } from '@/lib/strings';
 const NAV_ITEMS = [
   { href: '#features', labelKey: 'navFeatures' as const },
   { href: '#quick-start', labelKey: 'navQuickStart' as const },
-  { href: '#google-setup', labelKey: 'navGoogleSetup' as const },
+  { href: '#spotlight-google', labelKey: 'navGoogleSetup' as const },
 ] as const;
 
 /** Title-slide chrome: logo, section links, and primary actions (hero slide only). */

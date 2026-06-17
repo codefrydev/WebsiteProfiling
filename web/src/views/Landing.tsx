@@ -12,7 +12,6 @@ import LandingHero from '@/components/landing/LandingHero';
 import LandingFeatureSpotlight from '@/components/landing/LandingFeatureSpotlight';
 import LandingFinalCta from '@/components/landing/LandingFinalCta';
 import LandingFooter from '@/components/landing/LandingFooter';
-import LandingGoogleSetup from '@/components/landing/LandingGoogleSetup';
 import LandingLimitations from '@/components/landing/LandingLimitations';
 import LandingPathStrip from '@/components/landing/LandingPathStrip';
 import LandingQuickStart from '@/components/landing/LandingQuickStart';
@@ -56,6 +55,10 @@ export default function LandingPage() {
         <LandingPathStrip />
       </LandingPageSection>
 
+      <LandingPageSection id={LANDING_SECTION_IDS.quickStart} fullBleed>
+        <LandingQuickStart />
+      </LandingPageSection>
+
       <LandingPageSection id={LANDING_SECTION_IDS.spotlights} fullBleed>
         <div className="flex min-h-0 w-full flex-1 flex-col justify-center gap-4">
           <div className={landingGutterClass}>
@@ -80,27 +83,72 @@ export default function LandingPage() {
 
       <LandingPageSection id={LANDING_SECTION_IDS.spotlightIssues} fullBleed>
         <LandingFeatureSpotlight
-            eyebrow={vl.spotlight2Eyebrow}
-            title={vl.spotlight2Title}
-            description={vl.spotlight2Description}
-            bullets={vl.spotlight2Bullets}
-            mockVariant="issues"
-            ctaHref="/home"
-            ctaLabel={vl.spotlight2Cta}
-            reversed
+          eyebrow={vl.spotlight2Eyebrow}
+          title={vl.spotlight2Title}
+          description={vl.spotlight2Description}
+          bullets={vl.spotlight2Bullets}
+          mockVariant="issues"
+          ctaHref="/home"
+          ctaLabel={vl.spotlight2Cta}
+          reversed
+        />
+      </LandingPageSection>
+
+      <LandingPageSection id={LANDING_SECTION_IDS.spotlightGoogle} fullBleed>
+        <LandingFeatureSpotlight
+          eyebrow={vl.spotlight3Eyebrow}
+          title={vl.spotlight3Title}
+          description={vl.spotlight3Description}
+          bullets={vl.spotlight3Bullets}
+          mockVariant="google"
+          ctaHref={vl.spotlight3CtaHref}
+          ctaLabel={vl.spotlight3Cta}
+          secondaryCtaHref={vl.spotlight3SecondaryCtaHref}
+          secondaryCtaLabel={vl.spotlight3SecondaryCta}
+          secondaryCtaExternal
+        />
+      </LandingPageSection>
+
+      <LandingPageSection id={LANDING_SECTION_IDS.spotlightContentStudio} fullBleed>
+        <LandingFeatureSpotlight
+          eyebrow={vl.spotlight4Eyebrow}
+          title={vl.spotlight4Title}
+          description={vl.spotlight4Description}
+          bullets={vl.spotlight4Bullets}
+          mockVariant="contentStudio"
+          ctaHref={vl.spotlight4CtaHref}
+          ctaLabel={vl.spotlight4Cta}
+          reversed
+        />
+      </LandingPageSection>
+
+      <LandingPageSection id={LANDING_SECTION_IDS.spotlightAiChat} fullBleed>
+        <LandingFeatureSpotlight
+          eyebrow={vl.spotlight5Eyebrow}
+          title={vl.spotlight5Title}
+          description={vl.spotlight5Description}
+          bullets={vl.spotlight5Bullets}
+          mockVariant="aiChat"
+          ctaHref={vl.spotlight5CtaHref}
+          ctaLabel={vl.spotlight5Cta}
+        />
+      </LandingPageSection>
+
+      <LandingPageSection id={LANDING_SECTION_IDS.spotlightCompareExport} fullBleed>
+        <LandingFeatureSpotlight
+          eyebrow={vl.spotlight6Eyebrow}
+          title={vl.spotlight6Title}
+          description={vl.spotlight6Description}
+          bullets={vl.spotlight6Bullets}
+          mockVariant="compareExport"
+          ctaHref={vl.spotlight6CtaHref}
+          ctaLabel={vl.spotlight6Cta}
+          reversed
         />
       </LandingPageSection>
 
       <LandingPageSection id={LANDING_SECTION_IDS.useCases}>
         <LandingUseCases />
-      </LandingPageSection>
-
-      <LandingPageSection id={LANDING_SECTION_IDS.quickStart} fullBleed>
-        <LandingQuickStart />
-      </LandingPageSection>
-
-      <LandingPageSection id={LANDING_SECTION_IDS.googleSetup}>
-        <LandingGoogleSetup />
       </LandingPageSection>
 
       <LandingPageSection id={LANDING_SECTION_IDS.features}>

@@ -59,7 +59,7 @@ export default function LandingFinalCta() {
 
         <div className={`${landingSplitVisualClass} px-5 sm:px-8 md:px-6 lg:px-10`}>
           <div className={`${landingSplitMockClass} min-h-[14rem] sm:min-h-[18rem]`}>
-            <LandingProductMock variant="issues" className="h-full min-h-0 w-full" elevated fillHeight />
+            <LandingProductMock variant="compareExport" className="h-full min-h-0 w-full" elevated fillHeight />
           </div>
         </div>
       </div>
