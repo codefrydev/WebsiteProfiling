@@ -62,7 +62,7 @@ def test_read_glossary_excerpt_missing(monkeypatch) -> None:
 def test_tools_catalog_json_includes_security_tools() -> None:
     with patch.dict(os.environ, {"WP_MCP_DOMAIN": "full"}):
         catalog = json.loads(mcp_server._tools_catalog_json())
-    assert catalog["tool_count"] >= 340
+    assert catalog["tool_count"] >= 338
     assert "get_security_findings" in catalog["domains"]["security"]
     assert "get_geo_readiness_score" in catalog["domains"]["geo"]
     assert "get_gsc_url_inspection" in catalog["domains"]["integrations"]
@@ -173,7 +173,7 @@ def test_mcp_main_registers_handlers(monkeypatch) -> None:
     assert captured["name"] == "site-audit-full"
     assert captured["ran"] is True
     tools = asyncio.run(captured["list_tools"]())  # type: ignore[arg-type]
-    assert len(tools) >= 340
+    assert len(tools) >= 338
     resources = asyncio.run(captured["list_resources"]())  # type: ignore[arg-type]
     assert any(r["uri"] == "audit://property/7" for r in resources)
     assert any(r["uri"] == "audit://domains" for r in resources)
@@ -247,7 +247,7 @@ def test_mcp_call_tool_rejects_tools_outside_domain(monkeypatch) -> None:
         mcp_server.main()
 
     tools = asyncio.run(captured["list_tools"]())  # type: ignore[arg-type]
-    assert len(tools) < 340
+    assert len(tools) < 338
     blocked = asyncio.run(captured["call_tool"]("export_audit_report", {"format": "pdf"}))  # type: ignore[arg-type]
     assert "not exposed" in blocked[0]["text"]
 

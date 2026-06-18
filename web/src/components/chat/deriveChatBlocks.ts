@@ -179,7 +179,6 @@ const EXPORT_TOOLS = new Set([
   'export_audit_report',
   'export_compare_csv',
   'export_list_as_csv',
-  'export_custom_report',
 ]);
 
 const IMAGE_SUMMARY_TOOL = 'get_image_audit_summary';

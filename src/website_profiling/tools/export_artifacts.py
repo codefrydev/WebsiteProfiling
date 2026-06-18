@@ -12,7 +12,6 @@ from datetime import datetime, timezone
 from typing import Any
 
 _ARTIFACT_ID_RE = re.compile(r"^[a-f0-9-]{36}$")
-_SPEC_ID_RE = re.compile(r"^[a-f0-9-]{36}$")
 _TTL_SECONDS = 24 * 60 * 60
 _INLINE_MAX_BYTES = 512 * 1024
 _LIST_ROW_KEYS = (
@@ -30,6 +29,17 @@ _LIST_ROW_KEYS = (
     "clusters",
     "deltas",
     "results",
+    "broken",
+    "redirects",
+    "diagnostics",
+    "categories",
+    "opportunities",
+    "violations_by_rule",
+    "poor_performance_pages",
+    "errors",
+    "daily",
+    "by_device",
+    "by_channel",
 )
 
 
@@ -39,12 +49,6 @@ def _data_dir() -> str:
 
 def exports_dir() -> str:
     path = os.path.join(_data_dir(), "exports")
-    os.makedirs(path, exist_ok=True)
-    return path
-
-
-def specs_dir() -> str:
-    path = os.path.join(exports_dir(), "specs")
     os.makedirs(path, exist_ok=True)
     return path
 
@@ -151,27 +155,6 @@ def delete_artifact(artifact_id: str) -> None:
                 os.remove(path)
         except OSError:
             pass
-
-
-def save_report_spec(spec: dict[str, Any]) -> str:
-    spec_id = str(uuid.uuid4())
-    spec["report_spec_id"] = spec_id
-    spec["created_at"] = datetime.now(timezone.utc).isoformat()
-    path = os.path.join(specs_dir(), f"{spec_id}.json")
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(spec, f)
-    return spec_id
-
-
-def read_report_spec(spec_id: str) -> dict[str, Any] | None:
-    if not _SPEC_ID_RE.match(spec_id):
-        return None
-    path = os.path.join(specs_dir(), f"{spec_id}.json")
-    if not os.path.isfile(path):
-        return None
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-    return data if isinstance(data, dict) else None
 
 
 def rows_from_tool_result(result: dict[str, Any]) -> list[dict[str, Any]]:

@@ -35,9 +35,6 @@ def test_export_tools_formats(conn: MagicMock, ctx: Ctx, tmp_path, monkeypatch) 
         assert dispatch_tool("export_audit_report", {"format": "bad"}, context=ctx, conn=conn)["error"]
         assert dispatch_tool("export_list_as_csv", {}, context=ctx, conn=conn)["error"]
         assert dispatch_tool("export_list_as_csv", {"tool_name": "nope"}, context=ctx, conn=conn)["error"]
-        assert dispatch_tool("compose_custom_report", {"sections": []}, context=ctx, conn=conn)["error"]
-        assert dispatch_tool("export_custom_report", {"format": "bad"}, context=ctx, conn=conn)["error"]
-        assert dispatch_tool("export_custom_report", {"report_spec_id": "missing"}, context=ctx, conn=conn)["error"]
 
     with patch.object(Ctx, "load_payload", return_value=payload), patch(
         "website_profiling.tools.audit_tools.export_tools.export_audit_html",
@@ -76,64 +73,6 @@ def test_export_tools_formats(conn: MagicMock, ctx: Ctx, tmp_path, monkeypatch) 
     ):
         assert dispatch_tool("export_compare_csv", {"baseline_report_id": 1}, context=ctx, conn=conn)["error"]
 
-    with patch.object(Ctx, "load_payload", return_value=payload):
-        bad_tool = dispatch_tool(
-            "compose_custom_report",
-            {
-                "title": "T",
-                "sections": [{"type": "tool", "tool_name": "export_audit_report", "tool_args": {}}],
-            },
-            context=ctx,
-            conn=conn,
-        )
-        assert "not allowed" in bad_tool["error"]
-
-        spec = dispatch_tool(
-            "compose_custom_report",
-            {"title": "T", "sections": [{"type": "executive_summary"}]},
-            context=ctx,
-            conn=conn,
-        )
-        with patch(
-            "website_profiling.tools.audit_tools.export_tools.resolve_section_results",
-            return_value=[{"pages": [{"url": "https://ex.com"}]}],
-        ):
-            html_out = dispatch_tool(
-                "export_custom_report",
-                {
-                    "title": "Direct",
-                    "format": "html",
-                    "sections": [
-                        {"type": "tool", "tool_name": "list_broken_links", "tool_args": {}},
-                    ],
-                },
-                context=ctx,
-                conn=conn,
-            )
-            assert html_out.get("artifact_id")
-            pdf_out = dispatch_tool(
-                "export_custom_report",
-                {"report_spec_id": spec["report_spec_id"], "format": "pdf"},
-                context=ctx,
-                conn=conn,
-            )
-        if pdf_out.get("error"):
-            pytest.skip(pdf_out["error"])
-        assert pdf_out.get("format") == "pdf"
-
-def test_export_custom_report_pdf_error(conn: MagicMock, ctx: Ctx, tmp_path, monkeypatch) -> None:
-    monkeypatch.setenv("DATA_DIR", str(tmp_path))
-    with patch.object(Ctx, "load_payload", return_value=_payload()), patch(
-        "website_profiling.tools.audit_tools.export_tools.render_custom_report_pdf",
-        side_effect=RuntimeError("no pdf"),
-    ):
-        assert dispatch_tool(
-            "export_custom_report",
-            {"title": "T", "format": "pdf", "sections": [{"type": "executive_summary"}]},
-            context=ctx,
-            conn=conn,
-        )["error"] == "no pdf"
-
 
 def test_export_audit_report_paths(conn: MagicMock, ctx: Ctx, tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
@@ -149,12 +88,3 @@ def test_export_audit_report_paths(conn: MagicMock, ctx: Ctx, tmp_path, monkeypa
         side_effect=RuntimeError("export failed"),
     ):
         assert "export failed" in dispatch_tool("export_audit_report", {"format": "csv"}, context=ctx, conn=conn)["error"]
-
-    with patch.object(Ctx, "load_payload", return_value=_payload()):
-        assert dispatch_tool("compose_custom_report", {"sections": [{"type": "notes", "markdown": "x"}]}, context=ctx, conn=conn)["error"]
-        assert dispatch_tool(
-            "export_custom_report",
-            {"sections": [{"type": "executive_summary"}]},
-            context=ctx,
-            conn=conn,
-        )["error"]

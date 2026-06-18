@@ -7,18 +7,10 @@ from psycopg import Connection
 
 from ..export_artifacts import (
     dicts_to_csv,
-    read_report_spec,
     rows_from_tool_result,
     save_artifact,
-    save_report_spec,
 )
 from ..export_compare import export_compare_issues_csv
-from ..export_custom import (
-    render_custom_report_html,
-    render_custom_report_pdf,
-    resolve_section_results,
-    validate_sections,
-)
 from ..export_audit import (
     export_audit_csv,
     export_audit_html,
@@ -30,7 +22,6 @@ from .compare_helpers import load_compare_pair
 from .context import AuditToolContext
 
 _EXPORT_FORMATS = {"pdf", "html", "csv", "json"}
-_CUSTOM_FORMATS = {"html", "pdf"}
 _MIME = {
     "pdf": "application/pdf",
     "html": "text/html; charset=utf-8",
@@ -198,8 +189,6 @@ _EXPORT_TOOL_NAMES = frozenset({
     "export_audit_report",
     "export_compare_csv",
     "export_list_as_csv",
-    "compose_custom_report",
-    "export_custom_report",
     "list_export_formats",
 })
 
@@ -304,112 +293,6 @@ def export_list_as_csv(conn: Connection, ctx: AuditToolContext, args: dict[str, 
     }
 
 
-def _tool_allowed_for_custom(tool_name: str) -> bool:
-    if tool_name in _EXPORT_TOOL_NAMES:
-        return False
-    from .registry import tool_handler_names
-    return tool_name in tool_handler_names()
-
-
-def compose_custom_report(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
-    title = str(args.get("title") or "").strip()
-    if not title:
-        return {"error": "title is required"}
-    sections_raw = args.get("sections")
-    sections, err = validate_sections(sections_raw)
-    if err:
-        return {"error": err}
-    assert sections is not None
-    for section in sections:
-        if section.get("type") == "tool":
-            tname = str(section.get("tool_name") or "")
-            if not _tool_allowed_for_custom(tname):
-                return {"error": f"tool not allowed in custom report: {tname}"}
-    scoped = ctx.with_args(args)
-    payload = scoped.load_payload(conn)
-    if not payload:
-        return {"error": "no report found"}
-    spec = {
-        "title": title,
-        "sections": sections,
-        "property_id": scoped.property_id,
-        "report_id": scoped.report_id,
-    }
-    spec_id = save_report_spec(spec)
-    preview_html = render_custom_report_html(
-        title=title,
-        payload=payload,
-        sections=sections,
-        section_results=[None] * len(sections),
-    )
-    snippet = preview_html[:400].replace("\n", " ")
-    return {
-        "report_spec_id": spec_id,
-        "section_count": len(sections),
-        "preview_html_snippet": snippet,
-        "title": title,
-    }
-
-
-def export_custom_report(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
-    fmt = str(args.get("format") or "html").lower().strip()
-    if fmt not in _CUSTOM_FORMATS:
-        return {"error": f"format must be one of: {', '.join(sorted(_CUSTOM_FORMATS))}"}
-    scoped = ctx.with_args(args)
-    payload = scoped.load_payload(conn)
-    if not payload:
-        return {"error": "no report found"}
-    spec_id = args.get("report_spec_id")
-    title = str(args.get("title") or "").strip()
-    sections: list[dict[str, Any]] | None = None
-    if spec_id:
-        spec = read_report_spec(str(spec_id))
-        if not spec:
-            return {"error": "report_spec_id not found"}
-        title = str(spec.get("title") or title or "Custom Report")
-        raw_sections = spec.get("sections")
-        sections, err = validate_sections(raw_sections)
-        if err:
-            return {"error": err}
-    else:
-        sections, err = validate_sections(args.get("sections"))
-        if err:
-            return {"error": err}
-        if not title:
-            return {"error": "title is required when report_spec_id is omitted"}
-    assert sections is not None
-    for section in sections:
-        if section.get("type") == "tool":
-            tname = str(section.get("tool_name") or "")
-            if not _tool_allowed_for_custom(tname):
-                return {"error": f"tool not allowed in custom report: {tname}"}
-    section_results = resolve_section_results(conn, scoped, payload, sections, _dispatch)
-    html_doc = render_custom_report_html(
-        title=title,
-        payload=payload,
-        sections=sections,
-        section_results=section_results,
-    )
-    safe_title = "".join(c if c.isalnum() or c in "-_" else "-" for c in title.lower())[:40] or "custom-report"
-    if fmt == "html":
-        filename = f"{safe_title}.html"
-        return {
-            **_artifact_from_bytes(html_doc, filename=filename, mime_type=_MIME["html"], extra={"format": fmt, "title": title}),
-            "format": fmt,
-            "title": title,
-        }
-    try:
-        pdf_bytes = render_custom_report_pdf(html_doc, title)
-    except RuntimeError as exc:
-        return {"error": str(exc)}
-    filename = f"{safe_title}.pdf"
-    return {
-        **_artifact_from_bytes(pdf_bytes, filename=filename, mime_type=_MIME["pdf"], extra={"format": fmt, "title": title}),
-        "format": fmt,
-        "title": title,
-    }
-
-
 def list_export_formats(_conn: Connection, _ctx: AuditToolContext, _args: dict[str, Any]) -> dict[str, Any]:
     return {
         "formats": [
@@ -419,14 +302,11 @@ def list_export_formats(_conn: Connection, _ctx: AuditToolContext, _args: dict[s
             {"tool": "export_audit_report", "format": "json", "description": "Full audit JSON payload"},
             {"tool": "export_compare_csv", "format": "csv", "description": "Issue added/removed diff between two reports"},
             {"tool": "export_list_as_csv", "format": "csv", "description": "CSV from any allowlisted list tool result"},
-            {"tool": "compose_custom_report", "description": "Save a multi-section custom report spec"},
-            {"tool": "export_custom_report", "format": "html|pdf", "description": "Render composed custom report"},
         ],
         "example_prompts": [
             "Download the audit as PDF",
             "Export broken links as CSV",
             "Compare this report to report 38 as CSV",
-            "Build a client report with executive summary, category scores, and broken links",
         ],
         "notes": [
             "PDF requires reportlab (pip install reportlab)",

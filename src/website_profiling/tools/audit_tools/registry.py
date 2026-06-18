@@ -297,10 +297,8 @@ from .lighthouse import (
     list_slow_pages,
 )
 from .export_tools import (
-    compose_custom_report,
     export_audit_report,
     export_compare_csv,
-    export_custom_report,
     export_list_as_csv,
     list_export_formats,
 )
@@ -585,8 +583,6 @@ _TOOL_HANDLERS: dict[str, ToolHandler] = {
     "export_audit_report": export_audit_report,
     "export_compare_csv": export_compare_csv,
     "export_list_as_csv": export_list_as_csv,
-    "compose_custom_report": compose_custom_report,
-    "export_custom_report": export_custom_report,
     "list_export_formats": list_export_formats,
     "export_sitemap_xml": export_sitemap_xml,
     "validate_rich_results": validate_rich_results,

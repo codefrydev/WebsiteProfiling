@@ -387,10 +387,6 @@ def test_export_artifacts_workbook_and_custom(tmp_path, monkeypatch, conn: Magic
     export_artifacts.delete_artifact(aid)
     assert not meta_path.exists()
 
-    spec_id = export_artifacts.save_report_spec({"title": "T"})
-    assert export_artifacts.read_report_spec(spec_id)["title"] == "T"
-    assert export_artifacts.read_report_spec("not-a-uuid") is None
-
     from website_profiling.tools import export_crawl_workbook as wb_mod
 
     assert wb_mod._parse_custom_fields({"price": 9.99}) == {"price": "9.99"}
@@ -403,13 +399,6 @@ def test_export_artifacts_workbook_and_custom(tmp_path, monkeypatch, conn: Magic
     })
     with zipfile.ZipFile(io.BytesIO(raw)) as zf:
         assert "custom_fields.csv" in zf.namelist()
-
-    from website_profiling.tools.export_custom import render_custom_report_pdf
-
-    try:
-        render_custom_report_pdf("T", {"site_name": "Ex"}, [], [])
-    except Exception:
-        pass
 
 
 def test_tools_remaining_branch_coverage(conn: MagicMock, ctx: Ctx, tmp_path, monkeypatch) -> None:
@@ -433,11 +422,6 @@ def test_tools_remaining_branch_coverage(conn: MagicMock, ctx: Ctx, tmp_path, mo
     from website_profiling.tools.audit_tools import report_extras as rex_mod
     from website_profiling.tools.audit_tools import security as sec_mod
     from website_profiling.tools import export_crawl_workbook as wb_mod
-    from website_profiling.tools.export_custom import (
-        _section_html_tool_result,
-        resolve_section_results,
-        validate_sections,
-    )
 
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
 
@@ -632,20 +616,11 @@ def test_tools_remaining_branch_coverage(conn: MagicMock, ctx: Ctx, tmp_path, mo
     rows, cols = wb_mod._custom_field_rows([{"url": "", "custom_fields": '{"a":"1"}'}, {"custom_extract": "x"}])
     assert rows == [] and cols
 
-    assert export_artifacts.read_report_spec("00000000-0000-0000-0000-000000000000") is None
+    assert export_artifacts.read_artifact_bytes("00000000-0000-0000-0000-000000000000") is None
     aid = export_artifacts.save_artifact(b"x", filename="y.bin", mime_type="application/octet-stream")["artifact_id"]
     with patch("website_profiling.tools.export_artifacts.os.remove", side_effect=OSError("denied")):
         export_artifacts.delete_artifact(aid)
 
-    assert _section_html_tool_result("H", {"keywords": [{"k": "v"}]}) != ""
-    _, err = validate_sections([{"type": "weird"}])
-    assert err
-    results = resolve_section_results(conn, ctx, {}, [{"type": "weird"}], lambda *a, **k: {})
-    assert results == [None]
-
-    with patch.object(Ctx, "load_payload", return_value={}):
-        assert et_mod.compose_custom_report(conn, ctx, {"title": "T", "sections": [{"type": "executive_summary"}]})["error"]
-        assert et_mod.export_custom_report(conn, ctx, {"title": "T", "sections": [{"type": "executive_summary"}]})["error"]
     with patch.object(Ctx, "load_payload", return_value={"site_name": "Ex"}), patch(
         "website_profiling.tools.audit_tools.export_tools._dispatch",
         return_value={"error": "tool failed"},
@@ -657,35 +632,8 @@ def test_tools_remaining_branch_coverage(conn: MagicMock, ctx: Ctx, tmp_path, mo
     ):
         out = et_mod.export_list_as_csv(conn, ctx, {"tool_name": "list_broken_links"})
         assert out.get("total") == 1
-    with patch.object(Ctx, "load_payload", return_value={"site_name": "Ex"}):
-        assert et_mod.compose_custom_report(conn, ctx, {"title": "T", "sections": [{"type": "nope"}]})["error"]
-        assert et_mod.export_custom_report(
-            conn,
-            ctx,
-            {"title": "T", "sections": [{"type": "tool", "tool_name": "export_audit_report", "tool_args": {}}]},
-        )["error"]
-        assert et_mod.export_custom_report(conn, ctx, {"sections": [{"type": "nope"}]})["error"]
-        bad_spec = export_artifacts.save_report_spec({"title": "Bad", "sections": [{"type": "nope"}]})
-        assert et_mod.export_custom_report(conn, ctx, {"report_spec_id": bad_spec})["error"]
     with patch.object(Ctx, "load_payload", return_value={"issues": {"broken": []}}):
         assert isinstance(et_mod._dispatch("list_broken_links", {}, ctx, conn), dict)
-
-    with patch("website_profiling.tools.export_custom.rows_from_tool_result", return_value=[]):
-        assert "/a" in _section_html_tool_result("H", {"pages": [{"path": "/a"}]})
-    _, err5 = validate_sections([{"type": "executive_summary"}, 42])
-    assert err5
-    import builtins
-    real_import = builtins.__import__
-
-    def _block_reportlab(name, globals=None, locals=None, fromlist=(), level=0):
-        if name == "reportlab" or (fromlist and "reportlab" in name):
-            raise ImportError("no reportlab")
-        return real_import(name, globals, locals, fromlist, level)
-
-    with patch("builtins.__import__", side_effect=_block_reportlab):
-        with pytest.raises(RuntimeError, match="reportlab"):
-            from website_profiling.tools.export_custom import render_custom_report_pdf as _pdf
-            _pdf("<html></html>", "T")
 
     clusters_only_bad = ["bad", "bad2"]
     with patch.object(Ctx, "load_payload", return_value={"content_duplicates": clusters_only_bad}):

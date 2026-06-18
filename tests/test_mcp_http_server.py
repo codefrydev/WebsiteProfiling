@@ -394,7 +394,7 @@ def test_create_server_registers_handlers(monkeypatch) -> None:
 
     assert captured["name"] == "site-audit-full"
     tools = asyncio.run(captured["list_tools"]())  # type: ignore[arg-type]
-    assert len(tools) >= 340
+    assert len(tools) >= 338
 
 
 def test_bool_env_helper() -> None:
