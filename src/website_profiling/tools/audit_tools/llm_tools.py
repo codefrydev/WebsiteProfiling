@@ -333,3 +333,231 @@ def draft_llms_txt(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]
         "llms_txt_draft": "\n".join(draft_lines),
         "provenance": "AI insights",
     }
+
+
+def generate_schema(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    """Generate JSON-LD schema markup (FAQPage / Organization / Article / WebSite) from crawl data."""
+    scoped = ctx.with_args(args)
+    schema_type = str(args.get("schema_type") or "WebSite").strip()
+    url = str(args.get("url") or "").strip()
+    payload = scoped.load_payload(conn)
+    domain = str(scoped.resolve_property_domain(conn) or "")
+    site_name = str(payload.get("site_name") if payload else None or domain or "Site")
+    from .geo_tools import _base_url as _mk_base
+    base_url = _mk_base(domain) if domain else url
+
+    def _website_schema() -> dict[str, Any]:
+        return {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "name": site_name,
+            "url": base_url,
+            "description": f"{site_name} — official website",
+            "potentialAction": {
+                "@type": "SearchAction",
+                "target": {"@type": "EntryPoint", "urlTemplate": f"{base_url}/?s={{search_term_string}}"},
+                "query-input": "required name=search_term_string",
+            },
+        }
+
+    def _organization_schema() -> dict[str, Any]:
+        return {
+            "@context": "https://schema.org",
+            "@type": "Organization",
+            "name": site_name,
+            "url": base_url,
+            "logo": {"@type": "ImageObject", "url": f"{base_url}/logo.png"},
+            "sameAs": [],
+        }
+
+    def _faqpage_schema() -> dict[str, Any]:
+        df = scoped.load_crawl_df(conn)
+        questions: list[dict[str, Any]] = []
+        if df is not None and not df.empty:
+            for _, row in df.iterrows():
+                rec = row.to_dict()
+                title = str(rec.get("title") or "")
+                excerpt = str(rec.get("content_excerpt") or "")
+                if "?" in title or "faq" in str(rec.get("url") or "").lower():
+                    questions.append({
+                        "@type": "Question",
+                        "name": title,
+                        "acceptedAnswer": {"@type": "Answer", "text": excerpt[:300] or "See full answer on the page."},
+                    })
+                if len(questions) >= 10:
+                    break
+        return {
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            "mainEntity": questions or [
+                {"@type": "Question", "name": "Example question?",
+                 "acceptedAnswer": {"@type": "Answer", "text": "Example answer."}}
+            ],
+        }
+
+    def _article_schema() -> dict[str, Any]:
+        df = scoped.load_crawl_df(conn)
+        headline, description = "", ""
+        if df is not None and not df.empty:
+            for _, row in df.iterrows():
+                rec = row.to_dict()
+                if str(rec.get("url") or "").rstrip("/").lower() == url.rstrip("/").lower():
+                    headline = str(rec.get("title") or "")
+                    description = str(rec.get("meta_description") or rec.get("content_excerpt") or "")[:200]
+                    break
+        return {
+            "@context": "https://schema.org",
+            "@type": "Article",
+            "headline": headline or "Article title",
+            "description": description or "Article description",
+            "url": url or base_url,
+            "publisher": {
+                "@type": "Organization",
+                "name": site_name,
+                "url": base_url,
+            },
+        }
+
+    generators = {
+        "WebSite": _website_schema,
+        "Organization": _organization_schema,
+        "FAQPage": _faqpage_schema,
+        "Article": _article_schema,
+    }
+    schema_type_clean = schema_type if schema_type in generators else "WebSite"
+    schema_obj = generators[schema_type_clean]()
+
+    err = _llm_disabled_response()
+    if not err:
+        from ...llm.base import get_llm_client
+        from ...llm_config import load_llm_config_from_db
+
+        try:
+            client = get_llm_client(load_llm_config_from_db())
+            raw = client.complete_json(
+                "You generate valid JSON-LD schema.org markup. Return JSON with key schema_json.",
+                f"Improve this {schema_type_clean} JSON-LD for AI readability:\n{json.dumps(schema_obj, indent=2)[:1500]}",
+            )
+            improved = raw.get("schema_json") if isinstance(raw, dict) else None
+            if isinstance(improved, dict) and improved:
+                schema_obj = improved
+        except Exception:
+            pass
+
+    return {
+        "schema_type": schema_type_clean,
+        "schema_json": schema_obj,
+        "script_tag": f'<script type="application/ld+json">\n{json.dumps(schema_obj, indent=2)}\n</script>',
+        "provenance": "AI insights" if not err else "Generated",
+    }
+
+
+def generate_robots_txt(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    """Generate a robots.txt that explicitly allows all major AI citation bots."""
+    from .geo_list_tools import _AI_BOT_TIERS
+
+    scoped = ctx.with_args(args)
+    domain = str(scoped.resolve_property_domain(conn) or "")
+    from .geo_tools import _base_url as _mk_base
+    base_url = _mk_base(domain) if domain else ""
+
+    lines = ["# robots.txt — generated by Site Audit", ""]
+    for agent in _AI_BOT_TIERS:
+        lines.append(f"User-agent: {agent}")
+        lines.append("Allow: /")
+        lines.append("")
+    lines += ["User-agent: *", "Allow: /", ""]
+    if base_url:
+        lines.append(f"Sitemap: {base_url}/sitemap.xml")
+
+    return {
+        "domain": domain,
+        "robots_txt": "\n".join(lines),
+        "ai_bots_allowed": list(_AI_BOT_TIERS.keys()),
+        "provenance": "Generated",
+    }
+
+
+def generate_meta_tags(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    """Generate meta/OG tag recommendations for a URL based on crawl data."""
+    scoped = ctx.with_args(args)
+    url = str(args.get("url") or "").strip()
+    if not url:
+        return {"error": "url is required"}
+    df = scoped.load_crawl_df(conn)
+    if df is None or df.empty:
+        return {"error": "no crawl data", "url": url}
+    needle = url.rstrip("/").lower()
+    for _, row in df.iterrows():
+        rec = row.to_dict()
+        if str(rec.get("url") or "").rstrip("/").lower() != needle:
+            continue
+        title = str(rec.get("title") or "")
+        desc = str(rec.get("meta_description") or rec.get("content_excerpt") or "")[:160]
+        canonical = url
+        og_title = title
+        og_desc = desc
+        tags: list[str] = [
+            f'<title>{title or "Page Title"}</title>',
+            f'<meta name="description" content="{desc or "Page description."}">',
+            f'<link rel="canonical" href="{canonical}">',
+            f'<meta property="og:title" content="{og_title or title}">',
+            f'<meta property="og:description" content="{og_desc or desc}">',
+            f'<meta property="og:url" content="{url}">',
+            '<meta property="og:type" content="website">',
+        ]
+        return {
+            "url": url,
+            "meta_tags_html": "\n".join(tags),
+            "title": title,
+            "meta_description": desc,
+            "provenance": "Generated",
+        }
+    return {"error": "url not found in crawl", "url": url}
+
+
+def generate_geo_fix_bundle(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    """Generate all missing GEO fix files: llms.txt, robots.txt, WebSite schema, and meta tags summary."""
+    scoped = ctx.with_args(args)
+    domain = scoped.resolve_property_domain(conn)
+
+    llms_result = draft_llms_txt(conn, scoped, args)
+    robots_result = generate_robots_txt(conn, scoped, args)
+    schema_result = generate_schema(conn, scoped, {**args, "schema_type": "WebSite"})
+    org_schema_result = generate_schema(conn, scoped, {**args, "schema_type": "Organization"})
+
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from .geo_tools import _fetch_llms_txt, _fetch_ai_discovery, _score_meta_signals
+    from .geo_list_tools import _parse_robots_txt, _parse_robots_access
+
+    with ThreadPoolExecutor(max_workers=3) as _pool:
+        _f_llms = _pool.submit(_fetch_llms_txt, domain)
+        _f_disc = _pool.submit(_fetch_ai_discovery, domain)
+        _f_meta = _pool.submit(_score_meta_signals, domain)
+        llms_status = _f_llms.result()
+        discovery_status = _f_disc.result()
+        meta_status = _f_meta.result()
+
+    missing_files: list[str] = []
+    if not llms_status.get("found"):
+        missing_files.append("llms.txt")
+    robots_text = _parse_robots_txt(domain)
+    access_map = _parse_robots_access(robots_text) if robots_text else {}
+    from .geo_list_tools import _AI_BOT_TIERS
+    citation_bots = [b for b, t in _AI_BOT_TIERS.items() if t == "citation"]
+    if any(access_map.get(b.lower()) == "blocked" for b in citation_bots):
+        missing_files.append("robots.txt (AI bots blocked)")
+    if not discovery_status.get("endpoints", {}).get("ai_txt", {}).get("found"):
+        missing_files.append(".well-known/ai.txt")
+    if not meta_status.get("has_meta_description"):
+        missing_files.append("meta description tags")
+
+    return {
+        "domain": domain,
+        "missing_files": missing_files,
+        "llms_txt": llms_result,
+        "robots_txt": robots_result,
+        "website_schema": schema_result,
+        "organization_schema": org_schema_result,
+        "provenance": "Generated",
+    }

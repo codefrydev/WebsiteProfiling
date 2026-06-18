@@ -1,4 +1,4 @@
-"""GEO/AEO page-level list tools."""
+"""GEO/AEO page-level list tools + robots AI-bot tier scoring."""
 from __future__ import annotations
 
 import re
@@ -8,22 +8,133 @@ from urllib.parse import urljoin
 import requests
 from psycopg import Connection
 
-from ._slice import _parse_page_analysis, _row_schema_types_list, cap_list, parse_limit
+from ._slice import _row_schema_types_list, cap_list, parse_limit
 from .context import AuditToolContext
-from .geo_tools import _fetch_llms_txt, _has_faq_schema
+from .geo_tools import _base_url, _fetch_llms_txt, _has_faq_schema, _score_robots_ai_access
 
 _HOWTO_TYPES = frozenset({"howto", "how-to"})
 _HOWTO_URL_HINTS = ("/how-to", "/howto", "/guide/", "/tutorial/", "/recipes/")
-_AI_CRAWLER_AGENTS = (
-    "GPTBot",
-    "ChatGPT-User",
-    "ClaudeBot",
-    "anthropic-ai",
-    "Google-Extended",
-    "PerplexityBot",
-    "Bytespider",
-    "CCBot",
-)
+
+# 27 AI bots across three tiers (training / search / citation).
+# Citation bots retrieve and cite pages live (highest impact on visibility).
+# Search bots feed AI-search indexes. Training bots harvest datasets.
+_AI_BOT_TIERS: dict[str, str] = {
+    # citation (9 pts weight in robots score)
+    "GPTBot": "citation",
+    "OAI-SearchBot": "citation",
+    "ChatGPT-User": "citation",
+    "ClaudeBot": "citation",
+    "anthropic-ai": "citation",
+    "PerplexityBot": "citation",
+    "Perplexity-User": "citation",
+    # search (6 pts weight)
+    "Google-Extended": "search",
+    "Googlebot": "search",
+    "Bingbot": "search",
+    "BingPreview": "search",
+    "DuckDuckBot": "search",
+    "Applebot": "search",
+    "Applebot-Extended": "search",
+    # training (3 pts weight)
+    "CCBot": "training",
+    "Bytespider": "training",
+    "FacebookBot": "training",
+    "Amazonbot": "training",
+    "meta-externalagent": "training",
+    "meta-externalfetcher": "training",
+    "Diffbot": "training",
+    "ImagesiftBot": "training",
+    "omgili": "training",
+    "omgilibot": "training",
+    "Timpibot": "training",
+    "DataForSeoBot": "training",
+    "PiplBot": "training",
+}
+
+# Flat tuple for backward compat with list_robots_blocked_ai_crawlers
+_AI_CRAWLER_AGENTS = tuple(_AI_BOT_TIERS.keys())
+
+
+def _parse_robots_txt(domain: str) -> str:
+    if not domain:
+        return ""
+    url = urljoin(_base_url(domain) + "/", "robots.txt")
+    try:
+        resp = requests.get(url, timeout=8, headers={"User-Agent": "SiteAudit/1.0"})
+        if resp.status_code == 200:
+            return resp.text
+    except requests.RequestException:
+        return ""
+    return ""
+
+
+def _parse_robots_access(robots_text: str) -> dict[str, str]:
+    """Return per-agent access map: agent_lower -> 'blocked' | 'allowed' | 'default'.
+
+    Handles Allow: and Disallow: with path-specific rules.
+    A bot is 'blocked' only if Disallow: / with no overriding Allow: / rule.
+    """
+    access: dict[str, str] = {}
+    sections: list[tuple[list[str], list[str], list[str]]] = []
+    current_agents: list[str] = []
+    current_allows: list[str] = []
+    current_disallows: list[str] = []
+
+    def _flush() -> None:
+        if current_agents:
+            sections.append((list(current_agents), list(current_allows), list(current_disallows)))
+
+    for raw_line in robots_text.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        lower = line.lower()
+        if lower.startswith("user-agent:"):
+            # Flush the current block only when it already has rules.
+            # If there are no rules yet, we're in a multi-agent block (shared rules)
+            # and should just keep accumulating agents.
+            if current_allows or current_disallows:
+                _flush()
+                current_agents = []
+                current_allows = []
+                current_disallows = []
+            current_agents.append(line.split(":", 1)[1].strip())
+        elif lower.startswith("allow:"):
+            current_allows.append(line.split(":", 1)[1].strip())
+        elif lower.startswith("disallow:"):
+            current_disallows.append(line.split(":", 1)[1].strip())
+    _flush()
+
+    def _agent_access(agent: str) -> str:
+        agent_l = agent.lower()
+        specific: list[tuple[list[str], list[str]]] = []
+        wildcard: list[tuple[list[str], list[str]]] = []
+        for agents, allows, disallows in sections:
+            agents_lower = [a.lower() for a in agents]
+            if agent_l in agents_lower:
+                specific.append((allows, disallows))
+            elif "*" in agents_lower:
+                wildcard.append((allows, disallows))
+        # Specific rules always take precedence over wildcard
+        applicable = specific if specific else wildcard
+        if not applicable:
+            return "default"
+        for allows, disallows in applicable:
+            root_blocked = "/" in disallows or "" in disallows
+            root_allowed = "/" in allows
+            if root_blocked and not root_allowed:
+                return "blocked"
+        return "allowed"
+
+    for agent in _AI_BOT_TIERS:
+        access[agent.lower()] = _agent_access(agent)
+    return access
+
+
+def _agent_blocked(robots_text: str, agent: str) -> bool:
+    """True if the agent is blocked from the entire site (Disallow: /)."""
+    access = _parse_robots_access(robots_text)
+    return access.get(agent.lower()) == "blocked"
 
 
 def _has_howto_schema(row: dict[str, Any]) -> bool:
@@ -71,39 +182,6 @@ def _aeo_score(rec: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _parse_robots_txt(domain: str) -> str:
-    if not domain:
-        return ""
-    base = f"https://{re.sub(r'^https?://', '', domain).split('/')[0]}"
-    url = urljoin(base + "/", "robots.txt")
-    try:
-        resp = requests.get(url, timeout=8, headers={"User-Agent": "SiteAudit/1.0"})
-        if resp.status_code == 200:
-            return resp.text
-    except requests.RequestException:
-        return ""
-    return ""
-
-
-def _agent_blocked(robots_text: str, agent: str) -> bool:
-    blocks: dict[str, bool] = {}
-    current_agent = "*"
-    for line in robots_text.splitlines():
-        line = line.strip()
-        if not line or line.startswith("#"):
-            continue
-        lower = line.lower()
-        if lower.startswith("user-agent:"):
-            current_agent = line.split(":", 1)[1].strip()
-            continue
-        if lower.startswith("disallow:"):
-            path = line.split(":", 1)[1].strip()
-            if path == "/":
-                blocks[current_agent.lower()] = True
-    agent_lower = agent.lower()
-    return bool(blocks.get(agent_lower) or blocks.get("*"))
-
-
 def _llms_urls(llms_preview: str, llms_url: str) -> set[str]:
     urls: set[str] = set()
     for line in (llms_preview or "").splitlines():
@@ -112,6 +190,38 @@ def _llms_urls(llms_preview: str, llms_url: str) -> set[str]:
     if llms_url:
         urls.add(llms_url.rstrip("/").lower())
     return urls
+
+
+# ---------------------------------------------------------------------------
+# Public tools
+# ---------------------------------------------------------------------------
+
+def get_robots_ai_access_score(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    """Score robots.txt AI-bot access /18 with tier breakdown."""
+    scoped = ctx.with_args(args)
+    domain = scoped.resolve_property_domain(conn)
+    if not domain:
+        return {"error": "domain unknown", "robots_score": 0}
+    robots_text = _parse_robots_txt(domain)
+    if not robots_text.strip():
+        return {
+            "domain": domain,
+            "robots_score": 0,
+            "missing": True,
+            "note": "robots.txt not reachable",
+            "provenance": "Crawl",
+        }
+    access_map = _parse_robots_access(robots_text)
+    per_bot: list[dict[str, Any]] = []
+    for agent, tier in _AI_BOT_TIERS.items():
+        status = access_map.get(agent.lower(), "default")
+        per_bot.append({"agent": agent, "tier": tier, "access": status})
+    per_bot.sort(key=lambda x: ("citation", "search", "training").index(x["tier"]))
+    result = _score_robots_ai_access(domain)
+    result["domain"] = domain
+    result["per_bot"] = per_bot
+    result["provenance"] = "Crawl"
+    return result
 
 
 def list_pages_missing_howto_schema(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
@@ -226,12 +336,13 @@ def list_robots_blocked_ai_crawlers(conn: Connection, ctx: AuditToolContext, arg
             "missing": True,
             "note": "robots.txt not reachable",
         }
+    access_map = _parse_robots_access(robots_text)
     blocked: list[dict[str, Any]] = []
-    for agent in _AI_CRAWLER_AGENTS:
-        if _agent_blocked(robots_text, agent):
-            blocked.append({"agent": agent, "blocked": True, "scope": "disallow: /"})
-    limit = parse_limit(args.get("limit"), 10, 20)
-    sliced = cap_list(blocked, limit, max_cap=20)
+    for agent, tier in _AI_BOT_TIERS.items():
+        if access_map.get(agent.lower()) == "blocked":
+            blocked.append({"agent": agent, "tier": tier, "blocked": True, "scope": "disallow: /"})
+    limit = parse_limit(args.get("limit"), 20, 30)
+    sliced = cap_list(blocked, limit, max_cap=30)
     return {
         "domain": domain,
         "agents": sliced["items"],

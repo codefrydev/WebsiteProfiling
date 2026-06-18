@@ -13,7 +13,7 @@ from website_profiling.tools.audit_tools.tool_domains import TIER_0_TOOLS
 
 
 def test_tool_definitions_schema() -> None:
-    assert len(TOOL_DEFINITIONS) == 338
+    assert len(TOOL_DEFINITIONS) == 354
     for tool in TOOL_DEFINITIONS:
         assert tool.get("name")
         assert tool.get("description")

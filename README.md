@@ -58,13 +58,13 @@ Site Audit focuses on **honest, self-hosted technical SEO**. It is not a drop-in
 
 - **No live backlink index** — Backlink tools read **Google Search Console Links CSV imports** (and optional third-party CSV overlays). There is no Ahrefs, Semrush, Moz, or Majestic API integration.
 - **No daily rank tracking** — Keyword positions come from **GSC snapshots** on your connected property, not a proprietary SERP tracker or rank-history database.
-- **No live AI citation checks** — GEO/AEO tools use **on-site heuristics**; they do not query ChatGPT, Perplexity, or other AI search engines in real time.
+- **Live AI citation checks are opt-in** — GEO/AEO tools default to **on-site heuristics** (no API required). Optional live checks via `check_ai_citations_live` require a BYO API key (`PERPLEXITY_API_KEY`, `OPENAI_API_KEY`, etc.) and explicit `opt_in=true`; they are not called automatically.
 - **No third-party keyword volume APIs** — Keyword explorer uses **on-site frequency plus Search Console**; difficulty and SERP feature overlays are estimated unless you supply your own data.
 - **No managed cloud** — You run it (Docker or local dev). This repo is not a hosted multi-tenant SaaS.
 - **No substitute for Google access** — Search Console, Analytics, and Bing Webmaster require **your credentials**; missing or stale integrations show empty states with provenance labels, not fabricated metrics.
 - **Not a ranking guarantee** — Category scores (0–100) are **internal audit scores**, not Google rankings or predicted traffic impact.
 
-**Planned extensions** (not yet shipped): full backlink index beyond GSC import, SERP rank tracking beyond GSC snapshots, and live AI citation APIs. See [docs/MCP.md](docs/MCP.md#future-pipeline-items).
+**Planned extensions** (not yet shipped): full backlink index beyond GSC import, SERP rank tracking beyond GSC snapshots. See [docs/MCP.md](docs/MCP.md#future-pipeline-items).
 
 ## Features
 
