@@ -7,6 +7,7 @@ import {
 describe('landingLayout deck order', () => {
   it('includes all spotlight section ids', () => {
     expect(LANDING_DECK_SECTION_ORDER).toContain(LANDING_SECTION_IDS.spotlightGoogle);
+    expect(LANDING_DECK_SECTION_ORDER).toContain(LANDING_SECTION_IDS.spotlightPromptGenerator);
     expect(LANDING_DECK_SECTION_ORDER).toContain(LANDING_SECTION_IDS.spotlightContentStudio);
     expect(LANDING_DECK_SECTION_ORDER).toContain(LANDING_SECTION_IDS.spotlightAiChat);
     expect(LANDING_DECK_SECTION_ORDER).toContain(LANDING_SECTION_IDS.spotlightCompareExport);
@@ -25,7 +26,7 @@ describe('landingLayout deck order', () => {
     expect(google).toBeGreaterThan(crawl);
   });
 
-  it('has 15 slides including footer', () => {
-    expect(LANDING_DECK_SECTION_ORDER).toHaveLength(15);
+  it('has 16 slides including footer', () => {
+    expect(LANDING_DECK_SECTION_ORDER).toHaveLength(16);
   });
 });

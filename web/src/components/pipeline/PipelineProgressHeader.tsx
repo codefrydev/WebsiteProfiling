@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, Pause, Play } from 'lucide-react';
 import type { PipelineJobStatus } from '@/types/api';
 import type { LivePipelineEstimate } from '@/lib/pipelineLiveEstimate';
 import {
@@ -23,6 +23,8 @@ export interface PipelineProgressHeaderProps {
   liveEstimate?: LivePipelineEstimate | null;
   compact?: boolean;
   className?: string;
+  onPause?: () => void;
+  onResume?: () => void;
 }
 
 function truncateUrl(url: string, max = 56): string {
@@ -41,6 +43,8 @@ export default function PipelineProgressHeader({
   liveEstimate = null,
   compact = false,
   className = '',
+  onPause,
+  onResume,
 }: PipelineProgressHeaderProps) {
   const events = useMemo(() => parsePipelineProgressEvents(log), [log]);
   const latest = useMemo(() => resolveActiveProgress(events, status), [events, status]);
@@ -48,6 +52,7 @@ export default function PipelineProgressHeader({
 
   if (!latest) return null;
 
+  const jobPaused = status === 'paused';
   const jobFinished = status === 'success' || status === 'error';
   const activePhase = latest.phase;
   const activeIdx = jobFinished && latest.step === 'done' ? PIPELINE_STEPPER_PHASES.length : phaseIndex(activePhase);
@@ -112,12 +117,14 @@ export default function PipelineProgressHeader({
         <div className="flex min-w-0 items-center gap-2">
           {isActive ? (
             <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-link" aria-hidden />
+          ) : jobPaused ? (
+            <Pause className="h-3.5 w-3.5 shrink-0 text-amber-400" aria-hidden />
           ) : jobFinished && status === 'success' ? (
             <Check className="h-3.5 w-3.5 shrink-0 text-green-500" aria-hidden />
           ) : null}
           <span className="font-medium text-foreground">
-            {phaseLabel}
-            {!compact ? ` · ${stepText}` : `: ${stepText}`}
+            {jobPaused ? 'Paused' : phaseLabel}
+            {!compact ? ` · ${jobPaused ? 'Crawl saved — click Resume to continue' : stepText}` : `: ${jobPaused ? 'paused' : stepText}`}
           </span>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2 tabular-nums text-muted-foreground">
@@ -133,6 +140,28 @@ export default function PipelineProgressHeader({
             <span className="font-medium text-foreground/90">
               ~{formatDurationMs(liveEstimate.remainingMs)} left total
             </span>
+          ) : null}
+          {isActive && latest.phase === 'crawl' && onPause && !compact ? (
+            <button
+              type="button"
+              onClick={onPause}
+              className="ml-1 flex items-center gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300 hover:bg-amber-500/20 active:opacity-70"
+              title="Pause crawl and save frontier"
+            >
+              <Pause className="h-2.5 w-2.5" aria-hidden />
+              Pause
+            </button>
+          ) : null}
+          {jobPaused && onResume && !compact ? (
+            <button
+              type="button"
+              onClick={onResume}
+              className="ml-1 flex items-center gap-1 rounded border border-green-500/40 bg-green-500/10 px-2 py-0.5 text-[10px] font-medium text-green-300 hover:bg-green-500/20 active:opacity-70"
+              title="Resume crawl from saved frontier"
+            >
+              <Play className="h-2.5 w-2.5" aria-hidden />
+              Resume
+            </button>
           ) : null}
         </div>
       </div>

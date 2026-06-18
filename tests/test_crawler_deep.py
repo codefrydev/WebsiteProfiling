@@ -662,3 +662,83 @@ def test_capture_page_html_enqueues_to_stream_writer():
     assert len(writer.records) == 1
     assert writer.records[0]["url"] == "https://site.com"
 
+
+def test_run_crawler_compare_mobile_desktop_second_pass(monkeypatch):
+    """compare_mobile_desktop=True triggers a second crawl and links the run IDs."""
+    import website_profiling.crawl.crawler as mod
+
+    crawl_calls: list[dict] = []
+
+    class FakeCrawler:
+        def __init__(self, **_kwargs):
+            self.link_edges_accum = []
+            self.store_page_html = False
+
+        def crawl(self, **_kwargs):
+            return pd.DataFrame([{"url": "https://a.com", "status": 200, "title": "ok"}])
+
+    run_id_seq = iter([7, 8])
+
+    class _Ctx:
+        def __init__(self):
+            self._conn = object()
+
+        def __enter__(self):
+            return self._conn
+
+        def __exit__(self, _t, _v, _tb):
+            return False
+
+    linked: list[tuple] = []
+    fake_set_mobile = lambda conn, d, m: linked.append((d, m))
+
+    def fake_get_latest(conn):
+        return next(run_id_seq)
+
+    fake_db = types.SimpleNamespace(
+        backup_db_if_exists=lambda: None,
+        create_crawl_run=lambda *_a, **_k: 7,
+        db_session=lambda: _Ctx(),
+        read_historical_data=lambda: {},
+        restore_historical_data=lambda *_a, **_k: None,
+        write_crawl=lambda conn, df, crawl_run_id=None: None,
+    )
+    fake_storage = types.SimpleNamespace(ensure_crawl_tables_cleared=lambda *_a, **_k: None)
+    monkeypatch.setattr(mod, "Crawler", FakeCrawler)
+    monkeypatch.setitem(__import__("sys").modules, "website_profiling.db", fake_db)
+    monkeypatch.setitem(__import__("sys").modules, "website_profiling.db.storage", fake_storage)
+
+    import website_profiling.db.crawl_store as cs_mod
+
+    monkeypatch.setattr(cs_mod, "get_latest_crawl_run_id", fake_get_latest)
+    monkeypatch.setattr(cs_mod, "set_mobile_run_id", fake_set_mobile)
+
+    # Patch run_crawler itself for the recursive call to avoid double setup
+    second_calls: list[dict] = []
+
+    original_run = mod.run_crawler
+
+    def patched_run(start_url="", **kwargs):
+        if kwargs.get("compare_mobile_desktop") is False and kwargs.get("crawl_user_agent_preset") == "mobile":
+            second_calls.append({"start_url": start_url, **kwargs})
+            return pd.DataFrame([{"url": "https://a.com", "status": 200}])
+        return original_run(start_url, **kwargs)
+
+    monkeypatch.setattr(mod, "run_crawler", patched_run)
+
+    mod.run_crawler(
+        "https://a.com",
+        output_db=True,
+        crawl_stream_to_db=False,
+        max_pages=5,
+        preserve_crawl_history=True,
+        show_progress=False,
+        compare_mobile_desktop=True,
+    )
+
+    assert len(second_calls) == 1
+    assert second_calls[0]["crawl_user_agent_preset"] == "mobile"
+    assert second_calls[0]["compare_mobile_desktop"] is False
+    # set_mobile_run_id was called
+    assert linked and linked[0][0] == 7
+

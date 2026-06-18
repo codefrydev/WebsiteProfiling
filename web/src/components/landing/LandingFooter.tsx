@@ -3,7 +3,13 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { ExternalLink } from 'lucide-react';
-import { landingGutterClass } from '@/components/landing/landingLayout';
+import AppLogo from '@/components/AppLogo';
+import {
+  landingContentClass,
+  landingGutterClass,
+  landingSectionSplitClass,
+  landingSplitCopyClass,
+} from '@/components/landing/landingLayout';
 import { strings } from '@/lib/strings';
 
 const vl = strings.views.landing;
@@ -34,51 +40,87 @@ function FooterLink({
   );
 }
 
+type FooterGroup = {
+  title: string;
+  links: { href: string; label: string; external?: boolean }[];
+};
+
+const FOOTER_COLUMNS: readonly FooterGroup[][] = [
+  [
+    {
+      title: vl.footerProductTitle,
+      links: [
+        { href: '/home', label: vl.footerOpenApp },
+        { href: '/pipeline', label: vl.footerRunAudit },
+        { href: '/chat', label: vl.footerChat },
+      ],
+    },
+    {
+      title: vl.footerCommunityTitle,
+      links: [
+        { href: vl.githubRepoUrl, label: vl.trustGithub, external: true },
+        { href: vl.githubIssuesUrl, label: vl.footerIssues, external: true },
+      ],
+    },
+  ],
+  [
+    {
+      title: vl.footerDocsTitle,
+      links: [
+        { href: vl.githubContributingUrl, label: vl.footerContributing, external: true },
+        { href: vl.githubMcpUrl, label: vl.footerMcp, external: true },
+        { href: vl.githubReadmeUrl, label: vl.limitationsReadmeLink, external: true },
+      ],
+    },
+    {
+      title: vl.footerLegalTitle,
+      links: [{ href: vl.githubLicenseUrl, label: vl.footerLicense, external: true }],
+    },
+  ],
+] as const;
+
+function FooterGroupSection({ title, links }: FooterGroup) {
+  return (
+    <section className="px-4 py-4 @sm:px-5 @sm:py-5">
+      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      <ul className="mt-3 space-y-2">
+        {links.map(({ href, label, external }) => (
+          <li key={href}>
+            <FooterLink href={href} external={external}>
+              {label}
+            </FooterLink>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export default function LandingFooter() {
   return (
-    <div className={`w-full py-6 sm:py-8 ${landingGutterClass}`}>
-      <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-5">
-        <div className="lg:col-span-1">
-          <p className="font-semibold text-foreground">{app.productName}</p>
-          <p className="mt-1 text-sm text-muted-foreground">{vl.footerCopyright}</p>
-          <p className="mt-3 text-xs text-muted-foreground">© {new Date().getFullYear()}</p>
-        </div>
-        <div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-foreground">
-            {vl.footerProductTitle}
+    <div className={`${landingContentClass} flex h-full w-full flex-col justify-center py-8 @sm:py-10 ${landingGutterClass}`}>
+      <div className={landingSectionSplitClass}>
+        <div className={`${landingSplitCopyClass} max-w-sm @md:pr-8 @lg:pr-10`}>
+          <div className="flex items-center gap-2.5">
+            <AppLogo size={26} />
+            <p className="text-lg font-semibold text-foreground">{app.productName}</p>
+          </div>
+          <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{vl.footerCopyright}</p>
+          <p className="mt-6 text-xs text-muted-foreground">
+            © {new Date().getFullYear()} {app.productName} · {vl.footerLicense}
           </p>
-          <ul className="space-y-2">
-            <li><FooterLink href="/home">{vl.footerOpenApp}</FooterLink></li>
-            <li><FooterLink href="/pipeline">{vl.footerRunAudit}</FooterLink></li>
-            <li><FooterLink href="/chat">{vl.footerChat}</FooterLink></li>
-          </ul>
         </div>
-        <div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-foreground">
-            {vl.footerDocsTitle}
-          </p>
-          <ul className="space-y-2">
-            <li><FooterLink href={vl.githubContributingUrl} external>{vl.footerContributing}</FooterLink></li>
-            <li><FooterLink href={vl.githubMcpUrl} external>{vl.footerMcp}</FooterLink></li>
-            <li><FooterLink href={vl.githubReadmeUrl} external>{vl.limitationsReadmeLink}</FooterLink></li>
-          </ul>
-        </div>
-        <div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-foreground">
-            {vl.footerCommunityTitle}
-          </p>
-          <ul className="space-y-2">
-            <li><FooterLink href={vl.githubRepoUrl} external>{vl.trustGithub}</FooterLink></li>
-            <li><FooterLink href={vl.githubIssuesUrl} external>{vl.footerIssues}</FooterLink></li>
-          </ul>
-        </div>
-        <div>
-          <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-foreground">
-            {vl.footerLegalTitle}
-          </p>
-          <ul className="space-y-2">
-            <li><FooterLink href={vl.githubLicenseUrl} external>{vl.footerLicense}</FooterLink></li>
-          </ul>
+
+        <div className="flex min-h-0 flex-col justify-center @md:pl-2 @lg:pl-4">
+          <div className="overflow-hidden rounded-xl border border-default/60 @md:grid @md:grid-cols-2 @md:divide-x divide-default/60">
+            {FOOTER_COLUMNS.map((column, columnIndex) => (
+              <div key={columnIndex} className="divide-y divide-default/60">
+                {column.map((group) => (
+                  <FooterGroupSection key={group.title} {...group} />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

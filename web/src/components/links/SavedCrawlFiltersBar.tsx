@@ -4,15 +4,16 @@ import { useCallback, useEffect, useState } from 'react';
 import { BookmarkPlus } from 'lucide-react';
 import { Button } from '@/components';
 import { apiUrl } from '@/lib/publicBase';
-import type { LinksFilterValues } from './LinksFilterBar';
 
 interface SavedCrawlFiltersBarProps {
   propertyId: number;
-  filterValues: LinksFilterValues;
-  onLoad: (values: LinksFilterValues) => void;
+  /** Opaque view object persisted as the saved filter's JSON payload. */
+  view: unknown;
+  /** Called with the raw persisted JSON so the caller can normalize/apply it. */
+  onLoad: (raw: unknown) => void;
 }
 
-export default function SavedCrawlFiltersBar({ propertyId, filterValues, onLoad }: SavedCrawlFiltersBarProps) {
+export default function SavedCrawlFiltersBar({ propertyId, view, onLoad }: SavedCrawlFiltersBarProps) {
   const [names, setNames] = useState<string[]>([]);
   const [selected, setSelected] = useState('');
   const [status, setStatus] = useState('');
@@ -43,7 +44,7 @@ export default function SavedCrawlFiltersBar({ propertyId, filterValues, onLoad 
       const res = await fetch(apiUrl('/filters'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ propertyId, name: name.trim(), filterJson: filterValues }),
+        body: JSON.stringify({ propertyId, name: name.trim(), filterJson: view }),
       });
       if (!res.ok) throw new Error('Save failed');
       setStatus(`Saved "${name.trim()}"`);
@@ -59,7 +60,7 @@ export default function SavedCrawlFiltersBar({ propertyId, filterValues, onLoad 
       const res = await fetch(apiUrl(`/filters?propertyId=${propertyId}`));
       const body = await res.json();
       const row = (body.filters || []).find((f: { name: string }) => f.name === selected);
-      if (row?.filterJson) onLoad(row.filterJson as LinksFilterValues);
+      if (row?.filterJson) onLoad(row.filterJson);
     } catch {
       setStatus('Could not load filter');
     }

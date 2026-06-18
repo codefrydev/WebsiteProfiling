@@ -28,7 +28,9 @@ import type { ChatNarrative } from '@/types/chatNarrative';
 import type { ToolActivityItem } from '@/components/chat/ChatToolActivity';
 import {
   buildChatSearchQuery,
+  clearChatComposerDraft,
   parseChatUrlContext,
+  readChatComposerDraft,
   readStoredChatContext,
   writeStoredChatContext,
 } from '@/lib/chatUrlState';
@@ -225,6 +227,15 @@ export default function ChatPage() {
     if (!configLoaded) return;
     void loadProperties();
   }, [configLoaded, loadProperties]);
+
+  useEffect(() => {
+    const domainFromUrl = searchParams.get('domain') ?? searchParams.get('brand') ?? '';
+    const draft = readChatComposerDraft(domainFromUrl);
+    if (draft) {
+      setComposerDraft(draft);
+      clearChatComposerDraft();
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (propertyId) void loadSessions(propertyId);

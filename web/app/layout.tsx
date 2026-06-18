@@ -13,7 +13,7 @@ const dmSans = DM_Sans({
 
 export const metadata = {
   title: 'Site Audit',
-  description: 'Technical SEO site crawl and audit reports',
+  description: 'SEO site crawl and audit reports',
   icons: {
     icon: '/favicon.svg',
     apple: '/favicon.svg',

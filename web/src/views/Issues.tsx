@@ -13,6 +13,9 @@ import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
 import IssueTaskBoard from '@/components/issues/IssueTaskBoard';
 import IssueAiFixButton from '@/components/issues/IssueAiFixButton';
+import IssuePromptGenerator from '@/components/issues/IssuePromptGenerator';
+import IssueTrendChart from '@/components/issues/IssueTrendChart';
+import MobileDesktopDelta from '@/components/issues/MobileDesktopDelta';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
 import { doughnutOptionsWithPercentTooltip, formatCompositionAria } from '../lib/chartDoughnutUtils';
@@ -104,6 +107,7 @@ function IssueCard({ item, vi, emDash }: IssueCardProps) {
 
 export default function Issues({ searchQuery = '' }: ViewProps) {
   const { data, selectedReportId } = useReport();
+  const domain = data?.site_name || '';
   useSectionData('issues');
   useSectionData('traffic');
   const issuesReady = useSectionsViewReady(['issues']);
@@ -128,6 +132,16 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
   }, [data?.google?.gsc?.top_pages]);
 
   const q = (searchQuery || '').toLowerCase().trim();
+
+  const allIssuesList = useMemo((): CategoryIssueItem[] => {
+    const acc: CategoryIssueItem[] = [];
+    (data?.categories || []).forEach((cat) => {
+      (cat.issues || []).forEach((iss: ReportIssue) => {
+        acc.push({ category: cat.name || cat.id || '', issue: iss });
+      });
+    });
+    return acc;
+  }, [data]);
 
   const list = useMemo((): CategoryIssueItem[] => {
     const acc: CategoryIssueItem[] = [];
@@ -287,7 +301,20 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
 
   return (
     <PageLayout className="space-y-6 min-w-0 max-w-full">
-      <PageHeader title={vi.title} subtitle={subtitle} />
+      <PageHeader
+        title={vi.title}
+        subtitle={subtitle}
+        actions={
+          allIssuesList.length > 0 ? (
+            <IssuePromptGenerator
+              domain={domain}
+              items={allIssuesList}
+              reportId={selectedReportId}
+              propertyId={propertyId}
+            />
+          ) : null
+        }
+      />
 
       <ViewTabs
         tabs={[
@@ -306,6 +333,11 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
           reportId={selectedReportId}
           issues={taskBoardIssues}
         />
+      ) : null}
+
+      {issuesTab === 'audit' && domain ? <IssueTrendChart domain={domain} /> : null}
+      {issuesTab === 'audit' && data?.crawl_run_id ? (
+        <MobileDesktopDelta runId={data.crawl_run_id} />
       ) : null}
 
       {issuesTab === 'audit' && showCharts && (

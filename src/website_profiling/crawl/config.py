@@ -69,6 +69,7 @@ class CrawlConfig:
     crawl_robots_txt_override: str = ""
     custom_extractors: Optional[list[dict]] = None
     enable_axe: bool = False
+    compare_mobile_desktop: bool = False
 
     @classmethod
     def from_kwargs(cls, **kwargs: object) -> CrawlConfig:

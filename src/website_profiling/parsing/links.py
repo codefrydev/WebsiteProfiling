@@ -61,6 +61,53 @@ def _parse_rel_flags(rel_raw: str) -> tuple[bool, bool, bool]:
     return ("nofollow" in parts, "sponsored" in parts, "ugc" in parts)
 
 
+_NAV_CLASSES = frozenset({"nav", "menu", "navbar", "navigation"})
+_HEADER_CLASSES = frozenset({"header", "site-header", "page-header"})
+_FOOTER_CLASSES = frozenset({"footer", "site-footer", "page-footer"})
+_SIDEBAR_CLASSES = frozenset({"sidebar", "side", "aside", "widget-area"})
+
+
+def _classify_position(tag) -> str:
+    """Classify where a link sits on the page by walking its ancestor chain."""
+    for parent in tag.parents:
+        name = getattr(parent, "name", None)
+        if name is None:
+            continue
+        # Semantic HTML5 landmarks (highest priority — unambiguous)
+        if name == "nav":
+            return "nav"
+        if name == "header":
+            return "header"
+        if name == "footer":
+            return "footer"
+        if name == "aside":
+            return "sidebar"
+        # ARIA roles
+        role = str(parent.get("role") or "").lower()
+        if role in ("navigation", "menubar"):
+            return "nav"
+        if role == "banner":
+            return "header"
+        if role == "contentinfo":
+            return "footer"
+        if role == "complementary":
+            return "sidebar"
+        # Class / ID heuristics for common naming conventions
+        cls_set = {c.lower() for c in (parent.get("class") or [])}
+        elem_id = str(parent.get("id") or "").lower()
+        if cls_set & _NAV_CLASSES or elem_id in _NAV_CLASSES:
+            return "nav"
+        if cls_set & _HEADER_CLASSES or elem_id in _HEADER_CLASSES:
+            return "header"
+        if cls_set & _FOOTER_CLASSES or elem_id in _FOOTER_CLASSES:
+            return "footer"
+        if cls_set & _SIDEBAR_CLASSES or elem_id in _SIDEBAR_CLASSES:
+            return "sidebar"
+        if name in ("main", "article", "section"):
+            return "content"
+    return "content"
+
+
 def _anchor_text_from_tag(a) -> str:
     parts: list[str] = []
     for child in a.children:
@@ -103,6 +150,7 @@ def parse_link_edges(base_url: str, html_text: str) -> tuple[str, list[dict]]:
             "is_sponsored": sponsored,
             "is_ugc": ugc,
             "link_type": link_type,
+            "position": _classify_position(a),
         })
     return title_tag, edges
 

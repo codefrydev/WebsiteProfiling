@@ -443,6 +443,8 @@ export interface LinkEdgeRow {
   is_sponsored?: boolean;
   is_ugc?: boolean;
   link_type?: string;
+  /** Where the link sits on the source page: nav | header | content | footer | sidebar */
+  position?: string;
 }
 
 export interface LinkRelSummary {
@@ -458,6 +460,8 @@ export interface InlinkAnchorRow {
   target_url?: string;
   anchor_text?: string;
   inlink_count?: number;
+  /** Most common position among inlinks with this anchor text (nav | header | content | footer | sidebar). */
+  top_position?: string;
 }
 
 export interface GraphEdge {
@@ -690,6 +694,7 @@ export interface CrawlSegmentEntry {
   prefix: string;
   url_count?: number;
   health_score?: number | null;
+  pattern_type?: 'prefix' | 'regex';
 }
 
 export interface CrawlSegmentsData {
@@ -1173,4 +1178,21 @@ export interface ContentAnalyticsStats {
 export interface SimilarInternalRow {
   url: string;
   score: number | null;
+}
+
+export interface MobileDesktopVariant {
+  title: string;
+  h1: string;
+  word_count: number;
+  status: number;
+}
+
+export interface MobileDesktopDeltaRow {
+  url: string;
+  desktop: MobileDesktopVariant;
+  mobile: MobileDesktopVariant;
+  title_differs: boolean;
+  h1_differs: boolean;
+  word_count_delta: number;
+  status_differs: boolean;
 }

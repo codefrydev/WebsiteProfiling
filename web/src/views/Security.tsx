@@ -19,6 +19,7 @@ import { ChartAccessibleFallback } from '../components/charts';
 import type { SecurityFinding, ViewProps } from '@/types';
 import { securityFindingLabel } from '@/lib/securityFindingLabels';
 import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import SecurityFindingsPromptGenerator from '@/components/issues/SecurityFindingsPromptGenerator';
 import { buildSecurityFindingContext } from '@/lib/fixSuggestionContext';
 
 registerChartJsBase();
@@ -100,6 +101,7 @@ type SecurityTabId = (typeof SECURITY_TABS)[number];
 
 export default function Security({ searchQuery = '' }: ViewProps) {
   const { data } = useReport();
+  const domain = data?.site_name || '';
   useSectionData('security');
   const securityReady = useSectionsViewReady(['security']);
   const [severityFilter, setSeverityFilter] = useState('All');
@@ -233,6 +235,11 @@ export default function Security({ searchQuery = '' }: ViewProps) {
       <PageHeader
         title={vs.title}
         subtitle={`${vs.subtitlePrefix} ${format(vs.subtitleCount, { count: allFindings.length, s: allFindings.length !== 1 ? 's' : '' })}`}
+        actions={
+          allFindings.length > 0 ? (
+            <SecurityFindingsPromptGenerator domain={domain} findings={allFindings} />
+          ) : null
+        }
       />
 
       <ViewTabs

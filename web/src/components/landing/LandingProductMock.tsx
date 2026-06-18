@@ -15,6 +15,7 @@ export type LandingProductMockVariant =
   | 'default'
   | 'crawl'
   | 'issues'
+  | 'promptGenerator'
   | 'google'
   | 'contentStudio'
   | 'aiChat'
@@ -31,7 +32,7 @@ interface LandingProductMockProps {
 
 const NAV_ITEMS = [
   { label: 'Overview', activeFor: ['default'] as const },
-  { label: 'Issues', activeFor: ['issues'] as const },
+  { label: 'Issues', activeFor: ['issues', 'promptGenerator'] as const },
   { label: 'All URLs', activeFor: ['crawl'] as const },
   { label: 'Search', activeFor: ['google'] as const },
   { label: 'Write', activeFor: ['contentStudio'] as const },
@@ -44,6 +45,7 @@ const MOCK_PATHS: Record<LandingProductMockVariant, string> = {
   default: 'overview',
   crawl: 'links',
   issues: 'issues',
+  promptGenerator: 'issues',
   google: 'search-performance',
   contentStudio: 'write',
   aiChat: 'chat',
@@ -312,7 +314,7 @@ function GooglePanel() {
       </div>
       <CompactWidget title="Top queries" className="mb-0">
         <div className="space-y-1">
-          <MockUrlRow path="technical seo audit" status={200} />
+          <MockUrlRow path="seo audit guide" status={200} />
           <MockUrlRow path="screaming frog alternative" status={200} />
           <MockUrlRow path="self hosted seo tool" status={200} />
         </div>
@@ -346,7 +348,7 @@ function ContentStudioPanel() {
       <div className="min-w-0 flex-1 space-y-2">
         <div className="rounded-lg border border-default/60 bg-brand-900/40 p-2">
           <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Title</p>
-          <p className="mt-0.5 truncate text-[10px] font-medium text-foreground">Technical SEO Audit Guide 2026</p>
+          <p className="mt-0.5 truncate text-[10px] font-medium text-foreground">SEO Audit Guide 2026</p>
         </div>
         <div className="rounded-lg border border-default/60 bg-brand-900/40 p-2">
           <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Body</p>
@@ -363,7 +365,7 @@ function ContentStudioPanel() {
         <p className="mt-0.5 text-lg font-bold text-emerald-400">B+</p>
         <p className="mt-2 text-[8px] font-semibold uppercase tracking-wide text-muted-foreground">Terms</p>
         <div className="mt-1.5 space-y-2">
-          <MockTermRow term="technical seo" count={4} target={3} tone="ok" />
+          <MockTermRow term="seo audit" count={4} target={3} tone="ok" />
           <MockTermRow term="site audit" count={1} target={2} tone="warn" />
           <MockTermRow term="crawl budget" count={0} target={1} tone="bad" />
         </div>
@@ -394,6 +396,43 @@ function AiChatPanel() {
           View issues table
         </span>
       </div>
+    </div>
+  );
+}
+
+function PromptGeneratorPanel() {
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[9px] font-semibold text-foreground">Issues</p>
+        <span className="rounded-md border border-default/60 bg-brand-900/60 px-2 py-0.5 text-[8px] font-semibold text-link">
+          Generate prompt
+        </span>
+      </div>
+      <div className="rounded-lg border border-default/60 bg-brand-950/50 p-2">
+        <p className="text-[8px] font-semibold text-foreground">Audit issues prompt</p>
+        <p className="mt-0.5 text-[7px] text-muted-foreground">31 unique issues from 47 findings</p>
+        <div className="mt-2 space-y-1 rounded-md border border-default/40 bg-brand-900/40 p-1.5">
+          <span className="block h-1 w-[95%] rounded bg-brand-700/80" />
+          <span className="block h-1 w-[88%] rounded bg-brand-700/80" />
+          <span className="block h-1 w-[72%] rounded bg-blue-500/30" />
+          <span className="block h-1 w-[90%] rounded bg-brand-700/80" />
+          <span className="block h-1 w-[65%] rounded bg-brand-700/80" />
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1">
+          <span className="rounded border border-default/60 px-1.5 py-0.5 text-[7px] text-foreground">Copy prompt</span>
+          <span className="rounded border border-fuchsia-500/30 bg-fuchsia-500/10 px-1.5 py-0.5 text-[7px] text-fuchsia-300">
+            Get AI plan
+          </span>
+          <span className="rounded border border-default/60 px-1.5 py-0.5 text-[7px] text-foreground">Open in Chat</span>
+        </div>
+      </div>
+      <CompactWidget title="Also on Security & JS errors" className="mb-0 mt-auto">
+        <div className="space-y-1">
+          <MockIssueRow severity="High" title="Missing HSTS header (12 URLs)" />
+          <MockIssueRow severity="Medium" title="TypeError: x is not a function (3 URLs)" />
+        </div>
+      </CompactWidget>
     </div>
   );
 }
@@ -445,6 +484,8 @@ function renderPanel(variant: LandingProductMockVariant) {
       return <CrawlPanel />;
     case 'issues':
       return <IssuesPanel />;
+    case 'promptGenerator':
+      return <PromptGeneratorPanel />;
     case 'google':
       return <GooglePanel />;
     case 'contentStudio':
@@ -468,8 +509,8 @@ export default function LandingProductMock({
   const bodyMinH = fillHeight
     ? 'min-h-0 flex-1'
     : compact
-      ? 'min-h-[200px] sm:min-h-[220px]'
-      : 'min-h-[320px] sm:min-h-[360px]';
+      ? 'min-h-[200px] @sm:min-h-[220px]'
+      : 'min-h-[320px] @sm:min-h-[360px]';
 
   return (
     <div
@@ -484,13 +525,13 @@ export default function LandingProductMock({
           <span className={`rounded-full bg-amber-500/80 ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`} />
           <span className={`rounded-full bg-emerald-500/80 ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`} />
         </span>
-        <span className="min-w-0 flex-1 truncate rounded-md border border-default/60 bg-brand-950/60 px-2 py-0.5 text-center text-[9px] text-muted-foreground sm:text-[10px]">
+        <span className="min-w-0 flex-1 truncate rounded-md border border-default/60 bg-brand-950/60 px-2 py-0.5 text-center text-[9px] text-muted-foreground @sm:text-[10px]">
           https://site-audit.local/{MOCK_PATHS[variant]}
         </span>
       </div>
 
       <div className={`flex ${bodyMinH}`}>
-        <aside className={`hidden shrink-0 border-r border-default/60 bg-brand-900/60 p-2 sm:block ${compact ? 'w-20' : 'w-28 p-2.5'}`}>
+        <aside className={`hidden shrink-0 border-r border-default/60 bg-brand-900/60 p-2 @sm:block ${compact ? 'w-20' : 'w-28 p-2.5'}`}>
           <div className={`flex items-center gap-1.5 ${compact ? 'mb-2' : 'mb-3'}`}>
             <span className={`rounded-md bg-blue-500/20 ${compact ? 'h-4 w-4' : 'h-5 w-5'}`} />
             <span className={`rounded bg-brand-700/80 ${compact ? 'h-1.5 w-10' : 'h-2 w-14'}`} />
@@ -501,7 +542,7 @@ export default function LandingProductMock({
               return (
                 <li
                   key={label}
-                  className={`rounded-md px-1.5 py-1 text-[9px] sm:text-[10px] ${
+                  className={`rounded-md px-1.5 py-1 text-[9px] @sm:text-[10px] ${
                     active ? 'bg-blue-500/15 font-semibold text-link' : 'text-muted-foreground'
                   }`}
                 >
@@ -512,7 +553,7 @@ export default function LandingProductMock({
           </ul>
         </aside>
 
-        <div className={`min-w-0 flex-1 overflow-hidden ${compact ? 'p-2' : 'p-3 sm:p-3.5'}`}>
+        <div className={`min-w-0 flex-1 overflow-hidden ${compact ? 'p-2' : 'p-3 @sm:p-3.5'}`}>
           {renderPanel(variant)}
         </div>
       </div>

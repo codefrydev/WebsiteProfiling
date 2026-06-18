@@ -1,10 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   applyChatUrlContext,
   buildChatFabHref,
   buildChatSearchQuery,
+  clearChatComposerDraft,
   isChatFabVisiblePath,
   parseChatUrlContext,
+  readChatComposerDraft,
+  writeChatComposerDraft,
 } from './chatUrlState';
 
 describe('chatUrlState', () => {
@@ -36,6 +39,26 @@ describe('chatUrlState', () => {
     expect(buildChatFabHref('codefrydev.in')).toBe('/chat?domain=codefrydev.in');
     expect(buildChatFabHref('')).toBe('/chat');
     expect(buildChatFabHref(null)).toBe('/chat');
+  });
+
+  it('stores and reads composer draft by domain', () => {
+    const storage = new Map<string, string>();
+    vi.stubGlobal('window', {});
+    vi.stubGlobal('sessionStorage', {
+      getItem: (key: string) => storage.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        storage.set(key, value);
+      },
+      removeItem: (key: string) => {
+        storage.delete(key);
+      },
+    });
+
+    writeChatComposerDraft({ domain: 'codefrydev.in', text: 'Fix all titles' });
+    expect(readChatComposerDraft('codefrydev.in')).toBe('Fix all titles');
+    expect(readChatComposerDraft('other.com')).toBeNull();
+    clearChatComposerDraft();
+    expect(readChatComposerDraft('codefrydev.in')).toBeNull();
   });
 
   it('isChatFabVisiblePath matches report routes only', () => {

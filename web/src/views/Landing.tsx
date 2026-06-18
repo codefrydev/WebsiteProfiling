@@ -1,15 +1,8 @@
 'use client';
 
-import {
-  Cpu,
-  Gauge,
-  Key,
-  Link2,
-  MessageSquare,
-  TrendingUp,
-} from 'lucide-react';
 import LandingHero from '@/components/landing/LandingHero';
 import LandingFeatureSpotlight from '@/components/landing/LandingFeatureSpotlight';
+import LandingFeatures from '@/components/landing/LandingFeatures';
 import LandingFinalCta from '@/components/landing/LandingFinalCta';
 import LandingFooter from '@/components/landing/LandingFooter';
 import LandingLimitations from '@/components/landing/LandingLimitations';
@@ -24,15 +17,6 @@ import { LANDING_SECTION_IDS, landingGutterClass } from '@/components/landing/la
 import { strings } from '@/lib/strings';
 
 const vl = strings.views.landing;
-
-const FEATURES = [
-  { icon: Gauge, title: vl.featureOnPageTitle, description: vl.featureOnPageDescription },
-  { icon: TrendingUp, title: vl.featureSearchTitle, description: vl.featureSearchDescription },
-  { icon: Key, title: vl.featureKeywordsTitle, description: vl.featureKeywordsDescription },
-  { icon: Link2, title: vl.featureLinksTitle, description: vl.featureLinksDescription },
-  { icon: MessageSquare, title: vl.featureAiTitle, description: vl.featureAiDescription },
-  { icon: Cpu, title: vl.featureSelfHostedTitle, description: vl.featureSelfHostedDescription },
-] as const;
 
 export default function LandingPage() {
   return (
@@ -94,6 +78,18 @@ export default function LandingPage() {
         />
       </LandingPageSection>
 
+      <LandingPageSection id={LANDING_SECTION_IDS.spotlightPromptGenerator} fullBleed>
+        <LandingFeatureSpotlight
+          eyebrow={vl.spotlightPromptEyebrow}
+          title={vl.spotlightPromptTitle}
+          description={vl.spotlightPromptDescription}
+          bullets={vl.spotlightPromptBullets}
+          mockVariant="promptGenerator"
+          ctaHref={vl.spotlightPromptCtaHref}
+          ctaLabel={vl.spotlightPromptCta}
+        />
+      </LandingPageSection>
+
       <LandingPageSection id={LANDING_SECTION_IDS.spotlightGoogle} fullBleed>
         <LandingFeatureSpotlight
           eyebrow={vl.spotlight3Eyebrow}
@@ -152,30 +148,7 @@ export default function LandingPage() {
       </LandingPageSection>
 
       <LandingPageSection id={LANDING_SECTION_IDS.features}>
-        <div className="w-full min-w-0">
-          <LandingSectionHeader
-            eyebrow={vl.sectionCapabilities}
-            title={vl.featuresTitle}
-            subtitle={vl.featuresSubtitle}
-            compact
-          />
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-            {FEATURES.map(({ icon: Icon, title, description }) => (
-              <article
-                key={title}
-                className="group rounded-xl border border-default/60 p-3 transition-colors hover:border-blue-500/25"
-              >
-                <span className="inline-flex h-8 w-8 items-center justify-center text-link">
-                  <Icon className="h-3.5 w-3.5" aria-hidden />
-                </span>
-                <h3 className="mt-2 text-xs font-semibold text-foreground sm:text-sm">{title}</h3>
-                <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground sm:text-xs">
-                  {description}
-                </p>
-              </article>
-            ))}
-          </div>
-        </div>
+        <LandingFeatures />
       </LandingPageSection>
 
       <LandingPageSection id={LANDING_SECTION_IDS.limitations} fullBleed>

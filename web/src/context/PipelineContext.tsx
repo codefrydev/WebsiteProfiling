@@ -31,7 +31,7 @@ import {
   validateRequiredPipelineFields,
 } from '@/lib/pipelineConfigSchema';
 import { buildInitialLlmConfigState } from '@/lib/llmConfigSchema';
-import { defaultLlmModelForProvider } from '@/lib/llmProviderDefaults';
+import { applyLlmModelChange, applyLlmProviderChange } from '@/lib/llmProviderModels';
 import {
   applyPreset,
   commandToPresetId,
@@ -344,7 +344,15 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
   }, [configLoaded, busy, status, watchJob]);
 
   const setLlmField = useCallback((key: string, v: string | boolean) => {
-    setLlmConfigState((prev) => ({ ...prev, [key]: v }));
+    setLlmConfigState((prev) => {
+      if (key === 'llm_provider') {
+        return applyLlmProviderChange(prev, String(v));
+      }
+      if (key === 'llm_model') {
+        return applyLlmModelChange(prev, String(v));
+      }
+      return { ...prev, [key]: v };
+    });
     if (key === 'llm_api_key') {
       setLlmConfigMasked((prev) => {
         const next = { ...prev };
@@ -474,14 +482,15 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     async (model: string): Promise<boolean> => {
       const trimmed = model.trim();
       if (!trimmed) return false;
-      setLlmConfigState((prev) => ({ ...prev, llm_model: trimmed }));
+      const nextState = applyLlmModelChange(llmConfigState, trimmed);
+      setLlmConfigState(nextState);
       setSaving(true);
       try {
         const res = await fetch(apiUrl('/llm-config'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            state: { ...buildLlmPayload(), llm_model: trimmed },
+            state: { ...llmConfigState, ...llmConfigMasked, ...nextState },
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -493,40 +502,22 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         setSaving(false);
       }
     },
-    [buildLlmPayload],
+    [llmConfigState, llmConfigMasked],
   );
 
   const saveLlmProvider = useCallback(
     async (provider: string): Promise<boolean> => {
       const trimmed = provider.trim();
       if (!trimmed || trimmed === 'none') return false;
-      setLlmConfigState((prev) => {
-        const providerChanged = trimmed !== String(prev.llm_provider || '');
-        const nextModel = providerChanged
-          ? defaultLlmModelForProvider(trimmed)
-          : String(prev.llm_model || '');
-        return {
-          ...prev,
-          llm_provider: trimmed,
-          llm_model: nextModel,
-        };
-      });
+      const nextState = applyLlmProviderChange(llmConfigState, trimmed);
+      setLlmConfigState(nextState);
       setSaving(true);
       try {
-        const payload = buildLlmPayload();
-        const providerChanged = trimmed !== String(payload.llm_provider || '');
-        const nextModel = providerChanged
-          ? defaultLlmModelForProvider(trimmed)
-          : String(payload.llm_model || '');
         const res = await fetch(apiUrl('/llm-config'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            state: {
-              ...payload,
-              llm_provider: trimmed,
-              llm_model: nextModel,
-            },
+            state: { ...llmConfigState, ...llmConfigMasked, ...nextState },
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -538,7 +529,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         setSaving(false);
       }
     },
-    [buildLlmPayload],
+    [llmConfigState, llmConfigMasked],
   );
 
   const saveLlmChatUnlimitedTools = useCallback(

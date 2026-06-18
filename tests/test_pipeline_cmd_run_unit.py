@@ -398,3 +398,24 @@ def test_pipeline_lists_content_analysis_in_steps(monkeypatch, capsys) -> None:
     pipeline_cmd.run(cfg, argparse.Namespace(command=None))
     assert "content-analysis" in capsys.readouterr().out
 
+
+def test_pipeline_run_resume_run_id_calls_crawl(monkeypatch) -> None:
+    """When args.resume_run_id is set, run() invokes _run_crawl with that id."""
+    from website_profiling.commands import pipeline_cmd
+
+    captured: dict = {}
+
+    def fake_run_crawl(cfg, use_database, resume_run_id=None):
+        captured["resume_run_id"] = resume_run_id
+
+    monkeypatch.setattr(pipeline_cmd, "_run_crawl", fake_run_crawl)
+
+    cfg = {
+        "start_url": "https://site.com",
+        "run_crawl": "false",
+        "run_report": "false",
+    }
+    args = argparse.Namespace(command=None, resume_run_id=42)
+    pipeline_cmd.run(cfg, args)
+    assert captured.get("resume_run_id") == 42
+

@@ -8,12 +8,14 @@ import {
 } from '@/components/landing/LandingDeckContext';
 import LandingDeckProgress from '@/components/landing/LandingDeckProgress';
 import LandingDeckTrack from '@/components/landing/LandingDeckTrack';
+import LandingHeroTopBar from '@/components/landing/LandingHeroTopBar';
 import { LANDING_SECTION_IDS } from '@/components/landing/landingLayout';
+import { useStageScale } from '@/hooks/useStageScale';
 
 export interface LandingShellProps {
   children: ReactNode;
   footer?: ReactNode;
-  /** Decorative layers rendered behind the slide track (fixed within viewport). */
+  /** Decorative layers rendered behind the slide stage (fills the full viewport). */
   backdrop?: ReactNode;
 }
 
@@ -28,12 +30,17 @@ export default function LandingShell({ children, footer, backdrop }: LandingShel
 }
 
 function LandingShellInner({ children, footer, backdrop }: LandingShellProps) {
-  const viewportRef = useRef<HTMLElement>(null);
-  const { goToSlide, goNext, goPrev, presenterMode } = useLandingDeckRequired();
+  const outerRef = useRef<HTMLDivElement>(null);
+  const stageFrameRef = useRef<HTMLDivElement>(null);
+  const { goToSlide, goNext, goPrev } = useLandingDeckRequired();
 
+  useStageScale(stageFrameRef);
+
+  // Anchor links live in the fixed header (outside the stage), so delegate from
+  // the outer container rather than the slide viewport.
   useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
+    const outer = outerRef.current;
+    if (!outer) return;
 
     const onClick = (event: MouseEvent) => {
       const anchor = (event.target as Element).closest('a[href^="#"]');
@@ -45,13 +52,14 @@ function LandingShellInner({ children, footer, backdrop }: LandingShellProps) {
       goToSlide(id);
     };
 
-    viewport.addEventListener('click', onClick);
-    return () => viewport.removeEventListener('click', onClick);
+    outer.addEventListener('click', onClick);
+    return () => outer.removeEventListener('click', onClick);
   }, [goToSlide]);
 
+  // Wheel paging over the whole slide region (the scaled stage plus its letterbox).
   useEffect(() => {
-    const viewport = viewportRef.current;
-    if (!viewport) return;
+    const frame = stageFrameRef.current;
+    if (!frame) return;
 
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
@@ -60,35 +68,43 @@ function LandingShellInner({ children, footer, backdrop }: LandingShellProps) {
       else goPrev();
     };
 
-    viewport.addEventListener('wheel', onWheel, { passive: false });
-    return () => viewport.removeEventListener('wheel', onWheel);
+    frame.addEventListener('wheel', onWheel, { passive: false });
+    return () => frame.removeEventListener('wheel', onWheel);
   }, [goNext, goPrev]);
 
   return (
     <div
-      className={`landing-grid-bg flex h-dvh flex-col overflow-hidden bg-brand-900 text-foreground${presenterMode ? ' landing-presenter' : ''}`}
+      ref={outerRef}
+      className="landing-grid-bg relative isolate flex h-dvh flex-col overflow-hidden bg-brand-900 text-foreground"
     >
-      <main ref={viewportRef} className="landing-deck-viewport relative min-h-0 flex-1 overflow-hidden">
-        {backdrop ? (
-          <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">{backdrop}</div>
-        ) : null}
+      {backdrop ? (
+        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">{backdrop}</div>
+      ) : null}
 
-        <LandingDeckTrack>
-          {children}
+      <LandingHeroTopBar />
 
-          {footer ? (
-            <footer
-              id={LANDING_SECTION_IDS.siteFooter}
-              className="landing-deck-slide landing-footer-snap border-t border-muted/40"
-            >
-              {footer}
-            </footer>
-          ) : null}
-        </LandingDeckTrack>
+      <div ref={stageFrameRef} className="landing-stage-frame">
+        <div className="landing-stage">
+          <main className="landing-deck-viewport relative overflow-hidden">
+            <LandingDeckTrack>
+              {children}
+
+              {footer ? (
+                <footer
+                  id={LANDING_SECTION_IDS.siteFooter}
+                  className="landing-deck-slide landing-footer-snap border-t border-muted/40"
+                >
+                  {footer}
+                </footer>
+              ) : null}
+            </LandingDeckTrack>
+          </main>
+        </div>
 
         <LandingDeckControls />
-        <LandingDeckProgress />
-      </main>
+      </div>
+
+      <LandingDeckProgress />
     </div>
   );
 }

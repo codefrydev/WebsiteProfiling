@@ -38,6 +38,14 @@ interface LinkAttributesPanelProps {
 export default function LinkAttributesPanel({ summary, anchors, labels }: LinkAttributesPanelProps) {
   if (!summary && !(anchors?.length)) return null;
 
+  const POSITION_COLORS: Record<string, string> = {
+    nav:     'bg-blue-500/15 text-blue-400',
+    header:  'bg-purple-500/15 text-purple-400',
+    content: 'bg-emerald-500/15 text-emerald-400',
+    footer:  'bg-slate-500/15 text-slate-400',
+    sidebar: 'bg-amber-500/15 text-amber-400',
+  };
+
   const columns: TableColumn[] = [
     { key: 'target_url', label: labels.target },
     { key: 'anchor_text', label: labels.anchor },
@@ -45,6 +53,20 @@ export default function LinkAttributesPanel({ summary, anchors, labels }: LinkAt
       key: 'inlink_count',
       label: labels.inlinks,
       render: (v) => (typeof v === 'number' ? v.toLocaleString() : String(v ?? '')),
+    },
+    {
+      key: 'top_position',
+      label: 'Position',
+      render: (v) => {
+        const pos = String(v ?? '').toLowerCase();
+        if (!pos) return null;
+        const cls = POSITION_COLORS[pos] ?? 'bg-brand-700/30 text-muted-foreground';
+        return (
+          <span className={`inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-medium ${cls}`}>
+            {pos}
+          </span>
+        );
+      },
     },
   ];
 
