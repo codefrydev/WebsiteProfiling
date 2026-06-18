@@ -414,6 +414,7 @@ from .report_extras import (
     list_issues_with_ai_fixes,
 )
 from .schema import get_schema_coverage, list_pages_without_schema, search_pages_by_schema_type
+from .sql_query import get_sql_schema, run_sql_query
 from .security import (
     get_security_findings,
     get_security_findings_summary,
@@ -790,6 +791,8 @@ _TOOL_HANDLERS: dict[str, ToolHandler] = {
     "list_robots_blocked_ai_crawlers": list_robots_blocked_ai_crawlers,
     "list_pages_console_errors_by_type": list_pages_console_errors_by_type,
     "list_pages_js_rendering_delta": list_pages_js_rendering_delta,
+    "get_sql_schema": get_sql_schema,
+    "run_sql_query": run_sql_query,
 }
 
 

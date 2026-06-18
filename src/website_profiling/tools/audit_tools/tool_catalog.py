@@ -496,4 +496,31 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
     _tool("list_robots_blocked_ai_crawlers", "Pages blocking AI crawler user-agents.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
     _tool("list_pages_console_errors_by_type", "Console errors filtered by error_type.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT, "error_type": {'type': 'string'}}),
     _tool("list_pages_js_rendering_delta", "URLs with static vs rendered content delta.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    # Read-only SQL query tools
+    _tool(
+        "get_sql_schema",
+        "Return all public-schema table names and their columns so you can write accurate SQL. "
+        "Call this before run_sql_query to understand available tables. "
+        "Secret/config tables are excluded from the output.",
+        {},
+    ),
+    _tool(
+        "run_sql_query",
+        "Execute a read-only SELECT against the audit database and return rows as JSON. "
+        "Only a single SELECT statement is allowed — no INSERT, UPDATE, DELETE, DROP, ALTER, or DDL. "
+        "Call get_sql_schema first to discover available tables and columns.",
+        {
+            "sql": {
+                "type": "string",
+                "description": "A single read-only SELECT statement. No writes or DDL permitted.",
+            },
+            "row_cap": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 500,
+                "description": "Maximum rows to return (default 200, max 500).",
+            },
+        },
+        ["sql"],
+    ),
 ]

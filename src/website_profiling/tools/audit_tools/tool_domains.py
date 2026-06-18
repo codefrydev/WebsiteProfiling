@@ -139,6 +139,8 @@ _DOMAIN_OVERRIDES: dict[str, str] = {
     "get_multimodal_readiness": "geo",
     "get_topic_authority": "geo",
     "list_gsc_ctr_underperformers": "google",
+    "get_sql_schema": "core",
+    "run_sql_query": "core",
 }
 
 _ONPAGE_PREFIXES = (

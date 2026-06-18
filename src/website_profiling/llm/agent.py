@@ -92,6 +92,11 @@ Visualization playbook (chat UI renders charts and tables from tool JSON automat
 - Lighthouse: get_lighthouse_summary
 - Google/GSC: get_google_summary, get_gsc_top_queries
 
+SQL playbook (only when get_sql_schema / run_sql_query are available):
+- To answer questions that require custom data queries, call get_sql_schema first to discover tables, then run_sql_query with a single read-only SELECT. Only SELECT is allowed — the tool will reject INSERT/UPDATE/DELETE/DDL.
+- Wrap complex filters in a subquery if needed; keep the result concise (use LIMIT, GROUP BY, etc.).
+- Never tell the user you cannot run SQL if run_sql_query is loaded — use it.
+
 Rules:
 - Use the provided tools to query real audit data. Do not invent URLs, scores, or metrics.
 - When citing issues, include the URL when available.

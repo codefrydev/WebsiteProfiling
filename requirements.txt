@@ -48,6 +48,9 @@ mcp>=1.19,<2
 uvicorn>=0.30
 starlette>=0.38
 
+# SQL query validation (read-only chat tool)
+sqlglot==30.11.0
+
 # Dev / test
 pytest==9.0.3
 pytest-cov==7.1.0
