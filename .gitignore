@@ -31,4 +31,4 @@ pipeline-config.txt
 .coverage
 .agents/
 skills-lock.json
-.crawl_results.csv
+crawl_results.csv

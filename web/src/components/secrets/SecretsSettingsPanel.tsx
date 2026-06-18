@@ -120,20 +120,28 @@ export function SecretsSaveBar({
   saveMsg,
   readOnly,
   onSave,
+  saveHint,
+  saveButton,
+  savingLabel,
 }: {
   saving: boolean;
   loading: boolean;
   saveMsg: string;
   readOnly: boolean;
   onSave: () => void;
+  saveHint?: string;
+  saveButton?: string;
+  savingLabel?: string;
 }) {
   const saveFailed = saveMsg && !saveMsg.includes('saved');
+  const hint = saveHint ?? s.saveHint;
+  const buttonLabel = readOnly ? strings.app.readonlyBanner : saving ? (savingLabel ?? s.saving) : (saveButton ?? s.saveButton);
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
       <span
         className={`text-sm ${saveMsg ? (saveFailed ? 'text-red-700 dark:text-red-400' : 'text-green-700 dark:text-green-400') : 'text-xs text-muted-foreground'}`}
       >
-        {saveMsg || s.saveHint}
+        {saveMsg || hint}
       </span>
       <button
         type="button"
@@ -141,7 +149,7 @@ export function SecretsSaveBar({
         disabled={saving || loading || readOnly}
         className="rounded-full bg-blue-600 px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
       >
-        {readOnly ? strings.app.readonlyBanner : saving ? s.saving : s.saveButton}
+        {buttonLabel}
       </button>
     </div>
   );

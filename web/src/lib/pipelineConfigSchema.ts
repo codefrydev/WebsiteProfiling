@@ -701,6 +701,47 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
     ],
   },
   {
+    id: 'mcp',
+    label: 'Remote MCP',
+    fields: [
+      {
+        key: 'mcp_token',
+        label: 'MCP bearer token',
+        type: 'secret',
+        defaultValue: '',
+        help: 'Managed on Secrets → Remote MCP. Used by the Streamable HTTP MCP service.',
+      },
+      {
+        key: 'mcp_allowed_hosts',
+        label: 'Allowed MCP hostnames',
+        type: 'text',
+        defaultValue: '',
+        help: 'Comma-separated public hostnames clients may use (e.g. audit.example.com).',
+      },
+      {
+        key: 'mcp_allowed_origins',
+        label: 'Allowed MCP origins',
+        type: 'text',
+        defaultValue: '',
+        help: 'Optional comma-separated Origin values for browser MCP clients.',
+      },
+      {
+        key: 'mcp_public_url',
+        label: 'Public MCP base URL',
+        type: 'text',
+        defaultValue: '',
+        help: 'Managed on MCP settings. Used for copy-paste client configs.',
+      },
+      {
+        key: 'mcp_domain',
+        label: 'MCP tool bundle',
+        type: 'text',
+        defaultValue: 'core',
+        help: 'Managed on MCP settings (WP_MCP_DOMAIN).',
+      },
+    ],
+  },
+  {
     id: 'advanced',
     label: 'Advanced',
     fields: [

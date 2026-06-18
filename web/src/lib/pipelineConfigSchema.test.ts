@@ -9,6 +9,7 @@ import {
   isPipelineFieldVisible,
   validatePipelineRun,
 } from '@/lib/pipelineConfigSchema';
+import { MCP_MANAGED_KEYS } from '@/lib/secretsConfigSchema';
 
 function parseConfigKeys(raw: string): Set<string> {
   const keys = new Set<string>();
@@ -32,6 +33,8 @@ describe('pipelineConfigSchema', () => {
     const optionalOmitted = new Set([
       'enrich_keywords_after_report',
       ...INTERNAL_PIPELINE_KEYS,
+      // MCP keys are managed on /mcp (server-runtime settings), not in the CLI example.
+      ...MCP_MANAGED_KEYS,
     ]);
     for (const key of ALL_SCHEMA_KEYS) {
       if (optionalOmitted.has(key)) continue;

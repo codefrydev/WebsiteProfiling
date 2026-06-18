@@ -38,6 +38,20 @@ export const PIPELINE_SECRET_KEYS = new Set([
   'google_rich_results_api_key',
   'crawl_auth_password',
   'crawl_cookies',
+  'mcp_token',
+]);
+
+/**
+ * Keys managed on the dedicated /mcp page. They are hidden from the generic
+ * Pipeline page and kept out of the CLI shadow file, but only `mcp_token` is a
+ * true secret (in PIPELINE_SECRET_KEYS) — the rest must round-trip as plain text.
+ */
+export const MCP_MANAGED_KEYS = new Set([
+  'mcp_token',
+  'mcp_allowed_hosts',
+  'mcp_allowed_origins',
+  'mcp_public_url',
+  'mcp_domain',
 ]);
 
 export const SECRETS_SECTIONS: SecretsSection[] = [
@@ -135,9 +149,57 @@ export const SECRETS_SECTIONS: SecretsSection[] = [
   },
 ];
 
-export const ALL_SECRETS_KEYS = new Set(
-  SECRETS_SECTIONS.flatMap((s) => s.fields.map((f) => f.key)),
-);
+/** Managed on /mcp — stored in pipeline_config like other secrets. */
+export const MCP_SETTINGS_FIELDS: SecretsField[] = [
+  {
+    key: 'mcp_token',
+    label: 'MCP bearer token',
+    type: 'secret',
+    storage: 'pipeline',
+    placeholder: 'Long random token',
+    help: 'Required for remote MCP clients. Sent as Authorization: Bearer … in Cursor or Claude Desktop.',
+    envVars: ['WP_MCP_TOKEN'],
+  },
+  {
+    key: 'mcp_allowed_hosts',
+    label: 'Allowed hostnames',
+    type: 'text',
+    storage: 'pipeline',
+    placeholder: 'audit.example.com,*.example.com',
+    help: 'Comma-separated Host header values clients may use. Required when MCP binds beyond localhost.',
+    envVars: ['WP_MCP_ALLOWED_HOSTS'],
+  },
+  {
+    key: 'mcp_allowed_origins',
+    label: 'Allowed origins (optional)',
+    type: 'text',
+    storage: 'pipeline',
+    placeholder: 'https://audit.example.com',
+    help: 'Comma-separated Origin values for browser MCP clients. Leave blank to skip Origin checks.',
+    envVars: ['WP_MCP_ALLOWED_ORIGINS'],
+  },
+  {
+    key: 'mcp_public_url',
+    label: 'Public MCP base URL',
+    type: 'text',
+    storage: 'pipeline',
+    placeholder: 'https://audit.example.com',
+    help: 'Used to build copy-paste client configs. Include scheme, no trailing slash.',
+  },
+  {
+    key: 'mcp_domain',
+    label: 'Tool bundle',
+    type: 'text',
+    storage: 'pipeline',
+    placeholder: 'core',
+    help: 'WP_MCP_DOMAIN bundle: core (default), crawl, google, links, or full.',
+  },
+];
+
+export const ALL_SECRETS_KEYS = new Set([
+  ...SECRETS_SECTIONS.flatMap((s) => s.fields.map((f) => f.key)),
+  ...MCP_SETTINGS_FIELDS.map((f) => f.key),
+]);
 
 export const SECRETS_MASK_SENTINEL = '__MASKED__';
 
@@ -145,11 +207,18 @@ export function isPipelineSecretKey(key: string): boolean {
   return PIPELINE_SECRET_KEYS.has(key);
 }
 
+/** Keys hidden from the generic Pipeline page: secrets plus /mcp-managed config. */
+export function isPipelineHiddenKey(key: string): boolean {
+  return isPipelineSecretKey(key) || MCP_MANAGED_KEYS.has(key);
+}
+
 export function isPipelineFieldVisibleOnPipeline(field: { key: string }): boolean {
-  return !isPipelineSecretKey(field.key);
+  return !isPipelineHiddenKey(field.key);
 }
 
 export function getSecretsFieldByKey(key: string): SecretsField | null {
+  const mcpField = MCP_SETTINGS_FIELDS.find((f) => f.key === key);
+  if (mcpField) return mcpField;
   for (const section of SECRETS_SECTIONS) {
     const field = section.fields.find((f) => f.key === key);
     if (field) return field;
@@ -177,6 +246,9 @@ export function buildInitialSecretsState(): SecretsState {
       out[f.key] = '';
     }
   }
+  for (const f of MCP_SETTINGS_FIELDS) {
+    out[f.key] = f.key === 'mcp_domain' ? 'core' : '';
+  }
   return out;
 }
 
@@ -187,6 +259,11 @@ export function collectEnvHints(): Record<string, boolean> {
       for (const envVar of field.envVars ?? []) {
         vars.add(envVar);
       }
+    }
+  }
+  for (const field of MCP_SETTINGS_FIELDS) {
+    for (const envVar of field.envVars ?? []) {
+      vars.add(envVar);
     }
   }
   const hints: Record<string, boolean> = {};

@@ -27,11 +27,11 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 - **Pipeline storage** (crawl, edges, nodes, report payload, Lighthouse, keywords, warnings) lives in **PostgreSQL only**. Deliverables use the Export view, `GET /api/report/export`, or MCP `export_*` tools — not files written by the main pipeline step.
 - **Pool tuning:** `DB_POOL_MIN` / `DB_POOL_MAX` (Python), `PGPOOL_MAX` (Node). Bulk crawl writes via `executemany`; optional **`crawl_stream_to_db`** streams rows during fetch. Per-URL raw HTML: `crawl_page_html` table (migration `015`); API `GET/POST /api/crawl/page-html` (localhost).
 - **`web/` APIs:** `/api/report/*` read routes (payload, meta, history — not localhost-guarded; protect with `AUTH_*` when exposed); `/api/run` spawns Python (localhost); `/api/jobs`, `/api/jobs/[id]`, `/api/jobs/[id]/cancel` (localhost); `/api/crawl/browser-status`, `/api/crawl/page-html` (localhost); `/api/pipeline-config` GET/PUT; `/api/llm-config` GET/PUT; `/api/chat` POST (SSE); `/api/chat/sessions` GET/POST; `/api/ollama/status` (localhost); `/api/properties/{id}/google/links/import` POST; `PipelineRunnerFab` saves pipeline + LLM state before each run. Full route list: `web/app/api/**/route.ts`.
-- **MCP:** `python -m website_profiling.mcp` (stdio, **340 read-only audit tools**, domain-scoped via `WP_MCP_DOMAIN`). See `docs/MCP.md`. Requires `pip install -r requirements.txt`.
+- **MCP:** `python -m website_profiling.mcp` (stdio) or `python -m website_profiling.mcp.http` (remote Streamable HTTP). Configure at **`/mcp`** in the web UI. See `docs/MCP.md`.
 - **AI Chat UI:** `/chat` — property-scoped chat with saved sessions (`chat_sessions`, `chat_messages`; migration `012_chat_sessions`).
 - **Job store:** PostgreSQL `pipeline_jobs` when `DATABASE_URL` is set (`pipelineJobsDb.ts` — status, timestamps, truncated logs). In-memory map in `pipelineJobs.ts` holds live log tail and child process handles; stale rows reconciled via `PIPELINE_JOB_STALE_HOURS`.
 - **Schema head:** `015_crawl_page_html` (recent: `013` link_edges/discovery, `014` job log truncation, `015` per-URL HTML storage).
-- **Docker:** `Dockerfile` + `docker-compose.yml` (postgres + web); **`docker-compose.prod.yml`** (production); **`docker-compose.pull.yml`** for pre-built images (`WEB_IMAGE`); **`LIGHTHOUSE_CHROME_FLAGS`**
+- **Docker:** `Dockerfile` + `docker-compose.yml` (postgres + web); **`docker-compose.prod.yml`** (production + remote MCP on `:8000`); **`docker-compose.pull.yml`** for pre-built images (`WEB_IMAGE`); **`LIGHTHOUSE_CHROME_FLAGS`**
 
 **Where to edit**
 
@@ -42,7 +42,7 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 | DB schema | `alembic/versions/` |
 | Local analysis | `analysis/local.py`, `requirements.txt` |
 | AI insights (LLM) | `llm/enrich.py`, `llm/agent.py`, `llm_config.py`, `requirements.txt` |
-| Audit query tools (MCP + chat) | `tools/audit_tools/`, `mcp/server.py`, `commands/chat_cmd.py` |
+| Audit query tools (MCP + chat) | `tools/audit_tools/`, `mcp/server.py`, `mcp/http_server.py`, `commands/chat_cmd.py` |
 | Config / CLI | `config.py` (`load_config`, `load_config_from_db`), `cli.py`, `input.txt.example` |
 | UI pipeline schema | `web/src/lib/pipelineConfigSchema.ts` |
 | UI LLM schema | `web/src/lib/llmConfigSchema.ts` |

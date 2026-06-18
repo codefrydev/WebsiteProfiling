@@ -16,6 +16,7 @@ import {
   Home as HomeIcon,
   Images,
   Key,
+  Plug,
   PenLine,
   LayoutDashboard,
   Link as LinkIcon,
@@ -32,7 +33,7 @@ import {
 import { strings } from '@/lib/strings';
 import { viewIdToPathSlug, type ViewId } from '@/routes';
 
-export type NavItemId = ViewId | 'pipeline' | 'secrets' | 'chat' | 'write';
+export type NavItemId = ViewId | 'pipeline' | 'secrets' | 'mcp' | 'chat' | 'write';
 
 export interface AppNavItem {
   id: NavItemId;
@@ -80,6 +81,7 @@ const NAV_DESCRIPTIONS: Partial<Record<NavItemId, string>> = {
   'keywords-explorer': 'Keyword research & expansion',
   pipeline: 'Crawl a site and build a report',
   secrets: 'API keys and credentials',
+  mcp: 'Remote MCP client setup',
   chat: 'Ask questions about this audit',
   write: 'Draft content from audit data',
 };
@@ -133,6 +135,15 @@ const SECRETS_NAV: AppNavItem = {
   description: NAV_DESCRIPTIONS.secrets,
 };
 
+const MCP_NAV: AppNavItem = {
+  id: 'mcp',
+  label: strings.nav.mcp.label,
+  section: strings.nav.mcp.section,
+  icon: Plug,
+  hrefPath: '/mcp',
+  description: NAV_DESCRIPTIONS.mcp,
+};
+
 const CHAT_NAV: AppNavItem = {
   id: 'chat',
   label: strings.nav.chat.label,
@@ -162,6 +173,7 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
   })),
   PIPELINE_NAV,
   SECRETS_NAV,
+  MCP_NAV,
   WRITE_NAV,
   CHAT_NAV,
 ];
@@ -172,7 +184,7 @@ export const REPORT_VIEW_IDS: ViewId[] = VIEW_NAV.map(({ id }) => id);
 export const APP_NAV_SECTIONS = [...new Set(APP_NAV_ITEMS.map((item) => item.section))];
 
 /** Routes with their own app pages — not resolved by `pathSlugToViewId`. */
-export const STANDALONE_NAV_IDS = ['pipeline', 'secrets', 'chat', 'write'] as const satisfies readonly NavItemId[];
+export const STANDALONE_NAV_IDS = ['pipeline', 'secrets', 'mcp', 'chat', 'write'] as const satisfies readonly NavItemId[];
 
 export type StandaloneNavId = (typeof STANDALONE_NAV_IDS)[number];
 
@@ -211,6 +223,7 @@ export const CHAT_SIDEBAR_NAV_IDS = [
   'links',
   'pipeline',
   'secrets',
+  'mcp',
   'write',
 ] as const satisfies readonly NavItemId[];
 
@@ -220,6 +233,7 @@ export const WRITE_SIDEBAR_NAV_IDS = [
   'links',
   'pipeline',
   'secrets',
+  'mcp',
   'chat',
   'write',
 ] as const satisfies readonly NavItemId[];
@@ -230,6 +244,7 @@ export const PIPELINE_SIDEBAR_NAV_IDS = WRITE_SIDEBAR_NAV_IDS;
 
 export function isMiniNavLinkActive(href: string, pathname: string): boolean {
   if (href === '/secrets') return pathname.startsWith('/secrets');
+  if (href === '/mcp') return pathname.startsWith('/mcp');
   if (href === '/write') return pathname.startsWith('/write');
   if (href === '/chat') return pathname.startsWith('/chat');
   if (href === '/pipeline') return pathname.startsWith('/pipeline');
@@ -237,7 +252,7 @@ export function isMiniNavLinkActive(href: string, pathname: string): boolean {
 }
 
 export function navHref(item: AppNavItem, trailingQuery: string): string {
-  if (item.id === 'home' || item.id === 'pipeline' || item.id === 'secrets' || item.id === 'chat' || item.id === 'write') {
+  if (item.id === 'home' || item.id === 'pipeline' || item.id === 'secrets' || item.id === 'mcp' || item.id === 'chat' || item.id === 'write') {
     return item.hrefPath;
   }
   const raw = trailingQuery.startsWith('?') ? trailingQuery.slice(1) : trailingQuery;
@@ -257,6 +272,9 @@ export function isNavItemActive(item: AppNavItem, pathname: string): boolean {
   }
   if (item.id === 'secrets') {
     return pathname === '/secrets' || pathname.startsWith('/secrets/');
+  }
+  if (item.id === 'mcp') {
+    return pathname === '/mcp' || pathname.startsWith('/mcp/');
   }
   if (item.id === 'chat') {
     return pathname === '/chat' || pathname.startsWith('/chat/');
