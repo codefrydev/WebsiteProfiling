@@ -46,14 +46,6 @@ def test_dicts_to_csv() -> None:
     assert "https://ex.com" in csv_text
 
 
-def test_save_report_spec(artifact_dir) -> None:
-    spec_id = export_artifacts.save_report_spec({"title": "T", "sections": []})
-    spec = export_artifacts.read_report_spec(spec_id)
-    assert spec is not None
-    assert spec["title"] == "T"
-
-
-def test_sweep_expired_artifacts(artifact_dir) -> None:
     env = export_artifacts.save_artifact(b"x", filename="old.bin", mime_type="application/octet-stream")
     meta_path = os.path.join(export_artifacts.exports_dir(), f"{env['artifact_id']}.meta.json")
     with open(meta_path, encoding="utf-8") as f:

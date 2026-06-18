@@ -275,29 +275,6 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
         "Validate structured data / Rich Results for sample URLs (Estimated without API key).",
         {"property_id": _PID, "report_id": _RID, "limit": {"type": "integer", "maximum": 50}, "api_key": {"type": "string"}},
     ),
-    _tool(
-        "compose_custom_report",
-        "Compose a multi-section custom report spec (tool, executive_summary, category_scores, notes sections).",
-        {
-            "property_id": _PID,
-            "report_id": _RID,
-            "title": {"type": "string"},
-            "sections": {"type": "array", "items": {"type": "object"}},
-        },
-        ["title", "sections"],
-    ),
-    _tool(
-        "export_custom_report",
-        "Render a composed custom report to HTML or PDF.",
-        {
-            "property_id": _PID,
-            "report_id": _RID,
-            "report_spec_id": {"type": "string"},
-            "title": {"type": "string"},
-            "sections": {"type": "array", "items": {"type": "object"}},
-            "format": {"type": "string", "enum": ["html", "pdf"]},
-        },
-    ),
     _tool("list_export_formats", "List supported export tools, formats, and example prompts.", {}),
     # Image audit
     _tool("get_image_audit_summary", "Site-wide image audit totals: alt, lazy-load, dimensions, OG, Lighthouse image diagnostics.", {"property_id": _PID, "report_id": _RID}),

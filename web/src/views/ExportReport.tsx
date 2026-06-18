@@ -1,42 +1,22 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
-import { Download, FileText, Printer } from 'lucide-react';
-import Button from '@/components/Button';
-import CustomReportBuilder from '@/components/export/CustomReportBuilder';
+import { useState } from 'react';
+import { Download, FileText } from 'lucide-react';
 import { useReport } from '@/context/useReport';
-import { useOptionalPipeline } from '@/context/PipelineContext';
-import { buildAuditExportUrl, buildWorkbookExportUrl, buildSitemapExportUrl } from '@/lib/exportAudit';
+import { buildAuditExportUrl } from '@/lib/exportAudit';
 import { strings } from '@/lib/strings';
-import { ViewTabs, ViewTabPanel } from '@/components';
-import type { ViewProps } from '@/types/report';
 
 const ve = strings.views.exportReport;
-const EXPORT_TABS = ['standard', 'custom'] as const;
-type ExportTabId = (typeof EXPORT_TABS)[number];
 
-export default function ExportReport(_props: ViewProps) {
-  const { selectedReportId, reportList, data } = useReport();
-  const pipeline = useOptionalPipeline();
-  const propertyId = Number(pipeline?.configState.active_property_id || 0) || null;
+export default function ExportReport() {
+  const { selectedReportId, reportList } = useReport();
   const reportId = selectedReportId ?? reportList?.[0]?.id ?? null;
   const [previewError, setPreviewError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<ExportTabId>('standard');
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const previewUrl = buildAuditExportUrl('html', reportId, { inline: true });
   const pdfUrl = buildAuditExportUrl('pdf', reportId);
   const csvUrl = buildAuditExportUrl('csv', reportId);
   const jsonUrl = buildAuditExportUrl('json', reportId);
-  const workbookUrl = buildWorkbookExportUrl(reportId);
-  const sitemapUrl = buildSitemapExportUrl(reportId);
-
-  const siteLabel = data?.site_name || strings.app.defaultSiteName;
-  const generated = data?.report_generated_at;
-
-  const handlePrint = useCallback(() => {
-    iframeRef.current?.contentWindow?.print();
-  }, []);
 
   return (
     <div className="flex flex-col min-h-[calc(100dvh-4rem)] print:min-h-0">
@@ -44,18 +24,8 @@ export default function ExportReport(_props: ViewProps) {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-lg font-semibold text-foreground">{ve.title}</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              {siteLabel}
-              {generated ? ` · ${ve.generatedLabel} ${generated}` : ''}
-            </p>
-            <p className="text-sm text-muted-foreground mt-2 max-w-2xl">{ve.description}</p>
           </div>
-          {activeTab === 'standard' ? (
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="secondary" type="button" onClick={handlePrint} className="!py-1.5 !px-3">
-              <Printer className="h-4 w-4" />
-              {ve.print}
-            </Button>
             <a
               href={pdfUrl}
               download
@@ -72,22 +42,6 @@ export default function ExportReport(_props: ViewProps) {
               {ve.downloadCsv}
             </a>
             <a
-              href={workbookUrl}
-              download
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-default text-foreground hover:bg-brand-700/80 transition-colors"
-            >
-              <Download className="h-4 w-4" />
-              {ve.downloadWorkbook}
-            </a>
-            <a
-              href={sitemapUrl}
-              download
-              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-default text-foreground hover:bg-brand-700/80 transition-colors"
-            >
-              <Download className="h-4 w-4" />
-              {ve.downloadSitemap}
-            </a>
-            <a
               href={jsonUrl}
               className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-default text-foreground hover:bg-brand-700/80 transition-colors"
             >
@@ -95,32 +49,14 @@ export default function ExportReport(_props: ViewProps) {
               {ve.downloadJson}
             </a>
           </div>
-          ) : null}
         </div>
-        <ViewTabs
-          tabs={[
-            { id: 'standard', label: ve.tabStandard },
-            { id: 'custom', label: ve.tabCustom },
-          ]}
-          activeTab={activeTab}
-          onChange={(id) => setActiveTab(id as ExportTabId)}
-          ariaLabel={ve.title}
-          idPrefix="export-report"
-          className="mt-4"
-        />
-        {activeTab === 'custom' ? (
-          <CustomReportBuilder propertyId={propertyId} reportId={reportId} />
-        ) : null}
       </div>
 
-      {activeTab === 'standard' ? (
-      <ViewTabPanel idPrefix="export-report" tabId="standard" className="flex flex-col flex-1 min-h-0">
       <div className="flex-1 min-h-0 flex flex-col bg-slate-200/80 dark:bg-zinc-200 p-3 sm:p-4 print:p-0 print:bg-white">
         {previewError ? (
           <p className="p-6 text-red-700 text-sm bg-white rounded-xl">{previewError}</p>
         ) : (
           <iframe
-            ref={iframeRef}
             title={ve.previewTitle}
             src={previewUrl}
             className="w-full flex-1 min-h-[480px] border-0 rounded-xl shadow-lg bg-white print:rounded-none print:shadow-none"
@@ -129,8 +65,6 @@ export default function ExportReport(_props: ViewProps) {
           />
         )}
       </div>
-      </ViewTabPanel>
-      ) : null}
     </div>
   );
 }

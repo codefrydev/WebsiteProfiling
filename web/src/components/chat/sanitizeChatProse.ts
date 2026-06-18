@@ -8,7 +8,6 @@ const TOOL_LABELS: Record<string, string> = {
   export_audit_report: 'export audit report',
   export_compare_csv: 'export comparison CSV',
   export_list_as_csv: 'export list as CSV',
-  export_custom_report: 'export custom report',
   get_category_recommendations: 'category recommendations',
   get_report_summary: 'audit summary',
   get_critical_issues: 'critical issues list',

@@ -188,7 +188,7 @@ def classify_tool_domain(name: str) -> str:
     if name in TIER_0_TOOLS:
         return _DOMAIN_OVERRIDES.get(name, "core")
 
-    if name.startswith("export_") or name in ("compose_custom_report", "list_export_formats"):
+    if name.startswith("export_") or name == "list_export_formats":
         return "export"
     if name.startswith((
         "get_image_", "list_pages_without_lazy", "list_pages_with_images_missing",

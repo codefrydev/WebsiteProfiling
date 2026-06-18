@@ -178,7 +178,7 @@ def conn() -> MagicMock:
 def test_handler_schema_parity() -> None:
     names = {t["name"] for t in TOOL_DEFINITIONS}
     assert names == tool_handler_names()
-    assert len(TOOL_DEFINITIONS) == 340
+    assert len(TOOL_DEFINITIONS) == 338
 
 
 def test_slice_helpers() -> None:
@@ -536,28 +536,6 @@ def test_export_tools(conn: MagicMock, ctx: AuditToolContext, tmp_path, monkeypa
         )
         assert csv_out.get("artifact_id")
         assert csv_out.get("total") == 1
-    with patch.object(Ctx, "load_payload", return_value=payload):
-        spec = dispatch_tool(
-            "compose_custom_report",
-            {
-                "title": "Client",
-                "sections": [{"type": "category_scores"}, {"type": "notes", "heading": "N", "markdown": "Hi"}],
-            },
-            context=ctx,
-            conn=conn,
-        )
-        assert spec.get("report_spec_id")
-        with patch(
-            "website_profiling.tools.audit_tools.export_tools.resolve_section_results",
-            return_value=[None, None],
-        ):
-            html_out = dispatch_tool(
-                "export_custom_report",
-                {"report_spec_id": spec["report_spec_id"], "format": "html"},
-                context=ctx,
-                conn=conn,
-            )
-            assert html_out.get("artifact_id")
     with patch("website_profiling.tools.audit_tools.export_tools.load_compare_pair") as mock_pair:
         mock_pair.return_value = (payload, payload, 2, 1, None)
         cmp_out = dispatch_tool("export_compare_csv", {"baseline_report_id": 1}, context=ctx, conn=conn)

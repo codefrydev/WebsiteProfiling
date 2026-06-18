@@ -16,7 +16,6 @@ export const AUDIT_TOOL_ALLOWLIST = new Set([
   'get_faq_schema_coverage',
   'list_pages_missing_faq_schema',
   'get_eeat_signals_summary',
-  // Custom report builder (curated subset)
   'get_report_summary',
   'get_category_scores',
   'get_critical_issues',

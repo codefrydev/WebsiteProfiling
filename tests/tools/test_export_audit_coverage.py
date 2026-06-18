@@ -145,6 +145,41 @@ def test_helper_functions_cover_branches() -> None:
     assert export_audit._category_cards_html([]).startswith("<p")
 
 
+def test_executive_summary_html_empty_and_gsc_clicks() -> None:
+    from website_profiling.tools.export_audit_html import (
+        _executive_summary_html,
+        _priority_stats_html,
+        _report_html_styles,
+    )
+
+    assert _executive_summary_html({}) == ""
+    assert _executive_summary_html({"executive_summary": {}}) == ""
+
+    clicks_payload = {
+        "executive_summary": {
+            "top_issues": [
+                {
+                    "priority": "high",
+                    "message": "Traffic issue",
+                    "url": "https://example.com/hot",
+                    "gsc_clicks": 42,
+                }
+            ]
+        }
+    }
+    html_block = _executive_summary_html(clicks_payload)
+    assert "42" in html_block
+    assert "GSC clicks" in html_block
+
+    stats = _priority_stats_html({"critical": 1, "high": 2, "medium": 0, "low": 3})
+    assert "stat-critical" in stats
+    assert "Critical" in stats
+
+    styles = _report_html_styles()
+    assert isinstance(styles, str)
+    assert len(styles) > 0
+
+
 def test_summary_lines_includes_scope_and_diagnostics() -> None:
     lines = dict(export_audit._summary_lines(_rich_payload()))
     assert lines["Property"] == "Coverage Site"
@@ -197,10 +232,11 @@ def test_export_json_csv_and_truncated_html(monkeypatch) -> None:
     assert "Measured + Search Console" in csv_out
 
     html_out = export_audit.export_audit_html()
-    assert "Overall health score 70/100" in html_out
-    assert "Showing 200 of" in html_out
-    assert "Custom extract" in html_out
-    assert "logo.png" in html_out
+    assert "Site Audit — Coverage Site" in html_out
+    assert "Showing 120 of" in html_out
+    assert "Audit details" in html_out
+    assert "Data source glossary" in html_out
+    assert "Crawled URLs (sample)" in html_out
 
 
 def test_export_pdf_full_branches(monkeypatch) -> None:
