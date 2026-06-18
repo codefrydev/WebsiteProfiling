@@ -15,6 +15,7 @@ export type LandingProductMockVariant =
   | 'default'
   | 'crawl'
   | 'issues'
+  | 'promptGenerator'
   | 'google'
   | 'contentStudio'
   | 'aiChat'
@@ -31,7 +32,7 @@ interface LandingProductMockProps {
 
 const NAV_ITEMS = [
   { label: 'Overview', activeFor: ['default'] as const },
-  { label: 'Issues', activeFor: ['issues'] as const },
+  { label: 'Issues', activeFor: ['issues', 'promptGenerator'] as const },
   { label: 'All URLs', activeFor: ['crawl'] as const },
   { label: 'Search', activeFor: ['google'] as const },
   { label: 'Write', activeFor: ['contentStudio'] as const },
@@ -44,6 +45,7 @@ const MOCK_PATHS: Record<LandingProductMockVariant, string> = {
   default: 'overview',
   crawl: 'links',
   issues: 'issues',
+  promptGenerator: 'issues',
   google: 'search-performance',
   contentStudio: 'write',
   aiChat: 'chat',
@@ -398,6 +400,43 @@ function AiChatPanel() {
   );
 }
 
+function PromptGeneratorPanel() {
+  return (
+    <div className="flex h-full min-h-0 flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[9px] font-semibold text-foreground">Issues</p>
+        <span className="rounded-md border border-default/60 bg-brand-900/60 px-2 py-0.5 text-[8px] font-semibold text-link">
+          Generate prompt
+        </span>
+      </div>
+      <div className="rounded-lg border border-default/60 bg-brand-950/50 p-2">
+        <p className="text-[8px] font-semibold text-foreground">Audit issues prompt</p>
+        <p className="mt-0.5 text-[7px] text-muted-foreground">31 unique issues from 47 findings</p>
+        <div className="mt-2 space-y-1 rounded-md border border-default/40 bg-brand-900/40 p-1.5">
+          <span className="block h-1 w-[95%] rounded bg-brand-700/80" />
+          <span className="block h-1 w-[88%] rounded bg-brand-700/80" />
+          <span className="block h-1 w-[72%] rounded bg-blue-500/30" />
+          <span className="block h-1 w-[90%] rounded bg-brand-700/80" />
+          <span className="block h-1 w-[65%] rounded bg-brand-700/80" />
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1">
+          <span className="rounded border border-default/60 px-1.5 py-0.5 text-[7px] text-foreground">Copy prompt</span>
+          <span className="rounded border border-fuchsia-500/30 bg-fuchsia-500/10 px-1.5 py-0.5 text-[7px] text-fuchsia-300">
+            Get AI plan
+          </span>
+          <span className="rounded border border-default/60 px-1.5 py-0.5 text-[7px] text-foreground">Open in Chat</span>
+        </div>
+      </div>
+      <CompactWidget title="Also on Security & JS errors" className="mb-0 mt-auto">
+        <div className="space-y-1">
+          <MockIssueRow severity="High" title="Missing HSTS header (12 URLs)" />
+          <MockIssueRow severity="Medium" title="TypeError: x is not a function (3 URLs)" />
+        </div>
+      </CompactWidget>
+    </div>
+  );
+}
+
 function CompareExportPanel() {
   return (
     <>
@@ -445,6 +484,8 @@ function renderPanel(variant: LandingProductMockVariant) {
       return <CrawlPanel />;
     case 'issues':
       return <IssuesPanel />;
+    case 'promptGenerator':
+      return <PromptGeneratorPanel />;
     case 'google':
       return <GooglePanel />;
     case 'contentStudio':

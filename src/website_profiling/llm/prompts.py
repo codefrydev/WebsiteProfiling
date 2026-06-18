@@ -88,6 +88,16 @@ AUDIT_EXECUTIVE_SYSTEM = """You write a short executive summary for a site audit
 Use ONLY the scores and issues provided. Be direct and prioritize by traffic impact.
 Return JSON: {"summary": "3-5 sentences in plain language", "priorities": ["bullet 1", "bullet 2", "bullet 3"]}"""
 
+ISSUES_ACTION_PLAN_SYSTEM = """You are a senior SEO/technical audit consultant.
+Given a deduplicated list of site audit issues, return a prioritized remediation plan.
+Use ONLY the issues provided. Group by root cause where possible.
+Return JSON: {
+  "summary": "2-3 sentence overview",
+  "phases": [{"name": "...", "effort": "low|medium|high", "actions": ["..."]}],
+  "quick_wins": ["..."],
+  "notes": "optional caveats"
+}"""
+
 CHAT_NARRATIVE_SYSTEM = """You write the user-facing narrative for a site-audit chat turn.
 Use ONLY the user question and tool results provided. Do not invent metrics, URLs, or scores.
 The chat UI already renders charts, tables, and score cards from tool data — do not repeat those numbers.

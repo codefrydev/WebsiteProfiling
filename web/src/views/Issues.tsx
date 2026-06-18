@@ -13,6 +13,7 @@ import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
 import IssueTaskBoard from '@/components/issues/IssueTaskBoard';
 import IssueAiFixButton from '@/components/issues/IssueAiFixButton';
+import IssuePromptGenerator from '@/components/issues/IssuePromptGenerator';
 import IssueTrendChart from '@/components/issues/IssueTrendChart';
 import MobileDesktopDelta from '@/components/issues/MobileDesktopDelta';
 import { palette } from '../utils/chartPalette';
@@ -131,6 +132,16 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
   }, [data?.google?.gsc?.top_pages]);
 
   const q = (searchQuery || '').toLowerCase().trim();
+
+  const allIssuesList = useMemo((): CategoryIssueItem[] => {
+    const acc: CategoryIssueItem[] = [];
+    (data?.categories || []).forEach((cat) => {
+      (cat.issues || []).forEach((iss: ReportIssue) => {
+        acc.push({ category: cat.name || cat.id || '', issue: iss });
+      });
+    });
+    return acc;
+  }, [data]);
 
   const list = useMemo((): CategoryIssueItem[] => {
     const acc: CategoryIssueItem[] = [];
@@ -290,7 +301,20 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
 
   return (
     <PageLayout className="space-y-6 min-w-0 max-w-full">
-      <PageHeader title={vi.title} subtitle={subtitle} />
+      <PageHeader
+        title={vi.title}
+        subtitle={subtitle}
+        actions={
+          allIssuesList.length > 0 ? (
+            <IssuePromptGenerator
+              domain={domain}
+              items={allIssuesList}
+              reportId={selectedReportId}
+              propertyId={propertyId}
+            />
+          ) : null
+        }
+      />
 
       <ViewTabs
         tabs={[

@@ -25,6 +25,7 @@ import {
   type FlatBrowserErrorRow,
 } from '@/lib/browserErrors';
 import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import BrowserErrorsPromptGenerator from '@/components/issues/BrowserErrorsPromptGenerator';
 import { buildBrowserErrorContext, buildBrowserErrorSummaryContext } from '@/lib/fixSuggestionContext';
 
 type TypeFilter = 'All' | 'console' | 'exception';
@@ -33,6 +34,7 @@ type JsErrorsTabId = (typeof JS_ERRORS_TABS)[number];
 
 export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
   const { data } = useReport();
+  const domain = data?.site_name || '';
   useSectionData('links');
   const linksReady = useSectionsViewReady(['links']);
   const searchParams = useSearchParams();
@@ -154,6 +156,13 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
           count: allRows.length,
           pages: errorLinks.length,
         })}`}
+        actions={
+          <BrowserErrorsPromptGenerator
+            domain={domain}
+            rows={allRows}
+            renderMode={scopeInfo.renderMode}
+          />
+        }
       />
 
       <ViewTabs

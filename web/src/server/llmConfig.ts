@@ -16,6 +16,11 @@ import {
   resolveLlmApiKey,
 } from '@/lib/llmProviderApiKeys';
 import { defaultLlmModelForProvider, ensurePersistedLlmModel } from '@/lib/llmProviderDefaults';
+import {
+  ALL_LLM_PROVIDER_MODEL_KEYS,
+  backfillProviderModelsFromActive,
+  llmProviderModelField,
+} from '@/lib/llmProviderModels';
 import { withDb } from '@/server/db';
 import type { LlmConfigLoadResult, LlmConfigState } from '@/types/api';
 
@@ -53,6 +58,14 @@ function applyLlmDefaults(parsedMap: Record<string, string>): LlmConfigState {
 
 function applyProviderApiKeys(parsedMap: Record<string, string>, state: LlmConfigState): void {
   for (const key of ALL_LLM_PROVIDER_API_KEY_KEYS) {
+    if (parsedMap[key] != null && String(parsedMap[key]).trim() !== '') {
+      state[key] = String(parsedMap[key]);
+    }
+  }
+}
+
+function applyProviderModels(parsedMap: Record<string, string>, state: LlmConfigState): void {
+  for (const key of ALL_LLM_PROVIDER_MODEL_KEYS) {
     if (parsedMap[key] != null && String(parsedMap[key]).trim() !== '') {
       state[key] = String(parsedMap[key]);
     }
@@ -104,6 +117,8 @@ export async function loadLlmConfig(): Promise<LlmConfigLoadResult> {
     if (Object.keys(known).length > 0) {
       const state = applyLlmDefaults(known);
       applyProviderApiKeys(known, state);
+      applyProviderModels(known, state);
+      backfillProviderModelsFromActive(known, state);
       const resolved = resolveLlmApiKey({ ...known, ...state });
       if (resolved) {
         state.llm_api_key = resolved;
@@ -113,10 +128,16 @@ export async function loadLlmConfig(): Promise<LlmConfigLoadResult> {
       if (!String(state.llm_model || '').trim() && provider !== 'none') {
         state.llm_model = defaultLlmModelForProvider(provider);
       }
+      const providerModelField = llmProviderModelField(provider);
+      const providerModelMissing =
+        provider !== 'none' &&
+        Boolean(providerModelField) &&
+        !String(known[providerModelField] || '').trim() &&
+        Boolean(String(state.llm_model || '').trim());
       return {
         state,
         source: 'store' as const,
-        backfillModel: dbModelEmpty && provider !== 'none',
+        backfillModel: (dbModelEmpty && provider !== 'none') || providerModelMissing,
       };
     }
     return {
@@ -169,6 +190,14 @@ export async function saveLlmConfig(
       } else if (existing[key] && entries[key] === undefined) {
         entries[key] = existing[key];
         secretKeys.add(key);
+      }
+    }
+
+    for (const key of ALL_LLM_PROVIDER_MODEL_KEYS) {
+      if (state[key] !== undefined) {
+        entries[key] = state[key] == null ? '' : String(state[key]);
+      } else if (existing[key] && entries[key] === undefined) {
+        entries[key] = existing[key];
       }
     }
 

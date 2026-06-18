@@ -1,6 +1,12 @@
 import { pathSlugToViewId } from '@/routes';
 
 const STORAGE_KEY = 'chat:last-context:v1';
+const DRAFT_STORAGE_KEY = 'chat:composer-draft:v1';
+
+export interface ChatComposerDraft {
+  domain?: string;
+  text: string;
+}
 
 export interface ChatUrlContext {
   propertyId: number | null;
@@ -44,6 +50,49 @@ export function writeStoredChatContext(ctx: ChatUrlContext): void {
     );
   } catch {
     /* quota / private mode */
+  }
+}
+
+export function writeChatComposerDraft(draft: ChatComposerDraft): void {
+  if (typeof window === 'undefined') return;
+  const text = String(draft.text || '').trim();
+  if (!text) return;
+  try {
+    sessionStorage.setItem(
+      DRAFT_STORAGE_KEY,
+      JSON.stringify({
+        domain: draft.domain ? String(draft.domain).trim() : undefined,
+        text,
+      }),
+    );
+  } catch {
+    /* quota / private mode */
+  }
+}
+
+export function readChatComposerDraft(domain?: string | null): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(DRAFT_STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw) as ChatComposerDraft;
+    const text = String(data.text || '').trim();
+    if (!text) return null;
+    const storedDomain = String(data.domain || '').trim().toLowerCase();
+    const expected = String(domain || '').trim().toLowerCase();
+    if (storedDomain && expected && storedDomain !== expected) return null;
+    return text;
+  } catch {
+    return null;
+  }
+}
+
+export function clearChatComposerDraft(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+  } catch {
+    /* ignore */
   }
 }
 

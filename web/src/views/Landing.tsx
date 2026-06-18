@@ -78,6 +78,18 @@ export default function LandingPage() {
         />
       </LandingPageSection>
 
+      <LandingPageSection id={LANDING_SECTION_IDS.spotlightPromptGenerator} fullBleed>
+        <LandingFeatureSpotlight
+          eyebrow={vl.spotlightPromptEyebrow}
+          title={vl.spotlightPromptTitle}
+          description={vl.spotlightPromptDescription}
+          bullets={vl.spotlightPromptBullets}
+          mockVariant="promptGenerator"
+          ctaHref={vl.spotlightPromptCtaHref}
+          ctaLabel={vl.spotlightPromptCta}
+        />
+      </LandingPageSection>
+
       <LandingPageSection id={LANDING_SECTION_IDS.spotlightGoogle} fullBleed>
         <LandingFeatureSpotlight
           eyebrow={vl.spotlight3Eyebrow}
