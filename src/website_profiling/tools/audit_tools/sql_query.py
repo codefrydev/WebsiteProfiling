@@ -2,16 +2,23 @@
 
 Defense-in-depth stack:
   Layer 0 (regex):   fast keyword/table scan on stripped SQL before parsing.
-  Layer 1 (parse):   sqlglot rejects non-SELECT and write/DDL nodes before
-                     any DB call is made.
+  Layer 1 (parse):   sqlglot rejects non-SELECT and write/DDL nodes, enforces
+                     the table allowlist, and blocks system-catalog schemas
+                     (information_schema / pg_catalog) before any DB call.
   Layer 2 (engine):  every query runs inside BEGIN TRANSACTION READ ONLY so
                      Postgres refuses any write even if Layers 0-1 are bypassed.
   Layer 3 (role):    when DATABASE_URL_READONLY points to a least-privilege
                      role, the DB grants make writes impossible at the
                      permission level regardless of layers 0-2.
+
+Tenant isolation:
+  When a property_id is available in AuditToolContext, scope-binding CTEs are
+  automatically prepended to every query so the LLM cannot access another
+  tenant's data even if it omits a WHERE filter.
 """
 from __future__ import annotations
 
+import logging
 import re
 from typing import Any
 
@@ -23,21 +30,88 @@ from ...db._common import _sanitize_for_json
 from ...db.pool import readonly_session
 from .context import AuditToolContext
 
+logger = logging.getLogger(__name__)
+
 # ---------------------------------------------------------------------------
-# Tables the LLM must never be allowed to SELECT from — contains secrets or
-# private data.  Any query that references one of these is rejected in Layer 0
-# and Layer 1 even though Layer 2/3 would also block writes.
+# Allowlist: tables the LLM is permitted to SELECT from.
+# Anything NOT in this set is rejected in Layer 1.
+# This replaces the old denylist approach — new secret tables are safe by
+# default because they won't appear here.
 # ---------------------------------------------------------------------------
-_DENIED_TABLES: frozenset[str] = frozenset({
-    "llm_config",          # LLM provider API keys
-    "google_app_settings", # OAuth client id/secret
-    "pipeline_config",     # arbitrary user-supplied env / secrets
-    "chat_sessions",       # user chat privacy
-    "chat_messages",       # user chat privacy
-    "content_drafts",      # user-authored content privacy
+_ALLOWED_TABLES: frozenset[str] = frozenset({
+    # Core crawl data
+    "crawl_runs",
+    "crawl_results",
+    "crawl_page_html",
+    "edges",
+    "nodes",
+    "link_edges",
+    # Lighthouse
+    "lighthouse_summary",
+    "lighthouse_runs",
+    "lighthouse_page_summaries",
+    "lh_audits",
+    "lh_audit_items",
+    # Reports & analytics
+    "report_payload",
+    "google_data",
+    "keyword_data",
+    "keyword_history",
+    "keyword_suggest_cache",
+    "page_google_snapshots",
+    "gsc_links_data",
+    "gsc_links_snapshots",
+    # Issue tracking & audit health
+    "audit_health_snapshots",
+    "issue_status",
+    # CRuX, competitors, filters
+    "crux_snapshots",
+    "competitor_keyword_gap",
+    "saved_crawl_filters",
+    "log_file_uploads",
+    # LLM response cache
+    "llm_cache",
+    # Properties (name/domain — useful for joins)
+    "properties",
 })
 
+# ---------------------------------------------------------------------------
+# Tenant-scoping maps
+# Tables in these sets are automatically wrapped in scope-binding CTEs when
+# ctx.property_id is available.
+# ---------------------------------------------------------------------------
+
+# Tables with a direct property_id column
+_SCOPE_BY_PROPERTY_ID: frozenset[str] = frozenset({
+    "google_data",
+    "keyword_data",
+    "gsc_links_data",
+    "gsc_links_snapshots",
+    "issue_status",
+    "audit_health_snapshots",
+    "crux_snapshots",
+    "log_file_uploads",
+    "competitor_keyword_gap",
+    "saved_crawl_filters",
+})
+
+# Tables scoped through crawl_run_id → crawl_runs.property_id
+_SCOPE_VIA_CRAWL_RUN: frozenset[str] = frozenset({
+    "crawl_results",
+    "crawl_page_html",
+    "edges",
+    "nodes",
+    "link_edges",
+})
+
+# ---------------------------------------------------------------------------
+# Blocked system-catalog schemas
+# ---------------------------------------------------------------------------
+_BLOCKED_SCHEMAS: frozenset[str] = frozenset({"information_schema", "pg_catalog"})
+
+# ---------------------------------------------------------------------------
 # Functions that perform side effects even inside a SELECT
+# ---------------------------------------------------------------------------
 _FORBIDDEN_FUNCTION_PATTERNS: tuple[str, ...] = (
     r"^pg_sleep$",
     r"^pg_read_file$",
@@ -69,23 +143,22 @@ _FORBIDDEN_FUNCTION_PATTERNS: tuple[str, ...] = (
 # Max rows returned to the LLM (configurable; default 200)
 _DEFAULT_ROW_CAP = 200
 
+# Maximum SQL length accepted before regex/AST parsing (16 KiB)
+_MAX_SQL_BYTES = 16_384
+
 # ---------------------------------------------------------------------------
 # Layer 0 — regex pre-filter
 # ---------------------------------------------------------------------------
 
 # Patterns for stripping comments before keyword scanning.
-# Order matters: block comments first, then line comments.
 _RE_BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 _RE_LINE_COMMENT = re.compile(r"--[^\r\n]*")
-# Dollar-quoted strings ($$...$$  or  $tag$...$tag$) — replace with empty
-# so their content isn't scanned for keywords.
+# Dollar-quoted strings — replace with empty so their content isn't scanned.
 _RE_DOLLAR_QUOTE = re.compile(r"\$[^$]*\$.*?\$[^$]*\$", re.DOTALL)
 # Single-quoted string literals — strip content so a keyword inside a
 # string value (e.g. WHERE name = 'delete me') is not flagged.
 _RE_STRING_LITERAL = re.compile(r"'(?:[^'\\]|\\.)*'")
 
-# Write/DDL keywords that should never appear at the token level.
-# Using word-boundary anchors so "updates" in a column alias doesn't trigger.
 _WRITE_KEYWORDS: tuple[str, ...] = (
     "insert", "update", "delete", "drop", "alter", "create", "truncate",
     "merge", "replace", "upsert",
@@ -99,7 +172,7 @@ _WRITE_KEYWORDS: tuple[str, ...] = (
     "set", "reset", "load", "listen", "unlisten", "notify",
     # locking
     "lock",
-    # SELECT INTO new_table — creates a table (write); must come after stripping literals
+    # SELECT INTO new_table — creates a table (write)
     "into",
     # Postgres dangerous builtins referenced as bare words
     "pg_sleep", "pg_read_file", "pg_read_binary_file", "pg_ls_dir",
@@ -117,9 +190,17 @@ _WRITE_KW_RE: re.Pattern[str] = re.compile(
     re.IGNORECASE,
 )
 
-# Denied table names as whole words (case-insensitive).
-_DENIED_TABLE_RE: re.Pattern[str] = re.compile(
-    r"\b(" + "|".join(re.escape(t) for t in sorted(_DENIED_TABLES)) + r")\b",
+# Layer 0 still fast-rejects the known secret table names (belt+suspenders).
+_SECRET_TABLES: frozenset[str] = frozenset({
+    "llm_config",
+    "google_app_settings",
+    "pipeline_config",
+    "chat_sessions",
+    "chat_messages",
+    "content_drafts",
+})
+_SECRET_TABLE_RE: re.Pattern[str] = re.compile(
+    r"\b(" + "|".join(re.escape(t) for t in sorted(_SECRET_TABLES)) + r")\b",
     re.IGNORECASE,
 )
 
@@ -138,12 +219,9 @@ def assert_read_only_regex(sql: str) -> None:
 
     Strips comments and string literals then checks for:
     - Write/DDL/session-mutation keywords
-    - Denied table names
+    - Known secret table names
 
-    This is a *belt* alongside the sqlglot *suspenders*.  The regex is
-    intentionally strict (it bans ``BEGIN`` too), which means an attacker
-    cannot use obfuscation tricks (e.g. inline comments between keyword letters
-    at the token level) to sneak a write past both layers simultaneously.
+    This is a *belt* alongside the sqlglot *suspenders*.
     """
     stripped = _strip_sql_literals(sql)
 
@@ -153,7 +231,7 @@ def assert_read_only_regex(sql: str) -> None:
             f"Forbidden keyword '{m.group(0)}' detected in query."
         )
 
-    m = _DENIED_TABLE_RE.search(stripped)
+    m = _SECRET_TABLE_RE.search(stripped)
     if m:
         raise ReadOnlyViolation(
             f"Table '{m.group(0)}' is not accessible via this tool."
@@ -180,33 +258,82 @@ def _check_function_calls(ast: exp.Expression) -> None:
                 )
 
 
+def _collect_cte_names(ast: exp.Expression) -> frozenset[str]:
+    """Return the lowercase alias names of all CTEs defined in the statement.
+
+    These are virtual table names; they must not be checked against the
+    base-table allowlist.
+    """
+    return frozenset(
+        str(node.alias or "").lower()
+        for node in ast.walk()
+        if isinstance(node, exp.CTE)
+    )
+
+
 def _check_table_refs(ast: exp.Expression) -> None:
-    """Reject queries that reference denied tables."""
+    """Enforce the table allowlist and block system-catalog schemas.
+
+    CTE aliases defined within the same statement are excluded from the
+    allowlist check since they are not real base-table references.
+    """
+    cte_names = _collect_cte_names(ast)
+
     for node in ast.walk():
-        if isinstance(node, exp.Table):
-            table_name = str(node.this or "").lower().strip('"').strip("'")
-            if table_name in _DENIED_TABLES:
-                raise ReadOnlyViolation(
-                    f"Table '{table_name}' is not accessible via this tool."
-                )
+        if not isinstance(node, exp.Table):
+            continue
+
+        table_name = str(node.this or "").lower().strip('"').strip("'")
+        # node.db holds the schema qualifier (e.g. "information_schema" for
+        # information_schema.tables); node.catalog holds the catalog prefix.
+        schema_name = str(node.db or "").lower().strip('"').strip("'")
+
+        # Block system-catalog schemas — they leak metadata about denied tables.
+        if schema_name in _BLOCKED_SCHEMAS:
+            raise ReadOnlyViolation(
+                f"Queries against '{schema_name}' are not permitted. "
+                "Use the get_sql_schema tool to discover available tables."
+            )
+
+        if not table_name:
+            continue
+
+        # Skip CTE alias references — they are virtual, not base tables.
+        if table_name in cte_names:
+            continue
+
+        # Enforce allowlist — every base table must be explicitly permitted.
+        if table_name not in _ALLOWED_TABLES:
+            raise ReadOnlyViolation(
+                f"Table '{table_name}' is not in the list of queryable tables. "
+                "Call get_sql_schema to see available tables."
+            )
 
 
 def assert_read_only(sql: str) -> None:
     """Parse *sql* and raise ReadOnlyViolation if it is not a safe read-only SELECT.
 
     Checks (in order):
-    0. Regex pre-filter: no write/DDL keywords or denied table names in token stream.
+    0. SQL length cap: reject oversized inputs before expensive parsing.
+    0. Regex pre-filter: no write/DDL keywords or secret table names.
     1. Exactly one statement (blocks ``SELECT 1; DROP TABLE x``).
     2. Top-level node is a SELECT / UNION / WITH wrapping a SELECT.
     3. Tree contains no write/DDL expression nodes.
     4. No dangerous side-effecting functions.
-    5. No references to denied tables.
+    5. Table allowlist: every referenced table must be in _ALLOWED_TABLES.
+    6. No system-catalog schema references (information_schema, pg_catalog).
     """
     sql = sql.strip()
     if not sql:
         raise ReadOnlyViolation("SQL statement is empty.")
 
-    # Layer 0 — fast regex scan (runs before the parser)
+    # Length cap (before regex / AST to bound parse cost)
+    if len(sql.encode()) > _MAX_SQL_BYTES:
+        raise ReadOnlyViolation(
+            f"SQL statement exceeds the {_MAX_SQL_BYTES // 1024} KiB size limit."
+        )
+
+    # Layer 0 — fast regex scan
     assert_read_only_regex(sql)
 
     try:
@@ -241,14 +368,14 @@ def assert_read_only(sql: str) -> None:
         exp.Command,
         exp.Merge,
         exp.TruncateTable,
-        exp.Transaction,   # blocks embedded BEGIN/COMMIT/ROLLBACK
+        exp.Transaction,
         exp.Commit,
         exp.Rollback,
-        exp.Use,           # USE <database> / SET search_path
-        exp.Set,           # SET <variable> = ...
-        exp.Copy,          # COPY ... TO / FROM
-        exp.Lock,          # SELECT ... FOR UPDATE / FOR SHARE
-        exp.Into,          # SELECT ... INTO new_table (creates a table)
+        exp.Use,
+        exp.Set,
+        exp.Copy,
+        exp.Lock,
+        exp.Into,
     )
     for node in stmt.walk():
         if isinstance(node, _FORBIDDEN_NODES):
@@ -269,18 +396,122 @@ def assert_read_only(sql: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Tenant scoping helpers
+# ---------------------------------------------------------------------------
+
+def _extract_referenced_tables(stmt: exp.Expression) -> set[str]:
+    """Return the set of lowercase base table names referenced in the statement.
+
+    CTE aliases are excluded because they are virtual names, not real tables.
+    """
+    cte_names = _collect_cte_names(stmt)
+    return {
+        name
+        for node in stmt.walk()
+        if isinstance(node, exp.Table)
+        for name in (str(node.this or "").lower().strip('"').strip("'"),)
+        if name and name not in cte_names
+    }
+
+
+def _get_user_cte_names(stmt: exp.Expression) -> set[str]:
+    """Return the names of all CTEs defined anywhere in the statement (lowercase).
+
+    Uses ast.walk() because the top-level node from sqlglot is exp.Select
+    (with a nested exp.With), not exp.With itself.
+    """
+    return _collect_cte_names(stmt)
+
+
+def _inject_scope_ctes(sql: str, stmt: exp.Expression, property_id: int) -> str:
+    """Prepend tenant-scoping CTEs for all property-bound tables in the query.
+
+    Tables in _SCOPE_BY_PROPERTY_ID are wrapped:
+        tbl AS (SELECT * FROM tbl WHERE property_id = <property_id>)
+
+    Tables in _SCOPE_VIA_CRAWL_RUN are wrapped through crawl_runs:
+        crawl_runs AS (SELECT * FROM crawl_runs WHERE property_id = <property_id>)
+        tbl AS (SELECT t.* FROM tbl t
+                WHERE t.crawl_run_id IN (SELECT id FROM crawl_runs))
+
+    Raises ReadOnlyViolation when a user CTE name shadows any scopable table
+    (an attacker could use such a CTE to bypass the scope bindings).
+    """
+    _ALL_SCOPABLE: frozenset[str] = _SCOPE_BY_PROPERTY_ID | _SCOPE_VIA_CRAWL_RUN | {"crawl_runs"}
+
+    # Guard: reject upfront if any user CTE alias shadows a scopable table name.
+    # This prevents bypass via e.g. WITH crawl_runs AS (SELECT * FROM crawl_runs).
+    user_cte_names = _get_user_cte_names(stmt)
+    cte_conflicts = _ALL_SCOPABLE & user_cte_names
+    if cte_conflicts:
+        raise ReadOnlyViolation(
+            f"CTE name(s) {sorted(cte_conflicts)!r} conflict with mandatory scope "
+            "bindings. Rename your CTEs to avoid these names."
+        )
+
+    referenced = _extract_referenced_tables(stmt)
+
+    need_property_tables = _SCOPE_BY_PROPERTY_ID & referenced
+    need_crawl_run_tables = _SCOPE_VIA_CRAWL_RUN & referenced
+    need_crawl_runs_direct = "crawl_runs" in referenced
+    # We always emit a crawl_runs CTE when any child table is referenced,
+    # even if the user did not reference crawl_runs directly.
+    need_crawl_runs_cte = need_crawl_runs_direct or bool(need_crawl_run_tables)
+
+    if not need_property_tables and not need_crawl_run_tables and not need_crawl_runs_direct:
+        return sql  # Nothing to scope
+
+    pid = int(property_id)
+
+    ctes: list[str] = []
+
+    # crawl_runs scope (covers both direct reference and child-table parent)
+    if need_crawl_runs_cte:
+        ctes.append(
+            f"crawl_runs AS "
+            f"(SELECT * FROM crawl_runs WHERE property_id = {pid})"
+        )
+
+    # Child tables scoped through the crawl_runs CTE above
+    for tbl in sorted(need_crawl_run_tables):
+        ctes.append(
+            f"{tbl} AS "
+            f"(SELECT t.* FROM {tbl} t "
+            f"WHERE t.crawl_run_id IN (SELECT id FROM crawl_runs))"
+        )
+
+    # Tables with a direct property_id column
+    for tbl in sorted(need_property_tables):
+        ctes.append(
+            f"{tbl} AS "
+            f"(SELECT * FROM {tbl} WHERE property_id = {pid})"
+        )
+
+    cte_block = ",\n".join(ctes)
+
+    # Merge with any existing WITH clause (regex-based, because sqlglot parses
+    # WITH ... SELECT as exp.Select with a nested exp.With, not exp.With itself).
+    if re.match(r"\s*WITH\s", sql, re.IGNORECASE):
+        return re.sub(
+            r"(?i)^\s*WITH\s+",
+            f"WITH {cte_block},\n",
+            sql.strip(),
+            count=1,
+        )
+    return f"WITH {cte_block}\n{sql.strip()}"
+
+
+# ---------------------------------------------------------------------------
 # Tool handlers
 # ---------------------------------------------------------------------------
 
 def run_sql_query(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
     """Execute a user-supplied read-only SELECT and return rows as JSON.
 
-    The *conn* argument (injected by the tool dispatcher) is intentionally
-    ignored; we always open a dedicated readonly_session so the read-only
-    transaction wrapper is guaranteed regardless of what connection the caller
-    holds.
+    The *conn* argument (injected by the tool dispatcher) is used only to
+    resolve the active property scope; the actual query runs on a dedicated
+    readonly_session so the read-only transaction wrapper is guaranteed.
     """
-    _ = conn  # unused — readonly_session() opens its own connection
     sql = str(args.get("sql") or "").strip()
     if not sql:
         return {"error": "sql argument is required."}
@@ -291,16 +522,29 @@ def run_sql_query(conn: Connection, ctx: AuditToolContext, args: dict[str, Any])
     except (TypeError, ValueError):
         row_cap = _DEFAULT_ROW_CAP
 
-    # Layer 1 — parse-based validation
+    # Layer 1 — parse-based validation (includes length cap + Layer 0 regex)
     try:
         assert_read_only(sql)
     except ReadOnlyViolation as exc:
         return {"error": f"Query rejected: {exc}"}
 
-    # Wrap with an outer LIMIT so the user cannot pull unlimited rows
-    # even if they write LIMIT 99999 inside their own query.  We cap
-    # by selecting from the user query as a sub-select.
-    wrapped = f"SELECT * FROM ({sql}) _q LIMIT {row_cap}"
+    # Re-parse to get the AST for scope injection (parse already validated above)
+    try:
+        stmts = sqlglot.parse(sql, read="postgres")
+        stmt = stmts[0] if stmts else None
+    except Exception:  # noqa: BLE001
+        stmt = None
+
+    # Tenant scoping: inject property-bound CTEs when a property is in context.
+    if stmt is not None and ctx.property_id is not None:
+        try:
+            sql = _inject_scope_ctes(sql, stmt, ctx.property_id)
+        except ReadOnlyViolation as exc:
+            return {"error": f"Query rejected: {exc}"}
+
+    # Wrap with an outer LIMIT (row_cap + 1) so we can detect truncation
+    # without under-counting: if > row_cap rows come back, data was cut.
+    wrapped = f"SELECT * FROM ({sql}) _q LIMIT {row_cap + 1}"
 
     # Layer 2 — read-only transaction (Postgres rejects any write)
     try:
@@ -310,7 +554,11 @@ def run_sql_query(conn: Connection, ctx: AuditToolContext, args: dict[str, Any])
                 raw_rows = cur.fetchall()
                 columns = [desc[0] for desc in cur.description] if cur.description else []
     except Exception as exc:  # noqa: BLE001
-        return {"error": str(exc).strip() or type(exc).__name__}
+        logger.exception("run_sql_query DB error (property_id=%s)", ctx.property_id)
+        return {"error": "Query execution failed. Check your SQL syntax and column references."}
+
+    truncated = len(raw_rows) > row_cap
+    raw_rows = raw_rows[:row_cap]
 
     rows = [
         dict(zip(columns, _sanitize_for_json(list(row.values() if isinstance(row, dict) else row))))
@@ -321,62 +569,130 @@ def run_sql_query(conn: Connection, ctx: AuditToolContext, args: dict[str, Any])
         "columns": columns,
         "rows": rows,
         "row_count": len(rows),
-        "truncated": len(rows) >= row_cap,
+        "truncated": truncated,
     }
 
 
-# Tables exposed via get_sql_schema — excludes denied tables so the LLM
-# cannot even learn their column names.
+# ---------------------------------------------------------------------------
+# Schema discovery
+# ---------------------------------------------------------------------------
+
 def get_sql_schema(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
-    """Return the public schema: allowlisted tables and their columns.
+    """Return the public schema: allowlisted tables, their columns, and foreign keys.
 
     This lets the LLM write accurate SQL before calling run_sql_query.
-    Denied (secret) tables are excluded from the output.
+    Tables outside the allowlist are excluded from the output.
     """
-    query = """
+    col_query = """
         SELECT
             t.table_name,
             c.column_name,
             c.data_type,
-            c.is_nullable
+            c.is_nullable,
+            tc.constraint_type
         FROM information_schema.tables t
         JOIN information_schema.columns c
           ON c.table_name = t.table_name
          AND c.table_schema = t.table_schema
+        LEFT JOIN information_schema.key_column_usage kcu
+          ON kcu.table_name = c.table_name
+         AND kcu.column_name = c.column_name
+         AND kcu.table_schema = c.table_schema
+        LEFT JOIN information_schema.table_constraints tc
+          ON tc.constraint_name = kcu.constraint_name
+         AND tc.table_schema = kcu.table_schema
+         AND tc.constraint_type = 'PRIMARY KEY'
         WHERE t.table_schema = 'public'
           AND t.table_type = 'BASE TABLE'
         ORDER BY t.table_name, c.ordinal_position
     """
+    fk_query = """
+        SELECT
+            kcu.table_name,
+            kcu.column_name,
+            ccu.table_name  AS foreign_table,
+            ccu.column_name AS foreign_column
+        FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+          ON kcu.constraint_name = tc.constraint_name
+         AND kcu.table_schema    = tc.table_schema
+        JOIN information_schema.constraint_column_usage ccu
+          ON ccu.constraint_name = tc.constraint_name
+         AND ccu.table_schema    = tc.table_schema
+        WHERE tc.constraint_type = 'FOREIGN KEY'
+          AND tc.table_schema    = 'public'
+        ORDER BY kcu.table_name, kcu.column_name
+    """
     try:
         with readonly_session() as ro_conn:
             with ro_conn.cursor() as cur:
-                cur.execute(query)
-                raw = cur.fetchall()
+                cur.execute(col_query)
+                col_rows = cur.fetchall()
+                cur.execute(fk_query)
+                fk_rows = cur.fetchall()
     except Exception as exc:  # noqa: BLE001
-        return {"error": str(exc).strip() or type(exc).__name__}
+        logger.exception("get_sql_schema DB error (property_id=%s)", ctx.property_id)
+        return {"error": "Schema query failed. The database may be unavailable."}
 
-    tables: dict[str, list[dict[str, str]]] = {}
-    for row in raw:
+    # Build column map, filtered to the allowlist
+    tables: dict[str, list[dict[str, Any]]] = {}
+    for row in col_rows:
         if isinstance(row, dict):
             tname = str(row.get("table_name") or "")
-            col = {
+            col: dict[str, Any] = {
                 "column": str(row.get("column_name") or ""),
                 "type": str(row.get("data_type") or ""),
                 "nullable": str(row.get("is_nullable") or "YES") == "YES",
+                "primary_key": row.get("constraint_type") == "PRIMARY KEY",
             }
         else:
             tname = str(row[0])
-            col = {"column": str(row[1]), "type": str(row[2]), "nullable": str(row[3]) == "YES"}
+            col = {
+                "column": str(row[1]),
+                "type": str(row[2]),
+                "nullable": str(row[3]) == "YES",
+                "primary_key": row[4] == "PRIMARY KEY",
+            }
 
-        if tname.lower() in _DENIED_TABLES:
+        if tname.lower() not in _ALLOWED_TABLES:
             continue
         tables.setdefault(tname, []).append(col)
 
+    # Build foreign-key map
+    fk_map: dict[str, list[dict[str, str]]] = {}
+    for row in fk_rows:
+        if isinstance(row, dict):
+            tname = str(row.get("table_name") or "")
+            fk: dict[str, str] = {
+                "column": str(row.get("column_name") or ""),
+                "references_table": str(row.get("foreign_table") or ""),
+                "references_column": str(row.get("foreign_column") or ""),
+            }
+        else:
+            tname = str(row[0])
+            fk = {
+                "column": str(row[1]),
+                "references_table": str(row[2]),
+                "references_column": str(row[3]),
+            }
+
+        if tname.lower() not in _ALLOWED_TABLES:
+            continue
+        fk_map.setdefault(tname, []).append(fk)
+
     return {
         "tables": [
-            {"table": tname, "columns": cols}
+            {
+                "table": tname,
+                "columns": cols,
+                "foreign_keys": fk_map.get(tname, []),
+            }
             for tname, cols in sorted(tables.items())
         ],
-        "denied_tables_excluded": True,
-        "note": "Use run_sql_query with a single read-only SELECT. No INSERT/UPDATE/DELETE/DDL is allowed.",
+        "allowlisted_tables_only": True,
+        "note": (
+            "Use run_sql_query with a single read-only SELECT. "
+            "No INSERT/UPDATE/DELETE/DDL is allowed. "
+            "Scope queries to the active property using the injected filters."
+        ),
     }

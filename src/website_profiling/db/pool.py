@@ -102,6 +102,9 @@ def _get_ro_pool() -> ConnectionPool:
     if _ro_pool is None:
         ro_url = (os.environ.get("DATABASE_URL_READONLY") or "").strip()
         url = ro_url or get_database_url()
+        # Mirror the main pool's connect_timeout for fast failure in dev/tests.
+        if "connect_timeout=" not in url:
+            url = f"{url}{'&' if '?' in url else '?'}connect_timeout=3"
         # Small pool: read-only queries run one at a time per chat turn
         _ro_pool = ConnectionPool(
             conninfo=url,
