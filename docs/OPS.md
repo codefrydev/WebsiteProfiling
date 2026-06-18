@@ -117,6 +117,20 @@ AUTH_DEFAULT_ROLE=client-readonly
 
 Production also requires `AUTH_SECRET` and optionally `AUTH_USER` / `AUTH_PASSWORD` (see `docker-compose.prod.yml`).
 
+### Remote MCP (Streamable HTTP)
+
+The `mcp` service in `docker-compose.prod.yml` exposes read-only audit tools over HTTP at `/mcp`. Configure on **Secrets → Remote MCP** (`/secrets`) or via environment variables (env overrides saved values):
+
+| Variable | Purpose |
+|----------|---------|
+| `WP_MCP_TOKEN` | Bearer token for MCP clients (`Authorization: Bearer …`) |
+| `WP_MCP_ALLOWED_HOSTS` | Public hostname allowlist (e.g. `audit.example.com`) |
+| `WP_MCP_ALLOWED_ORIGINS` | Optional `Origin` allowlist |
+| `WP_MCP_DOMAIN` | Tool bundle (`core` recommended for remote) |
+| `MCP_PORT` | Host port mapped to container `8000` (default `8000`) |
+
+Terminate TLS at your reverse proxy; do not expose plain HTTP publicly. Configure token and allowed hostnames on **Secrets → Remote MCP** (`/secrets`, Remote MCP section).
+
 ### Read-only client dashboards
 
 Set `AUTH_DEFAULT_ROLE=client-readonly` so session logins cannot run audits or save settings. The API returns 403 on mutations; the UI hides **Run audit** and disables save controls. Use `viewer` instead if chat access should also be blocked.

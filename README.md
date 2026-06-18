@@ -93,7 +93,7 @@ Site Audit focuses on **honest, self-hosted technical SEO**. It is not a drop-in
   </tr>
 </table>
 
-Also included: **AI chat** over audit data (optional), **Content studio** (write &amp; optimize with live SEO scoring), **340 MCP tools** (domain-scoped servers), image SEO, GEO/AEO readiness, keyword explorer (GSC + on-site), backlinks (GSC Links import), compare runs, and portfolio management for agencies.
+Also included: **AI chat** over audit data (optional), **Content studio** (write &amp; optimize with live SEO scoring), **340 MCP tools** (local stdio or remote Streamable HTTP), image SEO, GEO/AEO readiness, keyword explorer (GSC + on-site), backlinks (GSC Links import), compare runs, and portfolio management for agencies.
 
 <img src="docs/assets/social-preview.png" alt="Site Audit — developer-friendly SEO audit preview" width="100%">
 
@@ -109,7 +109,7 @@ WebsiteProfiling/
 │   ├── integrations/          # Google Search Console, GA4, Bing, CrUX
 │   ├── llm/                   # AI enrich + chat agent
 │   ├── tools/                 # Exports, audit query tools, MCP helpers
-│   ├── mcp/                   # MCP server (340 read-only tools, domain bundles)
+│   ├── mcp/                   # MCP server (stdio + remote HTTP, domain bundles)
 │   ├── db/                    # PostgreSQL storage layer
 │   ├── commands/              # CLI subcommands
 │   ├── cli.py                 # Pipeline entrypoint

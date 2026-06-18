@@ -41,6 +41,27 @@ services:
       retries: 3
       start_period: 15s
 
+  # Optional remote MCP (Streamable HTTP). Uncomment and set WP_MCP_TOKEN / WP_MCP_ALLOWED_HOSTS.
+  # mcp:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   image: website-profiling:latest
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   command: ['python', '-m', 'website_profiling.mcp.http']
+  #   environment:
+  #     WEBSITE_PROFILING_ROOT: /app
+  #     DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
+  #     WP_MCP_HTTP_HOST: 0.0.0.0
+  #     WP_MCP_HTTP_PORT: 8000
+  #     WP_MCP_TOKEN: ${WP_MCP_TOKEN:-dev-mcp-token}
+  #     WP_MCP_ALLOWED_HOSTS: localhost,127.0.0.1
+  #     WP_MCP_DOMAIN: core
+  #   ports:
+  #     - "8000:8000"
+
 volumes:
   pg-data:
   profiling-data:

@@ -13,6 +13,7 @@ The same tool catalog powers in-app **AI Chat** at `/chat`.
 - [Prerequisites](#prerequisites)
 - [Domain-scoped servers](#domain-scoped-servers)
 - [Configuration](#configuration)
+- [Remote Streamable HTTP](#remote-streamable-http)
 - [MCP resources](#mcp-resources)
 - [Tool reference](#tool-reference)
 - [In-app chat](#in-app-chat)
@@ -31,11 +32,13 @@ export DATABASE_URL=postgres://profiling:profiling@localhost:5432/website_profil
 export PYTHONPATH=src
 ```
 
-Start the server:
+Start the local stdio server:
 
 ```bash
 python -m website_profiling.mcp
 ```
+
+For remote access over HTTP, see [Remote Streamable HTTP](#remote-streamable-http).
 
 ---
 
@@ -108,6 +111,80 @@ Add to `.cursor/mcp.json` or your MCP client settings:
   }
 }
 ```
+
+---
+
+## Remote Streamable HTTP
+
+Use this when Site Audit runs on a hosted server and your MCP client (Cursor, Claude Desktop, etc.) connects over the network instead of spawning a local stdio subprocess.
+
+### Start the HTTP server
+
+Configure access on **MCP settings** (`/mcp`) in the web UI (recommended), or set environment variables. UI changes apply on the next MCP request without restarting the service.
+
+```bash
+export DATABASE_URL=postgres://profiling:profiling@localhost:5432/website_profiling
+export PYTHONPATH=src
+export WP_MCP_HTTP_HOST=0.0.0.0
+export WP_MCP_HTTP_PORT=8000
+export WP_MCP_DOMAIN=core
+export WP_PROPERTY_ID=1
+
+python -m website_profiling.mcp.http
+```
+
+Set **MCP bearer token** and **Allowed hostnames** on the Secrets page (or via `WP_MCP_TOKEN` / `WP_MCP_ALLOWED_HOSTS`). Environment variables override saved values when set.
+
+The MCP endpoint is `http://<host>:8000/mcp` by default (`WP_MCP_HTTP_PATH=/mcp`).
+
+### Environment variables
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `WP_MCP_HTTP_HOST` | `127.0.0.1` | Bind address (`0.0.0.0` for Docker) |
+| `WP_MCP_HTTP_PORT` | `8000` | Listen port |
+| `WP_MCP_HTTP_PATH` | `/mcp` | Mount path |
+| `WP_MCP_TOKEN` | unset | Bearer token (**required** when not binding localhost). Save on **Secrets → Remote MCP** or set here (env wins). |
+| `WP_MCP_ALLOWED_HOSTS` | unset | Comma-separated `Host` allowlist (**required** for non-localhost bind). Save on **Secrets → Remote MCP** or set here. |
+| `WP_MCP_ALLOWED_ORIGINS` | unset | Comma-separated `Origin` allowlist for browser clients |
+| `WP_MCP_JSON_RESPONSE` | `false` | JSON responses instead of SSE streams |
+| `WP_MCP_DOMAIN` | `core` | Tool bundle (same as stdio) |
+| `WP_PROPERTY_ID` | unset | Default property (same as stdio) |
+
+**Security:** `WP_MCP_TOKEN` is required when `WP_MCP_HTTP_HOST` is not localhost. Tools are read-only but expose audit, GSC, and GA4 data — treat the token like a database credential.
+
+**DNS rebinding protection:** Whenever a token **and** allowed hosts are configured — via the UI **or** environment variables — the HTTP service enforces the bearer token plus the Host/Origin allowlist in its own middleware, and the MCP SDK's built-in DNS-rebinding check is turned off (the middleware supersedes it). The SDK check only applies as a fallback on a non-localhost bind that has no remote access configured (a state the startup validation otherwise refuses to boot in). Either way, set `WP_MCP_ALLOWED_HOSTS` to the public hostname clients use (e.g. `audit.example.com`).
+
+### Cursor / Claude Desktop (remote)
+
+```json
+{
+  "mcpServers": {
+    "site-audit-remote": {
+      "url": "https://audit.example.com/mcp",
+      "headers": {
+        "Authorization": "Bearer your-long-random-token"
+      }
+    }
+  }
+}
+```
+
+### Docker (production)
+
+The `mcp` service in `docker-compose.prod.yml` includes an `mcp` service. Set `WP_MCP_TOKEN` and `WP_MCP_ALLOWED_HOSTS` in the environment **or** configure them on **Secrets → Remote MCP** after deploy.
+
+Terminate TLS at your reverse proxy and route `/mcp` to the MCP container. Recommended proxy settings: `proxy_buffering off`, long `proxy_read_timeout`.
+
+### Troubleshooting
+
+| Symptom | Likely cause |
+|---------|----------------|
+| Server refuses to start | Missing token or allowed hosts on non-localhost bind (Secrets page or env) |
+| 401 Unauthorized | Wrong or missing `Authorization: Bearer` header |
+| 404 Not Found | Wrong path — endpoint is `/mcp` by default |
+| Blocked / bad request behind proxy | Host not listed in allowed hostnames (Secrets → Remote MCP) |
+| Connection refused | Firewall, wrong port, or MCP service not running |
 
 ---
 

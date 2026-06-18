@@ -3,6 +3,7 @@
  */
 import {
   ALL_SECRETS_KEYS,
+  MCP_SETTINGS_FIELDS,
   SECRETS_MASK_SENTINEL,
   SECRETS_SECTIONS,
   buildInitialSecretsState,
@@ -117,17 +118,26 @@ export async function saveSecrets(rawState: SecretsState): Promise<void> {
   }
 
   const pipelineState = { ...pipelineLoaded.state };
+  const copyPipelineField = (key: string): void => {
+    if (rawState[key] === undefined) return;
+    pipelineState[key] = String(rawState[key] ?? '');
+    if (rawState[`${key}_masked`] === true) {
+      pipelineState[`${key}_masked`] = true;
+    } else {
+      delete pipelineState[`${key}_masked`];
+    }
+  };
   for (const section of SECRETS_SECTIONS) {
     for (const field of section.fields) {
       if (field.storage !== 'pipeline') continue;
-      if (rawState[field.key] === undefined) continue;
-      pipelineState[field.key] = String(rawState[field.key] ?? '');
-      if (rawState[`${field.key}_masked`] === true) {
-        pipelineState[`${field.key}_masked`] = true;
-      } else {
-        delete pipelineState[`${field.key}_masked`];
-      }
+      copyPipelineField(field.key);
     }
+  }
+  // MCP fields live in a separate array (managed on /mcp), not in SECRETS_SECTIONS;
+  // copy them too or they are silently dropped on save.
+  for (const field of MCP_SETTINGS_FIELDS) {
+    if (field.storage !== 'pipeline') continue;
+    copyPipelineField(field.key);
   }
 
   const googlePatch: Parameters<typeof saveGoogleAppSettings>[0] = {};

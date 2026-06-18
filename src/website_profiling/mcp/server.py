@@ -75,13 +75,9 @@ def _mcp_domain() -> str:
     return (os.environ.get("WP_MCP_DOMAIN") or "core").strip().lower()
 
 
-def _exposed_tool_names() -> set[str]:
-    return mcp_tool_names(_mcp_domain())
-
-
-def _tools_catalog_json() -> str:
-    domain = _mcp_domain()
-    exposed = _exposed_tool_names()
+def _tools_catalog_json(domain: str | None = None) -> str:
+    effective = (domain or _mcp_domain()).strip().lower() or "core"
+    exposed = mcp_tool_names(effective)
     by_domain = tools_catalog_by_domain()
     scoped: dict[str, list[str]] = {}
     for d, names in by_domain.items():
@@ -89,7 +85,7 @@ def _tools_catalog_json() -> str:
         if filtered:
             scoped[d] = filtered
     return json.dumps({
-        "mcp_domain": domain,
+        "mcp_domain": effective,
         "tool_count": len(exposed),
         "handlers": sorted(exposed),
         "domains": scoped,
@@ -97,9 +93,10 @@ def _tools_catalog_json() -> str:
     }, indent=2)
 
 
-def _domains_resource_json() -> str:
+def _domains_resource_json(domain: str | None = None) -> str:
+    effective = (domain or _mcp_domain()).strip().lower() or "core"
     return json.dumps({
-        "current_mcp_domain": _mcp_domain(),
+        "current_mcp_domain": effective,
         "bundles": {
             key: sorted(domains)
             for key, domains in MCP_DOMAIN_BUNDLES.items()
@@ -108,7 +105,7 @@ def _domains_resource_json() -> str:
     }, indent=2)
 
 
-def _resolve_resource(uri: str) -> str:
+def _resolve_resource(uri: str, domain: str | None = None) -> str:
     if uri == "audit://properties":
         result = dispatch_tool("list_properties", {})
         return json.dumps(result, indent=2, default=str)
@@ -117,10 +114,10 @@ def _resolve_resource(uri: str) -> str:
         return _read_glossary_excerpt()
 
     if uri == "audit://tools":
-        return _tools_catalog_json()
+        return _tools_catalog_json(domain=domain)
 
     if uri == "audit://domains":
-        return _domains_resource_json()
+        return _domains_resource_json(domain=domain)
 
     m = _URI_PROPERTY.match(uri)
     if m:
@@ -153,19 +150,25 @@ def _resolve_resource(uri: str) -> str:
     return json.dumps({"error": f"unknown resource: {uri}"})
 
 
-def main() -> None:
+def _import_mcp_types():
     try:
         from mcp.server import Server
-        from mcp.server.stdio import stdio_server
         from mcp.types import Resource, TextContent, Tool
     except ImportError as e:
         raise SystemExit(
             "MCP SDK not installed. Run: pip install -r requirements.txt",
         ) from e
+    return Server, Resource, TextContent, Tool
 
-    server = Server(f"site-audit-{_mcp_domain()}")
+
+def create_server(domain: str | None = None):
+    """Build transport-agnostic MCP server with Site Audit tools and resources."""
+    Server, Resource, TextContent, Tool = _import_mcp_types()
+
+    effective_domain = (domain or _mcp_domain()).strip().lower() or "core"
+    server = Server(f"site-audit-{effective_domain}")
     default_pid = _default_property_id()
-    exposed = _exposed_tool_names()
+    exposed = mcp_tool_names(effective_domain)
 
     @server.list_tools()
     async def list_tools() -> list[Tool]:
@@ -186,7 +189,7 @@ def main() -> None:
     async def call_tool(name: str, arguments: dict[str, Any] | None) -> list[TextContent]:
         if name not in exposed:
             result = {
-                "error": f"tool not exposed in MCP domain {_mcp_domain()}: {name}",
+                "error": f"tool not exposed in MCP domain {effective_domain}: {name}",
                 "hint": "Connect WP_MCP_DOMAIN=full or the domain server that includes this tool.",
             }
             return [TextContent(type="text", text=json.dumps(result, indent=2, default=str))]
@@ -223,7 +226,20 @@ def main() -> None:
 
     @server.read_resource()
     async def read_resource(uri: str) -> str:
-        return _resolve_resource(uri)
+        return _resolve_resource(uri, domain=effective_domain)
+
+    return server
+
+
+def run_stdio() -> None:
+    try:
+        from mcp.server.stdio import stdio_server
+    except ImportError as e:
+        raise SystemExit(
+            "MCP SDK not installed. Run: pip install -r requirements.txt",
+        ) from e
+
+    server = create_server()
 
     async def run() -> None:
         async with stdio_server() as (read_stream, write_stream):
@@ -232,6 +248,10 @@ def main() -> None:
     import asyncio
 
     asyncio.run(run())
+
+
+def main() -> None:
+    run_stdio()
 
 
 if __name__ == "__main__":

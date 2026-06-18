@@ -14,6 +14,7 @@ import {
   getFieldByKey,
 } from '@/lib/pipelineConfigSchema';
 import {
+  isPipelineHiddenKey,
   isPipelineSecretKey,
   maskSecretForClient,
   SECRETS_MASK_SENTINEL,
@@ -151,7 +152,7 @@ export function serializeConfig(
     seenIds.add(section.id);
     lines.push(`# --- ${section.label} ---`);
     for (const f of section.fields) {
-      if (isPipelineSecretKey(f.key)) continue;
+      if (isPipelineHiddenKey(f.key)) continue;
       const v = state[f.key];
       if (f.type === 'bool') {
         lines.push(`${f.key} = ${v === true ? 'true' : 'false'}`);
@@ -323,7 +324,7 @@ export async function savePipelineConfig(
     shadowState[key] = entries[key];
   }
   for (const key of Object.keys(shadowState)) {
-    if (isPipelineSecretKey(key)) {
+    if (isPipelineHiddenKey(key)) {
       delete shadowState[key];
       delete shadowState[`${key}_masked`];
     }

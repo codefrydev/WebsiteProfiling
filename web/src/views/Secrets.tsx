@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import ChatShell from '@/components/chat/ChatShell';
@@ -42,13 +43,24 @@ export default function SecretsPage() {
               {loadError}
             </div>
           ) : (
-            <SecretsSettingsPanel
+            <>
+              <div className="mx-auto max-w-3xl px-4 pt-6 sm:px-6">
+                <p className="rounded-2xl border border-muted/30 bg-[var(--chat-surface)] px-4 py-3 text-xs text-muted-foreground">
+                  {s.mcpMovedHint}{' '}
+                  <Link href="/mcp" className="text-link hover:underline">
+                    {s.mcpMovedLink}
+                  </Link>
+                  .
+                </p>
+              </div>
+              <SecretsSettingsPanel
               activeSection={activeSection}
               state={state}
               envHints={envHints}
               disabled={readOnly || saving}
               onChange={setField}
             />
+            </>
           )}
         </div>
 
