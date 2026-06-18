@@ -54,6 +54,3 @@ export const LANDING_DECK_SECTION_ORDER: readonly string[] = [
   LANDING_SECTION_IDS.finalCta,
   LANDING_SECTION_IDS.siteFooter,
 ] as const;
-
-export const LANDING_DECK_AUTO_ADVANCE_INTERVALS_MS = [8000, 12000, 15000] as const;
-export type LandingDeckAutoAdvanceMs = (typeof LANDING_DECK_AUTO_ADVANCE_INTERVALS_MS)[number];

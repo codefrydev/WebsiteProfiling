@@ -312,7 +312,7 @@ function GooglePanel() {
       </div>
       <CompactWidget title="Top queries" className="mb-0">
         <div className="space-y-1">
-          <MockUrlRow path="technical seo audit" status={200} />
+          <MockUrlRow path="seo audit guide" status={200} />
           <MockUrlRow path="screaming frog alternative" status={200} />
           <MockUrlRow path="self hosted seo tool" status={200} />
         </div>
@@ -346,7 +346,7 @@ function ContentStudioPanel() {
       <div className="min-w-0 flex-1 space-y-2">
         <div className="rounded-lg border border-default/60 bg-brand-900/40 p-2">
           <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Title</p>
-          <p className="mt-0.5 truncate text-[10px] font-medium text-foreground">Technical SEO Audit Guide 2026</p>
+          <p className="mt-0.5 truncate text-[10px] font-medium text-foreground">SEO Audit Guide 2026</p>
         </div>
         <div className="rounded-lg border border-default/60 bg-brand-900/40 p-2">
           <p className="text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">Body</p>
@@ -363,7 +363,7 @@ function ContentStudioPanel() {
         <p className="mt-0.5 text-lg font-bold text-emerald-400">B+</p>
         <p className="mt-2 text-[8px] font-semibold uppercase tracking-wide text-muted-foreground">Terms</p>
         <div className="mt-1.5 space-y-2">
-          <MockTermRow term="technical seo" count={4} target={3} tone="ok" />
+          <MockTermRow term="seo audit" count={4} target={3} tone="ok" />
           <MockTermRow term="site audit" count={1} target={2} tone="warn" />
           <MockTermRow term="crawl budget" count={0} target={1} tone="bad" />
         </div>

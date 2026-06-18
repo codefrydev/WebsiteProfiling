@@ -6,12 +6,6 @@ import {
   useRef,
   useState,
 } from 'react';
-import {
-  LANDING_DECK_AUTO_ADVANCE_INTERVALS_MS,
-  type LandingDeckAutoAdvanceMs,
-} from '@/components/landing/landingLayout';
-
-const PRESENTER_STORAGE_KEY = 'landing-presenter-mode';
 
 export function clampSlideIndex(index: number, total: number): number {
   if (total <= 0) return 0;
@@ -45,32 +39,6 @@ function isEditableTarget(target: EventTarget | null): boolean {
   return target.isContentEditable;
 }
 
-function readPresenterFromUrl(): boolean {
-  if (typeof window === 'undefined') return false;
-  return new URLSearchParams(window.location.search).get('present') === '1';
-}
-
-function readPresenterFromSession(): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    return sessionStorage.getItem(PRESENTER_STORAGE_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
-function persistPresenterMode(enabled: boolean): void {
-  try {
-    if (enabled) {
-      sessionStorage.setItem(PRESENTER_STORAGE_KEY, '1');
-    } else {
-      sessionStorage.removeItem(PRESENTER_STORAGE_KEY);
-    }
-  } catch {
-    /* ignore quota / private mode */
-  }
-}
-
 function syncHashForSlide(sectionIds: readonly string[], id: string): void {
   if (id !== sectionIds[0]) {
     window.history.pushState(null, '', `#${id}`);
@@ -91,24 +59,12 @@ export interface UseLandingDeckResult {
   goToSlide: (target: string | number, behavior?: ScrollBehavior) => void;
   goNext: () => void;
   goPrev: () => void;
-  presenterMode: boolean;
-  setPresenterMode: (enabled: boolean) => void;
-  togglePresenterMode: () => void;
-  autoAdvance: boolean;
-  setAutoAdvance: (enabled: boolean) => void;
-  autoAdvanceMs: LandingDeckAutoAdvanceMs;
-  setAutoAdvanceMs: (ms: LandingDeckAutoAdvanceMs) => void;
 }
 
 export function useLandingDeck({ sectionIds }: UseLandingDeckOptions): UseLandingDeckResult {
   const total = sectionIds.length;
   const [activeIndex, setActiveIndex] = useState(0);
   const [slideTransition, setSlideTransition] = useState(false);
-  const [presenterMode, setPresenterModeState] = useState(false);
-  const [autoAdvance, setAutoAdvance] = useState(false);
-  const [autoAdvanceMs, setAutoAdvanceMs] = useState<LandingDeckAutoAdvanceMs>(
-    LANDING_DECK_AUTO_ADVANCE_INTERVALS_MS[0],
-  );
   const [reduceMotion, setReduceMotion] = useState(false);
   const activeIndexRef = useRef(0);
   const hashSyncedRef = useRef(false);
@@ -116,12 +72,6 @@ export function useLandingDeck({ sectionIds }: UseLandingDeckOptions): UseLandin
   useEffect(() => {
     activeIndexRef.current = activeIndex;
   }, [activeIndex]);
-
-  useEffect(() => {
-    const initial = readPresenterFromUrl() || readPresenterFromSession();
-    setPresenterModeState(initial);
-    if (initial) setAutoAdvance(true);
-  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return;
@@ -152,21 +102,6 @@ export function useLandingDeck({ sectionIds }: UseLandingDeckOptions): UseLandin
     }
     setSlideTransition(!reduceMotion);
   }, [reduceMotion, sectionIds]);
-
-  const setPresenterMode = useCallback((enabled: boolean) => {
-    setPresenterModeState(enabled);
-    persistPresenterMode(enabled);
-    if (!enabled) setAutoAdvance(false);
-  }, []);
-
-  const togglePresenterMode = useCallback(() => {
-    setPresenterModeState((prev) => {
-      const next = !prev;
-      persistPresenterMode(next);
-      if (!next) setAutoAdvance(false);
-      return next;
-    });
-  }, []);
 
   const goToSlide = useCallback(
     (target: string | number, behavior: ScrollBehavior = 'smooth') => {
@@ -222,21 +157,6 @@ export function useLandingDeck({ sectionIds }: UseLandingDeckOptions): UseLandin
           event.preventDefault();
           goToSlide(total - 1);
           break;
-        case 'p':
-        case 'P':
-          event.preventDefault();
-          togglePresenterMode();
-          break;
-        case 'f':
-        case 'F':
-          if (!presenterMode) return;
-          event.preventDefault();
-          if (document.fullscreenElement) {
-            void document.exitFullscreen();
-          } else {
-            void document.documentElement.requestFullscreen();
-          }
-          break;
         default:
           break;
       }
@@ -244,7 +164,7 @@ export function useLandingDeck({ sectionIds }: UseLandingDeckOptions): UseLandin
 
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [goNext, goPrev, goToSlide, presenterMode, togglePresenterMode, total]);
+  }, [goNext, goPrev, goToSlide, total]);
 
   useEffect(() => {
     const onHashChange = () => {
@@ -260,18 +180,6 @@ export function useLandingDeck({ sectionIds }: UseLandingDeckOptions): UseLandin
     return () => window.removeEventListener('hashchange', onHashChange);
   }, [goToSlide]);
 
-  useEffect(() => {
-    if (!presenterMode || !autoAdvance || reduceMotion) return;
-    if (activeIndex >= total - 1) return;
-
-    const timer = window.setInterval(() => {
-      if (activeIndexRef.current >= total - 1) return;
-      goNext();
-    }, autoAdvanceMs);
-
-    return () => window.clearInterval(timer);
-  }, [activeIndex, autoAdvance, autoAdvanceMs, goNext, presenterMode, reduceMotion, total]);
-
   const activeId = sectionIds[activeIndex] ?? null;
 
   return {
@@ -282,12 +190,5 @@ export function useLandingDeck({ sectionIds }: UseLandingDeckOptions): UseLandin
     goToSlide,
     goNext,
     goPrev,
-    presenterMode,
-    setPresenterMode,
-    togglePresenterMode,
-    autoAdvance,
-    setAutoAdvance,
-    autoAdvanceMs,
-    setAutoAdvanceMs,
   };
 }

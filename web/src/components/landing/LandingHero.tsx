@@ -1,9 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { CheckCircle2, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import LandingProductMock from '@/components/landing/LandingProductMock';
-import LandingSlideBadge from '@/components/landing/LandingSlideBadge';
 import {
   LANDING_SECTION_IDS,
   landingGutterClass,
@@ -13,63 +12,40 @@ import {
   landingSplitMockClass,
   landingSplitVisualClass,
 } from '@/components/landing/landingLayout';
-import { useInView } from '@/lib/useInView';
 import { strings } from '@/lib/strings';
-import type { CSSProperties } from 'react';
 
 const vl = strings.views.landing;
 
 export default function LandingHero() {
-  const { ref: bulletsRef, inView: bulletsInView } = useInView<HTMLUListElement>();
-
   return (
     <section id={LANDING_SECTION_IDS.hero} className={landingSectionClass}>
-      <LandingSlideBadge label={(vl.deckBadges as Record<string, string>).hero ?? ''} />
-
-      <div className={`flex min-h-0 flex-1 flex-col justify-center pb-11 pt-4 @sm:pb-12 @sm:pt-5 ${landingGutterClass}`}>
+      <div className={`flex min-h-0 flex-1 flex-col justify-center py-8 @sm:py-10 ${landingGutterClass}`}>
         <div className={landingSectionSplitClass}>
-          <div className={`${landingSplitCopyClass} @md:pr-6 @lg:pr-10`}>
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-link">{vl.heroEyebrow}</p>
-            <h1 className="landing-gradient-text text-3xl font-bold tracking-tight @sm:text-4xl @md:text-[2.5rem] @md:leading-[1.1] @lg:text-[2.75rem] @xl:text-5xl">
-              {vl.heroTitle}
-            </h1>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground @sm:text-base @lg:text-lg">
-              {vl.heroSubtitle}
-            </p>
-            <ul
-              ref={bulletsRef}
-              className={`mt-4 space-y-1.5${bulletsInView ? ' stagger' : ''}`}
-            >
-              {vl.heroBullets.map((bullet, index) => (
-                <li
-                  key={bullet}
-                  className="flex items-start gap-2 text-sm text-foreground"
-                  style={{ '--i': index } as CSSProperties}
-                >
-                  <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 text-link" aria-hidden />
-                  <span className="line-clamp-2">{bullet}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-5 flex flex-wrap items-center gap-2.5">
+          <div className={`${landingSplitCopyClass} max-w-xl flex flex-col gap-8 @md:gap-10 @md:pr-8 @lg:pr-12`}>
+            <div className="space-y-5 @md:space-y-6">
+              <p className="text-sm leading-relaxed text-muted-foreground">{vl.heroEyebrow}</p>
+              <h1 className="text-3xl font-semibold tracking-tight text-foreground @sm:text-4xl @md:text-[2.5rem] @md:leading-[1.25]">
+                {vl.heroTitle}
+              </h1>
+              <p className="max-w-md text-base leading-7 text-muted-foreground @md:text-lg @md:leading-8">
+                {vl.heroSubtitle}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
               <Link
                 href="/pipeline"
-                className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-500"
+                className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
               >
                 {vl.ctaRunAudit}
                 <ChevronRight className="h-4 w-4" aria-hidden />
               </Link>
               <Link
                 href="/home"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-default px-3.5 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-brand-800"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 {vl.ctaDashboard}
-                <ChevronRight className="h-4 w-4" aria-hidden />
               </Link>
             </div>
-            <p className="mt-3 text-[11px] text-muted-foreground @sm:text-xs">
-              {vl.heroProofNoSubscription} · {vl.heroProofLocalData}
-            </p>
           </div>
 
           <div className={`${landingSplitVisualClass} px-0 pb-2 @sm:px-0 @md:px-0`}>

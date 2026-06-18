@@ -32,7 +32,7 @@ export default function LandingShell({ children, footer, backdrop }: LandingShel
 function LandingShellInner({ children, footer, backdrop }: LandingShellProps) {
   const outerRef = useRef<HTMLDivElement>(null);
   const stageFrameRef = useRef<HTMLDivElement>(null);
-  const { goToSlide, goNext, goPrev, presenterMode } = useLandingDeckRequired();
+  const { goToSlide, goNext, goPrev } = useLandingDeckRequired();
 
   useStageScale(stageFrameRef);
 
@@ -75,7 +75,7 @@ function LandingShellInner({ children, footer, backdrop }: LandingShellProps) {
   return (
     <div
       ref={outerRef}
-      className={`landing-grid-bg relative isolate flex h-dvh flex-col overflow-hidden bg-brand-900 text-foreground${presenterMode ? ' landing-presenter' : ''}`}
+      className="landing-grid-bg relative isolate flex h-dvh flex-col overflow-hidden bg-brand-900 text-foreground"
     >
       {backdrop ? (
         <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">{backdrop}</div>

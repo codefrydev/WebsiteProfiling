@@ -792,7 +792,7 @@ select:focus-visible {
   overflow: hidden;
 }
 
-/* Landing deck — progress, presenter mode, edge navigation */
+/* Landing deck — progress and edge navigation */
 .landing-deck-progress-track {
   height: 2px;
   overflow: hidden;
@@ -852,123 +852,17 @@ select:focus-visible {
   opacity: 0;
 }
 
+.landing-deck-edge-btn:focus-visible {
+  outline: 2px solid var(--app-link);
+  outline-offset: 2px;
+}
+
 .landing-deck-edge-btn--prev {
   left: 0.75rem;
 }
 
 .landing-deck-edge-btn--next {
   right: 0.75rem;
-}
-
-.landing-deck-controls {
-  pointer-events: none;
-  position: absolute;
-  right: 1rem;
-  bottom: 2.25rem;
-  left: 1rem;
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.35rem;
-}
-
-.landing-deck-controls-inner {
-  pointer-events: auto;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.35rem;
-  border-radius: 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--app-border) 80%, transparent);
-  background: color-mix(in srgb, var(--app-bg) 88%, transparent);
-  padding: 0.35rem;
-  backdrop-filter: blur(12px);
-}
-
-.landing-deck-control-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  border-radius: 0.5rem;
-  padding: 0.4rem 0.65rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--app-text-muted);
-  transition:
-    background var(--dur-base) var(--ease-out),
-    color var(--dur-base) var(--ease-out);
-}
-
-.landing-deck-control-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--app-bg-muted) 70%, transparent);
-  color: var(--app-text);
-}
-
-.landing-deck-control-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.4;
-}
-
-.landing-deck-control-btn:focus-visible,
-.landing-deck-edge-btn:focus-visible {
-  outline: 2px solid var(--app-link);
-  outline-offset: 2px;
-}
-
-.landing-deck-control-btn--exit {
-  color: var(--app-text);
-}
-
-.landing-deck-control-select {
-  border-radius: 0.5rem;
-  border: 1px solid color-mix(in srgb, var(--app-border) 70%, transparent);
-  background: color-mix(in srgb, var(--app-bg-muted) 50%, transparent);
-  padding: 0.35rem 0.5rem;
-  font-size: 0.75rem;
-  color: var(--app-text-muted);
-}
-
-.landing-deck-shortcuts-hint {
-  pointer-events: none;
-  font-size: 0.65rem;
-  color: var(--app-text-subtle);
-}
-
-.landing-deck-speaker-note {
-  pointer-events: none;
-  max-width: 28rem;
-  text-align: right;
-  font-size: 0.7rem;
-  line-height: 1.35;
-  color: var(--app-text-muted);
-}
-
-.landing-slide-badge {
-  pointer-events: none;
-  position: absolute;
-  top: 0.75rem;
-  right: 1.25rem;
-  z-index: 10;
-  display: none;
-  border-radius: 9999px;
-  border: 1px solid color-mix(in srgb, var(--app-link) 35%, transparent);
-  background: color-mix(in srgb, var(--app-link) 12%, transparent);
-  padding: 0.25rem 0.65rem;
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--app-link);
-}
-
-.landing-presenter .landing-slide-badge {
-  display: inline-flex;
-}
-
-.landing-presenter .landing-section {
-  padding-top: 0.75rem;
-  padding-bottom: 2.5rem;
 }
 
 /* ─────────────────────────────────────────────────────────────

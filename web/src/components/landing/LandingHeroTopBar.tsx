@@ -3,8 +3,6 @@
 import Link from 'next/link';
 import AppLogo from '@/components/AppLogo';
 import ThemeToggle from '@/components/ThemeToggle';
-import { LandingDeckPresentButton } from '@/components/landing/LandingDeckControls';
-import { useLandingDeckRequired } from '@/components/landing/LandingDeckContext';
 import { strings } from '@/lib/strings';
 
 const NAV_ITEMS = [
@@ -22,27 +20,6 @@ const headerGutter = 'px-5 sm:px-8 lg:px-10 xl:px-12';
 export default function LandingHeroTopBar() {
   const vl = strings.views.landing;
   const app = strings.app;
-  const { presenterMode } = useLandingDeckRequired();
-
-  if (presenterMode) {
-    return (
-      <div className={`flex shrink-0 items-center justify-between gap-3 border-b border-muted/40 py-3 ${headerGutter}`}>
-        <Link href="/" className="flex min-w-0 items-center gap-2.5">
-          <AppLogo size={22} />
-          <span className="truncate font-semibold text-foreground">{app.productName}</span>
-        </Link>
-        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-          <ThemeToggle />
-          <Link
-            href="/pipeline"
-            className="rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-500 sm:px-3 sm:text-sm"
-          >
-            {vl.navRunAudit}
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <header className="shrink-0 border-b border-muted/40">
@@ -75,7 +52,6 @@ export default function LandingHeroTopBar() {
         </nav>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <ThemeToggle />
-          <LandingDeckPresentButton />
           <Link
             href="/home"
             className="hidden rounded-lg border border-default px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-brand-800 sm:inline sm:text-sm"
