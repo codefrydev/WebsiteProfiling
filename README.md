@@ -1,12 +1,12 @@
 <p align="center">
   <a href="https://github.com/codefrydev/WebsiteProfiling">
-    <img src="docs/assets/readme-banner.png" alt="Site Audit — Open Source SEO Crawl &amp; Audit" width="920">
+    <img src="docs/assets/readme-banner.png" alt="Site Audit — Developer-friendly SEO crawl and audit" width="920">
   </a>
 </p>
 
 <p align="center">
-  <strong>Site Audit — Open Source SEO Crawl &amp; Audit</strong><br>
-  <sub>Self-hosted technical SEO — your infrastructure, your data.</sub>
+  <strong>Site Audit — Developer-friendly SEO crawl &amp; audit</strong><br>
+  <sub>Self-hosted technical SEO for developers — your infrastructure, your data.</sub>
 </p>
 
 <p align="center">
@@ -37,15 +37,15 @@
 
 # Site Audit
 
-**Open-source SEO crawl and technical audit platform** — built with **Next.js, Python, and PostgreSQL**.
+**Developer-friendly SEO audit platform** — open-source crawl and technical audit tooling built with **Next.js, Python, and PostgreSQL**.
 
 ## Overview
 
-Site Audit is a self-hosted alternative to commercial SEO suites. It runs on your own infrastructure, stores data in your PostgreSQL database, and produces transparent technical reports — no subscription tiers, no gated exports.
+Site Audit is a **developer-friendly SEO audit** tool: self-hosted, transparent, and built for engineers who want crawl data, issue reports, and integrations in their own stack — not another opaque SaaS dashboard. It runs on your infrastructure, stores data in PostgreSQL, and produces actionable technical reports with no subscription tiers or gated exports.
 
 **Use cases**
 
-- Technical SEO audits for owned or client properties
+- Developer-friendly SEO audits for owned or client properties
 - Crawl analysis with static and JavaScript rendering
 - Content writing and optimization with live SEO scoring
 - Search Console, GA4, and Bing Webmaster integration
@@ -95,9 +95,7 @@ Site Audit focuses on **honest, self-hosted technical SEO**. It is not a drop-in
 
 Also included: **AI chat** over audit data (optional), **Content studio** (write &amp; optimize with live SEO scoring), **340 MCP tools** (domain-scoped servers), image SEO, GEO/AEO readiness, keyword explorer (GSC + on-site), backlinks (GSC Links import), compare runs, and portfolio management for agencies.
 
-<p align="center">
-  <img src="docs/assets/social-preview.png" alt="Site Audit preview" width="640">
-</p>
+<img src="docs/assets/social-preview.png" alt="Site Audit — developer-friendly SEO audit preview" width="100%">
 
 ## Architecture
 
@@ -137,15 +135,17 @@ WebsiteProfiling/
 └── pipeline-config.example.txt
 ```
 
-| Path | Purpose |
-|------|---------|
-| `src/website_profiling/` | Crawl, analyze, report, Lighthouse, integrations, AI — run via `python -m src` |
-| `web/app/api/` | REST APIs: report data, pipeline runs, chat (SSE), Google/Bing sync |
-| `web/src/lib/pipelineConfigSchema.ts` | Audit settings schema (UI ↔ PostgreSQL) |
-| `alembic/versions/` | Database migrations — run `./local-run migrate` |
-| `tests/` | Backend tests; `./local-test browser` for Playwright crawl integration |
-| `docs/MCP.md` | MCP server setup for IDE and agent integrations |
-| `data/` | Local secrets and shadow `pipeline-config.txt` (gitignored) |
+
+| Path                                  | Purpose                                                                        |
+| ------------------------------------- | ------------------------------------------------------------------------------ |
+| `src/website_profiling/`              | Crawl, analyze, report, Lighthouse, integrations, AI — run via `python -m src` |
+| `web/app/api/`                        | REST APIs: report data, pipeline runs, chat (SSE), Google/Bing sync            |
+| `web/src/lib/pipelineConfigSchema.ts` | Audit settings schema (UI ↔ PostgreSQL)                                        |
+| `alembic/versions/`                   | Database migrations — run `./local-run migrate`                                |
+| `tests/`                              | Backend tests; `./local-test browser` for Playwright crawl integration         |
+| `docs/MCP.md`                         | MCP server setup for IDE and agent integrations                                |
+| `data/`                               | Local secrets and shadow `pipeline-config.txt` (gitignored)                    |
+
 
 For layout details and common development patterns, see [AGENT.md](AGENT.md).
 
@@ -179,10 +179,12 @@ Default local `DATABASE_URL`: `postgres://postgres:dev@127.0.0.1:5432/website_pr
 
 ### Pipeline job timeouts
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `PIPELINE_JOB_STALE_HOURS` | 1 hour | Reconciles stuck `running` rows |
+
+| Setting                       | Default   | Description                                    |
+| ----------------------------- | --------- | ---------------------------------------------- |
+| `PIPELINE_JOB_STALE_HOURS`    | 1 hour    | Reconciles stuck `running` rows                |
 | `PIPELINE_JOB_ORPHAN_MINUTES` | 5 minutes | Clears orphan jobs with no live server process |
+
 
 Increase `PIPELINE_JOB_STALE_HOURS` for crawls that routinely exceed one hour.
 
@@ -213,16 +215,18 @@ In Audit settings, set **Crawl rendering** to `javascript` (always headless Chro
 
 Ask questions about audit data at [http://localhost:3000/chat](http://localhost:3000/chat). Enable a provider under **Run audit → AI settings** (`llm_enabled`, provider, model). `./local-run setup` installs Python deps from `requirements.txt` (including `httpx`, OpenAI, Anthropic, and Groq SDKs; Gemini uses `httpx` via REST).
 
-| Provider | Notes |
-|----------|-------|
-| **Ollama** | Local daemon at `http://127.0.0.1:11434`. Chat UI lists installed models plus the live Ollama cloud catalog. Native tool calling when supported; ReAct fallback otherwise. |
-| **OpenAI** / **Anthropic** | API key in AI settings or env (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`); native tool calling with streaming. |
-| **Google Gemini** | API key in AI settings or `GEMINI_API_KEY`; REST via `httpx`. |
-| **Groq** | API key in AI settings or `GROQ_API_KEY`; official Groq Python SDK; native tool calling with streaming. Default model `openai/gpt-oss-120b`. |
+
+| Provider                   | Notes                                                                                                                                                                      |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ollama**                 | Local daemon at `http://127.0.0.1:11434`. Chat UI lists installed models plus the live Ollama cloud catalog. Native tool calling when supported; ReAct fallback otherwise. |
+| **OpenAI** / **Anthropic** | API key in AI settings or env (`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`); native tool calling with streaming.                                                                 |
+| **Google Gemini**          | API key in AI settings or `GEMINI_API_KEY`; REST via `httpx`.                                                                                                              |
+| **Groq**                   | API key in AI settings or `GROQ_API_KEY`; official Groq Python SDK; native tool calling with streaming. Default model `openai/gpt-oss-120b`.                               |
+
 
 The agent uses the same **340 read-only audit tools** as the MCP server ([docs/MCP.md](docs/MCP.md)), with **dynamic routing** (~45 tools per turn). Responses stream over SSE (`POST /api/chat`). Sessions persist per property (`chat_sessions` / `chat_messages`).
 
-### Content studio (optional)
+### Content studio (optional, Experimental)
 
 Write and optimize content at [http://localhost:3000/write](http://localhost:3000/write) with **live SEO scoring** from Search Console and on-page heuristics. Drafts persist per property; an optional AI assist (same providers as AI chat) drafts and rewrites copy. Backed by `/api/content-drafts`, `/api/content/score`, and `/api/content/analyze`.
 
@@ -235,14 +239,16 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and 
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [docs/README.md](docs/README.md) | Documentation index and brand assets |
-| [AGENT.md](AGENT.md) | Repository layout and development commands |
-| [docs/GLOSSARY.md](docs/GLOSSARY.md) | UI terminology |
-| [docs/COMPANY_STANDARDS.md](docs/COMPANY_STANDARDS.md) | Data and security policy |
-| [docs/MCP.md](docs/MCP.md) | MCP server setup |
-| [docs/OPS.md](docs/OPS.md) | Scheduled audits, alerts, production ops |
+
+| Document                                               | Description                                |
+| ------------------------------------------------------ | ------------------------------------------ |
+| [docs/README.md](docs/README.md)                       | Documentation index and brand assets       |
+| [AGENT.md](AGENT.md)                                   | Repository layout and development commands |
+| [docs/GLOSSARY.md](docs/GLOSSARY.md)                   | UI terminology                             |
+| [docs/COMPANY_STANDARDS.md](docs/COMPANY_STANDARDS.md) | Data and security policy                   |
+| [docs/MCP.md](docs/MCP.md)                             | MCP server setup                           |
+| [docs/OPS.md](docs/OPS.md)                             | Scheduled audits, alerts, production ops   |
+
 
 ## Star History
 
@@ -251,5 +257,3 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and 
 ## License
 
 Copyright © 2026 [codefrydev](https://github.com/codefrydev). Released under the [MIT License](LICENSE).
-
-Issues and pull requests: [codefrydev/WebsiteProfiling](https://github.com/codefrydev/WebsiteProfiling)
