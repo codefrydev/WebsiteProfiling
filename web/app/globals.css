@@ -182,6 +182,14 @@ body {
   color: var(--app-text);
 }
 
+/* The landing deck renders on a fixed, uniformly-scaled canvas. Keep the root
+   font size stable there so rem-based slide text isn't shrunk a second time by
+   the global ≤1024px step above — that would break the "identical at every
+   size" guarantee. Specificity (0,1,1) beats the :root media rule. */
+html:has(.landing-grid-bg) {
+  font-size: 18px;
+}
+
 /* Report layout: scrollbar (theme-aware) */
 ::-webkit-scrollbar {
   width: 6px;
@@ -655,8 +663,39 @@ select:focus-visible {
 }
 
 /* Horizontal slide deck — one panel visible, no vertical scroll. */
+
+/* Fixed 16:9 design canvas, uniformly scaled to fit the area between the fixed
+   header and progress bar — like a PowerPoint slide. The scale factor is
+   measured in JS (useStageScale) and written to --landing-scale. */
+.landing-stage-frame {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  --landing-scale: 1; /* SSR / pre-measure default; overwritten by useStageScale */
+}
+
+.landing-stage {
+  position: relative;
+  width: 1280px;
+  height: 720px;
+  flex: 0 0 auto;
+  transform-origin: center center;
+  transform: scale(var(--landing-scale));
+  backface-visibility: hidden;
+  /* Slide content queries this fixed-width container instead of the viewport,
+     so the layout is identical at every screen size (see step 5). */
+  container-type: inline-size;
+  container-name: stage;
+}
+
 .landing-deck-viewport {
   position: relative;
+  width: 100%;
+  height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
 }
@@ -709,15 +748,13 @@ select:focus-visible {
   display: grid;
   width: 100%;
   min-width: 0;
+  /* Fill the slide so the copy centers vertically and the mock spans full height
+     (the fixed canvas has no scroll — content is centered, not top-stacked). */
+  height: 100%;
   align-items: stretch;
-  gap: 1.5rem;
-}
-
-@media (min-width: 768px) {
-  .landing-section-split {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 0;
-  }
+  /* Fixed two-column split — the canvas is always rendered at design width. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0;
 }
 
 .landing-split-copy {
@@ -732,17 +769,12 @@ select:focus-visible {
   min-height: 0;
   align-items: center;
   justify-content: center;
+  height: 100%;
+  padding: 0.75rem 1.5rem 0.75rem 0.75rem;
 }
 
-@media (min-width: 768px) {
-  .landing-split-visual {
-    height: 100%;
-    padding: 0.75rem 1.5rem 0.75rem 0.75rem;
-  }
-
-  .landing-section-split--reversed .landing-split-visual {
-    padding: 0.75rem 0.75rem 0.75rem 1.5rem;
-  }
+.landing-section-split--reversed .landing-split-visual {
+  padding: 0.75rem 0.75rem 0.75rem 1.5rem;
 }
 
 .landing-split-mock {
@@ -806,7 +838,7 @@ select:focus-visible {
     background var(--dur-base) var(--ease-out);
 }
 
-.landing-deck-viewport:hover .landing-deck-edge-btn:not(:disabled) {
+.landing-stage-frame:hover .landing-deck-edge-btn:not(:disabled) {
   opacity: 0.85;
 }
 

@@ -28,14 +28,14 @@ export default function LandingCodeBlock({ label, command, prominent = false }: 
   return (
     <div
       className={`group border border-default/60 transition-colors hover:border-blue-500/25 ${
-        prominent ? 'rounded-xl p-4 sm:p-5' : 'rounded-lg p-3'
+        prominent ? 'rounded-xl p-4 @sm:p-5' : 'rounded-lg p-3'
       }`}
     >
       <div className={`flex items-center justify-between gap-2 ${prominent ? 'mb-2' : 'mb-1.5'}`}>
         {label ? (
           <p
             className={`font-medium uppercase tracking-wider text-muted-foreground ${
-              prominent ? 'text-xs sm:text-sm' : 'text-[10px] sm:text-xs'
+              prominent ? 'text-xs @sm:text-sm' : 'text-[10px] @sm:text-xs'
             }`}
           >
             {label}
@@ -54,7 +54,7 @@ export default function LandingCodeBlock({ label, command, prominent = false }: 
           {copied ? vl.copyCommandDone : vl.copyCommand}
         </button>
       </div>
-      <pre className={`overflow-hidden font-mono text-foreground ${prominent ? 'text-sm sm:text-base' : 'text-xs sm:text-sm'}`}>
+      <pre className={`overflow-hidden font-mono text-foreground ${prominent ? 'text-sm @sm:text-base' : 'text-xs @sm:text-sm'}`}>
         <code className={prominent ? 'break-all' : 'line-clamp-3 break-all'}>
           <span className="select-none text-muted-foreground">$ </span>
           {command}

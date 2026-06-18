@@ -75,7 +75,7 @@ function trimInMemoryLog(entry: PipelineJobEntry, chunk: string): void {
 function markJobFinished(
   id: string,
   entry: PipelineJobEntry,
-  status: 'success' | 'error',
+  status: 'success' | 'error' | 'paused',
   exitCode: number | null,
   error?: string,
 ): void {
@@ -266,6 +266,13 @@ export async function startPipelineJobAsync(
       markJobFinished(id, entry, 'error', code ?? -1, CANCELLED_MESSAGE);
       return;
     }
+    if (code === 2) {
+      // Python crawler paused — extract crawl_run_id from log for resume
+      const match = /\[PAUSE\] crawl_run_id=(\d+)/.exec(entry.log);
+      entry.pausedCrawlRunId = match ? Number(match[1]) : null;
+      markJobFinished(id, entry, 'paused', code);
+      return;
+    }
     const status = code === 0 ? 'success' : 'error';
     let error: string | undefined;
     if (code !== 0) {
@@ -382,4 +389,132 @@ export async function cancelPipelineJob(id: string): Promise<CancelPipelineJobRe
     return { ok: false, status: 'error', error: 'Job not found' };
   }
   return { ok: false, status: entry.status, error: 'Job is not running' };
+}
+
+export interface PausePipelineJobResult {
+  ok: boolean;
+  error?: string;
+}
+
+/** Send SIGUSR1 (Unix) or write a PID-keyed pause file (Windows) to the running job. */
+export async function pausePipelineJob(id: string): Promise<PausePipelineJobResult> {
+  const trimmed = id.trim();
+  const entry = getStore().jobs.get(trimmed);
+  const proc = getProcessMap().get(trimmed);
+
+  if (!entry || entry.status !== 'running') {
+    return { ok: false, error: 'Job is not running' };
+  }
+  if (!proc || proc.killed || proc.pid == null) {
+    return { ok: false, error: 'Process not found' };
+  }
+
+  try {
+    // SIGUSR1 on Unix; fall back to a pause-flag file on Windows.
+    process.kill(proc.pid, 'SIGUSR1' as NodeJS.Signals);
+  } catch {
+    // Windows fallback: write a file the Python process polls for.
+    const os = await import('os');
+    const nodePath = await import('path');
+    const flagPath = nodePath.join(os.tmpdir(), `wp_pause_${proc.pid}.flag`);
+    try {
+      fs.writeFileSync(flagPath, '');
+    } catch {
+      return { ok: false, error: 'Could not send pause signal' };
+    }
+  }
+  return { ok: true };
+}
+
+export interface ResumePipelineJobResult {
+  ok: boolean;
+  newJobId?: string;
+  error?: string;
+}
+
+/** Start a new crawl job that resumes from the paused frontier of a previous job. */
+export async function resumePipelineJob(
+  id: string,
+  options: StartPipelineJobOptions = {},
+): Promise<ResumePipelineJobResult> {
+  const trimmed = id.trim();
+  const entry = getStore().jobs.get(trimmed);
+
+  // Resolve the paused crawl_run_id from in-memory entry or the DB log.
+  let pausedRunId: number | null = entry?.pausedCrawlRunId ?? null;
+  if (pausedRunId == null) {
+    const job = await getJob(trimmed);
+    if (!job) return { ok: false, error: 'Job not found' };
+    if (job.status !== 'paused') return { ok: false, error: 'Job is not paused' };
+    const match = /\[PAUSE\] crawl_run_id=(\d+)/.exec(job.log);
+    pausedRunId = match ? Number(match[1]) : null;
+  }
+  if (pausedRunId == null) {
+    return { ok: false, error: 'No paused crawl run found for this job' };
+  }
+
+  // Start a new pipeline job with --resume-run-id flag appended to the crawl command.
+  const repoRoot = resolveRepoRoot(options.repoRoot);
+  const pythonExe = sanitizePython(options.python, repoRoot);
+  const store = getStore();
+  if (store.running) {
+    return { ok: false, error: 'An audit job is already running' };
+  }
+
+  const newId = randomUUID();
+  if (isDbJobsEnabled()) {
+    const claimed = await tryClaimRunningPipelineJob(newId, 'crawl', options.propertyId ?? null, null);
+    if (!claimed) {
+      return { ok: false, error: 'An audit job is already running' };
+    }
+  }
+
+  const newEntry: import('@/types/api').PipelineJobEntry = {
+    status: 'running',
+    exitCode: null,
+    log: '',
+    logTruncated: false,
+  };
+  store.jobs.set(newId, newEntry);
+  store.running = true;
+
+  const args = ['-m', 'src', '--resume-run-id', String(pausedRunId)];
+  const proc = spawn(pythonExe, args, {
+    cwd: repoRoot,
+    env: getPipelineSpawnEnv(repoRoot),
+    shell: false,
+  });
+  getProcessMap().set(newId, proc);
+
+  const append = (chunk: Buffer | string): void => {
+    const text = chunk.toString();
+    trimInMemoryLog(newEntry, text);
+    if (isDbJobsEnabled()) {
+      void appendPipelineJobLog(newId, text)
+        .then((truncated) => { if (truncated) newEntry.logTruncated = true; })
+        .catch((err) => logPipelineDbError('appendPipelineJobLog', err));
+    }
+  };
+  proc.stdout?.on('data', append);
+  proc.stderr?.on('data', append);
+
+  proc.on('error', (err: Error) => {
+    if (newEntry.finished) return;
+    markJobFinished(newId, newEntry, 'error', -1, formatPythonSpawnError(err, pythonExe, repoRoot));
+  });
+
+  proc.on('close', (code: number | null) => {
+    if (newEntry.finished) return;
+    if (code === 2) {
+      const match = /\[PAUSE\] crawl_run_id=(\d+)/.exec(newEntry.log);
+      newEntry.pausedCrawlRunId = match ? Number(match[1]) : null;
+      markJobFinished(newId, newEntry, 'paused', code);
+      return;
+    }
+    const status = code === 0 ? 'success' : 'error';
+    const error = code !== 0 ? buildPipelineJobErrorMessage(newEntry.log, code) : undefined;
+    markJobFinished(newId, newEntry, status, code, error);
+  });
+
+  return { ok: true, newJobId: newId };
 }

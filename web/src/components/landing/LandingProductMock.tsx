@@ -468,8 +468,8 @@ export default function LandingProductMock({
   const bodyMinH = fillHeight
     ? 'min-h-0 flex-1'
     : compact
-      ? 'min-h-[200px] sm:min-h-[220px]'
-      : 'min-h-[320px] sm:min-h-[360px]';
+      ? 'min-h-[200px] @sm:min-h-[220px]'
+      : 'min-h-[320px] @sm:min-h-[360px]';
 
   return (
     <div
@@ -484,13 +484,13 @@ export default function LandingProductMock({
           <span className={`rounded-full bg-amber-500/80 ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`} />
           <span className={`rounded-full bg-emerald-500/80 ${compact ? 'h-2 w-2' : 'h-2.5 w-2.5'}`} />
         </span>
-        <span className="min-w-0 flex-1 truncate rounded-md border border-default/60 bg-brand-950/60 px-2 py-0.5 text-center text-[9px] text-muted-foreground sm:text-[10px]">
+        <span className="min-w-0 flex-1 truncate rounded-md border border-default/60 bg-brand-950/60 px-2 py-0.5 text-center text-[9px] text-muted-foreground @sm:text-[10px]">
           https://site-audit.local/{MOCK_PATHS[variant]}
         </span>
       </div>
 
       <div className={`flex ${bodyMinH}`}>
-        <aside className={`hidden shrink-0 border-r border-default/60 bg-brand-900/60 p-2 sm:block ${compact ? 'w-20' : 'w-28 p-2.5'}`}>
+        <aside className={`hidden shrink-0 border-r border-default/60 bg-brand-900/60 p-2 @sm:block ${compact ? 'w-20' : 'w-28 p-2.5'}`}>
           <div className={`flex items-center gap-1.5 ${compact ? 'mb-2' : 'mb-3'}`}>
             <span className={`rounded-md bg-blue-500/20 ${compact ? 'h-4 w-4' : 'h-5 w-5'}`} />
             <span className={`rounded bg-brand-700/80 ${compact ? 'h-1.5 w-10' : 'h-2 w-14'}`} />
@@ -501,7 +501,7 @@ export default function LandingProductMock({
               return (
                 <li
                   key={label}
-                  className={`rounded-md px-1.5 py-1 text-[9px] sm:text-[10px] ${
+                  className={`rounded-md px-1.5 py-1 text-[9px] @sm:text-[10px] ${
                     active ? 'bg-blue-500/15 font-semibold text-link' : 'text-muted-foreground'
                   }`}
                 >
@@ -512,7 +512,7 @@ export default function LandingProductMock({
           </ul>
         </aside>
 
-        <div className={`min-w-0 flex-1 overflow-hidden ${compact ? 'p-2' : 'p-3 sm:p-3.5'}`}>
+        <div className={`min-w-0 flex-1 overflow-hidden ${compact ? 'p-2' : 'p-3 @sm:p-3.5'}`}>
           {renderPanel(variant)}
         </div>
       </div>

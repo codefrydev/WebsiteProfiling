@@ -5,7 +5,6 @@ import AppLogo from '@/components/AppLogo';
 import ThemeToggle from '@/components/ThemeToggle';
 import { LandingDeckPresentButton } from '@/components/landing/LandingDeckControls';
 import { useLandingDeckRequired } from '@/components/landing/LandingDeckContext';
-import { landingGutterClass } from '@/components/landing/landingLayout';
 import { strings } from '@/lib/strings';
 
 const NAV_ITEMS = [
@@ -13,6 +12,11 @@ const NAV_ITEMS = [
   { href: '#quick-start', labelKey: 'navQuickStart' as const },
   { href: '#spotlight-google', labelKey: 'navGoogleSetup' as const },
 ] as const;
+
+/* The header is fixed chrome at real device size (outside the scaled stage), so
+   it keeps viewport-based responsive gutters rather than the container-query
+   gutter used by slide content. */
+const headerGutter = 'px-5 sm:px-8 lg:px-10 xl:px-12';
 
 /** Title-slide chrome: logo, section links, and primary actions (hero slide only). */
 export default function LandingHeroTopBar() {
@@ -22,7 +26,7 @@ export default function LandingHeroTopBar() {
 
   if (presenterMode) {
     return (
-      <div className={`flex shrink-0 items-center justify-between gap-3 border-b border-muted/40 py-3 ${landingGutterClass}`}>
+      <div className={`flex shrink-0 items-center justify-between gap-3 border-b border-muted/40 py-3 ${headerGutter}`}>
         <Link href="/" className="flex min-w-0 items-center gap-2.5">
           <AppLogo size={22} />
           <span className="truncate font-semibold text-foreground">{app.productName}</span>
@@ -42,7 +46,7 @@ export default function LandingHeroTopBar() {
 
   return (
     <header className="shrink-0 border-b border-muted/40">
-      <div className={`flex h-14 w-full items-center justify-between gap-3 ${landingGutterClass}`}>
+      <div className={`flex h-14 w-full items-center justify-between gap-3 ${headerGutter}`}>
         <Link href="/" className="flex min-w-0 items-center gap-2.5">
           <AppLogo size={22} />
           <span className="truncate font-semibold text-foreground">{app.productName}</span>
@@ -87,7 +91,7 @@ export default function LandingHeroTopBar() {
         </div>
       </div>
       <nav
-        className={`flex gap-2 overflow-x-auto border-t border-muted/50 py-2 md:hidden ${landingGutterClass}`}
+        className={`flex gap-2 overflow-x-auto border-t border-muted/50 py-2 md:hidden ${headerGutter}`}
         aria-label="Landing mobile"
       >
         {NAV_ITEMS.map(({ href, labelKey }) => (

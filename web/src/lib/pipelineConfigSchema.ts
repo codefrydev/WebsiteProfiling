@@ -120,6 +120,14 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
         visibleWhen: { key: 'crawl_user_agent_preset', not: ['default', 'mobile'] },
       },
       {
+        key: 'compare_mobile_desktop',
+        label: 'Mobile vs Desktop comparison',
+        type: 'bool',
+        defaultValue: false,
+        help: 'After crawling, run a second pass with Mobile Safari UA and compare per-URL title, H1, word count, and status differences.',
+        visibleWhen: { key: 'crawl_user_agent_preset', not: ['mobile'] },
+      },
+      {
         key: 'crawl_auth_username',
         label: 'HTTP Basic auth username',
         type: 'text',
@@ -236,10 +244,10 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
       },
       {
         key: 'crawl_path_segments',
-        label: 'Crawl path segments (prefixes)',
+        label: 'Crawl path segments',
         type: 'text',
         defaultValue: '',
-        help: 'Comma-separated path prefixes for per-segment health scores (e.g. /blog,/products).',
+        help: 'Comma-separated path prefixes or regex patterns. Each segment gets its own health score computed from its URLs. Examples: /blog,/products or /blog/.*,/api/v\\d+',
         placeholder: '/blog,/docs',
       },
       {
@@ -721,7 +729,7 @@ export const PIPELINE_CONFIG_SECTIONS: PipelineConfigSection[] = [
 
 const ADVANCED_FIELD_KEYS = new Set<string>([
   // Crawl
-  'crawl_user_agent_preset', 'crawl_user_agent_custom', 'crawl_auth_username', 'crawl_auth_password',
+  'crawl_user_agent_preset', 'crawl_user_agent_custom', 'compare_mobile_desktop', 'crawl_auth_username', 'crawl_auth_password',
   'crawl_extra_headers', 'crawl_cookies', 'crawl_robots_txt_override', 'custom_extractors',
   'polite_delay', 'store_outlinks', 'store_content_excerpt', 'content_excerpt_max_chars',
   'store_page_html', 'max_stored_html_bytes', 'run_content_analysis', 'content_analysis_strategy',

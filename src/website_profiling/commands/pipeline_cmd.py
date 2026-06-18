@@ -157,7 +157,12 @@ def run(cfg: dict, args: argparse.Namespace) -> None:
 
     phase_results: list[PhaseResult] = []
 
-    if run_crawl:
+    resume_run_id = getattr(args, "resume_run_id", None)
+    if resume_run_id is not None:
+        phase_results.append(
+            run_pipeline_phase("crawl", lambda: _run_crawl(cfg, use_database, resume_run_id=resume_run_id))
+        )
+    elif run_crawl:
         phase_results.append(run_pipeline_phase("crawl", lambda: _run_crawl(cfg, use_database)))
 
     if run_content_analysis and use_database:
@@ -209,7 +214,7 @@ def _finalize_pipeline_run(phase_results: list[PhaseResult]) -> None:
     sys.exit(1)
 
 
-def _run_crawl(cfg: dict, use_database: bool) -> None:
+def _run_crawl(cfg: dict, use_database: bool, resume_run_id: int | None = None) -> None:
     from ..crawl.crawler import run_crawler
 
     console_print("[Crawl] Starting...", flush=True)
@@ -304,6 +309,7 @@ def _run_crawl(cfg: dict, use_database: bool) -> None:
         crawl_robots_txt_override=(cfg.get("crawl_robots_txt_override") or "").strip(),
         custom_extractors=custom_extractors or None,
         enable_axe=enable_axe,
+        resume_run_id=resume_run_id,
     )
     console_print("[Crawl] Done.", flush=True)
     emit_phase_done("crawl")

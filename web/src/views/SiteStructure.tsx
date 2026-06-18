@@ -445,7 +445,12 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
                 <tbody className="divide-y divide-muted">
                   {crawlSegments.segments.map((seg: CrawlSegmentEntry) => (
                     <tr key={seg.prefix}>
-                      <td className="py-2 pr-3 font-mono text-foreground">{seg.prefix}</td>
+                      <td className="py-2 pr-3 font-mono text-foreground">
+                        {seg.prefix}
+                        {seg.pattern_type === 'regex' && (
+                          <span className="ml-1.5 inline-flex items-center rounded px-1 py-0.5 text-[10px] font-medium bg-blue-500/15 text-blue-400">regex</span>
+                        )}
+                      </td>
                       <td className="py-2 px-3 text-right tabular-nums">{seg.url_count ?? 0}</td>
                       <td className="py-2 pl-3 text-right tabular-nums">{seg.health_score ?? '—'}</td>
                     </tr>

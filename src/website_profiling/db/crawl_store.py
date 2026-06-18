@@ -105,6 +105,141 @@ def get_crawl_run_info(conn: Connection, run_id: int) -> Optional[dict[str, Any]
             return None
 
 
+def set_mobile_run_id(conn: Connection, desktop_run_id: int, mobile_run_id: int) -> None:
+    """Link a mobile crawl run to its paired desktop run."""
+    conn.execute(
+        "UPDATE crawl_runs SET mobile_run_id = %s WHERE id = %s",
+        (mobile_run_id, desktop_run_id),
+    )
+    conn.commit()
+
+
+def get_mobile_run_id(conn: Connection, run_id: int) -> Optional[int]:
+    """Return the mobile_run_id paired with this desktop run, or None."""
+    try:
+        cur = conn.execute(
+            "SELECT mobile_run_id FROM crawl_runs WHERE id = %s", (run_id,)
+        )
+        row = cur.fetchone()
+        if row is None:
+            return None
+        val = row["mobile_run_id"]
+        return int(val) if val is not None else None
+    except Exception:
+        return None
+
+
+def read_mobile_desktop_delta(conn: Connection, desktop_run_id: int) -> list[dict[str, Any]]:
+    """Compare desktop vs paired mobile crawl, returning per-URL delta rows.
+
+    Each row has: url, desktop, mobile (each with title/h1/word_count/status),
+    and boolean flags title_differs, h1_differs, status_differs, plus word_count_delta.
+    Only URLs present in both runs with at least one meaningful difference are included.
+    """
+    mobile_run_id = get_mobile_run_id(conn, desktop_run_id)
+    if mobile_run_id is None:
+        return []
+    desktop_df = read_crawl(conn, desktop_run_id)
+    mobile_df = read_crawl(conn, mobile_run_id)
+    if desktop_df.empty or mobile_df.empty:
+        return []
+
+    def _norm(s: Any) -> str:
+        return str(s or "").rstrip("/").lower()
+
+    def _int(v: Any) -> int:
+        try:
+            return int(v or 0)
+        except (TypeError, ValueError):
+            return 0
+
+    desktop_map = {_norm(r.get("url")): r for r in desktop_df.to_dict("records")}
+    mobile_map = {_norm(r.get("url")): r for r in mobile_df.to_dict("records")}
+
+    deltas: list[dict[str, Any]] = []
+    for url_key, dr in desktop_map.items():
+        mr = mobile_map.get(url_key)
+        if mr is None:
+            continue
+        d_title = str(dr.get("title") or "")
+        m_title = str(mr.get("title") or "")
+        d_h1 = str(dr.get("h1") or "")
+        m_h1 = str(mr.get("h1") or "")
+        d_wc = _int(dr.get("word_count"))
+        m_wc = _int(mr.get("word_count"))
+        d_st = _int(dr.get("status"))
+        m_st = _int(mr.get("status"))
+
+        title_diff = d_title != m_title
+        h1_diff = d_h1 != m_h1
+        wc_diff = abs(d_wc - m_wc)
+        status_diff = d_st != m_st
+
+        if not (title_diff or h1_diff or wc_diff > 50 or status_diff):
+            continue
+        deltas.append({
+            "url": str(dr.get("url") or url_key),
+            "desktop": {"title": d_title, "h1": d_h1, "word_count": d_wc, "status": d_st},
+            "mobile": {"title": m_title, "h1": m_h1, "word_count": m_wc, "status": m_st},
+            "title_differs": title_diff,
+            "h1_differs": h1_diff,
+            "word_count_delta": wc_diff,
+            "status_differs": status_diff,
+        })
+
+    # Sort: status diffs first (mobile indexing risk), then title, then word count delta
+    deltas.sort(
+        key=lambda d: -(
+            (4 if d["status_differs"] else 0)
+            + (2 if d["title_differs"] else 0)
+            + (1 if d["h1_differs"] else 0)
+            + (1 if d["word_count_delta"] > 100 else 0)
+        )
+    )
+    return deltas
+
+
+def save_pause_state(conn: Connection, run_id: int, state: dict) -> None:
+    """Persist frontier state for a paused crawl run."""
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc).isoformat()
+    conn.execute(
+        "UPDATE crawl_runs SET pause_state = %s, paused_at = %s WHERE id = %s",
+        (json.dumps(state), now, run_id),
+    )
+    conn.commit()
+
+
+def load_pause_state(conn: Connection, run_id: int) -> Optional[dict]:
+    """Load saved frontier state for a paused crawl run."""
+    try:
+        cur = conn.execute(
+            "SELECT pause_state FROM crawl_runs WHERE id = %s", (run_id,)
+        )
+        row = cur.fetchone()
+        if row is None or row["pause_state"] is None:
+            return None
+        val = row["pause_state"]
+        if isinstance(val, str):
+            return json.loads(val)
+        return dict(val)
+    except Exception:
+        return None
+
+
+def clear_pause_state(conn: Connection, run_id: int) -> None:
+    """Clear saved frontier state after a successful resume."""
+    try:
+        conn.execute(
+            "UPDATE crawl_runs SET pause_state = NULL, paused_at = NULL WHERE id = %s",
+            (run_id,),
+        )
+        conn.commit()
+    except Exception:
+        pass
+
+
 def _df_row_to_crawl_json(row: pd.Series) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for col in row.index:
@@ -398,14 +533,15 @@ def write_link_edges(
             bool(e.get("is_sponsored")),
             bool(e.get("is_ugc")),
             str(e.get("link_type") or "internal"),
+            str(e.get("position") or "content"),
         ))
     if rows:
         _executemany(
             conn,
             """INSERT INTO link_edges (
                 crawl_run_id, from_url, to_url, anchor_text, rel,
-                is_nofollow, is_sponsored, is_ugc, link_type
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                is_nofollow, is_sponsored, is_ugc, link_type, position
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT DO NOTHING""",
             rows,
         )
@@ -424,7 +560,9 @@ def read_link_edges(
         return []
     try:
         cur = conn.execute(
-            """SELECT from_url, to_url, anchor_text, rel, is_nofollow, is_sponsored, is_ugc, link_type
+            """SELECT from_url, to_url, anchor_text, rel,
+                      is_nofollow, is_sponsored, is_ugc, link_type,
+                      COALESCE(position, 'content') AS position
                FROM link_edges WHERE crawl_run_id = %s LIMIT %s""",
             (run_id, max(1, int(limit))),
         )

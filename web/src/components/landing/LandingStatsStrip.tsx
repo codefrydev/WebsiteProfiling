@@ -23,9 +23,9 @@ const STACK = [vl.trustStackDocker, vl.trustStackPostgres, vl.trustStackNext, vl
 
 export default function LandingStatsStrip() {
   return (
-    <div className={`${landingContentClass} flex h-full min-h-0 flex-col justify-center gap-6 lg:gap-8`}>
+    <div className={`${landingContentClass} flex h-full min-h-0 flex-col justify-center gap-6 @lg:gap-8`}>
       <div className={landingSectionSplitClass}>
-        <div className={`${landingSplitCopyClass} ${landingGutterClass} md:pr-6 lg:pr-10`}>
+        <div className={`${landingSplitCopyClass} ${landingGutterClass} @md:pr-6 @lg:pr-10`}>
           <LandingSectionHeader
             eyebrow={vl.statsEyebrow}
             title={vl.statsTitle}
@@ -35,21 +35,21 @@ export default function LandingStatsStrip() {
           />
         </div>
 
-        <div className={`flex min-h-0 flex-col justify-center px-5 sm:px-8 md:px-6 lg:px-10`}>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className={`flex min-h-0 flex-col justify-center px-5 @sm:px-8 @md:px-6 @lg:px-10`}>
+          <div className="grid grid-cols-1 gap-3 @sm:grid-cols-2">
             {STATS.map(({ icon: Icon, label, value, hint }) => (
               <article
                 key={label}
-                className="flex min-h-[7.5rem] flex-col rounded-xl border border-default/60 px-4 py-4 transition-colors hover:border-blue-500/25 sm:min-h-[8.25rem] sm:px-5 sm:py-5"
+                className="flex min-h-[7.5rem] flex-col rounded-xl border border-default/60 px-4 py-4 transition-colors hover:border-blue-500/25 @sm:min-h-[8.25rem] @sm:px-5 @sm:py-5"
               >
                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-link">
                   <Icon className="h-4 w-4" aria-hidden />
                 </span>
-                <p className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground sm:text-xs">
+                <p className="mt-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground @sm:text-xs">
                   {label}
                 </p>
-                <p className="mt-0.5 text-base font-bold leading-snug text-foreground sm:text-lg">{value}</p>
-                <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground sm:text-sm">{hint}</p>
+                <p className="mt-0.5 text-base font-bold leading-snug text-foreground @sm:text-lg">{value}</p>
+                <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground @sm:text-sm">{hint}</p>
               </article>
             ))}
           </div>
@@ -57,7 +57,7 @@ export default function LandingStatsStrip() {
       </div>
 
       <div
-        className={`flex flex-col items-center gap-3 border-t border-muted/40 pt-5 sm:flex-row sm:justify-between ${landingGutterClass}`}
+        className={`flex flex-col items-center gap-3 border-t border-muted/40 pt-5 @sm:flex-row @sm:justify-between ${landingGutterClass}`}
       >
         <p className="text-xs font-semibold uppercase tracking-wider text-link">{vl.trustTitle}</p>
         <div className="flex flex-wrap items-center justify-center gap-2">

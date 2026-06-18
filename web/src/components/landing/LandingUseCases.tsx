@@ -34,17 +34,17 @@ export default function LandingUseCases() {
         subtitle={vl.useCasesSubtitle}
         compact
       />
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid gap-3 @md:grid-cols-3">
         {USE_CASES.map(({ icon: Icon, title, description }) => (
           <article
             key={title}
-            className="rounded-xl border border-default/60 p-3.5 transition-colors hover:border-blue-500/25 sm:p-4"
+            className="rounded-xl border border-default/60 p-3.5 transition-colors hover:border-blue-500/25 @sm:p-4"
           >
             <span className="inline-flex h-8 w-8 items-center justify-center text-link">
               <Icon className="h-4 w-4" aria-hidden />
             </span>
             <h3 className="mt-2 text-sm font-semibold text-foreground">{title}</h3>
-            <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+            <p className="mt-1 line-clamp-3 text-xs leading-relaxed text-muted-foreground @sm:text-sm">
               {description}
             </p>
           </article>

@@ -12,7 +12,11 @@ import { linkHasBrowserErrors } from '@/lib/browserErrors';
 import { collectCustomFieldKeys, parseLinkCustomFields } from '@/lib/customFields';
 import { SortTh, RowTooltip, LinksFilterBar, InlinksMetricCell } from '@/components/links';
 import SavedCrawlFiltersBar from '@/components/links/SavedCrawlFiltersBar';
+import AdvancedLinkFilters from '@/components/links/AdvancedLinkFilters';
+import ColumnPicker from '@/components/links/ColumnPicker';
 import type { LinksFilterValues } from '@/components/links/LinksFilterBar';
+import type { AdvancedCondition } from '@/lib/advancedLinkFilter';
+import { resolveColumns } from '@/lib/columnConfig';
 import type { LinkSortKey } from './types';
 import { LinksExplorerTabPanel } from './LinksExplorerTabPanel';
 import { LinksExplorerSummaryCharts } from './LinksExplorerSummaryCharts';
@@ -21,8 +25,16 @@ export interface LinksExplorerTableTabProps {
   filterValues: LinksFilterValues;
   onFilterChange: (key: keyof LinksFilterValues, value: string) => void;
   onClearAllFilters: () => void;
+  advConditions: AdvancedCondition[];
+  onAdvAdd: () => void;
+  onAdvUpdate: (id: string, patch: Partial<Pick<AdvancedCondition, 'field' | 'op' | 'value'>>) => void;
+  onAdvRemove: (id: string) => void;
+  onAdvClear: () => void;
+  columns?: string[];
+  onColumnsChange?: (cols: string[] | undefined) => void;
   propertyId?: number;
-  onLoadSavedFilter?: (values: LinksFilterValues) => void;
+  savedView?: unknown;
+  onLoadSavedView?: (raw: unknown) => void;
   searchQuery: string;
   filtered: ReportLink[];
   pageLinks: ReportLink[];
@@ -47,8 +59,16 @@ export function LinksExplorerTableTab({
   filterValues,
   onFilterChange,
   onClearAllFilters,
+  advConditions,
+  onAdvAdd,
+  onAdvUpdate,
+  onAdvRemove,
+  onAdvClear,
+  columns,
+  onColumnsChange,
   propertyId = 0,
-  onLoadSavedFilter,
+  savedView,
+  onLoadSavedView,
   searchQuery,
   filtered,
   pageLinks,
@@ -74,6 +94,7 @@ export function LinksExplorerTableTab({
   const customFieldKeys = collectCustomFieldKeys(links);
   const customExtractHint = normalizeHintContent(metricHelpHint('views.links.explorerExtract'));
   const jsErrorsHint = normalizeHintContent(metricHelpHint('views.links.explorerJsErrors'));
+  const visibleCols = resolveColumns(columns);
 
   return (
     <LinksExplorerTabPanel tabId="urls" className="flex flex-col gap-4">
@@ -83,15 +104,24 @@ export function LinksExplorerTableTab({
         onClearAll={onClearAllFilters}
         searchQuery={searchQuery}
       />
-      {onLoadSavedFilter ? (
-        <SavedCrawlFiltersBar
-          propertyId={propertyId}
-          filterValues={filterValues}
-          onLoad={onLoadSavedFilter}
-        />
+      <AdvancedLinkFilters
+        conditions={advConditions}
+        onAdd={onAdvAdd}
+        onUpdate={onAdvUpdate}
+        onRemove={onAdvRemove}
+        onClear={onAdvClear}
+      />
+      {onLoadSavedView ? (
+        <SavedCrawlFiltersBar propertyId={propertyId} view={savedView} onLoad={onLoadSavedView} />
       ) : null}
 
       <LinksExplorerSummaryCharts links={links} />
+
+      {onColumnsChange ? (
+        <div className="flex justify-end">
+          <ColumnPicker columns={columns} onChange={onColumnsChange} />
+        </div>
+      ) : null}
 
       <Card overflowHidden padding="none" className="flex flex-col min-h-[min(500px,70vh)] sm:min-h-[500px]">
         <div
@@ -127,6 +157,7 @@ export function LinksExplorerTableTab({
                   sortDesc={sortDesc}
                   onSort={onToggleSort}
                   hint={metricHelpHint('views.links.explorerStatus')}
+                  className={visibleCols.has('status') ? undefined : 'hidden'}
                 />
                 <SortTh
                   label={vl.thLinksIn}
@@ -135,6 +166,7 @@ export function LinksExplorerTableTab({
                   sortDesc={sortDesc}
                   onSort={onToggleSort}
                   hint={metricHelpHint('views.links.explorerInlinks')}
+                  className={visibleCols.has('inlinks') ? undefined : 'hidden'}
                 />
                 <SortTh
                   label={vl.thCrawlDepth}
@@ -142,8 +174,8 @@ export function LinksExplorerTableTab({
                   sortBy={sortBy}
                   sortDesc={sortDesc}
                   onSort={onToggleSort}
-                  className="hidden md:table-cell"
                   hint={metricHelpHint('views.links.explorerDepth')}
+                  className={visibleCols.has('depth') ? undefined : 'hidden'}
                 />
                 <SortTh
                   label={vl.thLoadTime}
@@ -152,6 +184,7 @@ export function LinksExplorerTableTab({
                   sortDesc={sortDesc}
                   onSort={onToggleSort}
                   hint={metricHelpHint('views.links.explorerLoadTime')}
+                  className={visibleCols.has('response_time_ms') ? undefined : 'hidden'}
                 />
                 <SortTh
                   label={vl.thWords}
@@ -159,11 +192,11 @@ export function LinksExplorerTableTab({
                   sortBy={sortBy}
                   sortDesc={sortDesc}
                   onSort={onToggleSort}
-                  className="hidden md:table-cell"
                   hint={metricHelpHint('views.links.explorerWords')}
+                  className={visibleCols.has('word_count') ? undefined : 'hidden'}
                 />
                 {hasCustomExtract ? (
-                  <th className="hidden lg:table-cell px-4 py-4 text-muted-foreground uppercase text-xs whitespace-nowrap">
+                  <th className={visibleCols.has('custom_extract') ? 'px-4 py-4 text-muted-foreground uppercase text-xs whitespace-nowrap' : 'hidden'}>
                     <span className="inline-flex items-center gap-1 normal-case">
                       {vl.thCustomExtract}
                       {customExtractHint ? (
@@ -182,7 +215,7 @@ export function LinksExplorerTableTab({
                     {key}
                   </th>
                 ))}
-                <th className="hidden lg:table-cell px-4 py-4 text-muted-foreground uppercase text-xs whitespace-nowrap">
+                <th className={visibleCols.has('js_errors') ? 'px-4 py-4 text-muted-foreground uppercase text-xs whitespace-nowrap' : 'hidden'}>
                   <span className="inline-flex items-center gap-1 normal-case">
                     {vl.thJsErrors}
                     {jsErrorsHint ? (
@@ -232,17 +265,19 @@ export function LinksExplorerTableTab({
                           <span className="truncate font-mono">{hrefLines.label}</span>
                           <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" />
                         </a>
-                        {(link.depth != null || (link.word_count ?? 0) > 0) && (
-                          <p className="mt-1 md:hidden text-[11px] text-muted-foreground leading-snug">
-                            {link.depth != null && (
+                        {((!visibleCols.has('depth') && link.depth != null) ||
+                          (!visibleCols.has('word_count') && (link.word_count ?? 0) > 0)) && (
+                          <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
+                            {!visibleCols.has('depth') && link.depth != null && (
                               <span>
                                 {vl.thCrawlDepth}: {String(link.depth)}
                               </span>
                             )}
-                            {link.depth != null && (link.word_count ?? 0) > 0 && (
+                            {!visibleCols.has('depth') && link.depth != null &&
+                              !visibleCols.has('word_count') && (link.word_count ?? 0) > 0 && (
                               <span className="mx-1.5 text-muted-foreground">·</span>
                             )}
-                            {(link.word_count ?? 0) > 0 && (
+                            {!visibleCols.has('word_count') && (link.word_count ?? 0) > 0 && (
                               <span>
                                 {vl.thWords}: {(link.word_count ?? 0).toLocaleString()}
                               </span>
@@ -251,25 +286,32 @@ export function LinksExplorerTableTab({
                         )}
                       </div>
                     </td>
-                    <td className="px-3 sm:px-4 py-3 whitespace-nowrap align-middle">
+                    <td className={visibleCols.has('status') ? 'px-3 sm:px-4 py-3 whitespace-nowrap align-middle' : 'hidden'}>
                       <Badge value={link.status ?? ''} />
                     </td>
-                    <td className="px-3 sm:px-4 py-3 text-right align-middle min-w-0">
+                    <td className={visibleCols.has('inlinks') ? 'px-3 sm:px-4 py-3 text-right align-middle min-w-0' : 'hidden'}>
                       <InlinksMetricCell count={link.inlinks ?? 0} maxInSection={maxInlinksInResults} />
                     </td>
-                    <td className="hidden md:table-cell px-4 py-3 text-foreground text-sm tabular-nums whitespace-nowrap align-middle">
+                    <td className={visibleCols.has('depth') ? 'px-4 py-3 text-foreground text-sm tabular-nums whitespace-nowrap align-middle' : 'hidden'}>
                       {link.depth != null ? link.depth : sj.emDash}
                     </td>
                     <td
-                      className={`px-3 sm:px-4 py-3 text-sm font-semibold tabular-nums whitespace-nowrap align-middle ${rtColor(link.response_time_ms)}`}
+                      className={
+                        visibleCols.has('response_time_ms')
+                          ? `px-3 sm:px-4 py-3 text-sm font-semibold tabular-nums whitespace-nowrap align-middle ${rtColor(link.response_time_ms)}`
+                          : 'hidden'
+                      }
                     >
                       {formatMs(link.response_time_ms)}
                     </td>
-                    <td className="hidden md:table-cell px-4 py-3 text-sm text-foreground tabular-nums whitespace-nowrap align-middle">
+                    <td className={visibleCols.has('word_count') ? 'px-4 py-3 text-sm text-foreground tabular-nums whitespace-nowrap align-middle' : 'hidden'}>
                       {(link.word_count ?? 0) > 0 ? (link.word_count ?? 0).toLocaleString() : sj.emDash}
                     </td>
                     {hasCustomExtract ? (
-                      <td className="hidden lg:table-cell px-4 py-3 text-xs text-foreground align-middle max-w-[12rem] truncate" title={link.custom_extract}>
+                      <td
+                        className={visibleCols.has('custom_extract') ? 'px-4 py-3 text-xs text-foreground align-middle max-w-[12rem] truncate' : 'hidden'}
+                        title={link.custom_extract}
+                      >
                         {link.custom_extract || sj.emDash}
                       </td>
                     ) : null}
@@ -285,7 +327,7 @@ export function LinksExplorerTableTab({
                         </td>
                       );
                     })}
-                    <td className="hidden lg:table-cell px-4 py-3 text-xs align-middle whitespace-nowrap">
+                    <td className={visibleCols.has('js_errors') ? 'px-4 py-3 text-xs align-middle whitespace-nowrap' : 'hidden'}>
                       {linkHasBrowserErrors(link) ? (
                         <span className="inline-flex items-center rounded-md bg-red-500/10 border border-red-500/25 px-2 py-0.5 font-mono text-red-700 dark:text-red-300">
                           {format(vl.jsErrorBadge, {

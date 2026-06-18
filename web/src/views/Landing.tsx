@@ -159,7 +159,7 @@ export default function LandingPage() {
             subtitle={vl.featuresSubtitle}
             compact
           />
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+          <div className="grid gap-2.5 @sm:grid-cols-2 @lg:grid-cols-3 @xl:grid-cols-6">
             {FEATURES.map(({ icon: Icon, title, description }) => (
               <article
                 key={title}
@@ -168,8 +168,8 @@ export default function LandingPage() {
                 <span className="inline-flex h-8 w-8 items-center justify-center text-link">
                   <Icon className="h-3.5 w-3.5" aria-hidden />
                 </span>
-                <h3 className="mt-2 text-xs font-semibold text-foreground sm:text-sm">{title}</h3>
-                <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground sm:text-xs">
+                <h3 className="mt-2 text-xs font-semibold text-foreground @sm:text-sm">{title}</h3>
+                <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-muted-foreground @sm:text-xs">
                   {description}
                 </p>
               </article>

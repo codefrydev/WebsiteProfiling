@@ -18,8 +18,8 @@ def summarize_link_rel(edges: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def build_inlink_anchor_matrix(edges: list[dict[str, Any]], *, limit: int = 500) -> list[dict[str, Any]]:
-    """Aggregate inlink anchor text counts per target URL."""
-    buckets: dict[tuple[str, str], int] = Counter()
+    """Aggregate inlink anchor text counts per target URL, including dominant position."""
+    buckets: dict[tuple[str, str], Counter] = {}
     for e in edges:
         if str(e.get("link_type") or "") != "internal":
             continue
@@ -28,10 +28,14 @@ def build_inlink_anchor_matrix(edges: list[dict[str, Any]], *, limit: int = 500)
         source = str(e.get("from_url") or "").rstrip("/")
         if not target or not source:
             continue
-        buckets[(target, anchor)] += 1
-    rows = [
-        {"target_url": t, "anchor_text": a, "inlink_count": c}
-        for (t, a), c in buckets.items()
-    ]
+        key = (target, anchor)
+        if key not in buckets:
+            buckets[key] = Counter()
+        buckets[key][str(e.get("position") or "content")] += 1
+    rows = []
+    for (t, a), pos_counter in buckets.items():
+        total = sum(pos_counter.values())
+        top_pos = pos_counter.most_common(1)[0][0] if pos_counter else "content"
+        rows.append({"target_url": t, "anchor_text": a, "inlink_count": total, "top_position": top_pos})
     rows.sort(key=lambda r: (-r["inlink_count"], r["target_url"]))
     return rows[: max(1, limit)]

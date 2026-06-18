@@ -128,7 +128,7 @@ export async function cancelPipelineJobInDb(
 
 export async function finishPipelineJob(
   id: string,
-  status: 'success' | 'error',
+  status: 'success' | 'error' | 'paused',
   exitCode: number | null,
   error?: string,
   logTruncated?: boolean,
@@ -166,7 +166,14 @@ export async function getPipelineJobFromDb(id: string): Promise<PipelineJob | nu
     );
     const row = cur.rows[0];
     if (!row) return null;
-    const st = row.status === 'success' ? 'success' : row.status === 'running' ? 'running' : 'error';
+    const st =
+      row.status === 'success'
+        ? 'success'
+        : row.status === 'running'
+          ? 'running'
+          : row.status === 'paused'
+            ? 'paused'
+            : 'error';
     return {
       status: st,
       exitCode: row.exit_code,
@@ -187,7 +194,7 @@ export async function isAnyPipelineJobRunning(): Promise<boolean> {
 export interface PipelineJobListItem {
   id: string;
   jobType: string;
-  status: 'running' | 'success' | 'error';
+  status: 'running' | 'success' | 'error' | 'paused';
   propertyId: number | null;
   startedAt: string;
   finishedAt: string | null;
@@ -216,7 +223,14 @@ export async function listRecentPipelineJobs(limit = 20): Promise<PipelineJobLis
     return cur.rows.map((row) => ({
       id: row.id,
       jobType: row.job_type,
-      status: row.status === 'success' ? 'success' : row.status === 'running' ? 'running' : 'error',
+      status:
+        row.status === 'success'
+          ? 'success'
+          : row.status === 'running'
+            ? 'running'
+            : row.status === 'paused'
+              ? 'paused'
+              : 'error',
       propertyId: row.property_id,
       startedAt: row.started_at.toISOString(),
       finishedAt: row.finished_at?.toISOString() ?? null,

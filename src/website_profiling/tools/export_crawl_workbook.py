@@ -67,7 +67,7 @@ def build_crawl_workbook_zip(report_payload: dict[str, Any]) -> bytes:
         if isinstance(link_edges, list) and link_edges:
             edge_cols = [
                 "from_url", "to_url", "anchor_text", "rel",
-                "is_nofollow", "is_sponsored", "is_ugc", "link_type",
+                "is_nofollow", "is_sponsored", "is_ugc", "link_type", "position",
             ]
             zf.writestr("links.csv", _csv_bytes(link_edges, edge_cols))
 

@@ -10,7 +10,7 @@ export default function LandingDeckProgress() {
 
   return (
     <div
-      className="landing-deck-progress pointer-events-none absolute inset-x-0 bottom-0 z-20 border-t border-muted/50 bg-brand-900/80 backdrop-blur-sm"
+      className="landing-deck-progress relative z-20 w-full shrink-0 border-t border-muted/50 bg-brand-900/80 backdrop-blur-sm"
       role="progressbar"
       aria-valuemin={1}
       aria-valuemax={total}

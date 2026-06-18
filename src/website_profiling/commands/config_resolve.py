@@ -364,4 +364,11 @@ def build_parser() -> argparse.ArgumentParser:
         dest="stdin_json",
         help="For 'chat' command: read JSON payload from stdin and emit NDJSON events.",
     )
+    parser.add_argument(
+        "--resume-run-id",
+        type=int,
+        default=None,
+        dest="resume_run_id",
+        help="Resume a paused crawl from the saved frontier of the given crawl_run_id.",
+    )
     return parser

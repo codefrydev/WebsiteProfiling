@@ -30,6 +30,7 @@ SCHEMA_KEYS = {
     "crawl_url_list",
     "crawl_user_agent_preset",
     "crawl_user_agent_custom",
+    "compare_mobile_desktop",
     "crawl_auth_username",
     "crawl_auth_password",
     "crawl_extra_headers",

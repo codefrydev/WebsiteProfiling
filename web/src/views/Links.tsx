@@ -37,6 +37,12 @@ import {
   SEO_ISSUE_RECOMMENDATIONS,
 } from '../utils/linkUtils';
 import type { LinksFilterValues } from '../components/links/LinksFilterBar';
+import {
+  applyAdvancedConditions,
+  makeCondition,
+  type AdvancedCondition,
+} from '@/lib/advancedLinkFilter';
+import { normalizeSavedView, type SavedLinksView } from '@/lib/savedLinksView';
 import { linkHasBrowserErrors } from '@/lib/browserErrors';
 import { browserInspectorIssueRows } from '@/components/browser/BrowserDiagnosticsPanel';
 import { exportLinksCsv } from '@/utils/linkExport';
@@ -98,6 +104,13 @@ export default function Links({ searchQuery = '' }: ViewProps) {
   const [rtFilter, setRtFilter] = useState(sj.all);
   const [wcFilter, setWcFilter] = useState(sj.all);
   const [jsErrorFilter, setJsErrorFilter] = useState(sj.all);
+  const [advConditions, setAdvConditions] = useState<AdvancedCondition[]>([]);
+  const [columns, setColumns] = useState<string[] | undefined>(undefined);
+  const condIdRef = useRef(0);
+  const nextCondId = useCallback(() => {
+    condIdRef.current += 1;
+    return `cond-${condIdRef.current}`;
+  }, []);
 
   const [inspectNotFound, setInspectNotFound] = useState(false);
 
@@ -249,6 +262,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
     if (wcFilter === 'Long')   list = list.filter((l) => (l.word_count ?? 0) >= 1000);
     if (jsErrorFilter === 'Has errors') list = list.filter((l) => linkHasBrowserErrors(l));
     if (jsErrorFilter === 'Clean') list = list.filter((l) => !linkHasBrowserErrors(l));
+    list = applyAdvancedConditions(list, advConditions);
     const q = (searchQuery || '').toLowerCase().trim();
     if (q) {
       list = list.filter((l) => {
@@ -273,7 +287,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
       return sortDesc ? -cmp : cmp;
     });
     return list;
-  }, [links, statusFilter, inlinksFilter, rtFilter, wcFilter, jsErrorFilter, searchQuery, sortBy, sortDesc, sj.all]);
+  }, [links, statusFilter, inlinksFilter, rtFilter, wcFilter, jsErrorFilter, advConditions, searchQuery, sortBy, sortDesc, sj.all]);
 
   const maxInlinksInResults = useMemo(() => {
     if (!filtered.length) return 1;
@@ -444,12 +458,43 @@ export default function Links({ searchQuery = '' }: ViewProps) {
     setPage(1);
   };
 
-  const loadSavedFilter = (values: LinksFilterValues) => {
-    setInlinksFilter(values.inlinksFilter);
-    setStatusFilter(values.statusFilter);
-    setRtFilter(values.rtFilter);
-    setWcFilter(values.wcFilter);
-    setJsErrorFilter(values.jsErrorFilter);
+  const addCondition = () => {
+    setAdvConditions((prev) => [...prev, makeCondition(nextCondId())]);
+    setPage(1);
+  };
+  const updateCondition = (
+    id: string,
+    patch: Partial<Pick<AdvancedCondition, 'field' | 'op' | 'value'>>,
+  ) => {
+    setAdvConditions((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
+    setPage(1);
+  };
+  const removeCondition = (id: string) => {
+    setAdvConditions((prev) => prev.filter((c) => c.id !== id));
+    setPage(1);
+  };
+  const clearConditions = () => {
+    setAdvConditions([]);
+    setPage(1);
+  };
+
+  const defaultQuick: LinksFilterValues = {
+    inlinksFilter: sj.all,
+    statusFilter: sj.all,
+    rtFilter: sj.all,
+    wcFilter: sj.all,
+    jsErrorFilter: sj.all,
+  };
+  const savedView: SavedLinksView = { quick: filterValues, advanced: advConditions, columns };
+  const loadSavedView = (raw: unknown) => {
+    const v = normalizeSavedView(raw, defaultQuick);
+    setInlinksFilter(v.quick.inlinksFilter);
+    setStatusFilter(v.quick.statusFilter);
+    setRtFilter(v.quick.rtFilter);
+    setWcFilter(v.quick.wcFilter);
+    setJsErrorFilter(v.quick.jsErrorFilter);
+    setAdvConditions(v.advanced);
+    if (v.columns !== undefined) setColumns(v.columns);
     setPage(1);
   };
 
@@ -525,8 +570,16 @@ export default function Links({ searchQuery = '' }: ViewProps) {
             filterValues={filterValues}
             onFilterChange={handleFilterChange}
             onClearAllFilters={clearAllFilters}
+            advConditions={advConditions}
+            onAdvAdd={addCondition}
+            onAdvUpdate={updateCondition}
+            onAdvRemove={removeCondition}
+            onAdvClear={clearConditions}
+            columns={columns}
+            onColumnsChange={setColumns}
             propertyId={propertyId}
-            onLoadSavedFilter={loadSavedFilter}
+            savedView={savedView}
+            onLoadSavedView={loadSavedView}
             searchQuery={searchQuery}
             filtered={filtered}
             pageLinks={pageLinks}

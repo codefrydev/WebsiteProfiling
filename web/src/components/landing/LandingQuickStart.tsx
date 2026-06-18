@@ -25,9 +25,9 @@ export default function LandingQuickStart() {
   const { ref: bulletsRef, inView: bulletsInView } = useInView<HTMLUListElement>();
 
   return (
-    <div className={`${landingContentClass} flex h-full min-h-0 flex-col justify-center gap-6 lg:gap-8`}>
+    <div className={`${landingContentClass} flex h-full min-h-0 flex-col justify-center gap-6 @lg:gap-8`}>
       <div className={landingSectionSplitClass}>
-        <div className={`${landingSplitCopyClass} ${landingGutterClass} md:pr-6 lg:pr-10`}>
+        <div className={`${landingSplitCopyClass} ${landingGutterClass} @md:pr-6 @lg:pr-10`}>
           <LandingSectionHeader
             eyebrow={vl.sectionGettingStarted}
             title={vl.quickStartTitle}
@@ -52,8 +52,8 @@ export default function LandingQuickStart() {
           </ul>
         </div>
 
-        <div className="flex min-h-0 flex-col justify-center px-5 sm:px-8 md:px-6 lg:px-10">
-          <div className="grid gap-3 lg:grid-cols-2 lg:gap-4">
+        <div className="flex min-h-0 flex-col justify-center px-5 @sm:px-8 @md:px-6 @lg:px-10">
+          <div className="grid gap-3 @lg:grid-cols-2 @lg:gap-4">
             <LandingCodeBlock
               prominent
               label={vl.quickStartDockerLabel}
@@ -72,12 +72,12 @@ export default function LandingQuickStart() {
       </div>
 
       <div className={`border-t border-muted/40 pt-5 text-center ${landingGutterClass}`}>
-        <p className="text-xs text-muted-foreground sm:text-sm">{vl.quickStartDocsHint}</p>
+        <p className="text-xs text-muted-foreground @sm:text-sm">{vl.quickStartDocsHint}</p>
         <a
           href={vl.githubReadmeUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-link hover:underline sm:text-sm"
+          className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-link hover:underline @sm:text-sm"
         >
           {vl.limitationsReadmeLink}
           <ExternalLink className="h-3 w-3" aria-hidden />

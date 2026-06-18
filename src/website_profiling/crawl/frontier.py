@@ -154,3 +154,19 @@ class CrawlFrontier:
 
     def should_skip_dequeued(self, url: str) -> bool:
         return url_matches_exclude(url, self.exclude_urls)
+
+    def serialize_state(self) -> dict:
+        """Return a JSON-serialisable snapshot of the frontier for pause/resume."""
+        with self.lock:
+            pending = list(self.queue.queue)
+            visited = list(self.visited)
+            depths = dict(self.depths)
+        return {"pending": pending, "visited": visited, "depths": depths}
+
+    def restore_from_state(self, state: dict) -> None:
+        """Pre-populate the frontier from a previously serialised state."""
+        with self.lock:
+            for url in state.get("pending", []):
+                self.queue.put(url)
+            self.visited.update(state.get("visited", []))
+            self.depths.update(state.get("depths", {}))

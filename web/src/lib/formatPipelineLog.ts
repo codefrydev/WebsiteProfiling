@@ -275,7 +275,7 @@ export function extractLatestProgress(events: PipelineProgressEvent[]): Pipeline
   return events[events.length - 1] ?? null;
 }
 
-export type PipelineJobStatus = 'starting' | 'running' | 'success' | 'error' | '';
+export type PipelineJobStatus = 'starting' | 'running' | 'success' | 'error' | 'paused' | '';
 
 /** Pick the progress snapshot to show in the header (respects finished jobs). */
 export function resolveActiveProgress(

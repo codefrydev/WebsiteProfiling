@@ -16,7 +16,7 @@ export type ApiRouteHandlerWithParams<TParams extends Record<string, string>> = 
 export type LocalGuardResult = NextResponse<ApiErrorBody> | null;
 
 /** Pipeline job stored in globalThis. */
-export type PipelineJobStatus = 'starting' | 'running' | 'success' | 'error';
+export type PipelineJobStatus = 'starting' | 'running' | 'success' | 'error' | 'paused';
 
 export interface PipelineJob {
   status: PipelineJobStatus;
@@ -30,6 +30,7 @@ export interface PipelineJob {
 export interface PipelineJobEntry extends PipelineJob {
   cancelled?: boolean;
   finished?: boolean;
+  pausedCrawlRunId?: number | null;
 }
 
 export interface PipelineJobStore {

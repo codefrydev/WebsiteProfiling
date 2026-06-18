@@ -40,6 +40,7 @@ import PipelineRunPreviewCard from './PipelineRunPreviewCard';
 import { buildPipelineRunPreview } from '@/lib/pipelineRunPreview';
 import { computeLivePipelineEstimate } from '@/lib/pipelineLiveEstimate';
 import { parsePipelineProgressEvents, resolveActiveProgress } from '@/lib/formatPipelineLog';
+import { apiUrl } from '@/lib/publicBase';
 
 const s = strings.pipelineRunner;
 const crawlPresets = s.crawlPresets as Record<string, { label: string; maxPages: string; stream?: boolean }>;
@@ -82,8 +83,19 @@ export default function PipelineRunPanel() {
     cancelJob,
     stopping,
     continueInBackground,
+    activeJobId,
   } = usePipeline();
   const { readOnly } = useReadOnlySession();
+
+  const pauseJob = async () => {
+    if (!activeJobId) return;
+    await fetch(apiUrl(`/jobs/${encodeURIComponent(activeJobId)}/pause`), { method: 'POST' });
+  };
+
+  const resumeJob = async () => {
+    if (!activeJobId) return;
+    await fetch(apiUrl(`/jobs/${encodeURIComponent(activeJobId)}/resume`), { method: 'POST' });
+  };
 
   const [crawlAuthorized, setCrawlAuthorized] = useState(false);
 
@@ -490,6 +502,8 @@ export default function PipelineRunPanel() {
                   status={status}
                   liveEstimate={liveEstimate}
                   className="mb-3"
+                  onPause={!readOnly ? pauseJob : undefined}
+                  onResume={!readOnly ? resumeJob : undefined}
                 />
               ) : null}
 
