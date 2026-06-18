@@ -150,7 +150,6 @@ export default function Overview({ searchQuery = '' }: ViewProps) {
           exportHref={exportHref}
           compareHref={compareHref}
           reportCount={reportList.length}
-          lighthouseScores={charts.lighthouseScores?.scores}
         />
       )}
 
