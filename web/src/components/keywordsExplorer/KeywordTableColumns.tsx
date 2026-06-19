@@ -165,6 +165,43 @@ export function buildKeywordColumns(
     });
   }
 
+  const showPlannerVolume = allRows.some((r) => r.planner_avg_monthly_searches != null);
+  if (showPlannerVolume) {
+    cols.push({
+      key: 'planner_avg_monthly_searches',
+      label: ke.table.plannerVolume ?? 'Vol. (Planner)',
+      hint: 'views.keywords.plannerVolume',
+      render: (v) =>
+        v != null && typeof v === 'number' ? (
+          <span className="tabular-nums text-violet-700 dark:text-violet-300 font-semibold">
+            {Number(v).toLocaleString()}
+          </span>
+        ) : (
+          '—'
+        ),
+    });
+    cols.push({
+      key: 'planner_competition',
+      label: ke.table.plannerCompetition ?? 'Comp. (Planner)',
+      hint: 'views.keywords.plannerCompetition',
+      render: (v) => {
+        if (!v || typeof v !== 'string') return <span className="text-muted-foreground">—</span>;
+        const color =
+          v === 'HIGH'
+            ? 'text-red-700 dark:text-red-400'
+            : v === 'MEDIUM'
+              ? 'text-yellow-700 dark:text-yellow-400'
+              : v === 'LOW'
+                ? 'text-green-700 dark:text-green-400'
+                : 'text-muted-foreground';
+        return <span className={`font-semibold text-xs ${color}`}>{v}</span>;
+      },
+    });
+  }
+
+  // Planner forecast is aggregate (campaign-level), not per-row.
+  // The summary is surfaced via data_blob.planner_forecast_summary in the stats panel.
+
   cols.push(
     {
       key: 'difficulty',

@@ -484,8 +484,10 @@ def _run_report(cfg: dict, use_database: bool) -> None:
     emit_phase_done("report")
     console_print(f"Report written: {out}")
 
-    if should_enrich_keywords_after_report(cfg) and google_db_has_gsc(cfg):
-        console_print("[Keywords] Post-audit keyword research (Search Console data found)...", flush=True)
+    enable_planner = get_bool(cfg, "enable_google_keyword_planner", False)
+    if should_enrich_keywords_after_report(cfg) and (google_db_has_gsc(cfg) or enable_planner):
+        source_label = "Search Console" if google_db_has_gsc(cfg) else "Keyword Planner"
+        console_print(f"[Keywords] Post-audit keyword research ({source_label} data)...", flush=True)
         emit_phase_start("keywords")
         from ..integrations.google.keyword_enrich import run_enrichment
 

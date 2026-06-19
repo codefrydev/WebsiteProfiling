@@ -11,6 +11,10 @@ INSTALL_HINT = (
     "google-analytics-data google-analytics-admin"
 )
 
+ADS_INSTALL_HINT = (
+    "Install Google Ads API dependency: pip install google-ads==31.0.0"
+)
+
 
 def read_secrets() -> dict[str, Any]:
     """Compat shim: app settings from DB in camelCase shape (no global refresh token)."""
@@ -90,6 +94,84 @@ def build_credentials(property_id: int | None = None):
     raise RuntimeError(
         "Google API access requires a property context. "
         "Set Site URL in audit settings, connect Google for that site, then run fetch again."
+    )
+
+
+def build_ads_client(property_id: int | None = None):
+    """
+    Build a GoogleAdsClient for Keyword Planner API calls.
+
+    Loads developer_token + login_customer_id from google_app_settings and
+    reuses the OAuth refresh token (with the adwords scope) from the property
+    row (or service account). Raises RuntimeError with a clear hint if the
+    credentials or dependency are missing.
+    """
+    try:
+        from google.ads.googleads.client import GoogleAdsClient
+    except ImportError as e:
+        raise ImportError(f"{ADS_INSTALL_HINT}\n({e})") from e
+
+    from ...db.google_app_store import read_google_app_settings
+
+    settings = read_google_app_settings()
+    developer_token = settings.get("developer_token") or ""
+    login_customer_id = (settings.get("login_customer_id") or "").strip().replace("-", "")
+
+    if not developer_token:
+        raise RuntimeError(
+            "Google Ads developer token not configured. "
+            "Go to Integrations and enter your developer token under Google Ads Keyword Planner."
+        )
+    if not login_customer_id:
+        raise RuntimeError(
+            "Google Ads login customer ID not configured. "
+            "Go to Integrations and enter your manager account customer ID."
+        )
+
+    from ...db.google_app_store import has_service_account
+
+    # Service account path: works with or without a property_id
+    if has_service_account():
+        sa = settings.get("service_account_json") or {}
+        from google.oauth2 import service_account as _sa_mod
+        _SCOPES_ADS = ["https://www.googleapis.com/auth/adwords"]
+        creds = _sa_mod.Credentials.from_service_account_info(sa, scopes=_SCOPES_ADS)
+        return GoogleAdsClient(
+            credentials=creds,
+            developer_token=developer_token,
+            login_customer_id=login_customer_id or None,
+            use_proto_plus=True,
+        )
+
+    # OAuth refresh token path — property required
+    if property_id is None:
+        raise RuntimeError(
+            "property_id is required for Google Ads API unless a service account is configured."
+        )
+
+    client_id, client_secret = _app_client_credentials()
+    refresh_token, prop_auth_mode, _domain = _property_google_auth(property_id)
+
+    if prop_auth_mode == "service_account":
+        # Should have been caught by has_service_account() above; fallback just in case
+        raise RuntimeError(
+            "Property uses service account auth but no service account is configured app-wide."
+        )
+    if not refresh_token:
+        raise RuntimeError(
+            "Google OAuth not connected for this property. "
+            "Click 'Connect with Google' in Integrations — the consent screen now includes the Ads scope."
+        )
+
+    return GoogleAdsClient.load_from_dict(
+        {
+            "developer_token": developer_token,
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "refresh_token": refresh_token,
+            "login_customer_id": login_customer_id or None,
+            "use_proto_plus": True,
+        }
     )
 
 

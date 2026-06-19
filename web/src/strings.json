@@ -470,6 +470,15 @@
         "serpCompetition": {
           "body": "Estimated SERP competition from optional SerpAPI overlay. Heuristic, not official keyword difficulty."
         },
+        "plannerVolume": {
+          "body": "Average monthly search volume from Google Ads Keyword Planner. Official market-level data — not Search Console impressions for this site."
+        },
+        "plannerCompetition": {
+          "body": "Competition level from Google Ads Keyword Planner (LOW / MEDIUM / HIGH). Reflects paid-search advertiser competition, not organic keyword difficulty."
+        },
+        "plannerForecastClicks": {
+          "body": "Estimated weekly clicks forecast from Google Ads Keyword Planner GenerateKeywordForecastMetrics. Applies to paid campaigns, not organic rankings."
+        },
         "gscClicks": {
           "body": "Search Console clicks attributed to this query or query–page pair in the selected range."
         },
@@ -3251,6 +3260,9 @@
         "kdEstimated": "Difficulty (est.)",
         "serpCompetition": "SERP comp. (est.)",
         "serpCompetitionHint": "Estimated from SerpAPI organic result density and SERP features",
+        "plannerVolume": "Vol. (Planner)",
+        "plannerCompetition": "Comp. (Planner)",
+        "plannerForecastClicks": "Forecast Clicks",
         "onSiteFrequency": "On-site frequency",
         "position": "Avg. position",
         "impressions": "Impressions",

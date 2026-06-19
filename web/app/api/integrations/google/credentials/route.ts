@@ -36,6 +36,12 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
     if (typeof body.dateRangeDays === 'number' && body.dateRangeDays > 0) {
       patch.dateRangeDays = body.dateRangeDays;
     }
+    if (typeof body.developerToken === 'string' && body.developerToken.trim()) {
+      patch.developerToken = body.developerToken.trim();
+    }
+    if (typeof body.loginCustomerId === 'string' && body.loginCustomerId.trim()) {
+      patch.loginCustomerId = body.loginCustomerId.trim().replace(/-/g, '');
+    }
 
     if (Object.keys(patch).length === 0) {
       return NextResponse.json({ error: 'No valid fields provided' }, { status: 400 });

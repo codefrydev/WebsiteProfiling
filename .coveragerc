@@ -8,6 +8,7 @@ omit =
     */website_profiling/integrations/bing/*
     */website_profiling/integrations/crux/*
     */website_profiling/integrations/serp/*
+    */website_profiling/integrations/ai_citations/*
     */website_profiling/integrations/links/third_party_csv.py
     */website_profiling/lighthouse/*
     */website_profiling/reporting/*

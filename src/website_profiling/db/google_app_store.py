@@ -14,6 +14,7 @@ SINGLETON_ID = 1
 _SCOPES = [
     "https://www.googleapis.com/auth/webmasters.readonly",
     "https://www.googleapis.com/auth/analytics.readonly",
+    "https://www.googleapis.com/auth/adwords",
 ]
 
 
@@ -25,6 +26,8 @@ def _row_to_dict(row: Any) -> dict[str, Any]:
         "service_account_json": sa if isinstance(sa, dict) else None,
         "default_date_range_days": int(_row_field(row, "default_date_range_days", index=4) or 28),
         "updated_at": _row_field(row, "updated_at", index=5),
+        "developer_token": (str(_row_field(row, "developer_token", index=6) or "")).strip(),
+        "login_customer_id": (str(_row_field(row, "login_customer_id", index=7) or "")).strip(),
     }
 
 
@@ -36,7 +39,8 @@ def read_google_app_settings(conn: Connection | None = None) -> dict[str, Any]:
         cur = c.execute(
             """
             SELECT id, client_id, client_secret, service_account_json,
-                   default_date_range_days, updated_at
+                   default_date_range_days, updated_at,
+                   developer_token, login_customer_id
             FROM google_app_settings WHERE id = %s
             """,
             (SINGLETON_ID,),
@@ -48,6 +52,8 @@ def read_google_app_settings(conn: Connection | None = None) -> dict[str, Any]:
                 "client_secret": "",
                 "service_account_json": None,
                 "default_date_range_days": 28,
+                "developer_token": "",
+                "login_customer_id": "",
             }
         return _row_to_dict(row)
 
@@ -75,6 +81,12 @@ def save_google_app_settings(conn: Connection, patch: dict[str, Any]) -> None:
     if "default_date_range_days" in patch:
         sets.append("default_date_range_days = %s")
         vals.append(int(patch["default_date_range_days"] or 28))
+    if "developer_token" in patch:
+        sets.append("developer_token = %s")
+        vals.append(patch["developer_token"] or None)
+    if "login_customer_id" in patch:
+        sets.append("login_customer_id = %s")
+        vals.append(patch["login_customer_id"] or None)
 
     if len(vals) == 0:
         return

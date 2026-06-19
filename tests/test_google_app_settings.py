@@ -165,3 +165,55 @@ def test_build_credentials_signature():
     sig = inspect.signature(auth.build_credentials)
     assert "property_id" in sig.parameters
     assert "credentials_path" not in sig.parameters
+
+
+def test_save_google_app_settings_developer_token_and_customer_id() -> None:
+    """developer_token and login_customer_id branches must be reachable."""
+    conn = MagicMock()
+    google_app_store.save_google_app_settings(
+        conn,
+        {
+            "developer_token": "TOKEN-abc123",
+            "login_customer_id": "123-456-7890",
+        },
+    )
+    conn.execute.assert_called_once()
+    conn.commit.assert_called_once()
+    sql = conn.execute.call_args[0][0]
+    assert "developer_token" in sql
+    assert "login_customer_id" in sql
+    # Both values should appear in the positional args
+    vals = conn.execute.call_args[0][1]
+    assert "TOKEN-abc123" in vals
+    assert "123-456-7890" in vals
+
+
+def test_save_google_app_settings_falsy_token_stored_as_none() -> None:
+    """Empty-string developer_token is stored as None (clears the field)."""
+    conn = MagicMock()
+    google_app_store.save_google_app_settings(
+        conn,
+        {"developer_token": ""},
+    )
+    conn.execute.assert_called_once()
+    vals = conn.execute.call_args[0][1]
+    # Empty string should be converted to None so COALESCE keeps the existing value
+    assert None in vals
+
+
+def test_read_google_app_settings_includes_planner_fields() -> None:
+    """Row with developer_token and login_customer_id round-trips correctly."""
+    conn = MagicMock()
+    conn.execute.return_value.fetchone.return_value = {
+        "id": 1,
+        "client_id": "cid",
+        "client_secret": "sec",
+        "service_account_json": None,
+        "default_date_range_days": 28,
+        "updated_at": None,
+        "developer_token": "  DEV-TOKEN  ",
+        "login_customer_id": "  999-888-7777  ",
+    }
+    row = google_app_store.read_google_app_settings(conn)
+    assert row["developer_token"] == "DEV-TOKEN"
+    assert row["login_customer_id"] == "999-888-7777"

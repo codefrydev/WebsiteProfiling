@@ -207,6 +207,18 @@ CI also runs a **Docker** job (image build, browser pytest in container, compose
 
 Connect Google Search Console and Analytics via **Integrations** (gear icon) in the application UI.
 
+### Google Ads Keyword Planner (optional)
+
+Adds official search volume and competition data from the Google Ads API to the Keywords explorer. Requires:
+
+1. A [Google Ads developer token](https://developers.google.com/google-ads/api/docs/first-call/dev-token) (Basic access is sufficient for keyword research).
+2. A Google Ads manager account customer ID (login customer ID).
+3. An existing Google OAuth connection (via Integrations) — users must re-consent after the `adwords` scope is added.
+
+In **Integrations → Google Ads Keyword Planner**, enter the developer token and login customer ID. Then enable `enable_google_keyword_planner` in audit settings.
+
+The overlay enriches keywords that have no Search Console impressions with `planner_avg_monthly_searches` and `planner_competition`, labelled "Google Keyword Planner" to distinguish them from real GSC data. GSC-ranked keywords are never overwritten. Set `enable_keyword_forecast = true` to additionally attach click/conversion forecasts to the top 50 keywords.
+
 ### JavaScript crawl (optional)
 
 In Audit settings, set **Crawl rendering** to `javascript` (always headless Chromium) or `auto` (static first, browser when SPA heuristics match). Requires Playwright from `requirements.txt` and Chromium on `PATH` or `CHROME_PATH` (included in Docker). The UI preflights via `GET /api/crawl/browser-status` before runs when JS or auto mode is selected.

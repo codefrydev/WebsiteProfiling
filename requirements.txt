@@ -16,6 +16,8 @@ google-auth-oauthlib==1.4.0
 google-api-python-client==2.197.0
 google-analytics-data==0.23.0
 google-analytics-admin==0.30.0
+# Google Ads API for Keyword Planner (optional; required for enable_google_keyword_planner)
+google-ads==31.0.0
 
 # Keywords Explorer — Google Suggest + Wikipedia + Datamuse (all free, no auth needed)
 # requests already listed above
