@@ -32,3 +32,4 @@ pipeline-config.txt
 .agents/
 skills-lock.json
 crawl_results.csv
+commit.*
