@@ -1,10 +1,10 @@
 /**
  * Consistent page title and optional subtitle.
  */
-import type { ReactNode } from 'react';
+import React, { type ReactNode } from 'react';
 
 export interface PageHeaderProps {
-  title: string;
+  title: React.ReactNode;
   subtitle?: ReactNode;
   icon?: ReactNode;
   actions?: ReactNode;

@@ -90,6 +90,13 @@ export const LLM_CONFIG_SECTIONS = [
         defaultValue: true,
         help: 'AI writing coach in Content studio (/write) when AI suggestions are enabled in the editor.',
       },
+      {
+        key: 'llm_enable_dashboards',
+        label: 'Dashboard AI (DashScript + chart generation)',
+        type: 'bool',
+        defaultValue: true,
+        help: 'Enables the "Ask AI" button in widget config and "Generate with AI" on the Dashboards page.',
+      },
     ],
   },
   {

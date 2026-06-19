@@ -19,6 +19,7 @@ import {
   Plug,
   PenLine,
   LayoutDashboard,
+  LayoutGrid,
   Link as LinkIcon,
   Repeat,
   Share2,
@@ -53,6 +54,7 @@ export interface AppNavItem {
 const NAV_DESCRIPTIONS: Partial<Record<NavItemId, string>> = {
   home: 'Pick a property to audit',
   overview: 'Audit health at a glance',
+  dashboards: 'Build your own metric dashboards',
   compare: 'Compare two audit runs',
   export: 'Download reports & data',
   'log-analyzer': 'Server log file insights',
@@ -89,6 +91,7 @@ const NAV_DESCRIPTIONS: Partial<Record<NavItemId, string>> = {
 const VIEW_NAV: { id: ViewId; icon: LucideIcon }[] = [
   { id: 'home', icon: HomeIcon },
   { id: 'overview', icon: LayoutDashboard },
+  { id: 'dashboards', icon: LayoutGrid },
   { id: 'compare', icon: ArrowLeftRight },
   { id: 'export', icon: FileDown },
   { id: 'log-analyzer', icon: Terminal },

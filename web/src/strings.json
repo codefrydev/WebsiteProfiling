@@ -710,6 +710,10 @@
       "label": "Overview",
       "section": "Overview"
     },
+    "dashboards": {
+      "label": "Dashboards",
+      "section": "Overview"
+    },
     "compare": {
       "label": "Compare audits",
       "section": "Overview"
