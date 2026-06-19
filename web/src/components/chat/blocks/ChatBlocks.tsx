@@ -2,6 +2,7 @@
 
 import type { ChatBlock } from '@/components/chat/deriveChatBlocks';
 import { blockKey } from '@/components/chat/deriveChatBlocks';
+import ChatAuditRunConfirmBlock from './ChatAuditRunConfirmBlock';
 import ChatFileDownloadBlock from './ChatFileDownloadBlock';
 import ChatCategoryScoresBlock from './ChatCategoryScoresBlock';
 import ChatCompareCategoryBlock from './ChatCompareCategoryBlock';
@@ -48,6 +49,8 @@ export default function ChatBlocks({ blocks }: ChatBlocksProps) {
             return <ChatLighthouseBlock key={key} block={block} />;
           case 'google_summary':
             return <ChatGoogleSummaryBlock key={key} block={block} />;
+          case 'audit_run_confirm':
+            return <ChatAuditRunConfirmBlock key={key} block={block} />;
           case 'file_download':
             return <ChatFileDownloadBlock key={key} block={block} />;
           case 'image_audit_summary':

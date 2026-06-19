@@ -388,6 +388,7 @@ from .links import (
     list_nofollow_internal_links,
     list_orphan_pages,
 )
+from .crawl_actions import prepare_audit_run
 from .ops import (
     get_google_integration_status,
     get_integration_alerts,
@@ -553,6 +554,7 @@ _TOOL_HANDLERS: dict[str, ToolHandler] = {
     "get_property_ops": get_property_ops,
     "get_google_integration_status": get_google_integration_status,
     "list_crawl_runs": list_crawl_runs,
+    "prepare_audit_run": prepare_audit_run,
     "list_log_uploads": list_log_uploads,
     "get_latest_log_analysis": get_latest_log_analysis,
     "get_keyword_serp_overlay": get_keyword_serp_overlay,

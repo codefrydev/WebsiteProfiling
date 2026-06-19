@@ -326,6 +326,8 @@ In-app chat uses **dynamic tool routing**: each turn loads Tier 0 router tools p
 
 Responses stream over SSE via `POST /api/chat`. Sessions persist per property in `chat_sessions` and `chat_messages`.
 
+**Optional crawl actions:** When **Allow chat to start crawls** is enabled under **Run audit → Settings → Content & AI → Chat agent**, the chat agent can guide crawl setup and call `prepare_audit_run` to show an in-chat confirm card. The user must authorize crawling and click **Run audit** — the agent never spawns jobs directly. MCP tools remain read-only; `prepare_audit_run` is chat-only and excluded from MCP bundles.
+
 ---
 
 ## Provider notes

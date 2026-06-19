@@ -9,6 +9,7 @@ from ..concurrency import map_parallel, tool_concurrency
 from ..llm_config import llm_is_enabled, load_llm_config_from_db
 from ..text_sanitize import sanitize_unicode_deep, strip_surrogates
 from ..tools.audit_tools import AuditToolContext
+from ..tools.audit_tools.crawl_actions import CHAT_CRAWL_TOOL
 from ..tools.audit_tools.registry import (
     TOOL_DEFINITIONS,
     _normalize_tool_args,
@@ -54,7 +55,7 @@ def _max_tool_rounds(cfg: dict[str, str]) -> int:
 
 NARRATIVE_FAILED_MSG = "Could not generate a summary. Tool results are shown below."
 
-SYSTEM_PROMPT = """You are Site Audit AI, a technical SEO assistant for a self-hosted site audit platform.
+_SYSTEM_PROMPT_BASE = """You are Site Audit AI, a technical SEO assistant for a self-hosted site audit platform.
 You help users understand crawl results, audit issues, Lighthouse scores, keywords, and Search Console data.
 
 Tool routing (only a subset of tools is loaded each turn):
@@ -111,10 +112,36 @@ Rules:
 - After gathering enough data via tools, stop calling tools. A brief internal acknowledgment is enough; user-facing text is generated separately.
 - Do not repeat health scores, URL counts, success rates, category scores, priority counts, or URL lists when the UI already shows them in cards or tables.
 - Never mention internal tool names (e.g. run_technical_workflow, export_audit_report) in user-facing text.
-- You are read-only: you cannot run crawls or change settings.
 - Do not pass property_id or report_id in tool calls — they are injected from the active chat property.
 - If data is missing, say what integration or crawl step is needed (briefly; narrative will be expanded separately).
 """
+
+_SYSTEM_PROMPT_READONLY_SUFFIX = """
+- You are read-only: you cannot run crawls or change settings.
+"""
+
+_SYSTEM_PROMPT_CRAWL_SUFFIX = """
+Crawl playbook (when user asks to crawl, audit, or re-run a site):
+- Clarify: new vs existing property, default vs custom configuration.
+- Default: pick crawl preset (starter, spa, ecommerce, performance) and pipeline mode (full-audit or crawl-only).
+- Custom: ask only high-impact overrides — max_pages, crawl_render_mode (static/auto/javascript), run_lighthouse_on_pages, concurrency.
+- After collecting answers, always call prepare_audit_run to build a preview — never claim a crawl has started.
+- The chat UI shows a confirm card; wait for the user to authorize and click Run before assuming the audit began.
+- If prepare_audit_run returns job_running, tell the user an audit is already in progress.
+"""
+
+SYSTEM_PROMPT_READONLY = _SYSTEM_PROMPT_BASE + _SYSTEM_PROMPT_READONLY_SUFFIX
+SYSTEM_PROMPT_CRAWL_ENABLED = _SYSTEM_PROMPT_BASE + _SYSTEM_PROMPT_CRAWL_SUFFIX
+# Back-compat for tests and imports
+SYSTEM_PROMPT = SYSTEM_PROMPT_READONLY
+
+
+def _chat_allow_crawl(cfg: dict[str, str]) -> bool:
+    return _truthy_cfg(cfg, "llm_chat_allow_crawl")
+
+
+def resolve_system_prompt(cfg: dict[str, str]) -> str:
+    return SYSTEM_PROMPT_CRAWL_ENABLED if _chat_allow_crawl(cfg) else SYSTEM_PROMPT_READONLY
 
 REACT_PROMPT_SUFFIX = """
 Respond with valid JSON only, one of:
@@ -141,6 +168,8 @@ def _react_step(
     messages: list[dict[str, Any]],
     tools_desc: str,
     on_token: Callable[[str], None] | None,
+    *,
+    system_prompt: str,
 ) -> ChatResult:
     """JSON ReAct fallback for providers without native tool calling."""
     # Include "tool" messages so the model sees prior tool results; otherwise it
@@ -151,7 +180,7 @@ def _react_step(
         if m.get("role") in ("user", "assistant", "system", "tool")
     )
     user = f"Available tools:\n{tools_desc}\n\nConversation:\n{convo}\n\nNext action JSON:"
-    data = client.complete_json(SYSTEM_PROMPT + REACT_PROMPT_SUFFIX, user)
+    data = client.complete_json(system_prompt + REACT_PROMPT_SUFFIX, user)
     action = str(data.get("action") or "").lower()
     if action == "tool":
         name = str(data.get("name") or "")
@@ -210,8 +239,11 @@ def _expand_active_tools_from_result(
     return expanded
 
 
-def _build_openai_messages(history: list[dict[str, str]]) -> list[dict[str, Any]]:
-    out: list[dict[str, Any]] = [{"role": "system", "content": SYSTEM_PROMPT}]
+def _build_openai_messages(
+    history: list[dict[str, str]],
+    system_prompt: str,
+) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = [{"role": "system", "content": system_prompt}]
     for msg in history:
         role = msg.get("role")
         content = strip_surrogates(str(msg.get("content") or ""))
@@ -278,9 +310,12 @@ def run_agent_turn(
         _emit(on_event, {"type": "error", "message": msg})
         return {"ok": False, "error": msg}
 
-    openai_messages = _build_openai_messages(messages)
+    system_prompt = resolve_system_prompt(cfg)
+    openai_messages = _build_openai_messages(messages, system_prompt)
     last_user = _last_user_message(messages)
     active_names = select_tools_for_turn(last_user, messages)
+    if _chat_allow_crawl(cfg):
+        active_names.add(CHAT_CRAWL_TOOL)
     tools = openai_tools_schema(active_names, context_scoped=True)
     tool_events: list[dict[str, Any]] = []
     max_rounds = _max_tool_rounds(cfg)
@@ -302,6 +337,7 @@ def run_agent_turn(
                     llm_messages,
                     _tools_description(names=active_names, compact=True),
                     None,
+                    system_prompt=system_prompt,
                 )
         except Exception as e:
             msg = str(e).strip() or type(e).__name__

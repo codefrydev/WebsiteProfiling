@@ -4143,6 +4143,25 @@
       "unlimitedToolsOffHint": "Allow up to 100 tool steps per message for deep multi-step audits.",
       "partialToolsSaved": "Tool results were saved from this turn. The assistant did not produce a final summary.",
       "partialResponseNote": "The assistant stopped before a full summary. Structured results above are still valid.",
+      "crawlActionsEnabled": "Crawl actions enabled",
+      "suggestedCrawlPrompts": [
+        "Run a crawl with default settings",
+        "Re-crawl this property with JavaScript rendering",
+        "Start a full audit for a new site"
+      ],
+      "auditRunConfirm": {
+        "title": "Ready to run audit",
+        "presetLabel": "Preset",
+        "pipelineFullAudit": "Full audit",
+        "pipelineCrawlOnly": "Crawl only",
+        "runButton": "Run audit",
+        "retryButton": "Retry",
+        "starting": "Starting…",
+        "running": "Audit running…",
+        "done": "Audit finished. Ask me to summarize the results.",
+        "runFailed": "Failed to start audit",
+        "editInRunner": "Edit in Run audit"
+      },
       "proseStrippedNote": "Detailed metrics are shown in the cards above.",
       "insightDefaultTitle": "Summary",
       "showAllItems": "Show all {count} items",

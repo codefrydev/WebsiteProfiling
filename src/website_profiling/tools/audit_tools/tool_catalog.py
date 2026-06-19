@@ -536,4 +536,40 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
         },
         ["sql"],
     ),
+    _tool(
+        "prepare_audit_run",
+        "Preview an audit/crawl run for in-chat confirmation. Does not start the job — the user must authorize and click Run in the UI.",
+        {
+            "mode": {"type": "string", "enum": ["default", "custom"], "description": "default or custom configuration"},
+            "start_url": {"type": "string", "description": "Site URL to crawl (required for new properties)"},
+            "crawl_preset_id": {
+                "type": "string",
+                "enum": ["starter", "spa", "ecommerce", "performance"],
+                "description": "Crawl preset (default: starter)",
+            },
+            "pipeline_mode": {
+                "type": "string",
+                "enum": ["full-audit", "crawl-only"],
+                "description": "Full audit (crawl+report) or crawl-only",
+            },
+            "create_property": {
+                "type": "object",
+                "description": "When adding a new property, provide name and site_url",
+                "properties": {
+                    "name": {"type": "string"},
+                    "site_url": {"type": "string"},
+                },
+            },
+            "config_overrides": {
+                "type": "object",
+                "description": "Custom mode only: max_pages, crawl_render_mode, run_lighthouse_on_pages, concurrency",
+                "properties": {
+                    "max_pages": {"type": "string"},
+                    "crawl_render_mode": {"type": "string", "enum": ["static", "auto", "javascript"]},
+                    "run_lighthouse_on_pages": {"type": "boolean"},
+                    "concurrency": {"type": "string"},
+                },
+            },
+        },
+    ),
 ]

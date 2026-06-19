@@ -30,6 +30,10 @@ CANONICAL_DOMAINS: tuple[str, ...] = (
     "insight",
 )
 
+# Chat-only tools — excluded from MCP domain bundles.
+CHAT_ONLY_TOOLS: frozenset[str] = frozenset({
+    "prepare_audit_run",
+})
 # Tier 0 — always included in chat dynamic routing (router + top insight tools).
 TIER_0_TOOLS: frozenset[str] = frozenset({
     "search_audit_tools",
@@ -71,6 +75,7 @@ _DOMAIN_OVERRIDES: dict[str, str] = {
     "get_brand_keyword_split": "keywords",
     "list_keywords_by_intent": "keywords",
     "get_gsc_page_queries": "google",
+    "prepare_audit_run": "ops",
     "list_broken_links": "links",
     "list_broken_link_sources": "links",
     "get_gsc_sample_links": "backlinks",
@@ -329,14 +334,14 @@ def tool_names_for_mcp_bundle(meta: dict[str, dict[str, Any]], bundle: str) -> s
     bundle_key = (bundle or "core").strip().lower()
     allowed_domains = MCP_DOMAIN_BUNDLES.get(bundle_key, MCP_DOMAIN_BUNDLES["core"])
     if bundle_key == "full":
-        return set(meta.keys())
+        return set(meta.keys()) - CHAT_ONLY_TOOLS
     names: set[str] = set()
     by_domain = tools_by_domain(meta)
     for domain in allowed_domains:
         names.update(by_domain.get(domain) or [])
     if bundle_key == "core":
         names.update(TIER_0_TOOLS & set(meta.keys()))
-    return names
+    return names - CHAT_ONLY_TOOLS
 
 
 def domains_catalog(meta: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:

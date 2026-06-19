@@ -103,6 +103,8 @@ export default function ChatPage() {
     llmConfigState.llm_enabled === true &&
     String(llmConfigState.llm_provider || 'none') !== 'none';
 
+  const crawlChatEnabled = llmConfigState.llm_chat_allow_crawl === true;
+
   const showConversation = Boolean(sessionId) || messages.length > 0 || busy || loadingMessages;
   const isHero = !showConversation;
   const activeProperty = properties.find((p) => propertyIdsEqual(p.id, propertyId)) ?? null;
@@ -584,6 +586,7 @@ export default function ChatPage() {
             propertyId={propertyId}
             sessionTitle={activeSession?.title}
             loading={loadingProperties}
+            crawlActionsEnabled={crawlChatEnabled && llmEnabled}
           />
           {!llmEnabled ? (
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-8">
@@ -608,7 +611,11 @@ export default function ChatPage() {
                   {c.emptySubline}
                 </p>
                 <div className="mt-10 w-full">{composer}</div>
-                <SuggestedPrompts onSelect={(p) => void handleSend(p)} disabled={busy || !propertyId} />
+                <SuggestedPrompts
+                  onSelect={(p) => void handleSend(p)}
+                  disabled={busy || !propertyId}
+                  crawlEnabled={crawlChatEnabled}
+                />
               </div>
             </div>
           ) : (
