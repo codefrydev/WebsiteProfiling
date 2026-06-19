@@ -607,7 +607,9 @@ def run_enrichment(
 
         for nk, kw_data in all_keywords.items():
             kw_text = kw_data.get("keyword") or nk
-            ctr_frac = ctr_as_fraction(kw_data.get("gsc_ctr"))
+            # gsc_ctr is already a fraction (normalized at ingest, see line ~409);
+            # do NOT pass it through ctr_as_fraction again or it gets divided by 100 twice.
+            ctr_frac = float(kw_data.get("gsc_ctr") or 0.0)
             gsc_row = {
                 "position": kw_data.get("gsc_position"),
                 "impressions": kw_data.get("gsc_impressions"),

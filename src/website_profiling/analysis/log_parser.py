@@ -59,7 +59,14 @@ def compare_log_to_crawl(
     """Paths in logs but not crawled, and crawled but not in logs."""
     from urllib.parse import urlparse
 
-    log_paths = {row["path"] for row in log_analysis.get("top_paths") or []}
+    # Normalize log paths the same way as crawl paths (strip query string), else
+    # any logged URL with a query string can never match its crawled counterpart.
+    log_paths: set[str] = set()
+    for row in log_analysis.get("top_paths") or []:
+        try:
+            log_paths.add(urlparse(row["path"]).path or "/")
+        except Exception:
+            continue
     crawl_paths: set[str] = set()
     for u in crawl_urls:
         try:

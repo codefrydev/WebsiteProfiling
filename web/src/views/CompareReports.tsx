@@ -310,7 +310,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
                     reportIdA: compareReportId,
-                    reportIdB: selectedReportId,
+                    reportIdB: effectiveId,
                   }),
                 })
                   .then(async (res) => {
@@ -319,7 +319,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = `compare-${compareReportId}-vs-${selectedReportId}.csv`;
+                    a.download = `compare-${compareReportId}-vs-${effectiveId}.csv`;
                     a.click();
                     URL.revokeObjectURL(url);
                   })

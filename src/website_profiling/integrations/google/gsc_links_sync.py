@@ -34,7 +34,7 @@ def check_stale_gsc_links_imports(max_age_days: int = 7) -> list[dict[str, Any]]
     with db_session() as conn:
         cur = conn.execute(
             """
-            SELECT p.id, p.name, MAX(g.imported_at) AS last_import
+            SELECT p.id, p.name, MAX(g.fetched_at) AS last_import
             FROM properties p
             LEFT JOIN gsc_links_data g ON g.property_id = p.id
             GROUP BY p.id, p.name

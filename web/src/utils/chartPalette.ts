@@ -44,7 +44,8 @@ export function sortByValue(
     return { labels: [...labels], values: [...values] };
   }
   const pairs: [string, number][] = labels.map((l, i) => [l, values[i] ?? 0]);
-  const mult = order === 'desc' ? -1 : 1;
+  // `Number(b[1]) - Number(a[1])` is already descending; only flip it for 'asc'.
+  const mult = order === 'desc' ? 1 : -1;
   pairs.sort((a, b) => mult * (Number(b[1]) - Number(a[1])));
   return {
     labels: pairs.map((p) => p[0]),

@@ -75,6 +75,12 @@ def _build_outbound_link_domains(
 def _build_url_fingerprints(df: pd.DataFrame) -> list[dict[str, Any]]:
     """Stable fingerprints for comparing page content/structure between report runs (no raw HTML stored)."""
     out: list[dict[str, Any]] = []
+
+    # NaN is truthy, so `... or 0` does NOT catch it; int(NaN) raises ValueError.
+    def _to_int(v: Any) -> int:
+        n = pd.to_numeric(v, errors="coerce")
+        return int(n) if pd.notna(n) else 0
+
     for _, row in df.iterrows():
         u = str(row.get("url") or "").strip().rstrip("/")
         if not u:
@@ -83,11 +89,11 @@ def _build_url_fingerprints(df: pd.DataFrame) -> list[dict[str, Any]]:
         meta = str(row.get("meta_description") or "")
         h1 = str(row.get("h1") or "")
         headings = str(row.get("heading_sequence") or "")
-        wc = int(pd.to_numeric(row.get("word_count"), errors="coerce") or 0)
-        cl = int(pd.to_numeric(row.get("content_length"), errors="coerce") or 0)
-        h1c = int(pd.to_numeric(row.get("h1_count"), errors="coerce") or 0)
-        sc = int(pd.to_numeric(row.get("script_count"), errors="coerce") or 0)
-        lc = int(pd.to_numeric(row.get("link_stylesheet_count"), errors="coerce") or 0)
+        wc = _to_int(row.get("word_count"))
+        cl = _to_int(row.get("content_length"))
+        h1c = _to_int(row.get("h1_count"))
+        sc = _to_int(row.get("script_count"))
+        lc = _to_int(row.get("link_stylesheet_count"))
         # heading_sequence is structural (h1,h2,...) — keep it in structure fingerprint only.
         raw_c = "|".join([title, meta, h1, str(wc), str(cl)]).encode("utf-8")
         content_fp = hashlib.sha256(raw_c).hexdigest()

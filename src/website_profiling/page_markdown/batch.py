@@ -44,22 +44,25 @@ def extract_run_markdown(
 
     # If not overwriting, skip URLs already extracted
     if not overwrite:
-        existing = list_page_markdown(conn, crawl_run_id, limit=200, offset=0)
-        # Fetch all existing URLs with pagination
+        # Fetch all existing URLs with pagination. list_page_markdown clamps its
+        # limit to a server-side max of 200, so page_limit must match that cap and
+        # the loop must advance by the number of items actually returned.
         all_existing_urls: set[str] = set()
         page_offset = 0
-        page_limit = 500
+        page_limit = 200
         while True:
             batch = list_page_markdown(conn, crawl_run_id, limit=page_limit, offset=page_offset)
-            for item in batch["items"]:
-                all_existing_urls.add(str(item.get("url", "")).rstrip("/"))
-            if len(batch["items"]) < page_limit:
+            items = batch["items"]
+            if not items:
                 break
-            page_offset += page_limit
+            for item in items:
+                all_existing_urls.add(str(item.get("url", "")).rstrip("/"))
+            page_offset += len(items)
+            if len(items) < page_limit:
+                break
         rows = [r for r in rows if str(r.get("url", "")).rstrip("/") not in all_existing_urls]
         if not rows:
             return []
-        del existing
 
     worker_count = max(1, int(workers))
     if worker_count == 1 or len(rows) == 1:

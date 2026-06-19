@@ -116,6 +116,10 @@ def _passive_open_redirect_risk(df: pd.DataFrame, start_url: str) -> list[dict]:
     findings = []
     parsed_start = urlparse(start_url)
     start_netloc = (parsed_start.netloc or "").lower()
+    # Without a known origin there is no basis to classify a target as "external",
+    # so skip the check rather than flagging every absolute redirect URL.
+    if not start_netloc:
+        return findings
 
     for _, row in df.iterrows():
         url_str = str(row.get("url", "")).strip()
@@ -261,6 +265,7 @@ def _passive_html_checks(
             print(f"  security_scanner: skipping {url}: {type(exc).__name__}: {exc}", file=sys.stderr)
             continue
 
+    session.close()
     return findings
 
 
@@ -431,4 +436,5 @@ def _active_checks(
         except Exception:
             continue
 
+    session.close()
     return findings

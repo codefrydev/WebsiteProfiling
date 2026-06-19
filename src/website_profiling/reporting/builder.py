@@ -390,18 +390,22 @@ def run_simple_report(
         "lcp": [], "inp": [], "cls": [], "seo": [],
     }
     if lighthouse_by_url:
+        # Metric buckets keyed by Lighthouse audit id; audit "score" is on the 0-1 scale.
         audit_map = {
             "lcp": "largest-contentful-paint",
             "inp": "interaction-to-next-paint",
             "cls": "cumulative-layout-shift",
-            "seo": "seo",
         }
         for url, lh in lighthouse_by_url.items():
             if not isinstance(lh, dict):
                 continue
-            audits = lh.get("audits") if isinstance(lh.get("audits"), dict) else {}
+            # lh["audits"] is a LIST of audit dicts (see read_lh_audits_with_items),
+            # not a dict keyed by id — build the id->audit map ourselves.
+            audit_by_id = {
+                a.get("id"): a for a in (lh.get("audits") or []) if isinstance(a, dict)
+            }
             for bucket, audit_id in audit_map.items():
-                audit = audits.get(audit_id) if isinstance(audits, dict) else None
+                audit = audit_by_id.get(audit_id)
                 if not isinstance(audit, dict):
                     continue
                 score = audit.get("score")
@@ -410,6 +414,18 @@ def run_simple_report(
                         "url": str(url),
                         "score": score,
                         "displayValue": audit.get("displayValue"),
+                    })
+            # "seo" is a Lighthouse category, not an audit id; its score lives in
+            # category_scores on the 0-100 scale.
+            cat_scores = lh.get("category_scores") if isinstance(lh.get("category_scores"), dict) else {}
+            seo_score = cat_scores.get("seo")
+            if seo_score is not None:
+                norm = float(seo_score) / 100.0 if float(seo_score) > 1 else float(seo_score)
+                if norm < 0.9:
+                    lighthouse_failure_urls["seo"].append({
+                        "url": str(url),
+                        "score": seo_score,
+                        "displayValue": None,
                     })
 
     optional_audit_urls: dict[str, list[dict[str, Any]]] = {

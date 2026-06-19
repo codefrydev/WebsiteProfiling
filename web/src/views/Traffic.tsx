@@ -183,10 +183,11 @@ export default function Traffic() {
 
   const coverageBadge = (urlJoin?.ga4_only ?? 0) > 0 ? urlJoin!.ga4_only! : null;
 
-  const headerMeta: ReactNode = google?.fetched_at ? (
+  const fetchedDate = google?.fetched_at ? new Date(String(google.fetched_at)) : null;
+  const headerMeta: ReactNode = fetchedDate && !Number.isNaN(fetchedDate.getTime()) ? (
     <span>
       {' '}
-      &middot; {format(tf.fetchedAt, { date: new Date(String(google.fetched_at)).toLocaleDateString() })}
+      &middot; {format(tf.fetchedAt, { date: fetchedDate.toLocaleDateString() })}
     </span>
   ) : null;
 

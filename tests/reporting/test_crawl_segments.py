@@ -83,8 +83,8 @@ def test_matches_path_regex() -> None:
 
 def test_segment_health_all_ok() -> None:
     df = pd.DataFrame([
-        {"url": "https://ex.com/a", "status": 200, "title": "A", "description": "desc"},
-        {"url": "https://ex.com/b", "status": 200, "title": "B", "description": "desc"},
+        {"url": "https://ex.com/a", "status": 200, "title": "A", "meta_description": "desc"},
+        {"url": "https://ex.com/b", "status": 200, "title": "B", "meta_description": "desc"},
     ])
     assert _segment_health(df) == 100
 
@@ -112,7 +112,7 @@ def test_segment_health_missing_title_deduction() -> None:
 
 def test_segment_health_missing_description_deduction() -> None:
     """All descriptions missing → full 10-pt deduction."""
-    df = pd.DataFrame([{"status": 200, "title": "T", "description": ""} for _ in range(5)])
+    df = pd.DataFrame([{"status": 200, "title": "T", "meta_description": ""} for _ in range(5)])
     score = _segment_health(df)
     assert score == 90  # 100 - 10
 
@@ -127,7 +127,7 @@ def test_segment_health_missing_viewport_deduction() -> None:
 def test_segment_health_clamped_to_zero() -> None:
     """Multiple deductions stack: 100 - 30(status) - 20(title) - 10(desc) - 10(viewport) = 30."""
     df = pd.DataFrame([
-        {"status": 500, "title": "", "description": "", "viewport_present": False}
+        {"status": 500, "title": "", "meta_description": "", "viewport_present": False}
         for _ in range(10)
     ])
     assert _segment_health(df) == 30
@@ -135,7 +135,7 @@ def test_segment_health_clamped_to_zero() -> None:
 
 def test_segment_health_small_missing_rate_no_deduction() -> None:
     """Under 10% missing rate triggers no deduction."""
-    rows = [{"status": 200, "title": "T", "description": "D"} for _ in range(10)]
+    rows = [{"status": 200, "title": "T", "meta_description": "D"} for _ in range(10)]
     rows[0]["title"] = ""  # 10% — threshold is > 10%, so no deduction
     df = pd.DataFrame(rows)
     assert _segment_health(df) == 100

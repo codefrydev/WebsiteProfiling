@@ -208,7 +208,9 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
   }, {});
 
 
-  let filtered = list;
+  // Copy before sorting: `list` is a memoized array; sorting it in place would
+  // mutate the memoized value during render and reorder other consumers.
+  let filtered = [...list];
   if (priorityFilter !== sj.all) {
     filtered = filtered.filter((item) => normalizePriority(item.issue.priority) === priorityFilter);
   }

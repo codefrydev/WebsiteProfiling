@@ -50,7 +50,7 @@ def generate_audit_executive_summary(
 
     categories = report_payload.get("categories") or []
     gsc = (report_payload.get("google") or {}).get("gsc") or {}
-    gsc_pages = gsc.get("pages") if isinstance(gsc, dict) else []
+    gsc_pages = (gsc.get("top_pages") or gsc.get("pages")) if isinstance(gsc, dict) else []
     top_issues = rank_issues_by_traffic(categories, gsc_pages)[:5]
 
     scores = [c.get("score") for c in categories if isinstance(c.get("score"), (int, float))]

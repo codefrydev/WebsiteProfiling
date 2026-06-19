@@ -381,7 +381,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
             </span>
           </div>
         </div>
-        {(runTimestamp || iterations) && (
+        {(runTimestamp || iterations > 0) && (
           <p className="text-muted-foreground text-xs mt-3 pt-3 border-t border-muted">
             {iterations > 0 && <span>{format(vlh.runsMediansFull, { n: iterations })}</span>}
             {runTimestamp && <span className="ml-3">{vlh.generated} {new Date(runTimestamp).toLocaleString()}</span>}

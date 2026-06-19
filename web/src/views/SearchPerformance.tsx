@@ -219,10 +219,11 @@ export default function SearchPerformance() {
   const tabLabels = sp.tabs as Record<GscTabId, string>;
   const coverageBadge = (urlJoin?.gsc_only ?? 0) > 0 ? urlJoin!.gsc_only! : null;
 
-  const headerMeta: ReactNode = google?.fetched_at ? (
+  const fetchedDate = google?.fetched_at ? new Date(String(google.fetched_at)) : null;
+  const headerMeta: ReactNode = fetchedDate && !Number.isNaN(fetchedDate.getTime()) ? (
     <span>
       {' '}
-      &middot; {format(sp.fetchedAt, { date: new Date(String(google.fetched_at)).toLocaleDateString() })}
+      &middot; {format(sp.fetchedAt, { date: fetchedDate.toLocaleDateString() })}
     </span>
   ) : null;
 
