@@ -43,6 +43,9 @@ groq==1.4.0
 pyspellchecker==0.9.0
 html5lib==1.1
 
+# Token counting for agent readiness checks (approximate, cl100k_base encoder)
+tiktoken==0.13.0
+
 # MCP server for Cursor / Claude Desktop (stdio + remote Streamable HTTP)
 mcp>=1.19,<2
 uvicorn>=0.30

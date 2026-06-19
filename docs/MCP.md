@@ -288,6 +288,26 @@ Size-based tools require `probe_image_inventory=true` in pipeline config. Relate
 
 `get_geo_readiness_score`, `get_aeo_content_signals_for_url`, `get_llms_txt_status`, `draft_llms_txt`, `get_faq_schema_coverage`, `list_pages_missing_faq_schema`, `get_eeat_signals_summary`, `get_internal_link_suggestions`, `check_ai_citation_presence`
 
+### Agent documentation readiness (agentic-seo parity)
+
+`get_agent_readiness_score` — 5-category composite score (0-100, A-F grade): discovery, content structure, token economics, capability signaling, UX bridge.
+
+**Discovery:** `get_agents_md_status`, `get_skill_md_status`, `get_agent_permissions_status`
+
+**Token economics:** `get_token_budget_summary`, `list_oversized_pages_for_agents`
+
+**Content structure:** `get_content_structure_aeo_summary`, `get_markdown_availability_summary`, `list_pages_agent_unfriendly`
+
+**UX bridge:** `get_copy_for_ai_signals`, `list_pages_missing_copy_for_ai`
+
+**Generator:** `generate_agent_readiness_bundle` — draft AGENTS.md, skill.md, agent-permissions.json
+
+**Example prompts:**
+- "Score this site's agent documentation readiness"
+- "Which pages are over the 8k token limit for AI agents?"
+- "Does this site have an AGENTS.md or skill.md?"
+- "Generate agent readiness files for my site"
+
 ### Integrations
 
 `get_bing_index_status` (requires `bing_webmaster_api_key` in audit settings)

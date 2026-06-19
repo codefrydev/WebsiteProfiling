@@ -215,6 +215,11 @@ def classify_tool_domain(name: str) -> str:
         "get_ai_discovery", "get_robots_ai_", "get_citability_",
         "list_pages_missing_faq", "draft_llms", "check_ai_citation",
         "generate_schema", "generate_robots_txt", "generate_meta_tags", "generate_geo_fix",
+        # Agent readiness
+        "get_agent_", "get_agents_", "get_skill_md", "get_token_budget",
+        "get_copy_for_ai", "get_markdown_availability", "get_content_structure_aeo",
+        "list_oversized_pages", "list_pages_agent_unfriendly",
+        "list_pages_missing_copy_for_ai", "generate_agent_readiness",
     )):
         return "geo"
     if "axe" in name or "mixed_content" in name or name == "get_heading_outline_for_url":
