@@ -97,3 +97,56 @@ def test_run_page_markdown_extraction_writes_results(monkeypatch, capsys):
     assert result["crawl_run_id"] == 7
     assert len(written) == 1
     assert written[0]["url"] == "https://example.com"
+
+
+def test_page_markdown_cmd_run_prints_summary(monkeypatch, capsys):
+    import argparse
+
+    from website_profiling.commands import page_markdown_cmd
+
+    monkeypatch.setattr(
+        "website_profiling.page_markdown.pipeline.run_page_markdown_extraction",
+        lambda **kw: {"pages_extracted": 3, "crawl_run_id": 9},
+    )
+    monkeypatch.setattr(
+        "website_profiling.commands.config_resolve.active_property_id_from_cfg",
+        lambda _cfg: 42,
+    )
+    args = argparse.Namespace(
+        crawl_run_id=9,
+        strategy="main_only",
+        overwrite=True,
+        workers=2,
+        as_json=False,
+    )
+    page_markdown_cmd.run({}, args)
+    out = capsys.readouterr().out
+    assert "[page-markdown] Done:" in out
+    assert "pages_extracted" in out
+
+
+def test_page_markdown_cmd_run_json_output(monkeypatch, capsys):
+    import argparse
+    import json
+
+    from website_profiling.commands import page_markdown_cmd
+
+    summary = {"pages_extracted": 1, "crawl_run_id": 5}
+    monkeypatch.setattr(
+        "website_profiling.page_markdown.pipeline.run_page_markdown_extraction",
+        lambda **kw: summary,
+    )
+    monkeypatch.setattr(
+        "website_profiling.commands.config_resolve.active_property_id_from_cfg",
+        lambda _cfg: None,
+    )
+    args = argparse.Namespace(
+        crawl_run_id=None,
+        strategy="full_body",
+        overwrite=False,
+        workers=4,
+        as_json=True,
+    )
+    page_markdown_cmd.run({"start_url": "https://example.com"}, args)
+    out = capsys.readouterr().out.strip()
+    assert json.loads(out) == summary

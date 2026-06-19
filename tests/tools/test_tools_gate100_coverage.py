@@ -20,6 +20,7 @@ from website_profiling.tools.audit_tools import (
 )
 from website_profiling.tools.audit_tools.tool_domains import (
     CANONICAL_DOMAINS,
+    CHAT_ONLY_TOOLS,
     TIER_0_TOOLS,
     classify_tool_domain,
     domains_catalog,
@@ -496,7 +497,7 @@ def test_tool_domains_classify_and_catalog() -> None:
     tier1 = tool_names_for_tier(meta, 1)
     assert tier1
     full_bundle = tool_names_for_mcp_bundle(meta, "full")
-    assert len(full_bundle) == len(meta)
+    assert len(full_bundle) == len(meta) - len(CHAT_ONLY_TOOLS & meta.keys())
     core_bundle = tool_names_for_mcp_bundle(meta, "core")
     assert TIER_0_TOOLS <= core_bundle
 

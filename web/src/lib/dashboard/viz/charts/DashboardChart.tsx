@@ -29,6 +29,7 @@ import {
   getChartLegendLabelColor,
   doughnutOptionsBottomLegend,
 } from '@/utils/chartJsDefaults';
+import { anyDoughnutOptions } from '@/utils/chartOptions';
 import { ChartPanel } from '@/components/charts/ChartPanel';
 import type { SeriesSet } from '@/lib/dashboard/viz/series';
 
@@ -112,19 +113,17 @@ export function DashboardChart({ seriesSet, kind, options = {} }: DashboardChart
   if (kind === 'pie' || kind === 'doughnut') {
     const pieData = {
       labels: seriesSet.labels,
-      datasets: datasets as { data: number[]; backgroundColor: string[]; borderWidth: number }[],
+      datasets,
     };
-    const pieOpts = {
+    const pieOpts = anyDoughnutOptions({
       ...doughnutOptionsBottomLegend(),
       onClick: onCategoryClick ? handleClick : undefined,
-    };
+    });
     return (
       <div className={heightClass}>
         {kind === 'doughnut'
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          ? <Doughnut data={pieData as any} options={pieOpts} />
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          : <Pie data={pieData as any} options={pieOpts} />}
+          ? <Doughnut data={pieData} options={pieOpts} />
+          : <Pie data={pieData} options={pieOpts} />}
       </div>
     );
   }

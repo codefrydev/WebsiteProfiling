@@ -58,6 +58,12 @@ def test_html_to_markdown_strips_scripts():
     assert "bad()" not in md
 
 
+def test_html_to_markdown_none():
+    from website_profiling.page_markdown.html_to_markdown import html_to_markdown
+
+    assert html_to_markdown(None) == ""
+
+
 def test_html_to_markdown_empty():
     from website_profiling.page_markdown.html_to_markdown import html_to_markdown
     from bs4 import BeautifulSoup

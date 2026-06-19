@@ -148,6 +148,26 @@ def test_priority_counts_skips_invalid_entries() -> None:
     assert counts[1]["current"] == 1
 
 
+def test_lighthouse_uses_summary_scores_when_median_missing() -> None:
+    cur = {
+        "lighthouse_by_url": {
+            "https://ex.com/a": {"performance": 80, "seo": 75},
+        },
+        "links": [],
+    }
+    base = {
+        "lighthouse_by_url": {
+            "https://ex.com/a": {"performance": 60, "seo": 70},
+        },
+        "links": [],
+    }
+    deltas = build_lighthouse_url_deltas(cur, base)
+    assert len(deltas) == 1
+    assert deltas[0]["performance_current"] == 80
+    assert deltas[0]["performance_baseline"] == 60
+    assert deltas[0]["performance_delta"] == 20
+
+
 def test_lighthouse_from_links_and_skips() -> None:
     cur = {
         "lighthouse_by_url": {

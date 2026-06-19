@@ -684,7 +684,7 @@ def test_tool_handlers_new_tools_registered() -> None:
 def test_allowlist_new_tools():
     """Snapshot test: new GEO tools must be in the TS allowlist source."""
     import pathlib
-    source = pathlib.Path(__file__).parents[1] / "web" / "src" / "server" / "auditToolAllowlist.ts"
+    source = pathlib.Path(__file__).parents[2] / "web" / "src" / "server" / "auditToolAllowlist.ts"
     text = source.read_text()
     new_tools = [
         "get_ai_discovery_status",

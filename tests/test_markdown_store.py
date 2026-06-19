@@ -88,6 +88,41 @@ def test_read_page_markdown_returns_dict():
     assert result == row_data
 
 
+def test_read_page_markdown_returns_none_for_empty_url():
+    from website_profiling.db import markdown_store as ms
+
+    conn = MagicMock()
+    result = ms.read_page_markdown(conn, 5, "")
+    assert result is None
+    conn.execute.assert_not_called()
+
+
+def test_list_page_markdown_filters_by_query():
+    from website_profiling.db import markdown_store as ms
+
+    items = [{"url": "https://example.com/blog", "title": "Blog", "word_count": 5, "strategy": "main_only", "extracted_at": "2025-01-01"}]
+    conn = MagicMock()
+    count_cur = MagicMock()
+    count_cur.fetchone.return_value = {"count": 1}
+    data_cur = MagicMock()
+    data_cur.fetchall.return_value = items
+    conn.execute.side_effect = [count_cur, data_cur]
+
+    result = ms.list_page_markdown(conn, 5, query="blog")
+    assert result["total"] == 1
+    assert result["items"] == items
+    assert "lower(url) LIKE" in conn.execute.call_args_list[0][0][0]
+
+
+def test_count_page_markdown_by_run_handles_exception():
+    from website_profiling.db import markdown_store as ms
+
+    conn = MagicMock()
+    conn.execute.side_effect = Exception("boom")
+    result = ms.count_page_markdown_by_run(conn, [3])
+    assert result == {}
+
+
 def test_read_page_markdown_returns_none_for_unknown():
     from website_profiling.db import markdown_store as ms
 

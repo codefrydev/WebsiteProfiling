@@ -956,3 +956,180 @@ class TestFeatureFlagGating:
             selected = select_tools_for_turn("show me some data")
         assert "get_sql_schema" not in selected
         assert "run_sql_query" not in selected
+
+
+# ---------------------------------------------------------------------------
+# Remaining branch coverage
+# ---------------------------------------------------------------------------
+
+class TestSqlQueryRemainingBranches:
+    def test_anonymous_forbidden_function_with_regex_bypass(self) -> None:
+        with patch("website_profiling.tools.audit_tools.sql_query.assert_read_only_regex"):
+            with pytest.raises(ReadOnlyViolation, match="not permitted"):
+                assert_read_only("SELECT pg_sleep(1)")
+
+    def test_select_for_update_locks_rejected(self) -> None:
+        import sqlglot
+        from sqlglot import exp
+
+        stmt = sqlglot.parse_one("SELECT 1")
+        stmt.set("locks", [object()])
+        with patch("website_profiling.tools.audit_tools.sql_query.assert_read_only_regex"), patch(
+            "website_profiling.tools.audit_tools.sql_query.sqlglot.parse",
+            return_value=[stmt],
+        ):
+            with pytest.raises(ReadOnlyViolation, match="FOR UPDATE"):
+                assert_read_only("SELECT 1")
+
+    def test_check_table_refs_skips_empty_table_name(self) -> None:
+        from sqlglot import exp
+        from website_profiling.tools.audit_tools.sql_query import _check_table_refs
+
+        table = exp.Table(this=exp.to_identifier(""))
+        select = exp.Select().from_(table)
+        _check_table_refs(select)
+
+    def test_get_sql_schema_skips_unlisted_dict_fk(self) -> None:
+        from contextlib import contextmanager
+
+        col_rows = [
+            {"table_name": "crawl_runs", "column_name": "id", "data_type": "bigint",
+             "is_nullable": "NO", "constraint_type": "PRIMARY KEY"},
+        ]
+        fk_rows = [
+            {"table_name": "pipeline_jobs", "column_name": "id", "foreign_table": "properties", "foreign_column": "id"},
+        ]
+
+        class _FakeCursor:
+            _call_count = 0
+            description = [("table_name",), ("column_name",), ("data_type",),
+                           ("is_nullable",), ("constraint_type",)]
+
+            def execute(self, sql: str) -> None:
+                pass
+
+            def fetchall(self):
+                _FakeCursor._call_count += 1
+                return col_rows if _FakeCursor._call_count == 1 else fk_rows
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+        class _FakeConn:
+            def cursor(self):
+                return _FakeCursor()
+
+            def rollback(self):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+        @contextmanager
+        def _fake_ro():
+            _FakeCursor._call_count = 0
+            yield _FakeConn()
+
+        with patch("website_profiling.tools.audit_tools.sql_query.readonly_session", _fake_ro):
+            result = get_sql_schema(MagicMock(), AuditToolContext(), {})
+        assert result["tables"][0]["foreign_keys"] == []
+
+    def test_run_sql_query_bad_row_cap_defaults(self) -> None:
+        from contextlib import contextmanager
+
+        @contextmanager
+        def _ro():
+            cur = MagicMock()
+            cur.description = [("n",)]
+            cur.fetchall.return_value = [(1,)]
+            conn = MagicMock()
+            conn.cursor.return_value.__enter__.return_value = cur
+            yield conn
+
+        with patch("website_profiling.tools.audit_tools.sql_query.readonly_session", _ro):
+            result = run_sql_query(MagicMock(), AuditToolContext(), {"sql": "SELECT 1", "row_cap": "bad"})
+        assert result["row_count"] == 1
+
+    def test_run_sql_query_continues_when_reparse_fails(self) -> None:
+        from contextlib import contextmanager
+
+        @contextmanager
+        def _ro():
+            cur = MagicMock()
+            cur.description = [("n",)]
+            cur.fetchall.return_value = [(1,)]
+            conn = MagicMock()
+            conn.cursor.return_value.__enter__.return_value = cur
+            yield conn
+
+        with patch("website_profiling.tools.audit_tools.sql_query.readonly_session", _ro), patch(
+            "website_profiling.tools.audit_tools.sql_query.assert_read_only",
+        ), patch(
+            "website_profiling.tools.audit_tools.sql_query.sqlglot.parse",
+            side_effect=RuntimeError("parse fail"),
+        ):
+            result = run_sql_query(MagicMock(), AuditToolContext(property_id=1), {"sql": "SELECT 1"})
+        assert result["row_count"] == 1
+
+    def test_run_sql_query_scope_injection_rejected(self) -> None:
+        import sqlglot
+
+        with patch("website_profiling.tools.audit_tools.sql_query.assert_read_only"), patch(
+            "website_profiling.tools.audit_tools.sql_query.sqlglot.parse",
+            return_value=[sqlglot.parse_one("SELECT 1")],
+        ), patch(
+            "website_profiling.tools.audit_tools.sql_query._inject_scope_ctes",
+            side_effect=ReadOnlyViolation("scope fail"),
+        ):
+            scoped = run_sql_query(MagicMock(), AuditToolContext(property_id=1), {"sql": "SELECT 1"})
+        assert "scope fail" in scoped["error"]
+
+    def test_get_sql_schema_skips_unlisted_tuple_fk(self) -> None:
+        from contextlib import contextmanager
+
+        col_rows = [("crawl_runs", "id", "bigint", "NO", "PRIMARY KEY")]
+        fk_rows = [("pipeline_jobs", "id", "properties", "id")]
+
+        class _FakeCursor:
+            _call_count = 0
+
+            def execute(self, sql: str) -> None:
+                pass
+
+            def fetchall(self):
+                _FakeCursor._call_count += 1
+                return col_rows if _FakeCursor._call_count == 1 else fk_rows
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+        class _FakeConn:
+            def cursor(self):
+                return _FakeCursor()
+
+            def rollback(self):
+                pass
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                pass
+
+        @contextmanager
+        def _fake_ro():
+            _FakeCursor._call_count = 0
+            yield _FakeConn()
+
+        with patch("website_profiling.tools.audit_tools.sql_query.readonly_session", _fake_ro):
+            result = get_sql_schema(MagicMock(), AuditToolContext(), {})
+        assert result["tables"][0]["foreign_keys"] == []
