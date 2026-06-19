@@ -1,4 +1,20 @@
 import type { VizType } from '@/lib/dashboard/types';
+import type { AggregateOp } from '@/lib/dashboard/types';
+
+export type FieldRole = 'dimension' | 'measure';
+
+export interface CatalogField {
+  /** Dot-path key, e.g. 'crawl_summary.count_4xx'. */
+  key: string;
+  /** Human-readable label shown in pickers. */
+  label: string;
+  /** 'dimension' = categorical (group-by / X axis); 'measure' = numeric (Y axis / KPI). */
+  role: FieldRole;
+  /** Default aggregation for measure fields when aggregating rows. */
+  defaultAgg?: AggregateOp;
+  /** Suggested number format string (same tokens as WidgetOptions.format). */
+  format?: string;
+}
 
 export interface CatalogEntry {
   toolName: string;
@@ -6,16 +22,42 @@ export interface CatalogEntry {
   section: string;
   description: string;
   defaultArgs?: Record<string, unknown>;
-  fields?: string[];
+  /** Dot-path into the tool result that contains the rows array. */
   rowsPath?: string;
+  fields: CatalogField[];
   compatibleViz: VizType[];
-  defaultValueField?: string;
-  defaultXField?: string;
-  defaultYField?: string;
 }
+
+// ─── helpers ───────────────────────────────────────────────────────────────
+
+export function dimensions(e: CatalogEntry): CatalogField[] {
+  return e.fields.filter((f) => f.role === 'dimension');
+}
+
+export function measures(e: CatalogEntry): CatalogField[] {
+  return e.fields.filter((f) => f.role === 'measure');
+}
+
+export function fieldKeys(e: CatalogEntry): string[] {
+  return e.fields.map((f) => f.key);
+}
+
+/** First dimension key, used as default X / series-split field. */
+export function defaultDimension(e: CatalogEntry): string | undefined {
+  return dimensions(e)[0]?.key;
+}
+
+/** First measure key, used as default Y / KPI value field. */
+export function defaultMeasure(e: CatalogEntry): string | undefined {
+  return measures(e)[0]?.key;
+}
+
+// ─── shorthand arrays ───────────────────────────────────────────────────────
 
 const CHART_VIZ: VizType[] = ['bar', 'horizontal-bar', 'ranked-bar', 'line', 'area', 'pie', 'doughnut', 'stacked-bar', 'table'];
 const METRIC_VIZ: VizType[] = ['kpi', 'stat-card', 'gauge', 'sparkline'];
+
+// ─── catalog ────────────────────────────────────────────────────────────────
 
 export const DASHBOARD_CATALOG: CatalogEntry[] = [
   {
@@ -23,19 +65,27 @@ export const DASHBOARD_CATALOG: CatalogEntry[] = [
     label: 'Audit summary',
     section: 'Overview',
     description: 'Top-level health score and page counts from the latest audit.',
-    fields: ['health_score', 'total_issues', 'crawl_summary.total_urls', 'crawl_summary.count_2xx', 'crawl_summary.count_4xx', 'crawl_summary.count_5xx'],
+    fields: [
+      { key: 'health_score', label: 'Health score', role: 'measure', defaultAgg: 'avg', format: '0' },
+      { key: 'total_issues', label: 'Total issues', role: 'measure', defaultAgg: 'sum' },
+      { key: 'crawl_summary.total_urls', label: 'Total URLs', role: 'measure', defaultAgg: 'sum' },
+      { key: 'crawl_summary.count_2xx', label: '2xx URLs', role: 'measure', defaultAgg: 'sum' },
+      { key: 'crawl_summary.count_4xx', label: '4xx URLs', role: 'measure', defaultAgg: 'sum' },
+      { key: 'crawl_summary.count_5xx', label: '5xx URLs', role: 'measure', defaultAgg: 'sum' },
+    ],
     compatibleViz: [...METRIC_VIZ, 'stacked-bar'],
-    defaultValueField: 'health_score',
   },
   {
     toolName: 'get_category_scores',
     label: 'Category scores',
     section: 'Overview',
     description: 'Score per audit category (SEO, performance, security, etc.).',
-    fields: ['name', 'score', 'issue_count'],
     rowsPath: 'categories',
-    defaultXField: 'name',
-    defaultYField: 'score',
+    fields: [
+      { key: 'name', label: 'Category', role: 'dimension' },
+      { key: 'score', label: 'Score', role: 'measure', defaultAgg: 'avg', format: '0' },
+      { key: 'issue_count', label: 'Issue count', role: 'measure', defaultAgg: 'sum' },
+    ],
     compatibleViz: [...CHART_VIZ, 'stat-card'],
   },
   {
@@ -43,110 +93,150 @@ export const DASHBOARD_CATALOG: CatalogEntry[] = [
     label: 'Critical issues',
     section: 'Overview',
     description: 'Most impactful issues found in the audit.',
-    fields: ['message', 'priority', 'category', 'url', 'impact_score'],
     rowsPath: 'issues',
-    defaultXField: 'message',
-    defaultYField: 'impact_score',
-    compatibleViz: ['table', 'bar', 'horizontal-bar', 'ranked-bar'],
     defaultArgs: { limit: 20 },
+    fields: [
+      { key: 'message', label: 'Message', role: 'dimension' },
+      { key: 'category', label: 'Category', role: 'dimension' },
+      { key: 'priority', label: 'Priority', role: 'dimension' },
+      { key: 'url', label: 'URL', role: 'dimension' },
+      { key: 'impact_score', label: 'Impact score', role: 'measure', defaultAgg: 'avg' },
+    ],
+    compatibleViz: ['table', 'bar', 'horizontal-bar', 'ranked-bar'],
   },
   {
     toolName: 'get_lighthouse_summary',
     label: 'Lighthouse summary',
     section: 'Performance',
     description: 'Aggregate Lighthouse scores: performance, accessibility, SEO.',
-    fields: ['summary.category_scores.performance', 'summary.category_scores.accessibility', 'summary.category_scores.seo', 'pages_audited'],
+    fields: [
+      { key: 'summary.category_scores.performance', label: 'Performance', role: 'measure', defaultAgg: 'avg', format: 'pct' },
+      { key: 'summary.category_scores.accessibility', label: 'Accessibility', role: 'measure', defaultAgg: 'avg', format: 'pct' },
+      { key: 'summary.category_scores.seo', label: 'SEO', role: 'measure', defaultAgg: 'avg', format: 'pct' },
+      { key: 'pages_audited', label: 'Pages audited', role: 'measure', defaultAgg: 'sum' },
+    ],
     compatibleViz: [...METRIC_VIZ],
-    defaultValueField: 'summary.category_scores.performance',
   },
   {
     toolName: 'list_broken_links',
     label: 'Broken links',
     section: 'Links',
     description: 'Pages returning 4xx/5xx or error status codes.',
-    fields: ['url', 'status'],
     rowsPath: 'broken',
-    defaultXField: 'url',
-    defaultYField: 'status',
-    compatibleViz: ['table'],
     defaultArgs: { limit: 50 },
+    fields: [
+      { key: 'url', label: 'URL', role: 'dimension' },
+      { key: 'status', label: 'Status code', role: 'dimension' },
+    ],
+    compatibleViz: ['table'],
   },
   {
     toolName: 'get_image_audit_summary',
     label: 'Image SEO summary',
     section: 'Images',
     description: 'Overview of image alt text, dimensions, lazy-loading, and counts.',
-    fields: ['pages_missing_alt', 'images_total_crawled', 'pages_missing_image_dimensions', 'pages_without_lazy_images', 'og_image_missing_count'],
+    fields: [
+      { key: 'pages_missing_alt', label: 'Pages missing alt', role: 'measure', defaultAgg: 'sum' },
+      { key: 'images_total_crawled', label: 'Images crawled', role: 'measure', defaultAgg: 'sum' },
+      { key: 'pages_missing_image_dimensions', label: 'Missing dimensions', role: 'measure', defaultAgg: 'sum' },
+      { key: 'pages_without_lazy_images', label: 'No lazy-load', role: 'measure', defaultAgg: 'sum' },
+      { key: 'og_image_missing_count', label: 'Missing OG image', role: 'measure', defaultAgg: 'sum' },
+    ],
     compatibleViz: [...METRIC_VIZ, 'bar', 'horizontal-bar', 'stacked-bar', 'pie', 'doughnut'],
-    defaultValueField: 'pages_missing_alt',
   },
   {
     toolName: 'list_largest_images',
     label: 'Largest images',
     section: 'Images',
-    description: 'Images sorted by file size — largest first (requires image inventory probe).',
-    fields: ['url', 'size_bytes', 'content_type'],
+    description: 'Images sorted by file size — largest first.',
     rowsPath: 'items',
-    defaultXField: 'url',
-    defaultYField: 'size_bytes',
-    compatibleViz: ['table', 'bar', 'horizontal-bar', 'ranked-bar'],
     defaultArgs: { limit: 20 },
+    fields: [
+      { key: 'url', label: 'URL', role: 'dimension' },
+      { key: 'content_type', label: 'Content type', role: 'dimension' },
+      { key: 'size_bytes', label: 'Size (bytes)', role: 'measure', defaultAgg: 'sum' },
+    ],
+    compatibleViz: ['table', 'bar', 'horizontal-bar', 'ranked-bar'],
   },
   {
     toolName: 'get_axe_audit_summary',
     label: 'Accessibility summary',
     section: 'Accessibility',
     description: 'Pages with axe accessibility violations.',
-    fields: ['pages_with_violations', 'total_violations'],
+    fields: [
+      { key: 'pages_with_violations', label: 'Pages with violations', role: 'measure', defaultAgg: 'sum' },
+      { key: 'total_violations', label: 'Total violations', role: 'measure', defaultAgg: 'sum' },
+    ],
     compatibleViz: [...METRIC_VIZ, 'stacked-bar', 'bar'],
-    defaultValueField: 'total_violations',
   },
   {
     toolName: 'get_geo_readiness_score',
     label: 'GEO readiness score',
     section: 'GEO / AEO',
     description: 'AI answer-engine readiness score and sub-scores.',
-    fields: ['geo_readiness_score', 'band', 'components.schema_coverage', 'components.faq_schema_coverage', 'components.robots_ai_access', 'components.meta_tags'],
+    fields: [
+      { key: 'band', label: 'Band', role: 'dimension' },
+      { key: 'geo_readiness_score', label: 'GEO readiness', role: 'measure', defaultAgg: 'avg', format: '0' },
+      { key: 'components.schema_coverage', label: 'Schema coverage', role: 'measure', defaultAgg: 'avg', format: 'pct' },
+      { key: 'components.faq_schema_coverage', label: 'FAQ schema', role: 'measure', defaultAgg: 'avg', format: 'pct' },
+      { key: 'components.robots_ai_access', label: 'Robots AI access', role: 'measure', defaultAgg: 'avg' },
+      { key: 'components.meta_tags', label: 'Meta tags', role: 'measure', defaultAgg: 'avg' },
+    ],
     compatibleViz: [...METRIC_VIZ],
-    defaultValueField: 'geo_readiness_score',
   },
   {
     toolName: 'get_agent_readiness_score',
     label: 'Agent readiness score',
     section: 'GEO / AEO',
     description: 'Score for agent/MCP discoverability.',
-    fields: ['agent_readiness_score', 'percentage', 'grade'],
+    fields: [
+      { key: 'grade', label: 'Grade', role: 'dimension' },
+      { key: 'agent_readiness_score', label: 'Agent readiness', role: 'measure', defaultAgg: 'avg', format: '0' },
+      { key: 'percentage', label: 'Percentage', role: 'measure', defaultAgg: 'avg', format: 'pct' },
+    ],
     compatibleViz: [...METRIC_VIZ],
-    defaultValueField: 'agent_readiness_score',
   },
   {
     toolName: 'get_citability_score',
     label: 'Citability score',
     section: 'GEO / AEO',
     description: 'Measures how likely LLMs are to cite pages on this site.',
-    fields: ['citability_score', 'total_pages', 'pages_above_50', 'pages_above_75'],
+    fields: [
+      { key: 'citability_score', label: 'Citability score', role: 'measure', defaultAgg: 'avg', format: '0' },
+      { key: 'total_pages', label: 'Total pages', role: 'measure', defaultAgg: 'sum' },
+      { key: 'pages_above_50', label: 'Pages above 50', role: 'measure', defaultAgg: 'sum' },
+      { key: 'pages_above_75', label: 'Pages above 75', role: 'measure', defaultAgg: 'sum' },
+    ],
     compatibleViz: [...METRIC_VIZ, 'stacked-bar', 'pie'],
-    defaultValueField: 'citability_score',
   },
   {
     toolName: 'get_eeat_signals_summary',
     label: 'E-E-A-T signals',
     section: 'GEO / AEO',
     description: 'Author, organization, and about/contact page signals from the crawl.',
-    fields: ['pages_with_author_schema', 'pages_with_organization_schema', 'about_contact_pages'],
+    fields: [
+      { key: 'pages_with_author_schema', label: 'Author schema', role: 'measure', defaultAgg: 'sum' },
+      { key: 'pages_with_organization_schema', label: 'Org schema', role: 'measure', defaultAgg: 'sum' },
+      { key: 'about_contact_pages', label: 'About/contact pages', role: 'measure', defaultAgg: 'sum' },
+    ],
     compatibleViz: [...METRIC_VIZ, 'bar', 'stacked-bar'],
-    defaultValueField: 'pages_with_author_schema',
   },
   {
     toolName: 'get_google_summary',
     label: 'Google Search Console summary',
     section: 'Search',
     description: 'Clicks, impressions, CTR, and average position from GSC.',
-    fields: ['gsc.summary.clicks', 'gsc.summary.impressions', 'gsc.summary.ctr', 'gsc.summary.position'],
+    fields: [
+      { key: 'gsc.summary.clicks', label: 'Clicks', role: 'measure', defaultAgg: 'sum' },
+      { key: 'gsc.summary.impressions', label: 'Impressions', role: 'measure', defaultAgg: 'sum' },
+      { key: 'gsc.summary.ctr', label: 'CTR', role: 'measure', defaultAgg: 'avg', format: '0.0%' },
+      { key: 'gsc.summary.position', label: 'Avg position', role: 'measure', defaultAgg: 'avg', format: '0.0' },
+    ],
     compatibleViz: [...METRIC_VIZ, 'bar', 'horizontal-bar', 'stacked-bar', 'line'],
-    defaultValueField: 'gsc.summary.clicks',
   },
 ];
+
+// ─── lookup utilities ───────────────────────────────────────────────────────
 
 export function catalogBySectionSections(): string[] {
   return [...new Set(DASHBOARD_CATALOG.map((e) => e.section))];

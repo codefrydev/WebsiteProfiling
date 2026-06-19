@@ -2,7 +2,13 @@
 
 import { useState } from 'react';
 import { X, Search } from 'lucide-react';
-import { catalogBySection, catalogBySectionSections, type CatalogEntry } from '@/lib/dashboard/catalog/catalog';
+import {
+  catalogBySection,
+  catalogBySectionSections,
+  defaultDimension,
+  defaultMeasure,
+  type CatalogEntry,
+} from '@/lib/dashboard/catalog/catalog';
 import type { VizType, Widget, WidgetBinding } from '@/lib/dashboard/types';
 import { defaultWidgetLayout, newWidgetId } from '@/lib/dashboard/types';
 import { VIZ_LABELS } from '@/lib/dashboard/viz/labels';
@@ -42,9 +48,9 @@ export default function WidgetPalette({ onAdd, onClose }: WidgetPaletteProps) {
       source: 'audit-tool',
       toolName: selected.toolName,
       args: selected.defaultArgs,
-      valueField: selected.defaultValueField,
-      xField: selected.defaultXField,
-      yField: selected.defaultYField,
+      valueField: defaultMeasure(selected),
+      xField: defaultDimension(selected),
+      yField: defaultMeasure(selected),
       select: selected.rowsPath,
     };
 

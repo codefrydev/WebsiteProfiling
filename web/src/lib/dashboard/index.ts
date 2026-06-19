@@ -13,10 +13,13 @@ export * from '@/lib/dashboard/catalog/catalog';
 export * from '@/lib/dashboard/data/fetchWidgetData';
 export * from '@/lib/dashboard/data/fetchDashboards';
 export * from '@/lib/dashboard/viz/labels';
+export { extractMultiSeries, extractChartSeries } from '@/lib/dashboard/viz/series';
+export type { SeriesSet, ChartSeries } from '@/lib/dashboard/viz/series';
 export { renderViz, VIZ_REGISTRY } from '@/lib/dashboard/viz/registry';
 export { evalMeasure, evalTransform, DASHSCRIPT_HELP } from '@/lib/dashboard/script/eval';
 export { DashScriptError } from '@/lib/dashboard/script/types';
 
+export { FilterBar } from '@/lib/dashboard/builder/FilterBar';
 export { default as DashboardGrid } from '@/lib/dashboard/builder/DashboardGrid';
 export { default as DashboardWidget } from '@/lib/dashboard/builder/DashboardWidget';
 export { default as DashboardSwitcher } from '@/lib/dashboard/builder/DashboardSwitcher';

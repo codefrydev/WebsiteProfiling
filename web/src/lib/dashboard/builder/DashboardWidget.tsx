@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { Widget } from '@/lib/dashboard/types';
+import type { Widget, DashboardFilter, CrossFilter } from '@/lib/dashboard/types';
 import { fetchWidgetData, type WidgetData } from '@/lib/dashboard/data/fetchWidgetData';
 import { catalogEntry } from '@/lib/dashboard/catalog/catalog';
 import { renderViz, isDataViz } from '@/lib/dashboard/viz/registry';
@@ -17,6 +17,10 @@ interface DashboardWidgetProps {
   isEditing?: boolean;
   onRemove?: (id: string) => void;
   onEdit?: (id: string) => void;
+  activeFilters?: (DashboardFilter | CrossFilter)[];
+  onCrossFilter?: (field: string, value: string) => void;
+  /** Called whenever this widget's rows are fetched — used to collect dimension values for FilterBar. */
+  onDataReady?: (widgetId: string, rows: Record<string, unknown>[]) => void;
 }
 
 export default function DashboardWidget({
@@ -26,6 +30,9 @@ export default function DashboardWidget({
   isEditing = false,
   onRemove,
   onEdit,
+  activeFilters,
+  onCrossFilter,
+  onDataReady,
 }: DashboardWidgetProps) {
   const [data, setData] = useState<WidgetData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -40,13 +47,18 @@ export default function DashboardWidget({
     let cancelled = false;
     setLoading(true);
     setError(null);
-    fetchWidgetData(widget.binding, propertyId, reportId)
-      .then((result) => { if (!cancelled) setData(result); })
+    fetchWidgetData(widget.binding, propertyId, reportId, activeFilters)
+      .then((result) => {
+        if (!cancelled) {
+          setData(result);
+          onDataReady?.(widget.id, result.rows);
+        }
+      })
       .catch((e: unknown) => { if (!cancelled) setError(e instanceof Error ? e.message : String(e)); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [widget.binding, widget.viz, propertyId, reportId, retryCount]);
+  }, [widget.binding, widget.viz, propertyId, reportId, retryCount, activeFilters]);
 
   const catalog = catalogEntry(widget.binding.toolName);
   const displayTitle = widget.title || catalog?.label || widget.binding.toolName;
@@ -54,7 +66,7 @@ export default function DashboardWidget({
 
   const renderContent = () => {
     if (widget.viz === 'markdown') {
-      return renderViz('markdown', { widget, data: data ?? { raw: {}, rows: [], kpiValue: null }, catalog, opts });
+      return renderViz('markdown', { widget, data: data ?? { raw: {}, rows: [], kpiValue: null }, catalog, opts, onCrossFilter });
     }
 
     if (loading) {
@@ -83,8 +95,8 @@ export default function DashboardWidget({
       );
     }
 
-    if (!data) return renderViz(widget.viz, { widget, data: { raw: {}, rows: [], kpiValue: null }, catalog, opts });
-    return renderViz(widget.viz, { widget, data, catalog, opts });
+    if (!data) return renderViz(widget.viz, { widget, data: { raw: {}, rows: [], kpiValue: null }, catalog, opts, onCrossFilter });
+    return renderViz(widget.viz, { widget, data, catalog, opts, onCrossFilter });
   };
 
   return (

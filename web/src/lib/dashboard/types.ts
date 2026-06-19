@@ -46,6 +46,8 @@ export interface WidgetBinding {
   select?: string;
   xField?: string;
   yField?: string;
+  /** Dimension field used to split rows into multiple series (group-by). */
+  seriesField?: string;
   valueField?: string;
   aggregate?: AggregateOp;
   /**
@@ -102,9 +104,31 @@ export interface Widget {
   options?: WidgetOptions;
 }
 
+/** Board-level global filter applied across all widgets that expose the dimension. */
+export interface DashboardFilter {
+  id: string;
+  label: string;
+  /** Dimension key (dot-path) this filter matches against. */
+  field: string;
+  type: 'select' | 'multiselect' | 'search';
+  /** If set, only widgets whose toolName is in this list are filtered. Undefined = all. */
+  appliesTo?: string[];
+  value?: string | string[];
+}
+
+/** Cross-filter produced by clicking a chart element. Persisted in doc so reloads preserve it. */
+export interface CrossFilter {
+  id: string;
+  field: string;
+  value: string;
+  sourceWidgetId: string;
+}
+
 export interface DashboardDoc {
   version: 1;
   widgets: Widget[];
+  filters?: DashboardFilter[];
+  crossFilters?: CrossFilter[];
 }
 
 export function emptyDashboard(): DashboardDoc {

@@ -117,12 +117,23 @@ DASHSCRIPT GRAMMAR (supplied in the request as "dashscript_help") covers:
   - Measures (scalar): field("key"), sum("col"), avg("col"), count(), min/max, if(cond, a, b), coalesce(...)
   - Transforms (row pipelines): filter(...) | sort(col, desc) | take(N) | project(col1, col2) | skip(N)
 
-CATALOG: "catalog" lists available data-source tools with their fields, defaultXField, defaultYField, and compatibleViz.
-         Use ONLY toolName and viz values from catalog / viz_types.
+CATALOG: "catalog" lists available data-source tools. Each entry has:
+  - "dimensions": categorical fields used as X axis or group-by (e.g. page name, category, URL)
+  - "measures": numeric fields used as Y axis or KPI value (e.g. score, count, bytes)
+  Use ONLY toolName and viz values from catalog / viz_types.
+
+FIELD SELECTION RULES:
+  - xField MUST be a dimension key (role="dimension") — categorical, used on the X/category axis.
+  - yField MUST be a measure key (role="measure") — numeric, aggregatable, used on the Y/value axis.
+  - valueField (for KPI/gauge/stat-card) MUST be a measure key.
+  - seriesField (for multi-series / group-by charts) MUST be a dimension key — creates one dataset per distinct value.
+  - Do NOT swap dimensions and measures.
 
 BINDING FIELDS:
   - valueField: dot-path field name for KPI/gauge (e.g. "health_score" or "summary.category_scores.performance")
-  - xField / yField: column names for chart X/Y axes
+  - xField: dimension key for chart category axis
+  - yField: measure key for chart value axis
+  - seriesField: dimension key to pivot rows into multiple series (group-by); omit for single-series charts
   - select: dot-path to a rows array inside the tool result (e.g. "categories", "issues", "items")
   - args: object passed to the tool (e.g. {"limit": 10})
   - measure / transform: DashScript strings (only set when useScript is true)
@@ -150,7 +161,7 @@ mode = "widget":
     "title": "Widget title",
     "toolName": "<from catalog>",
     "viz": "<from viz_types or 'custom-chart'>",
-    "binding": { "source": "audit-tool", "toolName": "...", "valueField"?: "...", "xField"?: "...", "yField"?: "...", "select"?: "...", "args"?: {}, "measure"?: "...", "transform"?: "...", "useScript"?: true },
+    "binding": { "source": "audit-tool", "toolName": "...", "valueField"?: "...", "xField"?: "...", "yField"?: "...", "seriesField"?: "...", "select"?: "...", "args"?: {}, "measure"?: "...", "transform"?: "...", "useScript"?: true },
     "options": { "format"?: "...", "chartSort"?: "asc|desc", "chartMaxItems"?: N, "tableLimit"?: N, "chartSpec"?: {...} }
   },
   "explanation": "1-2 sentences"
@@ -183,4 +194,4 @@ CONSTRAINTS:
 - Use ONLY viz values from viz_types or "custom-chart".
 - Return ONLY valid JSON. Do not add markdown fences or extra text.
 - Keep explanation concise (1-2 sentences, no jargon).
-- Do not invent field names. Use only fields listed in the catalog entry or visible in "sample"."""
+- Do not invent field names. Use only fields listed in the catalog entry's dimensions/measures or visible in "sample"."""

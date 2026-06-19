@@ -5,6 +5,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useMemo,
 } from 'react';
 import { LayoutGrid, Plus, Eye, Pencil, Save, Copy, LayoutTemplate, Sparkles } from 'lucide-react';
 import { useActivePropertyContext } from '@/hooks/useActivePropertyContext';
@@ -26,7 +27,10 @@ import {
   emptyDashboard,
   type Widget,
   type DashboardDoc,
+  type DashboardFilter,
+  type CrossFilter,
 } from '@/lib/dashboard';
+import { FilterBar } from '@/lib/dashboard/builder/FilterBar';
 import AiAssistModal from '@/lib/dashboard/builder/AiAssistModal';
 import type { ViewProps } from '@/types';
 import { apiUrl } from '@/lib/publicBase';
@@ -77,6 +81,8 @@ export default function Dashboards({ searchQuery: _searchQuery = '' }: ViewProps
   const [aiAssistMode, setAiAssistMode] = useState<'widget' | 'dashboard'>('widget');
   const [editingWidgetId, setEditingWidgetId] = useState<string | null>(null);
   const [containerWidth, setContainerWidth] = useState(800);
+  // Dimension values collected from fetched widget data — used to populate filter option lists.
+  const [dimensionValues, setDimensionValues] = useState<Record<string, string[]>>({});
   const containerRef = useRef<HTMLDivElement>(null);
   // Always-current snapshot of dashboards for use inside async callbacks without
   // needing to add dashboards to every handler's dep array.
@@ -348,6 +354,72 @@ export default function Dashboards({ searchQuery: _searchQuery = '' }: ViewProps
     }
   }, [propertyId, activeDashboardId]);
 
+  // ── Filter / cross-filter handlers ─────────────────────────────────────────
+
+  const handleFiltersChange = useCallback(
+    (filters: DashboardFilter[]) => {
+      updateDoc({ ...doc, filters });
+    },
+    [doc, updateDoc],
+  );
+
+  const handleCrossFilter = useCallback(
+    (field: string, value: string, sourceWidgetId: string) => {
+      const crossFilters = doc.crossFilters ?? [];
+      const existing = crossFilters.find((cf) => cf.field === field && cf.value === value);
+      if (existing) {
+        // Toggle off
+        updateDoc({ ...doc, crossFilters: crossFilters.filter((cf) => cf.id !== existing.id) });
+      } else {
+        const newCf: CrossFilter = {
+          id: `cf-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`,
+          field,
+          value,
+          sourceWidgetId,
+        };
+        updateDoc({ ...doc, crossFilters: [...crossFilters, newCf] });
+      }
+    },
+    [doc, updateDoc],
+  );
+
+  const handleCrossFilterRemove = useCallback(
+    (id: string) => {
+      updateDoc({ ...doc, crossFilters: (doc.crossFilters ?? []).filter((cf) => cf.id !== id) });
+    },
+    [doc, updateDoc],
+  );
+
+  const handleCrossFilterClearAll = useCallback(
+    () => { updateDoc({ ...doc, crossFilters: [] }); },
+    [doc, updateDoc],
+  );
+
+  const handleDataReady = useCallback(
+    (widgetId: string, rows: Record<string, unknown>[]) => {
+      if (!rows.length) return;
+      // Collect distinct string values for every string-valued column
+      setDimensionValues((prev) => {
+        const next = { ...prev };
+        const sample = rows[0];
+        for (const key of Object.keys(sample)) {
+          const vals = new Set(rows.map((r) => String(r[key] ?? '')).filter(Boolean));
+          if (vals.size > 0 && vals.size <= 200) {
+            next[key] = [...vals].sort();
+          }
+        }
+        return next;
+      });
+      void widgetId; // suppress unused warning
+    },
+    [],
+  );
+
+  const activeFilters = useMemo(
+    () => [...(doc.filters ?? []), ...(doc.crossFilters ?? [])] as (DashboardFilter | CrossFilter)[],
+    [doc.filters, doc.crossFilters],
+  );
+
   const editingWidget = editingWidgetId
     ? doc.widgets.find((w) => w.id === editingWidgetId) ?? null
     : null;
@@ -500,17 +572,32 @@ export default function Dashboards({ searchQuery: _searchQuery = '' }: ViewProps
           </div>
         </div>
       ) : (
-        <div ref={containerRef} className="flex-1 min-h-0 overflow-y-auto">
-          <DashboardGrid
+        <div ref={containerRef} className="flex-1 min-h-0 overflow-y-auto flex flex-col">
+          <FilterBar
+            filters={doc.filters ?? []}
+            crossFilters={doc.crossFilters ?? []}
             widgets={doc.widgets}
-            propertyId={propertyId ?? 0}
-            reportId={reportId}
             isEditing={isEditing}
-            containerWidth={containerWidth}
-            onLayoutChange={handleLayoutChange}
-            onRemoveWidget={handleRemoveWidget}
-            onEditWidget={handleEditWidget}
+            dimensionValues={dimensionValues}
+            onFiltersChange={handleFiltersChange}
+            onCrossFilterRemove={handleCrossFilterRemove}
+            onCrossFilterClearAll={handleCrossFilterClearAll}
           />
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <DashboardGrid
+              widgets={doc.widgets}
+              propertyId={propertyId ?? 0}
+              reportId={reportId}
+              isEditing={isEditing}
+              containerWidth={containerWidth}
+              activeFilters={activeFilters}
+              onLayoutChange={handleLayoutChange}
+              onRemoveWidget={handleRemoveWidget}
+              onEditWidget={handleEditWidget}
+              onCrossFilter={handleCrossFilter}
+              onDataReady={handleDataReady}
+            />
+          </div>
         </div>
       )}
 

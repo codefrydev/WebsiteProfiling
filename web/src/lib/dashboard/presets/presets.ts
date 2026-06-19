@@ -1,4 +1,4 @@
-import { catalogEntry } from '@/lib/dashboard/catalog/catalog';
+import { catalogEntry, defaultDimension, defaultMeasure } from '@/lib/dashboard/catalog/catalog';
 import {
   newWidgetId,
   type DashboardDoc,
@@ -33,9 +33,9 @@ function buildWidget(def: PresetWidgetDef): Widget {
     source: 'audit-tool',
     toolName: def.toolName,
     args: cat?.defaultArgs,
-    valueField: cat?.defaultValueField,
-    xField: cat?.defaultXField,
-    yField: cat?.defaultYField,
+    valueField: cat ? defaultMeasure(cat) : undefined,
+    xField: cat ? defaultDimension(cat) : undefined,
+    yField: cat ? defaultMeasure(cat) : undefined,
     select: cat?.rowsPath,
     ...def.binding,
   };

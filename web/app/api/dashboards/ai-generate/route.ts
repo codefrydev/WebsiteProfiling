@@ -3,7 +3,7 @@ import { spawn } from 'child_process';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
 import { getRepoRoot, getPipelineSpawnEnv } from '@/server/pipelineSpawnEnv';
 import { resolvePythonExecutable, parsePythonJsonStdout } from '@/server/resolvePython';
-import { DASHBOARD_CATALOG } from '@/lib/dashboard/catalog/catalog';
+import { DASHBOARD_CATALOG, dimensions, measures } from '@/lib/dashboard/catalog/catalog';
 import { VIZ_LABELS } from '@/lib/dashboard/viz/labels';
 import { spawnAuditTool } from '@/server/spawnAuditTool';
 import type { ApiRouteHandler } from '@/types/api';
@@ -103,10 +103,9 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
       toolName: e.toolName,
       label: e.label,
       section: e.section,
-      fields: e.fields ?? [],
-      defaultValueField: e.defaultValueField,
-      defaultXField: e.defaultXField,
-      defaultYField: e.defaultYField,
+      fields: e.fields,
+      dimensions: dimensions(e).map((f) => ({ key: f.key, label: f.label, defaultAgg: f.defaultAgg, format: f.format })),
+      measures: measures(e).map((f) => ({ key: f.key, label: f.label, defaultAgg: f.defaultAgg, format: f.format })),
       rowsPath: e.rowsPath,
       compatibleViz: e.compatibleViz,
     })),

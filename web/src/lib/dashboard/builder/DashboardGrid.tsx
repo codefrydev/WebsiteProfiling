@@ -5,7 +5,7 @@ import GridLayout from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import type { Layout, LayoutItem } from 'react-grid-layout';
-import type { Widget } from '@/lib/dashboard/types';
+import type { Widget, DashboardFilter, CrossFilter } from '@/lib/dashboard/types';
 import DashboardWidget from '@/lib/dashboard/builder/DashboardWidget';
 
 interface DashboardGridProps {
@@ -14,9 +14,12 @@ interface DashboardGridProps {
   reportId: number | null;
   isEditing: boolean;
   containerWidth: number;
+  activeFilters?: (DashboardFilter | CrossFilter)[];
   onLayoutChange: (layout: Layout) => void;
   onRemoveWidget: (id: string) => void;
   onEditWidget: (id: string) => void;
+  onCrossFilter?: (field: string, value: string, sourceWidgetId: string) => void;
+  onDataReady?: (widgetId: string, rows: Record<string, unknown>[]) => void;
 }
 
 const COLS = 12;
@@ -28,9 +31,12 @@ export default function DashboardGrid({
   reportId,
   isEditing,
   containerWidth,
+  activeFilters,
   onLayoutChange,
   onRemoveWidget,
   onEditWidget,
+  onCrossFilter,
+  onDataReady,
 }: DashboardGridProps) {
   const layout = useMemo<LayoutItem[]>(
     () =>
@@ -84,6 +90,9 @@ export default function DashboardGrid({
             isEditing={isEditing}
             onRemove={onRemoveWidget}
             onEdit={onEditWidget}
+            activeFilters={activeFilters}
+            onCrossFilter={onCrossFilter ? (field, value) => onCrossFilter(field, value, widget.id) : undefined}
+            onDataReady={onDataReady}
           />
         </div>
       ))}

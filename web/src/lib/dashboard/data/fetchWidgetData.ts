@@ -1,5 +1,5 @@
 import { fetchAuditTool } from '@/lib/fetchAuditTool';
-import type { WidgetBinding, AggregateOp } from '@/lib/dashboard/types';
+import type { WidgetBinding, AggregateOp, DashboardFilter, CrossFilter } from '@/lib/dashboard/types';
 import { evalMeasure, evalTransform } from '@/lib/dashboard/script/eval';
 import { DashScriptError } from '@/lib/dashboard/script/types';
 
@@ -59,6 +59,58 @@ export function clearWidgetDataCache(): void {
   RESULT_CACHE.clear();
 }
 
+// ─── applyFilters ───────────────────────────────────────────────────────────
+
+function getPathLocal(obj: unknown, path: string): unknown {
+  return path.split('.').reduce<unknown>((cur, key) => {
+    if (cur == null || typeof cur !== 'object') return undefined;
+    return (cur as Record<string, unknown>)[key];
+  }, obj);
+}
+
+/**
+ * Apply board-level filters + cross-filters to a row array.
+ * Filters are applied client-side (audit data is small and already row-based).
+ * When `appliesTo` is set, the filter only runs for matching toolNames.
+ */
+export function applyFilters(
+  rows: Record<string, unknown>[],
+  filters: (DashboardFilter | CrossFilter)[],
+  toolName: string,
+): Record<string, unknown>[] {
+  if (!filters.length) return rows;
+  return rows.filter((row) => {
+    for (const f of filters) {
+      // DashboardFilter has `appliesTo`; CrossFilter has `sourceWidgetId`
+      if ('appliesTo' in f && f.appliesTo && !f.appliesTo.includes(toolName)) continue;
+
+      const rawVal = getPathLocal(row, f.field);
+      const rowVal = rawVal == null ? '' : String(rawVal);
+
+      if ('value' in f && f.value !== undefined && f.value !== '') {
+        if ('type' in f) {
+          // DashboardFilter
+          const df = f as DashboardFilter;
+          if (df.type === 'multiselect' && Array.isArray(df.value)) {
+            if (df.value.length > 0 && !df.value.includes(rowVal)) return false;
+          } else if (df.type === 'search') {
+            const search = typeof df.value === 'string' ? df.value.toLowerCase() : '';
+            if (search && !rowVal.toLowerCase().includes(search)) return false;
+          } else {
+            const sel = typeof df.value === 'string' ? df.value : '';
+            if (sel && rowVal !== sel) return false;
+          }
+        } else {
+          // CrossFilter
+          const cf = f as CrossFilter;
+          if (cf.value && rowVal !== cf.value) return false;
+        }
+      }
+    }
+    return true;
+  });
+}
+
 async function fetchWithCache(
   toolName: string,
   propertyId: number,
@@ -89,6 +141,7 @@ export async function fetchWidgetData(
   binding: WidgetBinding,
   propertyId: number,
   reportId: number | null | undefined,
+  activeFilters?: (DashboardFilter | CrossFilter)[],
 ): Promise<WidgetData> {
   const args = binding.args ?? {};
   const raw = await fetchWithCache(binding.toolName, propertyId, reportId, args);
@@ -101,6 +154,11 @@ export async function fetchWidgetData(
   let rows = rowsRaw;
 
   const scriptCtx = { raw, rows: rowsRaw };
+
+  // Apply board filters + cross-filters before scripting / aggregating
+  if (activeFilters?.length) {
+    rows = applyFilters(rows, activeFilters, binding.toolName);
+  }
 
   if (binding.useScript && binding.transform?.trim()) {
     try {

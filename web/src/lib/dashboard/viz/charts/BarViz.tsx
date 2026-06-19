@@ -1,41 +1,66 @@
 'use client';
 
 import { useMemo } from 'react';
-import { SimpleBarChart } from '@/components/charts/SimpleBarChart';
-import { extractChartSeries } from '@/lib/dashboard/viz/series';
+import { DashboardChart } from '@/lib/dashboard/viz/charts/DashboardChart';
+import { extractMultiSeries } from '@/lib/dashboard/viz/series';
 import { EmptyData } from '@/lib/dashboard/viz/EmptyData';
 import type { VizRenderProps } from '@/lib/dashboard/viz/types';
 
-export function BarViz(props: VizRenderProps) {
-  const series = extractChartSeries(props.widget, props.data, props.catalog, props.opts);
-  if (!series) return <EmptyData />;
-  return <SimpleBarChart labels={series.labels} values={series.values} horizontal={false} heightClass="h-40" />;
-}
-
-export function HorizontalBarViz(props: VizRenderProps) {
-  const series = extractChartSeries(props.widget, props.data, props.catalog, props.opts);
-  if (!series) return <EmptyData />;
-  return <SimpleBarChart labels={series.labels} values={series.values} horizontal heightClass="h-40" />;
-}
-
-export function RankedBarViz(props: VizRenderProps) {
-  const series = useMemo(
-    () => extractChartSeries(
-      { ...props.widget, options: { ...props.opts, chartSort: props.opts.chartSort ?? 'desc' } },
-      props.data,
-      props.catalog,
-      { ...props.opts, chartSort: props.opts.chartSort ?? 'desc' },
-    ),
-    [props.widget, props.data, props.catalog, props.opts],
+export function BarViz({ widget, data, catalog, opts, onCrossFilter }: VizRenderProps) {
+  const ss = useMemo(
+    () => extractMultiSeries(widget, data, catalog, opts),
+    [widget, data, catalog, opts],
   );
-  if (!series) return <EmptyData />;
+  if (!ss) return <EmptyData />;
+  const xField = widget.binding.xField ?? catalog?.fields.find((f) => f.role === 'dimension')?.key ?? '';
   return (
-    <SimpleBarChart
-      labels={series.labels}
-      values={series.values}
-      horizontal
-      heightClass="h-44"
-      ariaLabel={`Ranked bar chart for ${props.widget.title}`}
+    <DashboardChart
+      seriesSet={ss}
+      kind="bar"
+      options={{
+        showLegend: opts.showLegend,
+        onCategoryClick: onCrossFilter && xField ? (label) => onCrossFilter(xField, label) : undefined,
+      }}
+    />
+  );
+}
+
+export function HorizontalBarViz({ widget, data, catalog, opts, onCrossFilter }: VizRenderProps) {
+  const ss = useMemo(
+    () => extractMultiSeries(widget, data, catalog, opts),
+    [widget, data, catalog, opts],
+  );
+  if (!ss) return <EmptyData />;
+  const xField = widget.binding.xField ?? catalog?.fields.find((f) => f.role === 'dimension')?.key ?? '';
+  return (
+    <DashboardChart
+      seriesSet={ss}
+      kind="horizontal-bar"
+      options={{
+        showLegend: opts.showLegend,
+        onCategoryClick: onCrossFilter && xField ? (label) => onCrossFilter(xField, label) : undefined,
+      }}
+    />
+  );
+}
+
+export function RankedBarViz({ widget, data, catalog, opts, onCrossFilter }: VizRenderProps) {
+  const mergedOpts = { ...opts, chartSort: opts.chartSort ?? 'desc' as const };
+  const ss = useMemo(
+    () => extractMultiSeries(widget, data, catalog, mergedOpts),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [widget, data, catalog, opts],
+  );
+  if (!ss) return <EmptyData />;
+  const xField = widget.binding.xField ?? catalog?.fields.find((f) => f.role === 'dimension')?.key ?? '';
+  return (
+    <DashboardChart
+      seriesSet={ss}
+      kind="horizontal-bar"
+      options={{
+        heightClass: 'h-44',
+        onCategoryClick: onCrossFilter && xField ? (label) => onCrossFilter(xField, label) : undefined,
+      }}
     />
   );
 }

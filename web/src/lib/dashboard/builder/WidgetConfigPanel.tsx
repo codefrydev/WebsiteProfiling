@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { X, Sparkles } from 'lucide-react';
 import type { Widget, VizType, AggregateOp, ChartSortOrder, CustomChartSpec } from '@/lib/dashboard/types';
-import { catalogEntry } from '@/lib/dashboard/catalog/catalog';
+import { catalogEntry, dimensions, measures } from '@/lib/dashboard/catalog/catalog';
 import { VIZ_LABELS } from '@/lib/dashboard/viz/labels';
 import { DASHSCRIPT_HELP } from '@/lib/dashboard/script/eval';
 import AiAssistModal from '@/lib/dashboard/builder/AiAssistModal';
@@ -38,6 +38,7 @@ export default function WidgetConfigPanel({ widget, onSave, onClose, propertyId,
   const [viz, setViz] = useState<VizType>(widget.viz);
   const [xField, setXField] = useState(widget.binding.xField ?? '');
   const [yField, setYField] = useState(widget.binding.yField ?? '');
+  const [seriesField, setSeriesField] = useState(widget.binding.seriesField ?? '');
   const [valueField, setValueField] = useState(widget.binding.valueField ?? '');
   const [aggregate, setAggregate] = useState<AggregateOp>(widget.binding.aggregate ?? 'none');
   const [format, setFormat] = useState(widget.options?.format ?? '');
@@ -63,7 +64,9 @@ export default function WidgetConfigPanel({ widget, onSave, onClose, propertyId,
   const compatibleViz: VizType[] = baseCompatibleViz.includes(viz)
     ? baseCompatibleViz
     : [...baseCompatibleViz, viz];
-  const availableFields = catalog?.fields ?? [];
+  const availableDimensions = catalog ? dimensions(catalog) : [];
+  const availableMeasures = catalog ? measures(catalog) : [];
+  const allFields = catalog?.fields ?? [];
   const isChart = CHART_VIZ.includes(viz);
   const isMetric = METRIC_VIZ.includes(viz);
 
@@ -88,6 +91,7 @@ export default function WidgetConfigPanel({ widget, onSave, onClose, propertyId,
         ...widget.binding,
         xField: xField || undefined,
         yField: yField || undefined,
+        seriesField: seriesField || undefined,
         valueField: valueField || undefined,
         aggregate: aggregate !== 'none' ? aggregate : undefined,
         useScript: configMode === 'script' || undefined,
@@ -120,15 +124,21 @@ export default function WidgetConfigPanel({ widget, onSave, onClose, propertyId,
     }
   };
 
-  const fieldSelect = (value: string, onChange: (v: string) => void, placeholder: string) =>
-    availableFields.length > 0 ? (
+  const makeSelect = (
+    value: string,
+    onChange: (v: string) => void,
+    fields: { key: string; label: string }[],
+    placeholder: string,
+    autoLabel = '— auto —',
+  ) =>
+    fields.length > 0 ? (
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-3 py-1.5 text-sm bg-brand-800 border border-default rounded-lg text-bright focus:outline-none focus:ring-1 focus:ring-blue-500"
       >
-        <option value="">— auto —</option>
-        {availableFields.map((f) => <option key={f} value={f}>{f}</option>)}
+        <option value="">{autoLabel}</option>
+        {fields.map((f) => <option key={f.key} value={f.key}>{f.label}</option>)}
       </select>
     ) : (
       <input
@@ -139,6 +149,13 @@ export default function WidgetConfigPanel({ widget, onSave, onClose, propertyId,
         className="w-full px-3 py-1.5 text-sm bg-brand-800 border border-default rounded-lg text-bright focus:outline-none focus:ring-1 focus:ring-blue-500"
       />
     );
+
+  const dimensionSelect = (value: string, onChange: (v: string) => void, placeholder: string, autoLabel?: string) =>
+    makeSelect(value, onChange, availableDimensions, placeholder, autoLabel);
+  const measureSelect = (value: string, onChange: (v: string) => void, placeholder: string, autoLabel?: string) =>
+    makeSelect(value, onChange, availableMeasures, placeholder, autoLabel);
+  const anyFieldSelect = (value: string, onChange: (v: string) => void, placeholder: string, autoLabel?: string) =>
+    makeSelect(value, onChange, allFields, placeholder, autoLabel);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-end p-4 bg-black/40">
@@ -275,12 +292,16 @@ export default function WidgetConfigPanel({ widget, onSave, onClose, propertyId,
               {isChart && (
                 <>
                   <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1">Label field (X)</label>
-                    {fieldSelect(xField, setXField, 'e.g. category')}
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">Label field (X / dimension)</label>
+                    {dimensionSelect(xField, setXField, 'e.g. category')}
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1">Value field (Y)</label>
-                    {fieldSelect(yField, setYField, 'e.g. score')}
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">Value field (Y / measure)</label>
+                    {measureSelect(yField, setYField, 'e.g. score')}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">Series field (group by)</label>
+                    {dimensionSelect(seriesField, setSeriesField, 'e.g. category', '— none (single series) —')}
                   </div>
                 </>
               )}
@@ -290,7 +311,7 @@ export default function WidgetConfigPanel({ widget, onSave, onClose, propertyId,
               {isMetric && (
                 <div>
                   <label className="block text-xs font-semibold text-muted-foreground mb-1">Value field</label>
-                  {fieldSelect(valueField, setValueField, 'e.g. score')}
+                  {anyFieldSelect(valueField, setValueField, 'e.g. score')}
                 </div>
               )}
 
@@ -309,12 +330,16 @@ export default function WidgetConfigPanel({ widget, onSave, onClose, propertyId,
               {isChart && (
                 <>
                   <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1">Label field (X)</label>
-                    {fieldSelect(xField, setXField, 'e.g. category')}
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">Label field (X / dimension)</label>
+                    {dimensionSelect(xField, setXField, 'e.g. category')}
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-muted-foreground mb-1">Value field (Y)</label>
-                    {fieldSelect(yField, setYField, 'e.g. score')}
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">Value field (Y / measure)</label>
+                    {measureSelect(yField, setYField, 'e.g. score')}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1">Series field (group by)</label>
+                    {dimensionSelect(seriesField, setSeriesField, 'e.g. category', '— none (single series) —')}
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-muted-foreground mb-1">Max items</label>

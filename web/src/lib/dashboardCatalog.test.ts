@@ -4,6 +4,11 @@ import {
   catalogEntry,
   catalogBySection,
   catalogBySectionSections,
+  dimensions,
+  measures,
+  fieldKeys,
+  defaultDimension,
+  defaultMeasure,
 } from '@/lib/dashboardCatalog';
 
 describe('DASHBOARD_CATALOG integrity', () => {
@@ -65,6 +70,54 @@ describe('catalogBySectionSections', () => {
     const sections = catalogBySectionSections();
     expect(sections).toContain('Overview');
     expect(sections).toContain('Performance');
+  });
+});
+
+describe('catalog field helpers', () => {
+  it('dimensions() returns only dimension-role fields', () => {
+    const entry = catalogEntry('get_category_scores')!;
+    const dims = dimensions(entry);
+    expect(dims.length).toBeGreaterThan(0);
+    for (const f of dims) expect(f.role).toBe('dimension');
+  });
+
+  it('measures() returns only measure-role fields', () => {
+    const entry = catalogEntry('get_category_scores')!;
+    const ms = measures(entry);
+    expect(ms.length).toBeGreaterThan(0);
+    for (const f of ms) expect(f.role).toBe('measure');
+  });
+
+  it('dimensions + measures cover all fieldKeys', () => {
+    const entry = catalogEntry('get_category_scores')!;
+    const all = fieldKeys(entry).sort();
+    const split = [...dimensions(entry), ...measures(entry)].map((f) => f.key).sort();
+    expect(split).toEqual(all);
+  });
+
+  it('defaultDimension returns first dimension key', () => {
+    const entry = catalogEntry('get_category_scores')!;
+    expect(defaultDimension(entry)).toBe(dimensions(entry)[0]?.key);
+  });
+
+  it('defaultMeasure returns first measure key', () => {
+    const entry = catalogEntry('get_category_scores')!;
+    expect(defaultMeasure(entry)).toBe(measures(entry)[0]?.key);
+  });
+
+  it('every DASHBOARD_CATALOG entry has at least one field', () => {
+    for (const e of DASHBOARD_CATALOG) {
+      expect(e.fields.length, `${e.toolName} must have at least one field`).toBeGreaterThan(0);
+    }
+  });
+
+  it('catalog entries supporting charts have at least one measure', () => {
+    const chartViz = ['bar', 'horizontal-bar', 'ranked-bar', 'line', 'area', 'pie', 'doughnut', 'stacked-bar'];
+    for (const e of DASHBOARD_CATALOG) {
+      if (e.compatibleViz.some((v) => chartViz.includes(v))) {
+        expect(measures(e).length, `${e.toolName} has chart viz but no measures`).toBeGreaterThan(0);
+      }
+    }
   });
 });
 
