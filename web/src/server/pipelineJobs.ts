@@ -43,6 +43,7 @@ const ALLOWED_COMMANDS = new Set<string | null | undefined>([
   'warnings',
   'enrich',
   'google',
+  'page-markdown',
 ]);
 
 function getStore(): PipelineJobStore {
@@ -184,7 +185,11 @@ export async function startPipelineJobAsync(
   configAbsPath: string | null | undefined,
   options: StartPipelineJobOptions = {},
 ): Promise<string> {
-  if (command != null && command !== '' && !ALLOWED_COMMANDS.has(command)) {
+  // Validate only the first word so commands that carry extra CLI flags
+  // (e.g. "page-markdown --crawl-run-id 42 --strategy main_only") are still
+  // accepted when their base command is in the allow-list.
+  const commandBase = command?.split(/\s+/)[0] ?? null;
+  if (commandBase != null && commandBase !== '' && !ALLOWED_COMMANDS.has(commandBase)) {
     throw new Error('Invalid command');
   }
 
