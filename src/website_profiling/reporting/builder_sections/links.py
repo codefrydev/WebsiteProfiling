@@ -135,8 +135,11 @@ def build_links_list(
         rec["content_security_policy"] = _str_col("content_security_policy")
 
         # Content analysis
-        rec["reading_level"] = round(float(pd.to_numeric(row.get("reading_level") if "reading_level" in df.columns else None, errors="coerce") or 0.0), 1)
-        rec["content_html_ratio"] = round(float(pd.to_numeric(row.get("content_html_ratio") if "content_html_ratio" in df.columns else None, errors="coerce") or 0.0), 2)
+        # NaN is truthy, so `pd.to_numeric(...) or 0.0` does NOT fall back; guard with pd.isna.
+        _rl_num = pd.to_numeric(row.get("reading_level") if "reading_level" in df.columns else None, errors="coerce")
+        rec["reading_level"] = round(float(0.0 if pd.isna(_rl_num) else _rl_num), 1)
+        _chr_num = pd.to_numeric(row.get("content_html_ratio") if "content_html_ratio" in df.columns else None, errors="coerce")
+        rec["content_html_ratio"] = round(float(0.0 if pd.isna(_chr_num) else _chr_num), 2)
         rec["top_keywords"] = _str_col("top_keywords")
         rec["content_excerpt"] = _str_col("content_excerpt") if "content_excerpt" in df.columns else ""
 

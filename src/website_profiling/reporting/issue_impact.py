@@ -62,7 +62,12 @@ def enrich_categories_with_traffic_impact(
             ga4_sess = 0.0
             if url:
                 for path_key, ga in sessions_by_path.items():
-                    if url.endswith(path_key.rstrip("/")) or path_key in url:
+                    key = path_key.rstrip("/")
+                    # Skip the homepage "/" key (rstrip -> ""), which would make
+                    # url.endswith("") match every issue. Match GA4 paths as URL suffixes.
+                    if not key:
+                        continue
+                    if url.endswith(key):
                         ga4_sess = max(ga4_sess, float(ga.get("ga4_sessions") or 0))
             issue["gsc_clicks"] = gsc.get("gsc_clicks", 0)
             issue["gsc_impressions"] = gsc.get("gsc_impressions", 0)

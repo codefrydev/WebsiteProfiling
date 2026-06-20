@@ -90,20 +90,33 @@ export async function markRunningJobOrphaned(
 
 export async function appendPipelineJobLog(id: string, chunk: string): Promise<boolean> {
   return withDb(async (client) => {
-    const cur = await client.query<{ log_text: string; log_truncated: boolean }>(
-      `SELECT log_text, log_truncated FROM pipeline_jobs WHERE id = $1::uuid FOR UPDATE`,
-      [id],
-    );
-    const row = cur.rows[0];
-    if (!row) return false;
-    const combined = (row.log_text || '') + chunk;
-    const { log, truncated } = trimPipelineLog(combined);
-    const logTruncated = row.log_truncated || truncated;
-    await client.query(
-      `UPDATE pipeline_jobs SET log_text = $2, log_truncated = $3 WHERE id = $1::uuid`,
-      [id, log, logTruncated],
-    );
-    return logTruncated;
+    // Wrap the read-modify-write in a transaction so SELECT ... FOR UPDATE actually
+    // holds the row lock; concurrent stdout/stderr appenders would otherwise race and
+    // drop log chunks (last write wins).
+    await client.query('BEGIN');
+    try {
+      const cur = await client.query<{ log_text: string; log_truncated: boolean }>(
+        `SELECT log_text, log_truncated FROM pipeline_jobs WHERE id = $1::uuid FOR UPDATE`,
+        [id],
+      );
+      const row = cur.rows[0];
+      if (!row) {
+        await client.query('ROLLBACK');
+        return false;
+      }
+      const combined = (row.log_text || '') + chunk;
+      const { log, truncated } = trimPipelineLog(combined);
+      const logTruncated = row.log_truncated || truncated;
+      await client.query(
+        `UPDATE pipeline_jobs SET log_text = $2, log_truncated = $3 WHERE id = $1::uuid`,
+        [id, log, logTruncated],
+      );
+      await client.query('COMMIT');
+      return logTruncated;
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    }
   });
 }
 

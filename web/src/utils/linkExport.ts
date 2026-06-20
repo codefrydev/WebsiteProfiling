@@ -4,7 +4,7 @@ import { collectCustomFieldKeys, parseLinkCustomFields } from '@/lib/customField
 function escapeCsv(v: unknown): string {
   if (v == null) return '';
   const s = String(v);
-  return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
 export function exportLinksCsv(links: ReportLink[], filename = 'crawl_urls.csv'): void {

@@ -342,7 +342,7 @@ def generate_schema(conn: Connection, ctx: AuditToolContext, args: dict[str, Any
     url = str(args.get("url") or "").strip()
     payload = scoped.load_payload(conn)
     domain = str(scoped.resolve_property_domain(conn) or "")
-    site_name = str(payload.get("site_name") if payload else None or domain or "Site")
+    site_name = str(payload.get("site_name") or domain or "Site")
     from .geo_tools import _base_url as _mk_base
     base_url = _mk_base(domain) if domain else url
 

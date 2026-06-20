@@ -53,8 +53,9 @@ def _normalize_string_list(value: Any, field: str, errors: list[str]) -> list[st
     if not isinstance(value, list):
         errors.append(f"{field} must be an array")
         return []
-    if len(value) > MAX_ITEMS:
-        errors.append(f"{field} has more than {MAX_ITEMS} items")
+    # Over-length lists are silently capped to MAX_ITEMS below (the `break`), not flagged
+    # as a validation error — doing so would discard an otherwise-valid response and force
+    # a wasteful repair pass (or an outright failure) on common >5-item LLM output.
     out: list[str] = []
     for i, item in enumerate(value):
         if not isinstance(item, str):

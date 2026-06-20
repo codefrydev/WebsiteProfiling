@@ -113,7 +113,11 @@ export function parseBasicAuth(request: NextRequest): boolean {
   if (!header.startsWith('Basic ')) return false;
   try {
     const decoded = Buffer.from(header.slice(6), 'base64').toString('utf8');
-    const [u, p] = decoded.split(':');
+    // Split on the first colon only: per RFC 7617 the password may contain colons.
+    const idx = decoded.indexOf(':');
+    if (idx === -1) return false;
+    const u = decoded.slice(0, idx);
+    const p = decoded.slice(idx + 1);
     return u === user && p === pass;
   } catch {
     return false;

@@ -120,7 +120,9 @@ def _parse_robots_access(robots_text: str) -> dict[str, str]:
         if not applicable:
             return "default"
         for allows, disallows in applicable:
-            root_blocked = "/" in disallows or "" in disallows
+            # A bare `Disallow:` (empty value) is the canonical allow-all directive,
+            # not a block; only `Disallow: /` blocks the whole site.
+            root_blocked = "/" in disallows
             root_allowed = "/" in allows
             if root_blocked and not root_allowed:
                 return "blocked"
