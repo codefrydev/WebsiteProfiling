@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import ConfigField from '@/components/pipeline/ConfigField';
 import { SECRETS_SECTIONS, type SecretsField, type SecretsSection } from '@/lib/secretsConfigSchema';
+import { integrationGuideHref } from '@/lib/docs/integrationGuides';
 import { strings } from '@/lib/strings';
 import type { SecretsState } from '@/types/api';
 
@@ -94,12 +95,22 @@ export default function SecretsSettingsPanel({
       </div>
 
       {section.id === 'google' ? (
-        <p className="text-xs text-muted-foreground">
-          {s.googleConnectHint}{' '}
-          <Link href="/pipeline?group=google" className="text-link hover:underline">
-            {s.googleConnectLink}
-          </Link>
-        </p>
+        <div className="space-y-2 text-xs text-muted-foreground">
+          <p>
+            {s.googleConnectHint}{' '}
+            <Link href="/pipeline?group=google" className="text-link hover:underline">
+              {s.googleConnectLink}
+            </Link>
+          </p>
+          <p>
+            <Link
+              href={integrationGuideHref('google', { from: 'secrets', sectionId: 'oauthClient' })}
+              className="text-link hover:underline"
+            >
+              {strings.docs.googleOAuthGuideLink}
+            </Link>
+          </p>
+        </div>
       ) : null}
 
       {section.id === 'ai' ? (
@@ -107,6 +118,30 @@ export default function SecretsSettingsPanel({
           {s.aiProviderHint}{' '}
           <Link href="/pipeline?group=content-ai" className="text-link hover:underline">
             {s.aiProviderLink}
+          </Link>
+          {' · '}
+          <Link href={integrationGuideHref('ai', { from: 'secrets' })} className="text-link hover:underline">
+            {strings.docs.setupGuideLink}
+          </Link>
+        </p>
+      ) : null}
+
+      {section.id === 'integrations' ? (
+        <p className="text-xs text-muted-foreground">
+          <Link href={integrationGuideHref('bing', { from: 'secrets' })} className="text-link hover:underline">
+            {strings.docs.bingGuideLink}
+          </Link>
+          {' · '}
+          <Link href={integrationGuideHref('serp', { from: 'secrets' })} className="text-link hover:underline">
+            {strings.docs.serpGuideLink}
+          </Link>
+        </p>
+      ) : null}
+
+      {section.id === 'crawl' ? (
+        <p className="text-xs text-muted-foreground">
+          <Link href={integrationGuideHref('crawl-auth', { from: 'secrets' })} className="text-link hover:underline">
+            {strings.docs.setupGuideLink}
           </Link>
         </p>
       ) : null}

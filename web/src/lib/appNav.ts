@@ -4,6 +4,7 @@ import {
   ArrowLeftRight,
   Link2,
   BarChart2,
+  BookOpen,
   Bug,
   Accessibility,
   Image,
@@ -35,7 +36,7 @@ import {
 import { strings } from '@/lib/strings';
 import { viewIdToPathSlug, type ViewId } from '@/routes';
 
-export type NavItemId = ViewId | 'pipeline' | 'secrets' | 'mcp' | 'chat' | 'write' | 'pages-md';
+export type NavItemId = ViewId | 'pipeline' | 'secrets' | 'mcp' | 'docs' | 'chat' | 'write' | 'pages-md';
 
 export interface AppNavItem {
   id: NavItemId;
@@ -85,6 +86,7 @@ const NAV_DESCRIPTIONS: Partial<Record<NavItemId, string>> = {
   pipeline: 'Crawl a site and build a report',
   secrets: 'API keys and credentials',
   mcp: 'Remote MCP client setup',
+  docs: 'Integration setup guides',
   chat: 'Ask questions about this audit',
   write: 'Draft content from audit data',
   'pages-md': 'Extract & preview per-page markdown',
@@ -149,6 +151,15 @@ const MCP_NAV: AppNavItem = {
   description: NAV_DESCRIPTIONS.mcp,
 };
 
+const DOCS_NAV: AppNavItem = {
+  id: 'docs',
+  label: strings.nav.docs.label,
+  section: strings.nav.docs.section,
+  icon: BookOpen,
+  hrefPath: '/docs',
+  description: NAV_DESCRIPTIONS.docs,
+};
+
 const CHAT_NAV: AppNavItem = {
   id: 'chat',
   label: strings.nav.chat.label,
@@ -188,6 +199,7 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
   PIPELINE_NAV,
   SECRETS_NAV,
   MCP_NAV,
+  DOCS_NAV,
   WRITE_NAV,
   CHAT_NAV,
   PAGES_MD_NAV,
@@ -199,7 +211,7 @@ export const REPORT_VIEW_IDS: ViewId[] = VIEW_NAV.map(({ id }) => id);
 export const APP_NAV_SECTIONS = [...new Set(APP_NAV_ITEMS.map((item) => item.section))];
 
 /** Routes with their own app pages — not resolved by `pathSlugToViewId`. */
-export const STANDALONE_NAV_IDS = ['pipeline', 'secrets', 'mcp', 'chat', 'write', 'pages-md'] as const satisfies readonly NavItemId[];
+export const STANDALONE_NAV_IDS = ['pipeline', 'secrets', 'mcp', 'docs', 'chat', 'write', 'pages-md'] as const satisfies readonly NavItemId[];
 
 export type StandaloneNavId = (typeof STANDALONE_NAV_IDS)[number];
 
@@ -239,6 +251,7 @@ export const CHAT_SIDEBAR_NAV_IDS = [
   'pipeline',
   'secrets',
   'mcp',
+  'docs',
   'write',
   'pages-md',
 ] as const satisfies readonly NavItemId[];
@@ -250,6 +263,7 @@ export const WRITE_SIDEBAR_NAV_IDS = [
   'pipeline',
   'secrets',
   'mcp',
+  'docs',
   'chat',
   'write',
   'pages-md',
@@ -259,6 +273,8 @@ export const SECRETS_SIDEBAR_NAV_IDS = WRITE_SIDEBAR_NAV_IDS;
 
 export const PIPELINE_SIDEBAR_NAV_IDS = WRITE_SIDEBAR_NAV_IDS;
 
+export const DOCS_SIDEBAR_NAV_IDS = WRITE_SIDEBAR_NAV_IDS;
+
 export const PAGES_MD_SIDEBAR_NAV_IDS = [
   'home',
   'search-performance',
@@ -266,6 +282,7 @@ export const PAGES_MD_SIDEBAR_NAV_IDS = [
   'pipeline',
   'secrets',
   'mcp',
+  'docs',
   'chat',
   'write',
 ] as const satisfies readonly NavItemId[];
@@ -273,6 +290,7 @@ export const PAGES_MD_SIDEBAR_NAV_IDS = [
 export function isMiniNavLinkActive(href: string, pathname: string): boolean {
   if (href === '/secrets') return pathname.startsWith('/secrets');
   if (href === '/mcp') return pathname.startsWith('/mcp');
+  if (href === '/docs') return pathname.startsWith('/docs');
   if (href === '/write') return pathname.startsWith('/write');
   if (href === '/chat') return pathname.startsWith('/chat');
   if (href === '/pipeline') return pathname.startsWith('/pipeline');
@@ -281,7 +299,7 @@ export function isMiniNavLinkActive(href: string, pathname: string): boolean {
 }
 
 export function navHref(item: AppNavItem, trailingQuery: string): string {
-  if (item.id === 'home' || item.id === 'pipeline' || item.id === 'secrets' || item.id === 'mcp' || item.id === 'chat' || item.id === 'write' || item.id === 'pages-md') {
+  if (item.id === 'home' || item.id === 'pipeline' || item.id === 'secrets' || item.id === 'mcp' || item.id === 'docs' || item.id === 'chat' || item.id === 'write' || item.id === 'pages-md') {
     return item.hrefPath;
   }
   const raw = trailingQuery.startsWith('?') ? trailingQuery.slice(1) : trailingQuery;
@@ -304,6 +322,9 @@ export function isNavItemActive(item: AppNavItem, pathname: string): boolean {
   }
   if (item.id === 'mcp') {
     return pathname === '/mcp' || pathname.startsWith('/mcp/');
+  }
+  if (item.id === 'docs') {
+    return pathname === '/docs' || pathname.startsWith('/docs/');
   }
   if (item.id === 'chat') {
     return pathname === '/chat' || pathname.startsWith('/chat/');

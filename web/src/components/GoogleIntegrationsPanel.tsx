@@ -31,11 +31,9 @@ import Button from '@/components/Button';
 import ViewTabs from '@/components/ViewTabs';
 import { ViewTabPanel } from '@/components/ViewTabPanel';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
+import { integrationGuideHref } from '@/lib/docs/integrationGuides';
 
 type IntegrationsTabId = 'connect' | 'properties' | 'imports' | 'settings';
-
-const GCP_GUIDE_URL =
-  'https://developers.google.com/workspace/guides/get-started';
 
 const s = strings.pipelineRunner;
 
@@ -985,14 +983,12 @@ export default function GoogleIntegrationsPanel({
           >
             <p className="text-xs text-muted-foreground">
               Need a project?{' '}
-              <a
-                href={GCP_GUIDE_URL}
-                target="_blank"
-                rel="noreferrer"
+              <Link
+                href={integrationGuideHref('google', { from: 'integrations', sectionId: 'oauthClient' })}
                 className="inline-flex items-center gap-0.5 text-link underline"
               >
-                Google Cloud guide <ExternalLink className="h-3 w-3" />
-              </a>
+                {strings.docs.setupGuideLink}
+              </Link>
             </p>
             <div className="rounded-lg border border-default bg-brand-900/40 px-4 py-3 text-sm">
               <p className="text-foreground">
@@ -1403,9 +1399,17 @@ export default function GoogleIntegrationsPanel({
             <>
               {activeTab === 'connect' ? (
                 <ViewTabPanel idPrefix="integrations" tabId="connect" className="space-y-4">
-                  <p className="rounded-lg border border-default bg-brand-800/50 px-4 py-2.5 text-xs leading-relaxed text-muted-foreground">
-                    {infoBannerText}
-                  </p>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <p className="rounded-lg border border-default bg-brand-800/50 px-4 py-2.5 text-xs leading-relaxed text-muted-foreground flex-1 min-w-0">
+                      {infoBannerText}
+                    </p>
+                    <Link
+                      href={integrationGuideHref('google', { from: 'integrations' })}
+                      className="shrink-0 text-xs font-medium text-link hover:underline sm:text-sm"
+                    >
+                      {strings.docs.setupGuideLink}
+                    </Link>
+                  </div>
                   <div className="grid gap-4 xl:grid-cols-2">
                     {credentialsStep}
                     {connectStep}

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
-import LandingProductMock from '@/components/landing/LandingProductMock';
+import LandingLifecycleDiagram from '@/components/landing/LandingLifecycleDiagram';
 import {
   LANDING_SECTION_IDS,
   landingGutterClass,
@@ -49,8 +49,8 @@ export default function LandingHero() {
           </div>
 
           <div className={`${landingSplitVisualClass} px-0 pb-2 @sm:px-0 @md:px-0`}>
-            <div className={landingSplitMockClass}>
-              <LandingProductMock variant="default" className="h-full min-h-0 w-full" elevated fillHeight />
+            <div className={`${landingSplitMockClass} landing-mock-glow landing-float flex items-center justify-center`}>
+              <LandingLifecycleDiagram />
             </div>
           </div>
         </div>
