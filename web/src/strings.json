@@ -754,6 +754,10 @@
       "label": "Settings",
       "section": "Overview"
     },
+    "risk-settings": {
+      "label": "Risk Settings",
+      "section": "Tools"
+    },
     "issues": {
       "label": "Issues",
       "section": "Overview"

@@ -26,6 +26,7 @@ import {
   Settings as SettingsIcon,
   Share2,
   ShieldAlert,
+  ShieldCheck,
   Terminal,
   TrendingUp,
   FileSearch,
@@ -37,7 +38,7 @@ import {
 import { strings } from '@/lib/strings';
 import { viewIdToPathSlug, type ViewId } from '@/routes';
 
-export type NavItemId = ViewId | 'pipeline' | 'secrets' | 'mcp' | 'docs' | 'chat' | 'write' | 'pages-md' | 'settings';
+export type NavItemId = ViewId | 'pipeline' | 'secrets' | 'mcp' | 'docs' | 'chat' | 'write' | 'pages-md' | 'settings' | 'risk-settings';
 
 export interface AppNavItem {
   id: NavItemId;
@@ -56,6 +57,7 @@ export interface AppNavItem {
  */
 const NAV_DESCRIPTIONS: Partial<Record<NavItemId, string>> = {
   settings: 'Appearance, color palette & preferences',
+  'risk-settings': 'Access modes, feature flags & security controls',
   home: 'Pick a property to audit',
   overview: 'Audit health at a glance',
   dashboards: 'Build your own metric dashboards',
@@ -198,6 +200,15 @@ const SETTINGS_NAV: AppNavItem = {
   description: NAV_DESCRIPTIONS.settings,
 };
 
+const RISK_SETTINGS_NAV: AppNavItem = {
+  id: 'risk-settings',
+  label: strings.nav['risk-settings'].label,
+  section: strings.nav['risk-settings'].section,
+  icon: ShieldCheck,
+  hrefPath: '/risk-settings',
+  description: NAV_DESCRIPTIONS['risk-settings'],
+};
+
 export const APP_NAV_ITEMS: AppNavItem[] = [
   ...VIEW_NAV.map(({ id, icon }) => ({
     id,
@@ -215,6 +226,7 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
   CHAT_NAV,
   PAGES_MD_NAV,
   SETTINGS_NAV,
+  RISK_SETTINGS_NAV,
 ];
 
 /** View ids rendered inside ReportShell — keep in sync with `VIEW_CONFIG`. */
@@ -223,7 +235,7 @@ export const REPORT_VIEW_IDS: ViewId[] = VIEW_NAV.map(({ id }) => id);
 export const APP_NAV_SECTIONS = [...new Set(APP_NAV_ITEMS.map((item) => item.section))];
 
 /** Routes with their own app pages — not resolved by `pathSlugToViewId`. */
-export const STANDALONE_NAV_IDS = ['pipeline', 'secrets', 'mcp', 'docs', 'chat', 'write', 'pages-md', 'settings'] as const satisfies readonly NavItemId[];
+export const STANDALONE_NAV_IDS = ['pipeline', 'secrets', 'mcp', 'docs', 'chat', 'write', 'pages-md', 'settings', 'risk-settings'] as const satisfies readonly NavItemId[];
 
 export type StandaloneNavId = (typeof STANDALONE_NAV_IDS)[number];
 
@@ -267,6 +279,7 @@ export const CHAT_SIDEBAR_NAV_IDS = [
   'write',
   'pages-md',
   'settings',
+  'risk-settings',
 ] as const satisfies readonly NavItemId[];
 
 export const WRITE_SIDEBAR_NAV_IDS = [
@@ -281,6 +294,7 @@ export const WRITE_SIDEBAR_NAV_IDS = [
   'write',
   'pages-md',
   'settings',
+  'risk-settings',
 ] as const satisfies readonly NavItemId[];
 
 export const SECRETS_SIDEBAR_NAV_IDS = WRITE_SIDEBAR_NAV_IDS;
@@ -300,6 +314,7 @@ export const PAGES_MD_SIDEBAR_NAV_IDS = [
   'chat',
   'write',
   'settings',
+  'risk-settings',
 ] as const satisfies readonly NavItemId[];
 
 export const SETTINGS_SIDEBAR_NAV_IDS = [
@@ -313,6 +328,21 @@ export const SETTINGS_SIDEBAR_NAV_IDS = [
   'chat',
   'write',
   'pages-md',
+  'risk-settings',
+] as const satisfies readonly NavItemId[];
+
+export const RISK_SETTINGS_SIDEBAR_NAV_IDS = [
+  'home',
+  'search-performance',
+  'links',
+  'pipeline',
+  'secrets',
+  'mcp',
+  'docs',
+  'chat',
+  'write',
+  'pages-md',
+  'settings',
 ] as const satisfies readonly NavItemId[];
 
 export function isMiniNavLinkActive(href: string, pathname: string): boolean {
@@ -324,11 +354,12 @@ export function isMiniNavLinkActive(href: string, pathname: string): boolean {
   if (href === '/pipeline') return pathname.startsWith('/pipeline');
   if (href === '/pages-md') return pathname.startsWith('/pages-md');
   if (href === '/settings') return pathname.startsWith('/settings');
+  if (href === '/risk-settings') return pathname.startsWith('/risk-settings');
   return pathname === href;
 }
 
 export function navHref(item: AppNavItem, trailingQuery: string): string {
-  if (item.id === 'home' || item.id === 'pipeline' || item.id === 'secrets' || item.id === 'mcp' || item.id === 'docs' || item.id === 'chat' || item.id === 'write' || item.id === 'pages-md' || item.id === 'settings') {
+  if (item.id === 'home' || item.id === 'pipeline' || item.id === 'secrets' || item.id === 'mcp' || item.id === 'docs' || item.id === 'chat' || item.id === 'write' || item.id === 'pages-md' || item.id === 'settings' || item.id === 'risk-settings') {
     return item.hrefPath;
   }
   const raw = trailingQuery.startsWith('?') ? trailingQuery.slice(1) : trailingQuery;
@@ -366,6 +397,9 @@ export function isNavItemActive(item: AppNavItem, pathname: string): boolean {
   }
   if (item.id === 'settings') {
     return pathname === '/settings' || pathname.startsWith('/settings/');
+  }
+  if (item.id === 'risk-settings') {
+    return pathname === '/risk-settings' || pathname.startsWith('/risk-settings/');
   }
   if (item.id === 'home') {
     return pathname === '/home';

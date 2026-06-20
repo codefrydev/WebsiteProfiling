@@ -187,6 +187,80 @@ def test_mcp_main_registers_handlers(monkeypatch) -> None:
     assert "current_mcp_domain" in domains_text
 
 
+def test_load_disabled_tools_from_db() -> None:
+    mock_conn = MagicMock()
+    mock_conn.execute.return_value.fetchone.return_value = (
+        json.dumps(["list_properties", "get_report_summary"]),
+    )
+    with patch("website_profiling.mcp.server.db_session") as mock_db:
+        mock_db.return_value.__enter__.return_value = mock_conn
+        disabled = mcp_server._load_disabled_tools()
+    assert disabled == frozenset({"list_properties", "get_report_summary"})
+
+
+def test_load_disabled_tools_on_error() -> None:
+    with patch("website_profiling.mcp.server.db_session", side_effect=RuntimeError("no db")):
+        assert mcp_server._load_disabled_tools() == frozenset()
+
+
+def test_mcp_disabled_tools_excluded_from_list_and_call(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class FakeServer:
+        def __init__(self, name: str) -> None:
+            captured["name"] = name
+
+        def list_tools(self):
+            def decorator(fn):
+                captured["list_tools"] = fn
+                return fn
+            return decorator
+
+        def call_tool(self):
+            def decorator(fn):
+                captured["call_tool"] = fn
+                return fn
+            return decorator
+
+        def list_resources(self):
+            def decorator(fn):
+                return fn
+            return decorator
+
+        def read_resource(self):
+            def decorator(fn):
+                return fn
+            return decorator
+
+    fake_server_mod = MagicMock()
+    fake_server_mod.Server = FakeServer
+    fake_types_mod = MagicMock()
+    fake_types_mod.Tool = lambda **kwargs: kwargs
+    fake_types_mod.TextContent = lambda **kwargs: kwargs
+    fake_types_mod.Resource = lambda **kwargs: kwargs
+
+    monkeypatch.setitem(sys.modules, "mcp", MagicMock())
+    monkeypatch.setitem(sys.modules, "mcp.server", fake_server_mod)
+    monkeypatch.setitem(sys.modules, "mcp.types", fake_types_mod)
+
+    with patch.dict(os.environ, {"WP_MCP_DOMAIN": "full"}, clear=False):
+        with patch(
+            "website_profiling.mcp.server._load_disabled_tools",
+            return_value=frozenset({"list_properties"}),
+        ):
+            mcp_server.create_server()
+            tools = asyncio.run(captured["list_tools"]())  # type: ignore[arg-type]
+            blocked = asyncio.run(captured["call_tool"]("list_properties", {}))  # type: ignore[arg-type]
+
+    tool_names = {t["name"] for t in tools}
+    assert "list_properties" not in tool_names
+    assert len(tool_names) >= 337
+
+    payload = json.loads(blocked[0]["text"])
+    assert "disabled via Risk Settings" in payload["error"]
+    assert "/risk-settings" in payload["hint"]
+
+
 def test_mcp_call_tool_rejects_tools_outside_domain(monkeypatch) -> None:
     captured: dict[str, object] = {}
 

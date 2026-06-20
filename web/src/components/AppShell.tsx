@@ -27,6 +27,7 @@ import {
   navHref,
   type NavItemId,
 } from '@/lib/appNav';
+import { useRiskFeatures } from '@/context/RiskFeaturesContext';
 import type { ReportPayload } from '@/types';
 import {
   getBrowserDiagnosticsScope,
@@ -83,6 +84,7 @@ export default function AppShell({
   const { data, startUrlByRunId } = useReport();
   const { readonly: sessionReadonly } = useSession();
   const { productName, productSubtitle } = useBranding();
+  const { featureEnabled } = useRiskFeatures();
 
   const trailing = searchParams.toString() ? `?${searchParams.toString()}` : '';
   const closeSidebar = () => setSidebarOpen(false);
@@ -229,7 +231,7 @@ export default function AppShell({
                 >
                   {section}
                 </div>
-                {APP_NAV_ITEMS.filter((item) => item.section === section).map((item) => {
+                {APP_NAV_ITEMS.filter((item) => item.section === section && featureEnabled(item.id)).map((item) => {
                   const Icon = item.icon;
                   const href = navHref(item, trailing);
                   const isActive = isNavItemActive(item, pathname);
