@@ -4,8 +4,16 @@ import type { LocalGuardResult } from '@/types/api';
 /**
  * Returns a 403 NextResponse if the request is not from localhost, otherwise null.
  * Use at the top of every API route handler that should only be accessible locally.
+ * Set ALLOWED_HOSTS env var to a comma-separated list of additional trusted hostnames
+ * (e.g. for ngrok: ALLOWED_HOSTS=twenty-spotty-lilly.ngrok-free.dev).
  */
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
+
+const extraHosts = (process.env.ALLOWED_HOSTS ?? '')
+  .split(',')
+  .map((h) => h.trim().toLowerCase())
+  .filter(Boolean);
+extraHosts.forEach((h) => LOCAL_HOSTS.add(h));
 
 function hostFromHeader(hostHeader: string): string {
   const h = hostHeader.trim().toLowerCase();
