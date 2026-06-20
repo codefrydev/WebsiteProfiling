@@ -72,15 +72,15 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
       }}
     >
       {/* ── Header ─────────────────────────────────────────── */}
-      <div className="relative shrink-0 bg-gray-950 px-4 pb-4 pt-4">
+      <div className="relative shrink-0 bg-[var(--chat-header-bg)] px-4 pb-4 pt-4">
         {/* top row: status + actions */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-60" />
-              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60" style={{ background: 'var(--status-online-ping)' }} />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full" style={{ background: 'var(--status-online)' }} />
             </span>
-            <span className="text-[11px] font-medium text-green-400">Online</span>
+            <span className="text-[11px] font-medium" style={{ color: 'var(--status-online)' }}>Online</span>
           </div>
           <div className="flex items-center gap-1">
             {messages.length > 0 && (
@@ -88,24 +88,24 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
                 type="button"
                 onClick={reset}
                 title="New conversation"
-                className="flex h-7 w-7 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/10 hover:text-white"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-              </button>
-            )}
-            <Link
-              href={openFullChat()}
-              onClick={onClose}
-              title="Open full chat"
-              className="flex h-7 w-7 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/10 hover:text-white"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--chat-header-fg-muted)] transition-colors hover:bg-white/10 hover:text-[var(--chat-header-fg)]"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <Link
+            href={openFullChat()}
+            onClick={onClose}
+            title="Open full chat"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--chat-header-fg-muted)] transition-colors hover:bg-white/10 hover:text-[var(--chat-header-fg)]"
             >
               <Maximize2 className="h-3.5 w-3.5" />
             </Link>
             <button
               type="button"
-              onClick={onClose}
-              className="flex h-7 w-7 items-center justify-center rounded-full text-white/50 transition-colors hover:bg-white/10 hover:text-white"
-              aria-label="Close"
+          onClick={onClose}
+          className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--chat-header-fg-muted)] transition-colors hover:bg-white/10 hover:text-[var(--chat-header-fg)]"
+          aria-label="Close"
             >
               <ChevronDown className="h-4 w-4" />
             </button>
@@ -116,8 +116,8 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
         <div className="mt-3 flex items-center gap-3">
           <ChatAssistantAvatar size="lg" />
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-white">{assistantName}</p>
-            <p className="truncate text-[11px] text-white/50">
+            <p className="text-sm font-semibold text-[var(--chat-header-fg)]">{assistantName}</p>
+            <p className="truncate text-[11px] text-[var(--chat-header-fg-muted)]">
               {resolving ? (
                 <span className="flex items-center gap-1">
                   <Loader2 className="h-2.5 w-2.5 animate-spin" />
@@ -168,7 +168,7 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
                     type="button"
                     onClick={() => sendMessage(prompt)}
                     disabled={busy}
-                    className="rounded-xl border border-default/60 bg-[var(--chat-surface)]/30 px-3 py-2.5 text-left text-[12px] text-muted-foreground transition-all hover:border-blue-500/50 hover:bg-[var(--chat-surface)]/70 hover:text-foreground disabled:opacity-40"
+                    className="rounded-xl border border-default/60 bg-[var(--chat-surface)]/30 px-3 py-2.5 text-left text-[12px] text-muted-foreground transition-all hover:border-[var(--accent-border)] hover:bg-[var(--chat-surface)]/70 hover:text-foreground disabled:opacity-40"
                   >
                     {prompt}
                   </button>
@@ -186,15 +186,15 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
               {msg.role === 'assistant' && <ChatAssistantAvatar size="sm" />}
 
               {msg.role === 'user' ? (
-                <div className="max-w-[82%] rounded-2xl rounded-br-none bg-blue-600 px-4 py-2.5 text-[13px] leading-relaxed text-white shadow-sm">
+                <div className="max-w-[82%] rounded-2xl rounded-br-none bg-[var(--chat-user-bubble)] px-4 py-2.5 text-[13px] leading-relaxed text-[var(--chat-user-bubble-fg)] shadow-sm">
                   {msg.content}
                 </div>
               ) : (
                 <div
                   className={`max-w-[82%] rounded-2xl rounded-bl-none px-4 py-3 shadow-sm ${
                     msg.error
-                      ? 'border border-red-500/25 bg-red-500/10 text-[13px] text-red-400'
-                      : 'bg-gray-900 text-foreground'
+                      ? 'border border-[var(--color-danger-border)] bg-[var(--color-danger-bg)] text-[13px] text-[var(--color-danger)]'
+                      : 'bg-[var(--chat-assistant-bubble)] text-foreground'
                   }`}
                 >
                   {msg.toolStatus && (
@@ -213,7 +213,7 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
                         <ul className="mt-2 space-y-1">
                           {msg.narrative.recommended_actions.map((action, i) => (
                             <li key={i} className="flex items-start gap-2 text-[12px] text-muted-foreground">
-                              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+                              <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--accent)]" />
                               {action}
                             </li>
                           ))}
@@ -226,9 +226,9 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
                     <ChatMarkdown content={msg.content} streaming={msg.streaming} />
                   ) : !msg.toolStatus && !msg.narrative ? (
                     <div className="flex gap-1 py-1">
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40 [animation-delay:0ms]" />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40 [animation-delay:150ms]" />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-white/40 [animation-delay:300ms]" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--chat-header-fg-muted)] [animation-delay:0ms]" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--chat-header-fg-muted)] [animation-delay:150ms]" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[var(--chat-header-fg-muted)] [animation-delay:300ms]" />
                     </div>
                   ) : null}
 
@@ -236,7 +236,7 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
                     <Link
                       href={openFullChat()}
                       onClick={onClose}
-                      className="mt-2 flex items-center gap-1 text-[11px] text-blue-400 hover:text-blue-300"
+                      className="mt-2 flex items-center gap-1 text-[11px] text-link hover:text-link-soft"
                     >
                       See full results in chat
                       <ArrowUpRight className="h-3 w-3" />

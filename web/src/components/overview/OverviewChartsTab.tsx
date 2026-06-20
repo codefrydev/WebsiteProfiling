@@ -28,10 +28,6 @@ import { OverviewTabPanel } from './OverviewTabPanel';
 import { ensureOverviewChartsRegistered } from './chartSetup';
 import { barOptsVertical, barOptsGrouped } from './chartUtils';
 import { selectChartConcerns } from './overviewChartInsights';
-import { OverviewCompactMetricsGrid } from './OverviewAtAGlance';
-import { shouldShowAtAGlance, countIssuesByPriority } from './overviewAtAGlanceMetrics';
-import { crawledUrlCount } from '@/lib/crawlCounts';
-
 ensureOverviewChartsRegistered();
 
 const vo = strings.views.overview;
@@ -179,16 +175,6 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
   const hasContentSection = wordCountChart || titleMetaChart || readingLevelChart;
   const hasDiscoverySection = mimeChart || outlinksChart || domainsChart;
 
-  const showCompactHeader = useMemo(() => {
-    const issueCounts = countIssuesByPriority(data.categories);
-    return shouldShowAtAGlance({
-      urlCount: crawledUrlCount(data),
-      issueCounts,
-      gscDaily: data.google?.gsc?.daily,
-      lighthouseScores: lighthouseScores?.scores,
-    });
-  }, [data, lighthouseScores?.scores]);
-
   const chartSectionStatus = useTabSections(OVERVIEW_TAB_SECTIONS.charts, true);
   const chartsPending = isSectionPending(OVERVIEW_TAB_SECTIONS.charts, chartSectionStatus);
 
@@ -244,15 +230,6 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
               </div>
             ) : null}
           </div>
-
-          {showCompactHeader ? (
-            <OverviewCompactMetricsGrid
-              data={data}
-              querySuffix={querySuffix}
-              lighthouseScores={lighthouseScores?.scores}
-              variant="charts"
-            />
-          ) : null}
 
           {lighthouseScores ? (
             <ChartSection

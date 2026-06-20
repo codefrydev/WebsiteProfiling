@@ -16,6 +16,7 @@ import IntegrationsModal from '@/components/IntegrationsModal';
 import { Badge, Breadcrumb, ReportSelector } from '@/components';
 import { useReport } from '@/context/useReport';
 import { useSession } from '@/context/SessionContext';
+import { useBranding } from '@/context/useBranding';
 import { strings, format } from '@/lib/strings';
 import { canonicalDomainFromPayload } from '@/lib/domainSlug';
 import { OPEN_INTEGRATIONS } from '@/lib/pipelineJobEvents';
@@ -81,6 +82,7 @@ export default function AppShell({
   const [integrationsToast, setIntegrationsToast] = useState<IntegrationsToast | null>(null);
   const { data, startUrlByRunId } = useReport();
   const { readonly: sessionReadonly } = useSession();
+  const { productName, productSubtitle } = useBranding();
 
   const trailing = searchParams.toString() ? `?${searchParams.toString()}` : '';
   const closeSidebar = () => setSidebarOpen(false);
@@ -193,14 +195,14 @@ export default function AppShell({
               href="/home"
               className={`flex items-center min-w-0 ${sidebarCollapsed ? 'md:justify-center' : ''}`}
               onClick={closeSidebar}
-              title={sidebarCollapsed ? strings.app.productName : undefined}
+              title={sidebarCollapsed ? productName : undefined}
             >
               <AppLogo className={sidebarCollapsed ? 'md:mr-0 mr-3' : 'mr-3'} />
               <div className={`min-w-0 ${sidebarCollapsed ? 'md:hidden' : ''}`}>
                 <div className="font-bold text-bright leading-tight truncate">
-                  {strings.app.productName}
+                  {productName}
                 </div>
-                <div className="text-[11px] text-muted-foreground">{strings.app.productSubtitle}</div>
+                <div className="text-[11px] text-muted-foreground">{productSubtitle}</div>
               </div>
             </Link>
             <button
@@ -256,7 +258,7 @@ export default function AppShell({
                           : 'gap-3 px-3 py-2'
                       } ${
                         isActive
-                          ? 'tab-active bg-blue-500/10 border border-blue-500/25 text-link'
+                          ? 'tab-active text-link'
                           : 'text-muted-foreground hover:text-foreground hover:bg-brand-700/80'
                       }`}
                     >
@@ -291,7 +293,7 @@ export default function AppShell({
                       ) : null}
                       {badgeCount > 0 && sidebarCollapsed ? (
                         <span
-                          className="absolute top-1.5 right-1.5 hidden md:block h-2 w-2 rounded-full bg-red-500"
+                          className="absolute top-1.5 right-1.5 hidden md:block h-2 w-2 rounded-full bg-[var(--color-danger)]"
                           aria-hidden
                         />
                       ) : null}
@@ -311,7 +313,7 @@ export default function AppShell({
               className={`flex items-center ${sidebarCollapsed ? 'gap-3 md:justify-center md:gap-0' : 'gap-3'}`}
             >
               <div
-                className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white text-xs shrink-0"
+                className="w-8 h-8 rounded-full bg-[var(--accent)] flex items-center justify-center font-bold text-white text-xs shrink-0"
                 title={sidebarCollapsed ? auditedHost : undefined}
               >
                 {auditedInitials}
@@ -353,7 +355,7 @@ export default function AppShell({
         {sessionReadonly ? (
           <div
             role="status"
-            className="shrink-0 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-center text-xs text-amber-200 print:hidden"
+            className="shrink-0 border-b border-[var(--color-warning-border)] bg-[var(--color-warning-bg)] px-4 py-2 text-center text-xs text-[var(--color-warning)] print:hidden"
           >
             {strings.app.readonlyBanner}
           </div>
@@ -395,7 +397,7 @@ export default function AppShell({
                   value={searchQuery}
                   onChange={(e) => onSearchChange(e.target.value)}
                   placeholder={strings.app.searchPlaceholder}
-                  className="w-full bg-brand-900 border border-default focus:border-blue-500 rounded-lg pl-10 pr-4 py-2 text-sm outline-none text-foreground transition-all"
+                  className="w-full bg-brand-900 border border-default focus:border-[var(--accent)] rounded-lg pl-10 pr-4 py-2 text-sm outline-none text-foreground transition-all"
                 />
               </div>
             ) : (

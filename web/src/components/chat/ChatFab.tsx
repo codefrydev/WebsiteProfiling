@@ -113,7 +113,7 @@ export default function ChatFab() {
           onClick={handleClick}
           onPointerDown={handlePointerDown}
           style={style}
-          className={`print:hidden fixed z-[100] flex h-14 w-14 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--app-bg)] touch-none select-none ${
+          className={`print:hidden fixed z-[100] flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent)] text-white shadow-[var(--elevation-2)] hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--app-bg)] touch-none select-none ${
             isDragging ? 'cursor-grabbing scale-105 transition-none' : 'cursor-grab transition-all duration-200 ease-out'
           }`}
           aria-label={s.fabAria}

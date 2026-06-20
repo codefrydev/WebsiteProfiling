@@ -4,41 +4,46 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
+  Bookmark,
   ChevronLeft,
-  KeyRound,
-  Lock,
+  LayoutDashboard,
+  MessageSquare,
+  Palette,
   PanelLeft,
-  Plug,
+  PenLine,
   Settings,
-  Sparkles,
+  Tag,
   type LucideIcon,
 } from 'lucide-react';
 import AppLogo from '@/components/AppLogo';
 import ThemeToggle from '@/components/ThemeToggle';
 import type { ChatLayoutState } from '@/components/chat/ChatShell';
 import {
-  SECRETS_SIDEBAR_NAV_IDS,
+  SETTINGS_SIDEBAR_NAV_IDS,
   isMiniNavLinkActive,
   miniNavLinks,
 } from '@/lib/appNav';
-import { SECRETS_SECTIONS, type SecretsNavId } from '@/lib/secretsConfigSchema';
 import { strings } from '@/lib/strings';
 
-const s = strings.secrets;
+const s = strings.settings;
 const c = strings.components.chat;
 
-const NAV_LINKS = miniNavLinks(SECRETS_SIDEBAR_NAV_IDS);
+const NAV_LINKS = miniNavLinks(SETTINGS_SIDEBAR_NAV_IDS);
 
-const SECTION_ICONS: Record<SecretsNavId, LucideIcon> = {
-  ai: Sparkles,
-  google: KeyRound,
-  integrations: Plug,
-  crawl: Lock,
-};
+export type SettingsNavId = 'appearance' | 'layout' | 'chat' | 'writing' | 'branding' | 'defaults';
 
-export interface SecretsSidebarProps extends ChatLayoutState {
-  activeSection: SecretsNavId;
-  onSectionChange: (section: SecretsNavId) => void;
+export const SETTINGS_SECTIONS: { id: SettingsNavId; label: string; icon: LucideIcon }[] = [
+  { id: 'appearance', label: s.appearanceSection, icon: Palette },
+  { id: 'layout', label: s.layoutSection, icon: LayoutDashboard },
+  { id: 'chat', label: s.chatSection, icon: MessageSquare },
+  { id: 'writing', label: s.writingSection, icon: PenLine },
+  { id: 'branding', label: s.brandingSection, icon: Tag },
+  { id: 'defaults', label: s.defaultsSection, icon: Bookmark },
+];
+
+export interface SettingsSidebarProps extends ChatLayoutState {
+  activeSection: SettingsNavId;
+  onSectionChange: (section: SettingsNavId) => void;
 }
 
 function RailButton({
@@ -69,7 +74,7 @@ function RailButton({
   );
 }
 
-function SettingsMenu({ onClose }: { onClose: () => void }) {
+function QuickMenu({ onClose }: { onClose: () => void }) {
   return (
     <div className="w-56 rounded-2xl border border-default bg-[var(--chat-surface)] p-3 shadow-xl">
       <p className="mb-2 text-xs font-medium text-bright">{c.settingsTitle}</p>
@@ -78,43 +83,36 @@ function SettingsMenu({ onClose }: { onClose: () => void }) {
         <ThemeToggle />
       </div>
       <Link
-        href="/settings"
+        href="/secrets"
         className="mt-1 block rounded-lg px-2 py-1.5 text-xs text-link hover:bg-[var(--chat-surface-hover)]"
         onClick={onClose}
       >
-        {strings.settings.settingsLink}
-      </Link>
-      <Link
-        href="/pipeline"
-        className="block rounded-lg px-2 py-1.5 text-xs text-link hover:bg-[var(--chat-surface-hover)]"
-        onClick={onClose}
-      >
-        {s.pipelineSettingsLink}
+        API keys & secrets
       </Link>
     </div>
   );
 }
 
-export default function SecretsSidebar({
+export default function SettingsSidebar({
   activeSection,
   onSectionChange,
   expanded,
   toggle,
   setExpanded,
-}: SecretsSidebarProps) {
+}: SettingsSidebarProps) {
   const pathname = usePathname();
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  const settingsRef = useRef<HTMLDivElement>(null);
+  const [quickOpen, setQuickOpen] = useState(false);
+  const quickRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!settingsOpen) return;
+    if (!quickOpen) return;
     const onDocClick = (e: MouseEvent) => {
-      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
-        setSettingsOpen(false);
+      if (quickRef.current && !quickRef.current.contains(e.target as Node)) {
+        setQuickOpen(false);
       }
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSettingsOpen(false);
+      if (e.key === 'Escape') setQuickOpen(false);
     };
     document.addEventListener('mousedown', onDocClick);
     document.addEventListener('keydown', onKey);
@@ -122,18 +120,17 @@ export default function SecretsSidebar({
       document.removeEventListener('mousedown', onDocClick);
       document.removeEventListener('keydown', onKey);
     };
-  }, [settingsOpen]);
+  }, [quickOpen]);
 
   const sectionList = (
     <ul className="space-y-0.5">
-      {SECRETS_SECTIONS.map((section) => {
-        const Icon = SECTION_ICONS[section.id as SecretsNavId] ?? KeyRound;
-        const selected = activeSection === section.id;
+      {SETTINGS_SECTIONS.map(({ id, label, icon: Icon }) => {
+        const selected = activeSection === id;
         return (
-          <li key={section.id}>
+          <li key={id}>
             <button
               type="button"
-              onClick={() => onSectionChange(section.id as SecretsNavId)}
+              onClick={() => onSectionChange(id)}
               className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-colors ${
                 selected
                   ? 'bg-brand-700/60 text-foreground'
@@ -141,7 +138,7 @@ export default function SecretsSidebar({
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" aria-hidden />
-              <span className="truncate">{section.label}</span>
+              <span className="truncate">{label}</span>
             </button>
           </li>
         );
@@ -150,7 +147,8 @@ export default function SecretsSidebar({
   );
 
   if (!expanded) {
-    const ActiveIcon = SECTION_ICONS[activeSection] ?? KeyRound;
+    const { icon: ActiveIcon } = SETTINGS_SECTIONS.find((s2) => s2.id === activeSection) ??
+      SETTINGS_SECTIONS[0];
     return (
       <div className="chat-sidebar-rail">
         <Link href="/home" className="mb-2 flex h-10 w-10 items-center justify-center" title={c.navHome}>
@@ -165,17 +163,17 @@ export default function SecretsSidebar({
           <ActiveIcon className="h-5 w-5" />
         </RailButton>
 
-        <div className="relative mt-auto" ref={settingsRef}>
+        <div className="relative mt-auto" ref={quickRef}>
           <RailButton
             label={c.settingsTitle}
-            onClick={() => setSettingsOpen((v) => !v)}
-            active={settingsOpen}
+            onClick={() => setQuickOpen((v) => !v)}
+            active={quickOpen}
           >
             <Settings className="h-5 w-5" />
           </RailButton>
-          {settingsOpen ? (
+          {quickOpen ? (
             <div className="absolute bottom-0 left-full z-50 ml-2">
-              <SettingsMenu onClose={() => setSettingsOpen(false)} />
+              <QuickMenu onClose={() => setQuickOpen(false)} />
             </div>
           ) : null}
         </div>
@@ -238,19 +236,19 @@ export default function SecretsSidebar({
           <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">{sectionList}</div>
         </div>
 
-        <div className="relative border-t border-muted/30 p-2" ref={settingsRef}>
+        <div className="relative border-t border-muted/30 p-2" ref={quickRef}>
           <button
             type="button"
-            onClick={() => setSettingsOpen((v) => !v)}
+            onClick={() => setQuickOpen((v) => !v)}
             className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-muted-foreground transition-colors hover:bg-[var(--chat-surface-hover)] hover:text-foreground"
-            aria-expanded={settingsOpen}
+            aria-expanded={quickOpen}
           >
             <Settings className="h-4 w-4" />
             {c.settingsTitle}
           </button>
-          {settingsOpen ? (
+          {quickOpen ? (
             <div className="absolute bottom-full left-2 right-2 z-50 mb-1">
-              <SettingsMenu onClose={() => setSettingsOpen(false)} />
+              <QuickMenu onClose={() => setQuickOpen(false)} />
             </div>
           ) : null}
         </div>

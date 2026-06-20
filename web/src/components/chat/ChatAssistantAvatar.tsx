@@ -15,7 +15,7 @@ const SIZE_STYLES: Record<
   { shell: string; image: number; icon: string }
 > = {
   lg: {
-    shell: 'h-11 w-11 shadow-lg ring-2 ring-blue-500/30',
+    shell: 'h-11 w-11 shadow-lg ring-2 ring-[var(--accent-border)]',
     image: 28,
     icon: 'h-6 w-6',
   },
@@ -45,7 +45,7 @@ export default function ChatAssistantAvatar({
 
   return (
     <div
-      className={`flex shrink-0 items-center justify-center rounded-full bg-blue-600 ${dims.shell} ${className}`.trim()}
+      className={`flex shrink-0 items-center justify-center rounded-full bg-[var(--accent)] ${dims.shell} ${className}`.trim()}
     >
       {failed ? (
         <Bot className={`${dims.icon} text-white`} aria-hidden />

@@ -86,8 +86,15 @@ function SettingsMenu({ onClose }: { onClose: () => void }) {
         <ThemeToggle />
       </div>
       <Link
-        href="/secrets"
+        href="/settings"
         className="mt-1 block rounded-lg px-2 py-1.5 text-xs text-link hover:bg-[var(--chat-surface-hover)]"
+        onClick={onClose}
+      >
+        {strings.settings.settingsLink}
+      </Link>
+      <Link
+        href="/secrets"
+        className="block rounded-lg px-2 py-1.5 text-xs text-link hover:bg-[var(--chat-surface-hover)]"
         onClick={onClose}
       >
         {c.aiSettingsLink}

@@ -750,6 +750,10 @@
       "label": "Page Markdown",
       "section": "Tools"
     },
+    "settings": {
+      "label": "Settings",
+      "section": "Overview"
+    },
     "issues": {
       "label": "Issues",
       "section": "Overview"
@@ -856,6 +860,62 @@
     "crawlOnlyNote": "Crawl without audit — run a full site audit or regenerate the audit from this crawl to save a snapshot.",
     "titleLoadReport": "Load a previous audit",
     "titleCompareBaseline": "Older audit to compare against (new, removed, and changed URLs)"
+  },
+  "settings": {
+    "pageTitle": "Settings",
+    "sidebarTitle": "Settings",
+    "expandSidebar": "Show sidebar",
+    "collapseSidebar": "Hide sidebar",
+    "sectionsLabel": "Sections",
+    "settingsLink": "Appearance settings",
+
+    "appearanceSection": "Appearance",
+    "appearanceSubtitle": "Customise colors, theme mode, and visual style. Changes are saved to this browser only.",
+    "themeLabel": "Color mode",
+    "editingModeLabel": "Editing palette for",
+    "editingModeLight": "Light mode",
+    "editingModeDark": "Dark mode",
+    "presetsLabel": "Presets",
+    "resetTokenLabel": "Reset to default",
+    "resetAllLabel": "Reset all colors",
+    "resetAllConfirm": "Reset all color overrides for this mode?",
+    "previewLabel": "Preview",
+    "customizedBadge": "Customized",
+
+    "layoutSection": "Layout",
+    "layoutSubtitle": "Adjust sidebar and panel layout preferences. Saved to this browser.",
+    "sidebarCollapseLabel": "Collapse report sidebar by default",
+    "sidebarCollapseHelp": "Hides sidebar labels on the main audit view, showing icons only.",
+
+    "chatSection": "Chat",
+    "chatSubtitle": "Floating chat assistant appearance and behaviour. Saved to the database.",
+    "fabCornerLabel": "Chat button position",
+    "fabCornerHelp": "Which screen corner the floating chat button appears in. You can also drag it.",
+    "fabCornerBottomRight": "Bottom right",
+    "fabCornerBottomLeft": "Bottom left",
+    "fabCornerTopRight": "Top right",
+    "fabCornerTopLeft": "Top left",
+    "assistantNameLabel": "Assistant name",
+    "assistantNamePlaceholder": "AI Assistant",
+    "assistantAvatarLabel": "Assistant avatar URL",
+    "assistantAvatarPlaceholder": "/logo.svg or https://…/avatar.svg",
+    "assistantAvatarHelp": "Image shown in the chat popup header. Leave blank to use the default logo.",
+    "unlimitedToolRoundsLabel": "Extended tool rounds",
+    "unlimitedToolRoundsHelp": "Allow up to 100 tool steps per message instead of 10. Use for deep multi-step audits.",
+    "chatSaving": "Saving…",
+    "chatSaved": "Saved",
+    "chatSaveError": "Save failed",
+
+    "writingSection": "Writing",
+    "writingSubtitle": "Content Studio editor preferences. Saved to this browser.",
+    "contentStudioAiLabel": "AI writing suggestions in Content Studio",
+    "contentStudioAiHelp": "Shows real-time AI coaching as you type in the Content Studio editor (/write). This is a local toggle — the server AI gate is on the Pipeline settings page.",
+
+    "brandingSection": "Branding",
+    "brandingSubtitle": "Customise the product name and subtitle shown in the sidebar. Saved to the database.",
+
+    "defaultsSection": "Defaults",
+    "defaultsSubtitle": "Choose default behaviour when opening a site. Saved to this browser."
   },
   "secrets": {
     "pageTitle": "Secrets",
