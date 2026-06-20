@@ -4476,6 +4476,7 @@
       "aiDisabledHint": "Enable AI insights and configure a provider in Run audit → AI settings.",
       "openAiSettings": "Open AI settings",
       "aiSettingsLink": "AI settings",
+      "assistantAppearanceLink": "Assistant appearance",
       "sessionError": "Could not create chat session",
       "agentError": "The assistant encountered an error",
       "ollamaLabel": "Ollama",

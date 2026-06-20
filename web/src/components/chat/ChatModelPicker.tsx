@@ -25,6 +25,9 @@ export interface ChatModelPickerProps {
   model: string;
   baseUrl?: string;
   disabled?: boolean;
+  /** Opens above (composer) or below (header) the trigger. */
+  menuPlacement?: 'above' | 'below';
+  triggerClassName?: string;
 }
 
 function groupModels(models: OllamaModelEntry[]) {
@@ -72,6 +75,8 @@ export default function ChatModelPicker({
   model,
   baseUrl = 'http://127.0.0.1:11434',
   disabled,
+  menuPlacement = 'above',
+  triggerClassName,
 }: ChatModelPickerProps) {
   const { saveLlmModel, saving } = usePipeline();
   const isOllama = provider === 'ollama';
@@ -135,7 +140,10 @@ export default function ChatModelPicker({
         type="button"
         disabled={busy}
         onClick={() => setOpen((v) => !v)}
-        className="flex max-w-[7rem] items-center gap-1 rounded-full px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-[var(--chat-surface-hover)] hover:text-foreground disabled:opacity-50 sm:max-w-[9rem]"
+        className={
+          triggerClassName ??
+          'flex max-w-[7rem] items-center gap-1 rounded-full px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-[var(--chat-surface-hover)] hover:text-foreground disabled:opacity-50 sm:max-w-[9rem]'
+        }
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label={c.chooseModel}
@@ -148,13 +156,19 @@ export default function ChatModelPicker({
             aria-hidden
           />
         ) : null}
-        <span className="truncate font-medium text-foreground">{triggerLabel}</span>
+        <span
+          className={`truncate font-medium ${triggerClassName ? 'text-inherit' : 'text-foreground'}`}
+        >
+          {triggerLabel}
+        </span>
         <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open ? (
         <div
-          className="absolute bottom-full right-0 z-50 mb-2 flex max-h-[min(24rem,60vh)] w-[min(20rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-default bg-[var(--chat-surface)] shadow-2xl"
+          className={`absolute right-0 z-50 flex max-h-[min(24rem,60vh)] w-[min(20rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-default bg-[var(--chat-surface)] shadow-2xl ${
+            menuPlacement === 'below' ? 'top-full mt-2' : 'bottom-full mb-2'
+          }`}
           role="listbox"
         >
           {isOllama && connected && models.length ? (

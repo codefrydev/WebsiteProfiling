@@ -92,6 +92,13 @@ function SettingsMenu({ onClose }: { onClose: () => void }) {
       >
         {c.aiSettingsLink}
       </Link>
+      <Link
+        href="/pipeline?group=content-ai"
+        className="block rounded-lg px-2 py-1.5 text-xs text-link hover:bg-[var(--chat-surface-hover)]"
+        onClick={onClose}
+      >
+        {c.assistantAppearanceLink}
+      </Link>
     </div>
   );
 }

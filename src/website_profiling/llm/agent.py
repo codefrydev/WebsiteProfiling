@@ -98,7 +98,7 @@ SQL playbook (only when get_sql_schema / run_sql_query are available):
 - When SQL is needed: call get_sql_schema first to discover tables and foreign keys, then run_sql_query with a single read-only SELECT.
 - Only SELECT is allowed — the tool rejects INSERT/UPDATE/DELETE/DDL.
 - The tool automatically scopes queries to the active property; you do not need to add a property_id filter manually. For crawl data, scope is applied through crawl_runs.
-- Use row_cap intentionally: set a small value (10–50) for row listings and omit it (default 200) for aggregates.
+- Use row_cap intentionally: set a small value (10-50) for row listings and omit it (default 200) for aggregates.
 - Keep results concise — use LIMIT, GROUP BY, and aggregate functions. Avoid SELECT *.
 - Never tell the user you cannot run SQL if run_sql_query is loaded — use it.
 

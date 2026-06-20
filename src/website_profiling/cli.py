@@ -9,6 +9,7 @@ from .commands import (
     enrich_cmd,
     google_cmd,
     gsc_links_cmd,
+    help_cmd,
     keywords_cmd,
     lighthouse_cmd,
     page_coach_cmd,
@@ -46,6 +47,8 @@ def main() -> None:
         chat_cmd.run(cfg, args)
     elif args.command == "page-markdown":
         page_markdown_cmd.run(cfg, args)
+    elif args.command == "help":
+        help_cmd.run(cfg, args)
     else:
         pipeline_cmd.run(cfg, args)
 

@@ -104,6 +104,21 @@ export const LLM_CONFIG_SECTIONS = [
     label: 'Chat agent',
     fields: [
       {
+        key: 'llm_chat_assistant_name',
+        label: 'Assistant name',
+        type: 'text',
+        defaultValue: 'AI Assistant',
+        help: 'Shown in the floating chat popup and full chat header.',
+      },
+      {
+        key: 'llm_chat_assistant_avatar_url',
+        label: 'Assistant avatar URL',
+        type: 'text',
+        defaultValue: '',
+        placeholder: '/logo.svg or https://example.com/avatar.svg',
+        help: 'Image URL for the assistant avatar. Leave blank to use the default Site Audit logo.',
+      },
+      {
         key: 'llm_chat_unlimited_tool_rounds',
         label: 'Extended tool rounds (chat)',
         type: 'bool',
