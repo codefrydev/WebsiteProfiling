@@ -127,6 +127,18 @@ def build_priority_counts(current: dict[str, Any], baseline: dict[str, Any]) -> 
     ]
 
 
+def _scale_lh_score(score_0_1: float | None, fallback_0_100: float | None) -> float | None:
+    """Lighthouse ``median_metrics`` scores are stored on the native 0-1 scale, but
+    the deltas/threshold (``_LH_DELTA_THRESHOLD`` = 5 points) operate on a 0-100
+    scale, so scale them up. The ``fallback`` value (summary-level
+    ``performance``/``seo``) is already on the 0-100 scale and is used as-is."""
+    if score_0_1 is not None:
+        return round(score_0_1 * 100)
+    if fallback_0_100 is not None:
+        return round(fallback_0_100)
+    return None
+
+
 def _lh_from_payload(payload: dict[str, Any]) -> dict[str, dict[str, float | None]]:
     out: dict[str, dict[str, float | None]] = {}
     by_url = payload.get("lighthouse_by_url")
@@ -138,11 +150,9 @@ def _lh_from_payload(payload: dict[str, Any]) -> dict[str, dict[str, float | Non
             if not k:
                 continue
             metrics = summary.get("median_metrics") or summary
-            perf = _num(metrics.get("performance_score") or summary.get("performance"))
-            seo = _num(metrics.get("seo_score") or summary.get("seo"))
             out[k] = {
-                "perf": round(perf) if perf is not None else None,
-                "seo": round(seo) if seo is not None else None,
+                "perf": _scale_lh_score(_num(metrics.get("performance_score")), _num(summary.get("performance"))),
+                "seo": _scale_lh_score(_num(metrics.get("seo_score")), _num(summary.get("seo"))),
             }
     for link in payload.get("links") or []:
         if not isinstance(link, dict):
@@ -152,11 +162,9 @@ def _lh_from_payload(payload: dict[str, Any]) -> dict[str, dict[str, float | Non
             continue
         lh = link.get("lighthouse") if isinstance(link.get("lighthouse"), dict) else {}
         metrics = lh.get("median_metrics") or {}
-        perf = _num(metrics.get("performance_score"))
-        seo = _num(metrics.get("seo_score"))
         out[k] = {
-            "perf": round(perf) if perf is not None else None,
-            "seo": round(seo) if seo is not None else None,
+            "perf": _scale_lh_score(_num(metrics.get("performance_score")), None),
+            "seo": _scale_lh_score(_num(metrics.get("seo_score")), None),
         }
     return out
 

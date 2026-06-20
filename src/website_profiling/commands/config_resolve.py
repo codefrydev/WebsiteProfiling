@@ -280,8 +280,40 @@ def build_parser() -> argparse.ArgumentParser:
             "page-live",
             "page-coach",
             "chat",
+            "page-markdown",
         ],
         help="Run only this step (default: run all steps according to config)",
+    )
+    parser.add_argument(
+        "--crawl-run-id",
+        type=int,
+        default=None,
+        dest="crawl_run_id",
+        help="For page-markdown: crawl run id to extract markdown from (default: latest).",
+    )
+    parser.add_argument(
+        "--strategy",
+        default="main_only",
+        choices=["main_only", "full_body"],
+        help="For page-markdown: content extraction strategy (default: main_only).",
+    )
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        default=True,
+        help="For page-markdown: overwrite existing markdown rows (default: true).",
+    )
+    parser.add_argument(
+        "--no-overwrite",
+        action="store_false",
+        dest="overwrite",
+        help="For page-markdown: skip URLs already extracted.",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=4,
+        help="For page-markdown: parallel extraction workers (default: 4).",
     )
     parser.add_argument(
         "--url",

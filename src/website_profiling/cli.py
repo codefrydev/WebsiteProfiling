@@ -13,6 +13,7 @@ from .commands import (
     lighthouse_cmd,
     page_coach_cmd,
     page_live_cmd,
+    page_markdown_cmd,
     pipeline_cmd,
     warnings_cmd,
 )
@@ -43,6 +44,8 @@ def main() -> None:
         page_coach_cmd.run(cfg, cwd, args)
     elif args.command == "chat":
         chat_cmd.run(cfg, args)
+    elif args.command == "page-markdown":
+        page_markdown_cmd.run(cfg, args)
     else:
         pipeline_cmd.run(cfg, args)
 

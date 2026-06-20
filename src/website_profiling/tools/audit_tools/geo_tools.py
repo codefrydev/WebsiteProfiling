@@ -1,42 +1,128 @@
-"""GEO/AEO readiness tools: llms.txt, FAQ schema, citation signals, internal link suggestions."""
+"""GEO/AEO readiness tools: llms.txt, AI discovery, FAQ schema, citation signals, link suggestions.
+
+Score model (100 pts):
+  Robots.txt       /18  – AI bot access tiers
+  llms.txt         /18  – presence + depth
+  Schema JSON-LD   /16  – richness across pages
+  Meta tags        /14  – title/desc/canonical/OG
+  Content          /12  – word-count, headings, lists
+  Brand & Entity   /10  – org schema, entity richness
+  Signals          /6   – sitemap, RSS, dateModified
+  AI Discovery     /6   – .well-known/ai.txt + /ai/*.json
+
+Score bands: 86-100 Excellent · 68-85 Good · 36-67 Foundation · 0-35 Critical
+"""
 from __future__ import annotations
 
 import math
 import re
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import requests
 from psycopg import Connection
 
-from ._slice import _parse_page_analysis, _row_schema_types_list, cap_list, parse_limit
+from ._slice import _row_schema_types_list, cap_list, parse_limit
 from .context import AuditToolContext
 
 _FAQ_TYPES = frozenset({"faqpage", "qapage", "question"})
 _QA_URL_HINTS = ("/faq", "/faqs", "/help", "/support", "/questions")
 
+_SCORE_BANDS = (
+    (86, "Excellent"),
+    (68, "Good"),
+    (36, "Foundation"),
+    (0, "Critical"),
+)
+
+
+def _band(score: float) -> str:
+    for threshold, label in _SCORE_BANDS:
+        if score >= threshold:
+            return label
+    return "Critical"
+
+
+def _base_url(domain: str) -> str:
+    """Normalise domain/URL to a bare ``https://hostname`` base."""
+    return f"https://{re.sub(r'^https?://', '', domain).split('/')[0]}"
+
+
+# ---------------------------------------------------------------------------
+# llms.txt helpers
+# ---------------------------------------------------------------------------
 
 def _fetch_llms_txt(domain: str) -> dict[str, Any]:
     if not domain:
         return {"found": False, "error": "domain unknown"}
-    base = f"https://{re.sub(r'^https?://', '', domain).split('/')[0]}"
+    base = _base_url(domain)
     paths = ("/llms.txt", "/.well-known/llms.txt")
     for path in paths:
         url = urljoin(base + "/", path.lstrip("/"))
         try:
             resp = requests.get(url, timeout=8, headers={"User-Agent": "SiteAudit/1.0"})
             if resp.status_code == 200 and resp.text.strip():
+                text = resp.text.strip()
+                depth = _score_llms_txt_depth(text)
                 return {
                     "found": True,
                     "url": url,
                     "status_code": resp.status_code,
                     "size_bytes": len(resp.content),
-                    "preview": resp.text.strip()[:500],
+                    "preview": text[:500],
+                    "depth": depth,
                 }
         except requests.RequestException:
             continue
     return {"found": False, "checked_urls": [urljoin(base, p) for p in paths]}
+
+
+def _score_llms_txt_depth(text: str) -> dict[str, Any]:
+    """Parse llms.txt structure and return a depth score /18."""
+    lines = text.splitlines()
+    has_h1 = any(l.startswith("# ") for l in lines)
+    has_blockquote = any(l.startswith("> ") for l in lines)
+    section_count = sum(1 for l in lines if l.startswith("## "))
+    link_count = len(re.findall(r"https?://[^\s)>]+", text))
+    points = 0
+    if has_h1:
+        points += 4
+    if has_blockquote:
+        points += 3
+    if section_count >= 2:
+        points += 4
+    elif section_count == 1:
+        points += 2
+    if link_count >= 5:
+        points += 4
+    elif link_count >= 2:
+        points += 2
+    elif link_count >= 1:
+        points += 1
+    if link_count >= 10:
+        points += 3
+    return {
+        "has_h1": has_h1,
+        "has_blockquote": has_blockquote,
+        "section_count": section_count,
+        "link_count": link_count,
+        "depth_score": min(18, points),
+    }
+
+
+def _fetch_llms_full_txt(base: str) -> bool:
+    """Check whether llms-full.txt exists."""
+    for path in ("/llms-full.txt", "/.well-known/llms-full.txt"):
+        url = urljoin(base + "/", path.lstrip("/"))
+        try:
+            resp = requests.get(url, timeout=6, headers={"User-Agent": "SiteAudit/1.0"})
+            if resp.status_code == 200 and resp.text.strip():
+                return True
+        except requests.RequestException:
+            continue
+    return False
 
 
 def get_llms_txt_status(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
@@ -45,8 +131,147 @@ def get_llms_txt_status(conn: Connection, ctx: AuditToolContext, args: dict[str,
     result = _fetch_llms_txt(domain)
     result["domain"] = domain
     result["provenance"] = "Crawl"
+    if result.get("found"):
+        result["llms_full_txt_found"] = _fetch_llms_full_txt(_base_url(domain))
     return result
 
+
+# ---------------------------------------------------------------------------
+# AI Discovery helpers
+# ---------------------------------------------------------------------------
+
+_AI_DISCOVERY_PATHS = (
+    ("ai_txt", "/.well-known/ai.txt"),
+    ("ai_summary_json", "/ai/summary.json"),
+    ("ai_faq_json", "/ai/faq.json"),
+    ("ai_service_json", "/ai/service.json"),
+)
+
+
+def _fetch_ai_discovery(domain: str) -> dict[str, Any]:
+    if not domain:
+        return {"found_count": 0, "endpoints": {}, "error": "domain unknown"}
+    base = _base_url(domain)
+    endpoints: dict[str, Any] = {}
+    found_count = 0
+    for key, path in _AI_DISCOVERY_PATHS:
+        url = urljoin(base + "/", path.lstrip("/"))
+        try:
+            resp = requests.get(url, timeout=6, headers={"User-Agent": "SiteAudit/1.0"})
+            if resp.status_code == 200 and resp.text.strip():
+                endpoints[key] = {"found": True, "url": url, "size_bytes": len(resp.content)}
+                found_count += 1
+            else:
+                endpoints[key] = {"found": False, "url": url}
+        except requests.RequestException:
+            endpoints[key] = {"found": False, "url": url}
+    score = min(6, found_count * 2) if found_count else 0
+    return {"found_count": found_count, "endpoints": endpoints, "discovery_score": score}
+
+
+def get_ai_discovery_status(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    scoped = ctx.with_args(args)
+    domain = scoped.resolve_property_domain(conn)
+    result = _fetch_ai_discovery(domain)
+    result["domain"] = domain
+    result["provenance"] = "Crawl"
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Meta/freshness signal helpers
+# ---------------------------------------------------------------------------
+
+def _score_meta_signals(domain: str) -> dict[str, Any]:
+    """Fetch homepage and score meta/OG completeness /14."""
+    if not domain:
+        return {"meta_score": 0, "checked": False}
+    base = _base_url(domain)
+    try:
+        resp = requests.get(base, timeout=8, headers={"User-Agent": "SiteAudit/1.0"})
+        html = resp.text if resp.status_code == 200 else ""
+    except requests.RequestException:
+        return {"meta_score": 0, "checked": False}
+    has_title = bool(re.search(r"<title[^>]*>[^<]{3,}</title>", html, re.I))
+    has_desc = bool(re.search(r'<meta[^>]+name=["\']description["\'][^>]+content=["\'][^"\']{10,}', html, re.I))
+    has_canonical = bool(re.search(r'<link[^>]+rel=["\']canonical["\']', html, re.I))
+    has_og_title = bool(re.search(r'<meta[^>]+property=["\']og:title["\']', html, re.I))
+    has_og_desc = bool(re.search(r'<meta[^>]+property=["\']og:description["\']', html, re.I))
+    has_og_image = bool(re.search(r'<meta[^>]+property=["\']og:image["\']', html, re.I))
+    points = 0
+    if has_title:
+        points += 4
+    if has_desc:
+        points += 3
+    if has_canonical:
+        points += 3
+    if has_og_title:
+        points += 1
+    if has_og_desc:
+        points += 1
+    if has_og_image:
+        points += 2
+    return {
+        "meta_score": min(14, points),
+        "has_title": has_title,
+        "has_meta_description": has_desc,
+        "has_canonical": has_canonical,
+        "has_og_title": has_og_title,
+        "has_og_description": has_og_desc,
+        "has_og_image": has_og_image,
+        "checked": True,
+    }
+
+
+def _score_freshness_signals(domain: str) -> dict[str, Any]:
+    """Check sitemap, RSS/Atom feed, and dateModified signals /6."""
+    if not domain:
+        return {"freshness_score": 0, "checked": False}
+    base = _base_url(domain)
+    has_sitemap = False
+    has_feed = False
+    has_date_modified = False
+    for path in ("/sitemap.xml", "/sitemap_index.xml"):
+        url = urljoin(base + "/", path.lstrip("/"))
+        try:
+            resp = requests.get(url, timeout=6, headers={"User-Agent": "SiteAudit/1.0"})
+            if resp.status_code == 200 and "<url" in resp.text.lower():
+                has_sitemap = True
+                if "lastmod" in resp.text.lower():
+                    has_date_modified = True
+                break
+        except requests.RequestException:
+            continue
+    for path in ("/feed", "/feed.xml", "/rss.xml", "/atom.xml", "/feed/"):
+        url = urljoin(base + "/", path.lstrip("/"))
+        try:
+            resp = requests.get(url, timeout=6, headers={"User-Agent": "SiteAudit/1.0"})
+            if resp.status_code == 200 and (
+                "<rss" in resp.text.lower() or "<feed" in resp.text.lower()
+            ):
+                has_feed = True
+                break
+        except requests.RequestException:
+            continue
+    points = 0
+    if has_sitemap:
+        points += 2
+    if has_feed:
+        points += 2
+    if has_date_modified:
+        points += 2
+    return {
+        "freshness_score": min(6, points),
+        "has_sitemap": has_sitemap,
+        "has_rss_atom_feed": has_feed,
+        "has_date_modified_in_sitemap": has_date_modified,
+        "checked": True,
+    }
+
+
+# ---------------------------------------------------------------------------
+# FAQ schema helpers
+# ---------------------------------------------------------------------------
 
 def _has_faq_schema(row: dict[str, Any]) -> bool:
     types = [t.lower() for t in _row_schema_types_list(row)]
@@ -96,23 +321,45 @@ def list_pages_missing_faq_schema(conn: Connection, ctx: AuditToolContext, args:
     return {"pages": sliced["items"], "total": sliced["total"], "truncated": sliced["truncated"], "provenance": "Estimated"}
 
 
+# ---------------------------------------------------------------------------
+# Composite GEO readiness score  (8 categories, 100 pts, bands)
+# ---------------------------------------------------------------------------
+
 def get_geo_readiness_score(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    """8-category GEO readiness score (0-100) with score bands.
+
+    Categories (max pts):
+      robots_ai_access /18, llms_txt /18, schema_json_ld /16,
+      meta_tags /14, content /12, brand_entity /10,
+      signals /6, ai_discovery /6
+    """
     scoped = ctx.with_args(args)
     payload = scoped.load_payload(conn)
     df = scoped.load_crawl_df(conn)
-    components: dict[str, float] = {}
+    domain = scoped.resolve_property_domain(conn)
+
+    # ---- schema / content / brand signals from crawl DF ----
     total_2xx = 0
     schema_pages = 0
+    rich_schema_pages = 0
     good_word_count = 0
     good_headings = 0
+    has_lists_pages = 0
+    org_schema_pages = 0
     if df is not None and not df.empty:
         for _, row in df.iterrows():
             rec = row.to_dict()
             if not str(rec.get("status") or "").startswith("2"):
                 continue
             total_2xx += 1
-            if _row_schema_types_list(rec) or str(rec.get("has_schema") or "").lower() in ("true", "1", "yes"):
+            schema_types = _row_schema_types_list(rec)
+            has_any_schema = bool(schema_types) or str(rec.get("has_schema") or "").lower() in ("true", "1", "yes")
+            if has_any_schema:
                 schema_pages += 1
+            if len(schema_types) >= 2:
+                rich_schema_pages += 1
+            if any(t.lower() in ("organization", "localbusiness", "corporation") for t in schema_types):
+                org_schema_pages += 1
             try:
                 wc = int(rec.get("word_count") or 0)
             except (TypeError, ValueError):
@@ -122,37 +369,168 @@ def get_geo_readiness_score(conn: Connection, ctx: AuditToolContext, args: dict[
             seq = str(rec.get("heading_sequence") or "")
             if seq and "h1" in seq.lower() and "h2" in seq.lower():
                 good_headings += 1
+            excerpt = str(rec.get("content_excerpt") or "")
+            if re.search(r"^\s*[-*•]\s", excerpt, re.M) or "<li>" in str(rec.get("html") or "").lower():
+                has_lists_pages += 1
+
+    # ---- schema score /16 ----
     if total_2xx:
-        components["schema_coverage"] = round(schema_pages / total_2xx * 100, 1)
-        components["substantive_content"] = round(good_word_count / total_2xx * 100, 1)
-        components["heading_structure"] = round(good_headings / total_2xx * 100, 1)
+        schema_pct = schema_pages / total_2xx
+        rich_pct = rich_schema_pages / total_2xx
     else:
-        components["schema_coverage"] = 0
-        components["substantive_content"] = 0
-        components["heading_structure"] = 0
-    faq = get_faq_schema_coverage(conn, scoped, args)
-    components["faq_schema_coverage"] = float(faq.get("coverage_pct") or 0)
+        schema_pct = rich_pct = 0.0
+    schema_raw = min(16, round(schema_pct * 10 + rich_pct * 6))
+
+    # ---- content score /12 ----
+    if total_2xx:
+        content_raw = min(12, round(
+            (good_word_count / total_2xx) * 6
+            + (good_headings / total_2xx) * 4
+            + (has_lists_pages / total_2xx) * 2
+        ))
+    else:
+        content_raw = 0
+
+    # ---- brand & entity score /10 ----
     ner = payload.get("ner_site_summary") if isinstance(payload.get("ner_site_summary"), dict) else {}
     entities = ner.get("entities") or ner.get("top_entities") or []
     entity_count = len(entities) if isinstance(entities, list) else 0
-    components["entity_richness"] = min(100.0, entity_count * 5.0)
-    llms = _fetch_llms_txt(scoped.resolve_property_domain(conn))
-    components["llms_txt_present"] = 100.0 if llms.get("found") else 0.0
-    score = round(
-        components["schema_coverage"] * 0.2
-        + components["substantive_content"] * 0.2
-        + components["heading_structure"] * 0.15
-        + components["faq_schema_coverage"] * 0.15
-        + components["entity_richness"] * 0.15
-        + components["llms_txt_present"] * 0.15,
+    faq_cov = get_faq_schema_coverage(conn, scoped, args)
+    faq_pct = float(faq_cov.get("coverage_pct") or 0) / 100
+    if total_2xx:
+        brand_raw = min(10, round(
+            min(entity_count * 0.5, 5.0)
+            + (org_schema_pages / total_2xx) * 3
+            + faq_pct * 2
+        ))
+    else:
+        brand_raw = 0
+
+    # ---- live HTTP checks (run concurrently to cut wall time) ----
+    http_tasks = {
+        "llms": _fetch_llms_txt,
+        "robots": _score_robots_ai_access,
+        "meta": _score_meta_signals,
+        "freshness": _score_freshness_signals,
+        "discovery": _fetch_ai_discovery,
+    }
+    http_results: dict[str, dict[str, Any]] = {}
+    with ThreadPoolExecutor(max_workers=5) as pool:
+        futs = {pool.submit(fn, domain): key for key, fn in http_tasks.items()}
+        for fut in as_completed(futs):
+            http_results[futs[fut]] = fut.result()
+
+    llms = http_results["llms"]
+    llms_depth = llms.get("depth", {}) if llms.get("found") else {}
+    llms_raw = llms_depth.get("depth_score", 0) if llms.get("found") else 0
+
+    robots_result = http_results["robots"]
+    robots_raw = robots_result.get("robots_score", 0)
+
+    meta_result = http_results["meta"]
+    meta_raw = meta_result.get("meta_score", 0)
+
+    freshness_result = http_results["freshness"]
+    freshness_raw = freshness_result.get("freshness_score", 0)
+
+    discovery_result = http_results["discovery"]
+    discovery_raw = discovery_result.get("discovery_score", 0)
+
+    total_score = round(
+        robots_raw
+        + llms_raw
+        + schema_raw
+        + meta_raw
+        + content_raw
+        + brand_raw
+        + freshness_raw
+        + discovery_raw,
         1,
     )
+    total_score = min(100, total_score)
+
+    categories = {
+        "robots_ai_access": {"score": robots_raw, "max": 18},
+        "llms_txt": {"score": llms_raw, "max": 18},
+        "schema_json_ld": {"score": schema_raw, "max": 16},
+        "meta_tags": {"score": meta_raw, "max": 14},
+        "content": {"score": content_raw, "max": 12},
+        "brand_entity": {"score": brand_raw, "max": 10},
+        "signals": {"score": freshness_raw, "max": 6},
+        "ai_discovery": {"score": discovery_raw, "max": 6},
+    }
+
+    # backward-compat flat components for GeoReadiness.tsx
+    components = {
+        "schema_coverage": round(schema_pct * 100, 1) if total_2xx else 0,
+        "substantive_content": round(good_word_count / total_2xx * 100, 1) if total_2xx else 0,
+        "heading_structure": round(good_headings / total_2xx * 100, 1) if total_2xx else 0,
+        "faq_schema_coverage": float(faq_cov.get("coverage_pct") or 0),
+        "entity_richness": min(100.0, entity_count * 5.0),
+        "llms_txt_present": 100.0 if llms.get("found") else 0.0,
+        "meta_tags": float(meta_raw / 14 * 100),
+        "freshness_signals": float(freshness_raw / 6 * 100),
+        "ai_discovery": float(discovery_raw / 6 * 100),
+        "robots_ai_access": float(robots_raw / 18 * 100),
+    }
+
     return {
-        "geo_readiness_score": score,
+        "geo_readiness_score": total_score,
+        "band": _band(total_score),
+        "categories": categories,
         "components": components,
+        "llms_txt": {"found": llms.get("found", False), "depth": llms_depth},
         "provenance": "Estimated",
     }
 
+
+def _score_robots_ai_access(domain: str) -> dict[str, Any]:
+    """Score robots.txt AI-bot access /18 (imported by geo_list_tools)."""
+    if not domain:
+        return {"robots_score": 0, "checked": False}
+    url = urljoin(_base_url(domain) + "/", "robots.txt")
+    try:
+        resp = requests.get(url, timeout=8, headers={"User-Agent": "SiteAudit/1.0"})
+        robots_text = resp.text if resp.status_code == 200 else ""
+    except requests.RequestException:
+        return {"robots_score": 0, "checked": False, "error": "robots.txt not reachable"}
+    if not robots_text.strip():
+        return {"robots_score": 0, "checked": True, "missing": True}
+
+    from .geo_list_tools import _AI_BOT_TIERS, _parse_robots_access
+
+    access_map = _parse_robots_access(robots_text)
+    # Citation bots must be allowed → highest impact
+    citation_score = 0
+    search_score = 0
+    training_score = 0
+    citation_bots = [b for b, t in _AI_BOT_TIERS.items() if t == "citation"]
+    search_bots = [b for b, t in _AI_BOT_TIERS.items() if t == "search"]
+    training_bots = [b for b, t in _AI_BOT_TIERS.items() if t == "training"]
+
+    if citation_bots:
+        allowed = sum(1 for b in citation_bots if access_map.get(b.lower()) != "blocked")
+        citation_score = round(allowed / len(citation_bots) * 9)
+    if search_bots:
+        allowed = sum(1 for b in search_bots if access_map.get(b.lower()) != "blocked")
+        search_score = round(allowed / len(search_bots) * 6)
+    if training_bots:
+        allowed = sum(1 for b in training_bots if access_map.get(b.lower()) != "blocked")
+        training_score = round(allowed / len(training_bots) * 3)
+
+    score = min(18, citation_score + search_score + training_score)
+    return {
+        "robots_score": score,
+        "citation_bots_score": citation_score,
+        "search_bots_score": search_score,
+        "training_bots_score": training_score,
+        "checked": True,
+    }
+
+
+# ---------------------------------------------------------------------------
+# AEO per-URL signals
+# ---------------------------------------------------------------------------
 
 def get_aeo_content_signals_for_url(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
     scoped = ctx.with_args(args)
@@ -202,6 +580,10 @@ def get_aeo_content_signals_for_url(conn: Connection, ctx: AuditToolContext, arg
     return {"error": "url not found in crawl", "url": url}
 
 
+# ---------------------------------------------------------------------------
+# E-E-A-T signals
+# ---------------------------------------------------------------------------
+
 def get_eeat_signals_summary(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
     scoped = ctx.with_args(args)
     df = scoped.load_crawl_df(conn)
@@ -229,6 +611,10 @@ def get_eeat_signals_summary(conn: Connection, ctx: AuditToolContext, args: dict
         "provenance": "Crawl",
     }
 
+
+# ---------------------------------------------------------------------------
+# JS rendering delta
+# ---------------------------------------------------------------------------
 
 def get_js_rendering_delta(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
     scoped = ctx.with_args(args)
@@ -273,6 +659,10 @@ def get_js_rendering_delta(conn: Connection, ctx: AuditToolContext, args: dict[s
     sliced = cap_list(deltas, limit, max_cap=50)
     return {"deltas": sliced["items"], "total": sliced["total"], "truncated": sliced["truncated"], "provenance": "Crawl"}
 
+
+# ---------------------------------------------------------------------------
+# Internal link suggestions (TF-IDF)
+# ---------------------------------------------------------------------------
 
 def _tokenize(text: str) -> list[str]:
     return [w.lower() for w in re.findall(r"[a-z0-9]{3,}", text)]

@@ -9,6 +9,14 @@ from .tool_domains import TIER_0_TOOLS
 from .registry import tier0_tool_names, tool_meta, tool_names_for_domain
 
 
+def chat_sql_tool_enabled() -> bool:
+    """Return True when CHAT_SQL_TOOL_ENABLED=true/1/yes in the environment.
+
+    Defaults to False — raw SQL access is opt-in.
+    """
+    return os.environ.get("CHAT_SQL_TOOL_ENABLED", "").strip().lower() in ("true", "1", "yes")
+
+
 DOMAIN_KEYWORDS: dict[str, tuple[str, ...]] = {
     "issues": ("issue", "issues", "critical issues", "fix", "priority", "roadmap", "impact"),
     "crawl": ("crawl", "404", "500", "redirect", "status code", "orphan", "soft 404", "robots"),
@@ -22,7 +30,9 @@ DOMAIN_KEYWORDS: dict[str, tuple[str, ...]] = {
     "drift": ("compare", "baseline", "delta", "history", "trend", "drift"),
     "export": ("export", "pdf", "csv", "download"),
     "images": ("image", "alt text", "lazy load", "webp", "lcp image"),
-    "geo": ("geo", "aeo", "llms.txt", "faq schema", "eeat"),
+    "geo": ("geo", "aeo", "llms.txt", "faq schema", "eeat",
+            "agentic", "agents.md", "token budget", "copy for ai",
+            "agent readiness", "skill.md", "agent permissions", "markdown availability"),
     "accessibility": ("axe", "accessibility", "a11y", "mixed content"),
     "security": ("security", "tls", "hsts", "ssl"),
     "indexation": ("indexation", "sitemap", "hreflang", "indexed"),
@@ -143,6 +153,14 @@ def select_tools_for_turn(
 
     selected = apply_tool_cap(selected, cap)
     selected = {n for n in selected if n in meta or n in tier0_tool_names()}
+
+    # Opt-in: expose read-only SQL tools when the feature flag is set.
+    # Always included (never gated by domain keyword matching) so the LLM
+    # can reach them whenever the flag is on.
+    if chat_sql_tool_enabled():
+        selected.add("get_sql_schema")
+        selected.add("run_sql_query")
+
     return selected
 
 

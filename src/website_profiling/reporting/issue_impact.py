@@ -80,6 +80,6 @@ def sort_issues_by_impact(issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
         issues,
         key=lambda i: (
             -float(i.get("impact_score") or 0),
-            PRIORITY_WEIGHT.get(str(i.get("priority") or "Low"), 99),
+            -PRIORITY_WEIGHT.get(str(i.get("priority") or "Low"), 0),
         ),
     )

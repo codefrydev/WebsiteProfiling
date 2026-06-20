@@ -43,6 +43,7 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 | Local analysis | `analysis/local.py`, `requirements.txt` |
 | AI insights (LLM) | `llm/enrich.py`, `llm/agent.py`, `llm_config.py`, `requirements.txt` |
 | Audit query tools (MCP + chat) | `tools/audit_tools/`, `mcp/server.py`, `mcp/http_server.py`, `commands/chat_cmd.py` |
+| Agent readiness checks | `tools/audit_tools/agent_readiness.py`, `tools/audit_tools/_aeo_helpers.py` |
 | Config / CLI | `config.py` (`load_config`, `load_config_from_db`), `cli.py`, `input.txt.example` |
 | UI pipeline schema | `web/src/lib/pipelineConfigSchema.ts` |
 | UI LLM schema | `web/src/lib/llmConfigSchema.ts` |

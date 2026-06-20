@@ -384,15 +384,17 @@ class Crawler:
             canonical_url = parsed["canonical_url"]
             ext = parsed["ext"]
 
-            if self.crawl_ignore_params:
-                links = [strip_crawl_query_params(l, self.crawl_ignore_params) for l in links]
-
             link_edge_rows = parsed.get("link_edges") or []
             for edge in link_edge_rows:
                 link = edge.get("to_url") or ""
+                # Apply crawl_ignore_params to the URL that is actually enqueued,
+                # deduped and stored — otherwise the option has no effect and URLs
+                # differing only by an ignore-param get crawled as distinct pages.
+                if self.crawl_ignore_params:
+                    link = strip_crawl_query_params(link, self.crawl_ignore_params)
                 if self.store_outlinks:
                     outlink_list.append(link)
-                    self.link_edges_accum.append({"from_url": url, **edge})
+                    self.link_edges_accum.append({"from_url": url, **edge, "to_url": link})
                 # Only crawl links discovered on successful (2xx) pages; links
                 # parsed from custom 4xx/5xx error pages should not be followed.
                 if is_success:
@@ -744,6 +746,11 @@ def run_crawler(
         with db_session() as _conn:
             clear_pause_state(_conn, resume_run_id)
 
+    # Always defined before the mobile-compare check below: when streaming is
+    # active run_id is the streamed desktop run; the non-streaming branch reassigns
+    # it via create_crawl_run. Without this, an empty link_edges_accum on a streamed
+    # run leaves run_id unbound at the compare_mobile_desktop check.
+    run_id: Optional[int] = stream_run_id
     if output_db and crawler.link_edges_accum:
         from ..db import db_session
         from ..db.crawl_store import write_link_edges

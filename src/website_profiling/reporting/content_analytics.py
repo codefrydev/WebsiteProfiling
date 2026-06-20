@@ -84,7 +84,9 @@ def _build_content_analytics(df: pd.DataFrame) -> dict:
         u = row.get("url")
         if pd.isna(u) or not u:
             continue
-        w = int(pd.to_numeric(row.get("word_count"), errors="coerce") or 0)
+        # NaN is truthy, so `... or 0` does NOT catch it; int(NaN) raises ValueError.
+        _wc = pd.to_numeric(row.get("word_count"), errors="coerce")
+        w = int(_wc) if pd.notna(_wc) else 0
         if 0 < w < 300:
             result["thin_pages"].append({"url": str(u).strip(), "word_count": w})
 

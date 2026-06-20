@@ -25,10 +25,14 @@ const PROMPT_ICONS: LucideIcon[] = [
 export interface SuggestedPromptsProps {
   onSelect: (prompt: string) => void;
   disabled?: boolean;
+  crawlEnabled?: boolean;
 }
 
-export default function SuggestedPrompts({ onSelect, disabled }: SuggestedPromptsProps) {
-  const prompts = c.suggestedPrompts.slice(0, 6);
+export default function SuggestedPrompts({ onSelect, disabled, crawlEnabled }: SuggestedPromptsProps) {
+  const crawlPrompts = (c as { suggestedCrawlPrompts?: string[] }).suggestedCrawlPrompts ?? [];
+  const prompts = crawlEnabled
+    ? [...crawlPrompts.slice(0, 3), ...c.suggestedPrompts.slice(0, 3)]
+    : c.suggestedPrompts.slice(0, 6);
 
   return (
     <div className="mx-auto w-full max-w-3xl pt-10">

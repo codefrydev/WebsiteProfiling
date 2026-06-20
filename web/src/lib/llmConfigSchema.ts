@@ -90,6 +90,13 @@ export const LLM_CONFIG_SECTIONS = [
         defaultValue: true,
         help: 'AI writing coach in Content studio (/write) when AI suggestions are enabled in the editor.',
       },
+      {
+        key: 'llm_enable_dashboards',
+        label: 'Dashboard AI (DashScript + chart generation)',
+        type: 'bool',
+        defaultValue: true,
+        help: 'Enables the "Ask AI" button in widget config and "Generate with AI" on the Dashboards page.',
+      },
     ],
   },
   {
@@ -102,6 +109,13 @@ export const LLM_CONFIG_SECTIONS = [
         type: 'bool',
         defaultValue: false,
         help: 'When enabled, the chat agent may run up to 100 tool steps per message instead of 10. Use for deep multi-step audits.',
+      },
+      {
+        key: 'llm_chat_allow_crawl',
+        label: 'Allow chat to start crawls',
+        type: 'bool',
+        defaultValue: false,
+        help: 'When enabled, chat can guide crawl setup and show a confirm card before running. Crawls still require your explicit authorization in chat. When off, chat stays read-only.',
       },
     ],
   },

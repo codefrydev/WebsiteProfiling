@@ -39,7 +39,7 @@ def _payload(**overrides) -> dict:
         "content_duplicates": [{"id": "d1", "representative_url": "https://ex.com/a", "member_count": 2}],
         "tech_stack_summary": {"technologies": [{"name": "WP", "count": 5}]},
         "lighthouse_by_url": {
-            "https://ex.com/slow": {"performance": 40, "median_metrics": {"performance_score": 40, "seo_score": 80}},
+            "https://ex.com/slow": {"performance": 40, "median_metrics": {"performance_score": 0.40, "seo_score": 0.80}},
         },
         "links": [
             {"url": "https://ex.com/slow", "status": "200", "inlinks": 2, "outlinks": 3, "word_count": 100, "response_time_ms": 200},
@@ -76,7 +76,7 @@ def test_issue_and_priority_deltas() -> None:
 def test_lighthouse_redirect_security_dup_tech() -> None:
     cur = _payload()
     base = _payload(
-        lighthouse_by_url={"https://ex.com/slow": {"performance": 90, "median_metrics": {"performance_score": 90}}},
+        lighthouse_by_url={"https://ex.com/slow": {"performance": 90, "median_metrics": {"performance_score": 0.90}}},
         redirects=[],
         security_findings=[],
         content_duplicates=[],
@@ -148,6 +148,26 @@ def test_priority_counts_skips_invalid_entries() -> None:
     assert counts[1]["current"] == 1
 
 
+def test_lighthouse_uses_summary_scores_when_median_missing() -> None:
+    cur = {
+        "lighthouse_by_url": {
+            "https://ex.com/a": {"performance": 80, "seo": 75},
+        },
+        "links": [],
+    }
+    base = {
+        "lighthouse_by_url": {
+            "https://ex.com/a": {"performance": 60, "seo": 70},
+        },
+        "links": [],
+    }
+    deltas = build_lighthouse_url_deltas(cur, base)
+    assert len(deltas) == 1
+    assert deltas[0]["performance_current"] == 80
+    assert deltas[0]["performance_baseline"] == 60
+    assert deltas[0]["performance_delta"] == 20
+
+
 def test_lighthouse_from_links_and_skips() -> None:
     cur = {
         "lighthouse_by_url": {
@@ -155,12 +175,12 @@ def test_lighthouse_from_links_and_skips() -> None:
             "https://ex.com/a": "skip",
         },
         "links": [
-            {"url": "https://ex.com/b", "lighthouse": {"median_metrics": {"performance_score": 70, "seo_score": 90}}},
+            {"url": "https://ex.com/b", "lighthouse": {"median_metrics": {"performance_score": 0.70, "seo_score": 0.90}}},
             "skip",
-            {"url": "https://ex.com/a", "lighthouse": {"median_metrics": {"performance_score": 80}}},
+            {"url": "https://ex.com/a", "lighthouse": {"median_metrics": {"performance_score": 0.80}}},
         ],
     }
-    base = {"lighthouse_by_url": {"https://ex.com/c": {"median_metrics": {"performance_score": 50, "seo_score": 50}}}}
+    base = {"lighthouse_by_url": {"https://ex.com/c": {"median_metrics": {"performance_score": 0.50, "seo_score": 0.50}}}}
     assert build_lighthouse_url_deltas(cur, base) == []
 
 

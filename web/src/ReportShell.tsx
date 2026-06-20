@@ -7,6 +7,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import {
   Home as HomeIcon,
   LayoutDashboard,
+  LayoutGrid,
   AlertOctagon,
   Link as LinkIcon,
   Repeat,
@@ -57,6 +58,7 @@ function viewLoading(label = 'Loading view…') {
 
 const Home = dynamic(() => import('./views/Home'), { loading: () => viewLoading() });
 const Overview = dynamic(() => import('./views/Overview'), { loading: () => viewLoading() });
+const Dashboards = dynamic(() => import('./views/Dashboards'), { loading: () => viewLoading('Loading dashboards…') });
 const CompareReports = dynamic(() => import('./views/CompareReports'), { loading: () => viewLoading() });
 const Issues = dynamic(() => import('./views/Issues'), { loading: () => viewLoading() });
 const Links = dynamic(() => import('./views/Links'), { loading: () => viewLoading() });
@@ -119,6 +121,7 @@ const ReportProvider = ReportProviderBase as ComponentType<{
 const VIEW_CONFIG: ViewConfigEntry[] = [
   { id: 'home', component: Home as ComponentType<CurrentViewProps>, icon: HomeIcon },
   { id: 'overview', component: Overview as ComponentType<CurrentViewProps>, icon: LayoutDashboard },
+  { id: 'dashboards', component: Dashboards as ComponentType<CurrentViewProps>, icon: LayoutGrid },
   { id: 'compare', component: CompareReports as ComponentType<CurrentViewProps>, icon: ArrowLeftRight },
   { id: 'export', component: ExportReport as ComponentType<CurrentViewProps>, icon: FileDown },
   { id: 'log-analyzer', component: LogAnalyzer as ComponentType<CurrentViewProps>, icon: Terminal },

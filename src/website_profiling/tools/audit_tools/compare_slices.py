@@ -1,6 +1,7 @@
 """Focused compare/drift slice tools."""
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from psycopg import Connection
@@ -253,4 +254,88 @@ def compare_orphan_deltas(conn: Connection, ctx: AuditToolContext, args: dict[st
     return {
         **_compare_meta(cur_rid, base_rid, current, baseline),
         **build_orphan_deltas(current, baseline),
+    }
+
+
+def compare_geo_score_deltas(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    """GEO readiness score drift: compare current vs baseline report (live HTTP checks per call)."""
+    current, baseline, cur_rid, base_rid, err = load_compare_pair(conn, ctx, args)
+    if err:
+        return err
+    assert current is not None and baseline is not None
+
+    from .geo_tools import (
+        _fetch_llms_txt,
+        _fetch_ai_discovery,
+        _score_meta_signals,
+        _score_freshness_signals,
+        _score_robots_ai_access,
+    )
+
+    current_domain: str = current.get("domain") or current.get("property_domain") or ""
+    baseline_domain: str = baseline.get("domain") or baseline.get("property_domain") or current_domain
+
+    def _geo_snapshot(domain: str) -> dict[str, Any]:
+        """Build a GEO snapshot via concurrent HTTP checks."""
+        http_fns = {
+            "llms": _fetch_llms_txt,
+            "robots": _score_robots_ai_access,
+            "meta": _score_meta_signals,
+            "freshness": _score_freshness_signals,
+            "discovery": _fetch_ai_discovery,
+        }
+        results: dict[str, dict[str, Any]] = {}
+        with ThreadPoolExecutor(max_workers=5) as pool:
+            futs = {pool.submit(fn, domain): key for key, fn in http_fns.items()}
+            for fut in futs:
+                results[futs[fut]] = fut.result()
+
+        llms = results["llms"]
+        llms_depth = llms.get("depth", {}) if llms.get("found") else {}
+        llms_score = llms_depth.get("depth_score", 0) if llms.get("found") else 0
+        robots_score = results["robots"].get("robots_score", 0)
+        meta_score = results["meta"].get("meta_score", 0)
+        fresh_score = results["freshness"].get("freshness_score", 0)
+        disc_score = results["discovery"].get("discovery_score", 0)
+        return {
+            "llms_txt_score": llms_score,
+            "llms_txt_found": llms.get("found", False),
+            "robots_score": robots_score,
+            "meta_score": meta_score,
+            "freshness_score": fresh_score,
+            "ai_discovery_score": disc_score,
+            "total_score": llms_score + robots_score + meta_score + fresh_score + disc_score,
+        }
+
+    # Run both domain snapshots in parallel (10 HTTP requests → wall time ≈ max of 5)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        fut_cur = pool.submit(_geo_snapshot, current_domain)
+        fut_base = pool.submit(_geo_snapshot, baseline_domain)
+        cur_snap = fut_cur.result()
+        base_snap = fut_base.result()
+
+    deltas: dict[str, Any] = {}
+    for key in cur_snap:
+        if key.endswith("_found"):
+            continue
+        cur_val = cur_snap[key]
+        base_val = base_snap[key]
+        delta = cur_val - base_val if isinstance(cur_val, (int, float)) else None
+        deltas[key] = {
+            "current": cur_val,
+            "baseline": base_val,
+            "delta": delta,
+            "direction": ("improved" if delta and delta > 0 else ("regressed" if delta and delta < 0 else "unchanged")),
+        }
+
+    total_delta = cur_snap["total_score"] - base_snap["total_score"]
+    regression = total_delta < -3
+
+    return {
+        **_compare_meta(cur_rid, base_rid, current, baseline),
+        "current_domain": current_domain,
+        "geo_deltas": deltas,
+        "total_score_delta": total_delta,
+        "regression_detected": regression,
+        "provenance": "Estimated",
     }

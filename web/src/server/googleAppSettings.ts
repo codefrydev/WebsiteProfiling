@@ -13,6 +13,8 @@ export interface GoogleAppSettingsRow {
   clientSecret: string;
   serviceAccount: GoogleServiceAccount | null;
   dateRangeDays: number;
+  developerToken: string;
+  loginCustomerId: string;
 }
 
 async function readRow(client: PoolClient): Promise<GoogleAppSettingsRow | null> {
@@ -21,8 +23,11 @@ async function readRow(client: PoolClient): Promise<GoogleAppSettingsRow | null>
     client_secret: string | null;
     service_account_json: GoogleServiceAccount | null;
     default_date_range_days: number;
+    developer_token: string | null;
+    login_customer_id: string | null;
   }>(
-    `SELECT client_id, client_secret, service_account_json, default_date_range_days
+    `SELECT client_id, client_secret, service_account_json, default_date_range_days,
+            developer_token, login_customer_id
      FROM google_app_settings WHERE id = $1`,
     [SINGLETON_ID],
   );
@@ -33,6 +38,8 @@ async function readRow(client: PoolClient): Promise<GoogleAppSettingsRow | null>
     clientSecret: String(row.client_secret || '').trim(),
     serviceAccount: row.service_account_json,
     dateRangeDays: Number(row.default_date_range_days) || 28,
+    developerToken: String(row.developer_token || '').trim(),
+    loginCustomerId: String(row.login_customer_id || '').trim(),
   };
 }
 
@@ -45,6 +52,8 @@ export async function loadGoogleAppSettings(): Promise<GoogleAppSettingsRow> {
         clientSecret: '',
         serviceAccount: null,
         dateRangeDays: 28,
+        developerToken: '',
+        loginCustomerId: '',
       }
     );
   });
@@ -55,6 +64,8 @@ export interface SaveGoogleAppSettingsPatch {
   clientSecret?: string;
   serviceAccount?: GoogleServiceAccount | null;
   dateRangeDays?: number;
+  developerToken?: string;
+  loginCustomerId?: string;
 }
 
 export async function saveGoogleAppSettings(
@@ -77,6 +88,8 @@ export async function saveGoogleAppSettings(
          client_secret = COALESCE(NULLIF($2, ''), client_secret),
          service_account_json = CASE WHEN $3::boolean THEN $4::jsonb ELSE service_account_json END,
          default_date_range_days = COALESCE($5, default_date_range_days),
+         developer_token = COALESCE(NULLIF($7, ''), developer_token),
+         login_customer_id = COALESCE(NULLIF($8, ''), login_customer_id),
          updated_at = now()
        WHERE id = $6`,
       [
@@ -86,6 +99,8 @@ export async function saveGoogleAppSettings(
         patch.serviceAccount ? JSON.stringify(patch.serviceAccount) : null,
         patch.dateRangeDays ?? null,
         SINGLETON_ID,
+        patch.developerToken ?? '',
+        patch.loginCustomerId ?? '',
       ],
     );
   });
@@ -104,6 +119,8 @@ export async function getGoogleAppPublicStatus(): Promise<GooglePublicStatus> {
     ga4PropertyId: null,
     dateRangeDays: row.dateRangeDays,
     authMode: row.serviceAccount ? 'service_account' : null,
+    hasPlannerToken: Boolean(row.developerToken),
+    loginCustomerId: row.loginCustomerId || null,
   };
 }
 

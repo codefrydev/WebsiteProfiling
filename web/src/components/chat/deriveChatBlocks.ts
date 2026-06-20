@@ -147,6 +147,22 @@ export type ChatBlock =
       toolName: string;
       shown: number;
       total: number;
+    }
+  | {
+      type: 'audit_run_confirm';
+      startUrl: string;
+      crawlPreset: string;
+      pipelineMode: string;
+      highlights: string[];
+      runSpec: {
+        command: string;
+        state: Record<string, string>;
+        create_property: {
+          name: string;
+          canonical_domain: string;
+          site_url: string;
+        } | null;
+      };
     };
 
 const SUMMARY_TOOLS = new Set(['get_report_summary', 'get_executive_summary']);
@@ -216,6 +232,8 @@ export function blockKey(block: ChatBlock): string {
       return block.categoryId ? `health_trend:${block.categoryId}` : 'health_trend';
     case 'file_download':
       return `file_download:${block.files.map((f) => f.filename).join(',')}`;
+    case 'audit_run_confirm':
+      return `audit_run_confirm:${block.startUrl}:${block.crawlPreset}:${block.pipelineMode}`;
     case 'image_pages_table':
       return `image_pages:${block.title}`;
     case 'image_attention_table':
@@ -832,9 +850,82 @@ function blockFromFileDownload(name: string, result: Record<string, unknown>): C
   };
 }
 
+type AuditRunConfirmBlock = Extract<ChatBlock, { type: 'audit_run_confirm' }>;
+
+function blockFromAuditRunConfirm(name: string, result: Record<string, unknown>): ChatBlock | null {
+  if (name !== 'prepare_audit_run') return null;
+
+  if (result.ready !== true) {
+    const errors = result.errors;
+    if (Array.isArray(errors) && errors.length > 0) {
+      return {
+        type: 'tool_status',
+        variant: 'error',
+        toolName: name,
+        message: errors.map((e) => String(e)).join(' '),
+      };
+    }
+    if (result.error) {
+      return {
+        type: 'tool_status',
+        variant: 'error',
+        toolName: name,
+        message: String(result.error),
+      };
+    }
+    return null;
+  }
+
+  const summary = asRecord(result.summary);
+  const runSpecRaw = asRecord(result.run_spec);
+  if (!summary || !runSpecRaw) return null;
+
+  const stateRaw = asRecord(runSpecRaw.state);
+  if (!stateRaw) return null;
+
+  const state: Record<string, string> = {};
+  for (const [key, val] of Object.entries(stateRaw)) {
+    if (val != null) state[key] = String(val);
+  }
+
+  let createProperty: AuditRunConfirmBlock['runSpec']['create_property'] = null;
+  const createRaw = runSpecRaw.create_property;
+  if (createRaw && typeof createRaw === 'object' && !Array.isArray(createRaw)) {
+    const cp = createRaw as Record<string, unknown>;
+    const siteUrl = String(cp.site_url || '');
+    const domain = String(cp.canonical_domain || '');
+    if (siteUrl && domain) {
+      createProperty = {
+        name: String(cp.name || domain),
+        canonical_domain: domain,
+        site_url: siteUrl,
+      };
+    }
+  }
+
+  const highlightsRaw = summary.highlights;
+  const highlights = Array.isArray(highlightsRaw)
+    ? highlightsRaw.map((h) => String(h)).filter(Boolean)
+    : [];
+
+  return {
+    type: 'audit_run_confirm',
+    startUrl: String(summary.start_url || state.start_url || ''),
+    crawlPreset: String(summary.crawl_preset || 'starter'),
+    pipelineMode: String(summary.pipeline_mode || 'full-audit'),
+    highlights,
+    runSpec: {
+      command: String(runSpecRaw.command ?? ''),
+      state,
+      create_property: createProperty,
+    },
+  };
+}
+
 type BlockParser = (name: string, result: Record<string, unknown>) => ChatBlock | ChatBlock[] | null;
 
 const BLOCK_PARSERS: BlockParser[] = [
+  blockFromAuditRunConfirm,
   blockFromFileDownload,
   blockFromImageSummary,
   blockFromImageSummaryPreviews,

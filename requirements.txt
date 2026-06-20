@@ -6,6 +6,9 @@ tqdm==4.67.3
 networkx==3.6.1
 python-Wappalyzer==0.3.1
 
+# HTML → Markdown extraction (page_markdown package)
+markdownify>=0.13,<1
+
 # Local content analysis (duplicates, language)
 rapidfuzz==3.14.5
 langdetect==1.0.9
@@ -16,6 +19,8 @@ google-auth-oauthlib==1.4.0
 google-api-python-client==2.197.0
 google-analytics-data==0.23.0
 google-analytics-admin==0.30.0
+# Google Ads API for Keyword Planner (optional; required for enable_google_keyword_planner)
+google-ads==31.0.0
 
 # Keywords Explorer — Google Suggest + Wikipedia + Datamuse (all free, no auth needed)
 # requests already listed above
@@ -43,10 +48,16 @@ groq==1.4.0
 pyspellchecker==0.9.0
 html5lib==1.1
 
+# Token counting for agent readiness checks (approximate, cl100k_base encoder)
+tiktoken==0.13.0
+
 # MCP server for Cursor / Claude Desktop (stdio + remote Streamable HTTP)
 mcp>=1.19,<2
 uvicorn>=0.30
 starlette>=0.38
+
+# SQL query validation (read-only chat tool)
+sqlglot==30.11.0
 
 # Dev / test
 pytest==9.0.3

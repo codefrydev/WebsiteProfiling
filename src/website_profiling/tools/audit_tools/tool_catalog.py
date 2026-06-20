@@ -335,26 +335,55 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
     _tool("compare_indexation_deltas", "Indexation coverage count and gap list changes vs baseline.", {"baseline_report_id": _RID, "report_id": _RID}, ["baseline_report_id"]),
     _tool("compare_orphan_deltas", "Orphan URL set changes vs baseline report.", {"baseline_report_id": _RID, "report_id": _RID}, ["baseline_report_id"]),
     # GEO / AEO
-    _tool("get_llms_txt_status", "Check for /llms.txt and /.well-known/llms.txt on the property domain.", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_llms_txt_status", "Check for /llms.txt and /.well-known/llms.txt with depth scoring (H1, blockquote, sections, links).", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_ai_discovery_status", "Check AI discovery endpoints: /.well-known/ai.txt, /ai/summary.json, /ai/faq.json, /ai/service.json.", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_robots_ai_access_score", "Score robots.txt AI-bot access /18 with 27 bots across training/search/citation tiers.", {"property_id": _PID, "report_id": _RID}),
     _tool("get_faq_schema_coverage", "FAQPage/QAPage schema coverage across crawled pages.", {"property_id": _PID, "report_id": _RID}),
     _tool("list_pages_missing_faq_schema", "Q&A-style URLs missing FAQ schema markup.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
-    _tool("get_geo_readiness_score", "Composite 0-100 GEO readiness score from crawl signals.", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_geo_readiness_score", "8-category GEO readiness score (0-100) with score bands: Robots/18, llms.txt/18, Schema/16, Meta/14, Content/12, Brand/10, Signals/6, AI Discovery/6.", {"property_id": _PID, "report_id": _RID}),
     _tool("get_aeo_content_signals_for_url", "Per-URL answer-engine quotability signals.", {"url": _URL, "property_id": _PID, "report_id": _RID}, ["url"]),
     _tool("get_eeat_signals_summary", "Author/Organization schema and about/contact page counts.", {"property_id": _PID, "report_id": _RID}),
     _tool("get_js_rendering_delta", "Static vs rendered title/word-count differences.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
     _tool("get_internal_link_suggestions", "TF-IDF related pages and anchor hints for a source URL.", {"url": _URL, "property_id": _PID, "report_id": _RID, "limit": {"type": "integer", "maximum": 10}}, ["url"]),
+    _tool("get_citability_score", "Site-wide citability score (0-100) from 9 research-backed KDD/AutoGEO signals (quotations, stats, fluency, front-loading, lists, FAQ, headings, entities, depth).", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_citability_for_url", "Per-URL citability score and detailed signal breakdown.", {"url": _URL, "property_id": _PID, "report_id": _RID}, ["url"]),
+    _tool("get_negative_signals", "Detect 7 anti-citation signals: CTA overload, thin content, keyword stuffing, popups, missing author, no structure, affiliate overload.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("detect_prompt_injection", "Detect 8 prompt-injection / content-manipulation patterns: hidden text, invisible Unicode, micro-font, LLM instructions, HTML comment injection, monochrome text, data-attr injection, aria-hidden abuse.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("get_rag_chunk_readiness", "Score RAG retrieval readiness: section sizes, heading boundaries, anchor sentences.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("get_content_decay_signals", "Detect temporal, statistical, version, event, and price decay patterns. Returns evergreen score 0-100.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("get_multimodal_readiness", "Check image alt coverage, VideoObject/AudioObject schema, transcript/subtitle signals for multimodal AI engines.", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_topic_authority", "Multi-page entity clusters and pillar page detection via TF-IDF cosine similarity.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("compare_geo_score_deltas", "GEO readiness score drift between current and baseline report.", {"baseline_report_id": _RID, "report_id": _RID}, ["baseline_report_id"]),
     # LLM generators
     _tool("generate_issue_fix", "LLM fix suggestion for one audit issue message.", {"property_id": _PID, "message": {"type": "string"}, "url": _URL, "priority": {"type": "string"}, "category_id": {"type": "string"}, "refresh": {"type": "boolean"}}, ["message"]),
     _tool("summarize_category_for_client", "Client-friendly category summary with optional LLM narrative.", {"category_id": {"type": "string"}, "property_id": _PID, "report_id": _RID}, ["category_id"]),
     _tool("prioritize_fix_roadmap", "Top N issues ranked by impact_score for a fix roadmap.", {"property_id": _PID, "report_id": _RID, "limit": {"type": "integer", "maximum": 30}}),
     _tool("analyze_serp_snippet_for_url", "GSC query context plus LLM title/meta CTR suggestions.", {"url": _URL, "property_id": _PID, "report_id": _RID}, ["url"]),
     _tool("draft_llms_txt", "Draft llms.txt content from top pages and schema coverage.", {"property_id": _PID, "report_id": _RID}),
+    _tool("generate_schema", "Generate JSON-LD schema markup (WebSite/Organization/FAQPage/Article) from crawl data.", {"property_id": _PID, "report_id": _RID, "schema_type": {"type": "string"}, "url": _URL}),
+    _tool("generate_robots_txt", "Generate a robots.txt that explicitly allows all 27 AI citation/search/training bots.", {"property_id": _PID, "report_id": _RID}),
+    _tool("generate_meta_tags", "Generate meta/OG tag HTML recommendations for a URL.", {"url": _URL, "property_id": _PID, "report_id": _RID}, ["url"]),
+    _tool("generate_geo_fix_bundle", "Generate all missing GEO fix files: llms.txt, robots.txt, WebSite schema, Organization schema.", {"property_id": _PID, "report_id": _RID}),
+    # Agent Documentation Readiness (agentic-seo parity)
+    _tool("get_agent_readiness_score", "Agent documentation readiness score (0-100, A-F grade) across 5 categories: discovery/25, content_structure/25, token_economics/25, capability_signaling/15, ux_bridge/10.", {"property_id": _PID, "report_id": _RID, "max_tokens_per_page": {"type": "integer"}, "warn_tokens": {"type": "integer"}}),
+    _tool("get_agents_md_status", "Check for AGENTS.md, CLAUDE.md, GEMINI.md, AGENT.md at the site root with content quality scoring (purpose, stack, edit targets).", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_skill_md_status", "Check for /skill.md or /.well-known/skill.md with capability description, inputs, constraints, and examples scoring.", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_agent_permissions_status", "Check for /agent-permissions.json or /.well-known/agent-permissions.json with loose JSON schema validation.", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_token_budget_summary", "Per-page approximate token counts (cl100k_base): p50/p95, pages over warn/max thresholds, budget score.", {"property_id": _PID, "report_id": _RID, "max_tokens_per_page": {"type": "integer"}, "warn_tokens": {"type": "integer"}}),
+    _tool("list_oversized_pages_for_agents", "Pages exceeding the warn token threshold (default 8000 tokens).", {"property_id": _PID, "report_id": _RID, "warn_tokens": {"type": "integer"}, "limit": _LIMIT}),
+    _tool("get_content_structure_aeo_summary", "Site-wide content structure score for agent readiness: headings hierarchy, semantic HTML landmarks, code blocks, tables.", {"property_id": _PID, "report_id": _RID}),
+    _tool("get_markdown_availability_summary", "Check markdown source availability, HTML noise ratio, and JS-empty page detection for doc-like URLs.", {"property_id": _PID, "report_id": _RID, "probe_limit": {"type": "integer"}}),
+    _tool("list_pages_agent_unfriendly", "Combined: pages with high token count, poor content structure, or JS-only empty shells.", {"property_id": _PID, "report_id": _RID, "warn_tokens": {"type": "integer"}, "limit": _LIMIT}),
+    _tool("get_copy_for_ai_signals", "Site-wide coverage of copy-for-AI and raw-view affordances on doc-like pages.", {"property_id": _PID, "report_id": _RID}),
+    _tool("list_pages_missing_copy_for_ai", "Doc-like pages without copy-for-AI or raw markdown view affordances.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    _tool("generate_agent_readiness_bundle", "Generate draft AGENTS.md, skill.md, and agent-permissions.json for the site. Detects which files are missing.", {"property_id": _PID, "report_id": _RID}),
     # Integrations
     _tool("get_gsc_url_inspection", "Live GSC URL Inspection (indexing + rich results). Requires Google OAuth.", {"url": _URL, "property_id": _PID}, ["url", "property_id"]),
     _tool("get_gsc_index_coverage", "Estimated indexation coverage from crawl + sitemap + GSC join.", {"property_id": _PID, "report_id": _RID}),
     _tool("get_bing_index_status", "Bing Webmaster URL info (requires bing_webmaster_api_key).", {"url": _URL, "property_id": _PID}, ["url", "property_id"]),
     _tool("get_serp_feature_overlay", "Keywords with SERP feature / competition overlay data.", {"property_id": _PID, "limit": _LIMIT}, ["property_id"]),
     _tool("check_ai_citation_presence", "On-site citation readiness estimate for brand/query (no live LLM API).", {"property_id": _PID, "query": {"type": "string"}, "brand": {"type": "string"}}),
+    _tool("check_ai_citations_live", "Live AI citation check via Perplexity/OpenAI/Anthropic/Groq (opt-in, BYO key). Reports brand-mentioned, domain-cited, and competitors-cited.", {"property_id": _PID, "brand": {"type": "string"}, "query": {"type": "string"}, "provider": {"type": "string"}, "api_key": {"type": "string"}, "opt_in": {"type": "boolean"}, "multi_query": {"type": "string"}}),
     # Router / Tier 0 (Cursor-style)
     _tool("search_audit_tools", "Search the audit tool catalog by keyword. Returns matching tool names to call next.", {"query": {"type": "string"}, "limit": {"type": "integer", "maximum": 50}}, ["query"]),
     _tool("list_tool_domains", "List SEO tool domains with counts and example prompts.", {}),
@@ -480,4 +509,67 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
     _tool("list_robots_blocked_ai_crawlers", "Pages blocking AI crawler user-agents.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
     _tool("list_pages_console_errors_by_type", "Console errors filtered by error_type.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT, "error_type": {'type': 'string'}}),
     _tool("list_pages_js_rendering_delta", "URLs with static vs rendered content delta.", {"property_id": _PID, "report_id": _RID, "limit": _LIMIT}),
+    # Read-only SQL query tools
+    _tool(
+        "get_sql_schema",
+        "Return all public-schema table names and their columns so you can write accurate SQL. "
+        "Call this before run_sql_query to understand available tables. "
+        "Secret/config tables are excluded from the output.",
+        {},
+    ),
+    _tool(
+        "run_sql_query",
+        "Execute a read-only SELECT against the audit database and return rows as JSON. "
+        "Only a single SELECT statement is allowed — no INSERT, UPDATE, DELETE, DROP, ALTER, or DDL. "
+        "Call get_sql_schema first to discover available tables and columns.",
+        {
+            "sql": {
+                "type": "string",
+                "description": "A single read-only SELECT statement. No writes or DDL permitted.",
+            },
+            "row_cap": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 500,
+                "description": "Maximum rows to return (default 200, max 500).",
+            },
+        },
+        ["sql"],
+    ),
+    _tool(
+        "prepare_audit_run",
+        "Preview an audit/crawl run for in-chat confirmation. Does not start the job — the user must authorize and click Run in the UI.",
+        {
+            "mode": {"type": "string", "enum": ["default", "custom"], "description": "default or custom configuration"},
+            "start_url": {"type": "string", "description": "Site URL to crawl (required for new properties)"},
+            "crawl_preset_id": {
+                "type": "string",
+                "enum": ["starter", "spa", "ecommerce", "performance"],
+                "description": "Crawl preset (default: starter)",
+            },
+            "pipeline_mode": {
+                "type": "string",
+                "enum": ["full-audit", "crawl-only"],
+                "description": "Full audit (crawl+report) or crawl-only",
+            },
+            "create_property": {
+                "type": "object",
+                "description": "When adding a new property, provide name and site_url",
+                "properties": {
+                    "name": {"type": "string"},
+                    "site_url": {"type": "string"},
+                },
+            },
+            "config_overrides": {
+                "type": "object",
+                "description": "Custom mode only: max_pages, crawl_render_mode, run_lighthouse_on_pages, concurrency",
+                "properties": {
+                    "max_pages": {"type": "string"},
+                    "crawl_render_mode": {"type": "string", "enum": ["static", "auto", "javascript"]},
+                    "run_lighthouse_on_pages": {"type": "boolean"},
+                    "concurrency": {"type": "string"},
+                },
+            },
+        },
+    ),
 ]

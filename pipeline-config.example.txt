@@ -114,6 +114,10 @@ enable_google_analytics = false
 google_date_range_days = 28
 google_url_gap_list_limit = 200
 # enrich_keywords_after_report omitted = auto (follows enable_google_search_console)
+enable_google_keyword_planner = false
+enable_keyword_forecast = false
+google_ads_language_id = 1000
+google_ads_geo_ids = 2840
 
 # --- Basics ---
 keyword_max_pages = 200

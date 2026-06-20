@@ -141,3 +141,77 @@ def check_ai_citation_presence(conn: Connection, ctx: AuditToolContext, args: di
         "citation_readiness_note": "Live AI citation check requires external API — this is an on-site signal estimate",
         "provenance": "Estimated",
     }
+
+
+def check_ai_citations_live(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
+    """Live AI citation check using a real answer engine (opt-in, BYO API key).
+
+    Supported providers: perplexity (returns real source URLs), openai, anthropic, groq.
+    Requires opt_in=true and a valid API key (env or explicit api_key arg).
+    """
+    if not args.get("opt_in"):
+        return {
+            "error": "opt_in required",
+            "note": (
+                "Live AI citation checks query external APIs and may incur costs. "
+                "Pass opt_in=true to proceed. "
+                "Set PERPLEXITY_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, or GROQ_API_KEY."
+            ),
+            "provenance": "None",
+        }
+    scoped = ctx.with_args(args)
+    brand = str(args.get("brand") or "").strip()
+    query = str(args.get("query") or "").strip()
+    domain = scoped.resolve_property_domain(conn)
+    provider = str(args.get("provider") or "perplexity").strip().lower()
+    api_key = str(args.get("api_key") or "").strip() or None
+
+    if not brand and not domain:
+        return {"error": "brand or property domain is required"}
+    if not query:
+        brand_name = brand or domain or "this brand"
+        query = f"What is {brand_name}? Can you tell me about their main products or services?"
+
+    from ...integrations.ai_citations import check_citations, resolve_api_key
+
+    key = resolve_api_key(provider, api_key)
+    if not key:
+        return {
+            "error": f"No API key found for provider '{provider}'",
+            "note": f"Set {provider.upper()}_API_KEY env var or pass api_key argument.",
+            "provenance": "None",
+        }
+
+    queries = [query]
+    if args.get("multi_query"):
+        extra = str(args.get("multi_query") or "")
+        if extra:
+            queries.append(extra)
+
+    results: list[dict] = []
+    for q in queries:
+        try:
+            result = check_citations(
+                query=q,
+                brand=brand or domain,
+                domain=domain,
+                provider=provider,
+                api_key=key,
+            )
+            results.append(result.to_dict())
+        except Exception as exc:
+            results.append({"query": q, "error": str(exc), "provider": provider})
+
+    overall_brand_mentioned = any(r.get("brand_mentioned") for r in results)
+    overall_domain_cited = any(r.get("domain_cited") for r in results)
+
+    return {
+        "brand": brand or domain,
+        "domain": domain,
+        "provider": provider,
+        "queries_run": len(results),
+        "brand_mentioned": overall_brand_mentioned,
+        "domain_cited": overall_domain_cited,
+        "results": results,
+        "provenance": "Live",
+    }

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { spawn } from 'child_process';
 import { getRepoRoot, getPipelineSpawnEnv } from '@/server/pipelineSpawnEnv';
 import { resolvePythonExecutable, parsePythonJsonStdout, formatPythonSpawnError } from '@/server/resolvePython';
-import { loadPipelineConfig } from '@/server/pipelineConfig';
+import { loadPipelineConfigUnmasked } from '@/server/pipelineConfig';
 import type { ApiRouteHandler } from '@/types/api';
 
 export const runtime = 'nodejs';
@@ -14,7 +14,9 @@ export const dynamic = 'force-dynamic';
 export const POST: ApiRouteHandler = async (_request: NextRequest): Promise<Response> => {
   let state: Record<string, string | boolean>;
   try {
-    const cfg = await loadPipelineConfig();
+    // Must use the UNMASKED loader: the API key is passed to Python to authenticate
+    // with Bing; loadPipelineConfig() would return a masked '••••' placeholder.
+    const cfg = await loadPipelineConfigUnmasked();
     state = cfg.state;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);

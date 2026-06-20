@@ -25,6 +25,8 @@ def test_react_step_includes_tool_results_in_prompt() -> None:
         {"role": "assistant", "content": "Calling tool get_health"},
         {"role": "tool", "tool_call_id": "x", "content": '{"score": 80}'},
     ]
-    result = agent_mod._react_step(client, messages, "get_health", None)
+    result = agent_mod._react_step(
+        client, messages, "get_health", None, system_prompt=""
+    )
     assert result.content == "done"
     assert '{"score": 80}' in client.user_prompt

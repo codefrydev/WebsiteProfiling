@@ -36,10 +36,37 @@ from .content_lists import (
     list_spell_check_issues,
 )
 from .geo_list_tools import (
+    get_robots_ai_access_score,
     list_pages_ai_citation_signals,
     list_pages_missing_howto_schema,
     list_pages_missing_llms_txt_reference,
     list_robots_blocked_ai_crawlers,
+)
+from .geo_citability import (
+    get_citability_score,
+    get_citability_for_url,
+)
+from .geo_detectors import (
+    detect_prompt_injection,
+    get_content_decay_signals,
+    get_multimodal_readiness,
+    get_negative_signals,
+    get_rag_chunk_readiness,
+    get_topic_authority,
+)
+from .agent_readiness import (
+    get_agents_md_status,
+    get_skill_md_status,
+    get_agent_permissions_status,
+    get_token_budget_summary,
+    list_oversized_pages_for_agents,
+    get_content_structure_aeo_summary,
+    get_markdown_availability_summary,
+    list_pages_agent_unfriendly,
+    get_copy_for_ai_signals,
+    list_pages_missing_copy_for_ai,
+    get_agent_readiness_score,
+    generate_agent_readiness_bundle,
 )
 from .google_lists import (
     compare_gsc_periods,
@@ -164,6 +191,7 @@ from .compare_slices import (
     compare_category_deltas,
     compare_content_metrics,
     compare_duplicate_deltas,
+    compare_geo_score_deltas,
     compare_google_metrics,
     compare_health_score_delta,
     compare_indexation_deltas,
@@ -212,6 +240,7 @@ from .crawl_lists import (
 )
 from .geo_tools import (
     get_aeo_content_signals_for_url,
+    get_ai_discovery_status,
     get_eeat_signals_summary,
     get_faq_schema_coverage,
     get_geo_readiness_score,
@@ -259,6 +288,7 @@ from .google import (
 )
 from .integration_tools import (
     check_ai_citation_presence,
+    check_ai_citations_live,
     get_bing_index_status,
     get_gsc_index_coverage,
     get_gsc_url_inspection,
@@ -318,7 +348,11 @@ from .llm_tools import (
     draft_llms_txt,
     expand_keywords,
     generate_content_brief,
+    generate_geo_fix_bundle,
     generate_issue_fix,
+    generate_meta_tags,
+    generate_robots_txt,
+    generate_schema,
     get_page_coach,
     get_portfolio_summary,
     prioritize_fix_roadmap,
@@ -354,6 +388,7 @@ from .links import (
     list_nofollow_internal_links,
     list_orphan_pages,
 )
+from .crawl_actions import prepare_audit_run
 from .ops import (
     get_google_integration_status,
     get_integration_alerts,
@@ -394,6 +429,7 @@ from .report_extras import (
     list_issues_with_ai_fixes,
 )
 from .schema import get_schema_coverage, list_pages_without_schema, search_pages_by_schema_type
+from .sql_query import get_sql_schema, run_sql_query
 from .security import (
     get_security_findings,
     get_security_findings_summary,
@@ -518,6 +554,7 @@ _TOOL_HANDLERS: dict[str, ToolHandler] = {
     "get_property_ops": get_property_ops,
     "get_google_integration_status": get_google_integration_status,
     "list_crawl_runs": list_crawl_runs,
+    "prepare_audit_run": prepare_audit_run,
     "list_log_uploads": list_log_uploads,
     "get_latest_log_analysis": get_latest_log_analysis,
     "get_keyword_serp_overlay": get_keyword_serp_overlay,
@@ -617,24 +654,52 @@ _TOOL_HANDLERS: dict[str, ToolHandler] = {
     "get_gsc_ctr_opportunity_pages": get_gsc_ctr_opportunity_pages,
     "compare_indexation_deltas": compare_indexation_deltas,
     "compare_orphan_deltas": compare_orphan_deltas,
+    "compare_geo_score_deltas": compare_geo_score_deltas,
     "get_llms_txt_status": get_llms_txt_status,
+    "get_ai_discovery_status": get_ai_discovery_status,
     "get_faq_schema_coverage": get_faq_schema_coverage,
     "list_pages_missing_faq_schema": list_pages_missing_faq_schema,
     "get_geo_readiness_score": get_geo_readiness_score,
+    "get_agent_readiness_score": get_agent_readiness_score,
     "get_aeo_content_signals_for_url": get_aeo_content_signals_for_url,
+    "get_agents_md_status": get_agents_md_status,
+    "get_skill_md_status": get_skill_md_status,
+    "get_agent_permissions_status": get_agent_permissions_status,
+    "get_token_budget_summary": get_token_budget_summary,
+    "list_oversized_pages_for_agents": list_oversized_pages_for_agents,
+    "get_content_structure_aeo_summary": get_content_structure_aeo_summary,
+    "get_markdown_availability_summary": get_markdown_availability_summary,
+    "list_pages_agent_unfriendly": list_pages_agent_unfriendly,
+    "get_copy_for_ai_signals": get_copy_for_ai_signals,
+    "list_pages_missing_copy_for_ai": list_pages_missing_copy_for_ai,
+    "generate_agent_readiness_bundle": generate_agent_readiness_bundle,
     "get_eeat_signals_summary": get_eeat_signals_summary,
     "get_js_rendering_delta": get_js_rendering_delta,
     "get_internal_link_suggestions": get_internal_link_suggestions,
+    "get_robots_ai_access_score": get_robots_ai_access_score,
+    "get_citability_score": get_citability_score,
+    "get_citability_for_url": get_citability_for_url,
+    "get_negative_signals": get_negative_signals,
+    "detect_prompt_injection": detect_prompt_injection,
+    "get_rag_chunk_readiness": get_rag_chunk_readiness,
+    "get_content_decay_signals": get_content_decay_signals,
+    "get_multimodal_readiness": get_multimodal_readiness,
+    "get_topic_authority": get_topic_authority,
     "generate_issue_fix": generate_issue_fix,
     "summarize_category_for_client": summarize_category_for_client,
     "prioritize_fix_roadmap": prioritize_fix_roadmap,
     "analyze_serp_snippet_for_url": analyze_serp_snippet_for_url,
     "draft_llms_txt": draft_llms_txt,
+    "generate_schema": generate_schema,
+    "generate_robots_txt": generate_robots_txt,
+    "generate_meta_tags": generate_meta_tags,
+    "generate_geo_fix_bundle": generate_geo_fix_bundle,
     "get_gsc_url_inspection": get_gsc_url_inspection,
     "get_gsc_index_coverage": get_gsc_index_coverage,
     "get_bing_index_status": get_bing_index_status,
     "get_serp_feature_overlay": get_serp_feature_overlay,
     "check_ai_citation_presence": check_ai_citation_presence,
+    "check_ai_citations_live": check_ai_citations_live,
     "search_audit_tools": search_audit_tools,
     "list_tool_domains": list_tool_domains,
     "get_data_coverage_report": get_data_coverage_report,
@@ -754,6 +819,8 @@ _TOOL_HANDLERS: dict[str, ToolHandler] = {
     "list_robots_blocked_ai_crawlers": list_robots_blocked_ai_crawlers,
     "list_pages_console_errors_by_type": list_pages_console_errors_by_type,
     "list_pages_js_rendering_delta": list_pages_js_rendering_delta,
+    "get_sql_schema": get_sql_schema,
+    "run_sql_query": run_sql_query,
 }
 
 

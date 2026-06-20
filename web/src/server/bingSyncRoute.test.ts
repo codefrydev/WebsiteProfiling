@@ -10,6 +10,7 @@ vi.mock('child_process', () => ({
 
 vi.mock('@/server/pipelineConfig', () => ({
   loadPipelineConfig: (...args: unknown[]) => loadPipelineConfigMock(...args),
+  loadPipelineConfigUnmasked: (...args: unknown[]) => loadPipelineConfigMock(...args),
 }));
 
 describe('integrations/bing/sync route', () => {
@@ -40,6 +41,10 @@ describe('integrations/bing/sync route', () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.linked_page_count).toBe(3);
+    // Regression: the real (unmasked) key must reach Python, never a '••••' placeholder.
+    const spawnArgs = spawnMock.mock.calls[0][1] as string[];
+    expect(spawnArgs).toContain('key');
+    expect(spawnArgs.some((a) => a.includes('•'))).toBe(false);
   });
 
   it('returns 500 (not a hang) when the Python process fails to spawn', async () => {

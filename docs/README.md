@@ -39,3 +39,12 @@ Marketing and README assets are stored in [assets/](assets/):
 | [SECURITY.md](../SECURITY.md) | Vulnerability reporting policy |
 | [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md) | Community standards |
 | [pipeline-config.example.txt](../pipeline-config.example.txt) | Pipeline configuration key reference |
+
+## Agent discovery files
+
+These files help AI coding agents (Cursor, Claude Code, Cline) work with this codebase:
+
+| File | Description |
+|------|-------------|
+| [AGENTS.md](../AGENTS.md) | Short entry-point for AI coding agents — points to AGENT.md |
+| [AGENT.md](../AGENT.md) | Full developer/agent reference: APIs, edit targets, footguns |

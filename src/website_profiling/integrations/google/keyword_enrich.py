@@ -33,6 +33,9 @@ CTR_CURVE: dict[int, float] = {
 }
 CTR_CURVE_DEFAULT = 0.008  # position > 10
 
+# Maximum keywords passed to GenerateKeywordForecastMetrics (aggregate call)
+_FORECAST_TOP_N = 50
+
 
 def ctr_as_fraction(ctr: Any) -> float:
     """GSC rows use CTR as percent (e.g. 2.8 for 2.8%); normalize to fraction.
@@ -284,10 +287,18 @@ def run_enrichment(
     enable_trends = _get_bool(cfg, "enable_google_trends", False)
     enable_wiki = _get_bool(cfg, "enable_wikipedia_topic", False)
     enable_datamuse = _get_bool(cfg, "enable_datamuse", False)
+    enable_planner = _get_bool(cfg, "enable_google_keyword_planner", False)
+    enable_forecast = _get_bool(cfg, "enable_keyword_forecast", False)
     suggest_top_n = int(cfg.get("keyword_suggest_top_n") or 20)
-    max_suggest_results = int(cfg.get("keyword_max_suggest_results") or 8)
     user_seeds_raw = (cfg.get("keyword_seeds") or "").strip()
     user_seeds = [s.strip() for s in user_seeds_raw.split(",") if s.strip()]
+    # Google Ads geo/language targeting (defaults: US English)
+    ads_lang_id = int(cfg.get("google_ads_language_id") or 1000)
+    ads_geo_ids_raw = (cfg.get("google_ads_geo_ids") or "").strip()
+    ads_geo_ids = (
+        [int(g.strip()) for g in ads_geo_ids_raw.split(",") if g.strip().isdigit()]
+        if ads_geo_ids_raw else [2840]
+    )
 
     print("  [Keywords] Running keyword research...", flush=True)
 
@@ -500,19 +511,105 @@ def run_enrichment(
             print(f"  [Keywords] Fetching Trends for {len(trend_kws)} keywords...", flush=True)
             trend_directions = fetch_trend_direction(trend_kws)
 
-        # 8. Cannibalisation detection
+        # 8. Keyword Planner discovery (new keywords from GenerateKeywordIdeas)
+        planner_idea_count = 0
+        ads_client = None
+        ads_customer_id = ""
+        if enable_planner:
+            try:
+                from .auth import build_ads_client
+                from .keyword_planner import generate_keyword_ideas
+                from ...db.google_app_store import read_google_app_settings
+
+                ads_client = build_ads_client(property_id)
+                _planner_settings = read_google_app_settings()
+                ads_customer_id = (_planner_settings.get("login_customer_id") or "").replace("-", "")
+
+                # Seeds: GSC top queries + user seeds + brand
+                top_gsc = sorted(
+                    [r for r in all_keywords.values() if "gsc" in (r.get("sources") or [])],
+                    key=lambda r: int(r.get("gsc_impressions") or 0),
+                    reverse=True,
+                )[:suggest_top_n]
+                planner_seeds = list(dict.fromkeys(
+                    [r.get("keyword") or "" for r in top_gsc if r.get("keyword")]
+                    + user_seeds
+                    + ([brand_name] if brand_name else [])
+                ))
+                planner_seeds = [s for s in planner_seeds if s.strip()][:suggest_top_n]
+
+                if planner_seeds and ads_customer_id:
+                    print(
+                        f"  [Keywords] Keyword Planner: expanding {len(planner_seeds)} seeds...",
+                        flush=True,
+                    )
+                    idea_rows = generate_keyword_ideas(
+                        ads_client,
+                        ads_customer_id,
+                        planner_seeds,
+                        lang_id=ads_lang_id,
+                        geo_ids=ads_geo_ids,
+                        cache_conn=conn,
+                    )
+                    new_from_planner = 0
+                    for idea in idea_rows:
+                        kw_text = idea.get("keyword") or ""
+                        if not kw_text:
+                            continue
+                        nk = _normalize_kw(kw_text)
+                        if not nk or len(nk) < 3:
+                            continue
+                        if nk in all_keywords:
+                            # Enrich existing row with planner volume
+                            existing = all_keywords[nk]
+                            if "planner" not in existing.get("sources", []):
+                                existing.setdefault("sources", []).append("planner")
+                            for f in ("planner_avg_monthly_searches", "planner_competition",
+                                      "planner_competition_index", "planner_provenance"):
+                                if f in idea and existing.get(f) is None:
+                                    existing[f] = idea[f]
+                        else:
+                            all_keywords[nk] = {
+                                "keyword": kw_text.lower(),
+                                "sources": ["planner"],
+                                "score": 0.0,
+                                "relevance": 0.0,
+                                "recommended_action": "create content",
+                                "gsc_position": None,
+                                "gsc_impressions": None,
+                                "gsc_clicks": None,
+                                "gsc_ctr": None,
+                                "gsc_url": None,
+                                "planner_avg_monthly_searches": idea.get("planner_avg_monthly_searches"),
+                                "planner_competition": idea.get("planner_competition"),
+                                "planner_competition_index": idea.get("planner_competition_index"),
+                                "planner_provenance": idea.get("planner_provenance"),
+                            }
+                            new_from_planner += 1
+                    planner_idea_count = new_from_planner
+                    print(
+                        f"  [Keywords] Keyword Planner: {len(idea_rows)} ideas, "
+                        f"{new_from_planner} new keywords added.",
+                        flush=True,
+                    )
+            except Exception as exc:
+                print(f"  [Keywords] Warning: Keyword Planner discovery error (non-fatal): {exc}", flush=True)
+
+        # 9. Cannibalisation detection
         cannibalisation: list[dict] = []
         if gsc_by_page:
             cannibalisation = detect_cannibalisation(gsc_by_page)
 
-        # 9. Compute derived metrics for all keywords
+        # 10. Compute derived metrics for all keywords
         fetched_at = datetime.now(timezone.utc).isoformat()
         rows: list[dict[str, Any]] = []
         history_rows: list[dict] = []
 
         for nk, kw_data in all_keywords.items():
             kw_text = kw_data.get("keyword") or nk
-            ctr_frac = ctr_as_fraction(kw_data.get("gsc_ctr"))
+            # gsc_ctr is already a fraction (normalized at ingest, see line ~409);
+            # do NOT pass it through ctr_as_fraction again or it gets divided by 100 twice.
+            ctr_frac = float(kw_data.get("gsc_ctr") or 0.0)
             gsc_row = {
                 "position": kw_data.get("gsc_position"),
                 "impressions": kw_data.get("gsc_impressions"),
@@ -574,6 +671,11 @@ def run_enrichment(
                 "score": float(kw_data.get("score") or 0),
                 "relevance": float(kw_data.get("relevance") or 0),
                 "site_sources_count": int(kw_data.get("sources_count") or 0),
+                # Planner fields from discovery step — may be None if not yet enriched
+                "planner_avg_monthly_searches": kw_data.get("planner_avg_monthly_searches"),
+                "planner_competition": kw_data.get("planner_competition"),
+                "planner_competition_index": kw_data.get("planner_competition_index"),
+                "planner_provenance": kw_data.get("planner_provenance"),
             }
             rows.append(row)
 
@@ -621,6 +723,85 @@ def run_enrichment(
             except Exception:
                 pass
 
+        # Keyword Planner overlay: historical metrics for rows without GSC impressions
+        planner_overlay_count = 0
+        if enable_planner:
+            try:
+                from .keyword_planner import generate_historical_metrics
+
+                if ads_client is None:
+                    from .auth import build_ads_client
+                    from ...db.google_app_store import read_google_app_settings
+                    ads_client = build_ads_client(property_id)
+                    ads_customer_id = (read_google_app_settings().get("login_customer_id") or "").replace("-", "")
+
+                # Only enrich rows that are missing real GSC impressions AND planner volume
+                needs_volume = [
+                    r for r in rows
+                    if r.get("gsc_impressions") is None and r.get("planner_avg_monthly_searches") is None
+                ]
+                kw_list = [r["keyword"] for r in needs_volume if r.get("keyword")]
+                if kw_list and ads_customer_id:
+                    print(
+                        f"  [Keywords] Keyword Planner: fetching volume for {len(kw_list)} non-GSC keywords...",
+                        flush=True,
+                    )
+                    hist = generate_historical_metrics(
+                        ads_client,
+                        ads_customer_id,
+                        kw_list,
+                        lang_id=ads_lang_id,
+                        geo_ids=ads_geo_ids,
+                        cache_conn=conn,
+                    )
+                    for row in rows:
+                        kw = (row.get("keyword") or "").lower()
+                        if kw in hist:
+                            row.update(hist[kw])
+                            planner_overlay_count += 1
+            except Exception as exc:
+                print(
+                    f"  [Keywords] Warning: Keyword Planner overlay error (non-fatal): {exc}",
+                    flush=True,
+                )
+
+        # Keyword Planner forecast (optional) — returns aggregate campaign-level metrics
+        # for the top keywords as a summary, stored in data_blob (not per-row).
+        planner_forecast_summary: dict[str, Any] = {}
+        if enable_planner and enable_forecast:
+            try:
+                from .keyword_planner import fetch_keyword_forecast
+
+                if ads_client is None:
+                    from .auth import build_ads_client
+                    from ...db.google_app_store import read_google_app_settings
+                    ads_client = build_ads_client(property_id)
+                    ads_customer_id = (read_google_app_settings().get("login_customer_id") or "").replace("-", "")
+
+                top_kw_list = [r["keyword"] for r in rows[:_FORECAST_TOP_N] if r.get("keyword")]
+                if top_kw_list and ads_customer_id:
+                    print("  [Keywords] Keyword Planner: fetching aggregate forecast...", flush=True)
+                    planner_forecast_summary = fetch_keyword_forecast(
+                        ads_client,
+                        ads_customer_id,
+                        top_kw_list,
+                        lang_id=ads_lang_id,
+                        geo_ids=ads_geo_ids,
+                    )
+                    if planner_forecast_summary:
+                        print(
+                            f"  [Keywords] Keyword Planner forecast: "
+                            f"~{planner_forecast_summary.get('planner_forecast_clicks', 0):.0f} est. clicks "
+                            f"over {planner_forecast_summary.get('planner_forecast_period_days', 30)} days "
+                            f"for top {len(top_kw_list)} keywords.",
+                            flush=True,
+                        )
+            except Exception as exc:
+                print(
+                    f"  [Keywords] Warning: Keyword Planner forecast error (non-fatal): {exc}",
+                    flush=True,
+                )
+
         data_blob = {
             "fetched_at": fetched_at,
             "property_id": property_id,
@@ -628,6 +809,9 @@ def run_enrichment(
             "total_keywords": len(rows),
             "gsc_keyword_count": sum(1 for r in rows if "gsc" in (r.get("sources") or [])),
             "suggest_count": sum(1 for r in rows if "suggest" in (r.get("sources") or []) or "youtube" in (r.get("sources") or []) or "questions" in (r.get("sources") or [])),
+            "planner_idea_count": planner_idea_count,
+            "planner_overlay_count": planner_overlay_count,
+            "planner_forecast_summary": planner_forecast_summary or None,
             "cannibalisation": cannibalisation[:50],
             "cannibalisation_count": len(cannibalisation),
             "query_page_misalignment": query_misalignment,
@@ -642,10 +826,21 @@ def run_enrichment(
         if history_rows:
             append_keyword_history(conn, history_rows, property_id=property_id)
 
+        if enable_planner:
+            forecast_note = ""
+            if planner_forecast_summary:
+                forecast_note = (
+                    f", forecast ~{planner_forecast_summary.get('planner_forecast_clicks', 0):.0f} clicks"
+                )
+            planner_summary = (
+                f", Planner: {planner_idea_count} new / {planner_overlay_count} enriched{forecast_note}"
+            )
+        else:
+            planner_summary = ""
         print(
             f"  [Keywords] Enrichment done: {len(rows)} keywords "
             f"({data_blob['gsc_keyword_count']} from GSC, "
-            f"{data_blob['suggest_count']} from Suggest). "
+            f"{data_blob['suggest_count']} from Suggest{planner_summary}). "
             f"{len(cannibalisation)} cannibalisation issues.",
             flush=True,
         )

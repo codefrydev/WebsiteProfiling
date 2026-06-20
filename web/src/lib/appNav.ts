@@ -19,6 +19,7 @@ import {
   Plug,
   PenLine,
   LayoutDashboard,
+  LayoutGrid,
   Link as LinkIcon,
   Repeat,
   Share2,
@@ -29,11 +30,12 @@ import {
   MessageSquare,
   Globe2,
   Contact2,
+  FileCode,
 } from 'lucide-react';
 import { strings } from '@/lib/strings';
 import { viewIdToPathSlug, type ViewId } from '@/routes';
 
-export type NavItemId = ViewId | 'pipeline' | 'secrets' | 'mcp' | 'chat' | 'write';
+export type NavItemId = ViewId | 'pipeline' | 'secrets' | 'mcp' | 'chat' | 'write' | 'pages-md';
 
 export interface AppNavItem {
   id: NavItemId;
@@ -53,6 +55,7 @@ export interface AppNavItem {
 const NAV_DESCRIPTIONS: Partial<Record<NavItemId, string>> = {
   home: 'Pick a property to audit',
   overview: 'Audit health at a glance',
+  dashboards: 'Build your own metric dashboards',
   compare: 'Compare two audit runs',
   export: 'Download reports & data',
   'log-analyzer': 'Server log file insights',
@@ -84,11 +87,13 @@ const NAV_DESCRIPTIONS: Partial<Record<NavItemId, string>> = {
   mcp: 'Remote MCP client setup',
   chat: 'Ask questions about this audit',
   write: 'Draft content from audit data',
+  'pages-md': 'Extract & preview per-page markdown',
 };
 
 const VIEW_NAV: { id: ViewId; icon: LucideIcon }[] = [
   { id: 'home', icon: HomeIcon },
   { id: 'overview', icon: LayoutDashboard },
+  { id: 'dashboards', icon: LayoutGrid },
   { id: 'compare', icon: ArrowLeftRight },
   { id: 'export', icon: FileDown },
   { id: 'log-analyzer', icon: Terminal },
@@ -162,6 +167,15 @@ const WRITE_NAV: AppNavItem = {
   description: NAV_DESCRIPTIONS.write,
 };
 
+const PAGES_MD_NAV: AppNavItem = {
+  id: 'pages-md',
+  label: 'Page Markdown',
+  section: 'Tools',
+  icon: FileCode,
+  hrefPath: '/pages-md',
+  description: NAV_DESCRIPTIONS['pages-md'],
+};
+
 export const APP_NAV_ITEMS: AppNavItem[] = [
   ...VIEW_NAV.map(({ id, icon }) => ({
     id,
@@ -176,6 +190,7 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
   MCP_NAV,
   WRITE_NAV,
   CHAT_NAV,
+  PAGES_MD_NAV,
 ];
 
 /** View ids rendered inside ReportShell — keep in sync with `VIEW_CONFIG`. */
@@ -184,7 +199,7 @@ export const REPORT_VIEW_IDS: ViewId[] = VIEW_NAV.map(({ id }) => id);
 export const APP_NAV_SECTIONS = [...new Set(APP_NAV_ITEMS.map((item) => item.section))];
 
 /** Routes with their own app pages — not resolved by `pathSlugToViewId`. */
-export const STANDALONE_NAV_IDS = ['pipeline', 'secrets', 'mcp', 'chat', 'write'] as const satisfies readonly NavItemId[];
+export const STANDALONE_NAV_IDS = ['pipeline', 'secrets', 'mcp', 'chat', 'write', 'pages-md'] as const satisfies readonly NavItemId[];
 
 export type StandaloneNavId = (typeof STANDALONE_NAV_IDS)[number];
 
@@ -225,6 +240,7 @@ export const CHAT_SIDEBAR_NAV_IDS = [
   'secrets',
   'mcp',
   'write',
+  'pages-md',
 ] as const satisfies readonly NavItemId[];
 
 export const WRITE_SIDEBAR_NAV_IDS = [
@@ -236,11 +252,23 @@ export const WRITE_SIDEBAR_NAV_IDS = [
   'mcp',
   'chat',
   'write',
+  'pages-md',
 ] as const satisfies readonly NavItemId[];
 
 export const SECRETS_SIDEBAR_NAV_IDS = WRITE_SIDEBAR_NAV_IDS;
 
 export const PIPELINE_SIDEBAR_NAV_IDS = WRITE_SIDEBAR_NAV_IDS;
+
+export const PAGES_MD_SIDEBAR_NAV_IDS = [
+  'home',
+  'search-performance',
+  'links',
+  'pipeline',
+  'secrets',
+  'mcp',
+  'chat',
+  'write',
+] as const satisfies readonly NavItemId[];
 
 export function isMiniNavLinkActive(href: string, pathname: string): boolean {
   if (href === '/secrets') return pathname.startsWith('/secrets');
@@ -248,11 +276,12 @@ export function isMiniNavLinkActive(href: string, pathname: string): boolean {
   if (href === '/write') return pathname.startsWith('/write');
   if (href === '/chat') return pathname.startsWith('/chat');
   if (href === '/pipeline') return pathname.startsWith('/pipeline');
+  if (href === '/pages-md') return pathname.startsWith('/pages-md');
   return pathname === href;
 }
 
 export function navHref(item: AppNavItem, trailingQuery: string): string {
-  if (item.id === 'home' || item.id === 'pipeline' || item.id === 'secrets' || item.id === 'mcp' || item.id === 'chat' || item.id === 'write') {
+  if (item.id === 'home' || item.id === 'pipeline' || item.id === 'secrets' || item.id === 'mcp' || item.id === 'chat' || item.id === 'write' || item.id === 'pages-md') {
     return item.hrefPath;
   }
   const raw = trailingQuery.startsWith('?') ? trailingQuery.slice(1) : trailingQuery;
@@ -281,6 +310,9 @@ export function isNavItemActive(item: AppNavItem, pathname: string): boolean {
   }
   if (item.id === 'write') {
     return pathname === '/write' || pathname.startsWith('/write/');
+  }
+  if (item.id === 'pages-md') {
+    return pathname === '/pages-md' || pathname.startsWith('/pages-md/');
   }
   if (item.id === 'home') {
     return pathname === '/home';

@@ -12,6 +12,7 @@ export interface ChatContextBarProps {
   propertyId: number | null;
   sessionTitle?: string | null;
   loading?: boolean;
+  crawlActionsEnabled?: boolean;
 }
 
 export default function ChatContextBar({
@@ -19,6 +20,7 @@ export default function ChatContextBar({
   propertyId,
   sessionTitle,
   loading,
+  crawlActionsEnabled,
 }: ChatContextBarProps) {
   const domainLabel = property
     ? formatChatPropertyLabel(property)
@@ -41,6 +43,11 @@ export default function ChatContextBar({
           ) : null}
         </div>
       </div>
+      {crawlActionsEnabled ? (
+        <span className="shrink-0 rounded-full border border-blue-500/30 bg-blue-500/10 px-2 py-0.5 text-[10px] font-medium text-blue-700 dark:text-blue-300">
+          {c.crawlActionsEnabled}
+        </span>
+      ) : null}
     </header>
   );
 }

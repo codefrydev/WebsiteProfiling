@@ -56,8 +56,8 @@ def _segment_health(seg_df: pd.DataFrame) -> int:
         if missing_rate > 0.1:
             score -= round_half_up(20 * missing_rate)
 
-    if "description" in seg_df.columns:
-        missing = seg_df["description"].apply(lambda d: not d or str(d).strip() == "").sum()
+    if "meta_description" in seg_df.columns:
+        missing = seg_df["meta_description"].apply(lambda d: not d or str(d).strip() == "").sum()
         missing_rate = missing / n
         if missing_rate > 0.1:
             score -= round_half_up(10 * missing_rate)

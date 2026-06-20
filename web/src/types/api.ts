@@ -147,6 +147,8 @@ export interface GooglePublicStatus {
   ga4PropertyId: string | null;
   dateRangeDays: number;
   authMode: string | null;
+  hasPlannerToken?: boolean;
+  loginCustomerId?: string | null;
 }
 
 export interface GoogleStatusResponse extends GooglePublicStatus {
@@ -176,6 +178,8 @@ export interface GoogleCredentialsPostBody {
   gscSiteUrl?: string;
   ga4PropertyId?: string;
   dateRangeDays?: number;
+  developerToken?: string;
+  loginCustomerId?: string;
 }
 
 export interface GoogleCredentialsUploadBody {

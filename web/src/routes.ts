@@ -2,6 +2,7 @@
 export type ViewId =
   | 'home'
   | 'overview'
+  | 'dashboards'
   | 'issues'
   | 'links'
   | 'site-structure'
@@ -33,6 +34,7 @@ export type ViewId =
 export const REPORT_PATH_SLUGS = [
   'home',
   'dashboard',
+  'dashboards',
   'keywords',
   'issues',
   'links',
@@ -75,5 +77,6 @@ export function pathSlugToViewId(slug: string | null | undefined): ViewId | null
   if (!slug || typeof slug !== 'string') return null;
   if (slug === 'dashboard') return 'overview';
   if (slug === 'keywords') return 'keywords-explorer';
+  if (slug === 'dashboards') return 'dashboards';
   return REPORT_PATH_SLUG_SET.has(slug) ? (slug as ViewId) : null;
 }

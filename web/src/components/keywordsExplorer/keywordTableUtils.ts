@@ -18,6 +18,7 @@ export const SOURCE_CONFIG: Record<string, { label: string; color: string }> = {
   questions: { label: 'Questions', color: 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-300' },
   datamuse: { label: 'Related terms', color: 'bg-pink-500/20 text-pink-700 dark:text-pink-300' },
   wiki: { label: 'Wikipedia', color: 'bg-gray-500/20 text-gray-700 dark:text-gray-300' },
+  planner: { label: 'Keyword Planner', color: 'bg-violet-500/20 text-violet-700 dark:text-violet-300' },
 };
 
 export type IntentCounts = Record<KeywordIntent, number>;

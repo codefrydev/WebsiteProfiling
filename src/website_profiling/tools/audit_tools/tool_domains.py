@@ -30,6 +30,10 @@ CANONICAL_DOMAINS: tuple[str, ...] = (
     "insight",
 )
 
+# Chat-only tools — excluded from MCP domain bundles.
+CHAT_ONLY_TOOLS: frozenset[str] = frozenset({
+    "prepare_audit_run",
+})
 # Tier 0 — always included in chat dynamic routing (router + top insight tools).
 TIER_0_TOOLS: frozenset[str] = frozenset({
     "search_audit_tools",
@@ -71,6 +75,7 @@ _DOMAIN_OVERRIDES: dict[str, str] = {
     "get_brand_keyword_split": "keywords",
     "list_keywords_by_intent": "keywords",
     "get_gsc_page_queries": "google",
+    "prepare_audit_run": "ops",
     "list_broken_links": "links",
     "list_broken_link_sources": "links",
     "get_gsc_sample_links": "backlinks",
@@ -130,7 +135,17 @@ _DOMAIN_OVERRIDES: dict[str, str] = {
     "list_robots_blocked_ai_crawlers": "geo",
     "list_pages_missing_howto_schema": "geo",
     "list_pages_missing_article_schema": "geo",
+    "compare_geo_score_deltas": "geo",
+    "check_ai_citations_live": "geo",
+    "detect_prompt_injection": "geo",
+    "get_negative_signals": "geo",
+    "get_rag_chunk_readiness": "geo",
+    "get_content_decay_signals": "geo",
+    "get_multimodal_readiness": "geo",
+    "get_topic_authority": "geo",
     "list_gsc_ctr_underperformers": "google",
+    "get_sql_schema": "core",
+    "run_sql_query": "core",
 }
 
 _ONPAGE_PREFIXES = (
@@ -173,7 +188,7 @@ DOMAIN_EXAMPLE_PROMPTS: dict[str, str] = {
     "links": "Orphan pages and broken internal links.",
     "backlinks": "GSC backlinks sample and velocity.",
     "images": "Image audit summary and largest unoptimized images.",
-    "geo": "GEO readiness score and llms.txt status.",
+    "geo": "GEO readiness score, citability, AI discovery, robots tiers, negative signals, prompt injection, topic authority.",
 }
 
 
@@ -200,8 +215,17 @@ def classify_tool_domain(name: str) -> str:
         "get_landing_page_", "get_opportunity_", "get_traffic_health", "get_issue_to_traffic",
     )):
         return "insight"
-    if name.startswith(("get_geo_", "get_aeo_", "get_llms_", "get_eeat_", "get_faq_",
-                          "list_pages_missing_faq", "draft_llms", "check_ai_citation")):
+    if name.startswith((
+        "get_geo_", "get_aeo_", "get_llms_", "get_eeat_", "get_faq_",
+        "get_ai_discovery", "get_robots_ai_", "get_citability_",
+        "list_pages_missing_faq", "draft_llms", "check_ai_citation",
+        "generate_schema", "generate_robots_txt", "generate_meta_tags", "generate_geo_fix",
+        # Agent readiness
+        "get_agent_", "get_agents_", "get_skill_md", "get_token_budget",
+        "get_copy_for_ai", "get_markdown_availability", "get_content_structure_aeo",
+        "list_oversized_pages", "list_pages_agent_unfriendly",
+        "list_pages_missing_copy_for_ai", "generate_agent_readiness",
+    )):
         return "geo"
     if "axe" in name or "mixed_content" in name or name == "get_heading_outline_for_url":
         return "accessibility"
@@ -310,14 +334,14 @@ def tool_names_for_mcp_bundle(meta: dict[str, dict[str, Any]], bundle: str) -> s
     bundle_key = (bundle or "core").strip().lower()
     allowed_domains = MCP_DOMAIN_BUNDLES.get(bundle_key, MCP_DOMAIN_BUNDLES["core"])
     if bundle_key == "full":
-        return set(meta.keys())
+        return set(meta.keys()) - CHAT_ONLY_TOOLS
     names: set[str] = set()
     by_domain = tools_by_domain(meta)
     for domain in allowed_domains:
         names.update(by_domain.get(domain) or [])
     if bundle_key == "core":
         names.update(TIER_0_TOOLS & set(meta.keys()))
-    return names
+    return names - CHAT_ONLY_TOOLS
 
 
 def domains_catalog(meta: dict[str, dict[str, Any]]) -> list[dict[str, Any]]:

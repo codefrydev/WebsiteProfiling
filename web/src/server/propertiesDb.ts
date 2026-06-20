@@ -219,6 +219,14 @@ export async function setPropertyGoogleCredentials(
       add('google_refresh_token', patch.refreshToken);
       if (patch.refreshToken) {
         sets.push('google_connected_at = now()');
+      } else {
+        // Clearing the refresh token disconnects the account. Connection status is
+        // derived from Boolean(google_connected_at), so it must be cleared too —
+        // otherwise the property keeps reporting "connected" after a disconnect.
+        sets.push('google_connected_at = NULL');
+        if (patch.connectedEmail === undefined) {
+          sets.push('google_connected_email = NULL');
+        }
       }
     }
     if (patch.authMode !== undefined) add('google_auth_mode', patch.authMode);

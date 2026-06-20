@@ -470,6 +470,15 @@
         "serpCompetition": {
           "body": "Estimated SERP competition from optional SerpAPI overlay. Heuristic, not official keyword difficulty."
         },
+        "plannerVolume": {
+          "body": "Average monthly search volume from Google Ads Keyword Planner. Official market-level data — not Search Console impressions for this site."
+        },
+        "plannerCompetition": {
+          "body": "Competition level from Google Ads Keyword Planner (LOW / MEDIUM / HIGH). Reflects paid-search advertiser competition, not organic keyword difficulty."
+        },
+        "plannerForecastClicks": {
+          "body": "Estimated weekly clicks forecast from Google Ads Keyword Planner GenerateKeywordForecastMetrics. Applies to paid campaigns, not organic rankings."
+        },
         "gscClicks": {
           "body": "Search Console clicks attributed to this query or query–page pair in the selected range."
         },
@@ -701,6 +710,10 @@
       "label": "Overview",
       "section": "Overview"
     },
+    "dashboards": {
+      "label": "Dashboards",
+      "section": "Overview"
+    },
     "compare": {
       "label": "Compare audits",
       "section": "Overview"
@@ -728,6 +741,10 @@
     "write": {
       "label": "Content studio",
       "section": "AI"
+    },
+    "pages-md": {
+      "label": "Page Markdown",
+      "section": "Tools"
     },
     "issues": {
       "label": "Issues",
@@ -2454,22 +2471,65 @@
     "geoReadiness": {
       "title": "GEO / AEO readiness",
       "subtitle": "On-site signals for generative and answer-engine visibility — estimated from crawl heuristics, not live AI queries.",
-      "provenanceBanner": "Estimated — scores and signals are crawl heuristics. They do not query ChatGPT, Perplexity, or other AI search engines.",
-      "scoreLabel": "GEO readiness",
+      "provenanceBanner": "Estimated — scores and signals are crawl heuristics. They do not query ChatGPT, Perplexity, or other AI search engines unless live citation check is enabled.",
+      "scoreLabel": "GEO score",
+      "bandLabel": "Score band",
       "faqCoverageLabel": "FAQ schema coverage",
       "llmsLabel": "llms.txt",
       "llmsFound": "Found",
       "llmsMissing": "Not found",
       "faqPagesLabel": "Pages with FAQ schema",
-      "componentsTitle": "Score components",
+      "citabilityLabel": "Citability score",
+      "componentsTitle": "Score categories (100 pts)",
       "llmsPanelTitle": "llms.txt status",
       "llmsNotFoundHint": "No llms.txt at /llms.txt or /.well-known/llms.txt for this domain.",
+      "llmsDepthTitle": "llms.txt depth",
+      "aiDiscoveryTitle": "AI discovery endpoints",
+      "robotsTitle": "AI bot access (robots.txt)",
       "eeatTitle": "E-E-A-T signals (summary)",
+      "citabilityTitle": "Citability score",
+      "citabilitySubtitle": "Research-backed citability signals (KDD 2024 / AutoGEO ICLR 2026)",
+      "negativeSectionTitle": "Negative signals",
       "missingFaqTitle": "Pages missing FAQ schema",
       "missingFaqEmpty": "All crawled 2xx pages include FAQ-style schema, or none were checked.",
+      "fixBundleTitle": "GEO fix bundle",
+      "fixBundleSubtitle": "Generated fix files — review before publishing",
+      "citationLiveTitle": "Live AI citation check",
+      "citationLiveOptInNote": "Pass opt_in=true and a PERPLEXITY_API_KEY / OPENAI_API_KEY to run a live check.",
       "colUrl": "URL",
       "pageOf": "Showing",
-      "of": "of"
+      "of": "of",
+      "tabCitation": "Citation readiness",
+      "tabAgent": "Agent docs readiness",
+      "agentTitle": "Agent documentation readiness",
+      "agentSubtitle": "How well this site's documentation serves coding agents (Cursor, Claude Code, Cline). Checks AGENTS.md, token budgets, structure, and copy-for-AI affordances.",
+      "agentScoreLabel": "Agent readiness score",
+      "agentGradeLabel": "Grade",
+      "agentCategoriesTitle": "Score categories (100 pts)",
+      "agentAgentsMdLabel": "AGENTS.md",
+      "agentAgentsMdFound": "Found",
+      "agentAgentsMdMissing": "Not found",
+      "agentSkillMdLabel": "skill.md",
+      "agentPermissionsLabel": "agent-permissions.json",
+      "agentTokenBudgetTitle": "Token budget",
+      "agentTokenBudgetSubtitle": "Approximate GPT-4 token counts per page (cl100k_base — estimated)",
+      "agentOverMaxLabel": "Pages over max tokens",
+      "agentOverWarnLabel": "Pages over warn tokens",
+      "agentP50Label": "Median tokens (p50)",
+      "agentP95Label": "p95 tokens",
+      "agentDiscoveryFilesTitle": "Discovery files",
+      "agentStructureTitle": "Content structure",
+      "agentStructureSubtitle": "Headings, semantic landmarks, code blocks, tables across crawled pages",
+      "agentMarkdownTitle": "Markdown availability",
+      "agentCopyForAiTitle": "Copy-for-AI affordances",
+      "agentCopyForAiSubtitle": "Doc-like pages with copy-for-AI or raw-view buttons",
+      "agentOversizedTitle": "Oversized pages",
+      "agentOversizedEmpty": "No pages exceed the warn token threshold.",
+      "agentBundleTitle": "Generate agent readiness bundle",
+      "agentBundleSubtitle": "Draft AGENTS.md, skill.md, and agent-permissions.json — review before publishing",
+      "agentBundleButton": "Generate bundle",
+      "agentBundleGenerating": "Generating…",
+      "agentBundleMissingLabel": "Missing files detected"
     },
     "lighthouse": {
       "emptyTitle": "Page Speed",
@@ -3208,6 +3268,9 @@
         "kdEstimated": "Difficulty (est.)",
         "serpCompetition": "SERP comp. (est.)",
         "serpCompetitionHint": "Estimated from SerpAPI organic result density and SERP features",
+        "plannerVolume": "Vol. (Planner)",
+        "plannerCompetition": "Comp. (Planner)",
+        "plannerForecastClicks": "Forecast Clicks",
         "onSiteFrequency": "On-site frequency",
         "position": "Avg. position",
         "impressions": "Impressions",
@@ -4080,6 +4143,25 @@
       "unlimitedToolsOffHint": "Allow up to 100 tool steps per message for deep multi-step audits.",
       "partialToolsSaved": "Tool results were saved from this turn. The assistant did not produce a final summary.",
       "partialResponseNote": "The assistant stopped before a full summary. Structured results above are still valid.",
+      "crawlActionsEnabled": "Crawl actions enabled",
+      "suggestedCrawlPrompts": [
+        "Run a crawl with default settings",
+        "Re-crawl this property with JavaScript rendering",
+        "Start a full audit for a new site"
+      ],
+      "auditRunConfirm": {
+        "title": "Ready to run audit",
+        "presetLabel": "Preset",
+        "pipelineFullAudit": "Full audit",
+        "pipelineCrawlOnly": "Crawl only",
+        "runButton": "Run audit",
+        "retryButton": "Retry",
+        "starting": "Starting…",
+        "running": "Audit running…",
+        "done": "Audit finished. Ask me to summarize the results.",
+        "runFailed": "Failed to start audit",
+        "editInRunner": "Edit in Run audit"
+      },
       "proseStrippedNote": "Detailed metrics are shown in the cards above.",
       "insightDefaultTitle": "Summary",
       "showAllItems": "Show all {count} items",

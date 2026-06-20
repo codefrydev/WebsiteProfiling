@@ -225,3 +225,27 @@ def test_system_prompt_does_not_require_markdown_template() -> None:
     assert "### Power Insights" not in SYSTEM_PROMPT
     assert "### Recommended actions" not in SYSTEM_PROMPT
     assert "generated separately" in SYSTEM_PROMPT.lower()
+
+
+def test_resolve_system_prompt_readonly_by_default() -> None:
+    from website_profiling.llm.agent import (
+        SYSTEM_PROMPT_CRAWL_ENABLED,
+        SYSTEM_PROMPT_READONLY,
+        resolve_system_prompt,
+    )
+
+    assert resolve_system_prompt({}) == SYSTEM_PROMPT_READONLY
+    assert resolve_system_prompt({"llm_chat_allow_crawl": "false"}) == SYSTEM_PROMPT_READONLY
+    assert "read-only" in resolve_system_prompt({}).lower()
+
+
+def test_resolve_system_prompt_crawl_when_enabled() -> None:
+    from website_profiling.llm.agent import (
+        SYSTEM_PROMPT_CRAWL_ENABLED,
+        resolve_system_prompt,
+    )
+
+    prompt = resolve_system_prompt({"llm_chat_allow_crawl": "true"})
+    assert prompt == SYSTEM_PROMPT_CRAWL_ENABLED
+    assert "you are read-only" not in prompt.lower()
+    assert "prepare_audit_run" in prompt.lower()

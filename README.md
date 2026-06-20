@@ -58,13 +58,13 @@ Site Audit focuses on **honest, self-hosted technical SEO**. It is not a drop-in
 
 - **No live backlink index** — Backlink tools read **Google Search Console Links CSV imports** (and optional third-party CSV overlays). There is no Ahrefs, Semrush, Moz, or Majestic API integration.
 - **No daily rank tracking** — Keyword positions come from **GSC snapshots** on your connected property, not a proprietary SERP tracker or rank-history database.
-- **No live AI citation checks** — GEO/AEO tools use **on-site heuristics**; they do not query ChatGPT, Perplexity, or other AI search engines in real time.
+- **Live AI citation checks are opt-in** — GEO/AEO tools default to **on-site heuristics** (no API required). Optional live checks via `check_ai_citations_live` require a BYO API key (`PERPLEXITY_API_KEY`, `OPENAI_API_KEY`, etc.) and explicit `opt_in=true`; they are not called automatically.
 - **No third-party keyword volume APIs** — Keyword explorer uses **on-site frequency plus Search Console**; difficulty and SERP feature overlays are estimated unless you supply your own data.
 - **No managed cloud** — You run it (Docker or local dev). This repo is not a hosted multi-tenant SaaS.
 - **No substitute for Google access** — Search Console, Analytics, and Bing Webmaster require **your credentials**; missing or stale integrations show empty states with provenance labels, not fabricated metrics.
 - **Not a ranking guarantee** — Category scores (0–100) are **internal audit scores**, not Google rankings or predicted traffic impact.
 
-**Planned extensions** (not yet shipped): full backlink index beyond GSC import, SERP rank tracking beyond GSC snapshots, and live AI citation APIs. See [docs/MCP.md](docs/MCP.md#future-pipeline-items).
+**Planned extensions** (not yet shipped): full backlink index beyond GSC import, SERP rank tracking beyond GSC snapshots. See [docs/MCP.md](docs/MCP.md#future-pipeline-items).
 
 ## Features
 
@@ -207,6 +207,18 @@ CI also runs a **Docker** job (image build, browser pytest in container, compose
 
 Connect Google Search Console and Analytics via **Integrations** (gear icon) in the application UI.
 
+### Google Ads Keyword Planner (optional)
+
+Adds official search volume and competition data from the Google Ads API to the Keywords explorer. Requires:
+
+1. A [Google Ads developer token](https://developers.google.com/google-ads/api/docs/first-call/dev-token) (Basic access is sufficient for keyword research).
+2. A Google Ads manager account customer ID (login customer ID).
+3. An existing Google OAuth connection (via Integrations) — users must re-consent after the `adwords` scope is added.
+
+In **Integrations → Google Ads Keyword Planner**, enter the developer token and login customer ID. Then enable `enable_google_keyword_planner` in audit settings.
+
+The overlay enriches keywords that have no Search Console impressions with `planner_avg_monthly_searches` and `planner_competition`, labelled "Google Keyword Planner" to distinguish them from real GSC data. GSC-ranked keywords are never overwritten. Set `enable_keyword_forecast = true` to additionally attach click/conversion forecasts to the top 50 keywords.
+
 ### JavaScript crawl (optional)
 
 In Audit settings, set **Crawl rendering** to `javascript` (always headless Chromium) or `auto` (static first, browser when SPA heuristics match). Requires Playwright from `requirements.txt` and Chromium on `PATH` or `CHROME_PATH` (included in Docker). The UI preflights via `GET /api/crawl/browser-status` before runs when JS or auto mode is selected.
@@ -224,7 +236,9 @@ Ask questions about audit data at [http://localhost:3000/chat](http://localhost:
 | **Groq**                   | API key in AI settings or `GROQ_API_KEY`; official Groq Python SDK; native tool calling with streaming. Default model `openai/gpt-oss-120b`.                               |
 
 
-The agent uses the same **340 read-only audit tools** as the MCP server ([docs/MCP.md](docs/MCP.md)), with **dynamic routing** (~45 tools per turn). Responses stream over SSE (`POST /api/chat`). Sessions persist per property (`chat_sessions` / `chat_messages`).
+The agent uses the same **342 read-only audit tools** as the MCP server ([docs/MCP.md](docs/MCP.md)), with **dynamic routing** (~45 tools per turn). Responses stream over SSE (`POST /api/chat`). Sessions persist per property (`chat_sessions` / `chat_messages`).
+
+**Read-only SQL chat tool (opt-in):** Set `CHAT_SQL_TOOL_ENABLED=true` to expose `get_sql_schema` and `run_sql_query` to the LLM. The agent can then answer arbitrary data questions by generating and executing a single read-only SELECT. Queries are validated by a four-layer guard (regex pre-filter → `sqlglot` AST + table allowlist → `BEGIN TRANSACTION READ ONLY` → optional least-privilege DB role); DELETE/UPDATE/INSERT/DDL and non-allowlisted tables are always blocked. In multi-property deployments, scope-binding CTEs are automatically injected to enforce tenant isolation. See [docs/OPS.md](docs/OPS.md#read-only-sql-chat-tool) for setup including the recommended `audit_readonly` Postgres role and optional RLS configuration.
 
 ### Content studio (optional, Experimental)
 

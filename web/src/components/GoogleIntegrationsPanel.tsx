@@ -407,7 +407,7 @@ export default function GoogleIntegrationsPanel({
     }
   }, [effectivePropertyId, startUrl]);
 
-  const fetchStatus = useCallback(async () => {
+  const fetchStatus = useCallback(async (isCancelled?: () => boolean) => {
     if (effectivePropertyId == null) return;
     setLoadingStatus(true);
     try {
@@ -429,14 +429,17 @@ export default function GoogleIntegrationsPanel({
           lastFetchedAt: data.lastFetchedAt ?? null,
           connectedEmail: data.connectedEmail ?? null,
         };
-        setStatus(mapped);
-        const gsc = mapped.gscSiteUrl ?? '';
-        const ga4 = mapped.ga4PropertyId ?? '';
-        const days = mapped.dateRangeDays ? String(mapped.dateRangeDays) : '28';
-        setGscSiteUrl(gsc);
-        setGa4PropertyId(ga4);
-        setDateRangeDays(days);
-        setSavedPropertiesSnapshot({ gsc, ga4, days });
+        // Guard against a stale response (property switched) clobbering newer data.
+        if (!isCancelled?.()) {
+          setStatus(mapped);
+          const gsc = mapped.gscSiteUrl ?? '';
+          const ga4 = mapped.ga4PropertyId ?? '';
+          const days = mapped.dateRangeDays ? String(mapped.dateRangeDays) : '28';
+          setGscSiteUrl(gsc);
+          setGa4PropertyId(ga4);
+          setDateRangeDays(days);
+          setSavedPropertiesSnapshot({ gsc, ga4, days });
+        }
       }
     } catch {
       // ignore
@@ -446,10 +449,14 @@ export default function GoogleIntegrationsPanel({
   }, [endpoints.status, effectivePropertyId]);
 
   useEffect(() => {
-    void fetchStatus();
+    let cancelled = false;
+    void fetchStatus(() => cancelled);
+    return () => {
+      cancelled = true;
+    };
   }, [fetchStatus]);
 
-  const fetchLinksStatus = useCallback(async () => {
+  const fetchLinksStatus = useCallback(async (isCancelled?: () => boolean) => {
     if (effectivePropertyId == null || !endpoints.linksStatus) {
       setLinksStatus(null);
       return;
@@ -458,17 +465,22 @@ export default function GoogleIntegrationsPanel({
     try {
       const res = await fetch(endpoints.linksStatus);
       if (res.ok) {
-        setLinksStatus((await res.json()) as typeof linksStatus);
+        const data = (await res.json()) as typeof linksStatus;
+        if (!isCancelled?.()) setLinksStatus(data);
       }
     } catch {
-      setLinksStatus(null);
+      if (!isCancelled?.()) setLinksStatus(null);
     } finally {
       setLoadingLinksStatus(false);
     }
   }, [effectivePropertyId, endpoints.linksStatus]);
 
   useEffect(() => {
-    void fetchLinksStatus();
+    let cancelled = false;
+    void fetchLinksStatus(() => cancelled);
+    return () => {
+      cancelled = true;
+    };
   }, [fetchLinksStatus]);
 
   const handleLinksFile = useCallback(

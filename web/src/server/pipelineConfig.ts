@@ -222,14 +222,16 @@ async function readPipelineConfigFromDb(client: PoolClient): Promise<{
   return { known, unknown };
 }
 
-export async function loadPipelineConfig(): Promise<PipelineConfigLoadResult> {
+async function loadPipelineConfigInternal(mask: boolean): Promise<PipelineConfigLoadResult> {
   return withDb(async (client: PoolClient) => {
     const { known, unknown } = await readPipelineConfigFromDb(client);
+    const maybeMask = (state: PipelineConfigState) =>
+      mask ? maskPipelineSecretsForClient(state) : state;
 
     if (Object.keys(known).length > 0 || unknown.length > 0) {
       const { state, unknownKeys: schemaUnknown } = applySchemaDefaultsRaw(known);
       const allUnknown = filterUnknownKeys([...unknown, ...schemaUnknown]);
-      return { state: maskPipelineSecretsForClient(state), unknownKeys: allUnknown, source: 'store' };
+      return { state: maybeMask(state), unknownKeys: allUnknown, source: 'store' };
     }
 
     const shadowPath = getShadowConfigPath();
@@ -239,7 +241,7 @@ export async function loadPipelineConfig(): Promise<PipelineConfigLoadResult> {
         const parsed = parseInputTxt(raw);
         if (Object.keys(parsed).length > 0) {
           const { state, unknownKeys } = applySchemaDefaultsRaw(parsed);
-          return { state: maskPipelineSecretsForClient(state), unknownKeys: filterUnknownKeys(unknownKeys), source: 'legacy' };
+          return { state: maybeMask(state), unknownKeys: filterUnknownKeys(unknownKeys), source: 'legacy' };
         }
       } catch {
         /* fall through */
@@ -248,6 +250,20 @@ export async function loadPipelineConfig(): Promise<PipelineConfigLoadResult> {
 
     return { state: buildDefaults(), unknownKeys: [], source: 'defaults' };
   });
+}
+
+/** Returns pipeline config with secrets MASKED — safe to send to the client. */
+export async function loadPipelineConfig(): Promise<PipelineConfigLoadResult> {
+  return loadPipelineConfigInternal(true);
+}
+
+/**
+ * Server-only variant that returns UNMASKED secrets. Never return its result to
+ * the client — it contains raw API keys/tokens. Use only when a server route must
+ * consume a secret in-process (e.g. authenticating a spawned Python subprocess).
+ */
+export async function loadPipelineConfigUnmasked(): Promise<PipelineConfigLoadResult> {
+  return loadPipelineConfigInternal(false);
 }
 
 export interface SavePipelineConfigOptions {

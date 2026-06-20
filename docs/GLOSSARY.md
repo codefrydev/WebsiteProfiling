@@ -42,6 +42,9 @@ This glossary maps agency-facing UI terms to internal keys, database tables, and
 | Moz / Majestic overlay | `third_party_overlays` on `gsc_links`, `/api/backlinks/third-party-import` | CSV export upload | Referring-domain comparison vs GSC sample |
 | Bing backlinks | `bing_backlinks`, Integrations sync | Bing Webmaster API (optional) | Secondary link source |
 | SERP competition overlay | `serp_estimated_competition` on keywords | SerpAPI (optional) | Estimated SERP difficulty |
+| Keyword Planner overlay | `planner_avg_monthly_searches`, `planner_competition`, `planner_competition_index`, `planner_provenance` on keyword rows | Google Ads API `KeywordPlanIdeaService` (optional; `enable_google_keyword_planner`) | Official market-level search volume + competition — does not overwrite GSC impressions |
+| Keyword Planner discovery | New keyword rows with `sources: ["planner"]` | `GenerateKeywordIdeas` | Brand-new keywords not yet in crawl or GSC |
+| Keyword Planner forecast | `planner_forecast_clicks`, `planner_forecast_conversions` on top rows | `GenerateKeywordForecastMetrics` v24 (`enable_keyword_forecast`) | Paid-campaign click/conversion forecast — clearly labelled, not organic traffic |
 | Scheduled audits | `properties.schedule_cron`, `/api/schedule/check` | Cron + pipeline spawn | Recurring site audit — see [OPS.md](OPS.md) |
 | Property alerts | `alert_webhook_url`, `/api/alerts/check` | Health snapshot rules | Operations notifications |
 | Content brief | Keywords Brief button, `/api/keywords/content-brief` | LLM or deterministic | Content planning |

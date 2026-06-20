@@ -90,9 +90,8 @@ def parse_seo_extended(html_text: str, base_url: str) -> dict:
             out["img_without_lazy"] += 1
         if not img.get("width") and not img.get("height"):
             out["img_without_dimensions"] += 1
-        src = img.get("src") or ""
-        if base_scheme == "https" and src.strip().lower().startswith("http://"):
-            out["mixed_content_count"] += 1
+        # NOTE: mixed-content for img src/srcset is counted once by the generic
+        # href/src/srcset loop below; do not double-count it here.
     # ARIA: count elements with any aria- attribute
     for el in soup.find_all(True):
         if getattr(el, "attrs", None) and any(k.startswith("aria-") for k in el.attrs):

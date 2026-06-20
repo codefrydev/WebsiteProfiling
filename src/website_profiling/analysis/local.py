@@ -138,7 +138,15 @@ def compute_duplicate_groups(
             parent[x] = find(parent[x])
         return parent[x]
 
-    def union(a: str, b: str) -> None:
+    # Track which detector(s) actually merged each node, tagged on both endpoints
+    # so the label survives union-find re-rooting. Inferring the method from the
+    # cluster's SimHash-set size is wrong (Hamming-merged clusters have differing
+    # hashes; fuzzy-merged clusters can coincidentally share one).
+    node_methods: dict[str, set[str]] = defaultdict(set)
+
+    def union(a: str, b: str, method: str) -> None:
+        node_methods[a].add(method)
+        node_methods[b].add(method)
         ra, rb = find(a), find(b)
         if ra != rb:
             parent[rb] = ra
@@ -152,14 +160,14 @@ def compute_duplicate_groups(
             continue
         base = members[0]
         for m in members[1:]:
-            union(base, m)
+            union(base, m, "simhash")
 
     if hamming_max > 0 and len(urls) <= simhash_max_urls:
         sh_list = [(u, url_to_sh[u]) for u in urls]
         for i, (u1, h1) in enumerate(sh_list):
             for u2, h2 in sh_list[i + 1 :]:
                 if _hamming(h1, h2) <= hamming_max:
-                    union(u1, u2)
+                    union(u1, u2, "simhash")
     elif hamming_max > 0 and len(urls) > simhash_max_urls:
         warnings.append(
             f"Duplicate detection: SimHash similarity skipped for {len(urls)} URLs "
@@ -172,7 +180,7 @@ def compute_duplicate_groups(
             for u2 in urls[i + 1 :]:
                 fp2 = url_to_fp.get(u2, "")
                 if fp1 and fp2 and fuzz.token_set_ratio(fp1, fp2) >= fuzzy_threshold:
-                    union(u1, u2)
+                    union(u1, u2, "fuzzy")
     elif len(urls) > fuzzy_max_urls:
         warnings.append(
             f"Duplicate detection: fuzzy title matching skipped for {len(urls)} URLs "
@@ -192,8 +200,10 @@ def compute_duplicate_groups(
             continue
         members = sorted(set(members))
         rep = members[0]
-        hashes = {url_to_sh.get(m) for m in members}
-        methods = ["simhash"] if len(hashes) == 1 else ["fuzzy"]
+        found_methods: set[str] = set()
+        for m in members:
+            found_methods |= node_methods.get(m, set())
+        methods = sorted(found_methods) or ["simhash"]
         gkey = f"dup_{gid}"
         gid += 1
         groups_out.append(
