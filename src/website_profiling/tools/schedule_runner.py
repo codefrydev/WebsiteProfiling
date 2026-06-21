@@ -13,24 +13,53 @@ def _cron_dow(now: datetime) -> int:
     return (now.weekday() + 1) % 7
 
 
+def _cron_field_matches(field: str, value: int) -> bool:
+    """True if *value* matches a cron field of '*' or a comma list of integers."""
+    if field == "*":
+        return True
+    allowed = {part.strip() for part in field.split(",") if part.strip()}
+    return str(value) in allowed
+
+
 def _cron_matches(cron_expr: str, now: datetime) -> bool:
-    """Minimal cron matcher: 'MIN HOUR * * DOW' (UTC, single values only)."""
+    """Minimal cron matcher (UTC): 'MIN HOUR DOM MONTH DOW', '*' or comma lists.
+
+    Day-of-month and month are honoured (previously ignored, which made e.g.
+    ``0 9 1 * *`` fire every day instead of only on the 1st). DOM and DOW follow
+    standard cron OR-semantics: when both are restricted, the day matches if
+    EITHER matches; an unparseable field fails closed (no match).
+    """
     parts = cron_expr.strip().split()
     if len(parts) != 5:
         return False
-    minute, hour, _dom, _month, dow = parts
+    minute, hour, dom, month, dow = parts
     try:
         if minute != "*" and int(minute) != now.minute:
             return False
         if hour != "*" and int(hour) != now.hour:
             return False
+        # Validate the remaining fields up front so a malformed token fails closed.
+        for field in (dom, month, dow):
+            for part in field.split(","):
+                part = part.strip()
+                if part and part != "*":
+                    int(part)
     except ValueError:
         return False
-    if dow != "*":
-        cron_dow = _cron_dow(now)
-        allowed = {part.strip() for part in dow.split(",") if part.strip()}
-        if str(cron_dow) not in allowed:
-            return False
+
+    if not _cron_field_matches(month, now.month):
+        return False
+
+    dom_restricted = dom != "*"
+    dow_restricted = dow != "*"
+    dom_ok = _cron_field_matches(dom, now.day)
+    dow_ok = _cron_field_matches(dow, _cron_dow(now))
+    if dom_restricted and dow_restricted:
+        return dom_ok or dow_ok
+    if dom_restricted:
+        return dom_ok
+    if dow_restricted:
+        return dow_ok
     return True
 
 

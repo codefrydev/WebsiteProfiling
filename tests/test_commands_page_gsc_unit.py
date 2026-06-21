@@ -330,6 +330,34 @@ def test_page_coach_cmd_success_and_env(monkeypatch, capsys) -> None:
     assert out["ok"] is True
 
 
+def test_page_coach_cmd_malformed_env_does_not_crash(monkeypatch, capsys) -> None:
+    # A non-numeric / empty id (e.g. from an unvalidated request body) must
+    # degrade to None, not raise ValueError and crash the command.
+    from website_profiling.commands import page_coach_cmd
+
+    captured: dict = {}
+
+    def fake_run(url, cfg, **kwargs):
+        captured["kwargs"] = kwargs
+        return {"ok": True, "suggestions": []}
+
+    monkeypatch.setitem(
+        sys.modules,
+        "website_profiling.llm.page_coach",
+        types.SimpleNamespace(run_page_coach=fake_run),
+    )
+    monkeypatch.setenv("WP_PAGE_COACH_CURRENT", "live:abc")
+    monkeypatch.setenv("WP_PAGE_COACH_BASELINE", "snapshot:")
+
+    args = argparse.Namespace(url="https://example.com/page", refresh=False)
+    with pytest.raises(SystemExit) as exc:
+        page_coach_cmd.run({"start_url": "https://example.com"}, "/tmp", args)
+    assert exc.value.code == 0
+    assert captured["kwargs"]["current_type"] is None
+    assert captured["kwargs"]["current_id"] is None
+    assert captured["kwargs"]["baseline_id"] is None
+
+
 def test_page_coach_cmd_failure_exit(monkeypatch, capsys) -> None:
     from website_profiling.commands import page_coach_cmd
 

@@ -20,13 +20,21 @@ const CHAT_PROVIDER_OPTIONS = [
 export interface ChatProviderPickerProps {
   provider: string;
   disabled?: boolean;
+  /** Opens above (composer) or below (header) the trigger. */
+  menuPlacement?: 'above' | 'below';
+  triggerClassName?: string;
 }
 
 function providerLabel(value: string): string {
   return CHAT_PROVIDER_OPTIONS.find((opt) => opt.value === value)?.label ?? value;
 }
 
-export default function ChatProviderPicker({ provider, disabled }: ChatProviderPickerProps) {
+export default function ChatProviderPicker({
+  provider,
+  disabled,
+  menuPlacement = 'above',
+  triggerClassName,
+}: ChatProviderPickerProps) {
   const { saveLlmProvider, saving } = usePipeline();
   const [open, setOpen] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -68,18 +76,27 @@ export default function ChatProviderPicker({ provider, disabled }: ChatProviderP
         type="button"
         disabled={busy}
         onClick={() => setOpen((v) => !v)}
-        className="flex max-w-[6.5rem] items-center gap-1 rounded-full px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-[var(--chat-surface-hover)] hover:text-foreground disabled:opacity-50 sm:max-w-[8.5rem]"
+        className={
+          triggerClassName ??
+          'flex max-w-[6.5rem] items-center gap-1 rounded-full px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-[var(--chat-surface-hover)] hover:text-foreground disabled:opacity-50 sm:max-w-[8.5rem]'
+        }
         aria-expanded={open}
         aria-haspopup="listbox"
         aria-label={c.chooseProvider}
       >
-        <span className="truncate font-medium text-foreground">{providerLabel(provider)}</span>
+        <span
+          className={`truncate font-medium ${triggerClassName ? 'text-inherit' : 'text-foreground'}`}
+        >
+          {providerLabel(provider)}
+        </span>
         <ChevronDown className={`h-3.5 w-3.5 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
       {open ? (
         <div
-          className="absolute bottom-full right-0 z-50 mb-2 w-[min(14rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-default bg-[var(--chat-surface)] shadow-2xl"
+          className={`absolute right-0 z-50 w-[min(14rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-default bg-[var(--chat-surface)] shadow-2xl ${
+            menuPlacement === 'below' ? 'top-full mt-2' : 'bottom-full mb-2'
+          }`}
           role="listbox"
         >
           <ul className="max-h-[min(16rem,50vh)] overflow-y-auto p-1">

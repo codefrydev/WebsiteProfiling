@@ -172,6 +172,8 @@ Environment overrides (optional):
 After start, open: http://localhost:3000/home
 Run audits via sidebar "Run audit" (bottom-right FAB).
 
+Production Next.js (same Postgres, no hot reload): ./local-prod start
+
 Run CI-style tests: ./local-test (see ./local-test help). JS crawl integration: ./local-test browser.
 EOF
 }

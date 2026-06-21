@@ -50,6 +50,18 @@ def test_compute_impact_score_defaults():
     assert compute_impact_score("Unknown") >= 1
 
 
+def test_issue_impact_skips_homepage_ga4_path():
+    """GA4 path '/' rstrip('/') is ''; must not match every issue via endswith('')."""
+    categories = [{
+        "issues": [{"url": "https://example.com/about", "priority": "Medium"}],
+    }]
+    google = {"ga4": {"pages": [{"path": "/", "sessions": 999}]}}
+    enrich_categories_with_traffic_impact(categories, google)
+    issue = categories[0]["issues"][0]
+    assert issue["ga4_sessions"] == 0
+    assert issue["impact_score"] == compute_impact_score("Medium")
+
+
 def test_issue_impact_handles_invalid_rows():
     assert enrich_categories_with_traffic_impact([], []) == []
     enrich_categories_with_traffic_impact(

@@ -25,6 +25,7 @@
 
 <p align="center">
   <a href="#getting-started">Quick start</a> ·
+  <a href="#seo-feedback-loop">Feedback loop</a> ·
   <a href="#features">Features</a> ·
   <a href="#scope-and-limitations">Limitations</a> ·
   <a href="#architecture">Structure</a> ·
@@ -50,7 +51,32 @@ Site Audit is a **developer-friendly SEO audit** tool: self-hosted, transparent,
 - Content writing and optimization with live SEO scoring
 - Search Console, GA4, and Bing Webmaster integration
 - Agency portfolio management and run comparison
+- **Closed-loop SEO workflow** — audit, report, feed data to IDE agents via MCP, fix in code, review and compare
 - Optional AI-assisted analysis over audit data via MCP-compatible tools
+
+## SEO feedback loop
+
+Site Audit is built for a **continuous improve-and-verify cycle**, not one-off dashboard checks. Crawl your site, generate reports, expose audit data to AI agents in **Cursor, Claude Code, or Copilot** via [340 MCP tools](docs/MCP.md), fix issues in your repository, then **review** the next run to compare health scores and issue deltas.
+
+```text
+Audit → Report → MCP → Fix → Review → (repeat)
+```
+
+<p align="center">
+  <img src="docs/assets/seo-feedback-loop.png" alt="Site Audit SEO feedback loop — Audit, Report, MCP, Fix, Review" width="920">
+</p>
+
+**How each step maps to the product**
+
+| Step | What you do | In Site Audit |
+|------|-------------|---------------|
+| **Audit** | Crawl and score the site | Pipeline (`python -m src`), Lighthouse, on-page checks |
+| **Report** | Export and prioritize fixes | PDF/HTML/CSV exports, issue board, fix roadmap |
+| **MCP** | Pull audit context into your IDE | `python -m website_profiling.mcp` — read-only tools for Cursor / Claude Desktop |
+| **Fix** | Ship changes in your codebase | Your PR workflow (MCP does not write to the site) |
+| **Review** | Prove improvement | Compare runs, category deltas, GSC metric changes |
+
+See [docs/MCP.md](docs/MCP.md) for MCP setup and example prompts (e.g. compare two reports, export issue diffs).
 
 ## Scope and limitations
 
@@ -93,7 +119,7 @@ Site Audit focuses on **honest, self-hosted technical SEO**. It is not a drop-in
   </tr>
 </table>
 
-Also included: **AI chat** over audit data (optional), **Content studio** (write &amp; optimize with live SEO scoring), **340 MCP tools** (local stdio or remote Streamable HTTP), image SEO, GEO/AEO readiness, keyword explorer (GSC + on-site), backlinks (GSC Links import), compare runs, and portfolio management for agencies.
+Also included: **AI chat** over audit data (optional), **Content studio** (write &amp; optimize with live SEO scoring), **340 MCP tools** (local stdio or remote Streamable HTTP), image SEO, GEO/AEO readiness, keyword explorer (GSC + on-site), backlinks (GSC Links import), compare runs, portfolio management for agencies, and the **agent-driven feedback loop** above.
 
 <img src="docs/assets/social-preview.png" alt="Site Audit — developer-friendly SEO audit preview" width="100%">
 

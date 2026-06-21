@@ -322,8 +322,8 @@ def run_keyword_pipeline(
     if not high_value:
         high_value = scored[:10]
     summary_lines = [
-        "Quick-wins (high score, lower difficulty): " + ", ".join([x["keyword"] for x in quick_wins[:5]]) or "none",
-        "High-value targets (volume): " + ", ".join([x["keyword"] for x in high_value[:5]]) or "none",
+        "Quick-wins (high score, lower difficulty): " + (", ".join([x["keyword"] for x in quick_wins[:5]]) or "none"),
+        "High-value targets (volume): " + (", ".join([x["keyword"] for x in high_value[:5]]) or "none"),
     ]
     human_summary = " ".join(summary_lines)
 

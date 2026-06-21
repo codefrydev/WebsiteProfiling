@@ -80,9 +80,15 @@ export async function upsertPropertyByDomain(
   });
 }
 
+function looksLikeValidDomain(domain: string): boolean {
+  const lastDot = domain.lastIndexOf('.');
+  // Require at least one dot with content before it and a TLD of at least 2 chars after it.
+  return lastDot > 0 && domain.length - lastDot - 1 >= 2;
+}
+
 export async function resolvePropertyIdFromStartUrl(startUrl: string): Promise<number | null> {
   const domain = canonicalDomainFromStartUrl(startUrl);
-  if (!domain) return null;
+  if (!domain || !looksLikeValidDomain(domain)) return null;
   const existing = await getPropertyByDomain(domain);
   if (existing) return existing.id;
   const name = deriveSiteNameFromStartUrl(startUrl) || domain;

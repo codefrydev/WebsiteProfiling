@@ -9,7 +9,7 @@ import pytest
 from website_profiling.tools.audit_tools import AuditToolContext, dispatch_tool
 from website_profiling.tools.audit_tools.context import AuditToolContext as Ctx
 from website_profiling.tools.audit_tools.registry import TOOL_DEFINITIONS, openai_tools_schema
-from website_profiling.tools.audit_tools.report import (
+from website_profiling.tools.audit_tools.report.report import (
     get_category_scores,
     get_report_summary,
     list_issues,
@@ -93,7 +93,7 @@ def test_dispatch_via_db_session() -> None:
     with patch("website_profiling.tools.audit_tools.registry.db_session") as mock_sess:
         mock_sess.return_value.__enter__.return_value = conn
         with patch(
-            "website_profiling.tools.audit_tools.properties.list_properties_public",
+            "website_profiling.tools.audit_tools.portfolio.properties.list_properties_public",
             return_value=[],
         ):
             result = dispatch_tool("list_properties", {})
@@ -193,20 +193,20 @@ def test_get_report_summary_and_categories() -> None:
 def test_properties_tools() -> None:
     conn = MagicMock()
     with patch(
-        "website_profiling.tools.audit_tools.properties.list_properties_public",
+        "website_profiling.tools.audit_tools.portfolio.properties.list_properties_public",
         return_value=[{"id": 1}],
     ):
         assert dispatch_tool("list_properties", {}, conn=conn)["count"] == 1
 
     with patch(
-        "website_profiling.tools.audit_tools.properties.get_property_by_id",
+        "website_profiling.tools.audit_tools.portfolio.properties.get_property_by_id",
         return_value=None,
     ):
         missing = dispatch_tool("get_property", {"property_id": 9}, conn=conn)
     assert "not found" in missing["error"]
 
     with patch(
-        "website_profiling.tools.audit_tools.properties.get_property_by_id",
+        "website_profiling.tools.audit_tools.portfolio.properties.get_property_by_id",
         return_value={"id": 1, "name": "ex.com", "canonical_domain": "ex.com"},
     ):
         ok = dispatch_tool("get_property", {"property_id": 1}, conn=conn)
@@ -229,7 +229,7 @@ def test_crawl_tools() -> None:
     with patch.object(Ctx, "load_crawl_df", return_value=pd.DataFrame()), patch.object(
         Ctx, "load_payload", return_value=_sample_payload(),
     ), patch(
-        "website_profiling.tools.audit_tools.crawl.slice_from_google_row",
+        "website_profiling.tools.audit_tools.crawl.crawl.slice_from_google_row",
         return_value={"gsc": {"clicks": 1}},
     ):
         detail = dispatch_tool(
@@ -339,7 +339,7 @@ def test_lighthouse_keywords_google_health() -> None:
     with patch.object(Ctx, "load_crawl_df", return_value=df), patch.object(
         Ctx, "load_payload", return_value=_sample_payload(),
     ), patch(
-        "website_profiling.tools.audit_tools.crawl.slice_from_google_row",
+        "website_profiling.tools.audit_tools.crawl.crawl.slice_from_google_row",
         return_value={},
     ):
         found = dispatch_tool(

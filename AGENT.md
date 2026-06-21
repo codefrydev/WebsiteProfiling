@@ -43,13 +43,46 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 | Local analysis | `analysis/local.py`, `requirements.txt` |
 | AI insights (LLM) | `llm/enrich.py`, `llm/agent.py`, `llm_config.py`, `requirements.txt` |
 | Audit query tools (MCP + chat) | `tools/audit_tools/`, `mcp/server.py`, `mcp/http_server.py`, `commands/chat_cmd.py` |
-| Agent readiness checks | `tools/audit_tools/agent_readiness.py`, `tools/audit_tools/_aeo_helpers.py` |
+| Agent readiness checks | `tools/audit_tools/geo/agent_readiness.py`, `tools/audit_tools/_aeo_helpers.py` |
 | Config / CLI | `config.py` (`load_config`, `load_config_from_db`), `cli.py`, `input.txt.example` |
 | UI pipeline schema | `web/src/lib/pipelineConfigSchema.ts` |
 | UI LLM schema | `web/src/lib/llmConfigSchema.ts` |
 | UI config I/O | `web/src/server/pipelineConfig.ts`, `web/src/server/llmConfig.ts` |
+| D3 charts (custom / compare / overview) | `web/src/components/charts/d3/`, `web/src/lib/viz/` |
+| Chart.js charts (standard bar/line/doughnut) | `web/src/utils/chartJsDefaults.ts`, `react-chartjs-2` in views under `web/src/views/`, `web/src/components/searchPerformance/`, `web/src/components/traffic/` |
 
 Schema changes: add Alembic migration (`alembic revision`).
+
+**Charts — Chart.js + D3 (hybrid)**
+
+The web UI uses **both** Chart.js and D3.js. Pick the library that fits each chart; do not migrate everything to one stack.
+
+| Prefer **Chart.js** when… | Prefer **D3** when… |
+|---------------------------|---------------------|
+| Standard bar, line, or doughnut with typical legend/tooltip/responsive canvas | Custom layout (grouped compare bars, dual lines with null gaps, arc gauges) |
+| Quick add with minimal custom SVG | Tight theme control via CSS vars (`--chart-grid`, `--chart-title`, etc.) |
+| Page already on Chart.js (GSC, GA4, Links, Content Analytics) | Reusing shared components in `web/src/components/charts/d3/` |
+| Chart.js plugins or defaults are enough | Neutral data types + adapters in `web/src/lib/viz/` |
+
+**Decision rule:** If a D3 component already exists (`D3GroupedBarChart`, `D3DualLineChart`, `D3VerticalBarChart`, `D3DonutChart`, compact charts, `arcGauge.ts`), reuse it. If it is a one-off standard chart on a Chart.js page, stay on Chart.js unless D3 clearly wins.
+
+**Current split (indicative)**
+
+| Area | Library |
+|------|---------|
+| Overview dashboard (`/dashboard`) | D3 |
+| Compare (`/compare`) | D3 |
+| Content analytics — Analytics tab (`/content-analytics?tab=analytics`) | D3 |
+| GSC / GA4 / scatter (`GscCharts`, `Ga4Charts`) | Chart.js |
+| Links explorer, Content Analytics, Text Content Analysis | Chart.js |
+| Score rings, distribution donuts, compact sparklines | D3 |
+
+**Conventions (both stacks)**
+
+- Wrap charts in `ChartPanel`, `ChartAccessibleFallback`, and/or `ChartCard` where applicable.
+- Theme helpers live in `web/src/utils/chartJsDefaults.ts` (`getGridColor`, `getChartTitleColor`, `truncateChartLabel`) — use them from D3 as well as Chart.js.
+- Keep chart-library types out of data-prep: use neutral shapes (`BarChartData`, `DualSeriesChartData` in `web/src/lib/viz/types.ts` and `web/src/lib/compareChartData.ts`); convert at the render layer via `web/src/lib/viz/adapters.ts` when needed.
+- Migrate page-by-page when D3 is the better fit; do not remove `chart.js` from `package.json` until all consumers are migrated.
 
 **Company standards:** UI copy in `web/src/strings.json` (Site Audit, Properties, Run audit). Data provenance on `report_meta` in report payload. Docs: `docs/COMPANY_STANDARDS.md`, `docs/GLOSSARY.md`. Migration `003_company_standards` (properties, pipeline_jobs, audit_log). Durable jobs in `web/src/server/pipelineJobsDb.ts`. Export: `GET /api/report/export`, `src/website_profiling/tools/export_audit.py`.
 

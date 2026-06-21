@@ -1,12 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { Loader2, Plug, RefreshCw, Sparkles } from 'lucide-react';
 import ConfigField from '@/components/pipeline/ConfigField';
 import McpCopyBlock from '@/components/mcp/McpCopyBlock';
 import ChatShell from '@/components/chat/ChatShell';
 import { SecretsSaveBar } from '@/components/secrets/SecretsSettingsPanel';
+import ToolPageSidebar from '@/components/shared/ToolPageSidebar';
 import { useMcpSettings } from '@/hooks/useMcpSettings';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import { MCP_SETTINGS_FIELDS } from '@/lib/secretsConfigSchema';
@@ -20,7 +20,7 @@ import {
   normalizePublicUrl,
   tokenForSnippet,
 } from '@/lib/mcpClientConfig';
-import { CHAT_SIDEBAR_NAV_IDS, isMiniNavLinkActive, miniNavLinks } from '@/lib/appNav';
+import { CHAT_SIDEBAR_NAV_IDS } from '@/lib/appNav';
 import { strings } from '@/lib/strings';
 
 const s = strings.mcpSettings;
@@ -48,7 +48,7 @@ export default function McpSettingsPage() {
     tokenMasked,
   } = useMcpSettings();
   const { readOnly } = useReadOnlySession();
-  const pathname = usePathname();
+
 
   const publicUrl = normalizePublicUrl(String(state.mcp_public_url || ''));
   const domain = normalizeMcpDomain(String(state.mcp_domain || 'core'));
@@ -73,31 +73,13 @@ export default function McpSettingsPage() {
 
   return (
     <ChatShell
-      sidebar={() => (
-        <aside className="chat-sidebar flex flex-col">
-          <div className="border-b border-muted/30 px-3 py-3">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{s.sidebarTitle}</p>
-          </div>
-          <nav className="flex-1 space-y-1 overflow-y-auto p-2">
-            {miniNavLinks(CHAT_SIDEBAR_NAV_IDS).map((item) => {
-              const active = isMiniNavLinkActive(item.href, pathname);
-              return (
-              <Link
-                key={item.id}
-                href={item.href}
-                className={`flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm transition-colors ${
-                  active
-                    ? 'bg-blue-500/10 text-foreground'
-                    : 'text-muted-foreground hover:bg-muted/20 hover:text-foreground'
-                }`}
-              >
-                <item.icon className="h-4 w-4 shrink-0" aria-hidden />
-                <span className="truncate">{item.label}</span>
-              </Link>
-              );
-            })}
-          </nav>
-        </aside>
+      sidebar={(layout) => (
+        <ToolPageSidebar
+          {...layout}
+          navIds={CHAT_SIDEBAR_NAV_IDS}
+          title={s.sidebarTitle}
+          railIcon={Plug}
+        />
       )}
     >
       <div className="chat-main-panel">

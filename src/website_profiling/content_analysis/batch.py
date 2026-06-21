@@ -35,11 +35,16 @@ def _analyze_row(
     url = row.get("url")
     if not url or not html:
         return None
-    fields = analyze_page_html(
-        str(html),
-        excerpt_max_chars=excerpt_max_chars,
-        strategy=strategy,
-    )
+    try:
+        fields = analyze_page_html(
+            str(html),
+            excerpt_max_chars=excerpt_max_chars,
+            strategy=strategy,
+        )
+    except Exception:
+        # A single page whose HTML breaks the analysis stack must not abort the
+        # whole run (mirrors page_markdown.batch._extract_row); skip it instead.
+        return None
     return {"url": str(url).rstrip("/"), **fields}
 
 

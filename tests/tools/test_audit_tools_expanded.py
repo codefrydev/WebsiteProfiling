@@ -225,19 +225,19 @@ def test_all_payload_tools(conn: MagicMock, ctx: AuditToolContext) -> None:
     ), patch.object(Ctx, "load_google", return_value=payload["google"]), patch.object(
         Ctx, "load_gsc_links", return_value=gsc_links,
     ), patch(
-        "website_profiling.tools.audit_tools.backlinks.read_gsc_links_status",
+        "website_profiling.tools.audit_tools.backlinks.backlinks.read_gsc_links_status",
         return_value={"hasData": True},
     ), patch(
-        "website_profiling.tools.audit_tools.keywords.read_keyword_history",
+        "website_profiling.tools.audit_tools.keywords.keywords.read_keyword_history",
         return_value=[{"fetched_at": "2026-06-07", "position": 5}],
     ), patch(
-        "website_profiling.tools.audit_tools.ops.check_all_alerts",
+        "website_profiling.tools.audit_tools.ops.ops.check_all_alerts",
         return_value=[{"type": "health_drop"}],
     ), patch(
-        "website_profiling.tools.audit_tools.crawl.slice_from_google_row",
+        "website_profiling.tools.audit_tools.crawl.crawl.slice_from_google_row",
         return_value={"queries": []},
     ), patch(
-        "website_profiling.tools.audit_tools.ops.get_property_by_id",
+        "website_profiling.tools.audit_tools.ops.ops.get_property_by_id",
         return_value={"id": 1, "google_refresh_token": "tok", "gsc_site_url": "sc-domain:ex.com"},
     ), patch.object(
         conn, "execute",
@@ -390,6 +390,25 @@ def test_list_report_history_and_workflow(conn: MagicMock, ctx: AuditToolContext
         hist = dispatch_tool("list_report_history", {"property_id": 1}, conn=fake)
     assert hist["count"] == 1
 
+    # Unresolvable domain ("") must NOT filter on canonical_domain = '' (which
+    # matched no rows); it returns recent history instead.
+    fake_no_domain = FakeConn()
+    fake_no_domain.set_next_cursor(
+        FakeCursor(
+            fetchall_value=[{
+                "id": 11,
+                "site_name": "Ex2",
+                "canonical_domain": "ex2.com",
+                "generated_at": now,
+            }],
+        ),
+    )
+    with patch.object(Ctx, "resolve_property_domain", return_value=""):
+        hist2 = dispatch_tool("list_report_history", {"property_id": 1}, conn=fake_no_domain)
+    assert hist2["count"] == 1
+    executed_sql, _params = fake_no_domain.executed[-1]
+    assert "canonical_domain = %s" not in executed_sql
+
     fake2 = FakeConn()
     fake2.set_next_cursor(
         FakeCursor(
@@ -409,19 +428,44 @@ def test_list_report_history_and_workflow(conn: MagicMock, ctx: AuditToolContext
     wf = dispatch_tool("list_issue_workflow", {"property_id": 1}, conn=fake2)
     assert wf["count"] == 1
 
+    # status filter must be pushed into the SQL WHERE (applied before LIMIT),
+    # otherwise the most-recent N rows can be all-other-statuses and the filtered
+    # result is wrongly empty.
+    fake3 = FakeConn()
+    fake3.set_next_cursor(
+        FakeCursor(
+            fetchall_value=[{
+                "issue_key": "k1",
+                "url": "https://ex.com",
+                "category": "Tech",
+                "priority": "High",
+                "message": "msg",
+                "status": "open",
+                "assignee": None,
+                "note": None,
+                "updated_at": now,
+            }],
+        ),
+    )
+    wf2 = dispatch_tool("list_issue_workflow", {"property_id": 1, "status": "open"}, conn=fake3)
+    assert wf2["count"] == 1
+    executed_sql, executed_params = fake3.executed[-1]
+    assert "AND status = %s" in executed_sql
+    assert "open" in executed_params
+
 
 def test_compare_reports(conn: MagicMock, ctx: AuditToolContext) -> None:
     current = _full_payload()
     baseline = {**current, "summary": {**current["summary"], "total_urls": 8}}
-    with patch("website_profiling.tools.audit_tools.compare.read_report_payload", side_effect=[current, baseline]):
+    with patch("website_profiling.tools.audit_tools.compare.compare.read_report_payload", side_effect=[current, baseline]):
         result = dispatch_tool("compare_reports", {"baseline_report_id": 1}, context=ctx, conn=conn)
     assert "health_score" in result
-    with patch("website_profiling.tools.audit_tools.compare_helpers.read_report_payload", side_effect=[current, baseline]):
+    with patch("website_profiling.tools.audit_tools.compare.compare_helpers.read_report_payload", side_effect=[current, baseline]):
         diff = dispatch_tool("compare_url_set_diff", {"baseline_report_id": 1}, context=ctx, conn=conn)
     assert "new_count" in diff
     assert dispatch_tool("compare_reports", {}, context=ctx, conn=conn)["error"]
     with patch(
-        "website_profiling.tools.audit_tools.compare.read_report_payload",
+        "website_profiling.tools.audit_tools.compare.compare.read_report_payload",
         side_effect=[None, baseline],
     ):
         assert "not found" in dispatch_tool("compare_reports", {"baseline_report_id": 1}, context=ctx, conn=conn)["error"]
@@ -496,18 +540,18 @@ def test_new_gap_closure_tools(conn: MagicMock, ctx: AuditToolContext) -> None:
         assert dispatch_tool("list_lighthouse_poor_accessibility_pages", {}, context=ctx, conn=conn)["total"] == 1
         assert dispatch_tool("list_lighthouse_poor_best_practices_pages", {}, context=ctx, conn=conn)["total"] == 1
         assert dispatch_tool("list_lighthouse_cwv_failures", {}, context=ctx, conn=conn)["total"] == 1
-    with patch("website_profiling.tools.audit_tools.ops._load_log_analysis", return_value=log_row):
+    with patch("website_profiling.tools.audit_tools.ops.ops._load_log_analysis", return_value=log_row):
         assert dispatch_tool("get_log_top_paths", {"property_id": 1}, context=ctx, conn=conn)["total"] == 1
         assert dispatch_tool("list_log_only_paths", {"property_id": 1}, context=ctx, conn=conn)["total"] == 1
         assert dispatch_tool("list_crawl_only_paths", {"property_id": 1}, context=ctx, conn=conn)["total"] == 1
         assert dispatch_tool("get_log_googlebot_stats", {"property_id": 1}, context=ctx, conn=conn)["googlebot_hits"] == 10
-    with patch("website_profiling.tools.audit_tools.compare_helpers.read_report_payload", return_value=payload):
+    with patch("website_profiling.tools.audit_tools.compare.compare_helpers.read_report_payload", return_value=payload):
         assert "security_deltas" in dispatch_tool("compare_security_deltas", {"baseline_report_id": 1}, context=ctx, conn=conn)
         assert "health_score" in dispatch_tool("compare_health_score_delta", {"baseline_report_id": 1}, context=ctx, conn=conn)
-    with patch("website_profiling.tools.audit_tools.llm_tools.list_properties_public", return_value=[{"id": 1, "name": "ex.com", "canonical_domain": "ex.com"}]):
+    with patch("website_profiling.tools.audit_tools.integrations.llm_tools.list_properties_public", return_value=[{"id": 1, "name": "ex.com", "canonical_domain": "ex.com"}]):
         conn.execute = MagicMock(return_value=MagicMock(fetchone=MagicMock(return_value={"health_score": 80, "generated_at": datetime.now(timezone.utc), "report_id": 1, "issue_counts": "{}"})))
         assert dispatch_tool("get_portfolio_summary", {}, conn=conn)["count"] == 1
-    with patch("website_profiling.tools.audit_tools.llm_tools.batch_expand", return_value={"widgets": {"web": ["widgets near me"]}}):
+    with patch("website_profiling.tools.audit_tools.integrations.llm_tools.batch_expand", return_value={"widgets": {"web": ["widgets near me"]}}):
         assert dispatch_tool("expand_keywords", {"seeds": ["widgets"]}, context=ctx, conn=conn)["seed_count"] == 1
     assert dispatch_tool("generate_content_brief", {"keyword": "widgets"}, context=ctx, conn=conn)["brief"]["keyword"] == "widgets"
 
@@ -516,7 +560,7 @@ def test_export_tools(conn: MagicMock, ctx: AuditToolContext, tmp_path, monkeypa
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     payload = _full_payload()
     with patch.object(Ctx, "load_payload", return_value=payload), patch(
-        "website_profiling.tools.audit_tools.export_tools.export_audit_csv",
+        "website_profiling.tools.audit_tools.export.export_tools.export_audit_csv",
         return_value="url,status\nhttps://ex.com,200\n",
     ):
         out = dispatch_tool("export_audit_report", {"format": "csv"}, context=ctx, conn=conn)
@@ -525,7 +569,7 @@ def test_export_tools(conn: MagicMock, ctx: AuditToolContext, tmp_path, monkeypa
     formats = dispatch_tool("list_export_formats", {}, context=ctx, conn=conn)
     assert formats.get("formats")
     with patch.object(Ctx, "load_payload", return_value=payload), patch(
-        "website_profiling.tools.audit_tools.export_tools._dispatch",
+        "website_profiling.tools.audit_tools.export.export_tools._dispatch",
         return_value={"pages": [{"url": "https://ex.com/broken", "status": "404"}], "total": 1, "truncated": False},
     ):
         csv_out = dispatch_tool(
@@ -536,7 +580,7 @@ def test_export_tools(conn: MagicMock, ctx: AuditToolContext, tmp_path, monkeypa
         )
         assert csv_out.get("artifact_id")
         assert csv_out.get("total") == 1
-    with patch("website_profiling.tools.audit_tools.export_tools.load_compare_pair") as mock_pair:
+    with patch("website_profiling.tools.audit_tools.export.export_tools.load_compare_pair") as mock_pair:
         mock_pair.return_value = (payload, payload, 2, 1, None)
         cmp_out = dispatch_tool("export_compare_csv", {"baseline_report_id": 1}, context=ctx, conn=conn)
         assert cmp_out.get("artifact_id")

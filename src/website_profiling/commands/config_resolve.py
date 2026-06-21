@@ -281,6 +281,7 @@ def build_parser() -> argparse.ArgumentParser:
             "page-coach",
             "chat",
             "page-markdown",
+            "help",
         ],
         help="Run only this step (default: run all steps according to config)",
     )
@@ -394,7 +395,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--stdin-json",
         action="store_true",
         dest="stdin_json",
-        help="For 'chat' command: read JSON payload from stdin and emit NDJSON events.",
+        help="For 'chat' and 'help' commands: read JSON payload from stdin and emit NDJSON events.",
     )
     parser.add_argument(
         "--resume-run-id",

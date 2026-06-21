@@ -4,7 +4,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 from website_profiling.tools.audit_tools.context import AuditToolContext
-from website_profiling.tools.audit_tools.crawl_actions import (
+from website_profiling.tools.audit_tools.crawl.crawl_actions import (
     CHAT_CRAWL_TOOL,
     prepare_audit_run,
 )
@@ -32,7 +32,7 @@ def test_prepare_audit_run_disabled_when_setting_off() -> None:
     conn = _FakeConn()
     ctx = AuditToolContext(property_id=1)
     with patch(
-        "website_profiling.tools.audit_tools.crawl_actions._chat_allow_crawl",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions._chat_allow_crawl",
         return_value=False,
     ):
         out = prepare_audit_run(conn, ctx, {"start_url": "https://example.com"})
@@ -45,10 +45,10 @@ def test_prepare_audit_run_ready_default() -> None:
     ctx = AuditToolContext(property_id=1)
     saved = {"site_name": "Test", "run_crawl": "false"}
     with patch(
-        "website_profiling.tools.audit_tools.crawl_actions._chat_allow_crawl",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions._chat_allow_crawl",
         return_value=True,
     ), patch(
-        "website_profiling.tools.audit_tools.crawl_actions.read_pipeline_config",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions.read_pipeline_config",
         return_value=(saved, []),
     ):
         out = prepare_audit_run(
@@ -73,10 +73,10 @@ def test_prepare_audit_run_custom_overrides() -> None:
     conn = _FakeConn()
     ctx = AuditToolContext(property_id=2)
     with patch(
-        "website_profiling.tools.audit_tools.crawl_actions._chat_allow_crawl",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions._chat_allow_crawl",
         return_value=True,
     ), patch(
-        "website_profiling.tools.audit_tools.crawl_actions.read_pipeline_config",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions.read_pipeline_config",
         return_value=({}, []),
     ):
         out = prepare_audit_run(
@@ -104,10 +104,10 @@ def test_prepare_audit_run_new_property_payload() -> None:
     conn = _FakeConn()
     ctx = AuditToolContext(property_id=None)
     with patch(
-        "website_profiling.tools.audit_tools.crawl_actions._chat_allow_crawl",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions._chat_allow_crawl",
         return_value=True,
     ), patch(
-        "website_profiling.tools.audit_tools.crawl_actions.read_pipeline_config",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions.read_pipeline_config",
         return_value=({}, []),
     ):
         out = prepare_audit_run(
@@ -132,7 +132,7 @@ def test_prepare_audit_run_job_running() -> None:
     conn = _FakeConn(job_running=True)
     ctx = AuditToolContext(property_id=1)
     with patch(
-        "website_profiling.tools.audit_tools.crawl_actions._chat_allow_crawl",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions._chat_allow_crawl",
         return_value=True,
     ):
         out = prepare_audit_run(conn, ctx, {"start_url": "https://example.com"})
@@ -149,13 +149,13 @@ def test_prepare_audit_run_uses_property_default_preset() -> None:
         "default_crawl_preset": "spa",
     }
     with patch(
-        "website_profiling.tools.audit_tools.crawl_actions._chat_allow_crawl",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions._chat_allow_crawl",
         return_value=True,
     ), patch(
-        "website_profiling.tools.audit_tools.crawl_actions.read_pipeline_config",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions.read_pipeline_config",
         return_value=({}, []),
     ), patch(
-        "website_profiling.tools.audit_tools.crawl_actions.get_property_by_id",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions.get_property_by_id",
         return_value=prop,
     ):
         out = prepare_audit_run(

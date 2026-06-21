@@ -13,7 +13,7 @@ from website_profiling.tools.audit_tools._aeo_helpers import (
     score_content_structure_aeo,
     strip_html_to_text,
 )
-from website_profiling.tools.audit_tools.agent_readiness import (
+from website_profiling.tools.audit_tools.geo.agent_readiness import (
     _fetch_agents_md,
     _fetch_agent_permissions,
     _fetch_skill_md,

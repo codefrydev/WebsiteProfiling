@@ -1,4 +1,4 @@
-import type { ChartData } from 'chart.js';
+import type { BarChartData } from '@/lib/viz/types';
 import type { StatusDistribution } from '@/lib/statusDistribution';
 
 export const OVERVIEW_TABS = ['summary', 'charts', 'health', 'pages'] as const;
@@ -11,7 +11,7 @@ export interface OverviewChartInsightMeta {
 }
 
 export interface OverviewChartBlock extends OverviewChartInsightMeta {
-  data: ChartData<'bar'>;
+  data: BarChartData;
   aria: string;
   /** Render with horizontal bars (indexAxis y). */
   horizontal?: boolean;

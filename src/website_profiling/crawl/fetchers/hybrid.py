@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import threading
 from typing import Callable, Optional
 
 from .base import FetchResult, PageFetcher
@@ -19,10 +20,17 @@ class HybridFetcher:
         self._static = static
         self._browser_factory = browser_factory
         self._browser_instance: Optional[PageFetcher] = None
+        self._browser_lock = threading.Lock()
 
     def _get_browser(self) -> PageFetcher:
+        # Double-checked locking: crawler worker threads share one HybridFetcher,
+        # so an unsynchronized check-then-act would let two threads each build a
+        # BrowserFetcher (launching a Chromium process + daemon thread); the
+        # second assignment orphans the first, leaking it for the process lifetime.
         if self._browser_instance is None:
-            self._browser_instance = self._browser_factory()
+            with self._browser_lock:
+                if self._browser_instance is None:
+                    self._browser_instance = self._browser_factory()
         return self._browser_instance
 
     def fetch(self, url: str) -> FetchResult:

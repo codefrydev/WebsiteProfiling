@@ -103,13 +103,16 @@ def parse_seo_extended(html_text: str, base_url: str) -> dict:
             if not val or base_scheme != "https":
                 continue
             val = str(val).strip().lower()
-            if val.startswith("http://"):
-                out["mixed_content_count"] += 1
-            elif attr == "srcset":
+            if attr == "srcset":
+                # srcset is a comma-separated candidate list; count EVERY insecure
+                # candidate. The generic startswith() below would match the whole
+                # string once when the FIRST candidate is http:// and miss the rest.
                 for part in val.split(","):
-                    part = part.strip().split()[0] if part.strip() else ""
-                    if part.startswith("http://"):
+                    tok = part.strip().split()[0] if part.strip() else ""
+                    if tok.startswith("http://"):
                         out["mixed_content_count"] += 1
+            elif val.startswith("http://"):
+                out["mixed_content_count"] += 1
     return out
 def parse_resources(html_text: str, base_url: str) -> dict:
     """

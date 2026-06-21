@@ -149,10 +149,10 @@ def test_content_and_lighthouse_paths(conn: MagicMock, ctx: Ctx) -> None:
         },
     }
     with patch.object(Ctx, "load_payload", return_value=lh_payload), patch(
-        "website_profiling.tools.audit_tools.lighthouse.read_lighthouse_page_summaries",
+        "website_profiling.tools.audit_tools.performance.lighthouse.read_lighthouse_page_summaries",
         return_value={"https://ex.com/x": {"performance": 40, "scores": {"performance": 40}}},
     ), patch(
-        "website_profiling.tools.audit_tools.lighthouse.read_lighthouse_summary",
+        "website_profiling.tools.audit_tools.performance.lighthouse.read_lighthouse_summary",
         return_value={"human_summary": "db"},
     ):
         summary = dispatch_tool("get_lighthouse_summary", {}, context=ctx, conn=conn)
@@ -164,7 +164,7 @@ def test_content_and_lighthouse_paths(conn: MagicMock, ctx: Ctx) -> None:
 
 def test_compare_slices_and_llm(conn: MagicMock, ctx: Ctx) -> None:
     payload = _payload()
-    with patch("website_profiling.tools.audit_tools.compare_helpers.read_report_payload", return_value=payload):
+    with patch("website_profiling.tools.audit_tools.compare.compare_helpers.read_report_payload", return_value=payload):
         for name in (
             "compare_duplicate_deltas",
             "compare_tech_deltas",
@@ -175,7 +175,7 @@ def test_compare_slices_and_llm(conn: MagicMock, ctx: Ctx) -> None:
             result = dispatch_tool(name, {"baseline_report_id": 1}, context=ctx, conn=conn)
             assert "error" not in result, name
 
-    with patch("website_profiling.tools.audit_tools.llm_tools.run_page_coach", return_value={"coach": "ok"}):
+    with patch("website_profiling.tools.audit_tools.integrations.llm_tools.run_page_coach", return_value={"coach": "ok"}):
         assert dispatch_tool("get_page_coach", {"url": "https://ex.com"}, context=ctx, conn=conn)["coach"] == "ok"
     assert dispatch_tool("get_page_coach", {}, context=ctx, conn=conn)["error"]
     assert dispatch_tool("generate_content_brief", {}, context=ctx, conn=conn)["error"]
@@ -187,7 +187,7 @@ def test_compare_slices_and_llm(conn: MagicMock, ctx: Ctx) -> None:
         brief = dispatch_tool("generate_content_brief", {"keyword": "widgets", "gaps": ["gap"]}, context=ctx, conn=conn)
         assert brief["matched_rows"] == 1
 
-    with patch("website_profiling.tools.audit_tools.llm_tools.batch_expand", return_value={}), patch.object(
+    with patch("website_profiling.tools.audit_tools.integrations.llm_tools.batch_expand", return_value={}), patch.object(
         Ctx, "load_keywords", return_value=None,
     ):
         expanded = dispatch_tool(
@@ -204,7 +204,7 @@ def test_compare_slices_and_llm(conn: MagicMock, ctx: Ctx) -> None:
         "report_id": 1,
         "issue_counts": json.dumps({"High": 2}),
     })))
-    with patch("website_profiling.tools.audit_tools.llm_tools.list_properties_public", return_value=[{"id": 1, "name": "Ex"}]):
+    with patch("website_profiling.tools.audit_tools.integrations.llm_tools.list_properties_public", return_value=[{"id": 1, "name": "Ex"}]):
         portfolio = dispatch_tool("get_portfolio_summary", {}, conn=conn)
         assert portfolio["count"] == 1
         assert portfolio["properties"][0]["issue_counts"]["High"] == 2
@@ -227,7 +227,7 @@ def test_ops_log_paths(conn: MagicMock, ctx: Ctx) -> None:
         "analysis": {"top_paths": [{"path": "/"}], "parsed_lines": 10, "googlebot_hits": 2},
         "uploaded_at": datetime.now(timezone.utc).isoformat(),
     }
-    with patch("website_profiling.tools.audit_tools.ops._load_log_analysis", return_value=log_row):
+    with patch("website_profiling.tools.audit_tools.ops.ops._load_log_analysis", return_value=log_row):
         assert dispatch_tool("get_log_analysis_by_id", {"upload_id": 1}, context=ctx, conn=conn)["upload_id"] == 1
         assert dispatch_tool("get_latest_log_analysis", {}, context=ctx, conn=conn)["filename"] == "access.log"
         assert dispatch_tool("get_log_top_paths", {}, context=ctx, conn=conn)["total"] == 1
@@ -235,13 +235,13 @@ def test_ops_log_paths(conn: MagicMock, ctx: Ctx) -> None:
         assert dispatch_tool("list_crawl_only_paths", {}, context=ctx, conn=conn)["total"] == 0
         assert dispatch_tool("get_log_googlebot_stats", {}, context=ctx, conn=conn)["googlebot_hits"] == 2
 
-    with patch("website_profiling.tools.audit_tools.ops._load_log_analysis", return_value=None):
+    with patch("website_profiling.tools.audit_tools.ops.ops._load_log_analysis", return_value=None):
         assert dispatch_tool("get_log_top_paths", {}, context=ctx, conn=conn)["missing"]
 
 
 def test_tech_lighthouse_charts_keywords(conn: MagicMock, ctx: Ctx) -> None:
-    from website_profiling.tools.audit_tools import tech as tech_mod
-    from website_profiling.tools.audit_tools import lighthouse as lh_mod
+    from website_profiling.tools.audit_tools.tech import tech as tech_mod
+    from website_profiling.tools.audit_tools.performance import lighthouse as lh_mod
 
     assert tech_mod.list_pages_by_technology(conn, ctx, {})["error"]
     with patch.object(Ctx, "load_payload", return_value={}):
@@ -275,10 +275,10 @@ def test_tech_lighthouse_charts_keywords(conn: MagicMock, ctx: Ctx) -> None:
         "lighthouse_human_summary": "inline",
     }
     with patch.object(Ctx, "load_payload", return_value=lh_data), patch(
-        "website_profiling.tools.audit_tools.lighthouse.read_lighthouse_page_summaries",
+        "website_profiling.tools.audit_tools.performance.lighthouse.read_lighthouse_page_summaries",
         return_value={"https://ex.com/a": {"performance": 20}},
     ), patch(
-        "website_profiling.tools.audit_tools.lighthouse.read_lighthouse_summary",
+        "website_profiling.tools.audit_tools.performance.lighthouse.read_lighthouse_summary",
         return_value={"human_summary": "db"},
     ):
         out = lh_mod.get_lighthouse_summary(conn, ctx, {})
@@ -301,7 +301,7 @@ def test_tech_lighthouse_charts_keywords(conn: MagicMock, ctx: Ctx) -> None:
         assert lh_mod.list_lighthouse_poor_best_practices_pages(conn, ctx, {})["total"] >= 1
         assert lh_mod.list_lighthouse_cwv_failures(conn, ctx, {})["total"] >= 0
 
-    with patch("website_profiling.tools.audit_tools.report.get_report_summary", return_value={
+    with patch("website_profiling.tools.audit_tools.report.report.get_report_summary", return_value={
         "issue_counts": {"Critical": 2, "High": 1, "bad": "x"},
         "total_issues": 3,
         "health_score": 70,
@@ -320,7 +320,7 @@ def test_tech_lighthouse_charts_keywords(conn: MagicMock, ctx: Ctx) -> None:
         "serp_overlay_count": 1,
     }
     with patch.object(Ctx, "load_keywords", return_value=kw_payload), patch(
-        "website_profiling.tools.audit_tools.keywords.read_keyword_history",
+        "website_profiling.tools.audit_tools.keywords.keywords.read_keyword_history",
         return_value=[{"keyword": "x", "position": 4}],
     ):
         assert dispatch_tool("get_striking_distance_keywords", {}, context=ctx, conn=conn)["keywords"]
@@ -389,7 +389,7 @@ def test_security_google_lighthouse_and_portfolio(conn: MagicMock, ctx: Ctx, tmp
         assert dispatch_tool("get_gsc_top_pages", {}, context=ctx, conn=conn)["error"]
         assert dispatch_tool("get_gsc_page_query_slice", {"url": "https://ex.com"}, context=ctx, conn=conn)["error"]
     with patch.object(Ctx, "load_google", return_value=google_data), patch(
-        "website_profiling.tools.audit_tools.google.slice_from_google_row",
+        "website_profiling.tools.audit_tools.google.google.slice_from_google_row",
         return_value={"gsc": {"clicks": 1}, "ga4": {"sessions": 2}},
     ):
         assert dispatch_tool("get_gsc_top_pages", {}, context=ctx, conn=conn)["total"] == 1
@@ -426,7 +426,7 @@ def test_security_google_lighthouse_and_portfolio(conn: MagicMock, ctx: Ctx, tmp
         assert dispatch_tool("list_keywords_by_impressions", {"min_impressions": "x"}, context=ctx, conn=conn)["error"]
         assert dispatch_tool("list_keywords_by_position", {"min_position": 1, "max_position": 10}, context=ctx, conn=conn)["total"] == 1
 
-    with patch("website_profiling.tools.audit_tools.llm_tools.list_properties_public", return_value=["bad", {"id": None}]):
+    with patch("website_profiling.tools.audit_tools.integrations.llm_tools.list_properties_public", return_value=["bad", {"id": None}]):
         assert dispatch_tool("get_portfolio_summary", {}, conn=conn)["count"] == 0
 
     conn.execute = MagicMock(return_value=MagicMock(fetchone=MagicMock(return_value={
@@ -435,7 +435,7 @@ def test_security_google_lighthouse_and_portfolio(conn: MagicMock, ctx: Ctx, tmp
         "report_id": 3,
         "issue_counts": "not-json",
     })))
-    with patch("website_profiling.tools.audit_tools.llm_tools.list_properties_public", return_value=[{"id": 3, "name": "c"}]):
+    with patch("website_profiling.tools.audit_tools.integrations.llm_tools.list_properties_public", return_value=[{"id": 3, "name": "c"}]):
         portfolio = dispatch_tool("get_portfolio_summary", {}, conn=conn)
         assert portfolio["count"] == 1
         assert portfolio["properties"][0]["issue_counts"] == {}
@@ -470,10 +470,10 @@ def test_security_google_lighthouse_and_portfolio(conn: MagicMock, ctx: Ctx, tmp
         "lighthouse_by_url": {"skip": "bad"},
     }
     with patch.object(Ctx, "load_payload", return_value=lh_summary_payload), patch(
-        "website_profiling.tools.audit_tools.lighthouse.read_lighthouse_page_summaries",
+        "website_profiling.tools.audit_tools.performance.lighthouse.read_lighthouse_page_summaries",
         return_value={"https://ex.com/a": "bad"},
     ), patch(
-        "website_profiling.tools.audit_tools.lighthouse.read_lighthouse_summary",
+        "website_profiling.tools.audit_tools.performance.lighthouse.read_lighthouse_summary",
         return_value=None,
     ):
         assert dispatch_tool("get_lighthouse_summary", {}, context=ctx, conn=conn)["pages_audited"] == 1

@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
 import type { Ga4PageRow, UrlJoinData } from '@/types';
 import type { TableColumn } from '@/types/components';
 import { Users, AlertCircle, Settings2, Download, Loader2 } from 'lucide-react';
@@ -13,6 +14,7 @@ import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { TRAFFIC_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
+import { integrationGuideHref } from '@/lib/docs/integrationGuides';
 import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs, EmptyState } from '../components';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import GoogleTableToolbar from '../components/google/GoogleTableToolbar';
@@ -203,9 +205,15 @@ export default function Traffic() {
           description={
             <>
               {tf.emptyBody}
-              <span className="mt-3 flex items-center justify-center gap-1 text-xs">
+              <span className="mt-3 flex items-center justify-center gap-1 flex-wrap text-xs">
                 <Settings2 className="h-3.5 w-3.5 shrink-0" />
-                {tf.emptyIntegrationsHint}
+                {tf.emptyIntegrationsHint}{' '}
+                <Link
+                  href={integrationGuideHref('google', { from: 'integrations' })}
+                  className="text-link hover:underline"
+                >
+                  {strings.docs.setupGuideLink}
+                </Link>
               </span>
             </>
           }

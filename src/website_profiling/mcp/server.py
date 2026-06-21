@@ -75,6 +75,22 @@ def _mcp_domain() -> str:
     return (os.environ.get("WP_MCP_DOMAIN") or "core").strip().lower()
 
 
+def _load_disabled_tools() -> frozenset[str]:
+    """Load mcp_disabled_tools JSON array from pipeline_config. Returns empty set on any error."""
+    try:
+        with db_session() as conn:
+            row = conn.execute(
+                "SELECT value FROM pipeline_config WHERE key = 'mcp_disabled_tools'"
+            ).fetchone()
+            if row and row[0]:
+                items = json.loads(row[0])
+                if isinstance(items, list):
+                    return frozenset(str(i) for i in items if isinstance(i, str))
+    except Exception:  # noqa: BLE001
+        pass
+    return frozenset()
+
+
 def _tools_catalog_json(domain: str | None = None) -> str:
     effective = (domain or _mcp_domain()).strip().lower() or "core"
     exposed = mcp_tool_names(effective)
@@ -172,9 +188,12 @@ def create_server(domain: str | None = None):
 
     @server.list_tools()
     async def list_tools() -> list[Tool]:
+        disabled = _load_disabled_tools()
         out: list[Tool] = []
         for spec in TOOL_DEFINITIONS:
             if spec["name"] not in exposed:
+                continue
+            if spec["name"] in disabled:
                 continue
             out.append(
                 Tool(
@@ -187,10 +206,17 @@ def create_server(domain: str | None = None):
 
     @server.call_tool()
     async def call_tool(name: str, arguments: dict[str, Any] | None) -> list[TextContent]:
+        disabled = _load_disabled_tools()
         if name not in exposed:
             result = {
                 "error": f"tool not exposed in MCP domain {effective_domain}: {name}",
                 "hint": "Connect WP_MCP_DOMAIN=full or the domain server that includes this tool.",
+            }
+            return [TextContent(type="text", text=json.dumps(result, indent=2, default=str))]
+        if name in disabled:
+            result = {
+                "error": f"tool '{name}' has been disabled via Risk Settings.",
+                "hint": "Enable it on the /risk-settings page to use this tool.",
             }
             return [TextContent(type="text", text=json.dumps(result, indent=2, default=str))]
         args = dict(arguments or {})

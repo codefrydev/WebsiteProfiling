@@ -7,17 +7,15 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from website_profiling.tools.audit_tools import insight_helpers as ih
+from website_profiling.tools.audit_tools.insight import insight_helpers as ih
 from website_profiling.tools.audit_tools.context import AuditToolContext as Ctx
-from website_profiling.tools.audit_tools import (
-    crawl as crawl_mod,
-    data_coverage as dc_mod,
-    google as google_mod,
-    insight_tools as insight_mod,
-    keywords as kw_mod,
-    registry,
-    router_tools as router_mod,
-)
+from website_profiling.tools.audit_tools import (registry)
+from website_profiling.tools.audit_tools.crawl import crawl as crawl_mod
+from website_profiling.tools.audit_tools.core import data_coverage as dc_mod
+from website_profiling.tools.audit_tools.google import google as google_mod
+from website_profiling.tools.audit_tools.insight import insight_tools as insight_mod
+from website_profiling.tools.audit_tools.keywords import keywords as kw_mod
+from website_profiling.tools.audit_tools.core import router_tools as router_mod
 from website_profiling.tools.audit_tools.tool_domains import (
     CANONICAL_DOMAINS,
     CHAT_ONLY_TOOLS,
@@ -83,7 +81,7 @@ def test_context_load_google_full_and_pair_fallbacks(conn: MagicMock, ctx: Ctx) 
 def test_data_coverage_report_all_branches(conn: MagicMock, ctx: Ctx) -> None:
     assert dc_mod.get_data_coverage_report(conn, Ctx(property_id=None), {})["error"]
 
-    with patch("website_profiling.tools.audit_tools.data_coverage.get_property_by_id", return_value=None):
+    with patch("website_profiling.tools.audit_tools.core.data_coverage.get_property_by_id", return_value=None):
         assert dc_mod.get_data_coverage_report(conn, ctx, {})["error"] == "property not found"
 
     prop = {"google_refresh_token": "tok"}
@@ -106,7 +104,7 @@ def test_data_coverage_report_all_branches(conn: MagicMock, ctx: Ctx) -> None:
     }
     google_full = {"gsc_full": {"summary": {}}, "ga4_full": {"summary": {}}}
 
-    with patch("website_profiling.tools.audit_tools.data_coverage.get_property_by_id", return_value=prop), patch.object(
+    with patch("website_profiling.tools.audit_tools.core.data_coverage.get_property_by_id", return_value=prop), patch.object(
         Ctx, "load_payload", return_value=payload,
     ), patch.object(Ctx, "load_google", return_value=google), patch.object(
         Ctx, "load_keywords", return_value=keywords,
@@ -121,7 +119,7 @@ def test_data_coverage_report_all_branches(conn: MagicMock, ctx: Ctx) -> None:
     assert len(result["checks"]) >= 10
 
     sparse_prop = {"id": 1}
-    with patch("website_profiling.tools.audit_tools.data_coverage.get_property_by_id", return_value=sparse_prop), patch.object(
+    with patch("website_profiling.tools.audit_tools.core.data_coverage.get_property_by_id", return_value=sparse_prop), patch.object(
         Ctx, "load_payload", return_value={},
     ), patch.object(Ctx, "load_google", return_value=None), patch.object(
         Ctx, "load_keywords", return_value=None,
@@ -325,10 +323,10 @@ def test_insight_tools_dispatch(conn: MagicMock, ctx: Ctx) -> None:
         slash_diag = insight_mod.get_landing_page_full_diagnosis(conn, ctx, {"url": "https://ex.com/"})
         assert slash_diag["lighthouse"]["performance"] == 70
 
-    with patch("website_profiling.tools.audit_tools.insight_tools.list_issues", return_value={"error": "boom"}):
+    with patch("website_profiling.tools.audit_tools.insight.insight_tools.list_issues", return_value={"error": "boom"}):
         assert insight_mod.get_issue_to_traffic_map(conn, ctx, {})["error"] == "boom"
 
-    with patch("website_profiling.tools.audit_tools.insight_tools.list_issues", return_value={
+    with patch("website_profiling.tools.audit_tools.insight.insight_tools.list_issues", return_value={
         "issues": ["bad", {
             "url": "https://ex.com/x",
             "priority": "High",

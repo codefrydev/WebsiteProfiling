@@ -700,7 +700,7 @@ def run_simple_report(
         except Exception:
             pass
         try:
-            from ..tools.audit_tools.llm_tools import get_portfolio_summary
+            from ..tools.audit_tools.integrations.llm_tools import get_portfolio_summary
             from ..tools.audit_tools.context import AuditToolContext
 
             portfolio = get_portfolio_summary(conn, AuditToolContext(property_id=property_id), {})

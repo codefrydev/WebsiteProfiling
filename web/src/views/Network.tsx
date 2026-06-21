@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback, useDeferredValue } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useMemo, useCallback, useDeferredValue } from 'react';
 import ForceGraph3D from '3d-force-graph';
 import { Maximize, Minimize, ExternalLink, X } from 'lucide-react';
 import { useReport } from '../context/useReport';
@@ -6,21 +6,31 @@ import { useOptionalUrlInspector } from '@/context/UrlInspectorContext';
 import { useSectionData } from '@/hooks/useSectionData';
 import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
-import { shortPath } from '@/lib/linkGraph';
+import { D3ForceGraph } from '@/components/charts/d3/D3ForceGraph';
+import {
+  buildLinkTreePayload,
+  buildTreeNeighborIndex,
+  cloneLinkGraphPayload,
+  shortPath,
+  type LinkGraphNode,
+  type LinkGraphLink,
+} from '@/lib/linkGraph';
 import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Button, DataViewLayout, LabelWithHint } from '../components';
-import type { GraphEdge, GraphNode, ViewProps } from '@/types';
+import type { ViewProps } from '@/types';
 
-interface GraphNodeData {
-  id: string;
-  label: string;
-  title: string;
-  color: string;
-}
+const VIEW_MODE_STORAGE_KEY = 'network-view-mode';
 
-interface GraphLinkData {
-  source: string;
-  target: string;
+type NetworkViewMode = '2d' | '3d';
+
+function readStoredViewMode(): NetworkViewMode {
+  try {
+    const stored = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
+    if (stored === '3d') return '3d';
+  } catch {
+    /* ignore */
+  }
+  return '2d';
 }
 
 /** After the force simulation runs, 3d-force-graph mutates source/target into node objects. */
@@ -29,24 +39,17 @@ interface GraphLinkRuntime {
   target: string | { id?: string };
 }
 
-interface GraphPayload {
-  nodes: GraphNodeData[];
-  links: GraphLinkData[];
-  searchActive: boolean;
-  totalNodeCount: number;
-}
-
 interface ForceGraphInstance {
   _destructor?: () => void;
   width: (w: number) => ForceGraphInstance;
   height: (h: number) => ForceGraphInstance;
   pauseAnimation: () => void;
   resumeAnimation: () => void;
-  graphData: (data: { nodes: GraphNodeData[]; links: GraphLinkData[] }) => ForceGraphInstance;
-  nodeColor: (fn: (node: GraphNodeData) => string) => ForceGraphInstance;
-  nodeLabel: (fn: (node: GraphNodeData) => string) => ForceGraphInstance;
+  graphData: (data: { nodes: LinkGraphNode[]; links: LinkGraphLink[] }) => ForceGraphInstance;
+  nodeColor: (fn: (node: LinkGraphNode) => string) => ForceGraphInstance;
+  nodeLabel: (fn: (node: LinkGraphNode) => string) => ForceGraphInstance;
   linkColor: (fn: (link: GraphLinkRuntime) => string) => ForceGraphInstance;
-  onNodeClick: (fn: (node: GraphNodeData) => void) => ForceGraphInstance;
+  onNodeClick: (fn: (node: LinkGraphNode) => void) => ForceGraphInstance;
   onBackgroundClick: (fn: () => void) => ForceGraphInstance;
   backgroundColor: (color: string) => ForceGraphInstance;
   showNavInfo: (show: boolean) => ForceGraphInstance;
@@ -98,6 +101,9 @@ export default function Network({ searchQuery = '' }: ViewProps) {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const graphRef = useRef<ForceGraphInstance | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [viewMode, setViewMode] = useState<NetworkViewMode>(() =>
+    typeof window !== 'undefined' ? readStoredViewMode() : '2d',
+  );
   const [selected, setSelected] = useState<string | null>(null);
   const { data } = useReport();
   const inspector = useOptionalUrlInspector();
@@ -105,7 +111,6 @@ export default function Network({ searchQuery = '' }: ViewProps) {
   useSectionData('links');
   const networkReady = useSectionsViewReady(['structure', 'links']);
 
-  // Refs read by the (long-lived) graph callbacks so they never go stale.
   const selectionRef = useRef<{ id: string; neighbors: Set<string> } | null>(null);
   const neighborIndexRef = useRef<Map<string, Set<string>>>(new Map());
   const openUrlRef = useRef<((url: string) => void) | null>(null);
@@ -113,87 +118,40 @@ export default function Network({ searchQuery = '' }: ViewProps) {
 
   const deferredSearch = useDeferredValue(searchQuery);
 
-  const graphPayload = useMemo((): GraphPayload | null => {
-    if (!data) return null;
-    const q = (deferredSearch || '').toLowerCase().trim();
-    const urlToStatus: Record<string, string> = {};
-    (data.links || []).forEach((l) => {
-      urlToStatus[l.url] = String(l.status);
-    });
-
-    const nodes = (data.graph_nodes || []) as GraphNode[];
-    const edges = (data.graph_edges || []) as GraphEdge[];
-
-    if (nodes.length === 0 && edges.length === 0) return null;
-
-    const nodeMap = new Map<string, GraphNodeData>();
-    nodes.forEach((u) => {
-      const id = typeof u === 'string' ? u : (u.id || u.url || String(u));
-      const st = urlToStatus[id] || '';
-      const color = /^[45]/.test(st) ? '#EF4444' : /^2/.test(st) ? '#3B82F6' : '#64748b';
-      const label = typeof id === 'string' ? (id.replace(/^https?:\/\/[^/]+/, '') || '/') : id;
-      nodeMap.set(id, { id, label, title: id, color });
-    });
-    edges.forEach((e: GraphEdge) => {
-      const fromId = e.from ?? e['from'];
-      const toId = e.to ?? e['to'];
-      if (fromId && !nodeMap.has(fromId)) {
-        const st = urlToStatus[fromId] || '';
-        const color = /^[45]/.test(st) ? '#EF4444' : '#3B82F6';
-        nodeMap.set(fromId, {
-          id: fromId,
-          label: String(fromId).replace(/^https?:\/\/[^/]+/, '') || '/',
-          title: fromId,
-          color,
-        });
-      }
-      if (toId && !nodeMap.has(toId)) {
-        const st = urlToStatus[toId] || '';
-        const color = /^[45]/.test(st) ? '#EF4444' : '#3B82F6';
-        nodeMap.set(toId, {
-          id: toId,
-          label: String(toId).replace(/^https?:\/\/[^/]+/, '') || '/',
-          title: toId,
-          color,
-        });
-      }
-    });
-
-    let ids = Array.from(nodeMap.keys());
-    if (q) {
-      ids = ids.filter((id) => String(id).toLowerCase().includes(q));
+  const setViewModePersisted = useCallback((mode: NetworkViewMode) => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem(VIEW_MODE_STORAGE_KEY, mode);
+    } catch {
+      /* ignore */
     }
-    const idSet = new Set(ids);
-    const graphNodes = ids.map((id) => nodeMap.get(id)).filter((n): n is GraphNodeData => n != null);
-    const graphLinks = edges
-      .map((e: GraphEdge) => {
-        const fromId = e.from ?? e['from'];
-        const toId = e.to ?? e['to'];
-        return fromId && toId && idSet.has(fromId) && idSet.has(toId)
-          ? { source: fromId, target: toId }
-          : null;
-      })
-      .filter((link): link is GraphLinkData => link != null);
+  }, []);
 
-    return {
-      nodes: graphNodes,
-      links: graphLinks,
-      searchActive: !!q,
-      totalNodeCount: nodeMap.size,
-    };
+  const graphPayload = useMemo(() => {
+    if (!data) return null;
+    return buildLinkTreePayload(
+      data.graph_nodes || [],
+      data.graph_edges || [],
+      data.links || [],
+      deferredSearch,
+    );
   }, [data, deferredSearch]);
 
-  // Undirected neighbour index for click-to-highlight.
-  const neighborIndex = useMemo(() => {
-    const m = new Map<string, Set<string>>();
-    graphPayload?.links.forEach((l) => {
-      if (!m.has(l.source)) m.set(l.source, new Set());
-      if (!m.has(l.target)) m.set(l.target, new Set());
-      m.get(l.source)!.add(l.target);
-      m.get(l.target)!.add(l.source);
-    });
-    return m;
-  }, [graphPayload]);
+  /** Fresh copy per render so 3D force-graph cannot mutate shared link endpoints. */
+  const renderGraph = useMemo(
+    () => (graphPayload ? cloneLinkGraphPayload(graphPayload) : null),
+    [graphPayload],
+  );
+
+  const neighborIndex = useMemo(
+    () => buildTreeNeighborIndex(renderGraph?.links || graphPayload?.links || []),
+    [renderGraph, graphPayload],
+  );
+
+  const selectedNeighbors = useMemo(() => {
+    if (!selected) return null;
+    return neighborIndex.get(selected) || new Set<string>();
+  }, [selected, neighborIndex]);
 
   useEffect(() => {
     neighborIndexRef.current = neighborIndex;
@@ -203,13 +161,41 @@ export default function Network({ searchQuery = '' }: ViewProps) {
     openUrlRef.current = inspector?.openUrl ?? null;
   }, [inspector]);
 
+  const handleNodeSelect = useCallback(
+    (id: string) => {
+      selectionRef.current = {
+        id,
+        neighbors: neighborIndexRef.current.get(id) || new Set<string>(),
+      };
+      setSelected(id);
+      recolorRef.current();
+      const open = openUrlRef.current;
+      if (open) open(id);
+      else window.open(id, '_blank');
+    },
+    [],
+  );
+
   const clearSelection = useCallback(() => {
     selectionRef.current = null;
     setSelected(null);
     recolorRef.current();
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (viewMode !== '3d') {
+      const prev = graphRef.current;
+      if (prev?._destructor) {
+        try {
+          prev._destructor();
+        } catch {
+          /* ignore */
+        }
+        graphRef.current = null;
+      }
+      return undefined;
+    }
+
     const prev = graphRef.current;
     if (prev?._destructor) {
       try {
@@ -219,19 +205,17 @@ export default function Network({ searchQuery = '' }: ViewProps) {
       }
       graphRef.current = null;
     }
-    // Reset any highlight when the graph is rebuilt (e.g. on search).
-    selectionRef.current = null;
-    setSelected(null);
 
-    if (!data || !containerRef.current || !graphPayload || graphPayload.nodes.length === 0) {
+    if (!data || !containerRef.current || !renderGraph || renderGraph.nodes.length === 0) {
       return undefined;
     }
 
     const el = containerRef.current;
+    const graphData = cloneLinkGraphPayload(renderGraph);
     type ForceGraphFactory = () => (container: HTMLElement) => ForceGraphInstance;
     const createGraph = ForceGraph3D as unknown as ForceGraphFactory;
 
-    const nodeColorFn = (node: GraphNodeData): string => {
+    const nodeColorFn = (node: LinkGraphNode): string => {
       const sel = selectionRef.current;
       if (!sel) return node.color;
       if (node.id === sel.id) return SELECTED_NODE_COLOR;
@@ -247,23 +231,15 @@ export default function Network({ searchQuery = '' }: ViewProps) {
     };
 
     const graph = createGraph()(el)
-      .graphData({ nodes: graphPayload.nodes, links: graphPayload.links })
+      .graphData({ nodes: graphData.nodes, links: graphData.links })
       .nodeColor(nodeColorFn)
-      .nodeLabel((node: GraphNodeData) => node.title || node.id)
+      .nodeLabel((node: LinkGraphNode) => node.title || node.id)
       .linkColor(linkColorFn)
-      .onNodeClick((node: GraphNodeData) => {
+      .onNodeClick((node: LinkGraphNode) => {
         if (!node?.id) return;
-        selectionRef.current = {
-          id: node.id,
-          neighbors: neighborIndexRef.current.get(node.id) || new Set<string>(),
-        };
-        setSelected(node.id);
-        recolorRef.current();
-        const open = openUrlRef.current;
-        if (open) open(node.id);
-        else window.open(node.id, '_blank');
+        handleNodeSelect(node.id);
         try {
-          const n = node as GraphNodeData & { x?: number; y?: number; z?: number };
+          const n = node as LinkGraphNode & { x?: number; y?: number; z?: number };
           if (graph.cameraPosition && n.x != null && n.y != null && n.z != null) {
             const hyp = Math.hypot(n.x, n.y, n.z) || 1;
             const ratio = 1 + 160 / hyp;
@@ -273,11 +249,7 @@ export default function Network({ searchQuery = '' }: ViewProps) {
           /* camera focus is best-effort */
         }
       })
-      .onBackgroundClick(() => {
-        selectionRef.current = null;
-        setSelected(null);
-        recolorRef.current();
-      })
+      .onBackgroundClick(clearSelection)
       .backgroundColor('#05080f')
       .showNavInfo(false);
 
@@ -285,7 +257,7 @@ export default function Network({ searchQuery = '' }: ViewProps) {
       graph.nodeColor(nodeColorFn).linkColor(linkColorFn);
     };
 
-    applyGraphPhysics(graph, graphPayload.nodes.length, graphPayload.links.length);
+    applyGraphPhysics(graph, graphData.nodes.length, graphData.links.length);
 
     const w0 = el.offsetWidth;
     const h0 = el.offsetHeight;
@@ -317,7 +289,12 @@ export default function Network({ searchQuery = '' }: ViewProps) {
       }
       graphRef.current = null;
     };
-  }, [data, graphPayload]);
+  }, [data, renderGraph, viewMode, handleNodeSelect, clearSelection]);
+
+  useEffect(() => {
+    selectionRef.current = null;
+    setSelected(null);
+  }, [graphPayload]);
 
   const toggleFullscreen = () => {
     const el = wrapperRef.current;
@@ -347,6 +324,8 @@ export default function Network({ searchQuery = '' }: ViewProps) {
     graphPayload.nodes.length === 0 &&
     graphPayload.totalNodeCount > 0;
 
+  const clickHint = viewMode === '2d' ? vn.clickHint2d : vn.clickHint;
+
   return (
     <PageLayout variant="fullHeight" className="space-y-4">
       <DataViewLayout
@@ -357,11 +336,25 @@ export default function Network({ searchQuery = '' }: ViewProps) {
           <Card overflowHidden padding="none" className="flex-1 shadow-lg relative min-h-0">
           {hasGraph ? (
             <>
-              <div
-                ref={containerRef}
-                className="absolute inset-0 w-full h-full bg-[#05080f]"
-                style={{ outline: 'none' }}
-              />
+              {viewMode === '2d' ? (
+                renderGraph && renderGraph.nodes.length > 0 ? (
+                  <D3ForceGraph
+                    nodes={renderGraph.nodes}
+                    links={renderGraph.links}
+                    selectedId={selected}
+                    neighborIds={selectedNeighbors}
+                    onNodeClick={handleNodeSelect}
+                    onBackgroundClick={clearSelection}
+                    className="absolute inset-0 w-full h-full bg-[#05080f]"
+                  />
+                ) : null
+              ) : (
+                <div
+                  ref={containerRef}
+                  className="absolute inset-0 w-full h-full bg-[#05080f]"
+                  style={{ outline: 'none' }}
+                />
+              )}
               {searchEmpty && (
                 <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#05080f]/90 text-muted-foreground text-sm px-6 text-center">
                   {vn.searchEmpty}
@@ -380,17 +373,48 @@ export default function Network({ searchQuery = '' }: ViewProps) {
                   <div className="w-4 h-0.5 bg-brand-700" />
                   <LabelWithHint label={vn.legendLink} helpKey="views.network.legendLink" />
                 </div>
-                <p className="pt-1 text-[11px] text-muted-foreground border-t border-default">{vn.clickHint}</p>
+                <p className="pt-1 text-[11px] text-muted-foreground border-t border-default">{clickHint}</p>
               </div>
-              <Button
-                variant="secondary"
-                onClick={toggleFullscreen}
-                className="absolute top-4 right-4 z-10 print:hidden"
-                title={isFullscreen ? vn.titleExitFullscreen : vn.titleFullscreen}
-              >
-                {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-                {isFullscreen ? vn.exitFullscreen : vn.fullscreen}
-              </Button>
+              <div className="absolute top-4 right-4 z-10 flex items-center gap-2 print:hidden">
+                <div
+                  className="flex rounded-lg border border-default overflow-hidden bg-brand-900"
+                  role="group"
+                  aria-label="Graph view mode"
+                >
+                  <button
+                    type="button"
+                    onClick={() => setViewModePersisted('2d')}
+                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                      viewMode === '2d'
+                        ? 'bg-brand-700 text-bright'
+                        : 'text-muted-foreground hover:text-bright'
+                    }`}
+                    aria-pressed={viewMode === '2d'}
+                  >
+                    {vn.view2d}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewModePersisted('3d')}
+                    className={`px-3 py-1.5 text-xs font-medium transition-colors border-l border-default ${
+                      viewMode === '3d'
+                        ? 'bg-brand-700 text-bright'
+                        : 'text-muted-foreground hover:text-bright'
+                    }`}
+                    aria-pressed={viewMode === '3d'}
+                  >
+                    {vn.view3d}
+                  </button>
+                </div>
+                <Button
+                  variant="secondary"
+                  onClick={toggleFullscreen}
+                  title={isFullscreen ? vn.titleExitFullscreen : vn.titleFullscreen}
+                >
+                  {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                  {isFullscreen ? vn.exitFullscreen : vn.fullscreen}
+                </Button>
+              </div>
               {selected && (
                 <div className="absolute bottom-4 left-4 z-10 max-w-[min(28rem,80vw)] rounded-xl border border-default bg-brand-900/95 p-3 shadow-lg fade-in">
                   <div className="mb-1.5 flex items-center justify-between gap-2">

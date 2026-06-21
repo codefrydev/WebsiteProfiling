@@ -175,6 +175,8 @@ export function sliceFromGoogleRow(
   let inGsc = gscPage != null;
   let inGa4 = ga4Page != null;
   let inCrawl = false;
+  let inGscOnly = false;
+  let inGa4Only = false;
   for (const cat of ['crawl_only', 'gsc_only', 'ga4_only'] as const) {
     const arr = lists[cat];
     if (!Array.isArray(arr)) continue;
@@ -182,12 +184,23 @@ export function sliceFromGoogleRow(
       const u =
         item && typeof item === 'object' ? String((item as Record<string, unknown>).url || '') : String(item);
       if (u && normalizeUrl(u) === norm) {
-        if (cat === 'gsc_only') inGsc = true;
-        if (cat === 'ga4_only') inGa4 = true;
+        if (cat === 'crawl_only') inCrawl = true;
+        if (cat === 'gsc_only') {
+          inGsc = true;
+          inGscOnly = true;
+        }
+        if (cat === 'ga4_only') {
+          inGa4 = true;
+          inGa4Only = true;
+        }
         break;
       }
     }
   }
+  // A page present in GSC/GA4 but NOT flagged as a Google-only gap is a crawl∩Google
+  // match, so it was crawled. Without this, "both" pages report inCrawl=false and
+  // wrongly trigger the "in Search Console but not crawled" hint.
+  if ((inGsc && !inGscOnly) || (inGa4 && !inGa4Only)) inCrawl = true;
 
   const dateRangeRaw = raw.date_range;
   let dateRange: { start?: string; end?: string } =

@@ -25,6 +25,7 @@ Marketing and README assets are stored in [assets/](assets/):
 | Asset | Purpose |
 |-------|---------|
 | `readme-banner.png` | README header banner |
+| `seo-feedback-loop.png` | SEO feedback loop diagram (Audit → Report → MCP → Fix → Review) |
 | `social-preview.png` | Application screenshot for README and social previews |
 | `banner.svg` | Source artwork for the banner |
 | `logo.svg`, `logo-icon.svg` | Product logo and icon |

@@ -131,15 +131,18 @@ def batch_expand(
     Returns { seed: { "web": [...], "youtube": [...], "questions": [...] } }
     Uses concurrent requests and PostgreSQL cache (keyword_suggest_cache).
     """
-    result: dict[str, dict[str, list[str]]] = {
-        seed: {s: [] for s in sources} for seed in seeds
-    }
+    result: dict[str, dict[str, list[str]]] = {}
     tasks_to_fetch: list[tuple[str, str, str, str]] = []
 
     for seed in seeds:
         if not seed or not seed.strip():
             continue
         seed = seed.strip().lower()
+        # Key `result` by the NORMALIZED seed. The cache-hit path and worker path
+        # below both index `result[seed]` with this lowercased value, so keying
+        # by the raw seed would raise KeyError for any mixed-case seed on a cache
+        # hit (the common steady-state path), aborting the enrichment pipeline.
+        result.setdefault(seed, {s: [] for s in sources})
         for source in sources:
             # Check cache
             if cache_conn is not None:

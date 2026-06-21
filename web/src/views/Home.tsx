@@ -16,6 +16,7 @@ import { usePortfolio } from '@/context/usePortfolio';
 import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
 import { apiUrl } from '../lib/publicBase';
+import { getDefaultLandingView } from '@/lib/defaultViewPref';
 import type { PortfolioGroup, ViewProps } from '@/types';
 
 export default function Home({ onNavigate }: ViewProps) {
@@ -54,7 +55,7 @@ export default function Home({ onNavigate }: ViewProps) {
       }
       return;
     }
-    onNavigate?.('overview', {
+    onNavigate?.(getDefaultLandingView(), {
       domain: group.domainParam,
       reportId: group.reportId ?? undefined,
     });

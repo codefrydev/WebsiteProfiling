@@ -334,8 +334,16 @@ def run_lighthouse_audit(
         val = median_metrics.get(_cat_key[cat_id])
         category_scores[cat_id] = round(val * 100) if val is not None else None
 
-    # Merge top failures from run with worst performance score
-    worst_run = min(runs, key=lambda r: (r["performance_score"] is None, -(r["performance_score"] or 0)))
+    # Merge top failures from the run with the WORST (lowest) performance score.
+    # Negating the score made `min` pick the highest (best) score; and `or 0`
+    # would mis-rank a legitimate 0.0 score. None scores sort last.
+    worst_run = min(
+        runs,
+        key=lambda r: (
+            r["performance_score"] is None,
+            r["performance_score"] if r["performance_score"] is not None else 1.0,
+        ),
+    )
     top_failures = worst_run.get("top_failures") or []
 
     lcp_ok = median_metrics["lcp_ms"] is not None and median_metrics["lcp_ms"] <= LCP_GOOD_MS

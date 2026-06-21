@@ -11,9 +11,10 @@ export interface ChatComposerProps {
   busy?: boolean;
   onSend: (message: string) => void;
   trailing?: ReactNode;
-  variant?: 'hero' | 'dock';
+  variant?: 'hero' | 'dock' | 'compact';
   draftMessage?: string;
   onDraftApplied?: () => void;
+  placeholder?: string;
 }
 
 export default function ChatComposer({
@@ -24,6 +25,7 @@ export default function ChatComposer({
   variant = 'dock',
   draftMessage,
   onDraftApplied,
+  placeholder,
 }: ChatComposerProps) {
   const [text, setText] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -57,29 +59,34 @@ export default function ChatComposer({
   };
 
   const isHero = variant === 'hero';
+  const isCompact = variant === 'compact';
 
   return (
     <form
       onSubmit={handleSubmit}
-      className={`mx-auto w-full max-w-3xl ${isHero ? '' : 'px-4 pb-4 pt-2'}`}
+      className={`mx-auto w-full ${isHero || isCompact ? '' : 'max-w-3xl px-4 pb-4 pt-2'} ${isCompact ? 'px-3 pb-3 pt-2' : ''}`}
     >
       <div
-        className={`mx-auto flex items-end gap-1 rounded-3xl bg-[var(--chat-surface)] px-3 py-2 transition-shadow sm:px-4 ${
+        className={`mx-auto flex items-end gap-1 rounded-3xl bg-[var(--chat-surface)] px-3 py-2 transition-shadow ${
           isHero
-            ? 'chat-hero-input min-h-[3.5rem]'
-            : 'min-h-[3.25rem] shadow-lg ring-1 ring-white/[0.06]'
+            ? 'chat-hero-input min-h-[3.5rem] sm:px-4'
+            : isCompact
+              ? 'min-h-[2.75rem]'
+              : 'min-h-[3.25rem] shadow-lg ring-1 ring-white/[0.06] sm:px-4'
         }`}
       >
-        <button
-          type="button"
-          disabled={disabled || busy}
-          className={`mb-0.5 flex shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-[var(--chat-surface-hover)] hover:text-foreground disabled:opacity-40 ${
-            isHero ? 'h-10 w-10' : 'h-9 w-9'
-          }`}
-          aria-label={c.composerAttach}
-        >
-          <Plus className="h-5 w-5" />
-        </button>
+        {!isCompact && (
+          <button
+            type="button"
+            disabled={disabled || busy}
+            className={`mb-0.5 flex shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-[var(--chat-surface-hover)] hover:text-foreground disabled:opacity-40 ${
+              isHero ? 'h-10 w-10' : 'h-9 w-9'
+            }`}
+            aria-label={c.composerAttach}
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+        )}
 
         <textarea
           ref={textareaRef}
@@ -88,7 +95,7 @@ export default function ChatComposer({
             setText(e.target.value);
             resizeTextarea();
           }}
-          placeholder={c.inputPlaceholder}
+          placeholder={placeholder ?? c.inputPlaceholder}
           rows={1}
           disabled={disabled || busy}
           className={`max-h-40 flex-1 resize-none border-0 bg-transparent py-2 text-foreground placeholder:text-muted-foreground/80 focus:outline-none focus:ring-0 disabled:opacity-50 ${

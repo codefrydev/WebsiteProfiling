@@ -37,7 +37,8 @@ def test_validate_chat_narrative_caps_items() -> None:
         "power_insights": items,
         "recommended_actions": ["one"],
     })
-    assert any("more than" in e for e in errors)
+    # Over-length is silently capped, not treated as a validation error.
+    assert not errors
     assert len(narrative["power_insights"]) == 5
 
 

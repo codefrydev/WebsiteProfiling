@@ -542,10 +542,20 @@ def test_origin_allowed_url_and_hostname_patterns() -> None:
         "https://audit.example.com",
         ["https://audit.example.com"],
     )
+    # A bare hostname pattern matches the exact host only...
     assert http_server._origin_allowed(
-        "https://app.example.com",
+        "https://example.com",
         ["example.com"],
     )
+    # ...and must NOT be widened into a subdomain wildcard.
+    assert not http_server._origin_allowed(
+        "https://evil.example.com",
+        ["example.com"],
+    )
+    # Explicit wildcard patterns match the apex and any subdomain.
+    assert http_server._origin_allowed("https://app.example.com", ["*.example.com"])
+    assert http_server._origin_allowed("https://example.com", ["*.example.com"])
+    assert not http_server._origin_allowed("https://app.other.com", ["*.example.com"])
     assert not http_server._origin_allowed(
         "https://evil.example.net",
         ["https://audit.example.com"],
@@ -587,6 +597,78 @@ def test_remote_access_middleware_rejects_bad_origin() -> None:
     asyncio.run(run())
 
 
+def test_remote_access_middleware_origin_fallback_rejects_cross_host() -> None:
+    # No explicit allowed_origins: a browser Origin from a host that is not an
+    # allowed host must still be rejected (transport-level Origin protection is
+    # delegated to the middleware).
+    app = AsyncMock()
+    middleware = http_server.RemoteAccessMiddleware(app)
+
+    async def run() -> None:
+        sent: list[dict] = []
+
+        async def capture_send(message: dict) -> None:
+            sent.append(message)
+
+        with patch(
+            "website_profiling.mcp.http_server.load_mcp_http_settings",
+            return_value=McpHttpSettings(
+                token="secret-token",
+                allowed_hosts=["audit.example.com"],
+                allowed_origins=[],
+            ),
+        ):
+            await middleware(
+                {
+                    "type": "http",
+                    "headers": [
+                        (b"host", b"audit.example.com"),
+                        (b"authorization", b"Bearer secret-token"),
+                        (b"origin", b"https://evil.example.net"),
+                    ],
+                },
+                AsyncMock(),
+                capture_send,
+            )
+
+        assert sent[0]["status"] == 403
+        app.assert_not_called()
+
+    asyncio.run(run())
+
+
+def test_remote_access_middleware_origin_fallback_allows_same_host() -> None:
+    # Same-host browser Origin is allowed even without explicit allowed_origins.
+    app = AsyncMock()
+    middleware = http_server.RemoteAccessMiddleware(app)
+
+    async def run() -> None:
+        with patch(
+            "website_profiling.mcp.http_server.load_mcp_http_settings",
+            return_value=McpHttpSettings(
+                token="secret-token",
+                allowed_hosts=["audit.example.com"],
+                allowed_origins=[],
+            ),
+        ):
+            await middleware(
+                {
+                    "type": "http",
+                    "headers": [
+                        (b"host", b"audit.example.com"),
+                        (b"authorization", b"Bearer secret-token"),
+                        (b"origin", b"https://audit.example.com"),
+                    ],
+                },
+                AsyncMock(),
+                AsyncMock(),
+            )
+
+        app.assert_called_once()
+
+    asyncio.run(run())
+
+
 def test_transport_security_public_env_only() -> None:
     with patch(
         "website_profiling.mcp.http_server.load_mcp_http_settings",
@@ -601,7 +683,7 @@ def test_host_allowed_wildcard_nomatch_then_exact() -> None:
 
 def test_origin_allowed_http_nomatch_then_hostname() -> None:
     assert http_server._origin_allowed(
-        "https://app.example.com",
+        "https://example.com",
         ["https://other.example.com", "example.com"],
     )
 

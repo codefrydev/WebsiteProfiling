@@ -196,9 +196,21 @@ export const MCP_SETTINGS_FIELDS: SecretsField[] = [
   },
 ];
 
+/** Keys managed on the /risk-settings page — stored in pipeline_config but hidden from /secrets UI. */
+export const RISK_SETTINGS_KEYS = new Set([
+  'mcp_disabled_tools',
+  'feature_pipeline_enabled',
+  'feature_write_enabled',
+  'feature_pages_md_enabled',
+  'feature_chat_enabled',
+  'feature_mcp_visible',
+  'feature_secrets_visible',
+]);
+
 export const ALL_SECRETS_KEYS = new Set([
   ...SECRETS_SECTIONS.flatMap((s) => s.fields.map((f) => f.key)),
   ...MCP_SETTINGS_FIELDS.map((f) => f.key),
+  ...RISK_SETTINGS_KEYS,
 ]);
 
 export const SECRETS_MASK_SENTINEL = '__MASKED__';
@@ -208,8 +220,12 @@ export function isPipelineSecretKey(key: string): boolean {
 }
 
 /** Keys hidden from the generic Pipeline page: secrets plus /mcp-managed config. */
+export function isRiskSettingsKey(key: string): boolean {
+  return RISK_SETTINGS_KEYS.has(key);
+}
+
 export function isPipelineHiddenKey(key: string): boolean {
-  return isPipelineSecretKey(key) || MCP_MANAGED_KEYS.has(key);
+  return isPipelineSecretKey(key) || MCP_MANAGED_KEYS.has(key) || isRiskSettingsKey(key);
 }
 
 export function isPipelineFieldVisibleOnPipeline(field: { key: string }): boolean {
@@ -248,6 +264,12 @@ export function buildInitialSecretsState(): SecretsState {
   }
   for (const f of MCP_SETTINGS_FIELDS) {
     out[f.key] = f.key === 'mcp_domain' ? 'core' : '';
+  }
+  out['mcp_disabled_tools'] = '';
+  for (const key of RISK_SETTINGS_KEYS) {
+    if (key !== 'mcp_disabled_tools') {
+      out[key] = 'true';
+    }
   }
   return out;
 }

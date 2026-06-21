@@ -83,9 +83,14 @@ def read_historical_data() -> dict[str, list]:
         with db_session() as conn:
             for table in tables:
                 try:
-                    with conn.cursor() as cur:
-                        cur.execute(SQL("SELECT * FROM {}").format(Identifier(table)))
-                        result[table] = [dict(row) for row in cur.fetchall()]
+                    # Savepoint per table: a failed read (e.g. a table missing on
+                    # an under-migrated DB) otherwise aborts the whole transaction,
+                    # making every *later* table read fail too and silently dropping
+                    # all remaining preserved history. Roll back just this read.
+                    with conn.transaction():
+                        with conn.cursor() as cur:
+                            cur.execute(SQL("SELECT * FROM {}").format(Identifier(table)))
+                            result[table] = [dict(row) for row in cur.fetchall()]
                 except Exception as e:
                     console_print(
                         f"  Warning: could not read historical table '{table}': {e}",

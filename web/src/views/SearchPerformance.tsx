@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect } from 'react';
+import Link from 'next/link';
 import type { GscPageRow, UrlJoinData } from '@/types';
 import type { TableColumn } from '@/types/components';
 import { TrendingUp, Search, AlertCircle, Settings2, Download, Loader2 } from 'lucide-react';
@@ -13,6 +14,7 @@ import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { SEARCH_PERFORMANCE_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
+import { integrationGuideHref } from '@/lib/docs/integrationGuides';
 import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs } from '../components';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import GoogleTableToolbar from '../components/google/GoogleTableToolbar';
@@ -237,9 +239,15 @@ export default function SearchPerformance() {
           <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-xl font-bold text-bright mb-2">{sp.emptyTitle}</h2>
           <p className="text-muted-foreground text-sm mb-6">{sp.emptyBody}</p>
-          <p className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+          <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 flex-wrap">
             <Settings2 className="h-3.5 w-3.5 shrink-0" />
-            {sp.emptyIntegrationsHint}
+            {sp.emptyIntegrationsHint}{' '}
+            <Link
+              href={integrationGuideHref('google', { from: 'integrations' })}
+              className="text-link hover:underline"
+            >
+              {strings.docs.setupGuideLink}
+            </Link>
           </p>
         </div>
       </PageLayout>

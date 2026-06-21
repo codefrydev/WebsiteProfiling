@@ -118,6 +118,10 @@ def spell_check_issues(df: pd.DataFrame, *, max_pages: int = 50) -> tuple[list[d
         if not words:
             continue
         unknown = spell.unknown(words[:120])
+        # Count every page actually spell-checked, not only flagged ones, so
+        # max_pages bounds the expensive spell.unknown() work (the cap previously
+        # incremented only when an issue was appended).
+        checked += 1
         if len(unknown) >= 3:
             url = str(row.get("url") or "")
             sample = ", ".join(sorted(unknown)[:5])
@@ -127,7 +131,6 @@ def spell_check_issues(df: pd.DataFrame, *, max_pages: int = 50) -> tuple[list[d
                 priority="Low",
                 recommendation="Review title, H1, and visible copy for typos.",
             ))
-            checked += 1
     return issues[:20], None
 
 
@@ -149,6 +152,9 @@ def html_validation_issues(df: pd.DataFrame, *, max_pages: int = 30) -> tuple[li
         if len(html) < 100:
             continue
         url = str(row.get("url") or "")
+        # Count every page actually parsed, not only flagged ones, so max_pages
+        # bounds the expensive HTML parse/scan (was incremented only on warnings).
+        checked += 1
         warnings: list[str] = []
         if use_parser:
             try:
@@ -172,7 +178,6 @@ def html_validation_issues(df: pd.DataFrame, *, max_pages: int = 30) -> tuple[li
                 priority="Low",
                 recommendation="Fix markup validation issues that may affect parsing or accessibility.",
             ))
-            checked += 1
     return issues, use_parser
 
 
@@ -235,6 +240,11 @@ def wayback_issues(df: pd.DataFrame, *, max_lookups: int = 15) -> list[dict]:
                 ))
                 looked += 1
             continue
+        # Every uncached 404 here triggers a Wayback network request; count it
+        # against max_lookups whether or not a snapshot is found (and even if the
+        # request fails). Previously only snapshots-found counted, so a site full
+        # of snapshot-less 404s issued one request per 404 with no effective cap.
+        looked += 1
         try:
             resp = requests.get(
                 "https://archive.org/wayback/available",
@@ -254,7 +264,6 @@ def wayback_issues(df: pd.DataFrame, *, max_lookups: int = 15) -> list[dict]:
                     priority="Low",
                     recommendation="Review whether redirect or content restoration is appropriate.",
                 ))
-                looked += 1
         except Exception:
             with _WAYBACK_LOCK:
                 _WAYBACK_CACHE[cache_key] = False

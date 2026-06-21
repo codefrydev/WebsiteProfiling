@@ -5,6 +5,8 @@ from typing import Any
 
 from ..scoring import round_half_up
 
+_PRIORITY_RANK = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3}
+
 
 def rank_issues_by_traffic(
     categories: list[dict[str, Any]],
@@ -37,7 +39,10 @@ def rank_issues_by_traffic(
                 "gsc_clicks": clicks,
                 "traffic_weight": clicks,
             })
-    ranked.sort(key=lambda x: (-x.get("traffic_weight", 0), x.get("priority", "Medium")))
+    # Tiebreak by severity rank (not the raw string, which sorts Low before Medium alphabetically).
+    ranked.sort(
+        key=lambda x: (-x.get("traffic_weight", 0), _PRIORITY_RANK.get(x.get("priority", "Medium"), 99))
+    )
     return ranked
 
 

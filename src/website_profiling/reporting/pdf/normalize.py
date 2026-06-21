@@ -212,8 +212,12 @@ def normalize_issue_for_pdf(
         str(row.get("recommendation") or "").strip() if include_recommendation else None
     )
 
-    # Detect Lighthouse rows (audit-id only, no human label)
-    is_lh, audit_id = _is_lighthouse_row(raw_message, [])
+    # Detect Lighthouse rows (audit-id only, no human label). Pass the row's own
+    # tags so tag-based detection actually works (was hardcoded to [], making the
+    # `"lighthouse" in tags` branch dead).
+    is_lh, audit_id = _is_lighthouse_row(
+        raw_message, [str(t).lower() for t in (row.get("tags") or [])]
+    )
     if is_lh and audit_id:
         headline = _lh_label(audit_id)
     else:

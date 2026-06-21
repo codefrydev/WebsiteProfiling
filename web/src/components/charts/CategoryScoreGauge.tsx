@@ -2,9 +2,15 @@
 
 import { format, strings } from '@/lib/strings';
 import { scoreBandColor } from '@/utils/chartPalette';
+import { buildCriticalOverlayPath, buildScoreArcPaths } from '@/lib/viz/arcGauge';
 
 const vo = strings.views.overview;
 const sj = strings.common;
+
+const INNER_R = 13.5;
+const OUTER_R = 15.9155;
+const CX = 18;
+const CY = 18;
 
 export interface CategoryScoreGaugeProps {
   name: string;
@@ -14,7 +20,6 @@ export interface CategoryScoreGaugeProps {
 }
 
 export function CategoryScoreGauge({ name, score, size = 'md', onClick }: CategoryScoreGaugeProps) {
-  const clamped = score != null ? Math.min(100, Math.max(0, score)) : 0;
   const label =
     score == null ? sj.na : score >= 80 ? vo.scoreGood : score >= 50 ? vo.scoreNeeds : vo.scoreCritical;
   const labelCls =
@@ -31,6 +36,9 @@ export function CategoryScoreGauge({ name, score, size = 'md', onClick }: Catego
     size === 'lg' ? 'w-28 h-28' : size === 'sm' ? 'w-16 h-16' : 'w-20 h-20';
   const textSize = size === 'lg' ? 'text-3xl' : size === 'sm' ? 'text-lg' : 'text-xl';
 
+  const { background, foreground } = buildScoreArcPaths(score, INNER_R, OUTER_R);
+  const criticalOverlay = isCritical ? buildCriticalOverlayPath(INNER_R, OUTER_R) : null;
+
   const inner = (
     <>
       <div
@@ -41,31 +49,21 @@ export function CategoryScoreGauge({ name, score, size = 'md', onClick }: Catego
           score: score != null ? score : sj.na,
         })}
       >
-        <svg viewBox="0 0 36 36" className={`${dim} -rotate-90`}>
-          <path
-            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-            fill="none"
-            stroke="#1F2937"
-            strokeWidth="3"
-          />
-          <path
-            d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-            fill="none"
-            stroke={color}
-            strokeWidth="3"
-            strokeDasharray={score != null ? `${clamped}, 100` : '0, 100'}
-            strokeLinecap="round"
-          />
-          {isCritical ? (
-            <path
-              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-              fill="none"
-              stroke={color}
-              strokeWidth="1.5"
-              strokeDasharray="3 3"
-              opacity="0.8"
-            />
-          ) : null}
+        <svg viewBox="0 0 36 36" className={dim} aria-hidden="true">
+          <g transform={`translate(${CX},${CY})`}>
+            <path d={background} fill="#1F2937" />
+            {foreground ? <path d={foreground} fill={color} /> : null}
+            {criticalOverlay ? (
+              <path
+                d={criticalOverlay}
+                fill="none"
+                stroke={color}
+                strokeWidth={1.5}
+                strokeDasharray="3 3"
+                opacity={0.8}
+              />
+            ) : null}
+          </g>
         </svg>
         <div className={`absolute inset-0 flex items-center justify-center font-bold text-bright ${textSize}`}>
           {score != null ? score : sj.na}

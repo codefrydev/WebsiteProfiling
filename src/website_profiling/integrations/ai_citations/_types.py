@@ -34,13 +34,25 @@ class CitationResult:
         }
 
 
+def _strip_www(domain: str) -> str:
+    """Lowercase *domain* and remove a leading ``www.`` prefix.
+
+    ``str.lstrip("www.")`` strips the *character set* {'w', '.'}, not the
+    prefix — so ``wired.com`` becomes ``ired.com`` and ``w3.org`` becomes
+    ``3.org``, corrupting any domain that starts with 'w'. Use removeprefix
+    semantics instead.
+    """
+    d = domain.lower()
+    return d[4:] if d.startswith("www.") else d
+
+
 def _domain_in_sources(domain: str, sources: list[str]) -> bool:
-    needle = domain.lower().lstrip("www.").split("/")[0]
+    needle = _strip_www(domain).split("/")[0]
     return any(needle in s.lower() for s in sources)
 
 
 def _detect_competitors(sources: list[str], domain: str) -> list[str]:
-    own = domain.lower().lstrip("www.").split("/")[0]
+    own = _strip_www(domain).split("/")[0]
     seen: set[str] = set()
     competitors: list[str] = []
     for s in sources:
@@ -63,5 +75,5 @@ def _parametric_prompt(query: str, brand: str, domain: str) -> str:
 
 def _parametric_brand_check(brand: str, domain: str, answer: str) -> tuple[bool, bool]:
     brand_mentioned = brand.lower() in answer.lower()
-    domain_cited = domain.lower().lstrip("www.").split("/")[0] in answer.lower()
+    domain_cited = _strip_www(domain).split("/")[0] in answer.lower()
     return brand_mentioned, domain_cited

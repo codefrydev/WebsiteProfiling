@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from website_profiling.tools.audit_tools.sql_query import (
+from website_profiling.tools.audit_tools.core.sql_query import (
     ReadOnlyViolation,
     _ALLOWED_TABLES,
     _MAX_SQL_BYTES,
@@ -321,6 +321,17 @@ class TestAssertReadOnlyBlockedSchemas:
         with pytest.raises(ReadOnlyViolation):
             assert_read_only("SELECT * FROM public.llm_config")
 
+    def test_schema_qualified_allowed_table_rejected(self) -> None:
+        # public.<allowed> resolves to the real base table and would bypass the
+        # injected tenant-scope CTE — must be rejected even though google_data
+        # is allowlisted unqualified.
+        with pytest.raises(ReadOnlyViolation, match="Schema-qualified"):
+            assert_read_only("SELECT * FROM public.google_data")
+
+    def test_catalog_qualified_table_rejected(self) -> None:
+        with pytest.raises(ReadOnlyViolation, match="Schema-qualified"):
+            assert_read_only("SELECT * FROM cat.public.crawl_results")
+
 
 # ---------------------------------------------------------------------------
 # assert_read_only — rejected: dangerous functions
@@ -445,6 +456,18 @@ class TestInjectScopeCtes:
         with pytest.raises(ReadOnlyViolation, match="conflict"):
             _inject_scope_ctes(sql, self._stmt(sql), property_id=1)
 
+    def test_recursive_query_is_subquery_wrapped(self) -> None:
+        # Scope CTEs self-shadow their base tables, which is invalid under
+        # WITH RECURSIVE; the query must instead be wrapped in a subquery so the
+        # outer scope CTEs apply without breaking the recursive form.
+        sql = "WITH RECURSIVE sub AS (SELECT crawl_run_id FROM crawl_results) SELECT * FROM sub"
+        result = _inject_scope_ctes(sql, self._stmt(sql), property_id=3)
+        assert "WHERE property_id = 3" in result
+        assert "_scoped" in result
+        assert "WITH RECURSIVE sub" in result
+        # The injected CTEs must NOT be spliced in front of RECURSIVE.
+        assert ",\nRECURSIVE" not in result
+
 
 # ---------------------------------------------------------------------------
 # run_sql_query handler
@@ -492,7 +515,7 @@ def _ro_session_patch(columns: list[str], rows: list[list[Any]]):
         yield _FakeConn()
 
     return patch(
-        "website_profiling.tools.audit_tools.sql_query.readonly_session",
+        "website_profiling.tools.audit_tools.core.sql_query.readonly_session",
         _fake_ro_session,
     )
 
@@ -532,7 +555,7 @@ class TestRunSqlQuery:
             yield None
 
         with patch(
-            "website_profiling.tools.audit_tools.sql_query.readonly_session",
+            "website_profiling.tools.audit_tools.core.sql_query.readonly_session",
             _never_called,
         ):
             result = run_sql_query(
@@ -553,7 +576,7 @@ class TestRunSqlQuery:
             yield None
 
         with patch(
-            "website_profiling.tools.audit_tools.sql_query.readonly_session",
+            "website_profiling.tools.audit_tools.core.sql_query.readonly_session",
             _never_called,
         ):
             result = run_sql_query(
@@ -573,7 +596,7 @@ class TestRunSqlQuery:
             yield None
 
         with patch(
-            "website_profiling.tools.audit_tools.sql_query.readonly_session",
+            "website_profiling.tools.audit_tools.core.sql_query.readonly_session",
             _never_called,
         ):
             result = run_sql_query(
@@ -609,7 +632,7 @@ class TestRunSqlQuery:
             yield _BrokenConn()
 
         with patch(
-            "website_profiling.tools.audit_tools.sql_query.readonly_session",
+            "website_profiling.tools.audit_tools.core.sql_query.readonly_session",
             _broken_session,
         ):
             result = run_sql_query(
@@ -697,7 +720,7 @@ class TestRunSqlQuery:
             yield _FakeConn()
 
         with patch(
-            "website_profiling.tools.audit_tools.sql_query.readonly_session",
+            "website_profiling.tools.audit_tools.core.sql_query.readonly_session",
             _fake_ro,
         ):
             run_sql_query(
@@ -748,7 +771,7 @@ class TestRunSqlQuery:
             yield _FakeConn()
 
         with patch(
-            "website_profiling.tools.audit_tools.sql_query.readonly_session",
+            "website_profiling.tools.audit_tools.core.sql_query.readonly_session",
             _fake_ro,
         ):
             run_sql_query(
@@ -826,7 +849,7 @@ class TestGetSqlSchema:
             yield _FakeConn()
 
         with patch(
-            "website_profiling.tools.audit_tools.sql_query.readonly_session",
+            "website_profiling.tools.audit_tools.core.sql_query.readonly_session",
             _fake_ro,
         ):
             result = get_sql_schema(self._conn(), self._ctx(), {})
@@ -880,7 +903,7 @@ class TestGetSqlSchema:
             yield _FakeConn()
 
         with patch(
-            "website_profiling.tools.audit_tools.sql_query.readonly_session",
+            "website_profiling.tools.audit_tools.core.sql_query.readonly_session",
             _fake_ro,
         ):
             result = get_sql_schema(self._conn(), self._ctx(), {})
@@ -908,7 +931,7 @@ class TestGetSqlSchema:
             yield _BrokenConn()
 
         with patch(
-            "website_profiling.tools.audit_tools.sql_query.readonly_session",
+            "website_profiling.tools.audit_tools.core.sql_query.readonly_session",
             _broken_session,
         ):
             result = get_sql_schema(self._conn(), self._ctx(), {})
@@ -964,7 +987,7 @@ class TestFeatureFlagGating:
 
 class TestSqlQueryRemainingBranches:
     def test_anonymous_forbidden_function_with_regex_bypass(self) -> None:
-        with patch("website_profiling.tools.audit_tools.sql_query.assert_read_only_regex"):
+        with patch("website_profiling.tools.audit_tools.core.sql_query.assert_read_only_regex"):
             with pytest.raises(ReadOnlyViolation, match="not permitted"):
                 assert_read_only("SELECT pg_sleep(1)")
 
@@ -974,8 +997,8 @@ class TestSqlQueryRemainingBranches:
 
         stmt = sqlglot.parse_one("SELECT 1")
         stmt.set("locks", [object()])
-        with patch("website_profiling.tools.audit_tools.sql_query.assert_read_only_regex"), patch(
-            "website_profiling.tools.audit_tools.sql_query.sqlglot.parse",
+        with patch("website_profiling.tools.audit_tools.core.sql_query.assert_read_only_regex"), patch(
+            "website_profiling.tools.audit_tools.core.sql_query.sqlglot.parse",
             return_value=[stmt],
         ):
             with pytest.raises(ReadOnlyViolation, match="FOR UPDATE"):
@@ -983,7 +1006,7 @@ class TestSqlQueryRemainingBranches:
 
     def test_check_table_refs_skips_empty_table_name(self) -> None:
         from sqlglot import exp
-        from website_profiling.tools.audit_tools.sql_query import _check_table_refs
+        from website_profiling.tools.audit_tools.core.sql_query import _check_table_refs
 
         table = exp.Table(this=exp.to_identifier(""))
         select = exp.Select().from_(table)
@@ -1036,7 +1059,7 @@ class TestSqlQueryRemainingBranches:
             _FakeCursor._call_count = 0
             yield _FakeConn()
 
-        with patch("website_profiling.tools.audit_tools.sql_query.readonly_session", _fake_ro):
+        with patch("website_profiling.tools.audit_tools.core.sql_query.readonly_session", _fake_ro):
             result = get_sql_schema(MagicMock(), AuditToolContext(), {})
         assert result["tables"][0]["foreign_keys"] == []
 
@@ -1052,7 +1075,7 @@ class TestSqlQueryRemainingBranches:
             conn.cursor.return_value.__enter__.return_value = cur
             yield conn
 
-        with patch("website_profiling.tools.audit_tools.sql_query.readonly_session", _ro):
+        with patch("website_profiling.tools.audit_tools.core.sql_query.readonly_session", _ro):
             result = run_sql_query(MagicMock(), AuditToolContext(), {"sql": "SELECT 1", "row_cap": "bad"})
         assert result["row_count"] == 1
 
@@ -1068,10 +1091,10 @@ class TestSqlQueryRemainingBranches:
             conn.cursor.return_value.__enter__.return_value = cur
             yield conn
 
-        with patch("website_profiling.tools.audit_tools.sql_query.readonly_session", _ro), patch(
-            "website_profiling.tools.audit_tools.sql_query.assert_read_only",
+        with patch("website_profiling.tools.audit_tools.core.sql_query.readonly_session", _ro), patch(
+            "website_profiling.tools.audit_tools.core.sql_query.assert_read_only",
         ), patch(
-            "website_profiling.tools.audit_tools.sql_query.sqlglot.parse",
+            "website_profiling.tools.audit_tools.core.sql_query.sqlglot.parse",
             side_effect=RuntimeError("parse fail"),
         ):
             result = run_sql_query(MagicMock(), AuditToolContext(property_id=1), {"sql": "SELECT 1"})
@@ -1080,11 +1103,11 @@ class TestSqlQueryRemainingBranches:
     def test_run_sql_query_scope_injection_rejected(self) -> None:
         import sqlglot
 
-        with patch("website_profiling.tools.audit_tools.sql_query.assert_read_only"), patch(
-            "website_profiling.tools.audit_tools.sql_query.sqlglot.parse",
+        with patch("website_profiling.tools.audit_tools.core.sql_query.assert_read_only"), patch(
+            "website_profiling.tools.audit_tools.core.sql_query.sqlglot.parse",
             return_value=[sqlglot.parse_one("SELECT 1")],
         ), patch(
-            "website_profiling.tools.audit_tools.sql_query._inject_scope_ctes",
+            "website_profiling.tools.audit_tools.core.sql_query._inject_scope_ctes",
             side_effect=ReadOnlyViolation("scope fail"),
         ):
             scoped = run_sql_query(MagicMock(), AuditToolContext(property_id=1), {"sql": "SELECT 1"})
@@ -1130,6 +1153,6 @@ class TestSqlQueryRemainingBranches:
             _FakeCursor._call_count = 0
             yield _FakeConn()
 
-        with patch("website_profiling.tools.audit_tools.sql_query.readonly_session", _fake_ro):
+        with patch("website_profiling.tools.audit_tools.core.sql_query.readonly_session", _fake_ro):
             result = get_sql_schema(MagicMock(), AuditToolContext(), {})
         assert result["tables"][0]["foreign_keys"] == []
