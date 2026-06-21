@@ -24,6 +24,7 @@
 </p>
 
 <p align="center">
+  <a href="#demo">Demo</a> ·
   <a href="#getting-started">Quick start</a> ·
   <a href="#seo-feedback-loop">Feedback loop</a> ·
   <a href="#features">Features</a> ·
@@ -53,6 +54,18 @@ Site Audit is a **developer-friendly SEO audit** tool: self-hosted, transparent,
 - Agency portfolio management and run comparison
 - **Closed-loop SEO workflow** — audit, report, feed data to IDE agents via MCP, fix in code, review and compare
 - Optional AI-assisted analysis over audit data via MCP-compatible tools
+
+## Demo
+
+<p align="center">
+  <a href="https://youtu.be/HwWw7_koj70">
+    <img src="https://markdown-videos.vercel.app/youtube/HwWw7_koj70" alt="Site Audit — Open Source SEO Crawl & Audit" width="920">
+  </a>
+</p>
+
+<p align="center">
+  <sub><a href="https://youtu.be/HwWw7_koj70">▶ Site Audit — Open Source SEO Crawl & Audit</a></sub>
+</p>
 
 ## SEO feedback loop
 
