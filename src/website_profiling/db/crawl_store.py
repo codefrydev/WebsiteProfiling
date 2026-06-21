@@ -331,10 +331,17 @@ def _write_crawl_rows(conn: Connection, rows: list[tuple]) -> None:
         else:
             normalized.append(row)
     try:
-        _executemany(conn, _CRAWL_INSERT_SQL, normalized, page_size=_CRAWL_BATCH_SIZE)
+        # Savepoint so that a failure (e.g. a legacy schema missing the
+        # fetch_method column) rolls back ONLY this insert and leaves the
+        # transaction usable. Without it the legacy fallback below runs inside an
+        # aborted transaction, raises "current transaction is aborted", and
+        # silently writes nothing.
+        with conn.transaction():
+            _executemany(conn, _CRAWL_INSERT_SQL, normalized, page_size=_CRAWL_BATCH_SIZE)
     except Exception:
         legacy = [(r[0], r[1], r[2], r[3], r[5]) for r in normalized]
-        _executemany(conn, _CRAWL_INSERT_SQL_LEGACY, legacy, page_size=_CRAWL_BATCH_SIZE)
+        with conn.transaction():
+            _executemany(conn, _CRAWL_INSERT_SQL_LEGACY, legacy, page_size=_CRAWL_BATCH_SIZE)
 
 
 def write_crawl_batch(

@@ -41,7 +41,11 @@ def _cfg_int(cfg: dict[str, str] | None, key: str, default: int) -> int:
 
 
 def _tokenize_simhash(text: str) -> list[str]:
-    return re.findall(r"[a-z0-9]{3,}", text.lower())
+    # `[^\W_]` is word chars minus underscore: identical to the old `[a-z0-9]`
+    # for ASCII (input is lowercased) but ALSO matches Unicode letters/digits, so
+    # CJK / Cyrillic / Arabic / Greek pages no longer tokenize to nothing and
+    # collapse to SimHash 0 (which falsely clustered them all as duplicates).
+    return re.findall(r"[^\W_]{3,}", text.lower(), re.UNICODE)
 
 
 def _stable_token_hash(token: str) -> int:
@@ -123,6 +127,11 @@ def compute_duplicate_groups(
 
     bucket: dict[int, list[str]] = defaultdict(list)
     for u, h in url_to_sh.items():
+        # SimHash 0 means "no tokenizable content", not "identical content".
+        # Bucketing those together unioned every untokenizable page as a single
+        # giant duplicate group — skip them.
+        if h == 0:
+            continue
         bucket[h].append(u)
 
     fuzz = _import_rapidfuzz()
@@ -163,7 +172,9 @@ def compute_duplicate_groups(
             union(base, m, "simhash")
 
     if hamming_max > 0 and len(urls) <= simhash_max_urls:
-        sh_list = [(u, url_to_sh[u]) for u in urls]
+        # Exclude SimHash-0 (untokenizable) pages — every pair of them has
+        # Hamming distance 0 and would be wrongly merged as duplicates.
+        sh_list = [(u, url_to_sh[u]) for u in urls if url_to_sh[u] != 0]
         for i, (u1, h1) in enumerate(sh_list):
             for u2, h2 in sh_list[i + 1 :]:
                 if _hamming(h1, h2) <= hamming_max:

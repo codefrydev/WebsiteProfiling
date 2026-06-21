@@ -297,6 +297,54 @@ def test_discover_sitemap_nested_and_external_filter(monkeypatch):
     assert all("other.com" not in u for u in urls)
 
 
+def test_discover_sitemap_rejects_offorigin_nested_and_robots(monkeypatch):
+    # robots.txt and nested <sitemap><loc> entries are attacker-controllable;
+    # an off-origin sitemap URL must never be fetched (SSRF / scope escape).
+    from website_profiling.crawl.sitemap import discover_sitemap_urls
+
+    fetched: list[str] = []
+
+    class FakeResp:
+        def __init__(self, code, text):
+            self.status_code = code
+            self.text = text
+
+    class FakeSession:
+        headers = {}
+
+        def get(self, url, timeout=0):
+            fetched.append(url)
+            if url.endswith("/robots.txt"):
+                return FakeResp(
+                    200,
+                    "Sitemap: https://evil.com/evil.xml\n"
+                    "Sitemap: https://example.com/index.xml\n",
+                )
+            if url.endswith("/index.xml"):
+                return FakeResp(
+                    200,
+                    """<?xml version="1.0"?><sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+                    <sitemap><loc>https://evil.com/nested.xml</loc></sitemap>
+                    <sitemap><loc>https://example.com/pages.xml</loc></sitemap></sitemapindex>""",
+                )
+            if url.endswith("/pages.xml"):
+                return FakeResp(
+                    200,
+                    """<?xml version="1.0"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+                    <url><loc>https://example.com/p1</loc></url></urlset>""",
+                )
+            return FakeResp(404, "")
+
+        def close(self):
+            pass
+
+    monkeypatch.setattr("website_profiling.crawl.sitemap.requests.Session", lambda: FakeSession())
+    urls = discover_sitemap_urls("https://example.com", max_urls=10)
+    assert "https://example.com/p1" in urls
+    # Neither the robots-advertised nor the nested off-origin sitemap was fetched.
+    assert all("evil.com" not in u for u in fetched)
+
+
 def test_pip_install_browser_requirements_runs_subprocess(monkeypatch, tmp_path):
     from website_profiling.crawl.fetchers import browser_deps
 

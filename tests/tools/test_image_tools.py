@@ -8,7 +8,7 @@ import pytest
 
 from website_profiling.tools.audit_tools import dispatch_tool
 from website_profiling.tools.audit_tools.context import AuditToolContext as Ctx
-from website_profiling.tools.audit_tools.image_tools import IMAGE_LIGHTHOUSE_AUDIT_IDS
+from website_profiling.tools.audit_tools.images.image_tools import IMAGE_LIGHTHOUSE_AUDIT_IDS
 
 
 @pytest.fixture
@@ -72,14 +72,21 @@ def test_get_image_audit_summary(conn: MagicMock, ctx: Ctx) -> None:
     ])
     with patch.object(Ctx, "load_payload", return_value=_payload()), patch.object(Ctx, "load_crawl_df", return_value=df):
         summary = dispatch_tool("get_image_audit_summary", {}, context=ctx, conn=conn)
-    assert summary["pages_missing_alt"] >= 1
-    assert summary["pages_without_lazy_images"] >= 1
-    assert summary["pages_missing_image_dimensions"] >= 1
+    # The crawl DataFrame is authoritative: it reports 1 page missing alt and 0
+    # for lazy/dimensions, so a real 0 must NOT be replaced by a content_urls count.
+    assert summary["pages_missing_alt"] == 1
+    assert summary["pages_without_lazy_images"] == 0
+    assert summary["pages_missing_image_dimensions"] == 0
     assert summary["images_total_crawled"] == 5
     assert summary["lighthouse_image_diagnostics"] == 2
     assert summary["image_inventory_available"] is True
     assert "page_previews" in summary
     assert summary["page_previews"]["missing_lazy"]["total"] >= 1
+
+    # When the DataFrame is absent the count falls back to content_urls.
+    with patch.object(Ctx, "load_payload", return_value=_payload()), patch.object(Ctx, "load_crawl_df", return_value=None):
+        fb = dispatch_tool("get_image_audit_summary", {}, context=ctx, conn=conn)
+    assert fb["pages_without_lazy_images"] == len(_payload().get("content_urls", {}).get("missing_lazy") or [])
 
 
 def test_list_site_image_urls(conn: MagicMock, ctx: Ctx) -> None:

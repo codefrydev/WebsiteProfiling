@@ -32,8 +32,11 @@ python -m website_profiling.mcp   # Start MCP server (stdio)
 |------|-------|
 | Crawl | `src/website_profiling/crawl/` |
 | Report | `src/website_profiling/reporting/` |
-| GEO / AEO / Agent readiness | `src/website_profiling/tools/audit_tools/geo_tools.py`, `agent_readiness.py` |
+| GEO / AEO / Agent readiness | `src/website_profiling/tools/audit_tools/geo/geo_tools.py`, `geo/agent_readiness.py` |
 | DB schema | `alembic/versions/` |
 | UI | `web/src/views/`, `web/app/` |
+| Charts | D3: `web/src/components/charts/d3/`, `web/src/lib/viz/` · Chart.js: GSC/GA4/Links etc. — see [AGENT.md](AGENT.md) § Charts |
+
+**Charts:** Use **both** Chart.js and D3 — choose per chart (Overview/Compare → D3; standard GSC/GA4 bars → Chart.js). Full rules in [AGENT.md](AGENT.md).
 
 **Common pitfalls:** See [AGENT.md](AGENT.md) for the full footguns checklist (React context, Python local imports, psycopg dict rows, coverage gates).

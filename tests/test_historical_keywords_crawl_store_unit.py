@@ -283,6 +283,61 @@ def test_write_nodes_variants(monkeypatch):
     assert captured["n"] == 1
 
 
+def test_historical_read_table_failure_isolated(monkeypatch, capsys):
+    """A failing table read is rolled back and must not poison later reads."""
+    from website_profiling.db import historical as h
+
+    class IsoConn:
+        def __init__(self):
+            self.n = 0
+
+        def cursor(self_conn):
+            class IsoCursor:
+                def execute(self_cur, _sql):
+                    self_conn.n += 1
+                    if self_conn.n == 1:
+                        raise RuntimeError("relation does not exist")
+                    return None
+
+                def fetchall(self_cur):
+                    return [{"id": 7}]
+
+            cur = IsoCursor()
+
+            class CM:
+                def __enter__(self_non):
+                    return cur
+
+                def __exit__(self_non, _t, _v, _tb):
+                    return False
+
+            return CM()
+
+        def transaction(self_conn):
+            class CM:
+                def __enter__(self_non):
+                    return None
+
+                def __exit__(self_non, _t, _v, _tb):
+                    return False
+
+            return CM()
+
+    class Ctx:
+        def __enter__(self):
+            return IsoConn()
+
+        def __exit__(self, _t, _v, _tb):
+            return False
+
+    monkeypatch.setattr(h, "db_session", lambda: Ctx())
+    data = h.read_historical_data()
+    # First table failed (left empty), but later tables were still read.
+    assert data["report_payload"] == []
+    assert any(rows for t, rows in data.items() if t != "report_payload")
+    assert "could not read historical table" in capsys.readouterr().err
+
+
 def test_historical_read_and_restore(monkeypatch):
     from website_profiling.db import historical as h
 
@@ -317,6 +372,16 @@ def test_historical_read_and_restore(monkeypatch):
 
         def commit(self):
             self.commits += 1
+
+        def transaction(self):
+            class CM:
+                def __enter__(self_non):
+                    return None
+
+                def __exit__(self_non, _t, _v, _tb):
+                    return False
+
+            return CM()
 
     class Ctx:
         def __enter__(self):

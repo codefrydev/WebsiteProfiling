@@ -7,6 +7,7 @@ import {
 import { crawledUrlCount } from '@/lib/crawlCounts';
 import { palette, sortByValue, PALETTE_CATEGORICAL } from '@/utils/chartPalette';
 import type { ReportPayload } from '@/types';
+import type { BarChartData } from '@/lib/viz/types';
 import type { OverviewCharts } from './types';
 import { statusDistributionFromCounts } from '@/lib/statusDistribution';
 import {
@@ -61,17 +62,7 @@ export function useOverviewCharts(
     if (!labels.length || sumObject(dist) === 0) return null;
     const aria = `${vo.ariaWordCountIntro} ${labels.map((l, i) => `${values[i]} in ${l} words`).join(', ')}.`;
     return {
-      data: {
-        labels,
-        datasets: [
-          {
-            label: vo.chartPages,
-            data: values,
-            backgroundColor: wordCountBucketColors(labels),
-            borderRadius: 4,
-          },
-        ],
-      },
+      data: { labels, series: [{ label: vo.chartPages, values, colors: wordCountBucketColors(labels) }] } satisfies BarChartData,
       aria,
       takeaway: wordCountTakeaway(dist, crawledCount),
       viewHref: hrefs.contentAnalytics,
@@ -87,17 +78,7 @@ export function useOverviewCharts(
     if (!labels.length || sumObject(dist) === 0) return null;
     const aria = `${vo.ariaResponseTimeIntro} ${labels.map((l, i) => `${values[i]} URLs ${l}`).join(', ')}.`;
     return {
-      data: {
-        labels,
-        datasets: [
-          {
-            label: vo.chartUrls,
-            data: values,
-            backgroundColor: responseTimeBucketColors(labels),
-            borderRadius: 4,
-          },
-        ],
-      },
+      data: { labels, series: [{ label: vo.chartUrls, values, colors: responseTimeBucketColors(labels) }] } satisfies BarChartData,
       aria,
       takeaway: responseTimeTakeaway(dist),
       viewHref: hrefs.network,
@@ -117,17 +98,7 @@ export function useOverviewCharts(
     const values = entries.map(([, v]) => v);
     const aria = `${vo.ariaDepthIntro} ${entries.map(([d, n]) => `${n} at depth ${d}`).join(', ')}.`;
     return {
-      data: {
-        labels,
-        datasets: [
-          {
-            label: vo.chartUrls,
-            data: values,
-            backgroundColor: PALETTE_CATEGORICAL[4],
-            borderRadius: 4,
-          },
-        ],
-      },
+      data: { labels, series: [{ label: vo.chartUrls, values, colors: labels.map(() => PALETTE_CATEGORICAL[4] as string) }] } satisfies BarChartData,
       aria,
       takeaway: depthTakeaway(by, data?.depth_distribution?.max_depth, data?.depth_distribution?.avg_depth),
       viewHref: hrefs.links,
@@ -166,27 +137,13 @@ export function useOverviewCharts(
           Number(seo.meta_desc_ok || 0),
         ]
       : null;
-    const datasets = [];
-    if (titleData) {
-      datasets.push({
-        label: vo.chartTitleTags,
-        data: titleData,
-        backgroundColor: metaColors,
-        borderRadius: 4,
-      });
-    }
-    if (metaData) {
-      datasets.push({
-        label: vo.chartMetaDesc,
-        data: metaData,
-        backgroundColor: metaColors,
-        borderRadius: 4,
-      });
-    }
+    const seriesList = [];
+    if (titleData) seriesList.push({ label: vo.chartTitleTags, values: titleData, colors: metaColors });
+    if (metaData) seriesList.push({ label: vo.chartMetaDesc, values: metaData, colors: metaColors });
     const total = [...(titleData || []), ...(metaData || [])].reduce((a, b) => a + b, 0);
     if (total === 0) return null;
     return {
-      data: { labels, datasets },
+      data: { labels, series: seriesList } satisfies BarChartData,
       aria: vo.groupedTitleMetaAria,
       takeaway: titleMetaTakeaway(seo, crawledCount),
       viewHref: hrefs.content,
@@ -224,17 +181,7 @@ export function useOverviewCharts(
     if (!labels.length || sumObject(dist) === 0) return null;
     const dominant = dominantBucketLabel(labels, values);
     return {
-      data: {
-        labels,
-        datasets: [
-          {
-            label: vo.chartPages,
-            data: values,
-            backgroundColor: palette(labels.length),
-            borderRadius: 4,
-          },
-        ],
-      },
+      data: { labels, series: [{ label: vo.chartPages, values, colors: palette(labels.length) }] } satisfies BarChartData,
       aria: `${vo.ariaReadingIntro} ${labels.map((l, i) => `${values[i]} ${l}`).join(', ')}.`,
       takeaway: dominant
         ? format(vo.chartsTakeawayReadingDominant, {
@@ -257,17 +204,7 @@ export function useOverviewCharts(
     values = sorted.values.slice(0, 8);
     if (!values.some((v: number) => v > 0)) return null;
     return {
-      data: {
-        labels,
-        datasets: [
-          {
-            label: vo.chartUrls,
-            data: values,
-            backgroundColor: palette(labels.length),
-            borderRadius: 4,
-          },
-        ],
-      },
+      data: { labels, series: [{ label: vo.chartUrls, values, colors: palette(labels.length) }] } satisfies BarChartData,
       aria: `${vo.ariaMimeIntro} ${labels.map((l, i) => `${values[i]} ${l}`).join(', ')}.`,
       takeaway: format(vo.chartsTakeawayMimeTop, {
         mime: labels[0],
@@ -284,17 +221,7 @@ export function useOverviewCharts(
     if (!labels.length || !values.some((v) => v > 0)) return null;
     const dominant = dominantBucketLabel(labels, values);
     return {
-      data: {
-        labels,
-        datasets: [
-          {
-            label: vo.chartUrls,
-            data: values,
-            backgroundColor: PALETTE_CATEGORICAL[1],
-            borderRadius: 4,
-          },
-        ],
-      },
+      data: { labels, series: [{ label: vo.chartUrls, values, colors: labels.map(() => PALETTE_CATEGORICAL[1] as string) }] } satisfies BarChartData,
       aria: vo.ariaOutlinks,
       takeaway: dominant
         ? format(vo.chartsTakeawayOutlinksDominant, {
@@ -317,17 +244,7 @@ export function useOverviewCharts(
     values = sorted.values.slice(0, 10);
     if (!values.some((v) => v > 0)) return null;
     return {
-      data: {
-        labels,
-        datasets: [
-          {
-            label: vo.chartUrls,
-            data: values,
-            backgroundColor: palette(labels.length),
-            borderRadius: 4,
-          },
-        ],
-      },
+      data: { labels, series: [{ label: vo.chartUrls, values, colors: palette(labels.length) }] } satisfies BarChartData,
       aria: `${vo.ariaDomainsPrefix} ${labels[0]}: ${values[0]}.`,
       horizontal: true,
       takeaway: format(vo.chartsTakeawayDomainsTop, {

@@ -1,6 +1,9 @@
 'use client';
 
 import { useId } from 'react';
+import { scaleLinear } from 'd3-scale';
+import { line, area } from 'd3-shape';
+import { extent } from 'd3-array';
 
 export interface CompactAreaSparklineProps {
   points: number[];
@@ -18,40 +21,55 @@ export function CompactAreaSparkline({
   const fillId = useId();
   if (points.length < 2) return null;
 
-  const max = Math.max(...points);
-  const min = Math.min(...points);
-  const range = max - min || 1;
-  const coords = points
-    .map((p, i) => {
-      const x = (i / (points.length - 1)) * 100;
-      const y = 100 - ((p - min) / range) * 100;
-      return `${x},${y}`;
-    })
-    .join(' ');
+  const width = 100;
+  const height = 32;
+  const padding = 2;
+
+  const xScale = scaleLinear()
+    .domain([0, points.length - 1])
+    .range([padding, width - padding]);
+
+  const [yMin, yMax] = extent(points) as [number, number];
+  const yRange = yMax - yMin || 1;
+  const yScale = scaleLinear()
+    .domain([yMin, yMax])
+    .range([height - padding, padding]);
+
+  const lineGen = line<number>()
+    .x((_, i) => xScale(i))
+    .y((d) => yScale(d));
+
+  const areaGen = area<number>()
+    .x((_, i) => xScale(i))
+    .y0(height)
+    .y1((d) => yScale(d));
+
+  const linePath = lineGen(points) ?? '';
+  const areaPath = areaGen(points) ?? '';
 
   return (
     <svg
-      viewBox="0 0 100 32"
+      viewBox={`0 0 ${width} ${height}`}
       className={`${heightClass} w-full ${className}`.trim()}
       preserveAspectRatio="none"
-      aria-hidden
+      aria-hidden="true"
     >
-      <polyline
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={strokeClassName}
-        points={coords}
-      />
-      <polyline fill={`url(#${fillId})`} stroke="none" points={`0,32 ${coords} 100,32`} />
       <defs>
         <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="rgb(59 130 246 / 0.25)" />
           <stop offset="100%" stopColor="rgb(59 130 246 / 0)" />
         </linearGradient>
       </defs>
+      <path d={areaPath} fill={`url(#${fillId})`} />
+      <path
+        d={linePath}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={strokeClassName}
+      />
     </svg>
   );
 }

@@ -1,4 +1,4 @@
-import type { Chart, TooltipItem } from 'chart.js';
+import type { TooltipItem } from 'chart.js';
 import { useState, useMemo } from 'react';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { useTabSections } from '@/hooks/useTabSections';
@@ -20,8 +20,8 @@ import type {
 } from '@/types';
 import { filterSemanticTerms, filterTopicClusters } from '@/lib/semanticTextHygiene';
 import { anyChartOptions } from '../utils/chartOptions';
-import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
-import { Bar, Doughnut } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
+import { Bar } from 'react-chartjs-2';
 import {
   BookOpen,
   Globe,
@@ -45,51 +45,30 @@ import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, ViewTabs, ViewTabPanel, StatCard, SectionHeader, ChartTitleWithHint } from '../components';
-import { StatusDistributionChart, CoverageBar, ChartAccessibleFallback, ChartPanel } from '../components/charts';
+import { ChartPanel } from '../components/charts/ChartPanel';
+import { StatusDistributionChart, CoverageBar } from '../components/charts';
+import {
+  D3VerticalBarChart,
+  D3HorizontalBarChart,
+  D3GroupedBarChart,
+  D3DonutChart,
+  D3StackedVerticalBarChart,
+  D3StackedHorizontalBarChart,
+} from '@/components/charts/d3';
+import { labelsValuesToBarChartData, groupedBarChartData } from '@/lib/viz/adapters';
 import { crawledUrlCount } from '@/lib/crawlCounts';
 import { statusDistributionFromSummary } from '../lib/statusDistribution';
-import { filterZeroSlices, doughnutOptionsWithPercentTooltip, formatCompositionAria } from '../lib/chartDoughnutUtils';
+import { filterZeroSlices, formatCompositionAria } from '../lib/chartDoughnutUtils';
 import type { ViewTabItem } from '../components';
 import { palette, PALETTE_CATEGORICAL } from '../utils/chartPalette';
 import RichResultsValidationPanel from '../components/content/RichResultsValidationPanel';
 import {
   getGridColor,
   getChartTitleColor,
-  getChartCanvasTextColor,
-  getChartLegendLabelColor,
   truncateChartLabel,
 } from '../utils/chartJsDefaults';
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Title, Tooltip, Legend);
-
-/** Shared colors for title/meta bucket comparison (missing → long). */
-const COMPARE_BUCKET_COLORS = ['#EF4444', '#EAB308', '#22C55E', '#F97316'];
-
-const barValueLabelsPlugin = {
-  id: 'caBarLabels',
-  afterDatasetsDraw(chart: Chart) {
-    const ctx = chart.ctx;
-    const isHorizontal = chart.options.indexAxis === 'y';
-    ctx.save();
-    ctx.font = '11px system-ui, sans-serif';
-    ctx.fillStyle = getChartCanvasTextColor();
-    ctx.textAlign = isHorizontal ? 'left' : 'center';
-    ctx.textBaseline = 'middle';
-    (chart.data.datasets || []).forEach((dataset, dsi: number) => {
-      const meta = chart.getDatasetMeta(dsi);
-      if (!meta?.data?.length || !dataset?.data) return;
-      meta.data.forEach((bar, i: number) => {
-        const value = dataset.data[i];
-        if (value == null || value === 0) return;
-        const label = Number(value).toLocaleString();
-        const x = isHorizontal ? bar.x + 6 : bar.x;
-        const y = isHorizontal ? bar.y : bar.y - 12;
-        ctx.fillText(label, x, y);
-      });
-    });
-    ctx.restore();
-  },
-};
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 function barOpts(xTitle?: string) {
   const vca = strings.views.contentAnalytics;
@@ -143,56 +122,8 @@ function barOptsH(yAxisLabels?: readonly string[]) {
   });
 }
 
-function groupedBarOpts(yTitle?: string) {
-  const vca = strings.views.contentAnalytics;
-  const def = strings.common.pages;
-  return anyChartOptions({
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true, labels: { color: getChartLegendLabelColor(), font: { size: 11 }, padding: 10 } },
-      tooltip: {
-        callbacks: {
-          label: (ctx: TooltipItem<'bar'>) =>
-            ` ${format(vca.chartTooltipGrouped, { dataset: ctx.dataset.label, n: ctx.raw?.toLocaleString() })}`,
-        },
-      },
-    },
-    scales: {
-      x: { grid: { color: getGridColor() } },
-      y: { grid: { color: getGridColor() }, beginAtZero: true, title: { display: true, text: yTitle ?? def, color: getChartTitleColor() } },
-    },
-  });
-}
-
-function stackedPercentBarOpts() {
-  const vca = strings.views.contentAnalytics;
-  const pctAxis = strings.common.percentOfPages;
-  return anyChartOptions({
-    indexAxis: 'y',
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: true, labels: { color: getChartLegendLabelColor(), font: { size: 11 }, padding: 10 } },
-      tooltip: {
-        callbacks: {
-          label: (ctx: TooltipItem<'bar'>) =>
-            ` ${format(vca.chartTooltipPercent, { dataset: ctx.dataset.label, pct: Number(ctx.raw).toFixed(1) })}`,
-        },
-      },
-    },
-    scales: {
-      x: {
-        stacked: true,
-        grid: { color: getGridColor() },
-        beginAtZero: true,
-        max: 100,
-        title: { display: true, text: pctAxis, color: getChartTitleColor() },
-      },
-      y: { stacked: true, grid: { color: getGridColor() } },
-    },
-  });
-}
+/** Shared colors for title/meta bucket comparison (missing → long). */
+const COMPARE_BUCKET_COLORS = ['#EF4444', '#EAB308', '#22C55E', '#F97316'];
 
 function qualityBarColors(labels: string[]) {
   return labels.map((l: string) => {
@@ -757,9 +688,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                     </>
                   )}
                 </p>
-                <ChartPanel heightClass="h-64">
-                  <StatusDistributionChart distribution={statusDistribution!} heightClass="h-64" />
-                </ChartPanel>
+                <StatusDistributionChart distribution={statusDistribution!} heightClass="h-64" />
               </Card>
             )}
             {hasRtDist && (
@@ -779,22 +708,12 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                     </>
                   )}
                 </p>
-                <ChartPanel heightClass="h-64">
-                  <Bar
-                    data={{
-                      labels: rtLabels,
-                      datasets: [{ data: rtValues, backgroundColor: palette(rtLabels.length) }],
-                    }}
-                    options={{
-                      ...barOpts(ch.timeBucket),
-                      plugins: {
-                        legend: { display: false },
-                        tooltip: { callbacks: { label: (ctx: TooltipItem<'bar'>) => ` ${ctx.raw?.toLocaleString()} URLs` } },
-                      },
-                    }}
-                    plugins={[barValueLabelsPlugin]}
-                  />
-                </ChartPanel>
+                <D3VerticalBarChart
+                  data={labelsValuesToBarChartData(rtLabels, rtValues, palette(rtLabels.length))}
+                  yTitle={ch.timeBucket}
+                  ariaLabel={vca.responseTimeDist}
+                  heightClass="h-64"
+                />
               </Card>
             )}
           </div>
@@ -808,47 +727,26 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             {hasIssueBar && (
               <Card padding="tight">
                 <ChartTitleWithHint title="URLs flagged by issue type" helpKey="views.contentAnalytics.issuesByType" />
-                <ChartPanel heightClass="h-80">
-                  <Bar
-                    data={{
-                      labels: issueBarLabels,
-                      datasets: [{ data: issueBarValues, backgroundColor: palette(issueBarLabels.length) }],
-                    }}
-                    options={{
-                      ...barOptsH(issueBarLabels),
-                      plugins: {
-                        ...barOptsH(issueBarLabels).plugins,
-                        tooltip: { callbacks: { label: (ctx: TooltipItem<'bar'>) => ` ${ctx.raw?.toLocaleString()} URLs` } },
-                      },
-                    }}
-                    plugins={[barValueLabelsPlugin]}
-                  />
-                </ChartPanel>
+                <D3HorizontalBarChart
+                  data={labelsValuesToBarChartData(issueBarLabels, issueBarValues, palette(issueBarLabels.length))}
+                  xTitle={strings.charts.axisFrequency}
+                  ariaLabel="URLs flagged by issue type"
+                  heightClass="h-80"
+                />
               </Card>
             )}
             {hasSeoOptimalBar && (
               <Card padding="tight">
                 <ChartTitleWithHint title='Pages in “good” ranges' helpKey="views.contentAnalytics.seoOptimalRanges" />
-                <ChartPanel>
-                  <Bar
-                    data={{
-                      labels: ['Title length', 'Meta description', 'H1 count'],
-                      datasets: [
-                        {
-                          label: 'In range / optimal',
-                          data: [titleOkPct, metaOkPct, h1OkPct],
-                          backgroundColor: '#22C55E',
-                        },
-                        {
-                          label: 'Needs attention',
-                          data: [100 - titleOkPct, 100 - metaOkPct, 100 - h1OkPct],
-                          backgroundColor: '#EF444466',
-                        },
-                      ],
-                    }}
-                    options={stackedPercentBarOpts()}
-                  />
-                </ChartPanel>
+                <D3StackedHorizontalBarChart
+                  labels={['Title length', 'Meta description', 'H1 count']}
+                  series={[
+                    { label: 'In range / optimal', values: [titleOkPct, metaOkPct, h1OkPct], color: '#22C55E' },
+                    { label: 'Needs attention', values: [100 - titleOkPct, 100 - metaOkPct, 100 - h1OkPct], color: '#EF444466' },
+                  ]}
+                  xTitle={strings.common.percentOfPages}
+                  ariaLabel='Pages in "good" ranges'
+                />
               </Card>
             )}
             {hasThinCompare && (
@@ -899,104 +797,77 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card padding="tight">
             <ChartTitleWithHint title={vca.wordCountDist} helpKey="views.contentAnalytics.wordCountDist" />
-            <ChartPanel heightClass="h-64">
-              {wcLabels.length > 0 ? (
-                <Bar
-                  data={{ labels: wcLabels, datasets: [{ data: wcValues, backgroundColor: palette(wcLabels.length) }] }}
-                  options={barOpts(ch.axisWordCount)}
-                  plugins={[barValueLabelsPlugin]}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
-              )}
-            </ChartPanel>
+            {wcLabels.length > 0 ? (
+              <D3VerticalBarChart
+                data={labelsValuesToBarChartData(wcLabels, wcValues, palette(wcLabels.length))}
+                yTitle={ch.axisWordCount}
+                ariaLabel={vca.wordCountDist}
+                heightClass="h-64"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">{sj.noData}</div>
+            )}
           </Card>
 
           <Card padding="tight">
             <ChartTitleWithHint title={vca.readingLevelDist} helpKey="views.contentAnalytics.readingLevelDist" />
-            <ChartPanel heightClass="h-64">
-              {rlLabels.length > 0 ? (
-                <Bar
-                  data={{
-                    labels: rlLabels,
-                    datasets: [{ data: rlValues, backgroundColor: ['#22C55E', '#4C72B0', '#EAB308', '#EF4444'].slice(0, rlLabels.length) }],
-                  }}
-                  options={{ ...barOptsH(rlLabels), plugins: { ...barOptsH(rlLabels).plugins, tooltip: { callbacks: { label: (ctx: TooltipItem<'bar'>) => ` ${ctx.raw} pages` } } } }}
-                  plugins={[barValueLabelsPlugin]}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
-              )}
-            </ChartPanel>
+            {rlLabels.length > 0 ? (
+              <D3HorizontalBarChart
+                data={labelsValuesToBarChartData(
+                  rlLabels,
+                  rlValues,
+                  ['#22C55E', '#4C72B0', '#EAB308', '#EF4444'].slice(0, rlLabels.length),
+                )}
+                xTitle={strings.charts.axisFrequency}
+                ariaLabel={vca.readingLevelDist}
+                heightClass="h-64"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">{sj.noData}</div>
+            )}
           </Card>
 
           <Card padding="tight">
             <ChartTitleWithHint title={vca.contentHtmlRatio} helpKey="views.contentAnalytics.contentHtmlRatio" />
-            <ChartPanel heightClass="h-64">
-              {crLabels.length > 0 ? (
-                <Bar
-                  data={{ labels: crLabels, datasets: [{ data: crValues, backgroundColor: palette(crLabels.length) }] }}
-                  options={barOpts(ch.ratio)}
-                  plugins={[barValueLabelsPlugin]}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
-              )}
-            </ChartPanel>
+            {crLabels.length > 0 ? (
+              <D3VerticalBarChart
+                data={labelsValuesToBarChartData(crLabels, crValues, palette(crLabels.length))}
+                yTitle={ch.ratio}
+                ariaLabel={vca.contentHtmlRatio}
+                heightClass="h-64"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">{sj.noData}</div>
+            )}
           </Card>
 
           <Card padding="tight">
             <ChartTitleWithHint title={vca.topKeywords} helpKey="views.contentAnalytics.topKeywords" />
-            <ChartPanel heightClass="h-[28rem]">
-              {kwLabels.length > 0 ? (
-                <Bar
-                  data={{ labels: kwLabels, datasets: [{ data: kwValues, backgroundColor: PALETTE_CATEGORICAL[0] }] }}
-                  options={barOptsH(kwLabels)}
-                  plugins={[barValueLabelsPlugin]}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{vca.noKeywordData}</div>
-              )}
-            </ChartPanel>
+            {kwLabels.length > 0 ? (
+              <D3HorizontalBarChart
+                data={labelsValuesToBarChartData(kwLabels, kwValues, PALETTE_CATEGORICAL[0] ?? '#4C72B0')}
+                xTitle={strings.charts.axisFrequency}
+                ariaLabel={vca.topKeywords}
+                heightClass="h-[28rem]"
+                svgHeight={Math.max(448, kwLabels.length * 28 + 40)}
+              />
+            ) : (
+              <div className="flex items-center justify-center h-[28rem] text-muted-foreground text-sm">{vca.noKeywordData}</div>
+            )}
           </Card>
 
           {hasWcPercBar && (
             <Card padding="tight" className="lg:col-span-2">
               <ChartTitleWithHint title={vca.wordCountLadder} helpKey="views.contentAnalytics.wordCountLadder" />
-              <ChartPanel>
-                <Bar
-                  data={{
-                    labels: wcPercLabels,
-                    datasets: [
-                      {
-                        data: wcPercValues,
-                        backgroundColor: ['#64748B', '#EAB308', '#3B82F6', '#A855F7', '#22C55E', '#F97316'],
-                      },
-                    ],
-                  }}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                      legend: { display: false },
-                      tooltip: {
-                        callbacks: {
-                          label: (ctx: TooltipItem<'bar'>) => ` ${Number(ctx.raw).toLocaleString()} words`,
-                        },
-                      },
-                    },
-                    scales: {
-                      x: { grid: { color: getGridColor() }, title: { display: true, text: 'Statistic', color: getChartTitleColor() } },
-                      y: {
-                        grid: { color: getGridColor() },
-                        beginAtZero: true,
-                        title: { display: true, text: 'Words', color: getChartTitleColor() },
-                      },
-                    },
-                  }}
-                  plugins={[barValueLabelsPlugin]}
-                />
-              </ChartPanel>
+              <D3VerticalBarChart
+                data={labelsValuesToBarChartData(
+                  wcPercLabels,
+                  wcPercValues.map((v) => v ?? 0),
+                  ['#64748B', '#EAB308', '#3B82F6', '#A855F7', '#22C55E', '#F97316'],
+                )}
+                yTitle="Words"
+                ariaLabel={vca.wordCountLadder}
+              />
             </Card>
           )}
         </div>
@@ -1010,77 +881,44 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             {/* H1 Distribution Doughnut */}
             <Card padding="tight">
               <ChartTitleWithHint title={vca.h1Dist} helpKey="views.contentAnalytics.h1Dist" />
-              <ChartPanel>
-                {hasH1Data ? (
-                  <ChartAccessibleFallback
-                    summary={h1Aria}
-                    rows={h1Chart.labels.map((label, i) => [label, h1Chart.values[i] ?? 0] as [string, string | number])}
-                  >
-                    <div className="h-full flex items-center justify-center min-w-0 overflow-hidden" role="presentation">
-                      <div className="w-full max-w-[240px] h-full">
-                        <Doughnut
-                          data={{
-                            labels: h1Chart.labels,
-                            datasets: [{
-                              data: h1Chart.values,
-                              backgroundColor: ['#EF4444', '#22C55E', '#DD8452'].slice(0, h1Chart.labels.length),
-                              borderColor: 'rgba(15,23,42,0.8)',
-                              borderWidth: 2,
-                            }],
-                          }}
-                          options={doughnutOptionsWithPercentTooltip()}
-                        />
-                      </div>
-                    </div>
-                  </ChartAccessibleFallback>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
-                )}
-              </ChartPanel>
+              {hasH1Data ? (
+                <D3DonutChart
+                  labels={h1Chart.labels}
+                  values={h1Chart.values}
+                  colors={['#EF4444', '#22C55E', '#DD8452'].slice(0, h1Chart.labels.length)}
+                  ariaLabel={h1Aria}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">{sj.noData}</div>
+              )}
             </Card>
 
             {/* Title Length Quality */}
             <Card padding="tight">
               <ChartTitleWithHint title={vca.titleTagQuality} helpKey="views.contentAnalytics.titleTagQuality" />
-              <ChartPanel>
-                {hasTitleData ? (
-                  <Bar
-                    data={{
-                      labels: titleQualLabels,
-                      datasets: [{ data: titleQualValues, backgroundColor: qualityBarColors(titleQualLabels) }],
-                    }}
-                    options={{
-                      ...barOpts(),
-                      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: TooltipItem<'bar'>) => ` ${ctx.raw?.toLocaleString()} pages` } } },
-                    }}
-                    plugins={[barValueLabelsPlugin]}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
-                )}
-              </ChartPanel>
+              {hasTitleData ? (
+                <D3VerticalBarChart
+                  data={labelsValuesToBarChartData(titleQualLabels, titleQualValues, qualityBarColors(titleQualLabels))}
+                  yTitle={strings.common.pages}
+                  ariaLabel={vca.titleTagQuality}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">{sj.noData}</div>
+              )}
             </Card>
 
             {/* Meta Description Quality */}
             <Card padding="tight">
               <ChartTitleWithHint title={vca.metaDescQuality} helpKey="views.contentAnalytics.metaDescQuality" />
-              <ChartPanel>
-                {hasMetaData ? (
-                  <Bar
-                    data={{
-                      labels: metaQualLabels,
-                      datasets: [{ data: metaQualValues, backgroundColor: qualityBarColors(metaQualLabels) }],
-                    }}
-                    options={{
-                      ...barOpts(),
-                      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (ctx: TooltipItem<'bar'>) => ` ${ctx.raw?.toLocaleString()} pages` } } },
-                    }}
-                    plugins={[barValueLabelsPlugin]}
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{sj.noData}</div>
-                )}
-              </ChartPanel>
+              {hasMetaData ? (
+                <D3VerticalBarChart
+                  data={labelsValuesToBarChartData(metaQualLabels, metaQualValues, qualityBarColors(metaQualLabels))}
+                  yTitle={strings.common.pages}
+                  ariaLabel={vca.metaDescQuality}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-64 text-muted-foreground text-sm">{sj.noData}</div>
+              )}
             </Card>
           </div>
 
@@ -1089,53 +927,37 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
               {hasTitleMetaCompare && (
                 <Card padding="tight">
                   <ChartTitleWithHint title={vca.titleVsMetaBuckets} helpKey="views.contentAnalytics.titleVsMetaBuckets" />
-                  <ChartPanel heightClass="h-64">
-                    <Bar
-                      data={{
-                        labels: vca.compareBuckets,
-                        datasets: [
-                          {
-                            label: vca.datasetTitleTags,
-                            data: titleBucketCounts,
-                            backgroundColor: COMPARE_BUCKET_COLORS,
-                          },
-                          {
-                            label: vca.datasetMetaTags,
-                            data: metaBucketCounts,
-                            backgroundColor: COMPARE_BUCKET_COLORS,
-                          },
-                        ],
-                      }}
-                      options={groupedBarOpts(sj.pages)}
-                      plugins={[barValueLabelsPlugin]}
-                    />
-                  </ChartPanel>
+                  <D3GroupedBarChart
+                    data={groupedBarChartData(vca.compareBuckets, [
+                      { label: vca.datasetTitleTags, values: titleBucketCounts, colors: COMPARE_BUCKET_COLORS },
+                      { label: vca.datasetMetaTags, values: metaBucketCounts, colors: COMPARE_BUCKET_COLORS },
+                    ])}
+                    yTitle={sj.pages}
+                    ariaLabel={vca.titleVsMetaBuckets}
+                    heightClass="h-64"
+                  />
                 </Card>
               )}
               {hasSeoGapCountCompare && (
                 <Card padding="tight">
                   <ChartTitleWithHint title={vca.seoOptimalVsGapCounts} helpKey="views.contentAnalytics.seoOptimalVsGapCounts" />
-                  <ChartPanel heightClass="h-64">
-                    <Bar
-                      data={{
-                        labels: [vca.seoTitle, vca.seoMeta, vca.seoH1],
-                        datasets: [
-                          {
-                            label: vca.stackedInRange,
-                            data: [seoHealth.title_ok || 0, seoHealth.meta_desc_ok || 0, seoHealth.h1_one || 0],
-                            backgroundColor: '#22C55E',
-                          },
-                          {
-                            label: vca.stackedNeeds,
-                            data: [titleGapCount, metaGapCount, h1GapCount],
-                            backgroundColor: 'rgba(239, 68, 68, 0.45)',
-                          },
-                        ],
-                      }}
-                      options={groupedBarOpts(sj.pages)}
-                      plugins={[barValueLabelsPlugin]}
-                    />
-                  </ChartPanel>
+                  <D3GroupedBarChart
+                    data={groupedBarChartData([vca.seoTitle, vca.seoMeta, vca.seoH1], [
+                      {
+                        label: vca.stackedInRange,
+                        values: [seoHealth.title_ok || 0, seoHealth.meta_desc_ok || 0, seoHealth.h1_one || 0],
+                        colors: '#22C55E',
+                      },
+                      {
+                        label: vca.stackedNeeds,
+                        values: [titleGapCount, metaGapCount, h1GapCount],
+                        colors: 'rgba(239, 68, 68, 0.45)',
+                      },
+                    ])}
+                    yTitle={sj.pages}
+                    ariaLabel={vca.seoOptimalVsGapCounts}
+                    heightClass="h-64"
+                  />
                 </Card>
               )}
             </div>
@@ -1168,77 +990,32 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
         {hasSocialData && (
           <Card padding="tight">
             <h3 className="text-sm font-bold text-foreground mb-3">{vca.socialOverview}</h3>
-            <ChartPanel heightClass="h-64">
-              <Bar
-                data={{
-                  labels: [vca.openGraph, vca.twitterCard, vca.ogImage],
-                  datasets: [
-                    {
-                      label: vca.datasetHasTag,
-                      data: [ogPct, twPct, ogImgPct],
-                      backgroundColor: '#22C55E',
-                    },
-                    {
-                      label: vca.datasetMissing,
-                      data: [100 - ogPct, 100 - twPct, 100 - ogImgPct],
-                      backgroundColor: '#EF444466',
-                    },
-                  ],
-                }}
-                options={{
-                  ...groupedBarOpts(),
-                  scales: {
-                    x: { stacked: true, grid: { color: getGridColor() } },
-                    y: { stacked: true, grid: { color: getGridColor() }, beginAtZero: true, max: 100, title: { display: true, text: 'Coverage %', color: getChartTitleColor() } },
-                  },
-                  plugins: {
-                    legend: { display: true, labels: { color: getChartLegendLabelColor(), font: { size: 11 }, padding: 10 } },
-                    tooltip: { callbacks: { label: (ctx: TooltipItem<'bar'>) => ` ${ctx.dataset.label}: ${Number(ctx.raw).toFixed(1)}%` } },
-                  },
-                }}
-              />
-            </ChartPanel>
+            <D3StackedVerticalBarChart
+              labels={[vca.openGraph, vca.twitterCard, vca.ogImage]}
+              series={[
+                { label: vca.datasetHasTag, values: [ogPct, twPct, ogImgPct], color: '#22C55E' },
+                { label: vca.datasetMissing, values: [100 - ogPct, 100 - twPct, 100 - ogImgPct], color: '#EF444466' },
+              ]}
+              yTitle="Coverage %"
+              ariaLabel={vca.socialOverview}
+              heightClass="h-64"
+            />
           </Card>
         )}
 
         {hasSocialMissCompare && (
           <Card padding="tight" shadow>
             <ChartTitleWithHint title={vca.missingSocialUrlCompare} helpKey="views.contentAnalytics.missingSocialCompare" />
-            <ChartPanel className="max-w-lg">
-              <Bar
-                data={{
-                  labels: [vca.openGraph, vca.twitterCard],
-                  datasets: [
-                    {
-                      label: vca.datasetMissing,
-                      data: [ogMissCount, twMissCount],
-                      backgroundColor: ['#3B82F6', '#38BDF8'],
-                    },
-                  ],
-                }}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                      callbacks: {
-                        label: (ctx: TooltipItem<'bar'>) => ` ${ctx.raw?.toLocaleString()} ${sj.urls}`,
-                      },
-                    },
-                  },
-                  scales: {
-                    x: { grid: { color: getGridColor() } },
-                    y: {
-                      grid: { color: getGridColor() },
-                      beginAtZero: true,
-                      title: { display: true, text: sj.urls, color: getChartTitleColor() },
-                    },
-                  },
-                }}
-                plugins={[barValueLabelsPlugin]}
-              />
-            </ChartPanel>
+            <D3VerticalBarChart
+              data={labelsValuesToBarChartData(
+                [vca.openGraph, vca.twitterCard],
+                [ogMissCount, twMissCount],
+                ['#3B82F6', '#38BDF8'],
+              )}
+              yTitle={sj.urls}
+              ariaLabel={vca.missingSocialUrlCompare}
+              heightClass="h-64"
+            />
           </Card>
         )}
 
@@ -1369,22 +1146,12 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                   )}
                 </p>
               )}
-              <ChartPanel heightClass="h-64">
-                <Bar
-                  data={{
-                    labels: depthLabels,
-                    datasets: [{ data: depthValues, backgroundColor: palette(depthLabels.length) }],
-                  }}
-                  options={{
-                    ...barOpts(ch.depth),
-                    plugins: {
-                      legend: { display: false },
-                      tooltip: { callbacks: { label: (ctx: TooltipItem<'bar'>) => ` ${ctx.raw?.toLocaleString()} pages` } },
-                    },
-                  }}
-                  plugins={[barValueLabelsPlugin]}
-                />
-              </ChartPanel>
+              <D3VerticalBarChart
+                data={labelsValuesToBarChartData(depthLabels, depthValues, palette(depthLabels.length))}
+                yTitle={ch.depth}
+                ariaLabel="Crawl Depth Distribution"
+                heightClass="h-64"
+              />
             </Card>
 
             {/* Word count percentile summary */}

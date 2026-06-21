@@ -65,6 +65,30 @@ def test_html_validation_issues_missing_html5lib():
     assert isinstance(issues, list)
 
 
+def test_wayback_issues_bounds_requests_for_snapshotless_404s(monkeypatch):
+    # Regression: snapshot-less 404s must count against max_lookups so the number
+    # of external Wayback requests stays bounded (previously only snapshots-found
+    # incremented the counter, so the cap did nothing for the common no-snapshot case).
+    import website_profiling.reporting.optional_audits as oa
+
+    oa._WAYBACK_CACHE.clear()
+    calls = {"n": 0}
+
+    class _Resp:
+        def json(self):
+            return {"archived_snapshots": {}}
+
+    def fake_get(*_a, **_k):
+        calls["n"] += 1
+        return _Resp()
+
+    monkeypatch.setattr(oa.requests, "get", fake_get)
+    df = pd.DataFrame([{"url": f"https://x.com/{i}", "status": "404"} for i in range(20)])
+    issues = oa.wayback_issues(df, max_lookups=5)
+    assert calls["n"] == 5  # bounded by max_lookups, not 20
+    assert issues == []
+
+
 def test_apply_optional_audits_spell_skipped_without_package(capsys):
     categories = [
         {"id": "technical_seo", "name": "Technical", "issues": [], "recommendations": []},

@@ -462,7 +462,7 @@ class Crawler:
             limit=crawl_limit,
         )
         emit_phase_start("crawl", message="Crawling pages")
-        futures = []
+        futures: dict = {}  # future -> dequeued url (so an errored fetch keeps its url)
         db_writer: Optional[CrawlDbWriter] = None
         pages_crawled = 0
         self._db_writer = None
@@ -496,7 +496,7 @@ class Crawler:
                             continue
                         if not self.frontier.mark_visited(url):
                             continue
-                        futures.append(ex.submit(self.worker, url))
+                        futures[ex.submit(self.worker, url)] = url
 
                     can_submit_more = (
                         not self.queue.empty()
@@ -509,13 +509,16 @@ class Crawler:
                         # returns immediately if a future is already done.
                         wait(futures, return_when=FIRST_COMPLETED)
 
-                    remaining = []
-                    for f in futures:
+                    remaining: dict = {}
+                    for f, f_url in futures.items():
                         if f.done():
                             try:
                                 res = f.result()
                             except Exception:
-                                res = empty_crawl_row(status="error")
+                                # Keep the dequeued url so the error row is persisted
+                                # to the DB consistently with the non-streaming path
+                                # (an url-less row is silently dropped from streaming).
+                                res = empty_crawl_row(url=f_url, status="error")
                                 if self.store_outlinks:
                                     res["outlink_targets"] = "[]"
                             self.results.append(res)
@@ -529,7 +532,7 @@ class Crawler:
                                 pbar.update(1)
                             progress_tracker.maybe_emit(pages_crawled, page_url)
                         else:
-                            remaining.append(f)
+                            remaining[f] = f_url
                     futures = remaining
 
                     # Check for pause request (SIGUSR1) or Windows file-based signal.

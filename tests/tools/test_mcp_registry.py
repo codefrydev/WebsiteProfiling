@@ -42,7 +42,7 @@ def test_dispatch_list_properties_roundtrip() -> None:
     conn = MagicMock()
     props = [{"id": 1, "name": "ex.com", "canonical_domain": "ex.com"}]
     with patch(
-        "website_profiling.tools.audit_tools.properties.list_properties_public",
+        "website_profiling.tools.audit_tools.portfolio.properties.list_properties_public",
         return_value=props,
     ):
         result = dispatch_tool("list_properties", {}, conn=conn)

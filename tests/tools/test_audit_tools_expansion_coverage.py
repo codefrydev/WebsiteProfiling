@@ -10,16 +10,16 @@ import requests
 
 from website_profiling.tools.audit_tools import dispatch_tool
 from website_profiling.tools.audit_tools.context import AuditToolContext as Ctx
-from website_profiling.tools.audit_tools import crawl_lists as cl_mod
-from website_profiling.tools.audit_tools import crawl_metrics as cm_mod
-from website_profiling.tools.audit_tools import geo_tools as geo_mod
-from website_profiling.tools.audit_tools import google as google_mod
-from website_profiling.tools.audit_tools import integration_tools as int_mod
-from website_profiling.tools.audit_tools import keywords as kw_mod
-from website_profiling.tools.audit_tools import llm_tools as llm_mod
-from website_profiling.tools.audit_tools import payload_extras as pe_mod
-from website_profiling.tools.audit_tools import compare_slices as cmp_mod
-from website_profiling.tools.audit_tools import report as report_mod
+from website_profiling.tools.audit_tools.crawl import crawl_lists as cl_mod
+from website_profiling.tools.audit_tools.crawl import crawl_metrics as cm_mod
+from website_profiling.tools.audit_tools.geo import geo_tools as geo_mod
+from website_profiling.tools.audit_tools.google import google as google_mod
+from website_profiling.tools.audit_tools.integrations import integration_tools as int_mod
+from website_profiling.tools.audit_tools.keywords import keywords as kw_mod
+from website_profiling.tools.audit_tools.integrations import llm_tools as llm_mod
+from website_profiling.tools.audit_tools.core import payload_extras as pe_mod
+from website_profiling.tools.audit_tools.compare import compare_slices as cmp_mod
+from website_profiling.tools.audit_tools.report import report as report_mod
 
 
 @pytest.fixture
@@ -218,11 +218,11 @@ def test_geo_tools_paths(conn: MagicMock, ctx: Ctx) -> None:
     assert geo_mod._fetch_llms_txt("")["found"] is False
 
     mock_resp = MagicMock(status_code=200, text="llms content", content=b"llms content")
-    with patch("website_profiling.tools.audit_tools.geo_tools.requests.get", return_value=mock_resp):
+    with patch("website_profiling.tools.audit_tools.geo.geo_tools.requests.get", return_value=mock_resp):
         found = geo_mod._fetch_llms_txt("ex.com")
         assert found["found"] is True
 
-    with patch("website_profiling.tools.audit_tools.geo_tools.requests.get", side_effect=requests.RequestException("fail")):
+    with patch("website_profiling.tools.audit_tools.geo.geo_tools.requests.get", side_effect=requests.RequestException("fail")):
         assert geo_mod._fetch_llms_txt("ex.com")["found"] is False
 
     with patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), patch.object(
@@ -237,7 +237,7 @@ def test_geo_tools_paths(conn: MagicMock, ctx: Ctx) -> None:
     with patch.object(Ctx, "load_payload", return_value=payload), patch.object(
         Ctx, "load_crawl_df", return_value=_crawl_df(),
     ), patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), patch(
-        "website_profiling.tools.audit_tools.geo_tools._fetch_llms_txt",
+        "website_profiling.tools.audit_tools.geo.geo_tools._fetch_llms_txt",
         return_value={"found": True},
     ):
         geo = geo_mod.get_geo_readiness_score(conn, ctx, {})
@@ -257,7 +257,7 @@ def test_geo_tools_paths(conn: MagicMock, ctx: Ctx) -> None:
         assert geo_mod.get_internal_link_suggestions(conn, ctx, {"url": "https://ex.com/nope"})["error"]
 
     with patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), patch(
-        "website_profiling.tools.audit_tools.geo_tools._fetch_llms_txt", return_value={"found": False},
+        "website_profiling.tools.audit_tools.geo.geo_tools._fetch_llms_txt", return_value={"found": False},
     ):
         assert geo_mod.get_llms_txt_status(conn, ctx, {})["domain"] == "ex.com"
 
@@ -282,9 +282,25 @@ def test_geo_tools_paths(conn: MagicMock, ctx: Ctx) -> None:
     empty_geo = pd.DataFrame([{"url": "https://ex.com/e", "status": "404", "page_analysis": "{}"}])
     with patch.object(Ctx, "load_payload", return_value={}), patch.object(Ctx, "load_crawl_df", return_value=empty_geo), patch.object(
         Ctx, "resolve_property_domain", return_value="ex.com",
-    ), patch("website_profiling.tools.audit_tools.geo_tools._fetch_llms_txt", return_value={"found": False}):
+    ), patch("website_profiling.tools.audit_tools.geo.geo_tools._fetch_llms_txt", return_value={"found": False}):
         geo_empty = geo_mod.get_geo_readiness_score(conn, ctx, {})
         assert geo_empty["components"]["schema_coverage"] == 0
+
+
+def test_geo_readiness_survives_http_task_exception(conn: MagicMock, ctx: Ctx) -> None:
+    # A live-HTTP task raising (beyond the RequestException it guards internally)
+    # must degrade to a 0 sub-score, not crash the whole composite score.
+    with patch.object(Ctx, "load_payload", return_value={}), patch.object(
+        Ctx, "load_crawl_df", return_value=_crawl_df(),
+    ), patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), patch(
+        "website_profiling.tools.audit_tools.geo.geo_tools._fetch_llms_txt", return_value={"found": False},
+    ), patch(
+        "website_profiling.tools.audit_tools.geo.geo_tools._score_robots_ai_access",
+        side_effect=RuntimeError("boom"),
+    ):
+        result = geo_mod.get_geo_readiness_score(conn, ctx, {})
+    assert 0 <= result["geo_readiness_score"] <= 100
+    assert result["categories"]["robots_ai_access"]["score"] == 0
 
 
 def test_google_ctr_and_keywords(conn: MagicMock, ctx: Ctx) -> None:
@@ -321,10 +337,10 @@ def test_google_ctr_and_keywords(conn: MagicMock, ctx: Ctx) -> None:
 def test_integration_tools_paths(conn: MagicMock, ctx: Ctx) -> None:
     assert int_mod.get_gsc_url_inspection(conn, Ctx(property_id=None), {"url": "https://ex.com"})["missing"]
     assert int_mod.get_gsc_url_inspection(conn, ctx, {})["missing"]
-    with patch("website_profiling.tools.audit_tools.integration_tools.get_property_by_id", return_value=None):
+    with patch("website_profiling.tools.audit_tools.integrations.integration_tools.get_property_by_id", return_value=None):
         assert int_mod.get_gsc_url_inspection(conn, ctx, {"url": "https://ex.com"})["missing"]
 
-    with patch("website_profiling.tools.audit_tools.integration_tools.get_property_by_id", return_value={"canonical_domain": "ex.com"}):
+    with patch("website_profiling.tools.audit_tools.integrations.integration_tools.get_property_by_id", return_value={"canonical_domain": "ex.com"}):
         assert int_mod.get_bing_index_status(conn, ctx, {})["missing"]
         with patch("website_profiling.db.config_store.read_pipeline_config", return_value=({"bing_webmaster_api_key": "key"}, {})):
             with patch("website_profiling.integrations.bing.webmaster._bing_json_get", return_value={"d": {"indexed": True}}):
@@ -350,8 +366,8 @@ def test_integration_tools_paths(conn: MagicMock, ctx: Ctx) -> None:
         assert cite["entity_in_ner_summary"] is True
 
     prop = {"google_refresh_token": "t", "gsc_site_url": "https://ex.com/"}
-    with patch("website_profiling.tools.audit_tools.integration_tools.get_property_by_id", return_value=prop), patch(
-        "website_profiling.tools.audit_tools.integration_tools.build_credentials", side_effect=RuntimeError("creds"),
+    with patch("website_profiling.tools.audit_tools.integrations.integration_tools.get_property_by_id", return_value=prop), patch(
+        "website_profiling.tools.audit_tools.integrations.integration_tools.build_credentials", side_effect=RuntimeError("creds"),
     ):
         out = int_mod.get_gsc_url_inspection(conn, ctx, {"url": "https://ex.com"})
         assert "credentials error" in out["error"]
@@ -369,10 +385,10 @@ def test_llm_tools_paths(conn: MagicMock, ctx: Ctx) -> None:
         assert llm_mod._llm_disabled_response()["missing"] is True
         assert llm_mod.generate_issue_fix(conn, ctx, {})["missing"] is True
 
-    with patch("website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={}):
+    with patch("website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={}):
         assert llm_mod.generate_issue_fix(conn, ctx, {"message": ""})["error"]
 
-    with patch("website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={}), patch(
+    with patch("website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={}), patch(
         "website_profiling.llm.issue_fixes.generate_issue_fix_suggestion",
         return_value={"fix": "x"},
     ), patch("website_profiling.llm_config.load_llm_config_from_db", return_value={}):
@@ -382,17 +398,17 @@ def test_llm_tools_paths(conn: MagicMock, ctx: Ctx) -> None:
     cat_data = {"name": "Tech", "score": 80, "issues": [{"priority": "High", "message": "Slow", "url": "https://ex.com"}]}
     assert llm_mod.summarize_category_for_client(conn, ctx, {})["error"] == "category_id is required"
 
-    with patch("website_profiling.tools.audit_tools.issues.get_category_issues", return_value=cat_data), patch(
-        "website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={"missing": True},
+    with patch("website_profiling.tools.audit_tools.issues.issues.get_category_issues", return_value=cat_data), patch(
+        "website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={"missing": True},
     ):
         summary = llm_mod.summarize_category_for_client(conn, ctx, {"category_id": "tech"})
         assert summary["provenance"] == "Crawl"
 
-    with patch("website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={}), patch(
+    with patch("website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={}), patch(
         "website_profiling.llm.base.get_llm_client",
         return_value=MagicMock(complete_json=MagicMock(return_value={"summary": "Client text"})),
     ), patch("website_profiling.llm_config.load_llm_config_from_db", return_value={}), patch(
-        "website_profiling.tools.audit_tools.issues.get_category_issues", return_value=cat_data,
+        "website_profiling.tools.audit_tools.issues.issues.get_category_issues", return_value=cat_data,
     ):
         narrative = llm_mod.summarize_category_for_client(conn, ctx, {"category_id": "tech"})
         assert narrative["narrative"] == "Client text"
@@ -400,13 +416,13 @@ def test_llm_tools_paths(conn: MagicMock, ctx: Ctx) -> None:
     with patch.object(Ctx, "load_payload", return_value=None):
         assert llm_mod.prioritize_fix_roadmap(conn, ctx, {})["error"]
     with patch.object(Ctx, "load_payload", return_value={"categories": []}), patch(
-        "website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={"error": "off"},
+        "website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={"error": "off"},
     ), patch.object(Ctx, "load_google", return_value=None), patch.object(Ctx, "load_crawl_df", return_value=None):
         snippet = llm_mod.analyze_serp_snippet_for_url(conn, ctx, {"url": "https://ex.com"})
         assert snippet["provenance"] == "Crawl"
 
     with patch.object(Ctx, "load_payload", return_value={"site_name": "Ex", "top_pages": [{"url": "https://ex.com"}]}), patch(
-        "website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={},
+        "website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={},
     ), patch(
         "website_profiling.llm.base.get_llm_client",
         return_value=MagicMock(complete_json=MagicMock(return_value={"content": "# Ex\n\nPolished"})),
@@ -414,11 +430,11 @@ def test_llm_tools_paths(conn: MagicMock, ctx: Ctx) -> None:
         draft = llm_mod.draft_llms_txt(conn, ctx, {})
         assert "Polished" in draft["llms_txt_draft"]
 
-    with patch("website_profiling.tools.audit_tools.issues.get_category_issues", return_value={"error": "no cat"}):
+    with patch("website_profiling.tools.audit_tools.issues.issues.get_category_issues", return_value={"error": "no cat"}):
         assert llm_mod.summarize_category_for_client(conn, ctx, {"category_id": "x"})["error"] == "no cat"
 
     with patch.object(Ctx, "load_payload", return_value={"categories": []}), patch(
-        "website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={},
+        "website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={},
     ), patch("website_profiling.llm.base.get_llm_client", return_value=None), patch.object(
         Ctx, "load_google", return_value={"gsc": {}},
     ), patch.object(Ctx, "load_crawl_df", return_value=pd.DataFrame([{"url": "https://ex.com", "title": "T", "meta_description": "D"}])):
@@ -430,7 +446,7 @@ def test_llm_tools_paths(conn: MagicMock, ctx: Ctx) -> None:
 
     client = MagicMock(complete_json=MagicMock(side_effect=RuntimeError("llm fail")))
     with patch.object(Ctx, "load_payload", return_value={"site_name": "Ex"}), patch(
-        "website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={},
+        "website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={},
     ), patch("website_profiling.llm.base.get_llm_client", return_value=client), patch(
         "website_profiling.llm_config.load_llm_config_from_db", return_value={},
     ):
@@ -499,16 +515,16 @@ def test_expansion_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
     with patch.object(Ctx, "load_google", return_value=low_ctr):
         assert google_mod.get_gsc_ctr_opportunity_pages(conn, ctx, {})["total"] == 1
 
-    with patch("website_profiling.tools.audit_tools.integration_tools.get_property_by_id", return_value={"google_refresh_token": "t"}), patch(
-        "website_profiling.tools.audit_tools.integration_tools.build_credentials", return_value=None,
+    with patch("website_profiling.tools.audit_tools.integrations.integration_tools.get_property_by_id", return_value={"google_refresh_token": "t"}), patch(
+        "website_profiling.tools.audit_tools.integrations.integration_tools.build_credentials", return_value=None,
     ):
         assert int_mod.get_gsc_url_inspection(conn, ctx, {"url": "https://ex.com"})["missing"]
-    with patch("website_profiling.tools.audit_tools.integration_tools.get_property_by_id", return_value={"google_refresh_token": "t", "canonical_domain": ""}), patch(
-        "website_profiling.tools.audit_tools.integration_tools.build_credentials", return_value=object(),
+    with patch("website_profiling.tools.audit_tools.integrations.integration_tools.get_property_by_id", return_value={"google_refresh_token": "t", "canonical_domain": ""}), patch(
+        "website_profiling.tools.audit_tools.integrations.integration_tools.build_credentials", return_value=object(),
     ):
         assert "GSC site URL" in int_mod.get_gsc_url_inspection(conn, ctx, {"url": "https://ex.com"})["error"]
     assert int_mod.get_bing_index_status(conn, Ctx(property_id=None), {"url": "https://ex.com"})["missing"]
-    with patch("website_profiling.tools.audit_tools.integration_tools.get_property_by_id", return_value=None):
+    with patch("website_profiling.tools.audit_tools.integrations.integration_tools.get_property_by_id", return_value=None):
         assert int_mod.get_bing_index_status(conn, ctx, {"url": "https://ex.com"})["missing"]
 
     with patch.object(Ctx, "load_keywords", return_value={"rows": []}):
@@ -543,20 +559,20 @@ def test_expansion_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
         assert links["suggestions"]
 
     with patch.object(Ctx, "load_payload", return_value={"categories": []}), patch(
-        "website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={},
+        "website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={},
     ):
         assert llm_mod.prioritize_fix_roadmap(conn, ctx, {"limit": "bad"})["roadmap"] == []
 
-    with patch("website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={}), patch(
+    with patch("website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={}), patch(
         "website_profiling.llm.base.get_llm_client", return_value=MagicMock(complete_json=MagicMock(return_value={})),
     ), patch("website_profiling.llm_config.load_llm_config_from_db", return_value={}), patch(
-        "website_profiling.tools.audit_tools.issues.get_category_issues", return_value={"name": "T", "score": 1, "issues": []},
+        "website_profiling.tools.audit_tools.issues.issues.get_category_issues", return_value={"name": "T", "score": 1, "issues": []},
     ), patch("website_profiling.llm.base.parse_json_response", return_value={"summary": "parsed"}):
         summary = llm_mod.summarize_category_for_client(conn, ctx, {"category_id": "t"})
         assert summary.get("narrative") == "parsed"
 
     with patch.object(Ctx, "load_payload", return_value={"site_name": "Ex"}), patch(
-        "website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={},
+        "website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={},
     ), patch("website_profiling.llm.base.get_llm_client", return_value=MagicMock(complete_json=MagicMock(side_effect=RuntimeError("x")))):
         draft = llm_mod.draft_llms_txt(conn, ctx, {})
         assert "Ex" in draft["llms_txt_draft"]
@@ -608,10 +624,10 @@ def test_expansion_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
     ):
         assert llm_mod._llm_disabled_response() == {}
 
-    with patch("website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={}), patch(
+    with patch("website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={}), patch(
         "website_profiling.llm.base.get_llm_client", return_value=MagicMock(complete_json=MagicMock(side_effect=RuntimeError("boom"))),
     ), patch("website_profiling.llm_config.load_llm_config_from_db", return_value={}), patch(
-        "website_profiling.tools.audit_tools.issues.get_category_issues", return_value={"name": "T", "score": 1, "issues": []},
+        "website_profiling.tools.audit_tools.issues.issues.get_category_issues", return_value={"name": "T", "score": 1, "issues": []},
     ):
         err_summary = llm_mod.summarize_category_for_client(conn, ctx, {"category_id": "t"})
         assert "narrative_error" in err_summary
@@ -619,7 +635,7 @@ def test_expansion_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
     client_ok = MagicMock(complete_json=MagicMock(return_value={"title": "New", "meta_description": "Meta"}))
     with patch.object(Ctx, "load_google", return_value={"gsc": {}}), patch.object(
         Ctx, "load_crawl_df", return_value=pd.DataFrame([{"url": "https://ex.com", "title": "Old", "meta_description": "Old meta"}]),
-    ), patch("website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={}), patch(
+    ), patch("website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={}), patch(
         "website_profiling.llm.base.get_llm_client", return_value=client_ok,
     ), patch("website_profiling.llm_config.load_llm_config_from_db", return_value={}):
         serp = llm_mod.analyze_serp_snippet_for_url(conn, ctx, {"url": "https://ex.com"})
@@ -628,6 +644,6 @@ def test_expansion_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
 
 def test_compare_slices_error_paths(conn: MagicMock, ctx: Ctx) -> None:
     err = {"error": "bad baseline"}
-    with patch("website_profiling.tools.audit_tools.compare_slices.load_compare_pair", return_value=(None, None, None, None, err)):
+    with patch("website_profiling.tools.audit_tools.compare.compare_slices.load_compare_pair", return_value=(None, None, None, None, err)):
         assert cmp_mod.compare_indexation_deltas(conn, ctx, {}) == err
         assert cmp_mod.compare_orphan_deltas(conn, ctx, {}) == err

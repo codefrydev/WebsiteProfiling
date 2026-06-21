@@ -5,11 +5,37 @@ import { Bar } from 'react-chartjs-2';
 import type { ReportLink } from '@/types';
 import { Card, ChartTitleWithHint } from '@/components';
 import { ChartPanel } from '@/components/charts';
-import { barOptsVertical } from '@/components/overview/chartUtils';
 import { strings } from '@/lib/strings';
 import { statusDistributionFromLinks } from '@/lib/statusDistribution';
 import { PALETTE_CATEGORICAL } from '@/utils/chartPalette';
-import { registerChartJsBase } from '@/utils/chartJsDefaults';
+import { getGridColor, getChartTitleColor, registerChartJsBase } from '@/utils/chartJsDefaults';
+import type { TooltipItem } from 'chart.js';
+
+function barOptsVertical(yTitle: string, ariaDescription?: string) {
+  const o = strings.views.overview;
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx: TooltipItem<'bar'>) =>
+            ` ${Number(ctx.raw).toLocaleString()} ${o.chartUrls}`,
+        },
+      },
+    },
+    scales: {
+      x: { grid: { color: getGridColor() } },
+      y: {
+        grid: { color: getGridColor() },
+        beginAtZero: true,
+        title: { display: true, text: yTitle, color: getChartTitleColor() },
+      },
+    },
+    ...(ariaDescription ? { aria: { description: ariaDescription } } : {}),
+  };
+}
 
 registerChartJsBase();
 

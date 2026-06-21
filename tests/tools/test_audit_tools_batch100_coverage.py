@@ -8,17 +8,17 @@ import pandas as pd
 import pytest
 import requests
 
-from website_profiling.tools.audit_tools import crawl as crawl_mod
+from website_profiling.tools.audit_tools.crawl import crawl as crawl_mod
 from website_profiling.tools.audit_tools.context import AuditToolContext as Ctx
-from website_profiling.tools.audit_tools import issue_lists as issue_mod
-from website_profiling.tools.audit_tools import google_lists as google_mod
-from website_profiling.tools.audit_tools import keyword_lists as kw_mod
-from website_profiling.tools.audit_tools import backlink_lists as bl_mod
-from website_profiling.tools.audit_tools import content_lists as content_mod
-from website_profiling.tools.audit_tools import link_lists as link_mod
-from website_profiling.tools.audit_tools import indexation_lists as idx_mod
-from website_profiling.tools.audit_tools import compare_list_tools as cmp_mod
-from website_profiling.tools.audit_tools import geo_list_tools as geo_list_mod
+from website_profiling.tools.audit_tools.issues import issue_lists as issue_mod
+from website_profiling.tools.audit_tools.google import google_lists as google_mod
+from website_profiling.tools.audit_tools.keywords import keyword_lists as kw_mod
+from website_profiling.tools.audit_tools.backlinks import backlink_lists as bl_mod
+from website_profiling.tools.audit_tools.content import content_lists as content_mod
+from website_profiling.tools.audit_tools.links import link_lists as link_mod
+from website_profiling.tools.audit_tools.indexation import indexation_lists as idx_mod
+from website_profiling.tools.audit_tools.compare import compare_list_tools as cmp_mod
+from website_profiling.tools.audit_tools.geo import geo_list_tools as geo_list_mod
 
 
 @pytest.fixture
@@ -723,7 +723,7 @@ def test_keyword_lists_all_paths(conn: MagicMock, ctx: Ctx) -> None:
     prior = _prior_keywords()
     payload = _payload()
     with patch.object(Ctx, "load_keywords", return_value=kw), patch.object(Ctx, "load_payload", return_value=payload), patch(
-        "website_profiling.tools.audit_tools.keyword_lists.read_keyword_snapshots_for_property",
+        "website_profiling.tools.audit_tools.keywords.keyword_lists.read_keyword_snapshots_for_property",
         return_value=[kw, prior],
     ):
         assert kw_mod.list_keyword_rank_improvements(conn, ctx, {})["total"] >= 1
@@ -740,6 +740,8 @@ def test_keyword_lists_all_paths(conn: MagicMock, ctx: Ctx) -> None:
         assert kw_mod.get_keyword_opportunity_score(conn, ctx, {"keyword": "widgets"})["opportunity_score"] > 0
         assert kw_mod.list_keywords_near_page_one(conn, ctx, {})["total"] >= 1
         assert kw_mod.list_keywords_high_impression_zero_click(conn, ctx, {})["total"] >= 1
+        # Non-numeric threshold must fall back to the default (no crash).
+        assert kw_mod.list_keywords_high_impression_zero_click(conn, ctx, {"min_impressions": "bad"})["total"] >= 0
         assert kw_mod.list_keywords_by_competition_band(conn, ctx, {})["total"] >= 1
         assert kw_mod.get_keyword_serp_snapshot(conn, ctx, {"keyword": "widgets"})["keyword"] == "widgets"
         assert kw_mod.list_keywords_with_ai_overview(conn, ctx, {})["total"] >= 1
@@ -751,7 +753,7 @@ def test_keyword_lists_all_paths(conn: MagicMock, ctx: Ctx) -> None:
         assert kw_mod.list_cannibalisation_queries(conn, ctx, {})["missing"] is True
 
     with patch.object(Ctx, "load_keywords", return_value={"rows": []}), patch(
-        "website_profiling.tools.audit_tools.keyword_lists.read_keyword_snapshots_for_property",
+        "website_profiling.tools.audit_tools.keywords.keyword_lists.read_keyword_snapshots_for_property",
         return_value=[{"rows": []}],
     ):
         assert kw_mod.list_keyword_rank_improvements(conn, ctx, {})["missing"] is True
@@ -889,12 +891,12 @@ def test_indexation_lists_all_paths(conn: MagicMock, ctx: Ctx) -> None:
     no_prop = Ctx(property_id=None, report_id=1)
     assert idx_mod.list_log_paths_by_hits(conn, no_prop, {})["error"]
 
-    with patch("website_profiling.tools.audit_tools.indexation_lists._load_log_analysis", return_value=None):
+    with patch("website_profiling.tools.audit_tools.indexation.indexation_lists._load_log_analysis", return_value=None):
         assert idx_mod.list_log_paths_by_hits(conn, ctx, {})["missing"] is True
 
     log = _log_row()
     orphan_payload = {**payload, "orphan_urls": ["https://ex.com/orphan"]}
-    with patch("website_profiling.tools.audit_tools.indexation_lists._load_log_analysis", return_value=log), patch.object(
+    with patch("website_profiling.tools.audit_tools.indexation.indexation_lists._load_log_analysis", return_value=log), patch.object(
         Ctx, "load_payload", return_value=orphan_payload,
     ):
         assert idx_mod.list_log_paths_by_hits(conn, ctx, {})["total"] >= 1
@@ -902,7 +904,7 @@ def test_indexation_lists_all_paths(conn: MagicMock, ctx: Ctx) -> None:
         assert idx_mod.list_log_googlebot_low_crawl(conn, ctx, {"min_hits": "bad"})["total"] >= 0
         assert idx_mod.list_log_orphan_high_traffic(conn, ctx, {"min_hits": "bad"})["total"] >= 0
 
-    with patch("website_profiling.tools.audit_tools.indexation_lists._load_log_analysis", return_value=log), patch.object(
+    with patch("website_profiling.tools.audit_tools.indexation.indexation_lists._load_log_analysis", return_value=log), patch.object(
         Ctx, "load_payload", return_value={"orphan_urls": []},
     ):
         assert idx_mod.list_log_orphan_high_traffic(conn, ctx, {})["note"]
@@ -917,7 +919,7 @@ def test_indexation_lists_all_paths(conn: MagicMock, ctx: Ctx) -> None:
 
 def test_compare_list_tools_all_paths(conn: MagicMock, ctx: Ctx) -> None:
     err = {"error": "baseline required"}
-    with patch("website_profiling.tools.audit_tools.compare_list_tools.load_compare_pair", return_value=(None, None, None, None, err)):
+    with patch("website_profiling.tools.audit_tools.compare.compare_list_tools.load_compare_pair", return_value=(None, None, None, None, err)):
         assert cmp_mod.list_compare_new_issues(conn, ctx, {})["error"]
         assert cmp_mod.list_compare_resolved_issues(conn, ctx, {})["error"]
         assert cmp_mod.list_compare_new_urls(conn, ctx, {})["error"]
@@ -926,7 +928,7 @@ def test_compare_list_tools_all_paths(conn: MagicMock, ctx: Ctx) -> None:
         assert cmp_mod.list_compare_traffic_losers(conn, ctx, {})["error"]
 
     current, baseline = _compare_current(), _compare_baseline()
-    with patch("website_profiling.tools.audit_tools.compare_list_tools.load_compare_pair", return_value=(current, baseline, 2, 1, None)):
+    with patch("website_profiling.tools.audit_tools.compare.compare_list_tools.load_compare_pair", return_value=(current, baseline, 2, 1, None)):
         assert cmp_mod.list_compare_new_issues(conn, ctx, {})["total"] >= 0
         assert cmp_mod.list_compare_resolved_issues(conn, ctx, {})["total"] >= 0
         assert cmp_mod.list_compare_new_urls(conn, ctx, {})["total"] >= 1
@@ -938,7 +940,7 @@ def test_compare_list_tools_all_paths(conn: MagicMock, ctx: Ctx) -> None:
     no_google.pop("google")
     base_no_google = dict(baseline)
     base_no_google.pop("google")
-    with patch("website_profiling.tools.audit_tools.compare_list_tools.load_compare_pair", return_value=(no_google, base_no_google, 2, 1, None)), patch.object(
+    with patch("website_profiling.tools.audit_tools.compare.compare_list_tools.load_compare_pair", return_value=(no_google, base_no_google, 2, 1, None)), patch.object(
         Ctx, "load_google_full", return_value=None,
     ), patch.object(Ctx, "load_google", return_value=None):
         assert cmp_mod.list_compare_traffic_losers(conn, ctx, {})["missing"] is True
@@ -956,14 +958,14 @@ def test_geo_list_tools_all_paths(conn: MagicMock, ctx: Ctx) -> None:
         assert geo_list_mod.list_pages_ai_citation_signals(conn, ctx, {"min_score": "bad"})["total"] >= 1
 
     with patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), patch(
-        "website_profiling.tools.audit_tools.geo_list_tools._fetch_llms_txt",
+        "website_profiling.tools.audit_tools.geo.geo_list_tools._fetch_llms_txt",
         return_value={"found": False},
     ):
         assert geo_list_mod.list_pages_missing_llms_txt_reference(conn, ctx, {})["missing"] is True
 
     llms = {"found": True, "url": "https://ex.com/llms.txt", "preview": "https://ex.com/\nMore docs"}
     with patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), patch(
-        "website_profiling.tools.audit_tools.geo_list_tools._fetch_llms_txt", return_value=llms,
+        "website_profiling.tools.audit_tools.geo.geo_list_tools._fetch_llms_txt", return_value=llms,
     ), patch.object(Ctx, "load_payload", return_value=payload), patch.object(Ctx, "load_crawl_df", return_value=df):
         missing = geo_list_mod.list_pages_missing_llms_txt_reference(conn, ctx, {})
         assert missing["total"] >= 1
@@ -983,11 +985,11 @@ def test_geo_list_tools_all_paths(conn: MagicMock, ctx: Ctx) -> None:
     ):
         assert geo_list_mod.list_robots_blocked_ai_crawlers(conn, ctx, {})["missing"] is True
 
-    with patch("website_profiling.tools.audit_tools.geo_list_tools.requests.get", side_effect=requests.RequestException("fail")):
+    with patch("website_profiling.tools.audit_tools.geo.geo_list_tools.requests.get", side_effect=requests.RequestException("fail")):
         assert geo_list_mod._parse_robots_txt("ex.com") == ""
 
     mock_resp = MagicMock(status_code=404, text="")
-    with patch("website_profiling.tools.audit_tools.geo_list_tools.requests.get", return_value=mock_resp):
+    with patch("website_profiling.tools.audit_tools.geo.geo_list_tools.requests.get", return_value=mock_resp):
         assert geo_list_mod._parse_robots_txt("ex.com") == ""
 
 
@@ -1143,7 +1145,7 @@ def test_batch100_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
     # keyword_lists gaps
     kw = _keyword_data()
     with patch.object(Ctx, "load_keywords", return_value=None), patch(
-        "website_profiling.tools.audit_tools.keyword_lists.read_keyword_snapshots_for_property",
+        "website_profiling.tools.audit_tools.keywords.keyword_lists.read_keyword_snapshots_for_property",
         return_value=[kw],
     ):
         cur, prior = kw_mod._load_keyword_pair(ctx, conn)
@@ -1175,7 +1177,7 @@ def test_batch100_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
         assert kw_mod._pair_delta_tool(conn, ctx, {}, builder=lambda a, b: [], item_key="keywords")["missing"] is True
 
     with patch.object(Ctx, "load_keywords", return_value={"rows": []}), patch(
-        "website_profiling.tools.audit_tools.keyword_lists.read_keyword_snapshots_for_property",
+        "website_profiling.tools.audit_tools.keywords.keyword_lists.read_keyword_snapshots_for_property",
         return_value=[],
     ):
         assert kw_mod._load_keyword_pair(ctx, conn) == ({"rows": []}, None)
@@ -1203,7 +1205,7 @@ def test_batch100_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
         assert bl_mod.list_backlinks_to_url(conn, ctx, {"url": "https://ex.com"})["missing"] is True
         assert bl_mod.list_backlinks_from_domain(conn, ctx, {"domain": "x.com"})["missing"] is True
         assert bl_mod.get_anchor_text_distribution(conn, ctx, {})["missing"] is True
-    with patch("website_profiling.tools.audit_tools.backlink_lists.urlparse", side_effect=ValueError("bad")):
+    with patch("website_profiling.tools.audit_tools.backlinks.backlink_lists.urlparse", side_effect=ValueError("bad")):
         assert bl_mod._norm_domain("bad://") == "bad://"
 
     # content_lists gaps
@@ -1287,7 +1289,7 @@ def test_batch100_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
             "status_counts": {"500": 12, "503": 3},
         },
     }
-    with patch("website_profiling.tools.audit_tools.indexation_lists._load_log_analysis", return_value=log_non_list), patch.object(
+    with patch("website_profiling.tools.audit_tools.indexation.indexation_lists._load_log_analysis", return_value=log_non_list), patch.object(
         Ctx, "load_payload", return_value=_payload(),
     ):
         assert idx_mod.list_log_paths_by_hits(conn, ctx, {})["total"] == 0
@@ -1305,7 +1307,7 @@ def test_batch100_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
             "googlebot_paths": [{"path": "/orphan", "hits": 0}],
         },
     }
-    with patch("website_profiling.tools.audit_tools.indexation_lists._load_log_analysis", return_value=log_row), patch.object(
+    with patch("website_profiling.tools.audit_tools.indexation.indexation_lists._load_log_analysis", return_value=log_row), patch.object(
         Ctx, "load_payload", return_value=orphan_log,
     ):
         assert idx_mod.list_log_orphan_high_traffic(conn, ctx, {})["total"] >= 1
@@ -1326,7 +1328,7 @@ def test_batch100_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
         gaps = idx_mod.list_hreflang_reciprocal_gaps(conn, ctx, {})
         assert gaps["total"] >= 1
 
-    with patch("website_profiling.tools.audit_tools.indexation_lists.url_to_path", side_effect=RuntimeError("bad")):
+    with patch("website_profiling.tools.audit_tools.indexation.indexation_lists.url_to_path", side_effect=RuntimeError("bad")):
         assert idx_mod._norm_path("https://ex.com/x") == "https://ex.com/x"
 
     # compare_list_tools line 156 (skip non-losers)
@@ -1338,7 +1340,7 @@ def test_batch100_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
         "report_generated_at": "2026-05-01",
         "google": {"gsc_full": {"pages": [{"page": "https://ex.com/win", "clicks": 10, "impressions": 50}]}},
     }
-    with patch("website_profiling.tools.audit_tools.compare_list_tools.load_compare_pair", return_value=(winner_current, winner_baseline, 2, 1, None)):
+    with patch("website_profiling.tools.audit_tools.compare.compare_list_tools.load_compare_pair", return_value=(winner_current, winner_baseline, 2, 1, None)):
         losers = cmp_mod.list_compare_traffic_losers(conn, ctx, {})
         assert losers["total"] == 0
 
@@ -1356,7 +1358,7 @@ def test_batch100_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
 
     assert geo_list_mod._parse_robots_txt("") == ""
     ok_resp = MagicMock(status_code=200, text="User-agent: *\nAllow: /\n# comment\nUser-agent: ClaudeBot\nDisallow: /")
-    with patch("website_profiling.tools.audit_tools.geo_list_tools.requests.get", return_value=ok_resp):
+    with patch("website_profiling.tools.audit_tools.geo.geo_list_tools.requests.get", return_value=ok_resp):
         robots = geo_list_mod._parse_robots_txt("ex.com")
         assert "User-agent" in robots
         assert geo_list_mod._agent_blocked(robots, "ClaudeBot") is True
@@ -1467,12 +1469,12 @@ def test_batch100_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
         idx_mod.list_indexation_submitted_not_indexed(conn, ctx, {})
         idx_mod.list_crawl_urls_not_in_sitemap(conn, ctx, {})
 
-    with patch("website_profiling.tools.audit_tools.indexation_lists._load_log_analysis", return_value=_log_row()), patch.object(
+    with patch("website_profiling.tools.audit_tools.indexation.indexation_lists._load_log_analysis", return_value=_log_row()), patch.object(
         Ctx, "load_payload", return_value=_payload(),
     ):
         assert idx_mod.list_log_googlebot_low_crawl(conn, ctx, {"min_hits": "bad"})["paths"] is not None
 
-    with patch("website_profiling.tools.audit_tools.indexation_lists._load_log_analysis", return_value=_log_row()), patch.object(
+    with patch("website_profiling.tools.audit_tools.indexation.indexation_lists._load_log_analysis", return_value=_log_row()), patch.object(
         Ctx, "load_payload", return_value=None,
     ):
         assert idx_mod.list_log_orphan_high_traffic(conn, ctx, {})["error"]
@@ -1630,7 +1632,7 @@ def test_batch100_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
         assert idx_mod.list_indexation_indexed_not_submitted(conn, ctx, {})["error"]
         assert idx_mod.list_crawl_urls_not_in_sitemap(conn, ctx, {})["error"]
 
-    with patch("website_profiling.tools.audit_tools.indexation_lists._load_log_analysis", return_value=_log_row()):
+    with patch("website_profiling.tools.audit_tools.indexation.indexation_lists._load_log_analysis", return_value=_log_row()):
         assert idx_mod.list_log_5xx_paths(conn, Ctx(property_id=None, report_id=1), {})["error"]
         assert idx_mod.list_log_googlebot_low_crawl(conn, Ctx(property_id=None, report_id=1), {})["error"]
 
@@ -1644,12 +1646,12 @@ def test_batch100_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
         **_payload(),
         "links": [{"url": "https://ex.com/crawled"}, {"url": "https://ex.com/popular"}],
     }
-    with patch("website_profiling.tools.audit_tools.indexation_lists._load_log_analysis", return_value=bot_log), patch.object(
+    with patch("website_profiling.tools.audit_tools.indexation.indexation_lists._load_log_analysis", return_value=bot_log), patch.object(
         Ctx, "load_payload", return_value=bot_payload,
     ):
         assert idx_mod.list_log_googlebot_low_crawl(conn, ctx, {"min_hits": 20, "max_googlebot_hits": 5})["total"] == 0
 
-    with patch("website_profiling.tools.audit_tools.indexation_lists._load_log_analysis", return_value=_log_row()):
+    with patch("website_profiling.tools.audit_tools.indexation.indexation_lists._load_log_analysis", return_value=_log_row()):
         assert idx_mod.list_log_orphan_high_traffic(conn, Ctx(property_id=None, report_id=1), {})["error"]
 
     orphan_payload = {
@@ -1661,7 +1663,7 @@ def test_batch100_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
             "top_paths": ["skip", {"path": "/orphan", "hits": 50}],
         },
     }
-    with patch("website_profiling.tools.audit_tools.indexation_lists._load_log_analysis", return_value=orphan_log2), patch.object(
+    with patch("website_profiling.tools.audit_tools.indexation.indexation_lists._load_log_analysis", return_value=orphan_log2), patch.object(
         Ctx, "load_payload", return_value=orphan_payload,
     ):
         assert idx_mod.list_log_orphan_high_traffic(conn, ctx, {})["total"] >= 1

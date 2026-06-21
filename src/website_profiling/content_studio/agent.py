@@ -77,10 +77,15 @@ def _inject_missing_tools(
     ctx: ContentStudioContext,
     called: set[str],
     ollama_format: bool,
+    tool_events: list[dict[str, Any]],
 ) -> None:
     for name in sorted(REQUIRED_CONTENT_STUDIO_TOOLS - called):
         result = sanitize_unicode_deep(dispatch_content_studio_tool(name, ctx))
         called.add(name)
+        # Record the result for tool_events here too, so the caller need not
+        # dispatch each missing tool a second time (score_content_draft opens a
+        # DB session and re-parses the HTML on every dispatch).
+        tool_events.append({"name": name, "args": {}, "result": result})
         if ollama_format:
             openai_messages.append({
                 "role": "tool",
@@ -223,15 +228,9 @@ def run_content_studio_analyze(
             }
 
         if called:
-            _inject_missing_tools(openai_messages, ctx, called, ollama_format)
-            for name in sorted(REQUIRED_CONTENT_STUDIO_TOOLS):
-                if any(e["name"] == name for e in tool_events):
-                    continue
-                tool_events.append({
-                    "name": name,
-                    "args": {},
-                    "result": dispatch_content_studio_tool(name, ctx),
-                })
+            # Populates both the model messages and tool_events in one dispatch
+            # pass (previously every missing tool was dispatched twice).
+            _inject_missing_tools(openai_messages, ctx, called, ollama_format, tool_events)
             continue
 
         break

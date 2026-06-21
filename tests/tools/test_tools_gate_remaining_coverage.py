@@ -9,17 +9,15 @@ import pytest
 import requests
 
 from website_profiling.tools.audit_tools.context import AuditToolContext as Ctx
-from website_profiling.tools.audit_tools import (
-    crawl_actions as ca_mod,
-    geo_citability as cit_mod,
-    geo_detectors as det_mod,
-    geo_list_tools as geo_list_mod,
-    geo_tools as geo_mod,
-    integration_tools as int_mod,
-    llm_tools as llm_mod,
-    sql_query as sql_mod,
-)
-from website_profiling.tools.audit_tools.sql_query import ReadOnlyViolation, assert_read_only, get_sql_schema, run_sql_query
+from website_profiling.tools.audit_tools.crawl import crawl_actions as ca_mod
+from website_profiling.tools.audit_tools.geo import geo_citability as cit_mod
+from website_profiling.tools.audit_tools.geo import geo_detectors as det_mod
+from website_profiling.tools.audit_tools.geo import geo_list_tools as geo_list_mod
+from website_profiling.tools.audit_tools.geo import geo_tools as geo_mod
+from website_profiling.tools.audit_tools.integrations import integration_tools as int_mod
+from website_profiling.tools.audit_tools.integrations import llm_tools as llm_mod
+from website_profiling.tools.audit_tools.core import sql_query as sql_mod
+from website_profiling.tools.audit_tools.core.sql_query import ReadOnlyViolation, assert_read_only, get_sql_schema, run_sql_query
 
 
 @pytest.fixture
@@ -99,32 +97,32 @@ def test_crawl_action_helpers_and_validation_paths(conn: MagicMock) -> None:
     assert ca_mod._normalize_url("") == ""
     assert ca_mod._normalize_url("example.com/path") == "https://example.com/path"
     assert ca_mod._is_valid_url("") is False
-    with patch("website_profiling.tools.audit_tools.crawl_actions.urlparse", side_effect=ValueError("bad")):
+    with patch("website_profiling.tools.audit_tools.crawl.crawl_actions.urlparse", side_effect=ValueError("bad")):
         assert ca_mod._is_valid_url("https://example.com") is False
 
     broken = MagicMock()
     broken.execute.side_effect = RuntimeError("db down")
     assert ca_mod._pipeline_job_running(broken) is False
 
-    with patch("website_profiling.tools.audit_tools.crawl_actions._chat_allow_crawl", return_value=True), patch(
-        "website_profiling.tools.audit_tools.crawl_actions._pipeline_job_running",
+    with patch("website_profiling.tools.audit_tools.crawl.crawl_actions._chat_allow_crawl", return_value=True), patch(
+        "website_profiling.tools.audit_tools.crawl.crawl_actions._pipeline_job_running",
         return_value=False,
     ), patch(
-        "website_profiling.tools.audit_tools.crawl_actions.read_pipeline_config",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions.read_pipeline_config",
         return_value=({"crawl_discovery_mode": "list", "crawl_url_list": ""}, []),
     ):
         out = ca_mod.prepare_audit_run(conn, Ctx(property_id=1), {"mode": "default", "start_url": "https://ex.com"})
     assert out.get("ready") is False
     assert "URL list is required" in out["errors"][0]
 
-    with patch("website_profiling.tools.audit_tools.crawl_actions.load_llm_config_from_db", return_value={"llm_chat_allow_crawl": "true"}):
+    with patch("website_profiling.tools.audit_tools.crawl.crawl_actions.load_llm_config_from_db", return_value={"llm_chat_allow_crawl": "true"}):
         assert ca_mod._chat_allow_crawl() is True
 
-    with patch("website_profiling.tools.audit_tools.crawl_actions._chat_allow_crawl", return_value=True), patch(
-        "website_profiling.tools.audit_tools.crawl_actions._pipeline_job_running",
+    with patch("website_profiling.tools.audit_tools.crawl.crawl_actions._chat_allow_crawl", return_value=True), patch(
+        "website_profiling.tools.audit_tools.crawl.crawl_actions._pipeline_job_running",
         return_value=False,
     ), patch(
-        "website_profiling.tools.audit_tools.crawl_actions.read_pipeline_config",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions.read_pipeline_config",
         return_value=({}, []),
     ):
         assert ca_mod.prepare_audit_run(conn, Ctx(), {"mode": "bogus", "start_url": "https://ex.com"})["errors"]
@@ -135,7 +133,7 @@ def test_crawl_action_helpers_and_validation_paths(conn: MagicMock) -> None:
         )
         assert create_bad["ready"] is False
         with patch(
-            "website_profiling.tools.audit_tools.crawl_actions.canonical_domain_from_start_url",
+            "website_profiling.tools.audit_tools.crawl.crawl_actions.canonical_domain_from_start_url",
             return_value="",
         ):
             no_domain = ca_mod.prepare_audit_run(
@@ -148,25 +146,25 @@ def test_crawl_action_helpers_and_validation_paths(conn: MagicMock) -> None:
         assert no_url["ready"] is False
 
     prop = {"id": 9, "site_url": "https://ex.com", "default_crawl_preset": "starter"}
-    with patch("website_profiling.tools.audit_tools.crawl_actions._chat_allow_crawl", return_value=True), patch(
-        "website_profiling.tools.audit_tools.crawl_actions._pipeline_job_running",
+    with patch("website_profiling.tools.audit_tools.crawl.crawl_actions._chat_allow_crawl", return_value=True), patch(
+        "website_profiling.tools.audit_tools.crawl.crawl_actions._pipeline_job_running",
         return_value=False,
     ), patch(
-        "website_profiling.tools.audit_tools.crawl_actions.get_property_by_id",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions.get_property_by_id",
         return_value=prop,
     ), patch(
-        "website_profiling.tools.audit_tools.crawl_actions.read_pipeline_config",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions.read_pipeline_config",
         return_value=({}, []),
     ):
         out = ca_mod.prepare_audit_run(conn, Ctx(property_id=9), {"mode": "default"})
     assert out["ready"] is True
     assert out["run_spec"]["state"]["active_property_id"] == "9"
 
-    with patch("website_profiling.tools.audit_tools.crawl_actions._chat_allow_crawl", return_value=True), patch(
-        "website_profiling.tools.audit_tools.crawl_actions._pipeline_job_running",
+    with patch("website_profiling.tools.audit_tools.crawl.crawl_actions._chat_allow_crawl", return_value=True), patch(
+        "website_profiling.tools.audit_tools.crawl.crawl_actions._pipeline_job_running",
         return_value=False,
     ), patch(
-        "website_profiling.tools.audit_tools.crawl_actions.read_pipeline_config",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions.read_pipeline_config",
         return_value=({}, []),
     ):
         custom = ca_mod.prepare_audit_run(
@@ -185,25 +183,25 @@ def test_crawl_action_helpers_and_validation_paths(conn: MagicMock) -> None:
         )
     assert custom["ready"] is True
     assert any("Concurrency" in h for h in custom["summary"]["highlights"])
-    with patch("website_profiling.tools.audit_tools.crawl_actions._chat_allow_crawl", return_value=True), patch(
-        "website_profiling.tools.audit_tools.crawl_actions._pipeline_job_running",
+    with patch("website_profiling.tools.audit_tools.crawl.crawl_actions._chat_allow_crawl", return_value=True), patch(
+        "website_profiling.tools.audit_tools.crawl.crawl_actions._pipeline_job_running",
         return_value=False,
     ), patch(
-        "website_profiling.tools.audit_tools.crawl_actions.read_pipeline_config",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions.read_pipeline_config",
         return_value=({}, []),
     ), patch(
-        "website_profiling.tools.audit_tools.crawl_actions.get_property_by_id",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions.get_property_by_id",
         return_value={"id": 4, "site_url": "https://prop.example.com"},
     ):
         from_url = ca_mod.prepare_audit_run(conn, Ctx(property_id=4), {"mode": "default"})
     assert from_url["ready"] is True
     assert from_url["summary"]["start_url"] == "https://prop.example.com"
 
-    with patch("website_profiling.tools.audit_tools.crawl_actions._chat_allow_crawl", return_value=True), patch(
-        "website_profiling.tools.audit_tools.crawl_actions._pipeline_job_running",
+    with patch("website_profiling.tools.audit_tools.crawl.crawl_actions._chat_allow_crawl", return_value=True), patch(
+        "website_profiling.tools.audit_tools.crawl.crawl_actions._pipeline_job_running",
         return_value=False,
     ), patch(
-        "website_profiling.tools.audit_tools.crawl_actions.read_pipeline_config",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions.read_pipeline_config",
         return_value=({}, []),
     ):
         lh = ca_mod.prepare_audit_run(
@@ -217,14 +215,14 @@ def test_crawl_action_helpers_and_validation_paths(conn: MagicMock) -> None:
         )
     assert lh["ready"] is True
     assert any("Lighthouse on pages: no" in h for h in lh["summary"]["highlights"])
-    with patch("website_profiling.tools.audit_tools.crawl_actions._chat_allow_crawl", return_value=True), patch(
-        "website_profiling.tools.audit_tools.crawl_actions._pipeline_job_running",
+    with patch("website_profiling.tools.audit_tools.crawl.crawl_actions._chat_allow_crawl", return_value=True), patch(
+        "website_profiling.tools.audit_tools.crawl.crawl_actions._pipeline_job_running",
         return_value=False,
     ), patch(
-        "website_profiling.tools.audit_tools.crawl_actions.get_property_by_id",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions.get_property_by_id",
         return_value={"id": 5, "site_url": ""},
     ), patch(
-        "website_profiling.tools.audit_tools.crawl_actions.read_pipeline_config",
+        "website_profiling.tools.audit_tools.crawl.crawl_actions.read_pipeline_config",
         return_value=({}, []),
     ):
         no_site = ca_mod.prepare_audit_run(conn, Ctx(property_id=5), {"mode": "default"})
@@ -297,7 +295,7 @@ def test_citability_tool_handlers(conn: MagicMock, ctx: Ctx) -> None:
         "word_count": 50,
         "heading_sequence": "",
     }
-    with patch("website_profiling.tools.audit_tools.geo_citability.flesch_kincaid_grade", return_value=6.5):
+    with patch("website_profiling.tools.audit_tools.geo.geo_citability.flesch_kincaid_grade", return_value=6.5):
         assert cit_mod._citability_signals(mid_fluency)["signals"]["fluency"] == 6
 
 
@@ -384,7 +382,7 @@ def test_robots_ai_access_score(conn: MagicMock, ctx: Ctx) -> None:
         assert geo_list_mod.get_robots_ai_access_score(conn, ctx, {})["error"] == "domain unknown"
 
     with patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), patch(
-        "website_profiling.tools.audit_tools.geo_list_tools._parse_robots_txt",
+        "website_profiling.tools.audit_tools.geo.geo_list_tools._parse_robots_txt",
         return_value="",
     ):
         missing = geo_list_mod.get_robots_ai_access_score(conn, ctx, {})
@@ -392,7 +390,7 @@ def test_robots_ai_access_score(conn: MagicMock, ctx: Ctx) -> None:
 
     robots = "User-agent: GPTBot\nDisallow: /private/\nUser-agent: *\nAllow: /\n"
     with patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), patch(
-        "website_profiling.tools.audit_tools.geo_list_tools._parse_robots_txt",
+        "website_profiling.tools.audit_tools.geo.geo_list_tools._parse_robots_txt",
         return_value=robots,
     ):
         scored = geo_list_mod.get_robots_ai_access_score(conn, ctx, {})
@@ -411,22 +409,22 @@ def test_geo_tools_depth_and_fetch_helpers() -> None:
     assert geo_mod._score_llms_txt_depth(many_links)["depth_score"] >= 10
 
     mock_resp = MagicMock(status_code=200, text="# llms\n")
-    with patch("website_profiling.tools.audit_tools.geo_tools.requests.get", return_value=mock_resp):
+    with patch("website_profiling.tools.audit_tools.geo.geo_tools.requests.get", return_value=mock_resp):
         assert geo_mod._fetch_llms_full_txt("https://ex.com") is True
 
-    with patch("website_profiling.tools.audit_tools.geo_tools._fetch_llms_txt", return_value={"found": True, "depth": {}}), patch(
-        "website_profiling.tools.audit_tools.geo_tools._fetch_llms_full_txt",
+    with patch("website_profiling.tools.audit_tools.geo.geo_tools._fetch_llms_txt", return_value={"found": True, "depth": {}}), patch(
+        "website_profiling.tools.audit_tools.geo.geo_tools._fetch_llms_full_txt",
         return_value=True,
     ), patch.object(Ctx, "resolve_property_domain", return_value="ex.com"):
         status = geo_mod.get_llms_txt_status(MagicMock(), Ctx(), {})
     assert status["llms_full_txt_found"] is True
 
     miss = MagicMock(status_code=404, text="")
-    with patch("website_profiling.tools.audit_tools.geo_tools.requests.get", return_value=miss):
+    with patch("website_profiling.tools.audit_tools.geo.geo_tools.requests.get", return_value=miss):
         disc = geo_mod._fetch_ai_discovery("ex.com")
     assert disc["found_count"] == 0
 
-    with patch("website_profiling.tools.audit_tools.geo_tools.requests.get", side_effect=requests.RequestException("fail")):
+    with patch("website_profiling.tools.audit_tools.geo.geo_tools.requests.get", side_effect=requests.RequestException("fail")):
         disc_err = geo_mod._fetch_ai_discovery("ex.com")
     assert disc_err["endpoints"]
 
@@ -490,7 +488,7 @@ def test_llm_generator_tools(conn: MagicMock, ctx: Ctx) -> None:
     payload = {"site_name": "Ex", "categories": []}
 
     with patch.object(Ctx, "load_payload", return_value=payload), patch.object(Ctx, "load_crawl_df", return_value=df), patch(
-        "website_profiling.tools.audit_tools.llm_tools._llm_disabled_response",
+        "website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response",
         return_value={},
     ), patch(
         "website_profiling.llm.base.get_llm_client",
@@ -514,28 +512,28 @@ def test_llm_generator_tools(conn: MagicMock, ctx: Ctx) -> None:
     with patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), patch.object(
         Ctx, "load_payload", return_value=payload,
     ), patch.object(Ctx, "load_crawl_df", return_value=df), patch(
-        "website_profiling.tools.audit_tools.llm_tools.draft_llms_txt",
+        "website_profiling.tools.audit_tools.integrations.llm_tools.draft_llms_txt",
         return_value={"llms_txt_draft": "# Ex"},
     ), patch(
-        "website_profiling.tools.audit_tools.llm_tools.generate_robots_txt",
+        "website_profiling.tools.audit_tools.integrations.llm_tools.generate_robots_txt",
         return_value={"robots_txt": "Allow: /"},
     ), patch(
-        "website_profiling.tools.audit_tools.llm_tools.generate_schema",
+        "website_profiling.tools.audit_tools.integrations.llm_tools.generate_schema",
         side_effect=[{"schema_json": {}}, {"schema_json": {}}],
     ), patch(
-        "website_profiling.tools.audit_tools.geo_tools._fetch_llms_txt",
+        "website_profiling.tools.audit_tools.geo.geo_tools._fetch_llms_txt",
         return_value={"found": False},
     ), patch(
-        "website_profiling.tools.audit_tools.geo_tools._fetch_ai_discovery",
+        "website_profiling.tools.audit_tools.geo.geo_tools._fetch_ai_discovery",
         return_value={"endpoints": {"ai_txt": {"found": False}}},
     ), patch(
-        "website_profiling.tools.audit_tools.geo_tools._score_meta_signals",
+        "website_profiling.tools.audit_tools.geo.geo_tools._score_meta_signals",
         return_value={"has_meta_description": False},
     ), patch(
-        "website_profiling.tools.audit_tools.geo_list_tools._parse_robots_txt",
+        "website_profiling.tools.audit_tools.geo.geo_list_tools._parse_robots_txt",
         return_value="User-agent: GPTBot\nDisallow: /\n",
     ), patch(
-        "website_profiling.tools.audit_tools.geo_list_tools._parse_robots_access",
+        "website_profiling.tools.audit_tools.geo.geo_list_tools._parse_robots_access",
         return_value={"gptbot": "blocked"},
     ):
         bundle = llm_mod.generate_geo_fix_bundle(conn, ctx, {})
@@ -551,11 +549,11 @@ def test_sql_query_remaining_branches() -> None:
         assert_read_only("SELECT * FROM")
 
     with pytest.raises(ReadOnlyViolation, match="empty after parsing"):
-        with patch("website_profiling.tools.audit_tools.sql_query.sqlglot.parse", return_value=[None]):
+        with patch("website_profiling.tools.audit_tools.core.sql_query.sqlglot.parse", return_value=[None]):
             assert_read_only("SELECT 1")
 
     with pytest.raises(ReadOnlyViolation, match="not permitted"):
-        with patch("website_profiling.tools.audit_tools.sql_query.assert_read_only_regex"):
+        with patch("website_profiling.tools.audit_tools.core.sql_query.assert_read_only_regex"):
             assert_read_only("SELECT pg_sleep(1)")
 
 
@@ -602,7 +600,7 @@ def test_get_sql_schema_tuple_rows() -> None:
         _FakeCursor._call_count = 0
         yield _FakeConn()
 
-    with patch("website_profiling.tools.audit_tools.sql_query.readonly_session", _fake_ro):
+    with patch("website_profiling.tools.audit_tools.core.sql_query.readonly_session", _fake_ro):
         result = get_sql_schema(MagicMock(), Ctx(), {})
     tables = {t["table"]: t for t in result["tables"]}
     assert "crawl_runs" in tables
@@ -665,18 +663,18 @@ def test_remaining_geo_and_llm_gaps(conn: MagicMock, ctx: Ctx) -> None:
         capped = det_mod.get_topic_authority(conn, ctx, {"limit": 5})
     assert capped["total_pages"] == 200
 
-    with patch("website_profiling.tools.audit_tools.geo_tools.requests.get", side_effect=requests.RequestException("fail")):
+    with patch("website_profiling.tools.audit_tools.geo.geo_tools.requests.get", side_effect=requests.RequestException("fail")):
         assert geo_mod._fetch_llms_full_txt("https://ex.com") is False
 
     with patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), patch(
-        "website_profiling.tools.audit_tools.geo_tools._fetch_ai_discovery",
+        "website_profiling.tools.audit_tools.geo.geo_tools._fetch_ai_discovery",
         return_value={"found_count": 1, "endpoints": {}, "discovery_score": 2},
     ):
         assert geo_mod.get_ai_discovery_status(conn, ctx, {})["found_count"] == 1
 
     ok = MagicMock(status_code=200, text='<?xml version="1.0"?><urlset><url><loc>https://ex.com</loc><lastmod>2024-01-01</lastmod></url></urlset>')
     feed = MagicMock(status_code=200, text='<?xml version="1.0"?><rss><channel><item/></channel></rss>')
-    with patch("website_profiling.tools.audit_tools.geo_tools.requests.get", side_effect=[ok, feed, feed, feed]):
+    with patch("website_profiling.tools.audit_tools.geo.geo_tools.requests.get", side_effect=[ok, feed, feed, feed]):
         fresh = geo_mod._score_freshness_signals("ex.com")
     assert fresh["freshness_score"] > 0
 
@@ -685,7 +683,7 @@ def test_remaining_geo_and_llm_gaps(conn: MagicMock, ctx: Ctx) -> None:
         for i in range(12)
     ])
     with patch.object(Ctx, "load_payload", return_value={"site_name": "Ex"}), patch.object(Ctx, "load_crawl_df", return_value=faq_rows), patch(
-        "website_profiling.tools.audit_tools.llm_tools._llm_disabled_response",
+        "website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response",
         return_value={},
     ), patch(
         "website_profiling.llm.base.get_llm_client",
@@ -734,7 +732,7 @@ def test_remaining_geo_and_llm_gaps(conn: MagicMock, ctx: Ctx) -> None:
         _FakeCursor._call_count = 0
         yield _FakeConn()
 
-    with patch("website_profiling.tools.audit_tools.sql_query.readonly_session", _fake_ro):
+    with patch("website_profiling.tools.audit_tools.core.sql_query.readonly_session", _fake_ro):
         schema = get_sql_schema(MagicMock(), Ctx(), {})
     assert schema["tables"][0]["table"] == "crawl_runs"
     assert schema["tables"][0]["foreign_keys"] == []
@@ -791,22 +789,22 @@ def test_remaining_geo_and_llm_gaps(conn: MagicMock, ctx: Ctx) -> None:
     with patch.object(Ctx, "load_payload", return_value={"ner_site_summary": {"entities": ["Ex"]}}), patch.object(
         Ctx, "load_crawl_df", return_value=readiness_df,
     ), patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), patch(
-        "website_profiling.tools.audit_tools.geo_tools._fetch_llms_txt",
+        "website_profiling.tools.audit_tools.geo.geo_tools._fetch_llms_txt",
         return_value={"found": False},
     ), patch(
-        "website_profiling.tools.audit_tools.geo_tools._score_robots_ai_access",
+        "website_profiling.tools.audit_tools.geo.geo_tools._score_robots_ai_access",
         return_value={"robots_score": 5},
     ), patch(
-        "website_profiling.tools.audit_tools.geo_tools._score_meta_signals",
+        "website_profiling.tools.audit_tools.geo.geo_tools._score_meta_signals",
         return_value={"meta_score": 5},
     ), patch(
-        "website_profiling.tools.audit_tools.geo_tools._score_freshness_signals",
+        "website_profiling.tools.audit_tools.geo.geo_tools._score_freshness_signals",
         return_value={"freshness_score": 4},
     ), patch(
-        "website_profiling.tools.audit_tools.geo_tools._fetch_ai_discovery",
+        "website_profiling.tools.audit_tools.geo.geo_tools._fetch_ai_discovery",
         return_value={"discovery_score": 2},
     ), patch(
-        "website_profiling.tools.audit_tools.geo_tools.get_faq_schema_coverage",
+        "website_profiling.tools.audit_tools.geo.geo_tools.get_faq_schema_coverage",
         return_value={"coverage_pct": 50},
     ):
         score = geo_mod.get_geo_readiness_score(conn, ctx, {})

@@ -10,7 +10,7 @@ import pytest
 # Phase 1 helpers: llms.txt depth scoring
 # ---------------------------------------------------------------------------
 
-from website_profiling.tools.audit_tools.geo_tools import (
+from website_profiling.tools.audit_tools.geo.geo_tools import (
     _band,
     _fetch_ai_discovery,
     _fetch_llms_txt,
@@ -148,7 +148,7 @@ def test_fetch_ai_discovery_mocked() -> None:
 # Phase 1: robots AI-bot tier parsing
 # ---------------------------------------------------------------------------
 
-from website_profiling.tools.audit_tools.geo_list_tools import (
+from website_profiling.tools.audit_tools.geo.geo_list_tools import (
     _AI_BOT_TIERS,
     _AI_CRAWLER_AGENTS,
     _agent_blocked,
@@ -210,7 +210,7 @@ def test_agent_blocked_empty_robots() -> None:
 # Phase 2: citability scoring
 # ---------------------------------------------------------------------------
 
-from website_profiling.tools.audit_tools.geo_citability import _citability_signals
+from website_profiling.tools.audit_tools.geo.geo_citability import _citability_signals
 
 
 def _make_rec(**kwargs) -> dict:
@@ -292,7 +292,7 @@ def test_citability_full_page() -> None:
 # Phase 3: generative fix tools
 # ---------------------------------------------------------------------------
 
-from website_profiling.tools.audit_tools.llm_tools import (
+from website_profiling.tools.audit_tools.integrations.llm_tools import (
     generate_geo_fix_bundle,
     generate_meta_tags,
     generate_robots_txt,
@@ -312,9 +312,9 @@ def _make_conn_ctx():
 
 
 def test_generate_robots_txt_has_all_bots() -> None:
-    from website_profiling.tools.audit_tools.geo_list_tools import _AI_BOT_TIERS
+    from website_profiling.tools.audit_tools.geo.geo_list_tools import _AI_BOT_TIERS
     conn, ctx = _make_conn_ctx()
-    with patch("website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={"error": "disabled"}):
+    with patch("website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={"error": "disabled"}):
         result = generate_robots_txt(conn, ctx, {})
     robots = result["robots_txt"]
     for agent in list(_AI_BOT_TIERS.keys())[:5]:
@@ -325,7 +325,7 @@ def test_generate_robots_txt_has_all_bots() -> None:
 
 def test_generate_schema_website() -> None:
     conn, ctx = _make_conn_ctx()
-    with patch("website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={"error": "disabled"}):
+    with patch("website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={"error": "disabled"}):
         result = generate_schema(conn, ctx, {"schema_type": "WebSite"})
     assert result["schema_type"] == "WebSite"
     schema = result["schema_json"]
@@ -336,14 +336,14 @@ def test_generate_schema_website() -> None:
 
 def test_generate_schema_organization() -> None:
     conn, ctx = _make_conn_ctx()
-    with patch("website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={"error": "disabled"}):
+    with patch("website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={"error": "disabled"}):
         result = generate_schema(conn, ctx, {"schema_type": "Organization"})
     assert result["schema_json"]["@type"] == "Organization"
 
 
 def test_generate_schema_unknown_type_defaults_to_website() -> None:
     conn, ctx = _make_conn_ctx()
-    with patch("website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={"error": "disabled"}):
+    with patch("website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={"error": "disabled"}):
         result = generate_schema(conn, ctx, {"schema_type": "NonExistent"})
     assert result["schema_type"] == "WebSite"
 
@@ -367,7 +367,7 @@ def test_generate_geo_fix_bundle_returns_structure() -> None:
     not_found_resp.text = ""
     not_found_resp.content = b""
     with patch("requests.get", return_value=not_found_resp):
-        with patch("website_profiling.tools.audit_tools.llm_tools._llm_disabled_response", return_value={"error": "disabled"}):
+        with patch("website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={"error": "disabled"}):
             result = generate_geo_fix_bundle(conn, ctx, {})
     assert "domain" in result
     assert "llms_txt" in result
@@ -431,7 +431,7 @@ def test_resolve_api_key_missing(monkeypatch) -> None:
 
 
 def test_check_ai_citations_live_requires_opt_in() -> None:
-    from website_profiling.tools.audit_tools.integration_tools import check_ai_citations_live
+    from website_profiling.tools.audit_tools.integrations.integration_tools import check_ai_citations_live
     conn, ctx = _make_conn_ctx()
     result = check_ai_citations_live(conn, ctx, {"brand": "Example", "provider": "perplexity"})
     assert "error" in result
@@ -439,7 +439,7 @@ def test_check_ai_citations_live_requires_opt_in() -> None:
 
 
 def test_check_ai_citations_live_missing_key() -> None:
-    from website_profiling.tools.audit_tools.integration_tools import check_ai_citations_live
+    from website_profiling.tools.audit_tools.integrations.integration_tools import check_ai_citations_live
     import os
     conn, ctx = _make_conn_ctx()
     env_key = "PERPLEXITY_API_KEY"
@@ -457,7 +457,7 @@ def test_check_ai_citations_live_missing_key() -> None:
 # Phase 5: advanced detectors
 # ---------------------------------------------------------------------------
 
-from website_profiling.tools.audit_tools.geo_detectors import (
+from website_profiling.tools.audit_tools.geo.geo_detectors import (
     _check_negative_signals_for_page,
     _INJECTION_PATTERNS,
 )
@@ -525,19 +525,19 @@ def test_injection_pattern_llm_instruction() -> None:
 
 
 def test_content_decay_temporal_pattern() -> None:
-    from website_profiling.tools.audit_tools.geo_detectors import _TEMPORAL_DECAY
+    from website_profiling.tools.audit_tools.geo.geo_detectors import _TEMPORAL_DECAY
     text = "As of 2024, the platform has grown significantly."
     assert _TEMPORAL_DECAY.search(text)
 
 
 def test_content_decay_version_pattern() -> None:
-    from website_profiling.tools.audit_tools.geo_detectors import _VERSION_DECAY
+    from website_profiling.tools.audit_tools.geo.geo_detectors import _VERSION_DECAY
     text = "The app requires version v2.3 or higher."
     assert _VERSION_DECAY.search(text)
 
 
 def test_rag_chunk_readiness_anchor_sentence() -> None:
-    from website_profiling.tools.audit_tools.geo_detectors import _ANCHOR_SENTENCE_PATTERN
+    from website_profiling.tools.audit_tools.geo.geo_detectors import _ANCHOR_SENTENCE_PATTERN
     text = "Python is a high-level programming language that enables rapid development."
     assert _ANCHOR_SENTENCE_PATTERN.search(text)
 
@@ -546,13 +546,13 @@ def test_rag_chunk_readiness_anchor_sentence() -> None:
 # Phase 6: GEO drift compare
 # ---------------------------------------------------------------------------
 
-from website_profiling.tools.audit_tools.compare_slices import compare_geo_score_deltas
+from website_profiling.tools.audit_tools.compare.compare_slices import compare_geo_score_deltas
 
 
 def test_compare_geo_score_deltas_missing_baseline() -> None:
     conn = MagicMock()
     ctx = MagicMock()
-    with patch("website_profiling.tools.audit_tools.compare_slices.load_compare_pair",
+    with patch("website_profiling.tools.audit_tools.compare.compare_slices.load_compare_pair",
                return_value=(None, None, None, None, {"error": "no baseline"})):
         result = compare_geo_score_deltas(conn, ctx, {})
     assert "error" in result
@@ -571,13 +571,13 @@ def test_compare_geo_score_deltas_structure() -> None:
     zero_fresh = {"freshness_score": 4, "checked": True}
     zero_disc = {"found_count": 1, "discovery_score": 2}
 
-    with patch("website_profiling.tools.audit_tools.compare_slices.load_compare_pair",
+    with patch("website_profiling.tools.audit_tools.compare.compare_slices.load_compare_pair",
                return_value=(current, baseline, 2, 1, None)):
-        with patch("website_profiling.tools.audit_tools.geo_tools._score_robots_ai_access", return_value=zero_robots):
-            with patch("website_profiling.tools.audit_tools.geo_tools._fetch_llms_txt", return_value=zero_llms):
-                with patch("website_profiling.tools.audit_tools.geo_tools._score_meta_signals", return_value=zero_meta):
-                    with patch("website_profiling.tools.audit_tools.geo_tools._score_freshness_signals", return_value=zero_fresh):
-                        with patch("website_profiling.tools.audit_tools.geo_tools._fetch_ai_discovery", return_value=zero_disc):
+        with patch("website_profiling.tools.audit_tools.geo.geo_tools._score_robots_ai_access", return_value=zero_robots):
+            with patch("website_profiling.tools.audit_tools.geo.geo_tools._fetch_llms_txt", return_value=zero_llms):
+                with patch("website_profiling.tools.audit_tools.geo.geo_tools._score_meta_signals", return_value=zero_meta):
+                    with patch("website_profiling.tools.audit_tools.geo.geo_tools._score_freshness_signals", return_value=zero_fresh):
+                        with patch("website_profiling.tools.audit_tools.geo.geo_tools._fetch_ai_discovery", return_value=zero_disc):
                             result = compare_geo_score_deltas(conn, ctx, {})
     assert "geo_deltas" in result
     assert "regression_detected" in result

@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pandas as pd
 import pytest
 
-from website_profiling.tools.audit_tools import agent_readiness as ar_mod
+from website_profiling.tools.audit_tools.geo import agent_readiness as ar_mod
 from website_profiling.tools.audit_tools.context import AuditToolContext as Ctx
 from website_profiling.tools.audit_tools._aeo_helpers import (
     count_tokens,
@@ -582,12 +582,12 @@ def test_agent_readiness_score_http_exception(conn: MagicMock, ctx: Ctx) -> None
 
     with patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), \
          patch.object(Ctx, "load_crawl_df", return_value=_empty_df()), \
-         patch("website_profiling.tools.audit_tools.agent_readiness._fetch_agents_md", side_effect=raise_on_call), \
-         patch("website_profiling.tools.audit_tools.agent_readiness._fetch_llms_txt", side_effect=raise_on_call), \
-         patch("website_profiling.tools.audit_tools.agent_readiness._score_robots_ai_access", side_effect=raise_on_call), \
-         patch("website_profiling.tools.audit_tools.agent_readiness._fetch_skill_md", side_effect=raise_on_call), \
-         patch("website_profiling.tools.audit_tools.agent_readiness._fetch_agent_permissions", side_effect=raise_on_call), \
-         patch("website_profiling.tools.audit_tools.agent_readiness._score_meta_signals", side_effect=raise_on_call):
+         patch("website_profiling.tools.audit_tools.geo.agent_readiness._fetch_agents_md", side_effect=raise_on_call), \
+         patch("website_profiling.tools.audit_tools.geo.agent_readiness._fetch_llms_txt", side_effect=raise_on_call), \
+         patch("website_profiling.tools.audit_tools.geo.agent_readiness._score_robots_ai_access", side_effect=raise_on_call), \
+         patch("website_profiling.tools.audit_tools.geo.agent_readiness._fetch_skill_md", side_effect=raise_on_call), \
+         patch("website_profiling.tools.audit_tools.geo.agent_readiness._fetch_agent_permissions", side_effect=raise_on_call), \
+         patch("website_profiling.tools.audit_tools.geo.agent_readiness._score_meta_signals", side_effect=raise_on_call):
         result = ar_mod.get_agent_readiness_score(conn, ctx, {})
     assert "percentage" in result
 

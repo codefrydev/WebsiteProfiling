@@ -6,8 +6,8 @@ from unittest.mock import MagicMock
 import pytest
 
 from website_profiling.tools.audit_tools.context import AuditToolContext
-from website_profiling.tools.audit_tools.export_extras import export_sitemap_xml, validate_rich_results
-from website_profiling.tools.audit_tools.links import (
+from website_profiling.tools.audit_tools.export.export_extras import export_sitemap_xml, validate_rich_results
+from website_profiling.tools.audit_tools.links.links import (
     get_inlink_anchors,
     get_link_rel_summary,
     list_broken_link_sources,
@@ -81,7 +81,7 @@ def test_export_sitemap_xml_tool(ctx, monkeypatch):
     scoped.load_payload.return_value = {"links": [{"url": "https://example.com/", "status": "200"}]}
     ctx.load_payload = scoped.load_payload
     monkeypatch.setattr(
-        "website_profiling.tools.audit_tools.export_extras.save_artifact",
+        "website_profiling.tools.audit_tools.export.export_extras.save_artifact",
         lambda content, **kwargs: {"path": "/tmp/sitemap.xml", "filename": kwargs.get("filename")},
     )
     out = export_sitemap_xml(conn, ctx, {})

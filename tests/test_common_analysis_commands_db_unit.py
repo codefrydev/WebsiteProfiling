@@ -929,6 +929,16 @@ def test_historical_backup_success_and_restore_fallback(monkeypatch, tmp_path) -
         def cursor(self):
             raise RuntimeError("cursor fail")
 
+        def transaction(self):
+            class CM:
+                def __enter__(self_non):
+                    return None
+
+                def __exit__(self_non, _t, _v, _tb):
+                    return False
+
+            return CM()
+
     class Ctx:
         def __enter__(self):
             return BadConn()

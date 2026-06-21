@@ -91,7 +91,7 @@ _CONTACT_ORG_TYPES = frozenset({
     "corporation",
     "store",
     "restaurant",
-    "professionalService",
+    "professionalservice",
     "newsmediaorganization",
 })
 _CONTACT_CAP = 10

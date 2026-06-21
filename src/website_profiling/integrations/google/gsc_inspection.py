@@ -49,7 +49,7 @@ def inspect_url(creds: Any, site_url: str, url: str) -> dict[str, Any]:
             "issues": [
                 str(i.get("issueMessage") or i.get("severity") or i)
                 for i in (rich.get("issues") or [])[:5]
-                if isinstance(i, dict) or i
+                if isinstance(i, dict)
             ],
         },
         "provenance": "Search Console",

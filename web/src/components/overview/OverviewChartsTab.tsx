@@ -12,7 +12,6 @@ import {
   Sparkles,
   Zap,
 } from 'lucide-react';
-import { Bar } from 'react-chartjs-2';
 import { strings, format } from '@/lib/strings';
 import { Card, ChartTitleWithHint } from '@/components';
 import { ChartBlockSkeleton } from '@/components/SectionWidgetSkeleton';
@@ -20,15 +19,13 @@ import { OVERVIEW_TAB_SECTIONS, isSectionPending } from '@/lib/reportViewSection
 import { useTabSections } from '@/hooks/useTabSections';
 import { ScoreRing } from '@/components/lighthouse';
 import { StatusDistributionChart, LighthouseScoreGrid } from '@/components/charts';
-import { ChartPanel } from '@/components/charts';
-import { barOptionsHorizontal } from '@/utils/chartJsDefaults';
+import { D3VerticalBarChart } from '@/components/charts/d3/D3VerticalBarChart';
+import { D3HorizontalBarChart } from '@/components/charts/d3/D3HorizontalBarChart';
+import { D3GroupedBarChart } from '@/components/charts/d3/D3GroupedBarChart';
 import type { ReportPayload } from '@/types';
 import type { OverviewChartBlock, OverviewCharts } from './types';
 import { OverviewTabPanel } from './OverviewTabPanel';
-import { ensureOverviewChartsRegistered } from './chartSetup';
-import { barOptsVertical, barOptsGrouped } from './chartUtils';
 import { selectChartConcerns } from './overviewChartInsights';
-ensureOverviewChartsRegistered();
 
 const vo = strings.views.overview;
 const sj = strings.common;
@@ -108,16 +105,23 @@ function OverviewBarChart({
   yTitle: string;
   heightClass?: string;
 }) {
-  const labels = chart.data.labels?.map(String) ?? [];
-  const opts = chart.horizontal
-    ? barOptionsHorizontal(undefined, labels)
-    : barOptsVertical(yTitle, chart.aria);
+  if (chart.horizontal) {
+    return (
+      <D3HorizontalBarChart
+        data={chart.data}
+        xTitle={yTitle}
+        ariaLabel={chart.aria}
+        heightClass={heightClass}
+      />
+    );
+  }
   return (
-    <ChartPanel heightClass={heightClass}>
-      <div className="h-full w-full" role="img" aria-label={chart.aria}>
-        <Bar data={chart.data} options={opts} />
-      </div>
-    </ChartPanel>
+    <D3VerticalBarChart
+      data={chart.data}
+      yTitle={yTitle}
+      ariaLabel={chart.aria}
+      heightClass={heightClass}
+    />
   );
 }
 
@@ -296,14 +300,12 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
                       avgDepth: depth.avg_depth ?? sj.emDash,
                     })}
                   </div>
-                  <ChartPanel heightClass={CHART_HEIGHT}>
-                    <div className="h-full w-full" role="img" aria-label={depthChart.aria}>
-                      <Bar
-                        data={depthChart.data}
-                        options={barOptsVertical(vo.chartUrls, depthChart.aria)}
-                      />
-                    </div>
-                  </ChartPanel>
+                  <D3VerticalBarChart
+                    data={depthChart.data}
+                    yTitle={vo.chartUrls}
+                    ariaLabel={depthChart.aria}
+                    heightClass={CHART_HEIGHT}
+                  />
                 </ChartInsightCard>
               ) : null}
             </ChartSection>
@@ -334,11 +336,12 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
                   viewHref={titleMetaChart.viewHref}
                   viewLabel={titleMetaChart.viewLabel}
                 >
-                  <ChartPanel heightClass={CHART_HEIGHT}>
-                    <div className="h-full w-full" role="img" aria-label={titleMetaChart.aria}>
-                      <Bar data={titleMetaChart.data} options={barOptsGrouped(vo.chartPages)} />
-                    </div>
-                  </ChartPanel>
+                  <D3GroupedBarChart
+                    data={titleMetaChart.data}
+                    yTitle={vo.chartPages}
+                    ariaLabel={titleMetaChart.aria}
+                    heightClass={CHART_HEIGHT}
+                  />
                 </ChartInsightCard>
               ) : null}
               {readingLevelChart ? (

@@ -5,6 +5,7 @@ write mapped warnings to report_payload.warnings_mapped.
 """
 import json
 import os
+import re
 import sys
 from typing import Any
 
@@ -235,6 +236,15 @@ PHRASE_TO_ID: list[tuple[str, str]] = [
 ]
 
 
+def _phrase_in_text(phrase: str, text: str) -> bool:
+    """Whole-word/phrase match so short tokens don't match inside other words.
+
+    Plain substring matching mis-mapped unrelated warnings (e.g. 'bandwidth'
+    contains 'width' → image-aspect-ratio/CLS). Anchor on word boundaries.
+    """
+    return re.search(rf"\b{re.escape(phrase)}\b", text) is not None
+
+
 def _resolve_entry(audit_id: str, title: str | None, help_text: str | None) -> dict[str, Any]:
     """Get mapping entry for audit id or phrase match."""
     aid = (audit_id or "").strip().lower()
@@ -242,7 +252,9 @@ def _resolve_entry(audit_id: str, title: str | None, help_text: str | None) -> d
         return dict(AUDIT_MAP[aid])
     text = f"{title or ''} {help_text or ''}".lower()
     for phrase, mapped_id in PHRASE_TO_ID:
-        if phrase in text or phrase in aid:
+        # `aid` is a structured audit id, so substring there is intentional; the
+        # free-text title/help must match on word boundaries.
+        if _phrase_in_text(phrase, text) or phrase in aid:
             return dict(AUDIT_MAP.get(mapped_id, DEFAULT_ENTRY))
     return dict(DEFAULT_ENTRY)
 

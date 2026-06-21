@@ -58,7 +58,11 @@ def generate_dashboard_ai(
         user = json.dumps(payload, indent=2, default=str)[:10_000]
         raw = client.complete_json(DASHBOARD_AI_SYSTEM, user)
         result = raw if isinstance(raw, dict) and raw else parse_json_response(str(raw))
-        result["ok"] = True
+        if not isinstance(result, dict) or not result:
+            return {"ok": False, "error": "AI returned no parseable output."}
+        # Don't force success: keep an explicit ok/error the model may have
+        # returned instead of masking a failure as a successful generation.
+        result.setdefault("ok", True)
         return result
     except Exception as exc:
         return {"ok": False, "error": str(exc)}

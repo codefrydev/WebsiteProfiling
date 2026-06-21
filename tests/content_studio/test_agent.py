@@ -66,12 +66,15 @@ def test_inject_missing_tools_appends_results() -> None:
     ctx = sample_ctx()
     messages: list[dict] = []
     called = {"get_draft_seo_score"}
-    _inject_missing_tools(messages, ctx, called, ollama_format=False)
+    events: list[dict] = []
+    _inject_missing_tools(messages, ctx, called, ollama_format=False, tool_events=events)
     assert any(m.get("role") == "tool" for m in messages)
     assert called == REQUIRED_CONTENT_STUDIO_TOOLS
+    # tool_events is populated in the same pass (no second dispatch needed).
+    assert {e["name"] for e in events} == REQUIRED_CONTENT_STUDIO_TOOLS - {"get_draft_seo_score"}
     messages_ollama: list[dict] = []
     called_ollama = {"get_draft_seo_score"}
-    _inject_missing_tools(messages_ollama, ctx, called_ollama, ollama_format=True)
+    _inject_missing_tools(messages_ollama, ctx, called_ollama, ollama_format=True, tool_events=[])
     assert any(m.get("tool_name") for m in messages_ollama)
 
 

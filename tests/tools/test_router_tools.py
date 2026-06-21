@@ -4,8 +4,8 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 from website_profiling.tools.audit_tools import AuditToolContext
-from website_profiling.tools.audit_tools import router_tools as router_mod
-from website_profiling.tools.audit_tools.router_tools import run_domain_agent
+from website_profiling.tools.audit_tools.core import router_tools as router_mod
+from website_profiling.tools.audit_tools.core.router_tools import run_domain_agent
 
 
 def test_run_domain_agent_falls_back_to_global_search() -> None:

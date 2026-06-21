@@ -20,6 +20,11 @@ def _origin(start_url: str) -> str:
     return f"{parsed.scheme}://{parsed.netloc}"
 
 
+def _same_origin(url: str, origin: str) -> bool:
+    """True when *url* is on the same host as *origin* (the crawl start host)."""
+    return bool(url) and urlparse(url).netloc == urlparse(origin).netloc
+
+
 def _sitemap_urls_from_robots(text: str) -> list[str]:
     urls: list[str] = []
     for line in text.splitlines():
@@ -84,7 +89,12 @@ def discover_sitemap_urls(
         try:
             r = sess.get(f"{origin}/robots.txt", timeout=timeout)
             if r.status_code == 200 and r.text:
-                sitemap_queue.extend(_sitemap_urls_from_robots(r.text))
+                # Only follow same-origin sitemaps: robots.txt (or a MITM of it)
+                # can advertise arbitrary hosts, which would otherwise let the
+                # crawler issue requests off the audited origin (SSRF / scope escape).
+                sitemap_queue.extend(
+                    s for s in _sitemap_urls_from_robots(r.text) if _same_origin(s, origin)
+                )
         except Exception:
             pass
 
@@ -102,10 +112,12 @@ def discover_sitemap_urls(
                     continue
                 pages, nested = _parse_sitemap_xml(r.text, sm_url)
                 for n in nested:
-                    if n not in seen_sitemaps:
+                    # Nested <sitemap><loc> entries are attacker-controllable;
+                    # never queue an off-origin sitemap for fetching.
+                    if n not in seen_sitemaps and _same_origin(n, origin):
                         sitemap_queue.append(n)
                 for page in pages:
-                    if urlparse(page).netloc != urlparse(origin).netloc:
+                    if not _same_origin(page, origin):
                         continue
                     if page not in seen_pages:
                         seen_pages.add(page)

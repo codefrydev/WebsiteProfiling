@@ -8,6 +8,22 @@ import sys
 from .config_resolve import resolve_config
 
 
+def _parse_ref(raw: str) -> tuple[str | None, int | None]:
+    """Parse a 'type:id' env value, tolerating a missing/non-numeric id.
+
+    The bare ``":" in raw`` guard does not guarantee the right-hand side is an
+    integer (e.g. "live:" or "snapshot:abc" from an unvalidated request body),
+    so coerce defensively rather than letting int() raise and crash the command.
+    """
+    if ":" not in raw:
+        return None, None
+    type_part, _, id_part = raw.partition(":")
+    try:
+        return type_part, int(id_part)
+    except ValueError:
+        return None, None
+
+
 def run(cfg: dict, cwd: str, args: argparse.Namespace) -> None:
     from ..llm.page_coach import run_page_coach
 
@@ -19,15 +35,8 @@ def run(cfg: dict, cwd: str, args: argparse.Namespace) -> None:
     import os
 
     refresh = bool(getattr(args, "refresh", False))
-    current_type = current_id = baseline_type = baseline_id = None
-    cur_env = os.environ.get("WP_PAGE_COACH_CURRENT", "")
-    if ":" in cur_env:
-        parts = cur_env.split(":", 1)
-        current_type, current_id = parts[0], int(parts[1])
-    base_env = os.environ.get("WP_PAGE_COACH_BASELINE", "")
-    if ":" in base_env:
-        parts = base_env.split(":", 1)
-        baseline_type, baseline_id = parts[0], int(parts[1])
+    current_type, current_id = _parse_ref(os.environ.get("WP_PAGE_COACH_CURRENT", ""))
+    baseline_type, baseline_id = _parse_ref(os.environ.get("WP_PAGE_COACH_BASELINE", ""))
 
     result = run_page_coach(
         url,

@@ -1,21 +1,8 @@
 'use client';
 
-import { useMemo, type ReactNode } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-} from 'chart.js';
-import { Bar, Line } from 'react-chartjs-2';
+import { useMemo } from 'react';
 import { useReport } from '@/context/useReport';
 import type { CompareMetricRow, ReportCompareSummary } from '@/lib/reportCompare';
-import type { ReportPayload } from '@/types/report';
 import {
   buildAlignedDailySeries,
   buildMetricsBarChart,
@@ -25,145 +12,32 @@ import {
   pickMetricsForChart,
   type DualSeriesChartData,
 } from '@/lib/compareChartData';
+import { dualSeriesToBarChartData } from '@/lib/viz/adapters';
 import { palette } from '@/utils/chartPalette';
-import {
-  getGridColor,
-  getChartTitleColor,
-  getChartLegendLabelColor,
-} from '@/utils/chartJsDefaults';
 import ChartCard from '@/components/ChartCard';
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend);
-
-const COLOR_BASELINE = '#94a3b8';
-const COLOR_CURRENT = '#3b82f6';
+import { D3GroupedBarChart, D3DualLineChart, D3VerticalBarChart } from '@/components/charts/d3';
 
 type CompareChartStrings = (typeof import('@/lib/strings').strings)['views']['compare'];
 
-function useChartOptions() {
-  return useMemo(() => {
-    const grid = getGridColor();
-    const titleColor = getChartTitleColor();
-    const legendColor = getChartLegendLabelColor();
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index' as const, intersect: false },
-      plugins: {
-        legend: {
-          display: true,
-          position: 'bottom' as const,
-          labels: { color: legendColor, font: { size: 11 }, padding: 12 },
-        },
-        tooltip: { mode: 'index' as const, intersect: false },
-      },
-      scales: {
-        x: {
-          grid: { color: grid },
-          ticks: { color: titleColor, maxRotation: 45, autoSkip: true, font: { size: 10 } },
-        },
-        y: {
-          grid: { color: grid },
-          beginAtZero: true,
-          ticks: { color: titleColor },
-        },
-      },
-    };
-  }, []);
-}
+const COMPARE_CHART_HEIGHT = 'h-64';
 
-function dualBarDatasets(
-  series: DualSeriesChartData,
-  baselineLabel: string,
-  currentLabel: string,
-) {
-  return {
-    labels: series.labels,
-    datasets: [
-      {
-        label: baselineLabel,
-        data: series.baseline,
-        backgroundColor: COLOR_BASELINE + 'cc',
-        borderColor: COLOR_BASELINE,
-        borderWidth: 1,
-        borderRadius: 4,
-      },
-      {
-        label: currentLabel,
-        data: series.current,
-        backgroundColor: COLOR_CURRENT + 'cc',
-        borderColor: COLOR_CURRENT,
-        borderWidth: 1,
-        borderRadius: 4,
-      },
-    ],
-  };
-}
-
-function dualLineDatasets(
-  series: DualSeriesChartData,
-  baselineLabel: string,
-  currentLabel: string,
-) {
-  return {
-    labels: series.labels,
-    datasets: [
-      {
-        label: baselineLabel,
-        data: series.baseline,
-        borderColor: COLOR_BASELINE,
-        backgroundColor: COLOR_BASELINE + '22',
-        borderWidth: 2,
-        pointRadius: series.labels.length <= 31 ? 3 : 1,
-        tension: 0.25,
-        spanGaps: true,
-      },
-      {
-        label: currentLabel,
-        data: series.current,
-        borderColor: COLOR_CURRENT,
-        backgroundColor: COLOR_CURRENT + '22',
-        borderWidth: 2,
-        pointRadius: series.labels.length <= 31 ? 3 : 1,
-        tension: 0.25,
-        spanGaps: true,
-      },
-    ],
-  };
-}
-
-function GroupedBarChart({
+/** Thin wrapper: converts DualSeriesChartData → BarChartData for D3GroupedBarChart. */
+function CompareDualBar({
   series,
   baselineLabel,
   currentLabel,
+  ariaLabel,
 }: {
   series: DualSeriesChartData;
   baselineLabel: string;
   currentLabel: string;
+  ariaLabel?: string;
 }) {
-  const options = useChartOptions();
   const data = useMemo(
-    () => dualBarDatasets(series, baselineLabel, currentLabel),
+    () => dualSeriesToBarChartData(series, baselineLabel, currentLabel),
     [series, baselineLabel, currentLabel],
   );
-  return <Bar data={data} options={options} />;
-}
-
-function DualLineChart({
-  series,
-  baselineLabel,
-  currentLabel,
-}: {
-  series: DualSeriesChartData;
-  baselineLabel: string;
-  currentLabel: string;
-}) {
-  const options = useChartOptions();
-  const data = useMemo(
-    () => dualLineDatasets(series, baselineLabel, currentLabel),
-    [series, baselineLabel, currentLabel],
-  );
-  return <Line data={data} options={options} />;
+  return <D3GroupedBarChart data={data} ariaLabel={ariaLabel} heightClass={COMPARE_CHART_HEIGHT} />;
 }
 
 interface CompareOverviewChartsProps {
@@ -201,29 +75,32 @@ export function CompareOverviewCharts({ compare, metrics, vc }: CompareOverviewC
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {barMetrics.length > 0 ? (
-        <ChartCard title={vc.chartSiteMetrics} hint={vc.chartLegendHint}>
-          <GroupedBarChart
+        <ChartCard title={vc.chartSiteMetrics} hint={vc.chartLegendHint} heightClass={COMPARE_CHART_HEIGHT}>
+          <CompareDualBar
             series={metricsSeries}
             baselineLabel={vc.legendBaseline}
             currentLabel={vc.legendCurrent}
+            ariaLabel={vc.chartSiteMetrics}
           />
         </ChartCard>
       ) : null}
       {hasStatus && statusSeries ? (
-        <ChartCard title={vc.chartStatusMix} hint={vc.chartLegendHint}>
-          <GroupedBarChart
+        <ChartCard title={vc.chartStatusMix} hint={vc.chartLegendHint} heightClass={COMPARE_CHART_HEIGHT}>
+          <CompareDualBar
             series={statusSeries}
             baselineLabel={vc.legendBaseline}
             currentLabel={vc.legendCurrent}
+            ariaLabel={vc.chartStatusMix}
           />
         </ChartCard>
       ) : null}
       {hasPriority ? (
-        <ChartCard title={vc.chartIssuesPriority} hint={vc.chartLegendHint}>
-          <GroupedBarChart
+        <ChartCard title={vc.chartIssuesPriority} hint={vc.chartLegendHint} heightClass={COMPARE_CHART_HEIGHT}>
+          <CompareDualBar
             series={prioritySeries}
             baselineLabel={vc.legendBaseline}
             currentLabel={vc.legendCurrent}
+            ariaLabel={vc.chartIssuesPriority}
           />
         </ChartCard>
       ) : null}
@@ -266,29 +143,32 @@ export function CompareGoogleCharts({ vc }: CompareGoogleChartsProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       {gscClicks ? (
-        <ChartCard title={vc.chartGscClicks} hint={vc.chartDailyHint}>
-          <DualLineChart
+        <ChartCard title={vc.chartGscClicks} hint={vc.chartDailyHint} heightClass={COMPARE_CHART_HEIGHT}>
+          <D3DualLineChart
             series={gscClicks}
             baselineLabel={vc.legendBaseline}
             currentLabel={vc.legendCurrent}
+            ariaLabel={vc.chartGscClicks}
           />
         </ChartCard>
       ) : null}
       {gscImpressions ? (
-        <ChartCard title={vc.chartGscImpressions} hint={vc.chartDailyHint}>
-          <DualLineChart
+        <ChartCard title={vc.chartGscImpressions} hint={vc.chartDailyHint} heightClass={COMPARE_CHART_HEIGHT}>
+          <D3DualLineChart
             series={gscImpressions}
             baselineLabel={vc.legendBaseline}
             currentLabel={vc.legendCurrent}
+            ariaLabel={vc.chartGscImpressions}
           />
         </ChartCard>
       ) : null}
       {ga4Sessions ? (
-        <ChartCard title={vc.chartGa4Sessions} hint={vc.chartDailyHint}>
-          <DualLineChart
+        <ChartCard title={vc.chartGa4Sessions} hint={vc.chartDailyHint} heightClass={COMPARE_CHART_HEIGHT}>
+          <D3DualLineChart
             series={ga4Sessions}
             baselineLabel={vc.legendBaseline}
             currentLabel={vc.legendCurrent}
+            ariaLabel={vc.chartGa4Sessions}
           />
         </ChartCard>
       ) : null}
@@ -313,34 +193,22 @@ export function CompareUrlChangeChart({
   const values = [newCount, removedCount, contentCount, structureCount];
   const total = values.reduce((a, b) => a + b, 0);
   const labels = [vc.urlTabs.new, vc.urlTabs.removed, vc.urlTabs.content, vc.urlTabs.structure];
-  const options = useChartOptions();
-  const data = useMemo(
+  const colors = palette(4);
+
+  const barData = useMemo(
     () => ({
       labels,
-      datasets: [
-        {
-          label: vc.chartUrlChanges,
-          data: values,
-          backgroundColor: palette(4),
-          borderRadius: 4,
-        },
-      ],
+      series: [{ values, colors }],
     }),
-    [labels, values, vc.chartUrlChanges],
-  );
-  const opts = useMemo(
-    () => ({
-      ...options,
-      plugins: { ...options.plugins, legend: { display: false } },
-    }),
-    [options],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [newCount, removedCount, contentCount, structureCount],
   );
 
   if (total === 0) return null;
 
   return (
-    <ChartCard title={vc.chartUrlChanges} hint={vc.chartUrlChangesHint}>
-      <Bar data={data} options={opts} />
+    <ChartCard title={vc.chartUrlChanges} hint={vc.chartUrlChangesHint} heightClass={COMPARE_CHART_HEIGHT}>
+      <D3VerticalBarChart data={barData} ariaLabel={vc.chartUrlChanges} heightClass={COMPARE_CHART_HEIGHT} />
     </ChartCard>
   );
 }
@@ -359,11 +227,12 @@ export function CompareContentCharts({
   if (!series.labels.length) return null;
 
   return (
-    <ChartCard title={vc.chartContent} hint={vc.chartLegendHint}>
-      <GroupedBarChart
+    <ChartCard title={vc.chartContent} hint={vc.chartLegendHint} heightClass={COMPARE_CHART_HEIGHT}>
+      <CompareDualBar
         series={series}
         baselineLabel={vc.legendBaseline}
         currentLabel={vc.legendCurrent}
+        ariaLabel={vc.chartContent}
       />
     </ChartCard>
   );
@@ -389,11 +258,12 @@ export function ComparePerformanceCharts({
   if (!series.labels.length) return null;
 
   return (
-    <ChartCard title={vc.chartPerformance} hint={vc.chartLegendHint}>
-      <GroupedBarChart
+    <ChartCard title={vc.chartPerformance} hint={vc.chartLegendHint} heightClass={COMPARE_CHART_HEIGHT}>
+      <CompareDualBar
         series={series}
         baselineLabel={vc.legendBaseline}
         currentLabel={vc.legendCurrent}
+        ariaLabel={vc.chartPerformance}
       />
     </ChartCard>
   );

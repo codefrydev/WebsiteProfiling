@@ -417,7 +417,7 @@
           "body": "Crawled pages that returned HTTP 4xx or 5xx errors."
         },
         "legendLink": {
-          "body": "Internal anchor link between two pages in the crawl graph."
+          "body": "Crawl discovery path from parent page to child (one spine link per page, not every internal cross-link)."
         }
       },
       "indexation": {
@@ -2544,18 +2544,21 @@
       ]
     },
     "network": {
-      "title": "Internal Linking Map",
-      "subtitle": "Physics-based graph of internal link structure. Click a node to inspect the page and highlight its links. Red nodes indicate 4xx/5xx errors.",
+      "title": "Site Structure Map",
+      "subtitle": "Radial crawl tree from the homepage — one discovery path per page, not every cross-link. Switch between 2D and 3D. Red nodes indicate 4xx/5xx errors.",
       "searchEmpty": "No pages match your search.",
       "legendOk": "OK (2xx)",
       "legendBroken": "Broken (4xx/5xx)",
-      "legendLink": "Internal Link",
+      "legendLink": "Crawl path",
       "fullscreen": "Full screen",
       "exitFullscreen": "Exit full screen",
       "titleFullscreen": "Full screen",
       "titleExitFullscreen": "Exit full screen",
       "noEdges": "No edge data available.",
       "clickHint": "Click a node to inspect · drag to rotate",
+      "clickHint2d": "Click a node to inspect · scroll to zoom · drag to pan",
+      "view2d": "2D",
+      "view3d": "3D",
       "openLive": "Open live site",
       "clearSelection": "Clear",
       "selectedLabel": "Selected page"

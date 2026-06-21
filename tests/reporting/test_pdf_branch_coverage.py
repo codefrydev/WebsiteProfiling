@@ -359,6 +359,21 @@ class TestRendererBranches:
         assert _rl_render_executive_panel(cover, st) == []
         assert _render_top_issues_table([], st) == []
 
+    def test_reportlab_stat_grid_more_chips_than_columns(self):
+        # chips > columns must not crash: colWidths must match the cell count.
+        st = _make_styles()
+        block = StatGridBlock(
+            id="s",
+            columns=2,
+            chips=[
+                StatChip(label="A", value="1", tone="high"),
+                StatChip(label="B", value="2", tone="medium"),
+                StatChip(label="C", value="3", tone="low"),
+            ],
+        )
+        out = _flowables_for_block(block, st)
+        assert out  # renders a table flowable instead of raising at build time
+
     def test_reportlab_empty_optional_blocks(self):
         st = _make_styles()
         assert _flowables_for_block(KpiRowBlock(id="k", items=[]), st) == []

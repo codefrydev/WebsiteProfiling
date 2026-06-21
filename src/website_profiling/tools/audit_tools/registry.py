@@ -8,14 +8,14 @@ from psycopg import Connection
 
 from ...db.storage import db_session
 
-from .backlink_lists import (
+from .backlinks.backlink_lists import (
     get_anchor_text_distribution,
     list_backlinks_by_anchor_text,
     list_backlinks_from_domain,
     list_backlinks_to_url,
     list_referring_domains,
 )
-from .compare_list_tools import (
+from .compare.compare_list_tools import (
     list_compare_lighthouse_regressions,
     list_compare_new_issues,
     list_compare_new_urls,
@@ -23,7 +23,7 @@ from .compare_list_tools import (
     list_compare_resolved_issues,
     list_compare_traffic_losers,
 )
-from .content_lists import (
+from .content.content_lists import (
     get_text_content_analysis,
     list_amp_validation_issues,
     list_duplicate_content_pairs,
@@ -35,18 +35,18 @@ from .content_lists import (
     list_schema_errors_by_type,
     list_spell_check_issues,
 )
-from .geo_list_tools import (
+from .geo.geo_list_tools import (
     get_robots_ai_access_score,
     list_pages_ai_citation_signals,
     list_pages_missing_howto_schema,
     list_pages_missing_llms_txt_reference,
     list_robots_blocked_ai_crawlers,
 )
-from .geo_citability import (
+from .geo.geo_citability import (
     get_citability_score,
     get_citability_for_url,
 )
-from .geo_detectors import (
+from .geo.geo_detectors import (
     detect_prompt_injection,
     get_content_decay_signals,
     get_multimodal_readiness,
@@ -54,7 +54,7 @@ from .geo_detectors import (
     get_rag_chunk_readiness,
     get_topic_authority,
 )
-from .agent_readiness import (
+from .geo.agent_readiness import (
     get_agents_md_status,
     get_skill_md_status,
     get_agent_permissions_status,
@@ -68,7 +68,7 @@ from .agent_readiness import (
     get_agent_readiness_score,
     generate_agent_readiness_bundle,
 )
-from .google_lists import (
+from .google.google_lists import (
     compare_gsc_periods,
     get_ga4_path_trend,
     get_gsc_page_trend,
@@ -90,7 +90,7 @@ from .google_lists import (
     list_gsc_queries_by_clicks,
     list_gsc_queries_by_impressions,
 )
-from .indexation_lists import (
+from .indexation.indexation_lists import (
     list_crawl_urls_not_in_sitemap,
     list_hreflang_reciprocal_gaps,
     list_indexation_indexed_not_submitted,
@@ -102,7 +102,7 @@ from .indexation_lists import (
     list_redirect_chains_by_length,
     list_sitemap_urls_not_in_crawl,
 )
-from .issue_lists import (
+from .issues.issue_lists import (
     list_hreflang_issue_pages,
     list_lighthouse_failure_cls,
     list_lighthouse_failure_inp,
@@ -122,7 +122,7 @@ from .issue_lists import (
     list_pages_title_too_short,
     list_pages_very_thin_content,
 )
-from .keyword_lists import (
+from .keywords.keyword_lists import (
     get_keyword_opportunity_score,
     get_keyword_serp_snapshot,
     list_cannibalisation_queries,
@@ -144,14 +144,14 @@ from .keyword_lists import (
     list_semantic_cluster_pages,
     list_semantic_cluster_queries,
 )
-from .link_lists import (
+from .links.link_lists import (
     list_internal_links_from_url,
     list_internal_links_to_url,
     list_links_by_rel_nofollow,
     list_outbound_links,
     list_pagerank_low_pages,
 )
-from .backlinks import (
+from .backlinks.backlinks import (
     get_backlinks_velocity,
     get_bing_backlinks_summary,
     get_competitor_link_gap,
@@ -161,7 +161,7 @@ from .backlinks import (
     get_gsc_sample_links,
     get_third_party_links_overlay,
 )
-from .charts import (
+from .portfolio.charts import (
     get_crawl_summary,
     get_domain_link_distribution,
     get_issue_priority_breakdown,
@@ -170,15 +170,15 @@ from .charts import (
     get_title_length_distribution,
     get_top_crawled_pages,
 )
-from .data_coverage import get_data_coverage_report
-from .insight_tools import (
+from .core.data_coverage import get_data_coverage_report
+from .insight.insight_tools import (
     get_issue_to_traffic_map,
     get_landing_page_blended_table,
     get_landing_page_full_diagnosis,
     get_opportunity_matrix,
     get_traffic_health_check,
 )
-from .router_tools import (
+from .core.router_tools import (
     list_tool_domains,
     run_domain_agent,
     run_insight_workflow,
@@ -186,8 +186,8 @@ from .router_tools import (
     run_technical_workflow,
     search_audit_tools,
 )
-from .compare import compare_reports
-from .compare_slices import (
+from .compare.compare import compare_reports
+from .compare.compare_slices import (
     compare_category_deltas,
     compare_content_metrics,
     compare_duplicate_deltas,
@@ -206,8 +206,8 @@ from .compare_slices import (
     compare_tech_deltas,
     compare_url_set_diff,
 )
-from .crawl_metrics import get_asset_weight_summary, get_readability_summary
-from .content import (
+from .crawl.crawl_metrics import get_asset_weight_summary, get_readability_summary
+from .content.content import (
     get_content_analytics,
     get_content_duplicates,
     get_duplicate_cluster,
@@ -217,7 +217,7 @@ from .content import (
     list_thin_content_pages,
 )
 from .context import AuditToolContext
-from .crawl_lists import (
+from .crawl.crawl_lists import (
     get_axe_audit_summary,
     get_heading_outline_for_url,
     get_top_pages_by_pagerank,
@@ -238,7 +238,7 @@ from .crawl_lists import (
     list_pages_with_mixed_content,
     list_robots_blocked_urls,
 )
-from .geo_tools import (
+from .geo.geo_tools import (
     get_aeo_content_signals_for_url,
     get_ai_discovery_status,
     get_eeat_signals_summary,
@@ -249,7 +249,7 @@ from .geo_tools import (
     get_llms_txt_status,
     list_pages_missing_faq_schema,
 )
-from .crawl import (
+from .crawl.crawl import (
     get_browser_diagnostics_summary,
     get_crawl_links_table,
     get_crawl_segments,
@@ -272,7 +272,7 @@ from .crawl import (
     search_pages,
     search_pages_advanced,
 )
-from .google import (
+from .google.google import (
     get_ga4_by_channel,
     get_ga4_by_device,
     get_ga4_daily_trend,
@@ -286,7 +286,7 @@ from .google import (
     get_gsc_top_pages,
     get_gsc_top_queries,
 )
-from .integration_tools import (
+from .integrations.integration_tools import (
     check_ai_citation_presence,
     check_ai_citations_live,
     get_bing_index_status,
@@ -294,11 +294,11 @@ from .integration_tools import (
     get_gsc_url_inspection,
     get_serp_feature_overlay,
 )
-from .health import get_category_health_history, get_health_history, list_report_history
-from .indexation_tools import get_indexation_coverage, get_indexation_url_join, list_indexation_gaps
-from .international import get_hreflang_summary, get_language_summary
-from .issues import get_category_issues, list_issues_by_category
-from .keywords import (
+from .portfolio.health import get_category_health_history, get_health_history, list_report_history
+from .indexation.indexation_tools import get_indexation_coverage, get_indexation_url_join, list_indexation_gaps
+from .indexation.international import get_hreflang_summary, get_language_summary
+from .issues.issues import get_category_issues, list_issues_by_category
+from .keywords.keywords import (
     get_brand_keyword_split,
     get_keyword_cannibalisation,
     get_keyword_history,
@@ -314,7 +314,7 @@ from .keywords import (
     list_keywords_ctr_opportunity,
     search_keywords,
 )
-from .lighthouse import (
+from .performance.lighthouse import (
     get_crux_summary,
     get_lighthouse_diagnostics,
     get_lighthouse_for_url,
@@ -326,14 +326,14 @@ from .lighthouse import (
     list_lighthouse_poor_seo_pages,
     list_slow_pages,
 )
-from .export_tools import (
+from .export.export_tools import (
     export_audit_report,
     export_compare_csv,
     export_list_as_csv,
     list_export_formats,
 )
-from .export_extras import export_sitemap_xml, validate_rich_results
-from .image_tools import (
+from .export.export_extras import export_sitemap_xml, validate_rich_results
+from .images.image_tools import (
     get_image_audit_summary,
     list_images_needing_attention,
     list_largest_images,
@@ -343,7 +343,7 @@ from .image_tools import (
     list_site_image_urls,
     list_unoptimized_images,
 )
-from .llm_tools import (
+from .integrations.llm_tools import (
     analyze_serp_snippet_for_url,
     draft_llms_txt,
     expand_keywords,
@@ -358,7 +358,7 @@ from .llm_tools import (
     prioritize_fix_roadmap,
     summarize_category_for_client,
 )
-from .payload_extras import (
+from .core.payload_extras import (
     get_competitor_keyword_gap,
     get_pagination_audit_summary,
     get_portfolio_benchmark,
@@ -366,7 +366,7 @@ from .payload_extras import (
     get_site_anchor_text_summary,
     list_rich_results_failures,
 )
-from .onpage import (
+from .onpage.onpage import (
     list_content_url_issues,
     list_pages_meta_desc_too_long,
     list_pages_meta_desc_too_short,
@@ -377,7 +377,7 @@ from .onpage import (
     list_pages_noindex,
     list_seo_onpage_issues,
 )
-from .links import (
+from .links.links import (
     get_inlink_anchors,
     get_link_graph_summary,
     get_link_rel_summary,
@@ -388,8 +388,8 @@ from .links import (
     list_nofollow_internal_links,
     list_orphan_pages,
 )
-from .crawl_actions import prepare_audit_run
-from .ops import (
+from .crawl.crawl_actions import prepare_audit_run
+from .ops.ops import (
     get_google_integration_status,
     get_integration_alerts,
     get_latest_log_analysis,
@@ -402,14 +402,14 @@ from .ops import (
     list_log_only_paths,
     list_log_uploads,
 )
-from .properties import get_property, list_properties
-from .property_profile import (
+from .portfolio.properties import get_property, list_properties
+from .portfolio.property_profile import (
     get_ads_txt_status,
     get_contact_intelligence,
     get_security_txt_status,
     list_subdomains,
 )
-from .report import (
+from .report.report import (
     get_category_scores,
     get_critical_issues,
     get_executive_summary,
@@ -420,7 +420,7 @@ from .report import (
     list_top_impact_issues,
     search_issues,
 )
-from .report_extras import (
+from .report.report_extras import (
     get_audit_recommendations,
     get_category_recommendations,
     get_ml_errors,
@@ -428,14 +428,14 @@ from .report_extras import (
     list_audit_categories,
     list_issues_with_ai_fixes,
 )
-from .schema import get_schema_coverage, list_pages_without_schema, search_pages_by_schema_type
-from .sql_query import get_sql_schema, run_sql_query
-from .security import (
+from .schema.schema import get_schema_coverage, list_pages_without_schema, search_pages_by_schema_type
+from .core.sql_query import get_sql_schema, run_sql_query
+from .security.security import (
     get_security_findings,
     get_security_findings_summary,
     list_security_findings_by_type,
 )
-from .tech import get_tech_stack_summary, list_pages_by_technology
+from .tech.tech import get_tech_stack_summary, list_pages_by_technology
 from .tool_catalog import TOOL_DEFINITIONS
 from .tool_domains import (
     TIER_0_TOOLS,
@@ -447,7 +447,7 @@ from .tool_domains import (
     tool_names_for_tier as _meta_tool_names_for_tier,
     tools_by_domain,
 )
-from .workflow import list_issue_workflow
+from .ops.workflow import list_issue_workflow
 
 ToolHandler = Callable[[Connection, AuditToolContext, dict[str, Any]], dict[str, Any]]
 

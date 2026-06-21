@@ -233,7 +233,10 @@ def build_link_metric_deltas(current: dict[str, Any], baseline: dict[str, Any]) 
                     "delta": delta,
                 })
     out.sort(key=lambda x: abs(x.get("delta") or 0), reverse=True)
-    return out[:_LINK_METRIC_CAP]
+    # Return the full list; callers slice and report truncation accurately
+    # (capping here hid the real total and produced a false "truncated" flag at
+    # exactly the cap).
+    return out
 
 
 def _redirect_key(r: dict[str, Any]) -> str:
@@ -614,8 +617,9 @@ def build_full_compare(
         truncated_sections["issue_deltas"] = True
         issue_deltas = issue_deltas[:_ISSUE_DELTA_CAP]
     link_metrics = build_link_metric_deltas(current, baseline)
-    if len(link_metrics) >= _LINK_METRIC_CAP:
+    if len(link_metrics) > _LINK_METRIC_CAP:
         truncated_sections["link_metric_deltas"] = True
+        link_metrics = link_metrics[:_LINK_METRIC_CAP]
     google = build_google_metrics(current, baseline)
     return {
         "current_report_id": current_report_id,

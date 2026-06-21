@@ -18,6 +18,17 @@ from ..seo_summary import (
 )
 
 
+def _int_or_zero(value: Any) -> int:
+    """Coerce *value* to int, treating NaN / None / non-numeric as 0.
+
+    ``int(pd.to_numeric(x, errors="coerce") or 0)`` is unsafe: a NaN result is
+    truthy in Python, so ``NaN or 0`` evaluates to ``NaN`` and ``int(NaN)``
+    raises ValueError — crashing the whole report build on a single bad cell.
+    """
+    num = pd.to_numeric(value, errors="coerce")
+    return int(num) if pd.notna(num) else 0
+
+
 def build_content_url_lists(
     df: pd.DataFrame,
     success_df_urls: pd.DataFrame,
@@ -106,7 +117,7 @@ def build_content_url_lists(
             missing_alt.append({
                 "url": str(u).strip(),
                 "images_without_alt": int(alt_missing.loc[i]),
-                "images_total": int(pd.to_numeric(row.get("images_total"), errors="coerce") or 0),
+                "images_total": _int_or_zero(row.get("images_total")),
             })
 
     missing_lazy: list[dict[str, Any]] = []
@@ -122,7 +133,7 @@ def build_content_url_lists(
             missing_lazy.append({
                 "url": str(u).strip(),
                 "img_without_lazy": int(lazy_missing.loc[i]),
-                "images_total": int(pd.to_numeric(row.get("images_total"), errors="coerce") or 0),
+                "images_total": _int_or_zero(row.get("images_total")),
             })
     if "img_without_dimensions" in success_df_urls.columns:
         dim_missing = pd.to_numeric(success_df_urls["img_without_dimensions"], errors="coerce").fillna(0).astype(int)
@@ -135,7 +146,7 @@ def build_content_url_lists(
             missing_dimensions.append({
                 "url": str(u).strip(),
                 "img_without_dimensions": int(dim_missing.loc[i]),
-                "images_total": int(pd.to_numeric(row.get("images_total"), errors="coerce") or 0),
+                "images_total": _int_or_zero(row.get("images_total")),
             })
 
     title_short: list[dict[str, Any]] = []

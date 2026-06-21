@@ -9,7 +9,7 @@ from ..concurrency import map_parallel, tool_concurrency
 from ..llm_config import llm_is_enabled, load_llm_config_from_db
 from ..text_sanitize import sanitize_unicode_deep, strip_surrogates
 from ..tools.audit_tools import AuditToolContext
-from ..tools.audit_tools.crawl_actions import CHAT_CRAWL_TOOL
+from ..tools.audit_tools.crawl.crawl_actions import CHAT_CRAWL_TOOL
 from ..tools.audit_tools.registry import (
     TOOL_DEFINITIONS,
     _normalize_tool_args,

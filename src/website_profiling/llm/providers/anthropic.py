@@ -91,18 +91,20 @@ class AnthropicClient:
         except ImportError as e:
             raise ImportError("pip install -r requirements.txt") from e
 
-        client = anthropic.Anthropic(api_key=self._api_key, timeout=self._timeout)
-        msg = client.messages.create(
-            model=self._model,
-            max_tokens=4096,
-            system=system + "\nRespond with valid JSON only.",
-            messages=[{"role": "user", "content": user}],
-        )
-        parts = []
-        for block in msg.content:
-            if getattr(block, "type", None) == "text":
-                parts.append(block.text)
-        return parse_json_response("\n".join(parts))
+        # Use the client as a context manager so its underlying httpx connection
+        # pool is closed; otherwise every call leaks sockets across the agent loop.
+        with anthropic.Anthropic(api_key=self._api_key, timeout=self._timeout) as client:
+            msg = client.messages.create(
+                model=self._model,
+                max_tokens=4096,
+                system=system + "\nRespond with valid JSON only.",
+                messages=[{"role": "user", "content": user}],
+            )
+            parts = []
+            for block in msg.content:
+                if getattr(block, "type", None) == "text":
+                    parts.append(block.text)
+            return parse_json_response("\n".join(parts))
 
     def chat_with_tools(
         self,
@@ -121,7 +123,6 @@ class AnthropicClient:
         system, anthropic_messages = _to_anthropic_messages(messages)
         anthropic_tools = _to_anthropic_tools(tools)
 
-        client = anthropic.Anthropic(api_key=self._api_key, timeout=self._timeout)
         kwargs: dict[str, Any] = {
             "model": self._model,
             "max_tokens": 4096,
@@ -130,51 +131,54 @@ class AnthropicClient:
             "tools": anthropic_tools,
         }
 
-        if on_token:
-            content_parts: list[str] = []
-            tool_calls: list[ToolCall] = []
-            with client.messages.stream(**kwargs) as stream:
-                for event in stream:
-                    if event.type == "content_block_delta" and hasattr(event.delta, "text"):
-                        text = event.delta.text
-                        content_parts.append(text)
-                        on_token(text)
-                    if event.type == "content_block_start" and getattr(event.content_block, "type", None) == "tool_use":
-                        block = event.content_block
-                        tool_calls.append(
-                            ToolCall(id=block.id, name=block.name, arguments={}),
-                        )
-                    if event.type == "content_block_delta" and getattr(event.delta, "type", None) == "input_json_delta":
-                        if tool_calls:
-                            partial = getattr(event.delta, "partial_json", "") or ""
-                            prev = tool_calls[-1].arguments.get("_partial", "")
-                            tool_calls[-1].arguments["_partial"] = prev + partial
-                final = stream.get_final_message()
-            for tc in tool_calls:
-                partial = tc.arguments.pop("_partial", "")
-                if partial:
-                    try:
-                        tc.arguments = json.loads(partial)
-                    except json.JSONDecodeError:
-                        tc.arguments = {}
-            text_parts = []
-            for block in final.content:
-                if getattr(block, "type", None) == "text":
-                    text_parts.append(block.text)
-            return ChatResult(content="".join(content_parts) or "".join(text_parts), tool_calls=tool_calls)
+        # Context-manage the client so its httpx connection pool is closed on
+        # every path (the non-streaming branch closed nothing before).
+        with anthropic.Anthropic(api_key=self._api_key, timeout=self._timeout) as client:
+            if on_token:
+                content_parts: list[str] = []
+                tool_calls: list[ToolCall] = []
+                with client.messages.stream(**kwargs) as stream:
+                    for event in stream:
+                        if event.type == "content_block_delta" and hasattr(event.delta, "text"):
+                            text = event.delta.text
+                            content_parts.append(text)
+                            on_token(text)
+                        if event.type == "content_block_start" and getattr(event.content_block, "type", None) == "tool_use":
+                            block = event.content_block
+                            tool_calls.append(
+                                ToolCall(id=block.id, name=block.name, arguments={}),
+                            )
+                        if event.type == "content_block_delta" and getattr(event.delta, "type", None) == "input_json_delta":
+                            if tool_calls:
+                                partial = getattr(event.delta, "partial_json", "") or ""
+                                prev = tool_calls[-1].arguments.get("_partial", "")
+                                tool_calls[-1].arguments["_partial"] = prev + partial
+                    final = stream.get_final_message()
+                for tc in tool_calls:
+                    partial = tc.arguments.pop("_partial", "")
+                    if partial:
+                        try:
+                            tc.arguments = json.loads(partial)
+                        except json.JSONDecodeError:
+                            tc.arguments = {}
+                text_parts = []
+                for block in final.content:
+                    if getattr(block, "type", None) == "text":
+                        text_parts.append(block.text)
+                return ChatResult(content="".join(content_parts) or "".join(text_parts), tool_calls=tool_calls)
 
-        msg = client.messages.create(**kwargs)
-        content_parts: list[str] = []
-        tool_calls = []
-        for block in msg.content:
-            if getattr(block, "type", None) == "text":
-                content_parts.append(block.text)
-            if getattr(block, "type", None) == "tool_use":
-                tool_calls.append(
-                    ToolCall(
-                        id=block.id,
-                        name=block.name,
-                        arguments=dict(block.input) if isinstance(block.input, dict) else {},
-                    ),
-                )
-        return ChatResult(content="".join(content_parts), tool_calls=tool_calls)
+            msg = client.messages.create(**kwargs)
+            content_parts: list[str] = []
+            tool_calls = []
+            for block in msg.content:
+                if getattr(block, "type", None) == "text":
+                    content_parts.append(block.text)
+                if getattr(block, "type", None) == "tool_use":
+                    tool_calls.append(
+                        ToolCall(
+                            id=block.id,
+                            name=block.name,
+                            arguments=dict(block.input) if isinstance(block.input, dict) else {},
+                        ),
+                    )
+            return ChatResult(content="".join(content_parts), tool_calls=tool_calls)

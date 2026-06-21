@@ -92,6 +92,27 @@ def test_analyze_run_html_parallel_workers(monkeypatch: pytest.MonkeyPatch) -> N
     assert len(out) == 2
 
 
+def test_analyze_run_html_skips_failing_page(monkeypatch: pytest.MonkeyPatch) -> None:
+    # One page whose analysis raises must be skipped, not abort the whole batch.
+    rows = [
+        {"url": "https://good.com", "html": "<html>good</html>"},
+        {"url": "https://bad.com", "html": "<html>bad</html>"},
+    ]
+
+    def fake_analyze(html, **_k):
+        if "bad" in html:
+            raise ValueError("boom")
+        return {"word_count": 2}
+
+    monkeypatch.setattr(ca_batch, "analyze_page_html", fake_analyze)
+    monkeypatch.setattr(ca_batch, "iter_html_pages", lambda *_a, **_k: iter(rows))
+    out1 = ca_batch.analyze_run_html(MagicMock(), 1, workers=1)
+    assert [r["url"] for r in out1] == ["https://good.com"]
+    monkeypatch.setattr(ca_batch, "iter_html_pages", lambda *_a, **_k: iter(rows))
+    out2 = ca_batch.analyze_run_html(MagicMock(), 1, workers=2)
+    assert [r["url"] for r in out2] == ["https://good.com"]
+
+
 def test_iter_html_pages_paginates(monkeypatch: pytest.MonkeyPatch) -> None:
     chunks = [
         [{"url": "https://a.com", "html": "<html>a</html>"}] * 500,

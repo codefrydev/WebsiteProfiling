@@ -253,7 +253,10 @@ def _render_stat_grid(block: StatGridBlock, st: dict) -> list:
     from reportlab.platypus import Spacer, Table
     if not block.chips:
         return []
-    n = block.columns
+    # Never build more table cells than declared column widths: if a block has
+    # more chips than columns, widen the grid to fit them (ReportLab errors at
+    # build time on a cell/colWidths mismatch). Unchanged when chips <= columns.
+    n = max(block.columns, len(block.chips))
     col_w = _col_w_in(n)
     row: list = []
     for chip in block.chips:

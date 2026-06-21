@@ -23,6 +23,12 @@ def test_common_mixed_content_srcset_and_links_serialized_fallback() -> None:
     ext = parse_seo_extended(html, "https://secure.com/page")
     assert ext["mixed_content_count"] >= 1
 
+    # Regression: an all-http:// srcset must count EVERY insecure candidate, not
+    # just the first (the generic startswith() previously matched once and skipped
+    # the per-candidate loop).
+    all_http = '<html><body><img srcset="http://a.com/1.jpg 1x, http://b.com/2.jpg 2x"></body></html>'
+    assert parse_seo_extended(all_http, "https://secure.com")["mixed_content_count"] == 2
+
     assert parse_links_serialized("[unclosed") == ["[unclosed"]
 
 
@@ -125,6 +131,32 @@ def test_analysis_local_duplicate_and_language_paths(monkeypatch) -> None:
     )
     assert payload["ner_site_summary"]["Person"] == 2
     assert payload["ml_errors"] == ["x"]
+
+
+def test_duplicate_detection_skips_empty_simhash(monkeypatch) -> None:
+    """SimHash-0 (untokenizable) pages must not be clustered together as duplicates."""
+    from website_profiling.analysis import local
+
+    monkeypatch.setattr(
+        local, "_import_rapidfuzz", lambda: types.SimpleNamespace(token_set_ratio=lambda a, b: 0)
+    )
+    # Force the two "blank" pages to SimHash 0 and the two real pages to share a hash.
+    monkeypatch.setattr(local, "simhash_64", lambda fp: 0 if "blank" in fp else 999)
+    # Fingerprints must be >= 20 chars to be considered (see compute_duplicate_groups).
+    df = pd.DataFrame(
+        [
+            {"url": "https://a.com/e1", "status": "200", "content_type": "text/html", "title": "blank placeholder page number one"},
+            {"url": "https://a.com/e2", "status": "200", "content_type": "text/html", "title": "blank placeholder page number two"},
+            {"url": "https://a.com/d1", "status": "200", "content_type": "text/html", "title": "real duplicate content body text here"},
+            {"url": "https://a.com/d2", "status": "200", "content_type": "text/html", "title": "real duplicate content body text here"},
+        ]
+    )
+    _groups, mapping, _w = local.compute_duplicate_groups(df, {"enable_duplicate_detection": "true"})
+    # The real duplicates are grouped together...
+    assert mapping.get("https://a.com/d1") == mapping.get("https://a.com/d2") is not None
+    # ...but the two SimHash-0 pages are NOT (they were skipped, not bucketed).
+    assert "https://a.com/e1" not in mapping
+    assert "https://a.com/e2" not in mapping
 
 
 def test_browser_diagnostics_pandas_and_aggregate_paths() -> None:

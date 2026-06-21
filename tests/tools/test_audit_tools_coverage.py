@@ -9,18 +9,18 @@ import pandas as pd
 
 from website_profiling.tools.audit_tools import _slice, dispatch_tool
 from website_profiling.tools.audit_tools.context import AuditToolContext as Ctx
-from website_profiling.tools.audit_tools import compare as compare_mod
-from website_profiling.tools.audit_tools import crawl as crawl_mod
-from website_profiling.tools.audit_tools import keywords as kw_mod
-from website_profiling.tools.audit_tools import report as report_mod
-from website_profiling.tools.audit_tools import health as health_mod
-from website_profiling.tools.audit_tools import google as google_mod
-from website_profiling.tools.audit_tools import lighthouse as lh_mod
-from website_profiling.tools.audit_tools import links as links_mod
-from website_profiling.tools.audit_tools import backlinks as bl_mod
-from website_profiling.tools.audit_tools import content as content_mod
-from website_profiling.tools.audit_tools import issues as issues_mod
-from website_profiling.tools.audit_tools import schema as schema_mod
+from website_profiling.tools.audit_tools.compare import compare as compare_mod
+from website_profiling.tools.audit_tools.crawl import crawl as crawl_mod
+from website_profiling.tools.audit_tools.keywords import keywords as kw_mod
+from website_profiling.tools.audit_tools.report import report as report_mod
+from website_profiling.tools.audit_tools.portfolio import health as health_mod
+from website_profiling.tools.audit_tools.google import google as google_mod
+from website_profiling.tools.audit_tools.performance import lighthouse as lh_mod
+from website_profiling.tools.audit_tools.links import links as links_mod
+from website_profiling.tools.audit_tools.backlinks import backlinks as bl_mod
+from website_profiling.tools.audit_tools.content import content as content_mod
+from website_profiling.tools.audit_tools.issues import issues as issues_mod
+from website_profiling.tools.audit_tools.schema import schema as schema_mod
 
 
 def test_slice_edge_cases() -> None:
@@ -111,14 +111,14 @@ def test_crawl_lighthouse_links(conn: MagicMock | None = None) -> None:
     with patch.object(Ctx, "load_payload", return_value={}):
         assert links_mod.list_orphan_pages(conn, ctx, {})["error"]
     with patch.object(Ctx, "load_payload", return_value={"lighthouse_by_url": {}}), patch(
-        "website_profiling.tools.audit_tools.lighthouse.read_lighthouse_page_summaries", return_value={},
+        "website_profiling.tools.audit_tools.performance.lighthouse.read_lighthouse_page_summaries", return_value={},
     ):
         assert lh_mod.get_lighthouse_for_url(conn, ctx, {"url": "https://ex.com"})["error"]
 
 
 def test_security_workflow_backlinks() -> None:
-    from website_profiling.tools.audit_tools import security as sec_mod
-    from website_profiling.tools.audit_tools import workflow as wf_mod
+    from website_profiling.tools.audit_tools.security import security as sec_mod
+    from website_profiling.tools.audit_tools.ops import workflow as wf_mod
 
     conn = MagicMock()
     payload = {"security_findings": [{"url": "u", "severity": "High", "finding_type": "x", "message": "m"}]}
@@ -132,8 +132,15 @@ def test_security_workflow_backlinks() -> None:
     row = ("k", "u", "c", "Low", "m", "open", None, None, now)
     conn.execute = MagicMock(return_value=MagicMock(fetchall=MagicMock(return_value=[row])))
     ctx2 = Ctx(property_id=1)
-    assert wf_mod.list_issue_workflow(conn, ctx2, {"status": "closed"})["count"] == 0
+    # The status filter is now applied in SQL (before LIMIT), not in Python, so the
+    # predicate must be present in the query and bound as a parameter.
+    wf_mod.list_issue_workflow(conn, ctx2, {"status": "closed"})
+    called_sql, called_params = conn.execute.call_args[0][0], conn.execute.call_args[0][1]
+    assert "AND status = %s" in called_sql
+    assert "closed" in called_params
+    # No status filter → no status clause; the row is returned as-is.
     assert wf_mod.list_issue_workflow(conn, ctx2, {"limit": "bad"})["count"] == 1
+    assert "AND status = %s" not in conn.execute.call_args[0][0]
 
     with patch.object(Ctx, "load_gsc_links", return_value=None):
         assert bl_mod.get_gsc_links_summary(conn, Ctx(property_id=1), {})["missing"]
@@ -164,17 +171,17 @@ def test_misc_dispatch() -> None:
     conn = MagicMock()
     ctx = Ctx(property_id=None)
     assert dispatch_tool("get_integration_alerts", {}, context=ctx, conn=conn)["error"]
-    with patch("website_profiling.tools.audit_tools.ops.check_all_alerts", return_value=[]):
+    with patch("website_profiling.tools.audit_tools.ops.ops.check_all_alerts", return_value=[]):
         assert dispatch_tool("get_integration_alerts", {"property_id": 1}, context=Ctx(property_id=1), conn=conn)["count"] == 0
 
 
 def test_remaining_module_paths() -> None:
-    from website_profiling.tools.audit_tools import backlinks as bl
-    from website_profiling.tools.audit_tools import links as links_mod
-    from website_profiling.tools.audit_tools import content as ct
-    from website_profiling.tools.audit_tools import indexation_tools as idx
-    from website_profiling.tools.audit_tools import international as intl
-    from website_profiling.tools.audit_tools import tech as tech_mod
+    from website_profiling.tools.audit_tools.backlinks import backlinks as bl
+    from website_profiling.tools.audit_tools.links import links as links_mod
+    from website_profiling.tools.audit_tools.content import content as ct
+    from website_profiling.tools.audit_tools.indexation import indexation_tools as idx
+    from website_profiling.tools.audit_tools.indexation import international as intl
+    from website_profiling.tools.audit_tools.tech import tech as tech_mod
 
     conn = MagicMock()
     ctx = Ctx(property_id=1)
@@ -246,9 +253,9 @@ def test_remaining_module_paths() -> None:
 
     lh_payload = {"lighthouse_summary": None, "lighthouse_diagnostics": "x", "lighthouse_by_url": "x", "crux_summary": {"ok": True}}
     with patch.object(Ctx, "load_payload", return_value=lh_payload), patch(
-        "website_profiling.tools.audit_tools.lighthouse.read_lighthouse_summary", return_value={"p": 1},
+        "website_profiling.tools.audit_tools.performance.lighthouse.read_lighthouse_summary", return_value={"p": 1},
     ), patch(
-        "website_profiling.tools.audit_tools.lighthouse.read_lighthouse_page_summaries", return_value={"u": {"performance": 30}},
+        "website_profiling.tools.audit_tools.performance.lighthouse.read_lighthouse_page_summaries", return_value={"u": {"performance": 30}},
     ):
         assert lh_mod.get_lighthouse_summary(conn, ctx, {})["pages_audited"] == 1
         assert lh_mod.get_lighthouse_diagnostics(conn, ctx, {})["total"] == 0
@@ -292,19 +299,19 @@ def test_remaining_module_paths() -> None:
         assert health_mod.list_report_history(fake2, Ctx(property_id=1), {"limit": "bad"})["count"] == 0
 
     assert bl.get_gsc_links_import_status(conn, Ctx(property_id=1), {})  # patched in expanded tests
-    with patch("website_profiling.tools.audit_tools.backlinks.read_gsc_links_status", return_value={"hasData": False}):
+    with patch("website_profiling.tools.audit_tools.backlinks.backlinks.read_gsc_links_status", return_value={"hasData": False}):
         assert bl.get_gsc_links_import_status(conn, Ctx(property_id=1), {})["hasData"] is False
 
 
 def test_new_tools_coverage() -> None:
-    from website_profiling.tools.audit_tools import backlinks as bl_mod
-    from website_profiling.tools.audit_tools import charts as charts_mod
-    from website_profiling.tools.audit_tools import indexation_tools as idx_mod
-    from website_profiling.tools.audit_tools import compare_helpers as ch_mod
-    from website_profiling.tools.audit_tools import compare_slices as cs_mod
-    from website_profiling.tools.audit_tools import onpage as onpage_mod
-    from website_profiling.tools.audit_tools import ops as ops_mod
-    from website_profiling.tools.audit_tools import report_extras as rex_mod
+    from website_profiling.tools.audit_tools.backlinks import backlinks as bl_mod
+    from website_profiling.tools.audit_tools.portfolio import charts as charts_mod
+    from website_profiling.tools.audit_tools.indexation import indexation_tools as idx_mod
+    from website_profiling.tools.audit_tools.compare import compare_helpers as ch_mod
+    from website_profiling.tools.audit_tools.compare import compare_slices as cs_mod
+    from website_profiling.tools.audit_tools.onpage import onpage as onpage_mod
+    from website_profiling.tools.audit_tools.ops import ops as ops_mod
+    from website_profiling.tools.audit_tools.report import report_extras as rex_mod
     from website_profiling.reporting.compare_payload import build_url_set_diff
 
     conn = MagicMock()
@@ -391,7 +398,7 @@ def test_new_tools_coverage() -> None:
         fetchall=MagicMock(return_value=[{"captured_at": datetime.now(timezone.utc), "referring_domains": 5, "top_domains": []}]),
         fetchone=MagicMock(return_value={"schedule_cron": "0 9 * * 1", "alert_webhook_url": "u", "alert_email": "a@b.com"}),
     ))
-    with patch("website_profiling.tools.audit_tools.ops.get_property_by_id", return_value={"google_refresh_token": "t"}), patch.object(
+    with patch("website_profiling.tools.audit_tools.ops.ops.get_property_by_id", return_value={"google_refresh_token": "t"}), patch.object(
         Ctx, "load_google", return_value={"fetched_at": "2026-01-01"},
     ), patch("website_profiling.integrations.google.gsc_links_store.read_gsc_links_status", return_value={"hasData": True}):
         assert ops_mod.get_property_ops(conn, ctx, {})["has_schedule"]
@@ -427,7 +434,7 @@ def test_new_tools_coverage() -> None:
     def _read_pair(_conn: MagicMock, rid: int) -> dict:
         return cur_p if int(rid) == 1 else base_p
 
-    with patch("website_profiling.tools.audit_tools.compare_helpers.read_report_payload", side_effect=_read_pair):
+    with patch("website_profiling.tools.audit_tools.compare.compare_helpers.read_report_payload", side_effect=_read_pair):
         assert cs_mod.compare_url_set_diff(conn, ctx, {"baseline_report_id": 2})["new_count"] >= 1
         assert cs_mod.compare_issue_deltas(conn, ctx, {"baseline_report_id": 2})["issue_deltas"] == []
         assert cs_mod.compare_category_deltas(conn, ctx, {"baseline_report_id": 2})["category_scores"] == []
@@ -438,7 +445,7 @@ def test_new_tools_coverage() -> None:
 
     err = ch_mod.load_compare_pair(conn, ctx, {})
     assert err[4]["error"] == "baseline_report_id is required"
-    with patch("website_profiling.tools.audit_tools.compare_helpers.read_report_payload", side_effect=[{"a": 1}, None]):
+    with patch("website_profiling.tools.audit_tools.compare.compare_helpers.read_report_payload", side_effect=[{"a": 1}, None]):
         err2 = ch_mod.load_compare_pair(conn, Ctx(report_id=1), {"baseline_report_id": 2})
         assert "not found" in err2[4]["error"]
 
@@ -497,7 +504,7 @@ def test_new_tools_coverage() -> None:
 
     conn_rid = MagicMock()
     conn_rid.execute = MagicMock(return_value=MagicMock(fetchone=MagicMock(return_value={"id": 7})))
-    with patch("website_profiling.tools.audit_tools.compare_helpers.read_report_payload", side_effect=[{"links": []}, {"links": []}]):
+    with patch("website_profiling.tools.audit_tools.compare.compare_helpers.read_report_payload", side_effect=[{"links": []}, {"links": []}]):
         ok = ch_mod.load_compare_pair(conn_rid, Ctx(report_id=None), {"baseline_report_id": 2})
         assert ok[4] is None
         assert ok[2] == 7
@@ -524,7 +531,7 @@ def test_new_tools_coverage() -> None:
     assert ops_mod.get_property_ops(ops_conn, ctx, {})["error"] == "property not found"
     assert ops_mod.get_latest_log_analysis(ops_conn, ctx, {})["missing"]
 
-    with patch("website_profiling.tools.audit_tools.ops.get_property_by_id", return_value=None):
+    with patch("website_profiling.tools.audit_tools.ops.ops.get_property_by_id", return_value=None):
         assert ops_mod.get_google_integration_status(conn, ctx, {})["error"] == "property not found"
 
     with patch.object(Ctx, "load_gsc_links", return_value=None):
@@ -546,7 +553,7 @@ def test_new_tools_coverage() -> None:
 
     assert ch_mod._row_id({"id": 9}) == 9
     assert ch_mod._row_id((8,)) == 8
-    with patch("website_profiling.tools.audit_tools.compare_helpers.read_report_payload", return_value=None):
+    with patch("website_profiling.tools.audit_tools.compare.compare_helpers.read_report_payload", return_value=None):
         err_cur_only = ch_mod.load_compare_pair(conn, Ctx(report_id=3), {"baseline_report_id": 2})
         assert "not found" in err_cur_only[4]["error"]
 
@@ -586,14 +593,14 @@ def test_new_tools_coverage() -> None:
     ops_row.keys = MagicMock(return_value=["schedule_cron", "alert_webhook_url", "alert_email"])
     ops_conn3 = MagicMock()
     ops_conn3.execute = MagicMock(return_value=MagicMock(fetchone=MagicMock(return_value=ops_row)))
-    with patch("website_profiling.tools.audit_tools.ops._row_field", side_effect=lambda row, key, index=0: (
+    with patch("website_profiling.tools.audit_tools.ops.ops._row_field", side_effect=lambda row, key, index=0: (
         None, "https://hooks.example/alerts", None
     )[index]):
         ops = ops_mod.get_property_ops(ops_conn3, ctx, {})
         assert ops["has_alert_webhook"] is True
         assert ops["has_schedule"] is False
 
-    with patch("website_profiling.tools.audit_tools.ops.get_property_by_id", return_value={"google_refresh_token": "t"}), patch(
+    with patch("website_profiling.tools.audit_tools.ops.ops.get_property_by_id", return_value={"google_refresh_token": "t"}), patch(
         "website_profiling.integrations.google.gsc_links_store.read_gsc_links_status", side_effect=RuntimeError("db"),
     ), patch.object(Ctx, "load_google", return_value={}):
         status = ops_mod.get_google_integration_status(conn, ctx, {})
@@ -639,7 +646,7 @@ def test_new_tools_coverage() -> None:
     assert bl_mod.get_backlinks_velocity(bl_conn2, ctx, {})["count"] == 0
 
     with patch.object(Ctx, "load_google", return_value={"ga4": {"top_pages": []}, "fetched_at": "t"}), patch(
-        "website_profiling.tools.audit_tools.google.slice_from_google_row", return_value={"ga4": {"sessions": 3}},
+        "website_profiling.tools.audit_tools.google.google.slice_from_google_row", return_value={"ga4": {"sessions": 3}},
     ):
         assert google_mod.get_ga4_page_metrics(conn, ctx, {"path": "/x"})["metrics"]["sessions"] == 3
 
@@ -653,7 +660,7 @@ def test_new_tools_coverage() -> None:
 
 
 def test_property_profile_tools() -> None:
-    from website_profiling.tools.audit_tools import property_profile as pp_mod
+    from website_profiling.tools.audit_tools.portfolio import property_profile as pp_mod
 
     conn = MagicMock()
     ctx = Ctx(property_id=1)

@@ -33,6 +33,39 @@ def test_cron_matches_invalid_minute_or_hour() -> None:
     assert _cron_matches("abc 14 * * *", now) is False
 
 
+def test_cron_matches_day_of_month() -> None:
+    # Regression: "0 9 1 * *" previously fired EVERY day (DOM ignored); it must
+    # only fire on the 1st.
+    first = datetime(2026, 6, 1, 9, 0, tzinfo=timezone.utc)
+    second = datetime(2026, 6, 2, 9, 0, tzinfo=timezone.utc)
+    assert _cron_matches("0 9 1 * *", first) is True
+    assert _cron_matches("0 9 1 * *", second) is False
+
+
+def test_cron_matches_month_field() -> None:
+    jan1 = datetime(2026, 1, 1, 9, 0, tzinfo=timezone.utc)
+    jun1 = datetime(2026, 6, 1, 9, 0, tzinfo=timezone.utc)
+    assert _cron_matches("0 9 1 1 *", jan1) is True
+    assert _cron_matches("0 9 1 1 *", jun1) is False  # wrong month
+
+
+def test_cron_dom_dow_or_semantics() -> None:
+    # "0 9 1 * 0" = 1st of month OR Sunday (standard cron OR-semantics).
+    mon_first = datetime(2026, 6, 1, 9, 0, tzinfo=timezone.utc)   # Monday, day 1
+    sunday = datetime(2026, 6, 7, 9, 0, tzinfo=timezone.utc)      # Sunday, day 7
+    mon_eighth = datetime(2026, 6, 8, 9, 0, tzinfo=timezone.utc)  # Monday, day 8
+    assert _cron_matches("0 9 1 * 0", mon_first) is True   # DOM matches
+    assert _cron_matches("0 9 1 * 0", sunday) is True      # DOW matches
+    assert _cron_matches("0 9 1 * 0", mon_eighth) is False  # neither
+
+
+def test_cron_dom_list_and_invalid_field() -> None:
+    fifteenth = datetime(2026, 6, 15, 9, 0, tzinfo=timezone.utc)
+    assert _cron_matches("0 9 1,15 * *", fifteenth) is True
+    # A malformed day-of-month token fails closed (no spurious run).
+    assert _cron_matches("0 9 x * *", fifteenth) is False
+
+
 def test_cron_invalid_expression() -> None:
     now = datetime(2026, 6, 7, 10, 0, tzinfo=timezone.utc)
     assert _cron_matches("bad cron", now) is False

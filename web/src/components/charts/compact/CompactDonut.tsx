@@ -1,3 +1,8 @@
+'use client';
+
+import { arc, pie } from 'd3-shape';
+import { scaleLinear } from 'd3-scale';
+
 export interface CompactDonutSegment {
   label: string;
   value: number;
@@ -8,9 +13,7 @@ export interface CompactDonutProps {
   segments: CompactDonutSegment[];
   centerLabel?: string;
   centerValue?: string;
-  /** When true, legend shows raw counts; otherwise percentages of total */
   showCounts?: boolean;
-  /** Tailwind size classes for the donut ring (default compact h-14 w-14) */
   ringClassName?: string;
 }
 
@@ -24,44 +27,59 @@ export function CompactDonut({
   const total = segments.reduce((sum, s) => sum + s.value, 0);
   if (total <= 0) return null;
 
-  let cumulative = 0;
-  const gradient = segments
-    .map((s) => {
-      const start = (cumulative / total) * 100;
-      cumulative += s.value;
-      const end = (cumulative / total) * 100;
-      return `${s.color} ${start}% ${end}%`;
-    })
-    .join(', ');
+  const size = 56;
+  const cx = size / 2;
+  const cy = size / 2;
+  const outerR = size / 2 - 2;
+  const innerR = outerR * 0.62;
+
+  const pieLayout = pie<CompactDonutSegment>().sort(null).value((d) => d.value);
+  const arcGen = arc<{ startAngle: number; endAngle: number; data: CompactDonutSegment }>()
+    .innerRadius(innerR)
+    .outerRadius(outerR);
+  const arcs = pieLayout(segments);
+
+  const pctScale = scaleLinear().domain([0, total]).range([0, 100]);
 
   return (
     <div className="flex items-center gap-2">
       <div className={`relative shrink-0 ${ringClassName}`.trim()}>
-        <div className="h-full w-full rounded-full" style={{ background: `conic-gradient(${gradient})` }} />
-        <div className="absolute inset-[22%] flex flex-col items-center justify-center rounded-full bg-brand-900/95">
-          {centerValue ? (
-            <span className="text-[10px] font-bold tabular-nums text-bright">{centerValue}</span>
-          ) : null}
-          {centerLabel ? (
-            <span className="text-[7px] uppercase text-muted-foreground">{centerLabel}</span>
-          ) : null}
-        </div>
+        <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full" aria-hidden="true">
+          <g transform={`translate(${cx},${cy})`}>
+            {arcs.map((d) => (
+              <path
+                key={d.data.label}
+                d={arcGen(d) ?? ''}
+                fill={d.data.color}
+                stroke="var(--background, #0f172a)"
+                strokeWidth={1}
+              />
+            ))}
+          </g>
+        </svg>
+        {centerLabel || centerValue ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center leading-tight">
+            {centerValue ? (
+              <span className="text-xs font-bold tabular-nums text-foreground">{centerValue}</span>
+            ) : null}
+            {centerLabel ? (
+              <span className="text-[8px] text-muted-foreground">{centerLabel}</span>
+            ) : null}
+          </div>
+        ) : null}
       </div>
-      <ul className="min-w-0 flex-1 space-y-1">
-        {segments.map((s) => {
-          const pct = Math.round((s.value / total) * 100);
-          return (
-            <li key={s.label} className="flex items-center justify-between gap-1 text-[9px] sm:text-[10px]">
-              <span className="flex min-w-0 items-center gap-1 text-muted-foreground">
-                <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: s.color }} />
-                <span className="truncate">{s.label}</span>
-              </span>
-              <span className="shrink-0 font-semibold tabular-nums text-foreground">
-                {showCounts ? s.value.toLocaleString() : `${pct}%`}
-              </span>
-            </li>
-          );
-        })}
+      <ul className="min-w-0 space-y-0.5 text-[10px] text-muted-foreground">
+        {segments.map((s) => (
+          <li key={s.label} className="flex items-center gap-1.5">
+            <span className="h-2 w-2 shrink-0 rounded-sm" style={{ background: s.color }} />
+            <span className="truncate">
+              {s.label}{' '}
+              {showCounts
+                ? `(${s.value.toLocaleString()})`
+                : `(${pctScale(s.value).toFixed(1)}%)`}
+            </span>
+          </li>
+        ))}
       </ul>
     </div>
   );

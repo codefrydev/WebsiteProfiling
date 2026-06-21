@@ -101,7 +101,15 @@ def _origin_allowed(origin: str, allowed_origins: list[str]) -> bool:
             return True
         if pattern.startswith("http://") or pattern.startswith("https://"):
             continue
-        if origin_host == pattern or origin_host.endswith(f".{pattern.removeprefix('*.')}"):
+        if pattern.startswith("*."):
+            # Wildcard: match the apex and any subdomain.
+            if origin_host == pattern[2:] or origin_host.endswith(pattern[1:]):
+                return True
+            continue
+        # Bare hostname: exact match only. A non-wildcard pattern must NOT be
+        # widened into a ".pattern" suffix match, or `example.com` would also
+        # allow `evil.example.com`.
+        if origin_host == pattern:
             return True
     return False
 
@@ -179,7 +187,17 @@ class RemoteAccessMiddleware:
             return
 
         origin = headers.get("origin", "")
-        if settings.allowed_origins and not _origin_allowed(origin, settings.allowed_origins):
+        if settings.allowed_origins:
+            if not _origin_allowed(origin, settings.allowed_origins):
+                await _reject_request(send, 403, "Origin not allowed for remote MCP")
+                return
+        elif origin.strip() and not _host_allowed(_origin_host(origin), settings.allowed_hosts):
+            # No explicit allowed_origins configured. Transport-level Origin /
+            # DNS-rebinding protection is delegated to this middleware (see
+            # _transport_security_settings), so a request carrying a browser
+            # Origin header must at least be same-host as an allowed host;
+            # otherwise an unconfigured deployment performs no Origin check at
+            # all. Non-browser clients send no Origin and are unaffected.
             await _reject_request(send, 403, "Origin not allowed for remote MCP")
             return
 

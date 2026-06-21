@@ -143,7 +143,7 @@ def test_crawl_extras_tools(conn: MagicMock, ctx: AuditToolContext) -> None:
 def test_compare_indexation_and_orphan_deltas(conn: MagicMock, ctx: AuditToolContext) -> None:
     current = _payload()
     baseline = {**_payload(), "indexation_coverage": {"counts": {"crawled": 8}, "lists": {}, "lists_total": {}}, "orphan_urls": []}
-    with patch("website_profiling.tools.audit_tools.compare_slices.load_compare_pair", return_value=(current, baseline, 2, 1, None)):
+    with patch("website_profiling.tools.audit_tools.compare.compare_slices.load_compare_pair", return_value=(current, baseline, 2, 1, None)):
         idx = dispatch_tool("compare_indexation_deltas", {"baseline_report_id": 1}, context=ctx, conn=conn)
         assert idx["count_deltas"]
         orphan = dispatch_tool("compare_orphan_deltas", {"baseline_report_id": 1}, context=ctx, conn=conn)
@@ -152,7 +152,7 @@ def test_compare_indexation_and_orphan_deltas(conn: MagicMock, ctx: AuditToolCon
 
 def test_geo_tools_mocked(conn: MagicMock, ctx: AuditToolContext) -> None:
     with patch.object(Ctx, "load_payload", return_value=_payload()), patch.object(Ctx, "load_crawl_df", return_value=_crawl_df()), patch(
-        "website_profiling.tools.audit_tools.geo_tools._fetch_llms_txt",
+        "website_profiling.tools.audit_tools.geo.geo_tools._fetch_llms_txt",
         return_value={"found": False},
     ):
         geo = dispatch_tool("get_geo_readiness_score", {}, context=ctx, conn=conn)
@@ -176,7 +176,7 @@ def test_prioritize_fix_roadmap(conn: MagicMock, ctx: AuditToolContext) -> None:
 
 
 def test_integration_tools_missing_config(conn: MagicMock, ctx: AuditToolContext) -> None:
-    with patch("website_profiling.tools.audit_tools.integration_tools.get_property_by_id", return_value={"canonical_domain": "ex.com"}):
+    with patch("website_profiling.tools.audit_tools.integrations.integration_tools.get_property_by_id", return_value={"canonical_domain": "ex.com"}):
         gsc = dispatch_tool("get_gsc_url_inspection", {"url": "https://ex.com/"}, context=ctx, conn=conn)
         assert gsc["missing"] is True
         bing = dispatch_tool("get_bing_index_status", {"url": "https://ex.com/"}, context=ctx, conn=conn)
@@ -192,11 +192,11 @@ def test_gsc_index_coverage_from_payload(conn: MagicMock, ctx: AuditToolContext)
 
 def test_gsc_url_inspection_mocked(conn: MagicMock, ctx: AuditToolContext) -> None:
     prop = {"google_refresh_token": "tok", "gsc_site_url": "https://ex.com/"}
-    with patch("website_profiling.tools.audit_tools.integration_tools.get_property_by_id", return_value=prop), patch(
-        "website_profiling.tools.audit_tools.integration_tools.build_credentials",
+    with patch("website_profiling.tools.audit_tools.integrations.integration_tools.get_property_by_id", return_value=prop), patch(
+        "website_profiling.tools.audit_tools.integrations.integration_tools.build_credentials",
         return_value=object(),
     ), patch(
-        "website_profiling.tools.audit_tools.integration_tools.inspect_url",
+        "website_profiling.tools.audit_tools.integrations.integration_tools.inspect_url",
         return_value={"verdict": "PASS", "provenance": "GSC"},
     ):
         out = dispatch_tool("get_gsc_url_inspection", {"url": "https://ex.com/page"}, context=ctx, conn=conn)

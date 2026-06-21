@@ -386,7 +386,9 @@ def test_crawl_handles_worker_exception(monkeypatch):
     df = c.crawl(show_progress=False)
     assert len(df) == 1
     assert df.iloc[0]["status"] == "error"
-    assert df.iloc[0]["url"] is None
+    # The error row now carries the dequeued URL (so it persists to the DB in
+    # streaming mode too), rather than being url-less and silently dropped.
+    assert df.iloc[0]["url"] and "site.com" in str(df.iloc[0]["url"])
     assert "outlink_targets" in df.columns
 
 
@@ -443,6 +445,55 @@ def test_crawl_streams_rows_to_db_writer(monkeypatch):
     assert writer.started is True
     assert writer.finished is True
     assert writer.enqueued and writer.enqueued[0]["url"] == "https://site.com"
+
+
+def test_crawl_streams_error_rows_to_db_writer(monkeypatch):
+    # Regression: an errored fetch must still be persisted to the DB in streaming
+    # mode (it previously got a url-less error row and was silently dropped).
+    import website_profiling.crawl.crawler as mod
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
+        lambda *_a, **_k: [],
+    )
+
+    enqueued: list[dict] = []
+
+    class FakeDbWriter:
+        def __init__(self, *_a, **_k) -> None:
+            pass
+
+        def start(self) -> None:
+            pass
+
+        def enqueue(self, record: dict) -> None:
+            enqueued.append(record)
+
+        def finish(self) -> None:
+            pass
+
+        def join(self) -> None:
+            return None
+
+        def raise_if_failed(self) -> None:
+            return None
+
+    monkeypatch.setattr(mod, "_CrawlDbWriter", FakeDbWriter)
+    c = mod.Crawler(
+        start_url="https://site.com",
+        ignore_robots=True,
+        use_wappalyzer=False,
+        concurrency=1,
+        max_pages=1,
+    )
+
+    def _boom(_url):
+        raise RuntimeError("worker exploded")
+
+    monkeypatch.setattr(c, "worker", _boom)
+    c.crawl(show_progress=False, stream_crawl_run_id=7, stream_batch_size=100)
+    assert enqueued and enqueued[0]["status"] == "error"
+    assert "site.com" in str(enqueued[0]["url"])
 
 
 def test_run_crawler_writes_json(monkeypatch, tmp_path):
