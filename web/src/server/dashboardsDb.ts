@@ -26,7 +26,7 @@ function toRow(r: DbRow): DashboardRow {
     id: r.id,
     propertyId: r.property_id,
     name: r.name,
-    layoutJson: r.layout_json ?? { version: 1, widgets: [] },
+    layoutJson: r.layout_json ?? { version: 2, widgets: [], slicers: [] },
     isDefault: r.is_default,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
