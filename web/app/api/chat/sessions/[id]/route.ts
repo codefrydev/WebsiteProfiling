@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
-import { requireApiAuthForChat } from '@/server/auth';
+import { requireApiAuth, requireApiAuthForChat } from '@/server/auth';
 import { deleteChatSession, getChatSession } from '@/server/chatDb';
 import type { ApiRouteHandler } from '@/types/api';
 
@@ -35,14 +35,15 @@ export const GET: ApiRouteHandler = async (
   }
 };
 
-/** DELETE /api/chat/sessions/[id] */
+/** DELETE /api/chat/sessions/[id]?propertyId= */
 export const DELETE: ApiRouteHandler = async (
   request: NextRequest,
   context?: { params?: Promise<{ id: string }> },
 ): Promise<Response> => {
   const denied = forbiddenIfNotLocal(request);
   if (denied) return denied;
-  const authDenied = requireApiAuthForChat(request);
+  // Deleting a session is a destructive mutation: require a non-read-only role.
+  const authDenied = requireApiAuth(request);
   if (authDenied) return authDenied;
 
   const params = context?.params ? await context.params : { id: '' };
@@ -50,8 +51,17 @@ export const DELETE: ApiRouteHandler = async (
   if (!sessionId) {
     return NextResponse.json({ error: 'invalid session id' }, { status: 400 });
   }
+  const propertyId = Number(request.nextUrl.searchParams.get('propertyId') || '0');
+  if (!propertyId) {
+    return NextResponse.json({ error: 'propertyId required' }, { status: 400 });
+  }
 
   try {
+    // Scope the delete to the caller's property (consistent with POST /api/chat).
+    const session = await getChatSession(sessionId);
+    if (!session || session.property_id !== propertyId) {
+      return NextResponse.json({ error: 'session not found' }, { status: 404 });
+    }
     const deleted = await deleteChatSession(sessionId);
     if (!deleted) {
       return NextResponse.json({ error: 'session not found' }, { status: 404 });

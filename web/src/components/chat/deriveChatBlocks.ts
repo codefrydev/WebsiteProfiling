@@ -229,7 +229,9 @@ export function blockKey(block: ChatBlock): string {
     case 'label_value_chart':
       return `label_value:${block.title}`;
     case 'health_trend':
-      return block.categoryId ? `health_trend:${block.categoryId}` : 'health_trend';
+      // Fall back to the title so a site-wide trend and an all-categories
+      // trend (both lacking a categoryId) don't collide and drop one another.
+      return block.categoryId ? `health_trend:${block.categoryId}` : `health_trend:${block.title}`;
     case 'file_download':
       return `file_download:${block.files.map((f) => f.filename).join(',')}`;
     case 'audit_run_confirm':

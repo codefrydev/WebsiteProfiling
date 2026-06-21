@@ -82,13 +82,18 @@ export const GET: ApiRouteHandlerWithParams<{ id: string }> = async (
           return;
         }
         const body = Buffer.from(parsed.data_base64, 'base64');
-        const filename = parsed.filename || 'export.bin';
+        const rawName = parsed.filename || 'export.bin';
+        // Sanitize the ASCII fallback (strip non-printable/quote/slash chars so
+        // a CR/LF or quote can't break or inject the header) and provide an
+        // RFC 5987 filename* for the full UTF-8 name.
+        const asciiName =
+          rawName.replace(/[^\x20-\x7e]/g, '_').replace(/["\\/]/g, '_') || 'export.bin';
         const mime = parsed.mime_type || 'application/octet-stream';
         resolve(
           new NextResponse(body, {
             headers: {
               'Content-Type': mime,
-              'Content-Disposition': `attachment; filename="${filename}"`,
+              'Content-Disposition': `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(rawName)}`,
             },
           }),
         );

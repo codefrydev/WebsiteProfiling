@@ -32,6 +32,13 @@ export default function ChatMessageList({ messages, empty }: ChatMessageListProp
   useEffect(() => {
     const node = scrollRef.current;
     if (!node) return;
+    // Only stick to the bottom if the user is already near it; otherwise a
+    // user scrolling up to read history during streaming would be yanked down
+    // on every token.
+    const NEAR_BOTTOM_PX = 120;
+    const nearBottom =
+      node.scrollHeight - node.scrollTop - node.clientHeight <= NEAR_BOTTOM_PX;
+    if (!nearBottom) return;
     const raf = requestAnimationFrame(() => {
       node.scrollTop = node.scrollHeight;
     });

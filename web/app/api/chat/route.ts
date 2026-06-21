@@ -120,6 +120,31 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
   const chatTimeoutMs = await resolveChatTimeoutMs();
   const timeoutSec = Math.round(chatTimeoutMs / 1000);
 
+  // Track the spawned child so we can kill it if the client disconnects
+  // (ReadableStream.cancel) instead of leaking it until the timeout fires.
+  let activeProc: ReturnType<typeof spawn> | null = null;
+  let activeKillTimer: ReturnType<typeof setTimeout> | null = null;
+  let cancelled = false;
+
+  const cancelChild = () => {
+    cancelled = true;
+    const p = activeProc;
+    if (!p) return;
+    try {
+      p.kill('SIGTERM');
+      activeKillTimer = setTimeout(() => {
+        try {
+          p.kill('SIGKILL');
+        } catch {
+          /* already exited */
+        }
+      }, 2000);
+      (activeKillTimer as { unref?: () => void }).unref?.();
+    } catch {
+      /* already exited */
+    }
+  };
+
   const stream = new ReadableStream({
     start(controller) {
       const encoder = new TextEncoder();
@@ -170,6 +195,7 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
           shell: false,
         },
       );
+      activeProc = proc;
 
       const timer = setTimeout(() => {
         timedOut = true;
@@ -182,6 +208,14 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
         closeStream();
       }, chatTimeoutMs);
 
+      // Without an error listener, an EPIPE/ERR_STREAM_DESTROYED on the stdin
+      // pipe (child exits before reading) would surface as an unhandled stream
+      // error and crash the Node process instead of a clean chat error.
+      proc.stdin?.on('error', (err: Error) => {
+        clearTimeout(timer);
+        push('error', { message: `Failed to send request to assistant: ${err.message}` });
+        closeStream();
+      });
       proc.stdin?.write(stdinPayload);
       proc.stdin?.end();
 
@@ -265,7 +299,13 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
 
       proc.on('close', async (code: number | null) => {
         clearTimeout(timer);
-        if (timedOut) return;
+        if (activeKillTimer) {
+          clearTimeout(activeKillTimer);
+          activeKillTimer = null;
+        }
+        // On client cancel we drop the partial turn (the user navigated away);
+        // on timeout the error was already streamed.
+        if (timedOut || cancelled) return;
         exitCode = code;
 
         if (!sawError && !assistantText.trim() && !narrative) {
@@ -326,6 +366,11 @@ export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Respo
 
         closeStream();
       });
+    },
+    cancel() {
+      // Client disconnected mid-stream (reload/navigate/abort): terminate the
+      // agent process so it does not keep holding the LLM connection/CPU.
+      cancelChild();
     },
   });
 

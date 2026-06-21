@@ -105,8 +105,11 @@ export function preprocessChatMarkdown(content: string): string {
   let out = content.trim();
   if (!out) return out;
 
+  // NOTE: the leading character class already includes \s, so a trailing \s*
+  // here would overlap it and cause quadratic backtracking (ReDoS) on long
+  // whitespace-only lines. Keep the whitespace handled by the class only.
   out = out.replace(
-    /^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s🔎📸💡]*\s*(Power Insights|Key takeaways|Executive summary)(?:\s+for\s+[\w.-]+)?\s*$/gimu,
+    /^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s🔎📸💡]*(Power Insights|Key takeaways|Executive summary)(?:\s+for\s+[\w.-]+)?\s*$/gimu,
     '### $1',
   );
 

@@ -77,6 +77,7 @@ export default function ChatPage() {
   const [urlSyncEnabled, setUrlSyncEnabled] = useState(false);
   const messagesLoadGen = useRef(0);
   const sessionRestoredForProperty = useRef<number | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const searchKey = searchParams.toString();
 
@@ -183,11 +184,11 @@ export default function ChatPage() {
     }
   }, []);
 
-  const loadMessages = useCallback(async (sid: number) => {
+  const loadMessages = useCallback(async (sid: number, pid: number) => {
     const gen = ++messagesLoadGen.current;
     setLoadingMessages(true);
     try {
-      const res = await fetch(apiUrl(`/chat/sessions/${sid}/messages`));
+      const res = await fetch(apiUrl(`/chat/sessions/${sid}/messages?propertyId=${pid}`));
       if (!res.ok) return;
       const data = (await res.json()) as {
         messages?: Array<{
@@ -287,9 +288,9 @@ export default function ChatPage() {
 
   useEffect(() => {
     if (busy) return;
-    if (sessionId) void loadMessages(sessionId);
-    else setMessages([]);
-  }, [sessionId, loadMessages, busy]);
+    if (sessionId && propertyId) void loadMessages(sessionId, propertyId);
+    else if (!sessionId) setMessages([]);
+  }, [sessionId, propertyId, loadMessages, busy]);
 
   useEffect(() => {
     if (!busy || !startedAt) {
@@ -301,6 +302,9 @@ export default function ChatPage() {
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
   }, [busy, startedAt]);
+
+  // Abort any in-flight chat stream when the page unmounts.
+  useEffect(() => () => abortRef.current?.abort(), []);
 
   const createSession = async (): Promise<number | null> => {
     if (!propertyId) return null;
@@ -352,11 +356,16 @@ export default function ChatPage() {
       { id: assistantId, role: 'assistant', content: '', streaming: true, toolActivity: [] },
     ]);
 
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     try {
       const res = await fetch(apiUrl('/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: sid, propertyId, message: text }),
+        signal: controller.signal,
       });
 
       if (!res.ok) {
@@ -483,9 +492,15 @@ export default function ChatPage() {
           toolActivity: tools,
         });
       }
-      if (sid) await loadMessages(sid);
+      if (sid && propertyId) await loadMessages(sid, propertyId);
       if (propertyId) await loadSessions(propertyId);
     } catch (e) {
+      // Aborted (session switch / delete / unmount): not a user-facing error.
+      // The message-load effect re-runs once busy clears and restores the
+      // correct session, so leave the assistant placeholder alone here.
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        return;
+      }
       const msg = e instanceof Error ? e.message : String(e);
       setError(msg);
       setMessages((prev) =>
@@ -496,6 +511,7 @@ export default function ChatPage() {
         ),
       );
     } finally {
+      if (abortRef.current === controller) abortRef.current = null;
       setBusy(false);
       setActivityText('');
       setStartedAt(null);
@@ -503,12 +519,14 @@ export default function ChatPage() {
   };
 
   const handleDeleteSession = async (id: number) => {
-    await fetch(apiUrl(`/chat/sessions/${id}`), { method: 'DELETE' });
+    if (!propertyId) return;
+    if (sessionId === id) abortRef.current?.abort();
+    await fetch(apiUrl(`/chat/sessions/${id}?propertyId=${propertyId}`), { method: 'DELETE' });
     if (sessionId === id) {
       setSessionId(null);
       setMessages([]);
     }
-    if (propertyId) await loadSessions(propertyId);
+    await loadSessions(propertyId);
   };
 
   const modelPicker = llmEnabled ? (
@@ -560,6 +578,7 @@ export default function ChatPage() {
           properties={properties}
           propertyId={propertyId}
           onPropertyChange={(id) => {
+            abortRef.current?.abort();
             sessionRestoredForProperty.current = null;
             setUrlSyncEnabled(false);
             setPropertyId(id);
@@ -571,6 +590,7 @@ export default function ChatPage() {
           }}
           onNewChat={() => void handleNewChat()}
           onSelect={(id) => {
+            if (id !== sessionId) abortRef.current?.abort();
             setSessionId(id);
             setLoadingMessages(true);
           }}

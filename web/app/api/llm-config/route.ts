@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
+import { requireApiAuth, requireApiAuthForChat } from '@/server/auth';
 import { loadLlmConfig, saveLlmConfig } from '@/server/llmConfig';
 import { ALL_LLM_SCHEMA_KEYS, getLlmFieldByKey } from '@/lib/llmConfigSchema';
 import type { ApiRouteHandler, LlmConfigPutBody, LlmConfigState } from '@/types/api';
@@ -10,6 +11,8 @@ export const runtime = 'nodejs';
 export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Response> => {
   const denied = forbiddenIfNotLocal(request);
   if (denied) return denied;
+  const authDenied = requireApiAuthForChat(request);
+  if (authDenied) return authDenied;
 
   try {
     const result = await loadLlmConfig();
@@ -24,6 +27,8 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
 export const PUT: ApiRouteHandler = async (request: NextRequest): Promise<Response> => {
   const denied = forbiddenIfNotLocal(request);
   if (denied) return denied;
+  const authDenied = requireApiAuth(request);
+  if (authDenied) return authDenied;
 
   let body: LlmConfigPutBody;
   try {
