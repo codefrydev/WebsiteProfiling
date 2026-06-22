@@ -1,61 +1,21 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { localRequest, makeSpawnChild, makeSpawnError } from '@/server/testHelpers/routeTestUtils';
+import { localRequest, remoteRequest } from '@/server/testHelpers/routeTestUtils';
 
-const spawnMock = vi.fn();
-const loadPipelineConfigMock = vi.fn();
+const proxyMock = vi.fn();
+vi.mock('@/server/proxyToFastAPI', () => ({ proxyToFastAPI: (...a: unknown[]) => proxyMock(...a) }));
 
-vi.mock('child_process', () => ({
-  spawn: (...args: unknown[]) => spawnMock(...args),
-}));
-
-vi.mock('@/server/pipelineConfig', () => ({
-  loadPipelineConfig: (...args: unknown[]) => loadPipelineConfigMock(...args),
-  loadPipelineConfigUnmasked: (...args: unknown[]) => loadPipelineConfigMock(...args),
-}));
-
-describe('integrations/bing/sync route', () => {
-  beforeEach(() => {
-    spawnMock.mockReset();
-    loadPipelineConfigMock.mockReset();
-    vi.resetModules();
-  });
-
-  it('returns 400 when credentials missing', async () => {
-    loadPipelineConfigMock.mockResolvedValue({ state: { start_url: 'https://example.com' } });
+describe('integrations/bing/sync route proxy', () => {
+  beforeEach(() => { proxyMock.mockReset(); vi.resetModules(); proxyMock.mockResolvedValue(new Response('{}', { status: 200 })); });
+  it('returns 403 for non-local', async () => {
     const { POST } = await import('../../app/api/integrations/bing/sync/route');
-    const res = await POST(localRequest('/api/integrations/bing/sync', { method: 'POST' }));
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toMatch(/bing_webmaster_api_key/i);
+    const res = await POST(remoteRequest('/api/integrations/bing/sync', { method: 'POST' }));
+    expect(res.status).toBe(403);
   });
-
-  it('returns Bing summary on success', async () => {
-    loadPipelineConfigMock.mockResolvedValue({
-      state: { bing_webmaster_api_key: 'key', start_url: 'https://example.com' },
-    });
-    spawnMock.mockImplementation(() =>
-      makeSpawnChild(JSON.stringify({ ok: true, linked_page_count: 3 }) + '\n', 0),
-    );
+  it('proxies POST to FastAPI', async () => {
     const { POST } = await import('../../app/api/integrations/bing/sync/route');
-    const res = await POST(localRequest('/api/integrations/bing/sync', { method: 'POST' }));
+    const req = localRequest('/api/integrations/bing/sync', { method: 'POST' });
+    const res = await POST(req);
     expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.linked_page_count).toBe(3);
-    // Regression: the real (unmasked) key must reach Python, never a '••••' placeholder.
-    const spawnArgs = spawnMock.mock.calls[0][1] as string[];
-    expect(spawnArgs).toContain('key');
-    expect(spawnArgs.some((a) => a.includes('•'))).toBe(false);
-  });
-
-  it('returns 500 (not a hang) when the Python process fails to spawn', async () => {
-    loadPipelineConfigMock.mockResolvedValue({
-      state: { bing_webmaster_api_key: 'key', start_url: 'https://example.com' },
-    });
-    spawnMock.mockImplementation(() => makeSpawnError('spawn python3 ENOENT'));
-    const { POST } = await import('../../app/api/integrations/bing/sync/route');
-    const res = await POST(localRequest('/api/integrations/bing/sync', { method: 'POST' }));
-    expect(res.status).toBe(500);
-    const body = await res.json();
-    expect(body.error).toMatch(/ENOENT/);
+    expect(proxyMock).toHaveBeenCalledWith(req, '/api/integrations/bing/sync');
   });
 });

@@ -33,6 +33,7 @@ services:
       CHROME_PATH: /usr/bin/chromium
       LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
       LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
+      FASTAPI_URL: http://127.0.0.1:8001
     volumes:
       - profiling-data:/data
     healthcheck:

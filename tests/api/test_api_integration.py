@@ -1,0 +1,357 @@
+"""FastAPI HTTP integration tests — exercises real routes against PostgreSQL.
+
+These catch response-shape regressions and dict_row bugs that unit tests miss.
+Requires DATABASE_URL (same as other @pytest.mark.integration tests).
+"""
+from __future__ import annotations
+
+import uuid
+from typing import Any
+from unittest.mock import patch
+
+import pytest
+from fastapi.testclient import TestClient
+
+from website_profiling.db.pool import db_session
+
+
+pytestmark = pytest.mark.integration
+
+
+def test_health(api_client: TestClient) -> None:
+    res = api_client.get("/api/health")
+    assert res.status_code == 200
+    body = res.json()
+    assert body["ok"] is True
+    assert body["database"] == "up"
+
+
+def test_report_meta_response_shape(api_client: TestClient) -> None:
+    res = api_client.get("/api/report/meta")
+    assert res.status_code == 200
+    body = res.json()
+    assert "reports" in body
+    assert "crawlRuns" in body
+    assert isinstance(body["reports"], list)
+    for row in body["reports"]:
+        assert "canonical_domain" in row
+        assert "site_name" in row
+        assert "generated_at" in row
+        assert "canonicalDomain" not in row
+
+
+def test_properties_crud_and_ops(api_client: TestClient) -> None:
+    domain = f"api-prop-{uuid.uuid4().hex[:10]}.example"
+    create = api_client.post(
+        "/api/properties",
+        json={"name": "Props API", "canonical_domain": domain, "site_url": f"https://{domain}"},
+    )
+    assert create.status_code == 201
+    created = create.json()
+    property_id = int(created["id"])
+    assert created["canonical_domain"] == domain
+
+    try:
+        listing = api_client.get("/api/properties")
+        assert listing.status_code == 200
+        ids = {p["id"] for p in listing.json()["properties"]}
+        assert property_id in ids
+
+        detail = api_client.get(f"/api/properties/{property_id}")
+        assert detail.status_code == 200
+        assert detail.json()["canonical_domain"] == domain
+
+        ops_put = api_client.put(
+            f"/api/properties/{property_id}/ops",
+            json={
+                "scheduleCron": "0 9 * * 1",
+                "alertWebhookUrl": "https://hooks.example/alert",
+                "alertEmail": "ops@example.com",
+            },
+        )
+        assert ops_put.status_code == 200
+        assert ops_put.json()["ok"] is True
+
+        ops_get = api_client.get(f"/api/properties/{property_id}/ops")
+        assert ops_get.status_code == 200
+        ops = ops_get.json()
+        assert ops["schedule_cron"] == "0 9 * * 1"
+        assert ops["alert_webhook_url"] == "https://hooks.example/alert"
+        assert ops["alert_email"] == "ops@example.com"
+
+        preset_put = api_client.put(
+            f"/api/properties/{property_id}/preset",
+            json={"preset": "quick"},
+        )
+        assert preset_put.status_code == 200
+        assert preset_put.json()["default_crawl_preset"] == "quick"
+    finally:
+        deleted = api_client.delete(f"/api/properties/{property_id}")
+        assert deleted.status_code == 200
+        assert deleted.json()["ok"] is True
+
+
+def test_property_google_status_shape(api_client: TestClient, test_property: dict[str, Any]) -> None:
+    property_id = int(test_property["id"])
+    res = api_client.get(f"/api/properties/{property_id}/google/status")
+    assert res.status_code == 200
+    body = res.json()
+    for key in (
+        "connected",
+        "authMode",
+        "gscSiteUrl",
+        "ga4PropertyId",
+        "dateRangeDays",
+        "hasClientId",
+        "lastFetchedAt",
+        "propertyId",
+    ):
+        assert key in body
+    assert body["propertyId"] == property_id
+
+
+def test_integrations_google_status(api_client: TestClient) -> None:
+    res = api_client.get("/api/integrations/google/status")
+    assert res.status_code == 200
+    body = res.json()
+    assert "hasClientId" in body
+    assert "lastFetchedAt" in body
+
+
+def test_pipeline_and_llm_config_wrappers(api_client: TestClient) -> None:
+    pipe = api_client.get("/api/pipeline-config")
+    assert pipe.status_code == 200
+    pipe_body = pipe.json()
+    assert "state" in pipe_body
+    assert isinstance(pipe_body["state"], dict)
+
+    llm = api_client.get("/api/llm-config")
+    assert llm.status_code == 200
+    llm_body = llm.json()
+    assert "state" in llm_body
+    assert isinstance(llm_body["state"], dict)
+
+
+def test_content_drafts_full_crud(api_client: TestClient, test_property: dict[str, Any]) -> None:
+    property_id = int(test_property["id"])
+
+    empty = api_client.get("/api/content-drafts", params={"propertyId": property_id})
+    assert empty.status_code == 200
+    assert isinstance(empty.json()["drafts"], list)
+
+    create = api_client.post(
+        "/api/content-drafts",
+        json={
+            "propertyId": property_id,
+            "title": "Integration draft",
+            "target_keyword": "seo audit",
+        },
+    )
+    assert create.status_code == 200
+    draft_id = int(create.json()["id"])
+
+    listed = api_client.get("/api/content-drafts", params={"propertyId": property_id})
+    assert listed.status_code == 200
+    drafts = listed.json()["drafts"]
+    match = next((d for d in drafts if d["id"] == draft_id), None)
+    assert match is not None
+    assert match["property_id"] == property_id
+    assert match["target_keyword"] == "seo audit"
+
+    detail = api_client.get(f"/api/content-drafts/{draft_id}")
+    assert detail.status_code == 200
+    assert detail.json()["draft"]["title"] == "Integration draft"
+
+    patched = api_client.patch(
+        f"/api/content-drafts/{draft_id}",
+        json={"title": "Updated draft", "body_html": "<p>Hello</p>"},
+    )
+    assert patched.status_code == 200
+    assert patched.json()["draft"]["title"] == "Updated draft"
+
+    removed = api_client.delete(f"/api/content-drafts/{draft_id}")
+    assert removed.status_code == 200
+    assert removed.json()["ok"] is True
+
+
+def test_dashboards_crud(api_client: TestClient, test_property: dict[str, Any]) -> None:
+    property_id = int(test_property["id"])
+
+    create = api_client.post(
+        "/api/dashboards",
+        json={
+            "propertyId": property_id,
+            "name": "Integration dashboard",
+            "layoutJson": {"version": 2, "widgets": [], "slicers": []},
+        },
+    )
+    assert create.status_code == 201
+    dashboard = create.json()["dashboard"]
+    dashboard_id = int(dashboard["id"])
+    assert dashboard["propertyId"] == property_id
+    assert dashboard["name"] == "Integration dashboard"
+
+    listed = api_client.get("/api/dashboards", params={"propertyId": property_id})
+    assert listed.status_code == 200
+    ids = {d["id"] for d in listed.json()["dashboards"]}
+    assert dashboard_id in ids
+
+    updated = api_client.put(
+        f"/api/dashboards/{dashboard_id}",
+        json={"propertyId": property_id, "name": "Renamed dashboard"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["dashboard"]["name"] == "Renamed dashboard"
+
+    deleted = api_client.delete(
+        f"/api/dashboards/{dashboard_id}",
+        params={"propertyId": property_id},
+    )
+    assert deleted.status_code == 200
+    assert deleted.json()["ok"] is True
+
+
+def test_saved_filters_crud(api_client: TestClient, test_property: dict[str, Any]) -> None:
+    property_id = int(test_property["id"])
+    filter_name = f"filter-{uuid.uuid4().hex[:8]}"
+
+    upsert = api_client.post(
+        "/api/filters",
+        json={
+            "propertyId": property_id,
+            "name": filter_name,
+            "filterJson": {"status": ["200"]},
+        },
+    )
+    assert upsert.status_code == 200
+    assert upsert.json()["ok"] is True
+
+    listed = api_client.get("/api/filters", params={"propertyId": property_id})
+    assert listed.status_code == 200
+    names = {f["name"] for f in listed.json()["filters"]}
+    assert filter_name in names
+
+    deleted = api_client.request(
+        "DELETE",
+        "/api/filters",
+        json={"propertyId": property_id, "name": filter_name},
+    )
+    assert deleted.status_code == 200
+    assert deleted.json()["ok"] is True
+
+
+def test_issue_status_upsert_and_list(api_client: TestClient, test_property: dict[str, Any]) -> None:
+    property_id = int(test_property["id"])
+
+    empty = api_client.get("/api/issues/status", params={"propertyId": property_id})
+    assert empty.status_code == 200
+    assert isinstance(empty.json()["issues"], list)
+
+    upsert = api_client.put(
+        "/api/issues/status",
+        json={
+            "propertyId": property_id,
+            "message": "Missing meta description",
+            "status": "open",
+            "url": "https://example.com/page",
+            "priority": "Medium",
+        },
+    )
+    assert upsert.status_code == 200
+    issue = upsert.json()["issue"]
+    assert issue["propertyId"] == property_id
+    assert issue["status"] == "open"
+    assert issue["message"] == "Missing meta description"
+
+    listed = api_client.get("/api/issues/status", params={"propertyId": property_id})
+    assert listed.status_code == 200
+    messages = {i["message"] for i in listed.json()["issues"]}
+    assert "Missing meta description" in messages
+
+
+def test_portfolio_delete_crawl_run(api_client: TestClient, test_property: dict[str, Any]) -> None:
+    property_id = int(test_property["id"])
+    with db_session() as conn:
+        from website_profiling.db.crawl_store import create_crawl_run
+
+        crawl_run_id = create_crawl_run(
+            conn,
+            start_url=f"https://{test_property['domain']}",
+            property_id=property_id,
+        )
+
+    res = api_client.request(
+        "DELETE",
+        "/api/portfolio/delete",
+        json={"crawlRunId": crawl_run_id},
+    )
+    assert res.status_code == 200
+    assert res.json()["ok"] is True
+
+    with db_session() as conn:
+        cur = conn.execute("SELECT id FROM crawl_runs WHERE id = %s", (crawl_run_id,))
+        assert cur.fetchone() is None
+
+
+def test_properties_resolve(api_client: TestClient, test_property: dict[str, Any]) -> None:
+    res = api_client.get(
+        "/api/properties/resolve",
+        params={"startUrl": f"https://{test_property['domain']}/"},
+    )
+    assert res.status_code == 200
+    body = res.json()
+    assert body["id"] == test_property["id"]
+    assert body["canonical_domain"] == test_property["domain"]
+
+
+def test_ollama_status_response_shape(api_client: TestClient) -> None:
+    fake_models = [
+        {
+            "name": "llama3.2",
+            "source": "local",
+            "installed": True,
+            "capabilities": ["tools"],
+            "billing": "free_local",
+            "requires_subscription": False,
+        }
+    ]
+    with (
+        patch(
+            "website_profiling.llm.ollama_catalog.fetch_ollama_models",
+            return_value={
+                "ok": True,
+                "baseUrl": "http://127.0.0.1:11434",
+                "models": fake_models,
+                "cloudCatalogOk": True,
+                "localOk": True,
+            },
+        ),
+        patch(
+            "website_profiling.db.config_store.read_llm_config",
+            return_value={"llm_model": "llama3.2", "llm_base_url": "http://127.0.0.1:11434"},
+        ),
+    ):
+        res = api_client.get("/api/ollama/status")
+
+    assert res.status_code == 200
+    body = res.json()
+    assert body["ok"] is True
+    assert body["configuredModel"] == "llama3.2"
+    assert body["modelInstalled"] is True
+    assert body["supportsTools"] is True
+    assert isinstance(body["models"], list)
+    assert len(body["models"]) == 1
+
+
+def test_backlinks_velocity_empty(api_client: TestClient, test_property: dict[str, Any]) -> None:
+    res = api_client.get(
+        "/api/backlinks/velocity",
+        params={"propertyId": test_property["id"]},
+    )
+    assert res.status_code == 200
+    assert isinstance(res.json()["snapshots"], list)
+
+
+def test_report_payload_not_found(api_client: TestClient) -> None:
+    res = api_client.get("/api/report/payload", params={"reportId": 999999999})
+    assert res.status_code == 404

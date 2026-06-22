@@ -1,88 +1,38 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { localRequest } from '@/server/testHelpers/routeTestUtils';
+import { localRequest, remoteRequest } from '@/server/testHelpers/routeTestUtils';
 
-const spawnMock = vi.fn();
+const proxyMock = vi.fn();
 
-vi.mock('child_process', () => ({
-  spawn: (...args: unknown[]) => spawnMock(...args),
+vi.mock('@/server/proxyToFastAPI', () => ({
+  proxyToFastAPI: (...args: unknown[]) => proxyMock(...args),
 }));
 
-describe('keywords/competitor-import route', () => {
+describe('keywords/competitor-import route proxy', () => {
   beforeEach(() => {
-    spawnMock.mockReset();
+    proxyMock.mockReset();
     vi.resetModules();
+    proxyMock.mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
   });
 
-  it('returns 400 when csvText missing', async () => {
+  it('returns 403 for non-local host', async () => {
     const { POST } = await import('../../app/api/keywords/competitor-import/route');
     const res = await POST(
-      localRequest('/api/keywords/competitor-import', {
+      remoteRequest('/api/keywords/competitor-import', {
         method: 'POST',
-        body: JSON.stringify({ propertyId: 1, competitor: 'rival.com', csvText: '  ' }),
+        body: JSON.stringify({ csvText: 'a,b' }),
       }),
     );
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(403);
   });
 
-  it('imports competitor keywords on success via property-scoped store', async () => {
-    spawnMock.mockImplementation(() => ({
-      stdout: {
-        on: (_: string, cb: (c: Buffer) => void) =>
-          cb(
-            Buffer.from(
-              JSON.stringify({
-                count: 1,
-                rows: [{ keyword: 'kw', competitor: 'rival.com' }],
-                mergedCount: 1,
-                mergedRows: [{ keyword: 'kw', competitor: 'rival.com' }],
-              }),
-            ),
-          ),
-      },
-      stderr: { on: () => undefined },
-      stdin: { write: () => undefined, end: () => undefined },
-      on: (event: string, cb: (code: number) => void) => { if (event === 'close') cb(0); },
-    }));
+  it('proxies POST to FastAPI for local requests', async () => {
     const { POST } = await import('../../app/api/keywords/competitor-import/route');
-    const res = await POST(
-      localRequest('/api/keywords/competitor-import', {
-        method: 'POST',
-        body: JSON.stringify({
-          propertyId: 1,
-          competitor: 'rival.com',
-          csvText: 'Keyword,Volume\nkw,100\n',
-        }),
-      }),
-    );
+    const req = localRequest('/api/keywords/competitor-import', {
+      method: 'POST',
+      body: JSON.stringify({ csvText: 'keyword,volume\ntest,100' }),
+    });
+    const res = await POST(req);
     expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.count).toBe(1);
-    expect(body.mergedCount).toBe(1);
-    expect(spawnMock).toHaveBeenCalled();
-    const script = String(spawnMock.mock.calls[0]?.[1]?.[1] ?? '');
-    expect(script).toContain('merge_competitor_keyword_import');
-  });
-
-  it('returns 500 when python fails', async () => {
-    spawnMock.mockImplementation(() => ({
-      stdout: { on: () => undefined },
-      stderr: { on: (_: string, cb: (c: Buffer) => void) => cb(Buffer.from('db error')) },
-      stdin: { write: () => undefined, end: () => undefined },
-      on: (event: string, cb: (code: number) => void) => { if (event === 'close') cb(1); },
-    }));
-    const { POST } = await import('../../app/api/keywords/competitor-import/route');
-    const res = await POST(
-      localRequest('/api/keywords/competitor-import', {
-        method: 'POST',
-        body: JSON.stringify({
-          propertyId: 2,
-          competitor: 'rival.com',
-          csvText: 'Keyword,Volume\nkw,100\n',
-        }),
-      }),
-    );
-    expect(res.status).toBe(500);
-    const body = await res.json();
-    expect(body.error).toContain('failed');
+    expect(proxyMock).toHaveBeenCalledWith(req, '/api/keywords/competitor-import');
   });
 });

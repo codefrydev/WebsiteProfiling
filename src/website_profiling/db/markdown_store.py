@@ -5,7 +5,7 @@ from typing import Any, Optional
 
 from psycopg import Connection
 
-from ._common import _executemany, _now_iso
+from ._common import _executemany, _now_iso, _row_field
 
 _MD_BATCH_SIZE = 200
 
@@ -71,7 +71,15 @@ def read_page_markdown(conn: Connection, crawl_run_id: int, url: str) -> Optiona
         row = cur.fetchone()
         if row is None:
             return None
-        return dict(row)
+        return {
+            "url": _row_field(row, "url"),
+            "title": _row_field(row, "title"),
+            "markdown": _row_field(row, "markdown"),
+            "word_count": _row_field(row, "word_count"),
+            "strategy": _row_field(row, "strategy"),
+            "source_byte_length": _row_field(row, "source_byte_length"),
+            "extracted_at": _row_field(row, "extracted_at"),
+        }
     except Exception:
         return None
 
@@ -97,7 +105,7 @@ def list_page_markdown(
                 (crawl_run_id, pattern),
             )
             total_row = count_cur.fetchone()
-            total = int(dict(total_row).get("count", 0)) if total_row else 0
+            total = int(_row_field(total_row, "count", index=0) or 0) if total_row else 0
 
             cur = conn.execute(
                 """SELECT url, title, word_count, strategy, extracted_at
@@ -113,7 +121,7 @@ def list_page_markdown(
                 (crawl_run_id,),
             )
             total_row = count_cur.fetchone()
-            total = int(dict(total_row).get("count", 0)) if total_row else 0
+            total = int(_row_field(total_row, "count", index=0) or 0) if total_row else 0
 
             cur = conn.execute(
                 """SELECT url, title, word_count, strategy, extracted_at
@@ -123,7 +131,16 @@ def list_page_markdown(
                    LIMIT %s OFFSET %s""",
                 (crawl_run_id, limit, offset),
             )
-        items = [dict(row) for row in cur.fetchall()]
+        items = [
+            {
+                "url": _row_field(row, "url"),
+                "title": _row_field(row, "title"),
+                "word_count": _row_field(row, "word_count"),
+                "strategy": _row_field(row, "strategy"),
+                "extracted_at": _row_field(row, "extracted_at"),
+            }
+            for row in cur.fetchall() or []
+        ]
         return {"items": items, "total": total, "limit": limit, "offset": offset}
     except Exception:
         return {"items": [], "total": 0, "limit": limit, "offset": offset}
@@ -141,7 +158,10 @@ def count_page_markdown_by_run(conn: Connection, crawl_run_ids: list[int]) -> di
                GROUP BY crawl_run_id""",
             (crawl_run_ids,),
         )
-        return {int(row["crawl_run_id"]): int(row["cnt"]) for row in cur.fetchall()}
+        return {
+            int(_row_field(row, "crawl_run_id")): int(_row_field(row, "cnt") or 0)
+            for row in cur.fetchall() or []
+        }
     except Exception:
         return {}
 
@@ -159,3 +179,47 @@ def delete_page_markdown_for_run(conn: Connection, crawl_run_id: int, *, commit:
         return deleted
     except Exception:
         return 0
+
+
+def list_markdown_crawl_runs(
+    conn: Connection,
+    property_id: int | None = None,
+    *,
+    limit: int = 50,
+) -> list[dict[str, Any]]:
+    """Crawl runs with HTML and markdown page counts for the page-markdown UI."""
+    limit = max(1, min(int(limit), 100))
+    where = "WHERE cr.property_id = %s" if property_id else ""
+    params: tuple[Any, ...] = (property_id, limit) if property_id else (limit,)
+    cur = conn.execute(
+        f"""
+        SELECT cr.id, cr.created_at, cr.start_url,
+               COALESCE(html_counts.cnt, 0) AS html_page_count,
+               COALESCE(md_counts.cnt, 0)   AS markdown_page_count
+        FROM crawl_runs cr
+        LEFT JOIN (
+            SELECT crawl_run_id, COUNT(*)::int AS cnt
+            FROM crawl_page_html GROUP BY crawl_run_id
+        ) html_counts ON html_counts.crawl_run_id = cr.id
+        LEFT JOIN (
+            SELECT crawl_run_id, COUNT(*)::int AS cnt
+            FROM crawl_page_markdown GROUP BY crawl_run_id
+        ) md_counts ON md_counts.crawl_run_id = cr.id
+        {where}
+        ORDER BY cr.id DESC
+        LIMIT %s
+        """,
+        params,
+    )
+    runs: list[dict[str, Any]] = []
+    for row in cur.fetchall() or []:
+        created = _row_field(row, "created_at")
+        runs.append({
+            "id": int(_row_field(row, "id")),
+            "created_at": created.isoformat() if hasattr(created, "isoformat") else str(created or "") or None,
+            "start_url": _row_field(row, "start_url"),
+            "html_page_count": int(_row_field(row, "html_page_count") or 0),
+            "markdown_page_count": int(_row_field(row, "markdown_page_count") or 0),
+        })
+    return runs
+

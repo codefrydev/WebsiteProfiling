@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptyDashboard, newWidgetId } from '@/types/dashboard';
+import { emptyDashboard, newWidgetId } from '@/lib/dashboard/engine/doc';
 
 describe('emptyDashboard', () => {
   it('returns a v2 doc with empty widgets + slicers', () => {

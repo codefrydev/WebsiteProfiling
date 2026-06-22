@@ -11,7 +11,7 @@ from typing import Any, Optional
 from psycopg import Connection
 from psycopg.types.json import Json
 
-from ...db.storage import _parse_row_json, _sanitize_for_json
+from ...db._common import _parse_row_json, _row_field, _sanitize_for_json
 
 
 def write_google_data(
@@ -124,6 +124,125 @@ def read_prior_google_snapshot(
             return None
         data = _parse_row_json(row)
         return data if isinstance(data, dict) else None
+    except Exception:
+        return None
+
+
+def read_last_google_fetched_at(conn: Connection) -> str | None:
+    """ISO timestamp of the most recent google_data row (any property)."""
+    try:
+        cur = conn.execute(
+            "SELECT fetched_at FROM google_data ORDER BY id DESC LIMIT 1"
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        fetched = _row_field(row, "fetched_at", index=0)
+        if fetched is None:
+            return None
+        return fetched.isoformat() if hasattr(fetched, "isoformat") else str(fetched)
+    except Exception:
+        return None
+
+
+def read_google_snapshot_row(
+    conn: Connection,
+    property_id: int,
+    *,
+    snapshot_id: int | None = None,
+) -> dict[str, Any] | None:
+    """Return one google_data row as {id, fetchedAt, data} with full parsed blob."""
+    try:
+        if snapshot_id is not None:
+            cur = conn.execute(
+                """
+                SELECT id, fetched_at, data
+                FROM google_data
+                WHERE id = %s AND property_id = %s
+                """,
+                (snapshot_id, property_id),
+            )
+        else:
+            cur = conn.execute(
+                """
+                SELECT id, fetched_at, data
+                FROM google_data
+                WHERE property_id = %s
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (property_id,),
+            )
+        row = cur.fetchone()
+        if not row:
+            return None
+        data = _parse_row_json(row, "data", index=2)
+        if not isinstance(data, dict):
+            return None
+        fetched = _row_field(row, "fetched_at", index=1)
+        return {
+            "id": int(_row_field(row, "id", index=0)),
+            "fetchedAt": fetched.isoformat() if hasattr(fetched, "isoformat") else str(fetched or ""),
+            "data": data,
+        }
+    except Exception:
+        return None
+
+
+def list_google_snapshot_rows(
+    conn: Connection,
+    property_id: int,
+    *,
+    limit: int = 10,
+) -> list[dict[str, Any]]:
+    """Recent google_data rows for a property as {id, fetchedAt, data}."""
+    limit = max(1, min(int(limit), 50))
+    try:
+        cur = conn.execute(
+            """
+            SELECT id, fetched_at, data
+            FROM google_data
+            WHERE property_id = %s
+            ORDER BY id DESC
+            LIMIT %s
+            """,
+            (property_id, limit),
+        )
+        out: list[dict[str, Any]] = []
+        for row in cur.fetchall() or []:
+            data = _parse_row_json(row, "data", index=2)
+            if not isinstance(data, dict):
+                continue
+            fetched = _row_field(row, "fetched_at", index=1)
+            out.append({
+                "id": int(_row_field(row, "id", index=0)),
+                "fetchedAt": fetched.isoformat() if hasattr(fetched, "isoformat") else str(fetched or ""),
+                "data": data,
+            })
+        return out
+    except Exception:
+        return []
+
+
+def read_last_google_fetched_at_for_property(conn: Connection, property_id: int) -> str | None:
+    """ISO timestamp of the most recent google_data row for a property."""
+    try:
+        cur = conn.execute(
+            """
+            SELECT fetched_at FROM google_data
+            WHERE property_id = %s
+            ORDER BY id DESC
+            LIMIT 1
+            """,
+            (property_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            return None
+        fetched = _row_field(row, "fetched_at", index=0)
+        if fetched is None:
+            return None
+        return fetched.isoformat() if hasattr(fetched, "isoformat") else str(fetched)
     except Exception:
         return None
 

@@ -1,4 +1,4 @@
-import type { PoolClient } from 'pg';
+type PoolClient = { query: (sql: string, params?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> };
 import type {
   CrawlPageHtmlRunRow,
   CrawlRunRow,

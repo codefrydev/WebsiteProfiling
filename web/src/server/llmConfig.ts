@@ -1,7 +1,6 @@
 /**
- * LLM config stored only in PostgreSQL (llm_config table). No shadow file.
+ * LLM config stored in PostgreSQL, accessed via FastAPI (/api/llm-config).
  */
-import type { PoolClient } from 'pg';
 import {
   LLM_CONFIG_SECTIONS,
   ALL_LLM_SCHEMA_KEYS,
@@ -20,24 +19,22 @@ import {
   backfillProviderModelsFromActive,
   llmProviderModelField,
 } from '@/lib/llmProviderModels';
-import { withDb } from '@/server/db';
+import { fastApiGet, fastApiPut } from '@/server/fastApiClient';
 import type { LlmConfigLoadResult, LlmConfigState } from '@/types/api';
 
 const MASK_SENTINEL = '__MASKED__';
 
-async function readLlmConfigFromDb(client: PoolClient): Promise<Record<string, string>> {
-  const known: Record<string, string> = {};
+async function readLlmConfigFromApi(): Promise<Record<string, string>> {
   try {
-    const { rows } = await client.query(
-      'SELECT key, value, is_secret FROM llm_config ORDER BY key',
-    );
-    for (const row of rows) {
-      known[String(row.key)] = String(row.value);
+    const data = await fastApiGet<{ state?: Record<string, unknown> }>('/api/llm-config');
+    const known: Record<string, string> = {};
+    for (const [k, v] of Object.entries(data.state ?? {})) {
+      if (v != null) known[k] = String(v);
     }
+    return known;
   } catch {
-    /* empty */
+    return {};
   }
-  return known;
 }
 
 function applyLlmDefaults(parsedMap: Record<string, string>): LlmConfigState {
@@ -120,44 +117,45 @@ export function maskLlmStateForClient(state: LlmConfigState): LlmConfigState {
 }
 
 export async function readLlmConfigRaw(): Promise<Record<string, string>> {
-  return withDb(readLlmConfigFromDb);
+  return readLlmConfigFromApi();
 }
 
 export async function loadLlmConfig(): Promise<LlmConfigLoadResult> {
-  const loaded = await withDb(async (client: PoolClient) => {
-    const known = await readLlmConfigFromDb(client);
-    if (Object.keys(known).length > 0) {
-      const state = applyLlmDefaults(known);
-      applyProviderApiKeys(known, state);
-      applyProviderModels(known, state);
-      backfillProviderModelsFromActive(known, state);
-      const resolved = resolveLlmApiKey({ ...known, ...state });
-      if (resolved) {
-        state.llm_api_key = resolved;
-      }
-      const provider = String(state.llm_provider || 'none');
-      const dbModelEmpty = !String(known.llm_model || '').trim();
-      if (!String(state.llm_model || '').trim() && provider !== 'none') {
-        state.llm_model = defaultLlmModelForProvider(provider);
-      }
-      const providerModelField = llmProviderModelField(provider);
-      const providerModelMissing =
-        provider !== 'none' &&
-        Boolean(providerModelField) &&
-        !String(known[providerModelField] || '').trim() &&
-        Boolean(String(state.llm_model || '').trim());
-      return {
-        state,
-        source: 'store' as const,
-        backfillModel: (dbModelEmpty && provider !== 'none') || providerModelMissing,
-      };
+  const known = await readLlmConfigFromApi();
+  let loaded: { state: LlmConfigState; source: 'store' | 'defaults'; backfillModel: boolean };
+
+  if (Object.keys(known).length > 0) {
+    const state = applyLlmDefaults(known);
+    applyProviderApiKeys(known, state);
+    applyProviderModels(known, state);
+    backfillProviderModelsFromActive(known, state);
+    const resolved = resolveLlmApiKey({ ...known, ...state });
+    if (resolved) {
+      state.llm_api_key = resolved;
     }
-    return {
+    const provider = String(state.llm_provider || 'none');
+    const dbModelEmpty = !String(known.llm_model || '').trim();
+    if (!String(state.llm_model || '').trim() && provider !== 'none') {
+      state.llm_model = defaultLlmModelForProvider(provider);
+    }
+    const providerModelField = llmProviderModelField(provider);
+    const providerModelMissing =
+      provider !== 'none' &&
+      Boolean(providerModelField) &&
+      !String(known[providerModelField] || '').trim() &&
+      Boolean(String(state.llm_model || '').trim());
+    loaded = {
+      state,
+      source: 'store',
+      backfillModel: (dbModelEmpty && provider !== 'none') || providerModelMissing,
+    };
+  } else {
+    loaded = {
       state: buildInitialLlmConfigState(),
-      source: 'defaults' as const,
+      source: 'defaults',
       backfillModel: false,
     };
-  });
+  }
 
   if (loaded.backfillModel) {
     await saveLlmConfig(loaded.state);
@@ -177,73 +175,55 @@ export async function saveLlmConfig(
   state: LlmConfigState,
   { preserveSecrets = true }: SaveLlmConfigOptions = {},
 ): Promise<string> {
-  await withDb(async (client: PoolClient) => {
-    const existing = preserveSecrets ? await readLlmConfigFromDb(client) : {};
+  const existing = preserveSecrets ? await readLlmConfigFromApi() : {};
 
-    const entries: Record<string, string> = {};
-    const secretKeys = new Set<string>();
-    for (const section of LLM_CONFIG_SECTIONS) {
-      for (const f of section.fields) {
-        const v = state[f.key];
-        if (v === undefined) continue;
-        if (f.type === 'bool') {
-          entries[f.key] = v === true ? 'true' : 'false';
-        } else if (isLlmSecretKey(f.key) || isLlmProviderApiKeyField(f.key)) {
-          writeSecretEntry(f.key, v, state[`${f.key}_masked`], existing, entries, secretKeys);
-        } else {
-          entries[f.key] = v == null ? '' : String(v);
+  const entries: Record<string, string> = {};
+  const secretKeys = new Set<string>();
+  for (const section of LLM_CONFIG_SECTIONS) {
+    for (const f of section.fields) {
+      const v = state[f.key];
+      if (v === undefined) continue;
+      if (f.type === 'bool') {
+        entries[f.key] = v === true ? 'true' : 'false';
+      } else if (isLlmSecretKey(f.key) || isLlmProviderApiKeyField(f.key)) {
+        writeSecretEntry(f.key, v, state[`${f.key}_masked`], existing, entries, secretKeys);
+      } else {
+        entries[f.key] = v == null ? '' : String(v);
+      }
+    }
+  }
+
+  for (const key of ALL_LLM_PROVIDER_API_KEY_KEYS) {
+    if (state[key] !== undefined) {
+      writeSecretEntry(key, state[key], state[`${key}_masked`], existing, entries, secretKeys);
+    } else if (existing[key] && entries[key] === undefined) {
+      entries[key] = existing[key];
+      secretKeys.add(key);
+    }
+  }
+
+  for (const key of ALL_LLM_PROVIDER_MODEL_KEYS) {
+    if (state[key] !== undefined) {
+      entries[key] = state[key] == null ? '' : String(state[key]);
+    } else if (existing[key] && entries[key] === undefined) {
+      entries[key] = existing[key];
+    }
+  }
+
+  for (const section of LLM_CONFIG_SECTIONS) {
+    for (const f of section.fields) {
+      if (entries[f.key] !== undefined) continue;
+      if (existing[f.key] !== undefined) {
+        entries[f.key] = existing[f.key];
+        if (isLlmSecretKey(f.key) && existing[f.key]) {
+          secretKeys.add(f.key);
         }
       }
     }
+  }
 
-    for (const key of ALL_LLM_PROVIDER_API_KEY_KEYS) {
-      if (state[key] !== undefined) {
-        writeSecretEntry(key, state[key], state[`${key}_masked`], existing, entries, secretKeys);
-      } else if (existing[key] && entries[key] === undefined) {
-        entries[key] = existing[key];
-        secretKeys.add(key);
-      }
-    }
-
-    for (const key of ALL_LLM_PROVIDER_MODEL_KEYS) {
-      if (state[key] !== undefined) {
-        entries[key] = state[key] == null ? '' : String(state[key]);
-      } else if (existing[key] && entries[key] === undefined) {
-        entries[key] = existing[key];
-      }
-    }
-
-    for (const section of LLM_CONFIG_SECTIONS) {
-      for (const f of section.fields) {
-        if (entries[f.key] !== undefined) continue;
-        if (existing[f.key] !== undefined) {
-          entries[f.key] = existing[f.key];
-          if (isLlmSecretKey(f.key) && existing[f.key]) {
-            secretKeys.add(f.key);
-          }
-        }
-      }
-    }
-
-    const persistedEntries = ensurePersistedLlmModel(entries);
-
-    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-
-    await client.query('BEGIN');
-    try {
-      await client.query('DELETE FROM llm_config');
-      for (const [k, v] of Object.entries(persistedEntries)) {
-        await client.query(
-          'INSERT INTO llm_config (key, value, is_secret, updated_at) VALUES ($1, $2, $3, $4)',
-          [k, v, secretKeys.has(k), now],
-        );
-      }
-      await client.query('COMMIT');
-    } catch (e) {
-      await client.query('ROLLBACK');
-      throw e;
-    }
-  });
+  const persistedEntries = ensurePersistedLlmModel(entries);
+  await fastApiPut('/api/llm-config', { state: persistedEntries });
   return 'postgresql';
 }
 

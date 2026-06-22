@@ -63,4 +63,26 @@ sys.exit(1)
 PY
 
 /opt/venv/bin/alembic upgrade head
-cd /app/web && exec npm run start -- -H 0.0.0.0 -p 3000
+
+WORKER_PID=""
+UVICORN_PID=""
+NPM_PID=""
+
+cleanup() {
+  [ -n "$WORKER_PID" ] && kill "$WORKER_PID" 2>/dev/null || true
+  [ -n "$UVICORN_PID" ] && kill "$UVICORN_PID" 2>/dev/null || true
+  [ -n "$NPM_PID" ] && kill "$NPM_PID" 2>/dev/null || true
+}
+trap cleanup TERM INT
+
+/opt/venv/bin/python -m website_profiling.worker &
+WORKER_PID=$!
+
+/opt/venv/bin/uvicorn website_profiling.api.main:app \
+  --host 0.0.0.0 --port 8001 --workers 1 &
+UVICORN_PID=$!
+
+cd /app/web
+npm run start -- -H 0.0.0.0 -p 3000 &
+NPM_PID=$!
+wait $NPM_PID

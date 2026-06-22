@@ -1,64 +1,21 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { localRequest } from '@/server/testHelpers/routeTestUtils';
-import { makeSpawnChild } from '@/server/testHelpers/routeTestUtils';
+import { localRequest, remoteRequest } from '@/server/testHelpers/routeTestUtils';
 
-const spawnMock = vi.fn();
-vi.mock('child_process', () => ({
-  spawn: (...args: unknown[]) => spawnMock(...args),
-}));
+const proxyMock = vi.fn();
+vi.mock('@/server/proxyToFastAPI', () => ({ proxyToFastAPI: (...a: unknown[]) => proxyMock(...a) }));
 
-describe('issues/action-plan route', () => {
-  beforeEach(() => {
-    spawnMock.mockReset();
-    vi.resetModules();
-  });
-
-  it('returns 400 when domain missing', async () => {
+describe('issues/action-plan route proxy', () => {
+  beforeEach(() => { proxyMock.mockReset(); vi.resetModules(); proxyMock.mockResolvedValue(new Response(JSON.stringify({ plan: '' }), { status: 200 })); });
+  it('returns 403 for non-local', async () => {
     const { POST } = await import('../../app/api/issues/action-plan/route');
-    const res = await POST(
-      localRequest('/api/issues/action-plan', {
-        method: 'POST',
-        body: JSON.stringify({ issues: [{ message: 'Missing title' }] }),
-      }),
-    );
-    expect(res.status).toBe(400);
+    const res = await POST(remoteRequest('/api/issues/action-plan', { method: 'POST' }));
+    expect(res.status).toBe(403);
   });
-
-  it('returns 400 when issues missing', async () => {
+  it('proxies POST to FastAPI', async () => {
     const { POST } = await import('../../app/api/issues/action-plan/route');
-    const res = await POST(
-      localRequest('/api/issues/action-plan', {
-        method: 'POST',
-        body: JSON.stringify({ domain: 'example.com' }),
-      }),
-    );
-    expect(res.status).toBe(400);
-  });
-
-  it('returns plan when Python succeeds', async () => {
-    spawnMock.mockImplementation(() =>
-      makeSpawnChild(
-        JSON.stringify({
-          ok: true,
-          plan: 'Fix critical issues first.',
-          summary: 'Start with titles.',
-        }) + '\n',
-        0,
-      ),
-    );
-    const { POST } = await import('../../app/api/issues/action-plan/route');
-    const res = await POST(
-      localRequest('/api/issues/action-plan', {
-        method: 'POST',
-        body: JSON.stringify({
-          domain: 'example.com',
-          issues: [{ message: 'Missing title', category: 'Technical SEO', priority: 'High' }],
-        }),
-      }),
-    );
+    const req = localRequest('/api/issues/action-plan', { method: 'POST', body: '{}' });
+    const res = await POST(req);
     expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.ok).toBe(true);
-    expect(body.plan).toMatch(/critical/i);
+    expect(proxyMock).toHaveBeenCalledWith(req, '/api/issues/action-plan');
   });
 });

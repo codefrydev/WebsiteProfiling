@@ -1,9 +1,18 @@
 import { buildReportCompareSummary } from '@/lib/reportCompare';
 import { computeReportFingerprintDiff } from '@/lib/reportDiff';
 import { strings } from '@/lib/strings';
-import { getReportPayload } from '@/server/reportDb';
+import { fastApiGet } from '@/server/fastApiClient';
 import type { ReportCompareSummary } from '@/lib/reportCompare';
 import type { ReportFingerprintDiff } from '@/types/report';
+
+import type { ReportPayload } from '@/types/report';
+
+async function getReportPayload(reportId: number): Promise<ReportPayload> {
+  const data = await fastApiGet<{ payload: ReportPayload }>(
+    `/api/report/payload?reportId=${reportId}`,
+  );
+  return data.payload;
+}
 
 export interface ReportCompareApiResponse {
   summary: ReportCompareSummary;

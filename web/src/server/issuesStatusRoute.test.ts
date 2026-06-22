@@ -1,103 +1,30 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { localRequest, remoteRequest } from '@/server/testHelpers/routeTestUtils';
 
-const listIssueStatusMock = vi.fn();
-const upsertIssueStatusMock = vi.fn();
+const proxyMock = vi.fn();
 
-vi.mock('@/server/issueStatusDb', () => ({
-  listIssueStatus: (...args: unknown[]) => listIssueStatusMock(...args),
-  upsertIssueStatus: (...args: unknown[]) => upsertIssueStatusMock(...args),
+vi.mock('@/server/proxyToFastAPI', () => ({
+  proxyToFastAPI: (...args: unknown[]) => proxyMock(...args),
 }));
 
-describe('issues/status route', () => {
+describe('issues/status route proxy', () => {
   beforeEach(() => {
-    listIssueStatusMock.mockReset();
-    upsertIssueStatusMock.mockReset();
+    proxyMock.mockReset();
     vi.resetModules();
-    listIssueStatusMock.mockResolvedValue([]);
-    upsertIssueStatusMock.mockResolvedValue({ id: 1, status: 'open', message: 'Slow LCP' });
+    proxyMock.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
   });
 
-  it('GET returns 400 without propertyId', async () => {
+  it('returns 403 for non-local host', async () => {
     const { GET } = await import('../../app/api/issues/status/route');
-    const res = await GET(localRequest('/api/issues/status'));
-    expect(res.status).toBe(400);
-  });
-
-  it('GET returns issues for property', async () => {
-    listIssueStatusMock.mockResolvedValue([{ id: 1, status: 'open' }]);
-    const { GET } = await import('../../app/api/issues/status/route');
-    const res = await GET(localRequest('/api/issues/status?propertyId=5'));
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.issues).toHaveLength(1);
-  });
-
-  it('PUT returns 403 for non-local host', async () => {
-    const { PUT } = await import('../../app/api/issues/status/route');
-    const res = await PUT(
-      remoteRequest('/api/issues/status', {
-        method: 'PUT',
-        body: JSON.stringify({ propertyId: 1, message: 'x', status: 'open' }),
-      }),
-    );
+    const res = await GET(remoteRequest('/api/issues/status'));
     expect(res.status).toBe(403);
   });
 
-  it('PUT returns 400 for invalid status', async () => {
-    const { PUT } = await import('../../app/api/issues/status/route');
-    const res = await PUT(
-      localRequest('/api/issues/status', {
-        method: 'PUT',
-        body: JSON.stringify({ propertyId: 1, message: 'x', status: 'bogus' }),
-      }),
-    );
-    expect(res.status).toBe(400);
-  });
-
-  it('PUT upserts issue on valid payload', async () => {
-    const { PUT } = await import('../../app/api/issues/status/route');
-    const res = await PUT(
-      localRequest('/api/issues/status', {
-        method: 'PUT',
-        body: JSON.stringify({ propertyId: 1, message: 'Slow LCP', status: 'in_progress' }),
-      }),
-    );
+  it('proxies GET to FastAPI', async () => {
+    const { GET } = await import('../../app/api/issues/status/route');
+    const req = localRequest('/api/issues/status');
+    const res = await GET(req);
     expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.issue.status).toBe('open');
-  });
-
-  it('PUT forwards assignee and note to upsert', async () => {
-    upsertIssueStatusMock.mockResolvedValue({
-      id: 2,
-      status: 'open',
-      message: 'Missing title',
-      assignee: 'alex@example.com',
-      note: 'Fix in sprint 3',
-    });
-    const { PUT } = await import('../../app/api/issues/status/route');
-    const res = await PUT(
-      localRequest('/api/issues/status', {
-        method: 'PUT',
-        body: JSON.stringify({
-          propertyId: 1,
-          message: 'Missing title',
-          status: 'open',
-          assignee: 'alex@example.com',
-          note: 'Fix in sprint 3',
-        }),
-      }),
-    );
-    expect(res.status).toBe(200);
-    expect(upsertIssueStatusMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        assignee: 'alex@example.com',
-        note: 'Fix in sprint 3',
-      }),
-    );
-    const body = await res.json();
-    expect(body.issue.assignee).toBe('alex@example.com');
-    expect(body.issue.note).toBe('Fix in sprint 3');
+    expect(proxyMock).toHaveBeenCalledWith(req, '/api/issues/status');
   });
 });

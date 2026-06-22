@@ -55,6 +55,7 @@ tiktoken==0.13.0
 mcp>=1.19,<2
 uvicorn>=0.30
 starlette>=0.38
+fastapi>=0.115
 
 # SQL query validation (read-only chat tool)
 sqlglot==30.11.0

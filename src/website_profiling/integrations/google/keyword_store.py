@@ -9,7 +9,7 @@ from typing import Any
 from psycopg import Connection
 from psycopg.types.json import Json
 
-from ...db.storage import _parse_row_json, _sanitize_for_json
+from ...db._common import _parse_row_json, _row_field, _sanitize_for_json
 
 
 def write_keyword_data(
@@ -118,9 +118,13 @@ def read_keyword_snapshots_for_property(
         )
         out: list[dict[str, Any]] = []
         for row in cur.fetchall():
-            data = _parse_row_json(row)
+            data = _parse_row_json(row, "data", index=1)
             if isinstance(data, dict):
-                out.append({"fetched_at": row["fetched_at"], **data})
+                fetched = _row_field(row, "fetched_at", index=0)
+                out.append({
+                    "fetched_at": fetched.isoformat() if hasattr(fetched, "isoformat") else str(fetched or ""),
+                    **data,
+                })
         return out
     except Exception:
         return []
@@ -144,15 +148,33 @@ def read_keyword_history(
                ORDER BY id DESC LIMIT %s""",
             (property_id, keyword, limit),
         )
-        return [
-            {
-                "fetched_at": row["fetched_at"],
-                "position": row["position"],
-                "clicks": row["clicks"],
-                "impressions": row["impressions"],
-                "ctr": row["ctr"],
-            }
-            for row in cur.fetchall()
-        ]
+        rows = list(cur.fetchall() or [])
+        return [_map_keyword_history_row(row) for row in reversed(rows)]
     except Exception:
         return []
+
+
+def read_keyword_history_batch(
+    conn: Connection,
+    keywords: list[str],
+    *,
+    property_id: int,
+    limit: int = 30,
+) -> dict[str, list[dict[str, Any]]]:
+    """Batch keyword history keyed by keyword string."""
+    limit = max(1, min(int(limit), 90))
+    results: dict[str, list[dict[str, Any]]] = {}
+    for kw in keywords:
+        results[kw] = read_keyword_history(conn, kw, limit, property_id=property_id)
+    return results
+
+
+def _map_keyword_history_row(row: Any) -> dict[str, Any]:
+    fetched = _row_field(row, "fetched_at", index=0)
+    return {
+        "fetched_at": fetched.isoformat() if hasattr(fetched, "isoformat") else str(fetched or ""),
+        "position": _row_field(row, "position", index=1),
+        "clicks": _row_field(row, "clicks", index=2),
+        "impressions": _row_field(row, "impressions", index=3),
+        "ctr": _row_field(row, "ctr", index=4),
+    }

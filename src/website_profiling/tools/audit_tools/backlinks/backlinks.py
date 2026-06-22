@@ -118,20 +118,20 @@ def get_backlinks_velocity(conn: Connection, ctx: AuditToolContext, args: dict[s
         return {"error": "property_id is required"}
     limit = parse_limit(args.get("limit"), 52, 52)
     cur = conn.execute(
-        """SELECT captured_at, referring_domains, top_domains
+        """SELECT fetched_at, referring_domains, top_domains
            FROM gsc_links_snapshots
            WHERE property_id = %s
-           ORDER BY captured_at ASC
+           ORDER BY fetched_at ASC
            LIMIT %s""",
         (int(scoped.property_id), limit),
     )
     snapshots = []
     for row in cur.fetchall() or []:
-        captured = row["captured_at"] if hasattr(row, "keys") else row[0]
+        fetched = row["fetched_at"] if hasattr(row, "keys") else row[0]
         domains = row["referring_domains"] if hasattr(row, "keys") else row[1]
         top = row["top_domains"] if hasattr(row, "keys") else row[2]
         snapshots.append({
-            "captured_at": captured.isoformat() if hasattr(captured, "isoformat") else str(captured or ""),
+            "captured_at": fetched.isoformat() if hasattr(fetched, "isoformat") else str(fetched or ""),
             "referring_domains": domains,
             "top_domains": top,
         })

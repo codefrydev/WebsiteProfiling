@@ -206,3 +206,219 @@ def list_properties_public(conn: Connection) -> list[dict[str, Any]]:
             "crawl_authorized_at": crawl_auth.isoformat() if crawl_auth else None,
         })
     return out
+
+
+def get_property_id_by_domain(conn: Connection, domain: str) -> int | None:
+    """Resolve property id from canonical domain (case-insensitive)."""
+    normalized = (domain or "").strip().lower()
+    if not normalized:
+        return None
+    prop = get_property_by_domain(conn, normalized)
+    return int(prop["id"]) if prop else None
+
+
+def resolve_property_id_for_page(
+    conn: Connection,
+    page_url: str,
+    property_id_str: str | None = None,
+    domain_str: str | None = None,
+) -> int | None:
+    """Resolve property ID from explicit param, domain, or URL hostname."""
+    if property_id_str:
+        try:
+            return int(property_id_str)
+        except (ValueError, TypeError):
+            pass
+
+    if domain_str:
+        prop_id = get_property_id_by_domain(conn, domain_str)
+        if prop_id is not None:
+            return prop_id
+
+    host = _extract_hostname(page_url)
+    if host:
+        return get_property_id_by_domain(conn, host)
+    return None
+
+
+def get_property_ops(conn: Connection, property_id: int) -> dict[str, Any] | None:
+    cur = conn.execute(
+        "SELECT schedule_cron, alert_webhook_url, alert_email FROM properties WHERE id = %s",
+        (property_id,),
+    )
+    row = cur.fetchone()
+    if not row:
+        return None
+    return {
+        "schedule_cron": _row_field(row, "schedule_cron", index=0),
+        "alert_webhook_url": _row_field(row, "alert_webhook_url", index=1),
+        "alert_email": _row_field(row, "alert_email", index=2),
+    }
+
+
+def update_property_ops(
+    conn: Connection,
+    property_id: int,
+    *,
+    schedule_cron: str | None,
+    alert_webhook_url: str | None,
+    alert_email: str | None,
+) -> None:
+    conn.execute(
+        """
+        UPDATE properties
+        SET schedule_cron     = %s,
+            alert_webhook_url = %s,
+            alert_email       = %s,
+            updated_at        = now()
+        WHERE id = %s
+        """,
+        (schedule_cron, alert_webhook_url, alert_email, property_id),
+    )
+    conn.commit()
+
+
+def delete_property(conn: Connection, property_id: int) -> bool:
+    cur = conn.execute(
+        "DELETE FROM properties WHERE id = %s RETURNING id",
+        (property_id,),
+    )
+    deleted = cur.fetchone() is not None
+    conn.commit()
+    return deleted
+
+
+def update_property_crawl_preset(
+    conn: Connection,
+    property_id: int,
+    preset: str | None,
+) -> None:
+    conn.execute(
+        "UPDATE properties SET default_crawl_preset = %s, updated_at = now() WHERE id = %s",
+        (preset, property_id),
+    )
+    conn.commit()
+
+
+def authorize_property_crawl(conn: Connection, property_id: int) -> None:
+    """Mark property as crawl-authorized (OAuth flow)."""
+    conn.execute(
+        "UPDATE properties SET crawl_authorized_at = now(), updated_at = now() WHERE id = %s",
+        (property_id,),
+    )
+    conn.commit()
+
+
+def get_property_google_public_status(conn: Connection, property_id: int) -> dict[str, Any]:
+    row = get_property_by_id(conn, property_id)
+    if not row:
+        return {
+            "connected": False,
+            "authMode": None,
+            "gscSiteUrl": None,
+            "ga4PropertyId": None,
+            "dateRangeDays": 28,
+            "connectedEmail": None,
+            "connectedAt": None,
+        }
+    connected_at = row.get("google_connected_at")
+    return {
+        "connected": connected_at is not None,
+        "authMode": row.get("google_auth_mode"),
+        "gscSiteUrl": row.get("gsc_site_url"),
+        "ga4PropertyId": row.get("ga4_property_id"),
+        "dateRangeDays": int(row.get("google_date_range_days") or 0) or 28,
+        "connectedEmail": row.get("google_connected_email"),
+        "connectedAt": connected_at,
+    }
+
+
+def apply_property_google_credentials_patch(
+    conn: Connection,
+    property_id: int,
+    *,
+    refresh_token: str | None = None,
+    auth_mode: str | None = None,
+    gsc_site_url: str | None = None,
+    ga4_property_id: str | None = None,
+    date_range_days: int | None = None,
+    connected_email: str | None = None,
+    fields_set: frozenset[str] | None = None,
+) -> None:
+    """Merge Google OAuth / site mapping fields on a property row."""
+    allowed = fields_set or frozenset({
+        "refresh_token", "auth_mode", "gsc_site_url", "ga4_property_id",
+        "date_range_days", "connected_email",
+    })
+    sets: list[str] = ["updated_at = now()"]
+    vals: list[Any] = []
+
+    def _add(col: str, val: Any) -> None:
+        sets.append(f"{col} = %s")
+        vals.append(val)
+
+    if "gsc_site_url" in allowed and gsc_site_url is not None:
+        _add("gsc_site_url", gsc_site_url.strip() or None)
+    if "ga4_property_id" in allowed and ga4_property_id is not None:
+        v = ga4_property_id.strip() if ga4_property_id else ""
+        if v and not v.isdigit():
+            raise ValueError(
+                "Analytics property ID must be a numeric ID (e.g. 123456789). "
+                "The G-XXXXXXX code is a Measurement ID."
+            )
+        _add("ga4_property_id", v or None)
+    if "date_range_days" in allowed and date_range_days is not None and date_range_days > 0:
+        _add("google_date_range_days", date_range_days)
+    if "auth_mode" in allowed and auth_mode is not None:
+        _add("google_auth_mode", auth_mode or None)
+    if "connected_email" in allowed and connected_email is not None:
+        _add("google_connected_email", connected_email.strip() or None)
+    if "refresh_token" in allowed and refresh_token is not None:
+        token = refresh_token.strip()
+        _add("google_refresh_token", token or None)
+        if token:
+            sets.append("google_connected_at = now()")
+        else:
+            sets.append("google_connected_at = NULL")
+            if "connected_email" not in allowed or connected_email is None:
+                sets.append("google_connected_email = NULL")
+
+    if len(vals) == 0:
+        raise ValueError("No valid fields provided")
+
+    vals.append(property_id)
+    conn.execute(
+        f"UPDATE properties SET {', '.join(sets)} WHERE id = %s",
+        vals,
+    )
+    conn.commit()
+
+
+def disconnect_property_google(conn: Connection, property_id: int) -> None:
+    apply_property_google_credentials_patch(
+        conn,
+        property_id,
+        refresh_token="",
+        auth_mode=None,
+        fields_set=frozenset({"refresh_token", "auth_mode"}),
+    )
+
+
+def get_property_google_status(conn: Connection, property_id: int) -> dict[str, Any] | None:
+    """Property-level Google integration status for the integrations UI."""
+    from website_profiling.db.google_app_store import read_google_app_settings
+    from website_profiling.integrations.google.store import read_last_google_fetched_at_for_property
+
+    if not get_property_by_id(conn, property_id):
+        return None
+
+    prop_status = get_property_google_public_status(conn, property_id)
+    app_cfg = read_google_app_settings(conn)
+    has_client_id = bool(app_cfg.get("client_id"))
+
+    return {
+        **prop_status,
+        "hasClientId": has_client_id,
+        "lastFetchedAt": read_last_google_fetched_at_for_property(conn, property_id),
+        "propertyId": property_id,
+    }

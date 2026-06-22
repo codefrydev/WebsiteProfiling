@@ -51,7 +51,8 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
     baseUrl: result.baseUrl,
     configuredModel,
     modelInstalled,
-    supportsTools: configuredEntry?.capabilities?.includes('tools') ?? modelsSupportTools(result.models),
+    supportsTools:
+      configuredEntry?.capabilities?.includes('tools') ?? modelsSupportTools(result.models),
     cloudCatalogOk: result.cloudCatalogOk,
     localOk: result.localOk,
     catalogSource: 'live',

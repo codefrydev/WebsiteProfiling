@@ -1,12 +1,9 @@
 /**
- * Pipeline config stored in PostgreSQL (pipeline_config table).
- *
- * PostgreSQL is the single source of truth. A shadow `pipeline-config.txt` is
- * written to DATA_DIR on every Save/Run for CLI back-compat.
+ * Pipeline config — reads and writes via FastAPI (/api/pipeline-config).
+ * A shadow `pipeline-config.txt` is written to DATA_DIR on every Save/Run for CLI back-compat.
  */
 import fs from 'fs';
 import path from 'path';
-import type { PoolClient } from 'pg';
 import {
   PIPELINE_CONFIG_SECTIONS,
   ALL_SCHEMA_KEYS,
@@ -19,12 +16,16 @@ import {
   maskSecretForClient,
   SECRETS_MASK_SENTINEL,
 } from '@/lib/secretsConfigSchema';
-import { getDataDir, withDb } from '@/server/db';
+import { fastApiGet, fastApiPut } from '@/server/fastApiClient';
 import type {
   PipelineConfigLoadResult,
   PipelineConfigState,
   PipelineUnknownKey,
 } from '@/types/api';
+
+function getDataDir(): string {
+  return process.env.WP_DATA_DIR || process.env.DATA_DIR || path.join(process.cwd(), '..', 'data');
+}
 
 /** Shadow key=value file written to DATA_DIR for CLI back-compat. */
 export function getShadowConfigPath(): string {
@@ -199,57 +200,53 @@ function filterUnknownKeys(list: PipelineUnknownKey[] | undefined): PipelineUnkn
   return (list || []).filter((u) => u && !isLegacyOrLlmKey(u.key));
 }
 
-async function readPipelineConfigFromDb(client: PoolClient): Promise<{
+async function readPipelineConfigFromApi(): Promise<{
   known: Record<string, string>;
   unknown: PipelineUnknownKey[];
 }> {
   const known: Record<string, string> = {};
   const unknown: PipelineUnknownKey[] = [];
   try {
-    const { rows } = await client.query(
-      'SELECT key, value, is_unknown FROM pipeline_config ORDER BY key',
-    );
-    for (const row of rows) {
-      if (row.is_unknown) {
-        unknown.push({ key: String(row.key), value: String(row.value) });
-      } else {
-        known[String(row.key)] = String(row.value);
-      }
+    const data = await fastApiGet<{ state?: Record<string, unknown>; unknownKeys?: PipelineUnknownKey[] }>('/api/pipeline-config');
+    const state = data.state ?? {};
+    for (const [k, v] of Object.entries(state)) {
+      if (v != null) known[k] = String(v);
+    }
+    for (const u of data.unknownKeys ?? []) {
+      unknown.push(u);
     }
   } catch {
-    /* table may not exist before migrations */
+    /* FastAPI unavailable */
   }
   return { known, unknown };
 }
 
 async function loadPipelineConfigInternal(mask: boolean): Promise<PipelineConfigLoadResult> {
-  return withDb(async (client: PoolClient) => {
-    const { known, unknown } = await readPipelineConfigFromDb(client);
-    const maybeMask = (state: PipelineConfigState) =>
-      mask ? maskPipelineSecretsForClient(state) : state;
+  const { known, unknown } = await readPipelineConfigFromApi();
+  const maybeMask = (state: PipelineConfigState) =>
+    mask ? maskPipelineSecretsForClient(state) : state;
 
-    if (Object.keys(known).length > 0 || unknown.length > 0) {
-      const { state, unknownKeys: schemaUnknown } = applySchemaDefaultsRaw(known);
-      const allUnknown = filterUnknownKeys([...unknown, ...schemaUnknown]);
-      return { state: maybeMask(state), unknownKeys: allUnknown, source: 'store' };
-    }
+  if (Object.keys(known).length > 0 || unknown.length > 0) {
+    const { state, unknownKeys: schemaUnknown } = applySchemaDefaultsRaw(known);
+    const allUnknown = filterUnknownKeys([...unknown, ...schemaUnknown]);
+    return { state: maybeMask(state), unknownKeys: allUnknown, source: 'store' };
+  }
 
-    const shadowPath = getShadowConfigPath();
-    if (fs.existsSync(shadowPath)) {
-      try {
-        const raw = fs.readFileSync(shadowPath, 'utf8');
-        const parsed = parseInputTxt(raw);
-        if (Object.keys(parsed).length > 0) {
-          const { state, unknownKeys } = applySchemaDefaultsRaw(parsed);
-          return { state: maybeMask(state), unknownKeys: filterUnknownKeys(unknownKeys), source: 'legacy' };
-        }
-      } catch {
-        /* fall through */
+  const shadowPath = getShadowConfigPath();
+  if (fs.existsSync(shadowPath)) {
+    try {
+      const raw = fs.readFileSync(shadowPath, 'utf8');
+      const parsed = parseInputTxt(raw);
+      if (Object.keys(parsed).length > 0) {
+        const { state, unknownKeys } = applySchemaDefaultsRaw(parsed);
+        return { state: maybeMask(state), unknownKeys: filterUnknownKeys(unknownKeys), source: 'legacy' };
       }
+    } catch {
+      /* fall through */
     }
+  }
 
-    return { state: buildDefaults(), unknownKeys: [], source: 'defaults' };
-  });
+  return { state: buildDefaults(), unknownKeys: [], source: 'defaults' };
 }
 
 /** Returns pipeline config with secrets MASKED — safe to send to the client. */
@@ -276,7 +273,7 @@ export async function savePipelineConfig(
   { unknownKeys = [], preserveSecrets = true }: SavePipelineConfigOptions = {},
 ): Promise<string> {
   const existingKnown = preserveSecrets
-    ? (await withDb(async (client) => readPipelineConfigFromDb(client))).known
+    ? (await readPipelineConfigFromApi()).known
     : {};
 
   const entries: Record<string, string> = {};
@@ -308,32 +305,7 @@ export async function savePipelineConfig(
     entries[key] = String(v);
   }
 
-  const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
-
-  await withDb(async (client: PoolClient) => {
-    await client.query('BEGIN');
-    try {
-      await client.query('DELETE FROM pipeline_config');
-      for (const [k, v] of Object.entries(entries)) {
-        await client.query(
-          'INSERT INTO pipeline_config (key, value, is_unknown, updated_at) VALUES ($1, $2, false, $3)',
-          [k, v, now],
-        );
-      }
-      for (const { key, value } of unknownKeys) {
-        await client.query(
-          `INSERT INTO pipeline_config (key, value, is_unknown, updated_at)
-           VALUES ($1, $2, true, $3)
-           ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, is_unknown = true, updated_at = EXCLUDED.updated_at`,
-          [key, value, now],
-        );
-      }
-      await client.query('COMMIT');
-    } catch (e) {
-      await client.query('ROLLBACK');
-      throw e;
-    }
-  });
+  await fastApiPut('/api/pipeline-config', { state: entries, unknownKeys });
 
   const shadowState: PipelineConfigState = { ...state };
   for (const key of Object.keys(entries)) {

@@ -1,63 +1,10 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { spawn } from 'child_process';
-import { getRepoRoot, getPipelineSpawnEnv } from '@/server/pipelineSpawnEnv';
-import { resolvePythonExecutable, parsePythonJsonStdout, formatPythonSpawnError } from '@/server/resolvePython';
-import { loadPipelineConfigUnmasked } from '@/server/pipelineConfig';
+import { type NextRequest } from 'next/server';
+import { proxyToFastAPI } from '@/server/proxyToFastAPI';
+import { forbiddenIfNotLocal } from '@/server/localOnly';
 import type { ApiRouteHandler } from '@/types/api';
 
-export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/**
- * POST /api/integrations/bing/sync — fetch Bing Webmaster backlinks summary.
- */
-export const POST: ApiRouteHandler = async (_request: NextRequest): Promise<Response> => {
-  let state: Record<string, string | boolean>;
-  try {
-    // Must use the UNMASKED loader: the API key is passed to Python to authenticate
-    // with Bing; loadPipelineConfig() would return a masked '••••' placeholder.
-    const cfg = await loadPipelineConfigUnmasked();
-    state = cfg.state;
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: msg }, { status: 500 });
-  }
-  const apiKey = String(state.bing_webmaster_api_key || '').trim();
-  const siteUrl = String(state.start_url || '').trim();
-  if (!apiKey || !siteUrl) {
-    return NextResponse.json(
-      { error: 'Set bing_webmaster_api_key and start_url in pipeline settings.' },
-      { status: 400 },
-    );
-  }
-
-  const repoRoot = getRepoRoot();
-  const pythonExe = resolvePythonExecutable(null, repoRoot);
-  const script = `
-import json, sys
-from website_profiling.integrations.bing.webmaster import fetch_bing_backlinks_summary
-api_key, site_url = sys.argv[1], sys.argv[2]
-print(json.dumps(fetch_bing_backlinks_summary(api_key, site_url)))
-`;
-
-  return new Promise<Response>((resolve) => {
-    const proc = spawn(pythonExe, ['-c', script, apiKey, siteUrl], {
-      cwd: repoRoot,
-      env: getPipelineSpawnEnv(repoRoot),
-      shell: false,
-    });
-    let stdout = '';
-    proc.stdout?.on('data', (c: Buffer | string) => { stdout += c.toString(); });
-    proc.on('error', (err: Error) => {
-      resolve(NextResponse.json({ error: formatPythonSpawnError(err, pythonExe, repoRoot) }, { status: 500 }));
-    });
-    proc.on('close', (code) => {
-      const parsed = parsePythonJsonStdout(stdout);
-      if (code === 0 && parsed) {
-        resolve(NextResponse.json(parsed));
-        return;
-      }
-      resolve(NextResponse.json({ error: stdout.trim() || 'Bing sync failed' }, { status: 500 }));
-    });
-  });
+export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Response> => {
+  const denied = forbiddenIfNotLocal(request); if (denied) return denied; return proxyToFastAPI(request, '/api/integrations/bing/sync');
 };

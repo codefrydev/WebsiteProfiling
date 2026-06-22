@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, Loader2, Play, RefreshCw, Wifi } from 'lucide-react';
 import { apiUrl } from '@/lib/publicBase';
-import type { PageMarkdownRunRow } from '@/server/pageMarkdownDb';
+interface PageMarkdownRunRow {
+  id: number;
+  created_at: string | null;
+  start_url: string;
+  html_page_count: number;
+  markdown_page_count: number;
+}
 
 interface ExtractorPanelProps {
   propertyId: number | null;
@@ -67,7 +73,7 @@ export default function ExtractorPanel({
       const list = (data.runs ?? []) as PageMarkdownRunRow[];
       setRuns(list);
       if (!selectedRunId && list.length > 0) {
-        onRunSelect(list[0].crawl_run_id);
+        onRunSelect(list[0].id);
       }
     } catch (e) {
       setRunsError(e instanceof Error ? e.message : String(e));
@@ -130,7 +136,7 @@ export default function ExtractorPanel({
     if (captureJobId) setCaptureStatus('running');
   }, [captureJobId]);
 
-  const selectedRun = runs.find((r) => r.crawl_run_id === selectedRunId) ?? null;
+  const selectedRun = runs.find((r) => r.id === selectedRunId) ?? null;
 
   const handleExtract = async () => {
     if (!selectedRunId) return;
@@ -188,8 +194,8 @@ export default function ExtractorPanel({
             onChange={(e) => onRunSelect(Number(e.target.value))}
           >
             {runs.map((r) => (
-              <option key={r.crawl_run_id} value={r.crawl_run_id}>
-                #{r.crawl_run_id} — {r.start_url} — {formatDate(r.created_at)} —
+              <option key={r.id} value={r.id}>
+                #{r.id} — {r.start_url} — {formatDate(r.created_at)} —
                 HTML: {r.html_page_count} | MD: {r.markdown_page_count}
               </option>
             ))}

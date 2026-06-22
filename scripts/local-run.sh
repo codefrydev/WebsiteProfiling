@@ -134,12 +134,34 @@ cmd_start() {
   log "Ensuring migrations are up to date"
   "$VENV/bin/alembic" upgrade head
   cmd_web_deps
+  cd "$ROOT"
+  export DATABASE_URL DATA_DIR PYTHON WEBSITE_PROFILING_ROOT PYTHONPATH
+
+  WORKER_PID=""
+  UVICORN_PID=""
+
+  cleanup_local() {
+    [ -n "$WORKER_PID" ] && kill "$WORKER_PID" 2>/dev/null || true
+    [ -n "$UVICORN_PID" ] && kill "$UVICORN_PID" 2>/dev/null || true
+  }
+  trap cleanup_local INT TERM EXIT
+
+  log "Starting pipeline worker"
+  "$VENV/bin/python" -m website_profiling.worker &
+  WORKER_PID=$!
+
+  log "Starting FastAPI on port 8001"
+  export FASTAPI_URL="http://127.0.0.1:8001"
+  export FASTAPI_ALLOWED_ORIGINS="http://localhost:3000"
+  "$VENV/bin/uvicorn" website_profiling.api.main:app \
+    --host 0.0.0.0 --port 8001 --workers 1 &
+  UVICORN_PID=$!
+
   log "Starting Next.js dev server (Ctrl+C to stop)"
   log "DATABASE_URL=$DATABASE_URL"
   log "DATA_DIR=$DATA_DIR"
   log "PYTHON=$PYTHON"
   cd "$WEB"
-  export DATABASE_URL DATA_DIR PYTHON WEBSITE_PROFILING_ROOT PYTHONPATH
   exec npm run dev
 }
 
