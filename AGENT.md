@@ -84,7 +84,7 @@ The web UI uses **both** Chart.js and D3.js. Pick the library that fits each cha
 - Keep chart-library types out of data-prep: use neutral shapes (`BarChartData`, `DualSeriesChartData` in `web/src/lib/viz/types.ts` and `web/src/lib/compareChartData.ts`); convert at the render layer via `web/src/lib/viz/adapters.ts` when needed.
 - Migrate page-by-page when D3 is the better fit; do not remove `chart.js` from `package.json` until all consumers are migrated.
 
-**Company standards:** UI copy in `web/src/strings.json` (Site Audit, Properties, Run audit). Data provenance on `report_meta` in report payload. Docs: `docs/COMPANY_STANDARDS.md`, `docs/GLOSSARY.md`. Migration `003_company_standards` (properties, pipeline_jobs, audit_log). Durable jobs in `web/src/server/pipelineJobsDb.ts`. Export: `GET /api/report/export`, `src/website_profiling/tools/export_audit.py`.
+**Company standards:** UI copy in `web/src/strings.json` (Site Audit, Properties, Run audit). Data provenance on `report_meta` in report payload. Docs: `docs/COMPANY_STANDARDS.md`, `docs/GLOSSARY.md`. Migration `003_company_standards` (properties, pipeline_jobs, audit_log). Durable jobs in `web/src/server/pipelineJobsDb.ts`. Export: PDF/workbook via FileService (`FILE_SERVICE_URL`); CSV/JSON via `GET /api/report/export` and `src/website_profiling/tools/export_audit.py`.
 
 **Common footguns (check before finishing web or DB work)**
 

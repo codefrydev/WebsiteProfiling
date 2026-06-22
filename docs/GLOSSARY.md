@@ -52,7 +52,7 @@ This glossary maps agency-facing UI terms to internal keys, database tables, and
 | AI Chat | `/chat`, `/api/chat`, `chat_sessions` | LLM + read-only audit tools | Conversational audit queries |
 | MCP tools | `python -m website_profiling.mcp` | Same `audit_tools` as chat | IDE integration — see [MCP.md](MCP.md) |
 | Read-only session | `AUTH_DEFAULT_ROLE=client-readonly` or `viewer`; `/api/auth/session` returns role and mutation flags | Session cookie | `client-readonly`: view + chat; `viewer`: view only (no chat) |
-| Export executive summary | `export_audit_html/pdf/csv`, Export view | Report payload + optional AI | Client deliverable |
+| Export executive summary | `export_audit_report` (pdf/csv/json), Export view | Report payload + optional AI | Client deliverable |
 | ads.txt / security.txt | `site_level`, `get_ads_txt_status`, `get_security_txt_status` | Root file fetch at report build | Publisher / contact file hygiene |
 | Subdomain inventory | `subdomains`, `list_subdomains`, `/subdomains` view | Crawl + GSC + optional crt.sh | Host footprint vs crawl scope |
 | Contact intelligence | `contact_intelligence`, `get_contact_intelligence`, `/contacts` view | Crawl schema/mailto + security.txt + RDAP org | Business identity consistency |

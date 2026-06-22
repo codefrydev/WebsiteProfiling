@@ -11,7 +11,7 @@ This file is the canonical entry point for agents. For full detail see [AGENT.md
 - `src/website_profiling/` — core Python package
   - `cli.py`, `config.py`, `crawl/`, `db/`, `reporting/`, `analysis/`, `llm/`, `tools/`
 - `web/` — Next.js frontend
-- `services/FileService/` — .NET file operations service (QuestPDF audit PDFs; port 8080). Profiles: `executive|standard|full|premium`. Env: `FILE_SERVICE_URL` on Next.js, `FASTAPI_URL` on FileService.
+- `services/FileService/` — .NET file operations service (QuestPDF PDFs + Excel workbooks; port 8080). **HTTP-only** — fetches `/api/report/payload` via `REPORT_API_URL` (framework-neutral report API); no Postgres. Profiles: `executive|standard|full|premium`. Env: `FILE_SERVICE_URL` on Next.js/MCP, `REPORT_API_URL` on FileService.
 - `alembic/` — DB migrations
 - `docs/` — documentation index
 - `tests/` — pytest suite

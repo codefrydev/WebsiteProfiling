@@ -16,7 +16,7 @@ public sealed class AppSettingsClient : IAppSettingsClient
 
     public AppSettingsClient(
         HttpClient http,
-        IOptions<FastApiOptions> options,
+        IOptions<ReportApiOptions> options,
         ILogoFetcher logoFetcher,
         ILogger<AppSettingsClient> logger)
     {

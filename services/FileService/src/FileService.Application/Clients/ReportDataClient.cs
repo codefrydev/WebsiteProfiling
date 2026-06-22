@@ -17,7 +17,7 @@ public sealed class ReportDataClient : IReportDataClient
     private readonly HttpClient _http;
     private readonly ILogger<ReportDataClient> _logger;
 
-    public ReportDataClient(HttpClient http, IOptions<FastApiOptions> options, ILogger<ReportDataClient> logger)
+    public ReportDataClient(HttpClient http, IOptions<ReportApiOptions> options, ILogger<ReportDataClient> logger)
     {
         _http = http;
         _logger = logger;
@@ -84,7 +84,7 @@ public sealed class ReportDataClient : IReportDataClient
             return;
         }
         var body = await response.Content.ReadAsStringAsync(cancellationToken);
-        _logger.LogWarning("FastAPI request failed: {Status} {Body}", response.StatusCode, body);
-        throw new HttpRequestException($"FastAPI returned {(int)response.StatusCode}: {body}", null, response.StatusCode);
+        _logger.LogWarning("Report API request failed: {Status} {Body}", response.StatusCode, body);
+        throw new HttpRequestException($"Report API returned {(int)response.StatusCode}: {body}", null, response.StatusCode);
     }
 }

@@ -3912,7 +3912,7 @@
       "downloadPdf": "Download PDF",
       "downloadCsv": "Download CSV",
       "downloadJson": "Download JSON",
-      "downloadWorkbook": "Download crawl workbook (ZIP)",
+      "downloadWorkbook": "Download crawl workbook (Excel)",
       "downloadSitemap": "Download XML sitemap"
     },
     "overview": {

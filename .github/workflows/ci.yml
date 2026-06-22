@@ -43,7 +43,7 @@ jobs:
             --cov-report=term-missing --cov-fail-under=100 -q -o addopts=
       - name: Pytest (tools coverage gate)
         run: |
-          pytest tests/tools/ \
+          pytest tests/tools/ tests/clients/ \
             --cov=website_profiling.tools --cov-config=.coveragerc.tools \
             --cov-report=term-missing --cov-fail-under=100 -q -o addopts=
       - name: CLI smoke

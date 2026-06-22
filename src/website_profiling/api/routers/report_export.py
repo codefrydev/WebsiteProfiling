@@ -70,21 +70,3 @@ def export_sitemap(
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
-
-@router.get("/export-workbook")
-def export_workbook(
-    conn: DbDep,
-    reportId: Optional[int] = Query(None),
-) -> Response:
-    try:
-        from website_profiling.tools.export_workbook import export_workbook as _export
-        content = _export(conn, reportId)
-        return Response(
-            content=content if isinstance(content, bytes) else content.encode("utf-8"),
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={"Content-Disposition": "attachment; filename=report.xlsx"},
-        )
-    except ImportError:
-        raise HTTPException(status_code=501, detail="Workbook export unavailable")
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))

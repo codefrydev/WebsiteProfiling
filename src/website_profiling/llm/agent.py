@@ -77,7 +77,7 @@ Image playbook:
 - Export lists: export_list_as_csv with the matching list tool
 
 Export playbook (chat UI shows download buttons after export tools — do not paste file contents):
-- Full audit PDF/HTML/CSV/JSON: export_audit_report with format pdf|html|csv|json
+- Full audit PDF/CSV/JSON: export_audit_report with format pdf|csv|json (PDF via FileService)
 - Compare issue diff CSV: export_compare_csv with baseline_report_id
 - Export a list as CSV: export_list_as_csv with tool_name and tool_args (e.g. list_broken_links)
 - After export tools succeed, tell the user their download is ready; the UI renders file buttons automatically

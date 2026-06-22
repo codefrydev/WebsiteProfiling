@@ -1,4 +1,4 @@
-"""Export audit payload to CSV, JSON, HTML (preview/print), and PDF."""
+"""Export audit payload to CSV and JSON."""
 from __future__ import annotations
 
 import csv
@@ -10,20 +10,8 @@ from ..db import db_session, read_report_payload
 from .export_audit_data import (
     _executive_export_data,
     _executive_source_label,
-    _format_report_date,
-    _issue_priority_counts,
     _issue_recommendation,
     _issues_rows,
-    _overall_score,
-    _priority_sort_key,
-    _score_band,
-    _summary_lines,
-)
-from .export_audit_html import (
-    _category_cards_html,
-    _executive_summary_html,
-    _priority_stats_html,
-    _report_html_styles,
 )
 
 
@@ -84,31 +72,3 @@ def export_audit_csv(report_id: Optional[int] = None) -> str:
 def export_audit_json(report_id: Optional[int] = None) -> str:
     payload = _load_payload(report_id)
     return json.dumps(payload, indent=2, default=str)
-
-
-def export_audit_html(report_id: Optional[int] = None, profile: str = "standard") -> str:
-    """Export audit report as HTML preview matching the PDF layout."""
-    from ..reporting.pdf import build_pdf_document
-    from ..reporting.pdf.options import PdfBuildOptions
-    from ..reporting.pdf.render.html import render_html_document
-
-    payload = _load_payload(report_id)
-    opts = PdfBuildOptions(profile=profile, report_id=report_id)  # type: ignore[arg-type]
-    doc = build_pdf_document(payload, opts)
-    return render_html_document(doc)
-
-
-def export_audit_pdf(report_id: Optional[int] = None, profile: str = "standard") -> bytes:
-    """Export audit report as a formatted PDF using the PdfDocument pipeline.
-
-    Args:
-        report_id: Specific report ID to load (None = latest).
-        profile: "executive" | "standard" | "full" (default "standard").
-    """
-    from ..reporting.pdf import build_pdf_document, render_pdf_document
-    from ..reporting.pdf.options import PdfBuildOptions
-
-    payload = _load_payload(report_id)
-    opts = PdfBuildOptions(profile=profile, report_id=report_id)  # type: ignore[arg-type]
-    doc = build_pdf_document(payload, opts)
-    return render_pdf_document(doc)

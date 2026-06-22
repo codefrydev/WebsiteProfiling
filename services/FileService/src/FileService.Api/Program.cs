@@ -16,7 +16,7 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1",
         Description =
             "PDF export and file generation for Site Audit reports. "
-            + "Fetches report data from FastAPI; no direct database access.",
+            + "Fetches report data from the Site Audit report API over HTTP; no direct database access.",
     });
 });
 
@@ -101,6 +101,58 @@ app.MapGet("/v1/reports/by-domain/{domain}/pdf", async (
     + "Query params: profile (executive|standard|full|premium, default standard), "
     + "branding (default true), disposition (inline|attachment, default attachment).");
 
+app.MapGet("/v1/reports/{reportId:int}/workbook", async (
+    int reportId,
+    IWorkbookReportService workbookService,
+    string? disposition,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var bytes = await workbookService.GenerateByReportIdAsync(reportId, cancellationToken);
+        return WorkbookResult(bytes, disposition, $"audit-workbook-{reportId}.xlsx");
+    }
+    catch (KeyNotFoundException ex)
+    {
+        return Results.NotFound(new { detail = ex.Message });
+    }
+    catch (HttpRequestException ex)
+    {
+        return Results.Json(new { detail = "Upstream data service unavailable", error = ex.Message }, statusCode: 502);
+    }
+})
+.WithName("GetReportWorkbookById")
+.WithWorkbookOpenApi(
+    "Export crawl workbook by report ID",
+    "Generates an Excel workbook (Internal URLs, Links, Redirects, Issues, Custom Fields) "
+    + "from the report payload fetched via the report API. disposition: inline|attachment (default attachment).");
+
+app.MapGet("/v1/reports/by-domain/{domain}/workbook", async (
+    string domain,
+    IWorkbookReportService workbookService,
+    string? disposition,
+    CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var bytes = await workbookService.GenerateByDomainAsync(domain, cancellationToken);
+        var safeName = string.IsNullOrWhiteSpace(domain) ? "report" : domain.Replace('.', '-');
+        return WorkbookResult(bytes, disposition, $"audit-workbook-{safeName}.xlsx");
+    }
+    catch (KeyNotFoundException ex)
+    {
+        return Results.NotFound(new { detail = ex.Message });
+    }
+    catch (HttpRequestException ex)
+    {
+        return Results.Json(new { detail = "Upstream data service unavailable", error = ex.Message }, statusCode: 502);
+    }
+})
+.WithName("GetReportWorkbookByDomain")
+.WithWorkbookOpenApi(
+    "Export crawl workbook by domain",
+    "Resolves the latest report for the domain, then generates an Excel crawl workbook.");
+
 app.Run();
 
 static PdfProfile ParseProfile(string? profile) => (profile ?? "standard").Trim().ToLowerInvariant() switch
@@ -118,6 +170,18 @@ static IResult PdfResult(byte[] bytes, string? disposition, string filename)
         ? "inline"
         : $"attachment; filename=\"{filename}\"";
     return new PdfFileResult(bytes, contentDisposition);
+}
+
+static IResult WorkbookResult(byte[] bytes, string? disposition, string filename)
+{
+    var inline = string.Equals(disposition, "inline", StringComparison.OrdinalIgnoreCase);
+    var contentDisposition = inline
+        ? "inline"
+        : $"attachment; filename=\"{filename}\"";
+    return new BinaryFileResult(
+        bytes,
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        contentDisposition);
 }
 
 public partial class Program;

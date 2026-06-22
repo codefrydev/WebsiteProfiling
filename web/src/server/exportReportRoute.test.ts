@@ -3,24 +3,35 @@ import { localRequest, remoteRequest } from '@/server/testHelpers/routeTestUtils
 
 const fastApiProxyMock = vi.fn();
 const fileServiceProxyMock = vi.fn();
+const workbookProxyMock = vi.fn();
 
 vi.mock('@/server/proxyToFastAPI', () => ({
   proxyToFastAPI: (...a: unknown[]) => fastApiProxyMock(...a),
 }));
 vi.mock('@/server/proxyToFileService', () => ({
   proxyPdfExportToFileService: (...a: unknown[]) => fileServiceProxyMock(...a),
+  proxyWorkbookExportToFileService: (...a: unknown[]) => workbookProxyMock(...a),
 }));
 
 describe('report/export route proxy', () => {
   beforeEach(() => {
     fastApiProxyMock.mockReset();
     fileServiceProxyMock.mockReset();
+    workbookProxyMock.mockReset();
     vi.resetModules();
     fastApiProxyMock.mockResolvedValue(new Response('csv', { status: 200 }));
     fileServiceProxyMock.mockResolvedValue(
       new Response(new Uint8Array([0x25, 0x50, 0x44, 0x46]), {
         status: 200,
         headers: { 'content-type': 'application/pdf' },
+      }),
+    );
+    workbookProxyMock.mockResolvedValue(
+      new Response(new Uint8Array([0x50, 0x4b]), {
+        status: 200,
+        headers: {
+          'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        },
       }),
     );
   });
@@ -47,5 +58,34 @@ describe('report/export route proxy', () => {
     expect(res.status).toBe(200);
     expect(fileServiceProxyMock).toHaveBeenCalledWith(req);
     expect(fastApiProxyMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('report/export-workbook route proxy', () => {
+  beforeEach(() => {
+    workbookProxyMock.mockReset();
+    vi.resetModules();
+    workbookProxyMock.mockResolvedValue(
+      new Response(new Uint8Array([0x50, 0x4b]), {
+        status: 200,
+        headers: {
+          'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        },
+      }),
+    );
+  });
+
+  it('returns 403 for non-local', async () => {
+    const { GET } = await import('../../app/api/report/export-workbook/route');
+    const res = await GET(remoteRequest('/api/report/export-workbook?reportId=1'));
+    expect(res.status).toBe(403);
+  });
+
+  it('proxies workbook to FileService', async () => {
+    const { GET } = await import('../../app/api/report/export-workbook/route');
+    const req = localRequest('/api/report/export-workbook?reportId=1');
+    const res = await GET(req);
+    expect(res.status).toBe(200);
+    expect(workbookProxyMock).toHaveBeenCalledWith(req);
   });
 });

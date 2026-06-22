@@ -129,6 +129,7 @@ run_pytest_tools() {
   log "Pytest (tools coverage gate, 100%)"
   "$VENV/bin/pytest" \
     tests/tools/ \
+    tests/clients/ \
     --cov=website_profiling.tools \
     --cov-config=.coveragerc.tools \
     --cov-report=term-missing \

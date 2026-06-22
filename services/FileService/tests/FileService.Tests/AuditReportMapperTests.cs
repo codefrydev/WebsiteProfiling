@@ -75,6 +75,27 @@ public class DomainResolverTests
         };
         Assert.Equal(7, DomainResolver.ResolveReportId(rows, "my-cool-site"));
     }
+
+    [Fact]
+    public void Returns_null_for_empty_or_unknown_query()
+    {
+        var rows = new List<ReportListRow> { new() { Id = 1, CanonicalDomain = "ex.com" } };
+        Assert.Null(DomainResolver.ResolveReportId(rows, ""));
+        Assert.Null(DomainResolver.ResolveReportId(rows, "unknown.test"));
+    }
+
+    [Fact]
+    public void NormalizeDomainQuery_strips_trailing_punctuation()
+    {
+        Assert.Equal("example.com", DomainResolver.NormalizeDomainQuery("Example.COM,"));
+    }
+
+    [Fact]
+    public void Matches_slugified_canonical_host()
+    {
+        var row = new ReportListRow { Id = 2, CanonicalDomain = "www.example.com", SiteName = "Example" };
+        Assert.True(DomainResolver.DomainQueryMatchesRow(row, "www-example-com"));
+    }
 }
 
 public class TocBuilderTests

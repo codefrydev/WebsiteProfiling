@@ -37,13 +37,6 @@ def test_export_tools_formats(conn: MagicMock, ctx: Ctx, tmp_path, monkeypatch) 
         assert dispatch_tool("export_list_as_csv", {"tool_name": "nope"}, context=ctx, conn=conn)["error"]
 
     with patch.object(Ctx, "load_payload", return_value=payload), patch(
-        "website_profiling.tools.audit_tools.export.export_tools.export_audit_html",
-        return_value="<html></html>",
-    ):
-        out = dispatch_tool("export_audit_report", {"format": "html"}, context=ctx, conn=conn)
-        assert out.get("artifact_id")
-
-    with patch.object(Ctx, "load_payload", return_value=payload), patch(
         "website_profiling.tools.audit_tools.export.export_tools.export_audit_json",
         return_value="{}",
     ):
@@ -51,7 +44,7 @@ def test_export_tools_formats(conn: MagicMock, ctx: Ctx, tmp_path, monkeypatch) 
         assert out.get("format") == "json"
 
     with patch.object(Ctx, "load_payload", return_value=payload), patch(
-        "website_profiling.tools.audit_tools.export.export_tools.export_audit_pdf",
+        "website_profiling.tools.audit_tools.export.export_tools.fetch_report_pdf",
         side_effect=FileNotFoundError,
     ):
         assert dispatch_tool("export_audit_report", {"format": "pdf"}, context=ctx, conn=conn)["error"]
@@ -77,8 +70,8 @@ def test_export_tools_formats(conn: MagicMock, ctx: Ctx, tmp_path, monkeypatch) 
 def test_export_audit_report_paths(conn: MagicMock, ctx: Ctx, tmp_path, monkeypatch) -> None:
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
     with patch.object(Ctx, "load_payload", return_value=_payload()), patch(
-        "website_profiling.tools.audit_tools.export.export_tools.export_audit_pdf",
-        return_value=b"%PDF",
+        "website_profiling.tools.audit_tools.export.export_tools.fetch_report_pdf",
+        return_value=b"%PDF-1.4",
     ):
         pdf_out = dispatch_tool("export_audit_report", {"format": "pdf"}, context=ctx, conn=conn)
         assert pdf_out.get("format") == "pdf"

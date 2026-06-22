@@ -73,6 +73,28 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Report_workbook_returns_xlsx_bytes()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/v1/reports/1/workbook");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            response.Content.Headers.ContentType?.MediaType);
+        var bytes = await response.Content.ReadAsByteArrayAsync();
+        Assert.True(bytes.Length > 4);
+        Assert.Equal("PK", System.Text.Encoding.ASCII.GetString(bytes, 0, 2));
+    }
+
+    [Fact]
+    public async Task By_domain_workbook_resolves_report()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/v1/reports/by-domain/example.com/workbook");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
     private sealed class FakeReportDataClient : IReportDataClient
     {
         public Task<IReadOnlyList<ReportListRow>> ListReportsAsync(CancellationToken cancellationToken = default)

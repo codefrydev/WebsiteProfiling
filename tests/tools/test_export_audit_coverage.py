@@ -6,6 +6,17 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from website_profiling.tools import export_audit
+from website_profiling.tools.export_audit_data import (
+    _executive_export_data,
+    _executive_source_label,
+    _format_report_date,
+    _issue_recommendation,
+    _issues_rows,
+    _overall_score,
+    _priority_sort_key,
+    _score_band,
+    _summary_lines,
+)
 
 
 def _rich_payload() -> dict:
@@ -34,17 +45,6 @@ def _rich_payload() -> dict:
                     "url": "https://example.com/top",
                     "gsc_clicks": "bad",
                 },
-                {
-                    "priority": "medium",
-                    "message": "Zero clicks",
-                    "url": "https://example.com/zero",
-                    "gsc_clicks": 0,
-                },
-                {
-                    "priority": "high",
-                    "message": "x" * 120,
-                    "url": "https://example.com/" + ("segment/" * 15),
-                },
             ],
         },
         "categories": [
@@ -56,27 +56,17 @@ def _rich_payload() -> dict:
         ],
         "links": [
             {"url": "https://example.com/ok", "status": "200", "title": "OK", "inlinks": 3, "word_count": 100},
-            {"url": "https://example.com/redirect", "status": "301", "title": "Redir"},
-            {"url": "https://example.com/missing", "status": "404", "title": ""},
-            {"url": "https://example.com/error", "status": "500", "title": "Err"},
-            {"url": "https://example.com/custom", "status": "200", "custom_extract": "CEF"},
             "not-a-dict",
         ],
         "report_meta": {
             "data_sources": ["Crawl", "GSC"],
             "google_fetched_at": "2026-06-06",
-            "export_logo_url": "https://cdn.example/logo.png",
             "crawl_scope": {
                 "pages_crawled": 50,
                 "max_pages_configured": 100,
                 "crawl_limited": True,
                 "render_mode": "javascript",
                 "js_concurrency": 4,
-                "browser_diagnostics": {
-                    "pages_with_console_errors": 2,
-                    "total_console_errors": 5,
-                    "pages_with_page_errors": 1,
-                },
             },
         },
         "summary": {
@@ -113,79 +103,35 @@ def test_load_payload_success_and_missing() -> None:
 
 def test_helper_functions_cover_branches() -> None:
     payload = _rich_payload()
-    rows = export_audit._issues_rows(payload)
+    rows = _issues_rows(payload)
     assert len(rows) >= 4
 
-    legacy = export_audit._executive_export_data({"recommendations": ["Only legacy"]})
+    legacy = _executive_export_data({"recommendations": ["Only legacy"]})
     assert "Only legacy" in legacy["summary"]
 
-    assert export_audit._executive_source_label("ai_insights") == "AI insights"
-    assert export_audit._executive_source_label("deterministic") == "Measured + Search Console"
-    assert export_audit._executive_source_label("custom") == "custom"
-    assert export_audit._executive_source_label("") == "Audit data"
+    assert _executive_source_label("ai_insights") == "AI insights"
+    assert _executive_source_label("deterministic") == "Measured + Search Console"
+    assert _executive_source_label("custom") == "custom"
+    assert _executive_source_label("") == "Audit data"
 
-    html_block = export_audit._executive_summary_html(payload)
-    assert "Executive summary" in html_block
-    assert "Top traffic-impacting issues" in html_block
+    assert _format_report_date("") == "—"
+    assert _format_report_date("not-a-date") == "not-a-date"
+    assert "2026" in _format_report_date("2026-06-07T12:00:00")
 
-    assert export_audit._format_report_date("") == "—"
-    assert export_audit._format_report_date("not-a-date") == "not-a-date"
-    assert "2026" in export_audit._format_report_date("2026-06-07T12:00:00")
+    assert _overall_score({"categories": []}) is None
+    assert _overall_score(payload) == 70
 
-    assert export_audit._overall_score({"categories": []}) is None
-    assert export_audit._overall_score(payload) == 70
-
-    assert export_audit._score_band(None) == ("—", "score-na")
-    assert export_audit._score_band(85)[1] == "score-good"
-    assert export_audit._score_band(65)[1] == "score-fair"
-    assert export_audit._score_band(40)[1] == "score-poor"
-
-    cards = export_audit._category_cards_html(payload["categories"])
-    assert "Technical SEO" in cards
-    assert export_audit._category_cards_html([]).startswith("<p")
+    assert _score_band(None) == ("—", "score-na")
+    assert _score_band(85)[1] == "score-good"
+    assert _score_band(65)[1] == "score-fair"
+    assert _score_band(40)[1] == "score-poor"
 
 
-def test_executive_summary_html_empty_and_gsc_clicks() -> None:
-    from website_profiling.tools.export_audit_html import (
-        _executive_summary_html,
-        _priority_stats_html,
-        _report_html_styles,
-    )
-
-    assert _executive_summary_html({}) == ""
-    assert _executive_summary_html({"executive_summary": {}}) == ""
-
-    clicks_payload = {
-        "executive_summary": {
-            "top_issues": [
-                {
-                    "priority": "high",
-                    "message": "Traffic issue",
-                    "url": "https://example.com/hot",
-                    "gsc_clicks": 42,
-                }
-            ]
-        }
-    }
-    html_block = _executive_summary_html(clicks_payload)
-    assert "42" in html_block
-    assert "GSC clicks" in html_block
-
-    stats = _priority_stats_html({"critical": 1, "high": 2, "medium": 0, "low": 3})
-    assert "stat-critical" in stats
-    assert "Critical" in stats
-
-    styles = _report_html_styles()
-    assert isinstance(styles, str)
-    assert len(styles) > 0
-
-
-def test_summary_lines_includes_scope_and_diagnostics() -> None:
-    lines = dict(export_audit._summary_lines(_rich_payload()))
+def test_summary_lines_includes_scope() -> None:
+    lines = dict(_summary_lines(_rich_payload()))
     assert lines["Property"] == "Coverage Site"
     assert "pages crawled" in lines["Crawl scope"]
     assert "JavaScript rendering" in lines["Crawl scope"]
-    assert "Browser diagnostics" in lines
     assert "Google data fetched" in lines
     assert "HTTP status mix" in lines
     assert lines["Critical issues"] == "55"
@@ -202,25 +148,60 @@ def test_summary_lines_auto_and_static_render_modes() -> None:
             }
         }
     }
-    auto_lines = dict(export_audit._summary_lines(auto_scope))
+    auto_lines = dict(_summary_lines(auto_scope))
     assert "auto rendering" in auto_lines["Crawl scope"]
 
     static_scope = {
         "report_meta": {"crawl_scope": {"pages_crawled": 5, "static_html_only": True}}
     }
-    static_lines = dict(export_audit._summary_lines(static_scope))
+    static_lines = dict(_summary_lines(static_scope))
     assert "static HTML only" in static_lines["Crawl scope"]
 
 
 def test_issue_recommendation_prefers_llm_when_distinct() -> None:
-    rec, llm = export_audit._issue_recommendation(
+    rec, llm = _issue_recommendation(
         {"recommendation": "Rule", "llm_recommendation": "LLM fix"}
     )
     assert rec == "LLM fix"
     assert llm == "LLM fix"
 
 
-def test_export_json_csv_and_truncated_html(monkeypatch) -> None:
+def test_priority_sort_key_unknown_priority() -> None:
+    assert _priority_sort_key({"priority": "unknown"}) == 9
+
+
+def test_summary_lines_browser_diagnostics() -> None:
+    payload = {
+        "report_meta": {
+            "crawl_scope": {
+                "pages_crawled": 10,
+                "browser_diagnostics": {
+                    "pages_with_console_errors": 2,
+                    "total_console_errors": 5,
+                    "pages_with_page_errors": 1,
+                },
+            }
+        }
+    }
+    lines = dict(_summary_lines(payload))
+    assert "Browser diagnostics" in lines
+    assert "console errors" in lines["Browser diagnostics"]
+
+
+def test_issue_priority_counts() -> None:
+    from website_profiling.tools.export_audit_data import _issue_priority_counts
+
+    counts = _issue_priority_counts([
+        {"priority": "critical"},
+        {"priority": "High"},
+        {"priority": "unknown"},
+    ])
+    assert counts["critical"] == 1
+    assert counts["high"] == 1
+    assert counts["medium"] == 0
+
+
+def test_export_json_and_csv(monkeypatch) -> None:
     payload = _rich_payload()
     monkeypatch.setattr(export_audit, "_load_payload", lambda _rid=None: payload)
 
@@ -230,58 +211,3 @@ def test_export_json_csv_and_truncated_html(monkeypatch) -> None:
     csv_out = export_audit.export_audit_csv()
     assert "data_sources" in csv_out
     assert "Measured + Search Console" in csv_out
-
-    html_out = export_audit.export_audit_html()
-    assert "Site Audit — Coverage Site" in html_out
-    assert "Showing 120 of" in html_out
-    assert "Audit details" in html_out
-    assert "Data source glossary" in html_out
-    assert "Crawled URLs (sample)" in html_out
-
-
-def test_export_pdf_full_branches(monkeypatch) -> None:
-    pytest.importorskip("reportlab")
-    payload = _rich_payload()
-    monkeypatch.setattr(export_audit, "_load_payload", lambda _rid=None: payload)
-
-    pdf = export_audit.export_audit_pdf()
-    assert pdf[:4] == b"%PDF"
-
-
-def test_export_pdf_truncates_long_issue_lists(monkeypatch) -> None:
-    pytest.importorskip("reportlab")
-    issues = [
-        {
-            "priority": "low",
-            "message": "x" * 150,
-            "url": "https://example.com/" + ("path/" * 20),
-            "recommendation": "fix",
-        }
-        for _ in range(90)
-    ]
-    payload = {
-        "site_name": "Truncate PDF",
-        "categories": [{"name": "Technical SEO", "score": 80, "issues": issues}],
-        "links": [],
-    }
-    monkeypatch.setattr(export_audit, "_load_payload", lambda _rid=None: payload)
-    pdf = export_audit.export_audit_pdf()
-    assert pdf[:4] == b"%PDF"
-
-
-def test_export_pdf_requires_reportlab(monkeypatch) -> None:
-    payload = {"site_name": "No PDF", "categories": [], "links": []}
-    monkeypatch.setattr(export_audit, "_load_payload", lambda _rid=None: payload)
-
-    import builtins
-
-    real_import = builtins.__import__
-
-    def fake_import(name, *args, **kwargs):
-        if name == "reportlab.lib" or name.startswith("reportlab."):
-            raise ImportError("no reportlab")
-        return real_import(name, *args, **kwargs)
-
-    with patch("builtins.__import__", side_effect=fake_import):
-        with pytest.raises(RuntimeError, match="PDF export requires reportlab"):
-            export_audit.export_audit_pdf()

@@ -1,16 +1,16 @@
 # FileService
 
-Standalone .NET service for file generation and file-related operations. The first capability is **audit report PDF export** via [QuestPDF](https://www.questpdf.com/).
+Standalone .NET service for file generation and file-related operations: **audit report PDF export** ([QuestPDF](https://www.questpdf.com/)) and **crawl workbook Excel export** (ClosedXML).
 
-Python/FastAPI remains the source of truth for crawl data and CSV/JSON exports. This service fetches report payloads over HTTP and renders PDFs — no direct Postgres access.
+Python remains the source of truth for crawl data and CSV/JSON exports. FileService consumes a **framework-neutral HTTP report API** (JSON payload, meta, app-settings) and renders deliverables — **no direct Postgres access** (no Npgsql, EF, or `DATABASE_URL`).
 
 ## Run locally
 
-Prerequisites: [.NET SDK 10+](https://dotnet.microsoft.com/download), FastAPI running on port 8001.
+Prerequisites: [.NET SDK 10+](https://dotnet.microsoft.com/download), Site Audit report API on port 8001 (Python uvicorn in dev).
 
 ```bash
 cd services/FileService
-export FASTAPI_URL=http://127.0.0.1:8001
+export REPORT_API_URL=http://127.0.0.1:8001
 dotnet run --project src/FileService.Api
 ```
 
@@ -22,8 +22,18 @@ In **Development**, Swagger UI is at **http://localhost:8080/docs** and the Open
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `FASTAPI_URL` | `http://127.0.0.1:8001` | FastAPI base URL for report data and app-settings |
+| `REPORT_API_URL` | `http://127.0.0.1:8001` | Base URL for report payload, meta, and app-settings HTTP API |
 | `ASPNETCORE_URLS` | `http://127.0.0.1:8080` | Bind address (Docker sets `http://+:8080`) |
+
+## Upstream HTTP contract
+
+FileService does not reference FastAPI or Python — only these HTTP routes on `REPORT_API_URL`:
+
+| Route | Purpose |
+|-------|---------|
+| `GET /api/report/payload?reportId=` | Report JSON for PDF/workbook |
+| `GET /api/report/meta` | Domain → report list |
+| `GET /api/app-settings?key=` | Agency branding (optional) |
 
 ## API
 
@@ -32,14 +42,24 @@ In **Development**, Swagger UI is at **http://localhost:8080/docs** and the Open
 | GET | `/health` | Liveness |
 | GET | `/v1/reports/{reportId}/pdf` | PDF for report ID |
 | GET | `/v1/reports/by-domain/{domain}/pdf` | Resolve domain → latest report → PDF |
+| GET | `/v1/reports/{reportId}/workbook` | Excel crawl workbook for report ID |
+| GET | `/v1/reports/by-domain/{domain}/workbook` | Resolve domain → latest report → workbook |
 
-**Query params**
+**PDF query params**
 
 | Param | Default | Description |
 |-------|---------|-------------|
 | `profile` | `standard` | `executive`, `standard`, `full`, or `premium` |
-| `branding` | `true` | Load agency name/logo/subtitle from FastAPI app-settings |
+| `branding` | `true` | Load agency name/logo/subtitle from report API app-settings |
 | `disposition` | `attachment` | `inline` for iframe preview, `attachment` for download |
+
+**Workbook query params**
+
+| Param | Default | Description |
+|-------|---------|-------------|
+| `disposition` | `attachment` | `inline` or `attachment` |
+
+Workbook sheets (when data exists in payload): Internal URLs, Links, Redirects, Issues, Custom Fields.
 
 ## PDF profiles
 

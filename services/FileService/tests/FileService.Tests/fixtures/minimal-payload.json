@@ -66,5 +66,8 @@
   "top_pages": [
     { "url": "https://example.com/" },
     { "url": "https://example.com/about" }
+  ],
+  "links": [
+    { "url": "https://example.com/", "status": "200", "title": "Home" }
   ]
 }

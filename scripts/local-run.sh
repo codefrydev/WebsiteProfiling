@@ -164,7 +164,7 @@ cmd_start() {
   if command -v dotnet >/dev/null 2>&1; then
     free_port 8080
     log "Starting FileService on port 8080"
-    export FASTAPI_URL="http://127.0.0.1:8001"
+    export REPORT_API_URL="http://127.0.0.1:8001"
     (cd "$ROOT/services/FileService" && \
       ASPNETCORE_URLS="http://127.0.0.1:8080" \
       ASPNETCORE_ENVIRONMENT=Development \

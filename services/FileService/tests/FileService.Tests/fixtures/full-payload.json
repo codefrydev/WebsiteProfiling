@@ -92,8 +92,35 @@
     "blocked": 5
   },
   "links": [
-    { "url": "https://example.com/", "status": "200", "title": "Home" },
-    { "url": "https://example.com/about", "status": "200", "title": "About" }
+    { "url": "https://example.com/", "status": "200", "title": "Home", "inlinks": 1, "outlinks": 2 },
+    {
+      "url": "https://example.com/products",
+      "status": "200",
+      "title": "Products",
+      "custom_extract": "SKU-1",
+      "custom_fields": "{\"price\":\"9.99\",\"sku\":\"SKU-1\"}"
+    }
+  ],
+  "link_edges": [
+    {
+      "from_url": "https://example.com/",
+      "to_url": "https://example.com/about",
+      "anchor_text": "About",
+      "rel": "",
+      "is_nofollow": false,
+      "is_sponsored": false,
+      "is_ugc": false,
+      "link_type": "internal",
+      "position": 1
+    }
+  ],
+  "redirects": [
+    {
+      "url": "https://example.com/old",
+      "message": "301 redirect chain",
+      "priority": "medium",
+      "recommendation": "Update internal links"
+    }
   ],
   "top_pages": [
     { "url": "https://example.com/" }

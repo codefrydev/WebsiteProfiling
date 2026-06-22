@@ -216,7 +216,7 @@ Export tools write artifact files with a 24-hour TTL; in-app chat renders downlo
 
 `export_audit_report`, `export_compare_csv`, `export_list_as_csv`, `export_sitemap_xml`, `validate_rich_results`, `list_export_formats`
 
-Full audit exports use the same generators as the Export view. PDF export requires `reportlab`.
+Full audit exports use the same generators as the Export view. PDF export uses **FileService** (`FILE_SERVICE_URL`, default `http://127.0.0.1:8080`) — FileService must be running for PDF downloads in MCP/chat.
 
 ### Image audit
 

@@ -455,7 +455,7 @@ def test_new_tools_coverage() -> None:
 
     bl_conn = MagicMock()
     bl_conn.execute = MagicMock(return_value=MagicMock(
-        fetchall=MagicMock(return_value=[{"captured_at": datetime.now(timezone.utc), "referring_domains": 3, "top_domains": []}]),
+        fetchall=MagicMock(return_value=[{"fetched_at": datetime.now(timezone.utc), "referring_domains": 3, "top_domains": []}]),
     ))
     assert bl_mod.get_backlinks_velocity(bl_conn, ctx, {})["count"] == 1
 
