@@ -107,24 +107,31 @@ export async function appendChatMessage(
   },
 ): Promise<number> {
   return withDb(async (client) => {
-    const cur = await client.query<{ id: string }>(
-      `INSERT INTO chat_messages
-         (session_id, role, content, tool_name, tool_args, tool_result, created_at)
-       VALUES ($1, $2, $3, $4, $5, $6, now()) RETURNING id`,
-      [
-        sessionId,
-        role,
-        content,
-        meta?.toolName ?? null,
-        meta?.toolArgs != null ? JSON.stringify(meta.toolArgs) : null,
-        meta?.toolResult != null ? JSON.stringify(meta.toolResult) : null,
-      ],
-    );
-    await client.query(
-      `UPDATE chat_sessions SET updated_at = now() WHERE id = $1`,
-      [sessionId],
-    );
-    return Number(cur.rows[0]?.id);
+    await client.query('BEGIN');
+    try {
+      const cur = await client.query<{ id: string }>(
+        `INSERT INTO chat_messages
+           (session_id, role, content, tool_name, tool_args, tool_result, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, now()) RETURNING id`,
+        [
+          sessionId,
+          role,
+          content,
+          meta?.toolName ?? null,
+          meta?.toolArgs != null ? JSON.stringify(meta.toolArgs) : null,
+          meta?.toolResult != null ? JSON.stringify(meta.toolResult) : null,
+        ],
+      );
+      await client.query(
+        `UPDATE chat_sessions SET updated_at = now() WHERE id = $1`,
+        [sessionId],
+      );
+      await client.query('COMMIT');
+      return Number(cur.rows[0]?.id);
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    }
   });
 }
 

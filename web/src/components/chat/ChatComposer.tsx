@@ -42,9 +42,15 @@ export default function ChatComposer({
   useEffect(() => {
     if (!draftMessage) return;
     setText(draftMessage);
-    resizeTextarea();
     onDraftApplied?.();
-    textareaRef.current?.focus();
+    // Resize/focus after the controlled value has committed to the DOM,
+    // otherwise scrollHeight reflects the previous (empty) content and a
+    // multi-line draft renders collapsed to a single row.
+    const raf = requestAnimationFrame(() => {
+      resizeTextarea();
+      textareaRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(raf);
   }, [draftMessage, onDraftApplied, resizeTextarea]);
 
   const handleSubmit = (e: FormEvent) => {
@@ -102,7 +108,9 @@ export default function ChatComposer({
             isHero ? 'min-h-[2.5rem] text-[15px]' : 'min-h-[2.25rem] text-sm'
           }`}
           onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
+            // Ignore the Enter that confirms an IME composition (CJK etc.),
+            // otherwise a half-composed message gets submitted prematurely.
+            if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault();
               handleSubmit(e);
             }

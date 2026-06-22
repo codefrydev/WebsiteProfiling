@@ -7,7 +7,6 @@ import {
   ALL_LLM_SCHEMA_KEYS,
   getLlmFieldByKey,
   buildInitialLlmConfigState,
-  maskLlmSecretForClient,
   isLlmSecretKey,
 } from '@/lib/llmConfigSchema';
 import {
@@ -96,11 +95,24 @@ function writeSecretEntry(
   if (entries[key]) secretKeys.add(key);
 }
 
+/** Mask any secret value (generic provider keys + the legacy llm_api_key). */
+function maskSecretValue(value: string | boolean | undefined): string {
+  if (!value || String(value).trim() === '') return '';
+  const s = String(value);
+  if (s.startsWith('••••')) return s;
+  if (s.length <= 4) return '••••';
+  return `••••${s.slice(-4)}`;
+}
+
 export function maskLlmStateForClient(state: LlmConfigState): LlmConfigState {
   const out: LlmConfigState = { ...state };
   for (const key of Object.keys(out)) {
-    if (isLlmSecretKey(key)) {
-      out[key] = maskLlmSecretForClient(key, out[key]);
+    // Mask BOTH the legacy llm_api_key and every per-provider key
+    // (llm_api_key_openai/_gemini/_anthropic/_groq). The latter were
+    // previously returned in plaintext because isLlmSecretKey only covers
+    // llm_api_key, even though the save path treats them as secrets.
+    if (isLlmSecretKey(key) || isLlmProviderApiKeyField(key)) {
+      out[key] = maskSecretValue(out[key]);
       if (out[key]) out[`${key}_masked`] = true;
     }
   }

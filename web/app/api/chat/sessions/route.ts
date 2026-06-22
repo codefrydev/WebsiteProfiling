@@ -32,6 +32,8 @@ export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Respon
 export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Response> => {
   const denied = forbiddenIfNotLocal(request);
   if (denied) return denied;
+  // Chat (incl. starting a session) is intentionally available to the
+  // read-only client role; only destructive deletes are restricted (see DELETE).
   const authDenied = requireApiAuthForChat(request);
   if (authDenied) return authDenied;
 

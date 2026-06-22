@@ -2,9 +2,97 @@
 from __future__ import annotations
 
 import json
+import os
+import sys
 from typing import Any
 
 from ..base import ChatResult, TokenCallback, ToolCall, parse_json_response
+
+# Ephemeral (5-minute) prompt-cache marker. Placed on the static request prefix
+# (tools -> system -> conversation) so Anthropic bills repeated prefix tokens at
+# ~10% of base input price across the multi-round tool loop. Mirrors how Claude
+# Code caches its tool/system prefix.
+_CACHE_CONTROL = {"type": "ephemeral"}
+
+
+def _truthy(value: str | None, *, default: bool) -> bool:
+    raw = (value or "").strip().lower()
+    if not raw:
+        return default
+    return raw in ("1", "true", "yes", "on")
+
+
+def _prompt_cache_enabled() -> bool:
+    """Prompt caching is on by default; set WP_LLM_PROMPT_CACHE=0 to disable."""
+    return _truthy(os.environ.get("WP_LLM_PROMPT_CACHE"), default=True)
+
+
+def _cache_debug_enabled() -> bool:
+    return _truthy(os.environ.get("WP_LLM_DEBUG_CACHE"), default=False)
+
+
+def _log_cache_usage(usage: Any) -> None:
+    """When WP_LLM_DEBUG_CACHE is set, print cache token counts to stderr."""
+    if usage is None or not _cache_debug_enabled():
+        return
+    created = getattr(usage, "cache_creation_input_tokens", None)
+    read = getattr(usage, "cache_read_input_tokens", None)
+    inp = getattr(usage, "input_tokens", None)
+    print(
+        f"[wp-cache] input={inp} cache_creation={created} cache_read={read}",
+        file=sys.stderr,
+        flush=True,
+    )
+
+
+def _apply_prompt_caching(
+    system: str,
+    tools: list[dict[str, Any]],
+    messages: list[dict[str, Any]],
+) -> tuple[Any, list[dict[str, Any]], list[dict[str, Any]]]:
+    """Add cache_control breakpoints to the static request prefix.
+
+    Returns ``(system, tools, messages)`` unchanged when caching is disabled, so
+    behavior is byte-identical to the no-cache path. Otherwise places three
+    breakpoints (the limit is four) in Anthropic's prefix order:
+
+    1. the last tool definition (caches the whole tools array),
+    2. the system prompt (caches tools+system),
+    3. the last content block of the last message (rolls forward each round,
+       reading the prior conversation prefix from cache and writing the suffix).
+
+    Builds new copies — never mutates the caller's lists/dicts — so the pure
+    converter outputs stay clean.
+    """
+    if not _prompt_cache_enabled():
+        return system, tools, messages
+
+    # 1. System prompt -> single text block carrying the cache marker.
+    system_blocks: Any = [
+        {"type": "text", "text": system, "cache_control": _CACHE_CONTROL},
+    ]
+
+    # 2. Last tool definition.
+    tools_out = list(tools)
+    if tools_out:
+        tools_out[-1] = {**tools_out[-1], "cache_control": _CACHE_CONTROL}
+
+    # 3. Last content block of the last message.
+    messages_out = list(messages)
+    if messages_out:
+        last = dict(messages_out[-1])
+        content = last.get("content")
+        if isinstance(content, list) and content:
+            blocks = list(content)
+            blocks[-1] = {**blocks[-1], "cache_control": _CACHE_CONTROL}
+            last["content"] = blocks
+        elif isinstance(content, str):
+            last["content"] = [
+                {"type": "text", "text": content, "cache_control": _CACHE_CONTROL},
+            ]
+        messages_out[-1] = last
+
+    return system_blocks, tools_out, messages_out
 
 
 def _to_anthropic_messages(messages: list[dict[str, Any]]) -> tuple[str, list[dict[str, Any]]]:
@@ -122,6 +210,9 @@ class AnthropicClient:
 
         system, anthropic_messages = _to_anthropic_messages(messages)
         anthropic_tools = _to_anthropic_tools(tools)
+        system, anthropic_tools, anthropic_messages = _apply_prompt_caching(
+            system, anthropic_tools, anthropic_messages,
+        )
 
         kwargs: dict[str, Any] = {
             "model": self._model,
@@ -154,6 +245,7 @@ class AnthropicClient:
                                 prev = tool_calls[-1].arguments.get("_partial", "")
                                 tool_calls[-1].arguments["_partial"] = prev + partial
                     final = stream.get_final_message()
+                _log_cache_usage(getattr(final, "usage", None))
                 for tc in tool_calls:
                     partial = tc.arguments.pop("_partial", "")
                     if partial:
@@ -168,6 +260,7 @@ class AnthropicClient:
                 return ChatResult(content="".join(content_parts) or "".join(text_parts), tool_calls=tool_calls)
 
             msg = client.messages.create(**kwargs)
+            _log_cache_usage(getattr(msg, "usage", None))
             content_parts: list[str] = []
             tool_calls = []
             for block in msg.content:

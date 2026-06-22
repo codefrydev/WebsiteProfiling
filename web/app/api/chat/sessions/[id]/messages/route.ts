@@ -1,13 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
 import { requireApiAuthForChat } from '@/server/auth';
-import { getChatMessages } from '@/server/chatDb';
+import { getChatMessages, getChatSession } from '@/server/chatDb';
 import type { ApiRouteHandler } from '@/types/api';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-/** GET /api/chat/sessions/[id]/messages */
+/** GET /api/chat/sessions/[id]/messages?propertyId= */
 export const GET: ApiRouteHandler = async (
   request: NextRequest,
   context?: { params?: Promise<{ id: string }> },
@@ -22,8 +22,18 @@ export const GET: ApiRouteHandler = async (
   if (!sessionId) {
     return NextResponse.json({ error: 'invalid session id' }, { status: 400 });
   }
+  const propertyId = Number(request.nextUrl.searchParams.get('propertyId') || '0');
+  if (!propertyId) {
+    return NextResponse.json({ error: 'propertyId required' }, { status: 400 });
+  }
 
   try {
+    // Scope conversation history to the caller's property to avoid leaking
+    // another property's messages by enumerating session ids.
+    const session = await getChatSession(sessionId);
+    if (!session || session.property_id !== propertyId) {
+      return NextResponse.json({ error: 'session not found' }, { status: 404 });
+    }
     const messages = await getChatMessages(sessionId);
     return NextResponse.json({ messages });
   } catch (e) {
