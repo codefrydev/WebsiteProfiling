@@ -11,10 +11,11 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 **Key paths**
 
 - `src/website_profiling/` -- `cli.py`, `config.py`, `crawl/`, `db/storage.py`, `lighthouse/`, `reporting/`, `analysis/`, `llm/`, `tools/`
+- `services/FileService/` -- .NET PDF + Excel workbook export (HTTP-only; see [README](services/FileService/README.md))
 - `web/app/` -- routes; `web/src/` -- React; pipeline: `PipelineRunnerFab`, `server/pipelineJobs.ts`, `server/pipelineConfig.ts`, `server/llmConfig.ts`, `server/db.ts`
 - `alembic/` -- schema migrations
 
-**Local dev:** `./local-run` (Postgres in Docker `wp-pg`, Next.js on host; default `DATABASE_URL`: `postgres://postgres:dev@127.0.0.1:5432/website_profiling`). See `scripts/local-run.sh`. **Local tests:** `./local-test` runs **three** Python coverage gates (core 100%, reporting 100%, tools 100%) plus web checks — mirrors CI **python** and **web** jobs; Docker CI is separate (see `.github/workflows/ci.yml`). `./local-test browser` for `@pytest.mark.browser` integration tests — see `scripts/local-test.sh`. Mocked browser unit tests: `tests/test_browser_fetcher_unit.py`.
+**Local dev:** `./local-run` (Postgres in Docker `wp-pg`, FileService on `:8080`, Next.js on host; default `DATABASE_URL`: `postgres://postgres:dev@127.0.0.1:5432/website_profiling`). See `scripts/local-run.sh`. **Local tests:** `./local-test` runs **three** Python coverage gates (core 100%, reporting 100%, tools 100%) plus web checks — mirrors CI **python** and **web** jobs; Docker CI is separate (see `.github/workflows/ci.yml`). `./local-test browser` for `@pytest.mark.browser` integration tests — see `scripts/local-test.sh`. Mocked browser unit tests: `tests/test_browser_fetcher_unit.py`.
 
 **JavaScript crawl (optional):** Config keys `crawl_render_mode` (`static` | `javascript` | `auto`) and `crawl_js_*` in pipeline config / `pipelineConfigSchema.ts`. JS/auto crawls can capture browser console errors and uncaught exceptions (`crawl_js_capture_console`, stored under `page_analysis.browser`). **Auto mode** uses static-first fetch, pre-parse SPA heuristics (`needs_js_render`), then post-parse low-outlink fallback (`needs_js_render_after_parse`) in `crawler.py`. **Preflight:** `GET /api/crawl/browser-status` (localhost) spawns Python `browser_status()`; Run audit settings/run validation calls it when render mode is `javascript` or `auto`. Browser deps: Playwright from `requirements.txt` (installed by `./local-run setup` and `./local-test`). Runtime needs Chromium on `PATH` or `CHROME_PATH` (Docker sets `CHROME_PATH=/usr/bin/chromium`). Integration tests: `@pytest.mark.browser` — excluded by default in `pytest.ini`; Docker CI runs `tests/test_crawl_fetchers.py` and `tests/test_crawler_browser_e2e.py -m browser`; locally `./local-test browser`.
 
@@ -31,7 +32,7 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 - **AI Chat UI:** `/chat` — property-scoped chat with saved sessions (`chat_sessions`, `chat_messages`; migration `012_chat_sessions`).
 - **Job store:** PostgreSQL `pipeline_jobs` when `DATABASE_URL` is set (`pipelineJobsDb.ts` — status, timestamps, truncated logs). In-memory map in `pipelineJobs.ts` holds live log tail and child process handles; stale rows reconciled via `PIPELINE_JOB_STALE_HOURS`.
 - **Schema head:** `015_crawl_page_html` (recent: `013` link_edges/discovery, `014` job log truncation, `015` per-URL HTML storage).
-- **Docker:** `Dockerfile` + `docker-compose.yml` (postgres + web); **`docker-compose.prod.yml`** (production + remote MCP on `:8000`); **`docker-compose.pull.yml`** for pre-built images (`WEB_IMAGE`); **`LIGHTHOUSE_CHROME_FLAGS`**
+- **Docker:** `Dockerfile` + `docker-compose.yml` (postgres + web + FileService); **`docker-compose.prod.yml`** (production + remote MCP on `:8000`); **`docker-compose.pull.yml`** for pre-built images (`WEB_IMAGE`); **`LIGHTHOUSE_CHROME_FLAGS`**
 
 **Where to edit**
 
@@ -39,6 +40,7 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 |------|--------|
 | Crawl | `crawl/crawler.py`, `crawl/fetchers/` |
 | Report | `reporting/builder.py`, `reporting/categories.py` |
+| PDF / workbook export | `services/FileService/` (rendering); Next.js proxies in `web/src/server/proxyToFileService.ts` |
 | DB schema | `alembic/versions/` |
 | Local analysis | `analysis/local.py`, `requirements.txt` |
 | AI insights (LLM) | `llm/enrich.py`, `llm/agent.py`, `llm_config.py`, `requirements.txt` |
@@ -84,7 +86,7 @@ The web UI uses **both** Chart.js and D3.js. Pick the library that fits each cha
 - Keep chart-library types out of data-prep: use neutral shapes (`BarChartData`, `DualSeriesChartData` in `web/src/lib/viz/types.ts` and `web/src/lib/compareChartData.ts`); convert at the render layer via `web/src/lib/viz/adapters.ts` when needed.
 - Migrate page-by-page when D3 is the better fit; do not remove `chart.js` from `package.json` until all consumers are migrated.
 
-**Company standards:** UI copy in `web/src/strings.json` (Site Audit, Properties, Run audit). Data provenance on `report_meta` in report payload. Docs: `docs/COMPANY_STANDARDS.md`, `docs/GLOSSARY.md`. Migration `003_company_standards` (properties, pipeline_jobs, audit_log). Durable jobs in `web/src/server/pipelineJobsDb.ts`. Export: PDF/workbook via FileService (`FILE_SERVICE_URL`); CSV/JSON via `GET /api/report/export` and `src/website_profiling/tools/export_audit.py`.
+**Company standards:** UI copy in `web/src/strings.json` (Site Audit, Properties, Run audit). Data provenance on `report_meta` in report payload. Docs: `docs/COMPANY_STANDARDS.md`, `docs/GLOSSARY.md`. Migration `003_company_standards` (properties, pipeline_jobs, audit_log). Durable jobs in `web/src/server/pipelineJobsDb.ts`. **Export:** PDF/workbook via FileService (`FILE_SERVICE_URL` on web/MCP; `REPORT_API_URL` on FileService); CSV/JSON via `GET /api/report/export` and `src/website_profiling/tools/export_audit.py`.
 
 **Common footguns (check before finishing web or DB work)**
 

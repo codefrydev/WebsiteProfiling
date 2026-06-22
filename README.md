@@ -19,6 +19,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Next.js-000?logo=next.js&logoColor=white" alt="Next.js">
   <img src="https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/.NET-512BD4?logo=dotnet&logoColor=white" alt=".NET">
   <img src="https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL">
   <img src="https://img.shields.io/badge/Docker-2496ED?logo=docker&logoColor=white" alt="Docker">
 </p>
@@ -84,7 +85,7 @@ Audit → Report → MCP → Fix → Review → (repeat)
 | Step | What you do | In Site Audit |
 |------|-------------|---------------|
 | **Audit** | Crawl and score the site | Pipeline (`python -m src`), Lighthouse, on-page checks |
-| **Report** | Export and prioritize fixes | PDF/HTML/CSV exports, issue board, fix roadmap |
+| **Report** | Export and prioritize fixes | PDF, Excel workbook, CSV, and JSON exports; issue board; fix roadmap |
 | **MCP** | Pull audit context into your IDE | `python -m website_profiling.mcp` — read-only tools for Cursor / Claude Desktop |
 | **Fix** | Ship changes in your codebase | Your PR workflow (MCP does not write to the site) |
 | **Review** | Prove improvement | Compare runs, category deltas, GSC metric changes |
@@ -159,12 +160,13 @@ WebsiteProfiling/
 │   ├── src/views/             # Report views (overview, links, issues, …)
 │   ├── src/server/            # Server-side DB, pipeline jobs, config I/O
 │   └── public/                # Static assets (logo, favicon)
+├── services/FileService/      # .NET PDF + Excel workbook export (port 8080)
 ├── alembic/versions/          # PostgreSQL schema migrations
 ├── tests/                     # pytest suite + fixtures
 ├── docs/                      # Glossary, MCP, ops, brand assets
 ├── scripts/                   # local-run.sh, local-test.sh helpers
 ├── .github/workflows/         # CI (Python + web + browser crawl)
-├── docker-compose.yml         # Dev stack (Postgres + web)
+├── docker-compose.yml         # Dev stack (Postgres + web + FileService)
 ├── docker-compose.prod.yml    # Production stack (requires AUTH_SECRET)
 ├── docker-compose.pull.yml    # Pre-built WEB_IMAGE
 ├── Dockerfile                 # Production image
@@ -178,6 +180,7 @@ WebsiteProfiling/
 | Path                                  | Purpose                                                                        |
 | ------------------------------------- | ------------------------------------------------------------------------------ |
 | `src/website_profiling/`              | Crawl, analyze, report, Lighthouse, integrations, AI — run via `python -m src` |
+| `services/FileService/`               | PDF and Excel workbook export — see [services/FileService/README.md](services/FileService/README.md) |
 | `web/app/api/`                        | REST APIs: report data, pipeline runs, chat (SSE), Google/Bing sync            |
 | `web/src/lib/pipelineConfigSchema.ts` | Audit settings schema (UI ↔ PostgreSQL)                                        |
 | `alembic/versions/`                   | Database migrations — run `./local-run migrate`                                |
@@ -198,7 +201,7 @@ Build and run from source:
 docker compose up --build
 ```
 
-Open [http://localhost:3000/home](http://localhost:3000/home).
+Open [http://localhost:3000/home](http://localhost:3000/home). PDF and workbook exports require the **FileService** container (`files`, port 8080).
 
 Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `AUTH_SECRET`. Pre-built images: `docker-compose.pull.yml` (`WEB_IMAGE`).
 
@@ -206,7 +209,7 @@ Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTG
 
 ```bash
 ./local-run setup   # First time: Postgres, Python venv, migrations, npm deps
-./local-run         # Start DB + Next.js dev server → http://localhost:3000/home
+./local-run         # Start DB + FileService + Next.js → http://localhost:3000/home
 ./local-run db      # Postgres only (no app)
 ./local-run migrate # Apply Alembic migrations only
 ./local-run stop    # Stop Postgres container

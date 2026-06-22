@@ -2,11 +2,11 @@
 
 Standalone .NET service for file generation and file-related operations: **audit report PDF export** ([QuestPDF](https://www.questpdf.com/)) and **crawl workbook Excel export** (ClosedXML).
 
-Python remains the source of truth for crawl data and CSV/JSON exports. FileService consumes a **framework-neutral HTTP report API** (JSON payload, meta, app-settings) and renders deliverables — **no direct Postgres access** (no Npgsql, EF, or `DATABASE_URL`).
+Python owns crawl data and CSV/JSON exports. FileService renders PDF and Excel workbooks from the report HTTP API — **no direct Postgres access** (no Npgsql, EF, or `DATABASE_URL`).
 
 ## Run locally
 
-Prerequisites: [.NET SDK 10+](https://dotnet.microsoft.com/download), Site Audit report API on port 8001 (Python uvicorn in dev).
+Prerequisites: [.NET SDK 10+](https://dotnet.microsoft.com/download), Site Audit report API on port 8001 (started by `./local-run` or Docker `web` service).
 
 ```bash
 cd services/FileService
@@ -27,7 +27,7 @@ In **Development**, Swagger UI is at **http://localhost:8080/docs** and the Open
 
 ## Upstream HTTP contract
 
-FileService does not reference FastAPI or Python — only these HTTP routes on `REPORT_API_URL`:
+Routes on `REPORT_API_URL`:
 
 | Route | Purpose |
 |-------|---------|
