@@ -13,7 +13,7 @@ router = APIRouter(prefix="/report", tags=["report-export"])
 
 DbDep = Annotated[Connection, Depends(get_db)]
 
-EXPORT_FORMATS = {"csv", "json", "html", "pdf"}
+EXPORT_FORMATS = {"csv", "json"}
 
 
 @router.get("/export")
@@ -43,22 +43,6 @@ def export_report(
                 content=body if isinstance(body, bytes) else body.encode(),
                 media_type="application/json",
                 headers={"Content-Disposition": "attachment; filename=report.json"},
-            )
-        if format == "html":
-            from website_profiling.tools.export_audit import export_audit_html as _export
-            content = _export(conn, reportId)
-            return Response(
-                content=content if isinstance(content, bytes) else content.encode(),
-                media_type="text/html",
-                headers={"Content-Disposition": "attachment; filename=report.html"},
-            )
-        if format == "pdf":
-            from website_profiling.tools.export_audit import export_audit_pdf as _export
-            content = _export(conn, reportId)
-            return Response(
-                content=content if isinstance(content, bytes) else content.encode("utf-8"),
-                media_type="application/pdf",
-                headers={"Content-Disposition": "attachment; filename=report.pdf"},
             )
     except ImportError as exc:
         raise HTTPException(status_code=501, detail=f"Export module unavailable: {exc}")

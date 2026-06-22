@@ -1,0 +1,70 @@
+{
+  "site_name": "example.com",
+  "report_title": "Technical SEO Audit Report",
+  "report_generated_at": "2025-06-01T12:00:00Z",
+  "overall_score": 72,
+  "executive_summary": {
+    "summary": "The site has several high-priority SEO issues.",
+    "source": "deterministic",
+    "priorities": ["Fix broken links", "Improve meta descriptions"],
+    "top_issues": [
+      {
+        "category": "Technical SEO",
+        "priority": "high",
+        "message": "Missing title tag",
+        "url": "https://example.com/page",
+        "recommendation": "Add a unique title."
+      }
+    ]
+  },
+  "report_meta": {
+    "data_sources": ["Crawl", "Google Search Console"],
+    "crawl_scope": {
+      "pages_crawled": 150,
+      "max_pages_configured": 500
+    }
+  },
+  "categories": [
+    {
+      "name": "technical_seo",
+      "score": 68,
+      "issues": [
+        {
+          "priority": "critical",
+          "message": "Server error on homepage",
+          "url": "https://example.com/",
+          "recommendation": "Fix 500 response."
+        },
+        {
+          "priority": "high",
+          "message": "Missing meta description",
+          "url": "https://example.com/about",
+          "recommendation": "Add meta description."
+        }
+      ]
+    },
+    {
+      "name": "content",
+      "score": 80,
+      "issues": [
+        {
+          "priority": "medium",
+          "message": "Thin content",
+          "url": "https://example.com/blog/post",
+          "recommendation": "Expand content."
+        }
+      ]
+    }
+  ],
+  "lighthouse_summary": {
+    "url": "https://example.com/",
+    "performance": 85,
+    "accessibility": 92,
+    "best_practices": 88,
+    "seo": 90
+  },
+  "top_pages": [
+    { "url": "https://example.com/" },
+    { "url": "https://example.com/about" }
+  ]
+}

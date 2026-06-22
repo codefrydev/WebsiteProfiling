@@ -34,6 +34,7 @@ services:
       LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
       LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
       FASTAPI_URL: http://127.0.0.1:8001
+      FILE_SERVICE_URL: http://files:8080
     volumes:
       - profiling-data:/data
     healthcheck:
@@ -42,6 +43,17 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+
+  files:
+    build:
+      context: ./services/FileService
+    ports:
+      - "8080:8080"
+    environment:
+      FASTAPI_URL: http://web:8001
+    depends_on:
+      web:
+        condition: service_started
 
 volumes:
   pg-data:
