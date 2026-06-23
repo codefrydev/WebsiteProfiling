@@ -10,27 +10,42 @@ import type { NextRequest } from 'next/server';
 
 const FASTAPI_BASE = (process.env.FASTAPI_URL ?? 'http://127.0.0.1:8001').replace(/\/$/, '');
 
-export async function proxyToFastAPI(req: NextRequest, path: string): Promise<Response> {
+export async function proxyToFastAPI(
+  req: NextRequest,
+  path: string,
+  signal?: AbortSignal,
+): Promise<Response> {
   const url = `${FASTAPI_BASE}${path}${req.nextUrl.search}`;
 
-  const upstream = await fetch(url, {
-    method: req.method,
-    headers: {
-      'content-type': req.headers.get('content-type') ?? 'application/json',
-    },
-    body: req.method !== 'GET' && req.method !== 'HEAD' ? req.body : undefined,
-    // Node 18+ fetch requires duplex:'half' for streaming request bodies.
-    // @ts-expect-error — not in all TS lib versions
-    duplex: 'half',
-  });
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 120_000);
 
-  // Forward the upstream Content-Type so SSE streams and JSON are handled correctly.
-  const contentType = upstream.headers.get('content-type') ?? 'application/json';
+  try {
+    const upstream = await fetch(url, {
+      method: req.method,
+      headers: {
+        'content-type': req.headers.get('content-type') ?? 'application/json',
+      },
+      body: req.method !== 'GET' && req.method !== 'HEAD' ? req.body : undefined,
+      // Node 18+ fetch requires duplex:'half' for streaming request bodies.
+      // @ts-expect-error — not in all TS lib versions
+      duplex: 'half',
+      signal: signal ?? controller.signal,
+    });
 
-  return new Response(upstream.body, {
-    status: upstream.status,
-    headers: {
-      'content-type': contentType,
-    },
-  });
+    clearTimeout(timer);
+
+    // Forward the upstream Content-Type so SSE streams and JSON are handled correctly.
+    const contentType = upstream.headers.get('content-type') ?? 'application/json';
+
+    return new Response(upstream.body, {
+      status: upstream.status,
+      headers: {
+        'content-type': contentType,
+      },
+    });
+  } catch (err) {
+    clearTimeout(timer);
+    throw err;
+  }
 }

@@ -50,9 +50,10 @@ def upsert_saved_filter(
     conn.commit()
 
 
-def delete_saved_filter(conn: Connection, property_id: int, name: str) -> None:
-    conn.execute(
+def delete_saved_filter(conn: Connection, property_id: int, name: str) -> bool:
+    cur = conn.execute(
         "DELETE FROM saved_crawl_filters WHERE property_id = %s AND name = %s",
         (property_id, name),
     )
     conn.commit()
+    return cur.rowcount > 0

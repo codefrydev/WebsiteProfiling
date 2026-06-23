@@ -20,10 +20,10 @@ class ChatSessionCreate(BaseModel):
 
 class ChatSessionResponse(BaseModel):
     id: int
-    property_id: int
+    propertyId: int
     title: str
-    created_at: str
-    updated_at: str
+    createdAt: str
+    updatedAt: str
 
 
 class ChatMessageResponse(BaseModel):

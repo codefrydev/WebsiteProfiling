@@ -45,8 +45,9 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         from website_profiling.db.pool import close_db_pool
 
         close_db_pool()
-    except Exception:
-        pass
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).warning("Error closing DB pool on shutdown: %s", exc)
 
 
 app = FastAPI(
@@ -58,9 +59,15 @@ app = FastAPI(
 # CORS — only added when FASTAPI_ALLOWED_ORIGINS is set (local Swagger in dev).
 _origins_raw = os.getenv("FASTAPI_ALLOWED_ORIGINS", "").strip()
 if _origins_raw:
+    _origins = [o.strip() for o in _origins_raw.split(",") if o.strip()]
+    if "*" in _origins:
+        raise RuntimeError(
+            "FASTAPI_ALLOWED_ORIGINS cannot contain '*' when allow_credentials=True. "
+            "List explicit origins (e.g. http://localhost:3000) instead."
+        )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=[o.strip() for o in _origins_raw.split(",") if o.strip()],
+        allow_origins=_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

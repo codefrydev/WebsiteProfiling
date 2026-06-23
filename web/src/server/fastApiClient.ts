@@ -3,7 +3,7 @@
  * Used by server utilities that previously queried PostgreSQL directly.
  */
 
-function fastApiBase(): string {
+export function fastApiBase(): string {
   return (process.env.FASTAPI_URL || 'http://127.0.0.1:8001').replace(/\/$/, '');
 }
 

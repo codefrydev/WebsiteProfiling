@@ -25,9 +25,11 @@ def delete_portfolio_item(body: DeletePortfolioBody, conn: DbDep) -> dict[str, A
     if body.reportId is None and body.crawlRunId is None:
         raise HTTPException(status_code=400, detail="reportId or crawlRunId required")
 
-    portfolio_store.delete_portfolio_item(
+    deleted = portfolio_store.delete_portfolio_item(
         conn,
         report_id=body.reportId,
         crawl_run_id=body.crawlRunId,
     )
+    if not deleted:
+        raise HTTPException(status_code=404, detail="portfolio item not found")
     return {"ok": True}

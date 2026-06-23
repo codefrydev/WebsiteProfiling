@@ -154,7 +154,7 @@ def list_compare_traffic_losers(conn: Connection, ctx: AuditToolContext, args: d
         delta = cur_clicks - base_clicks
         if delta >= 0:
             continue
-        url = str(cur_row.get("page") or cur_row.get("url") or key)
+        url = str(cur_row.get("page") or key)
         losers.append({
             "url": url,
             "clicks_current": cur_clicks,

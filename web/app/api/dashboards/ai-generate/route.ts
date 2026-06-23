@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { forbiddenIfNotLocal } from '@/server/localOnly';
+import { fastApiBase } from '@/server/fastApiClient';
 import { DASHBOARD_CATALOG, dimensions, measures } from '@/lib/dashboard/catalog/catalog';
 import { VIZ_LABELS } from '@/lib/dashboard/viz/labels';
 import type { ApiRouteHandler } from '@/types/api';
@@ -35,10 +36,6 @@ Examples:
   measure:   sum("issues") / count()
   transform: filter(severity == "critical") | sort(count, desc) | take(5)
 `.trim();
-
-function fastApiBase(): string {
-  return (process.env.FASTAPI_URL || 'http://127.0.0.1:8001').replace(/\/$/, '');
-}
 
 /**
  * POST /api/dashboards/ai-generate

@@ -81,30 +81,22 @@ def try_claim_pending_job(conn: Connection, worker_pid: int) -> Optional[dict[st
 
 def append_job_log(conn: Connection, job_id: str, chunk: str) -> bool:
     """Append to log_text with row-level lock. Returns True if log was truncated."""
-    conn.execute("BEGIN")
-    try:
-        cur = conn.execute(
-            "SELECT log_text, log_truncated FROM pipeline_jobs WHERE id = %s::uuid FOR UPDATE",
-            (job_id,),
-        )
-        row = cur.fetchone()
-        if not row:
-            conn.execute("ROLLBACK")
-            return False
-        log, truncated = _trim_log(str(row["log_text"] or ""), chunk)
-        log_truncated = bool(row["log_truncated"]) or truncated
-        conn.execute(
-            "UPDATE pipeline_jobs SET log_text = %s, log_truncated = %s WHERE id = %s::uuid",
-            (log, log_truncated, job_id),
-        )
-        conn.execute("COMMIT")
-        return log_truncated
-    except Exception:
-        try:
-            conn.execute("ROLLBACK")
-        except Exception:
-            pass
-        raise
+    cur = conn.execute(
+        "SELECT log_text, log_truncated FROM pipeline_jobs WHERE id = %s::uuid FOR UPDATE",
+        (job_id,),
+    )
+    row = cur.fetchone()
+    if not row:
+        conn.rollback()
+        return False
+    log, truncated = _trim_log(str(row["log_text"] or ""), chunk)
+    log_truncated = bool(row["log_truncated"]) or truncated
+    conn.execute(
+        "UPDATE pipeline_jobs SET log_text = %s, log_truncated = %s WHERE id = %s::uuid",
+        (log, log_truncated, job_id),
+    )
+    conn.commit()
+    return log_truncated
 
 
 # ── Finish ───────────────────────────────────────────────────────────────────

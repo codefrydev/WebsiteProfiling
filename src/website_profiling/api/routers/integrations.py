@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from typing import Annotated, Any, Optional
 
@@ -317,7 +316,7 @@ def google_page_live(
                 detail=data.get("error") or "Live fetch failed",
             )
         import datetime
-        return {"ok": True, "fetchedAt": datetime.datetime.utcnow().isoformat() + "Z", **data}
+        return {"ok": True, "fetchedAt": datetime.datetime.now(datetime.timezone.utc).isoformat().replace("+00:00", "Z"), **data}
     except subprocess.TimeoutExpired:
         raise HTTPException(status_code=504, detail="Live fetch timed out after 45s")
 

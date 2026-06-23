@@ -49,5 +49,7 @@ def delete_filter(body: FilterDeleteBody, conn: DbDep) -> dict[str, Any]:
     name = (body.name or "").strip()
     if not body.propertyId or not name:
         raise HTTPException(status_code=400, detail="propertyId and name required")
-    saved_filter_store.delete_saved_filter(conn, body.propertyId, name)
+    deleted = saved_filter_store.delete_saved_filter(conn, body.propertyId, name)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="filter not found")
     return {"ok": True}

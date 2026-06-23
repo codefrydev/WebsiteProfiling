@@ -25,7 +25,8 @@ def alerts_check(
 
         return run_alerts_for_property(conn, propertyId)
     except ImportError:
-        pass
+        import logging
+        logging.getLogger(__name__).debug("alerts_runner module not available in this build")
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
     return {"ok": True, "checked": 0}

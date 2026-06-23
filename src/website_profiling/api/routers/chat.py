@@ -21,6 +21,16 @@ DbDep = Annotated[Connection, Depends(get_db)]
 _FIRST_SENTENCE_RE = re.compile(r"^(.{8,80}[.!?])", re.DOTALL)
 
 
+def _fmt_session(s: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": s["id"],
+        "propertyId": s["property_id"],
+        "title": s["title"],
+        "createdAt": s["created_at"],
+        "updatedAt": s["updated_at"],
+    }
+
+
 def _messages_for_agent_context(
     rows: list[dict[str, Any]], max_turns: int = 20
 ) -> list[dict[str, str]]:
@@ -102,18 +112,26 @@ def chat_turn(body: ChatRequest, conn: DbDep) -> StreamingResponse:
 
         thread.join(timeout=5)
 
-        # Persist assistant response
+        # Persist assistant response. The injected `conn` dependency is released
+        # by FastAPI as soon as StreamingResponse is returned (before this
+        # generator resumes), so we open a fresh connection for persistence.
         assistant_text = "".join(assistant_parts).strip()
         if assistant_text:
             try:
-                append_message(conn, body.sessionId, "assistant", assistant_text)
-                # Auto-title from first user message if session title is default
-                if session.get("title") in ("New chat", "", None):
-                    derived = _derive_title(body.message) or _derive_title(assistant_text)
-                    if derived:
-                        update_session_title(conn, body.sessionId, derived)
-            except Exception:
-                pass
+                from website_profiling.db.pool import db_session
+                with db_session() as fresh_conn:
+                    append_message(fresh_conn, body.sessionId, "assistant", assistant_text)
+                    if session.get("title") in ("New chat", "", None):
+                        derived = _derive_title(body.message) or _derive_title(assistant_text)
+                        if derived:
+                            update_session_title(fresh_conn, body.sessionId, derived)
+            except Exception as exc:
+                import logging
+                logging.getLogger(__name__).warning(
+                    "Failed to persist chat assistant message for session %s: %s",
+                    body.sessionId,
+                    exc,
+                )
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 
@@ -130,7 +148,7 @@ def list_sessions(
     if not propertyId:
         raise HTTPException(status_code=400, detail="propertyId required")
     sessions = _list(conn, propertyId)
-    return {"sessions": sessions}
+    return {"sessions": [_fmt_session(s) for s in sessions]}
 
 
 @router.post("/sessions")
@@ -150,7 +168,7 @@ def get_session_route(session_id: int, conn: DbDep) -> dict[str, Any]:
     session = get_session(conn, session_id)
     if not session:
         raise HTTPException(status_code=404, detail="session not found")
-    return {"session": session}
+    return {"session": _fmt_session(session)}
 
 
 @router.delete("/sessions/{session_id}")

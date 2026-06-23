@@ -29,8 +29,10 @@ def delete_portfolio_item(
     *,
     report_id: int | None = None,
     crawl_run_id: int | None = None,
-) -> None:
+) -> bool:
+    deleted = False
     if report_id is not None:
-        delete_portfolio_report(conn, report_id)
+        deleted = delete_portfolio_report(conn, report_id)
     if crawl_run_id is not None:
-        delete_portfolio_crawl_run(conn, crawl_run_id)
+        deleted = delete_portfolio_crawl_run(conn, crawl_run_id)
+    return deleted

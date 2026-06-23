@@ -23,6 +23,7 @@ services:
         condition: service_healthy
     ports:
       - '${WEB_PORT:-3000}:3000'
+      - '${FASTAPI_PORT:-8001}:8001'
     environment:
       WEBSITE_PROFILING_ROOT: /app
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
@@ -31,7 +32,12 @@ services:
       AUTH_PASSWORD: ${AUTH_PASSWORD:-}
       NODE_ENV: production
       FASTAPI_URL: http://127.0.0.1:8001
+      FASTAPI_ALLOWED_ORIGINS: ${FASTAPI_ALLOWED_ORIGINS:-http://localhost:3000}
       FILE_SERVICE_URL: http://files:8080
+      PYTHON: /opt/venv/bin/python
+      CHROME_PATH: /usr/bin/chromium
+      LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
+      LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
     volumes:
       - profiling-data:/data
     healthcheck:
@@ -39,6 +45,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 30s
 
   worker:
     build:
@@ -47,7 +54,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: ['python', '-m', 'src', 'report']
+    command: ['/opt/venv/bin/python', '-m', 'website_profiling.worker']
     environment:
       WEBSITE_PROFILING_ROOT: /app
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}

@@ -87,7 +87,6 @@ def put_pipeline_config(
     coerced: dict[str, str] = {str(k): str(v) for k, v in body.state.items()}
     unknown_keys: list[dict[str, str]] = body.unknownKeys or []
     write_pipeline_config(conn, coerced, unknown_keys)
-    conn.commit()
     return {"ok": True, "source": "db"}
 
 
@@ -142,7 +141,6 @@ def put_llm_config(
             secret_keys.add(k)
 
     write_llm_config(conn, entries, secret_keys)
-    conn.commit()
     return {"ok": True}
 
 
@@ -223,7 +221,6 @@ def put_secrets(
                     llm_secret_keys.add(k)
 
     write_llm_config(conn, llm_updates, llm_secret_keys)
-    conn.commit()
 
     if google_patch:
         save_google_app_settings(conn, google_patch)
