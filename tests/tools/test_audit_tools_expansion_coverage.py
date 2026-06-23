@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
@@ -127,6 +128,37 @@ def _crawl_df() -> pd.DataFrame:
     ])
 
 
+@contextmanager
+def _patch_geo_readiness_http(
+    *,
+    llms_found: bool = True,
+    robots_score: int = 9,
+    robots_side_effect: Exception | None = None,
+):
+    """Patch live HTTP helpers so get_geo_readiness_score never hits the network."""
+    llms_ret = {
+        "found": llms_found,
+        "depth": {"depth_score": 12} if llms_found else {},
+    }
+    robots_patch = (
+        {"side_effect": robots_side_effect}
+        if robots_side_effect is not None
+        else {"return_value": {"robots_score": robots_score}}
+    )
+    with (
+        patch.object(geo_mod, "_fetch_llms_txt", return_value=llms_ret),
+        patch.object(geo_mod, "_score_robots_ai_access", **robots_patch),
+        patch.object(geo_mod, "_score_meta_signals", return_value={"meta_score": 7}),
+        patch.object(geo_mod, "_score_freshness_signals", return_value={"freshness_score": 4}),
+        patch.object(
+            geo_mod,
+            "_fetch_ai_discovery",
+            return_value={"discovery_score": 4, "found_count": 2, "endpoints": {}},
+        ),
+    ):
+        yield
+
+
 def test_payload_extras_edge_paths(conn: MagicMock, ctx: Ctx) -> None:
     with patch.object(Ctx, "load_payload", return_value=None):
         assert pe_mod.get_rich_results_summary(conn, ctx, {})["missing"] is True
@@ -236,9 +268,8 @@ def test_geo_tools_paths(conn: MagicMock, ctx: Ctx) -> None:
     payload = {"ner_site_summary": {"entities": ["Acme", "Widgets"]}}
     with patch.object(Ctx, "load_payload", return_value=payload), patch.object(
         Ctx, "load_crawl_df", return_value=_crawl_df(),
-    ), patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), patch(
-        "website_profiling.tools.audit_tools.geo.geo_tools._fetch_llms_txt",
-        return_value={"found": True},
+    ), patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), _patch_geo_readiness_http(
+        llms_found=True,
     ):
         geo = geo_mod.get_geo_readiness_score(conn, ctx, {})
         assert 0 <= geo["geo_readiness_score"] <= 100
@@ -282,7 +313,7 @@ def test_geo_tools_paths(conn: MagicMock, ctx: Ctx) -> None:
     empty_geo = pd.DataFrame([{"url": "https://ex.com/e", "status": "404", "page_analysis": "{}"}])
     with patch.object(Ctx, "load_payload", return_value={}), patch.object(Ctx, "load_crawl_df", return_value=empty_geo), patch.object(
         Ctx, "resolve_property_domain", return_value="ex.com",
-    ), patch("website_profiling.tools.audit_tools.geo.geo_tools._fetch_llms_txt", return_value={"found": False}):
+    ), _patch_geo_readiness_http(llms_found=False):
         geo_empty = geo_mod.get_geo_readiness_score(conn, ctx, {})
         assert geo_empty["components"]["schema_coverage"] == 0
 
@@ -292,11 +323,9 @@ def test_geo_readiness_survives_http_task_exception(conn: MagicMock, ctx: Ctx) -
     # must degrade to a 0 sub-score, not crash the whole composite score.
     with patch.object(Ctx, "load_payload", return_value={}), patch.object(
         Ctx, "load_crawl_df", return_value=_crawl_df(),
-    ), patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), patch(
-        "website_profiling.tools.audit_tools.geo.geo_tools._fetch_llms_txt", return_value={"found": False},
-    ), patch(
-        "website_profiling.tools.audit_tools.geo.geo_tools._score_robots_ai_access",
-        side_effect=RuntimeError("boom"),
+    ), patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), _patch_geo_readiness_http(
+        llms_found=False,
+        robots_side_effect=RuntimeError("boom"),
     ):
         result = geo_mod.get_geo_readiness_score(conn, ctx, {})
     assert 0 <= result["geo_readiness_score"] <= 100
@@ -309,11 +338,12 @@ def test_google_ctr_and_keywords(conn: MagicMock, ctx: Ctx) -> None:
 
     gsc_data = {
         "gsc": {
-            "pages": [
+            "top_pages": [
                 {"page": "https://ex.com/a", "impressions": 500, "position": 5, "ctr": "0.5%"},
                 "skip",
                 {"page": "https://ex.com/b", "impressions": 50, "position": 10, "ctr": "5%"},
                 {"page": "https://ex.com/c", "impressions": 200, "position": "bad"},
+                {"page": "https://ex.com/d", "impressions": 500, "position": 0, "ctr": "0.5%"},
             ],
         },
     }
@@ -326,10 +356,10 @@ def test_google_ctr_and_keywords(conn: MagicMock, ctx: Ctx) -> None:
         ctr_kw = kw_mod.list_keywords_ctr_opportunity(conn, ctx, {})
         assert ctr_kw["total"] >= 1
 
-    with patch.object(Ctx, "load_google", return_value={"gsc": {"pages": "bad"}}):
+    with patch.object(Ctx, "load_google", return_value={"gsc": {"top_pages": "bad"}}):
         assert google_mod.get_gsc_ctr_opportunity_pages(conn, ctx, {})["total"] == 0
 
-    high_ctr = {"gsc": {"pages": [{"page": "https://ex.com/good", "impressions": 1000, "position": 3, "ctr": "15%"}]}}
+    high_ctr = {"gsc": {"top_pages": [{"page": "https://ex.com/good", "impressions": 1000, "position": 3, "ctr": "15%"}]}}
     with patch.object(Ctx, "load_google", return_value=high_ctr):
         assert google_mod.get_gsc_ctr_opportunity_pages(conn, ctx, {})["total"] == 0
 
@@ -511,7 +541,7 @@ def test_expansion_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
     with patch.object(Ctx, "load_crawl_df", return_value=pag_df):
         assert pe_mod.get_pagination_audit_summary(conn, ctx, {})["pages_with_rel_next"] == 1
 
-    low_ctr = {"gsc": {"pages": [{"page": "https://ex.com/low", "impressions": 500, "position": 5, "ctr": 0.001}]}}
+    low_ctr = {"gsc": {"top_pages": [{"page": "https://ex.com/low", "impressions": 500, "position": 5, "ctr": 0.001}]}}
     with patch.object(Ctx, "load_google", return_value=low_ctr):
         assert google_mod.get_gsc_ctr_opportunity_pages(conn, ctx, {})["total"] == 1
 

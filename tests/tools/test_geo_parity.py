@@ -4,6 +4,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 
 # ---------------------------------------------------------------------------
@@ -72,6 +73,45 @@ def test_score_robots_no_domain() -> None:
     result = _score_robots_ai_access("")
     assert result["robots_score"] == 0
     assert result["checked"] is False
+
+
+def test_score_meta_signals_request_error() -> None:
+    with patch(
+        "website_profiling.tools.audit_tools.geo.geo_tools.requests.get",
+        side_effect=requests.RequestException("network"),
+    ):
+        result = _score_meta_signals("example.com")
+    assert result["meta_score"] == 0
+    assert result["checked"] is False
+
+
+def test_score_freshness_request_errors() -> None:
+    with patch(
+        "website_profiling.tools.audit_tools.geo.geo_tools.requests.get",
+        side_effect=requests.RequestException("network"),
+    ):
+        result = _score_freshness_signals("example.com")
+    assert result["freshness_score"] == 0
+    assert result["checked"] is True
+    assert result["has_sitemap"] is False
+    assert result["has_rss_atom_feed"] is False
+
+
+def test_score_robots_ai_access_tier_scoring() -> None:
+    robots = "User-agent: *\nDisallow: /\n"
+    mock_resp = MagicMock()
+    mock_resp.status_code = 200
+    mock_resp.text = robots
+    with patch(
+        "website_profiling.tools.audit_tools.geo.geo_tools.requests.get",
+        return_value=mock_resp,
+    ):
+        result = _score_robots_ai_access("example.com")
+    assert result["checked"] is True
+    assert result["robots_score"] == 0
+    assert result["citation_bots_score"] == 0
+    assert result["search_bots_score"] == 0
+    assert result["training_bots_score"] == 0
 
 
 def test_fetch_ai_discovery_no_domain() -> None:

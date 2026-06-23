@@ -1,5 +1,5 @@
 import { apiUrl } from '@/lib/publicBase';
-import type { DashboardDoc } from '@/lib/dashboard/types';
+import type { DashboardDoc } from '@/lib/dashboard/engine/doc';
 
 export interface DashboardRowClient {
   id: number;

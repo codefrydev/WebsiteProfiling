@@ -46,7 +46,7 @@ def test_select_lighthouse_urls_from_gsc_ranks_by_clicks() -> None:
 
     google = {
         "gsc": {
-            "pages": [
+            "top_pages": [
                 {"page": "https://a.com/low", "clicks": 1},
                 {"page": "https://a.com/high", "clicks": 50},
                 {"page": "https://a.com/missing", "clicks": 99},
@@ -62,7 +62,7 @@ def test_select_lighthouse_urls_from_gsc_ranks_by_clicks() -> None:
 def test_select_lighthouse_urls_from_gsc_falls_back_to_crawl() -> None:
     from website_profiling.commands.pipeline_cmd import select_lighthouse_urls_from_gsc
 
-    google = {"gsc": {"pages": [{"page": "https://other.com", "clicks": 99}]}}
+    google = {"gsc": {"top_pages": [{"page": "https://other.com", "clicks": 99}]}}
     assert select_lighthouse_urls_from_gsc(google, ["https://a.com/a", "https://a.com/b"], 1) == [
         "https://a.com/a",
     ]
@@ -73,7 +73,7 @@ def test_select_lighthouse_urls_from_gsc_skips_bad_rows() -> None:
 
     google = {
         "gsc": {
-            "pages": [
+            "top_pages": [
                 "bad-row",
                 {"page": "", "clicks": 5},
                 {"page": "https://a.com/x", "clicks": "not-a-number"},

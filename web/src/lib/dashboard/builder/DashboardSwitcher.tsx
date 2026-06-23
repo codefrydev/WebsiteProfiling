@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Plus, Check, Trash2, Star, ChevronDown, LayoutTemplate } from 'lucide-react';
-import type { DashboardRow } from '@/server/dashboardsDb';
+import type { DashboardRowClient } from '@/lib/dashboard/data/fetchDashboards';
 import { DASHBOARD_PRESETS } from '@/lib/dashboard/presets/presets';
 
 interface DashboardSwitcherProps {
-  dashboards: DashboardRow[];
+  dashboards: DashboardRowClient[];
   activeDashboardId: number | null;
   onSelect: (id: number) => void;
   onCreate: (name: string) => void;

@@ -37,7 +37,7 @@ def test_issue_impact_enriches_and_sorts():
     ]
     google = {
         "gsc": {"top_pages": [{"page": "https://example.com/page", "clicks": 3, "impressions": 100}]},
-        "ga4": {"pages": [{"path": "/page", "sessions": 2}]},
+        "ga4": {"top_pages": [{"path": "/page", "sessions": 2}]},
     }
     enrich_categories_with_traffic_impact(categories, google)
     assert categories[0]["issues"][0]["impact_score"] > categories[0]["issues"][1]["impact_score"]
@@ -55,7 +55,7 @@ def test_issue_impact_skips_homepage_ga4_path():
     categories = [{
         "issues": [{"url": "https://example.com/about", "priority": "Medium"}],
     }]
-    google = {"ga4": {"pages": [{"path": "/", "sessions": 999}]}}
+    google = {"ga4": {"top_pages": [{"path": "/", "sessions": 999}]}}
     enrich_categories_with_traffic_impact(categories, google)
     issue = categories[0]["issues"][0]
     assert issue["ga4_sessions"] == 0
@@ -77,7 +77,7 @@ def test_issue_impact_handles_invalid_rows():
         ],
         {
             "gsc": {"top_pages": ["bad", {"page": "", "clicks": 1}, {"page": "https://example.com/x", "clicks": 2, "impressions": 5}]},
-            "ga4": {"pages": ["bad", {"path": "", "sessions": 1}, {"path": "/x", "sessions": 4}]},
+            "ga4": {"top_pages": ["bad", {"path": "", "sessions": 1}, {"path": "/x", "sessions": 4}]},
         },
     )
     assert sort_issues_by_impact(

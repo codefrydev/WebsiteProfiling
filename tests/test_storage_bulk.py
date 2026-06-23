@@ -29,6 +29,7 @@ def test_write_crawl_bulk_round_trip(pg_conn):
                 f"https://example.com/page-{i}",
                 "200",
                 f"Page {i}",
+                "static",
                 Json({"status": "200", "title": f"Page {i}"}),
             )
         )

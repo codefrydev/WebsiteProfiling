@@ -639,17 +639,22 @@ def test_crawl_store_remaining_branches(monkeypatch) -> None:
         def execute(self, sql, params=None):
             raise RuntimeError("x")
 
-    assert cs.read_crawl(AlwaysBoom()).empty  # type: ignore[arg-type]
+    with pytest.raises(RuntimeError, match="x"):
+        cs.read_crawl(AlwaysBoom())  # type: ignore[arg-type]
 
     rconn = CrawlConn(fetchall=[{"url": "u", "fetch_method": "rendered", "data": {}}])
     monkeypatch.setattr(cs, "get_latest_crawl_run_id", lambda _c: None)
     df = cs.read_crawl(rconn, run_id=None)  # type: ignore[arg-type]
     assert df.iloc[0]["fetch_method"] == "rendered"
 
-    rconn2 = CrawlConn(fetchall=[{"url": "u", "data": {"fetch_method": "static"}}])
+    rconn2 = CrawlConn(fetchall=[{"url": "u", "fetch_method": "static", "data": {}}])
     monkeypatch.setattr(cs, "get_latest_crawl_run_id", lambda _c: 2)
-    df2 = cs._read_crawl_rows(rconn2, 2, include_fetch_method=False)  # type: ignore[arg-type]
+    df2 = cs.read_crawl(rconn2, run_id=2)  # type: ignore[arg-type]
     assert df2.iloc[0]["fetch_method"] == "static"
+
+    rconn3 = CrawlConn(fetchall=[{"url": "u", "data": {}}])
+    df3 = cs.read_crawl(rconn3, run_id=2)  # type: ignore[arg-type]
+    assert df3.iloc[0]["fetch_method"] == "static"
 
     nconn = CrawlConn()
     monkeypatch.setattr(cs, "get_latest_crawl_run_id", lambda _c: None)
@@ -971,7 +976,7 @@ def test_remaining_gaps_misc(monkeypatch) -> None:
     )
 
     rconn = CrawlConn(fetchall=[{"url": "u", "fetch_method": None, "data": {}}])
-    df = cs._read_crawl_rows(rconn, 1, include_fetch_method=True)  # type: ignore[arg-type]
+    df = cs.read_crawl(rconn, run_id=1)  # type: ignore[arg-type]
     assert df.iloc[0]["fetch_method"] == "static"
 
     nconn = CrawlConn()

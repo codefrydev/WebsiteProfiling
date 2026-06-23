@@ -107,7 +107,7 @@ def test_helper_functions_cover_branches() -> None:
     assert len(rows) >= 4
 
     legacy = _executive_export_data({"recommendations": ["Only legacy"]})
-    assert "Only legacy" in legacy["summary"]
+    assert legacy["summary"] == ""
 
     assert _executive_source_label("ai_insights") == "AI insights"
     assert _executive_source_label("deterministic") == "Measured + Search Console"

@@ -99,23 +99,21 @@ def test_try_claim_pending_job_returns_none():
 
 def test_append_job_log_no_row():
     conn = FakeConn()
-    # BEGIN → FakeCursor, SELECT FOR UPDATE → returns None row
-    conn.set_next_cursor(FakeCursor())
     conn.set_next_cursor(FakeCursor(fetchone_value=None))
     result = append_job_log(conn, "job-1", "some output")
     assert result is False
+    assert conn.rollbacks == 1
 
 
 def test_append_job_log_appends_successfully():
     conn = FakeConn()
-    conn.set_next_cursor(FakeCursor())  # BEGIN
     conn.set_next_cursor(
         FakeCursor(fetchone_value={"log_text": "existing", "log_truncated": False})
     )
     conn.set_next_cursor(FakeCursor())  # UPDATE
-    conn.set_next_cursor(FakeCursor())  # COMMIT
     result = append_job_log(conn, "job-1", " more")
     assert result is False  # not truncated
+    assert conn.commits == 1
 
 
 def test_append_job_log_error_calls_rollback():
@@ -129,23 +127,22 @@ def test_append_job_log_error_calls_rollback():
     conn = BoomConn()
     with pytest.raises(RuntimeError):
         append_job_log(conn, "job-1", "chunk")
-    sqls = [s for s, _ in conn.executed]
-    assert any("ROLLBACK" in s for s in sqls)
 
 
-def test_append_job_log_error_rollback_also_fails():
-    """Covers the 'except Exception: pass' inside the rollback handler."""
+def test_append_job_log_error_before_rollback():
+    """FOR UPDATE errors propagate without attempting rollback."""
 
     class BoomAllConn(FakeConn):
         def execute(self, sql: str, params=None):  # type: ignore[override]
             self.executed.append((sql, params))
-            if "FOR UPDATE" in sql or "ROLLBACK" in sql:
+            if "FOR UPDATE" in sql:
                 raise RuntimeError("db error")
             return FakeCursor()
 
     conn = BoomAllConn()
-    with pytest.raises(RuntimeError):
+    with pytest.raises(RuntimeError, match="db error"):
         append_job_log(conn, "job-1", "chunk")
+    assert conn.rollbacks == 0
 
 
 # ── finish_job ────────────────────────────────────────────────────────────────

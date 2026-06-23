@@ -1,14 +1,12 @@
 """Tests for competitor keyword gap store."""
 from __future__ import annotations
 
-import json
 import os
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from website_profiling.integrations.keywords.competitor_gap_store import (
-    _migrate_legacy_config_if_empty,
     merge_competitor_keyword_import,
     read_competitor_keyword_gap,
     write_competitor_keyword_gap,
@@ -68,63 +66,15 @@ def test_read_returns_empty_when_data_not_list() -> None:
     assert read_competitor_keyword_gap(conn, 2) == []
 
 
-def test_read_migrates_when_row_missing() -> None:
+def test_read_returns_empty_when_row_missing() -> None:
     conn = _mock_conn_with_row(None)
-    legacy = [{"keyword": "legacy", "competitor": "old.com"}]
-    with patch(
-        "website_profiling.integrations.keywords.competitor_gap_store._migrate_legacy_config_if_empty",
-        return_value=legacy,
-    ) as migrate:
-        out = read_competitor_keyword_gap(conn, 9)
-    migrate.assert_called_once_with(conn, 9)
-    assert out == legacy
+    assert read_competitor_keyword_gap(conn, 9) == []
 
 
 def test_read_returns_empty_on_db_error() -> None:
     conn = MagicMock()
     conn.execute.side_effect = RuntimeError("db down")
     assert read_competitor_keyword_gap(conn, 1) == []
-
-
-def test_migrate_legacy_empty_config() -> None:
-    conn = MagicMock()
-    with patch(
-        "website_profiling.db.config_store.read_pipeline_config",
-        return_value=({}, []),
-    ):
-        assert _migrate_legacy_config_if_empty(conn, 1) == []
-
-
-def test_migrate_legacy_parses_and_writes() -> None:
-    conn = MagicMock()
-    rows = [{"keyword": "kw", "competitor": "c.com"}]
-    raw = json.dumps(rows)
-    with patch(
-        "website_profiling.db.config_store.read_pipeline_config",
-        return_value=({"competitor_keyword_gap_json": raw}, []),
-    ):
-        out = _migrate_legacy_config_if_empty(conn, 4)
-    assert out == rows
-    conn.execute.assert_called()
-    conn.commit.assert_called()
-
-
-def test_migrate_legacy_ignores_non_list_json() -> None:
-    conn = MagicMock()
-    with patch(
-        "website_profiling.db.config_store.read_pipeline_config",
-        return_value=({"competitor_keyword_gap_json": json.dumps({"bad": True})}, []),
-    ):
-        assert _migrate_legacy_config_if_empty(conn, 1) == []
-
-
-def test_migrate_legacy_returns_empty_on_error() -> None:
-    conn = MagicMock()
-    with patch(
-        "website_profiling.db.config_store.read_pipeline_config",
-        side_effect=RuntimeError("fail"),
-    ):
-        assert _migrate_legacy_config_if_empty(conn, 1) == []
 
 
 def _require_database_url() -> None:
@@ -153,12 +103,6 @@ def _reset_competitor_gap(conn, property_id: int) -> None:
 def roundtrip_property_id() -> int:
     _require_database_url()
     return _integration_property_id("competitor-gap-roundtrip.example")
-
-
-@pytest.fixture
-def migrate_property_id() -> int:
-    _require_database_url()
-    return _integration_property_id("competitor-gap-migrate.example")
 
 
 @pytest.mark.integration
@@ -192,38 +136,3 @@ def test_competitor_gap_db_roundtrip(roundtrip_property_id: int) -> None:
         assert len(merged3) == 2
         assert {r["keyword"] for r in merged3} == {"kw2", "new-kw"}
         assert read_competitor_keyword_gap(conn, roundtrip_property_id) == merged3
-
-
-@pytest.mark.integration
-def test_migrate_legacy_config_from_pipeline(migrate_property_id: int) -> None:
-    from website_profiling.db import db_session
-
-    legacy_rows = [{"keyword": "from-config", "competitor": "legacy.com"}]
-    with db_session() as conn:
-        conn.execute(
-            """
-            INSERT INTO pipeline_config (key, value, is_unknown, updated_at)
-            VALUES (%s, %s, false, now())
-            ON CONFLICT (key) DO UPDATE SET
-                value = EXCLUDED.value,
-                is_unknown = false,
-                updated_at = now()
-            """,
-            ("competitor_keyword_gap_json", json.dumps(legacy_rows)),
-        )
-        conn.execute(
-            "DELETE FROM competitor_keyword_gap WHERE property_id = %s",
-            (migrate_property_id,),
-        )
-        conn.commit()
-        rows = read_competitor_keyword_gap(conn, migrate_property_id)
-        assert rows == legacy_rows
-        conn.execute(
-            "DELETE FROM pipeline_config WHERE key = %s",
-            ("competitor_keyword_gap_json",),
-        )
-        conn.execute(
-            "DELETE FROM competitor_keyword_gap WHERE property_id = %s",
-            (migrate_property_id,),
-        )
-        conn.commit()
