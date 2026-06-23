@@ -1,21 +1,22 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { localRequest, remoteRequest } from '@/server/testHelpers/routeTestUtils';
 
-const listForApiMock = vi.fn();
+const proxyMock = vi.fn();
 
-vi.mock('@/server/pipelineJobs', () => ({
-  listPipelineJobsForApi: (...args: unknown[]) => listForApiMock(...args),
+vi.mock('@/server/proxyToFastAPI', () => ({
+  proxyToFastAPI: (...args: unknown[]) => proxyMock(...args),
 }));
 
-describe('jobs route', () => {
+describe('jobs route proxy', () => {
   beforeEach(() => {
-    listForApiMock.mockReset();
+    proxyMock.mockReset();
     vi.resetModules();
-    listForApiMock.mockResolvedValue({
-      jobs: [{ id: 'j1', status: 'completed' }],
-      active: null,
-      reconciled: 0,
-    });
+    proxyMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({ jobs: [{ id: 'j1', status: 'completed' }], active: null, reconciled: 0 }),
+        { status: 200 },
+      ),
+    );
   });
 
   it('returns 403 for non-local host', async () => {
@@ -24,12 +25,11 @@ describe('jobs route', () => {
     expect(res.status).toBe(403);
   });
 
-  it('lists jobs for local request', async () => {
+  it('proxies GET to FastAPI', async () => {
     const { GET } = await import('../../app/api/jobs/route');
-    const res = await GET(localRequest('/api/jobs?limit=10'));
+    const req = localRequest('/api/jobs?limit=10');
+    const res = await GET(req);
     expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.jobs).toHaveLength(1);
-    expect(body.reconciled).toBe(0);
+    expect(proxyMock).toHaveBeenCalledWith(req, '/api/jobs');
   });
 });

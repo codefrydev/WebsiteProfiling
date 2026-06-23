@@ -1,4 +1,9 @@
-import type { PoolClient } from 'pg';
+type PoolClient = {
+  query: (
+    sql: string,
+    params?: unknown[],
+  ) => Promise<{ rows: Record<string, unknown>[]; rowCount?: number }>;
+};
 import type {
   CrawlPageHtmlRunRow,
   CrawlRunRow,
@@ -49,11 +54,7 @@ export async function getPageHtmlStatsByRunIds(
   const stats = new Map<number, { page_count: number; total_bytes: number }>();
   if (!crawlRunIds.length) return stats;
   try {
-    const { rows } = await client.query<{
-      crawl_run_id: string | number;
-      page_count: string | number;
-      total_bytes: string | number;
-    }>(
+    const { rows } = await client.query(
       `SELECT crawl_run_id,
               COUNT(*)::int AS page_count,
               COALESCE(SUM(byte_length), 0)::bigint AS total_bytes
@@ -288,7 +289,7 @@ export async function readCompetitorKeywordGap(
 ): Promise<CompetitorKeywordGapRow[]> {
   if (propertyId == null) return [];
   try {
-    const { rows } = await client.query<{ data: unknown }>(
+    const { rows } = await client.query(
       'SELECT data FROM competitor_keyword_gap WHERE property_id = $1',
       [propertyId],
     );
@@ -315,7 +316,7 @@ export async function lookupPropertyIdByDomain(
   ];
   try {
     for (const domain of candidates) {
-      const { rows } = await client.query<{ id: string }>(
+      const { rows } = await client.query(
         'SELECT id FROM properties WHERE canonical_domain = $1',
         [domain],
       );
@@ -398,16 +399,16 @@ async function resolveReportRow(
 
   let row: { data: unknown } | undefined;
   if (resolvedReportId != null) {
-    const res = await client.query<{ data: unknown }>(
+    const res = await client.query(
       'SELECT data FROM report_payload WHERE id = $1',
       [resolvedReportId],
     );
-    row = res.rows[0];
+    row = res.rows[0] as { data: unknown } | undefined;
   } else {
-    const res = await client.query<{ data: unknown }>(
+    const res = await client.query(
       'SELECT data FROM report_payload ORDER BY id DESC LIMIT 1',
     );
-    row = res.rows[0];
+    row = res.rows[0] as { data: unknown } | undefined;
   }
 
   if (!row) {
@@ -597,7 +598,7 @@ export async function deletePortfolioItem(
 
   if (opts.reportId != null && Number.isFinite(Number(opts.reportId))) {
     const reportId = Number(opts.reportId);
-    const existing = await client.query<{ data: unknown }>(
+    const existing = await client.query(
       'SELECT data FROM report_payload WHERE id = $1',
       [reportId],
     );

@@ -159,3 +159,27 @@ def test_list_properties_public() -> None:
     assert len(rows) == 1
     assert rows[0]["google_connected"] is True
     assert rows[0]["google_connected_at"] == dt.isoformat()
+
+
+def test_resolve_property_id_for_page_hostname() -> None:
+    from website_profiling.db.property_store import resolve_property_id_for_page
+
+    row = {
+        "id": 12,
+        "name": "ex.com",
+        "canonical_domain": "ex.com",
+        "site_url": "https://ex.com",
+        "gsc_site_url": None,
+        "ga4_property_id": None,
+        "google_auth_mode": None,
+        "google_refresh_token": None,
+        "google_connected_at": None,
+        "google_connected_email": None,
+        "google_date_range_days": 28,
+        "default_crawl_preset": None,
+        "crawl_authorized_at": None,
+    }
+    conn = FakeConn()
+    conn.set_next_cursor(FakeCursor(fetchone_value=row))
+    assert resolve_property_id_for_page(conn, "https://ex.com/about") == 12
+    assert resolve_property_id_for_page(FakeConn(), "") is None

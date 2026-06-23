@@ -32,6 +32,19 @@ log() { printf '\033[1;36m→\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!\033[0m %s\n' "$*" >&2; }
 die() { printf '\033[1;31m✗\033[0m %s\n' "$*" >&2; exit 1; }
 
+# Kill any process still listening on a TCP port (stale dev servers after Ctrl+C).
+free_port() {
+  local port="$1"
+  local pids
+  pids="$(lsof -nP -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)"
+  if [[ -n "$pids" ]]; then
+    warn "Stopping stale listener on port $port (PID(s): ${pids//$'\n'/ })"
+    # shellcheck disable=SC2086
+    kill $pids 2>/dev/null || true
+    sleep 0.3
+  fi
+}
+
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || die "Missing required command: $1"
 }
@@ -134,13 +147,54 @@ cmd_start() {
   log "Ensuring migrations are up to date"
   "$VENV/bin/alembic" upgrade head
   cmd_web_deps
+  cd "$ROOT"
+  export DATABASE_URL DATA_DIR PYTHON WEBSITE_PROFILING_ROOT PYTHONPATH
+
+  WORKER_PID=""
+  UVICORN_PID=""
+  FILE_SERVICE_PID=""
+
+  cleanup_local() {
+    [ -n "$WORKER_PID" ] && kill "$WORKER_PID" 2>/dev/null || true
+    [ -n "$UVICORN_PID" ] && kill "$UVICORN_PID" 2>/dev/null || true
+    [ -n "$FILE_SERVICE_PID" ] && kill "$FILE_SERVICE_PID" 2>/dev/null || true
+  }
+  trap cleanup_local INT TERM EXIT
+
+  if command -v dotnet >/dev/null 2>&1; then
+    free_port 8080
+    log "Starting FileService on port 8080"
+    export REPORT_API_URL="http://127.0.0.1:8001"
+    (cd "$ROOT/services/FileService" && \
+      ASPNETCORE_URLS="http://127.0.0.1:8080" \
+      ASPNETCORE_ENVIRONMENT=Development \
+      dotnet run --project src/FileService.Api --no-launch-profile) &
+    FILE_SERVICE_PID=$!
+  else
+    warn "dotnet not found — PDF export requires FileService (see services/FileService/README.md)"
+  fi
+
+  log "Starting pipeline worker"
+  "$VENV/bin/python" -m website_profiling.worker &
+  WORKER_PID=$!
+
+  free_port 8001
+  log "Starting FastAPI on port 8001"
+  export FASTAPI_URL="http://127.0.0.1:8001"
+  export FASTAPI_ALLOWED_ORIGINS="http://localhost:3000"
+  "$VENV/bin/uvicorn" website_profiling.api.main:app \
+    --host 0.0.0.0 --port 8001 --workers 1 &
+  UVICORN_PID=$!
+
   log "Starting Next.js dev server (Ctrl+C to stop)"
   log "DATABASE_URL=$DATABASE_URL"
   log "DATA_DIR=$DATA_DIR"
   log "PYTHON=$PYTHON"
+  log "FILE_SERVICE_URL=${FILE_SERVICE_URL:-http://127.0.0.1:8080}"
+  export FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}"
   cd "$WEB"
-  export DATABASE_URL DATA_DIR PYTHON WEBSITE_PROFILING_ROOT PYTHONPATH
-  exec npm run dev
+  # Do not exec — keep this shell alive so the trap kills FileService/worker/uvicorn on Ctrl+C.
+  npm run dev
 }
 
 cmd_stop() {

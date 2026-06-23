@@ -37,6 +37,7 @@ class FakeConn:
     def __init__(self) -> None:
         self.executed: list[tuple[str, tuple[Any, ...] | None]] = []
         self.commits = 0
+        self.rollbacks = 0
         self._next_cursor: FakeCursor | None = None
         self._cursor_queue: list[FakeCursor] = []
 
@@ -61,6 +62,9 @@ class FakeConn:
 
     def commit(self) -> None:
         self.commits += 1
+
+    def rollback(self) -> None:
+        self.rollbacks += 1
 
     @contextmanager
     def transaction(self) -> Iterator[None]:

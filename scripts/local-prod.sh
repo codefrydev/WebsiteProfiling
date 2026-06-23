@@ -68,9 +68,34 @@ cmd_start() {
   log "DATA_DIR=$DATA_DIR"
   log "PYTHON=$PYTHON"
   log "NODE_ENV=$NODE_ENV"
-  cd "$WEB"
+  cd "$ROOT"
   export DATABASE_URL DATA_DIR PYTHON WEBSITE_PROFILING_ROOT PYTHONPATH NODE_ENV
-  exec npm run start
+
+  WORKER_PID=""
+  UVICORN_PID=""
+  NPM_PID=""
+
+  cleanup_prod() {
+    [ -n "$WORKER_PID" ] && kill "$WORKER_PID" 2>/dev/null || true
+    [ -n "$UVICORN_PID" ] && kill "$UVICORN_PID" 2>/dev/null || true
+    [ -n "$NPM_PID" ] && kill "$NPM_PID" 2>/dev/null || true
+  }
+  trap cleanup_prod INT TERM EXIT
+
+  log "Starting pipeline worker"
+  "$ROOT/.venv/bin/python" -m website_profiling.worker &
+  WORKER_PID=$!
+
+  log "Starting FastAPI on port 8001"
+  export FASTAPI_URL="http://127.0.0.1:8001"
+  "$ROOT/.venv/bin/uvicorn" website_profiling.api.main:app \
+    --host 0.0.0.0 --port 8001 --workers 1 &
+  UVICORN_PID=$!
+
+  cd "$WEB"
+  npm run start -- -H 0.0.0.0 -p 3000 &
+  NPM_PID=$!
+  wait $NPM_PID
 }
 
 cmd_help() {

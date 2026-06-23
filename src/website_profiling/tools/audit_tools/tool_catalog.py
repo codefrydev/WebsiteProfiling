@@ -244,7 +244,7 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
     _tool(
         "export_audit_report",
         "Export full audit report as PDF, HTML, CSV, or JSON. Returns download artifact metadata.",
-        {"property_id": _PID, "report_id": _RID, "format": {"type": "string", "enum": ["pdf", "html", "csv", "json"]}},
+        {"property_id": _PID, "report_id": _RID, "format": {"type": "string", "enum": ["pdf", "csv", "json"]}},
     ),
     _tool(
         "export_compare_csv",

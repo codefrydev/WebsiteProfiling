@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# WebsiteProfiling: Next.js web UI + Python pipeline (spawned from /api/run).
+# WebsiteProfiling: Next.js UI + FastAPI (port 8001) + Python worker + pipeline.
 # Build from repository root: docker build -t website-profiling .
 # BuildKit cache mounts (default in Docker Desktop) reuse pip/npm downloads across rebuilds.
 

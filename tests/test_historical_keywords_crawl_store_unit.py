@@ -252,7 +252,7 @@ def test_crawl_store_core_helpers(monkeypatch):
         {
             "RETURNING id": _Cursor(row={"id": 11}),
             "ORDER BY id DESC LIMIT 1": _Cursor(row={"id": 9}),
-            "WHERE id = %s": _Cursor(row={"created_at": "now", "start_url": "https://a.com"}),
+            "WHERE id = %s": _Cursor(row={"created_at": "now", "start_url": "https://a.com", "render_mode": "static"}),
         }
     )
     assert cs.create_crawl_run(conn, "https://a.com") == 11  # type: ignore[arg-type]

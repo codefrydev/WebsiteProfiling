@@ -214,20 +214,6 @@ def test_write_and_read_link_edges(monkeypatch) -> None:
     assert cs.read_link_edges(CrawlConn(), run_id=None) == []  # type: ignore[arg-type]
 
 
-def test_create_crawl_run_discovery_mode_fallback() -> None:
-    from website_profiling.db import crawl_store as cs
-
-    class BoomDisc(CrawlConn):
-        def execute(self, sql, params=None):
-            self.executed.append((sql, params))
-            if "discovery_mode" in sql:
-                raise RuntimeError("no discovery_mode")
-            return super().execute(sql, params)
-
-    conn = BoomDisc(fetchone={"id": 12})
-    assert cs.create_crawl_run(conn, start_url="https://a.com", discovery_mode="list") == 12  # type: ignore[arg-type]
-
-
 def test_create_crawl_run_raises_when_all_statements_fail() -> None:
     from website_profiling.db import crawl_store as cs
 

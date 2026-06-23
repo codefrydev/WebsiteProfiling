@@ -11,24 +11,19 @@ from ...export_artifacts import (
     save_artifact,
 )
 from ...export_compare import export_compare_issues_csv
-from ...export_audit import (
-    export_audit_csv,
-    export_audit_html,
-    export_audit_json,
-    export_audit_pdf,
-)
+from ...export_audit import export_audit_csv, export_audit_json
+from ....clients.file_service import fetch_report_pdf
 from .._slice import parse_limit
 from ..compare.compare_helpers import load_compare_pair
 from ..context import AuditToolContext
 
-_EXPORT_FORMATS = {"pdf", "html", "csv", "json"}
+_EXPORT_FORMATS = {"pdf", "csv", "json"}
 _MIME = {
     "pdf": "application/pdf",
-    "html": "text/html; charset=utf-8",
     "csv": "text/csv; charset=utf-8",
     "json": "application/json; charset=utf-8",
 }
-_EXT = {"pdf": "pdf", "html": "html", "csv": "csv", "json": "json"}
+_EXT = {"pdf": "pdf", "csv": "csv", "json": "json"}
 
 _LIST_EXPORT_ALLOWLIST = frozenset({
     "list_issues",
@@ -214,18 +209,17 @@ def export_audit_report(conn: Connection, ctx: AuditToolContext, args: dict[str,
     if fmt not in _EXPORT_FORMATS:
         return {"error": f"format must be one of: {', '.join(sorted(_EXPORT_FORMATS))}"}
     report_id = scoped.report_id
+    profile = str(args.get("profile") or "standard").strip().lower()
     try:
         if fmt == "pdf":
-            data = export_audit_pdf(report_id)
+            data = fetch_report_pdf(report_id, profile=profile)
             filename = f"audit-export.{_EXT[fmt]}"
             return {
                 **_artifact_from_bytes(data, filename=filename, mime_type=_MIME[fmt], extra={"format": fmt, "report_id": report_id}),
                 "format": fmt,
                 "report_id": report_id,
             }
-        if fmt == "html":
-            data = export_audit_html(report_id)
-        elif fmt == "csv":
+        if fmt == "csv":
             data = export_audit_csv(report_id)
         else:
             data = export_audit_json(report_id)
@@ -296,8 +290,7 @@ def export_list_as_csv(conn: Connection, ctx: AuditToolContext, args: dict[str, 
 def list_export_formats(_conn: Connection, _ctx: AuditToolContext, _args: dict[str, Any]) -> dict[str, Any]:
     return {
         "formats": [
-            {"tool": "export_audit_report", "format": "pdf", "description": "Full audit PDF deliverable"},
-            {"tool": "export_audit_report", "format": "html", "description": "Full audit HTML preview/print"},
+            {"tool": "export_audit_report", "format": "pdf", "description": "Full audit PDF deliverable (FileService)"},
             {"tool": "export_audit_report", "format": "csv", "description": "Full audit CSV (URLs + issues)"},
             {"tool": "export_audit_report", "format": "json", "description": "Full audit JSON payload"},
             {"tool": "export_compare_csv", "format": "csv", "description": "Issue added/removed diff between two reports"},
@@ -309,7 +302,7 @@ def list_export_formats(_conn: Connection, _ctx: AuditToolContext, _args: dict[s
             "Compare this report to report 38 as CSV",
         ],
         "notes": [
-            "PDF requires reportlab (pip install reportlab)",
+            "PDF requires FileService (FILE_SERVICE_URL; see services/FileService/)",
             "Artifacts expire after 24 hours",
             "Chat UI shows download buttons after export tools run",
         ],

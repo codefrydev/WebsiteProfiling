@@ -1,0 +1,128 @@
+{
+  "site_name": "example.com",
+  "report_title": "Technical SEO Audit Report",
+  "report_generated_at": "2025-06-01T12:00:00Z",
+  "overall_score": 72,
+  "summary": {
+    "total_urls": 200,
+    "indexable": 180,
+    "total_issues": 45,
+    "critical_issues": 2
+  },
+  "status_counts": {
+    "200": 180,
+    "301": 10,
+    "404": 5
+  },
+  "executive_summary": {
+    "summary": "The site has several high-priority SEO issues.",
+    "source": "deterministic",
+    "priorities": ["Fix broken links", "Improve meta descriptions"]
+  },
+  "report_meta": {
+    "data_sources": ["Crawl", "Google Search Console", "Google Analytics 4"],
+    "google_fetched_at": "2025-06-01T11:00:00Z",
+    "crawl_scope": {
+      "pages_crawled": 150,
+      "max_pages_configured": 500,
+      "render_mode": "auto"
+    }
+  },
+  "categories": [
+    {
+      "name": "technical_seo",
+      "score": 68,
+      "issues": [
+        {
+          "priority": "critical",
+          "message": "Server error on https://example.com/",
+          "url": "https://example.com/",
+          "recommendation": "Fix 500 response.",
+          "gsc_clicks": 120,
+          "gsc_impressions": 4500
+        }
+      ]
+    }
+  ],
+  "lighthouse_summary": {
+    "url": "https://example.com/",
+    "performance": 85,
+    "accessibility": 92,
+    "best_practices": 88,
+    "seo": 90
+  },
+  "lighthouse_human_summary": "Core Web Vitals are generally good.",
+  "lighthouse_diagnostics": [
+    { "title": "Largest Contentful Paint", "description": "2.1s" }
+  ],
+  "search_performance": {
+    "queries": [
+      { "query": "example brand", "clicks": "50", "impressions": "1200" }
+    ],
+    "pages": [
+      { "page": "https://example.com/", "clicks": "200", "impressions": "8000" }
+    ]
+  },
+  "ga4": {
+    "channels": [
+      { "channel": "Organic Search", "sessions": "1200" }
+    ],
+    "devices": [
+      { "device": "mobile", "sessions": "800" }
+    ]
+  },
+  "security_findings": [
+    {
+      "severity": "high",
+      "finding_type": "missing_header",
+      "url": "https://example.com/",
+      "message": "Missing Content-Security-Policy header"
+    }
+  ],
+  "content_analytics": {
+    "word_count_stats": { "mean": 450, "median": 380 },
+    "thin_content_count": 12,
+    "top_keywords_site": [
+      { "word": "services", "count": "45" }
+    ]
+  },
+  "indexation_coverage": {
+    "indexable": 180,
+    "non_indexable": 15,
+    "blocked": 5
+  },
+  "links": [
+    { "url": "https://example.com/", "status": "200", "title": "Home", "inlinks": 1, "outlinks": 2 },
+    {
+      "url": "https://example.com/products",
+      "status": "200",
+      "title": "Products",
+      "custom_extract": "SKU-1",
+      "custom_fields": "{\"price\":\"9.99\",\"sku\":\"SKU-1\"}"
+    }
+  ],
+  "link_edges": [
+    {
+      "from_url": "https://example.com/",
+      "to_url": "https://example.com/about",
+      "anchor_text": "About",
+      "rel": "",
+      "is_nofollow": false,
+      "is_sponsored": false,
+      "is_ugc": false,
+      "link_type": "internal",
+      "position": 1
+    }
+  ],
+  "redirects": [
+    {
+      "url": "https://example.com/old",
+      "message": "301 redirect chain",
+      "priority": "medium",
+      "recommendation": "Update internal links"
+    }
+  ],
+  "top_pages": [
+    { "url": "https://example.com/" }
+  ]
+}

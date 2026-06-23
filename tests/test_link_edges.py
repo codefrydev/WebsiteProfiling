@@ -148,32 +148,3 @@ def test_parse_links_backward_compat():
     title, links = parse_links("https://example.com", html)
     assert title == ""
     assert links == {"https://example.com/a", "https://example.com/b"}
-
-
-def test_workbook_links_csv_columns():
-    from website_profiling.tools.export_crawl_workbook import build_crawl_workbook_zip
-    import zipfile
-    import io
-
-    payload = {
-        "link_edges": [
-            {
-                "from_url": "https://example.com/",
-                "to_url": "https://example.com/about",
-                "anchor_text": "About",
-                "rel": "nofollow",
-                "is_nofollow": True,
-                "is_sponsored": False,
-                "is_ugc": False,
-                "link_type": "internal",
-                "position": "content",
-            }
-        ]
-    }
-    raw = build_crawl_workbook_zip(payload)
-    with zipfile.ZipFile(io.BytesIO(raw)) as zf:
-        header = zf.read("links.csv").decode("utf-8").splitlines()[0]
-    assert "from_url" in header
-    assert "anchor_text" in header
-    assert "is_nofollow" in header
-    assert "position" in header

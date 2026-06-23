@@ -1,15 +1,9 @@
-import { NextResponse } from 'next/server';
-import { getReportMeta } from '@/server/reportDb';
+import { type NextRequest } from 'next/server';
+import { proxyToFastAPI } from '@/server/proxyToFastAPI';
 import type { ApiRouteHandler } from '@/types/api';
 
 export const dynamic = 'force-dynamic';
 
-export const GET: ApiRouteHandler = async (): Promise<Response> => {
-  try {
-    const data = await getReportMeta();
-    return NextResponse.json(data);
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return NextResponse.json({ error: msg }, { status: 500 });
-  }
+export const GET: ApiRouteHandler = async (request: NextRequest): Promise<Response> => {
+  return proxyToFastAPI(request, '/api/report/meta');
 };

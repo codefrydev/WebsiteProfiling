@@ -34,36 +34,13 @@ def create_crawl_run(
 ) -> int:
     mode = (render_mode or "static").strip().lower()
     disc = (discovery_mode or "spider").strip().lower()
-    statements = [
-        (
-            "INSERT INTO crawl_runs (created_at, start_url, property_id, render_mode, discovery_mode) VALUES (%s, %s, %s, %s, %s) RETURNING id",
-            (_now_iso(), start_url, property_id, mode, disc),
-        ),
-        (
-            "INSERT INTO crawl_runs (created_at, start_url, property_id, render_mode) VALUES (%s, %s, %s, %s) RETURNING id",
-            (_now_iso(), start_url, property_id, mode),
-        ),
-        (
-            "INSERT INTO crawl_runs (created_at, start_url, property_id) VALUES (%s, %s, %s) RETURNING id",
-            (_now_iso(), start_url, property_id),
-        ),
-    ]
-    last_err: Exception | None = None
-    for sql, params in statements:
-        try:
-            cur = conn.execute(sql, params)
-            row = cur.fetchone()
-            conn.commit()
-            return int(row["id"])
-        except Exception as exc:
-            last_err = exc
-            try:
-                conn.rollback()
-            except Exception:
-                pass
-    if last_err is not None:
-        raise last_err
-    raise RuntimeError("create_crawl_run failed")  # pragma: no cover
+    cur = conn.execute(
+        "INSERT INTO crawl_runs (created_at, start_url, property_id, render_mode, discovery_mode) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+        (_now_iso(), start_url, property_id, mode, disc),
+    )
+    row = cur.fetchone()
+    conn.commit()
+    return int(row["id"])
 
 
 def get_latest_crawl_run_id(conn: Connection) -> Optional[int]:
@@ -84,25 +61,13 @@ def get_crawl_run_info(conn: Connection, run_id: int) -> Optional[dict[str, Any]
         row = cur.fetchone()
         if row is None:
             return None
-        out: dict[str, Any] = {
+        return {
             "created_at": row["created_at"],
             "start_url": row["start_url"],
+            "render_mode": row["render_mode"],
         }
-        if "render_mode" in row.keys():
-            out["render_mode"] = row["render_mode"]
-        return out
     except Exception:
-        try:
-            cur = conn.execute(
-                "SELECT created_at, start_url FROM crawl_runs WHERE id = %s",
-                (run_id,),
-            )
-            row = cur.fetchone()
-            if row is None:
-                return None
-            return {"created_at": row["created_at"], "start_url": row["start_url"]}
-        except Exception:
-            return None
+        return None
 
 
 def set_mobile_run_id(conn: Connection, desktop_run_id: int, mobile_run_id: int) -> None:
@@ -289,14 +254,6 @@ ON CONFLICT (crawl_run_id, url) DO UPDATE SET
   fetch_method = EXCLUDED.fetch_method,
   data = EXCLUDED.data"""
 
-_CRAWL_INSERT_SQL_LEGACY = """INSERT INTO crawl_results (crawl_run_id, url, status, title, data)
-VALUES (%s, %s, %s, %s, %s)
-ON CONFLICT (crawl_run_id, url) DO UPDATE SET
-  status = EXCLUDED.status,
-  title = EXCLUDED.title,
-  data = EXCLUDED.data"""
-
-
 def _crawl_rows_from_df(df: pd.DataFrame, crawl_run_id: int) -> list[tuple]:
     rows: list[tuple] = []
     if df.empty or "url" not in df.columns:
@@ -324,24 +281,8 @@ def _crawl_rows_from_df(df: pd.DataFrame, crawl_run_id: int) -> list[tuple]:
 def _write_crawl_rows(conn: Connection, rows: list[tuple]) -> None:
     if not rows:
         return
-    normalized: list[tuple] = []
-    for row in rows:
-        if len(row) == 5:
-            normalized.append((row[0], row[1], row[2], row[3], "static", row[4]))
-        else:
-            normalized.append(row)
-    try:
-        # Savepoint so that a failure (e.g. a legacy schema missing the
-        # fetch_method column) rolls back ONLY this insert and leaves the
-        # transaction usable. Without it the legacy fallback below runs inside an
-        # aborted transaction, raises "current transaction is aborted", and
-        # silently writes nothing.
-        with conn.transaction():
-            _executemany(conn, _CRAWL_INSERT_SQL, normalized, page_size=_CRAWL_BATCH_SIZE)
-    except Exception:
-        legacy = [(r[0], r[1], r[2], r[3], r[5]) for r in normalized]
-        with conn.transaction():
-            _executemany(conn, _CRAWL_INSERT_SQL_LEGACY, legacy, page_size=_CRAWL_BATCH_SIZE)
+    with conn.transaction():
+        _executemany(conn, _CRAWL_INSERT_SQL, rows, page_size=_CRAWL_BATCH_SIZE)
 
 
 def write_crawl_batch(
@@ -431,36 +372,13 @@ def merge_crawl_result_fields_batch(
 
 
 def read_crawl(conn: Connection, run_id: Optional[int] = None) -> pd.DataFrame:
-    try:
-        return _read_crawl_rows(conn, run_id, include_fetch_method=True)
-    except Exception:
-        try:
-            return _read_crawl_rows(conn, run_id, include_fetch_method=False)
-        except Exception:
-            return pd.DataFrame()
-
-
-def _read_crawl_rows(
-    conn: Connection,
-    run_id: Optional[int],
-    *,
-    include_fetch_method: bool,
-) -> pd.DataFrame:
     if run_id is None:
         run_id = get_latest_crawl_run_id(conn)
-    if include_fetch_method:
-        if run_id is None:
-            cur = conn.execute("SELECT url, fetch_method, data FROM crawl_results")
-        else:
-            cur = conn.execute(
-                "SELECT url, fetch_method, data FROM crawl_results WHERE crawl_run_id = %s",
-                (run_id,),
-            )
-    elif run_id is None:
-        cur = conn.execute("SELECT url, data FROM crawl_results")
+    if run_id is None:
+        cur = conn.execute("SELECT url, fetch_method, data FROM crawl_results")
     else:
         cur = conn.execute(
-            "SELECT url, data FROM crawl_results WHERE crawl_run_id = %s",
+            "SELECT url, fetch_method, data FROM crawl_results WHERE crawl_run_id = %s",
             (run_id,),
         )
     rows = cur.fetchall()
@@ -469,19 +387,12 @@ def _read_crawl_rows(
     records = []
     for row in rows:
         rec: dict[str, Any] = {"url": row["url"]}
-        fm_col: Optional[str] = None
-        if include_fetch_method and "fetch_method" in row.keys():
-            fm_col = str(row["fetch_method"] or "static").strip() or "static"
+        if "fetch_method" in row.keys():
+            rec["fetch_method"] = str(row["fetch_method"] or "static").strip() or "static"
         data = _parse_row_json(row) or {}
         if isinstance(data, dict):
             rec.update(data)
-        if fm_col is not None:
-            rec["fetch_method"] = fm_col
-        elif not include_fetch_method:
-            rec["fetch_method"] = str(
-                (data.get("fetch_method") if isinstance(data, dict) else None) or "static"
-            ).strip() or "static"
-        elif "fetch_method" not in rec:
+        if "fetch_method" not in rec:
             rec["fetch_method"] = "static"
         records.append(rec)
     df = pd.DataFrame(records)

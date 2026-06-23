@@ -27,16 +27,14 @@ def test_gsc_page_urls_extracts_top_pages() -> None:
         "gsc": {
             "top_pages": [
                 {"page": "https://example.com/x"},
-                {"url": "https://example.com/y"},
+                {"page": "https://example.com/y"},
             ]
         }
     }
-    assert len(_gsc_page_urls(google)) == 2
-
-
-def test_gsc_page_urls_legacy_pages_fallback() -> None:
-    google = {"gsc": {"pages": [{"page": "https://example.com/x"}]}}
-    assert _gsc_page_urls(google) == ["https://example.com/x"]
+    assert _gsc_page_urls(google) == [
+        "https://example.com/x",
+        "https://example.com/y",
+    ]
 
 
 @patch("website_profiling.reporting.indexation.discover_sitemap_urls")

@@ -13,7 +13,6 @@ import pytest
 from website_profiling.tools import export_artifacts
 from website_profiling.tools.audit_tools import _slice, dispatch_tool
 from website_profiling.tools.audit_tools.context import AuditToolContext as Ctx
-from website_profiling.tools.export_crawl_workbook import build_crawl_workbook_zip
 
 
 @pytest.fixture
@@ -387,19 +386,6 @@ def test_export_artifacts_workbook_and_custom(tmp_path, monkeypatch, conn: Magic
     export_artifacts.delete_artifact(aid)
     assert not meta_path.exists()
 
-    from website_profiling.tools import export_crawl_workbook as wb_mod
-
-    assert wb_mod._parse_custom_fields({"price": 9.99}) == {"price": "9.99"}
-    assert wb_mod._parse_custom_fields("{bad") == {}
-    assert wb_mod._parse_custom_fields("[]") == {}
-
-    raw = build_crawl_workbook_zip({
-        "links": [{"url": "https://ex.com/p", "custom_fields": '{"price":"9.99"}'}],
-        "categories": ["bad", {"name": "SEO", "issues": ["bad", {"message": "x", "priority": "Low"}]}],
-    })
-    with zipfile.ZipFile(io.BytesIO(raw)) as zf:
-        assert "custom_fields.csv" in zf.namelist()
-
 
 def test_tools_remaining_branch_coverage(conn: MagicMock, ctx: Ctx, tmp_path, monkeypatch) -> None:
     from website_profiling.tools.audit_tools.backlinks import backlinks as bl_mod
@@ -421,7 +407,6 @@ def test_tools_remaining_branch_coverage(conn: MagicMock, ctx: Ctx, tmp_path, mo
     from website_profiling.tools.audit_tools.report import report as report_mod
     from website_profiling.tools.audit_tools.report import report_extras as rex_mod
     from website_profiling.tools.audit_tools.security import security as sec_mod
-    from website_profiling.tools import export_crawl_workbook as wb_mod
 
     monkeypatch.setenv("DATA_DIR", str(tmp_path))
 
@@ -612,10 +597,6 @@ def test_tools_remaining_branch_coverage(conn: MagicMock, ctx: Ctx, tmp_path, mo
         portfolio = llm_mod.get_portfolio_summary(conn, ctx, {})
         assert portfolio["properties"][0]["issue_counts"] == {}
 
-    assert wb_mod._parse_custom_fields("   ") == {}
-    rows, cols = wb_mod._custom_field_rows([{"url": "", "custom_fields": '{"a":"1"}'}, {"custom_extract": "x"}])
-    assert rows == [] and cols
-
     assert export_artifacts.read_artifact_bytes("00000000-0000-0000-0000-000000000000") is None
     aid = export_artifacts.save_artifact(b"x", filename="y.bin", mime_type="application/octet-stream")["artifact_id"]
     with patch("website_profiling.tools.export_artifacts.os.remove", side_effect=OSError("denied")):
@@ -721,6 +702,3 @@ def test_tools_remaining_branch_coverage(conn: MagicMock, ctx: Ctx, tmp_path, mo
     ], "image_inventory_summary": {"unoptimized_min_kb": 200}}
     with patch.object(Ctx, "load_payload", return_value=mixed_inv):
         assert img_mod.list_unoptimized_images(conn, ctx, {})["total"] == 0
-
-    rows, _ = wb_mod._custom_field_rows(["bad", {"url": "https://ex.com", "custom_fields": '{"a":"1"}'}])
-    assert len(rows) == 1

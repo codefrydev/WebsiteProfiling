@@ -13,10 +13,10 @@ def _metrics_by_url(google_data: dict[str, Any] | None) -> tuple[dict[str, dict]
         return clicks, sessions
     gsc = google_data.get("gsc") or {}
     if isinstance(gsc, dict):
-        for row in (gsc.get("pages") or gsc.get("top_pages") or []):
+        for row in (gsc.get("top_pages") or []):
             if not isinstance(row, dict):
                 continue
-            url = str(row.get("page") or row.get("url") or "").strip().lower().rstrip("/")
+            url = str(row.get("page") or "").strip().lower().rstrip("/")
             if not url:
                 continue
             clicks[url] = {
@@ -25,10 +25,10 @@ def _metrics_by_url(google_data: dict[str, Any] | None) -> tuple[dict[str, dict]
             }
     ga4 = google_data.get("ga4") or {}
     if isinstance(ga4, dict):
-        for row in (ga4.get("pages") or ga4.get("top_pages") or []):
+        for row in (ga4.get("top_pages") or []):
             if not isinstance(row, dict):
                 continue
-            path = str(row.get("path") or row.get("pagePath") or row.get("url") or "").strip().lower()
+            path = str(row.get("path") or "").strip().lower()
             if not path:
                 continue
             sessions[path] = {"ga4_sessions": float(row.get("sessions") or 0)}

@@ -11,6 +11,7 @@ This file is the canonical entry point for agents. For full detail see [AGENT.md
 - `src/website_profiling/` — core Python package
   - `cli.py`, `config.py`, `crawl/`, `db/`, `reporting/`, `analysis/`, `llm/`, `tools/`
 - `web/` — Next.js frontend
+- `services/FileService/` — .NET PDF + Excel workbook export (port 8080). HTTP-only via `REPORT_API_URL`; no Postgres. Profiles: `executive|standard|full|premium`. Details: [services/FileService/README.md](services/FileService/README.md). Env: `FILE_SERVICE_URL` (Next.js/MCP), `REPORT_API_URL` (FileService).
 - `alembic/` — DB migrations
 - `docs/` — documentation index
 - `tests/` — pytest suite
@@ -18,7 +19,7 @@ This file is the canonical entry point for agents. For full detail see [AGENT.md
 **Run / dev**
 
 ```bash
-./local-run          # Start Postgres (Docker) + Next.js
+./local-run          # Start Postgres + FileService + Next.js
 ./local-test         # Run all three coverage gates
 python -m src        # Run audit pipeline
 python -m website_profiling.mcp   # Start MCP server (stdio)

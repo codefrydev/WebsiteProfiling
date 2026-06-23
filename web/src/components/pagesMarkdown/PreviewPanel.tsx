@@ -4,7 +4,21 @@ import { useCallback, useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Code, Copy, Eye, Loader2, Search } from 'lucide-react';
 import { apiUrl } from '@/lib/publicBase';
 import MarkdownPreview from './MarkdownPreview';
-import type { PageMarkdownListItem, PageMarkdownContent } from '@/server/pageMarkdownDb';
+interface PageMarkdownListItem {
+  id: number;
+  url: string;
+  title?: string | null;
+  crawl_run_id: number | null;
+  created_at: string | null;
+  word_count?: number | null;
+}
+
+interface PageMarkdownContent {
+  id: number;
+  url: string;
+  markdown: string | null;
+  created_at: string | null;
+}
 
 const PAGE_SIZE = 25;
 
@@ -179,7 +193,7 @@ export default function PreviewPanel({ crawlRunId, refreshKey }: PreviewPanelPro
                         {item.url}
                       </p>
                       <p className="mt-0.5 text-[10px] text-muted-foreground">
-                        {item.word_count.toLocaleString()} words
+                        {(item.word_count ?? 0).toLocaleString()} words
                       </p>
                     </button>
                   </li>
@@ -291,7 +305,7 @@ export default function PreviewPanel({ crawlRunId, refreshKey }: PreviewPanelPro
           ) : !content ? (
             <p className="text-sm text-muted-foreground">No content.</p>
           ) : (
-            <MarkdownPreview content={content.markdown} raw={rawMode} />
+            <MarkdownPreview content={content.markdown ?? ''} raw={rawMode} />
           )}
         </div>
       </div>

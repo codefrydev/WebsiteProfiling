@@ -97,13 +97,13 @@ def select_lighthouse_urls_from_gsc(
     if not google_data or max_pages <= 0:
         return []
     gsc = google_data.get("gsc") if isinstance(google_data.get("gsc"), dict) else {}
-    pages = gsc.get("pages") if isinstance(gsc.get("pages"), list) else []
+    pages = gsc.get("top_pages") if isinstance(gsc.get("top_pages"), list) else []
     crawl_set = {u.rstrip("/") for u in crawl_urls}
     ranked: list[tuple[float, str]] = []
     for row in pages:
         if not isinstance(row, dict):
             continue
-        url = str(row.get("page") or row.get("url") or "").strip()
+        url = str(row.get("page") or "").strip()
         if not url:
             continue
         norm = url.rstrip("/")

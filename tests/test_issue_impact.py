@@ -19,7 +19,7 @@ def test_enrich_and_sort_issues():
             {"message": "high traffic", "url": "https://ex.com/b", "priority": "Medium"},
         ],
     }]
-    google = {"gsc": {"pages": [
+    google = {"gsc": {"top_pages": [
         {"page": "https://ex.com/b", "clicks": 50, "impressions": 1000},
     ]}}
     enrich_categories_with_traffic_impact(categories, google)

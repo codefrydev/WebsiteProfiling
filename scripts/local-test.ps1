@@ -240,6 +240,7 @@ function Invoke-PytestTools {
     Write-Log "Pytest (tools coverage gate, 100%)"
     & $VENV_PYTEST `
         tests/tools/ `
+        tests/clients/ `
         --cov=website_profiling.tools `
         --cov-config=.coveragerc.tools `
         --cov-report=term-missing `

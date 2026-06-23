@@ -146,7 +146,7 @@ def get_gsc_ctr_opportunity_pages(conn: Connection, ctx: AuditToolContext, args:
     if not data:
         return {"error": "no google data found", "pages": [], "total": 0, "truncated": False}
     gsc = data.get("gsc") if isinstance(data.get("gsc"), dict) else {}
-    pages = gsc.get("pages") or gsc.get("top_pages") or []
+    pages = gsc.get("top_pages") or []
     if not isinstance(pages, list):
         pages = []
     try:

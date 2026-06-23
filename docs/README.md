@@ -15,6 +15,7 @@ This directory contains product, integration, and operations documentation for *
 | [COMPANY_STANDARDS.md](COMPANY_STANDARDS.md) | Agencies / operators | Data classification, crawl scope, security policy |
 | [MCP.md](MCP.md) | Integrators | Model Context Protocol server configuration and tool reference |
 | [OPS.md](OPS.md) | Operators | Scheduled audits, alerts, migrations, production notes |
+| [services/FileService/README.md](../services/FileService/README.md) | Developers / operators | PDF and Excel workbook export service |
 
 ---
 

@@ -1,7 +1,7 @@
 /**
  * Shared helpers: slice per-page metrics from google_data JSON blobs.
  */
-import type { PoolClient } from 'pg';
+type PoolClient = { query: (sql: string, params?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> };
 import { normalizeUrl, urlToPath } from '@/lib/urlNorm';
 
 export interface PageGscSlice {

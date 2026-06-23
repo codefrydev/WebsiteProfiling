@@ -163,9 +163,9 @@ def _build_report_metadata(
     if lighthouse_summary:
         sources.append("lighthouse")
     if google_data:
-        if google_data.get("gsc") or google_data.get("gsc_summary"):
+        if google_data.get("gsc"):
             sources.append("search_console")
-        if google_data.get("ga4") or google_data.get("ga4_summary"):
+        if google_data.get("ga4"):
             sources.append("analytics")
     if gsc_links_data and "search_console" not in sources:
         sources.append("search_console")

@@ -124,7 +124,7 @@ def list_gsc_ctr_underperformers(conn: Connection, ctx: AuditToolContext, args: 
         expected = industry_ctr(pos)
         if ctr > 0 and ctr < min(site_median * 0.7, expected * 0.7):
             under.append({
-                "page": row.get("page") or row.get("url"),
+                "page": row.get("page"),
                 "clicks": row.get("clicks"),
                 "impressions": row.get("impressions"),
                 "ctr": row.get("ctr"),

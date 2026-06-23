@@ -23,6 +23,7 @@ services:
         condition: service_healthy
     ports:
       - '${WEB_PORT:-3000}:3000'
+      - '${FASTAPI_PORT:-8001}:8001'
     environment:
       WEBSITE_PROFILING_ROOT: /app
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
@@ -30,6 +31,13 @@ services:
       AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET}
       AUTH_PASSWORD: ${AUTH_PASSWORD:-}
       NODE_ENV: production
+      FASTAPI_URL: http://127.0.0.1:8001
+      FASTAPI_ALLOWED_ORIGINS: ${FASTAPI_ALLOWED_ORIGINS:-http://localhost:3000}
+      FILE_SERVICE_URL: http://files:8080
+      PYTHON: /opt/venv/bin/python
+      CHROME_PATH: /usr/bin/chromium
+      LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
+      LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
     volumes:
       - profiling-data:/data
     healthcheck:
@@ -37,6 +45,7 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 30s
 
   worker:
     build:
@@ -45,7 +54,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    command: ['python', '-m', 'src', 'report']
+    command: ['/opt/venv/bin/python', '-m', 'website_profiling.worker']
     environment:
       WEBSITE_PROFILING_ROOT: /app
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
@@ -55,6 +64,17 @@ services:
     profiles:
       - worker
 
+  files:
+    build:
+      context: ./services/FileService
+    ports:
+      - '${FILE_SERVICE_PORT:-8080}:8080'
+    environment:
+      REPORT_API_URL: http://web:8001
+    depends_on:
+      web:
+        condition: service_started
+
   mcp:
     build:
       context: .
@@ -62,10 +82,13 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      files:
+        condition: service_started
     command: ['python', '-m', 'website_profiling.mcp.http']
     environment:
       WEBSITE_PROFILING_ROOT: /app
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
+      FILE_SERVICE_URL: http://files:8080
       WP_MCP_HTTP_HOST: 0.0.0.0
       WP_MCP_HTTP_PORT: 8000
       WP_MCP_TOKEN: ${WP_MCP_TOKEN:?set WP_MCP_TOKEN}

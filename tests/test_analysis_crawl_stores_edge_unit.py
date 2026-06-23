@@ -259,12 +259,12 @@ def test_crawl_store_last_branches(monkeypatch) -> None:
     batch = CrawlConn()
     cs.write_crawl_batch(batch, [(1, "u", "200", "t", "static", _json_val({}))], 1)  # type: ignore[arg-type]
 
-    rconn = CrawlConn(fetchall=[{"url": "u", "data": {}}])
-    df = cs._read_crawl_rows(rconn, 1, include_fetch_method=True)  # type: ignore[arg-type]
+    rconn = CrawlConn(fetchall=[{"url": "u", "fetch_method": "static", "data": {}}])
+    df = cs.read_crawl(rconn, run_id=1)  # type: ignore[arg-type]
     assert df.iloc[0]["fetch_method"] == "static"
 
     rconn2 = CrawlConn(fetchall=[{"url": "u", "data": {"fetch_method": "rendered"}}])
-    df2 = cs._read_crawl_rows(rconn2, 1, include_fetch_method=False)  # type: ignore[arg-type]
+    df2 = cs.read_crawl(rconn2, run_id=1)  # type: ignore[arg-type]
     assert df2.iloc[0]["fetch_method"] == "rendered"
 
     nconn = CrawlConn()

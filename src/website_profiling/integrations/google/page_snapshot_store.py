@@ -7,7 +7,7 @@ from typing import Any
 from psycopg import Connection
 from psycopg.types.json import Json
 
-from ...db.storage import _parse_row_json, _sanitize_for_json
+from ...db._common import _parse_row_json, _row_field, _sanitize_for_json
 from .normalize import normalize_url
 from .page_lookup import _public_ga4_page, _public_gsc_page, summary_from_slice
 
@@ -33,7 +33,7 @@ def write_page_snapshot(conn: Connection, page_url: str, data: dict[str, Any]) -
         (page_url.strip(), url_norm, Json(_sanitize_for_json(data))),
     )
     row = cur.fetchone()
-    snapshot_id = int(row["id"]) if row else 0
+    snapshot_id = int(_row_field(row, "id", index=0)) if row else 0
     limit = max_snapshots_per_url()
     conn.execute(
         """
@@ -60,12 +60,13 @@ def read_page_snapshot(conn: Connection, snapshot_id: int) -> dict[str, Any] | N
     row = cur.fetchone()
     if not row:
         return None
-    data = _parse_row_json(row) or {}
+    data = _parse_row_json(row, "data", index=4) or {}
+    fetched = _row_field(row, "fetched_at", index=3)
     return {
-        "snapshotId": int(row["id"]),
-        "pageUrl": str(row["page_url"]),
-        "urlNorm": str(row["url_norm"]),
-        "fetchedAt": row["fetched_at"].isoformat() if row["fetched_at"] else None,
+        "snapshotId": int(_row_field(row, "id", index=0)),
+        "pageUrl": str(_row_field(row, "page_url", index=1)),
+        "urlNorm": str(_row_field(row, "url_norm", index=2)),
+        "fetchedAt": fetched.isoformat() if hasattr(fetched, "isoformat") else str(fetched or ""),
         "source": data.get("source") or "live",
         "gsc": data.get("gsc"),
         "ga4": data.get("ga4"),
@@ -90,13 +91,14 @@ def list_live_history(
     )
     out: list[dict[str, Any]] = []
     for row in cur.fetchall():
-        data = _parse_row_json(row) or {}
+        data = _parse_row_json(row, "data", index=2) or {}
         gsc = data.get("gsc")
         ga4 = data.get("ga4")
+        fetched = _row_field(row, "fetched_at", index=1)
         out.append(
             {
-                "id": int(row["id"]),
-                "fetchedAt": row["fetched_at"].isoformat() if row["fetched_at"] else None,
+                "id": int(_row_field(row, "id", index=0)),
+                "fetchedAt": fetched.isoformat() if hasattr(fetched, "isoformat") else str(fetched or ""),
                 "type": "live",
                 **summary_from_slice(gsc, ga4),
             }
@@ -109,6 +111,59 @@ def latest_live_snapshot(conn: Connection, page_url: str) -> dict[str, Any] | No
     if not rows:
         return None
     return read_page_snapshot(conn, int(rows[0]["id"]))
+
+
+def read_page_snapshot_compare(conn: Connection, snapshot_id: int) -> dict[str, Any] | None:
+    """Load snapshot for page-compare API ({id, fetchedAt, data})."""
+    cur = conn.execute(
+        "SELECT id, fetched_at, data FROM page_google_snapshots WHERE id = %s",
+        (snapshot_id,),
+    )
+    row = cur.fetchone()
+    if not row:
+        return None
+    data = _parse_row_json(row, "data", index=2)
+    if not isinstance(data, dict):
+        data = {}
+    fetched = _row_field(row, "fetched_at", index=1)
+    return {
+        "id": int(_row_field(row, "id", index=0)),
+        "fetchedAt": fetched.isoformat() if hasattr(fetched, "isoformat") else str(fetched or ""),
+        "data": data,
+    }
+
+
+def list_page_snapshot_api_history(
+    conn: Connection,
+    page_url: str,
+    *,
+    limit: int = 15,
+) -> list[dict[str, Any]]:
+    """History rows with raw gsc/ga4 blobs for the integrations API."""
+    url_norm = normalize_url(page_url)
+    cur = conn.execute(
+        """
+        SELECT id, fetched_at, data
+        FROM page_google_snapshots
+        WHERE url_norm = %s
+        ORDER BY fetched_at DESC, id DESC
+        LIMIT %s
+        """,
+        (url_norm, limit),
+    )
+    out: list[dict[str, Any]] = []
+    for row in cur.fetchall() or []:
+        data = _parse_row_json(row, "data", index=2) or {}
+        if not isinstance(data, dict):
+            data = {}
+        fetched = _row_field(row, "fetched_at", index=1)
+        out.append({
+            "id": int(_row_field(row, "id", index=0)),
+            "fetchedAt": fetched.isoformat() if hasattr(fetched, "isoformat") else str(fetched or ""),
+            "gsc": data.get("gsc"),
+            "ga4": data.get("ga4"),
+        })
+    return out
 
 
 def package_live_payload(

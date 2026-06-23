@@ -32,9 +32,8 @@ psycopg[binary,pool]==3.3.4
 sqlalchemy==2.0.50
 alembic==1.18.4
 
-# Audit export (PDF)
-reportlab==4.5.1
 
+# Tabular audit exports (CSV/JSON) — PDF and workbook via FileService (.NET)
 # JavaScript rendering crawl (headless Chromium via Playwright)
 playwright==1.60.0
 
@@ -55,6 +54,7 @@ tiktoken==0.13.0
 mcp>=1.19,<2
 uvicorn>=0.30
 starlette>=0.38
+fastapi>=0.115
 
 # SQL query validation (read-only chat tool)
 sqlglot==30.11.0

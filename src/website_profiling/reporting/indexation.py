@@ -31,12 +31,12 @@ def _gsc_page_urls(google_data: dict[str, Any] | None) -> list[str]:
     if not google_data:
         return []
     gsc = google_data.get("gsc") if isinstance(google_data.get("gsc"), dict) else {}
-    raw = gsc.get("top_pages") or gsc.get("pages")
+    raw = gsc.get("top_pages")
     pages = raw if isinstance(raw, list) else []
     out: list[str] = []
     for row in pages:
         if isinstance(row, dict):
-            u = str(row.get("page") or row.get("url") or "").strip()
+            u = str(row.get("page") or "").strip()
             if u:
                 out.append(u)
     return out
@@ -46,12 +46,12 @@ def _gsc_by_page(google_data: dict[str, Any] | None) -> dict[str, dict]:
     if not google_data:
         return {}
     gsc = google_data.get("gsc") if isinstance(google_data.get("gsc"), dict) else {}
-    raw = gsc.get("top_pages") or gsc.get("pages")
+    raw = gsc.get("top_pages")
     pages = raw if isinstance(raw, list) else []
     out: dict[str, dict] = {}
     for row in pages:
         if isinstance(row, dict):
-            u = str(row.get("page") or row.get("url") or "").strip()
+            u = str(row.get("page") or "").strip()
             if u:
                 out[u] = row
     return out

@@ -685,7 +685,7 @@ def run_simple_report(
             gsc_pages = []
             gsc_block = (report_data.get("google") or {}).get("gsc") or {}
             if isinstance(gsc_block, dict):
-                gsc_pages = gsc_block.get("top_pages") or gsc_block.get("pages") or []
+                gsc_pages = gsc_block.get("top_pages") or []
             enrich_top_issues_with_llm(
                 report_data.get("categories") or [],
                 llm_cfg_for_clusters,

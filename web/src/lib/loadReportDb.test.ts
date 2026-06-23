@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import type { PoolClient } from 'pg';
+type PoolClient = { query: (sql: string, params?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> };
 import { readReportPayloadFromDatabase } from './loadReportDb';
 
 function mockClient(queries: Record<string, unknown>): PoolClient {

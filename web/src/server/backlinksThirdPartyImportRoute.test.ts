@@ -1,71 +1,21 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { localRequest, makeSpawnChild, withAuthSecret, authHeaders } from '@/server/testHelpers/routeTestUtils';
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { localRequest, remoteRequest } from '@/server/testHelpers/routeTestUtils';
 
-const spawnMock = vi.fn();
-vi.mock('child_process', () => ({
-  spawn: (...args: unknown[]) => spawnMock(...args),
-}));
+const proxyMock = vi.fn();
+vi.mock('@/server/proxyToFastAPI', () => ({ proxyToFastAPI: (...a: unknown[]) => proxyMock(...a) }));
 
-describe('backlinks/third-party-import route', () => {
-  let restoreAuth: () => void;
-
-  beforeEach(() => {
-    spawnMock.mockReset();
-    vi.resetModules();
-    restoreAuth = withAuthSecret();
-  });
-
-  afterEach(() => {
-    restoreAuth();
-  });
-
-  it('returns 400 for invalid provider', async () => {
-    const headers = await authHeaders();
+describe('backlinks/third-party-import route proxy', () => {
+  beforeEach(() => { proxyMock.mockReset(); vi.resetModules(); proxyMock.mockResolvedValue(new Response('{}', { status: 200 })); });
+  it('returns 403 for non-local', async () => {
     const { POST } = await import('../../app/api/backlinks/third-party-import/route');
-    const res = await POST(
-      localRequest('/api/backlinks/third-party-import', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ propertyId: 1, provider: 'ahrefs', csvText: 'a,b\n1,2\n' }),
-      }),
-    );
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.error).toMatch(/moz or majestic/i);
+    const res = await POST(remoteRequest('/api/backlinks/third-party-import', { method: 'POST' }));
+    expect(res.status).toBe(403);
   });
-
-  it('returns 400 when propertyId missing', async () => {
-    const headers = await authHeaders();
+  it('proxies POST to FastAPI', async () => {
     const { POST } = await import('../../app/api/backlinks/third-party-import/route');
-    const res = await POST(
-      localRequest('/api/backlinks/third-party-import', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ provider: 'moz', csvText: 'Domain,Links\na.com,1\n' }),
-      }),
-    );
-    expect(res.status).toBe(400);
-  });
-
-  it('returns overlay result on success', async () => {
-    spawnMock.mockImplementation(() =>
-      makeSpawnChild(JSON.stringify({ ok: true, imported_domains: 2 }) + '\n', 0),
-    );
-    const headers = await authHeaders();
-    const { POST } = await import('../../app/api/backlinks/third-party-import/route');
-    const res = await POST(
-      localRequest('/api/backlinks/third-party-import', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          propertyId: 1,
-          provider: 'moz',
-          csvText: 'Domain,Links\na.com,1\n',
-        }),
-      }),
-    );
+    const req = localRequest('/api/backlinks/third-party-import', { method: 'POST', body: '{}' });
+    const res = await POST(req);
     expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.ok).toBe(true);
+    expect(proxyMock).toHaveBeenCalledWith(req, '/api/backlinks/third-party-import');
   });
 });

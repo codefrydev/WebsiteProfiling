@@ -42,6 +42,7 @@ import { REPORT_VIEW_IDS } from './lib/appNav';
 import { pathSlugToViewId, viewIdToPathSlug, type ViewId } from './routes';
 import { dispatchOpenIntegrations } from './lib/pipelineJobEvents';
 import ReportShellSkeleton from './components/ReportShellSkeleton';
+import ExportReportActions from './components/export/ExportReportActions';
 import { ReportProvider as ReportProviderBase } from './context/ReportContext';
 import { PortfolioProvider } from './context/PortfolioContext';
 import ViewSectionLoader from './components/ViewSectionLoader';
@@ -277,6 +278,7 @@ function AppContent({ slug }: SlugProps): ReactNode {
       showSearch={showSearch}
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
+      headerExtra={view === 'export' ? <ExportReportActions /> : undefined}
     >
       {view === 'home' ? (
         <PortfolioProvider>

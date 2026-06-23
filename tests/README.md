@@ -25,6 +25,26 @@ tests/content_studio/
   test_tools.py      # deterministic analyze tools
 ```
 
+## API integration (`tests/api/`)
+
+FastAPI routes are omitted from the core coverage gate (see `.coveragerc`). Use HTTP integration tests against a real Postgres instead:
+
+```
+tests/api/
+  conftest.py              # TestClient + ephemeral property fixture
+  test_api_integration.py  # @pytest.mark.integration — full route smoke + CRUD
+  test_content_drafts_list.py
+  test_report_loader_list.py
+```
+
+Requires `DATABASE_URL` (same as other `@pytest.mark.integration` tests). Run:
+
+```bash
+pytest tests/api/test_api_integration.py -m integration --no-cov
+```
+
+These tests catch response-shape regressions (camelCase vs snake_case), dict_row SQL bugs, and wrong column names that unit mocks miss.
+
 ## Core (everything else)
 
 Remaining `tests/test_*.py` files cover the core gate (100% on all packages except `reporting/`, `tools/`, and other omits in `.coveragerc`).

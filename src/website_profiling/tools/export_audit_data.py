@@ -71,20 +71,11 @@ def _executive_export_data(payload: dict[str, Any]) -> dict[str, Any]:
         if isinstance(raw_top, list):
             top_issues = [i for i in raw_top if isinstance(i, dict)][:8]
 
-    legacy_recs = payload.get("recommendations") or []
-    legacy_list: list[str] = []
-    if isinstance(legacy_recs, list):
-        legacy_list = [str(r).strip() for r in legacy_recs if str(r).strip()]
-
-    if not summary and legacy_list:
-        summary = "\n".join(f"• {r}" for r in legacy_list[:12])
-
     return {
         "summary": summary,
         "priorities": priorities,
         "top_issues": top_issues,
         "source": source,
-        "legacy_recommendations": legacy_list,
     }
 
 

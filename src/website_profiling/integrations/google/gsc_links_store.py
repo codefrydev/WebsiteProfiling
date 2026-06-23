@@ -164,3 +164,34 @@ def read_gsc_links_status(
         "sampleLinkCount": len(data.get("sample_links") or []),
         "latestLinkCount": len(data.get("latest_links") or []),
     }
+
+
+def list_backlinks_velocity(
+    conn: Connection,
+    property_id: int,
+    *,
+    limit: int = 52,
+) -> list[dict[str, Any]]:
+    """Referring-domain trend snapshots for Backlinks velocity chart."""
+    from ...db._common import _parse_row_json, _row_field
+
+    limit = max(1, min(int(limit), 52))
+    cur = conn.execute(
+        """SELECT fetched_at, referring_domains, top_domains
+           FROM gsc_links_snapshots
+           WHERE property_id = %s
+           ORDER BY fetched_at ASC
+           LIMIT %s""",
+        (property_id, limit),
+    )
+    snapshots: list[dict[str, Any]] = []
+    for row in cur.fetchall() or []:
+        fetched = _row_field(row, "fetched_at", index=0)
+        top_domains = _parse_row_json(row, "top_domains", index=2)
+        snapshots.append({
+            "capturedAt": fetched.isoformat() if hasattr(fetched, "isoformat") else str(fetched or "") or None,
+            "referringDomains": int(_row_field(row, "referring_domains", index=1) or 0),
+            "topDomains": top_domains if isinstance(top_domains, list) else [],
+        })
+    return snapshots
+

@@ -154,6 +154,18 @@ def test_geo_tools_mocked(conn: MagicMock, ctx: AuditToolContext) -> None:
     with patch.object(Ctx, "load_payload", return_value=_payload()), patch.object(Ctx, "load_crawl_df", return_value=_crawl_df()), patch(
         "website_profiling.tools.audit_tools.geo.geo_tools._fetch_llms_txt",
         return_value={"found": False},
+    ), patch(
+        "website_profiling.tools.audit_tools.geo.geo_tools._score_robots_ai_access",
+        return_value={"robots_score": 5},
+    ), patch(
+        "website_profiling.tools.audit_tools.geo.geo_tools._score_meta_signals",
+        return_value={"meta_score": 5},
+    ), patch(
+        "website_profiling.tools.audit_tools.geo.geo_tools._score_freshness_signals",
+        return_value={"freshness_score": 4},
+    ), patch(
+        "website_profiling.tools.audit_tools.geo.geo_tools._fetch_ai_discovery",
+        return_value={"discovery_score": 2, "found_count": 0, "endpoints": {}},
     ):
         geo = dispatch_tool("get_geo_readiness_score", {}, context=ctx, conn=conn)
         assert 0 <= geo["geo_readiness_score"] <= 100

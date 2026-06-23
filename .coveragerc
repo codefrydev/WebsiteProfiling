@@ -19,6 +19,11 @@ omit =
     */website_profiling/llm_config.py
     */website_profiling/cli.py
     */website_profiling/commands/enrich_cmd.py
+    # FastAPI server — tested via integration tests, not unit tests
+    */website_profiling/api/*
+    */website_profiling/clients/*
+    # Worker process — requires running DB and subprocess for meaningful tests
+    */website_profiling/worker/*
 
 [report]
 show_missing = True

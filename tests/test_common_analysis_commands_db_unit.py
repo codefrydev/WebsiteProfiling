@@ -819,36 +819,13 @@ def test_config_store_read_write_pipeline(monkeypatch) -> None:
 def test_crawl_store_branches(monkeypatch) -> None:
     from website_profiling.db import crawl_store as cs
 
-    # create_crawl_run fallback without render_mode
-    conn = CrawlConn(fetchone={"id": 3}, boom_execute=True)
-    conn.boom_execute = False
-
-    class BoomFirst(CrawlConn):
-        def execute(self, sql, params=None):
-            self.executed.append((sql, params))
-            if "render_mode" in sql:
-                raise RuntimeError("no column")
-            return super().execute(sql, params)
-
-    conn2 = BoomFirst(fetchone={"id": 4})
-    assert cs.create_crawl_run(conn2, start_url="https://a.com", render_mode="js") == 4  # type: ignore[arg-type]
+    conn = CrawlConn(fetchone={"id": 3})
+    assert cs.create_crawl_run(conn, start_url="https://a.com", render_mode="js") == 3  # type: ignore[arg-type]
 
     assert cs.get_latest_crawl_run_id(CrawlConn(boom_execute=True)) is None  # type: ignore[arg-type]
 
     info_conn = CrawlConn(fetchone={"created_at": "t", "start_url": "u", "render_mode": "static"})
     assert cs.get_crawl_run_info(info_conn, 1)["render_mode"] == "static"  # type: ignore[arg-type]
-
-    # fallback query without render_mode
-    class RenderBoom(CrawlConn):
-        def execute(self, sql, params=None):
-            self.executed.append((sql, params))
-            if "render_mode" in sql:
-                raise RuntimeError("no render_mode")
-            if "FROM crawl_runs WHERE" in sql:
-                return FakeCursor(fetchone_value={"created_at": "t", "start_url": "u"})
-            return super().execute(sql, params)
-
-    assert cs.get_crawl_run_info(RenderBoom(), 1)["start_url"] == "u"  # type: ignore[arg-type]
 
     row = pd.Series({"url": "https://a.com", "status": float("nan"), "n": 1})
     out = cs._df_row_to_crawl_json(row)
@@ -866,30 +843,12 @@ def test_crawl_store_branches(monkeypatch) -> None:
     df = pd.DataFrame([{"url": "https://a.com/", "status": 200}])
     cs.write_crawl(wconn, df, crawl_run_id=None)  # type: ignore[arg-type]
 
-    # legacy insert fallback
-    def boom_executemany(conn, sql, params, **kwargs):
-        if "fetch_method" in sql:
-            raise RuntimeError("legacy")
-        from website_profiling.db._common import _executemany as real
-
-        return real(conn, sql, params, page_size=kwargs.get("page_size", 500))
-
-    monkeypatch.setattr(cs, "_executemany", boom_executemany)
     from website_profiling.db._common import _json_val
 
     cs._write_crawl_rows(wconn, [(1, "u", "200", "t", "static", _json_val({}))])  # type: ignore[arg-type]
 
-    # read_crawl fallback without fetch_method
-    rconn = CrawlConn(fetchall=[{"url": "u", "data": {"viewport_present": "true"}}])
-
-    class FailFirst(CrawlConn):
-        def execute(self, sql, params=None):
-            if "fetch_method" in sql:
-                raise RuntimeError("no fm")
-            return super().execute(sql, params)
-
     monkeypatch.setattr(cs, "get_latest_crawl_run_id", lambda _c: 1)
-    df_read = cs.read_crawl(FailFirst(fetchall=[{"url": "u", "data": {}}]), run_id=1)  # type: ignore[arg-type]
+    df_read = cs.read_crawl(CrawlConn(fetchall=[{"url": "u", "fetch_method": "static", "data": {}}]), run_id=1)  # type: ignore[arg-type]
     assert "fetch_method" in df_read.columns
 
     # write_edges no run id, no latest

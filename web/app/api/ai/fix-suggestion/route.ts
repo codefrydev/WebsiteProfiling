@@ -1,84 +1,10 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { spawn } from 'child_process';
-import { getRepoRoot, getPipelineSpawnEnv } from '@/server/pipelineSpawnEnv';
-import { resolvePythonExecutable, parsePythonJsonStdout } from '@/server/resolvePython';
+import { type NextRequest } from 'next/server';
+import { proxyToFastAPI } from '@/server/proxyToFastAPI';
+import { forbiddenIfNotLocal } from '@/server/localOnly';
 import type { ApiRouteHandler } from '@/types/api';
 
-export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const PYTHON_SCRIPT = `
-import json, sys
-from website_profiling.llm.fix_suggestions import generate_fix_suggestion
-payload = json.load(sys.stdin)
-print(json.dumps(generate_fix_suggestion(payload, refresh=bool(payload.get("refresh")))))
-`;
-
-/**
- * POST /api/ai/fix-suggestion — on-demand LLM fix for any audit surface.
- */
 export const POST: ApiRouteHandler = async (request: NextRequest): Promise<Response> => {
-  let body: {
-    source?: string;
-    message?: string;
-    url?: string;
-    refresh?: boolean;
-    context?: Record<string, unknown>;
-    priority?: string;
-    category?: string;
-    recommendation?: string;
-    type?: string;
-  };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
-  }
-  const message = String(body.message || '').trim();
-  if (!message) {
-    return NextResponse.json({ error: 'message required' }, { status: 400 });
-  }
-
-  const repoRoot = getRepoRoot();
-  const pythonExe = resolvePythonExecutable(null, repoRoot);
-  const payload = {
-    source: body.source || 'issue',
-    message,
-    url: body.url,
-    refresh: body.refresh,
-    context: body.context,
-    priority: body.priority,
-    category: body.category,
-    recommendation: body.recommendation,
-    type: body.type,
-  };
-
-  return new Promise<Response>((resolve) => {
-    const proc = spawn(pythonExe, ['-c', PYTHON_SCRIPT], {
-      cwd: repoRoot,
-      env: getPipelineSpawnEnv(repoRoot),
-      shell: false,
-    });
-    let stdout = '';
-    proc.stdout?.on('data', (c: Buffer | string) => { stdout += c.toString(); });
-    proc.stdin?.write(JSON.stringify(payload));
-    proc.stdin?.end();
-    proc.on('error', () => {
-      clearTimeout(timer);
-      resolve(NextResponse.json({ error: 'Fix suggestion failed: could not start Python process' }, { status: 500 }));
-    });
-    proc.on('close', (code) => {
-      clearTimeout(timer);
-      const parsed = parsePythonJsonStdout(stdout);
-      if (code === 0 && parsed) {
-        resolve(NextResponse.json(parsed));
-        return;
-      }
-      resolve(NextResponse.json({ error: 'Fix suggestion failed' }, { status: 500 }));
-    });
-    const timer = setTimeout(() => {
-      try { proc.kill(); } catch { /* ignore */ }
-      resolve(NextResponse.json({ error: 'Fix suggestion timed out after 90s' }, { status: 504 }));
-    }, 90_000);
-  });
+  const denied = forbiddenIfNotLocal(request); if (denied) return denied; return proxyToFastAPI(request, '/api/ai/fix-suggestion');
 };

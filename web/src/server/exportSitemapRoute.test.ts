@@ -1,39 +1,21 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { localRequest } from '@/server/testHelpers/routeTestUtils';
+import { localRequest, remoteRequest } from '@/server/testHelpers/routeTestUtils';
 
-const spawnMock = vi.fn();
-vi.mock('child_process', () => ({
-  spawn: (...args: unknown[]) => spawnMock(...args),
-}));
+const proxyMock = vi.fn();
+vi.mock('@/server/proxyToFastAPI', () => ({ proxyToFastAPI: (...a: unknown[]) => proxyMock(...a) }));
 
-describe('report/export-sitemap route', () => {
-  beforeEach(() => {
-    spawnMock.mockReset();
-    vi.resetModules();
-  });
-
-  it('returns xml on success', async () => {
-    spawnMock.mockImplementation(() => ({
-      stdout: { on: (_: string, cb: (c: Buffer) => void) => cb(Buffer.from('<urlset></urlset>')) },
-      stderr: { on: () => undefined },
-      on: (event: string, cb: (code: number) => void) => { if (event === 'close') cb(0); },
-    }));
+describe('report/export-sitemap route proxy', () => {
+  beforeEach(() => { proxyMock.mockReset(); vi.resetModules(); proxyMock.mockResolvedValue(new Response('<xml/>', { status: 200 })); });
+  it('returns 403 for non-local', async () => {
     const { GET } = await import('../../app/api/report/export-sitemap/route');
-    const res = await GET(localRequest('/api/report/export-sitemap?reportId=12'));
+    const res = await GET(remoteRequest('/api/report/export-sitemap'));
+    expect(res.status).toBe(403);
+  });
+  it('proxies GET to FastAPI', async () => {
+    const { GET } = await import('../../app/api/report/export-sitemap/route');
+    const req = localRequest('/api/report/export-sitemap');
+    const res = await GET(req);
     expect(res.status).toBe(200);
-    expect(res.headers.get('Content-Type')).toContain('application/xml');
-    const text = await res.text();
-    expect(text).toContain('urlset');
-  });
-
-  it('returns 500 when python fails', async () => {
-    spawnMock.mockImplementation(() => ({
-      stdout: { on: () => undefined },
-      stderr: { on: (_: string, cb: (c: Buffer) => void) => cb(Buffer.from('boom')) },
-      on: (event: string, cb: (code: number) => void) => { if (event === 'close') cb(1); },
-    }));
-    const { GET } = await import('../../app/api/report/export-sitemap/route');
-    const res = await GET(localRequest('/api/report/export-sitemap?reportId=12'));
-    expect(res.status).toBe(500);
+    expect(proxyMock).toHaveBeenCalledWith(req, '/api/report/export-sitemap');
   });
 });

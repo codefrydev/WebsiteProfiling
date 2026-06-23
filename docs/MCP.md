@@ -216,7 +216,14 @@ Export tools write artifact files with a 24-hour TTL; in-app chat renders downlo
 
 `export_audit_report`, `export_compare_csv`, `export_list_as_csv`, `export_sitemap_xml`, `validate_rich_results`, `list_export_formats`
 
-Full audit exports use the same generators as the Export view. PDF export requires `reportlab`.
+| Deliverable | Generator | Env / notes |
+|-------------|-----------|-------------|
+| PDF | **FileService** (`GET /v1/reports/{id}/pdf`) | `FILE_SERVICE_URL` on MCP/web (default `http://127.0.0.1:8080`); FileService must be running |
+| Excel workbook | **FileService** (`GET /v1/reports/{id}/workbook`) | Same as PDF |
+| CSV / JSON audit export | Python (`export_audit_report`, `GET /api/report/export`) | Reads Postgres via report payload — no FileService required |
+| Compare / list CSV | Python | `export_compare_csv`, `export_list_as_csv` |
+
+FileService fetches report JSON over HTTP only (`REPORT_API_URL` → `/api/report/payload`, `/api/report/meta`, `/api/app-settings`). See [services/FileService/README.md](../services/FileService/README.md).
 
 ### Image audit
 
@@ -368,7 +375,7 @@ The following capabilities are planned but not yet available:
 | Security | "Show security finding changes since report 38" |
 | Links | "Which pages link to broken URLs?" |
 | Content | "Generate a content brief for keyword X" |
-| Export | "Download the audit as PDF" |
+| Export | "Download the audit as PDF" or "Export the crawl workbook as Excel" |
 | Compare | "Compare report 38 to the current audit and give me a CSV diff" |
 | Client report | "Build a client report with executive summary, category scores, and top critical issues as PDF" |
 | Images | "Which images are largest and unoptimized?" |

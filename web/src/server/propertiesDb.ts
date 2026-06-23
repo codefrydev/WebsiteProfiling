@@ -1,5 +1,9 @@
-import { withDb } from '@/server/db';
+/**
+ * Property data helpers — all calls go to FastAPI (/api/properties/*).
+ * This file is kept for OAuth flows and other routes that call these helpers directly.
+ */
 import { deriveSiteNameFromStartUrl, extractHostname } from '@/lib/domainSlug';
+import { fastApiGet, fastApiPost, fastApiPatch, fastApiPut } from '@/server/fastApiClient';
 
 export interface PropertyRow {
   id: number;
@@ -37,27 +41,71 @@ export function canonicalDomainFromStartUrl(startUrl: string): string {
   return extractHostname(href);
 }
 
-const PROPERTY_SELECT = `
-  SELECT id, name, canonical_domain, site_url, gsc_site_url, ga4_property_id,
-         google_auth_mode, google_connected_at::text, google_connected_email,
-         google_date_range_days, default_crawl_preset, crawl_authorized_at::text,
-         schedule_cron, alert_webhook_url, alert_email
-  FROM properties`;
-
-function mapPropertyRow(row: PropertyRow): PropertyRow {
-  return {
-    ...row,
-    google_connected: Boolean(row.google_connected_at),
-  };
+function looksLikeValidDomain(domain: string): boolean {
+  const lastDot = domain.lastIndexOf('.');
+  return lastDot > 0 && domain.length - lastDot - 1 >= 2;
 }
 
 export async function listProperties(): Promise<PropertyRow[]> {
-  return withDb(async (client) => {
-    const cur = await client.query<PropertyRow>(
-      `${PROPERTY_SELECT} ORDER BY name ASC`,
+  const data = await fastApiGet<{ properties?: PropertyRow[] }>('/api/properties');
+  return data.properties ?? [];
+}
+
+export async function getPropertyById(propertyId: number): Promise<PropertyRow | null> {
+  try {
+    return await fastApiGet<PropertyRow>(`/api/properties/${propertyId}`);
+  } catch (e) {
+    if (e instanceof Error && e.message.includes('404')) return null;
+    throw e;
+  }
+}
+
+export async function getPropertyByDomain(domain: string): Promise<PropertyRow | null> {
+  const normalized = domain.trim();
+  if (!normalized) return null;
+  const startUrl = normalized.includes('://') ? normalized : `https://${normalized}`;
+  try {
+    const data = await fastApiGet<{
+      id: number;
+      canonical_domain?: string;
+      default_crawl_preset?: string | null;
+    }>(`/api/properties/resolve?startUrl=${encodeURIComponent(startUrl)}`);
+    if (!data?.id) return null;
+    const canonical = data.canonical_domain || normalized.replace(/^https?:\/\//, '').split('/')[0];
+    return {
+      id: data.id,
+      name: canonical,
+      canonical_domain: canonical,
+      site_url: startUrl,
+      gsc_site_url: null,
+      ga4_property_id: null,
+      google_auth_mode: null,
+      google_connected_at: null,
+      google_connected_email: null,
+      google_date_range_days: null,
+      default_crawl_preset: data.default_crawl_preset ?? null,
+      crawl_authorized_at: null,
+      schedule_cron: null,
+      alert_webhook_url: null,
+      alert_email: null,
+    };
+  } catch (e) {
+    if (e instanceof Error && e.message.includes('404')) return null;
+    throw e;
+  }
+}
+
+export async function resolvePropertyIdFromStartUrl(startUrl: string): Promise<number | null> {
+  const domain = canonicalDomainFromStartUrl(startUrl);
+  if (!domain || !looksLikeValidDomain(domain)) return null;
+  try {
+    const data = await fastApiGet<{ id: number }>(
+      `/api/properties/resolve?startUrl=${encodeURIComponent(startUrl)}`,
     );
-    return cur.rows.map(mapPropertyRow);
-  });
+    return data.id ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export async function upsertPropertyByDomain(
@@ -65,54 +113,16 @@ export async function upsertPropertyByDomain(
   canonicalDomain: string,
   siteUrl: string | null,
 ): Promise<number> {
-  return withDb(async (client) => {
-    const cur = await client.query<{ id: string }>(
-      `INSERT INTO properties (name, canonical_domain, site_url, updated_at)
-       VALUES ($1, $2, $3, now())
-       ON CONFLICT (canonical_domain) DO UPDATE SET
-         name = EXCLUDED.name,
-         site_url = COALESCE(EXCLUDED.site_url, properties.site_url),
-         updated_at = now()
-       RETURNING id`,
-      [name, canonicalDomain.toLowerCase(), siteUrl],
-    );
-    return Number(cur.rows[0]?.id);
+  const data = await fastApiPost<{ id: number }>('/api/properties', {
+    name,
+    canonical_domain: canonicalDomain,
+    site_url: siteUrl,
   });
-}
-
-function looksLikeValidDomain(domain: string): boolean {
-  const lastDot = domain.lastIndexOf('.');
-  // Require at least one dot with content before it and a TLD of at least 2 chars after it.
-  return lastDot > 0 && domain.length - lastDot - 1 >= 2;
-}
-
-export async function resolvePropertyIdFromStartUrl(startUrl: string): Promise<number | null> {
-  const domain = canonicalDomainFromStartUrl(startUrl);
-  if (!domain || !looksLikeValidDomain(domain)) return null;
-  const existing = await getPropertyByDomain(domain);
-  if (existing) return existing.id;
-  const name = deriveSiteNameFromStartUrl(startUrl) || domain;
-  return upsertPropertyByDomain(name, domain, startUrl.trim() || null);
-}
-
-export async function getPropertyById(propertyId: number): Promise<PropertyRow | null> {
-  return withDb(async (client) => {
-    const cur = await client.query<PropertyRow>(
-      `${PROPERTY_SELECT} WHERE id = $1`,
-      [propertyId],
-    );
-    const row = cur.rows[0];
-    return row ? mapPropertyRow(row) : null;
-  });
+  return data.id;
 }
 
 export async function setPropertyCrawlAuthorized(propertyId: number): Promise<void> {
-  await withDb(async (client) => {
-    await client.query(
-      `UPDATE properties SET crawl_authorized_at = now(), updated_at = now() WHERE id = $1`,
-      [propertyId],
-    );
-  });
+  await fastApiPost(`/api/properties/${propertyId}/authorize`);
 }
 
 export async function setPropertyOpsSettings(
@@ -123,53 +133,14 @@ export async function setPropertyOpsSettings(
     alertEmail?: string | null;
   },
 ): Promise<void> {
-  await withDb(async (client) => {
-    const sets: string[] = ['updated_at = now()'];
-    const vals: unknown[] = [];
-    let n = 0;
-    if (patch.scheduleCron !== undefined) {
-      n += 1;
-      sets.push(`schedule_cron = $${n}`);
-      vals.push(patch.scheduleCron);
-    }
-    if (patch.alertWebhookUrl !== undefined) {
-      n += 1;
-      sets.push(`alert_webhook_url = $${n}`);
-      vals.push(patch.alertWebhookUrl);
-    }
-    if (patch.alertEmail !== undefined) {
-      n += 1;
-      sets.push(`alert_email = $${n}`);
-      vals.push(patch.alertEmail);
-    }
-    if (n === 0) return;
-    n += 1;
-    vals.push(propertyId);
-    await client.query(`UPDATE properties SET ${sets.join(', ')} WHERE id = $${n}`, vals);
-  });
+  await fastApiPut(`/api/properties/${propertyId}/ops`, patch);
 }
 
 export async function setPropertyCrawlPreset(
   propertyId: number,
   presetId: string | null,
 ): Promise<void> {
-  await withDb(async (client) => {
-    await client.query(
-      `UPDATE properties SET default_crawl_preset = $2, updated_at = now() WHERE id = $1`,
-      [propertyId, presetId],
-    );
-  });
-}
-
-export async function getPropertyByDomain(domain: string): Promise<PropertyRow | null> {
-  return withDb(async (client) => {
-    const cur = await client.query<PropertyRow>(
-      `${PROPERTY_SELECT} WHERE canonical_domain = $1`,
-      [domain.toLowerCase()],
-    );
-    const row = cur.rows[0];
-    return row ? mapPropertyRow(row) : null;
-  });
+  await fastApiPut(`/api/properties/${propertyId}/preset`, { preset: presetId });
 }
 
 export async function getPropertyGooglePublicStatus(
@@ -211,45 +182,5 @@ export async function setPropertyGoogleCredentials(
   propertyId: number,
   patch: PropertyGoogleCredentialsPatch,
 ): Promise<void> {
-  await withDb(async (client) => {
-    const sets: string[] = ['updated_at = now()'];
-    const vals: unknown[] = [];
-    let n = 0;
-    const add = (col: string, val: unknown) => {
-      n += 1;
-      sets.push(`${col} = $${n}`);
-      vals.push(val);
-    };
-
-    if (patch.refreshToken !== undefined) {
-      add('google_refresh_token', patch.refreshToken);
-      if (patch.refreshToken) {
-        sets.push('google_connected_at = now()');
-      } else {
-        // Clearing the refresh token disconnects the account. Connection status is
-        // derived from Boolean(google_connected_at), so it must be cleared too —
-        // otherwise the property keeps reporting "connected" after a disconnect.
-        sets.push('google_connected_at = NULL');
-        if (patch.connectedEmail === undefined) {
-          sets.push('google_connected_email = NULL');
-        }
-      }
-    }
-    if (patch.authMode !== undefined) add('google_auth_mode', patch.authMode);
-    if (patch.gscSiteUrl !== undefined) add('gsc_site_url', patch.gscSiteUrl);
-    if (patch.ga4PropertyId !== undefined) add('ga4_property_id', patch.ga4PropertyId);
-    if (patch.dateRangeDays !== undefined && patch.dateRangeDays > 0) {
-      add('google_date_range_days', patch.dateRangeDays);
-    }
-    if (patch.connectedEmail !== undefined) add('google_connected_email', patch.connectedEmail);
-
-    if (n === 0) return;
-
-    n += 1;
-    vals.push(propertyId);
-    await client.query(
-      `UPDATE properties SET ${sets.join(', ')} WHERE id = $${n}`,
-      vals,
-    );
-  });
+  await fastApiPatch(`/api/properties/${propertyId}/google/credentials`, patch);
 }

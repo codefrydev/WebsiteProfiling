@@ -1,50 +1,24 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { localRequest } from '@/server/testHelpers/routeTestUtils';
 
-const listMock = vi.fn();
-const upsertMock = vi.fn();
-const deleteMock = vi.fn();
+const proxyMock = vi.fn();
 
-vi.mock('@/server/savedFiltersDb', () => ({
-  listSavedFilters: (...args: unknown[]) => listMock(...args),
-  upsertSavedFilter: (...args: unknown[]) => upsertMock(...args),
-  deleteSavedFilter: (...args: unknown[]) => deleteMock(...args),
+vi.mock('@/server/proxyToFastAPI', () => ({
+  proxyToFastAPI: (...args: unknown[]) => proxyMock(...args),
 }));
 
-describe('filters route', () => {
+describe('filters route proxy', () => {
   beforeEach(() => {
-    listMock.mockReset();
-    upsertMock.mockReset();
-    deleteMock.mockReset();
+    proxyMock.mockReset();
     vi.resetModules();
+    proxyMock.mockResolvedValue(new Response(JSON.stringify([]), { status: 200 }));
   });
 
-  it('GET returns 400 without propertyId', async () => {
+  it('proxies GET /api/filters to FastAPI', async () => {
     const { GET } = await import('../../app/api/filters/route');
-    const res = await GET(localRequest('/api/filters'));
-    expect(res.status).toBe(400);
-  });
-
-  it('GET lists saved filters', async () => {
-    listMock.mockResolvedValue([{ name: 'Broken', filterJson: { status: '404' } }]);
-    const { GET } = await import('../../app/api/filters/route');
-    const res = await GET(localRequest('/api/filters?propertyId=7'));
+    const req = localRequest('/api/filters');
+    const res = await GET(req);
     expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.filters).toHaveLength(1);
-    expect(listMock).toHaveBeenCalledWith(7);
-  });
-
-  it('POST upserts a filter', async () => {
-    upsertMock.mockResolvedValue(undefined);
-    const { POST } = await import('../../app/api/filters/route');
-    const res = await POST(
-      localRequest('/api/filters', {
-        method: 'POST',
-        body: JSON.stringify({ propertyId: 3, name: 'Deep pages', filterJson: { minDepth: '3' } }),
-      }),
-    );
-    expect(res.status).toBe(200);
-    expect(upsertMock).toHaveBeenCalledWith(3, 'Deep pages', { minDepth: '3' });
+    expect(proxyMock).toHaveBeenCalledWith(req, '/api/filters');
   });
 });
