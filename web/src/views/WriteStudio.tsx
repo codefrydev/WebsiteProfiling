@@ -1,7 +1,6 @@
-'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FileText, RefreshCw, Sparkles } from 'lucide-react';
 import { usePipeline } from '@/context/PipelineContext';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
@@ -32,8 +31,8 @@ function buildWriteUrl(params: URLSearchParams): string {
 
 export default function WriteStudio() {
   const vs = strings.views.contentStudio;
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { configState, configLoaded } = usePipeline();
   const { readOnly } = useReadOnlySession();
 
@@ -72,9 +71,9 @@ export default function WriteStudio() {
       if (patch.propertyId != null) params.set('propertyId', String(patch.propertyId));
       if (patch.removeDraft) params.delete('draft');
       else if (patch.draft != null) params.set('draft', String(patch.draft));
-      router.replace(buildWriteUrl(params));
+      navigate(buildWriteUrl(params), { replace: true });
     },
-    [router, searchParams],
+    [navigate, searchParams],
   );
 
   const loadProperties = useCallback(async () => {

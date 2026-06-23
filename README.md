@@ -17,7 +17,8 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Next.js-000?logo=next.js&logoColor=white" alt="Next.js">
+  <img src="https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black" alt="React">
+  <img src="https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white" alt="Vite">
   <img src="https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/.NET-512BD4?logo=dotnet&logoColor=white" alt=".NET">
   <img src="https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL">
@@ -40,7 +41,7 @@
 
 # Site Audit
 
-**Developer-friendly SEO audit platform** — open-source crawl and technical audit tooling built with **Next.js, Python, and PostgreSQL**.
+**Developer-friendly SEO audit platform** — open-source crawl and technical audit tooling built with **React, Python, PostgreSQL, and .NET**.
 
 ## Overview
 
@@ -154,19 +155,20 @@ WebsiteProfiling/
 │   ├── commands/              # CLI subcommands
 │   ├── cli.py                 # Pipeline entrypoint
 │   └── config.py              # Config load (DB + shadow file)
-├── web/                       # Next.js UI
-│   ├── app/                   # App Router pages + /api routes
+├── web/                       # Vite + React SPA (nginx in prod)
+│   ├── src/AppRoutes.tsx      # React Router routes
 │   ├── src/components/        # React UI components
 │   ├── src/views/             # Report views (overview, links, issues, …)
-│   ├── src/server/            # Server-side DB, pipeline jobs, config I/O
+│   ├── src/lib/               # Client helpers, BFF apiUrl/apiFetch
 │   └── public/                # Static assets (logo, favicon)
+├── services/Bff/              # .NET BFF — auth + /api/* proxy (port 8090)
 ├── services/FileService/      # .NET PDF + Excel workbook export (port 8080)
 ├── alembic/versions/          # PostgreSQL schema migrations
 ├── tests/                     # pytest suite + fixtures
 ├── docs/                      # Glossary, MCP, ops, brand assets
 ├── scripts/                   # local-run.sh, local-test.sh helpers
 ├── .github/workflows/         # CI (Python + web + browser crawl)
-├── docker-compose.yml         # Dev stack (Postgres + web + FileService)
+├── docker-compose.yml         # Dev stack (Postgres + web + BFF + FileService)
 ├── docker-compose.prod.yml    # Production stack (requires AUTH_SECRET)
 ├── docker-compose.pull.yml    # Pre-built WEB_IMAGE
 ├── Dockerfile                 # Production image
@@ -181,7 +183,8 @@ WebsiteProfiling/
 | ------------------------------------- | ------------------------------------------------------------------------------ |
 | `src/website_profiling/`              | Crawl, analyze, report, Lighthouse, integrations, AI — run via `python -m src` |
 | `services/FileService/`               | PDF and Excel workbook export — see [services/FileService/README.md](services/FileService/README.md) |
-| `web/app/api/`                        | REST APIs: report data, pipeline runs, chat (SSE), Google/Bing sync            |
+| `services/Bff/`                       | Browser API gateway — auth, CORS, proxy to FastAPI + FileService               |
+| `web/src/lib/publicBase.ts`           | BFF base URL (`VITE_BFF_BASE_URL`) and `apiFetch` / `apiUrl`                   |
 | `web/src/lib/pipelineConfigSchema.ts` | Audit settings schema (UI ↔ PostgreSQL)                                        |
 | `alembic/versions/`                   | Database migrations — run `./local-run migrate`                                |
 | `tests/`                              | Backend tests; `./local-test browser` for Playwright crawl integration         |
@@ -201,7 +204,7 @@ Build and run from source:
 docker compose up --build
 ```
 
-Open [http://localhost:3000/home](http://localhost:3000/home). PDF and workbook exports require the **FileService** container (`files`, port 8080).
+Open [http://localhost:3000/home](http://localhost:3000/home). The **BFF** (`:8090`) handles all `/api/*` calls; PDF and workbook exports require the **FileService** container (`files`, port 8080).
 
 Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `AUTH_SECRET`. Pre-built images: `docker-compose.pull.yml` (`WEB_IMAGE`).
 
@@ -209,7 +212,7 @@ Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTG
 
 ```bash
 ./local-run setup   # First time: Postgres, Python venv, migrations, npm deps
-./local-run         # Start DB + FileService + Next.js → http://localhost:3000/home
+./local-run         # Start DB + BFF + FileService + Vite → http://localhost:3000/home
 ./local-run db      # Postgres only (no app)
 ./local-run migrate # Apply Alembic migrations only
 ./local-run stop    # Stop Postgres container

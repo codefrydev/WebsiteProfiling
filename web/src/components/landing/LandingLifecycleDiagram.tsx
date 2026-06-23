@@ -1,4 +1,3 @@
-'use client';
 
 import { Bot, Code2, FileText, GitCompare, Radar, type LucideIcon } from 'lucide-react';
 import { strings } from '@/lib/strings';

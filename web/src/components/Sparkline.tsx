@@ -1,4 +1,3 @@
-'use client';
 
 export type SparklineMode = 'higher-better' | 'lower-better';
 

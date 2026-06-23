@@ -1,7 +1,6 @@
-'use client';
 
 import { useEffect, useState } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import type { IntegrationToast } from '@/types/api';
 import ChatShell from '@/components/chat/ChatShell';
 import PageLayout from '@/components/PageLayout';
@@ -21,9 +20,9 @@ import {
 } from '@/lib/pipelineNav';
 
 export default function PipelinePage() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
   const activeNav = pipelineNavFromSearchParams(searchParams);
   const { busy, status, stopping, handlePresetChange, cancelJob } = usePipeline();
   const { readOnly } = useReadOnlySession();
@@ -40,11 +39,11 @@ export default function PipelinePage() {
 
   useEffect(() => {
     const onOpenIntegrations = () => {
-      router.replace(pipelineHrefForNav('google', searchParams));
+      navigate(pipelineHrefForNav('google', searchParams), { replace: true });
     };
     window.addEventListener(OPEN_INTEGRATIONS, onOpenIntegrations);
     return () => window.removeEventListener(OPEN_INTEGRATIONS, onOpenIntegrations);
-  }, [router, searchParams]);
+  }, [navigate, searchParams]);
 
   useEffect(() => {
     const intParam = searchParams.get('integrations');
@@ -53,7 +52,7 @@ export default function PipelinePage() {
     if (intParam !== 'open') return;
 
     if (activeNav !== 'google') {
-      router.replace(pipelineHrefForNav('google', searchParams));
+      navigate(pipelineHrefForNav('google', searchParams), { replace: true });
     }
 
     if (authParam === 'success') {
@@ -76,12 +75,12 @@ export default function PipelinePage() {
       next.set('group', 'google');
     }
     const q = next.toString();
-    router.replace(q ? `${pathname}?${q}` : pathname);
+    navigate(q ? `${pathname}?${q}` : pathname, { replace: true });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setNav = (nav: PipelineNavId) => {
-    router.replace(pipelineHrefForNav(nav, searchParams));
+    navigate(pipelineHrefForNav(nav, searchParams), { replace: true });
   };
 
   const headerExtra =

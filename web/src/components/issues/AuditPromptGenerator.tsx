@@ -1,7 +1,6 @@
-'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { Check, Copy, FileText, MessageSquare, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
@@ -42,7 +41,7 @@ export default function AuditPromptGenerator({
   labels: vp,
   modalTitleId = 'audit-prompt-modal-title',
 }: AuditPromptGeneratorProps) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { readOnly } = useReadOnlySession();
   const [open, setOpen] = useState(false);
   const [aiPlan, setAiPlan] = useState<string | null>(null);
@@ -107,8 +106,8 @@ export default function AuditPromptGenerator({
 
   const handleOpenInChat = useCallback(() => {
     writeChatComposerDraft({ domain, text: fullText });
-    router.push(buildChatFabHref(domain));
-  }, [domain, fullText, router]);
+    navigate(buildChatFabHref(domain));
+  }, [domain, fullText, navigate]);
 
   if (built.rawCount === 0) return null;
 

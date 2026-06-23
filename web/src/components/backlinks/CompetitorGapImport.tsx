@@ -1,4 +1,3 @@
-'use client';
 
 import { useRef, useState, useCallback } from 'react';
 import { Upload, Loader2 } from 'lucide-react';

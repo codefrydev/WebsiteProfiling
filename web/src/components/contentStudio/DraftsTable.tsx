@@ -1,4 +1,3 @@
-'use client';
 
 import { Pencil, Trash2 } from 'lucide-react';
 import { strings } from '@/lib/strings';

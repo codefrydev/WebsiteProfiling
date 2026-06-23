@@ -1,4 +1,3 @@
-'use client';
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { syncChartJsDefaultsColor } from '../utils/chartJsDefaults';

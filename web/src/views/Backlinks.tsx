@@ -1,9 +1,8 @@
-'use client';
 
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link2, Settings2, Loader2 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'react-router-dom';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
@@ -38,7 +37,7 @@ type BacklinksTabId = (typeof TABS)[number];
 
 export default function Backlinks(_props: ViewProps) {
   const vb = strings.views.backlinks;
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const { data, loadReport } = useReport();
   useSectionData('gsc-links');
   const gscLinksReady = useSectionsViewReady(['gsc-links']);

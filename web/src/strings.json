@@ -1906,8 +1906,8 @@
               "items": [
                 "Go to APIs & Services → Credentials → Create credentials → OAuth client ID.",
                 "Application type: Web application.",
-                "Authorized redirect URI (local dev): http://localhost:3000/api/integrations/google/callback",
-                "For production, add the same path on your public origin (or set GOOGLE_REDIRECT_URI).",
+                "Authorized redirect URI (local dev): http://localhost:8090/api/integrations/google/callback",
+                "For production, use your BFF public origin with the same path (or set GOOGLE_REDIRECT_URI to that full callback URL).",
                 "Copy the Client ID and Client Secret into Site Audit → Integrations → Connect tab → Save credentials.",
                 "Per site: pick the property, click Connect with Google, and sign in with an account that has GSC + GA4 access."
               ],

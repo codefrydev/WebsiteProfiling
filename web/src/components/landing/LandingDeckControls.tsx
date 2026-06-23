@@ -1,4 +1,3 @@
-'use client';
 
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLandingDeckRequired } from '@/components/landing/LandingDeckContext';

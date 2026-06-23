@@ -1,9 +1,8 @@
-'use client';
 
-import { useMemo, useState, useCallback } from 'react';
-import { apiFetch } from '@/lib/publicBase';
-import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useMemo, useState, useCallback, lazy, Suspense } from 'react';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
+import { Link } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import {
   ArrowLeftRight,
@@ -38,15 +37,12 @@ import {
 } from '../components/compare/CompareTabPanels';
 import CompareUrlMetadataTable from '../components/compare/CompareUrlMetadataTable';
 import { ScoreDelta } from '@/components/charts/ScoreDelta';
-import dynamic from 'next/dynamic';
 
-const CompareOverviewCharts = dynamic(
-  () => import('../components/compare/CompareCharts').then((m) => m.CompareOverviewCharts),
-  { ssr: false, loading: () => <div className="h-56 rounded-xl bg-brand-800/40 animate-pulse" /> },
+const CompareOverviewCharts = lazy(() =>
+  import('../components/compare/CompareCharts').then((m) => ({ default: m.CompareOverviewCharts })),
 );
-const CompareUrlChangeChart = dynamic(
-  () => import('../components/compare/CompareCharts').then((m) => m.CompareUrlChangeChart),
-  { ssr: false },
+const CompareUrlChangeChart = lazy(() =>
+  import('../components/compare/CompareCharts').then((m) => ({ default: m.CompareUrlChangeChart })),
 );
 import type { ViewProps } from '@/types';
 
@@ -128,9 +124,9 @@ const TAB_KEYS = [
 ] as const satisfies readonly CompareTab[];
 
 export default function CompareReports({ searchQuery = '' }: ViewProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
   const [tab] = useUrlTab(TAB_KEYS, 'overview', 'tab');
   const [urlTab, setUrlTab] = useUrlTab(URL_TABS, 'all', 'urlTab');
   const setTab = useCallback(
@@ -145,9 +141,9 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
         params.delete('urlTab');
       }
       const q = params.toString();
-      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+      navigate(q ? `${pathname}?${q}` : pathname, { replace: true, preventScrollReset: true });
     },
-    [router, pathname, searchParams],
+    [navigate, pathname, searchParams],
   );
   const [copyHint, setCopyHint] = useState('');
   const { reportList, reportCompare, compareReportId, selectedReportId, loading, error } = useReport();
@@ -306,7 +302,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
               type="button"
               className="ml-auto px-3 py-1.5 rounded-lg border border-default bg-brand-800 hover:bg-brand-700 text-foreground text-xs font-medium"
               onClick={() => {
-                void apiFetch('/api/compare/export', {
+                void apiFetch(apiUrl('/compare/export'), {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({
@@ -394,11 +390,13 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
 
           {tab === 'overview' ? (
             <div className="space-y-6">
-              <CompareOverviewCharts
-                compare={reportCompare}
-                metrics={reportCompare.metrics}
-                vc={vc}
-              />
+              <Suspense fallback={<div className="h-56 rounded-xl bg-brand-800/40 animate-pulse" />}>
+                <CompareOverviewCharts
+                  compare={reportCompare}
+                  metrics={reportCompare.metrics}
+                  vc={vc}
+                />
+              </Suspense>
 
               <div>
                 <h3 className="text-sm font-bold text-foreground mb-1">{vc.siteMetrics}</h3>
@@ -417,13 +415,15 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                 urlLists.structureChanged.length > 0) ? (
                 <>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <CompareUrlChangeChart
-                    newCount={urlLists.newUrls.length}
-                    removedCount={urlLists.removedUrls.length}
-                    contentCount={urlLists.contentChanged.length}
-                    structureCount={urlLists.structureChanged.length}
-                    vc={vc}
-                  />
+                  <Suspense fallback={<div className="h-56 rounded-xl bg-brand-800/40 animate-pulse" />}>
+                    <CompareUrlChangeChart
+                      newCount={urlLists.newUrls.length}
+                      removedCount={urlLists.removedUrls.length}
+                      contentCount={urlLists.contentChanged.length}
+                      structureCount={urlLists.structureChanged.length}
+                      vc={vc}
+                    />
+                  </Suspense>
                 </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                   <Card className="p-4">
@@ -609,7 +609,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                 <p className="text-sm text-muted-foreground">{vc.siteStructureHint}</p>
               </div>
               <Link
-                href={siteStructureHref}
+                to={siteStructureHref}
                 className="shrink-0 inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 transition-colors"
               >
                 {vc.openSiteStructure}

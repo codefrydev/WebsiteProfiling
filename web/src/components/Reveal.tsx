@@ -1,4 +1,3 @@
-'use client';
 
 import { createElement, type ElementType, type ReactNode } from 'react';
 import { useInView } from '@/lib/useInView';

@@ -1,6 +1,5 @@
-'use client';
 
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { CheckCircle2, ChevronRight } from 'lucide-react';
 import LandingProductMock, { type LandingProductMockVariant } from '@/components/landing/LandingProductMock';
 import {
@@ -63,7 +62,7 @@ export default function LandingFeatureSpotlight({
         ))}
       </ul>
       <Link
-        href={ctaHref}
+        to={ctaHref}
         className="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-link transition-colors hover:underline"
       >
         {ctaLabel}
@@ -82,7 +81,7 @@ export default function LandingFeatureSpotlight({
           </a>
         ) : (
           <Link
-            href={secondaryCtaHref}
+            to={secondaryCtaHref}
             className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-link hover:underline"
           >
             {secondaryCtaLabel}

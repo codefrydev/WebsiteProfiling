@@ -1,4 +1,3 @@
-'use client';
 
 import { useMemo, useState } from 'react';
 import { ArrowDownLeft, ArrowUpRight, ExternalLink, Loader2, Search } from 'lucide-react';

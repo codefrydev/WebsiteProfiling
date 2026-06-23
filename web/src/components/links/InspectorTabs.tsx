@@ -1,4 +1,3 @@
-'use client';
 
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
 import { Gauge, Share2, Code2, Shield, AlertTriangle, FileBarChart, LineChart, Network } from 'lucide-react';

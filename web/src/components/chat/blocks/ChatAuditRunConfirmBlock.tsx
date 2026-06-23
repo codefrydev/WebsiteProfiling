@@ -1,8 +1,7 @@
-'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Loader2, Play } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import Button from '@/components/Button';
 import CrawlAuthorizeCheckbox from '@/components/pipeline/CrawlAuthorizeCheckbox';
 import { usePipeline } from '@/context/PipelineContext';
@@ -182,7 +181,7 @@ export default function ChatAuditRunConfirmBlock({ block }: { block: AuditRunCon
               {busy ? c.starting : jobStatus === 'error' ? c.retryButton : c.runButton}
             </Button>
             <Link
-              href="/pipeline"
+              to="/pipeline"
               className="text-xs text-link hover:underline"
             >
               {c.editInRunner}

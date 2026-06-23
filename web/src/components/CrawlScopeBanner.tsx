@@ -1,5 +1,5 @@
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 import AlertBanner from '@/components/AlertBanner';
 import { strings, format } from '@/lib/strings';
@@ -8,7 +8,7 @@ import { javascriptErrorsViewHref } from '@/lib/browserErrors';
 
 export default function CrawlScopeBanner({ data }: { data: ReportPayload | null | undefined }) {
   const cs = strings.views.overview.crawlScope;
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const trailingQuery = searchParams.toString();
   const scope = (data?.report_meta as { crawl_scope?: Record<string, unknown> } | undefined)?.crawl_scope;
   if (!scope) return null;
@@ -97,7 +97,7 @@ export default function CrawlScopeBanner({ data }: { data: ReportPayload | null 
       {showJsErrorsLink ? (
         <p className="text-xs pt-1">
           <Link
-            href={javascriptErrorsViewHref(trailingQuery)}
+            to={javascriptErrorsViewHref(trailingQuery)}
             className="font-medium text-amber-900 underline underline-offset-2 hover:text-amber-950 dark:text-amber-100 dark:hover:text-white"
           >
             {cs.viewJavaScriptErrors}

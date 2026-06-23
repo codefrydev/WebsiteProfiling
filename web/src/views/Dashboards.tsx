@@ -1,9 +1,7 @@
-'use client';
-
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { LayoutGrid, Plus, Eye, Pencil, Save, Trash2, Printer } from 'lucide-react';
-import type { Layout } from 'react-grid-layout';
-import { PageLayout, PageHeader, EmptyState } from '@/components';
+import { Plus, Eye, Pencil, Save, Trash2, Printer } from 'lucide-react';
+import { useContainerWidth, type Layout } from 'react-grid-layout';
+import { PageLayout, EmptyState } from '@/components';
 import type { ViewProps } from '@/types';
 import { usePropertyForDomain } from '@/lib/dashboard/hooks/usePropertyForDomain';
 import { DashboardCanvas } from '@/lib/dashboard/canvas/DashboardCanvas';
@@ -95,14 +93,13 @@ export default function Dashboards(_props: ViewProps) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
-  const [containerWidth, setContainerWidth] = useState(900);
+  const { width: containerWidth, containerRef, mounted } = useContainerWidth();
 
   // Ephemeral board interactions (not persisted — reset on dashboard switch/reload).
   const [slicerValues, setSlicerValues] = useState<Record<string, FilterValue>>({});
   const [crossFilter, setCrossFilter] = useState<CrossFilter | null>(null);
   const [drill, setDrill] = useState<Record<string, DrillState>>({});
 
-  const containerRef = useRef<HTMLDivElement>(null);
   const docRef = useRef(doc);
   useEffect(() => { docRef.current = doc; }, [doc]);
   const drillRef = useRef(drill);
@@ -115,18 +112,6 @@ export default function Dashboards(_props: ViewProps) {
   }, []);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => () => { if (autosaveTimer.current) clearTimeout(autosaveTimer.current); }, []);
-
-  // Measure container for react-grid-layout.
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const obs = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect.width;
-      if (w && w > 0) setContainerWidth(w);
-    });
-    obs.observe(containerRef.current);
-    setContainerWidth(containerRef.current.offsetWidth);
-    return () => obs.disconnect();
-  }, [loading, activeId]);
 
   const loadDashboards = useCallback(async () => {
     if (!propertyId) { setLoading(false); return; }
@@ -174,6 +159,7 @@ export default function Dashboards(_props: ViewProps) {
   }, [scheduleSave]);
 
   const handleLayoutChange = useCallback((layout: Layout) => {
+    if (!isEditing) return;
     const cur = docRef.current;
     const arr = Array.from(layout);
     const widgets = cur.widgets.map((w) => {
@@ -181,7 +167,7 @@ export default function Dashboards(_props: ViewProps) {
       return l ? { ...w, layout: { x: l.x, y: l.y, w: l.w, h: l.h } } : w;
     });
     updateDoc({ ...cur, widgets });
-  }, [updateDoc]);
+  }, [updateDoc, isEditing]);
 
   const addWidget = useCallback((datasetId: string) => {
     const cur = docRef.current;
@@ -189,7 +175,6 @@ export default function Dashboards(_props: ViewProps) {
     const widget = widgetForDataset(datasetId, bottomY);
     if (!widget) return;
     updateDoc({ ...cur, widgets: [...cur.widgets, widget] });
-    setSelectedWidgetId(widget.id);
   }, [updateDoc]);
 
   const removeWidget = useCallback((id: string) => {
@@ -351,12 +336,7 @@ export default function Dashboards(_props: ViewProps) {
   return (
     <PageLayout variant="fullHeight" className="flex flex-col min-h-0 gap-0">
       <style>{PRINT_CSS}</style>
-      <PageHeader
-        title="Dashboards"
-        icon={<LayoutGrid className="h-7 w-7 text-blue-400" />}
-        subtitle="Build custom views from any audit metric"
-        actions={
-          <div className="flex items-center gap-2 flex-wrap">
+      <div className="mb-3 flex flex-wrap items-center gap-2 shrink-0">
             {dashboards.length > 0 && (
               <select
                 value={activeId ?? ''}
@@ -377,7 +357,13 @@ export default function Dashboards(_props: ViewProps) {
 
             {activeId && (
               <button
-                onClick={() => setIsEditing((e) => !e)}
+                onClick={() => {
+                  setIsEditing((e) => {
+                    const next = !e;
+                    if (!next) setSelectedWidgetId(null);
+                    return next;
+                  });
+                }}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
                   isEditing ? 'border-blue-500 bg-blue-500/10 text-blue-400' : 'border-default hover:bg-white/5 text-muted-foreground hover:text-bright'
                 }`}
@@ -428,9 +414,7 @@ export default function Dashboards(_props: ViewProps) {
               </span>
             )}
             {saveError && <span className="text-xs text-red-400">{saveError}</span>}
-          </div>
-        }
-      />
+      </div>
 
       {loading ? (
         <div className="flex items-center justify-center flex-1">
@@ -480,7 +464,7 @@ export default function Dashboards(_props: ViewProps) {
                   <p className="font-medium">This dashboard is empty.</p>
                   <p className="text-xs">{isEditing ? 'Use “+ Add widget…” to add a chart.' : 'Switch to Edit to add widgets.'}</p>
                 </div>
-              ) : (
+              ) : mounted && containerWidth > 0 ? (
                 <DashboardCanvas
                   widgets={doc.widgets}
                   isEditing={isEditing}
@@ -492,11 +476,10 @@ export default function Dashboards(_props: ViewProps) {
                   onEditWidget={setSelectedWidgetId}
                   onRemoveWidget={removeWidget}
                   onDuplicateWidget={duplicateWidget}
-                  onSelectWidget={setSelectedWidgetId}
                   onCrossFilter={handleChartSelect}
                   onDrillUp={drillUp}
                 />
-              )}
+              ) : null}
             </div>
             {isEditing && selectedWidget && (
               <ConfigPanel

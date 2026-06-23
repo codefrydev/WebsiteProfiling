@@ -1,4 +1,3 @@
-'use client';
 
 import { useState, useMemo } from 'react';
 import { Filter, X } from 'lucide-react';

@@ -1,4 +1,3 @@
-'use client';
 
 import { useMemo } from 'react';
 import { Building2, ChevronDown, Cpu, Gauge, MessageSquare, Search, Sparkles } from 'lucide-react';

@@ -1,4 +1,3 @@
-'use client';
 
 import {
   createContext,
@@ -10,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import type { PipelineConfigSource, PipelineJobStatus, PipelineUnknownKey } from '@/types/api';
 import type { LlmConfigState, PipelineConfigState } from '@/types/api';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
@@ -111,7 +110,7 @@ export function useOptionalPipeline(): PipelineContextValue | null {
 }
 
 export function PipelineProvider({ children }: { children: ReactNode }) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const report = useOptionalReport();
   const [presetId, setPresetId] = useState<PipelinePresetId>(DEFAULT_PRESET_ID);
   const [customCommand, setCustomCommand] = useState('');
@@ -176,22 +175,22 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
   const openPipelinePage = useCallback(
     (tab: PipelineTab = 'run') => {
       setBackgroundMode(false);
-      router.push(buildPipelineHref({ tab }));
+      navigate(buildPipelineHref({ tab }));
     },
-    [router],
+    [navigate],
   );
 
   const watchJob = useCallback(
     (
       jobId: string,
       {
-        navigate = false,
-        jobCommand = '',
-      }: {
-        navigate?: boolean;
-        jobCommand?: string;
-      } = {},
-    ) => {
+      openPipeline = false,
+      jobCommand = '',
+    }: {
+      openPipeline?: boolean;
+      jobCommand?: string;
+    } = {},
+  ) => {
       if (!jobId) return;
       stopPoll();
       activeJobIdRef.current = jobId;
@@ -210,9 +209,9 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
           setCustomCommand(jobCommand);
         }
       }
-      if (navigate) {
+      if (openPipeline) {
         storePipelineReturnPath(currentPathForReturn());
-        router.push('/pipeline');
+        navigate('/pipeline');
       }
 
       pollStopRef.current = pollPipelineJob(jobId, (job) => {
@@ -239,7 +238,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         }
       });
     },
-    [stopPoll, report, router],
+    [stopPoll, report, navigate],
   );
 
   useEffect(() => {
@@ -249,7 +248,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         {};
       if (!detail.jobId) return;
       watchJob(detail.jobId, {
-        navigate: detail.openRunner !== false,
+        openPipeline: detail.openRunner !== false,
         jobCommand: detail.command || '',
       });
     };
@@ -328,7 +327,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         }
         const active = data.active as { id?: string; jobType?: string; status?: string } | null;
         if (active?.id && active.status === 'running') {
-          watchJob(active.id, { navigate: false, jobCommand: active.jobType || '' });
+          watchJob(active.id, { openPipeline: false, jobCommand: active.jobType || '' });
         }
       } catch (e) {
         if (!cancelled) {
@@ -628,8 +627,8 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
 
   const continueInBackground = useCallback(() => {
     setBackgroundMode(true);
-    router.push(readPipelineReturnPath());
-  }, [router]);
+    navigate(readPipelineReturnPath());
+  }, [navigate]);
 
   const cancelJob = useCallback(async (): Promise<boolean> => {
     const jobId = activeJobIdRef.current;

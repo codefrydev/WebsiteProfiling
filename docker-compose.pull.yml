@@ -1,7 +1,9 @@
-# Run a pre-built/pulled image with Postgres (no local docker build).
+# Run pre-built backend image + Vite web image with Postgres (no monolith UI).
 # Usage:
-#   export WEB_IMAGE=your-registry/website-profiling:tag
-#   docker compose -f docker-compose.pull.yml up -d
+#   docker build -t website-profiling:ci .
+#   docker build -t website-profiling-web:ci ./web --build-arg VITE_BFF_BASE_URL=http://localhost:8090
+#   BACKEND_IMAGE=website-profiling:ci WEB_IMAGE=website-profiling-web:ci \
+#     docker compose -f docker-compose.pull.yml up -d
 services:
   postgres:
     image: postgres:16-alpine
@@ -17,28 +19,38 @@ services:
       timeout: 3s
       retries: 5
 
-  web:
-    image: ${WEB_IMAGE:-website-profiling:latest}
+  fastapi:
+    image: ${BACKEND_IMAGE:-website-profiling:latest}
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "3000:3000"
     environment:
+      WP_ROLE: fastapi
       WEBSITE_PROFILING_ROOT: /app
       DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
       DATA_DIR: /data
       PYTHON: /opt/venv/bin/python
-      NODE_ENV: production
       CHROME_PATH: /usr/bin/chromium
       LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
       LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
-      FASTAPI_URL: http://127.0.0.1:8001
-      FILE_SERVICE_URL: http://files:8080
     volumes:
       - profiling-data:/data
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/home', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8001/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  web:
+    image: ${WEB_IMAGE:-website-profiling-web:latest}
+    depends_on:
+      fastapi:
+        condition: service_healthy
+    ports:
+      - "3000:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/home"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -47,12 +59,10 @@ services:
   files:
     build:
       context: ./services/FileService
-    ports:
-      - "8080:8080"
     environment:
-      REPORT_API_URL: http://web:8001
+      REPORT_API_URL: http://fastapi:8001
     depends_on:
-      web:
+      fastapi:
         condition: service_started
 
 volumes:

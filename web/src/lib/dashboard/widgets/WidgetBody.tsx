@@ -1,4 +1,3 @@
-'use client';
 
 import { AlertTriangle } from 'lucide-react';
 import ChartRenderer from '@/lib/dashboard/charts/ChartRenderer';

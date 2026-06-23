@@ -1,4 +1,3 @@
-'use client';
 
 import { LighthouseScoreGrid } from '@/components/charts';
 import { strings } from '@/lib/strings';

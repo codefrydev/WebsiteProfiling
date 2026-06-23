@@ -87,28 +87,17 @@ services:
       BFF_COOKIE_DOMAIN: ${BFF_COOKIE_DOMAIN:-}
 
   web:
-    image: website-profiling:latest
+    build:
+      context: ./web
+      args:
+        VITE_BFF_BASE_URL: ${BFF_PUBLIC_URL:?set BFF_PUBLIC_URL (browser-facing BFF origin)}
     depends_on:
       bff:
         condition: service_started
     ports:
-      - '${WEB_PORT:-3000}:3000'
-    environment:
-      WP_ROLE: web
-      WEBSITE_PROFILING_ROOT: /app
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
-      DATA_DIR: /data
-      NODE_ENV: production
-      # Public BFF URL the browser calls (consumed by the credentialed fetch wrapper).
-      NEXT_PUBLIC_BFF_BASE_URL: ${BFF_PUBLIC_URL:?set BFF_PUBLIC_URL (browser-facing BFF origin)}
-      # Residual server-side calls (SSR) reach FastAPI internally.
-      FASTAPI_URL: http://fastapi:8001
-      # SSR reads wp_session for UI role guards — must match the BFF secret.
-      AUTH_SECRET: ${AUTH_SECRET}
-    volumes:
-      - profiling-data:/data
+      - '${WEB_PORT:-3000}:80'
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://127.0.0.1:3000/home', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1/home']
       interval: 30s
       timeout: 5s
       retries: 3

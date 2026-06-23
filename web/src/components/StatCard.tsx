@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import HelpHint, { normalizeHintContent, type HelpHintContent } from './HelpHint';
 import Card from './Card';
 
@@ -86,7 +86,7 @@ export default function StatCard({
   if (href) {
     return (
       <Link
-        href={href}
+        to={href}
         className={`group block w-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 ${linkHeightClass}`.trim()}
       >
         {card}

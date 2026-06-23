@@ -2,19 +2,20 @@
 from __future__ import annotations
 
 import re
+import time
 from datetime import datetime
 from typing import Any, Callable, Optional
 from urllib.parse import urlparse
 
 from psycopg import Connection
 
-from website_profiling.db.report_store import read_report_payload
+from website_profiling.db.report_store import read_report_payload, read_report_payloads_portfolio
 
 from .report_loader import (
-    list_crawl_run_summaries,
     list_crawl_runs,
+    list_crawl_run_summaries,
     list_reports,
-    slice_payload_for_section,
+    list_reports_latest_per_domain,
 )
 
 PORTFOLIO_CATEGORY_ORDER = (
@@ -40,6 +41,40 @@ DATA_SOURCE_IDS = frozenset({
 
 UNKNOWN_BRAND = "Unknown property"
 EM_DASH = "—"
+
+# Portfolio home only needs recent crawl-only rows; aggregating every crawl run is slow on large DBs.
+PORTFOLIO_MAX_CRAWL_RUNS = 120
+PORTFOLIO_GROUPS_CACHE_TTL_S = 45.0
+
+_groups_cache: dict[str, tuple[float, dict[str, Any]]] = {}
+
+
+def _portfolio_groups_cache_key(conn: Connection) -> str:
+    try:
+        rep = conn.execute("SELECT COUNT(*)::int, MAX(id) FROM report_payload").fetchone()
+        crawl = conn.execute("SELECT COUNT(*)::int, MAX(id) FROM crawl_runs").fetchone()
+        rep_count = int(rep[0] if rep else 0)
+        rep_max = int(rep[1] or 0) if rep else 0
+        crawl_count = int(crawl[0] if crawl else 0)
+        crawl_max = int(crawl[1] or 0) if crawl else 0
+        return f"{rep_count}:{rep_max}:{crawl_count}:{crawl_max}"
+    except Exception:
+        return "unknown"
+
+
+def _get_cached_groups(key: str) -> dict[str, Any] | None:
+    entry = _groups_cache.get(key)
+    if not entry:
+        return None
+    ts, payload = entry
+    if time.time() - ts > PORTFOLIO_GROUPS_CACHE_TTL_S:
+        _groups_cache.pop(key, None)
+        return None
+    return payload
+
+
+def _set_cached_groups(key: str, payload: dict[str, Any]) -> None:
+    _groups_cache[key] = (time.time(), payload)
 
 
 def _extract_hostname(url: str | None) -> str:
@@ -263,7 +298,7 @@ def _title_coverage_pct(with_title: int, url_count: int) -> int:
     return round((with_title / url_count) * 100)
 
 
-def load_portfolio_maps(conn: Connection) -> dict[str, Any]:
+def load_portfolio_maps(conn: Connection, *, max_crawl_runs: int | None = None) -> dict[str, Any]:
     crawl_rows = list_crawl_runs(conn)
     start_url_by_run_id = {int(r["id"]): r["start_url"] for r in crawl_rows}
     run_created_at_by_run_id = {int(r["id"]): r["created_at"] for r in crawl_rows}
@@ -274,7 +309,7 @@ def load_portfolio_maps(conn: Connection) -> dict[str, Any]:
         }
         for r in crawl_rows
     }
-    crawl_summaries = list_crawl_run_summaries(conn)
+    crawl_summaries = list_crawl_run_summaries(conn, max_runs=max_crawl_runs)
     return {
         "start_url_by_run_id": start_url_by_run_id,
         "run_created_at_by_run_id": run_created_at_by_run_id,
@@ -534,17 +569,33 @@ def build_portfolio_card(
         return groups[0] if groups else None
 
     if crawl_run_id is not None:
-        report_groups = compute_domain_groups(report_list, maps, get_full_payload)
-        from_report = next((g for g in report_groups if g.get("crawlRunId") == crawl_run_id), None)
-        if from_report:
-            return from_report
+        try:
+            cur = conn.execute(
+                """
+                SELECT id FROM report_payload
+                WHERE (data->>'crawl_run_id')::bigint = %s
+                ORDER BY id DESC
+                LIMIT 1
+                """,
+                (int(crawl_run_id),),
+            )
+            match = cur.fetchone()
+        except Exception:
+            match = None
+        if match is not None:
+            rid = int(match[0] if isinstance(match, (list, tuple)) else match["id"])
+            row = next((r for r in report_list if int(r["id"]) == rid), {"id": rid, "generated_at": None})
+            groups = compute_domain_groups([row], maps, get_full_payload)
+            from_report = groups[0] if groups else None
+            if from_report:
+                return from_report
         summary = next(
             (s for s in maps["crawl_summaries"] if int(s["crawl_run_id"]) == crawl_run_id),
             None,
         )
         if not summary:
             return None
-        crawl_only = compute_crawl_only_groups([summary], report_groups)
+        crawl_only = compute_crawl_only_groups([summary], [])
         return crawl_only[0] if crawl_only else None
 
     return None
@@ -556,13 +607,12 @@ def build_groups_bundle(
     *,
     lite: bool,
 ) -> dict[str, Any]:
-    maps = load_portfolio_maps(conn)
+    maps = load_portfolio_maps(conn, max_crawl_runs=PORTFOLIO_MAX_CRAWL_RUNS)
+    report_ids = [int(r["id"]) for r in report_list]
+    payload_by_id = read_report_payloads_portfolio(conn, report_ids)
 
     def get_payload(rid: int) -> dict[str, Any] | None:
-        payload = read_report_payload(conn, rid)
-        if payload is None:
-            return None
-        return slice_payload_for_section(payload, "core") if lite else payload
+        return payload_by_id.get(rid)
 
     report_groups = compute_domain_groups(report_list, maps, get_payload)
     crawl_only = compute_crawl_only_groups(maps["crawl_summaries"], report_groups)
@@ -579,9 +629,20 @@ def get_portfolio_response(
     report_id: int | None = None,
     crawl_run_id: int | None = None,
 ) -> dict[str, Any]:
+    if widget == "groups":
+        cache_key = _portfolio_groups_cache_key(conn)
+        cached = _get_cached_groups(cache_key)
+        if cached is not None:
+            return cached
+
     all_reports = list_reports(conn)
     id_set = set(ids)
-    report_list = [r for r in all_reports if r["id"] in id_set] if ids else all_reports
+    if widget in ("groups", "summary") and not ids:
+        report_list = list_reports_latest_per_domain(conn)
+    elif ids:
+        report_list = [r for r in all_reports if r["id"] in id_set]
+    else:
+        report_list = all_reports
 
     if widget == "card":
         maps = load_portfolio_maps(conn)
@@ -600,7 +661,10 @@ def get_portfolio_response(
     if widget == "summary":
         return compute_portfolio_summary(bundle["groups"])
 
-    return {
+    payload = {
         "groups": bundle["groups"],
         "crawlHistoryByDomain": bundle["crawlHistoryByDomain"],
     }
+    if widget == "groups":
+        _set_cached_groups(cache_key, payload)
+    return payload

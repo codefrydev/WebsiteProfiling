@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, ChevronDown, ChevronRight, FolderOpen, Sparkles, Terminal } from 'lucide-react';
 import type { LinkDetail, NlpSignals, PageAnalysis, ReportLink, SimilarInternalRow } from '@/types/report';
 import ViewTabs from '@/components/ViewTabs';
@@ -335,9 +335,9 @@ export interface PageAnalysisTabProps {
 export default function PageAnalysisTab({ link }: PageAnalysisTabProps) {
   const p = strings.components.linkTabs.pageAnalysis;
   const st = p.subTabs;
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
 
   const pa: PageAnalysis = link.page_analysis && typeof link.page_analysis === 'object' ? link.page_analysis : {};
   const nlpSignals = link.nlp_entities || pa?.signals?.nlp_entities;
@@ -359,9 +359,9 @@ export default function PageAnalysisTab({ link }: PageAnalysisTabProps) {
         next.set('section', section);
       }
       const q = next.toString();
-      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+      navigate(q ? `${pathname}?${q}` : pathname, { replace: true, preventScrollReset: true });
     },
-    [router, pathname, searchParams, fallbackSection],
+    [navigate, pathname, searchParams, fallbackSection],
   );
 
   const warningsCount = Array.isArray(pa.warnings) ? pa.warnings.length : 0;

@@ -1,4 +1,3 @@
-'use client';
 
 import { ScoreDelta } from '@/components/charts/ScoreDelta';
 import { useChatFollowUp } from '@/components/chat/ChatFollowUpContext';

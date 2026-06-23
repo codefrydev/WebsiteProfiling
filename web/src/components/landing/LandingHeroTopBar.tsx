@@ -1,6 +1,5 @@
-'use client';
 
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import AppLogo from '@/components/AppLogo';
 import ThemeToggle from '@/components/ThemeToggle';
 import { strings } from '@/lib/strings';
@@ -25,7 +24,7 @@ export default function LandingHeroTopBar() {
   return (
     <header className="shrink-0 border-b border-muted/40">
       <div className={`flex h-14 w-full items-center justify-between gap-3 ${headerGutter}`}>
-        <Link href="/" className="flex min-w-0 items-center gap-2.5">
+        <Link to="/" className="flex min-w-0 items-center gap-2.5">
           <AppLogo size={22} />
           <span className="truncate font-semibold text-foreground">{app.productName}</span>
         </Link>
@@ -36,7 +35,7 @@ export default function LandingHeroTopBar() {
           {NAV_ITEMS.map(({ href, label }) => (
             <Link
               key={href}
-              href={href}
+              to={href}
               className="rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-brand-700/60 hover:text-foreground lg:px-3 lg:text-sm"
             >
               {label}
@@ -54,13 +53,13 @@ export default function LandingHeroTopBar() {
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <ThemeToggle />
           <Link
-            href="/home"
+            to="/home"
             className="hidden rounded-lg border border-default px-2.5 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-brand-800 sm:inline sm:text-sm"
           >
             {vl.navOpenApp}
           </Link>
           <Link
-            href="/pipeline"
+            to="/pipeline"
             className="rounded-lg bg-blue-600 px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-blue-500 sm:px-3 sm:text-sm"
           >
             {vl.navRunAudit}
@@ -74,7 +73,7 @@ export default function LandingHeroTopBar() {
         {NAV_ITEMS.map(({ href, label }) => (
           <Link
             key={href}
-            href={href}
+            to={href}
             className="shrink-0 rounded-full border border-default bg-brand-800/50 px-3 py-1 text-xs font-medium text-muted-foreground"
           >
             {label}

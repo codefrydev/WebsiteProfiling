@@ -1,7 +1,6 @@
-'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import ForceGraph3D from '3d-force-graph';
 import { useReport } from '@/context/useReport';
 import type { GraphEdge, GraphNode } from '@/types';
@@ -132,7 +131,7 @@ export default function SiteStructureLinkGraph() {
     <div className="space-y-3">
       <p className="text-xs text-muted-foreground">
         Showing up to {MAX_NODES} of {graphData.total} nodes. Click a node to open the URL.{' '}
-        <Link href="/network" className="text-link hover:underline">
+        <Link to="/network" className="text-link hover:underline">
           Open full Network view
         </Link>
       </p>

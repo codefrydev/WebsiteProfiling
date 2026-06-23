@@ -1,7 +1,6 @@
-'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
   ChevronDown,
@@ -600,7 +599,7 @@ export default function RiskSettingsPage() {
                       <code className="font-mono">AUTH_PASSWORD</code>, and{' '}
                       <code className="font-mono">AUTH_DEFAULT_ROLE</code> in your environment.{' '}
                       See the{' '}
-                      <Link href="/docs" className="text-link hover:underline">
+                      <Link to="/docs" className="text-link hover:underline">
                         integration docs
                       </Link>{' '}
                       for details.

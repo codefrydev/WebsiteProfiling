@@ -1,7 +1,6 @@
-'use client';
 
 import { useEffect, useRef } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { ArrowUpRight, ChevronDown, Loader2, Maximize2, RotateCcw } from 'lucide-react';
 import { strings } from '@/lib/strings';
 import ChatAssistantAvatar from '@/components/chat/ChatAssistantAvatar';
@@ -94,7 +93,7 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
             </button>
           )}
           <Link
-            href={openFullChat()}
+            to={openFullChat()}
             onClick={onClose}
             title="Open full chat"
             className="flex h-7 w-7 items-center justify-center rounded-full text-[var(--chat-header-fg-muted)] transition-colors hover:bg-white/10 hover:text-[var(--chat-header-fg)]"
@@ -234,7 +233,7 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
 
                   {!msg.streaming && !msg.content && msg.narrative && (
                     <Link
-                      href={openFullChat()}
+                      to={openFullChat()}
                       onClick={onClose}
                       className="mt-2 flex items-center gap-1 text-[11px] text-link hover:text-link-soft"
                     >

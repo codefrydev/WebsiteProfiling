@@ -1,7 +1,6 @@
-'use client';
 
 import { MessageSquare, X } from 'lucide-react';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import {
   chatFabCornerStyle,
@@ -23,8 +22,8 @@ const s = strings.components.chat;
  * Drag to any screen corner; position is remembered across sessions.
  */
 export default function ChatFab() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
   const domain = searchParams.get('domain') ?? searchParams.get('brand');
 
   const [open, setOpen] = useState(false);

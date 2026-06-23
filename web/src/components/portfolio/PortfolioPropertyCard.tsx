@@ -1,4 +1,3 @@
-'use client';
 
 import {
   AlertTriangle,
@@ -12,7 +11,6 @@ import {
 } from 'lucide-react';
 import { Card, LabelWithHint } from '@/components';
 import Sparkline, { type SparklineMode } from '@/components/Sparkline';
-import { SkeletonDomainCard } from '@/components/Skeleton';
 import { DataSourceBadgeRow } from '@/components/DataSourceBadge';
 import { PRIORITY_CONFIG } from '@/lib/issuePriority';
 import { format, strings } from '@/lib/strings';
@@ -27,7 +25,6 @@ import {
   shortCategoryLabel,
 } from '@/components/portfolio/portfolioCardUtils';
 import { useOptionalPortfolio } from '@/context/usePortfolio';
-import { usePortfolioCard } from '@/hooks/usePortfolioCard';
 import { usePortfolioCardHistory } from '@/hooks/usePortfolioCardHistory';
 import { useInView } from '@/lib/useInView';
 
@@ -120,33 +117,19 @@ export default function PortfolioPropertyCard({
   onDeleteConfirm,
 }: PortfolioPropertyCardProps) {
   const { ref, inView } = useInView<HTMLDivElement>({ once: true, rootMargin: '200px' });
-  const { group, status: cardStatus, isFullCard } = usePortfolioCard(liteGroup, fetchEnabled);
+  const group = liteGroup;
   const { auditHistory, status: historyStatus } = usePortfolioCardHistory(
     liteGroup.domainParam,
-    fetchEnabled && isFullCard && inView && !liteGroup.crawlOnly,
+    fetchEnabled && inView && !liteGroup.crawlOnly,
   );
   const portfolio = useOptionalPortfolio();
   const crawlHistory = portfolio?.crawlHistoryByDomain[liteGroup.domainParam] || [];
   const historyLoading =
     fetchEnabled &&
-    isFullCard &&
     inView &&
     !liteGroup.crawlOnly &&
     (historyStatus === 'loading' || historyStatus === 'idle');
 
-  if (fetchEnabled && !isFullCard && cardStatus !== 'error') {
-    return (
-      <div
-        ref={ref}
-        className="relative min-w-[520px] max-w-[600px] shrink-0"
-        role="status"
-        aria-busy="true"
-        aria-label={strings.app.loading}
-      >
-        <SkeletonDomainCard />
-      </div>
-    );
-  }
   const vh = strings.views.home;
   const sj = strings.common;
   const disabled = isOpening || isDeleting;

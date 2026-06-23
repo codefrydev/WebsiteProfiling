@@ -1,4 +1,3 @@
-'use client';
 
 import Sparkline from '@/components/Sparkline';
 

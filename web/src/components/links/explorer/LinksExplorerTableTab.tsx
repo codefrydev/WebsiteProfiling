@@ -1,4 +1,3 @@
-'use client';
 
 import { type MouseEvent, type RefObject } from 'react';
 import { Search, ExternalLink } from 'lucide-react';

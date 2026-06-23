@@ -1,8 +1,7 @@
-'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { Link } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ChevronLeft,
   ChevronRight,
@@ -13,7 +12,7 @@ import {
 } from 'lucide-react';
 import AppLogo from '@/components/AppLogo';
 import IntegrationsModal from '@/components/IntegrationsModal';
-import { Badge, Breadcrumb, ReportSelector } from '@/components';
+import { Badge, ReportSelector } from '@/components';
 import { useReport } from '@/context/useReport';
 import { useSession } from '@/context/SessionContext';
 import { useBranding } from '@/context/useBranding';
@@ -74,9 +73,9 @@ export default function AppShell({
   onSearchChange,
   headerExtra,
 }: AppShellProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
@@ -130,7 +129,7 @@ export default function AppShell({
       next.delete('auth');
       next.delete('reason');
       const q = next.toString();
-      router.replace(q ? `${pathname}?${q}` : pathname);
+      navigate(q ? `${pathname}?${q}` : pathname, { replace: true });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -167,8 +166,6 @@ export default function AppShell({
       ? format(strings.app.crawlCompletedSeconds, { seconds: crawlSummary.crawl_time_s })
       : strings.app.crawlCompleted;
 
-  const activeNavItem = APP_NAV_ITEMS.find((item) => isNavItemActive(item, pathname));
-
   return (
     <div className={`min-h-screen bg-brand-900 text-foreground overflow-hidden ${showSidebar ? 'flex' : 'block'}`}>
       {showSidebar && sidebarOpen ? (
@@ -194,7 +191,7 @@ export default function AppShell({
             }`}
           >
             <Link
-              href="/home"
+              to="/home"
               className={`flex items-center min-w-0 ${sidebarCollapsed ? 'md:justify-center' : ''}`}
               onClick={closeSidebar}
               title={sidebarCollapsed ? productName : undefined}
@@ -244,7 +241,7 @@ export default function AppShell({
                   return (
                     <Link
                       key={item.id}
-                      href={href}
+                      to={href}
                       onClick={closeSidebar}
                       title={
                         sidebarCollapsed
@@ -382,15 +379,6 @@ export default function AppShell({
                 {sidebarCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
               </button>
             </div>
-            {activeNavItem ? (
-              <Breadcrumb
-                items={[
-                  { label: activeNavItem.section },
-                  { label: activeNavItem.label, icon: activeNavItem.icon },
-                ]}
-                className="hidden min-w-0 shrink lg:flex"
-              />
-            ) : null}
             {showSearch && onSearchChange ? (
               <div className="min-w-0 relative flex-1 max-w-xl">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

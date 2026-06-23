@@ -1,4 +1,3 @@
-'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Code, Copy, Eye, Loader2, Search } from 'lucide-react';

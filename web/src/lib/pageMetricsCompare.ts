@@ -1,5 +1,5 @@
 import type { CompareMetricRow } from '@/lib/reportCompare';
-import type { PageGa4Slice, PageGscSlice } from '@/server/pageGoogleData';
+import type { PageGa4Slice, PageGscSlice } from '@/lib/pageGoogleData';
 
 function num(v: unknown): number | null {
   const n = Number(v);

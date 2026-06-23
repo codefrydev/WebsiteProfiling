@@ -1,4 +1,4 @@
-# Project (root) only. Python: src/.gitignore. Next.js: web/.gitignore. .NET: services/*/
+# Project (root) only. Python: src/.gitignore. Web UI: web/.gitignore. .NET: services/*/
 
 # Next.js UI: generated pipeline configs from the runner modal (repo root; must match Python cwd for paths)
 .website-profiling-ui-*.txt
@@ -33,7 +33,8 @@ pipeline-config.txt
 skills-lock.json
 crawl_results.csv
 commit.*
-
+.cursor/
+.claude/
 # .NET services (FileService, Bff, …) — build output and IDE artifacts
 services/**/bin/
 services/**/obj/

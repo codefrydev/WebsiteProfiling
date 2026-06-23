@@ -5,7 +5,7 @@ import type {
   LighthousePageSummary,
   ViewProps,
 } from '@/types';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { Gauge, Globe, Play, Loader2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
@@ -43,11 +43,11 @@ type LhTabId = (typeof LH_TABS)[number];
 const EMPTY_LH: LighthousePageSummary = {};
 
 export default function Lighthouse({ searchQuery = '' }: ViewProps) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { data, startUrlByRunId } = useReport();
   useSectionData('lighthouse');
   const lighthouseReady = useSectionsViewReady(['lighthouse']);
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const detailRef = useRef<HTMLDivElement>(null);
   const pageDetailRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useUrlTab(LH_TABS, 'overview');
@@ -340,7 +340,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
           <Button
             variant="primary"
             className="mt-6"
-            onClick={() => goToPipeline(router.push, { preset: 'lighthouse' })}
+            onClick={() => goToPipeline(navigate, { preset: 'lighthouse' })}
           >
             <Play className="h-4 w-4" aria-hidden />
             {vlh.runInPipeline}

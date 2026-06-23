@@ -1,4 +1,3 @@
-'use client';
 
 import { useState, useCallback } from 'react';
 import { FileText, Loader2, X } from 'lucide-react';

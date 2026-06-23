@@ -1,7 +1,6 @@
-'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { Check, ChevronDown, Circle, Loader2, RefreshCw } from 'lucide-react';
 import { useOllamaModels, type OllamaModelEntry } from '@/hooks/useOllamaModels';
 import {
@@ -299,7 +298,7 @@ export default function ChatModelPicker({
                 <span />
               )}
               <Link
-                href="/pipeline?group=content-ai"
+                to="/pipeline?group=content-ai"
                 className="text-link hover:underline"
                 onClick={() => setOpen(false)}
               >

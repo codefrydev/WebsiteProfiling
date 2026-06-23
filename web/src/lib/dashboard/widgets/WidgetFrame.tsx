@@ -1,4 +1,3 @@
-'use client';
 
 import { useRef } from 'react';
 import { GripVertical, Settings, Copy, X, Download, Image as ImageIcon } from 'lucide-react';
@@ -49,13 +48,17 @@ export function WidgetFrame({
     <Card
       padding="tight"
       className={`h-full flex flex-col min-h-0 overflow-hidden relative group/widget ${
-        selected ? 'ring-2 ring-blue-500/70' : ''
-      }`}
+        isEditing ? 'pointer-events-none' : ''
+      } ${selected ? 'ring-2 ring-blue-500/70' : ''}`}
     >
-      <div className="flex items-start justify-between gap-2 mb-1.5 shrink-0">
+      <div
+        className={`widget-edit-chrome flex items-start justify-between gap-2 mb-1.5 shrink-0 ${
+          isEditing ? 'drag-handle cursor-grab active:cursor-grabbing' : ''
+        }`}
+      >
         <div className="flex items-center gap-1.5 min-w-0">
           {isEditing && (
-            <span className="drag-handle cursor-grab active:cursor-grabbing shrink-0 text-muted-foreground">
+            <span className="shrink-0 text-muted-foreground pointer-events-none" aria-hidden>
               <GripVertical className="h-4 w-4" />
             </span>
           )}
@@ -63,7 +66,7 @@ export function WidgetFrame({
             {title}
           </p>
         </div>
-        <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover/widget:opacity-100 transition-opacity">
+        <div className="widget-no-drag flex items-center gap-1 shrink-0 opacity-0 group-hover/widget:opacity-100 transition-opacity">
           {widget.viz !== 'text' && (
             <button
               onClick={() => downloadCsv(title, result.table)}
@@ -117,7 +120,7 @@ export function WidgetFrame({
           <span className="truncate">{drill.path.map((p) => p.value).join(' › ')}</span>
         </div>
       )}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div className={`flex-1 min-h-0 overflow-hidden ${isEditing ? 'widget-edit-body' : ''}`}>
         <WidgetErrorBoundary resetKey={`${widget.viz}:${widget.datasetId}`}>
           <WidgetBody
             widget={widget}

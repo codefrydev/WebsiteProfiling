@@ -1,4 +1,3 @@
-'use client';
 
 import { createContext, useContext, type ReactNode } from 'react';
 import { LANDING_DECK_SECTION_ORDER } from '@/components/landing/landingLayout';

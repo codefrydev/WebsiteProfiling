@@ -1,4 +1,3 @@
-'use client';
 
 import { FileSearch, FileText, Key, PenLine, Search, Sparkles } from 'lucide-react';
 import { strings } from '@/lib/strings';

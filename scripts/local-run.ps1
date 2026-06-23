@@ -1,4 +1,4 @@
-# Local dev: PostgreSQL in Docker (wp-pg), Python venv + Next.js on the host.
+# Local dev: PostgreSQL in Docker (wp-pg), Python venv + Vite/React SPA + BFF on the host.
 # Usage: .\local-run.ps1 [command]
 #   (default) start   — ensure DB, migrations, npm run dev
 #   setup           — DB + venv + deps + migrations (no web server)
@@ -254,10 +254,60 @@ function Invoke-Start {
     & $VENV_ALEMBIC upgrade head
     Assert-LastExitCode "Database migration failed (alembic upgrade head)"
     Invoke-WebDeps
-    Write-Log "Starting Next.js dev server (Ctrl+C to stop)"
+
+    $bffBase = if ($env:VITE_BFF_BASE_URL) { $env:VITE_BFF_BASE_URL } else { "http://localhost:8090" }
+    $fileServiceUrl = if ($env:FILE_SERVICE_URL) { $env:FILE_SERVICE_URL } else { "http://127.0.0.1:8080" }
+
+    if (Get-Command dotnet -ErrorAction SilentlyContinue) {
+        Write-Log "Starting FileService on port 8080"
+        $env:REPORT_API_URL = "http://127.0.0.1:8001"
+        Start-Process -FilePath "dotnet" `
+            -ArgumentList @("run", "--project", "src/FileService.Api", "--no-launch-profile") `
+            -WorkingDirectory (Join-Path $ROOT "services/FileService") `
+            -WindowStyle Minimized | Out-Null
+    } else {
+        Write-Warn "dotnet not found — PDF export requires FileService (see services/FileService/README.md)"
+    }
+
+    Write-Log "Starting pipeline worker"
+    Start-Process -FilePath $VENV_PYTHON `
+        -ArgumentList @("-m", "website_profiling.worker") `
+        -WorkingDirectory $ROOT `
+        -WindowStyle Minimized | Out-Null
+
+    Write-Log "Starting FastAPI on port 8001"
+    $env:FASTAPI_URL = "http://127.0.0.1:8001"
+    $env:FASTAPI_ALLOWED_ORIGINS = "http://localhost:8090"
+    Start-Process -FilePath $VENV_PYTHON `
+        -ArgumentList @("-m", "uvicorn", "website_profiling.api.main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1") `
+        -WorkingDirectory $ROOT `
+        -WindowStyle Minimized | Out-Null
+
+    if (Get-Command dotnet -ErrorAction SilentlyContinue) {
+        Write-Log "Starting BFF on port 8090"
+        $bffDir = Join-Path $ROOT "services/Bff"
+        $env:FASTAPI_URL = "http://127.0.0.1:8001"
+        $env:FILE_SERVICE_URL = $fileServiceUrl
+        $env:BFF_ALLOWED_ORIGINS = "http://localhost:3000"
+        $env:ASPNETCORE_URLS = "http://127.0.0.1:8090"
+        $env:ASPNETCORE_ENVIRONMENT = "Development"
+        Start-Process -FilePath "dotnet" `
+            -ArgumentList @("run", "--project", "src/Bff.Api", "--no-launch-profile") `
+            -WorkingDirectory $bffDir `
+            -WindowStyle Minimized | Out-Null
+    } else {
+        Write-Warn "dotnet not found — browser API calls need the BFF (see services/Bff/)"
+    }
+
+    $env:FILE_SERVICE_URL = $fileServiceUrl
+    $env:VITE_BFF_BASE_URL = $bffBase
+
+    Write-Log "Starting Vite dev server (Ctrl+C to stop)"
     Write-Log "DATABASE_URL=$($env:DATABASE_URL)"
     Write-Log "DATA_DIR=$($env:DATA_DIR)"
     Write-Log "PYTHON=$($env:PYTHON)"
+    Write-Log "VITE_BFF_BASE_URL=$bffBase"
+    Write-Log "FILE_SERVICE_URL=$fileServiceUrl"
     Push-Location $WEB
     try {
         & npm run dev

@@ -1,4 +1,3 @@
-'use client';
 
 import { useOptionalPipeline } from '@/context/PipelineContext';
 import { useOptionalReport } from '@/context/useReport';

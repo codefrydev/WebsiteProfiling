@@ -1,8 +1,7 @@
-'use client';
 
 import { useMemo } from 'react';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
   TrendingUp,
   ChevronRight,
@@ -42,7 +41,7 @@ export function OverviewSummaryTab({
   reportCount,
 }: OverviewSummaryTabProps) {
   const vo = strings.views.overview;
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const querySuffix = searchParams.toString() ? `?${searchParams.toString()}` : '';
   const keywordsHref = useMemo(
     () => buildKeywordsHref(searchParams.toString()),
@@ -124,7 +123,7 @@ export function OverviewSummaryTab({
         ) : null}
         <div className="print:hidden">
           <Link
-            href={exportHref}
+            to={exportHref}
             className="inline-flex items-center gap-2 text-sm font-medium text-link hover:underline"
           >
             <FileDown className="h-4 w-4" />
@@ -214,7 +213,7 @@ export function OverviewSummaryTab({
               <p className="text-xs text-muted-foreground max-w-2xl">{vo.reportComparisonTeaser}</p>
             </div>
             <Link
-              href={compareHref}
+              to={compareHref}
               className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 transition-colors"
             >
               {strings.views.compare.title}

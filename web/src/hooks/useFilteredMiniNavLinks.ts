@@ -1,4 +1,3 @@
-'use client';
 
 import { useMemo } from 'react';
 import { miniNavLinks, type NavItemId } from '@/lib/appNav';

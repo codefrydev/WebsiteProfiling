@@ -1,4 +1,3 @@
-'use client';
 
 import LinkAttributesPanel from '@/components/links/LinkAttributesPanel';
 import type { InlinkAnchorRow, LinkRelSummary } from '@/types/report';

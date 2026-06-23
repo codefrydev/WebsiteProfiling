@@ -1,7 +1,6 @@
-'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { Check, ChevronDown } from 'lucide-react';
 import { LLM_PROVIDER_LABELS, LLM_CLOUD_PROVIDERS } from '@/lib/llmProviderApiKeys';
 import { strings } from '@/lib/strings';
@@ -125,7 +124,7 @@ export default function ChatProviderPicker({
             {saveError ? <p className="px-1 text-red-400">{saveError}</p> : null}
             <div className="flex justify-end px-1">
               <Link
-                href="/secrets"
+                to="/secrets"
                 className="text-link hover:underline"
                 onClick={() => setOpen(false)}
               >

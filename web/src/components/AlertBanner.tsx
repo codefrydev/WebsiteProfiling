@@ -1,4 +1,3 @@
-'use client';
 
 import { useState, type ReactNode } from 'react';
 import { AlertTriangle, Info, XCircle, CheckCircle, X, ChevronRight, ChevronDown } from 'lucide-react';

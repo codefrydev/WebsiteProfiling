@@ -1,4 +1,3 @@
-'use client';
 
 import type { LinkDetail } from '@/types/report';
 

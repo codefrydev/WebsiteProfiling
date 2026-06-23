@@ -1,4 +1,3 @@
-'use client';
 
 import { useState } from 'react';
 import { CheckCircle, XCircle, ChevronDown, ChevronUp, Zap, Image, Code2, Search, Shield, Clock, type LucideIcon } from 'lucide-react';

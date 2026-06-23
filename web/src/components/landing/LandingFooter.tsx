@@ -1,6 +1,5 @@
-'use client';
 
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import type { ReactNode } from 'react';
 import { ExternalLink } from 'lucide-react';
 import AppLogo from '@/components/AppLogo';
@@ -34,7 +33,7 @@ function FooterLink({
     );
   }
   return (
-    <Link href={href} className={className}>
+    <Link to={href} className={className}>
       {children}
     </Link>
   );

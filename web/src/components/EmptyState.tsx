@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import type { LucideIcon } from 'lucide-react';
 import Button from './Button';
 
@@ -45,7 +45,7 @@ function ActionButton({
       {action.label}
     </Button>
   );
-  return action.href ? <Link href={action.href}>{btn}</Link> : btn;
+  return action.href ? <Link to={action.href}>{btn}</Link> : btn;
 }
 
 /**

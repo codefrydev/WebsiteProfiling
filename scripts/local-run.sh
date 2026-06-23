@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Local dev: PostgreSQL in Docker (wp-pg), Python venv + Next.js on the host.
+# Local dev: PostgreSQL in Docker (wp-pg), Python venv + Vite on the host.
 # Usage: ./local-run [command]
-#   (default) start   — ensure DB, migrations, npm run dev
+#   (default) start   — ensure DB, migrations, vite dev + BFF
 #   setup           — DB + venv + deps + migrations (no web server)
 #   db              — start Postgres container only
 #   migrate         — alembic upgrade head
@@ -43,6 +43,60 @@ free_port() {
     kill $pids 2>/dev/null || true
     sleep 0.3
   fi
+}
+
+# Send signal to a process and its descendants (dotnet/npm subshell trees).
+kill_process_tree() {
+  local pid="$1"
+  local sig="${2:-TERM}"
+  local child
+  [[ -z "$pid" ]] && return 0
+  for child in $(pgrep -P "$pid" 2>/dev/null || true); do
+    kill_process_tree "$child" "$sig"
+  done
+  kill "-$sig" "$pid" 2>/dev/null || true
+}
+
+wait_for_pid() {
+  local pid="$1"
+  local timeout="${2:-10}"
+  local i
+  [[ -z "$pid" ]] && return 0
+  for ((i = 0; i < timeout * 2; i++)); do
+    kill -0 "$pid" 2>/dev/null || return 0
+    sleep 0.5
+  done
+  return 1
+}
+
+stop_service() {
+  local name="$1"
+  local pid="$2"
+  local port="${3:-}"
+  [[ -z "$pid" ]] && return 0
+  if ! kill -0 "$pid" 2>/dev/null; then
+    wait "$pid" 2>/dev/null || true
+    log "$name already stopped."
+    [[ -n "$port" ]] && free_port "$port"
+    return 0
+  fi
+  log "Stopping $name (PID $pid)..."
+  kill_process_tree "$pid" TERM
+  if ! wait_for_pid "$pid" 10; then
+    warn "$name did not exit in time — sending SIGKILL"
+    kill_process_tree "$pid" KILL
+    wait_for_pid "$pid" 2 || true
+  fi
+  wait "$pid" 2>/dev/null || true
+  log "$name stopped."
+  [[ -n "$port" ]] && free_port "$port"
+}
+
+# Detach background jobs so bash does not print "Terminated" after cleanup.
+disown_bg() {
+  local pid="$1"
+  [[ -z "$pid" ]] && return 0
+  disown "$pid" 2>/dev/null || true
 }
 
 need_cmd() {
@@ -153,13 +207,33 @@ cmd_start() {
   WORKER_PID=""
   UVICORN_PID=""
   FILE_SERVICE_PID=""
+  BFF_PID=""
+  _CLEANUP_DONE=0
+  set +m
 
   cleanup_local() {
-    [ -n "$WORKER_PID" ] && kill "$WORKER_PID" 2>/dev/null || true
-    [ -n "$UVICORN_PID" ] && kill "$UVICORN_PID" 2>/dev/null || true
-    [ -n "$FILE_SERVICE_PID" ] && kill "$FILE_SERVICE_PID" 2>/dev/null || true
+    if [[ "$_CLEANUP_DONE" -eq 1 ]]; then
+      return 0
+    fi
+    _CLEANUP_DONE=1
+    trap - INT TERM EXIT
+    set +e
+
+    log "Shutting down local dev stack..."
+    # Reverse startup order; Vite (foreground) is already exiting from Ctrl+C.
+    stop_service "BFF" "$BFF_PID" 8090
+    BFF_PID=""
+    stop_service "FastAPI" "$UVICORN_PID" 8001
+    UVICORN_PID=""
+    stop_service "pipeline worker" "$WORKER_PID"
+    WORKER_PID=""
+    stop_service "FileService" "$FILE_SERVICE_PID" 8080
+    FILE_SERVICE_PID=""
+    stop_postgres
+    log "All services stopped."
+    exit 0
   }
-  trap cleanup_local INT TERM EXIT
+  trap cleanup_local EXIT INT TERM
 
   if command -v dotnet >/dev/null 2>&1; then
     free_port 8080
@@ -170,6 +244,7 @@ cmd_start() {
       ASPNETCORE_ENVIRONMENT=Development \
       dotnet run --project src/FileService.Api --no-launch-profile) &
     FILE_SERVICE_PID=$!
+    disown_bg "$FILE_SERVICE_PID"
   else
     warn "dotnet not found — PDF export requires FileService (see services/FileService/README.md)"
   fi
@@ -177,33 +252,71 @@ cmd_start() {
   log "Starting pipeline worker"
   "$VENV/bin/python" -m website_profiling.worker &
   WORKER_PID=$!
+  disown_bg "$WORKER_PID"
 
   free_port 8001
   log "Starting FastAPI on port 8001"
   export FASTAPI_URL="http://127.0.0.1:8001"
-  export FASTAPI_ALLOWED_ORIGINS="http://localhost:3000"
+  export FASTAPI_ALLOWED_ORIGINS="http://localhost:8090"
   "$VENV/bin/uvicorn" website_profiling.api.main:app \
     --host 0.0.0.0 --port 8001 --workers 1 &
   UVICORN_PID=$!
+  disown_bg "$UVICORN_PID"
 
-  log "Starting Next.js dev server (Ctrl+C to stop)"
+  if command -v dotnet >/dev/null 2>&1; then
+    free_port 8090
+    log "Starting BFF on port 8090"
+    (cd "$ROOT/services/Bff" && \
+      FASTAPI_URL="http://127.0.0.1:8001" \
+      FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}" \
+      BFF_ALLOWED_ORIGINS="http://localhost:3000" \
+      ASPNETCORE_URLS="http://127.0.0.1:8090" \
+      ASPNETCORE_ENVIRONMENT=Development \
+      dotnet run --project src/Bff.Api --no-launch-profile) &
+    BFF_PID=$!
+    disown_bg "$BFF_PID"
+  else
+    warn "dotnet not found — browser API calls need the BFF (see services/Bff/)"
+  fi
+
+  log "Starting Vite dev server (Ctrl+C stops all services including Postgres)"
   log "DATABASE_URL=$DATABASE_URL"
   log "DATA_DIR=$DATA_DIR"
   log "PYTHON=$PYTHON"
+  log "VITE_BFF_BASE_URL=${VITE_BFF_BASE_URL:-http://localhost:8090}"
   log "FILE_SERVICE_URL=${FILE_SERVICE_URL:-http://127.0.0.1:8080}"
   export FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}"
+  export VITE_BFF_BASE_URL="${VITE_BFF_BASE_URL:-http://localhost:8090}"
   cd "$WEB"
-  # Do not exec — keep this shell alive so the trap kills FileService/worker/uvicorn on Ctrl+C.
+  set +e
   npm run dev
+  exit 0
 }
 
 cmd_stop() {
-  ensure_docker
+  need_cmd docker
+  if ! docker info >/dev/null 2>&1; then
+    die "Docker is not running. Start Docker Desktop, then retry."
+  fi
   if docker ps --format '{{.Names}}' | grep -qx "$PG_CONTAINER"; then
-    log "Stopping $PG_CONTAINER"
-    docker stop "$PG_CONTAINER" >/dev/null
+    stop_postgres
   else
     warn "Container $PG_CONTAINER is not running"
+  fi
+}
+
+stop_postgres() {
+  if ! command -v docker >/dev/null 2>&1; then
+    return 0
+  fi
+  if ! docker info >/dev/null 2>&1; then
+    warn "Docker unavailable — skipping Postgres stop"
+    return 0
+  fi
+  if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$PG_CONTAINER"; then
+    log "Stopping $PG_CONTAINER"
+    docker stop "$PG_CONTAINER" >/dev/null 2>&1 || warn "Could not stop $PG_CONTAINER"
+    log "Postgres stopped."
   fi
 }
 
@@ -212,7 +325,7 @@ cmd_help() {
 Local dev runner — Postgres in Docker, app on your machine
 
   ./local-run              Same as: start
-  ./local-run start        DB + migrations + npm run dev
+  ./local-run start        DB + migrations + npm run dev (Ctrl+C stops all services + Postgres)
   ./local-run setup        One-time setup (no dev server)
   ./local-run db           Start Postgres only
   ./local-run migrate      Run alembic upgrade head
@@ -226,7 +339,7 @@ Environment overrides (optional):
 After start, open: http://localhost:3000/home
 Run audits via sidebar "Run audit" (bottom-right FAB).
 
-Production Next.js (same Postgres, no hot reload): ./local-prod start
+Production build (same Postgres, no hot reload): ./local-prod start
 
 Run CI-style tests: ./local-test (see ./local-test help). JS crawl integration: ./local-test browser.
 EOF

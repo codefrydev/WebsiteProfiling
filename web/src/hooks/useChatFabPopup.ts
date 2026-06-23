@@ -1,7 +1,6 @@
-'use client';
 
 import { useCallback, useRef, useState } from 'react';
-import { apiFetch } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { consumeChatSse, type ChatSseEvent } from '@/components/chat/parseChatSse';
 import type { ChatNarrative } from '@/types/chatNarrative';
 
@@ -45,7 +44,7 @@ export function useChatFabPopup(domain: string | null): UseChatFabPopupReturn {
     if (!domain) return null;
     setResolving(true);
     try {
-      const res = await apiFetch('/api/properties');
+      const res = await apiFetch(apiUrl('/properties'));
       const data = (await res.json()) as {
         properties?: Array<{ id: number; canonical_domain?: string; name?: string }>;
       };
@@ -70,7 +69,7 @@ export function useChatFabPopup(domain: string | null): UseChatFabPopupReturn {
   const ensureSession = useCallback(async (pid: number): Promise<number | null> => {
     if (sessionIdRef.current) return sessionIdRef.current;
     try {
-      const res = await apiFetch('/api/chat/sessions', {
+      const res = await apiFetch(apiUrl('/chat/sessions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ propertyId: pid, title: 'Quick chat' }),
@@ -138,7 +137,7 @@ export function useChatFabPopup(domain: string | null): UseChatFabPopupReturn {
             return;
           }
 
-          const res = await apiFetch('/api/chat', {
+          const res = await apiFetch(apiUrl('/chat'), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ sessionId: sid, propertyId: pid, message: text }),

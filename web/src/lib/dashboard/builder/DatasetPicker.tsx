@@ -1,4 +1,3 @@
-'use client';
 
 import { datasetsByGroup } from '@/lib/dashboard/engine/datasets';
 

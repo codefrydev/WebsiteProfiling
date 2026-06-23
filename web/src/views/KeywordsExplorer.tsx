@@ -1,10 +1,9 @@
-'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import type { KeywordRow, KeywordReportData, ViewProps } from '@/types';
 import type { CannibalisationItem, KeywordHistoryMap, QueryPageMisalignmentItem } from '@/types/components';
 import { Key, Settings2, Play, Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
@@ -58,7 +57,7 @@ const EMPTY_ROWS: KeywordRow[] = [];
 const EMPTY_HISTORY: KeywordHistoryMap = {};
 
 export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { data, startUrlByRunId, selectedReportId, loadReport } = useReport();
   useSectionData('keywords');
   const keywordsReady = useSectionsViewReady(['keywords']);
@@ -325,7 +324,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
           <p className="text-xs text-muted-foreground mb-6">{ke.emptyHint}</p>
           <Button
             variant="primary"
-            onClick={() => goToPipeline(router.push, { preset: 'keywords-explorer' })}
+            onClick={() => goToPipeline(navigate, { preset: 'keywords-explorer' })}
           >
             <Play className="h-4 w-4" aria-hidden />
             {ke.runInPipeline}

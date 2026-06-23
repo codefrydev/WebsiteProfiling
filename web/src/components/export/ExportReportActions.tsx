@@ -1,7 +1,6 @@
-'use client';
 
 import { useCallback, useMemo } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Download, FileText } from 'lucide-react';
 import { useReport } from '@/context/useReport';
 import { buildAuditExportUrl, type PdfExportProfile } from '@/lib/exportAudit';
@@ -25,9 +24,9 @@ function parseProfile(raw: string | null): PdfExportProfile {
 export default function ExportReportActions() {
   const { selectedReportId, reportList } = useReport();
   const reportId = selectedReportId ?? reportList?.[0]?.id ?? null;
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   const profile = parseProfile(searchParams.get('profile'));
   const branding = searchParams.get('branding') !== 'false';
@@ -46,9 +45,9 @@ export default function ExportReportActions() {
         else p.set(key, value);
       }
       const qs = p.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      navigate(qs ? `${pathname}?${qs}` : pathname, { replace: true, preventScrollReset: true });
     },
-    [pathname, router, searchParams],
+    [pathname, navigate, searchParams],
   );
 
   const secondaryBtn =

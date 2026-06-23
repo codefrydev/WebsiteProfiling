@@ -1,16 +1,21 @@
-'use client';
-
-import { useMemo } from 'react';
-import GridLayout from 'react-grid-layout/legacy';
+import { useCallback, useMemo } from 'react';
+import GridLayout, {
+  verticalCompactor,
+  type Layout,
+  type LayoutItem,
+} from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import type { Layout, LayoutItem } from 'react-grid-layout';
+import './dashboardGrid.css';
 import { WidgetFrame } from '@/lib/dashboard/widgets/WidgetFrame';
 import type { Widget } from '@/lib/dashboard/engine/doc';
 import type { QuerySpec } from '@/lib/dashboard/engine/types';
 
 const COLS = 12;
 const ROW_HEIGHT = 80;
+const GRID_MARGIN: [number, number] = [12, 12];
+const GRID_PADDING: [number, number] = [0, 0];
+const RESIZE_HANDLES = ['se', 's', 'e'] as const;
 
 interface DashboardCanvasProps {
   widgets: Widget[];
@@ -25,7 +30,6 @@ interface DashboardCanvasProps {
   onEditWidget?: (id: string) => void;
   onRemoveWidget?: (id: string) => void;
   onDuplicateWidget?: (id: string) => void;
-  onSelectWidget?: (id: string) => void;
   onCrossFilter?: (widgetId: string, category: string, seriesKey?: string) => void;
   onDrillUp?: (id: string) => void;
 }
@@ -41,7 +45,6 @@ export function DashboardCanvas({
   onEditWidget,
   onRemoveWidget,
   onDuplicateWidget,
-  onSelectWidget,
   onCrossFilter,
   onDrillUp,
 }: DashboardCanvasProps) {
@@ -59,28 +62,40 @@ export function DashboardCanvas({
     [widgets],
   );
 
+  const persistLayout = useCallback(
+    (next: Layout) => {
+      onLayoutChange(next);
+    },
+    [onLayoutChange],
+  );
+
   return (
     <GridLayout
-      className="layout"
-      layout={layout}
-      cols={COLS}
-      rowHeight={ROW_HEIGHT}
       width={containerWidth}
-      isDraggable={isEditing}
-      isResizable={isEditing}
-      draggableHandle=".drag-handle"
-      onDragStop={onLayoutChange}
-      onResizeStop={onLayoutChange}
-      margin={[12, 12]}
-      containerPadding={[0, 0]}
-      resizeHandles={['se', 's', 'e']}
+      layout={layout}
+      gridConfig={{
+        cols: COLS,
+        rowHeight: ROW_HEIGHT,
+        margin: GRID_MARGIN,
+        containerPadding: GRID_PADDING,
+      }}
+      dragConfig={{
+        enabled: isEditing,
+        handle: '.drag-handle',
+        cancel: '.widget-no-drag',
+        threshold: 0,
+      }}
+      resizeConfig={{
+        enabled: isEditing,
+        handles: [...RESIZE_HANDLES],
+      }}
+      compactor={verticalCompactor}
+      className={isEditing ? 'layout dashboard-grid-editing' : 'layout'}
+      onDragStop={persistLayout}
+      onResizeStop={persistLayout}
     >
       {widgets.map((widget) => (
-        <div
-          key={widget.id}
-          style={{ overflow: 'hidden' }}
-          onMouseDownCapture={isEditing && onSelectWidget ? () => onSelectWidget(widget.id) : undefined}
-        >
+        <div key={widget.id} className="widget-grid-slot">
           <WidgetFrame
             widget={widget}
             isEditing={isEditing}

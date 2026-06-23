@@ -1,4 +1,3 @@
-'use client';
 
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Accessibility, ChevronDown, ChevronRight, List } from 'lucide-react';

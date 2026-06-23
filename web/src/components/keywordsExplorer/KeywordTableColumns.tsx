@@ -1,4 +1,3 @@
-'use client';
 
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { formatGscCtr } from '../../lib/gscMetrics';

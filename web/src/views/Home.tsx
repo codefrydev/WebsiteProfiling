@@ -5,7 +5,7 @@ import {
   Plus,
   Search,
 } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { PageLayout, Button } from '../components';
 import PortfolioGroupList from '@/components/portfolio/home/PortfolioGroupList';
@@ -106,13 +106,13 @@ export default function Home({ onNavigate }: ViewProps) {
           <p className="mt-1 text-sm text-muted-foreground">{vh.greetingTagline}</p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Link href="/chat">
+          <Link to="/chat">
             <Button variant="secondary">
               <MessageSquare className="h-4 w-4" aria-hidden />
               {vh.quickActionChatLabel}
             </Button>
           </Link>
-          <Link href="/pipeline">
+          <Link to="/pipeline">
             <Button variant="primary">
               <Plus className="h-4 w-4" aria-hidden />
               {vh.quickActionRunLabel}

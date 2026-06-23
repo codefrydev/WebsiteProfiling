@@ -1,0 +1,1288 @@
+@import "tailwindcss";
+
+@source "./**/*.{js,jsx,ts,tsx}";
+@source "../index.html";
+
+/* Class-based dark mode (html.dark) — toggled by ThemeProvider + inline FOUC script */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Semantic palette: :root = light, html.dark = dark */
+:root {
+  --font-dm-sans: 'DM Sans Variable', system-ui, sans-serif;
+  color-scheme: light;
+  --app-bg: #f8fafc;
+  --app-bg-elevated: #ffffff;
+  --app-bg-muted: #f1f5f9;
+  /* Image placeholders / sunken panels (maps to Tailwind brand-950) */
+  --app-bg-sunken: #e2e8f0;
+  /* Derived border/track/overlay from editable heading token so custom palette auto-follows */
+  --app-border: color-mix(in srgb, var(--app-text-heading) 14%, transparent);
+  --app-border-muted: color-mix(in srgb, var(--app-text-heading) 9%, transparent);
+  --app-text: #334155;
+  --app-text-heading: #0f172a;
+  --app-text-subtle: #526077;
+  --app-input: var(--app-bg-elevated);
+  --app-track: color-mix(in srgb, var(--app-text-heading) 8%, transparent);
+  --app-overlay: color-mix(in srgb, var(--app-text-heading) 45%, transparent);
+  --scrollbar-track: var(--app-bg-muted);
+  --scrollbar-thumb: #cbd5e1;
+  --chart-grid: rgba(148, 163, 184, 0.4);
+  --chart-legend: #64748b;
+  --chart-title: #64748b;
+  --code-bg: var(--app-bg-muted);
+  --shadow-elevated:
+    rgba(15, 23, 42, 0.06) 0 10px 15px -3px, rgba(15, 23, 42, 0.04) 0 4px 6px -2px;
+
+  --text: var(--app-text);
+  --text-h: var(--app-text-heading);
+  --bg: var(--app-bg);
+  --border: var(--app-border);
+  --accent: #2563eb;
+  /* Derived accent alpha tokens — auto-follow when --accent is customized */
+  --accent-bg: color-mix(in srgb, var(--accent) 10%, transparent);
+  --accent-border: color-mix(in srgb, var(--accent) 45%, transparent);
+  --social-bg: rgba(241, 245, 249, 0.8);
+  --shadow: var(--shadow-elevated);
+  /* Links / interactive blue (readable on light surfaces) */
+  --app-link: #1d4ed8;
+  --app-link-soft: #1e3a8a;
+
+  --chat-bg: var(--app-bg);
+  --chat-surface: var(--app-bg-elevated);
+  --chat-surface-hover: var(--app-bg-muted);
+  --chat-glow: rgba(66, 97, 255, 0.08);
+  --chat-glow-secondary: rgba(138, 79, 255, 0.04);
+
+  /* Warm secondary accent (welcome moments / highlights) — complements the cool blue */
+  --accent-warm: #f97316;
+  --accent-warm-soft: #fb923c;
+  --accent-2: #8b5cf6;
+  --surface-warm: color-mix(in srgb, var(--accent-warm) 6%, transparent);
+
+  /* Elevation scale (depth) */
+  --elevation-1: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --elevation-2: 0 6px 16px -4px rgba(15, 23, 42, 0.1);
+  --elevation-3: 0 16px 36px -8px rgba(15, 23, 42, 0.18);
+
+  /* Semantic status / severity colors */
+  --color-danger: #ef4444;
+  --color-danger-bg: color-mix(in srgb, #ef4444 10%, transparent);
+  --color-danger-border: color-mix(in srgb, #ef4444 35%, transparent);
+  --color-warning: #f59e0b;
+  --color-warning-bg: color-mix(in srgb, #f59e0b 10%, transparent);
+  --color-warning-border: color-mix(in srgb, #f59e0b 35%, transparent);
+  --color-success: #22c55e;
+  --color-success-bg: color-mix(in srgb, #22c55e 10%, transparent);
+  --color-success-border: color-mix(in srgb, #22c55e 35%, transparent);
+  --color-info: var(--accent);
+  --color-info-bg: var(--accent-bg);
+  --color-info-border: var(--accent-border);
+
+  /* Chat surface tokens (referenced by components, overridable by user) */
+  --chat-header-bg: #030712;
+  --chat-header-fg: rgba(255, 255, 255, 0.9);
+  --chat-header-fg-muted: rgba(255, 255, 255, 0.5);
+  --chat-user-bubble: var(--accent);
+  --chat-user-bubble-fg: #ffffff;
+  --chat-assistant-bubble: var(--app-bg-sunken);
+  --status-online: #22c55e;
+  --status-online-ping: rgba(34, 197, 94, 0.6);
+
+  /* Motion tokens (theme-independent) */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-fast: 120ms;
+  --dur-base: 220ms;
+  --dur-slow: 420ms;
+}
+
+html.dark {
+  color-scheme: dark;
+  --app-bg: #0b0f19;
+  --app-bg-elevated: #111827;
+  --app-bg-muted: #1f2937;
+  --app-bg-sunken: #06080f;
+  /* Derived border/track/overlay — auto-follow custom --app-text-heading on dark */
+  --app-border: color-mix(in srgb, var(--app-text-heading) 7%, transparent);
+  --app-border-muted: color-mix(in srgb, var(--app-text-heading) 4%, transparent);
+  --app-text: #cbd5e1;
+  --app-text-heading: #e2e8f0;
+  --app-text-subtle: #64748b;
+  --app-input: var(--app-bg);
+  --app-track: color-mix(in srgb, var(--app-text-heading) 6%, transparent);
+  --app-overlay: color-mix(in srgb, black 55%, transparent);
+  --scrollbar-track: var(--app-bg);
+  --scrollbar-thumb: #374151;
+  --chart-grid: rgba(100, 116, 139, 0.45);
+  --chart-legend: #94a3b8;
+  --chart-title: #94a3b8;
+  --code-bg: #1f2028;
+  --shadow-elevated:
+    rgba(0, 0, 0, 0.35) 0 10px 15px -3px, rgba(0, 0, 0, 0.22) 0 4px 6px -2px;
+
+  --text: var(--app-text);
+  --text-h: var(--app-text-heading);
+  --bg: var(--app-bg);
+  --border: var(--app-border);
+  --accent: #60a5fa;
+  /* Derived accent alpha tokens — auto-follow when --accent is customized */
+  --accent-bg: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-border: color-mix(in srgb, var(--accent) 45%, transparent);
+  --social-bg: rgba(47, 48, 58, 0.5);
+  --shadow: var(--shadow-elevated);
+  --app-link: #60a5fa;
+  --app-link-soft: #93c5fd;
+
+  --chat-bg: var(--app-bg);
+  --chat-surface: var(--app-bg-elevated);
+  --chat-surface-hover: var(--app-bg-muted);
+  --chat-glow: rgba(37, 99, 235, 0.06);
+  --chat-glow-secondary: rgba(37, 99, 235, 0.03);
+
+  /* Warm secondary accent — brighter on dark surfaces */
+  --accent-warm: #fb923c;
+  --accent-warm-soft: #fdba74;
+  --accent-2: #a78bfa;
+  --surface-warm: color-mix(in srgb, var(--accent-warm) 8%, transparent);
+
+  /* Elevation scale — deeper shadows on dark */
+  --elevation-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --elevation-2: 0 6px 16px -4px rgba(0, 0, 0, 0.45);
+  --elevation-3: 0 16px 36px -8px rgba(0, 0, 0, 0.55);
+
+  /* Semantic status / severity colors (dark) */
+  --color-danger: #f87171;
+  --color-danger-bg: color-mix(in srgb, #f87171 12%, transparent);
+  --color-danger-border: color-mix(in srgb, #f87171 35%, transparent);
+  --color-warning: #fbbf24;
+  --color-warning-bg: color-mix(in srgb, #fbbf24 12%, transparent);
+  --color-warning-border: color-mix(in srgb, #fbbf24 35%, transparent);
+  --color-success: #4ade80;
+  --color-success-bg: color-mix(in srgb, #4ade80 12%, transparent);
+  --color-success-border: color-mix(in srgb, #4ade80 35%, transparent);
+
+  /* Chat surface tokens (dark) */
+  --chat-header-bg: #030712;
+  --chat-header-fg: rgba(255, 255, 255, 0.9);
+  --chat-header-fg-muted: rgba(255, 255, 255, 0.5);
+  --chat-user-bubble: var(--accent);
+  --chat-user-bubble-fg: #ffffff;
+  --chat-assistant-bubble: var(--app-bg-sunken);
+  --status-online: #4ade80;
+  --status-online-ping: rgba(74, 222, 128, 0.6);
+}
+
+@theme {
+  /* Map legacy brand scale to semantic surfaces (theme-aware) */
+  --color-brand-900: var(--app-bg);
+  --color-brand-800: var(--app-bg-elevated);
+  --color-brand-700: var(--app-bg-muted);
+  --color-brand-950: var(--app-bg-sunken);
+
+  --border-color-default: var(--app-border);
+  --border-color-muted: var(--app-border-muted);
+
+  --color-bright: var(--app-text-heading);
+  --color-foreground: var(--app-text);
+  --color-muted-foreground: var(--app-text-subtle);
+
+  --color-muted: var(--app-border-muted);
+  --color-track: var(--app-track);
+
+  --color-link: var(--app-link);
+  --color-link-soft: var(--app-link-soft);
+
+  --color-accent-warm: var(--accent-warm);
+  --color-accent-warm-soft: var(--accent-warm-soft);
+  --color-accent-2: var(--accent-2);
+
+  --color-danger: var(--color-danger);
+  --color-warning: var(--color-warning);
+  --color-success: var(--color-success);
+  --color-status-online: var(--status-online);
+
+  --shadow-elevation-1: var(--elevation-1);
+  --shadow-elevation-2: var(--elevation-2);
+  --shadow-elevation-3: var(--elevation-3);
+
+  --radius-sm: 0.5rem;
+  --radius-card: 1rem;
+  --radius-lg: 1.25rem;
+  --radius-xl: 1.5rem;
+
+  --spacing-page-x: 1.5rem;
+  --spacing-page-y: 1.5rem;
+  --spacing-card: 1.25rem;
+}
+
+:root {
+  --font-size-base: 18px;
+  font: var(--font-size-base)/145% var(--font-dm-sans), var(--sans, system-ui, "Segoe UI", Roboto, sans-serif);
+  letter-spacing: 0.18px;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+html,
+body {
+  min-height: 100vh;
+}
+
+body {
+  margin: 0;
+  background: var(--app-bg);
+  color: var(--app-text);
+}
+
+/* The landing deck renders on a fixed, uniformly-scaled canvas. Keep the root
+   font size stable there so rem-based slide text isn't shrunk a second time by
+   the global ≤1024px step above — that would break the "identical at every
+   size" guarantee. Specificity (0,1,1) beats the :root media rule. */
+html:has(.landing-grid-bg) {
+  font-size: 18px;
+}
+
+/* Report layout: scrollbar (theme-aware) */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  filter: brightness(1.08);
+}
+
+/* Full-height views (Links, Network): single internal scroll, no outer page scroll */
+#viewContainer:has([data-full-height]) {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+#viewContainer:has([data-full-height]) > .fade-in {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.fade-in {
+  animation: fadeIn var(--dur-base, 0.3s) var(--ease-out, ease-in-out);
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fade-in {
+    animation: none;
+  }
+}
+
+.tab-active {
+  background-color: var(--accent-bg);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+h1,
+h2 {
+  font-family: var(--heading, system-ui, "Segoe UI", Roboto, sans-serif);
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+/* Reset h1 — app views use Tailwind (text-3xl, mb-*, etc.). Legacy hero margins caused a huge gap under the top nav. */
+h1 {
+  margin: 0;
+  font-size: inherit;
+  letter-spacing: inherit;
+}
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+  @media (max-width: 1024px) {
+    font-size: 20px;
+  }
+}
+p {
+  margin: 0;
+}
+
+code,
+.counter {
+  font-family: var(--mono, ui-monospace, Consolas, monospace);
+  display: inline-flex;
+  border-radius: 4px;
+  color: var(--text-h);
+}
+
+code {
+  font-size: 15px;
+  line-height: 135%;
+  padding: 4px 8px;
+  background: var(--code-bg);
+}
+
+/* Chat shell layout — explicit breakpoints so sidebar participates in flex on desktop */
+.chat-sidebar-rail {
+  position: relative;
+  z-index: 40;
+  display: flex;
+  height: 100%;
+  width: 3.5rem;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  border-right: 1px solid var(--app-border-muted);
+  background: var(--app-bg-elevated);
+  padding: 0.75rem 0;
+}
+
+.chat-sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  border: 0;
+  background: var(--app-overlay);
+}
+
+.chat-sidebar-panel {
+  z-index: 40;
+  display: flex;
+  height: 100%;
+  width: 17.5rem;
+  flex-shrink: 0;
+  flex-direction: column;
+  border-right: 1px solid var(--app-border-muted);
+  background: var(--app-bg-elevated);
+}
+
+@media (max-width: 767px) {
+  .chat-sidebar-backdrop {
+    display: block;
+  }
+
+  .chat-sidebar-panel {
+    position: fixed;
+    inset: 0 auto 0 0;
+  }
+}
+
+@media (min-width: 768px) {
+  .chat-sidebar-backdrop {
+    display: none;
+  }
+
+  .chat-sidebar-panel {
+    position: relative;
+  }
+}
+
+/* Chat shell — explicit height chain (flex-1 alone was not filling the viewport) */
+.chat-shell-main {
+  position: relative;
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-main-panel {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex: 1 1 0%;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chat-context-bar {
+  position: relative;
+  z-index: 10;
+  flex-shrink: 0;
+}
+
+/* Grid pins composer to the bottom; messages scroll in the top row */
+.chat-conversation {
+  display: grid;
+  min-height: 0;
+  flex: 1 1 0%;
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.chat-messages-scroll {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.chat-composer-dock {
+  border-top: 1px solid var(--app-border-muted);
+  background: color-mix(in srgb, var(--app-bg) 92%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+/* Chat page ambient glow */
+.chat-glow {
+  background: radial-gradient(
+    ellipse 90% 60% at 50% 42%,
+    var(--chat-glow) 0%,
+    var(--chat-glow-secondary) 40%,
+    transparent 72%
+  );
+}
+
+.chat-hero-input {
+  box-shadow:
+    0 0 0 1px var(--app-border),
+    var(--elevation-2);
+}
+
+.chat-hero-input:focus-within {
+  box-shadow:
+    0 0 0 1px var(--accent-border),
+    var(--elevation-3);
+}
+
+/* Chat markdown prose */
+.chat-prose {
+  color: var(--app-text);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.chat-prose-h1,
+.chat-prose-h2,
+.chat-prose-h3 {
+  color: var(--app-text-heading);
+  font-weight: 600;
+  margin: 1rem 0 0.5rem;
+}
+
+.chat-prose-h1 { font-size: 1.125rem; }
+.chat-prose-h2 { font-size: 1rem; }
+.chat-prose-h3 {
+  font-size: 0.9375rem;
+  margin-top: 1.25rem;
+  padding-top: 0.25rem;
+  color: var(--app-text-heading);
+}
+
+.chat-prose > h3:first-child,
+.chat-prose > h4:first-child,
+.chat-prose > h5:first-child {
+  margin-top: 0;
+}
+
+.chat-prose-p {
+  margin: 0.5rem 0;
+}
+
+.chat-prose-ul,
+.chat-prose-ol {
+  margin: 0.5rem 0;
+  padding-left: 1.25rem;
+}
+
+.chat-prose-li {
+  margin: 0.25rem 0;
+}
+
+.chat-prose-a {
+  color: var(--app-link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
+}
+
+.chat-prose-blockquote {
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid var(--app-border);
+  border-radius: 0 0.375rem 0.375rem 0;
+  color: var(--app-text-subtle);
+  background: rgb(255 255 255 / 0.02);
+}
+
+.chat-prose-insight {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border-left: 3px solid rgb(245 158 11 / 0.55);
+  border-radius: 0 0.375rem 0.375rem 0;
+  background: rgb(245 158 11 / 0.08);
+  color: var(--app-text);
+}
+
+.chat-prose-insight-title {
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  border-left: 3px solid rgb(245 158 11 / 0.55);
+  background: rgb(245 158 11 / 0.08);
+  color: rgb(253 230 138 / 0.95);
+}
+
+.chat-prose > .chat-prose-insight-title:first-child {
+  margin-top: 0;
+}
+
+.chat-prose-ol {
+  counter-reset: chat-rec;
+}
+
+.chat-prose-ol > .chat-prose-li {
+  margin: 0.5rem 0;
+  padding-left: 0.25rem;
+}
+
+.chat-prose-ol > .chat-prose-li::marker {
+  font-weight: 600;
+  color: var(--accent, rgb(96 165 250));
+}
+
+.chat-prose-hr {
+  margin: 1rem 0;
+  border: 0;
+  border-top: 1px solid var(--app-border-muted);
+}
+
+.chat-prose-table-wrap {
+  margin: 0.75rem 0;
+  overflow-x: auto;
+}
+
+.chat-prose-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+
+.chat-prose-th,
+.chat-prose-td {
+  border: 1px solid var(--app-border-muted);
+  padding: 0.375rem 0.5rem;
+  text-align: left;
+}
+
+.chat-prose-th {
+  background: var(--app-bg-muted);
+  font-weight: 600;
+}
+
+.chat-prose-pre {
+  margin: 0.75rem 0;
+}
+
+.chat-inline-code {
+  border-radius: 0.25rem;
+  background: var(--code-bg);
+  padding: 0.125rem 0.375rem;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 0.8125rem;
+}
+
+.chat-assistant-card {
+  border-color: var(--app-border-muted);
+  background: rgb(255 255 255 / 0.02);
+}
+
+.chat-assistant-card-partial {
+  border-top: 3px solid rgb(245 158 11 / 0.55);
+}
+
+.chat-prose-nested {
+  font-size: 0.8125rem;
+}
+
+.chat-prose-nested .chat-prose-h1,
+.chat-prose-nested .chat-prose-h2,
+.chat-prose-nested .chat-prose-h3 {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+}
+
+.chat-insight-sections .chat-prose {
+  margin-top: 0;
+}
+
+.chat-prose-table-wrap thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.chat-prose-pre pre,
+.chat-prose pre {
+  max-height: 16rem;
+  overflow: auto;
+}
+
+/* Focus visibility for keyboard users */
+.nav-btn:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Landing page polish */
+.landing-grid-bg {
+  background-image:
+    radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--app-text-subtle) 14%, transparent) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.landing-gradient-text {
+  background: linear-gradient(135deg, var(--app-link) 0%, var(--accent-2) 52%, var(--accent-warm-soft) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.landing-mock-glow {
+  position: relative;
+}
+
+.landing-mock-glow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--app-link) 45%, transparent),
+    color-mix(in srgb, #8b5cf6 35%, transparent),
+    color-mix(in srgb, var(--app-link) 20%, transparent)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .landing-float {
+    animation: landingFloat 6s ease-in-out infinite;
+  }
+
+  @keyframes landingFloat {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+}
+
+.landing-section-alt {
+  background: color-mix(in srgb, var(--app-bg-muted) 35%, transparent);
+}
+
+/* Horizontal slide deck — one panel visible, no vertical scroll. */
+
+/* Fixed 16:9 design canvas, uniformly scaled to fit the area between the fixed
+   header and progress bar — like a PowerPoint slide. The scale factor is
+   measured in JS (useStageScale) and written to --landing-scale. */
+.landing-stage-frame {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  --landing-scale: 1; /* SSR / pre-measure default; overwritten by useStageScale */
+}
+
+.landing-stage {
+  position: relative;
+  width: 1280px;
+  height: 720px;
+  flex: 0 0 auto;
+  transform-origin: center center;
+  transform: scale(var(--landing-scale));
+  backface-visibility: hidden;
+  /* Slide content queries this fixed-width container instead of the viewport,
+     so the layout is identical at every screen size (see step 5). */
+  container-type: inline-size;
+  container-name: stage;
+}
+
+.landing-deck-viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.landing-deck-track {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  height: 100%;
+  width: 100%;
+  will-change: transform;
+  transition: transform 0.45s var(--ease-out);
+}
+
+.landing-deck-track--instant {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-deck-track {
+    transition: none;
+  }
+}
+
+.landing-deck-slide,
+.landing-section {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  min-width: 100%;
+  flex: 0 0 100%;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.landing-section-body {
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.landing-section-body-centered {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.landing-section-split {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  /* Fill the slide so the copy centers vertically and the mock spans full height
+     (the fixed canvas has no scroll — content is centered, not top-stacked). */
+  height: 100%;
+  align-items: stretch;
+  /* Fixed two-column split — the canvas is always rendered at design width. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0;
+}
+
+.landing-split-copy {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.landing-split-visual {
+  display: flex;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0.75rem 1.5rem 0.75rem 0.75rem;
+}
+
+.landing-section-split--reversed .landing-split-visual {
+  padding: 0.75rem 0.75rem 0.75rem 1.5rem;
+}
+
+.landing-split-mock {
+  height: 100%;
+  max-height: 100%;
+  width: 100%;
+  min-height: 0;
+}
+
+/* Hero lifecycle loop — pentagon diagram with animated flow arrows */
+.landing-lifecycle {
+  width: min(100%, 560px);
+  max-height: 100%;
+  margin: 0 auto;
+  aspect-ratio: 560 / 448;
+}
+
+.landing-lifecycle-backdrop {
+  background:
+    radial-gradient(ellipse 72% 68% at 50% 44%, rgba(37, 99, 235, 0.22), transparent 68%),
+    radial-gradient(ellipse 48% 42% at 18% 78%, rgba(139, 92, 246, 0.14), transparent 70%),
+    radial-gradient(ellipse 42% 38% at 88% 22%, rgba(34, 197, 94, 0.12), transparent 72%);
+}
+
+.landing-lifecycle-orbit {
+  stroke: rgba(96, 165, 250, 0.14);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 8;
+}
+
+.landing-lifecycle-hub-ring {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.55), rgba(139, 92, 246, 0.45), rgba(34, 197, 94, 0.4));
+  box-shadow:
+    0 0 28px rgba(59, 130, 246, 0.35),
+    0 0 48px rgba(139, 92, 246, 0.15);
+}
+
+.landing-lifecycle-hub-label {
+  background: linear-gradient(90deg, #93c5fd, #c4b5fd, #86efac);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.landing-lifecycle-node {
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  transition:
+    transform 0.2s var(--ease-out),
+    box-shadow 0.2s var(--ease-out);
+}
+
+.landing-lifecycle-node:hover {
+  transform: translateY(-2px);
+}
+
+.landing-lifecycle-node[data-accent='audit'] {
+  background: linear-gradient(160deg, rgba(37, 99, 235, 0.28), rgba(15, 23, 42, 0.92));
+  border-color: rgba(96, 165, 250, 0.55);
+  box-shadow:
+    0 8px 28px rgba(37, 99, 235, 0.22),
+    inset 0 1px 0 rgba(147, 197, 253, 0.12);
+}
+
+.landing-lifecycle-node[data-accent='report'] {
+  background: linear-gradient(160deg, rgba(124, 58, 237, 0.26), rgba(15, 23, 42, 0.92));
+  border-color: rgba(167, 139, 250, 0.55);
+  box-shadow:
+    0 8px 28px rgba(124, 58, 237, 0.2),
+    inset 0 1px 0 rgba(196, 181, 253, 0.12);
+}
+
+.landing-lifecycle-node[data-accent='mcp'] {
+  background: linear-gradient(160deg, rgba(6, 182, 212, 0.26), rgba(15, 23, 42, 0.92));
+  border-color: rgba(34, 211, 238, 0.55);
+  box-shadow:
+    0 8px 28px rgba(6, 182, 212, 0.2),
+    inset 0 1px 0 rgba(165, 243, 252, 0.12);
+}
+
+.landing-lifecycle-node[data-accent='fix'] {
+  background: linear-gradient(160deg, rgba(249, 115, 22, 0.24), rgba(15, 23, 42, 0.92));
+  border-color: rgba(251, 146, 60, 0.55);
+  box-shadow:
+    0 8px 28px rgba(249, 115, 22, 0.18),
+    inset 0 1px 0 rgba(253, 186, 116, 0.12);
+}
+
+.landing-lifecycle-node[data-accent='review'] {
+  background: linear-gradient(160deg, rgba(34, 197, 94, 0.26), rgba(15, 23, 42, 0.92));
+  border-color: rgba(74, 222, 128, 0.55);
+  box-shadow:
+    0 8px 28px rgba(34, 197, 94, 0.2),
+    inset 0 1px 0 rgba(134, 239, 172, 0.12);
+}
+
+.landing-lifecycle-node[data-accent='audit'] .landing-lifecycle-node-icon {
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.25);
+  border: 1px solid rgba(96, 165, 250, 0.45);
+}
+
+.landing-lifecycle-node[data-accent='report'] .landing-lifecycle-node-icon {
+  color: #c4b5fd;
+  background: rgba(124, 58, 237, 0.25);
+  border: 1px solid rgba(167, 139, 250, 0.45);
+}
+
+.landing-lifecycle-node[data-accent='mcp'] .landing-lifecycle-node-icon {
+  color: #67e8f9;
+  background: rgba(6, 182, 212, 0.25);
+  border: 1px solid rgba(34, 211, 238, 0.45);
+}
+
+.landing-lifecycle-node[data-accent='fix'] .landing-lifecycle-node-icon {
+  color: #fdba74;
+  background: rgba(249, 115, 22, 0.25);
+  border: 1px solid rgba(251, 146, 60, 0.45);
+}
+
+.landing-lifecycle-node[data-accent='review'] .landing-lifecycle-node-icon {
+  color: #86efac;
+  background: rgba(34, 197, 94, 0.25);
+  border: 1px solid rgba(74, 222, 128, 0.45);
+}
+
+.landing-lifecycle-node[data-accent='audit'] .landing-lifecycle-step {
+  color: #bfdbfe;
+  background: rgba(59, 130, 246, 0.35);
+  border: 1px solid rgba(96, 165, 250, 0.4);
+}
+
+.landing-lifecycle-node[data-accent='report'] .landing-lifecycle-step {
+  color: #ddd6fe;
+  background: rgba(124, 58, 237, 0.35);
+  border: 1px solid rgba(167, 139, 250, 0.4);
+}
+
+.landing-lifecycle-node[data-accent='mcp'] .landing-lifecycle-step {
+  color: #a5f3fc;
+  background: rgba(6, 182, 212, 0.35);
+  border: 1px solid rgba(34, 211, 238, 0.4);
+}
+
+.landing-lifecycle-node[data-accent='fix'] .landing-lifecycle-step {
+  color: #fed7aa;
+  background: rgba(249, 115, 22, 0.35);
+  border: 1px solid rgba(251, 146, 60, 0.4);
+}
+
+.landing-lifecycle-node[data-accent='review'] .landing-lifecycle-step {
+  color: #bbf7d0;
+  background: rgba(34, 197, 94, 0.35);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+}
+
+.landing-lifecycle-arrow {
+  stroke-width: 2.5;
+  stroke-dasharray: 7 6;
+  animation: lifecycleFlow 2s linear infinite;
+}
+
+.landing-lifecycle-arrow--audit {
+  stroke: #60a5fa;
+}
+
+.landing-lifecycle-arrow--report {
+  stroke: #a78bfa;
+}
+
+.landing-lifecycle-arrow--mcp {
+  stroke: #22d3ee;
+}
+
+.landing-lifecycle-arrow--fix {
+  stroke: #fb923c;
+}
+
+.landing-lifecycle-arrow--review {
+  stroke: #4ade80;
+}
+
+.landing-lifecycle-arrow--closing {
+  stroke-width: 3;
+  stroke: #4ade80;
+  filter: url(#lifecycle-glow);
+}
+
+.landing-lifecycle-marker--audit {
+  fill: #60a5fa;
+}
+
+.landing-lifecycle-marker--report {
+  fill: #a78bfa;
+}
+
+.landing-lifecycle-marker--mcp {
+  fill: #22d3ee;
+}
+
+.landing-lifecycle-marker--fix {
+  fill: #fb923c;
+}
+
+.landing-lifecycle-marker--review {
+  fill: #4ade80;
+}
+
+@keyframes lifecycleFlow {
+  from {
+    stroke-dashoffset: 0;
+  }
+  to {
+    stroke-dashoffset: -26;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-lifecycle-arrow {
+    animation: none;
+    stroke-dasharray: none;
+  }
+}
+
+.landing-footer-snap {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  min-width: 100%;
+  overflow: hidden;
+}
+
+/* Landing deck — progress and edge navigation */
+.landing-deck-progress-track {
+  height: 2px;
+  overflow: hidden;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--app-text-subtle) 25%, transparent);
+}
+
+.landing-deck-progress-fill {
+  height: 100%;
+  width: 100%;
+  transform-origin: left center;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--app-link), var(--accent-2));
+  transition: transform 0.35s var(--ease-out);
+}
+
+.landing-deck-edge-nav {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+}
+
+.landing-deck-edge-btn {
+  pointer-events: auto;
+  position: absolute;
+  top: 50%;
+  display: flex;
+  height: 3rem;
+  width: 3rem;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--app-border) 70%, transparent);
+  background: color-mix(in srgb, var(--app-bg) 75%, transparent);
+  color: var(--app-text-muted);
+  opacity: 0;
+  backdrop-filter: blur(8px);
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    color var(--dur-base) var(--ease-out),
+    background var(--dur-base) var(--ease-out);
+}
+
+.landing-stage-frame:hover .landing-deck-edge-btn:not(:disabled) {
+  opacity: 0.85;
+}
+
+.landing-deck-edge-btn:hover:not(:disabled) {
+  color: var(--app-text);
+  background: color-mix(in srgb, var(--app-bg-muted) 80%, transparent);
+}
+
+.landing-deck-edge-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0;
+}
+
+.landing-deck-edge-btn:focus-visible {
+  outline: 2px solid var(--app-link);
+  outline-offset: 2px;
+}
+
+.landing-deck-edge-btn--prev {
+  left: 0.75rem;
+}
+
+.landing-deck-edge-btn--next {
+  right: 0.75rem;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Reusable redesign utilities — depth, motion, warmth
+   ───────────────────────────────────────────────────────────── */
+
+/* Ambient "aurora" backdrop — generalizes the hand-rolled blob layers
+   previously inlined on Landing/Home. Drop <div aria-hidden className="aurora-bg" />
+   into any `relative overflow-hidden` container. */
+.aurora-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  pointer-events: none;
+}
+.aurora-bg::before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  background:
+    radial-gradient(38% 38% at 18% 20%, color-mix(in srgb, var(--app-link) 22%, transparent), transparent 70%),
+    radial-gradient(42% 42% at 84% 10%, color-mix(in srgb, var(--accent-2) 20%, transparent), transparent 70%),
+    radial-gradient(40% 40% at 62% 96%, color-mix(in srgb, var(--accent-warm) 16%, transparent), transparent 72%);
+  filter: blur(64px);
+  opacity: 0.85;
+}
+
+/* Reusable gradient hairline border (generalizes .landing-mock-glow).
+   Apply to an element with a border-radius; ::before paints a 1px ring. */
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--app-link) 45%, transparent),
+    color-mix(in srgb, var(--accent-2) 35%, transparent),
+    color-mix(in srgb, var(--accent-warm) 22%, transparent)
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Enter animation — single element */
+  .animate-in {
+    animation: fadeRise var(--dur-slow) var(--ease-out) both;
+  }
+
+  /* Scroll-reveal (driven by <Reveal> + useInView). Guarded by reduced-motion,
+     so motion-averse users always see content regardless of scroll state. */
+  [data-reveal='hidden'] {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  [data-reveal='shown'] {
+    animation: fadeRise var(--dur-slow) var(--ease-out) both;
+  }
+
+  /* Staggered children — set style={{ '--i': index }} on each child */
+  .stagger > * {
+    animation: fadeRise var(--dur-slow) var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 60ms);
+  }
+
+  @keyframes fadeRise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Hover elevation */
+  .hover-lift {
+    transition:
+      transform var(--dur-base) var(--ease-out),
+      box-shadow var(--dur-base) var(--ease-out),
+      border-color var(--dur-base) var(--ease-out);
+  }
+  .hover-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--elevation-3);
+  }
+
+  /* Tactile press feedback */
+  .press {
+    transition: transform var(--dur-fast) var(--ease-out);
+  }
+  .press:active {
+    transform: scale(0.97);
+  }
+
+  /* Skeleton shimmer sweep (replaces animate-pulse) */
+  .shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+  .shimmer::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in srgb, var(--app-text-subtle) 16%, transparent),
+      transparent
+    );
+    animation: shimmerSweep 1.6s ease-in-out infinite;
+  }
+  @keyframes shimmerSweep {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  .shimmer-text {
+    background: linear-gradient(
+      90deg,
+      var(--app-text-subtle) 0%,
+      var(--app-text-heading) 45%,
+      var(--app-link) 55%,
+      var(--app-text-subtle) 100%
+    );
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: shimmerText 2.2s ease-in-out infinite;
+  }
+  @keyframes shimmerText {
+    0%,
+    100% {
+      background-position: 0% center;
+    }
+    50% {
+      background-position: 100% center;
+    }
+  }
+}

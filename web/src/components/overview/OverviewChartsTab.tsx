@@ -1,7 +1,6 @@
-'use client';
 
 import { useMemo, type ReactNode } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
   BarChart3,
@@ -85,7 +84,7 @@ function ChartInsightCard({
       <div className="min-h-0 flex-1">{children}</div>
       {viewHref && viewLabel ? (
         <Link
-          href={viewHref}
+          to={viewHref}
           className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-link hover:underline"
         >
           {viewLabel}
@@ -219,7 +218,7 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
                   {concerns.map((concern) => (
                     <Link
                       key={concern.id}
-                      href={concern.href}
+                      to={concern.href}
                       className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-amber-500/40 hover:bg-amber-500/15"
                     >
                       <AlertTriangle

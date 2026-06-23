@@ -1,4 +1,4 @@
-/** Server-side pipeline DB write failures (visible in Next.js terminal). */
+/** Pipeline DB write failures (logged to the browser console in dev). */
 export function logPipelineDbError(action: string, err: unknown): void {
   const msg = err instanceof Error ? err.message : String(err);
   console.error(`[pipeline-db] ${action}: ${msg}`);

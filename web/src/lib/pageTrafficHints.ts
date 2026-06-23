@@ -1,6 +1,6 @@
 import type { LinkDetail } from '@/types/report';
 import type { CompareMetricRow } from '@/lib/reportCompare';
-import type { PageGa4Slice, PageGscSlice } from '@/server/pageGoogleData';
+import type { PageGa4Slice, PageGscSlice } from '@/lib/pageGoogleData';
 
 export type PageHintCategory = 'search' | 'analytics' | 'onpage' | 'retention' | 'compare';
 

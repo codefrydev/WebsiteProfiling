@@ -1,4 +1,3 @@
-'use client';
 
 import { Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow } from '@/components';
 import type { UrlMetadataChangeRow } from '@/lib/reportCompare';

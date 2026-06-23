@@ -49,6 +49,11 @@ public sealed class UpstreamForwarder(IHttpClientFactory factory) : IUpstreamFor
         {
             context.Response.Headers["Content-Disposition"] = disposition.ToArray();
         }
+        // Pass redirects through (e.g. the Google OAuth consent/callback 302s).
+        if (upstream.Headers.Location is not null)
+        {
+            context.Response.Headers["Location"] = upstream.Headers.Location.ToString();
+        }
 
         if (disableResponseBuffering)
         {

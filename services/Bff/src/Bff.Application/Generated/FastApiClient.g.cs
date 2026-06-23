@@ -306,27 +306,27 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Delete Property
+        /// Delete Property Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Delete_property_api_properties__property_id__deleteAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Delete_property_route_api_properties__property_id__deleteAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Get Property Ops
+        /// Get Property Ops Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Get_property_ops_api_properties__property_id__ops_getAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Get_property_ops_route_api_properties__property_id__ops_getAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Update Property Ops
+        /// Update Property Ops Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Update_property_ops_api_properties__property_id__ops_putAsync(int property_id, OpsSettingsBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Update_property_ops_route_api_properties__property_id__ops_putAsync(int property_id, OpsSettingsBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -346,22 +346,16 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Authorize Property Crawl
+        /// Authorize Property Crawl Route
         /// </summary>
-        /// <remarks>
-        /// Mark property as crawl-authorized (used by OAuth flow).
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Authorize_property_crawl_api_properties__property_id__authorize_postAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Authorize_property_crawl_route_api_properties__property_id__authorize_postAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Property Google Status
         /// </summary>
-        /// <remarks>
-        /// Return property-level Google integration status.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Property_google_status_api_properties__property_id__google_status_getAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -370,9 +364,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Property Google Test
         /// </summary>
-        /// <remarks>
-        /// Run a quick Google API connectivity test for the property.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Property_google_test_api_properties__property_id__google_test_postAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -381,9 +372,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Property Google Properties
         /// </summary>
-        /// <remarks>
-        /// List GA4 / GSC properties available for this account.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Property_google_properties_api_properties__property_id__google_properties_getAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -392,9 +380,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Property Google Links Status
         /// </summary>
-        /// <remarks>
-        /// Return the status of GSC backlinks import for this property.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Property_google_links_status_api_properties__property_id__google_links_status_getAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -403,9 +388,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Property Google Links Import
         /// </summary>
-        /// <remarks>
-        /// Trigger a GSC backlinks import for this property.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Property_google_links_import_api_properties__property_id__google_links_import_postAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -414,9 +396,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Patch Property Google Credentials
         /// </summary>
-        /// <remarks>
-        /// Update Google credentials/settings for a property (used by OAuth callback).
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Patch_property_google_credentials_api_properties__property_id__google_credentials_patchAsync(int property_id, GoogleCredentialsPatch body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -425,9 +404,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Post Property Google Credentials
         /// </summary>
-        /// <remarks>
-        /// Update Google site/property settings from the integrations UI.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Post_property_google_credentials_api_properties__property_id__google_credentials_postAsync(int property_id, GoogleCredentialsPostBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -436,9 +412,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Post Property Google Disconnect
         /// </summary>
-        /// <remarks>
-        /// Clear OAuth tokens for a property.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Post_property_google_disconnect_api_properties__property_id__google_disconnect_postAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -524,11 +497,14 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Google Status
+        /// Get Google Credentials
         /// </summary>
+        /// <remarks>
+        /// Full app-level Google OAuth settings (server-side / local admin only).
+        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Google_status_api_integrations_google_status_getAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Get_google_credentials_api_integrations_google_credentials_getAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -537,6 +513,14 @@ namespace Bff.Application.Generated
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Save_google_credentials_api_integrations_google_credentials_postAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Google Status
+        /// </summary>
+        /// <returns>Successful Response</returns>
+        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<object> Google_status_api_integrations_google_status_getAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -559,6 +543,22 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
+        /// Google Oauth Start
+        /// </summary>
+        /// <returns>Successful Response</returns>
+        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<object> Google_oauth_start_api_integrations_google_auth_getAsync(Anonymous3? propertyId = null, Starturl? startUrl = null, Returnto? returnTo = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Google Oauth Callback
+        /// </summary>
+        /// <returns>Successful Response</returns>
+        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<object> Google_oauth_callback_api_integrations_google_callback_getAsync(Code? code = null, State? state = null, Error? error = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
         /// Google Properties Deprecated
         /// </summary>
         /// <remarks>
@@ -566,7 +566,7 @@ namespace Bff.Application.Generated
         /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Google_properties_deprecated_api_integrations_google_properties_getAsync(Anonymous3? propertyId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Google_properties_deprecated_api_integrations_google_properties_getAsync(Anonymous4? propertyId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -585,7 +585,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Google_page_data_api_integrations_google_page_data_getAsync(string url, Googlesnapshotid? googleSnapshotId = null, Anonymous4? propertyId = null, Anonymous5? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Google_page_data_api_integrations_google_page_data_getAsync(string url, Googlesnapshotid? googleSnapshotId = null, Anonymous5? propertyId = null, Anonymous6? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -593,7 +593,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Google_page_data_history_api_integrations_google_page_data_history_getAsync(string url, Anonymous6? propertyId = null, Anonymous7? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Google_page_data_history_api_integrations_google_page_data_history_getAsync(string url, Anonymous7? propertyId = null, Anonymous8? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -609,7 +609,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Google_keywords_by_page_api_integrations_google_keywords_by_page_getAsync(string url, Anonymous8? propertyId = null, Anonymous9? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Google_keywords_by_page_api_integrations_google_keywords_by_page_getAsync(string url, Anonymous9? propertyId = null, Anonymous10? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -617,7 +617,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Google_keywords_history_api_integrations_google_keywords_history_getAsync(string keyword, Anonymous10? propertyId = null, Anonymous11? domain = null, int? limit = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Google_keywords_history_api_integrations_google_keywords_history_getAsync(string keyword, Anonymous11? propertyId = null, Anonymous12? domain = null, int? limit = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -687,19 +687,19 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// List Issue Status
+        /// List Issue Status Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> List_issue_status_api_issues_status_getAsync(int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> List_issue_status_route_api_issues_status_getAsync(int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Upsert Issue Status
+        /// Upsert Issue Status Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Upsert_issue_status_api_issues_status_putAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Upsert_issue_status_route_api_issues_status_putAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -791,67 +791,67 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// List Content Drafts
+        /// List Content Drafts Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> List_content_drafts_api_content_drafts_getAsync(int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> List_content_drafts_route_api_content_drafts_getAsync(int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Create Content Draft
+        /// Create Content Draft Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Create_content_draft_api_content_drafts_postAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Create_content_draft_route_api_content_drafts_postAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Get Content Draft
+        /// Get Content Draft Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Get_content_draft_api_content_drafts__draft_id__getAsync(int draft_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Get_content_draft_route_api_content_drafts__draft_id__getAsync(int draft_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Update Content Draft
+        /// Update Content Draft Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Update_content_draft_api_content_drafts__draft_id__patchAsync(int draft_id, object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Update_content_draft_route_api_content_drafts__draft_id__patchAsync(int draft_id, object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Delete Content Draft
+        /// Delete Content Draft Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Delete_content_draft_api_content_drafts__draft_id__deleteAsync(int draft_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Delete_content_draft_route_api_content_drafts__draft_id__deleteAsync(int draft_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// List Page Markdown
+        /// List Page Markdown Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> List_page_markdown_api_page_markdown_getAsync(int crawlRunId, int? page = null, int? limit = null, Q? q = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> List_page_markdown_route_api_page_markdown_getAsync(int crawlRunId, int? page = null, int? limit = null, Q? q = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Delete Page Markdown
+        /// Delete Page Markdown Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Delete_page_markdown_api_page_markdown_deleteAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Delete_page_markdown_route_api_page_markdown_deleteAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Page Markdown Content
+        /// Page Markdown Content Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Page_markdown_content_api_page_markdown_content_getAsync(int crawlRunId, string url, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Page_markdown_content_route_api_page_markdown_content_getAsync(int crawlRunId, string url, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -863,11 +863,11 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Page Markdown Runs
+        /// Page Markdown Runs Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Page_markdown_runs_api_page_markdown_runs_getAsync(Anonymous12? propertyId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Page_markdown_runs_route_api_page_markdown_runs_getAsync(Anonymous13? propertyId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -947,7 +947,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Export_report_api_report_export_getAsync(string? format = null, Anonymous13? reportId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Export_report_api_report_export_getAsync(string? format = null, Anonymous14? reportId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -955,15 +955,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Export_sitemap_api_report_export_sitemap_getAsync(Anonymous14? reportId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Export Workbook
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Export_workbook_api_report_export_workbook_getAsync(Anonymous15? reportId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Export_sitemap_api_report_export_sitemap_getAsync(Anonymous15? reportId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -3909,11 +3901,11 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Delete Property
+        /// Delete Property Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Delete_property_api_properties__property_id__deleteAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Delete_property_route_api_properties__property_id__deleteAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (property_id == null)
                 throw new System.ArgumentNullException("property_id");
@@ -3997,11 +3989,11 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Get Property Ops
+        /// Get Property Ops Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Get_property_ops_api_properties__property_id__ops_getAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Get_property_ops_route_api_properties__property_id__ops_getAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (property_id == null)
                 throw new System.ArgumentNullException("property_id");
@@ -4086,11 +4078,11 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Update Property Ops
+        /// Update Property Ops Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Update_property_ops_api_properties__property_id__ops_putAsync(int property_id, OpsSettingsBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Update_property_ops_route_api_properties__property_id__ops_putAsync(int property_id, OpsSettingsBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (property_id == null)
                 throw new System.ArgumentNullException("property_id");
@@ -4367,14 +4359,11 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Authorize Property Crawl
+        /// Authorize Property Crawl Route
         /// </summary>
-        /// <remarks>
-        /// Mark property as crawl-authorized (used by OAuth flow).
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Authorize_property_crawl_api_properties__property_id__authorize_postAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Authorize_property_crawl_route_api_properties__property_id__authorize_postAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (property_id == null)
                 throw new System.ArgumentNullException("property_id");
@@ -4462,9 +4451,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Property Google Status
         /// </summary>
-        /// <remarks>
-        /// Return property-level Google integration status.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task<object> Property_google_status_api_properties__property_id__google_status_getAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
@@ -4554,9 +4540,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Property Google Test
         /// </summary>
-        /// <remarks>
-        /// Run a quick Google API connectivity test for the property.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task<object> Property_google_test_api_properties__property_id__google_test_postAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
@@ -4647,9 +4630,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Property Google Properties
         /// </summary>
-        /// <remarks>
-        /// List GA4 / GSC properties available for this account.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task<object> Property_google_properties_api_properties__property_id__google_properties_getAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
@@ -4739,9 +4719,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Property Google Links Status
         /// </summary>
-        /// <remarks>
-        /// Return the status of GSC backlinks import for this property.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task<object> Property_google_links_status_api_properties__property_id__google_links_status_getAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
@@ -4831,9 +4808,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Property Google Links Import
         /// </summary>
-        /// <remarks>
-        /// Trigger a GSC backlinks import for this property.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task<object> Property_google_links_import_api_properties__property_id__google_links_import_postAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
@@ -4924,9 +4898,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Patch Property Google Credentials
         /// </summary>
-        /// <remarks>
-        /// Update Google credentials/settings for a property (used by OAuth callback).
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task<object> Patch_property_google_credentials_api_properties__property_id__google_credentials_patchAsync(int property_id, GoogleCredentialsPatch body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
@@ -5023,9 +4994,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Post Property Google Credentials
         /// </summary>
-        /// <remarks>
-        /// Update Google site/property settings from the integrations UI.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task<object> Post_property_google_credentials_api_properties__property_id__google_credentials_postAsync(int property_id, GoogleCredentialsPostBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
@@ -5122,9 +5090,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Post Property Google Disconnect
         /// </summary>
-        /// <remarks>
-        /// Clear OAuth tokens for a property.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task<object> Post_property_google_disconnect_api_properties__property_id__google_disconnect_postAsync(int property_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
@@ -6047,11 +6012,14 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Google Status
+        /// Get Google Credentials
         /// </summary>
+        /// <remarks>
+        /// Full app-level Google OAuth settings (server-side / local admin only).
+        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Google_status_api_integrations_google_status_getAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Get_google_credentials_api_integrations_google_credentials_getAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -6064,8 +6032,8 @@ namespace Bff.Application.Generated
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "api/integrations/google/status"
-                    urlBuilder_.Append("api/integrations/google/status");
+                    // Operation Path: "api/integrations/google/credentials"
+                    urlBuilder_.Append("api/integrations/google/credentials");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -6186,6 +6154,80 @@ namespace Bff.Application.Generated
                                 throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
                             }
                             throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
+                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Google Status
+        /// </summary>
+        /// <returns>Successful Response</returns>
+        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<object> Google_status_api_integrations_google_status_getAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        {
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    var urlBuilder_ = new System.Text.StringBuilder();
+                
+                    // Operation Path: "api/integrations/google/status"
+                    urlBuilder_.Append("api/integrations/google/status");
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        foreach (var item_ in response_.Headers)
+                            headers_[item_.Key] = item_.Value;
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
                         }
                         else
                         {
@@ -6375,6 +6417,202 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
+        /// Google Oauth Start
+        /// </summary>
+        /// <returns>Successful Response</returns>
+        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<object> Google_oauth_start_api_integrations_google_auth_getAsync(Anonymous3? propertyId = null, Starturl? startUrl = null, Returnto? returnTo = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        {
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    var urlBuilder_ = new System.Text.StringBuilder();
+                
+                    // Operation Path: "api/integrations/google/auth"
+                    urlBuilder_.Append("api/integrations/google/auth");
+                    urlBuilder_.Append('?');
+                    if (propertyId != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("propertyId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(propertyId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (startUrl != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("startUrl")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(startUrl, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (returnTo != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("returnTo")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(returnTo, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    urlBuilder_.Length--;
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        foreach (var item_ in response_.Headers)
+                            headers_[item_.Key] = item_.Value;
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        if (status_ == 422)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
+                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Google Oauth Callback
+        /// </summary>
+        /// <returns>Successful Response</returns>
+        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<object> Google_oauth_callback_api_integrations_google_callback_getAsync(Code? code = null, State? state = null, Error? error = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        {
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    var urlBuilder_ = new System.Text.StringBuilder();
+                
+                    // Operation Path: "api/integrations/google/callback"
+                    urlBuilder_.Append("api/integrations/google/callback");
+                    urlBuilder_.Append('?');
+                    if (code != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("code")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(code, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (state != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("state")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(state, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (error != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("error")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(error, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    urlBuilder_.Length--;
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        foreach (var item_ in response_.Headers)
+                            headers_[item_.Key] = item_.Value;
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        if (status_ == 422)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
+                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
         /// Google Properties Deprecated
         /// </summary>
         /// <remarks>
@@ -6382,7 +6620,7 @@ namespace Bff.Application.Generated
         /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Google_properties_deprecated_api_integrations_google_properties_getAsync(Anonymous3? propertyId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Google_properties_deprecated_api_integrations_google_properties_getAsync(Anonymous4? propertyId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -6550,7 +6788,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Google_page_data_api_integrations_google_page_data_getAsync(string url, Googlesnapshotid? googleSnapshotId = null, Anonymous4? propertyId = null, Anonymous5? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Google_page_data_api_integrations_google_page_data_getAsync(string url, Googlesnapshotid? googleSnapshotId = null, Anonymous5? propertyId = null, Anonymous6? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (url == null)
                 throw new System.ArgumentNullException("url");
@@ -6652,7 +6890,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Google_page_data_history_api_integrations_google_page_data_history_getAsync(string url, Anonymous6? propertyId = null, Anonymous7? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Google_page_data_history_api_integrations_google_page_data_history_getAsync(string url, Anonymous7? propertyId = null, Anonymous8? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (url == null)
                 throw new System.ArgumentNullException("url");
@@ -6838,7 +7076,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Google_keywords_by_page_api_integrations_google_keywords_by_page_getAsync(string url, Anonymous8? propertyId = null, Anonymous9? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Google_keywords_by_page_api_integrations_google_keywords_by_page_getAsync(string url, Anonymous9? propertyId = null, Anonymous10? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (url == null)
                 throw new System.ArgumentNullException("url");
@@ -6936,7 +7174,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Google_keywords_history_api_integrations_google_keywords_history_getAsync(string keyword, Anonymous10? propertyId = null, Anonymous11? domain = null, int? limit = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Google_keywords_history_api_integrations_google_keywords_history_getAsync(string keyword, Anonymous11? propertyId = null, Anonymous12? domain = null, int? limit = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (keyword == null)
                 throw new System.ArgumentNullException("keyword");
@@ -7600,11 +7838,11 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// List Issue Status
+        /// List Issue Status Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> List_issue_status_api_issues_status_getAsync(int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> List_issue_status_route_api_issues_status_getAsync(int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (propertyId == null)
                 throw new System.ArgumentNullException("propertyId");
@@ -7690,11 +7928,11 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Upsert Issue Status
+        /// Upsert Issue Status Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Upsert_issue_status_api_issues_status_putAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Upsert_issue_status_route_api_issues_status_putAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -8748,11 +8986,11 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// List Content Drafts
+        /// List Content Drafts Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> List_content_drafts_api_content_drafts_getAsync(int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> List_content_drafts_route_api_content_drafts_getAsync(int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (propertyId == null)
                 throw new System.ArgumentNullException("propertyId");
@@ -8838,11 +9076,11 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Create Content Draft
+        /// Create Content Draft Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Create_content_draft_api_content_drafts_postAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Create_content_draft_route_api_content_drafts_postAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -8926,11 +9164,11 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Get Content Draft
+        /// Get Content Draft Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Get_content_draft_api_content_drafts__draft_id__getAsync(int draft_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Get_content_draft_route_api_content_drafts__draft_id__getAsync(int draft_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (draft_id == null)
                 throw new System.ArgumentNullException("draft_id");
@@ -9014,11 +9252,11 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Update Content Draft
+        /// Update Content Draft Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Update_content_draft_api_content_drafts__draft_id__patchAsync(int draft_id, object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Update_content_draft_route_api_content_drafts__draft_id__patchAsync(int draft_id, object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (draft_id == null)
                 throw new System.ArgumentNullException("draft_id");
@@ -9106,11 +9344,11 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Delete Content Draft
+        /// Delete Content Draft Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Delete_content_draft_api_content_drafts__draft_id__deleteAsync(int draft_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Delete_content_draft_route_api_content_drafts__draft_id__deleteAsync(int draft_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (draft_id == null)
                 throw new System.ArgumentNullException("draft_id");
@@ -9194,11 +9432,11 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// List Page Markdown
+        /// List Page Markdown Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> List_page_markdown_api_page_markdown_getAsync(int crawlRunId, int? page = null, int? limit = null, Q? q = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> List_page_markdown_route_api_page_markdown_getAsync(int crawlRunId, int? page = null, int? limit = null, Q? q = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (crawlRunId == null)
                 throw new System.ArgumentNullException("crawlRunId");
@@ -9296,11 +9534,11 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Delete Page Markdown
+        /// Delete Page Markdown Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Delete_page_markdown_api_page_markdown_deleteAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Delete_page_markdown_route_api_page_markdown_deleteAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -9384,11 +9622,11 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Page Markdown Content
+        /// Page Markdown Content Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Page_markdown_content_api_page_markdown_content_getAsync(int crawlRunId, string url, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Page_markdown_content_route_api_page_markdown_content_getAsync(int crawlRunId, string url, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (crawlRunId == null)
                 throw new System.ArgumentNullException("crawlRunId");
@@ -9566,11 +9804,11 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Page Markdown Runs
+        /// Page Markdown Runs Route
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Page_markdown_runs_api_page_markdown_runs_getAsync(Anonymous12? propertyId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Page_markdown_runs_route_api_page_markdown_runs_getAsync(Anonymous13? propertyId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -10441,7 +10679,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Export_report_api_report_export_getAsync(string? format = null, Anonymous13? reportId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Export_report_api_report_export_getAsync(string? format = null, Anonymous14? reportId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -10535,7 +10773,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Export_sitemap_api_report_export_sitemap_getAsync(Anonymous14? reportId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Export_sitemap_api_report_export_sitemap_getAsync(Anonymous15? reportId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -10550,96 +10788,6 @@ namespace Bff.Application.Generated
                 
                     // Operation Path: "api/report/export-sitemap"
                     urlBuilder_.Append("api/report/export-sitemap");
-                    urlBuilder_.Append('?');
-                    if (reportId != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("reportId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(reportId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    urlBuilder_.Length--;
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Export Workbook
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Export_workbook_api_report_export_workbook_getAsync(Anonymous15? reportId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/report/export-workbook"
-                    urlBuilder_.Append("api/report/export-workbook");
                     urlBuilder_.Append('?');
                     if (reportId != null)
                     {
@@ -11023,7 +11171,7 @@ namespace Bff.Application.Generated
         public string Status { get; set; } = default!;
 
         [System.Text.Json.Serialization.JsonPropertyName("error")]
-        public Error Error { get; set; } = default!;
+        public Error2 Error { get; set; } = default!;
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
@@ -11455,7 +11603,7 @@ namespace Bff.Application.Generated
         public bool Ok { get; set; } = default!;
 
         [System.Text.Json.Serialization.JsonPropertyName("error")]
-        public Error2 Error { get; set; } = default!;
+        public Error3 Error { get; set; } = default!;
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
@@ -11542,7 +11690,7 @@ namespace Bff.Application.Generated
         public NewJobId NewJobId { get; set; } = default!;
 
         [System.Text.Json.Serialization.JsonPropertyName("error")]
-        public Error3 Error { get; set; } = default!;
+        public Error4 Error { get; set; } = default!;
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
@@ -11563,7 +11711,7 @@ namespace Bff.Application.Generated
         public Command Command { get; set; } = default!;
 
         [System.Text.Json.Serialization.JsonPropertyName("state")]
-        public State State { get; set; } = default!;
+        public State2 State { get; set; } = default!;
 
         [System.Text.Json.Serialization.JsonPropertyName("unknownKeys")]
         public System.Collections.Generic.List<UnknownKeyEntry> UnknownKeys { get; set; } = default!;
@@ -11817,7 +11965,67 @@ namespace Bff.Application.Generated
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Googlesnapshotid
+    public partial class Starturl
+    {
+
+        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
+
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+        {
+            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
+            set { _additionalProperties = value; }
+        }
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class Returnto
+    {
+
+        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
+
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+        {
+            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
+            set { _additionalProperties = value; }
+        }
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class Code
+    {
+
+        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
+
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+        {
+            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
+            set { _additionalProperties = value; }
+        }
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class State
+    {
+
+        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
+
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+        {
+            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
+            set { _additionalProperties = value; }
+        }
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class Error
     {
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
@@ -11833,6 +12041,21 @@ namespace Bff.Application.Generated
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class Anonymous4
+    {
+
+        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
+
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+        {
+            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
+            set { _additionalProperties = value; }
+        }
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class Googlesnapshotid
     {
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
@@ -11952,7 +12175,7 @@ namespace Bff.Application.Generated
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Q
+    public partial class Anonymous12
     {
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
@@ -11967,7 +12190,7 @@ namespace Bff.Application.Generated
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Anonymous12
+    public partial class Q
     {
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
@@ -12087,7 +12310,7 @@ namespace Bff.Application.Generated
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Error
+    public partial class Error2
     {
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
@@ -12642,7 +12865,7 @@ namespace Bff.Application.Generated
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Error2
+    public partial class Error3
     {
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
@@ -12747,7 +12970,7 @@ namespace Bff.Application.Generated
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Error3
+    public partial class Error4
     {
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
@@ -12777,7 +13000,7 @@ namespace Bff.Application.Generated
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class State
+    public partial class State2
     {
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;

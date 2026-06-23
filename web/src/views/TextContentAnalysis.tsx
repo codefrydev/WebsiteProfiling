@@ -1,4 +1,3 @@
-'use client';
 
 import type { Chart, TooltipItem } from 'chart.js';
 import { Fragment, useState, useMemo, useEffect } from 'react';

@@ -1,4 +1,3 @@
-'use client';
 
 import {
   createContext,
@@ -93,9 +92,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     setWidgetStatus((prev) => ({ ...prev, groups: 'loading', summary: 'loading' }));
 
     try {
-      const ids = reportList.map((r) => r.id).join(',');
-      const qs = ids ? `?widget=groups&ids=${encodeURIComponent(ids)}` : '?widget=groups';
-      const res = await apiFetch(reportApi(`/portfolio${qs}`));
+      const res = await apiFetch(reportApi('/portfolio?widget=groups'));
       const body = (await res.json().catch(() => ({}))) as GroupsApiResponse;
       if (!res.ok) throw new Error(body.error || res.statusText);
 
@@ -135,7 +132,6 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
   }, [metaLoaded, reportList, crawlRuns.length, reportIdsKey]);
 
   useEffect(() => {
-    if (!metaLoaded) return;
     void loadGroups();
   }, [metaLoaded, reportIdsKey, crawlRuns.length, loadGroups]);
 

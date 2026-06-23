@@ -1,4 +1,3 @@
-'use client';
 
 import ReactMarkdown from 'react-markdown';
 import type { VizRenderProps } from '@/lib/dashboard/viz/types';

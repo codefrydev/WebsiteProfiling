@@ -1,4 +1,3 @@
-'use client';
 
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { apiUrl, apiFetch } from '@/lib/publicBase';

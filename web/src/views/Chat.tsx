@@ -1,8 +1,7 @@
-'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { Link } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import ChatContextBar from '@/components/chat/ChatContextBar';
 import ChatShell from '@/components/chat/ChatShell';
@@ -55,9 +54,9 @@ interface SessionRow {
 }
 
 export default function ChatPage() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
   const { configState, configLoaded, llmConfigState } = usePipeline();
   const initialUrlCtx = parseChatUrlContext(searchParams);
   const [properties, setProperties] = useState<PropertyOption[]>([]);
@@ -91,9 +90,9 @@ export default function ChatPage() {
       if (nextPropertyId) {
         writeStoredChatContext({ propertyId: nextPropertyId, sessionId: nextSessionId });
       }
-      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+      navigate(q ? `${pathname}?${q}` : pathname, { replace: true, preventScrollReset: true });
     },
-    [router, pathname, searchKey],
+    [navigate, pathname, searchKey],
   );
 
   const suggestFollowUp = useCallback((prompt: string) => {
@@ -615,7 +614,7 @@ export default function ChatPage() {
                 <div>
                   <p className="font-medium text-amber-100">{c.aiDisabledTitle}</p>
                   <p className="mt-1 text-muted-foreground">{c.aiDisabledHint}</p>
-                  <Link href="/pipeline?group=content-ai" className="mt-2 inline-block text-link text-xs">
+                  <Link to="/pipeline?group=content-ai" className="mt-2 inline-block text-link text-xs">
                     {c.openAiSettings}
                   </Link>
                 </div>

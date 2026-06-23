@@ -78,27 +78,19 @@ services:
       files:
         condition: service_started
 
-  # Next.js UI only. The browser calls the BFF (:8090) for all /api/*.
+  # Vite SPA (nginx). The browser calls the BFF (:8090) for all /api/*.
   web:
-    image: website-profiling:latest
+    build:
+      context: ./web
+      args:
+        VITE_BFF_BASE_URL: http://localhost:8090
     depends_on:
       bff:
         condition: service_started
     ports:
-      - "3000:3000"
-    environment:
-      WP_ROLE: web
-      WEBSITE_PROFILING_ROOT: /app
-      DATA_DIR: /data
-      NODE_ENV: production
-      # Browser-facing base URL for the BFF (consumed by the credentialed fetch wrapper).
-      NEXT_PUBLIC_BFF_BASE_URL: http://localhost:8090
-      # Residual server-side calls (SSR) still reach FastAPI internally.
-      FASTAPI_URL: http://fastapi:8001
-    volumes:
-      - profiling-data:/data
+      - "3000:80"
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/home', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/home"]
       interval: 30s
       timeout: 5s
       retries: 3

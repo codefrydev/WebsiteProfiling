@@ -5,7 +5,9 @@
  *   catalog/   — semantic data-source catalog for widget picker
  *   data/      — API clients + widget data fetching
  *   viz/       — chart/KPI renderers + registry
- *   builder/   — grid, palette, config panel UI
+ *   builder/   — config panel UI (dataset/viz editor)
+ *   canvas/    — v2 react-grid-layout dashboard surface
+ *   widgets/   — widget frame + query-driven body
  */
 
 export * from '@/lib/dashboard/types';
@@ -19,15 +21,10 @@ export { renderViz, VIZ_REGISTRY } from '@/lib/dashboard/viz/registry';
 export { evalMeasure, evalTransform, DASHSCRIPT_HELP } from '@/lib/dashboard/script/eval';
 export { DashScriptError } from '@/lib/dashboard/script/types';
 
-export { FilterBar } from '@/lib/dashboard/builder/FilterBar';
-export { default as DashboardGrid } from '@/lib/dashboard/builder/DashboardGrid';
-export { default as DashboardWidget } from '@/lib/dashboard/builder/DashboardWidget';
-export { default as DashboardSwitcher } from '@/lib/dashboard/builder/DashboardSwitcher';
-export { default as WidgetPalette } from '@/lib/dashboard/builder/WidgetPalette';
-export { default as WidgetConfigPanel } from '@/lib/dashboard/builder/WidgetConfigPanel';
-export { default as PresetPicker } from '@/lib/dashboard/builder/PresetPicker';
+export { ConfigPanel } from '@/lib/dashboard/builder/ConfigPanel';
 export { DASHBOARD_PRESETS, getPreset } from '@/lib/dashboard/presets/presets';
 export { default as AiAssistModal } from '@/lib/dashboard/builder/AiAssistModal';
+export { DashboardCanvas } from '@/lib/dashboard/canvas/DashboardCanvas';
 export {
   generateWidgetScript,
   generateWidget,

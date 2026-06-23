@@ -1,4 +1,3 @@
-'use client';
 
 import { useLayoutEffect, type RefObject } from 'react';
 

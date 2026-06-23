@@ -1,4 +1,3 @@
-'use client';
 
 import { useReport } from '@/context/useReport';
 import type { SectionKey } from '@/lib/reportSections';

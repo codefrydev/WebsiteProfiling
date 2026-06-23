@@ -1,4 +1,3 @@
-'use client';
 
 import { Loader2, Sparkles } from 'lucide-react';
 import { strings } from '@/lib/strings';

@@ -1,7 +1,6 @@
-'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { apiFetch } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -52,7 +51,7 @@ export default function IssueTrendChart({ domain }: IssueTrendChartProps) {
       return;
     }
     setLoading(true);
-    void apiFetch(`/api/report/history?domain=${encodeURIComponent(domain)}&limit=10`)
+    void apiFetch(apiUrl(`/report/history?domain=${encodeURIComponent(domain)}&limit=10`))
       .then(async (r) => {
         if (!r.ok) return;
         const body = (await r.json()) as { history?: HistoryRow[] };

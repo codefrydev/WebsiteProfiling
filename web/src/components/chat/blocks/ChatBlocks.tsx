@@ -1,4 +1,3 @@
-'use client';
 
 import type { ChatBlock } from '@/components/chat/deriveChatBlocks';
 import { blockKey } from '@/components/chat/deriveChatBlocks';

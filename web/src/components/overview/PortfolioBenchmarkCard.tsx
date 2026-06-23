@@ -1,6 +1,5 @@
-'use client';
 
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import {
   AlertCircle,
   ArrowLeftRight,
@@ -101,7 +100,7 @@ function StatusBanner({
         </p>
       </div>
       <Link
-        href={portfolioHref}
+        to={portfolioHref}
         className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-default bg-brand-800 px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-brand-700/60"
       >
         <LayoutGrid className="h-3.5 w-3.5" aria-hidden />
@@ -153,7 +152,7 @@ export function PortfolioBenchmarkCard({
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
             <Link
-              href={portfolioHref}
+              to={portfolioHref}
               className="inline-flex items-center gap-2 rounded-lg border border-default px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-brand-700/50"
             >
               <LayoutGrid className="h-4 w-4" aria-hidden />
@@ -161,7 +160,7 @@ export function PortfolioBenchmarkCard({
             </Link>
             {compareHref && reportCount > 1 ? (
               <Link
-                href={compareHref}
+                to={compareHref}
                 className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
               >
                 <ArrowLeftRight className="h-4 w-4" aria-hidden />
@@ -218,7 +217,7 @@ export function PortfolioBenchmarkCard({
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <CategoryScoreGauge name={vo.portfolioNoBenchmarkLabel} score={property} size="md" />
             <Link
-              href={`#${categoriesAnchorId}`}
+              to={`#${categoriesAnchorId}`}
               className="inline-flex items-center gap-1 text-xs font-medium text-link hover:underline"
             >
               {vo.portfolioScrollCategories}

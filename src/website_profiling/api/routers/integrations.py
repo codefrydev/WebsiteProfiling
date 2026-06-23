@@ -154,6 +154,41 @@ def google_disconnect(conn: DbDep) -> dict[str, Any]:
     }
 
 
+# ── GET /api/integrations/google/auth ─────────────────────────────────────────
+# OAuth consent + callback (moved server-side from the former Next.js routes; the browser
+# reaches these through the BFF). Heavy logic lives in integrations/google/oauth.py.
+
+@router.get("/google/auth")
+def google_oauth_start(
+    conn: DbDep,
+    propertyId: Optional[int] = Query(default=None),
+    startUrl: Optional[str] = Query(default=None),
+    returnTo: Optional[str] = Query(default=None),
+) -> Any:
+    from fastapi.responses import RedirectResponse
+    from website_profiling.integrations.google.oauth import OAuthError, oauth_start
+
+    try:
+        url = oauth_start(conn, propertyId, startUrl, returnTo)
+    except OAuthError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return RedirectResponse(url, status_code=302)
+
+
+@router.get("/google/callback")
+def google_oauth_callback(
+    conn: DbDep,
+    code: Optional[str] = Query(default=None),
+    state: Optional[str] = Query(default=None),
+    error: Optional[str] = Query(default=None),
+) -> Any:
+    from fastapi.responses import RedirectResponse
+    from website_profiling.integrations.google.oauth import oauth_callback
+
+    url = oauth_callback(conn, code, state, error)
+    return RedirectResponse(url, status_code=302)
+
+
 # ── GET /api/integrations/google/properties ───────────────────────────────────
 
 @router.get("/google/properties")

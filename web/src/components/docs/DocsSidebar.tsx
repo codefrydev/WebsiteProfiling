@@ -1,8 +1,7 @@
-'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { Link } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import {
   BarChart2,
   BookOpen,
@@ -87,7 +86,7 @@ function SettingsMenu({ onClose }: { onClose: () => void }) {
         <ThemeToggle />
       </div>
       <Link
-        href="/pipeline?integrations=open"
+        to="/pipeline?integrations=open"
         className="mt-1 block rounded-lg px-2 py-1.5 text-xs text-link hover:bg-[var(--chat-surface-hover)]"
         onClick={onClose}
       >
@@ -103,7 +102,7 @@ export default function DocsSidebar({
   toggle,
   setExpanded,
 }: DocsSidebarProps) {
-  const pathname = usePathname();
+  const { pathname } = useLocation();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -139,7 +138,7 @@ export default function DocsSidebar({
     <ul className="space-y-0.5">
       <li>
         <Link
-          href="/docs"
+          to="/docs"
           className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-colors ${
             onDocsHome && !activeGuideSlug
               ? 'bg-brand-700/60 text-foreground'
@@ -158,7 +157,7 @@ export default function DocsSidebar({
         return (
           <li key={slug}>
             <Link
-              href={`/docs/integrations/${slug}`}
+              to={`/docs/integrations/${slug}`}
               className={`flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs transition-colors ${
                 selected
                   ? 'bg-brand-700/60 text-foreground'
@@ -177,7 +176,7 @@ export default function DocsSidebar({
   if (!expanded) {
     return (
       <div className="chat-sidebar-rail">
-        <Link href="/home" className="mb-2 flex h-10 w-10 items-center justify-center" title={c.navHome}>
+        <Link to="/home" className="mb-2 flex h-10 w-10 items-center justify-center" title={c.navHome}>
           <AppLogo />
         </Link>
 
@@ -218,7 +217,7 @@ export default function DocsSidebar({
 
       <aside className="chat-sidebar-panel">
         <div className="flex items-center justify-between gap-2 px-3 py-3">
-          <Link href="/home" className="flex min-w-0 items-center gap-2">
+          <Link to="/home" className="flex min-w-0 items-center gap-2">
             <AppLogo size={20} />
             <span className="truncate text-sm font-medium text-bright">{d.pageTitle}</span>
           </Link>
@@ -239,7 +238,7 @@ export default function DocsSidebar({
               return (
                 <li key={href}>
                   <Link
-                    href={href}
+                    to={href}
                     className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors ${
                       isActive
                         ? 'bg-brand-700/60 text-foreground'

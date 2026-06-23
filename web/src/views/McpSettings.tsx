@@ -1,6 +1,5 @@
-'use client';
 
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { Loader2, Plug, RefreshCw, Sparkles } from 'lucide-react';
 import ConfigField from '@/components/pipeline/ConfigField';
 import McpCopyBlock from '@/components/mcp/McpCopyBlock';

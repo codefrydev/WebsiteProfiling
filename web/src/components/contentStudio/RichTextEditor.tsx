@@ -1,4 +1,3 @@
-'use client';
 
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
 import {
@@ -414,7 +413,7 @@ export default function RichTextEditor({
         )}
       </div>
 
-      <style jsx global>{`
+      <style>{`
         .tiptap p.is-editor-empty:first-child::before {
           color: var(--muted-foreground, #94a3b8);
           content: attr(data-placeholder);

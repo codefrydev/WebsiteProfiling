@@ -1,8 +1,7 @@
-'use client';
 
 import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import type { GscPageRow, UrlJoinData } from '@/types';
 import type { TableColumn } from '@/types/components';
 import { TrendingUp, Search, AlertCircle, Settings2, Download, Loader2 } from 'lucide-react';
@@ -35,7 +34,7 @@ import {
 } from '../components/searchPerformance/gscTableUtils';
 import UrlGapListsPanel from '../components/google/UrlGapListsPanel';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'react-router-dom';
 import { useUrlTab } from '@/hooks/useUrlTab';
 
 const TABS = ['overview', 'queries', 'pages', 'opportunities', 'coverage'] as const;
@@ -63,7 +62,7 @@ export default function SearchPerformance() {
   useSectionData('traffic');
   const trafficReady = useSectionsViewReady(['traffic']);
   const sp = strings.views.searchPerformance;
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useUrlTab(TABS, 'overview');
   useTabSections(SEARCH_PERFORMANCE_TAB_SECTIONS, true);
   const [querySearch, setQuerySearch] = useState('');
@@ -243,7 +242,7 @@ export default function SearchPerformance() {
             <Settings2 className="h-3.5 w-3.5 shrink-0" />
             {sp.emptyIntegrationsHint}{' '}
             <Link
-              href={integrationGuideHref('google', { from: 'integrations' })}
+              to={integrationGuideHref('google', { from: 'integrations' })}
               className="text-link hover:underline"
             >
               {strings.docs.setupGuideLink}

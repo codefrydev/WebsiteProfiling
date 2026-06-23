@@ -1,4 +1,3 @@
-'use client';
 
 import {
   Hash, Gauge, Activity, BarChart3, LineChart, PieChart, Table, Type, Grid3x3, type LucideIcon,

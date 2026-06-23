@@ -113,6 +113,18 @@ public class GatewayTests
     }
 
     [Fact]
+    public async Task Redirect_location_header_is_passed_through()
+    {
+        using var factory = new BffFactory();
+        var client = factory.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false });
+        var response = await client.GetAsync("/api/integrations/google/auth?propertyId=1");
+        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.Equal(
+            "https://accounts.google.com/o/oauth2/v2/auth?client_id=x",
+            response.Headers.Location?.ToString());
+    }
+
+    [Fact]
     public async Task Cors_preflight_echoes_origin_with_credentials()
     {
         using var factory = new BffFactory();
@@ -161,6 +173,13 @@ internal sealed class BffFactory(string? secret = null) : WebApplicationFactory<
     private static HttpResponseMessage Respond(HttpRequestMessage request)
     {
         var path = request.RequestUri!.AbsolutePath;
+        if (path.Contains("/google/auth"))
+        {
+            // Simulate FastAPI's OAuth consent 302 — the forwarder must pass Location through.
+            var redirect = new HttpResponseMessage(HttpStatusCode.Redirect);
+            redirect.Headers.Location = new Uri("https://accounts.google.com/o/oauth2/v2/auth?client_id=x");
+            return redirect;
+        }
         if (path.Contains("/pdf") || path.Contains("/workbook"))
         {
             var resp = new HttpResponseMessage(HttpStatusCode.OK)

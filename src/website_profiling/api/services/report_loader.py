@@ -80,6 +80,29 @@ def list_reports(conn: Connection) -> list[dict[str, Any]]:
     return result
 
 
+def list_reports_latest_per_domain(conn: Connection) -> list[dict[str, Any]]:
+    """One row per property — enough for portfolio home grouping (avoids loading every historical report)."""
+    cur = conn.execute(
+        """
+        SELECT DISTINCT ON (COALESCE(NULLIF(canonical_domain, ''), site_name))
+               id, canonical_domain, site_name, generated_at
+        FROM report_payload
+        ORDER BY COALESCE(NULLIF(canonical_domain, ''), site_name), generated_at DESC
+        """
+    )
+    rows = cur.fetchall()
+    result = []
+    for row in rows:
+        generated = _row_field(row, "generated_at")
+        result.append({
+            "id": int(_row_field(row, "id")),
+            "canonical_domain": _row_field(row, "canonical_domain"),
+            "site_name": _row_field(row, "site_name"),
+            "generated_at": generated.isoformat() if hasattr(generated, "isoformat") else generated,
+        })
+    return result
+
+
 # ── Crawl runs ───────────────────────────────────────────────────────────────
 
 def list_crawl_runs(conn: Connection) -> list[dict[str, Any]]:
@@ -103,11 +126,20 @@ def list_crawl_runs(conn: Connection) -> list[dict[str, Any]]:
     return result
 
 
-def list_crawl_run_summaries(conn: Connection) -> list[dict[str, Any]]:
+def list_crawl_run_summaries(conn: Connection, *, max_runs: int | None = None) -> list[dict[str, Any]]:
     """Aggregate crawl run stats for portfolio cards and crawl history."""
     try:
-        cur = conn.execute(
+        run_filter = ""
+        params: tuple[Any, ...] = ()
+        if max_runs is not None and max_runs > 0:
+            run_filter = """
+            WHERE cr.id IN (
+                SELECT id FROM crawl_runs ORDER BY id DESC LIMIT %s
+            )
             """
+            params = (int(max_runs),)
+        cur = conn.execute(
+            f"""
             SELECT
                cr.id AS crawl_run_id,
                cr.start_url,
@@ -134,9 +166,11 @@ def list_crawl_run_summaries(conn: Connection) -> list[dict[str, Any]]:
                )::int AS thin_pages
             FROM crawl_runs cr
             LEFT JOIN crawl_results crl ON crl.crawl_run_id = cr.id
+            {run_filter}
             GROUP BY cr.id, cr.start_url, cr.created_at, cr.render_mode, cr.discovery_mode
             ORDER BY cr.id DESC
-            """
+            """,
+            params,
         )
         rows = cur.fetchall()
     except Exception:

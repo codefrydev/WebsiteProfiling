@@ -1,7 +1,6 @@
-'use client';
 
 import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import {
   CheckCircle2,
   AlertCircle,
@@ -984,7 +983,7 @@ export default function GoogleIntegrationsPanel({
             <p className="text-xs text-muted-foreground">
               Need a project?{' '}
               <Link
-                href={integrationGuideHref('google', { from: 'integrations', sectionId: 'oauthClient' })}
+                to={integrationGuideHref('google', { from: 'integrations', sectionId: 'oauthClient' })}
                 className="inline-flex items-center gap-0.5 text-link underline"
               >
                 {strings.docs.setupGuideLink}
@@ -996,7 +995,7 @@ export default function GoogleIntegrationsPanel({
               </p>
               <p className="mt-2 text-xs text-muted-foreground">
                 {strings.secrets.googleCredentialsHint}{' '}
-                <Link href="/secrets" className="text-link hover:underline">
+                <Link to="/secrets" className="text-link hover:underline">
                   {strings.secrets.pageTitle}
                 </Link>
               </p>
@@ -1404,7 +1403,7 @@ export default function GoogleIntegrationsPanel({
                       {infoBannerText}
                     </p>
                     <Link
-                      href={integrationGuideHref('google', { from: 'integrations' })}
+                      to={integrationGuideHref('google', { from: 'integrations' })}
                       className="shrink-0 text-xs font-medium text-link hover:underline sm:text-sm"
                     >
                       {strings.docs.setupGuideLink}

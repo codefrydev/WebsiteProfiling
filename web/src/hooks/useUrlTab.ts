@@ -1,7 +1,6 @@
-'use client';
 
 import { useCallback, useMemo } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 
 export function parseUrlTab<T extends string>(
   raw: string | null,
@@ -19,9 +18,9 @@ export function useUrlTab<T extends string>(
   defaultTab: T,
   paramName = 'tab',
 ): [T, (tab: T) => void] {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
 
   const activeTab = useMemo(
     () => parseUrlTab(searchParams.get(paramName), validTabs, defaultTab),
@@ -37,9 +36,9 @@ export function useUrlTab<T extends string>(
         next.set(paramName, tab);
       }
       const q = next.toString();
-      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+      navigate(q ? `${pathname}?${q}` : pathname, { replace: true, preventScrollReset: true });
     },
-    [router, pathname, searchParams, paramName, defaultTab],
+    [navigate, pathname, searchParams, paramName, defaultTab],
   );
 
   return [activeTab, setActiveTab];

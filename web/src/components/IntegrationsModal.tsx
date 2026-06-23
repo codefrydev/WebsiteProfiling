@@ -1,4 +1,3 @@
-'use client';
 
 import { Settings2, X } from 'lucide-react';
 import type { IntegrationToast } from '@/types/api';

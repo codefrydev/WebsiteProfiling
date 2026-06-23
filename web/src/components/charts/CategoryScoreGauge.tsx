@@ -1,4 +1,3 @@
-'use client';
 
 import { format, strings } from '@/lib/strings';
 import { scoreBandColor } from '@/utils/chartPalette';

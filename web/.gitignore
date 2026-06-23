@@ -13,11 +13,12 @@
 # testing
 /coverage
 
-# next.js
+# Vite build output
+/dist
+
+# legacy Next.js artifacts (safe to ignore if present)
 /.next/
 /out/
-
-# production
 /build
 
 # misc

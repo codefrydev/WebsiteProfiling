@@ -1,4 +1,3 @@
-'use client';
 
 import { KeyRound } from 'lucide-react';
 import { SECRETS_SECTIONS, type SecretsNavId } from '@/lib/secretsConfigSchema';

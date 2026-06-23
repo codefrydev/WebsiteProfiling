@@ -1,7 +1,6 @@
-'use client';
 
 import { Loader2, Maximize2, Square } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { strings } from '@/lib/strings';
 import { usePipeline } from '@/context/PipelineContext';
 import { useSession } from '@/context/SessionContext';
@@ -13,8 +12,8 @@ const s = strings.pipelineRunner;
  * Background job dock on /home when a pipeline run is active in background mode.
  */
 export default function PipelineRunnerFab() {
-  const pathname = usePathname();
-  const router = useRouter();
+  const { pathname } = useLocation();
+  const navigate = useNavigate();
   const { busy, status, log, backgroundMode, stopping, cancelJob } = usePipeline();
   const { loading: sessionLoading, canMutate } = useSession();
 
@@ -73,7 +72,7 @@ export default function PipelineRunnerFab() {
         </button>
         <button
           type="button"
-          onClick={() => router.push('/pipeline')}
+          onClick={() => navigate('/pipeline')}
           className="shrink-0 rounded-lg p-2 text-muted-foreground hover:bg-brand-700 hover:text-foreground"
           aria-label={s.dockExpand}
           title={s.dockExpand}

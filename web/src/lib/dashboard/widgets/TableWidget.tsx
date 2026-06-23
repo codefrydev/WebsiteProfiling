@@ -1,4 +1,3 @@
-'use client';
 
 import type { QueryResult } from '@/lib/dashboard/engine/types';
 import type { VizOptions } from '@/lib/dashboard/engine/doc';

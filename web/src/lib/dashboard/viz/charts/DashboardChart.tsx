@@ -1,4 +1,3 @@
-'use client';
 
 /**
  * Shared chart component for all dashboard chart visualizations.

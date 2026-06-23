@@ -1,4 +1,3 @@
-'use client';
 
 import {
   createContext,
@@ -9,7 +8,7 @@ import {
   useRef,
   type ReactNode,
 } from 'react';
-import { usePathname } from 'next/navigation';
+import { useLocation } from 'react-router-dom';
 import { domainQueryMatchesRow } from '../lib/domainSlug';
 import {
   filterKeywordRowsForDomain,
@@ -21,6 +20,7 @@ import { computeReportFingerprintDiff } from '../lib/reportDiff';
 import { buildReportCompareSummary } from '../lib/reportCompare';
 import { strings } from '../lib/strings';
 import { reportApi, apiFetch } from '../lib/publicBase';
+import { loadReportCompare } from '../lib/reportCompareClient';
 import type { ReportContextValue } from './reportContextTypes';
 import { SECTION_KEYS, type SectionKey } from '../lib/reportSections';
 import type {
@@ -36,12 +36,6 @@ export const ReportContext = createContext<ReportContextValue | null>(null);
 
 interface PayloadApiResponse {
   payload?: ReportPayload;
-  error?: string;
-}
-
-interface CompareApiResponse {
-  summary?: ReportCompareSummary;
-  reportDiff?: ReportFingerprintDiff;
   error?: string;
 }
 
@@ -112,7 +106,7 @@ export interface ReportProviderProps {
 }
 
 export function ReportProvider({ children, domainSlug = null }: ReportProviderProps) {
-  const pathname = usePathname();
+  const { pathname } = useLocation();
   const [data, setData] = useState<ReportPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [metaLoaded, setMetaLoaded] = useState(false);
@@ -480,18 +474,12 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
 
     let cancelled = false;
     setCompareSummaryLoading(true);
-    const url = reportApi(
-      `/compare?reportId=${encodeURIComponent(String(effectiveReportId))}&baselineId=${encodeURIComponent(String(compareReportId))}`,
-    );
-    apiFetch(url)
-      .then(async (res) => {
-        const body = (await res.json().catch(() => ({}))) as CompareApiResponse;
-        if (!cancelled && res.ok && body.summary) {
+    // Comparison runs in the browser; only the payload fetches hit the BFF.
+    loadReportCompare(effectiveReportId, compareReportId)
+      .then((body) => {
+        if (!cancelled) {
           setCompareSummary(body.summary);
           setServerReportDiff(body.reportDiff ?? null);
-        } else if (!cancelled) {
-          setCompareSummary(null);
-          setServerReportDiff(null);
         }
       })
       .catch(() => {

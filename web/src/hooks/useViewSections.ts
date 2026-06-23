@@ -1,4 +1,3 @@
-'use client';
 
 import { VIEW_SECTIONS } from '@/lib/reportViewSections';
 import type { ViewId } from '@/routes';

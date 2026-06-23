@@ -1,5 +1,4 @@
-import dynamic from 'next/dynamic';
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useMemo, useState, useCallback, useEffect, lazy, Suspense } from 'react';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import {
   FolderTree,
@@ -37,10 +36,7 @@ import type { ViewTabItem } from '../components';
 import PathTreeTable from '../components/siteStructure/PathTreeTable';
 import CrawlMapPanel from '../components/siteStructure/CrawlMapPanel';
 
-const SiteStructureLinkGraph = dynamic(
-  () => import('../components/siteStructure/SiteStructureLinkGraph'),
-  { ssr: false, loading: () => <p className="text-sm text-muted-foreground py-8 text-center">Loading link graph…</p> },
-);
+const SiteStructureLinkGraph = lazy(() => import('../components/siteStructure/SiteStructureLinkGraph'));
 
 import type { CrawlSegmentEntry, CrawlSegmentsData, PathTreeNode, PathTreeTableRow, ViewProps } from '@/types';
 
@@ -545,7 +541,9 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
       {activeTab === 'graph' && data ? (
         <ViewTabPanel idPrefix="site-structure" tabId="graph">
           <Card padding="default">
-            <SiteStructureLinkGraph />
+            <Suspense fallback={<p className="text-sm text-muted-foreground py-8 text-center">Loading link graph…</p>}>
+              <SiteStructureLinkGraph />
+            </Suspense>
           </Card>
         </ViewTabPanel>
       ) : null}
