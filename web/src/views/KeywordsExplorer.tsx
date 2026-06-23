@@ -15,7 +15,7 @@ import { KEYWORDS_EXPLORER_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { useOptionalPipeline } from '../context/PipelineContext';
 import { useKeywordBrandQuery } from '@/hooks/useKeywordBrandQuery';
 import { filterKeywordRowsForDomain } from '@/lib/filterKeywordsForDomain';
-import { apiUrl } from '../lib/publicBase';
+import { apiUrl, apiFetch } from '../lib/publicBase';
 import { goToPipeline } from '../lib/pipelineReturn';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Button, ViewTabs } from '../components';
@@ -204,7 +204,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
       return undefined;
     }
     let cancelled = false;
-    fetch(apiUrl('/integrations/google/keywords/history/batch'), {
+    apiFetch(apiUrl('/integrations/google/keywords/history/batch'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

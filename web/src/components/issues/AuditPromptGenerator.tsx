@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, Copy, FileText, MessageSquare, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { format } from '@/lib/strings';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import {
@@ -82,7 +82,7 @@ export default function AuditPromptGenerator({
     setAiLoading(true);
     setAiError(null);
     try {
-      const res = await fetch(apiUrl('/issues/action-plan'), {
+      const res = await apiFetch(apiUrl('/issues/action-plan'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

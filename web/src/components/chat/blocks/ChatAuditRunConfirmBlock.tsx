@@ -7,7 +7,7 @@ import Button from '@/components/Button';
 import CrawlAuthorizeCheckbox from '@/components/pipeline/CrawlAuthorizeCheckbox';
 import { usePipeline } from '@/context/PipelineContext';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import {
   crawlRenderModeUsesBrowser,
   fetchBrowserCrawlStatus,
@@ -54,7 +54,7 @@ export default function ChatAuditRunConfirmBlock({ block }: { block: AuditRunCon
       const createProp = block.runSpec.create_property;
 
       if (createProp) {
-        const propRes = await fetch(apiUrl('/properties'), {
+        const propRes = await apiFetch(apiUrl('/properties'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -98,7 +98,7 @@ export default function ChatAuditRunConfirmBlock({ block }: { block: AuditRunCon
         throw new Error(validationErrors.join(' '));
       }
 
-      const res = await fetch(apiUrl('/run'), {
+      const res = await apiFetch(apiUrl('/run'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

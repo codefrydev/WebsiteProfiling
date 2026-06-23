@@ -1,4 +1,4 @@
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import type { DashboardDoc } from '@/lib/dashboard/engine/doc';
 
 export interface DashboardRowClient {
@@ -12,7 +12,7 @@ export interface DashboardRowClient {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(apiUrl(path), {
+  const res = await apiFetch(apiUrl(path), {
     headers: { 'Content-Type': 'application/json' },
     ...init,
   });

@@ -13,7 +13,7 @@ import {
 import { useRouter } from 'next/navigation';
 import type { PipelineConfigSource, PipelineJobStatus, PipelineUnknownKey } from '@/types/api';
 import type { LlmConfigState, PipelineConfigState } from '@/types/api';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { PIPELINE_JOB_STARTED, pollPipelineJob } from '@/lib/pipelineJobEvents';
 import { formatPipelineJobLog, logPipelineFailure } from '@/lib/pipelineDebug';
 import { currentPathForReturn, readPipelineReturnPath, storePipelineReturnPath, buildPipelineHref } from '@/lib/pipelineReturn';
@@ -264,8 +264,8 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     setLoadError('');
     try {
       const [pipeRes, llmRes] = await Promise.all([
-        fetch(apiUrl('/pipeline-config')),
-        fetch(apiUrl('/llm-config')),
+        apiFetch(apiUrl('/pipeline-config')),
+        apiFetch(apiUrl('/llm-config')),
       ]);
       const data = await pipeRes.json().catch(() => ({}));
       const llmData = await llmRes.json().catch(() => ({}));
@@ -317,7 +317,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     void (async () => {
       try {
-        const res = await fetch(apiUrl('/jobs?limit=1'));
+        const res = await apiFetch(apiUrl('/jobs?limit=1'));
         const data = await res.json().catch(() => ({}));
         if (cancelled) return;
         if (!res.ok) {
@@ -384,7 +384,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     const trimmed = startUrlValue.trim();
     if (!trimmed) return;
     try {
-      const res = await fetch(apiUrl(`/properties/resolve?startUrl=${encodeURIComponent(trimmed)}`));
+      const res = await apiFetch(apiUrl(`/properties/resolve?startUrl=${encodeURIComponent(trimmed)}`));
       const data = await res.json().catch(() => ({}));
       const preset = String(data.default_crawl_preset || '').trim();
       if (preset && isCrawlPresetId(preset)) {
@@ -421,7 +421,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     setConfigState((prev) => applyCrawlPreset(preset, prev));
     const propertyId = Number(configState.active_property_id || 0);
     if (propertyId > 0) {
-      void fetch(apiUrl(`/properties/${propertyId}/preset`), {
+      void apiFetch(apiUrl(`/properties/${propertyId}/preset`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ preset }),
@@ -450,14 +450,14 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     setSaving(true);
     setSaveMsg('');
     try {
-      const res = await fetch(apiUrl('/pipeline-config'), {
+      const res = await apiFetch(apiUrl('/pipeline-config'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ state: configState, unknownKeys }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || res.statusText);
-      const llmRes = await fetch(apiUrl('/llm-config'), {
+      const llmRes = await apiFetch(apiUrl('/llm-config'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ state: buildLlmPayload() }),
@@ -486,7 +486,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       setLlmConfigState(nextState);
       setSaving(true);
       try {
-        const res = await fetch(apiUrl('/llm-config'), {
+        const res = await apiFetch(apiUrl('/llm-config'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -513,7 +513,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       setLlmConfigState(nextState);
       setSaving(true);
       try {
-        const res = await fetch(apiUrl('/llm-config'), {
+        const res = await apiFetch(apiUrl('/llm-config'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -537,7 +537,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       setLlmConfigState((prev) => ({ ...prev, llm_chat_unlimited_tool_rounds: enabled }));
       setSaving(true);
       try {
-        const res = await fetch(apiUrl('/llm-config'), {
+        const res = await apiFetch(apiUrl('/llm-config'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -582,7 +582,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     setStatus('starting');
     setBackgroundMode(false);
     try {
-      const res = await fetch(apiUrl('/run'), {
+      const res = await apiFetch(apiUrl('/run'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -636,7 +636,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     if (!jobId || stopping) return false;
     setStopping(true);
     try {
-      const res = await fetch(apiUrl(`/jobs/${encodeURIComponent(jobId)}/cancel`), {
+      const res = await apiFetch(apiUrl(`/jobs/${encodeURIComponent(jobId)}/cancel`), {
         method: 'POST',
       });
       const data = await res.json().catch(() => ({}));

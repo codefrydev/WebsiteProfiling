@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { Bell, CalendarClock, Loader2 } from 'lucide-react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings, format } from '@/lib/strings';
 import { Button } from '@/components';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
@@ -26,7 +26,7 @@ export default function PropertyOpsSection({ propertyId }: PropertyOpsSectionPro
     if (propertyId == null) return undefined;
     let cancelled = false;
     setLoading(true);
-    void fetch(apiUrl(`/properties/${propertyId}/ops`))
+    void apiFetch(apiUrl(`/properties/${propertyId}/ops`))
       .then(async (res) => {
         if (cancelled) return;
         if (!res.ok) {
@@ -52,7 +52,7 @@ export default function PropertyOpsSection({ propertyId }: PropertyOpsSectionPro
   useEffect(() => {
     if (propertyId == null) return undefined;
     let cancelled = false;
-    void fetch(apiUrl(`/properties/${propertyId}/google/links/status`))
+    void apiFetch(apiUrl(`/properties/${propertyId}/google/links/status`))
       .then(async (res) => {
         if (cancelled) return;
         if (!res.ok) return;
@@ -84,7 +84,7 @@ export default function PropertyOpsSection({ propertyId }: PropertyOpsSectionPro
     setSaving(true);
     setMessage(null);
     try {
-      const res = await fetch(apiUrl(`/properties/${propertyId}/ops`), {
+      const res = await apiFetch(apiUrl(`/properties/${propertyId}/ops`), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
 import type { ReportIssue } from '@/types';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
@@ -40,7 +40,7 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
     if (!propertyId) return;
     let cancelled = false;
     setLoading(true);
-    void fetch(apiUrl(`/issues/status?propertyId=${propertyId}`))
+    void apiFetch(apiUrl(`/issues/status?propertyId=${propertyId}`))
       .then((r) => r.json())
       .then((data) => {
         if (cancelled) return;
@@ -74,7 +74,7 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
       if (!propertyId || readOnly) return;
       const message = String(item.issue.message || '').trim();
       if (!message) return;
-      const res = await fetch(apiUrl('/issues/status'), {
+      const res = await apiFetch(apiUrl('/issues/status'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

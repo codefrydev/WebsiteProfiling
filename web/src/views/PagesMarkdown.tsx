@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import {
   normalizePropertyId,
   pickInitialPropertyId,
@@ -66,7 +66,7 @@ export default function PagesMarkdown() {
     void (async () => {
       setLoadingProperties(true);
       try {
-        const res = await fetch(apiUrl('/properties'));
+        const res = await apiFetch(apiUrl('/properties'));
         if (!res.ok) return;
         const data = (await res.json()) as { properties?: PropertyOption[] };
         if (cancelled) return;

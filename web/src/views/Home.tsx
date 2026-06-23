@@ -15,7 +15,7 @@ import { portfolioCardKey } from '@/components/portfolio/portfolioCardUtils';
 import { usePortfolio } from '@/context/usePortfolio';
 import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
-import { apiUrl } from '../lib/publicBase';
+import { apiUrl, apiFetch } from '../lib/publicBase';
 import { getDefaultLandingView } from '@/lib/defaultViewPref';
 import type { PortfolioGroup, ViewProps } from '@/types';
 
@@ -67,7 +67,7 @@ export default function Home({ onNavigate }: ViewProps) {
       setDeletingKey(key);
       setDeleteError(null);
       try {
-        const res = await fetch(apiUrl('/portfolio/delete'), {
+        const res = await apiFetch(apiUrl('/portfolio/delete'), {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

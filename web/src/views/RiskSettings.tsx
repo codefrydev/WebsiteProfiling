@@ -14,7 +14,7 @@ import { SecretsSaveBar } from '@/components/secrets/SecretsSettingsPanel';
 import ToolPageSidebar from '@/components/shared/ToolPageSidebar';
 import { useRiskSettings } from '@/hooks/useRiskSettings';
 import { useSession } from '@/context/SessionContext';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { RISK_SETTINGS_SIDEBAR_NAV_IDS } from '@/lib/appNav';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -304,7 +304,7 @@ export default function RiskSettingsPage() {
   const [catalogError, setCatalogError] = useState('');
 
   useEffect(() => {
-    void fetch(apiUrl('/mcp-tools'))
+    void apiFetch(apiUrl('/mcp-tools'))
       .then((res) => res.json())
       .then((data: McpCatalog) => {
         if (data.error) {

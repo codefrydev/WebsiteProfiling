@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { apiFetch } from '@/lib/publicBase';
 import Link from 'next/link';
 import {
   AlertOctagon,
@@ -111,7 +112,7 @@ export function OverviewExecutiveSummary({
     setHealthTrend([]);
     setHistoryError(null);
     if (!domain || !historyInView) return;
-    void fetch(`/api/report/history?domain=${encodeURIComponent(domain)}&limit=8`)
+    void apiFetch(`/api/report/history?domain=${encodeURIComponent(domain)}&limit=8`)
       .then(async (r) => {
         if (!r.ok) {
           setHistoryError(vo.historyTrendUnavailable);

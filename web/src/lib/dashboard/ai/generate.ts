@@ -3,6 +3,7 @@
  * Calls POST /api/dashboards/ai-generate and validates / sanitizes the response.
  */
 import { tokenize } from '@/lib/dashboard/script/lexer';
+import { apiFetch } from '@/lib/publicBase';
 import { Parser } from '@/lib/dashboard/script/parser';
 import { newWidgetId, defaultWidgetLayout } from '@/lib/dashboard/types';
 import type {
@@ -172,7 +173,7 @@ export function assignLayouts(
 // ---------------------------------------------------------------------------
 
 async function callAiGenerate(opts: AiGenerateOptions): Promise<Record<string, unknown>> {
-  const res = await fetch('/api/dashboards/ai-generate', {
+  const res = await apiFetch('/api/dashboards/ai-generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

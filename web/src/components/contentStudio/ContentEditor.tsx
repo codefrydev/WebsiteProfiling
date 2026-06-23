@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import { Save, ScanSearch, Sparkles } from 'lucide-react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
 import { Button } from '@/components';
 import SeoScoreSidebar from './SeoScoreSidebar';
@@ -116,7 +116,7 @@ export default function ContentEditor({
     onAnalyzeLoading?.(true);
     onAnalyzeError?.(null);
     try {
-      const res = await fetch(apiUrl('/content/analyze'), {
+      const res = await apiFetch(apiUrl('/content/analyze'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

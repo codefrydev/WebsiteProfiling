@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, Circle, Info, Loader2, RefreshCw } from 'lucide-react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
 import SeoScoreSidebar from './SeoScoreSidebar';
 import AiSuggestionsPanel from './AiSuggestionsPanel';
@@ -31,7 +31,7 @@ export interface EditorInsightsPanelProps {
 }
 
 async function callWizard<T>(payload: Record<string, unknown>): Promise<T> {
-  const res = await fetch(apiUrl('/content/wizard'), {
+  const res = await apiFetch(apiUrl('/content/wizard'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),

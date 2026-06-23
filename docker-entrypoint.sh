@@ -2,13 +2,22 @@
 set -e
 cd /app
 
-if [ -z "${DATABASE_URL:-}" ] || [ -z "$(printf '%s' "$DATABASE_URL" | tr -d '[:space:]')" ]; then
-  echo "ERROR: DATABASE_URL is required." >&2
-  echo "  Use docker compose (see README) or pass -e DATABASE_URL=postgres://user:pass@host:5432/db" >&2
-  exit 1
-fi
+# Role dispatch. Default "all" preserves the legacy single-container behaviour
+# (worker + FastAPI + Next.js in one container). The BFF topology splits these into
+# separate compose services so FastAPI/FileService can be network-internal behind the
+# .NET BFF: WP_ROLE=fastapi | worker | web.
+ROLE="${WP_ROLE:-all}"
 
-/opt/venv/bin/python <<'PY'
+require_database_url() {
+  if [ -z "${DATABASE_URL:-}" ] || [ -z "$(printf '%s' "$DATABASE_URL" | tr -d '[:space:]')" ]; then
+    echo "ERROR: DATABASE_URL is required." >&2
+    echo "  Use docker compose (see README) or pass -e DATABASE_URL=postgres://user:pass@host:5432/db" >&2
+    exit 1
+  fi
+}
+
+wait_for_db() {
+  /opt/venv/bin/python <<'PY'
 import os
 import sys
 import time
@@ -61,50 +70,91 @@ print(
 print(f"  Last error: {last_error}", file=sys.stderr)
 sys.exit(1)
 PY
-
-/opt/venv/bin/alembic upgrade head
-
-WORKER_PID=""
-UVICORN_PID=""
-NPM_PID=""
-
-cleanup() {
-  [ -n "$WORKER_PID" ] && kill "$WORKER_PID" 2>/dev/null || true
-  [ -n "$UVICORN_PID" ] && kill "$UVICORN_PID" 2>/dev/null || true
-  [ -n "$NPM_PID" ] && kill "$NPM_PID" 2>/dev/null || true
 }
-trap cleanup TERM INT
 
-/opt/venv/bin/python -m website_profiling.worker &
-WORKER_PID=$!
+migrate() {
+  /opt/venv/bin/alembic upgrade head
+}
 
-/opt/venv/bin/uvicorn website_profiling.api.main:app \
-  --host 0.0.0.0 --port 8001 --workers 1 &
-UVICORN_PID=$!
+start_uvicorn_foreground() {
+  exec /opt/venv/bin/uvicorn website_profiling.api.main:app \
+    --host 0.0.0.0 --port 8001 --workers 1
+}
 
-# Wait for FastAPI to be ready before starting Next.js (max ~15s)
-i=0
-while [ "$i" -lt 30 ]; do
-  if node -e "require('http').get('http://127.0.0.1:8001/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))" 2>/dev/null; then
-    echo "FastAPI ready (attempt $((i + 1))/30)" >&2
-    break
-  fi
-  sleep 0.5
-  i=$((i + 1))
-done
-if [ "$i" -eq 30 ]; then
-  echo "WARNING: FastAPI did not respond to /api/health after 15s — continuing anyway" >&2
-fi
+start_next_foreground() {
+  cd /app/web
+  exec npm run start -- -H 0.0.0.0 -p 3000
+}
 
-cd /app/web
-npm run start -- -H 0.0.0.0 -p 3000 &
-NPM_PID=$!
+case "$ROLE" in
+  fastapi)
+    require_database_url
+    wait_for_db
+    migrate
+    start_uvicorn_foreground
+    ;;
+  worker)
+    require_database_url
+    wait_for_db
+    exec /opt/venv/bin/python -m website_profiling.worker
+    ;;
+  web)
+    # Next.js UI only. FastAPI now lives in its own service; the browser talks to the BFF.
+    start_next_foreground
+    ;;
+  all)
+    # Legacy single-container: worker + FastAPI + Next.js together.
+    require_database_url
+    wait_for_db
+    migrate
 
-# Monitor critical processes — exit the container if either npm or uvicorn dies.
-# A dead worker does not break the UI so it is intentionally excluded.
-while kill -0 "$NPM_PID" 2>/dev/null && kill -0 "$UVICORN_PID" 2>/dev/null; do
-  sleep 5
-done
-echo "Critical process (npm or uvicorn) exited — shutting down container" >&2
-cleanup
-exit 1
+    WORKER_PID=""
+    UVICORN_PID=""
+    NPM_PID=""
+
+    cleanup() {
+      [ -n "$WORKER_PID" ] && kill "$WORKER_PID" 2>/dev/null || true
+      [ -n "$UVICORN_PID" ] && kill "$UVICORN_PID" 2>/dev/null || true
+      [ -n "$NPM_PID" ] && kill "$NPM_PID" 2>/dev/null || true
+    }
+    trap cleanup TERM INT
+
+    /opt/venv/bin/python -m website_profiling.worker &
+    WORKER_PID=$!
+
+    /opt/venv/bin/uvicorn website_profiling.api.main:app \
+      --host 0.0.0.0 --port 8001 --workers 1 &
+    UVICORN_PID=$!
+
+    # Wait for FastAPI to be ready before starting Next.js (max ~15s)
+    i=0
+    while [ "$i" -lt 30 ]; do
+      if node -e "require('http').get('http://127.0.0.1:8001/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))" 2>/dev/null; then
+        echo "FastAPI ready (attempt $((i + 1))/30)" >&2
+        break
+      fi
+      sleep 0.5
+      i=$((i + 1))
+    done
+    if [ "$i" -eq 30 ]; then
+      echo "WARNING: FastAPI did not respond to /api/health after 15s — continuing anyway" >&2
+    fi
+
+    cd /app/web
+    npm run start -- -H 0.0.0.0 -p 3000 &
+    NPM_PID=$!
+
+    # Monitor critical processes — exit the container if either npm or uvicorn dies.
+    # A dead worker does not break the UI so it is intentionally excluded.
+    while kill -0 "$NPM_PID" 2>/dev/null && kill -0 "$UVICORN_PID" 2>/dev/null; do
+      sleep 5
+    done
+    echo "Critical process (npm or uvicorn) exited — shutting down container" >&2
+    cleanup
+    exit 1
+    ;;
+  *)
+    echo "ERROR: unknown WP_ROLE '$ROLE' (expected: all | web | fastapi | worker)" >&2
+    exit 1
+    ;;
+esac

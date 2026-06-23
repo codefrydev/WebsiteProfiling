@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { apiUrl } from '../../lib/publicBase';
+import { apiUrl, apiFetch } from '../../lib/publicBase';
 import { buildLinksInspectHref } from '../../lib/reportNav';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
 import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
@@ -250,7 +250,7 @@ export function ByPagePanel({ rows, ke, brandQuery = null }: ByPagePanelProps) {
     setPageKws(null);
     try {
       const domainParam = brandQuery ? `&domain=${encodeURIComponent(brandQuery)}` : '';
-      const res = await fetch(
+      const res = await apiFetch(
         apiUrl(`/integrations/google/keywords/by-page?url=${encodeURIComponent(url)}${domainParam}`),
       );
       const data = (await res.json()) as KeywordByPageResponse;
@@ -484,7 +484,7 @@ export function BulkSeedPanel({ brandQuery = null }: { brandQuery?: string | nul
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(apiUrl('/integrations/google/keywords/expand'), {
+      const res = await apiFetch(apiUrl('/integrations/google/keywords/expand'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

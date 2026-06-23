@@ -15,7 +15,7 @@ import {
   Settings2,
 } from 'lucide-react';
 import type { GooglePropertiesResponse, GoogleStatusResponse, IntegrationToast } from '@/types/api';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings, format } from '@/lib/strings';
 import { dispatchPipelineJobStarted, pollPipelineJob } from '@/lib/pipelineJobEvents';
 import { useOptionalReport } from '@/context/useReport';
@@ -279,7 +279,7 @@ export default function GoogleIntegrationsPanel({
     void (async () => {
       setLoadingPropertyRows(true);
       try {
-        const res = await fetch(apiUrl('/properties'));
+        const res = await apiFetch(apiUrl('/properties'));
         if (!res.ok) return;
         const data = (await res.json()) as { properties?: PropertyListItem[] };
         if (!cancelled) setPropertyRows(data.properties ?? []);
@@ -394,7 +394,7 @@ export default function GoogleIntegrationsPanel({
     const url = startUrl.trim();
     if (!url) return null;
     try {
-      const res = await fetch(apiUrl(`/properties/resolve?startUrl=${encodeURIComponent(url)}`));
+      const res = await apiFetch(apiUrl(`/properties/resolve?startUrl=${encodeURIComponent(url)}`));
       if (!res.ok) return null;
       const data = (await res.json()) as { id?: number };
       if (data.id == null || !Number.isFinite(data.id)) return null;
@@ -409,7 +409,7 @@ export default function GoogleIntegrationsPanel({
     if (effectivePropertyId == null) return;
     setLoadingStatus(true);
     try {
-      const res = await fetch(endpoints.status);
+      const res = await apiFetch(endpoints.status);
       if (res.ok) {
         const data = (await res.json()) as GoogleStatusResponse & {
           connected?: boolean;
@@ -461,7 +461,7 @@ export default function GoogleIntegrationsPanel({
     }
     setLoadingLinksStatus(true);
     try {
-      const res = await fetch(endpoints.linksStatus);
+      const res = await apiFetch(endpoints.linksStatus);
       if (res.ok) {
         const data = (await res.json()) as typeof linksStatus;
         if (!isCancelled?.()) setLinksStatus(data);
@@ -488,7 +488,7 @@ export default function GoogleIntegrationsPanel({
       setLinksUploadMessage('');
       try {
         const fileContent = await file.text();
-        const res = await fetch(endpoints.linksImport, {
+        const res = await apiFetch(endpoints.linksImport, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fileContent, fileName: file.name }),
@@ -530,7 +530,7 @@ export default function GoogleIntegrationsPanel({
   const loadGoogleLists = async () => {
     setLoadingGoogleLists(true);
     try {
-      const res = await fetch(endpoints.listProperties);
+      const res = await apiFetch(endpoints.listProperties);
       if (res.ok) {
         const data = (await res.json()) as GooglePropertiesResponse;
         setGoogleLists(data);
@@ -564,7 +564,7 @@ export default function GoogleIntegrationsPanel({
       setSavingProps(true);
       setPropertiesSaveState({ phase: 'saving' });
       try {
-        const res = await fetch(endpoints.credentials, {
+        const res = await apiFetch(endpoints.credentials, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -641,7 +641,7 @@ export default function GoogleIntegrationsPanel({
     if (readOnly || !refreshToken.trim() || effectivePropertyId == null) return;
     setSavingToken(true);
     try {
-      const res = await fetch(endpoints.credentials, {
+      const res = await apiFetch(endpoints.credentials, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken: refreshToken.trim() }),
@@ -666,7 +666,7 @@ export default function GoogleIntegrationsPanel({
     setTesting(true);
     setTestLog('');
     try {
-      const res = await fetch(endpoints.test, { method: 'POST' });
+      const res = await apiFetch(endpoints.test, { method: 'POST' });
       const data = await res.json();
       const log = data.log || (data.ok ? 'Test passed.' : 'Test failed.');
       setTestLog(log);
@@ -705,7 +705,7 @@ export default function GoogleIntegrationsPanel({
     fetchPollStopRef.current?.();
     fetchPollStopRef.current = null;
     try {
-      const res = await fetch(apiUrl('/run'), {
+      const res = await apiFetch(apiUrl('/run'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -753,7 +753,7 @@ export default function GoogleIntegrationsPanel({
   const handleDisconnect = async () => {
     if (readOnly) return;
     try {
-      await fetch(endpoints.disconnect, { method: 'POST' });
+      await apiFetch(endpoints.disconnect, { method: 'POST' });
       await fetchStatus();
       setToast({ type: 'success', message: 'Disconnected.' });
     } catch (e) {

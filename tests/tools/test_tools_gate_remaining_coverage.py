@@ -429,6 +429,16 @@ def test_geo_tools_depth_and_fetch_helpers() -> None:
     assert disc_err["endpoints"]
 
 
+def test_score_robots_ai_access_handles_request_error() -> None:
+    """robots.txt fetch failure → unchecked result (covers the RequestException branch)."""
+    with patch(
+        "website_profiling.tools.audit_tools.geo.geo_tools.requests.get",
+        side_effect=requests.RequestException("boom"),
+    ):
+        result = geo_mod._score_robots_ai_access("ex.com")
+    assert result == {"robots_score": 0, "checked": False, "error": "robots.txt not reachable"}
+
+
 # ---------------------------------------------------------------------------
 # integration_tools
 # ---------------------------------------------------------------------------

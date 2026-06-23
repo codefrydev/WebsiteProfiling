@@ -1,5 +1,5 @@
 import type { CustomThemeState, TokenMap } from '../lib/themeTokens';
-import { apiUrl } from '../lib/publicBase';
+import { apiUrl, apiFetch } from '../lib/publicBase';
 
 export const CUSTOM_THEME_KEY = 'wp-theme-custom:v1';
 export const CUSTOM_THEME_DB_KEY = 'custom_theme';
@@ -80,7 +80,7 @@ export function serializeCustomThemeForScript(state: CustomThemeState): string {
 /** Load custom theme from DB (via API). Returns null on any failure. */
 export async function loadCustomThemeFromDb(): Promise<CustomThemeState | null> {
   try {
-    const res = await fetch(apiUrl(`/app-settings?key=${CUSTOM_THEME_DB_KEY}`));
+    const res = await apiFetch(apiUrl(`/app-settings?key=${CUSTOM_THEME_DB_KEY}`));
     if (!res.ok) return null;
     const data = (await res.json()) as { key: string; value: string | null };
     if (!data.value) return null;
@@ -104,7 +104,7 @@ export async function saveCustomThemeToDb(state: CustomThemeState): Promise<void
   // Always keep localStorage in sync as a fast FOUC cache
   setStoredCustomTheme(state);
   try {
-    await fetch(apiUrl('/app-settings'), {
+    await apiFetch(apiUrl('/app-settings'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ key: CUSTOM_THEME_DB_KEY, value: JSON.stringify(state) }),

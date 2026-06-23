@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { Globe, Loader2 } from 'lucide-react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
 import { Button } from '@/components';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
@@ -20,7 +20,7 @@ export default function BingWebmasterSection() {
     setError(null);
     setResult(null);
     try {
-      const res = await fetch(apiUrl('/integrations/bing/sync'), { method: 'POST' });
+      const res = await apiFetch(apiUrl('/integrations/bing/sync'), { method: 'POST' });
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.error || s.failed);
       setResult(payload);

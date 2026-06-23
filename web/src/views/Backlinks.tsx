@@ -12,7 +12,7 @@ import { useTabSections } from '@/hooks/useTabSections';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { BACKLINKS_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { useActivePropertyContext } from '@/hooks/useActivePropertyContext';
-import { apiUrl } from '../lib/publicBase';
+import { apiUrl, apiFetch } from '../lib/publicBase';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, ViewTabs, EmptyState } from '../components';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
@@ -54,7 +54,7 @@ export default function Backlinks(_props: ViewProps) {
       return;
     }
     let cancelled = false;
-    void fetch(apiUrl(`/backlinks/velocity?propertyId=${propertyId}`))
+    void apiFetch(apiUrl(`/backlinks/velocity?propertyId=${propertyId}`))
       .then((r) => r.json())
       .then((body) => {
         if (!cancelled) setVelocity(body.snapshots || []);

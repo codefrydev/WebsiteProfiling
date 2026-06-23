@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { apiFetch } from '@/lib/publicBase';
 import { Loader2, RefreshCw, Sparkles, Radio } from 'lucide-react';
 import type { LinkDetail } from '@/types/report';
 import type { CompareMetricRow } from '@/lib/reportCompare';
@@ -108,15 +109,15 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
   const loadSnapshot = useCallback(async (googleSnapshotId?: number | null) => {
     const q = new URLSearchParams(pageGoogleQuery);
     if (googleSnapshotId != null) q.set('googleSnapshotId', String(googleSnapshotId));
-    const res = await fetch(`/api/integrations/google/page-data?${q}`);
+    const res = await apiFetch(`/api/integrations/google/page-data?${q}`);
     if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
     return (await res.json()) as PageDataResponse;
   }, [pageGoogleQuery]);
 
   const loadHistories = useCallback(async () => {
     const [siteRes, liveRes] = await Promise.all([
-      fetch(`/api/integrations/google/page-data/history?${pageGoogleQuery}`),
-      fetch(`/api/integrations/google/page-live/history?url=${encodeURIComponent(pageUrl)}`),
+      apiFetch(`/api/integrations/google/page-data/history?${pageGoogleQuery}`),
+      apiFetch(`/api/integrations/google/page-live/history?url=${encodeURIComponent(pageUrl)}`),
     ]);
     const site = siteRes.ok ? ((await siteRes.json()) as { history?: HistoryRow[] }).history || [] : [];
     const live = liveRes.ok ? ((await liveRes.json()) as { history?: HistoryRow[] }).history || [] : [];
@@ -161,7 +162,7 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
         q.set('baselineType', compareSelect.baselineType);
         q.set('baselineId', String(compareSelect.baselineId));
       }
-      const res = await fetch(`/api/integrations/google/page-compare?${q}`);
+      const res = await apiFetch(`/api/integrations/google/page-compare?${q}`);
       if (!res.ok) {
         setCompare(null);
         return;
@@ -203,7 +204,7 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
     setLiveBusy(true);
     setLiveError(null);
     try {
-      const res = await fetch('/api/integrations/google/page-live', {
+      const res = await apiFetch('/api/integrations/google/page-live', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: pageUrl }),
@@ -269,7 +270,7 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
         body.baselineType = compare.baseline.type;
         body.baselineId = compare.baseline.id;
       }
-      const res = await fetch('/api/links/page-coach', {
+      const res = await apiFetch('/api/links/page-coach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

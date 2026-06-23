@@ -98,3 +98,20 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Test FileService
         run: dotnet test services/FileService/FileService.slnx
+
+  bff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Test BFF
+        run: dotnet test services/Bff/Bff.slnx
+      - name: Generated client drift gate
+        run: |
+          dotnet tool install -g NSwag.ConsoleCore
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          (cd services/Bff && nswag run nswag.json)
+          git diff --exit-code services/Bff/src/Bff.Application/Generated/FastApiClient.g.cs \
+            || (echo "::error::FastApiClient.g.cs is stale — run services/Bff/generate-client.sh and commit." && exit 1)

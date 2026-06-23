@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { portfolioCardKey } from '@/components/portfolio/portfolioCardUtils';
 import { computePortfolioSummary } from '@/lib/homePortfolio';
-import { reportApi } from '@/lib/publicBase';
+import { reportApi, apiFetch } from '@/lib/publicBase';
 import { useReport } from './useReport';
 import type {
   PortfolioContextValue,
@@ -95,7 +95,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     try {
       const ids = reportList.map((r) => r.id).join(',');
       const qs = ids ? `?widget=groups&ids=${encodeURIComponent(ids)}` : '?widget=groups';
-      const res = await fetch(reportApi(`/portfolio${qs}`));
+      const res = await apiFetch(reportApi(`/portfolio${qs}`));
       const body = (await res.json().catch(() => ({}))) as GroupsApiResponse;
       if (!res.ok) throw new Error(body.error || res.statusText);
 
@@ -149,7 +149,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
       throw new Error('Missing report or crawl id');
     }
 
-    const res = await fetch(reportApi(`/portfolio?${params.toString()}`));
+    const res = await apiFetch(reportApi(`/portfolio?${params.toString()}`));
     const body = (await res.json().catch(() => ({}))) as CardApiResponse;
     if (!res.ok) throw new Error(body.error || res.statusText);
     if (body.group) {

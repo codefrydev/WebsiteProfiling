@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState, useCallback } from 'react';
+import { apiFetch } from '@/lib/publicBase';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useUrlTab } from '@/hooks/useUrlTab';
@@ -305,7 +306,7 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
               type="button"
               className="ml-auto px-3 py-1.5 rounded-lg border border-default bg-brand-800 hover:bg-brand-700 text-foreground text-xs font-medium"
               onClick={() => {
-                void fetch('/api/compare/export', {
+                void apiFetch('/api/compare/export', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({

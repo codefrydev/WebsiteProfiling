@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Terminal, Upload } from 'lucide-react';
 import { useOptionalPipeline } from '@/context/PipelineContext';
 import { useReport } from '@/context/useReport';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, StatCard } from '@/components';
@@ -61,7 +61,7 @@ export default function LogAnalyzer(_props: ViewProps) {
       form.append('file', file);
       if (startUrl) form.append('startUrl', startUrl);
       if (crawlUrls.length) form.append('crawlUrls', crawlUrls.join('\n'));
-      const res = await fetch(apiUrl('/logs/upload'), { method: 'POST', body: form });
+      const res = await apiFetch(apiUrl('/logs/upload'), { method: 'POST', body: form });
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.error || 'Upload failed');
       setAnalysis((payload.analysis || null) as Record<string, unknown> | null);

@@ -1,4 +1,4 @@
-import { apiUrl } from './publicBase';
+import { apiUrl, apiFetch } from './publicBase';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -145,7 +145,7 @@ export function setStoredUiPrefs(prefs: UiPrefs): void {
 
 export async function loadUiPrefsFromDb(): Promise<UiPrefs | null> {
   try {
-    const res = await fetch(apiUrl(`/app-settings?key=${UI_PREFS_DB_KEY}`));
+    const res = await apiFetch(apiUrl(`/app-settings?key=${UI_PREFS_DB_KEY}`));
     if (!res.ok) return null;
     const data = (await res.json()) as { key: string; value: string | null };
     if (!data.value) return null;
@@ -164,7 +164,7 @@ export async function loadUiPrefsFromDb(): Promise<UiPrefs | null> {
 export async function saveUiPrefsToDb(prefs: UiPrefs): Promise<void> {
   setStoredUiPrefs(prefs);
   try {
-    await fetch(apiUrl('/app-settings'), {
+    await apiFetch(apiUrl('/app-settings'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ key: UI_PREFS_DB_KEY, value: JSON.stringify(prefs) }),

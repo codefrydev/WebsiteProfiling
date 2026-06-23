@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { parsePortfolioAuditHistory, type PortfolioAuditHistoryPoint } from '@/lib/portfolioAuditHistory';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import type { PortfolioLoadStatus } from '@/context/portfolioContextTypes';
 
 export function usePortfolioCardHistory(
@@ -27,7 +27,7 @@ export function usePortfolioCardHistory(
     inFlightRef.current = true;
     setStatus('loading');
 
-    void fetch(apiUrl(`/report/history?domain=${encodeURIComponent(domainParam)}&limit=8`))
+    void apiFetch(apiUrl(`/report/history?domain=${encodeURIComponent(domainParam)}&limit=8`))
       .then((res) => res.json())
       .then((body) => {
         if (cancelled) return;

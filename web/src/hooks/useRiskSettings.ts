@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { RISK_SETTINGS_KEYS } from '@/lib/secretsConfigSchema';
 import { useSecrets } from '@/hooks/useSecrets';
 
@@ -21,7 +21,7 @@ const DEFAULT_LLM: RiskLlmState = {
 
 async function loadLlmRiskState(): Promise<RiskLlmState | null> {
   try {
-    const res = await fetch(apiUrl('/llm-config'));
+    const res = await apiFetch(apiUrl('/llm-config'));
     if (!res.ok) return null;
     const data = (await res.json()) as { state?: Record<string, unknown> };
     const s = data.state ?? {};
@@ -38,7 +38,7 @@ async function loadLlmRiskState(): Promise<RiskLlmState | null> {
 
 async function saveLlmField(key: string, value: boolean): Promise<boolean> {
   try {
-    const res = await fetch(apiUrl('/llm-config'), {
+    const res = await apiFetch(apiUrl('/llm-config'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ state: { [key]: value } }),

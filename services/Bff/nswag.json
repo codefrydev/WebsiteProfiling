@@ -1,0 +1,32 @@
+{
+  "runtime": "Net100",
+  "defaultVariables": null,
+  "documentGenerator": {
+    "fromDocument": {
+      "url": "../../web/openapi.json"
+    }
+  },
+  "codeGenerators": {
+    "openApiToCSharpClient": {
+      "clientBaseClass": null,
+      "className": "FastApiClient",
+      "operationGenerationMode": "SingleClientFromOperationId",
+      "generateClientInterfaces": true,
+      "generateOptionalParameters": true,
+      "jsonLibrary": "SystemTextJson",
+      "anyType": "object",
+      "dictionaryType": "System.Collections.Generic.Dictionary",
+      "dictionaryInstanceType": "System.Collections.Generic.Dictionary",
+      "arrayType": "System.Collections.Generic.List",
+      "arrayInstanceType": "System.Collections.Generic.List",
+      "namespace": "Bff.Application.Generated",
+      "requiredPropertiesMustBeDefined": true,
+      "generateDataAnnotations": false,
+      "generateExceptionClasses": true,
+      "exceptionClass": "FastApiClientException",
+      "useBaseUrl": false,
+      "generateNullableReferenceTypes": true,
+      "output": "src/Bff.Application/Generated/FastApiClient.g.cs"
+    }
+  }
+}

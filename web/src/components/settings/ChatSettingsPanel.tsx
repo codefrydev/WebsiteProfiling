@@ -11,7 +11,7 @@ import {
   DEFAULT_CHAT_ASSISTANT_NAME,
   DEFAULT_CHAT_ASSISTANT_AVATAR,
 } from '@/lib/chatAssistantBranding';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
 
 const s = strings.settings;
@@ -96,7 +96,7 @@ interface ChatLlmState {
 
 async function loadChatLlmSettings(): Promise<ChatLlmState | null> {
   try {
-    const res = await fetch(apiUrl('/llm-config'));
+    const res = await apiFetch(apiUrl('/llm-config'));
     if (!res.ok) return null;
     const data = (await res.json()) as { state?: Record<string, unknown> };
     const state = data.state ?? {};
@@ -114,7 +114,7 @@ async function loadChatLlmSettings(): Promise<ChatLlmState | null> {
 
 async function saveChatLlmField(key: string, value: string | boolean): Promise<boolean> {
   try {
-    const res = await fetch(apiUrl('/llm-config'), {
+    const res = await apiFetch(apiUrl('/llm-config'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ state: { [key]: value } }),

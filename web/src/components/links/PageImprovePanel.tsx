@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import { Loader2, Sparkles } from 'lucide-react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
 import { useOptionalReport } from '@/context/useReport';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
@@ -60,7 +60,7 @@ export default function PageImprovePanel({ url, inspectorDetails }: PageImproveP
         body.currentType = 'snapshot';
         body.currentId = reportId;
       }
-      const res = await fetch(apiUrl('/links/page-coach'), {
+      const res = await apiFetch(apiUrl('/links/page-coach'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

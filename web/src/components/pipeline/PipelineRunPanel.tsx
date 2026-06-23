@@ -40,7 +40,7 @@ import PipelineRunPreviewCard from './PipelineRunPreviewCard';
 import { buildPipelineRunPreview } from '@/lib/pipelineRunPreview';
 import { computeLivePipelineEstimate } from '@/lib/pipelineLiveEstimate';
 import { parsePipelineProgressEvents, resolveActiveProgress } from '@/lib/formatPipelineLog';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 
 const s = strings.pipelineRunner;
 const crawlPresets = s.crawlPresets as Record<string, { label: string; maxPages: string; stream?: boolean }>;
@@ -89,12 +89,12 @@ export default function PipelineRunPanel() {
 
   const pauseJob = async () => {
     if (!activeJobId) return;
-    await fetch(apiUrl(`/jobs/${encodeURIComponent(activeJobId)}/pause`), { method: 'POST' });
+    await apiFetch(apiUrl(`/jobs/${encodeURIComponent(activeJobId)}/pause`), { method: 'POST' });
   };
 
   const resumeJob = async () => {
     if (!activeJobId) return;
-    await fetch(apiUrl(`/jobs/${encodeURIComponent(activeJobId)}/resume`), { method: 'POST' });
+    await apiFetch(apiUrl(`/jobs/${encodeURIComponent(activeJobId)}/resume`), { method: 'POST' });
   };
 
   const [crawlAuthorized, setCrawlAuthorized] = useState(false);

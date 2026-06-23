@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Code, Copy, Eye, Loader2, Search } from 'lucide-react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import MarkdownPreview from './MarkdownPreview';
 interface PageMarkdownListItem {
   id: number;
@@ -56,7 +56,7 @@ export default function PreviewPanel({ crawlRunId, refreshKey }: PreviewPanelPro
         limit: String(PAGE_SIZE),
       });
       if (query) params.set('q', query);
-      const res = await fetch(apiUrl(`/page-markdown?${params.toString()}`));
+      const res = await apiFetch(apiUrl(`/page-markdown?${params.toString()}`));
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load pages');
       const newItems = (data.items ?? []) as PageMarkdownListItem[];
@@ -84,7 +84,7 @@ export default function PreviewPanel({ crawlRunId, refreshKey }: PreviewPanelPro
     setContent(null);
     try {
       const params = new URLSearchParams({ crawlRunId: String(crawlRunId), url });
-      const res = await fetch(apiUrl(`/page-markdown/content?${params.toString()}`));
+      const res = await apiFetch(apiUrl(`/page-markdown/content?${params.toString()}`));
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load content');
       setContent(data.content ?? null);
