@@ -1,16 +1,15 @@
 """Content drafts list must work with psycopg dict_row (pool default)."""
 from __future__ import annotations
 
+from typing import Any
+
 from website_profiling.db.content_draft_store import list_content_drafts
 from website_profiling.db.pool import db_session
 
 
-def test_list_content_drafts_with_rows() -> None:
+def test_list_content_drafts_with_rows(test_property: dict[str, Any]) -> None:
+    property_id = int(test_property["id"])
     with db_session() as conn:
-        cur = conn.execute("SELECT id FROM properties LIMIT 1")
-        row = cur.fetchone()
-        assert row is not None
-        property_id = int(row["id"])
 
         conn.execute(
             "DELETE FROM content_drafts WHERE property_id = %s AND title = 'Dict row test'",
