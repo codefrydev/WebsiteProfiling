@@ -5,6 +5,7 @@
 #   setup           — DB + venv + deps + migrations (no web server)
 #   db              — start Postgres container only
 #   migrate         — alembic upgrade head
+#   test            — run full CI-style test suite (./local-test all)
 #   stop            — stop wp-pg container
 #   help            — show commands
 set -euo pipefail
@@ -337,6 +338,11 @@ stop_postgres() {
   fi
 }
 
+cmd_test() {
+  shift
+  exec "$ROOT/scripts/local-test.sh" all "$@"
+}
+
 cmd_help() {
   cat <<EOF
 Local dev runner — Postgres in Docker, app on your machine
@@ -346,6 +352,7 @@ Local dev runner — Postgres in Docker, app on your machine
   ./local-run setup        One-time setup (no dev server)
   ./local-run db           Start Postgres only
   ./local-run migrate      Run alembic upgrade head
+  ./local-run test         Run full CI-style tests (./local-test all)
   ./local-run stop         Stop Postgres container
 
 Environment overrides (optional):
@@ -359,7 +366,7 @@ Run audits via sidebar "Run audit" (bottom-right FAB).
 
 Production build (same Postgres, no hot reload): ./local-prod start
 
-Run CI-style tests: ./local-test (see ./local-test help). JS crawl integration: ./local-test browser.
+Run CI-style tests: ./local-test or ./local-run test (see ./local-test help).
 EOF
 }
 
@@ -370,6 +377,7 @@ main() {
     setup) cmd_setup ;;
     db) cmd_db ;;
     migrate) cmd_migrate ;;
+    test) cmd_test "$@" ;;
     stop) cmd_stop ;;
     help|-h|--help) cmd_help ;;
     *)

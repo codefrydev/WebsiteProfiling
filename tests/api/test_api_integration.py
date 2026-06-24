@@ -2,6 +2,9 @@
 
 These catch response-shape regressions and dict_row bugs that unit tests miss.
 Requires DATABASE_URL (same as other @pytest.mark.integration tests).
+
+Report read routes (/api/report/meta, /api/report/payload, …) are served by the
+Data service — see services/Data/tests/Data.Tests/ApiIntegrationTests.cs.
 """
 from __future__ import annotations
 
@@ -24,20 +27,6 @@ def test_health(api_client: TestClient) -> None:
     body = res.json()
     assert body["ok"] is True
     assert body["database"] == "up"
-
-
-def test_report_meta_response_shape(api_client: TestClient) -> None:
-    res = api_client.get("/api/report/meta")
-    assert res.status_code == 200
-    body = res.json()
-    assert "reports" in body
-    assert "crawlRuns" in body
-    assert isinstance(body["reports"], list)
-    for row in body["reports"]:
-        assert "canonical_domain" in row
-        assert "site_name" in row
-        assert "generated_at" in row
-        assert "canonicalDomain" not in row
 
 
 def test_properties_crud_and_ops(api_client: TestClient) -> None:
@@ -268,8 +257,3 @@ def test_backlinks_velocity_empty(api_client: TestClient, test_property: dict[st
     )
     assert res.status_code == 200
     assert isinstance(res.json()["snapshots"], list)
-
-
-def test_report_payload_not_found(api_client: TestClient) -> None:
-    res = api_client.get("/api/report/payload", params={"reportId": 999999999})
-    assert res.status_code == 404

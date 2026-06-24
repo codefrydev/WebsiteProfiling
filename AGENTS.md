@@ -4,14 +4,15 @@
 
 This file is the canonical entry point for agents. For full detail see [AGENT.md](AGENT.md).
 
-**What it is:** Self-hosted SEO crawl and technical audit platform — `python -m src` from repo root. Stack: Python (crawl + analysis + MCP), Vite + React SPA (web UI), .NET BFF (browser API), PostgreSQL.
+**What it is:** Self-hosted SEO crawl and technical audit platform — `python -m src` from repo root. Stack: Python (crawl + analysis + MCP + FastAPI), Vite + React SPA (web UI), .NET BFF (browser API), .NET Data (report reads), PostgreSQL.
 
 **Key paths**
 
 - `src/website_profiling/` — core Python package
-  - `cli.py`, `config.py`, `crawl/`, `db/`, `reporting/`, `analysis/`, `llm/`, `tools/`
+  - `cli.py`, `config.py`, `api/`, `worker/`, `crawl/`, `db/`, `reporting/`, `analysis/`, `llm/`, `tools/`
 - `web/` — Vite + React SPA (static nginx in prod); browser calls `services/Bff/` for all `/api/*`
-- `services/Bff/` — .NET BFF (auth, CORS, proxy to FastAPI + FileService)
+- `services/Bff/` — .NET BFF (auth, CORS, proxy to FastAPI + Data + FileService)
+- `services/Data/` — .NET read service (report payloads, portfolio, issue status, filters; port 8091)
 - `services/FileService/` — .NET PDF + Excel workbook export (port 8080). HTTP-only via `REPORT_API_URL`; no Postgres. Profiles: `executive|standard|full|premium`. Details: [services/FileService/README.md](services/FileService/README.md). Env: `FILE_SERVICE_URL` (MCP), `REPORT_API_URL` (FileService).
 - `alembic/` — DB migrations
 - `docs/` — documentation index
@@ -20,8 +21,8 @@ This file is the canonical entry point for agents. For full detail see [AGENT.md
 **Run / dev**
 
 ```bash
-./local-run          # Start Postgres + FileService + BFF + Vite dev server
-./local-test         # Run all three coverage gates
+./local-run          # Start Postgres + FileService + Data + worker + FastAPI + BFF + Vite dev server
+./local-test         # Python + web + .NET tests (CI parity)
 python -m src        # Run audit pipeline
 python -m website_profiling.mcp   # Start MCP server (stdio)
 ```
