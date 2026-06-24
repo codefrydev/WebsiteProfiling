@@ -40,16 +40,17 @@ def category_mobile(df: pd.DataFrame) -> dict:
                 recommendation="Add <meta name='viewport' content='width=device-width, initial-scale=1'>.",
             ))
             deductions.append((min(25, int(no_viewport) * 5), True))
-        viewport_content = success_df["viewport_content"].fillna("").astype(str)
-        viewport_ok = success_df["viewport_present"].astype(str).str.lower().isin(("true", "1", "yes"))
-        invalid = (viewport_content.str.strip().eq("") | (~viewport_content.str.contains("width|device-width", case=False, na=False))) & viewport_ok
-        if invalid.sum() > 0:
-            issues.append(_issue(
-                "Some pages have viewport without width or device-width.",
-                priority="High",
-                recommendation="Use content='width=device-width, initial-scale=1' (or similar).",
-            ))
-            deductions.append((10, True))
+        if "viewport_content" in success_df.columns:
+            viewport_content = success_df["viewport_content"].fillna("").astype(str)
+            viewport_ok = success_df["viewport_present"].astype(str).str.lower().isin(("true", "1", "yes"))
+            invalid = (viewport_content.str.strip().eq("") | (~viewport_content.str.contains("width|device-width", case=False, na=False))) & viewport_ok
+            if invalid.sum() > 0:
+                issues.append(_issue(
+                    "Some pages have viewport without width or device-width.",
+                    priority="High",
+                    recommendation="Use content='width=device-width, initial-scale=1' (or similar).",
+                ))
+                deductions.append((10, True))
 
     score = _score_deductions(100, deductions)
     return {

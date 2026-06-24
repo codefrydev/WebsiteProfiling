@@ -71,8 +71,10 @@ _ALLOWED_TABLES: frozenset[str] = frozenset({
     "log_file_uploads",
     # LLM response cache
     "llm_cache",
-    # Properties (name/domain — useful for joins)
-    "properties",
+    # NOTE: `properties` is intentionally NOT allowlisted — it stores
+    # google_refresh_token and other OAuth credentials (see property_store.py),
+    # which must never be reachable from the chat SQL surface. It is also in
+    # _SECRET_TABLES below as a belt-and-suspenders fast reject.
 })
 
 # ---------------------------------------------------------------------------
@@ -198,6 +200,8 @@ _SECRET_TABLES: frozenset[str] = frozenset({
     "chat_sessions",
     "chat_messages",
     "content_drafts",
+    # Holds google_refresh_token / OAuth credentials — never queryable via chat.
+    "properties",
 })
 _SECRET_TABLE_RE: re.Pattern[str] = re.compile(
     r"\b(" + "|".join(re.escape(t) for t in sorted(_SECRET_TABLES)) + r")\b",

@@ -57,3 +57,14 @@ def test_tokenize_words_min_length() -> None:
     tokens = tokenize_words("I am ok testing")
     assert "I" not in tokens
     assert "am" in tokens
+
+
+def test_tokenize_words_keeps_non_ascii_letters() -> None:
+    # Regression: [a-zA-Z]+ dropped accented/non-Latin letters (café -> "caf").
+    tokens = tokenize_words("La café est très bon München 日本語")
+    assert "café" in tokens
+    assert "très" in tokens
+    assert "München" in tokens
+    assert "日本語" in tokens
+    # digits are still excluded (unchanged from the letters-only behaviour)
+    assert tokenize_words("abc123 456") == ["abc"]

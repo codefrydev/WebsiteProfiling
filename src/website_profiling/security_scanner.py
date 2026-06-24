@@ -361,9 +361,13 @@ def _active_checks(
                         if r.status_code != 200:
                             continue
                         text = (r.text or "").lower()
-                        if xss_token.lower() in text:
-                            # Check if unescaped (dangerous)
-                            if f">{xss_token}<" in text or f'">{xss_token}<' in text or f"'{xss_token}'" in text:
+                        token_l = xss_token.lower()
+                        if token_l in text:
+                            # Check if unescaped (dangerous). Compare lowercased
+                            # token against the lowercased body — using the
+                            # mixed-case token here never matched, so reflected
+                            # XSS was silently missed.
+                            if f">{token_l}<" in text or f'">{token_l}<' in text or f"'{token_l}'" in text:
                                 findings.append(_finding(
                                     "xss_reflected",
                                     "High",
@@ -403,13 +407,11 @@ def _active_checks(
 
             # SQLi error-based: single quote in common param
             for pname in ["id", "page", "q", "search", "query", "cat"][:2]:
-                if pname not in params and not params:
-                    test_params = {pname: ["'"]}
-                elif pname in params:
-                    test_params = dict(params)
-                    test_params[pname] = ["'"]
-                else:
-                    continue
+                # Inject the probe into the existing params (or add it if absent).
+                # The old `and not params` guard skipped the test whenever the URL
+                # already had other query params, gutting SQLi coverage.
+                test_params = dict(params)
+                test_params[pname] = ["'"]
                 new_query = urlencode(test_params, doseq=True)
                 probe_url = urlunparse((parsed_u.scheme, parsed_u.netloc, path, parsed_u.params, new_query, ""))
                 try:

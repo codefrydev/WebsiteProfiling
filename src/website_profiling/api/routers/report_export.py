@@ -28,7 +28,7 @@ def export_report(
     try:
         if format == "csv":
             from website_profiling.tools.export_audit import export_audit_csv as _export
-            content = _export(conn, reportId)
+            content = _export(reportId)
             return Response(
                 content=content if isinstance(content, bytes) else content.encode(),
                 media_type="text/csv",
@@ -37,7 +37,7 @@ def export_report(
         if format == "json":
             import json
             from website_profiling.tools.export_audit import export_audit_json as _export
-            content = _export(conn, reportId)
+            content = _export(reportId)
             body = json.dumps(content) if not isinstance(content, (str, bytes)) else content
             return Response(
                 content=body if isinstance(body, bytes) else body.encode(),
@@ -59,7 +59,7 @@ def export_sitemap(
 ) -> Response:
     try:
         from website_profiling.tools.export_sitemap import export_sitemap as _export
-        content = _export(conn, reportId)
+        content = _export(reportId)
         return Response(
             content=content if isinstance(content, bytes) else content.encode(),
             media_type="application/xml",

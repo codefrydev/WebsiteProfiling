@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Text;
 using Bff.Application.Auth;
 using Bff.Application.Options;
@@ -91,13 +92,22 @@ public static class AuthEndpoints
             // Split on the first colon only (RFC 7617: password may contain colons).
             var user = decoded[..idx];
             var pass = decoded[(idx + 1)..];
-            return user == auth.BasicUser && pass == auth.BasicPassword;
+            // Constant-time compare (matches WpSessionTokens' HMAC check). Hashing
+            // to a fixed length first avoids leaking credential length, and `&`
+            // (not `&&`) ensures both comparisons always run.
+            return FixedTimeStringEquals(user, auth.BasicUser)
+                 & FixedTimeStringEquals(pass, auth.BasicPassword);
         }
         catch (FormatException)
         {
             return false;
         }
     }
+
+    private static bool FixedTimeStringEquals(string a, string b) =>
+        CryptographicOperations.FixedTimeEquals(
+            SHA256.HashData(Encoding.UTF8.GetBytes(a)),
+            SHA256.HashData(Encoding.UTF8.GetBytes(b)));
 
     private static void SetSessionCookie(HttpContext context, string token, AuthOptions auth)
     {

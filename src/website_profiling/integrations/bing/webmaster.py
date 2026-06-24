@@ -36,25 +36,40 @@ def fetch_bing_backlinks_summary(api_key: str, site_url: str) -> dict[str, Any]:
     if not key or not site:
         return {"ok": False, "error": "Bing API key and site URL required", "source": "bing_webmaster"}
 
-    raw = _bing_json_get("GetLinkCounts", key, siteUrl=site, page=0)
-    if raw.get("error"):
-        return {
-            "ok": False,
-            "error": str(raw.get("error")),
-            "source": "bing_webmaster",
-            "site_url": site,
-        }
-
-    payload = raw.get("d") if isinstance(raw.get("d"), dict) else raw
-    links = payload.get("Links") if isinstance(payload, dict) else []
+    # GetLinkCounts is paginated. Walk every page (up to a safety cap) so a site
+    # with more than one page of backlinks isn't silently truncated to page 0.
+    _MAX_PAGES = 50
     pages: list[dict[str, Any]] = []
-    for row in links or []:
-        if not isinstance(row, dict):
-            continue
-        pages.append({
-            "url": row.get("Url"),
-            "inbound_links": int(row.get("Count") or 0),
-        })
+    total_pages = 1
+    page = 0
+    while page < _MAX_PAGES:
+        raw = _bing_json_get("GetLinkCounts", key, siteUrl=site, page=page)
+        if raw.get("error"):
+            if page == 0:
+                return {
+                    "ok": False,
+                    "error": str(raw.get("error")),
+                    "source": "bing_webmaster",
+                    "site_url": site,
+                }
+            break  # keep pages already collected; stop on a later-page error
+
+        payload = raw.get("d") if isinstance(raw.get("d"), dict) else raw
+        if isinstance(payload, dict):
+            total_pages = int(payload.get("TotalPages") or 1)
+        links = payload.get("Links") if isinstance(payload, dict) else []
+        if not links:
+            break
+        for row in links:
+            if not isinstance(row, dict):
+                continue
+            pages.append({
+                "url": row.get("Url"),
+                "inbound_links": int(row.get("Count") or 0),
+            })
+        page += 1
+        if page >= total_pages:
+            break
 
     total_inbound = sum(int(p.get("inbound_links") or 0) for p in pages)
     return {
@@ -64,6 +79,6 @@ def fetch_bing_backlinks_summary(api_key: str, site_url: str) -> dict[str, Any]:
         "linked_pages": pages[:100],
         "linked_page_count": len(pages),
         "total_inbound_links": total_inbound,
-        "total_pages": int(payload.get("TotalPages") or 1) if isinstance(payload, dict) else 1,
+        "total_pages": total_pages,
         "provenance": "Bing Webmaster",
     }

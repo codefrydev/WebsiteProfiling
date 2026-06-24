@@ -38,6 +38,20 @@ def test_fetch_bing_backlinks_summary_handles_api_error(mock_get) -> None:
 
 
 @patch("website_profiling.integrations.bing.webmaster._bing_json_get")
+def test_fetch_bing_backlinks_summary_paginates(mock_get) -> None:
+    # Regression: previously only page 0 was fetched, truncating multi-page results.
+    mock_get.side_effect = [
+        {"d": {"Links": [{"Url": "https://example.com/a", "Count": 3}], "TotalPages": 2}},
+        {"d": {"Links": [{"Url": "https://example.com/b", "Count": 1}], "TotalPages": 2}},
+    ]
+    result = fetch_bing_backlinks_summary("key", "https://example.com")
+    assert result["ok"] is True
+    assert result["linked_page_count"] == 2
+    assert result["total_inbound_links"] == 4
+    assert mock_get.call_count == 2
+
+
+@patch("website_profiling.integrations.bing.webmaster._bing_json_get")
 def test_fetch_bing_backlinks_summary_empty_links(mock_get) -> None:
     mock_get.return_value = {"d": {"Links": [], "TotalPages": 0}}
     result = fetch_bing_backlinks_summary("key", "https://example.com")

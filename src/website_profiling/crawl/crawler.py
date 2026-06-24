@@ -481,6 +481,32 @@ class Crawler:
             desc="Pages",
             disable=not use_tqdm,
         )
+
+        def _collect_future(f, f_url) -> None:
+            """Append one completed future's result to self.results (and the DB
+            writer). Shared by the main loop and the pause-drain so both persist
+            in-flight work identically. Calling f.result() blocks until done."""
+            nonlocal pages_crawled
+            try:
+                res = f.result()
+            except Exception:
+                # Keep the dequeued url so the error row is persisted to the DB
+                # consistently with the non-streaming path (an url-less row is
+                # silently dropped from streaming).
+                res = empty_crawl_row(url=f_url, status="error")
+                if self.store_outlinks:
+                    res["outlink_targets"] = "[]"
+            self.results.append(res)
+            page_url = (
+                str(res.get("url") or res.get("final_url") or "").strip() or None
+            )
+            pages_crawled += 1
+            if page_url and db_writer is not None:
+                db_writer.enqueue(res)
+            if use_tqdm:
+                pbar.update(1)
+            progress_tracker.maybe_emit(pages_crawled, page_url)
+
         try:
             with ThreadPoolExecutor(max_workers=self.concurrency) as ex:
                 while (len(self.results) < self.max_pages) and (
@@ -512,25 +538,7 @@ class Crawler:
                     remaining: dict = {}
                     for f, f_url in futures.items():
                         if f.done():
-                            try:
-                                res = f.result()
-                            except Exception:
-                                # Keep the dequeued url so the error row is persisted
-                                # to the DB consistently with the non-streaming path
-                                # (an url-less row is silently dropped from streaming).
-                                res = empty_crawl_row(url=f_url, status="error")
-                                if self.store_outlinks:
-                                    res["outlink_targets"] = "[]"
-                            self.results.append(res)
-                            page_url = (
-                                str(res.get("url") or res.get("final_url") or "").strip() or None
-                            )
-                            pages_crawled += 1
-                            if page_url and db_writer is not None:
-                                db_writer.enqueue(res)
-                            if use_tqdm:
-                                pbar.update(1)
-                            progress_tracker.maybe_emit(pages_crawled, page_url)
+                            _collect_future(f, f_url)
                         else:
                             remaining[f] = f_url
                     futures = remaining
@@ -549,6 +557,13 @@ class Crawler:
                             _PAUSE_EVENT.set()
                     if _PAUSE_EVENT.is_set():
                         self.paused = True
+                        # Drain in-flight futures before exiting so their results
+                        # aren't lost. Their URLs are already marked visited, so a
+                        # resumed crawl won't refetch them — collect them now (this
+                        # blocks on each result()) or they vanish from results + DB.
+                        for f, f_url in futures.items():
+                            _collect_future(f, f_url)
+                        futures = {}
                         break
 
                     if self.queue.empty() and not futures:

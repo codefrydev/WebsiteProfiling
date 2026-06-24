@@ -296,6 +296,78 @@ def test_pause_event_is_set_by_pause_file(tmp_path, monkeypatch):
     mod._PAUSE_EVENT.clear()
 
 
+def test_pause_drains_inflight_futures(tmp_path, monkeypatch):
+    """In-flight futures must be collected on pause, not silently dropped.
+
+    Regression: previously the loop broke immediately on pause, abandoning
+    futures that were still running. Their URLs are already marked visited, so a
+    resumed crawl never refetches them — they vanished from results and the DB.
+    """
+    import time
+
+    import website_profiling.crawl.crawler as mod
+    from website_profiling.crawl.schema import empty_crawl_row
+
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    mod._PAUSE_EVENT.clear()
+
+    pid = os.getpid()
+    flag = tmp_path / f"wp_pause_{pid}.flag"
+    flag.write_text("")  # pause requested before the crawl starts
+
+    class _FakeFrontier:
+        def __init__(self, *a, **kw):
+            self.queue: Queue = Queue()
+            self.visited: set = set()
+            self.depths: dict = {}
+            self.lock = threading.Lock()
+            self.rp = None
+            self.queue.put("https://example.com/fast")
+            self.queue.put("https://example.com/slow")
+
+        def should_skip_dequeued(self, url):
+            return False
+
+        def mark_visited(self, url):
+            if url in self.visited:
+                return False
+            self.visited.add(url)
+            return True
+
+        def seed_initial_urls(self, **kw):
+            pass
+
+        def serialize_state(self):
+            return {"pending": [], "visited": [], "depths": {}}
+
+    def _worker(url):
+        # The "slow" page is still in-flight when the "fast" future completes and
+        # the pause is detected, so it must be drained rather than dropped.
+        if url.endswith("/slow"):
+            time.sleep(0.4)
+        row = empty_crawl_row(status=200)
+        row["url"] = url
+        return row
+
+    mock_fetcher = MagicMock()
+    mock_fetcher.close = MagicMock()
+
+    with (
+        patch.object(mod, "CrawlFrontier", _FakeFrontier),
+        patch.object(mod, "build_fetcher", return_value=mock_fetcher),
+        patch.object(mod.Crawler, "worker", side_effect=_worker),
+    ):
+        crawler = mod.Crawler("https://example.com", max_pages=10)
+        df = crawler.crawl(show_progress=False)
+
+    mod._PAUSE_EVENT.clear()
+
+    assert crawler.paused is True
+    urls = set(df["url"].tolist())
+    assert "https://example.com/fast" in urls
+    assert "https://example.com/slow" in urls  # dropped before the drain fix
+
+
 def test_pause_loop_os_unlink_error_is_swallowed(tmp_path, monkeypatch):
     """OSError from os.unlink during pause-file cleanup is silently swallowed."""
     import website_profiling.crawl.crawler as mod

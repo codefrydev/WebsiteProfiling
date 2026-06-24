@@ -260,6 +260,12 @@ class TestAssertReadOnlyRejectedSecretTables:
         with pytest.raises(ReadOnlyViolation):
             assert_read_only("SELECT * FROM content_drafts")
 
+    def test_properties_rejected(self) -> None:
+        # properties holds google_refresh_token / OAuth creds — must not be
+        # reachable from the chat SQL tool.
+        with pytest.raises(ReadOnlyViolation):
+            assert_read_only("SELECT google_refresh_token FROM properties")
+
 
 # ---------------------------------------------------------------------------
 # assert_read_only — rejected: table allowlist (non-secret unlisted tables)

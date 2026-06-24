@@ -44,8 +44,6 @@ def _write_audit_health_snapshot(
     report_data: dict[str, Any],
 ) -> None:
     """Persist health score row for portfolio sparklines and alerts."""
-    import json
-
     categories = report_data.get("categories") or []
     scores = [
         float(c.get("score"))
@@ -80,8 +78,10 @@ def _write_audit_health_snapshot(
             report_id,
             canonical_domain or None,
             health_score,
-            json.dumps(category_scores),
-            json.dumps(issue_counts),
+            # Use the psycopg Json adapter (like report_data below) so these
+            # land as native jsonb objects, not double-encoded string literals.
+            _json_val(category_scores),
+            _json_val(issue_counts),
         ),
     )
 
