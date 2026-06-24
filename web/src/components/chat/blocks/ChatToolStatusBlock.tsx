@@ -1,4 +1,3 @@
-'use client';
 
 import { AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import { format, strings } from '@/lib/strings';

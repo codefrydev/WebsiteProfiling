@@ -16,7 +16,6 @@ from .routers import (
     content,
     crawl,
     dashboards,
-    filters,
     health,
     integrations,
     issues,
@@ -27,12 +26,9 @@ from .routers import (
     page_coach,
     page_markdown,
     pipeline,
-    portfolio,
     properties,
     report,
     report_audit_tool,
-    report_export,
-    report_portfolio,
     schedule,
 )
 
@@ -92,9 +88,8 @@ app.include_router(config.router, prefix="/api")
 # ── Batch F: Properties ──────────────────────────────────────────────────────
 app.include_router(properties.router, prefix="/api")
 
-# ── Batch G: Dashboards + Filters ────────────────────────────────────────────
+# ── Batch G: Dashboards ──────────────────────────────────────────────────────
 app.include_router(dashboards.router, prefix="/api")
-app.include_router(filters.router, prefix="/api")
 
 # ── Batch H: Google + Bing integrations ──────────────────────────────────────
 app.include_router(integrations.router, prefix="/api")
@@ -106,12 +101,9 @@ app.include_router(content.router, prefix="/api")
 app.include_router(page_markdown.router, prefix="/api")
 app.include_router(ollama.router, prefix="/api")
 app.include_router(mcp_tools.router, prefix="/api")
-app.include_router(portfolio.router, prefix="/api")
 app.include_router(alerts.router, prefix="/api")
 app.include_router(schedule.router, prefix="/api")
 app.include_router(logs.router, prefix="/api")
 app.include_router(compare.router, prefix="/api")
 app.include_router(page_coach.router, prefix="/api")
 app.include_router(report_audit_tool.router, prefix="/api")
-app.include_router(report_export.router, prefix="/api")
-app.include_router(report_portfolio.router, prefix="/api")

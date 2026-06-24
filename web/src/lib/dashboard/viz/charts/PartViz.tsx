@@ -1,4 +1,3 @@
-'use client';
 
 import { useMemo } from 'react';
 import { DashboardChart } from '@/lib/dashboard/viz/charts/DashboardChart';

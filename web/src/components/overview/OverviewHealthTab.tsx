@@ -1,7 +1,6 @@
-'use client';
 
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { ChevronRight, Lightbulb } from 'lucide-react';
 import type { ReportCategory, ReportPayload } from '@/types';
 import { strings, format } from '@/lib/strings';
@@ -41,7 +40,7 @@ export function OverviewHealthTab({
 }: OverviewHealthTabProps) {
   const vo = strings.views.overview;
   const sj = strings.common;
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const querySuffix = searchParams.toString() ? `?${searchParams.toString()}` : '';
   const hasSubdomains = Boolean(data.subdomains && !data.subdomains.disabled);
   const hasContacts = Boolean(
@@ -133,13 +132,13 @@ export function OverviewHealthTab({
             {(hasSubdomains || hasContacts) ? (
               <div className="flex flex-wrap gap-4 mt-3 text-sm">
                 {hasSubdomains ? (
-                  <Link href={`/subdomains${querySuffix}`} className="text-link hover:underline inline-flex items-center gap-1">
+                  <Link to={`/subdomains${querySuffix}`} className="text-link hover:underline inline-flex items-center gap-1">
                     {vo.viewSubdomains}
                     <ChevronRight className="h-4 w-4" aria-hidden />
                   </Link>
                 ) : null}
                 {hasContacts ? (
-                  <Link href={`/contacts${querySuffix}`} className="text-link hover:underline inline-flex items-center gap-1">
+                  <Link to={`/contacts${querySuffix}`} className="text-link hover:underline inline-flex items-center gap-1">
                     {vo.viewContacts}
                     <ChevronRight className="h-4 w-4" aria-hidden />
                   </Link>

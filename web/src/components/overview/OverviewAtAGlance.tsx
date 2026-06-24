@@ -1,7 +1,6 @@
-'use client';
 
 import { useMemo, type ReactNode } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import type { ReportPayload } from '@/types';
 import { strings } from '@/lib/strings';
@@ -52,7 +51,7 @@ function WidgetLink({
     <div className="flex h-full flex-col">
       {children}
       <Link
-        href={href}
+        to={href}
         className="mt-2 inline-flex items-center gap-1 text-[10px] font-medium text-link hover:underline sm:text-xs"
       >
         {label}
@@ -90,17 +89,17 @@ export function OverviewCompactMetricsGrid({
       {showKpiRow && hasKpiData ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           {urlCount > 0 ? (
-            <Link href={linksHref} className="block transition-opacity hover:opacity-90">
+            <Link to={linksHref} className="block transition-opacity hover:opacity-90">
               <CompactKpi label={vo.totalUrls} value={urlCount.toLocaleString()} />
             </Link>
           ) : null}
           {issueCounts.total > 0 ? (
-            <Link href={issuesHref} className="block transition-opacity hover:opacity-90">
+            <Link to={issuesHref} className="block transition-opacity hover:opacity-90">
               <CompactKpi label={vo.atAGlanceIssuesKpi} value={issueCounts.total.toLocaleString()} accent />
             </Link>
           ) : null}
           {gscClicks != null ? (
-            <Link href={searchHref} className="block transition-opacity hover:opacity-90">
+            <Link to={searchHref} className="block transition-opacity hover:opacity-90">
               <CompactKpi label={vo.gscClicksCard} value={gscClicks.toLocaleString()} />
             </Link>
           ) : null}

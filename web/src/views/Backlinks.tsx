@@ -1,9 +1,8 @@
-'use client';
 
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link2, Settings2, Loader2 } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'react-router-dom';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
@@ -12,7 +11,7 @@ import { useTabSections } from '@/hooks/useTabSections';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { BACKLINKS_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { useActivePropertyContext } from '@/hooks/useActivePropertyContext';
-import { apiUrl } from '../lib/publicBase';
+import { apiUrl, apiFetch } from '../lib/publicBase';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, ViewTabs, EmptyState } from '../components';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
@@ -38,7 +37,7 @@ type BacklinksTabId = (typeof TABS)[number];
 
 export default function Backlinks(_props: ViewProps) {
   const vb = strings.views.backlinks;
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const { data, loadReport } = useReport();
   useSectionData('gsc-links');
   const gscLinksReady = useSectionsViewReady(['gsc-links']);
@@ -54,7 +53,7 @@ export default function Backlinks(_props: ViewProps) {
       return;
     }
     let cancelled = false;
-    void fetch(apiUrl(`/backlinks/velocity?propertyId=${propertyId}`))
+    void apiFetch(apiUrl(`/backlinks/velocity?propertyId=${propertyId}`))
       .then((r) => r.json())
       .then((body) => {
         if (!cancelled) setVelocity(body.snapshots || []);

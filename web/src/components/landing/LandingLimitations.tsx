@@ -1,4 +1,3 @@
-'use client';
 
 import { CheckCircle2, ExternalLink, XCircle } from 'lucide-react';
 import LandingSectionHeader from '@/components/landing/LandingSectionHeader';

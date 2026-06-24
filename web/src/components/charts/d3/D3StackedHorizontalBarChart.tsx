@@ -1,4 +1,3 @@
-'use client';
 
 import { useRef, useState } from 'react';
 import { scaleBand, scaleLinear } from 'd3-scale';

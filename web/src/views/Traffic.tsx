@@ -1,8 +1,7 @@
-'use client';
 
 import type { ReactNode } from 'react';
 import { useState, useMemo, useEffect } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import type { Ga4PageRow, UrlJoinData } from '@/types';
 import type { TableColumn } from '@/types/components';
 import { Users, AlertCircle, Settings2, Download, Loader2 } from 'lucide-react';
@@ -37,7 +36,7 @@ import {
 } from '../components/traffic/ga4TableUtils';
 import { syncChartJsDefaultsColor } from '../utils/chartJsDefaults';
 import { buildLinksInspectHref } from '../lib/reportNav';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'react-router-dom';
 import { useUrlTab } from '@/hooks/useUrlTab';
 
 const TABS = ['overview', 'pages', 'engagement', 'coverage'] as const;
@@ -63,7 +62,7 @@ export default function Traffic() {
   const trafficReady = useSectionsViewReady(['traffic']);
   const tf = strings.views.traffic;
   const sp = strings.views.searchPerformance;
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useUrlTab(TABS, 'overview');
   useTabSections(TRAFFIC_TAB_SECTIONS, true);
   const [pathSearch, setPathSearch] = useState('');
@@ -209,7 +208,7 @@ export default function Traffic() {
                 <Settings2 className="h-3.5 w-3.5 shrink-0" />
                 {tf.emptyIntegrationsHint}{' '}
                 <Link
-                  href={integrationGuideHref('google', { from: 'integrations' })}
+                  to={integrationGuideHref('google', { from: 'integrations' })}
                   className="text-link hover:underline"
                 >
                   {strings.docs.setupGuideLink}

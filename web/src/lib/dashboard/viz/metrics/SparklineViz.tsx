@@ -1,4 +1,3 @@
-'use client';
 
 import { CompactAreaSparkline } from '@/components/charts/compact/CompactAreaSparkline';
 import { extractChartSeries } from '@/lib/dashboard/viz/series';

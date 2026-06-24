@@ -1,8 +1,7 @@
-'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Circle, Cloud, HardDrive, Loader2, RefreshCw, Sparkles } from 'lucide-react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { format, strings } from '@/lib/strings';
 
 const s = strings.pipelineRunner.ollama;
@@ -66,7 +65,7 @@ export default function OllamaModelPicker({
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(apiUrl('/ollama/status'));
+      const res = await apiFetch(apiUrl('/ollama/status'));
       const data = (await res.json()) as OllamaStatus;
       setStatus(data);
       if (data.ok && data.models?.length && !model) {

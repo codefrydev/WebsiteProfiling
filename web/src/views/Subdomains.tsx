@@ -1,8 +1,7 @@
-'use client';
 
 import { useMemo } from 'react';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Globe2 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { useSectionData } from '@/hooks/useSectionData';
@@ -33,7 +32,7 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
   const { data } = useReport();
   useSectionData('tech');
   const techReady = useSectionsViewReady(['tech']);
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const vs = strings.views.subdomains;
   const inv = data?.subdomains;
   const q = (searchQuery || '').toLowerCase().trim();
@@ -109,7 +108,7 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
             <p className="text-xs text-muted-foreground mt-2">{format(vs.moreHosts, { count: gscGapHosts.length - 20 })}</p>
           ) : null}
           <p className="text-xs text-muted-foreground mt-3">
-            <Link href={`/indexation${querySuffix}`} className="text-link hover:underline">
+            <Link to={`/indexation${querySuffix}`} className="text-link hover:underline">
               {vs.viewIndexation}
             </Link>
           </p>

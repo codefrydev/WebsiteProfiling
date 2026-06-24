@@ -1,4 +1,3 @@
-'use client';
 
 import { useCallback, useMemo } from 'react';
 import { MCP_SETTINGS_FIELDS } from '@/lib/secretsConfigSchema';

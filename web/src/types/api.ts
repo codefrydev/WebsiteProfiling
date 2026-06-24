@@ -1,19 +1,9 @@
-import type { NextRequest, NextResponse } from 'next/server';
 import type { PortfolioGroup } from '@/types/report';
 
 /** Standard API error body. */
 export interface ApiErrorBody {
   error: string;
 }
-
-export type ApiRouteHandler = (request: NextRequest) => Promise<Response>;
-
-export type ApiRouteHandlerWithParams<TParams extends Record<string, string>> = (
-  request: NextRequest,
-  context: { params: Promise<TParams> },
-) => Promise<Response>;
-
-export type LocalGuardResult = NextResponse<ApiErrorBody> | null;
 
 /** Pipeline job stored in globalThis. */
 export type PipelineJobStatus = 'starting' | 'running' | 'success' | 'error' | 'paused';
@@ -229,7 +219,3 @@ export interface AuditSqlExample {
   requiresTables?: string[];
 }
 
-declare global {
-  var __websiteProfilingPipelineJobs: PipelineJobStore | undefined;
-  var __websiteProfilingPipelineProcesses: Map<string, import('child_process').ChildProcess> | undefined;
-}

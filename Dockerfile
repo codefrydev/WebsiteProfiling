@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1
-# WebsiteProfiling: Next.js UI + FastAPI (port 8001) + Python worker + pipeline.
+# WebsiteProfiling: FastAPI (port 8001) + Python worker + pipeline.
+# Web UI is a separate image: web/Dockerfile (Vite SPA + nginx).
 # Build from repository root: docker build -t website-profiling .
 # BuildKit cache mounts (default in Docker Desktop) reuse pip/npm downloads across rebuilds.
 
@@ -32,7 +33,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    NEXT_TELEMETRY_DISABLED=1 \
     WEBSITE_PROFILING_ROOT=/app \
     DATA_DIR=/data \
     PYTHON=/opt/venv/bin/python \
@@ -57,27 +57,19 @@ RUN --mount=type=cache,target=/root/.npm \
 
 WORKDIR /app
 
-# Next.js install + build (layer cache)
-COPY web/package.json web/package-lock.json /app/web/
-RUN --mount=type=cache,target=/root/.npm \
-    cd /app/web && npm ci
-
 # Application source
 COPY pytest.ini /app/pytest.ini
 COPY src /app/src
 COPY tests /app/tests
-COPY web /app/web
 COPY alembic /app/alembic
 COPY alembic.ini /app/alembic.ini
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
-
-RUN cd /app/web && npm run build && npm prune --omit=dev
 
 ENV NODE_ENV=production
 
 # Persisted data directory (secrets + shadow config)
 RUN mkdir -p /data && chmod +x /app/docker-entrypoint.sh
 
-EXPOSE 3000
+EXPOSE 8001
 
 CMD ["/app/docker-entrypoint.sh"]

@@ -1,9 +1,8 @@
-'use client';
 
 import { useEffect, useState } from 'react';
 import { useReport } from '@/context/useReport';
 import { useActivePropertyContext } from '@/hooks/useActivePropertyContext';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 
 interface PropertyRow {
   id: number;
@@ -34,7 +33,7 @@ export function usePropertyForDomain(): { propertyId: number | null; ready: bool
   useEffect(() => {
     let cancelled = false;
     setDone(false);
-    fetch(apiUrl('/properties'))
+    apiFetch(apiUrl('/properties'))
       .then((r) => r.json())
       .then((d: { properties?: PropertyRow[] }) => {
         if (cancelled) return;

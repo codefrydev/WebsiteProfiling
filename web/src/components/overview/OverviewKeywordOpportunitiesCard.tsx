@@ -1,7 +1,6 @@
-'use client';
 
 import type { ReactNode } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { CheckCircle2, ChevronRight, Lightbulb, Settings2, Tag, TrendingUp, Zap } from 'lucide-react';
 import type { KeywordRow } from '@/types/components';
 import type { ContentAnalyticsData, KeywordOpportunities, KeywordReportData } from '@/types/report';
@@ -49,7 +48,7 @@ function KeywordPreviewRow({
   return (
     <li>
       <Link
-        href={href}
+        to={href}
         className="group flex items-center gap-3 rounded-lg border border-default/60 bg-brand-900/30 px-3 py-2.5 transition-colors hover:border-blue-500/30 hover:bg-brand-900/50"
       >
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground" title={keyword}>
@@ -86,7 +85,7 @@ function PreviewColumn({
           <Icon className={`h-4 w-4 shrink-0 ${iconClassName}`} aria-hidden />
           {title}
         </h3>
-        <Link href={viewAllHref} className="text-xs font-medium text-link hover:underline">
+        <Link to={viewAllHref} className="text-xs font-medium text-link hover:underline">
           {viewAllLabel}
         </Link>
       </div>
@@ -175,7 +174,7 @@ export function OverviewKeywordOpportunitiesCard({
             ) : null}
           </div>
           <Link
-            href={keywordsHref}
+            to={keywordsHref}
             className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
           >
             {vo.viewKeywords}
@@ -326,7 +325,7 @@ export function OverviewKeywordOpportunitiesCard({
               <Tag className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" aria-hidden />
               {vo.topThemes}
             </h3>
-            <Link href={topicsHref} className="text-xs font-medium text-link hover:underline">
+            <Link to={topicsHref} className="text-xs font-medium text-link hover:underline">
               {vo.topThemesViewAll}
             </Link>
           </div>
@@ -340,7 +339,7 @@ export function OverviewKeywordOpportunitiesCard({
               return (
                 <Link
                   key={`theme-${label}-${idx}`}
-                  href={topicsHref}
+                  to={topicsHref}
                   className="inline-flex max-w-full items-center gap-1 rounded-full border border-default bg-brand-900/40 px-3 py-1.5 text-xs text-foreground transition-colors hover:border-blue-500/30 hover:bg-brand-900/70"
                   title={label}
                 >

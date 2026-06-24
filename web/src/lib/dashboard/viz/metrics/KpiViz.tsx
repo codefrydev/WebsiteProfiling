@@ -1,4 +1,3 @@
-'use client';
 
 import { formatValue, thresholdColor } from '@/lib/dashboard/viz/formatters';
 import type { VizRenderProps } from '@/lib/dashboard/viz/types';

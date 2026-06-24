@@ -1,6 +1,5 @@
-'use client';
 
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ImageIcon } from 'lucide-react';
 import { useSectionData } from '@/hooks/useSectionData';
@@ -135,7 +134,7 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
       />
       <p className="text-xs text-muted-foreground mb-4 -mt-2">
         {vi.galleryLinkPrefix}{' '}
-        <Link href="/gallery" className="text-link hover:underline">
+        <Link to="/gallery" className="text-link hover:underline">
           {vi.galleryLinkLabel}
         </Link>
       </p>

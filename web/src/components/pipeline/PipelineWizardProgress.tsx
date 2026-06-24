@@ -1,4 +1,3 @@
-'use client';
 
 import { Check } from 'lucide-react';
 import { strings } from '@/lib/strings';

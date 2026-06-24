@@ -1,4 +1,3 @@
-'use client';
 
 import { strings } from '@/lib/strings';
 

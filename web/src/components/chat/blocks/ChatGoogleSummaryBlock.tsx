@@ -1,4 +1,3 @@
-'use client';
 
 import { SimpleBarChart } from '@/components/charts/SimpleBarChart';
 import { useChatFollowUp } from '@/components/chat/ChatFollowUpContext';

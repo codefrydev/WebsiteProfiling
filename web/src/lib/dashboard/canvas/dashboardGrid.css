@@ -1,0 +1,51 @@
+/**
+ * Dashboard edit mode — keep react-grid-layout resize handles above ECharts canvases
+ * and make handles visible on the dark theme.
+ */
+.dashboard-grid-editing .react-grid-item .react-resizable-handle {
+  z-index: 40;
+  pointer-events: auto;
+}
+
+.dashboard-grid-editing .react-grid-item:hover .react-resizable-handle,
+.dashboard-grid-editing .react-grid-item.resizing .react-resizable-handle {
+  opacity: 1;
+}
+
+.dashboard-grid-editing .react-grid-item .react-resizable-handle::after {
+  border-right-color: rgba(96, 165, 250, 0.9);
+  border-bottom-color: rgba(96, 165, 250, 0.9);
+}
+
+.dashboard-grid-editing .react-grid-item .react-resizable-handle-se {
+  width: 22px;
+  height: 22px;
+}
+
+.dashboard-grid-editing .react-grid-item .react-resizable-handle-s {
+  left: 0;
+  right: 0;
+  width: auto;
+  margin-left: 0;
+  height: 14px;
+}
+
+.dashboard-grid-editing .react-grid-item .react-resizable-handle-e {
+  top: 0;
+  bottom: 0;
+  height: auto;
+  margin-top: 0;
+  width: 14px;
+}
+
+.dashboard-grid-editing .widget-grid-slot {
+  height: 100%;
+}
+
+.dashboard-grid-editing .widget-edit-body {
+  pointer-events: none;
+}
+
+.dashboard-grid-editing .widget-edit-chrome {
+  pointer-events: auto;
+}

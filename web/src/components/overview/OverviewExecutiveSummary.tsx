@@ -1,7 +1,7 @@
-'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
+import { Link } from 'react-router-dom';
 import {
   AlertOctagon,
   ArrowLeftRight,
@@ -59,7 +59,7 @@ function ExecutiveIssueRow({
 
   return (
     <Link
-      href={issuesHref}
+      to={issuesHref}
       className="group flex items-center gap-3 rounded-lg border border-default/60 bg-brand-900/30 px-3 py-2.5 transition-colors hover:border-blue-500/30 hover:bg-brand-900/50"
     >
       <Badge variant={priorityBadgeVariant(issue.priority)} label={issue.priority || vo.issueUnknownPriority} />
@@ -111,7 +111,7 @@ export function OverviewExecutiveSummary({
     setHealthTrend([]);
     setHistoryError(null);
     if (!domain || !historyInView) return;
-    void fetch(`/api/report/history?domain=${encodeURIComponent(domain)}&limit=8`)
+    void apiFetch(apiUrl(`/report/history?domain=${encodeURIComponent(domain)}&limit=8`))
       .then(async (r) => {
         if (!r.ok) {
           setHistoryError(vo.historyTrendUnavailable);
@@ -204,7 +204,7 @@ export function OverviewExecutiveSummary({
 
                 <div className="flex flex-wrap gap-2">
                   <Link
-                    href={issuesHref}
+                    to={issuesHref}
                     className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
                   >
                     <AlertOctagon className="h-4 w-4" />
@@ -212,7 +212,7 @@ export function OverviewExecutiveSummary({
                   </Link>
                   {reportCount >= 2 ? (
                     <Link
-                      href={compareHref}
+                      to={compareHref}
                       className="inline-flex items-center gap-2 rounded-lg border border-default px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-brand-700/50"
                     >
                       <ArrowLeftRight className="h-4 w-4" />

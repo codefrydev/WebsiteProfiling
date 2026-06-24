@@ -1,8 +1,7 @@
-'use client';
 
 import { useState, useCallback } from 'react';
 import { Loader2, Sparkles } from 'lucide-react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import CopyBtn from '@/components/links/CopyBtn';
@@ -29,7 +28,7 @@ export default function AiSuggestionButton({ request, initialText = null, classN
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(apiUrl('/ai/fix-suggestion'), {
+      const res = await apiFetch(apiUrl('/ai/fix-suggestion'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

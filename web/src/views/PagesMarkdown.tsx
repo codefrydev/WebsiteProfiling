@@ -1,9 +1,8 @@
-'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useUrlTab } from '@/hooks/useUrlTab';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import {
   normalizePropertyId,
   pickInitialPropertyId,
@@ -37,8 +36,8 @@ function buildUrl(
 }
 
 export default function PagesMarkdown() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useUrlTab(TABS, 'builder');
 
   const [properties, setProperties] = useState<PropertyOption[]>([]);
@@ -56,9 +55,9 @@ export default function PagesMarkdown() {
 
   const syncUrl = useCallback(
     (patch: Record<string, string | null>) => {
-      router.replace(buildUrl('/pages-md', searchParams, patch), { scroll: false });
+      navigate(buildUrl('/pages-md', searchParams, patch), { replace: true, preventScrollReset: true });
     },
-    [router, searchParams],
+    [navigate, searchParams],
   );
 
   useEffect(() => {
@@ -66,7 +65,7 @@ export default function PagesMarkdown() {
     void (async () => {
       setLoadingProperties(true);
       try {
-        const res = await fetch(apiUrl('/properties'));
+        const res = await apiFetch(apiUrl('/properties'));
         if (!res.ok) return;
         const data = (await res.json()) as { properties?: PropertyOption[] };
         if (cancelled) return;

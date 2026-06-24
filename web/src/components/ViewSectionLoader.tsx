@@ -1,4 +1,3 @@
-'use client';
 
 import { pathSlugToViewId } from '@/routes';
 import { useViewSections } from '@/hooks/useViewSections';

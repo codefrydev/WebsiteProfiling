@@ -1,7 +1,6 @@
-'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { strings } from '@/lib/strings';
 
 const s = strings.settings;
@@ -96,7 +95,7 @@ export default function WritingPanel() {
 
       <p className="mt-4 text-[11px] text-muted-foreground">
         This preference is saved to your browser only. The server-side AI gate for Content Studio is on the{' '}
-        <Link href="/pipeline?group=content-ai" className="text-link hover:underline underline-offset-2">
+        <Link to="/pipeline?group=content-ai" className="text-link hover:underline underline-offset-2">
           Pipeline → Content & AI
         </Link>{' '}
         page.

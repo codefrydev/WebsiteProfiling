@@ -1,8 +1,7 @@
-'use client';
 
 import { useMemo, useState, useEffect, Fragment } from 'react';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { Bug, ChevronDown, ChevronRight, ExternalLink, BarChart3, List } from 'lucide-react';
 import { useReport } from '../context/useReport';
@@ -37,7 +36,7 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
   const domain = data?.site_name || '';
   useSectionData('links');
   const linksReady = useSectionsViewReady(['links']);
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const trailingQuery = searchParams.toString() ? `?${searchParams.toString()}` : '';
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('All');
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
@@ -127,7 +126,7 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
           <Bug className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
           <h2 className="text-lg font-semibold text-foreground mb-2">{vj.emptyStaticTitle}</h2>
           <p className="text-sm text-muted-foreground max-w-lg mx-auto mb-6">{vj.emptyStaticBody}</p>
-          <Link href="/pipeline">
+          <Link to="/pipeline">
             <Button variant="primary">{vj.runAudit}</Button>
           </Link>
         </Card>
@@ -213,7 +212,7 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
                             {row.sample_urls.map((url) => (
                               <li key={url}>
                                 <Link
-                                  href={linksInspectHref(url, 'analysis', trailingQuery.replace(/^\?/, ''))}
+                                  to={linksInspectHref(url, 'analysis', trailingQuery.replace(/^\?/, ''))}
                                   className="text-link hover:underline font-mono text-xs break-all"
                                 >
                                   {url}
@@ -317,7 +316,7 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
                               </TableCell>
                               <TableCell>
                                 <Link
-                                  href={linksInspectHref(row.url, 'analysis', trailingQuery.replace(/^\?/, ''))}
+                                  to={linksInspectHref(row.url, 'analysis', trailingQuery.replace(/^\?/, ''))}
                                   className="text-xs text-link hover:underline whitespace-nowrap"
                                 >
                                   {vj.viewDetails}

@@ -1,4 +1,3 @@
-'use client';
 
 import { useState, useMemo, useEffect, useRef, useCallback, type MouseEvent } from 'react';
 import { Link as LinkIcon, ArrowLeft, AlertTriangle, Download, List, TextQuote, Loader2 } from 'lucide-react';
@@ -12,7 +11,7 @@ import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Button, AlertBanner, ViewTabs } from '../components';
 import type { ViewTabItem } from '../components';
 import { useUrlTab } from '@/hooks/useUrlTab';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import type {
   InspectorBrokenItem,
   InspectorCategoryIssue,
@@ -90,9 +89,9 @@ export default function Links({ searchQuery = '' }: ViewProps) {
   useTabSections(LINKS_TAB_SECTIONS, true);
   const pipeline = useOptionalPipeline();
   const propertyId = Number(pipeline?.configState.active_property_id || 0);
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   const [sortBy, setSortBy] = useState<LinkSortKey>('inlinks');
   const [sortDesc, setSortDesc] = useState(true);
@@ -196,9 +195,9 @@ export default function Links({ searchQuery = '' }: ViewProps) {
       const next = new URLSearchParams(searchParams.toString());
       mutate(next);
       const q = next.toString();
-      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+      navigate(q ? `${pathname}?${q}` : pathname, { replace: true, preventScrollReset: true });
     },
-    [router, pathname, searchParams],
+    [navigate, pathname, searchParams],
   );
 
   useEffect(() => {

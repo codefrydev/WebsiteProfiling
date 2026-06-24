@@ -1,4 +1,3 @@
-'use client';
 
 import { useState } from 'react';
 import { ChevronDown, ChevronRight, Lightbulb, ListChecks } from 'lucide-react';

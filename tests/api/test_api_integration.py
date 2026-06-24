@@ -2,6 +2,9 @@
 
 These catch response-shape regressions and dict_row bugs that unit tests miss.
 Requires DATABASE_URL (same as other @pytest.mark.integration tests).
+
+Report read routes (/api/report/meta, /api/report/payload, …) are served by the
+Data service — see services/Data/tests/Data.Tests/ApiIntegrationTests.cs.
 """
 from __future__ import annotations
 
@@ -24,20 +27,6 @@ def test_health(api_client: TestClient) -> None:
     body = res.json()
     assert body["ok"] is True
     assert body["database"] == "up"
-
-
-def test_report_meta_response_shape(api_client: TestClient) -> None:
-    res = api_client.get("/api/report/meta")
-    assert res.status_code == 200
-    body = res.json()
-    assert "reports" in body
-    assert "crawlRuns" in body
-    assert isinstance(body["reports"], list)
-    for row in body["reports"]:
-        assert "canonical_domain" in row
-        assert "site_name" in row
-        assert "generated_at" in row
-        assert "canonicalDomain" not in row
 
 
 def test_properties_crud_and_ops(api_client: TestClient) -> None:
@@ -211,88 +200,6 @@ def test_dashboards_crud(api_client: TestClient, test_property: dict[str, Any]) 
     assert deleted.json()["ok"] is True
 
 
-def test_saved_filters_crud(api_client: TestClient, test_property: dict[str, Any]) -> None:
-    property_id = int(test_property["id"])
-    filter_name = f"filter-{uuid.uuid4().hex[:8]}"
-
-    upsert = api_client.post(
-        "/api/filters",
-        json={
-            "propertyId": property_id,
-            "name": filter_name,
-            "filterJson": {"status": ["200"]},
-        },
-    )
-    assert upsert.status_code == 200
-    assert upsert.json()["ok"] is True
-
-    listed = api_client.get("/api/filters", params={"propertyId": property_id})
-    assert listed.status_code == 200
-    names = {f["name"] for f in listed.json()["filters"]}
-    assert filter_name in names
-
-    deleted = api_client.request(
-        "DELETE",
-        "/api/filters",
-        json={"propertyId": property_id, "name": filter_name},
-    )
-    assert deleted.status_code == 200
-    assert deleted.json()["ok"] is True
-
-
-def test_issue_status_upsert_and_list(api_client: TestClient, test_property: dict[str, Any]) -> None:
-    property_id = int(test_property["id"])
-
-    empty = api_client.get("/api/issues/status", params={"propertyId": property_id})
-    assert empty.status_code == 200
-    assert isinstance(empty.json()["issues"], list)
-
-    upsert = api_client.put(
-        "/api/issues/status",
-        json={
-            "propertyId": property_id,
-            "message": "Missing meta description",
-            "status": "open",
-            "url": "https://example.com/page",
-            "priority": "Medium",
-        },
-    )
-    assert upsert.status_code == 200
-    issue = upsert.json()["issue"]
-    assert issue["propertyId"] == property_id
-    assert issue["status"] == "open"
-    assert issue["message"] == "Missing meta description"
-
-    listed = api_client.get("/api/issues/status", params={"propertyId": property_id})
-    assert listed.status_code == 200
-    messages = {i["message"] for i in listed.json()["issues"]}
-    assert "Missing meta description" in messages
-
-
-def test_portfolio_delete_crawl_run(api_client: TestClient, test_property: dict[str, Any]) -> None:
-    property_id = int(test_property["id"])
-    with db_session() as conn:
-        from website_profiling.db.crawl_store import create_crawl_run
-
-        crawl_run_id = create_crawl_run(
-            conn,
-            start_url=f"https://{test_property['domain']}",
-            property_id=property_id,
-        )
-
-    res = api_client.request(
-        "DELETE",
-        "/api/portfolio/delete",
-        json={"crawlRunId": crawl_run_id},
-    )
-    assert res.status_code == 200
-    assert res.json()["ok"] is True
-
-    with db_session() as conn:
-        cur = conn.execute("SELECT id FROM crawl_runs WHERE id = %s", (crawl_run_id,))
-        assert cur.fetchone() is None
-
-
 def test_properties_resolve(api_client: TestClient, test_property: dict[str, Any]) -> None:
     res = api_client.get(
         "/api/properties/resolve",
@@ -350,8 +257,3 @@ def test_backlinks_velocity_empty(api_client: TestClient, test_property: dict[st
     )
     assert res.status_code == 200
     assert isinstance(res.json()["snapshots"], list)
-
-
-def test_report_payload_not_found(api_client: TestClient) -> None:
-    res = api_client.get("/api/report/payload", params={"reportId": 999999999})
-    assert res.status_code == 404

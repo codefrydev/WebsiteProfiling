@@ -44,8 +44,6 @@ def _write_audit_health_snapshot(
     report_data: dict[str, Any],
 ) -> None:
     """Persist health score row for portfolio sparklines and alerts."""
-    import json
-
     categories = report_data.get("categories") or []
     scores = [
         float(c.get("score"))
@@ -80,8 +78,10 @@ def _write_audit_health_snapshot(
             report_id,
             canonical_domain or None,
             health_score,
-            json.dumps(category_scores),
-            json.dumps(issue_counts),
+            # Use the psycopg Json adapter (like report_data below) so these
+            # land as native jsonb objects, not double-encoded string literals.
+            _json_val(category_scores),
+            _json_val(issue_counts),
         ),
     )
 
@@ -124,3 +124,74 @@ def read_report_payload(conn: Connection, report_id: Optional[int] = None) -> Op
         return data if isinstance(data, dict) else None
     except Exception:
         return None
+
+
+def read_report_payloads(conn: Connection, report_ids: list[int]) -> dict[int, dict[str, Any]]:
+    """Batch-load report JSON blobs — one round-trip for portfolio grouping."""
+    if not report_ids:
+        return {}
+    try:
+        cur = conn.execute(
+            "SELECT id, data FROM report_payload WHERE id = ANY(%s)",
+            (report_ids,),
+        )
+        out: dict[int, dict[str, Any]] = {}
+        for row in cur.fetchall():
+            rid = _row_field(row, "id", index=0)
+            if rid is None:
+                continue
+            data = _parse_row_json(row, index=1)
+            if isinstance(data, dict):
+                out[int(rid)] = data
+        return out
+    except Exception:
+        return {}
+
+
+def read_report_payloads_portfolio(conn: Connection, report_ids: list[int]) -> dict[int, dict[str, Any]]:
+    """Load only JSON fields needed for /api/report/portfolio — skips multi-MB link/LH blobs."""
+    if not report_ids:
+        return {}
+    try:
+        cur = conn.execute(
+            """
+            SELECT id,
+              jsonb_build_object(
+                'site_name', data->'site_name',
+                'summary', data->'summary',
+                'categories', data->'categories',
+                'top_pages', COALESCE(data->'top_pages', '[]'::jsonb),
+                'report_meta', data->'report_meta',
+                'report_generated_at', data->'report_generated_at',
+                'crawl_run_id', data->'crawl_run_id',
+                'crawl_run_created_at', data->'crawl_run_created_at',
+                'lighthouse_summary', jsonb_build_object(
+                  'median_metrics', data->'lighthouse_summary'->'median_metrics',
+                  'category_scores', data->'lighthouse_summary'->'category_scores'
+                ),
+                'seo_health', data->'seo_health',
+                'content_analytics', jsonb_build_object(
+                  'word_count_stats', data->'content_analytics'->'word_count_stats'
+                ),
+                'response_time_stats', jsonb_build_object(
+                  'p50', data->'response_time_stats'->'p50'
+                ),
+                'security_findings', COALESCE(data->'security_findings', '[]'::jsonb),
+                'content_duplicates', COALESCE(data->'content_duplicates', '[]'::jsonb)
+              ) AS data
+            FROM report_payload
+            WHERE id = ANY(%s)
+            """,
+            (report_ids,),
+        )
+        out: dict[int, dict[str, Any]] = {}
+        for row in cur.fetchall():
+            rid = _row_field(row, "id", index=0)
+            if rid is None:
+                continue
+            data = _parse_row_json(row, index=1)
+            if isinstance(data, dict):
+                out[int(rid)] = data
+        return out
+    except Exception:
+        return {}

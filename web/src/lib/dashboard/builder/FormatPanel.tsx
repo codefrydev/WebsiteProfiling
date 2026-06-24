@@ -1,4 +1,3 @@
-'use client';
 
 import type { Widget, VizOptions } from '@/lib/dashboard/engine/doc';
 import { PALETTE_IDS } from '@/lib/dashboard/charts/theme';

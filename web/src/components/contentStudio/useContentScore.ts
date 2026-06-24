@@ -1,7 +1,6 @@
-'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import type { ContentScoreResult } from '@/types/contentStudio';
 
 export interface UseContentScoreInput {
@@ -41,7 +40,7 @@ export function useContentScore({
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(apiUrl('/content/score'), {
+      const res = await apiFetch(apiUrl('/content/score'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

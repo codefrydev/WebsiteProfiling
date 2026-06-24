@@ -1,4 +1,3 @@
-'use client';
 
 import type { StatusDistribution } from '@/lib/statusDistribution';
 import { palette } from '@/utils/chartPalette';

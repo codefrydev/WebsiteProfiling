@@ -1,4 +1,3 @@
-'use client';
 
 import { Search } from 'lucide-react';
 import { useOptionalUrlInspector } from '@/context/UrlInspectorContext';

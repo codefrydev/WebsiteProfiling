@@ -1,4 +1,3 @@
-'use client';
 
 import Badge from '@/components/Badge';
 import { useChatFollowUp } from '@/components/chat/ChatFollowUpContext';

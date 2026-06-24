@@ -1,8 +1,7 @@
-'use client';
 
 import { useRef, useState, useCallback } from 'react';
 import { Upload, Loader2 } from 'lucide-react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings, format } from '@/lib/strings';
 import { Button } from '@/components';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
@@ -55,7 +54,7 @@ export default function ThirdPartyLinksImport({ gscLinks, onImported }: ThirdPar
       setError(null);
       try {
         const csvText = await file.text();
-        const res = await fetch(apiUrl('/backlinks/third-party-import'), {
+        const res = await apiFetch(apiUrl('/backlinks/third-party-import'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ propertyId, provider, csvText, ourDomains }),

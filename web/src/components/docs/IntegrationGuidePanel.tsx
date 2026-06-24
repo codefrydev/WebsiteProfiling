@@ -1,7 +1,6 @@
-'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { ExternalLink } from 'lucide-react';
 import Button from '@/components/Button';
 import {
@@ -171,7 +170,7 @@ export default function IntegrationGuidePanel({
       </div>
 
       <div className="flex shrink-0 flex-wrap gap-2 border-t border-muted/30 bg-[var(--chat-bg)] px-4 py-3 sm:px-6">
-        <Link href={primaryCta.href}>
+        <Link to={primaryCta.href}>
           <Button variant="primary" className="px-4 py-2 text-sm">
             {primaryCta.label}
           </Button>
@@ -183,7 +182,7 @@ export default function IntegrationGuidePanel({
             </Button>
           </a>
         ) : (
-          <Link href={secondaryCta.href}>
+          <Link to={secondaryCta.href}>
             <Button variant="secondary" className="px-4 py-2 text-sm">
               {secondaryCta.label}
             </Button>

@@ -13,7 +13,9 @@ services:
       timeout: 3s
       retries: 5
 
-  web:
+  # FastAPI backend — now its own service (was bundled into `web`). Network-internal:
+  # only the BFF talks to it, so no host port is published.
+  fastapi:
     build:
       context: .
       dockerfile: Dockerfile
@@ -21,61 +23,112 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "3000:3000"
-      - "8001:8001"
     environment:
+      WP_ROLE: fastapi
       WEBSITE_PROFILING_ROOT: /app
       DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
       DATA_DIR: /data
       PYTHON: /opt/venv/bin/python
-      NODE_ENV: production
       CHROME_PATH: /usr/bin/chromium
       LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
       LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
-      FASTAPI_URL: http://127.0.0.1:8001
-      FASTAPI_ALLOWED_ORIGINS: "http://localhost:3000"
-      FILE_SERVICE_URL: http://files:8080
+      FASTAPI_ALLOWED_ORIGINS: "http://localhost:8090"
     volumes:
       - profiling-data:/data
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/home', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8001/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  worker:
+    image: website-profiling:latest
+    depends_on:
+      fastapi:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    environment:
+      WP_ROLE: worker
+      WEBSITE_PROFILING_ROOT: /app
+      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
+      DATA_DIR: /data
+      PYTHON: /opt/venv/bin/python
+      CHROME_PATH: /usr/bin/chromium
+      LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
+      LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
+    volumes:
+      - profiling-data:/data
+
+  # .NET read microservice — reads Postgres directly, incrementally replacing FastAPI reads.
+  # Internal: only the BFF reaches it (no published host port).
+  data:
+    build:
+      context: ./services/Data
+    environment:
+      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
+      ASPNETCORE_URLS: http://+:8091
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8091/health"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 15s
 
+  # .NET BFF — the single browser-facing API surface (owns auth + CORS).
+  bff:
+    build:
+      context: ./services/Bff
+    ports:
+      - "8090:8090"
+    environment:
+      FASTAPI_URL: http://fastapi:8001
+      FILE_SERVICE_URL: http://files:8080
+      BFF_ALLOWED_ORIGINS: "http://localhost:3000"
+      DATA_SERVICE_URL: http://data:8091
+      # Comma-separated /api path prefixes served by the Data service (reads + issue/portfolio mutations).
+      # Rollback: remove a prefix here and restart bff.
+      DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters"
+      # AUTH_SECRET: set to enable wp_session auth (must match the web service)
+    depends_on:
+      fastapi:
+        condition: service_started
+      files:
+        condition: service_started
+      data:
+        condition: service_started
+
+  # Vite SPA (nginx). The browser calls the BFF (:8090) for all /api/*.
+  web:
+    build:
+      context: ./web
+      args:
+        VITE_BFF_BASE_URL: http://localhost:8090
+    depends_on:
+      bff:
+        condition: service_started
+    ports:
+      - "3000:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/home"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # File export service (PDF/Excel). Internal: only the BFF reaches it.
   files:
     build:
       context: ./services/FileService
-    ports:
-      - "8080:8080"
     environment:
-      REPORT_API_URL: http://web:8001
+      REPORT_API_URL: http://fastapi:8001
     depends_on:
-      web:
+      fastapi:
         condition: service_started
-
-  # Optional remote MCP (Streamable HTTP). Uncomment and set WP_MCP_TOKEN / WP_MCP_ALLOWED_HOSTS.
-  # mcp:
-  #   build:
-  #     context: .
-  #     dockerfile: Dockerfile
-  #   image: website-profiling:latest
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #   command: ['python', '-m', 'website_profiling.mcp.http']
-  #   environment:
-  #     WEBSITE_PROFILING_ROOT: /app
-  #     DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
-  #     WP_MCP_HTTP_HOST: 0.0.0.0
-  #     WP_MCP_HTTP_PORT: 8000
-  #     WP_MCP_TOKEN: ${WP_MCP_TOKEN:-dev-mcp-token}
-  #     WP_MCP_ALLOWED_HOSTS: localhost,127.0.0.1
-  #     WP_MCP_DOMAIN: core
-  #   ports:
-  #     - "8000:8000"
 
 volumes:
   pg-data:

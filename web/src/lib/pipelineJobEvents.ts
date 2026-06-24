@@ -1,4 +1,4 @@
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import type { PipelineJob } from '@/types/api';
 import { logPipelineFailure } from '@/lib/pipelineDebug';
 
@@ -64,7 +64,7 @@ export function pollPipelineJob(
   const tick = async (): Promise<void> => {
     if (cancelled) return;
     try {
-      const res = await fetch(jobPath);
+      const res = await apiFetch(jobPath);
       const data: {
         status?: string;
         log?: string;

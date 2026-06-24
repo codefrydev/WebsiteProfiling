@@ -1,4 +1,3 @@
-'use client';
 
 import { Bot, ExternalLink, GitBranch, Shield, Sparkles } from 'lucide-react';
 import LandingSectionHeader from '@/components/landing/LandingSectionHeader';

@@ -1,9 +1,7 @@
-'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import dynamic from 'next/dynamic';
+import { useState, useEffect, useCallback, useMemo, lazy } from 'react';
 import { Save, ScanSearch, Sparkles } from 'lucide-react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
 import { Button } from '@/components';
 import SeoScoreSidebar from './SeoScoreSidebar';
@@ -11,12 +9,7 @@ import EditorInsightsPanel from './EditorInsightsPanel';
 import { useContentScore } from './useContentScore';
 import type { ContentAnalyzeResult, ContentDraftDetail, ContentScoreResult } from '@/types/contentStudio';
 
-const RichTextEditor = dynamic(() => import('./RichTextEditor'), {
-  ssr: false,
-  loading: () => (
-    <div className="min-h-[200px] flex-1 rounded-lg border border-default bg-brand-900 animate-pulse" />
-  ),
-});
+const RichTextEditor = lazy(() => import('./RichTextEditor'));
 
 export interface ContentEditorProps {
   draft: ContentDraftDetail;
@@ -116,7 +109,7 @@ export default function ContentEditor({
     onAnalyzeLoading?.(true);
     onAnalyzeError?.(null);
     try {
-      const res = await fetch(apiUrl('/content/analyze'), {
+      const res = await apiFetch(apiUrl('/content/analyze'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

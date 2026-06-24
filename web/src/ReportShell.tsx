@@ -1,9 +1,5 @@
-'use client';
-
-import { useState, useEffect, type ComponentType, type ReactNode } from 'react';
-import dynamic from 'next/dynamic';
-import Link from 'next/link';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { Suspense, useState, useEffect, type ComponentType, type ReactNode, lazy } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Home as HomeIcon,
   LayoutDashboard,
@@ -57,38 +53,35 @@ function viewLoading(label = 'Loading view…') {
   );
 }
 
-const Home = dynamic(() => import('./views/Home'), { loading: () => viewLoading() });
-const Overview = dynamic(() => import('./views/Overview'), { loading: () => viewLoading() });
-const Dashboards = dynamic(() => import('./views/Dashboards'), { loading: () => viewLoading('Loading dashboards…') });
-const CompareReports = dynamic(() => import('./views/CompareReports'), { loading: () => viewLoading() });
-const Issues = dynamic(() => import('./views/Issues'), { loading: () => viewLoading() });
-const Links = dynamic(() => import('./views/Links'), { loading: () => viewLoading() });
-const SiteStructure = dynamic(() => import('./views/SiteStructure'), { loading: () => viewLoading() });
-const Redirects = dynamic(() => import('./views/Redirects'), { loading: () => viewLoading() });
-const Content = dynamic(() => import('./views/Content'), { loading: () => viewLoading() });
-const Security = dynamic(() => import('./views/Security'), { loading: () => viewLoading() });
-const JavaScriptErrors = dynamic(() => import('./views/JavaScriptErrors'), { loading: () => viewLoading() });
-const AccessibilityView = dynamic(() => import('./views/Accessibility'), { loading: () => viewLoading() });
-const ImageSeo = dynamic(() => import('./views/ImageSeo'), { loading: () => viewLoading() });
-const GeoReadiness = dynamic(() => import('./views/GeoReadiness'), { loading: () => viewLoading() });
-const Lighthouse = dynamic(() => import('./views/Lighthouse'), { loading: () => viewLoading() });
-const Network = dynamic(() => import('./views/Network'), {
-  ssr: false,
-  loading: () => viewLoading('Loading network graph…'),
-});
-const ContentAnalytics = dynamic(() => import('./views/ContentAnalytics'), { loading: () => viewLoading() });
-const TextContentAnalysis = dynamic(() => import('./views/TextContentAnalysis'), { loading: () => viewLoading() });
-const TechStack = dynamic(() => import('./views/TechStack'), { loading: () => viewLoading() });
-const Gallery = dynamic(() => import('./views/Gallery'), { loading: () => viewLoading() });
-const SearchPerformance = dynamic(() => import('./views/SearchPerformance'), { loading: () => viewLoading() });
-const Indexation = dynamic(() => import('./views/Indexation'), { loading: () => viewLoading() });
-const Backlinks = dynamic(() => import('./views/Backlinks'), { loading: () => viewLoading() });
-const Traffic = dynamic(() => import('./views/Traffic'), { loading: () => viewLoading() });
-const KeywordsExplorer = dynamic(() => import('./views/KeywordsExplorer'), { loading: () => viewLoading() });
-const ExportReport = dynamic(() => import('./views/ExportReport'), { loading: () => viewLoading() });
-const LogAnalyzer = dynamic(() => import('./views/LogAnalyzer'), { loading: () => viewLoading() });
-const Subdomains = dynamic(() => import('./views/Subdomains'), { loading: () => viewLoading() });
-const Contacts = dynamic(() => import('./views/Contacts'), { loading: () => viewLoading() });
+const Home = lazy(() => import('./views/Home'));
+const Overview = lazy(() => import('./views/Overview'));
+const Dashboards = lazy(() => import('./views/Dashboards'));
+const CompareReports = lazy(() => import('./views/CompareReports'));
+const Issues = lazy(() => import('./views/Issues'));
+const Links = lazy(() => import('./views/Links'));
+const SiteStructure = lazy(() => import('./views/SiteStructure'));
+const Redirects = lazy(() => import('./views/Redirects'));
+const Content = lazy(() => import('./views/Content'));
+const Security = lazy(() => import('./views/Security'));
+const JavaScriptErrors = lazy(() => import('./views/JavaScriptErrors'));
+const AccessibilityView = lazy(() => import('./views/Accessibility'));
+const ImageSeo = lazy(() => import('./views/ImageSeo'));
+const GeoReadiness = lazy(() => import('./views/GeoReadiness'));
+const Lighthouse = lazy(() => import('./views/Lighthouse'));
+const Network = lazy(() => import('./views/Network'));
+const ContentAnalytics = lazy(() => import('./views/ContentAnalytics'));
+const TextContentAnalysis = lazy(() => import('./views/TextContentAnalysis'));
+const TechStack = lazy(() => import('./views/TechStack'));
+const Gallery = lazy(() => import('./views/Gallery'));
+const SearchPerformance = lazy(() => import('./views/SearchPerformance'));
+const Indexation = lazy(() => import('./views/Indexation'));
+const Backlinks = lazy(() => import('./views/Backlinks'));
+const Traffic = lazy(() => import('./views/Traffic'));
+const KeywordsExplorer = lazy(() => import('./views/KeywordsExplorer'));
+const ExportReport = lazy(() => import('./views/ExportReport'));
+const LogAnalyzer = lazy(() => import('./views/LogAnalyzer'));
+const Subdomains = lazy(() => import('./views/Subdomains'));
+const Contacts = lazy(() => import('./views/Contacts'));
 
 interface ReportShellReportContext {
   data: ReportPayload | null;
@@ -151,7 +144,7 @@ const VIEW_CONFIG: ViewConfigEntry[] = [
   { id: 'keywords-explorer', component: KeywordsExplorer as ComponentType<CurrentViewProps>, icon: Key },
 ];
 
-if (process.env.NODE_ENV !== 'production') {
+if (import.meta.env.DEV) {
   const configIds = new Set(VIEW_CONFIG.map((entry) => entry.id));
   for (const id of REPORT_VIEW_IDS) {
     if (!configIds.has(id)) {
@@ -174,9 +167,9 @@ const VIEWS = VIEW_CONFIG.map((v) => ({
 /** Sync `?domain=` query param with the active report payload. */
 function BrandUrlSync({ slug }: SlugProps): null {
   const { data, loading, error, startUrlByRunId } = useReport() as ReportShellReportContext;
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
   const searchStr = searchParams.toString();
 
   useEffect(() => {
@@ -186,8 +179,8 @@ function BrandUrlSync({ slug }: SlugProps): null {
     next.delete('domain');
     next.delete('brand');
     const q = next.toString();
-    router.replace(q ? `${pathname}?${q}` : pathname);
-  }, [slug, searchStr, searchParams, router, pathname]);
+    navigate(q ? `${pathname}?${q}` : pathname, { replace: true });
+  }, [slug, searchStr, searchParams, navigate, pathname]);
 
   useEffect(() => {
     if (slug === 'home') return;
@@ -200,16 +193,16 @@ function BrandUrlSync({ slug }: SlugProps): null {
     const next = new URLSearchParams(searchStr);
     next.set('domain', value);
     const q = next.toString();
-    router.replace(q ? `${pathname}?${q}` : pathname);
-  }, [slug, loading, error, data, searchStr, searchParams, router, pathname, startUrlByRunId]);
+    navigate(q ? `${pathname}?${q}` : pathname, { replace: true });
+  }, [slug, loading, error, data, searchStr, searchParams, navigate, pathname, startUrlByRunId]);
 
   return null;
 }
 
 /** Main report shell layout and navigation. */
 function AppContent({ slug }: SlugProps): ReactNode {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const { loading, error, data, setSelectedReportId } = useReport() as ReportShellReportContext;
 
@@ -221,18 +214,18 @@ function AppContent({ slug }: SlugProps): ReactNode {
     }
     const path = `/${viewIdToPathSlug(id)}`;
     if (id === 'home') {
-      router.push('/home');
+      navigate('/home');
       return;
     }
     if (opts?.domain != null && opts.domain !== '') {
       const p = new URLSearchParams(searchParams.toString());
       p.set('domain', opts.domain);
       const q = p.toString();
-      router.push(q ? `${path}?${q}` : path);
+      navigate(q ? `${path}?${q}` : path);
       return;
     }
     const q = searchParams.toString();
-    router.push(q ? `${path}?${q}` : path);
+    navigate(q ? `${path}?${q}` : path);
   };
 
   if (!view) {
@@ -261,7 +254,7 @@ function AppContent({ slug }: SlugProps): ReactNode {
               <p className="text-muted-foreground text-sm mt-4">{strings.app.failedHint}</p>
             ) : null}
             <Link
-              href="/pipeline"
+              to="/pipeline"
               className="mt-6 inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500 transition-colors"
             >
               {strings.app.openRunAudit}
@@ -282,18 +275,22 @@ function AppContent({ slug }: SlugProps): ReactNode {
     >
       {view === 'home' ? (
         <PortfolioProvider>
+          <Suspense fallback={viewLoading()}>
+            <CurrentView
+              searchQuery={searchQuery}
+              onNavigate={selectView}
+              onOpenIntegrations={dispatchOpenIntegrations}
+            />
+          </Suspense>
+        </PortfolioProvider>
+      ) : (
+        <Suspense fallback={viewLoading()}>
           <CurrentView
             searchQuery={searchQuery}
             onNavigate={selectView}
             onOpenIntegrations={dispatchOpenIntegrations}
           />
-        </PortfolioProvider>
-      ) : (
-        <CurrentView
-          searchQuery={searchQuery}
-          onNavigate={selectView}
-          onOpenIntegrations={dispatchOpenIntegrations}
-        />
+        </Suspense>
       )}
     </AppShell>
   );
@@ -311,7 +308,7 @@ function RoutedShell({ slug }: SlugProps): ReactNode {
 
 /** Wraps children with ReportProvider (db + domain from URL). */
 export function ReportAppClient({ children }: { children: ReactNode }): ReactNode {
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const domainRaw = searchParams.get('domain') ?? searchParams.get('brand');
   const domainSlug = domainRaw != null && domainRaw !== '' ? domainRaw : null;
 

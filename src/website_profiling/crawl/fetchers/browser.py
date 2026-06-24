@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import threading
 import time
@@ -12,6 +13,8 @@ from typing import Any, Callable, Optional
 
 from .base import HEADER_KEYS, FetchResult
 from .browser_diagnostics import finalize_browser_diagnostics, truncate_diag_text
+
+logger = logging.getLogger(__name__)
 
 _BROWSER_INSTALL_MSG = (
     "JavaScript crawl requires Playwright and Chromium. Install: "
@@ -449,3 +452,8 @@ class BrowserFetcher:
             self._loop.call_soon_threadsafe(self._jobs.put_nowait, None)
         if self._thread is not None and self._thread.is_alive():
             self._thread.join(timeout=30)
+            if self._thread.is_alive():  # pragma: no cover - join-timeout path
+                logger.warning(
+                    "BrowserFetcher event-loop thread did not exit within 30s; "
+                    "the browser/Chromium process may not have shut down cleanly."
+                )

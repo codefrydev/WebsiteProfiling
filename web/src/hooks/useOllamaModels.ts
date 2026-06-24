@@ -1,7 +1,6 @@
-'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 
 export type OllamaBillingTier = 'free_local' | 'cloud_free' | 'cloud_pro';
 
@@ -34,7 +33,7 @@ export function useOllamaModels(baseUrl: string, enabled = true) {
     if (!enabled) return;
     setLoading(true);
     try {
-      const res = await fetch(apiUrl('/ollama/status'));
+      const res = await apiFetch(apiUrl('/ollama/status'));
       const data = (await res.json()) as OllamaModelsStatus;
       setStatus(data);
     } catch {

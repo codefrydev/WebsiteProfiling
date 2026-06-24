@@ -1,7 +1,6 @@
-'use client';
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { Loader2, Save, X } from 'lucide-react';
 import { strings, format } from '@/lib/strings';
 import type { IntegrationToast, PipelineUnknownKey } from '@/types/api';
@@ -36,7 +35,7 @@ function SecretsLinkBanner() {
   return (
     <p className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2 text-xs text-muted-foreground">
       {strings.secrets.pipelineBanner}{' '}
-      <Link href="/secrets" className="text-link hover:underline">
+      <Link to="/secrets" className="text-link hover:underline">
         {strings.secrets.pageTitle}
       </Link>
       .

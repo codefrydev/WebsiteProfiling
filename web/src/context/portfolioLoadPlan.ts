@@ -6,8 +6,7 @@ export function portfolioGroupsLoadPlan(
   reportCount: number,
   crawlCount: number,
 ): PortfolioGroupsLoadPlan {
-  if (!metaLoaded) return 'wait-meta';
-  if (reportCount === 0 && crawlCount === 0) return 'show-empty';
+  if (metaLoaded && reportCount === 0 && crawlCount === 0) return 'show-empty';
   return 'fetch';
 }
 

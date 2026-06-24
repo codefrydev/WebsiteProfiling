@@ -1,8 +1,7 @@
-'use client';
 
 import { useCallback, useState } from 'react';
 import { FileText, Loader2, X } from 'lucide-react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
 import type { KeywordRow } from '@/types/components';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
@@ -68,7 +67,7 @@ export default function ContentTemplatesPanel({ defaultKeyword = '', clusterRows
     setError(null);
     setBrief(null);
     try {
-      const res = await fetch(apiUrl('/keywords/content-brief'), {
+      const res = await apiFetch(apiUrl('/keywords/content-brief'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

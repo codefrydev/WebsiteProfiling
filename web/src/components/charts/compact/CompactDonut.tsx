@@ -1,4 +1,3 @@
-'use client';
 
 import { arc, pie } from 'd3-shape';
 import { scaleLinear } from 'd3-scale';

@@ -255,3 +255,49 @@ def test_report_store_health_snapshot_insert_failure_is_ignored() -> None:
     write_report_payload(conn, {"site_name": "Y", "categories": []})  # type: ignore[arg-type]
     assert conn.commits == 1
 
+
+def test_read_report_payloads_batch_empty_and_rows() -> None:
+    from website_profiling.db.report_store import read_report_payloads, read_report_payloads_portfolio
+
+    assert read_report_payloads(FakeConn(), []) == {}  # type: ignore[arg-type]
+    assert read_report_payloads_portfolio(FakeConn(), []) == {}  # type: ignore[arg-type]
+
+    conn = FakeConn()
+    conn.set_next_cursor(
+        FakeCursor(
+            fetchall_value=[
+                {"id": 1, "data": {"site_name": "A", "summary": {"urls": 10}}},
+                {"id": 2, "data": '{"site_name":"B"}'},
+                {"id": None, "data": {"skip": True}},
+                {"id": 3, "data": "not-json"},
+            ]
+        )
+    )
+    assert read_report_payloads(conn, [1, 2, 3]) == {  # type: ignore[arg-type]
+        1: {"site_name": "A", "summary": {"urls": 10}},
+        2: {"site_name": "B"},
+    }
+
+    conn = FakeConn()
+    conn.set_next_cursor(
+        FakeCursor(
+            fetchall_value=[
+                {"id": 5, "data": {"site_name": "Lite", "summary": {"score": 80}}},
+                {"id": None, "data": {"skip": True}},
+            ]
+        )
+    )
+    assert read_report_payloads_portfolio(conn, [5]) == {5: {"site_name": "Lite", "summary": {"score": 80}}}  # type: ignore[arg-type]
+
+
+def test_read_report_payloads_batch_execute_failure() -> None:
+    from website_profiling.db.report_store import read_report_payloads, read_report_payloads_portfolio
+
+    class _BoomConn(FakeConn):
+        def execute(self, sql, params=None):
+            raise RuntimeError("db down")
+
+    boom = _BoomConn()
+    assert read_report_payloads(boom, [1]) == {}  # type: ignore[arg-type]
+    assert read_report_payloads_portfolio(boom, [1]) == {}  # type: ignore[arg-type]
+

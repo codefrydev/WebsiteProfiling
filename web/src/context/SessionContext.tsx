@@ -1,4 +1,3 @@
-'use client';
 
 import {
   createContext,
@@ -7,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 
 export interface SessionState {
   loading: boolean;
@@ -34,7 +33,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    void fetch(apiUrl('/auth/session'))
+    void apiFetch(apiUrl('/auth/session'))
       .then((res) => res.json())
       .then((data: Partial<SessionState>) => {
         if (cancelled) return;

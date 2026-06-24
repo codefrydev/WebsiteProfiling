@@ -1,4 +1,3 @@
-'use client';
 
 import { ExternalLink, Medal, TrendingUp } from 'lucide-react';
 import type { ReportTopPage } from '@/types';

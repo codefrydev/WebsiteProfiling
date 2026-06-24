@@ -1,4 +1,3 @@
-'use client';
 
 import ViewTabs from '@/components/ViewTabs';
 

@@ -1,4 +1,3 @@
-'use client';
 
 import { useEffect, useRef } from 'react';
 import ChatAssistantMessage from '@/components/chat/ChatAssistantMessage';

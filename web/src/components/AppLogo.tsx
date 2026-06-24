@@ -1,4 +1,3 @@
-'use client';
 
 import { useBranding } from '@/context/useBranding';
 

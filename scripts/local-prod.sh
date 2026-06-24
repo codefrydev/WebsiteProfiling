@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Local prod: same Postgres as ./local-run, Next.js build + start (NODE_ENV=production).
+# Local prod: same Postgres as ./local-run, Vite build + preview (NODE_ENV=production).
 # Usage: ./local-prod [command]
-#   (default) start   — DB, migrations, npm run build, npm run start
+#   (default) start   — DB, migrations, npm run build, npm run preview
 #   build             — npm run build only
 #   help              — show commands
 set -euo pipefail
@@ -26,7 +26,72 @@ WEB="$ROOT/web"
 LOCAL_RUN="$ROOT/scripts/local-run.sh"
 
 log() { printf '\033[1;36m→\033[0m %s\n' "$*"; }
+warn() { printf '\033[1;33m!\033[0m %s\n' "$*" >&2; }
 die() { printf '\033[1;31m✗\033[0m %s\n' "$*" >&2; exit 1; }
+
+kill_process_tree() {
+  local pid="$1"
+  local sig="${2:-TERM}"
+  local child
+  [[ -z "$pid" ]] && return 0
+  for child in $(pgrep -P "$pid" 2>/dev/null || true); do
+    kill_process_tree "$child" "$sig"
+  done
+  kill "-$sig" "$pid" 2>/dev/null || true
+}
+
+wait_for_pid() {
+  local pid="$1"
+  local timeout="${2:-10}"
+  local i
+  [[ -z "$pid" ]] && return 0
+  for ((i = 0; i < timeout * 2; i++)); do
+    kill -0 "$pid" 2>/dev/null || return 0
+    sleep 0.5
+  done
+  return 1
+}
+
+stop_service() {
+  local name="$1"
+  local pid="$2"
+  [[ -z "$pid" ]] && return 0
+  if ! kill -0 "$pid" 2>/dev/null; then
+    wait "$pid" 2>/dev/null || true
+    log "$name already stopped."
+    return 0
+  fi
+  log "Stopping $name (PID $pid)..."
+  kill_process_tree "$pid" TERM
+  if ! wait_for_pid "$pid" 10; then
+    warn "$name did not exit in time — sending SIGKILL"
+    kill_process_tree "$pid" KILL
+    wait_for_pid "$pid" 2 || true
+  fi
+  wait "$pid" 2>/dev/null || true
+  log "$name stopped."
+}
+
+disown_bg() {
+  local pid="$1"
+  [[ -z "$pid" ]] && return 0
+  disown "$pid" 2>/dev/null || true
+}
+
+stop_postgres() {
+  if ! command -v docker >/dev/null 2>&1; then
+    return 0
+  fi
+  if ! docker info >/dev/null 2>&1; then
+    warn "Docker unavailable — skipping Postgres stop"
+    return 0
+  fi
+  if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$PG_CONTAINER"; then
+    log "Stopping $PG_CONTAINER"
+    docker stop "$PG_CONTAINER" >/dev/null 2>&1 || warn "Could not stop $PG_CONTAINER"
+    log "Postgres stopped."
+  fi
+}
 
 need_cmd() {
   command -v "$1" >/dev/null 2>&1 || die "Missing required command: $1"
@@ -42,7 +107,7 @@ cmd_web_deps() {
 
 cmd_build() {
   cmd_web_deps
-  log "Building Next.js (production)"
+  log "Building Vite SPA (production)"
   (cd "$WEB" && npm run build)
 }
 
@@ -63,7 +128,7 @@ cmd_start() {
     cmd_web_deps
     log "Skipping build (--skip-build)"
   fi
-  log "Starting Next.js production server (Ctrl+C to stop)"
+  log "Starting Vite preview server (Ctrl+C stops all services including Postgres)"
   log "DATABASE_URL=$DATABASE_URL"
   log "DATA_DIR=$DATA_DIR"
   log "PYTHON=$PYTHON"
@@ -74,37 +139,58 @@ cmd_start() {
   WORKER_PID=""
   UVICORN_PID=""
   NPM_PID=""
+  _CLEANUP_DONE=0
+  set +m
 
   cleanup_prod() {
-    [ -n "$WORKER_PID" ] && kill "$WORKER_PID" 2>/dev/null || true
-    [ -n "$UVICORN_PID" ] && kill "$UVICORN_PID" 2>/dev/null || true
-    [ -n "$NPM_PID" ] && kill "$NPM_PID" 2>/dev/null || true
+    if [[ "$_CLEANUP_DONE" -eq 1 ]]; then
+      return 0
+    fi
+    _CLEANUP_DONE=1
+    trap - INT TERM EXIT
+    set +e
+
+    log "Shutting down local prod stack..."
+    stop_service "Vite preview" "$NPM_PID"
+    NPM_PID=""
+    stop_service "FastAPI" "$UVICORN_PID"
+    UVICORN_PID=""
+    stop_service "pipeline worker" "$WORKER_PID"
+    WORKER_PID=""
+    stop_postgres
+    log "All services stopped."
+    exit 0
   }
-  trap cleanup_prod INT TERM EXIT
+  trap cleanup_prod EXIT INT TERM
 
   log "Starting pipeline worker"
   "$ROOT/.venv/bin/python" -m website_profiling.worker &
   WORKER_PID=$!
+  disown_bg "$WORKER_PID"
 
   log "Starting FastAPI on port 8001"
   export FASTAPI_URL="http://127.0.0.1:8001"
   "$ROOT/.venv/bin/uvicorn" website_profiling.api.main:app \
     --host 0.0.0.0 --port 8001 --workers 1 &
   UVICORN_PID=$!
+  disown_bg "$UVICORN_PID"
 
   cd "$WEB"
-  npm run start -- -H 0.0.0.0 -p 3000 &
+  npm run preview -- --host 0.0.0.0 --port 3000 &
   NPM_PID=$!
-  wait $NPM_PID
+  disown_bg "$NPM_PID"
+  set +e
+  wait "$NPM_PID"
+  exit 0
 }
 
 cmd_help() {
   cat <<EOF
-Local prod runner — same Postgres as ./local-run, Next.js in production mode
+Local prod runner — same Postgres as ./local-run, Vite build + preview (NODE_ENV=production).
 
   ./local-prod              Same as: start
-  ./local-prod start        DB + migrations + build + npm run start
-  ./local-prod start --skip-build   Start without rebuilding (reuse .next)
+  ./local-prod start        DB + migrations + build + vite preview
+  ./local-prod start --skip-build   Start without rebuilding (reuse dist/)
   ./local-prod build        npm run build only
   ./local-prod help         Show this help
 

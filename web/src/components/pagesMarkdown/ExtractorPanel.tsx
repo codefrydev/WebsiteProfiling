@@ -1,8 +1,7 @@
-'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, Loader2, Play, RefreshCw, Wifi } from 'lucide-react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 interface PageMarkdownRunRow {
   id: number;
   created_at: string | null;
@@ -67,7 +66,7 @@ export default function ExtractorPanel({
       const url = propertyId
         ? apiUrl(`/page-markdown/runs?propertyId=${propertyId}`)
         : apiUrl('/page-markdown/runs');
-      const res = await fetch(url);
+      const res = await apiFetch(url);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to load runs');
       const list = (data.runs ?? []) as PageMarkdownRunRow[];
@@ -91,7 +90,7 @@ export default function ExtractorPanel({
     if (!extractJobId || extractStatus !== 'running') return;
     const id = setInterval(async () => {
       try {
-        const res = await fetch(apiUrl(`/jobs/${encodeURIComponent(extractJobId)}`));
+        const res = await apiFetch(apiUrl(`/jobs/${encodeURIComponent(extractJobId)}`));
         const data = await res.json();
         setExtractLog(data.log ?? '');
         if (data.status === 'done' || data.exitCode === 0) {
@@ -116,7 +115,7 @@ export default function ExtractorPanel({
     if (!captureJobId || captureJobDone) return;
     const id = setInterval(async () => {
       try {
-        const res = await fetch(apiUrl(`/jobs/${encodeURIComponent(captureJobId)}`));
+        const res = await apiFetch(apiUrl(`/jobs/${encodeURIComponent(captureJobId)}`));
         const data = await res.json();
         setCaptureLog(data.log ?? '');
         if (data.status === 'done' || data.exitCode === 0) {
@@ -144,7 +143,7 @@ export default function ExtractorPanel({
     setExtractLog('');
     setExtractStatus('running');
     try {
-      const res = await fetch(apiUrl('/page-markdown/extract'), {
+      const res = await apiFetch(apiUrl('/page-markdown/extract'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ crawlRunId: selectedRunId, strategy, overwrite }),
@@ -335,7 +334,7 @@ function CaptureSection({ selectedRun, captureStatus, captureLog, onCaptureStart
     setError(null);
     setStarting(true);
     try {
-      const res = await fetch(apiUrl('/run'), {
+      const res = await apiFetch(apiUrl('/run'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

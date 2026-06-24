@@ -1,4 +1,3 @@
-'use client';
 
 import LandingHero from '@/components/landing/LandingHero';
 import LandingFeatureSpotlight from '@/components/landing/LandingFeatureSpotlight';

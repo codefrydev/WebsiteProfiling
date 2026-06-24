@@ -1,4 +1,3 @@
-'use client';
 
 import { Briefcase, Building2, Code2 } from 'lucide-react';
 import LandingSectionHeader from '@/components/landing/LandingSectionHeader';

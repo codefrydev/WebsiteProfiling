@@ -1,4 +1,4 @@
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import type { PipelineConfigState } from '@/types/api';
 
 export interface BrowserCrawlStatus {
@@ -13,7 +13,7 @@ export function crawlRenderModeUsesBrowser(state: PipelineConfigState): boolean 
 
 export async function fetchBrowserCrawlStatus(): Promise<BrowserCrawlStatus> {
   try {
-    const res = await fetch(apiUrl('/crawl/browser-status'));
+    const res = await apiFetch(apiUrl('/crawl/browser-status'));
     const data = (await res.json().catch(() => ({}))) as BrowserCrawlStatus & { error?: string };
     if (!res.ok) {
       return {

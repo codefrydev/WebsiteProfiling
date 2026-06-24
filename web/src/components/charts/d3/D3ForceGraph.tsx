@@ -1,4 +1,3 @@
-'use client';
 
 import { useEffect, useRef } from 'react';
 import { hierarchy, tree, select, zoom, type HierarchyNode, type HierarchyPointNode, type ZoomBehavior } from 'd3';

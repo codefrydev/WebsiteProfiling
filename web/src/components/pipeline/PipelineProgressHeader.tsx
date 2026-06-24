@@ -1,4 +1,3 @@
-'use client';
 
 import { useMemo } from 'react';
 import { Check, Loader2, Pause, Play } from 'lucide-react';

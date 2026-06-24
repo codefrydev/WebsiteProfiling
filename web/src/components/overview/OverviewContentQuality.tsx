@@ -1,7 +1,6 @@
-'use client';
 
 import { useMemo, type ReactNode } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
   ChevronRight,
@@ -73,7 +72,7 @@ function ContentQualityColumn({
     <div className="flex h-full min-h-0 flex-col gap-4 rounded-xl border border-default/80 bg-brand-900/20 p-4">
       <div className="flex items-center justify-between gap-2 shrink-0">
         <h3 className="text-sm font-bold text-bright">{title}</h3>
-        <Link href={viewAllHref} className="text-xs font-medium text-link hover:underline">
+        <Link to={viewAllHref} className="text-xs font-medium text-link hover:underline">
           {viewAllLabel}
         </Link>
       </div>
@@ -178,7 +177,7 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
           <div className="flex flex-wrap gap-2 shrink-0">
             {duplicateGroupCount > 0 ? (
               <Link
-                href={contentOverviewHref}
+                to={contentOverviewHref}
                 className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
               >
                 <Copy className="h-4 w-4" />
@@ -186,7 +185,7 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
               </Link>
             ) : null}
             <Link
-              href={textAnalysisHref}
+              to={textAnalysisHref}
               className="inline-flex items-center gap-2 rounded-lg border border-default px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-brand-700/50"
             >
               <Languages className="h-4 w-4" />
@@ -204,7 +203,7 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
               {concerns.map((concern) => (
                 <Link
                   key={concern.id}
-                  href={concern.href}
+                  to={concern.href}
                   className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-amber-500/40 hover:bg-amber-500/15"
                 >
                   <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden />
@@ -255,7 +254,7 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
                   return (
                     <li key={cluster.id}>
                       <Link
-                        href={contentOverviewHref}
+                        to={contentOverviewHref}
                         className="group flex items-center gap-3 rounded-lg border border-default/60 bg-brand-900/40 px-3 py-2.5 transition-colors hover:border-blue-500/30 hover:bg-brand-900/60"
                       >
                         <div className="min-w-0 flex-1">
@@ -311,7 +310,7 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
                 <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   {vo.contentQualityLanguageMix}
                 </h4>
-                <Link href={contentAnalyticsHref} className="text-xs font-medium text-link hover:underline">
+                <Link to={contentAnalyticsHref} className="text-xs font-medium text-link hover:underline">
                   {vo.contentQualityOpenContentAnalytics}
                 </Link>
               </div>

@@ -228,7 +228,9 @@ class OllamaClient:
                         content_parts.append(text)
                         on_token(text)
                     if msg.get("tool_calls"):
-                        tool_calls = self._parse_tool_calls(msg["tool_calls"])
+                        # Accumulate across chunks — assigning here dropped any
+                        # tool calls delivered in an earlier streamed chunk.
+                        tool_calls.extend(self._parse_tool_calls(msg["tool_calls"]))
                     if chunk.get("done"):
                         break
 

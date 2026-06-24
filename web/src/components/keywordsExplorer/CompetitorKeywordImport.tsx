@@ -1,9 +1,8 @@
-'use client';
 
 import { useState } from 'react';
 import { Upload } from 'lucide-react';
 import { Button, Card } from '@/components';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 
 interface CompetitorKeywordImportProps {
   propertyId: number;
@@ -21,7 +20,7 @@ export default function CompetitorKeywordImport({ propertyId, onImported }: Comp
     setBusy(true);
     setStatus('');
     try {
-      const res = await fetch(apiUrl('/keywords/competitor-import'), {
+      const res = await apiFetch(apiUrl('/keywords/competitor-import'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ propertyId, competitor: competitor.trim(), csvText }),

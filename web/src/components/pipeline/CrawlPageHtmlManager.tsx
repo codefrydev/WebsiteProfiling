@@ -1,8 +1,7 @@
-'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Trash2 } from 'lucide-react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings, format } from '@/lib/strings';
 import { formatReportGeneratedAt } from '@/lib/reportTimestamps';
 import type { CrawlPageHtmlRunRow } from '@/types/report';
@@ -37,7 +36,7 @@ export default function CrawlPageHtmlManager({ disabled = false }: CrawlPageHtml
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(apiUrl('/crawl/page-html?limit=30'));
+      const res = await apiFetch(apiUrl('/crawl/page-html?limit=30'));
       const body = (await res.json()) as { runs?: CrawlPageHtmlRunRow[]; error?: string };
       if (!res.ok) {
         setError(body.error || sh.loadFailed);
@@ -61,7 +60,7 @@ export default function CrawlPageHtmlManager({ disabled = false }: CrawlPageHtml
     setDeletingRunId(crawlRunId);
     setError(null);
     try {
-      const res = await fetch(apiUrl('/crawl/page-html'), {
+      const res = await apiFetch(apiUrl('/crawl/page-html'), {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ crawlRunId }),

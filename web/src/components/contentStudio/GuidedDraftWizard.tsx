@@ -1,4 +1,3 @@
-'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -12,7 +11,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings, format } from '@/lib/strings';
 import { Button } from '@/components';
 import type {
@@ -41,7 +40,7 @@ interface OutlineRow extends WizardOutlineItem {
 }
 
 async function callStep<T>(step: string, payload: Record<string, unknown>): Promise<T> {
-  const res = await fetch(apiUrl('/content/wizard'), {
+  const res = await apiFetch(apiUrl('/content/wizard'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ step, ...payload }),
@@ -235,7 +234,7 @@ export default function GuidedDraftWizard({
         title,
         outline: outlinePayload,
       });
-      const res = await fetch(apiUrl('/content-drafts'), {
+      const res = await apiFetch(apiUrl('/content-drafts'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

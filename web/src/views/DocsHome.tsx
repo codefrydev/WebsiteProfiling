@@ -1,6 +1,5 @@
-'use client';
 
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import DocsShell from '@/components/docs/DocsShell';
 import { INTEGRATION_GUIDES } from '@/lib/docs/integrationGuides';
@@ -23,7 +22,7 @@ export default function DocsHome() {
             return (
               <Link
                 key={slug}
-                href={`/docs/integrations/${slug}`}
+                to={`/docs/integrations/${slug}`}
                 className="group flex items-start justify-between gap-3 rounded-2xl border border-muted/30 bg-[var(--chat-surface)] p-4 transition-colors hover:border-blue-500/30 hover:bg-[var(--chat-surface-hover)]"
               >
                 <div className="min-w-0">

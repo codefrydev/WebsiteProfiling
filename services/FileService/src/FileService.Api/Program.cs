@@ -1,3 +1,4 @@
+using System.Text;
 using FileService.Api;
 using FileService.Application;
 using FileService.Application.Services;
@@ -153,7 +154,56 @@ app.MapGet("/v1/reports/by-domain/{domain}/workbook", async (
     "Export crawl workbook by domain",
     "Resolves the latest report for the domain, then generates an Excel crawl workbook.");
 
+// ── CSV / JSON / sitemap exports (migrated from the Python report API) ──────────
+// All three render from the report payload read directly from Postgres.
+
+app.MapGet("/v1/reports/{reportId:int}/csv", (int reportId, IReportExportService export, string? disposition, CancellationToken ct) =>
+    ExportText(() => export.GetCsvByReportIdAsync(reportId, ct), "text/csv", disposition, $"report-{reportId}.csv"))
+    .WithName("GetReportCsvById").WithTags("Export");
+
+app.MapGet("/v1/reports/by-domain/{domain}/csv", (string domain, IReportExportService export, string? disposition, CancellationToken ct) =>
+    ExportText(() => export.GetCsvByDomainAsync(domain, ct), "text/csv", disposition, $"report-{SafeName(domain)}.csv"))
+    .WithName("GetReportCsvByDomain").WithTags("Export");
+
+app.MapGet("/v1/reports/{reportId:int}/json", (int reportId, IReportExportService export, string? disposition, CancellationToken ct) =>
+    ExportText(() => export.GetJsonByReportIdAsync(reportId, ct), "application/json", disposition, $"report-{reportId}.json"))
+    .WithName("GetReportJsonById").WithTags("Export");
+
+app.MapGet("/v1/reports/by-domain/{domain}/json", (string domain, IReportExportService export, string? disposition, CancellationToken ct) =>
+    ExportText(() => export.GetJsonByDomainAsync(domain, ct), "application/json", disposition, $"report-{SafeName(domain)}.json"))
+    .WithName("GetReportJsonByDomain").WithTags("Export");
+
+app.MapGet("/v1/reports/{reportId:int}/sitemap", (int reportId, IReportExportService export, string? disposition, CancellationToken ct) =>
+    ExportText(() => export.GetSitemapByReportIdAsync(reportId, ct), "application/xml", disposition, $"sitemap-{reportId}.xml"))
+    .WithName("GetReportSitemapById").WithTags("Export");
+
+app.MapGet("/v1/reports/by-domain/{domain}/sitemap", (string domain, IReportExportService export, string? disposition, CancellationToken ct) =>
+    ExportText(() => export.GetSitemapByDomainAsync(domain, ct), "application/xml", disposition, $"sitemap-{SafeName(domain)}.xml"))
+    .WithName("GetReportSitemapByDomain").WithTags("Export");
+
 app.Run();
+
+static async Task<IResult> ExportText(Func<Task<string>> render, string contentType, string? disposition, string filename)
+{
+    try
+    {
+        var text = await render();
+        var inline = string.Equals(disposition, "inline", StringComparison.OrdinalIgnoreCase);
+        var contentDisposition = inline ? "inline" : $"attachment; filename=\"{filename}\"";
+        return new BinaryFileResult(Encoding.UTF8.GetBytes(text), contentType, contentDisposition);
+    }
+    catch (KeyNotFoundException ex)
+    {
+        return Results.NotFound(new { detail = ex.Message });
+    }
+    catch (HttpRequestException ex)
+    {
+        return Results.Json(new { detail = "Upstream data service unavailable", error = ex.Message }, statusCode: 502);
+    }
+}
+
+static string SafeName(string? domain) =>
+    string.IsNullOrWhiteSpace(domain) ? "report" : domain.Replace('.', '-');
 
 static PdfProfile ParseProfile(string? profile) => (profile ?? "standard").Trim().ToLowerInvariant() switch
 {

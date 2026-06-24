@@ -1,8 +1,7 @@
-'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { Link } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import {
   ChevronLeft,
   KeyRound,
@@ -78,14 +77,14 @@ function SettingsMenu({ onClose }: { onClose: () => void }) {
         <ThemeToggle />
       </div>
       <Link
-        href="/settings"
+        to="/settings"
         className="mt-1 block rounded-lg px-2 py-1.5 text-xs text-link hover:bg-[var(--chat-surface-hover)]"
         onClick={onClose}
       >
         {strings.settings.settingsLink}
       </Link>
       <Link
-        href="/pipeline"
+        to="/pipeline"
         className="block rounded-lg px-2 py-1.5 text-xs text-link hover:bg-[var(--chat-surface-hover)]"
         onClick={onClose}
       >
@@ -102,7 +101,7 @@ export default function SecretsSidebar({
   toggle,
   setExpanded,
 }: SecretsSidebarProps) {
-  const pathname = usePathname();
+  const { pathname } = useLocation();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const settingsRef = useRef<HTMLDivElement>(null);
 
@@ -153,7 +152,7 @@ export default function SecretsSidebar({
     const ActiveIcon = SECTION_ICONS[activeSection] ?? KeyRound;
     return (
       <div className="chat-sidebar-rail">
-        <Link href="/home" className="mb-2 flex h-10 w-10 items-center justify-center" title={c.navHome}>
+        <Link to="/home" className="mb-2 flex h-10 w-10 items-center justify-center" title={c.navHome}>
           <AppLogo />
         </Link>
 
@@ -194,7 +193,7 @@ export default function SecretsSidebar({
 
       <aside className="chat-sidebar-panel">
         <div className="flex items-center justify-between gap-2 px-3 py-3">
-          <Link href="/home" className="flex min-w-0 items-center gap-2">
+          <Link to="/home" className="flex min-w-0 items-center gap-2">
             <AppLogo size={20} />
             <span className="truncate text-sm font-medium text-bright">{s.sidebarTitle}</span>
           </Link>
@@ -215,7 +214,7 @@ export default function SecretsSidebar({
               return (
                 <li key={href}>
                   <Link
-                    href={href}
+                    to={href}
                     className={`flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs transition-colors ${
                       isActive
                         ? 'bg-brand-700/60 text-foreground'

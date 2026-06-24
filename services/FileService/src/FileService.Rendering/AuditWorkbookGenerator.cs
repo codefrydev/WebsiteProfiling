@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using ClosedXML.Excel;
 
@@ -225,6 +226,20 @@ public sealed class AuditWorkbookGenerator
         _ => el.ToString(),
     };
 
+    private static string CustomFieldString(JsonElement el) => el.ValueKind switch
+    {
+        JsonValueKind.Null or JsonValueKind.Undefined => "",
+        JsonValueKind.String => el.GetString() ?? "",
+        JsonValueKind.True => "true",
+        JsonValueKind.False => "false",
+        // Plain decimal string instead of raw JSON (avoids scientific notation).
+        JsonValueKind.Number => el.TryGetInt64(out var l)
+            ? l.ToString(CultureInfo.InvariantCulture)
+            : el.GetDouble().ToString(CultureInfo.InvariantCulture),
+        // Nested object/array can't fit a flat cell as a scalar — compact JSON.
+        _ => el.GetRawText(),
+    };
+
     private static Dictionary<string, string> ParseCustomFields(JsonElement link)
     {
         if (!link.TryGetProperty("custom_fields", out var raw))
@@ -237,7 +252,7 @@ public sealed class AuditWorkbookGenerator
             var dict = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var prop in raw.EnumerateObject())
             {
-                dict[prop.Name] = prop.Value.ToString();
+                dict[prop.Name] = CustomFieldString(prop.Value);
             }
 
             return dict;
@@ -265,7 +280,7 @@ public sealed class AuditWorkbookGenerator
             var parsed = new Dictionary<string, string>(StringComparer.Ordinal);
             foreach (var prop in doc.RootElement.EnumerateObject())
             {
-                parsed[prop.Name] = prop.Value.ToString();
+                parsed[prop.Name] = CustomFieldString(prop.Value);
             }
 
             return parsed;

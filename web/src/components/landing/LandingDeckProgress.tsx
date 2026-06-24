@@ -1,4 +1,3 @@
-'use client';
 
 import { useLandingDeckRequired } from '@/components/landing/LandingDeckContext';
 import { strings } from '@/lib/strings';

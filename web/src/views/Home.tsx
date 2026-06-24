@@ -5,7 +5,7 @@ import {
   Plus,
   Search,
 } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { useState, useEffect, useCallback } from 'react';
 import { PageLayout, Button } from '../components';
 import PortfolioGroupList from '@/components/portfolio/home/PortfolioGroupList';
@@ -15,7 +15,7 @@ import { portfolioCardKey } from '@/components/portfolio/portfolioCardUtils';
 import { usePortfolio } from '@/context/usePortfolio';
 import { useReport } from '../context/useReport';
 import { strings } from '../lib/strings';
-import { apiUrl } from '../lib/publicBase';
+import { apiUrl, apiFetch } from '../lib/publicBase';
 import { getDefaultLandingView } from '@/lib/defaultViewPref';
 import type { PortfolioGroup, ViewProps } from '@/types';
 
@@ -67,7 +67,7 @@ export default function Home({ onNavigate }: ViewProps) {
       setDeletingKey(key);
       setDeleteError(null);
       try {
-        const res = await fetch(apiUrl('/portfolio/delete'), {
+        const res = await apiFetch(apiUrl('/portfolio/delete'), {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -106,13 +106,13 @@ export default function Home({ onNavigate }: ViewProps) {
           <p className="mt-1 text-sm text-muted-foreground">{vh.greetingTagline}</p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <Link href="/chat">
+          <Link to="/chat">
             <Button variant="secondary">
               <MessageSquare className="h-4 w-4" aria-hidden />
               {vh.quickActionChatLabel}
             </Button>
           </Link>
-          <Link href="/pipeline">
+          <Link to="/pipeline">
             <Button variant="primary">
               <Plus className="h-4 w-4" aria-hidden />
               {vh.quickActionRunLabel}

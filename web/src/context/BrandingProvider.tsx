@@ -1,7 +1,6 @@
-'use client';
 
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { BrandingContext, DEFAULT_BRANDING, type BrandingState } from './BrandingContext';
 
 const BRAND_NAME_KEY = 'brand_name';
@@ -11,9 +10,9 @@ const BRAND_LOGO_KEY = 'brand_logo_url';
 async function loadBrandingFromDb(): Promise<Partial<BrandingState>> {
   try {
     const [nameRes, subtitleRes, logoRes] = await Promise.all([
-      fetch(apiUrl(`/app-settings?key=${BRAND_NAME_KEY}`)),
-      fetch(apiUrl(`/app-settings?key=${BRAND_SUBTITLE_KEY}`)),
-      fetch(apiUrl(`/app-settings?key=${BRAND_LOGO_KEY}`)),
+      apiFetch(apiUrl(`/app-settings?key=${BRAND_NAME_KEY}`)),
+      apiFetch(apiUrl(`/app-settings?key=${BRAND_SUBTITLE_KEY}`)),
+      apiFetch(apiUrl(`/app-settings?key=${BRAND_LOGO_KEY}`)),
     ]);
     const [nameData, subtitleData, logoData] = await Promise.all([
       nameRes.ok ? (nameRes.json() as Promise<{ value: string | null }>) : Promise.resolve({ value: null }),
@@ -32,7 +31,7 @@ async function loadBrandingFromDb(): Promise<Partial<BrandingState>> {
 
 async function saveBrandKey(key: string, value: string): Promise<void> {
   try {
-    await fetch(apiUrl('/app-settings'), {
+    await apiFetch(apiUrl('/app-settings'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ key, value }),

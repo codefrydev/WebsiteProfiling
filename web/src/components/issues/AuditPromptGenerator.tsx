@@ -1,10 +1,9 @@
-'use client';
 
 import { useCallback, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useNavigate } from 'react-router-dom';
 import { Check, Copy, FileText, MessageSquare, Sparkles, X } from 'lucide-react';
 import { Button } from '@/components';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { format } from '@/lib/strings';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import {
@@ -42,7 +41,7 @@ export default function AuditPromptGenerator({
   labels: vp,
   modalTitleId = 'audit-prompt-modal-title',
 }: AuditPromptGeneratorProps) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { readOnly } = useReadOnlySession();
   const [open, setOpen] = useState(false);
   const [aiPlan, setAiPlan] = useState<string | null>(null);
@@ -82,7 +81,7 @@ export default function AuditPromptGenerator({
     setAiLoading(true);
     setAiError(null);
     try {
-      const res = await fetch(apiUrl('/issues/action-plan'), {
+      const res = await apiFetch(apiUrl('/issues/action-plan'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -107,8 +106,8 @@ export default function AuditPromptGenerator({
 
   const handleOpenInChat = useCallback(() => {
     writeChatComposerDraft({ domain, text: fullText });
-    router.push(buildChatFabHref(domain));
-  }, [domain, fullText, router]);
+    navigate(buildChatFabHref(domain));
+  }, [domain, fullText, navigate]);
 
   if (built.rawCount === 0) return null;
 

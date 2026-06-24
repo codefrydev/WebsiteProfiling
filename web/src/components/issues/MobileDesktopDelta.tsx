@@ -1,6 +1,6 @@
-'use client';
 
 import { useEffect, useState } from 'react';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { Smartphone } from 'lucide-react';
 import { Card } from '@/components';
 import type { MobileDesktopDeltaRow } from '@/types/report';
@@ -34,7 +34,7 @@ export default function MobileDesktopDelta({ runId }: Props) {
   useEffect(() => {
     if (!runId) return;
     setLoading(true);
-    fetch(`/api/report/mobile-delta?id=${runId}`)
+    apiFetch(apiUrl(`/report/mobile-delta?id=${runId}`))
       .then((r) => r.json())
       .then((d) => setRows(d.deltas ?? []))
       .catch(() => setRows([]))

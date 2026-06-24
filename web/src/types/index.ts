@@ -94,9 +94,6 @@ export type {
 
 export type {
   ApiErrorBody,
-  ApiRouteHandler,
-  ApiRouteHandlerWithParams,
-  LocalGuardResult,
   PipelineJobStatus,
   PipelineJob,
   PipelineJobStore,

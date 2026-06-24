@@ -1,4 +1,3 @@
-'use client';
 
 import { ImageIcon } from 'lucide-react';
 import { SimpleBarChart } from '@/components/charts/SimpleBarChart';

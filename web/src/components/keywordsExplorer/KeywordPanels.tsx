@@ -1,13 +1,12 @@
-'use client';
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Search, AlertCircle, RefreshCw, Globe, Youtube, HelpCircle,
   AlertTriangle, ExternalLink, Loader2, ChevronRight, FileText, Link2, Split,
 } from 'lucide-react';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { apiUrl } from '../../lib/publicBase';
+import { Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import { apiUrl, apiFetch } from '../../lib/publicBase';
 import { buildLinksInspectHref } from '../../lib/reportNav';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
 import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
@@ -225,7 +224,7 @@ interface ByPagePanelProps {
 
 export function ByPagePanel({ rows, ke, brandQuery = null }: ByPagePanelProps) {
   const bp = ke.byPage;
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
   const [pageKws, setPageKws] = useState<KeywordByPageResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -250,7 +249,7 @@ export function ByPagePanel({ rows, ke, brandQuery = null }: ByPagePanelProps) {
     setPageKws(null);
     try {
       const domainParam = brandQuery ? `&domain=${encodeURIComponent(brandQuery)}` : '';
-      const res = await fetch(
+      const res = await apiFetch(
         apiUrl(`/integrations/google/keywords/by-page?url=${encodeURIComponent(url)}${domainParam}`),
       );
       const data = (await res.json()) as KeywordByPageResponse;
@@ -417,7 +416,7 @@ export function ByPagePanel({ rows, ke, brandQuery = null }: ByPagePanelProps) {
                 <CopyBtn text={selectedUrl} className="text-xs" />
                 {inspectHref && (
                   <Link
-                    href={inspectHref}
+                    to={inspectHref}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-default bg-brand-800 hover:bg-brand-700 text-foreground transition-colors"
                   >
                     <Link2 className="w-3.5 h-3.5" aria-hidden />
@@ -484,7 +483,7 @@ export function BulkSeedPanel({ brandQuery = null }: { brandQuery?: string | nul
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(apiUrl('/integrations/google/keywords/expand'), {
+      const res = await apiFetch(apiUrl('/integrations/google/keywords/expand'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

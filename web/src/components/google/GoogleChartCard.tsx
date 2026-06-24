@@ -1,4 +1,3 @@
-'use client';
 
 import ChartCard from '@/components/ChartCard';
 import type { GoogleChartCardProps } from '@/types/components';

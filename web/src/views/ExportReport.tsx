@@ -1,7 +1,6 @@
-'use client';
 
 import { useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'react-router-dom';
 import { useReport } from '@/context/useReport';
 import { buildAuditExportUrl, type PdfExportProfile } from '@/lib/exportAudit';
 import { strings } from '@/lib/strings';
@@ -16,7 +15,7 @@ function parseProfile(raw: string | null): PdfExportProfile {
 export default function ExportReport() {
   const { selectedReportId, reportList } = useReport();
   const reportId = selectedReportId ?? reportList?.[0]?.id ?? null;
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [previewError, setPreviewError] = useState<string | null>(null);
 
   const profile = parseProfile(searchParams.get('profile'));

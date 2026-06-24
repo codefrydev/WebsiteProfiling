@@ -1410,8 +1410,8 @@
         "tags": [
           "properties"
         ],
-        "summary": "Delete Property",
-        "operationId": "delete_property_api_properties__property_id__delete",
+        "summary": "Delete Property Route",
+        "operationId": "delete_property_route_api_properties__property_id__delete",
         "parameters": [
           {
             "name": "property_id",
@@ -1431,7 +1431,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Delete Property Api Properties  Property Id  Delete"
+                  "title": "Response Delete Property Route Api Properties  Property Id  Delete"
                 }
               }
             }
@@ -1454,8 +1454,8 @@
         "tags": [
           "properties"
         ],
-        "summary": "Get Property Ops",
-        "operationId": "get_property_ops_api_properties__property_id__ops_get",
+        "summary": "Get Property Ops Route",
+        "operationId": "get_property_ops_route_api_properties__property_id__ops_get",
         "parameters": [
           {
             "name": "property_id",
@@ -1475,7 +1475,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Get Property Ops Api Properties  Property Id  Ops Get"
+                  "title": "Response Get Property Ops Route Api Properties  Property Id  Ops Get"
                 }
               }
             }
@@ -1496,8 +1496,8 @@
         "tags": [
           "properties"
         ],
-        "summary": "Update Property Ops",
-        "operationId": "update_property_ops_api_properties__property_id__ops_put",
+        "summary": "Update Property Ops Route",
+        "operationId": "update_property_ops_route_api_properties__property_id__ops_put",
         "parameters": [
           {
             "name": "property_id",
@@ -1527,7 +1527,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Update Property Ops Api Properties  Property Id  Ops Put"
+                  "title": "Response Update Property Ops Route Api Properties  Property Id  Ops Put"
                 }
               }
             }
@@ -1646,9 +1646,8 @@
         "tags": [
           "properties"
         ],
-        "summary": "Authorize Property Crawl",
-        "description": "Mark property as crawl-authorized (used by OAuth flow).",
-        "operationId": "authorize_property_crawl_api_properties__property_id__authorize_post",
+        "summary": "Authorize Property Crawl Route",
+        "operationId": "authorize_property_crawl_route_api_properties__property_id__authorize_post",
         "parameters": [
           {
             "name": "property_id",
@@ -1668,7 +1667,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Authorize Property Crawl Api Properties  Property Id  Authorize Post"
+                  "title": "Response Authorize Property Crawl Route Api Properties  Property Id  Authorize Post"
                 }
               }
             }
@@ -1692,7 +1691,6 @@
           "properties"
         ],
         "summary": "Property Google Status",
-        "description": "Return property-level Google integration status.",
         "operationId": "property_google_status_api_properties__property_id__google_status_get",
         "parameters": [
           {
@@ -1737,7 +1735,6 @@
           "properties"
         ],
         "summary": "Property Google Test",
-        "description": "Run a quick Google API connectivity test for the property.",
         "operationId": "property_google_test_api_properties__property_id__google_test_post",
         "parameters": [
           {
@@ -1782,7 +1779,6 @@
           "properties"
         ],
         "summary": "Property Google Properties",
-        "description": "List GA4 / GSC properties available for this account.",
         "operationId": "property_google_properties_api_properties__property_id__google_properties_get",
         "parameters": [
           {
@@ -1827,7 +1823,6 @@
           "properties"
         ],
         "summary": "Property Google Links Status",
-        "description": "Return the status of GSC backlinks import for this property.",
         "operationId": "property_google_links_status_api_properties__property_id__google_links_status_get",
         "parameters": [
           {
@@ -1872,7 +1867,6 @@
           "properties"
         ],
         "summary": "Property Google Links Import",
-        "description": "Trigger a GSC backlinks import for this property.",
         "operationId": "property_google_links_import_api_properties__property_id__google_links_import_post",
         "parameters": [
           {
@@ -1917,7 +1911,6 @@
           "properties"
         ],
         "summary": "Patch Property Google Credentials",
-        "description": "Update Google credentials/settings for a property (used by OAuth callback).",
         "operationId": "patch_property_google_credentials_api_properties__property_id__google_credentials_patch",
         "parameters": [
           {
@@ -1970,7 +1963,6 @@
           "properties"
         ],
         "summary": "Post Property Google Credentials",
-        "description": "Update Google site/property settings from the integrations UI.",
         "operationId": "post_property_google_credentials_api_properties__property_id__google_credentials_post",
         "parameters": [
           {
@@ -2025,7 +2017,6 @@
           "properties"
         ],
         "summary": "Post Property Google Disconnect",
-        "description": "Clear OAuth tokens for a property.",
         "operationId": "post_property_google_disconnect_api_properties__property_id__google_disconnect_post",
         "parameters": [
           {
@@ -2479,13 +2470,14 @@
         }
       }
     },
-    "/api/integrations/google/status": {
+    "/api/integrations/google/credentials": {
       "get": {
         "tags": [
           "integrations"
         ],
-        "summary": "Google Status",
-        "operationId": "google_status_api_integrations_google_status_get",
+        "summary": "Get Google Credentials",
+        "description": "Full app-level Google OAuth settings (server-side / local admin only).",
+        "operationId": "get_google_credentials_api_integrations_google_credentials_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -2494,15 +2486,13 @@
                 "schema": {
                   "additionalProperties": true,
                   "type": "object",
-                  "title": "Response Google Status Api Integrations Google Status Get"
+                  "title": "Response Get Google Credentials Api Integrations Google Credentials Get"
                 }
               }
             }
           }
         }
-      }
-    },
-    "/api/integrations/google/credentials": {
+      },
       "post": {
         "tags": [
           "integrations"
@@ -2540,6 +2530,29 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/integrations/google/status": {
+      "get": {
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Google Status",
+        "operationId": "google_status_api_integrations_google_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Google Status Api Integrations Google Status Get"
                 }
               }
             }
@@ -2609,6 +2622,168 @@
                   "additionalProperties": true,
                   "type": "object",
                   "title": "Response Google Disconnect Api Integrations Google Disconnect Post"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/integrations/google/auth": {
+      "get": {
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Google Oauth Start",
+        "operationId": "google_oauth_start_api_integrations_google_auth_get",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Propertyid"
+            }
+          },
+          {
+            "name": "startUrl",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Starturl"
+            }
+          },
+          {
+            "name": "returnTo",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Returnto"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Google Oauth Start Api Integrations Google Auth Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/integrations/google/callback": {
+      "get": {
+        "tags": [
+          "integrations"
+        ],
+        "summary": "Google Oauth Callback",
+        "operationId": "google_oauth_callback_api_integrations_google_callback_get",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Code"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "State"
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "Response Google Oauth Callback Api Integrations Google Callback Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -3376,8 +3551,8 @@
         "tags": [
           "issues"
         ],
-        "summary": "List Issue Status",
-        "operationId": "list_issue_status_api_issues_status_get",
+        "summary": "List Issue Status Route",
+        "operationId": "list_issue_status_route_api_issues_status_get",
         "parameters": [
           {
             "name": "propertyId",
@@ -3397,7 +3572,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response List Issue Status Api Issues Status Get"
+                  "title": "Response List Issue Status Route Api Issues Status Get"
                 }
               }
             }
@@ -3418,8 +3593,8 @@
         "tags": [
           "issues"
         ],
-        "summary": "Upsert Issue Status",
-        "operationId": "upsert_issue_status_api_issues_status_put",
+        "summary": "Upsert Issue Status Route",
+        "operationId": "upsert_issue_status_route_api_issues_status_put",
         "requestBody": {
           "content": {
             "application/json": {
@@ -3440,7 +3615,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Upsert Issue Status Api Issues Status Put"
+                  "title": "Response Upsert Issue Status Route Api Issues Status Put"
                 }
               }
             }
@@ -3951,8 +4126,8 @@
         "tags": [
           "content"
         ],
-        "summary": "List Content Drafts",
-        "operationId": "list_content_drafts_api_content_drafts_get",
+        "summary": "List Content Drafts Route",
+        "operationId": "list_content_drafts_route_api_content_drafts_get",
         "parameters": [
           {
             "name": "propertyId",
@@ -3972,7 +4147,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response List Content Drafts Api Content Drafts Get"
+                  "title": "Response List Content Drafts Route Api Content Drafts Get"
                 }
               }
             }
@@ -3993,8 +4168,8 @@
         "tags": [
           "content"
         ],
-        "summary": "Create Content Draft",
-        "operationId": "create_content_draft_api_content_drafts_post",
+        "summary": "Create Content Draft Route",
+        "operationId": "create_content_draft_route_api_content_drafts_post",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4015,7 +4190,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Create Content Draft Api Content Drafts Post"
+                  "title": "Response Create Content Draft Route Api Content Drafts Post"
                 }
               }
             }
@@ -4038,8 +4213,8 @@
         "tags": [
           "content"
         ],
-        "summary": "Get Content Draft",
-        "operationId": "get_content_draft_api_content_drafts__draft_id__get",
+        "summary": "Get Content Draft Route",
+        "operationId": "get_content_draft_route_api_content_drafts__draft_id__get",
         "parameters": [
           {
             "name": "draft_id",
@@ -4059,7 +4234,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Get Content Draft Api Content Drafts  Draft Id  Get"
+                  "title": "Response Get Content Draft Route Api Content Drafts  Draft Id  Get"
                 }
               }
             }
@@ -4080,8 +4255,8 @@
         "tags": [
           "content"
         ],
-        "summary": "Update Content Draft",
-        "operationId": "update_content_draft_api_content_drafts__draft_id__patch",
+        "summary": "Update Content Draft Route",
+        "operationId": "update_content_draft_route_api_content_drafts__draft_id__patch",
         "parameters": [
           {
             "name": "draft_id",
@@ -4113,7 +4288,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Update Content Draft Api Content Drafts  Draft Id  Patch"
+                  "title": "Response Update Content Draft Route Api Content Drafts  Draft Id  Patch"
                 }
               }
             }
@@ -4134,8 +4309,8 @@
         "tags": [
           "content"
         ],
-        "summary": "Delete Content Draft",
-        "operationId": "delete_content_draft_api_content_drafts__draft_id__delete",
+        "summary": "Delete Content Draft Route",
+        "operationId": "delete_content_draft_route_api_content_drafts__draft_id__delete",
         "parameters": [
           {
             "name": "draft_id",
@@ -4155,7 +4330,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Delete Content Draft Api Content Drafts  Draft Id  Delete"
+                  "title": "Response Delete Content Draft Route Api Content Drafts  Draft Id  Delete"
                 }
               }
             }
@@ -4178,8 +4353,8 @@
         "tags": [
           "page-markdown"
         ],
-        "summary": "List Page Markdown",
-        "operationId": "list_page_markdown_api_page_markdown_get",
+        "summary": "List Page Markdown Route",
+        "operationId": "list_page_markdown_route_api_page_markdown_get",
         "parameters": [
           {
             "name": "crawlRunId",
@@ -4238,7 +4413,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response List Page Markdown Api Page Markdown Get"
+                  "title": "Response List Page Markdown Route Api Page Markdown Get"
                 }
               }
             }
@@ -4259,8 +4434,8 @@
         "tags": [
           "page-markdown"
         ],
-        "summary": "Delete Page Markdown",
-        "operationId": "delete_page_markdown_api_page_markdown_delete",
+        "summary": "Delete Page Markdown Route",
+        "operationId": "delete_page_markdown_route_api_page_markdown_delete",
         "requestBody": {
           "content": {
             "application/json": {
@@ -4281,7 +4456,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Delete Page Markdown Api Page Markdown Delete"
+                  "title": "Response Delete Page Markdown Route Api Page Markdown Delete"
                 }
               }
             }
@@ -4304,8 +4479,8 @@
         "tags": [
           "page-markdown"
         ],
-        "summary": "Page Markdown Content",
-        "operationId": "page_markdown_content_api_page_markdown_content_get",
+        "summary": "Page Markdown Content Route",
+        "operationId": "page_markdown_content_route_api_page_markdown_content_get",
         "parameters": [
           {
             "name": "crawlRunId",
@@ -4334,7 +4509,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Page Markdown Content Api Page Markdown Content Get"
+                  "title": "Response Page Markdown Content Route Api Page Markdown Content Get"
                 }
               }
             }
@@ -4402,8 +4577,8 @@
         "tags": [
           "page-markdown"
         ],
-        "summary": "Page Markdown Runs",
-        "operationId": "page_markdown_runs_api_page_markdown_runs_get",
+        "summary": "Page Markdown Runs Route",
+        "operationId": "page_markdown_runs_route_api_page_markdown_runs_get",
         "parameters": [
           {
             "name": "propertyId",
@@ -4430,7 +4605,7 @@
                 "schema": {
                   "type": "object",
                   "additionalProperties": true,
-                  "title": "Response Page Markdown Runs Api Page Markdown Runs Get"
+                  "title": "Response Page Markdown Runs Route Api Page Markdown Runs Get"
                 }
               }
             }
@@ -4836,53 +5011,6 @@
         ],
         "summary": "Export Sitemap",
         "operationId": "export_sitemap_api_report_export_sitemap_get",
-        "parameters": [
-          {
-            "name": "reportId",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Reportid"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/report/export-workbook": {
-      "get": {
-        "tags": [
-          "report-export"
-        ],
-        "summary": "Export Workbook",
-        "operationId": "export_workbook_api_report_export_workbook_get",
         "parameters": [
           {
             "name": "reportId",

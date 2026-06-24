@@ -1,4 +1,3 @@
-'use client';
 
 import type { CSSProperties } from 'react';
 import { Building2 } from 'lucide-react';

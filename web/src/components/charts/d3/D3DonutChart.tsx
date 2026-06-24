@@ -1,4 +1,3 @@
-'use client';
 
 import { useRef, useState } from 'react';
 import { arc, pie } from 'd3-shape';

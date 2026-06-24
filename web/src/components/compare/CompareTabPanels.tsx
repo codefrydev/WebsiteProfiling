@@ -1,15 +1,11 @@
-'use client';
 
-import { useMemo, type ReactNode } from 'react';
-import dynamic from 'next/dynamic';
+import { useMemo, type ReactNode, lazy, Suspense } from 'react';
 
-const CompareGoogleCharts = dynamic(
-  () => import('./CompareCharts').then((m) => m.CompareGoogleCharts),
-  { ssr: false, loading: () => <div className="h-56 rounded-xl bg-brand-800/40 animate-pulse mb-4" /> },
+const CompareGoogleCharts = lazy(() =>
+  import('./CompareCharts').then((m) => ({ default: m.CompareGoogleCharts })),
 );
-const ComparePerformanceCharts = dynamic(
-  () => import('./CompareCharts').then((m) => m.ComparePerformanceCharts),
-  { ssr: false },
+const ComparePerformanceCharts = lazy(() =>
+  import('./CompareCharts').then((m) => ({ default: m.ComparePerformanceCharts })),
 );
 import type { IssueDeltaRow } from '@/lib/reportCompareExtras';
 import { ScoreDelta } from '@/components/charts/ScoreDelta';
@@ -283,11 +279,13 @@ export function ComparePerformancePanel({
 
   return (
     <div className="space-y-6">
-      <ComparePerformanceCharts
-        siteMetrics={siteMetrics}
-        contentMetrics={compare.extras.contentMetrics}
-        vc={vc}
-      />
+      <Suspense fallback={<div className="h-56 rounded-xl bg-brand-800/40 animate-pulse mb-4" />}>
+        <ComparePerformanceCharts
+          siteMetrics={siteMetrics}
+          contentMetrics={compare.extras.contentMetrics}
+          vc={vc}
+        />
+      </Suspense>
       {lh.length > 0 ? (
         <Card shadow>
           <h3 className="text-sm font-bold text-foreground mb-3">{vc.lighthouseByUrl}</h3>
@@ -339,9 +337,8 @@ function LhDelta({ delta }: { delta: number | null }) {
   );
 }
 
-const CompareContentCharts = dynamic(
-  () => import('./CompareCharts').then((m) => m.CompareContentCharts),
-  { ssr: false },
+const CompareContentCharts = lazy(() =>
+  import('./CompareCharts').then((m) => ({ default: m.CompareContentCharts })),
 );
 
 export function CompareContentPanel({ compare, searchQuery, vc, emptyLabel }: PanelProps) {
@@ -367,7 +364,9 @@ export function CompareContentPanel({ compare, searchQuery, vc, emptyLabel }: Pa
 
   return (
     <div className="space-y-6">
-      <CompareContentCharts contentMetrics={metrics} vc={vc} />
+      <Suspense fallback={<div className="h-56 rounded-xl bg-brand-800/40 animate-pulse" />}>
+        <CompareContentCharts contentMetrics={metrics} vc={vc} />
+      </Suspense>
       {metrics.length > 0 ? (
         <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {metrics.map((row) => (
@@ -494,7 +493,9 @@ export function CompareGooglePanel({ compare, vc, emptyLabel }: PanelProps) {
 
   return (
     <div className="space-y-4">
-      <CompareGoogleCharts vc={vc} />
+      <Suspense fallback={<div className="h-56 rounded-xl bg-brand-800/40 animate-pulse mb-4" />}>
+        <CompareGoogleCharts vc={vc} />
+      </Suspense>
       <p className="text-xs text-muted-foreground">{vc.googleDateNote}</p>
       {changed.length > 0 ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

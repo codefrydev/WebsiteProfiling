@@ -1,25 +1,28 @@
 # Site Audit — Web UI
 
-Next.js frontend for [Site Audit](../README.md). The app reads audit data from PostgreSQL and spawns the Python pipeline for crawl and report jobs.
+Vite + React SPA for [Site Audit](../README.md). The browser talks to the .NET **BFF** (`services/Bff/`) for all `/api/*` calls; the BFF proxies to FastAPI and FileService.
 
 ## Development
 
-Use the repo root scripts — do not run `npm run dev` in isolation unless Postgres is already up:
+Use the repo root scripts — do not run `npm run dev` in isolation unless Postgres, FastAPI, and the BFF are already up:
 
 ```bash
 ./local-run setup   # first time
-./local-run         # http://localhost:3000/home
+./local-run         # Vite on http://localhost:3000, BFF on :8090
 ```
+
+Env (optional): copy `web/.env.example` to `web/.env.local` and set `VITE_BFF_BASE_URL`.
 
 ## Structure
 
 | Path | Purpose |
 |------|---------|
-| `app/` | App Router pages and `/api` route handlers |
-| `src/components/` | Shared React components |
+| `index.html` | HTML shell (theme bootstrap script) |
+| `src/main.tsx` | Vite entry — `BrowserRouter` + providers |
+| `src/AppRoutes.tsx` | React Router route table |
 | `src/views/` | Report views (overview, issues, links, …) |
-| `src/server/` | DB access, pipeline jobs, config I/O |
-| `src/lib/` | Schemas (`pipelineConfigSchema.ts`, `llmConfigSchema.ts`) |
+| `src/components/` | Shared React components |
+| `src/lib/publicBase.ts` | BFF base URL + `apiFetch` / `apiUrl` |
 | `public/` | Static assets (logo, favicon) |
 
 ## Commands
@@ -27,15 +30,20 @@ Use the repo root scripts — do not run `npm run dev` in isolation unless Postg
 Run from `web/`:
 
 ```bash
+npm run dev          # Vite dev server (:3000)
+npm run build        # Production build → dist/
+npm run preview      # Serve dist/ locally
 npm run typecheck
 npm run lint
 npm test
 ```
+
+Production image: `web/Dockerfile` (build → nginx serving `dist/`).
 
 Full CI parity from repo root: `./local-test web`.
 
 ## Further reading
 
 - [README.md](../README.md) — setup and configuration
-- [AGENT.md](../AGENT.md) — API routes, React footguns, where to edit
+- [AGENT.md](../AGENT.md) — API surface (BFF), React footguns, where to edit
 - [docs/GLOSSARY.md](../docs/GLOSSARY.md) — UI terminology (`web/src/strings.json`)

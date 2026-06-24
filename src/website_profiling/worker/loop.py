@@ -17,11 +17,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 _POLL_INTERVAL = float(os.getenv("WP_WORKER_POLL_INTERVAL", "1.0"))
 
 _running = True
+_shutdown_signum: int | None = None
 
 
 def _handle_sigterm(signum: int, frame: object) -> None:
-    global _running
-    logger.info("Worker received signal %s, shutting down after current job.", signum)
+    global _running, _shutdown_signum
+    # Signal handlers must not log — logging is not reentrant-safe on stderr.
+    if _shutdown_signum is None:
+        _shutdown_signum = signum
     _running = False
 
 
@@ -49,4 +52,9 @@ def run_worker_loop() -> None:
         else:
             time.sleep(_POLL_INTERVAL)
 
+    if _shutdown_signum is not None:
+        logger.info(
+            "Worker received signal %s, shutting down after current job.",
+            _shutdown_signum,
+        )
     logger.info("Worker exiting cleanly.")

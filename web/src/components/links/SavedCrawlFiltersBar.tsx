@@ -1,9 +1,8 @@
-'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import { BookmarkPlus } from 'lucide-react';
 import { Button } from '@/components';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 
 interface SavedCrawlFiltersBarProps {
   propertyId: number;
@@ -24,7 +23,7 @@ export default function SavedCrawlFiltersBar({ propertyId, view, onLoad }: Saved
       return;
     }
     try {
-      const res = await fetch(apiUrl(`/filters?propertyId=${propertyId}`));
+      const res = await apiFetch(apiUrl(`/filters?propertyId=${propertyId}`));
       const body = await res.json();
       setNames((body.filters || []).map((f: { name: string }) => f.name));
     } catch {
@@ -41,7 +40,7 @@ export default function SavedCrawlFiltersBar({ propertyId, view, onLoad }: Saved
     if (!name?.trim() || !propertyId) return;
     setStatus('');
     try {
-      const res = await fetch(apiUrl('/filters'), {
+      const res = await apiFetch(apiUrl('/filters'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ propertyId, name: name.trim(), filterJson: view }),
@@ -57,7 +56,7 @@ export default function SavedCrawlFiltersBar({ propertyId, view, onLoad }: Saved
   const load = async () => {
     if (!selected || !propertyId) return;
     try {
-      const res = await fetch(apiUrl(`/filters?propertyId=${propertyId}`));
+      const res = await apiFetch(apiUrl(`/filters?propertyId=${propertyId}`));
       const body = await res.json();
       const row = (body.filters || []).find((f: { name: string }) => f.name === selected);
       if (row?.filterJson) onLoad(row.filterJson);

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using FileService.Domain.Models;
 
@@ -231,7 +232,11 @@ internal static class JsonHelper
         return prop.ValueKind switch
         {
             JsonValueKind.String => prop.GetString(),
-            JsonValueKind.Number => prop.GetRawText(),
+            // Normalise numbers to a plain decimal string; GetRawText() would
+            // leak JSON formatting like scientific notation (e.g. "1E+10").
+            JsonValueKind.Number => prop.TryGetInt64(out var l)
+                ? l.ToString(CultureInfo.InvariantCulture)
+                : prop.GetDouble().ToString(CultureInfo.InvariantCulture),
             _ => null,
         };
     }

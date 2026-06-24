@@ -1,7 +1,6 @@
-'use client';
 
 import type { ReactNode } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
   BarChart3,
@@ -62,7 +61,7 @@ function MetricSection({
           <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>
         </div>
         {viewAllHref && viewAllLabel ? (
-          <Link href={viewAllHref} className="inline-flex items-center gap-1 text-xs font-medium text-link hover:underline">
+          <Link to={viewAllHref} className="inline-flex items-center gap-1 text-xs font-medium text-link hover:underline">
             {viewAllLabel}
             <ChevronRight className="h-3.5 w-3.5" />
           </Link>
@@ -128,7 +127,7 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
             <p className="mt-1 text-sm text-muted-foreground">{vo.crawlSnapshotSubtitle}</p>
           </div>
           <Link
-            href={chartsHref}
+            to={chartsHref}
             className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-default px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-brand-700/50"
           >
             <BarChart3 className="h-4 w-4" />
@@ -145,7 +144,7 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
               {concerns.map((concern) => (
                 <Link
                   key={concern.id}
-                  href={concern.href}
+                  to={concern.href}
                   className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-red-500/25 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-red-500/40 hover:bg-red-500/15"
                 >
                   <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-red-600 dark:text-red-400" aria-hidden />

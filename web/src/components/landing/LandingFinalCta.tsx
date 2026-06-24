@@ -1,6 +1,5 @@
-'use client';
 
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { CheckCircle2, ChevronRight } from 'lucide-react';
 import LandingProductMock from '@/components/landing/LandingProductMock';
 import LandingSectionHeader from '@/components/landing/LandingSectionHeader';
@@ -38,14 +37,14 @@ export default function LandingFinalCta() {
           </ul>
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <Link
-              href="/pipeline"
+              to="/pipeline"
               className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-blue-500 @sm:text-base"
             >
               {vl.ctaRunAudit}
               <ChevronRight className="h-4 w-4" aria-hidden />
             </Link>
             <Link
-              href="/home"
+              to="/home"
               className="inline-flex items-center gap-1.5 rounded-lg border border-default px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-brand-800 @sm:text-base"
             >
               {vl.ctaDashboard}

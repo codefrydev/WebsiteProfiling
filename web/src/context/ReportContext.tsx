@@ -1,4 +1,3 @@
-'use client';
 
 import {
   createContext,
@@ -9,7 +8,7 @@ import {
   useRef,
   type ReactNode,
 } from 'react';
-import { usePathname } from 'next/navigation';
+import { useLocation } from 'react-router-dom';
 import { domainQueryMatchesRow } from '../lib/domainSlug';
 import {
   filterKeywordRowsForDomain,
@@ -20,7 +19,8 @@ import type { KeywordRow } from '@/types';
 import { computeReportFingerprintDiff } from '../lib/reportDiff';
 import { buildReportCompareSummary } from '../lib/reportCompare';
 import { strings } from '../lib/strings';
-import { reportApi } from '../lib/publicBase';
+import { reportApi, apiFetch } from '../lib/publicBase';
+import { loadReportCompare } from '../lib/reportCompareClient';
 import type { ReportContextValue } from './reportContextTypes';
 import { SECTION_KEYS, type SectionKey } from '../lib/reportSections';
 import type {
@@ -36,12 +36,6 @@ export const ReportContext = createContext<ReportContextValue | null>(null);
 
 interface PayloadApiResponse {
   payload?: ReportPayload;
-  error?: string;
-}
-
-interface CompareApiResponse {
-  summary?: ReportCompareSummary;
-  reportDiff?: ReportFingerprintDiff;
   error?: string;
 }
 
@@ -112,7 +106,7 @@ export interface ReportProviderProps {
 }
 
 export function ReportProvider({ children, domainSlug = null }: ReportProviderProps) {
-  const pathname = usePathname();
+  const { pathname } = useLocation();
   const [data, setData] = useState<ReportPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [metaLoaded, setMetaLoaded] = useState(false);
@@ -174,7 +168,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
                 ? `/payload?domain=${encodeURIComponent(scoped)}&section=${section}`
                 : `/payload?section=${section}`,
             );
-      const res = await fetch(url);
+      const res = await apiFetch(url);
       const body = (await res.json().catch(() => ({}))) as {
         payload?: Partial<ReportPayload>;
         error?: string;
@@ -227,7 +221,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
                 ? `/payload?domain=${encodeURIComponent(scoped)}&section=core`
                 : '/payload?section=core',
             );
-      const res = await fetch(url);
+      const res = await apiFetch(url);
       const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
       if (!res.ok) throw new Error(body.error || res.statusText);
       const coreData = sanitizePayloadForDomain(body.payload ?? null, scoped);
@@ -242,7 +236,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       if (allowGlobalFallback) {
         setSelectedReportId(null);
         try {
-          const res = await fetch(
+          const res = await apiFetch(
             scoped
               ? reportApi(`/payload?domain=${encodeURIComponent(scoped)}&section=core`)
               : reportApi('/payload?section=core'),
@@ -268,7 +262,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(reportApi('/meta'));
+      const res = await apiFetch(reportApi('/meta'));
       const body = (await res.json().catch(() => ({}))) as MetaApiResponse;
       if (!res.ok) throw new Error(body.error || res.statusText);
 
@@ -327,7 +321,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     loadedPayloadKeyRef.current = `crawl:${crawlRunId}`;
     setSectionStatus({});
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         reportApi(`/crawl-payload?crawlRunId=${encodeURIComponent(String(crawlRunId))}`),
       );
       const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
@@ -358,7 +352,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     setReportListFull([]);
     setCrawlRuns([]);
 
-    fetch(reportApi('/meta'))
+    apiFetch(reportApi('/meta'))
       .then((res) => res.json())
       .then((body: MetaApiResponse) => {
         if (cancelled) return;
@@ -480,18 +474,12 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
 
     let cancelled = false;
     setCompareSummaryLoading(true);
-    const url = reportApi(
-      `/compare?reportId=${encodeURIComponent(String(effectiveReportId))}&baselineId=${encodeURIComponent(String(compareReportId))}`,
-    );
-    fetch(url)
-      .then(async (res) => {
-        const body = (await res.json().catch(() => ({}))) as CompareApiResponse;
-        if (!cancelled && res.ok && body.summary) {
+    // Comparison runs in the browser; only the payload fetches hit the BFF.
+    loadReportCompare(effectiveReportId, compareReportId)
+      .then((body) => {
+        if (!cancelled) {
           setCompareSummary(body.summary);
           setServerReportDiff(body.reportDiff ?? null);
-        } else if (!cancelled) {
-          setCompareSummary(null);
-          setServerReportDiff(null);
         }
       })
       .catch(() => {
@@ -525,7 +513,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     }
     let cancelled = false;
     setCompareDataLoading(true);
-    fetch(reportApi(`/payload?reportId=${encodeURIComponent(String(compareReportId))}`))
+    apiFetch(reportApi(`/payload?reportId=${encodeURIComponent(String(compareReportId))}`))
       .then(async (res) => {
         const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
         if (!cancelled && res.ok && body.payload != null) setCompareData(body.payload);

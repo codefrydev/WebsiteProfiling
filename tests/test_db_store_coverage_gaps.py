@@ -192,6 +192,40 @@ def test_issue_status_store() -> None:
         upsert_issue_status(conn3, property_id=1, message="x", status="open")
 
 
+def test_saved_filter_store() -> None:
+    from website_profiling.db.saved_filter_store import (
+        delete_saved_filter,
+        list_saved_filters,
+        upsert_saved_filter,
+    )
+
+    row = {
+        "id": 1,
+        "property_id": 2,
+        "name": "status-200",
+        "filter_json": {"status": ["200"]},
+        "created_at": _dt(),
+    }
+
+    conn = FakeConn()
+    conn.set_next_cursor(FakeCursor(fetchall_value=[row]))
+    listed = list_saved_filters(conn, 2)
+    assert listed[0]["name"] == "status-200"
+    assert listed[0]["filterJson"] == {"status": ["200"]}
+
+    conn2 = FakeConn()
+    upsert_saved_filter(conn2, 2, "status-200", {"status": ["301"]})
+    assert conn2.commits == 1
+
+    conn3 = FakeConn()
+    conn3.set_next_cursor(FakeCursor(rowcount=1))
+    assert delete_saved_filter(conn3, 2, "status-200") is True
+
+    conn4 = FakeConn()
+    conn4.set_next_cursor(FakeCursor(rowcount=0))
+    assert delete_saved_filter(conn4, 2, "missing") is False
+
+
 def test_content_draft_store_paths() -> None:
     from website_profiling.db.content_draft_store import (
         create_content_draft,

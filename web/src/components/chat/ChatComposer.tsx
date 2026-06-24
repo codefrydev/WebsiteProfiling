@@ -1,4 +1,3 @@
-'use client';
 
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Loader2, Plus, Send } from 'lucide-react';

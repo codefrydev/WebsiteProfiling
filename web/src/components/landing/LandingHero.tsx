@@ -1,6 +1,5 @@
-'use client';
 
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import LandingLifecycleDiagram from '@/components/landing/LandingLifecycleDiagram';
 import {
@@ -33,14 +32,14 @@ export default function LandingHero() {
             </div>
             <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
               <Link
-                href="/pipeline"
+                to="/pipeline"
                 className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
               >
                 {vl.ctaRunAudit}
                 <ChevronRight className="h-4 w-4" aria-hidden />
               </Link>
               <Link
-                href="/home"
+                to="/home"
                 className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 {vl.ctaDashboard}

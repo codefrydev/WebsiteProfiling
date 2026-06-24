@@ -1,14 +1,13 @@
-'use client';
 
 import { Download, FileText } from 'lucide-react';
-import { apiUrl, getPublicBasePath } from '@/lib/publicBase';
+import { apiUrl } from '@/lib/publicBase';
 import type { ChatBlock } from '@/components/chat/deriveChatBlocks';
 
 type FileDownloadBlock = Extract<ChatBlock, { type: 'file_download' }>;
 
 function resolveHref(url: string): string {
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  if (url.startsWith('/api/')) return `${getPublicBasePath()}${url}`;
+  if (url.startsWith('/api/')) return apiUrl(url.slice(4));
   return apiUrl(url.replace(/^\//, ''));
 }
 

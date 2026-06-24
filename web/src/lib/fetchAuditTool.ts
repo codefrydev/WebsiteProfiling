@@ -1,4 +1,4 @@
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 
 export interface FetchAuditToolParams {
   toolName: string;
@@ -8,7 +8,7 @@ export interface FetchAuditToolParams {
 }
 
 export async function fetchAuditTool(params: FetchAuditToolParams): Promise<Record<string, unknown>> {
-  const res = await fetch(apiUrl('/report/audit-tool'), {
+  const res = await apiFetch(apiUrl('/report/audit-tool'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),

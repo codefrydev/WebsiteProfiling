@@ -1,8 +1,7 @@
-'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { Link } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import ChatContextBar from '@/components/chat/ChatContextBar';
 import ChatShell from '@/components/chat/ChatShell';
@@ -20,7 +19,7 @@ import ChatUnlimitedToolsToggle from '@/components/chat/ChatUnlimitedToolsToggle
 import ChatActivityBar from '@/components/chat/ChatActivityBar';
 import { ChatFollowUpProvider } from '@/components/chat/ChatFollowUpContext';
 import { usePipeline } from '@/context/PipelineContext';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { format, strings } from '@/lib/strings';
 import { consumeChatSse } from '@/components/chat/parseChatSse';
 import { toolEventsToActivity } from '@/components/chat/deriveChatBlocks';
@@ -55,9 +54,9 @@ interface SessionRow {
 }
 
 export default function ChatPage() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
   const { configState, configLoaded, llmConfigState } = usePipeline();
   const initialUrlCtx = parseChatUrlContext(searchParams);
   const [properties, setProperties] = useState<PropertyOption[]>([]);
@@ -91,9 +90,9 @@ export default function ChatPage() {
       if (nextPropertyId) {
         writeStoredChatContext({ propertyId: nextPropertyId, sessionId: nextSessionId });
       }
-      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+      navigate(q ? `${pathname}?${q}` : pathname, { replace: true, preventScrollReset: true });
     },
-    [router, pathname, searchKey],
+    [navigate, pathname, searchKey],
   );
 
   const suggestFollowUp = useCallback((prompt: string) => {
@@ -115,7 +114,7 @@ export default function ChatPage() {
     if (!configLoaded) return;
     setLoadingProperties(true);
     try {
-      const res = await fetch(apiUrl('/properties'));
+      const res = await apiFetch(apiUrl('/properties'));
       if (!res.ok) return;
       const data = (await res.json()) as { properties?: PropertyOption[] };
       const rows = (data.properties || []).map((p) => ({
@@ -155,7 +154,7 @@ export default function ChatPage() {
 
   const resolveSessionFromUrl = useCallback(async (sid: number, pid: number | null) => {
     try {
-      const res = await fetch(apiUrl(`/chat/sessions/${sid}`));
+      const res = await apiFetch(apiUrl(`/chat/sessions/${sid}`));
       if (!res.ok) return false;
       const data = (await res.json()) as { session?: SessionRow };
       const session = data.session;
@@ -173,7 +172,7 @@ export default function ChatPage() {
   const loadSessions = useCallback(async (pid: number) => {
     setLoadingSessions(true);
     try {
-      const res = await fetch(apiUrl(`/chat/sessions?propertyId=${pid}`));
+      const res = await apiFetch(apiUrl(`/chat/sessions?propertyId=${pid}`));
       if (!res.ok) throw new Error('Failed to load sessions');
       const data = (await res.json()) as { sessions?: SessionRow[] };
       setSessions(data.sessions || []);
@@ -188,7 +187,7 @@ export default function ChatPage() {
     const gen = ++messagesLoadGen.current;
     setLoadingMessages(true);
     try {
-      const res = await fetch(apiUrl(`/chat/sessions/${sid}/messages?propertyId=${pid}`));
+      const res = await apiFetch(apiUrl(`/chat/sessions/${sid}/messages?propertyId=${pid}`));
       if (!res.ok) return;
       const data = (await res.json()) as {
         messages?: Array<{
@@ -308,7 +307,7 @@ export default function ChatPage() {
 
   const createSession = async (): Promise<number | null> => {
     if (!propertyId) return null;
-    const res = await fetch(apiUrl('/chat/sessions'), {
+    const res = await apiFetch(apiUrl('/chat/sessions'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ propertyId }),
@@ -361,7 +360,7 @@ export default function ChatPage() {
     abortRef.current = controller;
 
     try {
-      const res = await fetch(apiUrl('/chat'), {
+      const res = await apiFetch(apiUrl('/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: sid, propertyId, message: text }),
@@ -521,7 +520,7 @@ export default function ChatPage() {
   const handleDeleteSession = async (id: number) => {
     if (!propertyId) return;
     if (sessionId === id) abortRef.current?.abort();
-    await fetch(apiUrl(`/chat/sessions/${id}?propertyId=${propertyId}`), { method: 'DELETE' });
+    await apiFetch(apiUrl(`/chat/sessions/${id}?propertyId=${propertyId}`), { method: 'DELETE' });
     if (sessionId === id) {
       setSessionId(null);
       setMessages([]);
@@ -615,7 +614,7 @@ export default function ChatPage() {
                 <div>
                   <p className="font-medium text-amber-100">{c.aiDisabledTitle}</p>
                   <p className="mt-1 text-muted-foreground">{c.aiDisabledHint}</p>
-                  <Link href="/pipeline?group=content-ai" className="mt-2 inline-block text-link text-xs">
+                  <Link to="/pipeline?group=content-ai" className="mt-2 inline-block text-link text-xs">
                     {c.openAiSettings}
                   </Link>
                 </div>

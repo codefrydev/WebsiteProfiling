@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, type TooltipItem } from 'chart.js';
 import { BookOpen, BarChart2, Check, FileText, Layers, Share2, Tag, X } from 'lucide-react';
 import type { LinkDetail } from '@/types/report';
@@ -221,7 +221,7 @@ export default function ContentTab({ link }: ContentTabProps) {
     <div className="space-y-8">
       <p className="text-xs text-muted-foreground -mt-2">
         {lc.intro}{' '}
-        <Link href="/content-analytics" className="text-link-soft hover:underline font-medium">
+        <Link to="/content-analytics" className="text-link-soft hover:underline font-medium">
           {lc.viewSiteDistributions}
         </Link>
       </p>

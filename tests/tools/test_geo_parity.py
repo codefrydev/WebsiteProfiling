@@ -716,24 +716,3 @@ def test_tool_handlers_new_tools_registered() -> None:
     for tool in new_tools:
         assert tool in _TOOL_HANDLERS, f"Tool '{tool}' not in _TOOL_HANDLERS"
 
-
-# ---------------------------------------------------------------------------
-# Wiring: auditToolAllowlist
-# ---------------------------------------------------------------------------
-
-def test_allowlist_new_tools():
-    """Snapshot test: new GEO tools must be in the TS allowlist source."""
-    import pathlib
-    source = pathlib.Path(__file__).parents[2] / "web" / "src" / "server" / "auditToolAllowlist.ts"
-    text = source.read_text()
-    new_tools = [
-        "get_ai_discovery_status",
-        "get_robots_ai_access_score",
-        "get_citability_score",
-        "generate_schema",
-        "generate_geo_fix_bundle",
-        "check_ai_citations_live",
-        "compare_geo_score_deltas",
-    ]
-    for tool in new_tools:
-        assert f"'{tool}'" in text, f"'{tool}' missing from auditToolAllowlist.ts"

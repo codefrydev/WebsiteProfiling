@@ -1,4 +1,3 @@
-'use client';
 
 import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
 import { buildIssueContext } from '@/lib/fixSuggestionContext';

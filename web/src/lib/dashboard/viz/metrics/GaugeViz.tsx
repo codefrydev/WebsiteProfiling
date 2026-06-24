@@ -1,4 +1,3 @@
-'use client';
 
 import { scoreBandColor } from '@/utils/chartPalette';
 import type { VizRenderProps } from '@/lib/dashboard/viz/types';

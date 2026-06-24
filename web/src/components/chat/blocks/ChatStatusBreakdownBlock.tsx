@@ -1,4 +1,3 @@
-'use client';
 
 import { useMemo } from 'react';
 import { Doughnut } from 'react-chartjs-2';

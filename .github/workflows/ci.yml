@@ -53,16 +53,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build image
+      - name: Build backend image
         run: docker build -t website-profiling:ci .
+      - name: Build web image
+        run: docker build -t website-profiling-web:ci ./web --build-arg VITE_BFF_BASE_URL=http://localhost:8090
       - name: Browser crawl tests in image
         run: |
           docker run --rm \
             website-profiling:ci \
             /opt/venv/bin/pytest tests/test_crawl_fetchers.py tests/test_crawler_browser_e2e.py -m browser -q -o addopts=
-      - name: Compose smoke (postgres + web)
+      - name: Compose smoke (postgres + fastapi + web)
         env:
-          WEB_IMAGE: website-profiling:ci
+          BACKEND_IMAGE: website-profiling:ci
+          WEB_IMAGE: website-profiling-web:ci
         run: |
           docker compose -f docker-compose.pull.yml up -d --wait
           curl -fsS http://127.0.0.1:3000/home
@@ -82,6 +85,8 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - name: Install
         run: npm ci
+      - name: Build
+        run: npm run build
       - name: Typecheck
         run: npm run typecheck
       - name: Lint
@@ -98,3 +103,30 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Test FileService
         run: dotnet test services/FileService/FileService.slnx
+
+  bff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Test BFF
+        run: dotnet test services/Bff/Bff.slnx
+      - name: Generated client drift gate
+        run: |
+          dotnet tool install -g NSwag.ConsoleCore
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          (cd services/Bff && nswag run nswag.json)
+          git diff --exit-code services/Bff/src/Bff.Application/Generated/FastApiClient.g.cs \
+            || (echo "::error::FastApiClient.g.cs is stale — run services/Bff/generate-client.sh and commit." && exit 1)
+
+  data:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Test Data service
+        run: dotnet test services/Data/Data.slnx

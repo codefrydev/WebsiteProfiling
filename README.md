@@ -17,7 +17,8 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Next.js-000?logo=next.js&logoColor=white" alt="Next.js">
+  <img src="https://img.shields.io/badge/React-61DAFB?logo=react&logoColor=black" alt="React">
+  <img src="https://img.shields.io/badge/Vite-646CFF?logo=vite&logoColor=white" alt="Vite">
   <img src="https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/.NET-512BD4?logo=dotnet&logoColor=white" alt=".NET">
   <img src="https://img.shields.io/badge/PostgreSQL-4169E1?logo=postgresql&logoColor=white" alt="PostgreSQL">
@@ -40,7 +41,7 @@
 
 # Site Audit
 
-**Developer-friendly SEO audit platform** — open-source crawl and technical audit tooling built with **Next.js, Python, and PostgreSQL**.
+**Developer-friendly SEO audit platform** — open-source crawl and technical audit tooling built with **React, Python, PostgreSQL, and .NET**. The stack is split into focused services: a **Python FastAPI** backend (crawl, pipeline, chat, integrations), a **.NET BFF** as the browser-facing API gateway, a **.NET Data** read service (report payloads, portfolio, issue status), and a **.NET FileService** for PDF/Excel export.
 
 ## Overview
 
@@ -139,12 +140,23 @@ Also included: **AI chat** over audit data (optional), **Content studio** (write
 
 ## Architecture
 
+```text
+Browser  →  web (:3000)  →  bff (:8090)  →  fastapi (:8001)   crawl, pipeline, chat, integrations
+                              │              data (:8091)     report reads, portfolio, issue status, filters
+                              │              files (:8080)    PDF + Excel export
+                              worker          background pipeline jobs (same Python image)
+                              postgres        audit data store
+```
+
 ```
 WebsiteProfiling/
 ├── src/website_profiling/     # Python audit engine (CLI: python -m src)
+│   ├── api/                   # FastAPI app (uvicorn :8001)
+│   ├── worker/                # Background pipeline job runner
 │   ├── crawl/                 # Crawler, fetchers, JS rendering
 │   ├── reporting/             # Report builder, issue categories
 │   ├── analysis/              # On-page / local analysis
+│   ├── content_studio/        # Content writing + live SEO scoring
 │   ├── lighthouse/            # Lighthouse runner
 │   ├── integrations/          # Google Search Console, GA4, Bing, CrUX
 │   ├── llm/                   # AI enrich + chat agent
@@ -154,23 +166,26 @@ WebsiteProfiling/
 │   ├── commands/              # CLI subcommands
 │   ├── cli.py                 # Pipeline entrypoint
 │   └── config.py              # Config load (DB + shadow file)
-├── web/                       # Next.js UI
-│   ├── app/                   # App Router pages + /api routes
+├── web/                       # Vite + React SPA (nginx in prod)
+│   ├── src/AppRoutes.tsx      # React Router routes
 │   ├── src/components/        # React UI components
 │   ├── src/views/             # Report views (overview, links, issues, …)
-│   ├── src/server/            # Server-side DB, pipeline jobs, config I/O
+│   ├── src/lib/               # Client helpers, BFF apiUrl/apiFetch
 │   └── public/                # Static assets (logo, favicon)
+├── services/Bff/              # .NET BFF — auth + /api/* proxy (port 8090)
+├── services/Data/             # .NET read service — report/portfolio/issue reads (port 8091)
 ├── services/FileService/      # .NET PDF + Excel workbook export (port 8080)
 ├── alembic/versions/          # PostgreSQL schema migrations
 ├── tests/                     # pytest suite + fixtures
 ├── docs/                      # Glossary, MCP, ops, brand assets
-├── scripts/                   # local-run.sh, local-test.sh helpers
-├── .github/workflows/         # CI (Python + web + browser crawl)
-├── docker-compose.yml         # Dev stack (Postgres + web + FileService)
-├── docker-compose.prod.yml    # Production stack (requires AUTH_SECRET)
-├── docker-compose.pull.yml    # Pre-built WEB_IMAGE
-├── Dockerfile                 # Production image
+├── scripts/                   # local-run.sh, local-test.sh, local-prod.sh
+├── .github/workflows/         # CI (Python, web, .NET, Docker)
+├── docker-compose.yml         # Full dev stack (see Getting started)
+├── docker-compose.prod.yml    # Production stack (requires AUTH_SECRET; optional MCP profile)
+├── docker-compose.pull.yml    # Pre-built BACKEND_IMAGE + WEB_IMAGE smoke layout
+├── Dockerfile                 # Python backend image (fastapi + worker roles)
 ├── local-run                  # Dev setup & start script
+├── local-prod                 # Production build + preview (no hot reload)
 ├── local-test                 # Full test suite (CI parity)
 ├── requirements.txt           # Python dependencies
 └── pipeline-config.example.txt
@@ -180,8 +195,11 @@ WebsiteProfiling/
 | Path                                  | Purpose                                                                        |
 | ------------------------------------- | ------------------------------------------------------------------------------ |
 | `src/website_profiling/`              | Crawl, analyze, report, Lighthouse, integrations, AI — run via `python -m src` |
+| `src/website_profiling/api/`          | FastAPI HTTP layer — pipeline, chat, integrations, crawl control               |
+| `services/Bff/`                       | Browser API gateway — auth, CORS, routes `/api/*` to FastAPI, Data, FileService |
+| `services/Data/`                      | .NET read/mutation service for report payloads, portfolio, issue status, saved filters |
 | `services/FileService/`               | PDF and Excel workbook export — see [services/FileService/README.md](services/FileService/README.md) |
-| `web/app/api/`                        | REST APIs: report data, pipeline runs, chat (SSE), Google/Bing sync            |
+| `web/src/lib/publicBase.ts`           | BFF base URL (`VITE_BFF_BASE_URL`) and `apiFetch` / `apiUrl`                   |
 | `web/src/lib/pipelineConfigSchema.ts` | Audit settings schema (UI ↔ PostgreSQL)                                        |
 | `alembic/versions/`                   | Database migrations — run `./local-run migrate`                                |
 | `tests/`                              | Backend tests; `./local-test browser` for Playwright crawl integration         |
@@ -193,27 +211,41 @@ For layout details and common development patterns, see [AGENT.md](AGENT.md).
 
 ## Getting started
 
+### Prerequisites
+
+| Tool | Used for |
+| ---- | -------- |
+| **Docker** | Postgres container (local dev) and full-stack compose |
+| **Python 3.12+** | Audit engine, FastAPI, pipeline worker, tests |
+| **Node 20+** | Vite + React SPA |
+| **.NET SDK 10+** | BFF, Data, and FileService (required for `./local-run`; optional if you only use Docker) |
+
 ### Docker
 
-Build and run from source:
+Build and run the full dev stack from source:
 
 ```bash
 docker compose up --build
 ```
 
-Open [http://localhost:3000/home](http://localhost:3000/home). PDF and workbook exports require the **FileService** container (`files`, port 8080).
+Services: **postgres**, **fastapi** (`:8001`, internal), **worker**, **data** (`:8091`, internal), **bff** (`:8090`), **web** (`:3000`), **files** (`:8080`, internal).
 
-Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTGRES_PASSWORD`, and `AUTH_SECRET`. Pre-built images: `docker-compose.pull.yml` (`WEB_IMAGE`).
+Open [http://localhost:3000/home](http://localhost:3000/home). The browser talks only to the **BFF** (`:8090`); the BFF proxies to FastAPI, the Data service (report reads and portfolio routes), and FileService (PDF/workbook export).
+
+Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTGRES_PASSWORD`, `AUTH_SECRET`, `BFF_ALLOWED_ORIGINS`, and `BFF_PUBLIC_URL`. Optional remote MCP: `docker compose -f docker-compose.prod.yml --profile mcp up`. Pre-built images: `docker-compose.pull.yml` (`BACKEND_IMAGE`, `WEB_IMAGE`).
 
 ### Local development
 
 ```bash
-./local-run setup   # First time: Postgres, Python venv, migrations, npm deps
-./local-run         # Start DB + FileService + Next.js → http://localhost:3000/home
+./local-run setup   # First time: Postgres, Python venv, Playwright/Chromium, migrations, npm deps
+./local-run         # Start full dev stack → http://localhost:3000/home
 ./local-run db      # Postgres only (no app)
 ./local-run migrate # Apply Alembic migrations only
 ./local-run stop    # Stop Postgres container
+./local-prod        # Same DB, Vite production build + preview (no hot reload)
 ```
+
+`./local-run` starts (in order): **FileService** `:8080`, **Data** `:8091`, **pipeline worker**, **FastAPI** `:8001`, **BFF** `:8090`, and **Vite** `:3000`. Use `localhost` (not `127.0.0.1`) for pipeline APIs so CORS and cookies match the BFF origin.
 
 Default local `DATABASE_URL`: `postgres://postgres:dev@127.0.0.1:5432/website_profiling` (Docker Compose dev stack uses `profiling:profiling`).
 
@@ -233,15 +265,16 @@ Increase `PIPELINE_JOB_STALE_HOURS` for crawls that routinely exceed one hour.
 ### Testing
 
 ```bash
-./local-test              # Python + web (matches CI python and web jobs)
+./local-test              # Full CI parity: Python + web + .NET (Data, Bff, FileService)
 ./local-test python       # Backend: three 100% coverage gates + browser pytest + CLI smoke
 ./local-test browser      # JS crawl integration tests (skips if Chromium unavailable)
-./local-test web          # Frontend: typecheck, lint, vitest
+./local-test web          # Frontend: build, typecheck, lint, vitest
+./local-test dotnet       # dotnet test Data + Bff + FileService + BFF OpenAPI drift gate
 ./local-test quick        # Fast loop; requires DB already running (no coverage gate)
 ./local-test all --no-cov # Full run without pytest coverage gate
 ```
 
-CI also runs a **Docker** job (image build, browser pytest in container, compose smoke). See [.github/workflows/ci.yml](.github/workflows/ci.yml).
+CI runs separate jobs for **Python** (coverage gates), **web**, **Data**, **Bff**, **FileService**, and **Docker** (image build, browser pytest in container, compose smoke). See [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
 ## Configuration
 
@@ -278,7 +311,7 @@ Ask questions about audit data at [http://localhost:3000/chat](http://localhost:
 | **Groq**                   | API key in AI settings or `GROQ_API_KEY`; official Groq Python SDK; native tool calling with streaming. Default model `openai/gpt-oss-120b`.                               |
 
 
-The agent uses the same **342 read-only audit tools** as the MCP server ([docs/MCP.md](docs/MCP.md)), with **dynamic routing** (~45 tools per turn). Responses stream over SSE (`POST /api/chat`). Sessions persist per property (`chat_sessions` / `chat_messages`).
+The agent uses the same **340 read-only audit tools** as the MCP server ([docs/MCP.md](docs/MCP.md)), with **dynamic routing** (~45 tools per turn). Responses stream over SSE (`POST /api/chat`). Sessions persist per property (`chat_sessions` / `chat_messages`).
 
 **Read-only SQL chat tool (opt-in):** Set `CHAT_SQL_TOOL_ENABLED=true` to expose `get_sql_schema` and `run_sql_query` to the LLM. The agent can then answer arbitrary data questions by generating and executing a single read-only SELECT. Queries are validated by a four-layer guard (regex pre-filter → `sqlglot` AST + table allowlist → `BEGIN TRANSACTION READ ONLY` → optional least-privilege DB role); DELETE/UPDATE/INSERT/DDL and non-allowlisted tables are always blocked. In multi-property deployments, scope-binding CTEs are automatically injected to enforce tenant isolation. See [docs/OPS.md](docs/OPS.md#read-only-sql-chat-tool) for setup including the recommended `audit_readonly` Postgres role and optional RLS configuration.
 

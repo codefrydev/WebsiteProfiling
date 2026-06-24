@@ -1,6 +1,6 @@
 import { Globe, CheckCircle, TrendingUp, BarChart3 } from 'lucide-react';
 import { useMemo } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'react-router-dom';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { useTabSections } from '@/hooks/useTabSections';
 import { useReport } from '../context/useReport';
@@ -29,7 +29,7 @@ import {
 
 export default function Overview({ searchQuery = '' }: ViewProps) {
   const { data, reportList, startUrlByRunId, sectionStatus } = useReport();
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useUrlTab(OVERVIEW_TABS, 'summary');
   useTabSections(OVERVIEW_TAB_SECTIONS[activeTab], Boolean(data));
   const chartsSectionsPending = isSectionPending(OVERVIEW_TAB_SECTIONS.charts, sectionStatus);

@@ -1,4 +1,3 @@
-'use client';
 
 import { Building2, Gauge, Sparkles } from 'lucide-react';
 import { StatCard, LabelWithHint } from '@/components';

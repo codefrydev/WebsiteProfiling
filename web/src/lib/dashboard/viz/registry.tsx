@@ -1,4 +1,3 @@
-'use client';
 
 import type { ComponentType } from 'react';
 import type { VizType } from '@/lib/dashboard/types';

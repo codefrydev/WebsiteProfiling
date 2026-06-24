@@ -26,7 +26,9 @@ class GeminiClient:
             "generationConfig": {"responseMimeType": "application/json", "temperature": 0.2},
         }
         with httpx.Client(timeout=self._timeout) as client:
-            r = client.post(url, params={"key": self._api_key}, json=payload)
+            # Pass the key in a header, not the query string: URL query params are
+            # logged by proxies / access logs / monitoring, leaking the API key.
+            r = client.post(url, headers={"x-goog-api-key": self._api_key}, json=payload)
             r.raise_for_status()
             data = r.json()
         text = ""

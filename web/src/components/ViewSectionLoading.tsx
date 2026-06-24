@@ -1,4 +1,3 @@
-'use client';
 
 import { PageLayout, PageHeader } from '@/components';
 import { Skeleton } from '@/components/Skeleton';

@@ -1,7 +1,6 @@
-'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { buildInitialSecretsState } from '@/lib/secretsConfigSchema';
 import type { SecretsLoadResult, SecretsState } from '@/types/api';
 
@@ -17,7 +16,7 @@ export function useSecrets() {
     setLoading(true);
     setLoadError('');
     try {
-      const res = await fetch(apiUrl('/secrets'));
+      const res = await apiFetch(apiUrl('/secrets'));
       if (!res.ok) {
         const data = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(data.error || `HTTP ${res.status}`);
@@ -50,7 +49,7 @@ export function useSecrets() {
     setSaving(true);
     setSaveMsg('');
     try {
-      const res = await fetch(apiUrl('/secrets'), {
+      const res = await apiFetch(apiUrl('/secrets'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ state }),

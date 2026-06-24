@@ -1,7 +1,6 @@
-'use client';
 
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { Link } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { ArrowLeft, BookOpen } from 'lucide-react';
 import { docsBackLink, parseDocsFromParam } from '@/lib/docs/docsFromParam';
 import { strings } from '@/lib/strings';
@@ -14,7 +13,7 @@ export interface DocsContextBarProps {
 }
 
 export default function DocsContextBar({ title, subtitle }: DocsContextBarProps) {
-  const searchParams = useSearchParams();
+  const [searchParams] = useSearchParams();
   const from = parseDocsFromParam(searchParams.get('from'));
   const back = from ? docsBackLink(from) : null;
 
@@ -25,7 +24,7 @@ export default function DocsContextBar({ title, subtitle }: DocsContextBarProps)
     <header className="chat-context-bar flex items-center gap-3 border-b border-muted/30 bg-[var(--chat-bg)] px-4 py-2.5">
       {back ? (
         <Link
-          href={back.href}
+          to={back.href}
           className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium text-link transition-colors hover:bg-[var(--chat-surface-hover)] sm:text-sm"
         >
           <ArrowLeft className="h-3.5 w-3.5" aria-hidden />

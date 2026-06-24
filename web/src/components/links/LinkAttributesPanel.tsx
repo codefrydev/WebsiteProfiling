@@ -1,4 +1,3 @@
-'use client';
 
 import SortablePaginatedTable from '@/components/google/SortablePaginatedTable';
 import { Card } from '@/components';

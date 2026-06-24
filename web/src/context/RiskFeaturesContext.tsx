@@ -1,4 +1,3 @@
-'use client';
 
 import {
   createContext,
@@ -7,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import type { NavItemId } from '@/lib/appNav';
 
 /** Maps a NavItemId to its feature_* pipeline_config key. */
@@ -45,7 +44,7 @@ export function RiskFeaturesProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
-    void fetch(apiUrl('/secrets'))
+    void apiFetch(apiUrl('/secrets'))
       .then((res) => (res.ok ? res.json() : null))
       .then((data: { state?: Record<string, string | boolean> } | null) => {
         if (cancelled || !data?.state) return;

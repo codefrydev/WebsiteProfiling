@@ -1,7 +1,6 @@
-'use client';
 
 import { useEffect, useState } from 'react';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 
 /** Resolve or create a properties row from the audit Site URL. */
 export function useResolvedPropertyId(
@@ -27,7 +26,7 @@ export function useResolvedPropertyId(
     let cancelled = false;
     void (async () => {
       try {
-        const res = await fetch(
+        const res = await apiFetch(
           apiUrl(`/properties/resolve?startUrl=${encodeURIComponent(url)}`),
         );
         if (!res.ok) return;

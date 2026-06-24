@@ -1,4 +1,3 @@
-'use client';
 
 import type { ReactNode } from 'react';
 import { scaleLinear } from 'd3-scale';

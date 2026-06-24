@@ -1,11 +1,10 @@
-'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FileText, RefreshCw, Sparkles } from 'lucide-react';
 import { usePipeline } from '@/context/PipelineContext';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
 import {
   normalizePropertyId,
@@ -32,8 +31,8 @@ function buildWriteUrl(params: URLSearchParams): string {
 
 export default function WriteStudio() {
   const vs = strings.views.contentStudio;
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { configState, configLoaded } = usePipeline();
   const { readOnly } = useReadOnlySession();
 
@@ -72,16 +71,16 @@ export default function WriteStudio() {
       if (patch.propertyId != null) params.set('propertyId', String(patch.propertyId));
       if (patch.removeDraft) params.delete('draft');
       else if (patch.draft != null) params.set('draft', String(patch.draft));
-      router.replace(buildWriteUrl(params));
+      navigate(buildWriteUrl(params), { replace: true });
     },
-    [router, searchParams],
+    [navigate, searchParams],
   );
 
   const loadProperties = useCallback(async () => {
     if (!configLoaded) return;
     setLoadingProperties(true);
     try {
-      const res = await fetch(apiUrl('/properties'));
+      const res = await apiFetch(apiUrl('/properties'));
       if (!res.ok) return;
       const data = (await res.json()) as { properties?: WritePropertyOption[] };
       const rows = (data.properties || []).map((p) => ({
@@ -117,7 +116,7 @@ export default function WriteStudio() {
     setLoadingList(true);
     setListError(null);
     try {
-      const res = await fetch(apiUrl(`/content-drafts?propertyId=${propertyId}`));
+      const res = await apiFetch(apiUrl(`/content-drafts?propertyId=${propertyId}`));
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.error || vs.loadFailed);
       setDrafts((payload.drafts || []) as ContentDraftListItem[]);
@@ -132,7 +131,7 @@ export default function WriteStudio() {
     setLoadingDraft(true);
     setDraftError(null);
     try {
-      const res = await fetch(apiUrl(`/content-drafts/${id}`));
+      const res = await apiFetch(apiUrl(`/content-drafts/${id}`));
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.error || vs.loadFailed);
       setActiveDraft((payload.draft || null) as ContentDraftDetail | null);
@@ -213,7 +212,7 @@ export default function WriteStudio() {
     if (!propertyId || readOnly) return;
     setCreating(true);
     try {
-      const res = await fetch(apiUrl('/content-drafts'), {
+      const res = await apiFetch(apiUrl('/content-drafts'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ propertyId, ...fields }),
@@ -243,7 +242,7 @@ export default function WriteStudio() {
     if (!draftId || readOnly) return;
     setSaving(true);
     try {
-      const res = await fetch(apiUrl(`/content-drafts/${draftId}`), {
+      const res = await apiFetch(apiUrl(`/content-drafts/${draftId}`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(patch),
@@ -262,7 +261,7 @@ export default function WriteStudio() {
   const handleDelete = async (id: number) => {
     if (readOnly) return;
     try {
-      const res = await fetch(apiUrl(`/content-drafts/${id}`), { method: 'DELETE' });
+      const res = await apiFetch(apiUrl(`/content-drafts/${id}`), { method: 'DELETE' });
       const payload = await res.json();
       if (!res.ok) throw new Error(payload.error || vs.deleteFailed);
       if (draftId === id) syncUrl({ removeDraft: true });

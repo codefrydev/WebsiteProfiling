@@ -1,4 +1,3 @@
-'use client';
 
 import { BarChart2, ChevronRight, Download, Play, Settings2 } from 'lucide-react';
 import LandingSectionHeader from '@/components/landing/LandingSectionHeader';

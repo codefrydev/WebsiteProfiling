@@ -1,4 +1,3 @@
-'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { RotateCcw, Upload, X, ImageIcon } from 'lucide-react';

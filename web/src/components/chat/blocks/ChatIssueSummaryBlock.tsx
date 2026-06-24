@@ -1,4 +1,3 @@
-'use client';
 
 import { PRIORITY_ORDER } from '@/lib/issuePriority';
 import type { ChatBlock } from '@/components/chat/deriveChatBlocks';

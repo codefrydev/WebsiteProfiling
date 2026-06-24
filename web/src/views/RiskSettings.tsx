@@ -1,7 +1,6 @@
-'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
   ChevronDown,
@@ -14,7 +13,7 @@ import { SecretsSaveBar } from '@/components/secrets/SecretsSettingsPanel';
 import ToolPageSidebar from '@/components/shared/ToolPageSidebar';
 import { useRiskSettings } from '@/hooks/useRiskSettings';
 import { useSession } from '@/context/SessionContext';
-import { apiUrl } from '@/lib/publicBase';
+import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { RISK_SETTINGS_SIDEBAR_NAV_IDS } from '@/lib/appNav';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -304,7 +303,7 @@ export default function RiskSettingsPage() {
   const [catalogError, setCatalogError] = useState('');
 
   useEffect(() => {
-    void fetch(apiUrl('/mcp-tools'))
+    void apiFetch(apiUrl('/mcp-tools'))
       .then((res) => res.json())
       .then((data: McpCatalog) => {
         if (data.error) {
@@ -600,7 +599,7 @@ export default function RiskSettingsPage() {
                       <code className="font-mono">AUTH_PASSWORD</code>, and{' '}
                       <code className="font-mono">AUTH_DEFAULT_ROLE</code> in your environment.{' '}
                       See the{' '}
-                      <Link href="/docs" className="text-link hover:underline">
+                      <Link to="/docs" className="text-link hover:underline">
                         integration docs
                       </Link>{' '}
                       for details.
