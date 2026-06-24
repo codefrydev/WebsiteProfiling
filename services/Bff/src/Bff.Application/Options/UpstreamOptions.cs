@@ -22,7 +22,7 @@ public sealed class UpstreamOptions
 
     /// <summary>
     /// Comma-separated /api path prefixes routed to the Data service instead of FastAPI
-    /// (env override: DATA_ROUTES). Supports GET/HEAD reads and PUT/DELETE mutations on matched
+    /// (env override: DATA_ROUTES). Supports GET/HEAD reads and POST/PUT/DELETE mutations on matched
     /// prefixes. Empty = everything stays on FastAPI (rollback-safe default).
     /// </summary>
     public string[] DataRoutes { get; set; } = [];

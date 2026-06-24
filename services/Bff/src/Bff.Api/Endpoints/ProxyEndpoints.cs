@@ -48,7 +48,7 @@ public static class ProxyEndpoints
 
         // Catch-all: every other /api/* request -> FastAPI (streamed for remaining export routes),
         // except paths in the DATA_ROUTES allowlist, which go to the internal Data service
-        // (GET reads + DELETE/PUT portfolio/issue mutations).
+        // (GET reads + POST/PUT/DELETE mutations on matched prefixes).
         // Auth still runs in AccessControlMiddleware before this delegate, so routing here doesn't
         // change which roles may reach a path. Empty allowlist => nothing matches => all FastAPI.
         app.Map("/api/{**rest}", (HttpContext ctx) =>
@@ -63,8 +63,9 @@ public static class ProxyEndpoints
                 && matchesDataRoute
                 && (HttpMethods.IsGet(ctx.Request.Method)
                     || HttpMethods.IsHead(ctx.Request.Method)
-                    || HttpMethods.IsDelete(ctx.Request.Method)
-                    || HttpMethods.IsPut(ctx.Request.Method));
+                    || HttpMethods.IsPost(ctx.Request.Method)
+                    || HttpMethods.IsPut(ctx.Request.Method)
+                    || HttpMethods.IsDelete(ctx.Request.Method));
 
             var client = toData
                 ? DependencyInjection.DataClient

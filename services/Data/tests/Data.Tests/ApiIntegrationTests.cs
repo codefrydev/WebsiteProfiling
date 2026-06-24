@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Data.Application.Dto.Meta;
+using Data.Application.Dto.Filters;
 using Data.Application.Dto.Issues;
 using Data.Application.Dto.Portfolio;
 using Data.Application.Dto.Report;
@@ -30,10 +31,12 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
                 services.RemoveAll<IPortfolioService>();
                 services.RemoveAll<IPortfolioRepository>();
                 services.RemoveAll<IIssueStatusRepository>();
+                services.RemoveAll<ISavedFilterRepository>();
                 services.AddScoped<IReportRepository, FakeReportRepository>();
                 services.AddScoped<IPortfolioService, FakePortfolioService>();
                 services.AddScoped<IPortfolioRepository, FakePortfolioRepository>();
                 services.AddScoped<IIssueStatusRepository, FakeIssueStatusRepository>();
+                services.AddScoped<ISavedFilterRepository, FakeSavedFilterRepository>();
             });
         });
     }
@@ -180,6 +183,135 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Contains("/api/report/portfolio", json);
         Assert.Contains("/api/portfolio/delete", json);
         Assert.Contains("/api/issues/status", json);
+        Assert.Contains("/api/filters", json);
+    }
+
+    [Fact]
+    public async Task Filters_list_missing_propertyId_returns_400()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/api/filters");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("propertyId required", doc.RootElement.GetProperty("detail").GetString());
+    }
+
+    [Fact]
+    public async Task Filters_list_zero_propertyId_returns_400()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/api/filters?propertyId=0");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("propertyId required", doc.RootElement.GetProperty("detail").GetString());
+    }
+
+    [Fact]
+    public async Task Filters_delete_missing_fields_returns_400()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Delete, "/api/filters")
+        {
+            Content = JsonContent.Create(new { propertyId = 1L }),
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("propertyId and name required", doc.RootElement.GetProperty("detail").GetString());
+    }
+
+    [Fact]
+    public async Task Filters_list_returns_filters_key()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/api/filters?propertyId=1");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(doc.RootElement.TryGetProperty("filters", out var filters));
+        Assert.Equal(JsonValueKind.Array, filters.ValueKind);
+        Assert.Equal(1, filters.GetArrayLength());
+        Assert.Equal("status-200", filters[0].GetProperty("name").GetString());
+    }
+
+    [Fact]
+    public async Task Filters_upsert_success_returns_ok()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.PostAsJsonAsync("/api/filters", new
+        {
+            propertyId = 1L,
+            name = "my-filter",
+            filterJson = new { status = new[] { "200" } },
+        });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(doc.RootElement.GetProperty("ok").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Filters_upsert_missing_fields_returns_400()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.PostAsJsonAsync("/api/filters", new { propertyId = 1L });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("propertyId and name required", doc.RootElement.GetProperty("detail").GetString());
+    }
+
+    [Fact]
+    public async Task Filters_delete_not_found_returns_404()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Delete, "/api/filters")
+        {
+            Content = JsonContent.Create(new { propertyId = 1L, name = "missing" }),
+        });
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("filter not found", doc.RootElement.GetProperty("detail").GetString());
+    }
+
+    [Fact]
+    public async Task Filters_delete_success_returns_ok()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Delete, "/api/filters")
+        {
+            Content = JsonContent.Create(new { propertyId = 1L, name = "status-200" }),
+        });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(doc.RootElement.GetProperty("ok").GetBoolean());
+    }
+
+    private sealed class FakeSavedFilterRepository : ISavedFilterRepository
+    {
+        public Task<IReadOnlyList<SavedFilterRowDto>> ListAsync(int propertyId, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<SavedFilterRowDto>>(
+            [
+                new SavedFilterRowDto
+                {
+                    Id = 1,
+                    PropertyId = propertyId,
+                    Name = "status-200",
+                    FilterJson = JsonSerializer.SerializeToElement(new { status = new[] { "200" } }),
+                    CreatedAt = "2024-01-01T00:00:00+00:00",
+                },
+            ]);
+
+        public Task UpsertAsync(
+            long propertyId, string name, JsonElement filterJson, CancellationToken cancellationToken) =>
+            Task.CompletedTask;
+
+        public Task<bool> DeleteAsync(long propertyId, string name, CancellationToken cancellationToken) =>
+            Task.FromResult(name != "missing");
     }
 
     [Fact]

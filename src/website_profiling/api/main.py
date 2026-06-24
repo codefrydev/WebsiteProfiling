@@ -16,7 +16,6 @@ from .routers import (
     content,
     crawl,
     dashboards,
-    filters,
     health,
     integrations,
     issues,
@@ -90,9 +89,8 @@ app.include_router(config.router, prefix="/api")
 # ── Batch F: Properties ──────────────────────────────────────────────────────
 app.include_router(properties.router, prefix="/api")
 
-# ── Batch G: Dashboards + Filters ────────────────────────────────────────────
+# ── Batch G: Dashboards ──────────────────────────────────────────────────────
 app.include_router(dashboards.router, prefix="/api")
-app.include_router(filters.router, prefix="/api")
 
 # ── Batch H: Google + Bing integrations ──────────────────────────────────────
 app.include_router(integrations.router, prefix="/api")

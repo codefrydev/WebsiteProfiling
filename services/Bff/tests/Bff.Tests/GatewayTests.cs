@@ -178,7 +178,7 @@ public class GatewayTests
     [Fact]
     public async Task Get_issues_status_routes_to_data_service_when_path_in_allowlist()
     {
-        using var factory = new BffFactory(dataRoutes: "/api/issues");
+        using var factory = new BffFactory(dataRoutes: "/api/issues/status");
         var client = factory.CreateClient();
         var response = await client.GetAsync("/api/issues/status?propertyId=1");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -188,7 +188,7 @@ public class GatewayTests
     [Fact]
     public async Task Put_issues_status_routes_to_data_service_when_path_in_allowlist()
     {
-        using var factory = new BffFactory(secret: Secret, dataRoutes: "/api/issues");
+        using var factory = new BffFactory(secret: Secret, dataRoutes: "/api/issues/status");
         var client = factory.CreateClient();
         var request = new HttpRequestMessage(HttpMethod.Put, "/api/issues/status")
         {
@@ -209,9 +209,88 @@ public class GatewayTests
     [Fact]
     public async Task Put_issues_status_forbidden_for_readonly_role()
     {
-        using var factory = new BffFactory(secret: Secret, dataRoutes: "/api/issues");
+        using var factory = new BffFactory(secret: Secret, dataRoutes: "/api/issues/status");
         var response = await Send(factory, HttpMethod.Put, "/api/issues/status", "client-readonly");
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Get_filters_routes_to_data_service_when_path_in_allowlist()
+    {
+        using var factory = new BffFactory(dataRoutes: "/api/filters");
+        var client = factory.CreateClient();
+        var response = await client.GetAsync("/api/filters?propertyId=1");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("\"upstream\":\"data\"", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Post_filters_routes_to_data_service_when_path_in_allowlist()
+    {
+        using var factory = new BffFactory(secret: Secret, dataRoutes: "/api/filters");
+        var client = factory.CreateClient();
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/filters")
+        {
+            Content = JsonContent.Create(new
+            {
+                propertyId = 1L,
+                name = "my-filter",
+                filterJson = new { status = new[] { "200" } },
+            }),
+        };
+        var token = WpSessionTokens.Create("analyst", Secret, DateTimeOffset.UtcNow.ToUnixTimeSeconds(), 604800);
+        request.Headers.Add("Cookie", $"{WpSessionTokens.CookieName}={token}");
+        var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("\"upstream\":\"data\"", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Post_filters_forbidden_for_readonly_role()
+    {
+        using var factory = new BffFactory(secret: Secret, dataRoutes: "/api/filters");
+        var response = await Send(factory, HttpMethod.Post, "/api/filters", "client-readonly");
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Delete_filters_routes_to_data_service_when_path_in_allowlist()
+    {
+        using var factory = new BffFactory(secret: Secret, dataRoutes: "/api/filters");
+        var client = factory.CreateClient();
+        var request = new HttpRequestMessage(HttpMethod.Delete, "/api/filters")
+        {
+            Content = JsonContent.Create(new { propertyId = 1L, name = "my-filter" }),
+        };
+        var token = WpSessionTokens.Create("analyst", Secret, DateTimeOffset.UtcNow.ToUnixTimeSeconds(), 604800);
+        request.Headers.Add("Cookie", $"{WpSessionTokens.CookieName}={token}");
+        var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("\"upstream\":\"data\"", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Delete_filters_forbidden_for_readonly_role()
+    {
+        using var factory = new BffFactory(secret: Secret, dataRoutes: "/api/filters");
+        var response = await Send(factory, HttpMethod.Delete, "/api/filters", "client-readonly");
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Post_issues_action_plan_stays_on_fastapi_when_issues_prefix_narrowed()
+    {
+        using var factory = new BffFactory(secret: Secret, dataRoutes: "/api/issues/status,/api/filters");
+        var client = factory.CreateClient();
+        var request = new HttpRequestMessage(HttpMethod.Post, "/api/issues/action-plan")
+        {
+            Content = JsonContent.Create(new { domain = "example.com", issues = new[] { new { message = "x" } } }),
+        };
+        var token = WpSessionTokens.Create("analyst", Secret, DateTimeOffset.UtcNow.ToUnixTimeSeconds(), 604800);
+        request.Headers.Add("Cookie", $"{WpSessionTokens.CookieName}={token}");
+        var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.DoesNotContain("\"upstream\":\"data\"", await response.Content.ReadAsStringAsync());
     }
 
     [Fact]

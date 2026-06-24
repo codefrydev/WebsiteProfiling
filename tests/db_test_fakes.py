@@ -12,9 +12,16 @@ from typing import Any, Iterator
 
 
 class FakeCursor:
-    def __init__(self, *, fetchone_value: Any = None, fetchall_value: list[Any] | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        fetchone_value: Any = None,
+        fetchall_value: list[Any] | None = None,
+        rowcount: int = 0,
+    ) -> None:
         self._fetchone_value = fetchone_value
         self._fetchall_value = fetchall_value or []
+        self.rowcount = rowcount
         self.executed: list[tuple[str, tuple[Any, ...] | None]] = []
         self.executemany_calls: list[tuple[str, list[Any]]] = []
 

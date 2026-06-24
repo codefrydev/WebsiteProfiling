@@ -211,35 +211,6 @@ def test_dashboards_crud(api_client: TestClient, test_property: dict[str, Any]) 
     assert deleted.json()["ok"] is True
 
 
-def test_saved_filters_crud(api_client: TestClient, test_property: dict[str, Any]) -> None:
-    property_id = int(test_property["id"])
-    filter_name = f"filter-{uuid.uuid4().hex[:8]}"
-
-    upsert = api_client.post(
-        "/api/filters",
-        json={
-            "propertyId": property_id,
-            "name": filter_name,
-            "filterJson": {"status": ["200"]},
-        },
-    )
-    assert upsert.status_code == 200
-    assert upsert.json()["ok"] is True
-
-    listed = api_client.get("/api/filters", params={"propertyId": property_id})
-    assert listed.status_code == 200
-    names = {f["name"] for f in listed.json()["filters"]}
-    assert filter_name in names
-
-    deleted = api_client.request(
-        "DELETE",
-        "/api/filters",
-        json={"propertyId": property_id, "name": filter_name},
-    )
-    assert deleted.status_code == 200
-    assert deleted.json()["ok"] is True
-
-
 def test_properties_resolve(api_client: TestClient, test_property: dict[str, Any]) -> None:
     res = api_client.get(
         "/api/properties/resolve",

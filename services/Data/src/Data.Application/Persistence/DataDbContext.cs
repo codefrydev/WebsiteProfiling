@@ -18,6 +18,8 @@ public sealed class DataDbContext(DbContextOptions<DataDbContext> options) : DbC
 
     public DbSet<IssueStatus> IssueStatuses => Set<IssueStatus>();
 
+    public DbSet<SavedCrawlFilter> SavedCrawlFilters => Set<SavedCrawlFilter>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ReportPayload>(e =>
@@ -72,6 +74,17 @@ public sealed class DataDbContext(DbContextOptions<DataDbContext> options) : DbC
             e.Property(x => x.Note).HasColumnName("note");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
+        });
+
+        modelBuilder.Entity<SavedCrawlFilter>(e =>
+        {
+            e.ToTable("saved_crawl_filters");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.PropertyId).HasColumnName("property_id");
+            e.Property(x => x.Name).HasColumnName("name");
+            e.Property(x => x.FilterJson).HasColumnName("filter_json").HasColumnType("jsonb");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
         });
     }
 }

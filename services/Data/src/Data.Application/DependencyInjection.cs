@@ -52,6 +52,7 @@ public static class DependencyInjection
         services.AddScoped<IPortfolioRepository, PortfolioRepository>();
         services.AddScoped<IPortfolioService, PortfolioService>();
         services.AddScoped<IIssueStatusRepository, IssueStatusRepository>();
+        services.AddScoped<ISavedFilterRepository, SavedFilterRepository>();
 
         return services;
     }

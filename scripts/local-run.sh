@@ -284,7 +284,7 @@ cmd_start() {
       FASTAPI_URL="http://127.0.0.1:8001" \
       FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}" \
       DATA_SERVICE_URL="http://127.0.0.1:8091" \
-      DATA_ROUTES="${DATA_ROUTES:-/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues}" \
+      DATA_ROUTES="${DATA_ROUTES:-/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters}" \
       BFF_ALLOWED_ORIGINS="http://localhost:3000" \
       ASPNETCORE_URLS="http://127.0.0.1:8090" \
       ASPNETCORE_ENVIRONMENT=Development \
@@ -351,7 +351,7 @@ Local dev runner — Postgres in Docker, app on your machine
 Environment overrides (optional):
   DATABASE_URL  (default: postgres://postgres:dev@127.0.0.1:5432/website_profiling)
   DATA_DIR      (default: <repo>/data)
-  DATA_ROUTES   (default: report reads, portfolio, issue workflow status — see local-run.sh)
+  DATA_ROUTES   (default: report reads, portfolio, issues status, saved filters)
   WP_PG_CONTAINER, WP_PG_PORT, WP_PG_PASSWORD, WP_PG_DB
 
 After start, open: http://localhost:3000/home
