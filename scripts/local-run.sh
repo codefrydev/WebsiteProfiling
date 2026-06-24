@@ -207,6 +207,7 @@ cmd_start() {
   WORKER_PID=""
   UVICORN_PID=""
   FILE_SERVICE_PID=""
+  DATA_PID=""
   BFF_PID=""
   _CLEANUP_DONE=0
   set +m
@@ -223,6 +224,8 @@ cmd_start() {
     # Reverse startup order; Vite (foreground) is already exiting from Ctrl+C.
     stop_service "BFF" "$BFF_PID" 8090
     BFF_PID=""
+    stop_service "Data" "$DATA_PID" 8091
+    DATA_PID=""
     stop_service "FastAPI" "$UVICORN_PID" 8001
     UVICORN_PID=""
     stop_service "pipeline worker" "$WORKER_PID"
@@ -245,8 +248,19 @@ cmd_start() {
       dotnet run --project src/FileService.Api --no-launch-profile) &
     FILE_SERVICE_PID=$!
     disown_bg "$FILE_SERVICE_PID"
+
+    free_port 8091
+    log "Starting Data service on port 8091"
+    (cd "$ROOT/services/Data" && \
+      DATABASE_URL="$DATABASE_URL" \
+      ASPNETCORE_URLS="http://127.0.0.1:8091" \
+      ASPNETCORE_ENVIRONMENT=Development \
+      dotnet run --project src/Data.Api --no-launch-profile) &
+    DATA_PID=$!
+    disown_bg "$DATA_PID"
   else
     warn "dotnet not found — PDF export requires FileService (see services/FileService/README.md)"
+    warn "dotnet not found — Data service unavailable on port 8091"
   fi
 
   log "Starting pipeline worker"
@@ -269,6 +283,8 @@ cmd_start() {
     (cd "$ROOT/services/Bff" && \
       FASTAPI_URL="http://127.0.0.1:8001" \
       FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}" \
+      DATA_SERVICE_URL="http://127.0.0.1:8091" \
+      DATA_ROUTES="${DATA_ROUTES:-/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio}" \
       BFF_ALLOWED_ORIGINS="http://localhost:3000" \
       ASPNETCORE_URLS="http://127.0.0.1:8090" \
       ASPNETCORE_ENVIRONMENT=Development \
@@ -285,6 +301,7 @@ cmd_start() {
   log "PYTHON=$PYTHON"
   log "VITE_BFF_BASE_URL=${VITE_BFF_BASE_URL:-http://localhost:8090}"
   log "FILE_SERVICE_URL=${FILE_SERVICE_URL:-http://127.0.0.1:8080}"
+  log "DATA_ROUTES=${DATA_ROUTES:-/api/report/meta,...}"
   export FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}"
   export VITE_BFF_BASE_URL="${VITE_BFF_BASE_URL:-http://localhost:8090}"
   cd "$WEB"
@@ -334,6 +351,7 @@ Local dev runner — Postgres in Docker, app on your machine
 Environment overrides (optional):
   DATABASE_URL  (default: postgres://postgres:dev@127.0.0.1:5432/website_profiling)
   DATA_DIR      (default: <repo>/data)
+  DATA_ROUTES   (default: all /api/report/* read routes including portfolio)
   WP_PG_CONTAINER, WP_PG_PORT, WP_PG_PASSWORD, WP_PG_DB
 
 After start, open: http://localhost:3000/home

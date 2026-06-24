@@ -1,5 +1,7 @@
 using Bff.Api.Forwarding;
 using Bff.Application;
+using Bff.Application.Options;
+using Microsoft.Extensions.Options;
 
 namespace Bff.Api.Endpoints;
 
@@ -44,11 +46,29 @@ public static class ProxyEndpoints
                 : (IResult)new ForwardingResult(DependencyInjection.FileServiceClient, path, disableResponseBuffering: true);
         });
 
-        // Catch-all: every other /api/* request -> FastAPI (streamed for remaining export routes).
+        // Catch-all: every other /api/* request -> FastAPI (streamed for remaining export routes),
+        // except paths in the DATA_ROUTES allowlist, which go to the internal Data service
+        // (GET reads + DELETE portfolio mutations).
+        // Auth still runs in AccessControlMiddleware before this delegate, so routing here doesn't
+        // change which roles may reach a path. Empty allowlist => nothing matches => all FastAPI.
         app.Map("/api/{**rest}", (HttpContext ctx) =>
         {
-            var streaming = ctx.Request.Path.Value?.Contains("/export", StringComparison.OrdinalIgnoreCase) == true;
-            var client = streaming ? DependencyInjection.FastApiStreamClient : DependencyInjection.FastApiClient;
+            var path = ctx.Request.Path.Value ?? string.Empty;
+            var streaming = path.Contains("/export", StringComparison.OrdinalIgnoreCase);
+
+            var upstream = ctx.RequestServices.GetRequiredService<IOptions<UpstreamOptions>>().Value;
+            var matchesDataRoute = upstream.DataRoutes.Any(prefix =>
+                path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+            var toData = !streaming
+                && matchesDataRoute
+                && (HttpMethods.IsGet(ctx.Request.Method)
+                    || HttpMethods.IsHead(ctx.Request.Method)
+                    || HttpMethods.IsDelete(ctx.Request.Method));
+
+            var client = toData
+                ? DependencyInjection.DataClient
+                : streaming ? DependencyInjection.FastApiStreamClient : DependencyInjection.FastApiClient;
+
             return (IResult)new ForwardingResult(
                 client,
                 $"{ctx.Request.Path}{ctx.Request.QueryString}",

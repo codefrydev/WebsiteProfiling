@@ -16,4 +16,13 @@ public sealed class UpstreamOptions
 
     /// <summary>Timeout for normal (non-streaming) upstream calls. Parity with the TS proxy (120s).</summary>
     public int TimeoutSeconds { get; set; } = 120;
+
+    /// <summary>Data service base URL (env override: DATA_SERVICE_URL). Internal .NET read service.</summary>
+    public string DataBaseUrl { get; set; } = "http://127.0.0.1:8091";
+
+    /// <summary>
+    /// Comma-separated /api path prefixes whose GET requests are routed to the Data service instead of
+    /// FastAPI (env override: DATA_ROUTES). Empty = everything stays on FastAPI (rollback-safe default).
+    /// </summary>
+    public string[] DataRoutes { get; set; } = [];
 }

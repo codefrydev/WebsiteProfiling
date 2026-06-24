@@ -269,30 +269,6 @@ def test_issue_status_upsert_and_list(api_client: TestClient, test_property: dic
     assert "Missing meta description" in messages
 
 
-def test_portfolio_delete_crawl_run(api_client: TestClient, test_property: dict[str, Any]) -> None:
-    property_id = int(test_property["id"])
-    with db_session() as conn:
-        from website_profiling.db.crawl_store import create_crawl_run
-
-        crawl_run_id = create_crawl_run(
-            conn,
-            start_url=f"https://{test_property['domain']}",
-            property_id=property_id,
-        )
-
-    res = api_client.request(
-        "DELETE",
-        "/api/portfolio/delete",
-        json={"crawlRunId": crawl_run_id},
-    )
-    assert res.status_code == 200
-    assert res.json()["ok"] is True
-
-    with db_session() as conn:
-        cur = conn.execute("SELECT id FROM crawl_runs WHERE id = %s", (crawl_run_id,))
-        assert cur.fetchone() is None
-
-
 def test_properties_resolve(api_client: TestClient, test_property: dict[str, Any]) -> None:
     res = api_client.get(
         "/api/properties/resolve",

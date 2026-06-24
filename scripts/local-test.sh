@@ -181,10 +181,23 @@ cmd_web() {
   ok "Web checks passed"
 }
 
+cmd_dotnet() {
+  if ! command -v dotnet >/dev/null 2>&1; then
+    warn "dotnet not found — skipping .NET tests"
+    return 0
+  fi
+  log "dotnet test services/Data"
+  (cd "$ROOT/services/Data" && dotnet test --no-restore -q)
+  log "dotnet test services/Bff"
+  (cd "$ROOT/services/Bff" && dotnet test --no-restore -q)
+  ok ".NET tests passed"
+}
+
 cmd_all() {
   cmd_python
   cmd_web
-  ok "All local tests passed (CI python + web jobs, including reporting/tools gates)"
+  cmd_dotnet
+  ok "All local tests passed (CI python + web + dotnet jobs, including reporting/tools gates)"
 }
 
 cmd_quick() {
@@ -211,10 +224,11 @@ cmd_help() {
 Local test runner — mirrors CI (python + web jobs)
 
   ./local-test              Same as: all
-  ./local-test all          Postgres + migrations + pytest (core + reporting + tools) + CLI + web
+  ./local-test all          Postgres + migrations + pytest + web + dotnet
   ./local-test python       DB + pytest (core + reporting + tools) + browser pytest + CLI smoke
   ./local-test browser      Browser integration pytest only (skips if no Chromium)
   ./local-test web          typecheck, lint, vitest (no Docker)
+  ./local-test dotnet       dotnet test services/Data + services/Bff (no Postgres needed)
   ./local-test quick        pytest + web without starting Docker (DB must be ready)
 
   ./local-test all --no-cov     skip pytest coverage gate (faster)
@@ -244,6 +258,7 @@ main() {
     python) cmd_python ;;
     browser) cmd_browser ;;
     web) cmd_web ;;
+    dotnet) cmd_dotnet ;;
     quick)
       PYTEST_NO_COV=1
       cmd_quick

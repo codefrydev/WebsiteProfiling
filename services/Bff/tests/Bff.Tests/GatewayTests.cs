@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text.Json;
 using Bff.Application;
 using Bff.Application.Auth;
@@ -138,6 +139,79 @@ public class GatewayTests
         Assert.Equal("true", response.Headers.GetValues("Access-Control-Allow-Credentials").Single());
     }
 
+    [Fact]
+    public async Task Get_routes_to_data_service_when_path_in_allowlist()
+    {
+        using var factory = new BffFactory(dataRoutes: "/api/report/meta");
+        var client = factory.CreateClient();
+        var response = await client.GetAsync("/api/report/meta");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("\"upstream\":\"data\"", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Get_portfolio_routes_to_data_service_when_path_in_allowlist()
+    {
+        using var factory = new BffFactory(dataRoutes: "/api/report/portfolio");
+        var client = factory.CreateClient();
+        var response = await client.GetAsync("/api/report/portfolio?widget=groups");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("\"upstream\":\"data\"", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Delete_portfolio_routes_to_data_service_when_path_in_allowlist()
+    {
+        using var factory = new BffFactory(secret: Secret, dataRoutes: "/api/portfolio");
+        var client = factory.CreateClient();
+        var request = new HttpRequestMessage(HttpMethod.Delete, "/api/portfolio/delete")
+        {
+            Content = JsonContent.Create(new { crawlRunId = 1L }),
+        };
+        var token = WpSessionTokens.Create("analyst", Secret, DateTimeOffset.UtcNow.ToUnixTimeSeconds(), 604800);
+        request.Headers.Add("Cookie", $"{WpSessionTokens.CookieName}={token}");
+        var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("\"upstream\":\"data\"", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Get_stays_on_fastapi_when_path_not_in_allowlist()
+    {
+        using var factory = new BffFactory(dataRoutes: "/api/report/portfolio");
+        var client = factory.CreateClient();
+        var response = await client.GetAsync("/api/report/meta");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.DoesNotContain("\"upstream\":\"data\"", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Empty_allowlist_keeps_all_reads_on_fastapi()
+    {
+        using var factory = new BffFactory();
+        var client = factory.CreateClient();
+        var response = await client.GetAsync("/api/report/meta");
+        Assert.DoesNotContain("\"upstream\":\"data\"", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Data_routed_get_still_requires_authentication()
+    {
+        using var factory = new BffFactory(secret: Secret, dataRoutes: "/api/report/meta");
+        var client = factory.CreateClient();
+        var response = await client.GetAsync("/api/report/meta");
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Data_routed_get_allowed_for_readonly_role_and_hits_data()
+    {
+        using var factory = new BffFactory(secret: Secret, dataRoutes: "/api/report/meta");
+        var response = await Send(factory, HttpMethod.Get, "/api/report/meta", "viewer");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("\"upstream\":\"data\"", await response.Content.ReadAsStringAsync());
+    }
+
     private static async Task<HttpResponseMessage> Send(BffFactory factory, HttpMethod method, string path, string role)
     {
         var client = factory.CreateClient();
@@ -148,13 +222,20 @@ public class GatewayTests
     }
 }
 
-internal sealed class BffFactory(string? secret = null) : WebApplicationFactory<Program>
+internal sealed class BffFactory(string? secret = null, string? dataRoutes = null) : WebApplicationFactory<Program>
 {
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Production");
         builder.ConfigureAppConfiguration((_, cfg) =>
-            cfg.AddInMemoryCollection(new Dictionary<string, string?> { ["Auth:Secret"] = secret ?? string.Empty }));
+        {
+            var settings = new Dictionary<string, string?> { ["Auth:Secret"] = secret ?? string.Empty };
+            if (dataRoutes is not null)
+            {
+                settings["Upstream:DataRoutes:0"] = dataRoutes;
+            }
+            cfg.AddInMemoryCollection(settings);
+        });
         builder.ConfigureServices(services =>
         {
             foreach (var name in new[]
@@ -167,8 +248,14 @@ internal sealed class BffFactory(string? secret = null) : WebApplicationFactory<
                 services.AddHttpClient(name)
                     .ConfigurePrimaryHttpMessageHandler(() => new TestHttpHandler(Respond));
             }
+            // Stub the Data service with a distinguishable body so cutover routing can be asserted.
+            services.AddHttpClient(DependencyInjection.DataClient)
+                .ConfigurePrimaryHttpMessageHandler(() => new TestHttpHandler(RespondData));
         });
     }
+
+    private static HttpResponseMessage RespondData(HttpRequestMessage request) =>
+        TestHttpHandler.Json($"{{\"path\":\"{request.RequestUri!.AbsolutePath}\",\"upstream\":\"data\"}}");
 
     private static HttpResponseMessage Respond(HttpRequestMessage request)
     {

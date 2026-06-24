@@ -61,6 +61,24 @@ services:
     volumes:
       - profiling-data:/data
 
+  # .NET read microservice — reads Postgres directly, incrementally replacing FastAPI reads.
+  # Internal: only the BFF reaches it (no published host port).
+  data:
+    build:
+      context: ./services/Data
+    environment:
+      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
+      ASPNETCORE_URLS: http://+:8091
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8091/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
   # .NET BFF — the single browser-facing API surface (owns auth + CORS).
   bff:
     build:
@@ -71,11 +89,17 @@ services:
       FASTAPI_URL: http://fastapi:8001
       FILE_SERVICE_URL: http://files:8080
       BFF_ALLOWED_ORIGINS: "http://localhost:3000"
+      DATA_SERVICE_URL: http://data:8091
+      # Comma-separated /api GET path prefixes served by the Data service instead of FastAPI.
+      # Rollback: remove a prefix here and restart bff.
+      DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio"
       # AUTH_SECRET: set to enable wp_session auth (must match the web service)
     depends_on:
       fastapi:
         condition: service_started
       files:
+        condition: service_started
+      data:
         condition: service_started
 
   # Vite SPA (nginx). The browser calls the BFF (:8090) for all /api/*.

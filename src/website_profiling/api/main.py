@@ -27,12 +27,10 @@ from .routers import (
     page_coach,
     page_markdown,
     pipeline,
-    portfolio,
     properties,
     report,
     report_audit_tool,
     report_export,
-    report_portfolio,
     schedule,
 )
 
@@ -106,7 +104,6 @@ app.include_router(content.router, prefix="/api")
 app.include_router(page_markdown.router, prefix="/api")
 app.include_router(ollama.router, prefix="/api")
 app.include_router(mcp_tools.router, prefix="/api")
-app.include_router(portfolio.router, prefix="/api")
 app.include_router(alerts.router, prefix="/api")
 app.include_router(schedule.router, prefix="/api")
 app.include_router(logs.router, prefix="/api")
@@ -114,4 +111,3 @@ app.include_router(compare.router, prefix="/api")
 app.include_router(page_coach.router, prefix="/api")
 app.include_router(report_audit_tool.router, prefix="/api")
 app.include_router(report_export.router, prefix="/api")
-app.include_router(report_portfolio.router, prefix="/api")
