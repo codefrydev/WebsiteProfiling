@@ -112,7 +112,8 @@ public static class DependencyInjection
             })
             .AddHttpMessageHandler<IdempotentRetryHandler>();
 
-        // Internal Data service (direct-Postgres reads). GET-only cutover, so idempotent retry is safe.
+        // Internal Data service (direct-Postgres reads + issue/portfolio mutations). GET/HEAD retry is safe;
+        // PUT/DELETE are forwarded without retry (IdempotentRetryHandler skips non-idempotent methods).
         services.AddHttpClient(DataClient)
             .ConfigureHttpClient((sp, client) =>
             {

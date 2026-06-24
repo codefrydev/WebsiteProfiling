@@ -21,8 +21,9 @@ public sealed class UpstreamOptions
     public string DataBaseUrl { get; set; } = "http://127.0.0.1:8091";
 
     /// <summary>
-    /// Comma-separated /api path prefixes whose GET requests are routed to the Data service instead of
-    /// FastAPI (env override: DATA_ROUTES). Empty = everything stays on FastAPI (rollback-safe default).
+    /// Comma-separated /api path prefixes routed to the Data service instead of FastAPI
+    /// (env override: DATA_ROUTES). Supports GET/HEAD reads and PUT/DELETE mutations on matched
+    /// prefixes. Empty = everything stays on FastAPI (rollback-safe default).
     /// </summary>
     public string[] DataRoutes { get; set; } = [];
 }

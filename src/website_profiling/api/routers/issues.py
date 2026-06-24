@@ -1,66 +1,11 @@
 """Issues routers — /api/issues/* and /api/ai/*."""
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Any
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
-from psycopg import Connection
-
-from ..deps import get_db
-from website_profiling.db import issue_status_store
+from fastapi import APIRouter, Body, HTTPException
 
 router = APIRouter(tags=["issues"])
-
-DbDep = Annotated[Connection, Depends(get_db)]
-
-
-# ── GET /api/issues/status ────────────────────────────────────────────────────
-
-@router.get("/issues/status")
-def list_issue_status_route(
-    conn: DbDep,
-    propertyId: int = Query(...),
-) -> dict[str, Any]:
-    if not propertyId:
-        raise HTTPException(status_code=400, detail="propertyId required")
-    return {"issues": issue_status_store.list_issue_status(conn, propertyId)}
-
-
-# ── PUT /api/issues/status ────────────────────────────────────────────────────
-
-@router.put("/issues/status")
-def upsert_issue_status_route(
-    conn: DbDep,
-    body: dict[str, Any] = Body(default={}),
-) -> dict[str, Any]:
-    property_id = int(body.get("propertyId") or 0)
-    message = str(body.get("message") or "").strip()
-    status = str(body.get("status") or "")
-
-    if not property_id or not message or not status:
-        raise HTTPException(
-            status_code=400,
-            detail="propertyId, message, and valid status required",
-        )
-
-    report_id = body.get("reportId")
-    try:
-        issue = issue_status_store.upsert_issue_status(
-            conn,
-            property_id=property_id,
-            message=message,
-            status=status,
-            report_id=int(report_id) if report_id is not None else None,
-            url=str(body.get("url") or ""),
-            priority=str(body.get("priority") or "Medium"),
-            category_id=body.get("categoryId") or None,
-            assignee=body.get("assignee") or None,
-            note=body.get("note") or None,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    return {"issue": issue}
 
 
 # ── POST /api/issues/fix-suggestion ──────────────────────────────────────────

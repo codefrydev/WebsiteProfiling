@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Data.Application.Dto.Meta;
+using Data.Application.Dto.Issues;
 using Data.Application.Dto.Portfolio;
 using Data.Application.Dto.Report;
 using Data.Application.Portfolio;
@@ -28,9 +29,11 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
                 services.RemoveAll<IReportRepository>();
                 services.RemoveAll<IPortfolioService>();
                 services.RemoveAll<IPortfolioRepository>();
+                services.RemoveAll<IIssueStatusRepository>();
                 services.AddScoped<IReportRepository, FakeReportRepository>();
                 services.AddScoped<IPortfolioService, FakePortfolioService>();
                 services.AddScoped<IPortfolioRepository, FakePortfolioRepository>();
+                services.AddScoped<IIssueStatusRepository, FakeIssueStatusRepository>();
             });
         });
     }
@@ -176,6 +179,128 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Contains("/api/report/meta", json);
         Assert.Contains("/api/report/portfolio", json);
         Assert.Contains("/api/portfolio/delete", json);
+        Assert.Contains("/api/issues/status", json);
+    }
+
+    [Fact]
+    public async Task Issues_status_list_returns_issues_key()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/api/issues/status?propertyId=1");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(doc.RootElement.TryGetProperty("issues", out var issues));
+        Assert.Equal(JsonValueKind.Array, issues.ValueKind);
+        Assert.Equal(1, issues.GetArrayLength());
+    }
+
+    [Fact]
+    public async Task Issues_status_list_missing_propertyId_returns_400()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/api/issues/status");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("propertyId required", doc.RootElement.GetProperty("detail").GetString());
+    }
+
+    [Fact]
+    public async Task Issues_status_list_zero_propertyId_returns_400()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/api/issues/status?propertyId=0");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("propertyId required", doc.RootElement.GetProperty("detail").GetString());
+    }
+
+    [Fact]
+    public async Task Issues_status_upsert_success_returns_issue()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.PutAsJsonAsync("/api/issues/status", new
+        {
+            propertyId = 1L,
+            message = "Missing meta description",
+            status = "open",
+            url = "https://example.com/page",
+            priority = "Medium",
+        });
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        var issue = doc.RootElement.GetProperty("issue");
+        Assert.Equal(1, issue.GetProperty("propertyId").GetInt64());
+        Assert.Equal("open", issue.GetProperty("status").GetString());
+        Assert.Equal("Missing meta description", issue.GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public async Task Issues_status_upsert_missing_fields_returns_400()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.PutAsJsonAsync("/api/issues/status", new { propertyId = 1L });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal(
+            "propertyId, message, and valid status required",
+            doc.RootElement.GetProperty("detail").GetString());
+    }
+
+    [Fact]
+    public async Task Issues_status_upsert_invalid_status_returns_400()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.PutAsJsonAsync("/api/issues/status", new
+        {
+            propertyId = 1L,
+            message = "x",
+            status = "bogus",
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("invalid status: bogus", doc.RootElement.GetProperty("detail").GetString());
+    }
+
+    private sealed class FakeIssueStatusRepository : IIssueStatusRepository
+    {
+        public Task<IReadOnlyList<IssueStatusRowDto>> ListAsync(int propertyId, CancellationToken cancellationToken) =>
+            Task.FromResult<IReadOnlyList<IssueStatusRowDto>>(
+            [
+                new IssueStatusRowDto
+                {
+                    Id = 1,
+                    PropertyId = propertyId,
+                    Message = "Missing meta description",
+                    Status = "open",
+                    Priority = "Medium",
+                    UpdatedAt = "2024-01-01T00:00:00+00:00",
+                },
+            ]);
+
+        public Task<IssueStatusRowDto> UpsertAsync(
+            UpsertIssueStatusRequest request, CancellationToken cancellationToken)
+        {
+            if (request.Status == "bogus")
+                throw new ArgumentException("invalid status: bogus");
+
+            return Task.FromResult(new IssueStatusRowDto
+            {
+                Id = 1,
+                PropertyId = request.PropertyId,
+                ReportId = request.ReportId,
+                Message = request.Message ?? string.Empty,
+                Status = request.Status ?? string.Empty,
+                Url = request.Url ?? string.Empty,
+                Priority = request.Priority ?? "Medium",
+                UpdatedAt = "2024-01-01T00:00:00+00:00",
+            });
+        }
     }
 
     [Fact]

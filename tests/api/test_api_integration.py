@@ -240,35 +240,6 @@ def test_saved_filters_crud(api_client: TestClient, test_property: dict[str, Any
     assert deleted.json()["ok"] is True
 
 
-def test_issue_status_upsert_and_list(api_client: TestClient, test_property: dict[str, Any]) -> None:
-    property_id = int(test_property["id"])
-
-    empty = api_client.get("/api/issues/status", params={"propertyId": property_id})
-    assert empty.status_code == 200
-    assert isinstance(empty.json()["issues"], list)
-
-    upsert = api_client.put(
-        "/api/issues/status",
-        json={
-            "propertyId": property_id,
-            "message": "Missing meta description",
-            "status": "open",
-            "url": "https://example.com/page",
-            "priority": "Medium",
-        },
-    )
-    assert upsert.status_code == 200
-    issue = upsert.json()["issue"]
-    assert issue["propertyId"] == property_id
-    assert issue["status"] == "open"
-    assert issue["message"] == "Missing meta description"
-
-    listed = api_client.get("/api/issues/status", params={"propertyId": property_id})
-    assert listed.status_code == 200
-    messages = {i["message"] for i in listed.json()["issues"]}
-    assert "Missing meta description" in messages
-
-
 def test_properties_resolve(api_client: TestClient, test_property: dict[str, Any]) -> None:
     res = api_client.get(
         "/api/properties/resolve",

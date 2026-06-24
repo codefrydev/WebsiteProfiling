@@ -176,6 +176,45 @@ public class GatewayTests
     }
 
     [Fact]
+    public async Task Get_issues_status_routes_to_data_service_when_path_in_allowlist()
+    {
+        using var factory = new BffFactory(dataRoutes: "/api/issues");
+        var client = factory.CreateClient();
+        var response = await client.GetAsync("/api/issues/status?propertyId=1");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("\"upstream\":\"data\"", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Put_issues_status_routes_to_data_service_when_path_in_allowlist()
+    {
+        using var factory = new BffFactory(secret: Secret, dataRoutes: "/api/issues");
+        var client = factory.CreateClient();
+        var request = new HttpRequestMessage(HttpMethod.Put, "/api/issues/status")
+        {
+            Content = JsonContent.Create(new
+            {
+                propertyId = 1L,
+                message = "Missing meta description",
+                status = "open",
+            }),
+        };
+        var token = WpSessionTokens.Create("analyst", Secret, DateTimeOffset.UtcNow.ToUnixTimeSeconds(), 604800);
+        request.Headers.Add("Cookie", $"{WpSessionTokens.CookieName}={token}");
+        var response = await client.SendAsync(request);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("\"upstream\":\"data\"", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Put_issues_status_forbidden_for_readonly_role()
+    {
+        using var factory = new BffFactory(secret: Secret, dataRoutes: "/api/issues");
+        var response = await Send(factory, HttpMethod.Put, "/api/issues/status", "client-readonly");
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Get_stays_on_fastapi_when_path_not_in_allowlist()
     {
         using var factory = new BffFactory(dataRoutes: "/api/report/portfolio");

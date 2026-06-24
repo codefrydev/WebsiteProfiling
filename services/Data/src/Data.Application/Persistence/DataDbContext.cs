@@ -16,6 +16,8 @@ public sealed class DataDbContext(DbContextOptions<DataDbContext> options) : DbC
 
     public DbSet<CrawlResult> CrawlResults => Set<CrawlResult>();
 
+    public DbSet<IssueStatus> IssueStatuses => Set<IssueStatus>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ReportPayload>(e =>
@@ -51,6 +53,25 @@ public sealed class DataDbContext(DbContextOptions<DataDbContext> options) : DbC
             e.Property(x => x.Status).HasColumnName("status");
             e.Property(x => x.Title).HasColumnName("title");
             e.Property(x => x.Data).HasColumnName("data").HasColumnType("jsonb");
+        });
+
+        modelBuilder.Entity<IssueStatus>(e =>
+        {
+            e.ToTable("issue_status");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.PropertyId).HasColumnName("property_id");
+            e.Property(x => x.ReportId).HasColumnName("report_id");
+            e.Property(x => x.IssueFingerprint).HasColumnName("issue_fingerprint");
+            e.Property(x => x.CategoryId).HasColumnName("category_id");
+            e.Property(x => x.Message).HasColumnName("message");
+            e.Property(x => x.Url).HasColumnName("url");
+            e.Property(x => x.Priority).HasColumnName("priority");
+            e.Property(x => x.Status).HasColumnName("status");
+            e.Property(x => x.Assignee).HasColumnName("assignee");
+            e.Property(x => x.Note).HasColumnName("note");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
         });
     }
 }

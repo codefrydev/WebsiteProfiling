@@ -90,9 +90,9 @@ services:
       FILE_SERVICE_URL: http://files:8080
       BFF_ALLOWED_ORIGINS: "http://localhost:3000"
       DATA_SERVICE_URL: http://data:8091
-      # Comma-separated /api GET path prefixes served by the Data service instead of FastAPI.
+      # Comma-separated /api path prefixes served by the Data service (reads + issue/portfolio mutations).
       # Rollback: remove a prefix here and restart bff.
-      DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio"
+      DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues"
       # AUTH_SECRET: set to enable wp_session auth (must match the web service)
     depends_on:
       fastapi:
