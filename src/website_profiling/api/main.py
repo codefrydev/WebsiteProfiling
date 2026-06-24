@@ -29,7 +29,6 @@ from .routers import (
     properties,
     report,
     report_audit_tool,
-    report_export,
     schedule,
 )
 
@@ -108,4 +107,3 @@ app.include_router(logs.router, prefix="/api")
 app.include_router(compare.router, prefix="/api")
 app.include_router(page_coach.router, prefix="/api")
 app.include_router(report_audit_tool.router, prefix="/api")
-app.include_router(report_export.router, prefix="/api")

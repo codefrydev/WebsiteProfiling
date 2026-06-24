@@ -114,6 +114,56 @@ public class GatewayTests
     }
 
     [Fact]
+    public async Task Csv_export_routes_to_file_service()
+    {
+        using var factory = new BffFactory();
+        var client = factory.CreateClient();
+        var response = await client.GetAsync("/api/report/export?format=csv&reportId=1");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        // Body echoes the forwarded path → proves the BFF rewrote to the FileService csv route.
+        Assert.Contains("/v1/reports/1/csv", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Json_export_routes_to_file_service()
+    {
+        using var factory = new BffFactory();
+        var client = factory.CreateClient();
+        var response = await client.GetAsync("/api/report/export?format=json&reportId=1");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("/v1/reports/1/json", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Sitemap_export_routes_to_file_service()
+    {
+        using var factory = new BffFactory();
+        var client = factory.CreateClient();
+        var response = await client.GetAsync("/api/report/export-sitemap?reportId=1");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("/v1/reports/1/sitemap", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Export_by_domain_routes_to_file_service()
+    {
+        using var factory = new BffFactory();
+        var client = factory.CreateClient();
+        var response = await client.GetAsync("/api/report/export?format=csv&domain=example.com");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("/v1/reports/by-domain/example.com/csv", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task Unsupported_export_format_returns_400()
+    {
+        using var factory = new BffFactory();
+        var client = factory.CreateClient();
+        var response = await client.GetAsync("/api/report/export?format=xml&reportId=1");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
     public async Task Redirect_location_header_is_passed_through()
     {
         using var factory = new BffFactory();

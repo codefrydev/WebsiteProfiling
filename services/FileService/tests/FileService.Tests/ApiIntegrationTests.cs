@@ -95,6 +95,66 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Report_csv_returns_csv()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/v1/reports/1/csv?disposition=inline");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/csv", response.Content.Headers.ContentType?.MediaType);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("# Site Audit export", body);
+        Assert.Contains("example.com", body);
+    }
+
+    [Fact]
+    public async Task Report_json_returns_payload()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/v1/reports/1/json");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/json", response.Content.Headers.ContentType?.MediaType);
+        using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.Equal("example.com", doc.RootElement.GetProperty("site_name").GetString());
+    }
+
+    [Fact]
+    public async Task Report_sitemap_returns_xml()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/v1/reports/1/sitemap");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("application/xml", response.Content.Headers.ContentType?.MediaType);
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Contains("<urlset", body);
+        Assert.Contains("https://example.com/", body);
+    }
+
+    [Fact]
+    public async Task By_domain_csv_resolves_report()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/v1/reports/by-domain/example.com/csv");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/csv", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public async Task By_domain_json_resolves_report()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/v1/reports/by-domain/example.com/json");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task By_domain_sitemap_resolves_report()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.GetAsync("/v1/reports/by-domain/example.com/sitemap");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
     private sealed class FakeReportDataClient : IReportDataClient
     {
         public Task<IReadOnlyList<ReportListRow>> ListReportsAsync(CancellationToken cancellationToken = default)

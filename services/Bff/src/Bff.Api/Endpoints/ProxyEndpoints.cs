@@ -20,21 +20,23 @@ public static class ProxyEndpoints
             $"/api/chat/{ctx.Request.QueryString}",
             disableResponseBuffering: true));
 
-        // PDF export: FileService when format=pdf, else FastAPI (csv/json). Mirrors proxyToFileService.ts.
+        // Report export: PDF/CSV/JSON are all rendered by the FileService (which reads Postgres
+        // directly). A missing format defaults to csv (matches the old Python default); any other
+        // format is rejected (the Python export route has been removed). Mirrors proxyToFileService.ts.
         app.MapGet("/api/report/export", (HttpContext ctx) =>
         {
-            var format = ctx.Request.Query["format"].ToString();
-            if (string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase))
+            var raw = ctx.Request.Query["format"].ToString();
+            var format = string.IsNullOrEmpty(raw) ? "csv" : raw.ToLowerInvariant();
+            if (format is not ("pdf" or "csv" or "json"))
             {
-                var path = BuildFileServicePdfPath(ctx.Request.Query);
-                return path is null
-                    ? Results.Json(new { error = "reportId or domain required for PDF export" }, statusCode: 400)
-                    : new ForwardingResult(DependencyInjection.FileServiceClient, path, disableResponseBuffering: true);
+                return Results.Json(
+                    new { error = $"Unsupported export format '{format}'. Use pdf, csv, or json." },
+                    statusCode: 400);
             }
-            return new ForwardingResult(
-                DependencyInjection.FastApiStreamClient,
-                $"/api/report/export{ctx.Request.QueryString}",
-                disableResponseBuffering: true);
+            var path = BuildFileServiceReportPath(ctx.Request.Query, format);
+            return path is null
+                ? Results.Json(new { error = "reportId or domain required for export" }, statusCode: 400)
+                : (IResult)new ForwardingResult(DependencyInjection.FileServiceClient, path, disableResponseBuffering: true);
         });
 
         // Excel workbook export -> FileService. Mirrors proxyToFileService.ts.
@@ -43,6 +45,15 @@ public static class ProxyEndpoints
             var path = BuildFileServiceWorkbookPath(ctx.Request.Query);
             return path is null
                 ? Results.Json(new { error = "reportId or domain required for workbook export" }, statusCode: 400)
+                : (IResult)new ForwardingResult(DependencyInjection.FileServiceClient, path, disableResponseBuffering: true);
+        });
+
+        // Sitemap export -> FileService (was Python via the catch-all; now rendered from Postgres).
+        app.MapGet("/api/report/export-sitemap", (HttpContext ctx) =>
+        {
+            var path = BuildFileServiceReportPath(ctx.Request.Query, "sitemap");
+            return path is null
+                ? Results.Json(new { error = "reportId or domain required for sitemap export" }, statusCode: 400)
                 : (IResult)new ForwardingResult(DependencyInjection.FileServiceClient, path, disableResponseBuffering: true);
         });
 
@@ -78,22 +89,33 @@ public static class ProxyEndpoints
         });
     }
 
-    private static string? BuildFileServicePdfPath(IQueryCollection query)
+    // Builds the FileService path for a report export. pdf carries profile/branding; csv/json/sitemap
+    // only need disposition. Returns null when neither reportId nor domain is supplied.
+    private static string? BuildFileServiceReportPath(IQueryCollection query, string format)
     {
         var reportId = query["reportId"].ToString();
         var domain = query["domain"].ToString();
-        var profile = Defaulted(query["profile"].ToString(), "standard");
         var disposition = Defaulted(query["disposition"].ToString(), "attachment");
-        var branding = Defaulted(query["branding"].ToString(), "true");
-        var qs = $"?profile={Uri.EscapeDataString(profile)}&disposition={Uri.EscapeDataString(disposition)}&branding={Uri.EscapeDataString(branding)}";
+
+        string qs;
+        if (format == "pdf")
+        {
+            var profile = Defaulted(query["profile"].ToString(), "standard");
+            var branding = Defaulted(query["branding"].ToString(), "true");
+            qs = $"?profile={Uri.EscapeDataString(profile)}&disposition={Uri.EscapeDataString(disposition)}&branding={Uri.EscapeDataString(branding)}";
+        }
+        else
+        {
+            qs = $"?disposition={Uri.EscapeDataString(disposition)}";
+        }
 
         if (!string.IsNullOrEmpty(reportId))
         {
-            return $"/v1/reports/{Uri.EscapeDataString(reportId)}/pdf{qs}";
+            return $"/v1/reports/{Uri.EscapeDataString(reportId)}/{format}{qs}";
         }
         if (!string.IsNullOrEmpty(domain))
         {
-            return $"/v1/reports/by-domain/{Uri.EscapeDataString(domain)}/pdf{qs}";
+            return $"/v1/reports/by-domain/{Uri.EscapeDataString(domain)}/{format}{qs}";
         }
         return null;
     }

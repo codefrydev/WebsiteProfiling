@@ -1,8 +1,9 @@
 namespace FileService.Application.Options;
 
 /// <summary>
-/// HTTP base URL for the Site Audit report API (JSON payload, meta, app-settings).
-/// FileService is not tied to any specific backend framework — only this HTTP contract.
+/// HTTP base URL for the Site Audit app-settings / branding API (used by <c>AppSettingsClient</c>).
+/// Report <em>payloads</em> are no longer fetched over HTTP — they are read directly from Postgres
+/// (see <c>DbReportDataClient</c> / <c>DatabaseOptions</c>).
 /// </summary>
 public sealed class ReportApiOptions
 {
