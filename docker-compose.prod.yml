@@ -48,20 +48,46 @@ services:
         condition: service_started
       postgres:
         condition: service_healthy
+      files:
+        condition: service_started
     environment:
       WP_ROLE: worker
       WEBSITE_PROFILING_ROOT: /app
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
       DATA_DIR: /data
+      PYTHON: /opt/venv/bin/python
+      CHROME_PATH: /usr/bin/chromium
+      LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
+      LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
+      FILE_SERVICE_URL: http://files:8080
     volumes:
       - profiling-data:/data
+
+  data:
+    build:
+      context: ./services/Data
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
+      ASPNETCORE_URLS: http://+:8091
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:8091/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
   files:
     build:
       context: ./services/FileService
     environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
       REPORT_API_URL: http://fastapi:8001
     depends_on:
+      postgres:
+        condition: service_healthy
       fastapi:
         condition: service_started
 
@@ -73,11 +99,15 @@ services:
         condition: service_started
       files:
         condition: service_started
+      data:
+        condition: service_healthy
     ports:
       - '${BFF_PORT:-8090}:8090'
     environment:
       FASTAPI_URL: http://fastapi:8001
       FILE_SERVICE_URL: http://files:8080
+      DATA_SERVICE_URL: http://data:8091
+      DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters"
       AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET}
       AUTH_PASSWORD: ${AUTH_PASSWORD:-}
       BFF_ALLOWED_ORIGINS: ${BFF_ALLOWED_ORIGINS:?set BFF_ALLOWED_ORIGINS (the public UI origin)}

@@ -49,6 +49,8 @@ services:
         condition: service_started
       postgres:
         condition: service_healthy
+      files:
+        condition: service_started
     environment:
       WP_ROLE: worker
       WEBSITE_PROFILING_ROOT: /app
@@ -58,6 +60,7 @@ services:
       CHROME_PATH: /usr/bin/chromium
       LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
       LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
+      FILE_SERVICE_URL: http://files:8080
     volumes:
       - profiling-data:/data
 
@@ -100,7 +103,7 @@ services:
       files:
         condition: service_started
       data:
-        condition: service_started
+        condition: service_healthy
 
   # Vite SPA (nginx). The browser calls the BFF (:8090) for all /api/*.
   web:
@@ -125,8 +128,11 @@ services:
     build:
       context: ./services/FileService
     environment:
+      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
       REPORT_API_URL: http://fastapi:8001
     depends_on:
+      postgres:
+        condition: service_healthy
       fastapi:
         condition: service_started
 

@@ -34,6 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     WEBSITE_PROFILING_ROOT=/app \
+    PYTHONPATH=/app/src \
     DATA_DIR=/data \
     PYTHON=/opt/venv/bin/python \
     CHROME_PATH=/usr/bin/chromium \

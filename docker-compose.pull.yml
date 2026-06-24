@@ -1,4 +1,4 @@
-# Run pre-built backend image + Vite web image with Postgres (no monolith UI).
+# Run pre-built backend + web images with the full split topology (CI / smoke).
 # Usage:
 #   docker build -t website-profiling:ci .
 #   docker build -t website-profiling-web:ci ./web --build-arg VITE_BFF_BASE_URL=http://localhost:8090
@@ -33,6 +33,7 @@ services:
       CHROME_PATH: /usr/bin/chromium
       LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
       LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
+      FASTAPI_ALLOWED_ORIGINS: "http://localhost:8090"
     volumes:
       - profiling-data:/data
     healthcheck:
@@ -42,15 +43,39 @@ services:
       retries: 3
       start_period: 30s
 
-  web:
-    image: ${WEB_IMAGE:-website-profiling-web:latest}
+  worker:
+    image: ${BACKEND_IMAGE:-website-profiling:latest}
     depends_on:
       fastapi:
+        condition: service_started
+      postgres:
         condition: service_healthy
-    ports:
-      - "3000:80"
+      files:
+        condition: service_started
+    environment:
+      WP_ROLE: worker
+      WEBSITE_PROFILING_ROOT: /app
+      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
+      DATA_DIR: /data
+      PYTHON: /opt/venv/bin/python
+      CHROME_PATH: /usr/bin/chromium
+      LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
+      LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
+      FILE_SERVICE_URL: http://files:8080
+    volumes:
+      - profiling-data:/data
+
+  data:
+    build:
+      context: ./services/Data
+    environment:
+      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
+      ASPNETCORE_URLS: http://+:8091
+    depends_on:
+      postgres:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/home"]
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8091/health"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -60,10 +85,46 @@ services:
     build:
       context: ./services/FileService
     environment:
+      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
       REPORT_API_URL: http://fastapi:8001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      fastapi:
+        condition: service_started
+
+  bff:
+    build:
+      context: ./services/Bff
+    ports:
+      - "8090:8090"
+    environment:
+      FASTAPI_URL: http://fastapi:8001
+      FILE_SERVICE_URL: http://files:8080
+      DATA_SERVICE_URL: http://data:8091
+      BFF_ALLOWED_ORIGINS: "http://localhost:3000"
+      DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters"
     depends_on:
       fastapi:
         condition: service_started
+      files:
+        condition: service_started
+      data:
+        condition: service_healthy
+
+  web:
+    image: ${WEB_IMAGE:-website-profiling-web:latest}
+    depends_on:
+      bff:
+        condition: service_started
+    ports:
+      - "3000:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/home"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
 volumes:
   pg-data:
