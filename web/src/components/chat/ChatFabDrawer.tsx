@@ -8,6 +8,7 @@ import ChatComposer from '@/components/chat/ChatComposer';
 import ChatMarkdown from '@/components/chat/ChatMarkdown';
 import ChatModelPicker from '@/components/chat/ChatModelPicker';
 import ChatProviderPicker from '@/components/chat/ChatProviderPicker';
+import ChatApiKeyBanner from '@/components/chat/ChatApiKeyBanner';
 import { usePipeline } from '@/context/PipelineContext';
 import { isLlmInsightsEnabled } from '@/lib/llmConfigSchema';
 import { resolveChatAssistantName } from '@/lib/chatAssistantBranding';
@@ -27,12 +28,15 @@ interface ChatFabDrawerProps {
 }
 
 export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerProps) {
-  const { llmConfigState } = usePipeline();
+  const { llmConfigState, llmApiKeyConfigured, configLoaded } = usePipeline();
   const { messages, busy, propertyName, resolving, sendMessage, reset, openFullChat } =
     useChatFabPopup(domain);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   const llmEnabled = isLlmInsightsEnabled(llmConfigState);
+  const llmProvider = String(llmConfigState.llm_provider || 'none');
+  const needsApiKey =
+    llmEnabled && configLoaded && !llmApiKeyConfigured && llmProvider !== 'none' && llmProvider !== 'ollama';
   const assistantName = resolveChatAssistantName(
     String(llmConfigState.llm_chat_assistant_name || ''),
   );
@@ -156,6 +160,7 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
           {/* Empty state */}
           {isEmpty && (
             <div className="flex flex-col gap-4">
+              {needsApiKey ? <ChatApiKeyBanner provider={llmProvider} compact /> : null}
               <p className="text-center text-[12px] text-muted-foreground pt-2">
                 {domain ? `Ask anything about ${domain}` : c.emptyHint}
               </p>
@@ -165,7 +170,7 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
                     key={prompt}
                     type="button"
                     onClick={() => sendMessage(prompt)}
-                    disabled={busy}
+                    disabled={busy || needsApiKey}
                     className="rounded-xl border border-default/60 bg-[var(--chat-surface)]/30 px-3 py-2.5 text-left text-[12px] text-muted-foreground transition-all hover:border-[var(--accent-border)] hover:bg-[var(--chat-surface)]/70 hover:text-foreground disabled:opacity-40"
                   >
                     {prompt}
@@ -250,7 +255,12 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
 
         {/* ── Composer ─────────────────────────────────────── */}
         <div className="shrink-0 border-t border-default/50">
-          <ChatComposer onSend={sendMessage} busy={busy} variant="compact" placeholder="Ask me anything…" />
+          {needsApiKey && !isEmpty ? (
+            <div className="px-4 pt-3">
+              <ChatApiKeyBanner provider={llmProvider} compact />
+            </div>
+          ) : null}
+          <ChatComposer onSend={sendMessage} busy={busy} variant="compact" placeholder="Ask me anything…" disabled={needsApiKey} />
         </div>
       </div>
     </div>

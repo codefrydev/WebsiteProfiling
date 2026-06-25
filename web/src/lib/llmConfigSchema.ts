@@ -3,6 +3,8 @@
  * Not part of audit settings files or CLI --config.
  */
 import type { LlmConfigState } from '@/types/api';
+import { isLlmProviderApiKeyField } from '@/lib/llmProviderApiKeys';
+import { backfillProviderModelsFromActive, isLlmProviderModelField } from '@/lib/llmProviderModels';
 
 export const LLM_CONFIG_SECTIONS = [
   {
@@ -223,6 +225,16 @@ export function normalizeLlmConfigState(raw: LlmConfigState): LlmConfigState {
       }
     }
   }
+
+  const parsedMap: Record<string, string> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (value === undefined || value === null) continue;
+    parsedMap[key] = String(value);
+    if (isLlmProviderApiKeyField(key) || isLlmProviderModelField(key)) {
+      out[key] = String(value ?? '');
+    }
+  }
+  backfillProviderModelsFromActive(parsedMap, out);
   return out;
 }
 

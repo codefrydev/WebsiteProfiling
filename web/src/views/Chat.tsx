@@ -17,6 +17,7 @@ import SuggestedPrompts from '@/components/chat/SuggestedPrompts';
 import ChatModelPicker from '@/components/chat/ChatModelPicker';
 import ChatProviderPicker from '@/components/chat/ChatProviderPicker';
 import ChatUnlimitedToolsToggle from '@/components/chat/ChatUnlimitedToolsToggle';
+import ChatApiKeyBanner from '@/components/chat/ChatApiKeyBanner';
 import ChatActivityBar from '@/components/chat/ChatActivityBar';
 import { ChatFollowUpProvider } from '@/components/chat/ChatFollowUpContext';
 import { usePipeline } from '@/context/PipelineContext';
@@ -65,7 +66,7 @@ export default function ChatPage() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
-  const { configState, configLoaded, llmConfigState } = usePipeline();
+  const { configState, configLoaded, llmConfigState, llmApiKeyConfigured } = usePipeline();
   const initialUrlCtx = parseChatUrlContext(searchParams);
   const [properties, setProperties] = useState<PropertyOption[]>([]);
   const [propertyId, setPropertyId] = useState<number | null>(initialUrlCtx.propertyId);
@@ -108,6 +109,9 @@ export default function ChatPage() {
   }, []);
 
   const llmEnabled = isLlmInsightsEnabled(llmConfigState);
+  const llmProvider = String(llmConfigState.llm_provider || 'none');
+  const needsApiKey =
+    llmEnabled && configLoaded && !llmApiKeyConfigured && llmProvider !== 'none' && llmProvider !== 'ollama';
 
   const crawlChatEnabled = parseLlmBool(llmConfigState.llm_chat_allow_crawl);
 
@@ -603,7 +607,7 @@ export default function ChatPage() {
 
   const composer = (
     <ChatComposer
-      disabled={!llmEnabled || !propertyId}
+      disabled={!llmEnabled || !propertyId || needsApiKey}
       busy={busy}
       onSend={(msg) => void handleSend(msg)}
       trailing={modelPicker}
@@ -612,6 +616,12 @@ export default function ChatPage() {
       onDraftApplied={() => setComposerDraft('')}
     />
   );
+
+  const apiKeyStrip = needsApiKey ? (
+    <div className="mx-auto w-full max-w-3xl px-4 pb-2">
+      <ChatApiKeyBanner provider={llmProvider} />
+    </div>
+  ) : null;
 
   const errorStrip = error ? (
     <div
@@ -686,10 +696,13 @@ export default function ChatPage() {
                 <p className="mt-3 max-w-md text-center text-sm text-muted-foreground">
                   {c.emptySubline}
                 </p>
-                <div className="mt-10 w-full">{composer}</div>
+                <div className="mt-10 w-full space-y-3">
+                  {apiKeyStrip}
+                  {composer}
+                </div>
                 <SuggestedPrompts
                   onSelect={(p) => void handleSend(p)}
-                  disabled={busy || !propertyId}
+                  disabled={busy || !propertyId || needsApiKey}
                   crawlEnabled={crawlChatEnabled}
                 />
               </div>
@@ -705,6 +718,7 @@ export default function ChatPage() {
               )}
               <div className="chat-composer-dock">
                 <ChatActivityBar busy={busy} statusText={activityText} elapsedSec={elapsedSec} />
+                {apiKeyStrip}
                 {errorStrip}
                 {composer}
               </div>

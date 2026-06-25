@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   llmProviderApiKeyField,
   resolveLlmApiKey,
+  isLlmApiKeyConfigured,
 } from '@/lib/llmProviderApiKeys';
 
 describe('resolveLlmApiKey', () => {
@@ -24,13 +25,34 @@ describe('resolveLlmApiKey', () => {
     ).toBe('sk-legacy');
   });
 
-  it('ignores masked values', () => {
+  it('ignores masked values for resolution', () => {
     expect(
       resolveLlmApiKey({
         llm_provider: 'openai',
         llm_api_key_openai: '••••cdef',
       }),
     ).toBe('');
+  });
+
+  it('treats masked DB values as configured', () => {
+    expect(
+      isLlmApiKeyConfigured({
+        llm_provider: 'groq',
+        llm_api_key_groq: '*',
+      }),
+    ).toBe(true);
+  });
+
+  it('reports missing key for cloud provider without stored value', () => {
+    expect(
+      isLlmApiKeyConfigured({
+        llm_provider: 'groq',
+      }),
+    ).toBe(false);
+  });
+
+  it('treats ollama as not needing an API key', () => {
+    expect(isLlmApiKeyConfigured({ llm_provider: 'ollama' })).toBe(true);
   });
 });
 

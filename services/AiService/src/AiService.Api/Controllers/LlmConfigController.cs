@@ -1,5 +1,7 @@
 using System.Text.Json.Nodes;
+using AiService.Application.Repositories;
 using AiService.Domain.Repositories;
+using AiService.Providers.Chat;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AiService.Api.Controllers;
@@ -25,7 +27,13 @@ public sealed class LlmConfigController : ControllerBase
             state[row.Key] = row.Value;
         }
 
-        return Ok(new { state, source = "db" });
+        var resolved = await _config.LoadAsync(cancellationToken);
+        return Ok(new
+        {
+            state,
+            source = "db",
+            apiKeyConfigured = IsApiKeyConfigured(resolved),
+        });
     }
 
     [HttpPut("")]
@@ -33,13 +41,25 @@ public sealed class LlmConfigController : ControllerBase
     public async Task<IActionResult> Put([FromBody] JsonObject body, CancellationToken cancellationToken)
     {
         var state = body["state"] as JsonObject ?? [];
-        var entries = new Dictionary<string, string>(StringComparer.Ordinal);
-        foreach (var prop in state)
+        var entries = LlmConfigPutHelpers.ParsePutEntries(state);
+        await _config.SaveAsync(entries, cancellationToken);
+        var resolved = await _config.LoadAsync(cancellationToken);
+        return Ok(new { ok = true, apiKeyConfigured = IsApiKeyConfigured(resolved) });
+    }
+
+    private static bool IsApiKeyConfigured(IReadOnlyDictionary<string, string> cfg)
+    {
+        var provider = (cfg.GetValueOrDefault("llm_provider") ?? "none").Trim().ToLowerInvariant();
+        if (provider is "" or "none")
         {
-            entries[prop.Key] = prop.Value?.ToString() ?? "";
+            return false;
         }
 
-        await _config.SaveAsync(entries, cancellationToken);
-        return Ok(new { ok = true });
+        if (provider == "ollama")
+        {
+            return true;
+        }
+
+        return !string.IsNullOrWhiteSpace(LlmConfigHelpers.ResolveApiKey(cfg));
     }
 }

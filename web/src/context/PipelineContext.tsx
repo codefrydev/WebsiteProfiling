@@ -30,6 +30,7 @@ import {
   validateRequiredPipelineFields,
 } from '@/lib/pipelineConfigSchema';
 import { buildInitialLlmConfigState, normalizeLlmConfigState } from '@/lib/llmConfigSchema';
+import { isLlmProviderApiKeyField } from '@/lib/llmProviderApiKeys';
 import { resolvePipelineRunState } from '@/lib/pipelineRunPreview';
 import { applyLlmModelChange, applyLlmProviderChange } from '@/lib/llmProviderModels';
 import {
@@ -51,6 +52,8 @@ export interface PipelineContextValue {
   customCommand: string;
   configState: PipelineConfigState;
   llmConfigState: LlmConfigState;
+  /** Server truth: active cloud provider has API key in DB or env (from GET /llm-config). */
+  llmApiKeyConfigured: boolean;
   unknownKeys: PipelineUnknownKey[];
   configSource: PipelineConfigSource | null;
   legacyBannerDismissed: boolean;
@@ -117,6 +120,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
   const [customCommand, setCustomCommand] = useState('');
   const [configState, setConfigState] = useState(buildInitialPipelineConfigState);
   const [llmConfigState, setLlmConfigState] = useState(buildInitialLlmConfigState);
+  const [llmApiKeyConfigured, setLlmApiKeyConfigured] = useState(false);
   const [llmConfigMasked, setLlmConfigMasked] = useState<Record<string, boolean>>({});
   const [unknownKeys, setUnknownKeys] = useState<PipelineUnknownKey[]>([]);
   const [configPath, setConfigPath] = useState('');
@@ -289,13 +293,21 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       setConfigSource(data.source || 'defaults');
       if (llmRes.ok && llmData.state) {
         setLlmConfigState(normalizeLlmConfigState(llmData.state as LlmConfigState));
+        setLlmApiKeyConfigured(Boolean(llmData.apiKeyConfigured));
         const masked: Record<string, boolean> = {};
         for (const [k, v] of Object.entries(llmData.state as Record<string, unknown>)) {
-          if (k.endsWith('_masked')) masked[k] = Boolean(v);
+          if (k.endsWith('_masked')) {
+            masked[k] = Boolean(v);
+            continue;
+          }
+          if (isLlmProviderApiKeyField(k) && String(v ?? '').trim() === '*') {
+            masked[`${k}_masked`] = true;
+          }
         }
         setLlmConfigMasked(masked);
       } else {
         setLlmConfigState(buildInitialLlmConfigState());
+        setLlmApiKeyConfigured(false);
         setLlmConfigMasked({});
       }
       setLegacyBannerDismissed(false);
@@ -304,6 +316,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       setLoadError(e instanceof Error ? e.message : String(e));
       setConfigState(buildInitialPipelineConfigState());
       setLlmConfigState(buildInitialLlmConfigState());
+      setLlmApiKeyConfigured(false);
       setConfigLoaded(true);
     } finally {
       setLoading(false);
@@ -315,6 +328,14 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       void loadConfig();
     }
   }, [configLoaded, loadConfig]);
+
+  useEffect(() => {
+    const onLlmConfigChanged = () => {
+      void loadConfig();
+    };
+    window.addEventListener('llm-config-changed', onLlmConfigChanged);
+    return () => window.removeEventListener('llm-config-changed', onLlmConfigChanged);
+  }, [loadConfig]);
 
   /** Resume polling the active DB-backed job after refresh or server restart. */
   useEffect(() => {
@@ -474,6 +495,9 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       });
       const llmData = await llmRes.json().catch(() => ({}));
       if (!llmRes.ok) throw new Error(llmData.error || llmRes.statusText);
+      if (typeof llmData.apiKeyConfigured === 'boolean') {
+        setLlmApiKeyConfigured(llmData.apiKeyConfigured);
+      }
       setConfigPath(data.configPath || data.dbPath || configPath);
       setConfigSource('store');
       setSaveMsg(s.saved);
@@ -505,6 +529,9 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || res.statusText);
+        if (typeof data.apiKeyConfigured === 'boolean') {
+          setLlmApiKeyConfigured(data.apiKeyConfigured);
+        }
         return true;
       } catch {
         return false;
@@ -532,6 +559,9 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || res.statusText);
+        if (typeof data.apiKeyConfigured === 'boolean') {
+          setLlmApiKeyConfigured(data.apiKeyConfigured);
+        }
         return true;
       } catch {
         return false;
@@ -556,6 +586,9 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || res.statusText);
+        if (typeof data.apiKeyConfigured === 'boolean') {
+          setLlmApiKeyConfigured(data.apiKeyConfigured);
+        }
         return true;
       } catch {
         return false;
@@ -600,6 +633,9 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       });
       const llmData = await llmRes.json().catch(() => ({}));
       if (!llmRes.ok) throw new Error(llmData.error || llmRes.statusText);
+      if (typeof llmData.apiKeyConfigured === 'boolean') {
+        setLlmApiKeyConfigured(llmData.apiKeyConfigured);
+      }
 
       const res = await apiFetch(apiUrl('/run'), {
         method: 'POST',
@@ -691,6 +727,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       customCommand,
       configState,
       llmConfigState,
+      llmApiKeyConfigured,
       unknownKeys,
       configSource,
       legacyBannerDismissed,
@@ -739,6 +776,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       customCommand,
       configState,
       llmConfigState,
+      llmApiKeyConfigured,
       unknownKeys,
       configSource,
       legacyBannerDismissed,
