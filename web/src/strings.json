@@ -39,7 +39,7 @@
       },
       "healthScore": {
         "title": "Site health",
-        "body": "Score from 0–100 based on issue category weights in this audit. Higher is better. Reflects technical SEO health, not Google rankings."
+        "body": "Score from 0-100 averaged across this audit's category scores. Higher is better. Mainly reflects technical SEO health; also includes real Search Console performance (rankings, CTR, trends) when Google is connected."
       },
       "impactScore": {
         "title": "Impact score",

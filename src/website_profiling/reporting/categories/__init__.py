@@ -14,6 +14,7 @@ from .performance import (
     category_core_web_vitals_from_lighthouse,
     category_performance,
 )
+from .search_performance import category_search_performance
 from .security import category_security
 from .technical_seo import category_technical_seo
 from ._helpers import (
@@ -53,6 +54,7 @@ __all__ = [
     "category_mobile",
     "category_security",
     "category_intelligence",
+    "category_search_performance",
     "_issue",
     "_sort_issues",
     "_page_analysis_dict",

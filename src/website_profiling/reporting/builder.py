@@ -589,6 +589,14 @@ def run_simple_report(
                     report_data.get("categories") or [],
                     google_data,
                 )
+                # Add a category scored from real Search Console performance.
+                # Returns None when there is no GSC search data, so the headline
+                # health average stays internal-only when Google isn't connected.
+                from .categories import category_search_performance
+
+                sp = category_search_performance(google_data.get("gsc"))
+                if sp is not None:
+                    report_data.setdefault("categories", []).append(sp)
         except Exception:
             pass
         try:
