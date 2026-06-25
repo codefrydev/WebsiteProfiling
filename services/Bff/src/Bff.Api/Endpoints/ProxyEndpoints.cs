@@ -76,6 +76,7 @@ public static class ProxyEndpoints
             var upstream = ctx.RequestServices.GetRequiredService<IOptions<UpstreamOptions>>().Value;
             var matchesDataRoute = upstream.DataRoutes.Any(prefix =>
                 path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+            var matchesIntegrationsRoute = MatchesIntegrationsRoute(path, upstream.IntegrationsRoutes);
             var matchesAiRoute = upstream.AiRoutes.Any(prefix =>
                 path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
             var toData = !streaming
@@ -85,8 +86,18 @@ public static class ProxyEndpoints
                     || HttpMethods.IsPost(ctx.Request.Method)
                     || HttpMethods.IsPut(ctx.Request.Method)
                     || HttpMethods.IsDelete(ctx.Request.Method));
+            var toIntegrations = !streaming
+                && !toData
+                && matchesIntegrationsRoute
+                && (HttpMethods.IsGet(ctx.Request.Method)
+                    || HttpMethods.IsHead(ctx.Request.Method)
+                    || HttpMethods.IsPost(ctx.Request.Method)
+                    || HttpMethods.IsPut(ctx.Request.Method)
+                    || HttpMethods.IsPatch(ctx.Request.Method)
+                    || HttpMethods.IsDelete(ctx.Request.Method));
             var toAi = !streaming
                 && !toData
+                && !toIntegrations
                 && matchesAiRoute
                 && (HttpMethods.IsGet(ctx.Request.Method)
                     || HttpMethods.IsHead(ctx.Request.Method)
@@ -96,9 +107,11 @@ public static class ProxyEndpoints
 
             var client = toData
                 ? DependencyInjection.DataClient
-                : toAi
-                    ? DependencyInjection.AiClient
-                    : streaming ? DependencyInjection.FastApiStreamClient : DependencyInjection.FastApiClient;
+                : toIntegrations
+                    ? DependencyInjection.IntegrationsClient
+                    : toAi
+                        ? DependencyInjection.AiClient
+                        : streaming ? DependencyInjection.FastApiStreamClient : DependencyInjection.FastApiClient;
 
             return (IResult)new ForwardingResult(
                 client,
@@ -158,4 +171,38 @@ public static class ProxyEndpoints
 
     private static string Defaulted(string value, string fallback) =>
         string.IsNullOrEmpty(value) ? fallback : value;
+
+    private static readonly string[] IntegrationsFastApiFallbackPaths =
+    [
+        "/api/integrations/google/credentials",
+        "/api/integrations/google/keywords/expand",
+        "/api/integrations/google/keywords/planner",
+    ];
+
+    private static bool MatchesIntegrationsRoute(string path, string[] routes)
+    {
+        if (routes.Length == 0)
+        {
+            return false;
+        }
+
+        foreach (var fallback in IntegrationsFastApiFallbackPaths)
+        {
+            if (path.StartsWith(fallback, StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+        }
+
+        foreach (var prefix in routes)
+        {
+            if (path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return path.StartsWith("/api/properties/", StringComparison.OrdinalIgnoreCase)
+            && path.Contains("/google", StringComparison.OrdinalIgnoreCase);
+    }
 }

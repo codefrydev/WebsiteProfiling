@@ -21,6 +21,9 @@ public static class DependencyInjection
     /// <summary>Named HttpClient for the internal Ai service — idempotent retry.</summary>
     public const string AiClient = "ai";
 
+    /// <summary>Named HttpClient for the internal Integrations service — idempotent retry.</summary>
+    public const string IntegrationsClient = "integrations";
+
     /// <summary>Named HttpClient for Ai service streaming (chat SSE) — no retry/buffering.</summary>
     public const string AiStreamClient = "ai-stream";
 
@@ -60,6 +63,17 @@ public static class DependencyInjection
                 if (!string.IsNullOrWhiteSpace(aiRoutes))
                 {
                     o.AiRoutes = aiRoutes
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                }
+                var integrations = Environment.GetEnvironmentVariable("INTEGRATIONS_SERVICE_URL");
+                if (!string.IsNullOrWhiteSpace(integrations))
+                {
+                    o.IntegrationsBaseUrl = integrations.Trim();
+                }
+                var integrationsRoutes = Environment.GetEnvironmentVariable("INTEGRATIONS_ROUTES");
+                if (!string.IsNullOrWhiteSpace(integrationsRoutes))
+                {
+                    o.IntegrationsRoutes = integrationsRoutes
                         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 }
             });
@@ -145,6 +159,15 @@ public static class DependencyInjection
             {
                 var opts = GetUpstream(sp);
                 client.BaseAddress = NormalizeBase(opts.AiBaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(Math.Max(5, opts.TimeoutSeconds));
+            })
+            .AddHttpMessageHandler<IdempotentRetryHandler>();
+
+        services.AddHttpClient(IntegrationsClient)
+            .ConfigureHttpClient((sp, client) =>
+            {
+                var opts = GetUpstream(sp);
+                client.BaseAddress = NormalizeBase(opts.IntegrationsBaseUrl);
                 client.Timeout = TimeSpan.FromSeconds(Math.Max(5, opts.TimeoutSeconds));
             })
             .AddHttpMessageHandler<IdempotentRetryHandler>();

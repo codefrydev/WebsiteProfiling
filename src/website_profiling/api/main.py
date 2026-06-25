@@ -17,6 +17,7 @@ from .routers import (
     dashboards,
     health,
     integrations,
+    internal_integrations,
     keywords,
     logs,
     page_markdown,
@@ -74,6 +75,7 @@ app.include_router(config.router, prefix="/api")
 app.include_router(properties.router, prefix="/api")
 app.include_router(dashboards.router, prefix="/api")
 app.include_router(integrations.router, prefix="/api")
+app.include_router(internal_integrations.router)
 app.include_router(keywords.router, prefix="/api")
 app.include_router(content.router, prefix="/api")
 app.include_router(page_markdown.router, prefix="/api")

@@ -33,6 +33,7 @@ services:
       LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
       LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
       FASTAPI_ALLOWED_ORIGINS: "http://localhost:8090"
+      DEPRECATE_PYTHON_INTEGRATIONS: "1"
     volumes:
       - profiling-data:/data
     healthcheck:
@@ -62,6 +63,7 @@ services:
       LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
       FILE_SERVICE_URL: http://files:8080
       AI_SERVICE_URL: http://ai:8092
+      INTEGRATIONS_SERVICE_URL: http://integrations:8093
     volumes:
       - profiling-data:/data
 
@@ -103,6 +105,29 @@ services:
       retries: 3
       start_period: 20s
 
+  integrations:
+    build:
+      context: ./services/IntegrationsService
+    environment:
+      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
+      ASPNETCORE_URLS: http://+:8093
+      FASTAPI_URL: http://fastapi:8001
+      USE_FASTAPI_PYTHON_BRIDGE: "1"
+      AUTH_SECRET: ${AUTH_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:8090/api/integrations/google/callback}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:3000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      fastapi:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8093/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
   # .NET BFF — the single browser-facing API surface (owns auth + CORS).
   bff:
     build:
@@ -115,9 +140,11 @@ services:
       BFF_ALLOWED_ORIGINS: "http://localhost:3000"
       DATA_SERVICE_URL: http://data:8091
       AI_SERVICE_URL: http://ai:8092
-      BFF_ALLOWED_ORIGINS: "http://localhost:3000"
+      INTEGRATIONS_SERVICE_URL: http://integrations:8093
+      AUTH_SECRET: ${AUTH_SECRET:-}
       DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters"
       AI_ROUTES: "/api/chat,/api/links/page-coach,/api/issues/fix-suggestion,/api/issues/action-plan,/api/ai/fix-suggestion,/api/dashboards/ai-generate,/api/content/analyze,/api/content/wizard,/api/llm-config,/api/secrets,/api/ollama/status,/api/report/audit-tool,/api/mcp-tools"
+      INTEGRATIONS_ROUTES: "/api/integrations/google,/api/integrations/bing"
     depends_on:
       fastapi:
         condition: service_started
@@ -126,6 +153,8 @@ services:
       data:
         condition: service_healthy
       ai:
+        condition: service_healthy
+      integrations:
         condition: service_healthy
 
   # Vite SPA (nginx). The browser calls the BFF (:8090) for all /api/*.

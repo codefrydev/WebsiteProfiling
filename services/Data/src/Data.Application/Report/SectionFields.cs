@@ -23,6 +23,7 @@ public static class SectionFields
                 "outbound_link_domains", "outlink_labels", "outlink_counts",
             ],
             ["traffic"] = ["google"],
+            ["gsc-detail"] = [],
             ["keywords"] =
             [
                 "keywords", "keyword_opportunities", "competitor_keyword_gap",

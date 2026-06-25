@@ -12,6 +12,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+# shellcheck source=scripts/local-run-common.sh
+source "$ROOT/scripts/local-run-common.sh"
 
 PG_CONTAINER="${WP_PG_CONTAINER:-wp-pg}"
 PG_IMAGE="${WP_PG_IMAGE:-postgres:16-alpine}"
@@ -32,19 +34,6 @@ WEB="$ROOT/web"
 log() { printf '\033[1;36m→\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33m!\033[0m %s\n' "$*" >&2; }
 die() { printf '\033[1;31m✗\033[0m %s\n' "$*" >&2; exit 1; }
-
-# Kill any process still listening on a TCP port (stale dev servers after Ctrl+C).
-free_port() {
-  local port="$1"
-  local pids
-  pids="$(lsof -nP -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)"
-  if [[ -n "$pids" ]]; then
-    warn "Stopping stale listener on port $port (PID(s): ${pids//$'\n'/ })"
-    # shellcheck disable=SC2086
-    kill $pids 2>/dev/null || true
-    sleep 0.3
-  fi
-}
 
 # Send signal to a process and its descendants (dotnet/npm subshell trees).
 kill_process_tree() {
@@ -122,7 +111,7 @@ wait_for_postgres() {
   die "Postgres did not become ready in time (container: $PG_CONTAINER)"
 }
 
-wait_for_http() {
+wait_for_http_logged() {
   local url="$1"
   local label="$2"
   local timeout="${3:-90}"
@@ -228,6 +217,7 @@ cmd_start() {
   DATA_PID=""
   AI_PID=""
   BFF_PID=""
+  INTEGRATIONS_PID=""
   _CLEANUP_DONE=0
   set +m
 
@@ -241,18 +231,13 @@ cmd_start() {
 
     log "Shutting down local dev stack..."
     # Reverse startup order; Vite (foreground) is already exiting from Ctrl+C.
-    stop_service "BFF" "$BFF_PID" 8090
-    BFF_PID=""
-    stop_service "AiService" "$AI_PID" 8092
-    AI_PID=""
-    stop_service "Data" "$DATA_PID" 8091
-    DATA_PID=""
+    if command -v dotnet >/dev/null 2>&1; then
+      stop_host_dotnet_stack stop_service
+    fi
     stop_service "FastAPI" "$UVICORN_PID" 8001
     UVICORN_PID=""
     stop_service "pipeline worker" "$WORKER_PID"
     WORKER_PID=""
-    stop_service "FileService" "$FILE_SERVICE_PID" 8080
-    FILE_SERVICE_PID=""
     stop_postgres
     log "All services stopped."
     exit 0
@@ -260,48 +245,20 @@ cmd_start() {
   trap cleanup_local EXIT INT TERM
 
   if command -v dotnet >/dev/null 2>&1; then
-    free_port 8080
-    log "Starting FileService on port 8080"
-    export REPORT_API_URL="http://127.0.0.1:8001"
-    (cd "$ROOT/services/FileService" && \
-      ASPNETCORE_URLS="http://127.0.0.1:8080" \
-      ASPNETCORE_ENVIRONMENT=Development \
-      dotnet run --project src/FileService.Api --no-launch-profile) &
-    FILE_SERVICE_PID=$!
+    start_host_dotnet_base "$ROOT" Development
     disown_bg "$FILE_SERVICE_PID"
-
-    free_port 8091
-    log "Starting Data service on port 8091"
-    (cd "$ROOT/services/Data" && \
-      DATABASE_URL="$DATABASE_URL" \
-      ASPNETCORE_URLS="http://127.0.0.1:8091" \
-      ASPNETCORE_ENVIRONMENT=Development \
-      dotnet run --project src/Data.Api --no-launch-profile) &
-    DATA_PID=$!
     disown_bg "$DATA_PID"
-
-    free_port 8092
-    log "Starting AiService on port 8092"
-    (cd "$ROOT/services/AiService" && \
-      DATABASE_URL="$DATABASE_URL" \
-      FASTAPI_URL="http://127.0.0.1:8001" \
-      ASPNETCORE_URLS="http://127.0.0.1:8092" \
-      ASPNETCORE_ENVIRONMENT=Development \
-      WP_MCP_HTTP=1 \
-      dotnet run --project src/AiService.Api --no-launch-profile) &
-    AI_PID=$!
     disown_bg "$AI_PID"
-
-    wait_for_http "http://127.0.0.1:8080/health" "FileService"
-    wait_for_http "http://127.0.0.1:8091/health" "Data service"
-    wait_for_http "http://127.0.0.1:8092/health" "AiService"
   else
     warn "dotnet not found — PDF export requires FileService (see services/FileService/README.md)"
     warn "dotnet not found — Data service unavailable on port 8091"
     warn "dotnet not found — AiService unavailable on port 8092"
+    warn "dotnet not found — IntegrationsService unavailable on port 8093"
   fi
 
   export AI_SERVICE_URL="${AI_SERVICE_URL:-http://127.0.0.1:8092}"
+  export INTEGRATIONS_SERVICE_URL="${INTEGRATIONS_SERVICE_URL:-http://127.0.0.1:8093}"
+  export FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}"
 
   log "Starting pipeline worker"
   "$VENV/bin/python" -m website_profiling.worker &
@@ -312,29 +269,17 @@ cmd_start() {
   log "Starting FastAPI on port 8001"
   export FASTAPI_URL="http://127.0.0.1:8001"
   export FASTAPI_ALLOWED_ORIGINS="http://localhost:8090"
+  export DEPRECATE_PYTHON_INTEGRATIONS="${DEPRECATE_PYTHON_INTEGRATIONS:-1}"
   "$VENV/bin/uvicorn" website_profiling.api.main:app \
     --host 0.0.0.0 --port 8001 --workers 1 &
   UVICORN_PID=$!
   disown_bg "$UVICORN_PID"
-  wait_for_http "http://127.0.0.1:8001/api/health" "FastAPI"
+  wait_for_http_logged "http://127.0.0.1:8001/api/health" "FastAPI"
 
   if command -v dotnet >/dev/null 2>&1; then
-    free_port 8090
-    log "Starting BFF on port 8090"
-    (cd "$ROOT/services/Bff" && \
-      FASTAPI_URL="http://127.0.0.1:8001" \
-      FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}" \
-      DATA_SERVICE_URL="http://127.0.0.1:8091" \
-      AI_SERVICE_URL="${AI_SERVICE_URL:-http://127.0.0.1:8092}" \
-      DATA_ROUTES="${DATA_ROUTES:-/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters}" \
-      AI_ROUTES="${AI_ROUTES:-/api/chat,/api/links/page-coach,/api/issues/fix-suggestion,/api/issues/action-plan,/api/ai/fix-suggestion,/api/dashboards/ai-generate,/api/content/analyze,/api/content/wizard,/api/llm-config,/api/secrets,/api/ollama/status,/api/report/audit-tool,/api/mcp-tools}" \
-      BFF_ALLOWED_ORIGINS="http://localhost:3000" \
-      ASPNETCORE_URLS="http://127.0.0.1:8090" \
-      ASPNETCORE_ENVIRONMENT=Development \
-      dotnet run --project src/Bff.Api --no-launch-profile) &
-    BFF_PID=$!
+    start_host_integrations_bff "$ROOT" Development
+    disown_bg "$INTEGRATIONS_PID"
     disown_bg "$BFF_PID"
-    wait_for_http "http://127.0.0.1:8090/health" "BFF"
   else
     warn "dotnet not found — browser API calls need the BFF (see services/Bff/)"
   fi
@@ -402,6 +347,9 @@ Environment overrides (optional):
   DATABASE_URL  (default: postgres://postgres:dev@127.0.0.1:5432/website_profiling)
   DATA_DIR      (default: <repo>/data)
   DATA_ROUTES   (default: report reads, portfolio, issues status, saved filters)
+  INTEGRATIONS_ROUTES (default: /api/integrations/google,/api/integrations/bing)
+  AUTH_SECRET, GOOGLE_REDIRECT_URI, APP_PUBLIC_URL (Google OAuth)
+  DEPRECATE_PYTHON_INTEGRATIONS (default: 1 — Python integration routes return 410)
   WP_PG_CONTAINER, WP_PG_PORT, WP_PG_PASSWORD, WP_PG_DB
 
 After start, open: http://localhost:3000/home

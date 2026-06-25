@@ -617,6 +617,9 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
     {
         public Task<JsonObject?> GetLatestPayloadAsync(long? propertyId, CancellationToken cancellationToken = default) =>
             Task.FromResult<JsonObject?>(null);
+
+        public Task<JsonObject?> GetGscDetailAsync(long? propertyId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<JsonObject?>(null);
     }
 
     private sealed class FakePropertyRepository : IPropertyRepository

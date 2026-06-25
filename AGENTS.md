@@ -4,7 +4,7 @@
 
 This file is the canonical entry point for agents. For full detail see [AGENT.md](AGENT.md).
 
-**What it is:** Self-hosted SEO crawl and technical audit platform — `python -m src` from repo root. Stack: Python (crawl + analysis + FastAPI), Vite + React SPA (web UI), .NET BFF (browser API), .NET Data (reads), .NET AiService (AI/LLM/MCP), PostgreSQL.
+**What it is:** Self-hosted SEO crawl and technical audit platform — `python -m src` from repo root. Stack: Python (crawl + analysis + FastAPI), Vite + React SPA (web UI), .NET BFF (browser API), .NET Data (reads), .NET AiService (AI/LLM/MCP), .NET IntegrationsService (Google/Bing I/O), PostgreSQL.
 
 **Key paths**
 
@@ -14,6 +14,7 @@ This file is the canonical entry point for agents. For full detail see [AGENT.md
 - `services/Bff/` — .NET BFF (auth, CORS, proxy to FastAPI + Data + AiService + FileService)
 - `services/Data/` — .NET read service (report payloads, portfolio, issue status, filters; port 8091)
 - `services/AiService/` — .NET AI service (Microsoft.Extensions.AI, chat, enrichment, MCP, **secrets/llm-config writes**; port 8092). See [services/AiService/README.md](services/AiService/README.md)
+- `services/IntegrationsService/` — .NET Google/Bing integrations (GSC/GA4 fetch, OAuth, page-live, keyword reads; port 8093). See [services/IntegrationsService/README.md](services/IntegrationsService/README.md)
 - `services/FileService/` — .NET PDF + Excel workbook export (port 8080). HTTP-only via `REPORT_API_URL`; no Postgres. Profiles: `executive|standard|full|premium`. Details: [services/FileService/README.md](services/FileService/README.md). Env: `FILE_SERVICE_URL` (MCP), `REPORT_API_URL` (FileService).
 - `alembic/` — DB migrations
 - `docs/` — documentation index
@@ -22,7 +23,7 @@ This file is the canonical entry point for agents. For full detail see [AGENT.md
 **Run / dev**
 
 ```bash
-./local-run          # Start Postgres + FileService + Data + AiService + worker + FastAPI + BFF + Vite
+./local-run          # Start Postgres + FileService + Data + AiService + IntegrationsService + worker + FastAPI + BFF + Vite
 ./local-test         # Python + web + .NET tests (CI parity)
 python -m src        # Run audit pipeline
 # MCP: AiService stdio/HTTP — see services/AiService/README.md and docs/MCP.md

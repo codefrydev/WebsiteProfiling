@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 from typing import Annotated, Any, Optional
 
@@ -13,6 +14,17 @@ from ..deps import get_db
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 
 DbDep = Annotated[Connection, Depends(get_db)]
+
+_MIGRATED_DETAIL = (
+    "This endpoint moved to IntegrationsService. "
+    "Configure INTEGRATIONS_ROUTES on the BFF to proxy /api/integrations/* and /api/properties/*/google."
+)
+
+
+def _raise_if_migrated() -> None:
+    if os.environ.get("DEPRECATE_PYTHON_INTEGRATIONS", "").strip() == "1":
+        raise HTTPException(status_code=410, detail=_MIGRATED_DETAIL)
+
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -60,6 +72,7 @@ def get_google_credentials(conn: DbDep) -> dict[str, Any]:
 
 @router.get("/google/status")
 def google_status(conn: DbDep) -> dict[str, Any]:
+    _raise_if_migrated()
     from website_profiling.integrations.google.store import read_last_google_fetched_at
 
     status = _google_public_status(conn)
@@ -73,6 +86,7 @@ def google_status(conn: DbDep) -> dict[str, Any]:
 
 @router.post("/google/disconnect")
 def google_disconnect(conn: DbDep) -> dict[str, Any]:
+    _raise_if_migrated()
     """Global disconnect is deprecated — use per-property disconnect."""
     return {
         "ok": False,
@@ -95,6 +109,7 @@ def google_oauth_start(
     startUrl: Optional[str] = Query(default=None),
     returnTo: Optional[str] = Query(default=None),
 ) -> Any:
+    _raise_if_migrated()
     from fastapi.responses import RedirectResponse
     from website_profiling.integrations.google.oauth import OAuthError, oauth_start
 
@@ -112,6 +127,7 @@ def google_oauth_callback(
     state: Optional[str] = Query(default=None),
     error: Optional[str] = Query(default=None),
 ) -> Any:
+    _raise_if_migrated()
     from fastapi.responses import RedirectResponse
     from website_profiling.integrations.google.oauth import oauth_callback
 
@@ -125,6 +141,7 @@ def google_oauth_callback(
 def google_properties_deprecated(
     property_id: Optional[int] = Query(None, alias="propertyId"),
 ) -> dict[str, Any]:
+    _raise_if_migrated()
     """Deprecated — use /api/properties/{id}/google/properties."""
     if not property_id:
         raise HTTPException(
@@ -141,6 +158,7 @@ def google_properties_deprecated(
 
 @router.post("/google/test")
 def google_test() -> dict[str, Any]:
+    _raise_if_migrated()
     """Run `python -m src google --test` and return stdout log."""
     import subprocess
     import sys
@@ -170,6 +188,7 @@ def google_page_data(
     propertyId: Optional[str] = Query(None),
     domain: Optional[str] = Query(None),
 ) -> dict[str, Any]:
+    _raise_if_migrated()
     from website_profiling.db.property_store import resolve_property_id_for_page
     from website_profiling.integrations.google.page_lookup import slice_from_google_row
     from website_profiling.integrations.google.store import read_google_snapshot_row
@@ -218,6 +237,7 @@ def google_page_data_history(
     propertyId: Optional[str] = Query(None),
     domain: Optional[str] = Query(None),
 ) -> dict[str, Any]:
+    _raise_if_migrated()
     from website_profiling.db.property_store import resolve_property_id_for_page
     from website_profiling.integrations.google.page_lookup import (
         slice_from_google_row,
@@ -255,6 +275,7 @@ def google_page_data_history(
 def google_page_live(
     body: dict[str, Any] = Body(default={}),
 ) -> dict[str, Any]:
+    _raise_if_migrated()
     url = str(body.get("url") or "").strip()
     if not url:
         raise HTTPException(status_code=400, detail="url is required")
@@ -295,6 +316,7 @@ def google_keywords_by_page(
     propertyId: Optional[str] = Query(None),
     domain: Optional[str] = Query(None),
 ) -> dict[str, Any]:
+    _raise_if_migrated()
     from website_profiling.db.property_store import resolve_property_id_for_page
     from website_profiling.integrations.google.keyword_store import read_latest_keyword_data
 
@@ -349,6 +371,7 @@ def google_keywords_history(
     domain: Optional[str] = Query(None),
     limit: int = Query(30, ge=1, le=90),
 ) -> dict[str, Any]:
+    _raise_if_migrated()
     from website_profiling.db.property_store import resolve_property_id_for_page
     from website_profiling.integrations.google.keyword_store import read_keyword_history
 
@@ -368,6 +391,7 @@ def google_keywords_history(
 
 @router.post("/bing/sync")
 def bing_sync(conn: DbDep) -> dict[str, Any]:
+    _raise_if_migrated()
     """Fetch Bing Webmaster backlinks summary using config from DB."""
     from website_profiling.db.config_store import read_pipeline_config
 
@@ -405,6 +429,7 @@ def google_page_compare(
     baselineType: str = Query("snapshot"),
     baselineId: int = Query(...),
 ) -> dict[str, Any]:
+    _raise_if_migrated()
     """Compare two page Google data snapshots."""
     from website_profiling.integrations.google.page_snapshot_store import read_page_snapshot_compare
 
@@ -425,6 +450,7 @@ def google_page_live_history(
     url: str = Query(...),
     limit: int = Query(15, ge=1, le=50),
 ) -> dict[str, Any]:
+    _raise_if_migrated()
     """Return history of page Google snapshots for a URL."""
     from website_profiling.integrations.google.page_snapshot_store import list_page_snapshot_api_history
 
@@ -442,6 +468,7 @@ def google_keywords_history_batch(
     conn: DbDep,
     body: dict[str, Any],
 ) -> dict[str, Any]:
+    _raise_if_migrated()
     """Batch keyword history: { keywords: str[], limit?: int, propertyId?: int, domain?: str }"""
     from website_profiling.db.property_store import get_property_id_by_domain
     from website_profiling.integrations.google.keyword_store import read_keyword_history_batch

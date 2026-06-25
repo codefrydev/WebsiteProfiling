@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
-# Local prod: same Postgres as ./local-run, Vite build + preview (NODE_ENV=production).
+# Local prod: same Postgres as ./local-run, full stack + Vite build + preview (NODE_ENV=production).
 # Usage: ./local-prod [command]
-#   (default) start   — DB, migrations, npm run build, npm run preview
+#   (default) start   — DB, migrations, .NET stack, worker, FastAPI, vite preview
 #   build             — npm run build only
 #   help              — show commands
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+# shellcheck source=scripts/local-run-common.sh
+source "$ROOT/scripts/local-run-common.sh"
 
 PG_CONTAINER="${WP_PG_CONTAINER:-wp-pg}"
 PG_PORT="${WP_PG_PORT:-5432}"
@@ -21,6 +23,9 @@ export PYTHON="${PYTHON:-$ROOT/.venv/bin/python}"
 export WEBSITE_PROFILING_ROOT="$ROOT"
 export PYTHONPATH="${PYTHONPATH:+$PYTHONPATH:}$ROOT/src"
 export NODE_ENV=production
+export VITE_BFF_BASE_URL="${VITE_BFF_BASE_URL:-http://localhost:8090}"
+export DEPRECATE_PYTHON_INTEGRATIONS="${DEPRECATE_PYTHON_INTEGRATIONS:-1}"
+export USE_FASTAPI_PYTHON_BRIDGE="${USE_FASTAPI_PYTHON_BRIDGE:-1}"
 
 WEB="$ROOT/web"
 LOCAL_RUN="$ROOT/scripts/local-run.sh"
@@ -55,10 +60,12 @@ wait_for_pid() {
 stop_service() {
   local name="$1"
   local pid="$2"
+  local port="${3:-}"
   [[ -z "$pid" ]] && return 0
   if ! kill -0 "$pid" 2>/dev/null; then
     wait "$pid" 2>/dev/null || true
     log "$name already stopped."
+    [[ -n "$port" ]] && free_port "$port"
     return 0
   fi
   log "Stopping $name (PID $pid)..."
@@ -70,6 +77,7 @@ stop_service() {
   fi
   wait "$pid" 2>/dev/null || true
   log "$name stopped."
+  [[ -n "$port" ]] && free_port "$port"
 }
 
 disown_bg() {
@@ -107,8 +115,8 @@ cmd_web_deps() {
 
 cmd_build() {
   cmd_web_deps
-  log "Building Vite SPA (production)"
-  (cd "$WEB" && npm run build)
+  log "Building Vite SPA (production, VITE_BFF_BASE_URL=$VITE_BFF_BASE_URL)"
+  (cd "$WEB" && VITE_BFF_BASE_URL="$VITE_BFF_BASE_URL" npm run build)
 }
 
 cmd_start() {
@@ -119,6 +127,8 @@ cmd_start() {
     esac
   done
 
+  need_cmd dotnet
+
   mkdir -p "$DATA_DIR"
   log "Ensuring Postgres and migrations (via ./local-run migrate)"
   "$LOCAL_RUN" migrate
@@ -128,13 +138,14 @@ cmd_start() {
     cmd_web_deps
     log "Skipping build (--skip-build)"
   fi
-  log "Starting Vite preview server (Ctrl+C stops all services including Postgres)"
+  log "Starting local prod stack (Ctrl+C stops all services including Postgres)"
   log "DATABASE_URL=$DATABASE_URL"
   log "DATA_DIR=$DATA_DIR"
-  log "PYTHON=$PYTHON"
-  log "NODE_ENV=$NODE_ENV"
+  log "VITE_BFF_BASE_URL=$VITE_BFF_BASE_URL"
+  log "INTEGRATIONS_SERVICE_URL=${INTEGRATIONS_SERVICE_URL:-http://127.0.0.1:8093}"
   cd "$ROOT"
   export DATABASE_URL DATA_DIR PYTHON WEBSITE_PROFILING_ROOT PYTHONPATH NODE_ENV
+  export VITE_BFF_BASE_URL DEPRECATE_PYTHON_INTEGRATIONS USE_FASTAPI_PYTHON_BRIDGE
 
   WORKER_PID=""
   UVICORN_PID=""
@@ -153,7 +164,8 @@ cmd_start() {
     log "Shutting down local prod stack..."
     stop_service "Vite preview" "$NPM_PID"
     NPM_PID=""
-    stop_service "FastAPI" "$UVICORN_PID"
+    stop_host_dotnet_stack stop_service
+    stop_service "FastAPI" "$UVICORN_PID" 8001
     UVICORN_PID=""
     stop_service "pipeline worker" "$WORKER_PID"
     WORKER_PID=""
@@ -163,6 +175,15 @@ cmd_start() {
   }
   trap cleanup_prod EXIT INT TERM
 
+  start_host_dotnet_base "$ROOT" Production
+  disown_bg "$FILE_SERVICE_PID"
+  disown_bg "$DATA_PID"
+  disown_bg "$AI_PID"
+
+  export AI_SERVICE_URL="${AI_SERVICE_URL:-http://127.0.0.1:8092}"
+  export INTEGRATIONS_SERVICE_URL="${INTEGRATIONS_SERVICE_URL:-http://127.0.0.1:8093}"
+  export FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}"
+
   log "Starting pipeline worker"
   "$ROOT/.venv/bin/python" -m website_profiling.worker &
   WORKER_PID=$!
@@ -170,10 +191,16 @@ cmd_start() {
 
   log "Starting FastAPI on port 8001"
   export FASTAPI_URL="http://127.0.0.1:8001"
+  export FASTAPI_ALLOWED_ORIGINS="http://localhost:8090"
   "$ROOT/.venv/bin/uvicorn" website_profiling.api.main:app \
     --host 0.0.0.0 --port 8001 --workers 1 &
   UVICORN_PID=$!
   disown_bg "$UVICORN_PID"
+  wait_for_http "http://127.0.0.1:8001/api/health" "FastAPI" 90 || die "FastAPI failed to start"
+
+  start_host_integrations_bff "$ROOT" Production
+  disown_bg "$INTEGRATIONS_PID"
+  disown_bg "$BFF_PID"
 
   cd "$WEB"
   npm run preview -- --host 0.0.0.0 --port 3000 &
@@ -186,10 +213,10 @@ cmd_start() {
 
 cmd_help() {
   cat <<EOF
-Local prod runner — same Postgres as ./local-run, Vite build + preview (NODE_ENV=production).
+Local prod runner — same Postgres as ./local-run, production Vite build + full .NET stack.
 
   ./local-prod              Same as: start
-  ./local-prod start        DB + migrations + build + vite preview
+  ./local-prod start        DB + migrations + build + full stack + vite preview
   ./local-prod start --skip-build   Start without rebuilding (reuse dist/)
   ./local-prod build        npm run build only
   ./local-prod help         Show this help
@@ -197,13 +224,16 @@ Local prod runner — same Postgres as ./local-run, Vite build + preview (NODE_E
 Environment overrides (optional):
   DATABASE_URL  (default: postgres://postgres:dev@127.0.0.1:5432/website_profiling)
   DATA_DIR      (default: <repo>/data)
-  AUTH_SECRET   (optional — enables login when set)
+  VITE_BFF_BASE_URL (default: http://localhost:8090 — baked into the SPA at build time)
+  AUTH_SECRET   (optional — required for Google OAuth in Production ASP.NET mode)
+  GOOGLE_REDIRECT_URI, APP_PUBLIC_URL (Google OAuth callback + post-login redirect)
   WP_PG_CONTAINER, WP_PG_PORT, WP_PG_PASSWORD, WP_PG_DB
 
 After start, open: http://localhost:3000/home
 Use localhost (not 127.0.0.1) for pipeline APIs.
 
 Dev mode with hot reload: ./local-run start
+Docker prod layout: docker compose -f docker-compose.prod.yml up
 EOF
 }
 

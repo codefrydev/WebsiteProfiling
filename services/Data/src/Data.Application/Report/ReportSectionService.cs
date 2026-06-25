@@ -41,7 +41,36 @@ public sealed class ReportSectionService(
             await MergeTrafficGoogleAsync(slice, domain, ctx.CanonicalDomain, cancellationToken);
         }
 
+        if (string.Equals(section, "gsc-detail", StringComparison.Ordinal))
+        {
+            await MergeGscDetailAsync(slice, domain, ctx.CanonicalDomain, cancellationToken);
+        }
+
         return slice;
+    }
+
+    private async Task MergeGscDetailAsync(
+        JsonObject slice,
+        string? domainQuery,
+        string? reportCanonicalDomain,
+        CancellationToken cancellationToken)
+    {
+        var propertyId = await ResolvePropertyIdAsync(domainQuery, reportCanonicalDomain, cancellationToken);
+        if (propertyId is null)
+        {
+            return;
+        }
+
+        var detail = await googleData.GetGscDetailAsync(propertyId, cancellationToken);
+        if (detail is null)
+        {
+            return;
+        }
+
+        foreach (var (key, value) in detail)
+        {
+            slice[key] = value?.DeepClone();
+        }
     }
 
     private async Task MergeTrafficGoogleAsync(

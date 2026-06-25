@@ -20,6 +20,9 @@ public sealed class UpstreamOptions
     /// <summary>Data service base URL (env override: DATA_SERVICE_URL). Internal .NET read service.</summary>
     public string DataBaseUrl { get; set; } = "http://127.0.0.1:8091";
 
+    /// <summary>Integrations service base URL (env override: INTEGRATIONS_SERVICE_URL).</summary>
+    public string IntegrationsBaseUrl { get; set; } = "http://127.0.0.1:8093";
+
     /// <summary>AiService base URL (env override: AI_SERVICE_URL). Internal .NET AI/LLM service.</summary>
     public string AiBaseUrl { get; set; } = "http://127.0.0.1:8092";
 
@@ -35,4 +38,11 @@ public sealed class UpstreamOptions
     /// prefixes. Empty = everything stays on FastAPI (rollback-safe default).
     /// </summary>
     public string[] DataRoutes { get; set; } = [];
+
+    /// <summary>
+    /// Comma-separated /api path prefixes routed to the Integrations service
+    /// (env override: INTEGRATIONS_ROUTES). Property-scoped <c>/api/properties/*/google</c> paths are
+    /// always matched when any Integrations route is configured.
+    /// </summary>
+    public string[] IntegrationsRoutes { get; set; } = [];
 }

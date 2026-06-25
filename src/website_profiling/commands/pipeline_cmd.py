@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from collections.abc import Callable
@@ -528,10 +529,37 @@ def _run_report(cfg: dict, use_database: bool) -> None:
         source_label = "Search Console" if google_db_has_gsc(cfg) else "Keyword Planner"
         console_print(f"[Keywords] Post-audit keyword research ({source_label} data)...", flush=True)
         emit_phase_start("keywords")
-        from ..integrations.google.keyword_enrich import run_enrichment
-
+        integrations_url = (os.environ.get("INTEGRATIONS_SERVICE_URL") or "").strip().rstrip("/")
+        property_id = active_property_id_from_cfg(cfg)
         try:
-            run_enrichment(cfg)
+            enriched = False
+            if integrations_url and property_id:
+                import json
+                import urllib.error
+                import urllib.request
+
+                req = urllib.request.Request(
+                    f"{integrations_url}/internal/integrations/keywords/enrich",
+                    data=json.dumps({"propertyId": int(property_id)}).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                try:
+                    with urllib.request.urlopen(req, timeout=120) as resp:
+                        result = json.loads(resp.read().decode("utf-8"))
+                    if not result.get("ok"):
+                        raise RuntimeError(result.get("log") or "Keyword enrich failed")
+                    enriched = True
+                except Exception:
+                    console_print(
+                        "Warning: Integrations keyword enrich failed; falling back to in-process enrich.",
+                        file=sys.stderr,
+                    )
+
+            if not enriched:
+                from ..integrations.google.keyword_enrich import run_enrichment
+
+                run_enrichment(cfg)
             console_print("[Keywords] Post-audit keyword research done.", flush=True)
             emit_phase_done("keywords")
         except Exception as e:

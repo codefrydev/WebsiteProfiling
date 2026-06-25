@@ -77,6 +77,35 @@ public sealed class ReportSectionServiceTests
         Assert.Equal("embedded-only", slice!["google"]!["fetched_at"]!.GetValue<string>());
     }
 
+    [Fact]
+    public async Task Gsc_detail_section_returns_by_page_summaries()
+    {
+        var gscDetail = new JsonObject
+        {
+            ["by_page"] = new JsonObject
+            {
+                ["https://example.com/a"] = new JsonObject
+                {
+                    ["page"] = "https://example.com/a",
+                    ["clicks"] = 5,
+                    ["impressions"] = 100,
+                },
+            },
+            ["fetched_at"] = "2026-06-25",
+        };
+
+        var reports = new FakeReportRepo("{}", "example.com");
+        var googleRepo = new FakeGoogleRepo(null, gscDetail);
+        var properties = new FakePropertyRepo(42, "example.com");
+
+        var svc = new ReportSectionService(reports, googleRepo, properties);
+        var slice = await svc.GetSectionPayloadAsync(1, "example.com", "gsc-detail", CancellationToken.None);
+
+        Assert.NotNull(slice);
+        Assert.True(slice!.ContainsKey("by_page"));
+        Assert.Equal("2026-06-25", slice["fetched_at"]!.GetValue<string>());
+    }
+
     private sealed class FakeReportRepo(string dataJson, string? domain) : IReportRepository
     {
         public Task<ReportMetaResponse> GetMetaAsync(CancellationToken cancellationToken) =>
@@ -98,10 +127,13 @@ public sealed class ReportSectionServiceTests
             throw new NotImplementedException();
     }
 
-    private sealed class FakeGoogleRepo(JsonObject? payload) : IGoogleDataRepository
+    private sealed class FakeGoogleRepo(JsonObject? payload, JsonObject? gscDetail = null) : IGoogleDataRepository
     {
         public Task<JsonObject?> GetLatestPayloadAsync(long? propertyId, CancellationToken cancellationToken = default) =>
             Task.FromResult(payload);
+
+        public Task<JsonObject?> GetGscDetailAsync(long? propertyId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(gscDetail);
     }
 
     private sealed class FakePropertyRepo(long id, string domain) : IPropertyRepository
