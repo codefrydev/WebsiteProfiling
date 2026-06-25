@@ -11,7 +11,7 @@ namespace AiService.Tools.Selection;
 /// Shared by MCP, chat, and <c>/api/mcp-tools</c>.
 /// </summary>
 public sealed class AuditToolSelectionService(
-    IPipelineConfigReader pipelineConfigReader,
+    IPipelineConfigRepository pipelineConfigRepository,
     ToolCatalog catalog,
     IMemoryCache cache)
 {
@@ -45,7 +45,7 @@ public sealed class AuditToolSelectionService(
         IReadOnlyDictionary<string, string> pipeline;
         try
         {
-            pipeline = await pipelineConfigReader.LoadAsync(cancellationToken);
+            pipeline = await pipelineConfigRepository.LoadAsync(cancellationToken);
         }
         catch
         {

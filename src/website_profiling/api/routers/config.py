@@ -44,6 +44,13 @@ def _is_secret_key(key: str) -> bool:
     )
 
 
+def _is_masked_sentinel(val: str) -> bool:
+    stripped = val.strip()
+    if stripped in (_MASK, "••••", "{configured}"):
+        return True
+    return stripped.startswith("*") and len(stripped) <= 4
+
+
 def _read_llm_config_full(conn: Connection) -> list[dict[str, Any]]:
     from website_profiling.db.config_store import read_llm_config_full
     return read_llm_config_full(conn)
@@ -118,21 +125,18 @@ def put_llm_config(
 ) -> dict[str, Any]:
     from website_profiling.db.config_store import write_llm_config
 
-    # Preserve existing secret values when client sends "*" (masked sentinel)
     existing_rows = _read_llm_config_full(conn)
     existing: dict[str, str] = {str(r["key"]): str(r["value"]) for r in existing_rows}
     existing_secrets: set[str] = {str(r["key"]) for r in existing_rows if r.get("is_secret")}
 
-    entries: dict[str, str] = {}
-    secret_keys: set[str] = set()
+    entries: dict[str, str] = dict(existing)
+    secret_keys: set[str] = set(existing_secrets)
 
     for k, v in body.state.items():
+        if k.endswith("_masked"):
+            continue
         val = str(v) if v is not None else ""
-        is_masked_sentinel = val.strip() in (_MASK, "••••") or (
-            val.strip().startswith("*") and len(val.strip()) <= 4
-        )
-        if is_masked_sentinel and k in existing:
-            # Keep original value
+        if _is_masked_sentinel(val) and k in existing:
             entries[k] = existing[k]
         else:
             entries[k] = val
@@ -151,6 +155,8 @@ def put_llm_config(
 
 @router.get("/secrets")
 def get_secrets(conn: Annotated[Connection, Depends(get_db)]) -> dict[str, Any]:
+    from website_profiling.api.secrets_catalog import is_managed_pipeline_key, is_pipeline_secret_key
+    from website_profiling.db.config_store import read_pipeline_config
     from website_profiling.db.google_app_store import read_google_app_settings
 
     llm_rows = _read_llm_config_full(conn)
@@ -159,19 +165,33 @@ def get_secrets(conn: Annotated[Connection, Depends(get_db)]) -> dict[str, Any]:
         k = str(row["key"])
         v = str(row["value"])
         is_secret = bool(row.get("is_secret")) or _is_secret_key(k)
-        if is_secret and v:
-            state[k] = _MASK
-            state[f"{k}_masked"] = True
-        elif v:
-            state[k] = v
+        if not is_secret or not v:
+            continue
+        state[k] = _MASK
+        state[f"{k}_masked"] = True
+
+    pipeline_known, _unknown = read_pipeline_config(conn)
+    for key, value in pipeline_known.items():
+        if not is_managed_pipeline_key(key) or not value:
+            continue
+        if is_pipeline_secret_key(key):
+            state[key] = _MASK
+            state[f"{key}_masked"] = True
+        else:
+            state[key] = value
 
     google = read_google_app_settings(conn)
-    for field in ("client_id", "client_secret", "developer_token", "login_customer_id"):
+    if google.get("client_id"):
+        state["google_client_id"] = str(google["client_id"])
+    for field in ("client_secret", "developer_token"):
         raw = str(google.get(field) or "")
         if raw:
-            state[f"google_{field}"] = _MASK if _is_secret_key(field) else raw
-            if _is_secret_key(field):
-                state[f"google_{field}_masked"] = True
+            state[f"google_{field}"] = _MASK
+            state[f"google_{field}_masked"] = True
+    if google.get("login_customer_id"):
+        state["google_login_customer_id"] = str(google["login_customer_id"])
+    if google.get("service_account_json"):
+        state["google_service_account_json_masked"] = True
     state["google_has_service_account"] = bool(google.get("service_account_json"))
 
     return {"state": state, "source": "db"}
@@ -186,8 +206,11 @@ def put_secrets(
     body: SecretsBody,
     conn: Annotated[Connection, Depends(get_db)],
 ) -> dict[str, Any]:
-    from website_profiling.db.config_store import read_llm_config, write_llm_config
-    from website_profiling.db.google_app_store import read_google_app_settings, save_google_app_settings
+    import json
+
+    from website_profiling.api.secrets_catalog import google_field_from_state_key, resolve_storage
+    from website_profiling.db.config_store import read_llm_config, read_pipeline_config, write_llm_config, write_pipeline_config
+    from website_profiling.db.google_app_store import save_google_app_settings
 
     existing_llm = read_llm_config(conn)
     existing_rows = _read_llm_config_full(conn)
@@ -195,6 +218,7 @@ def put_secrets(
 
     llm_updates: dict[str, str] = dict(existing_llm)
     llm_secret_keys: set[str] = set(existing_secrets_set)
+    pipeline_updates: dict[str, str] = {}
     google_patch: dict[str, Any] = {}
 
     for k, v in body.state.items():
@@ -202,30 +226,45 @@ def put_secrets(
             continue
 
         val = str(v) if v is not None else ""
-        is_masked_sentinel = val.strip() in (_MASK, "••••") or (
-            val.strip().startswith("*") and len(val.strip()) <= 4
-        )
+        if _is_masked_sentinel(val):
+            continue
 
-        if k.startswith("google_"):
-            field = k[len("google_"):]
-            if field in ("client_id", "client_secret", "developer_token", "login_customer_id"):
-                if not is_masked_sentinel:
-                    google_patch[field] = val
-        else:
-            if is_masked_sentinel:
-                # Preserve existing
-                pass
-            else:
-                llm_updates[k] = val
-                if _is_secret_key(k):
-                    llm_secret_keys.add(k)
+        storage = resolve_storage(k)
+        if storage == "google":
+            field = google_field_from_state_key(k)
+            if field == "service_account_json":
+                if not val.strip():
+                    continue
+                try:
+                    parsed = json.loads(val)
+                except json.JSONDecodeError as exc:
+                    raise HTTPException(status_code=400, detail="Invalid service account JSON.") from exc
+                if not isinstance(parsed, dict) or parsed.get("type") != "service_account":
+                    raise HTTPException(status_code=400, detail="Invalid service account JSON.")
+                google_patch["service_account_json"] = parsed
+            elif field in ("client_id", "client_secret", "developer_token", "login_customer_id"):
+                google_patch[field] = val
+        elif storage == "pipeline":
+            pipeline_updates[k] = val
+        elif storage == "llm":
+            llm_updates[k] = val
+            if _is_secret_key(k):
+                llm_secret_keys.add(k)
 
-    write_llm_config(conn, llm_updates, llm_secret_keys)
+    if llm_updates != existing_llm or llm_secret_keys != existing_secrets_set:
+        write_llm_config(conn, llm_updates, llm_secret_keys)
+
+    if pipeline_updates:
+        known, unknown = read_pipeline_config(conn)
+        merged_known = dict(known)
+        merged_known.update(pipeline_updates)
+        write_pipeline_config(conn, merged_known, unknown)
 
     if google_patch:
         save_google_app_settings(conn, google_patch)
 
-    return {"ok": True}
+    refreshed = get_secrets(conn)
+    return {"ok": True, **refreshed}
 
 
 # ---------------------------------------------------------------------------

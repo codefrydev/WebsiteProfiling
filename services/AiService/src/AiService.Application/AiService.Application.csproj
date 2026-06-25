@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <InternalsVisibleTo Include="AiService.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\AiService.Domain\AiService.Domain.csproj" />
     <ProjectReference Include="..\AiService.Providers\AiService.Providers.csproj" />
     <ProjectReference Include="..\AiService.Tools\AiService.Tools.csproj" />

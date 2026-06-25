@@ -65,7 +65,9 @@ public static class DependencyInjection
         });
 
         services.AddScoped<ILlmConfigRepository, LlmConfigRepository>();
-        services.AddSingleton<IPipelineConfigReader, PipelineConfigReader>();
+        services.AddScoped<IPipelineConfigRepository, PipelineConfigRepository>();
+        services.AddScoped<IGoogleAppSettingsRepository, GoogleAppSettingsRepository>();
+        services.AddScoped<SecretsService>();
         services.AddScoped<LlmCacheRepository>();
         services.AddScoped<ILlmCacheRepository>(sp => sp.GetRequiredService<LlmCacheRepository>());
         services.AddScoped<IChatSessionRepository, ChatSessionRepository>();

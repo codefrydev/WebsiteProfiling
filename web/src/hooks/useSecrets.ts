@@ -22,7 +22,7 @@ export function useSecrets() {
         throw new Error(data.error || `HTTP ${res.status}`);
       }
       const data = (await res.json()) as SecretsLoadResult;
-      setState(data.state);
+      setState({ ...buildInitialSecretsState(), ...data.state });
       setEnvHints(data.envHints || {});
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : String(e));
@@ -58,8 +58,12 @@ export function useSecrets() {
       if (!res.ok) {
         throw new Error(data.error || `HTTP ${res.status}`);
       }
-      setState(data.state);
-      setEnvHints(data.envHints || {});
+      if (data.state) {
+        setState({ ...buildInitialSecretsState(), ...data.state });
+        setEnvHints(data.envHints || {});
+      } else {
+        await load();
+      }
       setSaveMsg('Secrets saved.');
       return true;
     } catch (e) {
@@ -68,7 +72,7 @@ export function useSecrets() {
     } finally {
       setSaving(false);
     }
-  }, [state]);
+  }, [state, load]);
 
   return {
     state,

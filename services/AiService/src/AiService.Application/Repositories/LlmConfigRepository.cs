@@ -40,9 +40,7 @@ public sealed class LlmConfigRepository(AiDbContext db) : ILlmConfigRepository
         var existing = existingRows.ToDictionary(x => x.Key, x => x.Value, StringComparer.Ordinal);
         var existingSecrets = existingRows.Where(x => x.IsSecret).Select(x => x.Key).ToHashSet(StringComparer.Ordinal);
 
-        var now = DateTimeOffset.UtcNow;
-        var normalized = new Dictionary<string, (string Value, bool IsSecret)>(StringComparer.Ordinal);
-
+        var merged = new Dictionary<string, string>(existing, StringComparer.Ordinal);
         foreach (var (key, rawValue) in entries)
         {
             var val = rawValue ?? "";
@@ -51,6 +49,14 @@ public sealed class LlmConfigRepository(AiDbContext db) : ILlmConfigRepository
                 val = prior;
             }
 
+            merged[key] = val;
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var normalized = new Dictionary<string, (string Value, bool IsSecret)>(StringComparer.Ordinal);
+
+        foreach (var (key, val) in merged)
+        {
             var isSecret = existingSecrets.Contains(key) || LlmConfigSecrets.IsSecretKey(key);
             normalized[key] = (val, isSecret);
         }
