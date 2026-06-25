@@ -14,6 +14,7 @@ CATEGORY_LINKS = "Links"
 CATEGORY_MOBILE = "Mobile SEO"
 CATEGORY_SECURITY = "Security"
 CATEGORY_CONTENT_QUALITY = "Content quality"
+CATEGORY_SEARCH_PERFORMANCE = "Search performance"
 
 # Older audits may still use legacy names — map for exports and UI fallbacks
 LEGACY_CATEGORY_DISPLAY: dict[str, str] = {

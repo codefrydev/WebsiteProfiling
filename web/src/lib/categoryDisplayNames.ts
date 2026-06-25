@@ -8,6 +8,7 @@ const CATEGORY_DISPLAY: Record<string, string> = {
   'Mobile SEO': 'Mobile SEO',
   Security: 'Security',
   'Content quality': 'Content quality',
+  'Search performance': 'Search performance',
   // Legacy payloads
   'HTML/Accessibility': 'Accessibility & markup',
   'HTML & Accessibility': 'Accessibility & markup',
