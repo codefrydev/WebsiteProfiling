@@ -146,11 +146,15 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     return scopedList;
   }, [domainSlug, reportListFull, scopedList]);
 
-  const loadSection = useCallback(async (section: SectionKey, reportId: number | null) => {
+  const fetchSection = useCallback(async (
+    section: SectionKey,
+    reportId: number | null,
+    force: boolean,
+  ) => {
     if (inFlightSectionsRef.current.has(section)) return;
     inFlightSectionsRef.current.add(section);
     setSectionStatus((prev) => {
-      if (prev[section] === 'loaded') return prev;
+      if (!force && prev[section] === 'loaded') return prev;
       return { ...prev, [section]: 'loading' };
     });
     const cacheKeySnapshot = sectionCacheKeyRef.current;
@@ -196,7 +200,16 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     } finally {
       inFlightSectionsRef.current.delete(section);
     }
-  }, []); // all dependencies are stable refs or stable setters
+  }, []);
+
+  const loadSection = useCallback(async (section: SectionKey, reportId: number | null) => {
+    await fetchSection(section, reportId, false);
+  }, [fetchSection]);
+
+  const reloadSection = useCallback(async (section: SectionKey, reportId: number | null) => {
+    inFlightSectionsRef.current.delete(section);
+    await fetchSection(section, reportId, true);
+  }, [fetchSection]);
 
   const applyPayload = useCallback(async (reportId: number | null) => {
     const scoped = domainSlugRef.current;
@@ -596,6 +609,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       domainSlug: domainSlug ?? null,
       sectionStatus,
       loadSection,
+      reloadSection,
     }),
     [
       data,
@@ -619,6 +633,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       domainSlug,
       sectionStatus,
       loadSection,
+      reloadSection,
     ],
   );
 

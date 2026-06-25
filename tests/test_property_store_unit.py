@@ -85,18 +85,49 @@ def test_get_property_by_domain_and_id() -> None:
     assert get_property_by_id(conn3, 1)["name"] == "example.com"
 
 
+def test_is_valid_canonical_domain() -> None:
+    from website_profiling.db.property_store import is_valid_canonical_domain
+
+    assert is_valid_canonical_domain("example.com") is True
+    assert is_valid_canonical_domain("codefrydev.in") is True
+    assert is_valid_canonical_domain("www.luxtripper.co.uk") is True
+    assert is_valid_canonical_domain("h") is False
+    assert is_valid_canonical_domain("http") is False
+    assert is_valid_canonical_domain("https") is False
+    assert is_valid_canonical_domain("codefrydev") is False
+    assert is_valid_canonical_domain("codefrydev.i") is False
+    assert is_valid_canonical_domain("codefrydev.") is False
+
+
 def test_resolve_property_id_from_start_url_existing_and_create() -> None:
-    from website_profiling.db.property_store import resolve_property_id_from_start_url
+    from website_profiling.db.property_store import (
+        ensure_property_from_start_url,
+        lookup_property_id_from_start_url,
+        resolve_property_id_from_start_url,
+    )
 
     conn = FakeConn()
     conn.set_next_cursor(FakeCursor(fetchone_value=_property_row(pid=5)))
-    assert resolve_property_id_from_start_url(conn, "https://example.com") == 5
+    assert lookup_property_id_from_start_url(conn, "https://example.com") == 5
+
+    conn1b = FakeConn()
+    conn1b.set_next_cursor(FakeCursor(fetchone_value=_property_row(pid=5)))
+    assert resolve_property_id_from_start_url(conn1b, "https://example.com") == 5
 
     conn2 = FakeConn()
     conn2.set_next_cursor(FakeCursor(fetchone_value=None))
-    conn2.set_next_cursor(FakeCursor(fetchone_value=(99,)))
-    assert resolve_property_id_from_start_url(conn2, "https://new.example") == 99
-    assert conn2.commits == 1
+    assert lookup_property_id_from_start_url(conn2, "https://new.example") is None
+    assert resolve_property_id_from_start_url(conn2, "https://new.example") is None
+
+    conn3 = FakeConn()
+    conn3.set_next_cursor(FakeCursor(fetchone_value=None))
+    conn3.set_next_cursor(FakeCursor(fetchone_value=(99,)))
+    assert ensure_property_from_start_url(conn3, "https://new.example") == 99
+    assert conn3.commits == 1
+
+    conn4 = FakeConn()
+    assert ensure_property_from_start_url(conn4, "https://incomplete") is None
+    assert conn4.executed == []
 
 
 def test_update_property_google_noop_when_empty_patch() -> None:

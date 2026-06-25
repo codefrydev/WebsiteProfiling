@@ -141,11 +141,11 @@ def _ui_redirect(return_path: str, params: dict[str, str]) -> str:
 def oauth_start(conn: Any, property_id: int | None, start_url: str | None, return_to: str | None) -> str:
     """Resolve the property, build the Google consent URL. Raises OAuthError on bad input."""
     from ...db.google_app_store import app_client_credentials
-    from ...db.property_store import resolve_property_id_from_start_url
+    from ...db.property_store import ensure_property_from_start_url
 
     pid = property_id
     if pid is None and start_url:
-        pid = resolve_property_id_from_start_url(conn, start_url.strip())
+        pid = ensure_property_from_start_url(conn, start_url.strip())
     if pid is None or pid <= 0:
         raise OAuthError("propertyId is required. Set Site URL and connect from Integrations.")
 

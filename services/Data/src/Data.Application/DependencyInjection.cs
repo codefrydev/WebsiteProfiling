@@ -1,6 +1,7 @@
 using Data.Application.Options;
 using Data.Application.Persistence;
 using Data.Application.Portfolio;
+using Data.Application.Report;
 using Data.Application.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,6 +50,9 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IReportRepository, ReportRepository>();
+        services.AddScoped<IGoogleDataRepository, GoogleDataRepository>();
+        services.AddScoped<IPropertyRepository, PropertyRepository>();
+        services.AddScoped<IReportSectionService, ReportSectionService>();
         services.AddScoped<IPortfolioRepository, PortfolioRepository>();
         services.AddScoped<IPortfolioService, PortfolioService>();
         services.AddScoped<IIssueStatusRepository, IssueStatusRepository>();

@@ -77,6 +77,35 @@ def test_properties_crud_and_ops(api_client: TestClient) -> None:
     finally:
         deleted = api_client.delete(f"/api/properties/{property_id}")
         assert deleted.status_code == 200
+
+
+def test_properties_resolve_does_not_create_partial_domains(api_client: TestClient) -> None:
+    before = api_client.get("/api/properties")
+    assert before.status_code == 200
+    count_before = len(before.json()["properties"])
+
+    partial = api_client.get("/api/properties/resolve", params={"startUrl": "https://code"})
+    assert partial.status_code == 200
+    assert partial.json().get("id") is None
+
+    after = api_client.get("/api/properties")
+    assert after.status_code == 200
+    assert len(after.json()["properties"]) == count_before
+
+
+def test_properties_ensure_creates_valid_domain(api_client: TestClient) -> None:
+    domain = f"ensure-{uuid.uuid4().hex[:8]}.example"
+    url = f"https://{domain}/"
+    created = api_client.post("/api/properties/ensure", json={"startUrl": url})
+    assert created.status_code == 200
+    property_id = int(created.json()["id"])
+    try:
+        assert created.json()["canonical_domain"] == domain
+        again = api_client.get("/api/properties/resolve", params={"startUrl": url})
+        assert again.status_code == 200
+        assert int(again.json()["id"]) == property_id
+    finally:
+        api_client.delete(f"/api/properties/{property_id}")
         assert deleted.json()["ok"] is True
 
 

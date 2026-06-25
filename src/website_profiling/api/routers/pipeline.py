@@ -99,15 +99,9 @@ def run_pipeline(body: RunPostBody, conn: DbDep) -> dict[str, Any]:
         hostname = urlparse(start_url).hostname or ""
         if hostname:
             try:
-                from website_profiling.db.property_store import (
-                    canonical_domain_from_start_url,
-                    upsert_property_by_domain,
-                )
-                domain = canonical_domain_from_start_url(start_url)
-                if domain:
-                    property_id = upsert_property_by_domain(
-                        conn, domain, domain, start_url
-                    )
+                from website_profiling.db.property_store import ensure_property_from_start_url
+
+                property_id = ensure_property_from_start_url(conn, start_url) or property_id
             except Exception:
                 pass
         state["active_property_id"] = str(property_id or "")

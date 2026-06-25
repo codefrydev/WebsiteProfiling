@@ -391,14 +391,26 @@ export default function GoogleIntegrationsPanel({
   const ensurePropertyIdForOAuth = useCallback(async (): Promise<number | null> => {
     if (effectivePropertyId != null) return effectivePropertyId;
     const url = startUrl.trim();
-    if (!url) return null;
+    if (!url || !url.includes('.')) return null;
     try {
-      const res = await apiFetch(apiUrl(`/properties/resolve?startUrl=${encodeURIComponent(url)}`));
-      if (!res.ok) return null;
-      const data = (await res.json()) as { id?: number };
-      if (data.id == null || !Number.isFinite(data.id)) return null;
-      setSelectedPropertyId(data.id);
-      return data.id;
+      const resolveRes = await apiFetch(apiUrl(`/properties/resolve?startUrl=${encodeURIComponent(url)}`));
+      if (resolveRes.ok) {
+        const resolved = (await resolveRes.json()) as { id?: number | null };
+        if (resolved.id != null && Number.isFinite(resolved.id)) {
+          setSelectedPropertyId(resolved.id);
+          return resolved.id;
+        }
+      }
+      const ensureRes = await apiFetch(apiUrl('/properties/ensure'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startUrl: url }),
+      });
+      if (!ensureRes.ok) return null;
+      const ensured = (await ensureRes.json()) as { id?: number };
+      if (ensured.id == null || !Number.isFinite(ensured.id)) return null;
+      setSelectedPropertyId(ensured.id);
+      return ensured.id;
     } catch {
       return null;
     }

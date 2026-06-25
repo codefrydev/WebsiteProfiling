@@ -34,6 +34,7 @@ import {
 } from '../components/searchPerformance/gscTableUtils';
 import UrlGapListsPanel from '../components/google/UrlGapListsPanel';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
+import GoogleDataRefreshButton from '@/components/google/GoogleDataRefreshButton';
 import { useSearchParams } from 'react-router-dom';
 import { useUrlTab } from '@/hooks/useUrlTab';
 
@@ -281,6 +282,7 @@ export default function SearchPerformance() {
             {headerMeta}
           </>
         }
+        actions={<GoogleDataRefreshButton variant="gsc" />}
       />
 
       {errors.length > 0 && (

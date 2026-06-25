@@ -1,8 +1,7 @@
-
 import { useEffect, useState } from 'react';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
 
-/** Resolve or create a properties row from the audit Site URL. */
+/** Resolve an existing properties row from the audit Site URL (read-only; no create). */
 export function useResolvedPropertyId(
   explicitPropertyId: number | null | undefined,
   startUrl: string,
@@ -19,25 +18,30 @@ export function useResolvedPropertyId(
       return;
     }
     const url = startUrl.trim();
-    if (!url) {
+    if (!url || !url.includes('.')) {
       setResolved(null);
       return;
     }
     let cancelled = false;
-    void (async () => {
-      try {
-        const res = await apiFetch(
-          apiUrl(`/properties/resolve?startUrl=${encodeURIComponent(url)}`),
-        );
-        if (!res.ok) return;
-        const data = (await res.json()) as { id?: number };
-        if (!cancelled && data.id != null) setResolved(Number(data.id));
-      } catch {
-        /* ignore */
-      }
-    })();
+    const timer = setTimeout(() => {
+      void (async () => {
+        try {
+          const res = await apiFetch(
+            apiUrl(`/properties/resolve?startUrl=${encodeURIComponent(url)}`),
+          );
+          if (!res.ok) return;
+          const data = (await res.json()) as { id?: number | null };
+          if (!cancelled) {
+            setResolved(data.id != null && Number.isFinite(data.id) ? Number(data.id) : null);
+          }
+        } catch {
+          /* ignore */
+        }
+      })();
+    }, 400);
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
   }, [explicitPropertyId, startUrl]);
 

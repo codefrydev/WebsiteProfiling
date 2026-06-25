@@ -8,6 +8,7 @@ using Data.Application.Dto.Issues;
 using Data.Application.Dto.Portfolio;
 using Data.Application.Dto.Report;
 using Data.Application.Portfolio;
+using Data.Application.Report;
 using Data.Application.Repositories;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -28,11 +29,15 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<IReportRepository>();
+                services.RemoveAll<IReportSectionService>();
                 services.RemoveAll<IPortfolioService>();
                 services.RemoveAll<IPortfolioRepository>();
                 services.RemoveAll<IIssueStatusRepository>();
                 services.RemoveAll<ISavedFilterRepository>();
                 services.AddScoped<IReportRepository, FakeReportRepository>();
+                services.AddScoped<IReportSectionService, ReportSectionService>();
+                services.AddScoped<IGoogleDataRepository, FakeGoogleDataRepository>();
+                services.AddScoped<IPropertyRepository, FakePropertyRepository>();
                 services.AddScoped<IPortfolioService, FakePortfolioService>();
                 services.AddScoped<IPortfolioRepository, FakePortfolioRepository>();
                 services.AddScoped<IIssueStatusRepository, FakeIssueStatusRepository>();
@@ -588,6 +593,10 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
         public Task<string?> GetPayloadDataAsync(long? reportId, string? domain, CancellationToken ct) =>
             Task.FromResult<string?>(reportId == 999 ? null : """{"site_name":"example.com"}""");
 
+        public Task<ReportPayloadContext?> GetPayloadContextAsync(long? reportId, string? domain, CancellationToken ct) =>
+            Task.FromResult<ReportPayloadContext?>(
+                reportId == 999 ? null : new ReportPayloadContext("""{"site_name":"example.com"}""", "example.com"));
+
         public Task<AuditHistoryResponse> ListAuditHistoryAsync(string? domain, int limit, CancellationToken ct) =>
             Task.FromResult(new AuditHistoryResponse
             {
@@ -602,5 +611,17 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
 
         public Task<MobileDeltaResponse> GetMobileDeltaAsync(long runId, CancellationToken ct) =>
             Task.FromResult(new MobileDeltaResponse());
+    }
+
+    private sealed class FakeGoogleDataRepository : IGoogleDataRepository
+    {
+        public Task<JsonObject?> GetLatestPayloadAsync(long? propertyId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<JsonObject?>(null);
+    }
+
+    private sealed class FakePropertyRepository : IPropertyRepository
+    {
+        public Task<long?> ResolvePropertyIdByDomainAsync(string? domainRaw, CancellationToken cancellationToken = default) =>
+            Task.FromResult<long?>(null);
     }
 }

@@ -20,6 +20,10 @@ class PropertyUpsertBody(BaseModel):
     site_url: Optional[str] = None
 
 
+class PropertyEnsureBody(BaseModel):
+    startUrl: Optional[str] = None
+
+
 class OpsSettingsBody(BaseModel):
     scheduleCron: Optional[str] = None
     alertWebhookUrl: Optional[str] = None
@@ -66,6 +70,32 @@ def create_property(body: PropertyUpsertBody, conn: DbDep) -> dict[str, Any]:
     return {"id": prop_id, "name": name, "canonical_domain": domain}
 
 
+@router.post("/properties/ensure", status_code=200)
+def ensure_property(body: PropertyEnsureBody, conn: DbDep) -> dict[str, Any]:
+    """Create a property row when the URL is complete (OAuth / explicit actions only)."""
+    from website_profiling.db.property_store import (
+        canonical_domain_from_start_url,
+        ensure_property_from_start_url,
+        get_property_by_domain,
+    )
+
+    start_url = (body.startUrl or "").strip()
+    if not start_url:
+        raise HTTPException(status_code=400, detail="startUrl required")
+
+    prop_id = ensure_property_from_start_url(conn, start_url)
+    if prop_id is None:
+        raise HTTPException(status_code=400, detail="Valid site URL with a domain is required")
+
+    domain = canonical_domain_from_start_url(start_url)
+    prop = get_property_by_domain(conn, domain) if domain else None
+    return {
+        "id": prop_id,
+        "canonical_domain": domain,
+        "default_crawl_preset": prop.get("default_crawl_preset") if prop else None,
+    }
+
+
 @router.get("/properties/resolve")
 def resolve_property(
     conn: DbDep,
@@ -74,14 +104,14 @@ def resolve_property(
     from website_profiling.db.property_store import (
         canonical_domain_from_start_url,
         get_property_by_domain,
-        resolve_property_id_from_start_url,
+        lookup_property_id_from_start_url,
     )
 
     start_url = startUrl.strip()
     if not start_url:
         raise HTTPException(status_code=400, detail="startUrl required")
 
-    prop_id = resolve_property_id_from_start_url(conn, start_url)
+    prop_id = lookup_property_id_from_start_url(conn, start_url)
     domain = canonical_domain_from_start_url(start_url)
     prop = get_property_by_domain(conn, domain) if domain else None
     return {

@@ -4,6 +4,8 @@ using Data.Application.Dto.Meta;
 using Data.Application.Dto.Report;
 using Data.Application.Json;
 using Data.Application.Persistence;
+using Data.Application.Report;
+using Data.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
@@ -67,6 +69,29 @@ public sealed class ReportRepository(DataDbContext db, ILogger<ReportRepository>
 
     public async Task<string?> GetPayloadDataAsync(long? reportId, string? domain, CancellationToken ct)
     {
+        var ctx = await GetPayloadContextAsync(reportId, domain, ct);
+        return ctx?.DataJson;
+    }
+
+    public async Task<ReportPayloadContext?> GetPayloadContextAsync(
+        long? reportId,
+        string? domain,
+        CancellationToken ct)
+    {
+        var row = await ResolveReportRowAsync(reportId, domain, ct);
+        if (row is null)
+        {
+            return null;
+        }
+
+        return new ReportPayloadContext(row.Data, row.CanonicalDomain);
+    }
+
+    private async Task<ReportPayload?> ResolveReportRowAsync(
+        long? reportId,
+        string? domain,
+        CancellationToken ct)
+    {
         long? resolvedId = reportId;
 
         if (resolvedId is null && !string.IsNullOrWhiteSpace(domain))
@@ -84,18 +109,15 @@ public sealed class ReportRepository(DataDbContext db, ILogger<ReportRepository>
         {
             return await db.ReportPayloads
                 .Where(r => r.Id == resolvedId.Value)
-                .Select(r => r.Data)
                 .FirstOrDefaultAsync(ct);
         }
 
-        // No id or domain → latest report (mirrors Python read_report_payload(conn, None))
         return await db.ReportPayloads
             .OrderByDescending(r => r.Id)
-            .Select(r => r.Data)
             .FirstOrDefaultAsync(ct);
     }
 
-    // ── /api/report/history ──────────────────────────────────────────────────
+    // ── /api/report/payload (legacy inline) ─────────────────────────────────
 
     public async Task<AuditHistoryResponse> ListAuditHistoryAsync(
         string? domain, int limit, CancellationToken ct)

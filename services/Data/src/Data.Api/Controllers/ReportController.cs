@@ -19,11 +19,16 @@ namespace Data.Api.Controllers;
 public sealed class ReportController : ControllerBase
 {
     private readonly IReportRepository _reports;
+    private readonly IReportSectionService _sections;
     private readonly IPortfolioService _portfolio;
 
-    public ReportController(IReportRepository reports, IPortfolioService portfolio)
+    public ReportController(
+        IReportRepository reports,
+        IReportSectionService sections,
+        IPortfolioService portfolio)
     {
         _reports = reports;
+        _sections = sections;
         _portfolio = portfolio;
     }
 
@@ -55,12 +60,11 @@ public sealed class ReportController : ControllerBase
 
         if (section is not null)
         {
-            using var doc = JsonDocument.Parse(rawJson);
-            var filtered = new Dictionary<string, JsonElement>();
-            foreach (var field in SectionFields.ByKey[section])
-                if (doc.RootElement.TryGetProperty(field, out var val))
-                    filtered[field] = val.Clone();
-            return Ok(new { payload = filtered, section });
+            var slice = await _sections.GetSectionPayloadAsync(reportId, domain, section, cancellationToken);
+            if (slice is null)
+                return NotFound(new { detail = "Report not found" });
+
+            return Ok(new { payload = slice, section });
         }
 
         // Full payload: stream raw JSON without double-parsing (avoids re-serialising multi-MB blobs).

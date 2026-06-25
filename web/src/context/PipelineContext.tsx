@@ -140,6 +140,11 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
   const [crawlPresetId, setCrawlPresetId] = useState<CrawlPresetId | ''>('');
   const pollStopRef = useRef<(() => void) | null>(null);
   const activeJobIdRef = useRef('');
+  const startUrlPresetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (startUrlPresetTimerRef.current) clearTimeout(startUrlPresetTimerRef.current);
+  }, []);
 
   const refreshBrowserCrawlStatus = useCallback(async () => {
     setBrowserCrawlChecking(true);
@@ -382,7 +387,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
 
   const applyPropertyCrawlPreset = useCallback(async (startUrlValue: string) => {
     const trimmed = startUrlValue.trim();
-    if (!trimmed) return;
+    if (!trimmed || !trimmed.includes('.')) return;
     try {
       const res = await apiFetch(apiUrl(`/properties/resolve?startUrl=${encodeURIComponent(trimmed)}`));
       const data = await res.json().catch(() => ({}));
@@ -413,7 +418,12 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       }
       return { ...prev, start_url: value };
     });
-    void applyPropertyCrawlPreset(value);
+    if (startUrlPresetTimerRef.current) {
+      clearTimeout(startUrlPresetTimerRef.current);
+    }
+    startUrlPresetTimerRef.current = setTimeout(() => {
+      void applyPropertyCrawlPreset(value);
+    }, 400);
   }, [applyPropertyCrawlPreset]);
 
   const handleCrawlPresetChange = useCallback((preset: CrawlPresetId) => {

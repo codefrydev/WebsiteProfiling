@@ -36,6 +36,7 @@ import {
 } from '../components/traffic/ga4TableUtils';
 import { syncChartJsDefaultsColor } from '../utils/chartJsDefaults';
 import { buildLinksInspectHref } from '../lib/reportNav';
+import GoogleDataRefreshButton from '@/components/google/GoogleDataRefreshButton';
 import { useSearchParams } from 'react-router-dom';
 import { useUrlTab } from '@/hooks/useUrlTab';
 
@@ -249,6 +250,7 @@ export default function Traffic() {
             {headerMeta}
           </>
         }
+        actions={<GoogleDataRefreshButton variant="google" />}
       />
 
       {errors.length > 0 && (
