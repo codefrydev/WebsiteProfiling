@@ -63,7 +63,6 @@ export interface RunPostBody {
   command?: string | null | undefined;
   state?: PipelineConfigState;
   unknownKeys?: PipelineUnknownKey[];
-  llmState?: LlmConfigState;
   python?: string;
   repoRoot?: string;
   propertyId?: number | null;

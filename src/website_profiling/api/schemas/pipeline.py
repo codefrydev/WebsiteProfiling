@@ -108,7 +108,6 @@ class RunPostBody(BaseModel):
     command: Optional[str] = None
     state: Optional[dict[str, Any]] = None
     unknownKeys: list[UnknownKeyEntry] = Field(default_factory=list)
-    llmState: Optional[dict[str, Any]] = None
     propertyId: Optional[int] = None
     python: Optional[str] = None
     repoRoot: Optional[str] = None

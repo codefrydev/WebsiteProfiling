@@ -1658,7 +1658,7 @@
       "stat3Value": "Crawl · Lighthouse · Issues",
       "stat3Hint": "Full-site crawl, performance scores, and issue triage",
       "stat4Label": "AI workflow",
-      "stat4Value": "340 MCP tools",
+      "stat4Value": "369 MCP tools",
       "stat4Hint": "AI chat plus programmatic access from Cursor and Claude Desktop",
       "trustTitle": "Runs on your stack",
       "trustGithub": "View on GitHub",
@@ -1724,7 +1724,7 @@
       "spotlight5Bullets": [
         "\"What are my top critical issues?\" — real issue tables",
         "\"Export a PDF report\" — download buttons in the thread",
-        "340 MCP tools for Cursor and Claude Desktop — same data, programmatic"
+        "369 MCP tools for Cursor and Claude Desktop — same data, programmatic"
       ],
       "spotlight5Cta": "Open AI Chat",
       "spotlight5CtaHref": "/chat",
@@ -2084,15 +2084,15 @@
               "title": "Before you start",
               "items": [
                 "PostgreSQL running with at least one crawled property.",
-                "Python environment from ./local-run setup (for local stdio MCP).",
-                "For remote HTTP: a public URL or VPN access to your Site Audit host."
+                ".NET SDK 10+ and repo checkout (for local stdio MCP via AiService).",
+                "For remote HTTP: AiService with WP_MCP_HTTP=1 (./local-run enables this on :8092)."
               ]
             },
             "localStdio": {
               "title": "Local stdio (same machine)",
               "items": [
-                "Set DATABASE_URL and PYTHONPATH=src in your MCP client config.",
-                "Command: python -m website_profiling.mcp",
+                "Run from the repo root with DATABASE_URL and FASTAPI_URL in your MCP client env.",
+                "Command: dotnet run --project services/AiService/src/AiService.Api",
                 "Set WP_MCP_DOMAIN to core (default), crawl, google, links, or full.",
                 "Set WP_PROPERTY_ID to the default property id for tools that omit property_id.",
                 "Copy the Local stdio snippet from MCP settings after saving a token (optional for localhost)."
@@ -2103,7 +2103,7 @@
               "items": [
                 "On MCP settings: generate a bearer token and add allowed hostnames.",
                 "Set Public MCP base URL to your deployed origin (no trailing slash).",
-                "Start the MCP HTTP service on the server (see copy-paste commands on MCP settings).",
+                "Start AiService with WP_MCP_HTTP=1 on the server (see copy-paste commands on MCP settings).",
                 "In Cursor or Claude Desktop, use the Remote Streamable HTTP config with Authorization: Bearer …"
               ]
             },
@@ -2113,7 +2113,7 @@
                 "Open MCP settings (/mcp) from the app sidebar.",
                 "Generate token → add hostname from URL → pick tool bundle (WP_MCP_DOMAIN).",
                 "Save settings, then copy the client JSON into .cursor/mcp.json or Claude Desktop config.",
-                "See docs/MCP.md in the repo for domain bundles and the full 340-tool catalog."
+                "See docs/MCP.md in the repo for domain bundles and the full 369-tool catalog."
               ]
             },
             "examplePrompts": {

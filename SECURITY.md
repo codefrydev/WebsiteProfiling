@@ -26,4 +26,4 @@ If you find a vulnerability **in Site Audit itself** (e.g. remote code execution
 
 - Run production deployments with strong `POSTGRES_PASSWORD` and `AUTH_SECRET` (see `docker-compose.prod.yml`).
 - For client-facing dashboards, set `AUTH_DEFAULT_ROLE=client-readonly` (view reports and use chat) or `viewer` (view reports only). API enforces 403 on mutations; UI hides **Run audit** for read-only roles.
-- Do not commit `.env`, `.secrets/`, or OAuth client secrets. Google credentials are stored in PostgreSQL (`google_app_settings` and per-property columns on `properties`).
+- Do not commit `.env`, `.secrets/`, or OAuth client secrets. Google credentials and API keys are stored in PostgreSQL (`google_app_settings`, `llm_config`, and per-property columns on `properties`). Browser writes to these stores go through the BFF → **AiService** (`PUT /api/secrets`, `PUT /api/llm-config`) — not directly to FastAPI.

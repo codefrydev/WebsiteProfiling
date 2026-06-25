@@ -4,19 +4,21 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 
 **What it is:** `python -m src` from repo root (`src/__main__.py` -> package **`website_profiling`**). Config: stored in **PostgreSQL** (`pipeline_config` table, `key/value/is_unknown/updated_at`). A shadow **`pipeline-config.txt`** is auto-written to `DATA_DIR` on every Save/Run. CLI loads DB first (`DATABASE_URL`), then shadow file; `--config` overrides with a file. Reference keys: `input.txt.example` and `pipeline-config.example.txt` (not auto-loaded).
 
-**LLM / AI:** Settings live in **`llm_config`** table in PostgreSQL. Providers: OpenAI, Google Gemini, Anthropic, Groq, Ollama (`web/src/lib/llmConfigSchema.ts`). Configure only via web UI **AI** tab (`GET/PUT /api/llm-config`, localhost). Never in `pipeline-config.txt` or `--config`.
+**LLM / AI:** Settings live in **`llm_config`** (and related tables) in PostgreSQL. Providers: OpenAI, Google Gemini, Anthropic, Groq, Ollama (`web/src/lib/llmConfigSchema.ts`). **Browser writes** for API keys and LLM toggles go **BFF → AiService** (`PUT /api/secrets`, `PUT /api/llm-config`). Configure via **Secrets** (`/secrets`) and **Run audit → AI settings**. Never in `pipeline-config.txt` or `--config`. Worker/CLI calls AiService via `llm_client_http.py` (`AI_SERVICE_URL`, default `:8092`).
 
-**Frontend:** **`web/`** (Vite + React SPA) — browser calls **`services/Bff/`** for all `/api/*`; BFF proxies to FastAPI and FileService.
+**Frontend:** **`web/`** (Vite + React SPA) — browser calls **`services/Bff/`** for all `/api/*`; BFF proxies to FastAPI, AiService, Data, and FileService.
 
 **Key paths**
 
-- `src/website_profiling/` -- `cli.py`, `config.py`, `crawl/`, `db/storage.py`, `lighthouse/`, `reporting/`, `analysis/`, `llm/`, `tools/`
-- `services/Bff/` -- .NET BFF (auth, CORS, `/api/*` proxy)
+- `src/website_profiling/` -- `cli.py`, `config.py`, `crawl/`, `db/storage.py`, `lighthouse/`, `reporting/`, `analysis/`, `llm_client_http.py`, `tools/`
+- `services/Bff/` -- .NET BFF (auth, CORS, `/api/*` proxy to FastAPI + AiService + Data + FileService)
+- `services/AiService/` -- .NET AI (chat, secrets, LLM config, MCP, enrichment; port 8092)
+- `services/Data/` -- .NET read service (report payloads, portfolio, issue status; port 8091)
 - `services/FileService/` -- .NET PDF + Excel workbook export (HTTP-only; see [README](services/FileService/README.md))
 - `web/src/` -- React SPA (`AppRoutes.tsx`, `views/`, `components/`); pipeline UI: `PipelineRunnerFab`, `PipelineContext`
 - `alembic/` -- schema migrations
 
-**Local dev:** `./local-run` (Postgres in Docker `wp-pg`, FileService on `:8080`, FastAPI on `:8001`, BFF on `:8090`, Vite on `:3000`; default `DATABASE_URL`: `postgres://postgres:dev@127.0.0.1:5432/website_profiling`). See `scripts/local-run.sh`. **Local tests:** `./local-test` runs **three** Python coverage gates (core 100%, reporting 100%, tools 100%) plus web checks — mirrors CI **python** and **web** jobs; Docker CI is separate (see `.github/workflows/ci.yml`). `./local-test browser` for `@pytest.mark.browser` integration tests — see `scripts/local-test.sh`. Mocked browser unit tests: `tests/test_browser_fetcher_unit.py`.
+**Local dev:** `./local-run` (Postgres in Docker `wp-pg`, FileService `:8080`, Data `:8091`, AiService `:8092`, FastAPI `:8001`, BFF `:8090`, Vite `:3000`; default `DATABASE_URL`: `postgres://postgres:dev@127.0.0.1:5432/website_profiling`). See `scripts/local-run.sh`. **Local tests:** `./local-test` runs **three** Python coverage gates (core 100%, reporting 100%, tools 100%) plus web and .NET checks — mirrors CI; Docker CI is separate (see `.github/workflows/ci.yml`). `./local-test browser` for `@pytest.mark.browser` integration tests — see `scripts/local-test.sh`. Mocked browser unit tests: `tests/test_browser_fetcher_unit.py`.
 
 **JavaScript crawl (optional):** Config keys `crawl_render_mode` (`static` | `javascript` | `auto`) and `crawl_js_*` in pipeline config / `pipelineConfigSchema.ts`. JS/auto crawls can capture browser console errors and uncaught exceptions (`crawl_js_capture_console`, stored under `page_analysis.browser`). **Auto mode** uses static-first fetch, pre-parse SPA heuristics (`needs_js_render`), then post-parse low-outlink fallback (`needs_js_render_after_parse`) in `crawler.py`. **Preflight:** `GET /api/crawl/browser-status` (localhost) spawns Python `browser_status()`; Run audit settings/run validation calls it when render mode is `javascript` or `auto`. Browser deps: Playwright from `requirements.txt` (installed by `./local-run setup` and `./local-test`). Runtime needs Chromium on `PATH` or `CHROME_PATH` (Docker sets `CHROME_PATH=/usr/bin/chromium`). Integration tests: `@pytest.mark.browser` — excluded by default in `pytest.ini`; Docker CI runs `tests/test_crawl_fetchers.py` and `tests/test_crawler_browser_e2e.py -m browser`; locally `./local-test browser`.
 
@@ -25,15 +27,15 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 - Run audit (CLI): `python -m src` — reads config from PostgreSQL (`pipeline_config`); shadow `DATA_DIR/pipeline-config.txt` if table empty. CLI override: `python -m src --config path`
 - Optional step: `crawl` | `report` | `plot` | `lighthouse` | `keywords` | `warnings` | `enrich` | `google` | `chat`
 - **`preserve_crawl_history`** (default true): append crawls; `false` truncates crawl tables but restores `report_payload`, Lighthouse, `google_data`, `keyword_data`, `keyword_history`, `keyword_suggest_cache`, and `crawl_runs`
-- **`DATABASE_URL`** env: PostgreSQL connection string (required). **`DATA_DIR`**: secrets + shadow config (Docker: `/data`).
+- **`DATABASE_URL`** env: PostgreSQL connection string (required). **`DATA_DIR`**: shadow pipeline config and local artifacts (Docker: `/data`); API keys live in Postgres via AiService.
 - **Pipeline storage** (crawl, edges, nodes, report payload, Lighthouse, keywords, warnings) lives in **PostgreSQL only**. Deliverables use the Export view, `GET /api/report/export`, or MCP `export_*` tools — not files written by the main pipeline step.
 - **Pool tuning:** `DB_POOL_MIN` / `DB_POOL_MAX` (Python). Bulk crawl writes via `executemany`; optional **`crawl_stream_to_db`** streams rows during fetch. Per-URL raw HTML: `crawl_page_html` table (migration `015`); API `GET/POST /api/crawl/page-html`.
-- **Browser API (BFF):** All `/api/*` routes are served by `services/Bff/` (proxied to FastAPI / FileService). Notable: `/api/report/*`, `/api/run`, `/api/jobs/*`, `/api/pipeline-config`, `/api/llm-config`, `/api/chat` (SSE), `/api/integrations/google/*` (OAuth callback on BFF origin). `PipelineRunnerFab` saves pipeline + LLM state before each run. OpenAPI: `web/openapi.json`; BFF client: `services/Bff/src/Bff.Application/Generated/`.
-- **MCP:** `python -m website_profiling.mcp` (stdio) or `python -m website_profiling.mcp.http` (remote Streamable HTTP). Configure at **`/mcp`** in the web UI. See `docs/MCP.md`.
+- **Browser API (BFF):** All `/api/*` routes are served by `services/Bff/`. **FastAPI:** `/api/run`, `/api/jobs/*`, `/api/pipeline-config`, crawl, integrations (OAuth reads), properties, content drafts, etc. **AiService:** `/api/chat` (SSE), `/api/llm-config`, `/api/secrets`, `/api/ollama/status`, `/api/issues/fix-suggestion`, `/api/issues/action-plan`, `/api/dashboards/ai-generate`, `/api/content/analyze`, `/api/content/wizard`, `/api/links/page-coach`, `/api/mcp-tools`, `/api/report/audit-tool`. **Data:** report payload reads, portfolio, issue status, saved filters (see `DATA_ROUTES`). **FileService:** PDF/workbook export. `PipelineRunnerFab` saves pipeline config (FastAPI) and LLM state (`PUT /api/llm-config` → AiService) before each run. OpenAPI: `web/openapi.json` (FastAPI routes only — AiService routes are not in this spec); BFF client: `services/Bff/src/Bff.Application/Generated/`.
+- **MCP:** AiService (.NET) — stdio host or HTTP at `/mcp` when `WP_MCP_HTTP=1` on `:8092`. Configure at **`/mcp`** in the web UI. See `docs/MCP.md` and [services/AiService/README.md](services/AiService/README.md).
 - **AI Chat UI:** `/chat` — property-scoped chat with saved sessions (`chat_sessions`, `chat_messages`; migration `012_chat_sessions`).
 - **Job store:** PostgreSQL `pipeline_jobs` (FastAPI); live job status via `/api/jobs/*` through the BFF.
 - **Schema head:** `015_crawl_page_html` (recent: `013` link_edges/discovery, `014` job log truncation, `015` per-URL HTML storage).
-- **Docker:** Root `Dockerfile` (Python backend); `web/Dockerfile` (Vite SPA + nginx); `docker-compose.yml` (postgres + fastapi + worker + bff + web + FileService); **`docker-compose.prod.yml`** (production + optional MCP on `:8000`); **`docker-compose.pull.yml`** for pre-built images (`BACKEND_IMAGE`, `WEB_IMAGE`); **`LIGHTHOUSE_CHROME_FLAGS`**
+- **Docker:** Root `Dockerfile` (Python backend); `web/Dockerfile` (Vite SPA + nginx); `docker-compose.yml` (postgres + fastapi + worker + ai + data + bff + web + FileService); **`docker-compose.prod.yml`** (production + optional MCP profile mapping host `:8000` → AiService `:8092`); **`docker-compose.pull.yml`** for pre-built images (`BACKEND_IMAGE`, `WEB_IMAGE`); **`LIGHTHOUSE_CHROME_FLAGS`**
 
 **Where to edit**
 
@@ -44,12 +46,13 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 | PDF / workbook export | `services/FileService/` (rendering); BFF routes `/api/report/export` and `/api/report/export-workbook` to FileService |
 | DB schema | `alembic/versions/` |
 | Local analysis | `analysis/local.py`, `requirements.txt` |
-| AI insights (LLM) | `llm/enrich.py`, `llm/agent.py`, `llm_config.py`, `requirements.txt` |
-| Audit query tools (MCP + chat) | `tools/audit_tools/`, `mcp/server.py`, `mcp/http_server.py`, `commands/chat_cmd.py` |
+| AI insights (LLM) | `services/AiService/` (browser-facing), `llm_client_http.py` (worker/CLI), `llm_config.py` |
+| Audit query tools (MCP + chat) | `services/AiService/src/AiService.Tools/`, `services/AiService/src/AiService.Mcp/`, `tools/audit_tools/`, `commands/chat_cmd.py` |
 | Agent readiness checks | `tools/audit_tools/geo/agent_readiness.py`, `tools/audit_tools/_aeo_helpers.py` |
 | Config / CLI | `config.py` (`load_config`, `load_config_from_db`), `cli.py`, `input.txt.example` |
 | UI pipeline schema | `web/src/lib/pipelineConfigSchema.ts` |
 | UI LLM schema | `web/src/lib/llmConfigSchema.ts` |
+| UI secrets schema | `web/src/lib/secretsConfigSchema.ts`, `web/src/hooks/useSecrets.ts` |
 | Browser API client | `web/src/lib/publicBase.ts` (`apiUrl`, `apiFetch`, `VITE_BFF_BASE_URL`) |
 | D3 charts (custom / compare / overview) | `web/src/components/charts/d3/`, `web/src/lib/viz/` |
 | Chart.js charts (standard bar/line/doughnut) | `web/src/utils/chartJsDefaults.ts`, `react-chartjs-2` in views under `web/src/views/`, `web/src/components/searchPerformance/`, `web/src/components/traffic/` |

@@ -74,11 +74,11 @@ export function buildLocalStdioConfig(input: McpClientConfigInput): string {
   const payload = {
     mcpServers: {
       'site-audit-local': {
-        command: 'python',
-        args: ['-m', 'website_profiling.mcp'],
+        command: 'dotnet',
+        args: ['run', '--project', 'services/AiService/src/AiService.Api', '--no-launch-profile'],
         env: {
           DATABASE_URL: databaseUrl,
-          PYTHONPATH: 'src',
+          FASTAPI_URL: 'http://127.0.0.1:8001',
           WP_MCP_DOMAIN: domain,
           WP_PROPERTY_ID: propertyId,
         },
@@ -89,11 +89,18 @@ export function buildLocalStdioConfig(input: McpClientConfigInput): string {
 }
 
 export function buildDockerStartCommand(): string {
-  return 'docker compose -f docker-compose.prod.yml up -d mcp';
+  return 'docker compose -f docker-compose.prod.yml --profile mcp up -d mcp';
 }
 
 export function buildHttpStartCommand(): string {
-  return 'python -m website_profiling.mcp.http';
+  return [
+    'cd services/AiService',
+    'export DATABASE_URL=postgres://USER:PASS@localhost:5432/website_profiling',
+    'export FASTAPI_URL=http://127.0.0.1:8001',
+    'export ASPNETCORE_URLS=http://0.0.0.0:8092',
+    'export WP_MCP_HTTP=1',
+    'dotnet run --project src/AiService.Api',
+  ].join('\n');
 }
 
 export function tokenForSnippet(rawToken: string, masked: boolean): string {

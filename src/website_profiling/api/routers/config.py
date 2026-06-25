@@ -1,4 +1,7 @@
-"""Config routes: pipeline-config, llm-config, secrets, app-settings."""
+"""Config routes: pipeline-config and app-settings.
+
+Secrets, llm-config, and app-level Google credential writes are served by AiService via BFF.
+"""
 from __future__ import annotations
 
 from typing import Annotated, Any, Optional
@@ -11,49 +14,10 @@ from ..deps import get_db
 
 router = APIRouter(tags=["config"])
 
-_MASK = "*"
-
 
 # ---------------------------------------------------------------------------
 # helpers
 # ---------------------------------------------------------------------------
-
-
-def _mask_secrets(data: dict[str, Any]) -> dict[str, Any]:
-    """Return a copy of *data* with secret-ish values replaced by ``'*'``."""
-    masked: dict[str, Any] = {}
-    for k, v in data.items():
-        val_str = str(v) if v is not None else ""
-        if val_str and (_is_secret_key(k)):
-            masked[k] = _MASK
-        else:
-            masked[k] = v
-    return masked
-
-
-def _is_secret_key(key: str) -> bool:
-    key_lower = key.lower()
-    return (
-        key_lower.endswith("_secret")
-        or key_lower.endswith("_api_key")
-        or key_lower.endswith("_key")
-        or "api_key" in key_lower
-        or "secret" in key_lower
-        or "password" in key_lower
-        or "token" in key_lower
-    )
-
-
-def _is_masked_sentinel(val: str) -> bool:
-    stripped = val.strip()
-    if stripped in (_MASK, "••••", "{configured}"):
-        return True
-    return stripped.startswith("*") and len(stripped) <= 4
-
-
-def _read_llm_config_full(conn: Connection) -> list[dict[str, Any]]:
-    from website_profiling.db.config_store import read_llm_config_full
-    return read_llm_config_full(conn)
 
 
 def _read_app_setting(conn: Connection, key: str) -> Optional[str]:
@@ -95,176 +59,6 @@ def put_pipeline_config(
     unknown_keys: list[dict[str, str]] = body.unknownKeys or []
     write_pipeline_config(conn, coerced, unknown_keys)
     return {"ok": True, "source": "db"}
-
-
-# ---------------------------------------------------------------------------
-# llm-config
-# ---------------------------------------------------------------------------
-
-
-@router.get("/llm-config")
-def get_llm_config(conn: Annotated[Connection, Depends(get_db)]) -> dict[str, Any]:
-    rows = _read_llm_config_full(conn)
-    state: dict[str, Any] = {}
-    for row in rows:
-        k = str(row["key"])
-        v = str(row["value"])
-        is_secret = bool(row.get("is_secret"))
-        state[k] = _MASK if (is_secret and v) else v
-    return {"state": state, "source": "db"}
-
-
-class LlmConfigBody(BaseModel):
-    state: dict[str, Any]
-
-
-@router.put("/llm-config")
-def put_llm_config(
-    body: LlmConfigBody,
-    conn: Annotated[Connection, Depends(get_db)],
-) -> dict[str, Any]:
-    from website_profiling.db.config_store import write_llm_config
-
-    existing_rows = _read_llm_config_full(conn)
-    existing: dict[str, str] = {str(r["key"]): str(r["value"]) for r in existing_rows}
-    existing_secrets: set[str] = {str(r["key"]) for r in existing_rows if r.get("is_secret")}
-
-    entries: dict[str, str] = dict(existing)
-    secret_keys: set[str] = set(existing_secrets)
-
-    for k, v in body.state.items():
-        if k.endswith("_masked"):
-            continue
-        val = str(v) if v is not None else ""
-        if _is_masked_sentinel(val) and k in existing:
-            entries[k] = existing[k]
-        else:
-            entries[k] = val
-
-        if k in existing_secrets or _is_secret_key(k):
-            secret_keys.add(k)
-
-    write_llm_config(conn, entries, secret_keys)
-    return {"ok": True}
-
-
-# ---------------------------------------------------------------------------
-# secrets
-# ---------------------------------------------------------------------------
-
-
-@router.get("/secrets")
-def get_secrets(conn: Annotated[Connection, Depends(get_db)]) -> dict[str, Any]:
-    from website_profiling.api.secrets_catalog import is_managed_pipeline_key, is_pipeline_secret_key
-    from website_profiling.db.config_store import read_pipeline_config
-    from website_profiling.db.google_app_store import read_google_app_settings
-
-    llm_rows = _read_llm_config_full(conn)
-    state: dict[str, Any] = {}
-    for row in llm_rows:
-        k = str(row["key"])
-        v = str(row["value"])
-        is_secret = bool(row.get("is_secret")) or _is_secret_key(k)
-        if not is_secret or not v:
-            continue
-        state[k] = _MASK
-        state[f"{k}_masked"] = True
-
-    pipeline_known, _unknown = read_pipeline_config(conn)
-    for key, value in pipeline_known.items():
-        if not is_managed_pipeline_key(key) or not value:
-            continue
-        if is_pipeline_secret_key(key):
-            state[key] = _MASK
-            state[f"{key}_masked"] = True
-        else:
-            state[key] = value
-
-    google = read_google_app_settings(conn)
-    if google.get("client_id"):
-        state["google_client_id"] = str(google["client_id"])
-    for field in ("client_secret", "developer_token"):
-        raw = str(google.get(field) or "")
-        if raw:
-            state[f"google_{field}"] = _MASK
-            state[f"google_{field}_masked"] = True
-    if google.get("login_customer_id"):
-        state["google_login_customer_id"] = str(google["login_customer_id"])
-    if google.get("service_account_json"):
-        state["google_service_account_json_masked"] = True
-    state["google_has_service_account"] = bool(google.get("service_account_json"))
-
-    return {"state": state, "source": "db"}
-
-
-class SecretsBody(BaseModel):
-    state: dict[str, Any]
-
-
-@router.put("/secrets")
-def put_secrets(
-    body: SecretsBody,
-    conn: Annotated[Connection, Depends(get_db)],
-) -> dict[str, Any]:
-    import json
-
-    from website_profiling.api.secrets_catalog import google_field_from_state_key, resolve_storage
-    from website_profiling.db.config_store import read_llm_config, read_pipeline_config, write_llm_config, write_pipeline_config
-    from website_profiling.db.google_app_store import save_google_app_settings
-
-    existing_llm = read_llm_config(conn)
-    existing_rows = _read_llm_config_full(conn)
-    existing_secrets_set: set[str] = {str(r["key"]) for r in existing_rows if r.get("is_secret")}
-
-    llm_updates: dict[str, str] = dict(existing_llm)
-    llm_secret_keys: set[str] = set(existing_secrets_set)
-    pipeline_updates: dict[str, str] = {}
-    google_patch: dict[str, Any] = {}
-
-    for k, v in body.state.items():
-        if k.endswith("_masked") or k == "google_has_service_account":
-            continue
-
-        val = str(v) if v is not None else ""
-        if _is_masked_sentinel(val):
-            continue
-
-        storage = resolve_storage(k)
-        if storage == "google":
-            field = google_field_from_state_key(k)
-            if field == "service_account_json":
-                if not val.strip():
-                    continue
-                try:
-                    parsed = json.loads(val)
-                except json.JSONDecodeError as exc:
-                    raise HTTPException(status_code=400, detail="Invalid service account JSON.") from exc
-                if not isinstance(parsed, dict) or parsed.get("type") != "service_account":
-                    raise HTTPException(status_code=400, detail="Invalid service account JSON.")
-                google_patch["service_account_json"] = parsed
-            elif field in ("client_id", "client_secret", "developer_token", "login_customer_id"):
-                google_patch[field] = val
-        elif storage == "pipeline":
-            pipeline_updates[k] = val
-        elif storage == "llm":
-            llm_updates[k] = val
-            if _is_secret_key(k):
-                llm_secret_keys.add(k)
-
-    if llm_updates != existing_llm or llm_secret_keys != existing_secrets_set:
-        write_llm_config(conn, llm_updates, llm_secret_keys)
-
-    if pipeline_updates:
-        known, unknown = read_pipeline_config(conn)
-        merged_known = dict(known)
-        merged_known.update(pipeline_updates)
-        write_pipeline_config(conn, merged_known, unknown)
-
-    if google_patch:
-        save_google_app_settings(conn, google_patch)
-
-    refreshed = get_secrets(conn)
-    return {"ok": True, **refreshed}
 
 
 # ---------------------------------------------------------------------------

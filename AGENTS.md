@@ -13,7 +13,7 @@ This file is the canonical entry point for agents. For full detail see [AGENT.md
 - `web/` — Vite + React SPA (static nginx in prod); browser calls `services/Bff/` for all `/api/*`
 - `services/Bff/` — .NET BFF (auth, CORS, proxy to FastAPI + Data + AiService + FileService)
 - `services/Data/` — .NET read service (report payloads, portfolio, issue status, filters; port 8091)
-- `services/AiService/` — .NET AI service (Microsoft.Extensions.AI, chat, enrichment, MCP; port 8092). See [services/AiService/README.md](services/AiService/README.md)
+- `services/AiService/` — .NET AI service (Microsoft.Extensions.AI, chat, enrichment, MCP, **secrets/llm-config writes**; port 8092). See [services/AiService/README.md](services/AiService/README.md)
 - `services/FileService/` — .NET PDF + Excel workbook export (port 8080). HTTP-only via `REPORT_API_URL`; no Postgres. Profiles: `executive|standard|full|premium`. Details: [services/FileService/README.md](services/FileService/README.md). Env: `FILE_SERVICE_URL` (MCP), `REPORT_API_URL` (FileService).
 - `alembic/` — DB migrations
 - `docs/` — documentation index
@@ -28,7 +28,9 @@ python -m src        # Run audit pipeline
 # MCP: AiService stdio/HTTP — see services/AiService/README.md and docs/MCP.md
 ```
 
-**MCP:** 340 read-only audit tools via Model Context Protocol. See [docs/MCP.md](docs/MCP.md).
+**MCP:** 369 read-only audit tools via Model Context Protocol (AiService). See [docs/MCP.md](docs/MCP.md).
+
+**Secrets / credentials:** Browser writes go BFF → AiService only (`PUT /api/secrets`, `PUT /api/llm-config`). Python FastAPI keeps `pipeline-config` and read-only integration routes; worker/crawl reads `llm_config` / `google_app_settings` from Postgres at runtime.
 
 **Edit targets**
 

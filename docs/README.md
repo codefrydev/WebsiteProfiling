@@ -15,8 +15,24 @@ This directory contains product, integration, and operations documentation for *
 | [COMPANY_STANDARDS.md](COMPANY_STANDARDS.md) | Agencies / operators | Data classification, crawl scope, security policy |
 | [MCP.md](MCP.md) | Integrators | Model Context Protocol server configuration and tool reference |
 | [OPS.md](OPS.md) | Operators | Scheduled audits, alerts, migrations, production notes |
+| [services/AiService/README.md](../services/AiService/README.md) | Developers | AI chat, secrets, LLM config, MCP, enrichment (port 8092) |
 | [services/FileService/README.md](../services/FileService/README.md) | Developers / operators | PDF and Excel workbook export service |
-| `services/Data/` | Developers | .NET read service — report payloads, portfolio, issue status, saved filters |
+| `services/Data/` | Developers | .NET read service — report payloads, portfolio, issue status, saved filters (port 8091) |
+
+---
+
+## API routing (browser)
+
+All `/api/*` calls from the SPA go to the **BFF** (`:8090`). The BFF forwards subsets to:
+
+| Upstream | Examples |
+|----------|----------|
+| **FastAPI** (`:8001`) | `/api/run`, `/api/pipeline-config`, crawl, integrations, properties |
+| **AiService** (`:8092`) | `/api/chat`, `/api/secrets`, `/api/llm-config`, MCP-related APIs |
+| **Data** (`:8091`) | Report payload reads, portfolio, issue status, saved filters |
+| **FileService** (`:8080`) | PDF and Excel export |
+
+See [AGENT.md](../AGENT.md) for the full route split and [services/AiService/README.md](../services/AiService/README.md) for `AI_ROUTES`.
 
 ---
 

@@ -50,7 +50,7 @@ This glossary maps agency-facing UI terms to internal keys, database tables, and
 | Content brief | Keywords Brief button, `/api/keywords/content-brief` | LLM or deterministic | Content planning |
 | AI fix suggestions | `llm_recommendation`, `/api/ai/fix-suggestion` | LLM on demand + report build | Actionable remediation |
 | AI Chat | `/chat`, `/api/chat`, `chat_sessions` | LLM + read-only audit tools | Conversational audit queries |
-| MCP tools | `python -m website_profiling.mcp` | Same `audit_tools` as chat | IDE integration — see [MCP.md](MCP.md) |
+| MCP tools | AiService MCP (stdio or HTTP) | Same audit tool catalog as chat | IDE integration — see [MCP.md](MCP.md) |
 | Read-only session | `AUTH_DEFAULT_ROLE=client-readonly` or `viewer`; `/api/auth/session` returns role and mutation flags | Session cookie | `client-readonly`: view + chat; `viewer`: view only (no chat) |
 | Export executive summary | Export view; MCP `export_audit_report` (pdf/csv/json); workbook via Export view or FileService | Report payload + optional AI | Client deliverable |
 | ads.txt / security.txt | `site_level`, `get_ads_txt_status`, `get_security_txt_status` | Root file fetch at report build | Publisher / contact file hygiene |

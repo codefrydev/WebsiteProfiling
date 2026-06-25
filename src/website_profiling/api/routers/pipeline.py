@@ -18,7 +18,6 @@ from ..schemas.pipeline import (
     ResumeResponse,
     RunPostBody,
     RunResponse,
-    coerce_llm_state,
     coerce_pipeline_state,
     validate_pipeline_run,
 )
@@ -52,8 +51,6 @@ def _get_pipeline_jobs_db(conn: Connection):
 def run_pipeline(body: RunPostBody, conn: DbDep) -> dict[str, Any]:
     from website_profiling.db.config_store import (
         read_pipeline_config,
-        read_llm_config,
-        write_llm_config,
         write_pipeline_config,
     )
     from website_profiling.db.pipeline_jobs import enqueue_job, reconcile_stale_jobs
@@ -126,15 +123,6 @@ def run_pipeline(body: RunPostBody, conn: DbDep) -> dict[str, Any]:
         write_pipeline_config(conn, str_state, safe_unknown)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to save config: {exc}")
-
-    # Save LLM config if provided
-    if body.llmState and isinstance(body.llmState, dict):
-        llm_coerced = coerce_llm_state(body.llmState)
-        str_llm = {k: str(v) for k, v in llm_coerced.items() if not str(k).endswith("_masked")}
-        try:
-            write_llm_config(conn, str_llm)
-        except Exception as exc:
-            raise HTTPException(status_code=500, detail=f"Failed to save LLM config: {exc}")
 
     # Enqueue job
     job_id = str(uuid.uuid4())

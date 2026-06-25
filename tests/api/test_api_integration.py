@@ -107,18 +107,12 @@ def test_integrations_google_status(api_client: TestClient) -> None:
     assert "lastFetchedAt" in body
 
 
-def test_pipeline_and_llm_config_wrappers(api_client: TestClient) -> None:
+def test_pipeline_config_wrapper(api_client: TestClient) -> None:
     pipe = api_client.get("/api/pipeline-config")
     assert pipe.status_code == 200
     pipe_body = pipe.json()
     assert "state" in pipe_body
     assert isinstance(pipe_body["state"], dict)
-
-    llm = api_client.get("/api/llm-config")
-    assert llm.status_code == 200
-    llm_body = llm.json()
-    assert "state" in llm_body
-    assert isinstance(llm_body["state"], dict)
 
 
 def test_content_drafts_full_crud(api_client: TestClient, test_property: dict[str, Any]) -> None:

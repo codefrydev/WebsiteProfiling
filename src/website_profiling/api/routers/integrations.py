@@ -67,77 +67,7 @@ def google_status(conn: DbDep) -> dict[str, Any]:
     return status
 
 
-# ── POST /api/integrations/google/credentials ─────────────────────────────────
-
-@router.post("/google/credentials")
-def save_google_credentials(
-    conn: DbDep,
-    body: dict[str, Any] = Body(default={}),
-) -> dict[str, Any]:
-    _PROPERTY_ONLY_MSG = (
-        "Per-site settings (GSC, GA4, refresh token) must be saved via property "
-        "Integrations when a Site URL is set."
-    )
-    if any(k in body for k in ("refreshToken", "gscSiteUrl", "ga4PropertyId")):
-        raise HTTPException(status_code=400, detail=_PROPERTY_ONLY_MSG)
-
-    from website_profiling.db.google_app_store import save_google_app_settings
-
-    patch: dict[str, Any] = {}
-    if isinstance(body.get("clientId"), str) and body["clientId"].strip():
-        patch["client_id"] = body["clientId"].strip()
-    if isinstance(body.get("clientSecret"), str) and body["clientSecret"].strip():
-        patch["client_secret"] = body["clientSecret"].strip()
-    if isinstance(body.get("dateRangeDays"), (int, float)) and body["dateRangeDays"] > 0:
-        patch["default_date_range_days"] = int(body["dateRangeDays"])
-    if isinstance(body.get("developerToken"), str) and body["developerToken"].strip():
-        patch["developer_token"] = body["developerToken"].strip()
-    if isinstance(body.get("loginCustomerId"), str) and body["loginCustomerId"].strip():
-        patch["login_customer_id"] = body["loginCustomerId"].strip().replace("-", "")
-
-    if not patch:
-        raise HTTPException(status_code=400, detail="No valid fields provided")
-
-    save_google_app_settings(conn, patch)
-    return {"ok": True, "status": _google_public_status(conn)}
-
-
-# ── POST /api/integrations/google/credentials/upload ──────────────────────────
-
-@router.post("/google/credentials/upload")
-def upload_google_credentials(
-    conn: DbDep,
-    body: dict[str, Any] = Body(default={}),
-) -> dict[str, Any]:
-    from website_profiling.db.google_app_store import save_google_app_settings
-
-    raw = body.get("fileContent")
-    if not raw or not isinstance(raw, str):
-        raise HTTPException(status_code=400, detail="fileContent is required")
-
-    try:
-        parsed = json.loads(raw)
-    except Exception:
-        raise HTTPException(status_code=400, detail="This doesn't look like a valid JSON file.")
-
-    if (
-        not isinstance(parsed, dict)
-        or parsed.get("type") != "service_account"
-        or not isinstance(parsed.get("client_email"), str)
-        or not isinstance(parsed.get("private_key"), str)
-    ):
-        raise HTTPException(
-            status_code=400,
-            detail=(
-                "This doesn't look like a Google service account key file. "
-                "Make sure you downloaded the JSON key from Google Cloud Console > "
-                "IAM & Admin > Service Accounts."
-            ),
-        )
-
-    save_google_app_settings(conn, {"service_account_json": parsed})
-    return {"ok": True, "status": _google_public_status(conn)}
-
+# App-level Google credential writes (OAuth client, service account) → AiService PUT /api/secrets via BFF.
 
 # ── POST /api/integrations/google/disconnect ──────────────────────────────────
 

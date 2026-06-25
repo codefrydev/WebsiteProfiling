@@ -583,6 +583,14 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     setStatus('starting');
     setBackgroundMode(false);
     try {
+      const llmRes = await apiFetch(apiUrl('/llm-config'), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: buildLlmPayload() }),
+      });
+      const llmData = await llmRes.json().catch(() => ({}));
+      if (!llmRes.ok) throw new Error(llmData.error || llmRes.statusText);
+
       const res = await apiFetch(apiUrl('/run'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -590,7 +598,6 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
           command,
           state: runState,
           unknownKeys,
-          llmState: buildLlmPayload(),
           python: pythonExe.trim() || undefined,
           repoRoot: repoRoot.trim() || undefined,
         }),
