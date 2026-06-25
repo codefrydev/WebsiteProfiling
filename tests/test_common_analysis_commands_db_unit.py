@@ -640,7 +640,8 @@ def test_pipeline_cmd_remaining_branches(monkeypatch) -> None:
             return False
 
     monkeypatch.setattr("website_profiling.db.db_session", lambda: Ctx())
-    monkeypatch.setattr("website_profiling.db.get_latest_crawl_run_id", lambda _c: 1)
+    monkeypatch.setattr("website_profiling.db.resolve_crawl_run_id_for_cfg", lambda _c, **kw: 1)
+    monkeypatch.setattr("website_profiling.db.get_crawl_run_info", lambda _c, _rid: {"start_url": "https://a.com"})
     monkeypatch.setattr("website_profiling.db.read_crawl", lambda _c, _rid: pd.DataFrame())
     monkeypatch.setattr(pipeline_cmd, "lighthouse_work_dir", lambda: "/tmp/lh")
     monkeypatch.setattr(pipeline_cmd, "cleanup_lighthouse_work_dir", lambda _p: None)

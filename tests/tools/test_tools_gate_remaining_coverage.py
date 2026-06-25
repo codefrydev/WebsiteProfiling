@@ -501,7 +501,7 @@ def test_llm_generator_tools(conn: MagicMock, ctx: Ctx) -> None:
         "website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response",
         return_value={},
     ), patch(
-        "website_profiling.llm.base.get_llm_client",
+        "website_profiling.llm_client_http.complete_json",
         return_value=MagicMock(complete_json=MagicMock(return_value={"schema_json": {"@type": "WebSite", "name": "Ex"}})),
     ), patch("website_profiling.llm_config.load_llm_config_from_db", return_value={}):
         schema = llm_mod.generate_schema(conn, ctx, {"schema_type": "FAQPage"})
@@ -696,7 +696,7 @@ def test_remaining_geo_and_llm_gaps(conn: MagicMock, ctx: Ctx) -> None:
         "website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response",
         return_value={},
     ), patch(
-        "website_profiling.llm.base.get_llm_client",
+        "website_profiling.llm_client_http.complete_json",
         return_value=MagicMock(complete_json=MagicMock(side_effect=RuntimeError("llm down"))),
     ), patch("website_profiling.llm_config.load_llm_config_from_db", return_value={}):
         faq_schema = llm_mod.generate_schema(conn, ctx, {"schema_type": "FAQPage"})

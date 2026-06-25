@@ -1,4 +1,5 @@
 import type { ToolActivityItem } from '@/components/chat/ChatToolActivity';
+import { expandWorkflowToolActivity } from '@/components/chat/expandWorkflowToolActivity';
 import {
   deriveChatBlocks,
   deriveFallbackBlocks,
@@ -32,7 +33,7 @@ export function postprocessChatContent(
   toolActivity: ToolActivityItem[] | undefined,
   options: PostprocessChatContentOptions = {},
 ): PostprocessedChatContent {
-  const tools = toolActivity ?? [];
+  const tools = expandWorkflowToolActivity(toolActivity ?? []);
   const vizBlocks = deriveChatBlocks(tools);
   const fallbackBlocks = deriveFallbackBlocks(tools, vizBlocks);
   const blocks = mergeChatBlocks(vizBlocks, fallbackBlocks);

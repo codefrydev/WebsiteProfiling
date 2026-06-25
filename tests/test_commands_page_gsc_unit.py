@@ -311,7 +311,7 @@ def test_page_coach_cmd_success_and_env(monkeypatch, capsys) -> None:
 
     monkeypatch.setitem(
         sys.modules,
-        "website_profiling.llm.page_coach",
+        "website_profiling.llm_client_http.run_page_coach",
         types.SimpleNamespace(run_page_coach=fake_run),
     )
     monkeypatch.setenv("WP_PAGE_COACH_CURRENT", "crawl:5")
@@ -343,7 +343,7 @@ def test_page_coach_cmd_malformed_env_does_not_crash(monkeypatch, capsys) -> Non
 
     monkeypatch.setitem(
         sys.modules,
-        "website_profiling.llm.page_coach",
+        "website_profiling.llm_client_http.run_page_coach",
         types.SimpleNamespace(run_page_coach=fake_run),
     )
     monkeypatch.setenv("WP_PAGE_COACH_CURRENT", "live:abc")
@@ -363,7 +363,7 @@ def test_page_coach_cmd_failure_exit(monkeypatch, capsys) -> None:
 
     monkeypatch.setitem(
         sys.modules,
-        "website_profiling.llm.page_coach",
+        "website_profiling.llm_client_http.run_page_coach",
         types.SimpleNamespace(run_page_coach=lambda *_a, **_k: {"ok": False}),
     )
     monkeypatch.delenv("WP_PAGE_COACH_CURRENT", raising=False)

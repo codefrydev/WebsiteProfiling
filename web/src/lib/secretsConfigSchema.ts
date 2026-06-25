@@ -52,6 +52,7 @@ export const MCP_MANAGED_KEYS = new Set([
   'mcp_allowed_origins',
   'mcp_public_url',
   'mcp_domain',
+  'mcp_enabled_domains',
 ]);
 
 export const SECRETS_SECTIONS: SecretsSection[] = [
@@ -199,6 +200,7 @@ export const MCP_SETTINGS_FIELDS: SecretsField[] = [
 /** Keys managed on the /risk-settings page — stored in pipeline_config but hidden from /secrets UI. */
 export const RISK_SETTINGS_KEYS = new Set([
   'mcp_disabled_tools',
+  'mcp_enabled_domains',
   'feature_pipeline_enabled',
   'feature_write_enabled',
   'feature_pages_md_enabled',
@@ -266,8 +268,9 @@ export function buildInitialSecretsState(): SecretsState {
     out[f.key] = f.key === 'mcp_domain' ? 'core' : '';
   }
   out['mcp_disabled_tools'] = '';
+  out['mcp_enabled_domains'] = JSON.stringify(['core', 'insight']);
   for (const key of RISK_SETTINGS_KEYS) {
-    if (key !== 'mcp_disabled_tools') {
+    if (key !== 'mcp_disabled_tools' && key !== 'mcp_enabled_domains') {
       out[key] = 'true';
     }
   }

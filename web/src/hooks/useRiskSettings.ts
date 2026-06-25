@@ -60,6 +60,20 @@ function parseDisabledTools(raw: string | boolean | undefined): Set<string> {
   return new Set();
 }
 
+/** Parses mcp_enabled_domains JSON array (custom bundle mode). */
+export function parseEnabledDomains(raw: string | boolean | undefined): Set<string> {
+  if (!raw || typeof raw !== 'string') return new Set(['core', 'insight']);
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return new Set(parsed.map((d) => String(d).trim().toLowerCase()).filter(Boolean));
+    }
+  } catch {
+    /* invalid JSON */
+  }
+  return new Set(['core', 'insight']);
+}
+
 export function useRiskSettings() {
   const secrets = useSecrets();
 
@@ -92,6 +106,7 @@ export function useRiskSettings() {
 
   // ── Disabled tools (pipeline_config: mcp_disabled_tools) ─────────────────
   const disabledTools = parseDisabledTools(secrets.state.mcp_disabled_tools);
+  const enabledDomains = parseEnabledDomains(secrets.state.mcp_enabled_domains);
 
   const setToolDisabled = useCallback(
     (name: string, disabled: boolean) => {
@@ -102,6 +117,20 @@ export function useRiskSettings() {
         current.delete(name);
       }
       secrets.setField('mcp_disabled_tools', JSON.stringify(Array.from(current)));
+    },
+    [secrets],
+  );
+
+  const setDomainEnabled = useCallback(
+    (domain: string, enabled: boolean) => {
+      const current = parseEnabledDomains(secrets.state.mcp_enabled_domains);
+      if (enabled) {
+        current.add(domain);
+      } else {
+        current.delete(domain);
+      }
+      const ordered = Array.from(current).sort();
+      secrets.setField('mcp_enabled_domains', JSON.stringify(ordered.length ? ordered : ['core', 'insight']));
     },
     [secrets],
   );
@@ -153,6 +182,8 @@ export function useRiskSettings() {
     // Disabled tools
     disabledTools,
     setToolDisabled,
+    enabledDomains,
+    setDomainEnabled,
     // Feature visibility
     featureEnabled,
     setFeatureEnabled,

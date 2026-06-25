@@ -122,6 +122,23 @@ wait_for_postgres() {
   die "Postgres did not become ready in time (container: $PG_CONTAINER)"
 }
 
+wait_for_http() {
+  local url="$1"
+  local label="$2"
+  local timeout="${3:-90}"
+  local i
+  need_cmd curl
+  log "Waiting for $label ($url)"
+  for ((i = 0; i < timeout; i++)); do
+    if curl -fsS "$url" >/dev/null 2>&1; then
+      log "$label ready"
+      return 0
+    fi
+    sleep 1
+  done
+  die "$label did not become ready in ${timeout}s ($url)"
+}
+
 cmd_db() {
   ensure_docker
   if docker ps -a --format '{{.Names}}' | grep -qx "$PG_CONTAINER"; then
@@ -209,6 +226,7 @@ cmd_start() {
   UVICORN_PID=""
   FILE_SERVICE_PID=""
   DATA_PID=""
+  AI_PID=""
   BFF_PID=""
   _CLEANUP_DONE=0
   set +m
@@ -225,6 +243,8 @@ cmd_start() {
     # Reverse startup order; Vite (foreground) is already exiting from Ctrl+C.
     stop_service "BFF" "$BFF_PID" 8090
     BFF_PID=""
+    stop_service "AiService" "$AI_PID" 8092
+    AI_PID=""
     stop_service "Data" "$DATA_PID" 8091
     DATA_PID=""
     stop_service "FastAPI" "$UVICORN_PID" 8001
@@ -259,10 +279,29 @@ cmd_start() {
       dotnet run --project src/Data.Api --no-launch-profile) &
     DATA_PID=$!
     disown_bg "$DATA_PID"
+
+    free_port 8092
+    log "Starting AiService on port 8092"
+    (cd "$ROOT/services/AiService" && \
+      DATABASE_URL="$DATABASE_URL" \
+      FASTAPI_URL="http://127.0.0.1:8001" \
+      ASPNETCORE_URLS="http://127.0.0.1:8092" \
+      ASPNETCORE_ENVIRONMENT=Development \
+      WP_MCP_HTTP=1 \
+      dotnet run --project src/AiService.Api --no-launch-profile) &
+    AI_PID=$!
+    disown_bg "$AI_PID"
+
+    wait_for_http "http://127.0.0.1:8080/health" "FileService"
+    wait_for_http "http://127.0.0.1:8091/health" "Data service"
+    wait_for_http "http://127.0.0.1:8092/health" "AiService"
   else
     warn "dotnet not found — PDF export requires FileService (see services/FileService/README.md)"
     warn "dotnet not found — Data service unavailable on port 8091"
+    warn "dotnet not found — AiService unavailable on port 8092"
   fi
+
+  export AI_SERVICE_URL="${AI_SERVICE_URL:-http://127.0.0.1:8092}"
 
   log "Starting pipeline worker"
   "$VENV/bin/python" -m website_profiling.worker &
@@ -277,6 +316,7 @@ cmd_start() {
     --host 0.0.0.0 --port 8001 --workers 1 &
   UVICORN_PID=$!
   disown_bg "$UVICORN_PID"
+  wait_for_http "http://127.0.0.1:8001/api/health" "FastAPI"
 
   if command -v dotnet >/dev/null 2>&1; then
     free_port 8090
@@ -285,13 +325,16 @@ cmd_start() {
       FASTAPI_URL="http://127.0.0.1:8001" \
       FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}" \
       DATA_SERVICE_URL="http://127.0.0.1:8091" \
+      AI_SERVICE_URL="${AI_SERVICE_URL:-http://127.0.0.1:8092}" \
       DATA_ROUTES="${DATA_ROUTES:-/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters}" \
+      AI_ROUTES="${AI_ROUTES:-/api/chat,/api/links/page-coach,/api/issues/fix-suggestion,/api/issues/action-plan,/api/ai/fix-suggestion,/api/dashboards/ai-generate,/api/content/analyze,/api/content/wizard,/api/llm-config,/api/secrets,/api/ollama/status,/api/report/audit-tool,/api/mcp-tools}" \
       BFF_ALLOWED_ORIGINS="http://localhost:3000" \
       ASPNETCORE_URLS="http://127.0.0.1:8090" \
       ASPNETCORE_ENVIRONMENT=Development \
       dotnet run --project src/Bff.Api --no-launch-profile) &
     BFF_PID=$!
     disown_bg "$BFF_PID"
+    wait_for_http "http://127.0.0.1:8090/health" "BFF"
   else
     warn "dotnet not found — browser API calls need the BFF (see services/Bff/)"
   fi

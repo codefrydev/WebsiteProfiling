@@ -9,6 +9,7 @@ import ChatMarkdown from '@/components/chat/ChatMarkdown';
 import ChatModelPicker from '@/components/chat/ChatModelPicker';
 import ChatProviderPicker from '@/components/chat/ChatProviderPicker';
 import { usePipeline } from '@/context/PipelineContext';
+import { isLlmInsightsEnabled } from '@/lib/llmConfigSchema';
 import { resolveChatAssistantName } from '@/lib/chatAssistantBranding';
 import { useChatFabPopup } from '@/hooks/useChatFabPopup';
 
@@ -31,9 +32,7 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
     useChatFabPopup(domain);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const llmEnabled =
-    llmConfigState.llm_enabled === true &&
-    String(llmConfigState.llm_provider || 'none') !== 'none';
+  const llmEnabled = isLlmInsightsEnabled(llmConfigState);
   const assistantName = resolveChatAssistantName(
     String(llmConfigState.llm_chat_assistant_name || ''),
   );

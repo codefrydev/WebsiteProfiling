@@ -1,0 +1,116 @@
+using System.Text.Json.Nodes;
+using AiService.Application.Chat;
+using AiService.Application.Prompts;
+using AiService.Tools.Selection;
+
+namespace AiService.Tests;
+
+public sealed class ChatAgentParityTests
+{
+    [Fact]
+    public void ResolveSystemPrompt_adds_crawl_suffix_when_enabled()
+    {
+        var cfg = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["llm_chat_allow_crawl"] = "true",
+        };
+
+        var prompt = ChatAgentConfig.ResolveSystemPrompt(cfg);
+        Assert.Contains(LlmPrompts.ChatAgentCrawlSuffix.Trim(), prompt);
+        Assert.DoesNotContain(LlmPrompts.ChatAgentReadOnlySuffix.Trim(), prompt);
+    }
+
+    [Fact]
+    public void ResolveSystemPrompt_adds_readonly_suffix_when_crawl_disabled()
+    {
+        var cfg = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["llm_chat_allow_crawl"] = "false",
+        };
+
+        var prompt = ChatAgentConfig.ResolveSystemPrompt(cfg);
+        Assert.Contains(LlmPrompts.ChatAgentReadOnlySuffix.Trim(), prompt);
+        Assert.DoesNotContain("prepare_audit_run", prompt);
+    }
+
+    [Fact]
+    public void ResolveMaxToolRounds_honors_env_overrides()
+    {
+        var cfg = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["llm_chat_unlimited_tool_rounds"] = "false",
+        };
+
+        Environment.SetEnvironmentVariable("CHAT_MAX_TOOL_ROUNDS", "17");
+        try
+        {
+            Assert.Equal(17, ChatAgentConfig.ResolveMaxToolRounds(cfg));
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("CHAT_MAX_TOOL_ROUNDS", null);
+        }
+    }
+
+    [Fact]
+    public void ExpandActiveToolsFromResult_pins_search_results()
+    {
+        var allowed = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "search_audit_tools",
+            "list_broken_links",
+            "list_issues",
+        };
+        var active = new HashSet<string>(StringComparer.Ordinal) { "search_audit_tools" };
+        var result = new JsonObject
+        {
+            ["tool_names"] = new JsonArray("list_broken_links", "list_issues"),
+        };
+
+        var expanded = ChatToolSelector.ExpandActiveToolsFromResult(
+            "search_audit_tools",
+            result,
+            active,
+            allowed);
+
+        Assert.Contains("list_broken_links", expanded);
+        Assert.Contains("list_issues", expanded);
+    }
+
+    [Fact]
+    public void PhraseToolPins_critical_issues_includes_report_trio()
+    {
+        var allowed = new HashSet<string>(StringComparer.Ordinal)
+        {
+            "get_report_summary",
+            "get_issue_priority_breakdown",
+            "get_critical_issues",
+            "list_issues",
+            "search_audit_tools",
+        };
+
+        var selected = ChatToolSelector.SelectToolsForTurn(
+            "show me critical issues on this site",
+            priorUserMessages: null,
+            allowed);
+
+        Assert.Contains("get_report_summary", selected);
+        Assert.Contains("get_issue_priority_breakdown", selected);
+        Assert.Contains("get_critical_issues", selected);
+    }
+
+    [Fact]
+    public void PartialDone_event_serializes_for_sse()
+    {
+        var json = ChatSseSerializer.ToJson(new ChatPartialDoneStreamEvent("Stopped early"));
+        Assert.Equal("partial_done", json["type"]?.GetValue<string>());
+        Assert.Equal("Stopped early", json["message"]?.GetValue<string>());
+    }
+
+    [Fact]
+    public void StripSurrogates_removes_invalid_unicode()
+    {
+        var cleaned = ChatTextSanitize.StripSurrogates("hi\ud800there");
+        Assert.Equal("hithere", cleaned);
+    }
+}

@@ -60,6 +60,7 @@ services:
       LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
       LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
       FILE_SERVICE_URL: http://files:8080
+      AI_SERVICE_URL: http://ai:8092
     volumes:
       - profiling-data:/data
 
@@ -78,6 +79,26 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+
+  ai:
+    build:
+      context: ./services/AiService
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
+      FASTAPI_URL: http://fastapi:8001
+      ASPNETCORE_URLS: http://+:8092
+      WP_MCP_HTTP: "1"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      fastapi:
+        condition: service_started
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:8092/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
 
   files:
     build:
@@ -101,13 +122,17 @@ services:
         condition: service_started
       data:
         condition: service_healthy
+      ai:
+        condition: service_healthy
     ports:
       - '${BFF_PORT:-8090}:8090'
     environment:
       FASTAPI_URL: http://fastapi:8001
       FILE_SERVICE_URL: http://files:8080
       DATA_SERVICE_URL: http://data:8091
+      AI_SERVICE_URL: http://ai:8092
       DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters"
+      AI_ROUTES: "/api/chat,/api/links/page-coach,/api/issues/fix-suggestion,/api/issues/action-plan,/api/ai/fix-suggestion,/api/dashboards/ai-generate,/api/content/analyze,/api/content/wizard,/api/llm-config,/api/secrets,/api/ollama/status,/api/report/audit-tool,/api/mcp-tools"
       AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET}
       AUTH_PASSWORD: ${AUTH_PASSWORD:-}
       BFF_ALLOWED_ORIGINS: ${BFF_ALLOWED_ORIGINS:?set BFF_ALLOWED_ORIGINS (the public UI origin)}
@@ -134,28 +159,22 @@ services:
       start_period: 30s
 
   mcp:
-    image: website-profiling:latest
+    build:
+      context: ./services/AiService
     depends_on:
-      postgres:
+      ai:
         condition: service_healthy
-      files:
-        condition: service_started
-    command: ['/opt/venv/bin/python', '-m', 'website_profiling.mcp.http']
     environment:
-      WEBSITE_PROFILING_ROOT: /app
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
-      FILE_SERVICE_URL: http://files:8080
-      WP_MCP_HTTP_HOST: 0.0.0.0
-      WP_MCP_HTTP_PORT: 8000
-      WP_MCP_TOKEN: ${WP_MCP_TOKEN:?set WP_MCP_TOKEN}
-      WP_MCP_ALLOWED_HOSTS: ${WP_MCP_ALLOWED_HOSTS:-}
-      WP_MCP_ALLOWED_ORIGINS: ${WP_MCP_ALLOWED_ORIGINS:-}
+      FASTAPI_URL: http://fastapi:8001
+      ASPNETCORE_URLS: http://+:8092
+      WP_MCP_HTTP: "1"
       WP_MCP_DOMAIN: ${WP_MCP_DOMAIN:-core}
       WP_PROPERTY_ID: ${WP_PROPERTY_ID:-}
     profiles:
       - mcp
     ports:
-      - '${MCP_PORT:-8000}:8000'
+      - '${MCP_PORT:-8000}:8092'
 
 volumes:
   pg-data:

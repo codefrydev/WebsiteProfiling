@@ -262,6 +262,39 @@ def test_crawl_store_core_helpers(monkeypatch):
     assert cs._extract_hostname("https://A.com/path") == "a.com"
 
 
+def test_resolve_crawl_run_id_for_cfg_prefers_property_then_start_url(monkeypatch):
+    from website_profiling.db import crawl_store as cs
+
+    calls: list[str] = []
+
+    monkeypatch.setattr(cs, "get_latest_crawl_run_id_for_property", lambda _c, pid: (calls.append(f"prop:{pid}") or 42))
+    monkeypatch.setattr(
+        cs,
+        "get_latest_crawl_run_id_for_start_url",
+        lambda _c, url: (calls.append(f"url:{url}") or 7),
+    )
+    monkeypatch.setattr(cs, "get_latest_crawl_run_id", lambda _c: (calls.append("global") or 1))
+
+    conn = _Conn({})
+    assert cs.resolve_crawl_run_id_for_cfg(conn, property_id=3, start_url="https://site.com") == 42  # type: ignore[arg-type]
+    assert calls == ["prop:3"]
+
+    calls.clear()
+
+    def _no_property(_c, pid):
+        calls.append(f"prop:{pid}")
+        return None
+
+    monkeypatch.setattr(cs, "get_latest_crawl_run_id_for_property", _no_property)
+    assert cs.resolve_crawl_run_id_for_cfg(conn, property_id=3, start_url="https://site.com") == 7  # type: ignore[arg-type]
+    assert calls == ["prop:3", "url:https://site.com"]
+
+    calls.clear()
+    monkeypatch.setattr(cs, "get_latest_crawl_run_id_for_start_url", lambda _c, url: None)
+    assert cs.resolve_crawl_run_id_for_cfg(conn, property_id=None, start_url="") == 1  # type: ignore[arg-type]
+    assert calls == ["global"]
+
+
 def test_write_nodes_variants(monkeypatch):
     from website_profiling.db import crawl_store as cs
 

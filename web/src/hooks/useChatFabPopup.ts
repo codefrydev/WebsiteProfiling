@@ -149,6 +149,7 @@ export function useChatFabPopup(domain: string | null): UseChatFabPopupReturn {
           }
 
           let lastNarrative: ChatNarrative | null = null;
+          let lastProgressAt = 0;
 
           await consumeChatSse(res, (evt: ChatSseEvent) => {
             if (evt.type === 'token') {
@@ -171,6 +172,17 @@ export function useChatFabPopup(domain: string | null): UseChatFabPopupReturn {
                   m.id === assistantId
                     ? { ...m, toolStatus: `Running ${evt.name ?? 'tool'}…` }
                     : m,
+                ),
+              );
+            } else if (evt.type === 'tool_progress' && evt.detail) {
+              const now = Date.now();
+              if (now - lastProgressAt < 100) {
+                return;
+              }
+              lastProgressAt = now;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId ? { ...m, toolStatus: evt.detail } : m,
                 ),
               );
             } else if (evt.type === 'tool_end') {

@@ -5,7 +5,7 @@ import type { ToolActivityItem } from '@/components/chat/ChatToolActivity';
 import { toolEventsToActivity } from '@/components/chat/deriveChatBlocks';
 
 import type { ChatNarrative } from '@/types/chatNarrative';
-import { narrativeFromToolResult } from '@/types/chatNarrative';
+import { narrativeFromToolResult, narrativeFromLegacyContent } from '@/types/chatNarrative';
 
 export interface ChatMessage {
   id: string | number;
@@ -94,4 +94,4 @@ export function agentErrorFromToolResult(
   return typeof err === 'string' && err.trim() ? err.trim() : null;
 }
 
-export { narrativeFromToolResult };
+export { narrativeFromToolResult, narrativeFromLegacyContent };

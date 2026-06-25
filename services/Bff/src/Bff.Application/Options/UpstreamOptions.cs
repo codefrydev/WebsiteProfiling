@@ -20,6 +20,15 @@ public sealed class UpstreamOptions
     /// <summary>Data service base URL (env override: DATA_SERVICE_URL). Internal .NET read service.</summary>
     public string DataBaseUrl { get; set; } = "http://127.0.0.1:8091";
 
+    /// <summary>AiService base URL (env override: AI_SERVICE_URL). Internal .NET AI/LLM service.</summary>
+    public string AiBaseUrl { get; set; } = "http://127.0.0.1:8092";
+
+    /// <summary>
+    /// Comma-separated /api path prefixes routed to the Ai service instead of FastAPI
+    /// (env override: AI_ROUTES). Empty = AI routes stay on FastAPI (rollback-safe default).
+    /// </summary>
+    public string[] AiRoutes { get; set; } = [];
+
     /// <summary>
     /// Comma-separated /api path prefixes routed to the Data service instead of FastAPI
     /// (env override: DATA_ROUTES). Supports GET/HEAD reads and POST/PUT/DELETE mutations on matched

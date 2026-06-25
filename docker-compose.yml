@@ -61,6 +61,7 @@ services:
       LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
       LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
       FILE_SERVICE_URL: http://files:8080
+      AI_SERVICE_URL: http://ai:8092
     volumes:
       - profiling-data:/data
 
@@ -82,6 +83,26 @@ services:
       retries: 3
       start_period: 15s
 
+  ai:
+    build:
+      context: ./services/AiService
+    environment:
+      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
+      FASTAPI_URL: http://fastapi:8001
+      ASPNETCORE_URLS: http://+:8092
+      WP_MCP_HTTP: "1"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      fastapi:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8092/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
   # .NET BFF — the single browser-facing API surface (owns auth + CORS).
   bff:
     build:
@@ -93,16 +114,18 @@ services:
       FILE_SERVICE_URL: http://files:8080
       BFF_ALLOWED_ORIGINS: "http://localhost:3000"
       DATA_SERVICE_URL: http://data:8091
-      # Comma-separated /api path prefixes served by the Data service (reads + issue/portfolio mutations).
-      # Rollback: remove a prefix here and restart bff.
+      AI_SERVICE_URL: http://ai:8092
+      BFF_ALLOWED_ORIGINS: "http://localhost:3000"
       DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters"
-      # AUTH_SECRET: set to enable wp_session auth (must match the web service)
+      AI_ROUTES: "/api/chat,/api/links/page-coach,/api/issues/fix-suggestion,/api/issues/action-plan,/api/ai/fix-suggestion,/api/dashboards/ai-generate,/api/content/analyze,/api/content/wizard,/api/llm-config,/api/secrets,/api/ollama/status,/api/report/audit-tool,/api/mcp-tools"
     depends_on:
       fastapi:
         condition: service_started
       files:
         condition: service_started
       data:
+        condition: service_healthy
+      ai:
         condition: service_healthy
 
   # Vite SPA (nginx). The browser calls the BFF (:8090) for all /api/*.

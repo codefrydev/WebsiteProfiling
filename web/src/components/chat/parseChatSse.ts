@@ -1,12 +1,44 @@
 export type ChatSseEvent =
   | { type: 'token'; text: string }
   | { type: 'status'; phase?: string; detail?: string }
-  | { type: 'tool_start'; name?: string; args?: Record<string, unknown> }
-  | { type: 'tool_end'; name?: string; result?: Record<string, unknown> }
+  | {
+      type: 'tool_start';
+      callId?: string;
+      name?: string;
+      args?: Record<string, unknown>;
+    }
+  | {
+      type: 'tool_end';
+      callId?: string;
+      name?: string;
+      result?: Record<string, unknown>;
+      truncated?: boolean;
+      resultBytes?: number;
+    }
+  | {
+      type: 'tool_progress';
+      callId?: string;
+      name?: string;
+      detail?: string;
+    }
   | { type: 'narrative'; narrative: { power_insights: string[]; recommended_actions: string[] } }
   | { type: 'done'; message?: string }
   | { type: 'partial_done'; message?: string }
   | { type: 'error'; message?: string };
+
+export function resolveToolActivityIndex(
+  tools: ReadonlyArray<{ id: string; name: string; status: string }>,
+  evt: { callId?: string; name?: string },
+): number {
+  if (evt.callId) {
+    const byId = tools.findIndex((t) => t.id === evt.callId);
+    if (byId >= 0) {
+      return byId;
+    }
+  }
+
+  return tools.findIndex((t) => t.name === evt.name && t.status === 'running');
+}
 
 export function parseSseChunk(buffer: string): { events: ChatSseEvent[]; rest: string } {
   const events: ChatSseEvent[] = [];
@@ -38,14 +70,25 @@ export function parseSseChunk(buffer: string): { events: ChatSseEvent[]; rest: s
       } else if (eventType === 'tool_start') {
         events.push({
           type: 'tool_start',
+          callId: data.call_id ? String(data.call_id) : undefined,
           name: String(data.name || ''),
           args: (data.args as Record<string, unknown>) || {},
         });
       } else if (eventType === 'tool_end') {
         events.push({
           type: 'tool_end',
+          callId: data.call_id ? String(data.call_id) : undefined,
           name: String(data.name || ''),
           result: (data.result as Record<string, unknown>) || {},
+          truncated: Boolean(data.truncated),
+          resultBytes: typeof data.result_bytes === 'number' ? data.result_bytes : undefined,
+        });
+      } else if (eventType === 'tool_progress') {
+        events.push({
+          type: 'tool_progress',
+          callId: data.call_id ? String(data.call_id) : undefined,
+          name: String(data.name || ''),
+          detail: String(data.detail || ''),
         });
       } else if (eventType === 'narrative') {
         const narrative = data.narrative as Record<string, unknown> | undefined;

@@ -302,7 +302,7 @@ def run_keyword_pipeline(
             "yes",
         ):
             try:
-                from ..llm.enrich import cluster_keywords_llm
+                from ..llm_client_http import cluster_keywords_llm
 
                 top_kw = [
                     s["keyword"]

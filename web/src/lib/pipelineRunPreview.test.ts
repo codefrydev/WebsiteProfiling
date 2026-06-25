@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { buildInitialPipelineConfigState } from '@/lib/pipelineConfigSchema';
-import { buildPipelineRunPreview, formatPipelineRunDuration } from '@/lib/pipelineRunPreview';
+import {
+  buildPipelineRunPreview,
+  formatPipelineRunDuration,
+  resolvePipelineRunState,
+} from '@/lib/pipelineRunPreview';
 import { applyCrawlPreset } from '@/lib/crawlPresets';
 
 describe('buildPipelineRunPreview', () => {
@@ -61,5 +65,22 @@ describe('buildPipelineRunPreview', () => {
       },
     });
     expect(preview.timeMaxSeconds).toBeLessThan(6 * 60);
+  });
+});
+
+describe('resolvePipelineRunState', () => {
+  it('applies full-audit preset over saved flags that disabled crawl', () => {
+    const saved = {
+      ...buildInitialPipelineConfigState(),
+      run_crawl: false,
+      run_report: false,
+      run_plot: false,
+      start_url: 'https://codefrydev.in',
+    };
+    const runState = resolvePipelineRunState('full-audit', saved, '');
+    expect(runState.run_crawl).toBe(true);
+    expect(runState.run_report).toBe(true);
+    expect(runState.run_plot).toBe(true);
+    expect(runState.start_url).toBe('https://codefrydev.in');
   });
 });

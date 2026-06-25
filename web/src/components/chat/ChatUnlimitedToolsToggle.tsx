@@ -1,6 +1,7 @@
 
 import { Infinity } from 'lucide-react';
 import { strings } from '@/lib/strings';
+import { parseLlmBool } from '@/lib/llmConfigSchema';
 import { usePipeline } from '@/context/PipelineContext';
 
 const c = strings.components.chat;
@@ -11,7 +12,7 @@ export interface ChatUnlimitedToolsToggleProps {
 
 export default function ChatUnlimitedToolsToggle({ disabled }: ChatUnlimitedToolsToggleProps) {
   const { llmConfigState, saveLlmChatUnlimitedTools, saving } = usePipeline();
-  const enabled = llmConfigState.llm_chat_unlimited_tool_rounds === true;
+  const enabled = parseLlmBool(llmConfigState.llm_chat_unlimited_tool_rounds);
   const busy = disabled || saving;
 
   return (

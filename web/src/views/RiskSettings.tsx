@@ -23,6 +23,7 @@ interface McpTool {
   description: string;
   domain: string;
   bundles: string[];
+  enabled?: boolean;
 }
 
 interface McpCatalog {
@@ -39,6 +40,7 @@ const MCP_DOMAIN_OPTIONS = [
   { value: 'crawl', label: 'Crawl', description: 'Technical crawl & on-page tools' },
   { value: 'google', label: 'Google', description: 'GSC / GA4 / keyword tools' },
   { value: 'links', label: 'Links', description: 'Link architecture & backlinks' },
+  { value: 'custom', label: 'Custom', description: 'Pick individual tool domains below' },
   { value: 'full', label: 'Full Access ⚠️', description: 'All 340+ tools — high risk' },
 ] as const;
 
@@ -173,6 +175,47 @@ function DomainSelector({
   );
 }
 
+// ─── Custom domain toggles ────────────────────────────────────────────────────
+
+function CustomDomainPicker({
+  domains,
+  enabledDomains,
+  onToggle,
+  disabled,
+}: {
+  domains: string[];
+  enabledDomains: Set<string>;
+  onToggle: (domain: string, enabled: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      {domains.map((domain) => {
+        const checked = enabledDomains.has(domain);
+        return (
+          <label
+            key={domain}
+            className={`flex cursor-pointer items-center gap-2 rounded-xl border px-3 py-2 text-sm capitalize ${
+              checked
+                ? 'border-[var(--accent)]/40 bg-[var(--accent-bg)]'
+                : 'border-default bg-[var(--app-bg-sunken)]'
+            } ${disabled ? 'opacity-50' : ''}`}
+          >
+            <input
+              type="checkbox"
+              className="rounded border-default"
+              checked={checked}
+              disabled={disabled}
+              onChange={(e) => onToggle(domain, e.target.checked)}
+            />
+            <span className="text-bright">{domain}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Per-tool accordion ───────────────────────────────────────────────────────
 
 function ToolDomainAccordion({
@@ -181,6 +224,7 @@ function ToolDomainAccordion({
   disabledTools,
   onToggle,
   currentBundle,
+  enabledDomains,
   disabled,
 }: {
   domain: string;
@@ -188,11 +232,19 @@ function ToolDomainAccordion({
   disabledTools: Set<string>;
   onToggle: (name: string, disabled: boolean) => void;
   currentBundle: string;
+  enabledDomains: Set<string>;
   disabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
-  const bundleTools = tools.filter((t) => t.bundles.includes(currentBundle) || currentBundle === 'full');
+  const inBundle =
+    currentBundle === 'full'
+    || tools.some((t) => t.bundles.includes(currentBundle))
+    || (currentBundle === 'custom' && enabledDomains.has(domain));
+  const bundleTools = tools.filter((t) =>
+    currentBundle === 'full'
+    || t.bundles.includes(currentBundle)
+    || (currentBundle === 'custom' && enabledDomains.has(domain)));
   const enabledCount = tools.filter((t) => !disabledTools.has(t.name)).length;
 
   return (
@@ -224,11 +276,14 @@ function ToolDomainAccordion({
         <div className="divide-y divide-[var(--app-border-muted)] border-t border-default">
           {tools.map((tool) => {
             const isDisabled = disabledTools.has(tool.name);
-            const inBundle = tool.bundles.includes(currentBundle) || currentBundle === 'full';
+            const inToolBundle =
+              currentBundle === 'full'
+              || tool.bundles.includes(currentBundle)
+              || (currentBundle === 'custom' && enabledDomains.has(domain));
             return (
               <div
                 key={tool.name}
-                className={`flex items-start justify-between gap-4 px-4 py-3 ${!inBundle ? 'opacity-50' : ''}`}
+                className={`flex items-start justify-between gap-4 px-4 py-3 ${!inToolBundle ? 'opacity-50' : ''}`}
               >
                 <div className="min-w-0 flex-1">
                   <p className="font-mono text-xs font-medium text-bright">{tool.name}</p>
@@ -237,9 +292,9 @@ function ToolDomainAccordion({
                       {tool.description}
                     </p>
                   )}
-                  {!inBundle && (
+                  {!inToolBundle && (
                     <p className="mt-0.5 text-[10px] text-amber-600 dark:text-amber-400">
-                      Not in &ldquo;{currentBundle}&rdquo; bundle — switch to &ldquo;full&rdquo; to activate
+                      Not in current bundle — enable the &ldquo;{domain}&rdquo; domain or switch bundle
                     </p>
                   )}
                 </div>
@@ -289,6 +344,8 @@ export default function RiskSettingsPage() {
     save,
     disabledTools,
     setToolDisabled,
+    enabledDomains,
+    setDomainEnabled,
     featureEnabled,
     setFeatureEnabled,
     llmState,
@@ -397,6 +454,20 @@ export default function RiskSettingsPage() {
                       ⚠️ Full mode exposes every tool to MCP clients — use a strong bearer token.
                     </p>
                   )}
+                  {currentDomain === 'custom' && (
+                    <div className="space-y-2 border-t border-default pt-4">
+                      <p className="text-xs font-medium text-bright">Enabled tool domains</p>
+                      <p className="text-xs text-muted-foreground">
+                        Choose which audit tool groups are active for MCP and in-app chat.
+                      </p>
+                      <CustomDomainPicker
+                        domains={domainOrder.length ? domainOrder : (catalog?.domains ?? [])}
+                        enabledDomains={enabledDomains}
+                        onToggle={setDomainEnabled}
+                        disabled={saving}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Per-tool toggles */}
@@ -432,6 +503,7 @@ export default function RiskSettingsPage() {
                             disabledTools={disabledTools}
                             onToggle={setToolDisabled}
                             currentBundle={currentDomain}
+                            enabledDomains={enabledDomains}
                             disabled={saving}
                           />
                         ))}

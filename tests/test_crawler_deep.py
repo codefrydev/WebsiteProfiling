@@ -252,7 +252,7 @@ def test_run_crawler_writes_csv(monkeypatch, tmp_path):
 
     monkeypatch.setattr(mod, "Crawler", FakeCrawler)
     out_file = tmp_path / "out.csv"
-    df = mod.run_crawler("https://a.com", output_db=False, output_csv=str(out_file), show_progress=False)
+    df, _ = mod.run_crawler("https://a.com", output_db=False, output_csv=str(out_file), show_progress=False)
     assert not df.empty
     assert out_file.exists()
 
@@ -544,7 +544,7 @@ def test_run_crawler_non_streaming_db_write(monkeypatch):
     monkeypatch.setitem(__import__("sys").modules, "website_profiling.db", fake_db)
     monkeypatch.setitem(__import__("sys").modules, "website_profiling.db.storage", fake_storage)
 
-    df = mod.run_crawler(
+    df, _ = mod.run_crawler(
         "https://a.com",
         output_db=True,
         crawl_stream_to_db=False,
@@ -590,7 +590,7 @@ def test_run_crawler_streaming_db_with_history_backup(monkeypatch):
     monkeypatch.setitem(__import__("sys").modules, "website_profiling.db", fake_db)
     monkeypatch.setitem(__import__("sys").modules, "website_profiling.db.storage", fake_storage)
 
-    df = mod.run_crawler(
+    df, _ = mod.run_crawler(
         "https://a.com",
         output_db=True,
         crawl_stream_to_db=True,
@@ -631,7 +631,7 @@ def test_run_crawler_streaming_db_path(monkeypatch):
     monkeypatch.setitem(__import__("sys").modules, "website_profiling.db", fake_db)
     monkeypatch.setitem(__import__("sys").modules, "website_profiling.db.storage", fake_storage)
 
-    df = mod.run_crawler("https://a.com", output_db=True, crawl_stream_to_db=True, show_progress=False)
+    df, _ = mod.run_crawler("https://a.com", output_db=True, crawl_stream_to_db=True, show_progress=False)
     assert not df.empty
 
 
@@ -772,7 +772,7 @@ def test_run_crawler_compare_mobile_desktop_second_pass(monkeypatch):
     def patched_run(start_url="", **kwargs):
         if kwargs.get("compare_mobile_desktop") is False and kwargs.get("crawl_user_agent_preset") == "mobile":
             second_calls.append({"start_url": start_url, **kwargs})
-            return pd.DataFrame([{"url": "https://a.com", "status": 200}])
+            return pd.DataFrame([{"url": "https://a.com", "status": 200}]), 8
         return original_run(start_url, **kwargs)
 
     monkeypatch.setattr(mod, "run_crawler", patched_run)

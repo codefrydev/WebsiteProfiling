@@ -13,6 +13,23 @@ describe('parseSseChunk', () => {
     expect(rest).toBe('');
   });
 
+  it('parses tool events with call_id', () => {
+    const chunk =
+      'event: tool_start\ndata: {"call_id":"abc","name":"list_issues","args":{"limit":5}}\n\n' +
+      'event: tool_end\ndata: {"call_id":"abc","name":"list_issues","result":{"total":1},"truncated":false}\n\n';
+    const { events } = parseSseChunk(chunk);
+    expect(events[0]).toMatchObject({
+      type: 'tool_start',
+      callId: 'abc',
+      name: 'list_issues',
+    });
+    expect(events[1]).toMatchObject({
+      type: 'tool_end',
+      callId: 'abc',
+      name: 'list_issues',
+    });
+  });
+
   it('parses tool events', () => {
     const chunk =
       'event: tool_start\ndata: {"name":"list_issues","args":{"limit":5}}\n\n';

@@ -212,42 +212,7 @@ def test_properties_resolve(api_client: TestClient, test_property: dict[str, Any
 
 
 def test_ollama_status_response_shape(api_client: TestClient) -> None:
-    fake_models = [
-        {
-            "name": "llama3.2",
-            "source": "local",
-            "installed": True,
-            "capabilities": ["tools"],
-            "billing": "free_local",
-            "requires_subscription": False,
-        }
-    ]
-    with (
-        patch(
-            "website_profiling.llm.ollama_catalog.fetch_ollama_models",
-            return_value={
-                "ok": True,
-                "baseUrl": "http://127.0.0.1:11434",
-                "models": fake_models,
-                "cloudCatalogOk": True,
-                "localOk": True,
-            },
-        ),
-        patch(
-            "website_profiling.db.config_store.read_llm_config",
-            return_value={"llm_model": "llama3.2", "llm_base_url": "http://127.0.0.1:11434"},
-        ),
-    ):
-        res = api_client.get("/api/ollama/status")
-
-    assert res.status_code == 200
-    body = res.json()
-    assert body["ok"] is True
-    assert body["configuredModel"] == "llama3.2"
-    assert body["modelInstalled"] is True
-    assert body["supportsTools"] is True
-    assert isinstance(body["models"], list)
-    assert len(body["models"]) == 1
+    pytest.skip("Ollama status is served by AiService via BFF")
 
 
 def test_backlinks_velocity_empty(api_client: TestClient, test_property: dict[str, Any]) -> None:

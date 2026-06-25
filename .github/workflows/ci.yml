@@ -133,3 +133,13 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Test Data service
         run: dotnet test services/Data/Data.slnx
+
+  ai:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Test AiService
+        run: dotnet test services/AiService/AiService.slnx

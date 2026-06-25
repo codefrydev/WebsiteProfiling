@@ -197,6 +197,40 @@ export function buildInitialLlmConfigState(): LlmConfigState {
   return out;
 }
 
+/** Parse llm_config bool values stored as strings in PostgreSQL. */
+export function parseLlmBool(
+  value: string | boolean | undefined,
+  defaultValue = false,
+): boolean {
+  if (value === true || value === false) return value;
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (normalized === 'true' || normalized === '1' || normalized === 'yes') return true;
+  if (normalized === 'false' || normalized === '0' || normalized === 'no') return false;
+  return defaultValue;
+}
+
+/** Coerce API/DB llm_config rows to typed UI state (bools as boolean, not "true" strings). */
+export function normalizeLlmConfigState(raw: LlmConfigState): LlmConfigState {
+  const out = buildInitialLlmConfigState();
+  for (const section of LLM_CONFIG_SECTIONS) {
+    for (const f of section.fields) {
+      const value = raw[f.key];
+      if (value === undefined) continue;
+      if (f.type === 'bool') {
+        out[f.key] = parseLlmBool(value, f.defaultValue as boolean);
+      } else {
+        out[f.key] = String(value ?? '');
+      }
+    }
+  }
+  return out;
+}
+
+/** True when AI insights are on and a provider is selected (matches backend llm_is_enabled). */
+export function isLlmInsightsEnabled(state: LlmConfigState): boolean {
+  return parseLlmBool(state.llm_enabled) && String(state.llm_provider || 'none') !== 'none';
+}
+
 /** Mask stored API key for GET responses. */
 export function maskLlmSecretForClient(key: string, value: string | boolean | undefined): string {
   if (!isLlmSecretKey(key) || !value || String(value).trim() === '') {

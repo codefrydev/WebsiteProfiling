@@ -1,8 +1,11 @@
 # MCP Server Reference
 
-Site Audit exposes **340 read-only tools** via the [Model Context Protocol (MCP)](https://modelcontextprotocol.io). Connect from Cursor, Claude Desktop, or any MCP-compatible client to query audit data programmatically.
+Site Audit exposes **369 read-only tools** via the [Model Context Protocol (MCP)](https://modelcontextprotocol.io). The MCP server runs in **AiService** (.NET) — see [services/AiService/README.md](../services/AiService/README.md).
 
-The same tool catalog powers in-app **AI Chat** at `/chat`.
+- **stdio:** `dotnet run --project services/AiService/src/AiService.Api` with stdio MCP host (see AiService.Mcp)
+- **HTTP:** set `WP_MCP_HTTP=1` on AiService → endpoint `/mcp` (port 8092 by default)
+
+The same tool catalog powers in-app **AI Chat** at `/chat` (also served by AiService via the BFF).
 
 **Related documentation:** [GLOSSARY.md](GLOSSARY.md) · [Documentation index](README.md)
 

@@ -29,7 +29,8 @@ import {
   validatePipelineRun,
   validateRequiredPipelineFields,
 } from '@/lib/pipelineConfigSchema';
-import { buildInitialLlmConfigState } from '@/lib/llmConfigSchema';
+import { buildInitialLlmConfigState, normalizeLlmConfigState } from '@/lib/llmConfigSchema';
+import { resolvePipelineRunState } from '@/lib/pipelineRunPreview';
 import { applyLlmModelChange, applyLlmProviderChange } from '@/lib/llmProviderModels';
 import {
   applyPreset,
@@ -282,7 +283,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       setConfigPath(data.dbPath || data.configPath || '');
       setConfigSource(data.source || 'defaults');
       if (llmRes.ok && llmData.state) {
-        setLlmConfigState(llmData.state);
+        setLlmConfigState(normalizeLlmConfigState(llmData.state as LlmConfigState));
         const masked: Record<string, boolean> = {};
         for (const [k, v] of Object.entries(llmData.state as Record<string, unknown>)) {
           if (k.endsWith('_masked')) masked[k] = Boolean(v);
@@ -557,13 +558,14 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
 
   const run = useCallback(async () => {
     const command = effectiveCommand || null;
+    const runState = resolvePipelineRunState(presetId, configState, crawlPresetId);
     let browserStatus = browserCrawlStatus;
-    if (crawlRenderModeUsesBrowser(configState)) {
+    if (crawlRenderModeUsesBrowser(runState)) {
       browserStatus = await fetchBrowserCrawlStatus();
       setBrowserCrawlStatus(browserStatus);
     }
     const validationErrors = validatePipelineRun({
-      state: configState,
+      state: runState,
       command,
       browserStatus,
     });
@@ -586,7 +588,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           command,
-          state: configState,
+          state: runState,
           unknownKeys,
           llmState: buildLlmPayload(),
           python: pythonExe.trim() || undefined,
@@ -615,7 +617,9 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     }
   }, [
     effectiveCommand,
+    presetId,
     configState,
+    crawlPresetId,
     unknownKeys,
     buildLlmPayload,
     pythonExe,

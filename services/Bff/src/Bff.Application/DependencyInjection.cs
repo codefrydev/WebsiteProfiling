@@ -18,6 +18,12 @@ public static class DependencyInjection
     /// <summary>Named HttpClient for the internal Data service (direct-Postgres reads) — idempotent retry.</summary>
     public const string DataClient = "data";
 
+    /// <summary>Named HttpClient for the internal Ai service — idempotent retry.</summary>
+    public const string AiClient = "ai";
+
+    /// <summary>Named HttpClient for Ai service streaming (chat SSE) — no retry/buffering.</summary>
+    public const string AiStreamClient = "ai-stream";
+
     public static IServiceCollection AddBffApplication(this IServiceCollection services)
     {
         services.AddOptions<UpstreamOptions>()
@@ -43,6 +49,17 @@ public static class DependencyInjection
                 if (!string.IsNullOrWhiteSpace(dataRoutes))
                 {
                     o.DataRoutes = dataRoutes
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                }
+                var ai = Environment.GetEnvironmentVariable("AI_SERVICE_URL");
+                if (!string.IsNullOrWhiteSpace(ai))
+                {
+                    o.AiBaseUrl = ai.Trim();
+                }
+                var aiRoutes = Environment.GetEnvironmentVariable("AI_ROUTES");
+                if (!string.IsNullOrWhiteSpace(aiRoutes))
+                {
+                    o.AiRoutes = aiRoutes
                         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 }
             });
@@ -122,6 +139,22 @@ public static class DependencyInjection
                 client.Timeout = TimeSpan.FromSeconds(Math.Max(5, opts.TimeoutSeconds));
             })
             .AddHttpMessageHandler<IdempotentRetryHandler>();
+
+        services.AddHttpClient(AiClient)
+            .ConfigureHttpClient((sp, client) =>
+            {
+                var opts = GetUpstream(sp);
+                client.BaseAddress = NormalizeBase(opts.AiBaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(Math.Max(5, opts.TimeoutSeconds));
+            })
+            .AddHttpMessageHandler<IdempotentRetryHandler>();
+
+        services.AddHttpClient(AiStreamClient)
+            .ConfigureHttpClient((sp, client) =>
+            {
+                client.BaseAddress = NormalizeBase(GetUpstream(sp).AiBaseUrl);
+                client.Timeout = Timeout.InfiniteTimeSpan;
+            });
 
         services.AddHttpClient(FastApiStreamClient)
             .ConfigureHttpClient((sp, client) =>

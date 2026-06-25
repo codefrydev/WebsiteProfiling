@@ -1,4 +1,5 @@
 
+import { useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
 import ChatBlocks from '@/components/chat/blocks/ChatBlocks';
 import ChatInsightSections from '@/components/chat/ChatInsightSections';
@@ -38,13 +39,17 @@ export default function ChatAssistantMessage({
 }: ChatAssistantMessageProps) {
   const useStructuredNarrative = Boolean(narrative);
 
-  const processed = postprocessChatContent(
-    useStructuredNarrative ? '' : content,
-    toolActivity,
-    {
-      agentError,
-      partialError: useStructuredNarrative ? false : partialError,
-    },
+  const processed = useMemo(
+    () =>
+      postprocessChatContent(
+        useStructuredNarrative ? '' : content,
+        toolActivity,
+        {
+          agentError,
+          partialError: useStructuredNarrative ? false : partialError,
+        },
+      ),
+    [content, toolActivity, agentError, partialError, useStructuredNarrative],
   );
   const blocks = blocksOverride ?? processed.blocks;
   const prose = processed.prose;

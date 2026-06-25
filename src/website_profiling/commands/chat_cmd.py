@@ -1,55 +1,14 @@
-"""CLI: chat --stdin-json — agent turn for in-app chat (NDJSON events on stdout)."""
+"""CLI chat — delegated to AiService (.NET)."""
 from __future__ import annotations
 
 import argparse
-import json
 import sys
 
-from ..text_sanitize import sanitize_unicode_deep
-from ..tools.audit_tools import AuditToolContext
-from ..llm.agent import run_agent_turn
 
-
-def run(_cfg: dict, args: argparse.Namespace) -> None:
-    if not getattr(args, "stdin_json", False):
-        print("Error: chat requires --stdin-json", file=sys.stderr)
-        sys.exit(1)
-
-    try:
-        payload = json.load(sys.stdin)
-    except json.JSONDecodeError as e:
-        print(json.dumps({"type": "error", "message": f"Invalid stdin JSON: {e}"}))
-        sys.exit(1)
-
-    messages = payload.get("messages") or []
-    if not isinstance(messages, list):
-        messages = []
-
-    property_id = payload.get("property_id")
-    report_id = payload.get("report_id")
-    try:
-        pid = int(property_id) if property_id is not None else None
-    except (TypeError, ValueError):
-        pid = None
-    try:
-        rid = int(report_id) if report_id is not None else None
-    except (TypeError, ValueError):
-        rid = None
-
-    ctx = AuditToolContext(property_id=pid, report_id=rid)
-
-    def on_event(event: dict) -> None:
-        print(json.dumps(sanitize_unicode_deep(event), default=str), flush=True)
-
-    try:
-        result = run_agent_turn(messages, ctx, on_event=on_event)
-    except Exception as e:
-        msg = str(e).strip() or type(e).__name__
-        print(json.dumps({"type": "error", "message": msg}), flush=True)
-        sys.exit(1)
-
-    if not result.get("ok"):
-        err = result.get("error", "Agent failed")
-        print(json.dumps({"type": "error", "message": err}), flush=True)
-        sys.exit(1)
-    sys.exit(0)
+def run(cfg: dict, args: argparse.Namespace) -> None:
+    _ = cfg, args
+    print(
+        "In-app chat is served by AiService (.NET). Use the web UI (/chat) or POST /api/chat via the BFF.",
+        file=sys.stderr,
+    )
+    sys.exit(1)

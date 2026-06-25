@@ -11,6 +11,7 @@ import {
   DEFAULT_CHAT_ASSISTANT_AVATAR,
 } from '@/lib/chatAssistantBranding';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
+import { parseLlmBool } from '@/lib/llmConfigSchema';
 import { strings } from '@/lib/strings';
 
 const s = strings.settings;
@@ -102,9 +103,7 @@ async function loadChatLlmSettings(): Promise<ChatLlmState | null> {
     return {
       llm_chat_assistant_name: String(state.llm_chat_assistant_name ?? ''),
       llm_chat_assistant_avatar_url: String(state.llm_chat_assistant_avatar_url ?? ''),
-      llm_chat_unlimited_tool_rounds:
-        state.llm_chat_unlimited_tool_rounds === true ||
-        state.llm_chat_unlimited_tool_rounds === 'true',
+      llm_chat_unlimited_tool_rounds: parseLlmBool(state.llm_chat_unlimited_tool_rounds as string | boolean),
     };
   } catch {
     return null;
