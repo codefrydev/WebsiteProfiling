@@ -32,6 +32,10 @@ public sealed record ChatToolProgressEvent(string CallId, string Name, string De
 
 public sealed record ChatNarrativeStreamEvent(ChatNarrative Narrative) : ChatStreamEvent("narrative");
 
+public sealed record ChatNarrativePartialStreamEvent(ChatNarrative Narrative) : ChatStreamEvent("narrative_partial");
+
+public sealed record ChatTokenStreamEvent(string Text) : ChatStreamEvent("token");
+
 public sealed record ChatDoneStreamEvent() : ChatStreamEvent("done");
 
 public sealed record ChatErrorStreamEvent(string Message) : ChatStreamEvent("error");

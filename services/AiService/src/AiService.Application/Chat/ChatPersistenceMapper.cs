@@ -1,4 +1,7 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
+using WebsiteProfiling.Contracts.Chat;
+using WebsiteProfiling.Contracts.Json;
 
 namespace AiService.Application.Chat;
 
@@ -12,27 +15,27 @@ public static class ChatPersistenceMapper
             return null;
         }
 
-        var payload = new JsonObject();
-        if (result.Narrative is { } narrative)
+        var dto = new PersistedToolResultDto
         {
-            payload["narrative"] = new JsonObject
-            {
-                ["power_insights"] = new JsonArray(narrative.PowerInsights.Select(x => JsonValue.Create(x)).ToArray<JsonNode?>()),
-                ["recommended_actions"] = new JsonArray(narrative.RecommendedActions.Select(x => JsonValue.Create(x)).ToArray<JsonNode?>()),
-            };
+            Narrative = result.Narrative is { } narrative
+                ? new PersistedNarrativeDto
+                {
+                    PowerInsights = narrative.PowerInsights,
+                    RecommendedActions = narrative.RecommendedActions,
+                }
+                : null,
+            ToolEvents = result.ToolEvents.Count > 0
+                ? result.ToolEvents.Select(ToPersistedToolEvent).ToList()
+                : null,
+            AgentError = string.IsNullOrWhiteSpace(result.Error) ? null : result.Error,
+        };
+
+        if (dto.Narrative is null && dto.ToolEvents is null && dto.AgentError is null)
+        {
+            return null;
         }
 
-        if (result.ToolEvents.Count > 0)
-        {
-            payload["tool_events"] = new JsonArray(result.ToolEvents.Select(ToPersistedToolEvent).ToArray());
-        }
-
-        if (!string.IsNullOrWhiteSpace(result.Error))
-        {
-            payload["agent_error"] = result.Error;
-        }
-
-        return payload.Count == 0 ? null : payload.ToJsonString();
+        return JsonSerializer.Serialize(dto, ContractJsonOptions.Options);
     }
 
     public static string FirstNarrativeInsight(ChatTurnResult result)
@@ -50,11 +53,11 @@ public static class ChatPersistenceMapper
         return narrative.RecommendedActions.Count > 0 ? narrative.RecommendedActions[0] : "";
     }
 
-    private static JsonObject ToPersistedToolEvent(ChatToolEvent toolEvent)
+    private static PersistedToolEventDto ToPersistedToolEvent(ChatToolEvent toolEvent)
         => new()
         {
-            ["name"] = toolEvent.Name,
-            ["args"] = JsonNode.Parse(toolEvent.ArgsJson) ?? new JsonObject(),
-            ["result"] = JsonNode.Parse(toolEvent.ResultJson) ?? new JsonObject(),
+            Name = toolEvent.Name,
+            Args = JsonNode.Parse(toolEvent.ArgsJson),
+            Result = JsonNode.Parse(toolEvent.ResultJson),
         };
 }

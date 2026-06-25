@@ -106,6 +106,32 @@ public sealed class BingWebmasterService(IHttpClientFactory httpClientFactory)
         };
     }
 
+    public async Task<BingBacklinksFetchResult> FetchBacklinksSummaryTypedAsync(
+        string apiKey,
+        string siteUrl,
+        CancellationToken cancellationToken = default)
+    {
+        var raw = await FetchBacklinksSummaryAsync(apiKey, siteUrl, cancellationToken);
+        if (raw.TryGetValue("ok", out var ok) && ok is false)
+        {
+            return new BingBacklinksFetchResult
+            {
+                Ok = false,
+                Error = raw.GetValueOrDefault("error")?.ToString(),
+                SiteUrl = siteUrl,
+            };
+        }
+
+        return new BingBacklinksFetchResult
+        {
+            Ok = true,
+            SiteUrl = raw.GetValueOrDefault("site_url")?.ToString() ?? siteUrl,
+            TotalBacklinks = Convert.ToInt32(raw.GetValueOrDefault("total_inbound_links") ?? 0),
+            ReferringDomains = Convert.ToInt32(raw.GetValueOrDefault("linked_page_count") ?? 0),
+            LinkedPageCount = Convert.ToInt32(raw.GetValueOrDefault("linked_page_count") ?? 0),
+        };
+    }
+
     private async Task<Dictionary<string, object?>> JsonGetAsync(
         string method,
         string apiKey,

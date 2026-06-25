@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using AiService.Application.Json;
 using AiService.Application.Prompts;
 using AiService.Application.Repositories;
 using AiService.Domain.Repositories;
@@ -138,7 +139,11 @@ public sealed class EnrichmentService(
     }
 
     public Task<JsonObject> GenerateIssueFixAsync(JsonObject issue, bool refresh = false, CancellationToken cancellationToken = default)
-        => fixSuggestionService.GenerateAsync(new JsonObject(issue) { ["source"] = "issue" }, refresh, cancellationToken);
+    {
+        var payload = JsonNodeCopy.CloneObject(issue);
+        payload["source"] = "issue";
+        return fixSuggestionService.GenerateAsync(payload, refresh, cancellationToken);
+    }
 
     public async Task<JsonObject> GenerateAuditSummaryAsync(
         JsonObject reportPayload,

@@ -16,11 +16,20 @@ public sealed class ChatNarrativeSynthesizer(StructuredCompletionService complet
         string userMessage,
         IReadOnlyList<ChatToolEvent> toolEvents,
         Action<string>? onStatus = null,
+        Action<string>? onToken = null,
+        Action<ChatNarrative>? onPartialNarrative = null,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            return await SynthesizeCoreAsync(cfg, userMessage, toolEvents, onStatus, cancellationToken);
+            return await SynthesizeCoreAsync(
+                cfg,
+                userMessage,
+                toolEvents,
+                onStatus,
+                onToken,
+                onPartialNarrative,
+                cancellationToken);
         }
         catch (Exception ex) when (ex is not InvalidOperationException)
         {
@@ -33,16 +42,36 @@ public sealed class ChatNarrativeSynthesizer(StructuredCompletionService complet
         string userMessage,
         IReadOnlyList<ChatToolEvent> toolEvents,
         Action<string>? onStatus,
+        Action<string>? onToken,
+        Action<ChatNarrative>? onPartialNarrative,
         CancellationToken cancellationToken)
     {
         var payload = BuildSynthesisPayload(userMessage, toolEvents);
-        var parsed = await completionService.CompleteJsonAsync(
+        var extractor = onPartialNarrative is not null ? new StreamingNarrativeExtractor() : null;
+
+        var parsed = await completionService.CompleteJsonStreamingAsync(
             LlmPrompts.ChatNarrativeSystem,
             payload,
             cfg,
+            delta =>
+            {
+                onToken?.Invoke(delta);
+                if (extractor is null)
+                {
+                    return;
+                }
+
+                extractor.Append(delta);
+                var partial = extractor.TryExtractPartial();
+                if (partial is not null)
+                {
+                    onPartialNarrative!(partial);
+                }
+            },
             cancellationToken);
 
-        var (narrative, errors) = ValidateNarrative(UnwrapNarrativeObject(parsed));
+        var (narrative, errors) = ChatNarrativeParser.ValidateNarrative(
+            ChatNarrativeParser.UnwrapNarrativeObject(parsed));
         if (errors.Count == 0)
         {
             return narrative;
@@ -63,7 +92,8 @@ public sealed class ChatNarrativeSynthesizer(StructuredCompletionService complet
             cfg,
             cancellationToken);
 
-        var (narrative2, errors2) = ValidateNarrative(UnwrapNarrativeObject(repaired));
+        var (narrative2, errors2) = ChatNarrativeParser.ValidateNarrative(
+            ChatNarrativeParser.UnwrapNarrativeObject(repaired));
         if (errors2.Count == 0)
         {
             return narrative2;
@@ -89,21 +119,6 @@ public sealed class ChatNarrativeSynthesizer(StructuredCompletionService complet
         throw ex;
     }
 
-    private static JsonObject UnwrapNarrativeObject(JsonObject parsed)
-    {
-        if (parsed["power_insights"] is JsonArray || parsed["recommended_actions"] is JsonArray)
-        {
-            return parsed;
-        }
-
-        if (parsed["data"] is JsonObject data)
-        {
-            return data;
-        }
-
-        return parsed;
-    }
-
     private static string BuildSynthesisPayload(string userMessage, IReadOnlyList<ChatToolEvent> toolEvents)
     {
         var compact = toolEvents.Select(ev => new
@@ -120,45 +135,5 @@ public sealed class ChatNarrativeSynthesizer(StructuredCompletionService complet
         });
 
         return payload.Length > 10_000 ? payload[..10_000] + "\n…(truncated)" : payload;
-    }
-
-    private static (ChatNarrative Narrative, List<string> Errors) ValidateNarrative(JsonObject raw)
-    {
-        var errors = new List<string>();
-        var insights = NormalizeStringList(raw["power_insights"], "power_insights", errors);
-        var actions = NormalizeStringList(raw["recommended_actions"], "recommended_actions", errors);
-        if (insights.Count == 0 && actions.Count == 0)
-        {
-            errors.Add("both power_insights and recommended_actions are empty after normalization");
-        }
-
-        return (new ChatNarrative(insights, actions), errors);
-    }
-
-    private static List<string> NormalizeStringList(JsonNode? value, string field, List<string> errors)
-    {
-        var outList = new List<string>();
-        if (value is not JsonArray list)
-        {
-            errors.Add($"missing key {field}");
-            return outList;
-        }
-
-        foreach (var item in list)
-        {
-            var text = (item?.GetValue<string>() ?? "").Trim();
-            if (string.IsNullOrEmpty(text))
-            {
-                continue;
-            }
-
-            outList.Add(text);
-            if (outList.Count >= 5)
-            {
-                break;
-            }
-        }
-
-        return outList;
     }
 }

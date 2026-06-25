@@ -26,6 +26,86 @@ internal sealed class AnthropicChatClient(string apiKey, string model, TimeSpan 
         ChatOptions? options = null,
         CancellationToken cancellationToken = default)
     {
+        var payload = BuildPayload(chatMessages, options, stream: false);
+        using var request = CreateRequest(payload, stream: false);
+        using var response = await _http.SendAsync(request, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadFromJsonAsync<JsonObject>(cancellationToken)
+            ?? throw new InvalidOperationException("Anthropic returned an empty response.");
+
+        return ToChatResponse(body);
+    }
+
+    public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
+        IEnumerable<ChatMessage> chatMessages,
+        ChatOptions? options = null,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var payload = BuildPayload(chatMessages, options, stream: true);
+        using var request = CreateRequest(payload, stream: true);
+        using var response = await _http.SendAsync(
+            request,
+            HttpCompletionOption.ResponseHeadersRead,
+            cancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        using var reader = new StreamReader(stream);
+
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var line = await reader.ReadLineAsync(cancellationToken);
+            if (line is null)
+            {
+                break;
+            }
+
+            if (!line.StartsWith("data: ", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var data = line["data: ".Length..].Trim();
+            if (data.Length == 0 || data == "[DONE]")
+            {
+                continue;
+            }
+
+            JsonObject? eventData;
+            try
+            {
+                eventData = JsonNode.Parse(data) as JsonObject;
+            }
+            catch (JsonException)
+            {
+                continue;
+            }
+
+            if (eventData is null)
+            {
+                continue;
+            }
+
+            var eventType = eventData["type"]?.GetValue<string>();
+            if (eventType == "content_block_delta"
+                && eventData["delta"] is JsonObject delta
+                && delta["type"]?.GetValue<string>() == "text_delta")
+            {
+                var text = delta["text"]?.GetValue<string>();
+                if (!string.IsNullOrEmpty(text))
+                {
+                    yield return new ChatResponseUpdate(ChatRole.Assistant, text);
+                }
+            }
+        }
+    }
+
+    private JsonObject BuildPayload(
+        IEnumerable<ChatMessage> chatMessages,
+        ChatOptions? options,
+        bool stream)
+    {
         var (system, messages) = ToAnthropicMessages(chatMessages);
         if (options?.ResponseFormat == ChatResponseFormat.Json)
         {
@@ -40,34 +120,30 @@ internal sealed class AnthropicChatClient(string apiKey, string model, TimeSpan 
             ["messages"] = messages,
         };
 
+        if (stream)
+        {
+            payload["stream"] = true;
+        }
+
         if (options?.Tools is { Count: > 0 })
         {
             payload["tools"] = ToAnthropicTools(options.Tools);
         }
 
-        using var request = new HttpRequestMessage(HttpMethod.Post, "https://api.anthropic.com/v1/messages")
+        return payload;
+    }
+
+    private HttpRequestMessage CreateRequest(JsonObject payload, bool stream)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.anthropic.com/v1/messages")
         {
             Content = JsonContent.Create(payload, options: JsonOptions),
         };
         request.Headers.Add("x-api-key", apiKey);
         request.Headers.Add("anthropic-version", "2023-06-01");
-        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-        using var response = await _http.SendAsync(request, cancellationToken);
-        response.EnsureSuccessStatusCode();
-        var body = await response.Content.ReadFromJsonAsync<JsonObject>(cancellationToken)
-            ?? throw new InvalidOperationException("Anthropic returned an empty response.");
-
-        return ToChatResponse(body);
-    }
-
-    public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(
-        IEnumerable<ChatMessage> chatMessages,
-        ChatOptions? options = null,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var response = await GetResponseAsync(chatMessages, options, cancellationToken);
-        yield return new ChatResponseUpdate(ChatRole.Assistant, response.Text);
+        request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(
+            stream ? "text/event-stream" : "application/json"));
+        return request;
     }
 
     private static (string System, JsonArray Messages) ToAnthropicMessages(IEnumerable<ChatMessage> chatMessages)

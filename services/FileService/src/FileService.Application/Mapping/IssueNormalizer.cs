@@ -1,11 +1,12 @@
 using System.Text.RegularExpressions;
 using FileService.Domain.Models;
+using WebsiteProfiling.Contracts.Report;
 
 namespace FileService.Application.Mapping;
 
 public static partial class IssueNormalizer
 {
-    public static IssueModel Normalize(
+    public static IssueRecord Normalize(
         string category,
         string priority,
         string message,
@@ -16,7 +17,7 @@ public static partial class IssueNormalizer
         int? impactScore)
     {
         var headline = NormalizeHeadline(message, url);
-        return new IssueModel
+        return new IssueRecord
         {
             Category = category,
             Priority = priority,

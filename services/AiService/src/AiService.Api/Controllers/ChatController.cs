@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using System.Threading.Channels;
 using AiService.Application.Chat;
+using AiService.Application.Dto;
 using AiService.Application.Services;
 using AiService.Domain.Repositories;
 using AiService.Tools.Context;
@@ -38,7 +39,7 @@ public sealed class ChatController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>Run one chat turn with SSE streaming (status, tool_start, tool_end, narrative, error, done).</summary>
+    /// <summary>Run one chat turn with SSE streaming (status, tool_start, tool_end, token, narrative_partial, narrative, error, done).</summary>
     [HttpPost("")]
     [Produces("text/event-stream")]
     public async Task PostChat([FromBody] ChatRequest body, CancellationToken cancellationToken)
@@ -253,23 +254,5 @@ public sealed class ChatController : ControllerBase
         }
 
         return fileResult;
-    }
-
-    public sealed class ChatRequest
-    {
-        public long SessionId { get; set; }
-
-        public long PropertyId { get; set; }
-
-        public int? ReportId { get; set; }
-
-        public string Message { get; set; } = "";
-    }
-
-    public sealed class ChatSessionCreate
-    {
-        public long PropertyId { get; set; }
-
-        public string? Title { get; set; }
     }
 }

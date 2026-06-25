@@ -23,6 +23,7 @@ import { ChatFollowUpProvider } from '@/components/chat/ChatFollowUpContext';
 import { usePipeline } from '@/context/PipelineContext';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { format, strings } from '@/lib/strings';
+import { statusFromSseEvent } from '@/components/chat/chatStatusLabels';
 import { consumeChatSse, resolveToolActivityIndex } from '@/components/chat/parseChatSse';
 import { toolEventsToActivity } from '@/components/chat/deriveChatBlocks';
 import type { ChatNarrative } from '@/types/chatNarrative';
@@ -428,15 +429,26 @@ export default function ChatPage() {
 
       await consumeChatSse(res, (evt) => {
         if (evt.type === 'status' && evt.detail) {
-          setActivityText(evt.detail);
-          patchAssistant({ statusText: evt.detail, streaming: true });
+          const label = statusFromSseEvent(evt);
+          setActivityText(label);
+          patchAssistant({ statusText: label, streaming: true });
         } else if (evt.type === 'token') {
-          content += evt.text;
-          setActivityText(c.writing);
-          patchAssistant({ content, streaming: true, statusText: c.writing, error: false });
+          const label = statusFromSseEvent(evt);
+          setActivityText(label);
+          patchAssistant({ streaming: true, statusText: label, error: false });
+        } else if (evt.type === 'narrative_partial') {
+          narrative = evt.narrative;
+          patchAssistant({
+            narrative: evt.narrative,
+            streaming: true,
+            statusText: undefined,
+            error: false,
+            partialError: false,
+          });
         } else if (evt.type === 'tool_start') {
           const callId = evt.callId || `${evt.name}-${tools.length}`;
-          setActivityText(format(c.toolStatus, { name: evt.name || 'tool' }));
+          const label = statusFromSseEvent(evt);
+          setActivityText(label);
           tools.push({
             id: callId,
             name: evt.name || 'tool',
@@ -446,7 +458,7 @@ export default function ChatPage() {
           patchAssistant({
             toolActivity: [...tools],
             streaming: true,
-            statusText: format(c.toolStatus, { name: evt.name || 'tool' }),
+            statusText: label,
           });
         } else if (evt.type === 'tool_progress' && evt.detail) {
           const now = Date.now();
@@ -454,10 +466,11 @@ export default function ChatPage() {
             return;
           }
           lastProgressAt = now;
-          setActivityText(evt.detail);
+          const label = statusFromSseEvent(evt);
+          setActivityText(label);
           patchAssistant({
             streaming: true,
-            statusText: evt.detail,
+            statusText: label,
           });
         } else if (evt.type === 'tool_end') {
           const idx = resolveToolActivityIndex(tools, evt);

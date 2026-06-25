@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using FileService.Domain.Models;
 
 namespace FileService.Rendering.Exports;
 
@@ -38,6 +39,33 @@ public sealed class ReportSitemapExporter
                 }
             }
         }
+
+        var cap = Math.Max(1, maxUrls);
+        if (urls.Count > cap)
+        {
+            urls = urls.GetRange(0, cap);
+        }
+
+        var body = string.Join(
+            "\n",
+            urls.Select(u => $"  <url><loc>{XmlEscape(u)}</loc></url>"));
+
+        var sb = new StringBuilder();
+        sb.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+        sb.Append("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n");
+        sb.Append(body).Append('\n');
+        sb.Append("</urlset>\n");
+        return sb.ToString();
+    }
+
+    /// <summary>Build sitemap URLs from a typed <see cref="AuditReportModel"/> (link samples).</summary>
+    public string GenerateFromModel(AuditReportModel model, int maxUrls = 50000)
+    {
+        var urls = model.LinkSamples
+            .Where(l => !string.IsNullOrWhiteSpace(l.Url) && (l.Status ?? "").StartsWith('2'))
+            .Select(l => l.Url.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
 
         var cap = Math.Max(1, maxUrls);
         if (urls.Count > cap)

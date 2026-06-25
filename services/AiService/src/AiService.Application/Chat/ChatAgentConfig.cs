@@ -115,6 +115,15 @@ public static class ChatAgentConfig
                 $"(or restart with ./local-run setup). Details: {msg}";
         }
 
+        if (msg.Contains("tool_use_failed", StringComparison.OrdinalIgnoreCase) ||
+            msg.Contains("not in request.tools", StringComparison.OrdinalIgnoreCase))
+        {
+            return
+                "The assistant tried to use an audit tool that was not loaded for this chat step. " +
+                "Try your question again, use search_audit_tools first, or set chat tool mode to full in AI settings. " +
+                $"Details: {msg}";
+        }
+
         return msg;
     }
 }

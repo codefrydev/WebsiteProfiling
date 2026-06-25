@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using FileService.Domain.Models;
+using WebsiteProfiling.Contracts.Json;
 
 namespace FileService.Application.Mapping;
 
@@ -13,7 +14,7 @@ public static class ChapterMappers
         var statusCounts = ExtractStatusCounts(payload);
         var renderMode = payload.TryGetProperty("report_meta", out var meta) && meta.ValueKind == JsonValueKind.Object
             && meta.TryGetProperty("crawl_scope", out var scope) && scope.ValueKind == JsonValueKind.Object
-            ? JsonHelper.GetString(scope, "render_mode")
+            ? JsonCoercion.GetString(scope, "render_mode")
             : null;
 
         if (!hasSummary && statusCounts.Count == 0 && renderMode is null)
@@ -23,12 +24,12 @@ public static class ChapterMappers
 
         return new AuditSnapshotModel
         {
-            TotalUrls = hasSummary ? JsonHelper.GetInt(summary, "total_urls") : null,
-            IndexableUrls = hasSummary ? JsonHelper.GetInt(summary, "indexable") : null,
-            TotalIssues = hasSummary ? JsonHelper.GetInt(summary, "total_issues") : null,
-            CriticalIssues = hasSummary ? JsonHelper.GetInt(summary, "critical_issues") : null,
+            TotalUrls = hasSummary ? JsonCoercion.GetInt(summary, "total_urls") : null,
+            IndexableUrls = hasSummary ? JsonCoercion.GetInt(summary, "indexable") : null,
+            TotalIssues = hasSummary ? JsonCoercion.GetInt(summary, "total_issues") : null,
+            CriticalIssues = hasSummary ? JsonCoercion.GetInt(summary, "critical_issues") : null,
             StatusCounts = statusCounts,
-            GoogleFetchedAt = meta.ValueKind == JsonValueKind.Object ? JsonHelper.GetString(meta, "google_fetched_at") : null,
+            GoogleFetchedAt = meta.ValueKind == JsonValueKind.Object ? JsonCoercion.GetString(meta, "google_fetched_at") : null,
             RenderMode = renderMode,
         };
     }
@@ -39,7 +40,7 @@ public static class ChapterMappers
         {
             return null;
         }
-        var human = JsonHelper.GetString(payload, "lighthouse_human_summary") ?? "";
+        var human = JsonCoercion.GetString(payload, "lighthouse_human_summary") ?? "";
         var diagnostics = new List<LighthouseDiagnosticModel>();
         if (payload.TryGetProperty("lighthouse_diagnostics", out var diagEl) && diagEl.ValueKind == JsonValueKind.Array)
         {
@@ -47,8 +48,8 @@ public static class ChapterMappers
             {
                 diagnostics.Add(new LighthouseDiagnosticModel
                 {
-                    Title = JsonHelper.GetString(d, "title") ?? JsonHelper.GetString(d, "id") ?? "",
-                    Description = JsonHelper.GetString(d, "description") ?? "",
+                    Title = JsonCoercion.GetString(d, "title") ?? JsonCoercion.GetString(d, "id") ?? "",
+                    Description = JsonCoercion.GetString(d, "description") ?? "",
                 });
             }
         }
@@ -56,11 +57,11 @@ public static class ChapterMappers
         {
             Summary = new LighthouseSummaryModel
             {
-                Url = JsonHelper.GetString(lh, "url") ?? "",
-                Performance = JsonHelper.GetInt(lh, "performance"),
-                Accessibility = JsonHelper.GetInt(lh, "accessibility"),
-                BestPractices = JsonHelper.GetInt(lh, "best_practices"),
-                Seo = JsonHelper.GetInt(lh, "seo"),
+                Url = JsonCoercion.GetString(lh, "url") ?? "",
+                Performance = JsonCoercion.GetInt(lh, "performance"),
+                Accessibility = JsonCoercion.GetInt(lh, "accessibility"),
+                BestPractices = JsonCoercion.GetInt(lh, "best_practices"),
+                Seo = JsonCoercion.GetInt(lh, "seo"),
             },
             HumanSummary = human,
             Diagnostics = diagnostics,
@@ -109,10 +110,10 @@ public static class ChapterMappers
         }
         var findings = arr.EnumerateArray().Take(25).Select(f => new SecurityFindingModel
         {
-            Severity = JsonHelper.GetString(f, "severity") ?? "medium",
-            Type = JsonHelper.GetString(f, "finding_type") ?? JsonHelper.GetString(f, "type") ?? "",
-            Url = JsonHelper.GetString(f, "url") ?? "",
-            Message = JsonHelper.GetString(f, "message") ?? "",
+            Severity = JsonCoercion.GetString(f, "severity") ?? "medium",
+            Type = JsonCoercion.GetString(f, "finding_type") ?? JsonCoercion.GetString(f, "type") ?? "",
+            Url = JsonCoercion.GetString(f, "url") ?? "",
+            Message = JsonCoercion.GetString(f, "message") ?? "",
         }).ToList();
         return findings.Count == 0 ? null : new SecurityChapterModel { Findings = findings };
     }
@@ -131,16 +132,16 @@ public static class ChapterMappers
             {
                 keywords.Add(new MetricRowModel
                 {
-                    Label = JsonHelper.GetString(kw, "word") ?? "",
-                    Value = JsonHelper.GetString(kw, "count") ?? "",
+                    Label = JsonCoercion.GetString(kw, "word") ?? "",
+                    Value = JsonCoercion.GetString(kw, "count") ?? "",
                 });
             }
         }
         return new ContentChapterModel
         {
-            MeanWordCount = stats.ValueKind == JsonValueKind.Object ? JsonHelper.GetInt(stats, "mean") : null,
-            MedianWordCount = stats.ValueKind == JsonValueKind.Object ? JsonHelper.GetInt(stats, "median") : null,
-            ThinContentCount = JsonHelper.GetInt(ca, "thin_content_count"),
+            MeanWordCount = stats.ValueKind == JsonValueKind.Object ? JsonCoercion.GetInt(stats, "mean") : null,
+            MedianWordCount = stats.ValueKind == JsonValueKind.Object ? JsonCoercion.GetInt(stats, "median") : null,
+            ThinContentCount = JsonCoercion.GetInt(ca, "thin_content_count"),
             TopKeywords = keywords,
         };
     }
@@ -153,10 +154,10 @@ public static class ChapterMappers
         }
         return new IndexationChapterModel
         {
-            Indexable = JsonHelper.GetInt(ic, "indexable"),
-            NonIndexable = JsonHelper.GetInt(ic, "non_indexable"),
-            Blocked = JsonHelper.GetInt(ic, "blocked"),
-            Notes = JsonHelper.GetString(ic, "notes"),
+            Indexable = JsonCoercion.GetInt(ic, "indexable"),
+            NonIndexable = JsonCoercion.GetInt(ic, "non_indexable"),
+            Blocked = JsonCoercion.GetInt(ic, "blocked"),
+            Notes = JsonCoercion.GetString(ic, "notes"),
         };
     }
 
@@ -168,10 +169,66 @@ public static class ChapterMappers
         }
         return links.EnumerateArray().Take(limit).Select(l => new LinkSampleModel
         {
-            Url = JsonHelper.GetString(l, "url") ?? "",
-            Status = JsonHelper.GetString(l, "status") ?? "",
-            Title = JsonHelper.GetString(l, "title") ?? "",
+            Url = JsonCoercion.GetString(l, "url") ?? "",
+            Status = JsonCoercion.GetString(l, "status") ?? "",
+            Title = JsonCoercion.GetString(l, "title") ?? "",
         }).Where(l => !string.IsNullOrWhiteSpace(l.Url)).ToList();
+    }
+
+    public static IReadOnlyList<LinkSampleModel> MapSitemapLinks(JsonElement payload, int maxUrls = 50000)
+    {
+        if (!payload.TryGetProperty("links", out var links) || links.ValueKind != JsonValueKind.Array)
+        {
+            return [];
+        }
+
+        var cap = Math.Max(1, maxUrls);
+        var rows = new List<LinkSampleModel>();
+        foreach (var row in links.EnumerateArray())
+        {
+            if (row.ValueKind != JsonValueKind.Object || IsTruthy(row, "noindex"))
+            {
+                continue;
+            }
+
+            var status = JsonCoercion.GetString(row, "status") ?? "";
+            if (!status.StartsWith('2'))
+            {
+                continue;
+            }
+
+            var url = (JsonCoercion.GetString(row, "url") ?? "").Trim();
+            if (url.Length == 0)
+            {
+                continue;
+            }
+
+            rows.Add(new LinkSampleModel { Url = url, Status = status, Title = JsonCoercion.GetString(row, "title") ?? "" });
+            if (rows.Count >= cap)
+            {
+                break;
+            }
+        }
+
+        return rows;
+    }
+
+    private static bool IsTruthy(JsonElement obj, string name)
+    {
+        if (!obj.TryGetProperty(name, out var v))
+        {
+            return false;
+        }
+
+        return v.ValueKind switch
+        {
+            JsonValueKind.True => true,
+            JsonValueKind.String => !string.IsNullOrEmpty(v.GetString()),
+            JsonValueKind.Number => v.TryGetDouble(out var d) && d != 0,
+            JsonValueKind.Array => v.GetArrayLength() > 0,
+            JsonValueKind.Object => v.EnumerateObject().Any(),
+            _ => false,
+        };
     }
 
     private static List<MetricRowModel> MapMetricRows(
@@ -188,7 +245,7 @@ public static class ChapterMappers
         }
         foreach (var item in arr.EnumerateArray().Take(10))
         {
-            var label = JsonHelper.GetString(item, labelKey) ?? JsonHelper.GetString(item, "url") ?? "";
+            var label = JsonCoercion.GetString(item, labelKey) ?? JsonCoercion.GetString(item, "url") ?? "";
             if (string.IsNullOrWhiteSpace(label))
             {
                 continue;
@@ -196,8 +253,8 @@ public static class ChapterMappers
             rows.Add(new MetricRowModel
             {
                 Label = label,
-                Value = JsonHelper.GetString(item, valueKey) ?? "0",
-                Secondary = secondaryKey is not null ? JsonHelper.GetString(item, secondaryKey) : null,
+                Value = JsonCoercion.GetString(item, valueKey) ?? "0",
+                Secondary = secondaryKey is not null ? JsonCoercion.GetString(item, secondaryKey) : null,
             });
         }
         return rows;
@@ -218,35 +275,5 @@ public static class ChapterMappers
             }
         }
         return result;
-    }
-}
-
-internal static class JsonHelper
-{
-    public static string? GetString(JsonElement el, string name)
-    {
-        if (!el.TryGetProperty(name, out var prop))
-        {
-            return null;
-        }
-        return prop.ValueKind switch
-        {
-            JsonValueKind.String => prop.GetString(),
-            // Normalise numbers to a plain decimal string; GetRawText() would
-            // leak JSON formatting like scientific notation (e.g. "1E+10").
-            JsonValueKind.Number => prop.TryGetInt64(out var l)
-                ? l.ToString(CultureInfo.InvariantCulture)
-                : prop.GetDouble().ToString(CultureInfo.InvariantCulture),
-            _ => null,
-        };
-    }
-
-    public static int? GetInt(JsonElement el, string name)
-    {
-        if (!el.TryGetProperty(name, out var prop) || prop.ValueKind != JsonValueKind.Number)
-        {
-            return null;
-        }
-        return (int)Math.Round(prop.GetDouble());
     }
 }

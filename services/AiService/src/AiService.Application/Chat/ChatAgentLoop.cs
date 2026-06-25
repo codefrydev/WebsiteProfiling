@@ -24,12 +24,13 @@ public sealed class ChatAgentLoop(AuditChatToolsBuilder toolsBuilder, ToolDispat
         CancellationToken cancellationToken)
     {
         var gated = ChatToolSelector.ResolveChatToolMode(cfg) != "full";
-        var chatOptions = BuildChatOptions(context, activeTools, progress);
+        var sessionTools = new HashSet<string>(activeTools, StringComparer.Ordinal);
         var finished = false;
 
         for (var round = 0; round < maxRounds; round++)
         {
-            progress.EmitStatus("model", $"Thinking (step {round + 1}/{maxRounds})…");
+            progress.EmitStatus("model", $"Planning step {round + 1} of {maxRounds}…");
+            var chatOptions = BuildChatOptions(context, sessionTools, progress);
             var response = await client.GetResponseAsync(messages, chatOptions, cancellationToken);
             var assistantMessage = response.Messages.LastOrDefault(m => m.Role == ChatRole.Assistant);
             var toolCalls = assistantMessage?.Contents.OfType<FunctionCallContent>().ToList() ?? [];
@@ -37,6 +38,11 @@ public sealed class ChatAgentLoop(AuditChatToolsBuilder toolsBuilder, ToolDispat
             {
                 finished = true;
                 break;
+            }
+
+            foreach (var call in toolCalls)
+            {
+                sessionTools.Add(call.Name);
             }
 
             messages.Add(assistantMessage!);
@@ -52,12 +58,14 @@ public sealed class ChatAgentLoop(AuditChatToolsBuilder toolsBuilder, ToolDispat
 
             foreach (var result in dispatchResults)
             {
+                sessionTools.Add(result.Name);
                 activeTools = ChatToolSelector.ExpandActiveToolsFromResult(
                     result.Name,
                     result.ResultObject,
                     activeTools,
                     allowedTools,
                     cfg);
+                sessionTools.UnionWith(activeTools);
 
                 messages.Add(new ChatMessage(
                     ChatRole.Tool,
@@ -69,11 +77,6 @@ public sealed class ChatAgentLoop(AuditChatToolsBuilder toolsBuilder, ToolDispat
             {
                 finished = true;
                 break;
-            }
-
-            if (gated)
-            {
-                chatOptions = BuildChatOptions(context, activeTools, progress);
             }
         }
 

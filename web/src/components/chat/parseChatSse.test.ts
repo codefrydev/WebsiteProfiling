@@ -56,4 +56,15 @@ describe('parseSseChunk', () => {
       narrative: { power_insights: ['A'], recommended_actions: ['B'] },
     });
   });
+
+  it('parses narrative_partial events', () => {
+    const chunk =
+      'event: narrative_partial\ndata: {"narrative":{"power_insights":["A"],"recommended_actions":[]}}\n\n';
+    const { events } = parseSseChunk(chunk);
+    expect(events).toHaveLength(1);
+    expect(events[0]).toEqual({
+      type: 'narrative_partial',
+      narrative: { power_insights: ['A'], recommended_actions: [] },
+    });
+  });
 });

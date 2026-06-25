@@ -1,6 +1,7 @@
 
 import { useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
+import ChatStreamingStatus from '@/components/chat/ChatStreamingStatus';
 import ChatBlocks from '@/components/chat/blocks/ChatBlocks';
 import ChatInsightSections from '@/components/chat/ChatInsightSections';
 import ChatNarrativeSections from '@/components/chat/ChatNarrativeSections';
@@ -83,16 +84,28 @@ export default function ChatAssistantMessage({
     );
   }
 
+  const showStreamingPanel =
+    streaming &&
+    !fatalError &&
+    !showNarrative &&
+    !showProse &&
+    blocks.length === 0 &&
+    Boolean(statusText || (toolActivity?.length ?? 0) > 0);
+
   return (
     <div className={`${cardClass} space-y-3 rounded-xl border p-4 text-sm leading-relaxed`}>
-      {(streaming || (!content && !blocks.length && !showNarrative)) && !fatalError ? (
+      {showStreamingPanel ? (
+        <ChatStreamingStatus statusText={statusText} toolActivity={toolActivity} />
+      ) : (streaming || (!content && !blocks.length && !showNarrative)) && !fatalError ? (
         <Sparkles
           className={`h-4 w-4 text-muted-foreground ${streaming ? 'animate-pulse' : ''}`}
           aria-hidden
         />
       ) : null}
 
-      {toolActivity?.length ? <ChatToolActivity items={toolActivity} /> : null}
+      {toolActivity?.length && !showStreamingPanel ? (
+        <ChatToolActivity items={toolActivity} streaming={streaming} />
+      ) : null}
 
       {blocks.length > 0 ? <ChatBlocks blocks={blocks} /> : null}
 
@@ -120,7 +133,7 @@ export default function ChatAssistantMessage({
           streaming={streaming}
         />
       ) : streaming && statusText ? (
-        <span className="text-muted-foreground">{statusText}</span>
+        <ChatStreamingStatus statusText={statusText} toolActivity={toolActivity} />
       ) : null}
     </div>
   );

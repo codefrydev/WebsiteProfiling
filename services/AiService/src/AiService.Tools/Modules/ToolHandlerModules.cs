@@ -49,9 +49,10 @@ public static class ToolHandlerModules
         yield return new DelegatingToolHandler("get_critical_issues", ReportToolHandlers.GetCriticalIssuesAsync);
     }
 
-    /// <summary>Blended insight and opportunity tools.</summary>
+    /// <summary>Blended insight and opportunity tools (native GSC/GA4 blending).</summary>
     public static IEnumerable<IToolHandler> InsightModule()
     {
+        yield return new DelegatingToolHandler("get_landing_page_blended_table", InsightToolHandlers.GetLandingPageBlendedTableAsync);
         yield return new DelegatingToolHandler("get_opportunity_matrix", InsightToolHandlers.GetOpportunityMatrixAsync);
         yield return new DelegatingToolHandler("get_traffic_health_check", InsightToolHandlers.GetTrafficHealthCheckAsync);
     }

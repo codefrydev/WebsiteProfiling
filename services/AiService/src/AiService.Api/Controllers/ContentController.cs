@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using AiService.Application.Dto;
 using AiService.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -47,7 +48,7 @@ public sealed class ContentController : ControllerBase
                 body["metaDescription"]?.GetValue<string>() ?? "",
                 body["landingUrl"]?.GetValue<string>(),
                 body["useAi"]?.GetValue<bool?>() == true,
-                JsonBodyHelpers.GetRefresh(body),
+                body.GetRefresh(),
                 body["title"]?.GetValue<string>() ?? "",
                 cancellationToken);
 

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using IntegrationsService.Application.Google;
+using WebsiteProfiling.Contracts.Integrations;
 
 namespace IntegrationsService.Application.Repositories;
 
@@ -93,6 +94,7 @@ public static class PageLookupService
             },
             DateRange = dateRange,
             FetchedAt = fetchedAt?.ToString(),
+            Typed = PageLookupMapper.ToPageLookupResult(pageUrl, gscPage, ga4Page),
         };
     }
 
@@ -380,6 +382,8 @@ public sealed class PageSliceResult
     public Dictionary<string, object?> DateRange { get; init; } = [];
 
     public string? FetchedAt { get; init; }
+
+    public PageLookupResult? Typed { get; init; }
 }
 
 public sealed class PageCoverage

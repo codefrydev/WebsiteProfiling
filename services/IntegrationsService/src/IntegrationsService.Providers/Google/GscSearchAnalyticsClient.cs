@@ -3,6 +3,7 @@ using Google.Apis.SearchConsole.v1;
 using Google.Apis.SearchConsole.v1.Data;
 using Google.Apis.Services;
 using IntegrationsService.Application.Google;
+using WebsiteProfiling.Contracts.Google;
 
 namespace IntegrationsService.Providers.Google;
 

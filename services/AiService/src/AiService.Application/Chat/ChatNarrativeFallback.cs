@@ -59,14 +59,14 @@ public static class ChatNarrativeFallback
         List<string> insights,
         List<string> actions)
     {
-        if (result["error"]?.GetValue<string>() is { Length: > 0 } error)
+        if (JsonScalar.AsString(result["error"]) is { Length: > 0 } error)
         {
             insights.Add($"The {Label(workflowName)} could not finish: {error}");
             actions.Add("Check that a recent audit exists for this property and try again.");
             return;
         }
 
-        var wfType = result["type"]?.GetValue<string>() ?? result["workflow"]?.GetValue<string>() ?? "default";
+        var wfType = JsonScalar.AsString(result["type"]) ?? JsonScalar.AsString(result["workflow"]) ?? "default";
         if (result["steps"] is JsonArray steps)
         {
             var stepCount = 0;
@@ -78,7 +78,7 @@ public static class ChatNarrativeFallback
                 }
 
                 stepCount++;
-                var stepTool = step["tool"]?.GetValue<string>() ?? "tool";
+                var stepTool = JsonScalar.AsString(step["tool"]) ?? "tool";
                 if (step["result"] is JsonObject stepResult)
                 {
                     CollectFromResult(stepTool, stepResult, insights, actions);
@@ -102,33 +102,33 @@ public static class ChatNarrativeFallback
         List<string> insights,
         List<string> actions)
     {
-        if (result["error"]?.GetValue<string>() is { Length: > 0 } error)
+        if (JsonScalar.AsString(result["error"]) is { Length: > 0 } error)
         {
             insights.Add($"{Label(toolName)}: {error}");
             return;
         }
 
-        if (result["summary"]?.GetValue<string>() is { Length: > 0 } summary)
+        if (JsonScalar.AsString(result["summary"]) is { Length: > 0 } summary)
         {
             insights.Add(summary);
         }
 
-        if (result["message"]?.GetValue<string>() is { Length: > 0 } message)
+        if (JsonScalar.AsString(result["message"]) is { Length: > 0 } message)
         {
             insights.Add(message);
         }
 
-        if (result["health_score"]?.GetValue<double?>() is { } health)
+        if (JsonScalar.AsDouble(result["health_score"]) is { } health)
         {
             insights.Add($"Health score is {health:0}.");
         }
 
-        if (result["site_name"]?.GetValue<string>() is { Length: > 0 } site)
+        if (JsonScalar.AsString(result["site_name"]) is { Length: > 0 } site)
         {
             insights.Add($"Report data loaded for {site}.");
         }
 
-        if (result["total"]?.GetValue<int?>() is { } total && total >= 0)
+        if (JsonScalar.AsInt(result["total"]) is { } total && total >= 0)
         {
             insights.Add($"{Label(toolName)} returned {total} item(s).");
         }
@@ -144,7 +144,7 @@ public static class ChatNarrativeFallback
             insights.Add($"{Label(toolName)} returned {items.Count} row(s) to review.");
         }
 
-        if (result["recommendation"]?.GetValue<string>() is { Length: > 0 } rec)
+        if (JsonScalar.AsString(result["recommendation"]) is { Length: > 0 } rec)
         {
             actions.Add(rec);
         }

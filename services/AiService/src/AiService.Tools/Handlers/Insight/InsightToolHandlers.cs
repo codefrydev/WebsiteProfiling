@@ -1,16 +1,31 @@
 using System.Text.Json.Nodes;
 using AiService.Tools.Context;
+using AiService.Tools.Mapping;
+using AiService.Tools.Models.Insight;
 using AiService.Tools.Slice;
 using Npgsql;
+using WebsiteProfiling.Contracts.Json;
 
 namespace AiService.Tools.Handlers.Insight;
 
 /// <summary>
-/// Stub insight tools returning payload slices until full GSC/GA4 blending is ported from Python
+/// Native cross-platform insight tools (GSC + GA4 blending). Faithful port of Python
 /// <c>website_profiling.tools.audit_tools.insight.insight_tools</c>.
 /// </summary>
 public static class InsightToolHandlers
 {
+    public static async Task<JsonObject> GetLandingPageBlendedTableAsync(
+        NpgsqlConnection conn,
+        AuditToolContext ctx,
+        JsonObject args,
+        CancellationToken cancellationToken)
+    {
+        var scoped = ctx.WithArgs(args);
+        var parsedArgs = ToolArgsMapper.Parse<BlendedTableArgs>(args);
+        var result = await BuildBlendedTableAsync(conn, scoped, parsedArgs, cancellationToken);
+        return ToolResultMapper.ToJsonObject(result);
+    }
+
     public static async Task<JsonObject> GetOpportunityMatrixAsync(
         NpgsqlConnection conn,
         AuditToolContext ctx,
@@ -18,31 +33,49 @@ public static class InsightToolHandlers
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
-        if (payload.Count == 0)
+        var parsedArgs = ToolArgsMapper.Parse<BlendedTableArgs>(args);
+        var blended = await BuildBlendedTableAsync(conn, scoped, parsedArgs, cancellationToken);
+        if (blended.Error is not null)
         {
-            return new JsonObject
-            {
-                ["error"] = "no report found",
-                ["missing"] = true,
-            };
+            return ToolResultMapper.ToJsonObject(blended);
         }
 
-        var limit = PayloadSliceHelpers.ParseLimit(args["limit"], 30, 100);
-        var google = PayloadSliceHelpers.PayloadDictSlice(
-            payload,
-            "google",
-            ["gsc", "ga4", "gsc_full", "ga4_full", "fetched_at"]);
-        var topPages = PayloadSliceHelpers.PayloadField(payload, "top_pages", limit, maxCap: 100);
-
-        return new JsonObject
+        var quadrants = new Dictionary<string, IReadOnlyList<LandingPageBlendedRow>>(StringComparer.Ordinal)
         {
-            ["stub"] = true,
-            ["google"] = google,
-            ["top_pages"] = topPages,
-            ["property_id"] = scoped.PropertyId,
-            ["report_id"] = scoped.ReportId,
+            ["high_impact"] = [],
+            ["worth_optimizing"] = [],
+            ["good_but_capped"] = [],
+            ["low_priority"] = [],
         };
+
+        foreach (var row in blended.Rows)
+        {
+            var key = row.Quadrant;
+            if (!quadrants.ContainsKey(key))
+            {
+                quadrants[key] = [];
+            }
+
+            quadrants[key] = quadrants[key].Append(row).ToList();
+        }
+
+        var counts = quadrants.ToDictionary(kv => kv.Key, kv => kv.Value.Count, StringComparer.Ordinal);
+        var highImpact = counts.GetValueOrDefault("high_impact");
+        var worthOptimizing = counts.GetValueOrDefault("worth_optimizing");
+
+        var matrix = new OpportunityMatrixResult
+        {
+            Quadrants = quadrants,
+            Counts = counts,
+            Provenance = blended.Provenance,
+            Insights =
+            [
+                $"Focus on {highImpact} high-impact pages first.",
+                $"{worthOptimizing} pages could rank higher with on-page work.",
+            ],
+        };
+
+        return ToolResultMapper.ToJsonObject(matrix);
     }
 
     public static async Task<JsonObject> GetTrafficHealthCheckAsync(
@@ -52,38 +85,103 @@ public static class InsightToolHandlers
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
-        if (payload.Count == 0)
+        var raw = await scoped.LoadGoogleFullAsync(conn, cancellationToken)
+            ?? await scoped.LoadGoogleAsync(conn, cancellationToken);
+        if (raw is null)
         {
-            return new JsonObject
+            return ToolResultMapper.ToJsonObject(new TrafficHealthResult
             {
-                ["error"] = "no report found",
-                ["missing"] = true,
+                Error = "no google data found",
+                Missing = true,
+            });
+        }
+
+        var slice = PayloadSliceMapper.ToGoogleSlice(raw);
+        var health = InsightLogic.TrafficHealth(slice?.Gsc?.Summary, slice?.Ga4?.Summary);
+        var result = health with
+        {
+            Provenance = InsightLogic.ProvenanceBlockTyped(["gsc", "ga4"], JsonCoercion.AsString(raw["fetched_at"])),
+            Insights = [health.Note],
+        };
+
+        return ToolResultMapper.ToJsonObject(result);
+    }
+
+    private static async Task<BlendedTableResult> BuildBlendedTableAsync(
+        NpgsqlConnection conn,
+        AuditToolContext scoped,
+        BlendedTableArgs args,
+        CancellationToken cancellationToken)
+    {
+        var raw = await scoped.LoadGoogleFullAsync(conn, cancellationToken);
+        if (raw is null)
+        {
+            return new BlendedTableResult
+            {
+                Error = "no google data found",
+                Missing = true,
+                Rows = [],
             };
         }
 
-        var google = PayloadSliceHelpers.PayloadDictSlice(payload, "google");
-        if (google["missing"]?.GetValue<bool>() == true)
+        var slice = PayloadSliceMapper.ToGoogleSlice(raw);
+        if (slice is null)
         {
-            return new JsonObject
+            return new BlendedTableResult
             {
-                ["error"] = "no google data found",
-                ["missing"] = true,
+                Error = "no google data found",
+                Missing = true,
+                Rows = [],
             };
         }
 
-        var data = google["data"] as JsonObject;
-        var gsc = data?["gsc_full"] as JsonObject ?? data?["gsc"] as JsonObject;
-        var ga4 = data?["ga4_full"] as JsonObject ?? data?["ga4"] as JsonObject;
-
-        return new JsonObject
+        if (slice.Gsc?.ByPage is not { Count: > 0 })
         {
-            ["stub"] = true,
-            ["gsc_summary"] = PayloadSliceHelpers.PayloadDictSlice(gsc ?? [], "summary"),
-            ["ga4_summary"] = PayloadSliceHelpers.PayloadDictSlice(ga4 ?? [], "summary"),
-            ["google"] = google,
-            ["property_id"] = scoped.PropertyId,
-            ["report_id"] = scoped.ReportId,
+            var (gsc, _) = InsightLogic.GscGa4Blobs(raw);
+            if (gsc["top_pages"] is JsonArray topPages)
+            {
+                var rebuilt = new Dictionary<string, WebsiteProfiling.Contracts.Google.GscPageRecord>(StringComparer.Ordinal);
+                foreach (var item in topPages)
+                {
+                    if (item is JsonObject row
+                        && row["page"] is JsonValue pageValue
+                        && pageValue.TryGetValue<string>(out var page)
+                        && !string.IsNullOrEmpty(page))
+                    {
+                        rebuilt[page] = new WebsiteProfiling.Contracts.Google.GscPageRecord
+                        {
+                            Page = page,
+                            Clicks = (int)InsightLogic.Num(row["clicks"]),
+                            Impressions = (int)InsightLogic.Num(row["impressions"]),
+                            Ctr = InsightLogic.Num(row["ctr"]),
+                            Position = InsightLogic.Num(row["position"]),
+                        };
+                    }
+                }
+
+                slice = slice with { Gsc = new WebsiteProfiling.Contracts.Google.GoogleSlice.GscBlob { ByPage = rebuilt } };
+            }
+        }
+
+        var limit = Math.Max(1, Math.Min(args.Limit ?? 30, 100));
+        var minImpressions = Math.Max(0, Math.Min(args.MinImpressions ?? 0, 1_000_000));
+        var rows = InsightLogic.BlendLandingPagesTyped(slice, limit, minImpressions);
+
+        var highImpact = rows.Count(r => r.Quadrant == "high_impact");
+        var worthOptimizing = rows.Count(r => r.Quadrant == "worth_optimizing");
+        var totalPages = slice.Gsc?.ByPage.Count ?? 0;
+
+        return new BlendedTableResult
+        {
+            Rows = rows,
+            Total = rows.Count,
+            Truncated = totalPages > limit,
+            Provenance = InsightLogic.ProvenanceBlockTyped(["gsc", "ga4"], JsonCoercion.AsString(raw["fetched_at"])),
+            Insights =
+            [
+                $"{highImpact} high-impact landing pages",
+                $"{worthOptimizing} worth optimizing for rank",
+            ],
         };
     }
 }

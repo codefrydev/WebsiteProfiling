@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Data.Application.Dto.Portfolio;
+using Data.Application.Mapping;
 
 namespace Data.Application.Portfolio;
 
@@ -137,8 +138,15 @@ internal static class PortfolioGrouping
         PortfolioMaps maps)
     {
         long? runIdInt = null;
-        if (payload.TryGetProperty("crawl_run_id", out var ridEl) && ridEl.ValueKind == JsonValueKind.Number)
+        var metaSlice = PayloadSliceMapper.ToReportMetaSlice(payload);
+        if (metaSlice?.CrawlRunId is int crawlRunId)
+        {
+            runIdInt = crawlRunId;
+        }
+        else if (payload.TryGetProperty("crawl_run_id", out var ridEl) && ridEl.ValueKind == JsonValueKind.Number)
+        {
             runIdInt = ridEl.TryGetInt64(out var l) ? l : ridEl.GetInt32();
+        }
 
         var runStartUrl = runIdInt is not null && maps.StartUrlByRunId.TryGetValue(runIdInt.Value, out var su)
             ? su : "";

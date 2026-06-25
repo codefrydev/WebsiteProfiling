@@ -120,6 +120,8 @@ public sealed class ChatAgentService(
                     var detail = phase == "retrying" ? "Retrying summary…" : "Summarizing insights…";
                     progress.EmitStatus("synthesizing", detail);
                 },
+                onToken: progress.EmitToken,
+                onPartialNarrative: progress.EmitNarrativePartial,
                 cancellationToken);
             progress.EmitNarrative(narrative);
             progress.EmitDone();

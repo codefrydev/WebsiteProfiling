@@ -1,8 +1,15 @@
+using System.Text;
+
 namespace AiService.Application.Chat;
 
 /// <summary>Unicode sanitization for chat messages (ports Python <c>text_sanitize.strip_surrogates</c>).</summary>
 public static class ChatTextSanitize
 {
+    /// <summary>
+    /// Drops lone (unpaired) UTF-16 surrogates while preserving valid surrogate pairs, so
+    /// emoji and other non-BMP characters survive. Matches the Python original, which only
+    /// strips surrogates that cannot encode to UTF-8.
+    /// </summary>
     public static string StripSurrogates(string? text)
     {
         if (string.IsNullOrEmpty(text))
@@ -10,18 +17,27 @@ public static class ChatTextSanitize
             return "";
         }
 
-        var buffer = new char[text.Length];
-        var length = 0;
-        foreach (var ch in text)
+        var sb = new StringBuilder(text.Length);
+        for (var i = 0; i < text.Length; i++)
         {
-            if (char.IsSurrogate(ch))
+            var ch = text[i];
+            if (char.IsHighSurrogate(ch) && i + 1 < text.Length && char.IsLowSurrogate(text[i + 1]))
             {
-                continue;
+                // Valid surrogate pair — keep both halves.
+                sb.Append(ch);
+                sb.Append(text[i + 1]);
+                i++;
             }
-
-            buffer[length++] = ch;
+            else if (char.IsSurrogate(ch))
+            {
+                // Lone surrogate — drop (invalid in UTF-8).
+            }
+            else
+            {
+                sb.Append(ch);
+            }
         }
 
-        return length == text.Length ? text : new string(buffer, 0, length);
+        return sb.Length == text.Length ? text : sb.ToString();
     }
 }

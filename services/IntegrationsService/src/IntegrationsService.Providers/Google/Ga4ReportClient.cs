@@ -5,6 +5,7 @@ using Google.Apis.AnalyticsData.v1beta.Data;
 using Google.Apis.Http;
 using Google.Apis.Services;
 using IntegrationsService.Application.Google;
+using WebsiteProfiling.Contracts.Google;
 
 namespace IntegrationsService.Providers.Google;
 

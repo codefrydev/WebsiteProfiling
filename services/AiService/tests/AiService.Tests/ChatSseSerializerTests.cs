@@ -28,4 +28,24 @@ public sealed class ChatSseSerializerTests
         Assert.Equal("tool_progress", json["type"]?.GetValue<string>());
         Assert.Equal("call-2", json["call_id"]?.GetValue<string>());
     }
+
+    [Fact]
+    public void Token_event_serializes()
+    {
+        var json = ChatSseSerializer.ToJson(new ChatTokenStreamEvent("hello"));
+        Assert.Equal("token", json["type"]?.GetValue<string>());
+        Assert.Equal("hello", json["text"]?.GetValue<string>());
+    }
+
+    [Fact]
+    public void Narrative_partial_event_serializes()
+    {
+        var narrative = new ChatNarrative(["Insight one"], ["Action one"]);
+        var json = ChatSseSerializer.ToJson(new ChatNarrativePartialStreamEvent(narrative));
+        Assert.Equal("narrative_partial", json["type"]?.GetValue<string>());
+        var n = json["narrative"] as JsonObject;
+        Assert.NotNull(n);
+        Assert.Equal("Insight one", n["power_insights"]![0]!.GetValue<string>());
+        Assert.Equal("Action one", n["recommended_actions"]![0]!.GetValue<string>());
+    }
 }

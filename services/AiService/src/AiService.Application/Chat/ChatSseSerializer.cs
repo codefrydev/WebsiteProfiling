@@ -41,6 +41,16 @@ public static class ChatSseSerializer
             ["type"] = n.Type,
             ["narrative"] = ToNarrativeJson(n.Narrative),
         },
+        ChatNarrativePartialStreamEvent n => new()
+        {
+            ["type"] = n.Type,
+            ["narrative"] = ToNarrativeJson(n.Narrative),
+        },
+        ChatTokenStreamEvent t => new()
+        {
+            ["type"] = t.Type,
+            ["text"] = t.Text,
+        },
         ChatDoneStreamEvent d => new() { ["type"] = d.Type },
         ChatErrorStreamEvent e => new() { ["type"] = e.Type, ["message"] = e.Message },
         ChatPartialDoneStreamEvent p => new() { ["type"] = p.Type, ["message"] = p.Message },

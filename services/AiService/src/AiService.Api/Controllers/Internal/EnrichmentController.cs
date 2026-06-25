@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
+using AiService.Application.Dto;
 using AiService.Application.Services;
-using AiService.Api.Controllers;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AiService.Api.Controllers.Internal;
@@ -49,7 +49,7 @@ public sealed class EnrichmentController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> IssueFixes([FromBody] JsonObject body, CancellationToken cancellationToken)
     {
-        var result = await _enrichment.GenerateIssueFixAsync(body, JsonBodyHelpers.GetRefresh(body), cancellationToken);
+        var result = await _enrichment.GenerateIssueFixAsync(body, body.GetRefresh(), cancellationToken);
         return Ok(result);
     }
 

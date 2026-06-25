@@ -122,9 +122,9 @@ export function LinksExplorerTableTab({
         </div>
       ) : null}
 
-      <Card overflowHidden padding="none" className="flex flex-col min-h-[min(500px,70vh)] sm:min-h-[500px]">
+      <Card overflowHidden padding="none" className="flex flex-col">
         <div
-          className="overflow-x-auto overflow-y-visible touch-pan-x overscroll-x-contain relative scroll-smooth"
+          className="overflow-auto touch-pan-x overscroll-x-contain relative scroll-smooth max-h-[min(70vh,640px)]"
           ref={tableRef}
         >
           {hoveredRow && (() => {
@@ -138,8 +138,8 @@ export function LinksExplorerTableTab({
             {sj.tableSwipeHint}
           </p>
 
-          <table className="w-full min-w-[560px] text-left text-sm">
-            <thead className="bg-brand-900 uppercase text-xs font-semibold sticky top-0 z-20 shadow-sm">
+          <table className="w-full min-w-[54rem] text-left text-sm border-collapse">
+            <thead className="bg-brand-900 text-xs font-semibold sticky top-0 z-20 shadow-sm border-b border-default">
               <tr>
                 <SortTh
                   label={vl.thPage}
@@ -147,7 +147,7 @@ export function LinksExplorerTableTab({
                   sortBy={sortBy}
                   sortDesc={sortDesc}
                   onSort={onToggleSort}
-                  className="px-3 sm:px-6 sticky left-0 z-30 bg-brand-900 border-r border-default shadow-[4px_0_16px_-8px_rgba(0,0,0,0.55)]"
+                  className="px-3 sm:px-6 sticky left-0 z-30 bg-brand-900 border-r border-default shadow-[4px_0_16px_-8px_rgba(0,0,0,0.55)] min-w-[12rem] sm:min-w-[14rem]"
                 />
                 <SortTh
                   label={vl.thStatus}
@@ -156,7 +156,7 @@ export function LinksExplorerTableTab({
                   sortDesc={sortDesc}
                   onSort={onToggleSort}
                   hint={metricHelpHint('views.links.explorerStatus')}
-                  className={visibleCols.has('status') ? undefined : 'hidden'}
+                  className={visibleCols.has('status') ? 'w-24' : 'hidden'}
                 />
                 <SortTh
                   label={vl.thLinksIn}
@@ -165,7 +165,7 @@ export function LinksExplorerTableTab({
                   sortDesc={sortDesc}
                   onSort={onToggleSort}
                   hint={metricHelpHint('views.links.explorerInlinks')}
-                  className={visibleCols.has('inlinks') ? undefined : 'hidden'}
+                  className={visibleCols.has('inlinks') ? 'w-28 text-right' : 'hidden'}
                 />
                 <SortTh
                   label={vl.thCrawlDepth}
@@ -174,7 +174,7 @@ export function LinksExplorerTableTab({
                   sortDesc={sortDesc}
                   onSort={onToggleSort}
                   hint={metricHelpHint('views.links.explorerDepth')}
-                  className={visibleCols.has('depth') ? undefined : 'hidden'}
+                  className={visibleCols.has('depth') ? 'hidden xl:table-cell w-28 text-right' : 'hidden'}
                 />
                 <SortTh
                   label={vl.thLoadTime}
@@ -183,7 +183,7 @@ export function LinksExplorerTableTab({
                   sortDesc={sortDesc}
                   onSort={onToggleSort}
                   hint={metricHelpHint('views.links.explorerLoadTime')}
-                  className={visibleCols.has('response_time_ms') ? undefined : 'hidden'}
+                  className={visibleCols.has('response_time_ms') ? 'w-28 text-right' : 'hidden'}
                 />
                 <SortTh
                   label={vl.thWords}
@@ -192,7 +192,7 @@ export function LinksExplorerTableTab({
                   sortDesc={sortDesc}
                   onSort={onToggleSort}
                   hint={metricHelpHint('views.links.explorerWords')}
-                  className={visibleCols.has('word_count') ? undefined : 'hidden'}
+                  className={visibleCols.has('word_count') ? 'hidden xl:table-cell w-24 text-right' : 'hidden'}
                 />
                 {hasCustomExtract ? (
                   <th className={visibleCols.has('custom_extract') ? 'px-4 py-4 text-muted-foreground uppercase text-xs whitespace-nowrap' : 'hidden'}>
@@ -214,7 +214,7 @@ export function LinksExplorerTableTab({
                     {key}
                   </th>
                 ))}
-                <th className={visibleCols.has('js_errors') ? 'px-4 py-4 text-muted-foreground uppercase text-xs whitespace-nowrap' : 'hidden'}>
+                <th className={visibleCols.has('js_errors') ? 'px-3 sm:px-4 py-3.5 text-muted-foreground uppercase text-xs whitespace-nowrap w-36' : 'hidden'}>
                   <span className="inline-flex items-center gap-1 normal-case">
                     {vl.thJsErrors}
                     {jsErrorsHint ? (
@@ -224,12 +224,23 @@ export function LinksExplorerTableTab({
                     ) : null}
                   </span>
                 </th>
-                <th className="px-3 sm:px-4 py-4 text-center text-muted-foreground uppercase text-xs whitespace-nowrap">
+                <th className="px-3 sm:px-4 py-3.5 text-center text-muted-foreground uppercase text-xs whitespace-nowrap w-28">
                   {vl.thActions}
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-muted [&>tr:nth-child(even)]:bg-brand-900/30">
+              {pageLinks.length === 0 ? (
+                <tr>
+                  <td colSpan={12} className="px-6 py-14 text-center text-sm text-muted-foreground">
+                    {searchQuery || filterValues.statusFilter !== sj.all || filterValues.inlinksFilter !== sj.all
+                      || filterValues.rtFilter !== sj.all || filterValues.wcFilter !== sj.all
+                      || filterValues.jsErrorFilter !== sj.all || advConditions.length > 0
+                      ? strings.components?.urlGapLists?.noResults ?? 'No URLs match your search or filters.'
+                      : vl.noUrlData}
+                  </td>
+                </tr>
+              ) : null}
               {pageLinks.map((link, i) => {
                 const hrefLines = formatPageHrefLines(link.url);
                 const stickyBg = i % 2 === 1 ? 'bg-brand-900/40' : 'bg-brand-800';
@@ -264,25 +275,37 @@ export function LinksExplorerTableTab({
                           <span className="truncate font-mono">{hrefLines.label}</span>
                           <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60 group-hover:opacity-100 transition-opacity" />
                         </a>
-                        {((!visibleCols.has('depth') && link.depth != null) ||
-                          (!visibleCols.has('word_count') && (link.word_count ?? 0) > 0)) && (
+                        {link.depth != null && !visibleCols.has('depth') ? (
                           <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
-                            {!visibleCols.has('depth') && link.depth != null && (
-                              <span>
-                                {vl.thCrawlDepth}: {String(link.depth)}
-                              </span>
-                            )}
-                            {!visibleCols.has('depth') && link.depth != null &&
-                              !visibleCols.has('word_count') && (link.word_count ?? 0) > 0 && (
-                              <span className="mx-1.5 text-muted-foreground">·</span>
-                            )}
-                            {!visibleCols.has('word_count') && (link.word_count ?? 0) > 0 && (
-                              <span>
+                            {vl.thCrawlDepth}: {String(link.depth)}
+                            {!visibleCols.has('word_count') && (link.word_count ?? 0) > 0 ? (
+                              <>
+                                <span className="mx-1.5 text-muted-foreground">·</span>
                                 {vl.thWords}: {(link.word_count ?? 0).toLocaleString()}
-                              </span>
-                            )}
+                              </>
+                            ) : null}
                           </p>
-                        )}
+                        ) : null}
+                        {!visibleCols.has('word_count') && visibleCols.has('depth') && (link.word_count ?? 0) > 0 ? (
+                          <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
+                            {vl.thWords}: {(link.word_count ?? 0).toLocaleString()}
+                          </p>
+                        ) : null}
+                        {visibleCols.has('depth') && link.depth != null ? (
+                          <p className="mt-1 text-[11px] text-muted-foreground leading-snug xl:hidden">
+                            {vl.thCrawlDepth}: {String(link.depth)}
+                            {visibleCols.has('word_count') && (link.word_count ?? 0) > 0 ? (
+                              <>
+                                <span className="mx-1.5 text-muted-foreground">·</span>
+                                {vl.thWords}: {(link.word_count ?? 0).toLocaleString()}
+                              </>
+                            ) : null}
+                          </p>
+                        ) : visibleCols.has('word_count') && (link.word_count ?? 0) > 0 ? (
+                          <p className="mt-1 text-[11px] text-muted-foreground leading-snug xl:hidden">
+                            {vl.thWords}: {(link.word_count ?? 0).toLocaleString()}
+                          </p>
+                        ) : null}
                       </div>
                     </td>
                     <td className={visibleCols.has('status') ? 'px-3 sm:px-4 py-3 whitespace-nowrap align-middle' : 'hidden'}>
@@ -291,19 +314,19 @@ export function LinksExplorerTableTab({
                     <td className={visibleCols.has('inlinks') ? 'px-3 sm:px-4 py-3 text-right align-middle min-w-0' : 'hidden'}>
                       <InlinksMetricCell count={link.inlinks ?? 0} maxInSection={maxInlinksInResults} />
                     </td>
-                    <td className={visibleCols.has('depth') ? 'px-4 py-3 text-foreground text-sm tabular-nums whitespace-nowrap align-middle' : 'hidden'}>
+                    <td className={visibleCols.has('depth') ? 'hidden xl:table-cell px-4 py-3 text-foreground text-sm tabular-nums whitespace-nowrap align-middle text-right' : 'hidden'}>
                       {link.depth != null ? link.depth : sj.emDash}
                     </td>
                     <td
                       className={
                         visibleCols.has('response_time_ms')
-                          ? `px-3 sm:px-4 py-3 text-sm font-semibold tabular-nums whitespace-nowrap align-middle ${rtColor(link.response_time_ms)}`
+                          ? `px-3 sm:px-4 py-3 text-sm font-semibold tabular-nums whitespace-nowrap align-middle text-right ${rtColor(link.response_time_ms)}`
                           : 'hidden'
                       }
                     >
                       {formatMs(link.response_time_ms)}
                     </td>
-                    <td className={visibleCols.has('word_count') ? 'px-4 py-3 text-sm text-foreground tabular-nums whitespace-nowrap align-middle' : 'hidden'}>
+                    <td className={visibleCols.has('word_count') ? 'hidden xl:table-cell px-4 py-3 text-sm text-foreground tabular-nums whitespace-nowrap align-middle text-right' : 'hidden'}>
                       {(link.word_count ?? 0) > 0 ? (link.word_count ?? 0).toLocaleString() : sj.emDash}
                     </td>
                     {hasCustomExtract ? (
@@ -344,9 +367,11 @@ export function LinksExplorerTableTab({
                         onClick={() =>
                           onInspect(link.url, linkHasBrowserErrors(link) ? 'analysis' : 'overview')
                         }
-                        className="inline-flex items-center justify-center gap-1.5 min-h-11 min-w-[2.75rem] sm:min-h-0 sm:min-w-0 text-muted-foreground hover:text-bright bg-brand-800 hover:bg-brand-700 px-3 py-2.5 sm:px-2 sm:py-1 rounded-lg sm:rounded text-xs font-medium transition-colors touch-manipulation"
+                        className="inline-flex items-center justify-center gap-1.5 min-h-11 min-w-[2.75rem] sm:min-h-0 sm:min-w-0 text-muted-foreground hover:text-bright bg-brand-800 hover:bg-brand-700 px-3 py-2.5 sm:px-2.5 sm:py-1.5 rounded-lg sm:rounded-md text-xs font-medium transition-colors touch-manipulation"
+                        title={vl.inspect}
                       >
-                        <Search className="h-4 w-4 sm:h-3 sm:w-3 shrink-0" /> {vl.inspect}
+                        <Search className="h-4 w-4 sm:h-3.5 sm:w-3.5 shrink-0" aria-hidden />
+                        <span className="hidden sm:inline">{vl.inspect}</span>
                       </button>
                     </td>
                   </tr>

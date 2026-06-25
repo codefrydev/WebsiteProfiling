@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using AiService.Application.Chat;
 using AiService.Application.Prompts;
+using AiService.Tools.Domain;
 using AiService.Tools.Selection;
 
 namespace AiService.Tests;
@@ -100,6 +101,28 @@ public sealed class ChatAgentParityTests
     }
 
     [Fact]
+    public void ApplyToolCap_preserves_pinned_playbook_tools()
+    {
+        var selected = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var name in McpToolDomains.Tier0Tools)
+        {
+            selected.Add(name);
+        }
+
+        for (var i = 0; i < 40; i++)
+        {
+            selected.Add($"synthetic_tool_{i:D2}");
+        }
+
+        selected.Add("get_issue_priority_breakdown");
+        var pinned = new HashSet<string>(StringComparer.Ordinal) { "get_issue_priority_breakdown" };
+
+        var capped = ChatToolSelector.ApplyToolCap(selected, cap: 25, pinned);
+
+        Assert.Contains("get_issue_priority_breakdown", capped);
+    }
+
+    [Fact]
     public void PartialDone_event_serializes_for_sse()
     {
         var json = ChatSseSerializer.ToJson(new ChatPartialDoneStreamEvent("Stopped early"));
@@ -112,5 +135,20 @@ public sealed class ChatAgentParityTests
     {
         var cleaned = ChatTextSanitize.StripSurrogates("hi\ud800there");
         Assert.Equal("hithere", cleaned);
+    }
+
+    [Fact]
+    public void StripSurrogates_preserves_valid_surrogate_pairs()
+    {
+        // 🚀 (U+1F680) is a valid high+low surrogate pair and must survive.
+        const string withEmoji = "rocket 🚀 ok";
+        Assert.Equal(withEmoji, ChatTextSanitize.StripSurrogates(withEmoji));
+    }
+
+    [Fact]
+    public void StripSurrogates_drops_lone_low_surrogate()
+    {
+        var cleaned = ChatTextSanitize.StripSurrogates("\udc00x");
+        Assert.Equal("x", cleaned);
     }
 }

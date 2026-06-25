@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AiService.Domain\AiService.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Contracts\WebsiteProfiling.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

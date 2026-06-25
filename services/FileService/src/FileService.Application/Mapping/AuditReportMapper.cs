@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Text.Json;
 using FileService.Domain.Models;
+using WebsiteProfiling.Contracts.Json;
+using WebsiteProfiling.Contracts.Report;
 
 namespace FileService.Application.Mapping;
 
@@ -36,9 +38,9 @@ public static class AuditReportMapper
         return new AuditReportModel
         {
             ReportId = reportId,
-            SiteName = JsonHelper.GetString(payload, "site_name") ?? "Site",
-            ReportTitle = JsonHelper.GetString(payload, "report_title") ?? "Technical SEO Audit Report",
-            GeneratedAt = FormatReportDate(JsonHelper.GetString(payload, "report_generated_at")),
+            SiteName = JsonCoercion.GetString(payload, "site_name") ?? "Site",
+            ReportTitle = JsonCoercion.GetString(payload, "report_title") ?? "Technical SEO Audit Report",
+            GeneratedAt = FormatReportDate(JsonCoercion.GetString(payload, "report_generated_at")),
             ExportedAt = exportedAt,
             HealthScore = healthScore,
             ScoreBand = ScoreBand(healthScore),
@@ -62,9 +64,9 @@ public static class AuditReportMapper
         };
     }
 
-    private static List<IssueModel> ExtractIssues(JsonElement payload)
+    private static List<IssueRecord> ExtractIssues(JsonElement payload)
     {
-        var rows = new List<IssueModel>();
+        var rows = new List<IssueRecord>();
         if (!payload.TryGetProperty("categories", out var categories) || categories.ValueKind != JsonValueKind.Array)
         {
             return rows;
@@ -72,25 +74,25 @@ public static class AuditReportMapper
 
         foreach (var cat in categories.EnumerateArray())
         {
-            var catName = JsonHelper.GetString(cat, "name") ?? "";
+            var catName = JsonCoercion.GetString(cat, "name") ?? "";
             if (!cat.TryGetProperty("issues", out var issues) || issues.ValueKind != JsonValueKind.Array)
             {
                 continue;
             }
             foreach (var issue in issues.EnumerateArray())
             {
-                var rule = JsonHelper.GetString(issue, "recommendation") ?? "";
-                var llm = JsonHelper.GetString(issue, "llm_recommendation") ?? "";
+                var rule = JsonCoercion.GetString(issue, "recommendation") ?? "";
+                var llm = JsonCoercion.GetString(issue, "llm_recommendation") ?? "";
                 var rec = !string.IsNullOrWhiteSpace(llm) ? llm : rule;
                 rows.Add(IssueNormalizer.Normalize(
                     CategoryDisplayName(catName),
-                    JsonHelper.GetString(issue, "priority") ?? "",
-                    JsonHelper.GetString(issue, "message") ?? "",
-                    JsonHelper.GetString(issue, "url") ?? "",
+                    JsonCoercion.GetString(issue, "priority") ?? "",
+                    JsonCoercion.GetString(issue, "message") ?? "",
+                    JsonCoercion.GetString(issue, "url") ?? "",
                     rec,
-                    JsonHelper.GetInt(issue, "gsc_clicks"),
-                    JsonHelper.GetInt(issue, "gsc_impressions"),
-                    JsonHelper.GetInt(issue, "impact_score")));
+                    JsonCoercion.GetInt(issue, "gsc_clicks"),
+                    JsonCoercion.GetInt(issue, "gsc_impressions"),
+                    JsonCoercion.GetInt(issue, "impact_score")));
             }
         }
 
@@ -103,7 +105,7 @@ public static class AuditReportMapper
         return rows;
     }
 
-    private static IReadOnlyList<IssueModel> LimitIssues(List<IssueModel> allIssues, PdfProfile profile)
+    private static IReadOnlyList<IssueRecord> LimitIssues(List<IssueRecord> allIssues, PdfProfile profile)
     {
         var max = profile switch
         {
@@ -116,7 +118,7 @@ public static class AuditReportMapper
             return allIssues.Take(max).ToList();
         }
 
-        var result = new List<IssueModel>();
+        var result = new List<IssueRecord>();
         var perGroup = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
         foreach (var issue in allIssues)
         {
@@ -136,17 +138,17 @@ public static class AuditReportMapper
         return result;
     }
 
-    private static ExecutiveSummaryModel ExtractExecutiveSummary(JsonElement payload, List<IssueModel> allIssues)
+    private static ExecutiveSummaryModel ExtractExecutiveSummary(JsonElement payload, List<IssueRecord> allIssues)
     {
         var summary = "";
         var source = "";
         var priorities = new List<string>();
-        var topIssues = new List<IssueModel>();
+        var topIssues = new List<IssueRecord>();
 
         if (payload.TryGetProperty("executive_summary", out var exec) && exec.ValueKind == JsonValueKind.Object)
         {
-            summary = JsonHelper.GetString(exec, "summary") ?? "";
-            source = ExecutiveSourceLabel(JsonHelper.GetString(exec, "source"));
+            summary = JsonCoercion.GetString(exec, "summary") ?? "";
+            source = ExecutiveSourceLabel(JsonCoercion.GetString(exec, "source"));
             if (exec.TryGetProperty("priorities", out var priEl) && priEl.ValueKind == JsonValueKind.Array)
             {
                 foreach (var p in priEl.EnumerateArray())
@@ -163,11 +165,11 @@ public static class AuditReportMapper
                 foreach (var issue in topEl.EnumerateArray().Take(8))
                 {
                     topIssues.Add(IssueNormalizer.Normalize(
-                        JsonHelper.GetString(issue, "category") ?? "",
-                        JsonHelper.GetString(issue, "priority") ?? "",
-                        JsonHelper.GetString(issue, "message") ?? "",
-                        JsonHelper.GetString(issue, "url") ?? "",
-                        JsonHelper.GetString(issue, "recommendation") ?? "",
+                        JsonCoercion.GetString(issue, "category") ?? "",
+                        JsonCoercion.GetString(issue, "priority") ?? "",
+                        JsonCoercion.GetString(issue, "message") ?? "",
+                        JsonCoercion.GetString(issue, "url") ?? "",
+                        JsonCoercion.GetString(issue, "recommendation") ?? "",
                         null, null, null));
                 }
             }
@@ -217,8 +219,8 @@ public static class AuditReportMapper
             }
             scores.Add(new CategoryScoreModel
             {
-                Name = CategoryDisplayName(JsonHelper.GetString(cat, "name") ?? ""),
-                Score = JsonHelper.GetInt(cat, "score"),
+                Name = CategoryDisplayName(JsonCoercion.GetString(cat, "name") ?? ""),
+                Score = JsonCoercion.GetInt(cat, "score"),
                 IssueCount = issueCount,
             });
         }
@@ -237,8 +239,8 @@ public static class AuditReportMapper
         }
         return new CrawlScopeModel
         {
-            PagesCrawled = JsonHelper.GetInt(scope, "pages_crawled"),
-            MaxPagesConfigured = JsonHelper.GetInt(scope, "max_pages_configured"),
+            PagesCrawled = JsonCoercion.GetInt(scope, "pages_crawled"),
+            MaxPagesConfigured = JsonCoercion.GetInt(scope, "max_pages_configured"),
         };
     }
 
@@ -259,7 +261,7 @@ public static class AuditReportMapper
             .ToList();
     }
 
-    private static IReadOnlyList<string> BuildTruncationNotes(List<IssueModel> all, IReadOnlyList<IssueModel> limited)
+    private static IReadOnlyList<string> BuildTruncationNotes(List<IssueRecord> all, IReadOnlyList<IssueRecord> limited)
     {
         if (all.Count <= limited.Count)
         {
@@ -268,7 +270,7 @@ public static class AuditReportMapper
         return [$"Showing {limited.Count} of {all.Count} issues — export CSV for the full list."];
     }
 
-    private static Dictionary<string, int> CountByPriority(IEnumerable<IssueModel> issues)
+    private static Dictionary<string, int> CountByPriority(IEnumerable<IssueRecord> issues)
     {
         var counts = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
         {

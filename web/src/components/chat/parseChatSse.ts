@@ -22,6 +22,7 @@ export type ChatSseEvent =
       detail?: string;
     }
   | { type: 'narrative'; narrative: { power_insights: string[]; recommended_actions: string[] } }
+  | { type: 'narrative_partial'; narrative: { power_insights: string[]; recommended_actions: string[] } }
   | { type: 'done'; message?: string }
   | { type: 'partial_done'; message?: string }
   | { type: 'error'; message?: string };
@@ -38,6 +39,17 @@ export function resolveToolActivityIndex(
   }
 
   return tools.findIndex((t) => t.name === evt.name && t.status === 'running');
+}
+
+function parseNarrativePayload(data: Record<string, unknown>) {
+  const narrative = data.narrative as Record<string, unknown> | undefined;
+  const insights = Array.isArray(narrative?.power_insights)
+    ? (narrative.power_insights as unknown[]).map(String)
+    : [];
+  const actions = Array.isArray(narrative?.recommended_actions)
+    ? (narrative.recommended_actions as unknown[]).map(String)
+    : [];
+  return { power_insights: insights, recommended_actions: actions };
 }
 
 export function parseSseChunk(buffer: string): { events: ChatSseEvent[]; rest: string } {
@@ -90,17 +102,10 @@ export function parseSseChunk(buffer: string): { events: ChatSseEvent[]; rest: s
           name: String(data.name || ''),
           detail: String(data.detail || ''),
         });
-      } else if (eventType === 'narrative') {
-        const narrative = data.narrative as Record<string, unknown> | undefined;
-        const insights = Array.isArray(narrative?.power_insights)
-          ? (narrative.power_insights as unknown[]).map(String)
-          : [];
-        const actions = Array.isArray(narrative?.recommended_actions)
-          ? (narrative.recommended_actions as unknown[]).map(String)
-          : [];
+      } else if (eventType === 'narrative' || eventType === 'narrative_partial') {
         events.push({
-          type: 'narrative',
-          narrative: { power_insights: insights, recommended_actions: actions },
+          type: eventType,
+          narrative: parseNarrativePayload(data),
         });
       } else if (eventType === 'done') {
         events.push({ type: 'done', message: String(data.message || '') });

@@ -84,43 +84,6 @@ internal static class ChatHelpers
     }
 }
 
-internal static class JsonBodyHelpers
-{
-    internal static JsonObject ToJsonObject(object? body)
-    {
-        if (body is JsonObject obj)
-        {
-            return obj;
-        }
-
-        if (body is JsonElement element)
-        {
-            return JsonNode.Parse(element.GetRawText()) as JsonObject ?? [];
-        }
-
-        if (body is null)
-        {
-            return [];
-        }
-
-        return JsonNode.Parse(JsonSerializer.Serialize(body)) as JsonObject ?? [];
-    }
-
-    internal static JsonArray ToJsonArray(object? body, string propertyName)
-    {
-        var obj = ToJsonObject(body);
-        if (obj[propertyName] is JsonArray arr)
-        {
-            return arr;
-        }
-
-        return [];
-    }
-
-    internal static bool GetRefresh(JsonObject body)
-        => body["refresh"]?.GetValue<bool?>() == true;
-}
-
 internal static class SecretHelpers
 {
     internal const string Mask = "*";

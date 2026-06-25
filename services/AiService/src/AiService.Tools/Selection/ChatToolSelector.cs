@@ -106,6 +106,7 @@ public static class ChatToolSelector
 
         var cap = maxTools ?? ResolveChatToolMax();
         var selected = new HashSet<string>(StringComparer.Ordinal);
+        var pinned = new HashSet<string>(StringComparer.Ordinal);
         foreach (var name in McpToolDomains.Tier0Tools)
         {
             if (allowedTools.Contains(name))
@@ -162,15 +163,16 @@ public static class ChatToolSelector
                         if (allowedTools.Contains(anchor))
                         {
                             selected.Add(anchor);
+                            pinned.Add(anchor);
                         }
                     }
                 }
             }
         }
 
-        ApplyPhraseToolPins(selected, combined, allowedTools);
+        ApplyPhraseToolPins(selected, combined, allowedTools, pinned);
 
-        selected = ApplyToolCap(selected, cap);
+        selected = ApplyToolCap(selected, cap, pinned);
         selected.IntersectWith(allowedTools);
 
         if (ChatSqlToolEnabled())
@@ -286,7 +288,8 @@ public static class ChatToolSelector
     private static void ApplyPhraseToolPins(
         HashSet<string> selected,
         string combinedText,
-        IReadOnlySet<string> allowedTools)
+        IReadOnlySet<string> allowedTools,
+        HashSet<string> pinned)
     {
         var lower = combinedText.ToLowerInvariant();
         foreach (var (phrase, tools) in PhraseToolPins)
@@ -301,6 +304,7 @@ public static class ChatToolSelector
                 if (allowedTools.Contains(tool))
                 {
                     selected.Add(tool);
+                    pinned.Add(tool);
                 }
             }
         }

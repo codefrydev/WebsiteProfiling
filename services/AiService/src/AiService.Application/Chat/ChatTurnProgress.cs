@@ -26,6 +26,12 @@ public sealed class ChatTurnProgress(Action<ChatStreamEvent>? emit)
     public void EmitNarrative(ChatNarrative narrative)
         => emit?.Invoke(new ChatNarrativeStreamEvent(narrative));
 
+    public void EmitNarrativePartial(ChatNarrative narrative)
+        => emit?.Invoke(new ChatNarrativePartialStreamEvent(narrative));
+
+    public void EmitToken(string text)
+        => emit?.Invoke(new ChatTokenStreamEvent(text));
+
     public void EmitDone()
         => emit?.Invoke(new ChatDoneStreamEvent());
 

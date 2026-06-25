@@ -1,8 +1,11 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using Data.Application.Mapping;
 using Data.Application.Persistence;
 using Data.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using WebsiteProfiling.Contracts.Google;
+using WebsiteProfiling.Contracts.Json;
 
 namespace Data.Application.Repositories;
 
@@ -125,6 +128,46 @@ public sealed class GoogleDataRepository(DataDbContext db) : IGoogleDataReposito
         {
             return null;
         }
+    }
+
+    public async Task<GoogleSlice?> GetLatestGoogleSliceAsync(
+        long? propertyId,
+        CancellationToken cancellationToken = default)
+        => PayloadSliceMapper.ToGoogleSlice(await GetLatestPayloadAsync(propertyId, cancellationToken));
+
+    public async Task<Dictionary<string, GscPageDetail>?> GetGscDetailByPageAsync(
+        long? propertyId,
+        CancellationToken cancellationToken = default)
+    {
+        var json = await GetGscDetailAsync(propertyId, cancellationToken);
+        if (json?["by_page"] is not JsonObject byPage)
+        {
+            return null;
+        }
+
+        var result = new Dictionary<string, GscPageDetail>(StringComparer.Ordinal);
+        foreach (var (key, node) in byPage)
+        {
+            if (node is null)
+            {
+                continue;
+            }
+
+            try
+            {
+                var detail = JsonSerializer.Deserialize<GscPageDetail>(node.ToJsonString(), ContractJsonOptions.Options);
+                if (detail is not null)
+                {
+                    result[key] = detail with { Page = string.IsNullOrEmpty(detail.Page) ? key : detail.Page };
+                }
+            }
+            catch (JsonException)
+            {
+                // skip malformed page
+            }
+        }
+
+        return result.Count == 0 ? null : result;
     }
 
     private static void CopyIfPresent(JsonElement source, JsonObject target, string name)

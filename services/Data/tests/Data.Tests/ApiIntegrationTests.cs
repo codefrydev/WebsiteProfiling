@@ -10,6 +10,7 @@ using Data.Application.Dto.Report;
 using Data.Application.Portfolio;
 using Data.Application.Report;
 using Data.Application.Repositories;
+using WebsiteProfiling.Contracts.Google;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -618,8 +619,16 @@ public class ApiIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
         public Task<JsonObject?> GetLatestPayloadAsync(long? propertyId, CancellationToken cancellationToken = default) =>
             Task.FromResult<JsonObject?>(null);
 
+        public Task<GoogleSlice?> GetLatestGoogleSliceAsync(long? propertyId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<GoogleSlice?>(null);
+
         public Task<JsonObject?> GetGscDetailAsync(long? propertyId, CancellationToken cancellationToken = default) =>
             Task.FromResult<JsonObject?>(null);
+
+        public Task<Dictionary<string, GscPageDetail>?> GetGscDetailByPageAsync(
+            long? propertyId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<Dictionary<string, GscPageDetail>?>(null);
     }
 
     private sealed class FakePropertyRepository : IPropertyRepository

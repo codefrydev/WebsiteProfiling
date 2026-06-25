@@ -3,6 +3,7 @@ import { useCallback, useRef, useState } from 'react';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { consumeChatSse, type ChatSseEvent } from '@/components/chat/parseChatSse';
 import type { ChatNarrative } from '@/types/chatNarrative';
+import { strings } from '@/lib/strings';
 
 export interface FabChatMessage {
   id: string;
@@ -155,7 +156,18 @@ export function useChatFabPopup(domain: string | null): UseChatFabPopupReturn {
             if (evt.type === 'token') {
               setMessages((prev) =>
                 prev.map((m) =>
-                  m.id === assistantId ? { ...m, content: m.content + evt.text } : m,
+                  m.id === assistantId
+                    ? { ...m, toolStatus: strings.components.chat.writingSummary, streaming: true }
+                    : m,
+                ),
+              );
+            } else if (evt.type === 'narrative_partial') {
+              lastNarrative = evt.narrative;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId
+                    ? { ...m, narrative: evt.narrative, toolStatus: undefined, streaming: true }
+                    : m,
                 ),
               );
             } else if (evt.type === 'status') {

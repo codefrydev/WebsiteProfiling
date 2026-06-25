@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using AiService.Application.Dto;
 using AiService.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -47,7 +48,7 @@ public sealed class IssuesController : ControllerBase
 
         try
         {
-            var result = await _fixSuggestions.GenerateAsync(payload, JsonBodyHelpers.GetRefresh(body), cancellationToken);
+            var result = await _fixSuggestions.GenerateAsync(payload, body.GetRefresh(), cancellationToken);
             if (result["ok"]?.GetValue<bool?>() == false)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, new { detail = result["error"]?.GetValue<string>() ?? "Fix suggestion failed" });
@@ -80,7 +81,7 @@ public sealed class IssuesController : ControllerBase
 
         try
         {
-            var result = await _actionPlan.GenerateAsync(body, JsonBodyHelpers.GetRefresh(body), cancellationToken);
+            var result = await _actionPlan.GenerateAsync(body, body.GetRefresh(), cancellationToken);
             if (result["ok"]?.GetValue<bool?>() == false)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, new { detail = result["error"]?.GetValue<string>() ?? "Action plan failed" });
@@ -131,7 +132,7 @@ public sealed class AiFixSuggestionController : ControllerBase
 
         try
         {
-            var result = await _fixSuggestions.GenerateAsync(payload, JsonBodyHelpers.GetRefresh(body), cancellationToken);
+            var result = await _fixSuggestions.GenerateAsync(payload, body.GetRefresh(), cancellationToken);
             if (result["ok"]?.GetValue<bool?>() == false)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, new { detail = result["error"]?.GetValue<string>() ?? "Fix suggestion failed" });

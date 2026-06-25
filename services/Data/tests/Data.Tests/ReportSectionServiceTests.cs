@@ -3,6 +3,7 @@ using Data.Application.Dto.Meta;
 using Data.Application.Dto.Report;
 using Data.Application.Report;
 using Data.Application.Repositories;
+using WebsiteProfiling.Contracts.Google;
 
 namespace Data.Tests;
 
@@ -132,8 +133,16 @@ public sealed class ReportSectionServiceTests
         public Task<JsonObject?> GetLatestPayloadAsync(long? propertyId, CancellationToken cancellationToken = default) =>
             Task.FromResult(payload);
 
+        public Task<GoogleSlice?> GetLatestGoogleSliceAsync(long? propertyId, CancellationToken cancellationToken = default) =>
+            Task.FromResult<GoogleSlice?>(null);
+
         public Task<JsonObject?> GetGscDetailAsync(long? propertyId, CancellationToken cancellationToken = default) =>
             Task.FromResult(gscDetail);
+
+        public Task<Dictionary<string, GscPageDetail>?> GetGscDetailByPageAsync(
+            long? propertyId,
+            CancellationToken cancellationToken = default) =>
+            Task.FromResult<Dictionary<string, GscPageDetail>?>(null);
     }
 
     private sealed class FakePropertyRepo(long id, string domain) : IPropertyRepository

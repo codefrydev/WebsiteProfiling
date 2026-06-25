@@ -146,14 +146,14 @@ public static class ToolResultCompactor
                     continue;
                 }
 
-                var tool = step["tool"]?.GetValue<string>() ?? step["name"]?.GetValue<string>() ?? "";
+                var tool = JsonScalar.AsString(step["tool"]) ?? JsonScalar.AsString(step["name"]) ?? "";
                 var result = step["result"] as JsonObject;
                 var summary = new JsonObject
                 {
                     ["tool"] = tool,
                     ["ok"] = result?["error"] is null,
                 };
-                if (result?["error"]?.GetValue<string>() is { Length: > 0 } err)
+                if (JsonScalar.AsString(result?["error"]) is { Length: > 0 } err)
                 {
                     summary["error"] = err;
                 }
@@ -247,7 +247,7 @@ public static class ToolResultCompactor
 
     private static string SummarizeResult(JsonObject result)
     {
-        if (result["total"]?.GetValue<int>() is int total)
+        if (JsonScalar.AsInt(result["total"]) is int total)
         {
             return $"total={total}";
         }
@@ -257,7 +257,7 @@ public static class ToolResultCompactor
             return $"health_score={healthScore.ToJsonString()}";
         }
 
-        if (result["error"]?.GetValue<string>() is { Length: > 0 } err)
+        if (JsonScalar.AsString(result["error"]) is { Length: > 0 } err)
         {
             return err.Length > 120 ? err[..120] : err;
         }

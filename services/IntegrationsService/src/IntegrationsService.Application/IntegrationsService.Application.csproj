@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\IntegrationsService.Domain\IntegrationsService.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Contracts\WebsiteProfiling.Contracts.csproj" />
   </ItemGroup>
 
   <ItemGroup>

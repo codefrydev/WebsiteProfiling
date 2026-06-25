@@ -1,3 +1,5 @@
+using WebsiteProfiling.Contracts.Google;
+
 namespace IntegrationsService.Application.Google;
 
 /// <summary>
