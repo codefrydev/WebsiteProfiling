@@ -1,6 +1,7 @@
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { DraftInput } from '@/components/shared/DraftTextInput';
 import {
   type ChatFabCorner,
   loadChatFabCorner,
@@ -138,10 +139,6 @@ export default function ChatSettingsPanel() {
   const [loadError, setLoadError] = useState('');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
-  // Track debounce timers for text fields
-  const nameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const avatarTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   useEffect(() => {
     setFabCornerState(loadChatFabCorner());
     void loadChatLlmSettings().then((state) => {
@@ -153,10 +150,6 @@ export default function ChatSettingsPanel() {
       setAvatarUrl(state.llm_chat_assistant_avatar_url);
       setUnlimitedTools(state.llm_chat_unlimited_tool_rounds);
     });
-    return () => {
-      if (nameTimerRef.current) clearTimeout(nameTimerRef.current);
-      if (avatarTimerRef.current) clearTimeout(avatarTimerRef.current);
-    };
   }, []);
 
   const showSave = (ok: boolean) => {
@@ -169,23 +162,17 @@ export default function ChatSettingsPanel() {
     saveChatFabCorner(corner);
   };
 
-  const handleNameChange = (value: string) => {
+  const commitAssistantName = useCallback((value: string) => {
     setAssistantName(value);
-    if (nameTimerRef.current) clearTimeout(nameTimerRef.current);
-    nameTimerRef.current = setTimeout(() => {
-      setSaveStatus('saving');
-      void saveChatLlmField('llm_chat_assistant_name', value).then(showSave);
-    }, 600);
-  };
+    setSaveStatus('saving');
+    void saveChatLlmField('llm_chat_assistant_name', value).then(showSave);
+  }, []);
 
-  const handleAvatarChange = (value: string) => {
+  const commitAvatarUrl = useCallback((value: string) => {
     setAvatarUrl(value);
-    if (avatarTimerRef.current) clearTimeout(avatarTimerRef.current);
-    avatarTimerRef.current = setTimeout(() => {
-      setSaveStatus('saving');
-      void saveChatLlmField('llm_chat_assistant_avatar_url', value).then(showSave);
-    }, 600);
-  };
+    setSaveStatus('saving');
+    void saveChatLlmField('llm_chat_assistant_avatar_url', value).then(showSave);
+  }, []);
 
   const handleUnlimitedTools = (value: boolean) => {
     setUnlimitedTools(value);
@@ -221,7 +208,7 @@ export default function ChatSettingsPanel() {
         </p>
       )}
 
-      {/* FAB position (localStorage) */}
+      {/* FAB position (synced via client_preferences) */}
       <section className="mb-6 rounded-2xl border border-default bg-[var(--app-bg-elevated)] p-5">
         <p className="mb-3 text-sm font-medium text-bright">{s.fabCornerLabel}</p>
         <p className="mb-3 text-xs text-muted-foreground">{s.fabCornerHelp}</p>
@@ -254,12 +241,12 @@ export default function ChatSettingsPanel() {
           >
             {s.assistantNameLabel}
           </label>
-          <input
+          <DraftInput
             id="assistant-name"
             type="text"
             value={assistantName}
             placeholder={DEFAULT_CHAT_ASSISTANT_NAME}
-            onChange={(e) => handleNameChange(e.target.value)}
+            onCommit={commitAssistantName}
             className="mt-2 w-full rounded-lg border border-default bg-[var(--app-bg-muted)] px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-[var(--accent)] focus:outline-none transition-colors"
           />
         </div>
@@ -273,12 +260,12 @@ export default function ChatSettingsPanel() {
             {s.assistantAvatarLabel}
           </label>
           <p className="mt-0.5 text-xs text-muted-foreground">{s.assistantAvatarHelp}</p>
-          <input
+          <DraftInput
             id="assistant-avatar"
             type="text"
             value={avatarUrl}
             placeholder={DEFAULT_CHAT_ASSISTANT_AVATAR}
-            onChange={(e) => handleAvatarChange(e.target.value)}
+            onCommit={commitAvatarUrl}
             className="mt-2 w-full rounded-lg border border-default bg-[var(--app-bg-muted)] px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground font-mono focus:border-[var(--accent)] focus:outline-none transition-colors"
           />
         </div>

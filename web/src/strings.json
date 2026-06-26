@@ -1144,6 +1144,7 @@
     "unknownKeysHelp": "These keys are not in the UI schema but were found in your config. They are preserved on save.",
     "legacyBanner": "Settings were imported from an older config file — click Save settings to store them in the app.",
     "loadError": "Could not load saved config: {message}. Showing defaults.",
+    "llmLoadWarning": "Could not load LLM settings from the server ({message}). Chat and AI features may use defaults until you save again.",
     "openIntegrations": "Connect Search Console & Analytics",
     "googleGroupHint": "Search Console site and Analytics property IDs are saved with Save properties in Step 3 (Integrations tab). The footer Save settings button only saves pipeline toggles in the other tabs, not these fields.",
     "googleSavePropertiesHint": "Click Save properties, or tab out of a field to auto-save. The page footer Save settings does not store Search Console or Analytics values.",

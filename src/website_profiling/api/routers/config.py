@@ -123,3 +123,85 @@ def put_ui_preferences(
     patch_ui_preferences(conn, updates)
     conn.commit()
     return {"ok": True}
+
+
+class ClientPreferencesResponse(BaseModel):
+    defaultLandingView: str = "overview"
+    chatFabCorner: str = "bottom-right"
+    sidebarCollapsed: bool = False
+    networkViewMode: str = "2d"
+    contentStudioAiEnabled: bool = True
+    pipelinePythonExe: str = "python3"
+    pipelineRepoRoot: str = ""
+    radiusScale: str = "default"
+    densityScale: str = "default"
+    animationsEnabled: bool = True
+    fontSizeScale: str = "default"
+
+
+class ClientPreferencesBody(BaseModel):
+    defaultLandingView: Optional[str] = None
+    chatFabCorner: Optional[str] = None
+    sidebarCollapsed: Optional[bool] = None
+    networkViewMode: Optional[str] = None
+    contentStudioAiEnabled: Optional[bool] = None
+    pipelinePythonExe: Optional[str] = None
+    pipelineRepoRoot: Optional[str] = None
+    radiusScale: Optional[str] = None
+    densityScale: Optional[str] = None
+    animationsEnabled: Optional[bool] = None
+    fontSizeScale: Optional[str] = None
+
+
+def _client_preferences_response(prefs) -> ClientPreferencesResponse:
+    return ClientPreferencesResponse(
+        defaultLandingView=prefs.default_landing_view or "overview",
+        chatFabCorner=prefs.chat_fab_corner or "bottom-right",
+        sidebarCollapsed=bool(prefs.sidebar_collapsed),
+        networkViewMode=prefs.network_view_mode or "2d",
+        contentStudioAiEnabled=bool(prefs.content_studio_ai_enabled),
+        pipelinePythonExe=prefs.pipeline_python_exe or "python3",
+        pipelineRepoRoot=prefs.pipeline_repo_root or "",
+        radiusScale=prefs.radius_scale or "default",
+        densityScale=prefs.density_scale or "default",
+        animationsEnabled=bool(prefs.animations_enabled),
+        fontSizeScale=prefs.font_size_scale or "default",
+    )
+
+
+@router.get("/client-preferences")
+def get_client_preferences(conn: Annotated[Connection, Depends(get_db)]) -> ClientPreferencesResponse:
+    from website_profiling.db.typed_config.client_preferences_store import read_client_preferences
+
+    return _client_preferences_response(read_client_preferences(conn))
+
+
+@router.put("/client-preferences")
+def put_client_preferences(
+    body: ClientPreferencesBody,
+    conn: Annotated[Connection, Depends(get_db)],
+) -> dict[str, Any]:
+    from website_profiling.db.typed_config.client_preferences_store import patch_client_preferences
+
+    field_map = {
+        "defaultLandingView": "default_landing_view",
+        "chatFabCorner": "chat_fab_corner",
+        "sidebarCollapsed": "sidebar_collapsed",
+        "networkViewMode": "network_view_mode",
+        "contentStudioAiEnabled": "content_studio_ai_enabled",
+        "pipelinePythonExe": "pipeline_python_exe",
+        "pipelineRepoRoot": "pipeline_repo_root",
+        "radiusScale": "radius_scale",
+        "densityScale": "density_scale",
+        "animationsEnabled": "animations_enabled",
+        "fontSizeScale": "font_size_scale",
+    }
+    updates: dict[str, Any] = {}
+    for camel, snake in field_map.items():
+        value = getattr(body, camel)
+        if value is not None:
+            updates[snake] = value
+    if updates:
+        patch_client_preferences(conn, updates)
+        conn.commit()
+    return {"ok": True}

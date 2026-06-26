@@ -93,6 +93,22 @@
         "custom_theme_json": { "legacy_app_key": "custom_theme", "type": "jsonb", "nullable": true },
         "ui_prefs_json": { "legacy_app_key": "ui_prefs", "type": "jsonb", "nullable": true }
       }
+    },
+    "client_preferences": {
+      "singleton": true,
+      "columns": {
+        "default_landing_view": { "type": "text", "default": "overview" },
+        "chat_fab_corner": { "type": "text", "default": "bottom-right" },
+        "sidebar_collapsed": { "type": "bool", "default": false },
+        "network_view_mode": { "type": "text", "default": "2d" },
+        "content_studio_ai_enabled": { "type": "bool", "default": true },
+        "pipeline_python_exe": { "type": "text", "default": "python3" },
+        "pipeline_repo_root": { "type": "text", "default": "" },
+        "radius_scale": { "type": "text", "default": "default" },
+        "density_scale": { "type": "text", "default": "default" },
+        "animations_enabled": { "type": "bool", "default": true },
+        "font_size_scale": { "type": "text", "default": "default" }
+      }
     }
   },
   "pipeline_domain_tables": {

@@ -1,4 +1,5 @@
 import type { ViewId } from '@/routes';
+import { getCachedClientPreferences, patchClientPreferences } from '@/lib/clientPreferences';
 
 const DEFAULT_VIEW_LS_KEY = 'wp-default-view:v1';
 
@@ -16,15 +17,14 @@ export const LANDING_VIEW_OPTIONS: { id: ViewId; label: string; description: str
 export const DEFAULT_LANDING_VIEW: ViewId = 'overview';
 
 export function getDefaultLandingView(): ViewId {
-  try {
-    const v = localStorage.getItem(DEFAULT_VIEW_LS_KEY) as ViewId | null;
-    if (v && LANDING_VIEW_OPTIONS.some((o) => o.id === v)) return v;
-  } catch { /* ignore */ }
-  return DEFAULT_LANDING_VIEW;
+  return getCachedClientPreferences().defaultLandingView;
 }
 
 export function setDefaultLandingView(view: ViewId): void {
   try {
     localStorage.setItem(DEFAULT_VIEW_LS_KEY, view);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
+  patchClientPreferences({ defaultLandingView: view });
 }

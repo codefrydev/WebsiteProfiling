@@ -3,7 +3,7 @@
  */
 import type { LlmConfigState } from '@/types/api';
 import { LLM_CLOUD_PROVIDERS } from '@/lib/llmProviderApiKeys';
-import { llmProviderModelField } from '@/lib/llmProviderModels';
+import { LLM_MODEL_PROVIDERS, llmProviderModelField, readStoredProviderModel } from '@/lib/llmProviderModels';
 
 export interface LlmProviderProfileDto {
   provider: string;
@@ -94,8 +94,28 @@ export function llmSettingsDtoToFlatState(dto: LlmSettingsDto): LlmConfigState {
   return out;
 }
 
+/** Collect per-provider saved models for PUT /api/llm-settings providerProfiles. */
+export function collectProviderProfiles(state: LlmConfigState): LlmProviderProfileDto[] {
+  const profiles: LlmProviderProfileDto[] = [];
+  const activeProvider = String(state.llm_provider ?? 'none').trim().toLowerCase();
+  const activeModel = String(state.llm_model ?? '').trim();
+
+  for (const provider of LLM_MODEL_PROVIDERS) {
+    let savedModel = readStoredProviderModel(state, provider);
+    if (provider === activeProvider && activeModel) {
+      savedModel = activeModel;
+    }
+    if (savedModel) {
+      profiles.push({ provider, savedModel });
+    }
+  }
+
+  return profiles;
+}
+
 /** Map flat UI state to typed PUT /llm-settings body. */
 export function flatStateToLlmSettingsPatch(state: LlmConfigState): { settings: Record<string, unknown> } {
+  const providerProfiles = collectProviderProfiles(state);
   return {
     settings: {
       enabled: Boolean(state.llm_enabled),
@@ -121,6 +141,7 @@ export function flatStateToLlmSettingsPatch(state: LlmConfigState): { settings: 
       concurrency: Number(state.llm_concurrency ?? 2),
       timeoutSeconds: Number(state.llm_timeout_s ?? 120),
       similarTopK: Number(state.llm_similar_top_k ?? 5),
+      ...(providerProfiles.length > 0 ? { providerProfiles } : {}),
     },
   };
 }

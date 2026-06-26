@@ -1,3 +1,5 @@
+import { getCachedClientPreferences, patchClientPreferences } from '@/lib/clientPreferences';
+
 const STORAGE_KEY = 'wp-pipeline-runner:v1';
 
 export interface PipelineRunnerPrefs {
@@ -11,32 +13,25 @@ const DEFAULTS: PipelineRunnerPrefs = {
 };
 
 export function loadPipelineRunnerPrefs(): PipelineRunnerPrefs {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULTS };
-    const parsed = JSON.parse(raw) as Partial<PipelineRunnerPrefs>;
-    return {
-      pythonExe:
-        typeof parsed.pythonExe === 'string' && parsed.pythonExe.trim()
-          ? parsed.pythonExe.trim()
-          : DEFAULTS.pythonExe,
-      repoRoot: typeof parsed.repoRoot === 'string' ? parsed.repoRoot : DEFAULTS.repoRoot,
-    };
-  } catch {
-    return { ...DEFAULTS };
-  }
+  const cp = getCachedClientPreferences();
+  return {
+    pythonExe: cp.pipelinePythonExe.trim() || DEFAULTS.pythonExe,
+    repoRoot: cp.pipelineRepoRoot,
+  };
 }
 
 export function savePipelineRunnerPrefs(prefs: PipelineRunnerPrefs): void {
+  const normalized = {
+    pythonExe: prefs.pythonExe.trim() || DEFAULTS.pythonExe,
+    repoRoot: prefs.repoRoot.trim(),
+  };
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        pythonExe: prefs.pythonExe.trim() || DEFAULTS.pythonExe,
-        repoRoot: prefs.repoRoot.trim(),
-      }),
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
   } catch {
     // private browsing / quota
   }
+  patchClientPreferences({
+    pipelinePythonExe: normalized.pythonExe,
+    pipelineRepoRoot: normalized.repoRoot,
+  });
 }

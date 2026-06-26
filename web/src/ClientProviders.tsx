@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/context/ThemeProvider';
 import { PipelineProvider } from '@/context/PipelineContext';
 import { SessionProvider } from '@/context/SessionContext';
 import BrandingProvider from '@/context/BrandingProvider';
+import ClientPreferencesInit from '@/components/ClientPreferencesInit';
 import { RiskFeaturesProvider } from '@/context/RiskFeaturesContext';
 import ChatFab from '@/components/chat/ChatFab';
 import PipelineRunnerFab from '@/components/pipeline/PipelineRunnerFab';
@@ -17,6 +18,7 @@ export default function ClientProviders({ children }: { children: ReactNode }): 
   return (
     <ThemeProvider>
       <BrandingProvider>
+      <ClientPreferencesInit />
       <SessionProvider>
         <RiskFeaturesProvider>
           <Suspense fallback={<LoadingFallback />}>

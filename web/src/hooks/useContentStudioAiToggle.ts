@@ -1,28 +1,24 @@
 
 import { useCallback, useEffect, useState } from 'react';
-
-const STORAGE_KEY = 'content-studio-ai-enabled';
+import { getCachedClientPreferences, initClientPreferences, patchClientPreferences } from '@/lib/clientPreferences';
 
 export function useContentStudioAiToggle(): [boolean, (value: boolean) => void] {
-  const [enabled, setEnabled] = useState(true);
+  const [enabled, setEnabled] = useState(() => getCachedClientPreferences().contentStudioAiEnabled);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw === '0') setEnabled(false);
-      else if (raw === '1') setEnabled(true);
-    } catch {
-      /* ignore */
-    }
+    void initClientPreferences().then((prefs) => {
+      setEnabled(prefs.contentStudioAiEnabled);
+    });
   }, []);
 
   const set = useCallback((value: boolean) => {
     setEnabled(value);
     try {
-      localStorage.setItem(STORAGE_KEY, value ? '1' : '0');
+      localStorage.setItem('content-studio-ai-enabled', value ? '1' : '0');
     } catch {
       /* ignore */
     }
+    patchClientPreferences({ contentStudioAiEnabled: value });
   }, []);
 
   return [enabled, set];

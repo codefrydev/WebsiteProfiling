@@ -91,6 +91,21 @@ class UiPreferences:
 
 
 @dataclass
+class ClientPreferences:
+    default_landing_view: str = "overview"
+    chat_fab_corner: str = "bottom-right"
+    sidebar_collapsed: bool = False
+    network_view_mode: str = "2d"
+    content_studio_ai_enabled: bool = True
+    pipeline_python_exe: str = "python3"
+    pipeline_repo_root: str = ""
+    radius_scale: str = "default"
+    density_scale: str = "default"
+    animations_enabled: bool = True
+    font_size_scale: str = "default"
+
+
+@dataclass
 class CrawlSettings:
     start_url: str = ""
     crawl_discovery_mode: str = ""

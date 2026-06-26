@@ -1,24 +1,21 @@
 import { apiUrl, apiFetch } from './publicBase';
+import {
+  type UiPrefs,
+  type RadiusScale,
+  type DensityScale,
+  type FontSizeScale,
+  DEFAULT_UI_PREFS,
+  RADIUS_SCALES,
+  DENSITY_SCALES,
+  FONT_SIZE_SCALES,
+  isRadiusScale,
+  isDensityScale,
+  isFontSizeScale,
+} from './uiPrefScales';
+import { getCachedClientPreferences, initClientPreferences, patchClientPreferences } from './clientPreferences';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export type RadiusScale = 'sharp' | 'default' | 'rounded' | 'pill';
-export type DensityScale = 'compact' | 'default' | 'spacious';
-export type FontSizeScale = 'small' | 'default' | 'large';
-
-export interface UiPrefs {
-  radius: RadiusScale;
-  density: DensityScale;
-  animations: boolean;
-  fontSize: FontSizeScale;
-}
-
-const DEFAULT_UI_PREFS: UiPrefs = {
-  radius: 'default',
-  density: 'default',
-  animations: true,
-  fontSize: 'default',
-};
+export type { RadiusScale, DensityScale, FontSizeScale, UiPrefs };
+export { DEFAULT_UI_PREFS, RADIUS_SCALES, DENSITY_SCALES, FONT_SIZE_SCALES };
 
 // ─── Preset maps ──────────────────────────────────────────────────────────────
 
@@ -89,72 +86,78 @@ const ALL_MANAGED_VARS = [
 export function applyUiPrefs(prefs: UiPrefs): void {
   const el = document.documentElement;
 
-  // Clear all managed vars first
   for (const v of ALL_MANAGED_VARS) el.style.removeProperty(v);
 
-  // Radius
   const radiusMap = RADIUS_VARS[prefs.radius];
   if (radiusMap) {
     for (const [k, v] of Object.entries(radiusMap)) el.style.setProperty(k, v);
   }
 
-  // Density
   const densityMap = DENSITY_VARS[prefs.density];
   if (densityMap) {
     for (const [k, v] of Object.entries(densityMap)) el.style.setProperty(k, v);
   }
 
-  // Font size
   const fontSizeMap = FONT_SIZE_VARS[prefs.fontSize ?? 'default'];
   if (fontSizeMap) {
     for (const [k, v] of Object.entries(fontSizeMap)) el.style.setProperty(k, v);
   }
 
-  // Animations
   if (!prefs.animations) {
     for (const [k, v] of Object.entries(ANIMATION_VARS_OFF)) el.style.setProperty(k, v);
   }
 }
 
-// ─── Persistence ──────────────────────────────────────────────────────────────
+// ─── Persistence (client_preferences columns) ─────────────────────────────────
 
 const UI_PREFS_LS_KEY = 'wp-ui-prefs:v1';
+/** @deprecated ui_prefs_json — chrome prefs live in client_preferences now */
 export const UI_PREFS_DB_KEY = 'ui_prefs';
+
+function clientPrefsToUiPrefs(): UiPrefs {
+  const cp = getCachedClientPreferences();
+  return {
+    radius: cp.radiusScale,
+    density: cp.densityScale,
+    animations: cp.animationsEnabled,
+    fontSize: cp.fontSizeScale,
+  };
+}
 
 export function getStoredUiPrefs(): UiPrefs {
   try {
     const raw = localStorage.getItem(UI_PREFS_LS_KEY);
-    if (!raw) return { ...DEFAULT_UI_PREFS };
-    const p = JSON.parse(raw) as Partial<UiPrefs>;
-    return {
-      radius: isRadiusScale(p.radius) ? p.radius : DEFAULT_UI_PREFS.radius,
-      density: isDensityScale(p.density) ? p.density : DEFAULT_UI_PREFS.density,
-      animations: typeof p.animations === 'boolean' ? p.animations : DEFAULT_UI_PREFS.animations,
-      fontSize: isFontSizeScale(p.fontSize) ? p.fontSize : DEFAULT_UI_PREFS.fontSize,
-    };
+    if (raw) {
+      const p = JSON.parse(raw) as Partial<UiPrefs>;
+      return {
+        radius: isRadiusScale(p.radius) ? p.radius : DEFAULT_UI_PREFS.radius,
+        density: isDensityScale(p.density) ? p.density : DEFAULT_UI_PREFS.density,
+        animations: typeof p.animations === 'boolean' ? p.animations : DEFAULT_UI_PREFS.animations,
+        fontSize: isFontSizeScale(p.fontSize) ? p.fontSize : DEFAULT_UI_PREFS.fontSize,
+      };
+    }
   } catch {
-    return { ...DEFAULT_UI_PREFS };
+    /* ignore */
   }
+  return clientPrefsToUiPrefs();
 }
 
 export function setStoredUiPrefs(prefs: UiPrefs): void {
   try {
     localStorage.setItem(UI_PREFS_LS_KEY, JSON.stringify(prefs));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 export async function loadUiPrefsFromDb(): Promise<UiPrefs | null> {
   try {
-    const res = await apiFetch(apiUrl('/ui-preferences'));
-    if (!res.ok) return null;
-    const data = (await res.json()) as { uiPrefsJson?: Partial<UiPrefs> | null };
-    const p = data.uiPrefsJson;
-    if (!p || typeof p !== 'object') return null;
+    const prefs = await initClientPreferences();
     return {
-      radius: isRadiusScale(p.radius) ? p.radius : DEFAULT_UI_PREFS.radius,
-      density: isDensityScale(p.density) ? p.density : DEFAULT_UI_PREFS.density,
-      animations: typeof p.animations === 'boolean' ? p.animations : DEFAULT_UI_PREFS.animations,
-      fontSize: isFontSizeScale(p.fontSize) ? p.fontSize : DEFAULT_UI_PREFS.fontSize,
+      radius: prefs.radiusScale,
+      density: prefs.densityScale,
+      animations: prefs.animationsEnabled,
+      fontSize: prefs.fontSizeScale,
     };
   } catch {
     return null;
@@ -163,31 +166,10 @@ export async function loadUiPrefsFromDb(): Promise<UiPrefs | null> {
 
 export async function saveUiPrefsToDb(prefs: UiPrefs): Promise<void> {
   setStoredUiPrefs(prefs);
-  try {
-    await apiFetch(apiUrl('/ui-preferences'), {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ uiPrefsJson: prefs }),
-    });
-  } catch { /* ignore — localStorage is the fallback */ }
+  patchClientPreferences({
+    radiusScale: prefs.radius,
+    densityScale: prefs.density,
+    animationsEnabled: prefs.animations,
+    fontSizeScale: prefs.fontSize,
+  });
 }
-
-// ─── Validators ───────────────────────────────────────────────────────────────
-
-export const RADIUS_SCALES: RadiusScale[] = ['sharp', 'default', 'rounded', 'pill'];
-export const DENSITY_SCALES: DensityScale[] = ['compact', 'default', 'spacious'];
-export const FONT_SIZE_SCALES: FontSizeScale[] = ['small', 'default', 'large'];
-
-function isRadiusScale(v: unknown): v is RadiusScale {
-  return typeof v === 'string' && (RADIUS_SCALES as string[]).includes(v);
-}
-
-function isDensityScale(v: unknown): v is DensityScale {
-  return typeof v === 'string' && (DENSITY_SCALES as string[]).includes(v);
-}
-
-function isFontSizeScale(v: unknown): v is FontSizeScale {
-  return typeof v === 'string' && (FONT_SIZE_SCALES as string[]).includes(v);
-}
-
-export { DEFAULT_UI_PREFS };

@@ -1,23 +1,9 @@
 
 import { useEffect, useState } from 'react';
 import { strings } from '@/lib/strings';
+import { getCachedClientPreferences, initClientPreferences, patchClientPreferences } from '@/lib/clientPreferences';
 
 const s = strings.settings;
-const SIDEBAR_COLLAPSED_KEY = 'app-sidebar-collapsed';
-
-function loadSidebarCollapsed(): boolean {
-  try {
-    return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
-
-function saveSidebarCollapsed(value: boolean): void {
-  try {
-    localStorage.setItem(SIDEBAR_COLLAPSED_KEY, value ? '1' : '0');
-  } catch { /* ignore */ }
-}
 
 function Toggle({
   checked,
@@ -50,15 +36,24 @@ function Toggle({
 }
 
 export default function LayoutPanel() {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => getCachedClientPreferences().sidebarCollapsed,
+  );
 
   useEffect(() => {
-    setSidebarCollapsed(loadSidebarCollapsed());
+    void initClientPreferences().then((prefs) => {
+      setSidebarCollapsed(prefs.sidebarCollapsed);
+    });
   }, []);
 
   const handleSidebarCollapsed = (value: boolean) => {
     setSidebarCollapsed(value);
-    saveSidebarCollapsed(value);
+    try {
+      localStorage.setItem('app-sidebar-collapsed', value ? '1' : '0');
+    } catch {
+      /* ignore */
+    }
+    patchClientPreferences({ sidebarCollapsed: value });
   };
 
   return (
@@ -69,7 +64,6 @@ export default function LayoutPanel() {
       </div>
 
       <section className="rounded-2xl border border-default bg-[var(--app-bg-elevated)] divide-y divide-[var(--app-border-muted)]">
-        {/* Sidebar collapsed */}
         <div className="flex items-start justify-between gap-6 px-5 py-4">
           <div className="min-w-0">
             <label
@@ -91,7 +85,7 @@ export default function LayoutPanel() {
       </section>
 
       <p className="mt-4 text-[11px] text-muted-foreground">
-        These preferences are stored in your browser only. They take effect immediately on the next page load.
+        These preferences sync across browsers and take effect on the next page load.
       </p>
     </div>
   );

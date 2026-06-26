@@ -47,6 +47,7 @@ import {
 } from '@/components/pipeline/pipelinePresets';
 import { applyCrawlPreset, isCrawlPresetId, type CrawlPresetId } from '@/lib/crawlPresets';
 import { loadPipelineRunnerPrefs, savePipelineRunnerPrefs } from '@/lib/pipelineRunnerPrefs';
+import { initClientPreferences } from '@/lib/clientPreferences';
 
 const s = strings.pipelineRunner;
 
@@ -61,6 +62,8 @@ export interface PipelineContextValue {
   llmApiKeyConfigured: boolean;
   configSource: PipelineConfigSource | null;
   loadError: string;
+  /** Non-fatal: pipeline loaded but GET /llm-settings failed. */
+  llmLoadWarning: string;
   loading: boolean;
   /** True after the first pipeline/LLM config fetch completes. */
   configLoaded: boolean;
@@ -127,6 +130,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
   const [configPath, setConfigPath] = useState('');
   const [configSource, setConfigSource] = useState<PipelineConfigSource | null>(null);
   const [loadError, setLoadError] = useState('');
+  const [llmLoadWarning, setLlmLoadWarning] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
@@ -144,11 +148,9 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
   const [crawlPresetId, setCrawlPresetId] = useState<CrawlPresetId | ''>('');
   const pollStopRef = useRef<(() => void) | null>(null);
   const activeJobIdRef = useRef('');
-  const startUrlPresetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveMsgTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
-    if (startUrlPresetTimerRef.current) clearTimeout(startUrlPresetTimerRef.current);
     if (saveMsgTimerRef.current) clearTimeout(saveMsgTimerRef.current);
   }, []);
 
@@ -170,6 +172,13 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     }
     void refreshBrowserCrawlStatus();
   }, [crawlRenderMode, refreshBrowserCrawlStatus]);
+
+  useEffect(() => {
+    void initClientPreferences().then((prefs) => {
+      setPythonExe(prefs.pipelinePythonExe);
+      setRepoRoot(prefs.pipelineRepoRoot);
+    });
+  }, []);
 
   useEffect(() => {
     savePipelineRunnerPrefs({ pythonExe, repoRoot });
@@ -273,6 +282,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
   const loadConfig = useCallback(async () => {
     setLoading(true);
     setLoadError('');
+    setLlmLoadWarning('');
     try {
       const [pipeRes, llmRes] = await Promise.all([
         apiFetch(apiUrl('/pipeline-settings')),
@@ -305,6 +315,9 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         }
         setLlmConfigMasked(masked);
       } else {
+        const llmBody = llmData as LlmSettingsGetResponse & { error?: string };
+        const llmMsg = String(llmBody.error || llmRes.statusText || 'LLM settings unavailable');
+        setLlmLoadWarning(format(s.llmLoadWarning, { message: llmMsg }));
         setLlmConfigState(buildInitialLlmConfigState());
         setLlmApiKeyConfigured(false);
         setLlmConfigMasked({});
@@ -312,6 +325,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       setConfigLoaded(true);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : String(e));
+      setLlmLoadWarning('');
       setConfigState(buildInitialPipelineConfigState());
       setLlmConfigState(buildInitialLlmConfigState());
       setLlmApiKeyConfigured(false);
@@ -460,12 +474,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       }
       return { ...prev, start_url: value };
     });
-    if (startUrlPresetTimerRef.current) {
-      clearTimeout(startUrlPresetTimerRef.current);
-    }
-    startUrlPresetTimerRef.current = setTimeout(() => {
-      void applyPropertyCrawlPreset(value);
-    }, 400);
+    void applyPropertyCrawlPreset(value);
   }, [applyPropertyCrawlPreset]);
 
   const handleCrawlPresetChange = useCallback((preset: CrawlPresetId) => {
@@ -552,8 +561,11 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         if (typeof data.apiKeyConfigured === 'boolean') {
           setLlmApiKeyConfigured(data.apiKeyConfigured);
         }
+        setLlmLoadWarning('');
         return true;
-      } catch {
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        setSaveMsg(format(s.saveFailed, { message }));
         return false;
       } finally {
         setSaving(false);
@@ -580,8 +592,11 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         if (typeof data.apiKeyConfigured === 'boolean') {
           setLlmApiKeyConfigured(data.apiKeyConfigured);
         }
+        setLlmLoadWarning('');
         return true;
-      } catch {
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        setSaveMsg(format(s.saveFailed, { message }));
         return false;
       } finally {
         setSaving(false);
@@ -749,6 +764,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       llmApiKeyConfigured,
       configSource,
       loadError,
+      llmLoadWarning,
       loading,
       configLoaded,
       saving,
@@ -795,6 +811,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       llmApiKeyConfigured,
       configSource,
       loadError,
+      llmLoadWarning,
       loading,
       configLoaded,
       saving,

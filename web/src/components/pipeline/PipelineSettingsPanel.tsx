@@ -256,6 +256,7 @@ export default function PipelineSettingsPanel({
     configState,
     llmConfigState,
     loadError,
+    llmLoadWarning,
     pythonExe,
     repoRoot,
     customCommand,
@@ -403,6 +404,12 @@ export default function PipelineSettingsPanel({
               ? s.browserCrawlChecking
               : browserCrawlStatus?.message?.trim() || s.browserCrawlBannerHint}
           </p>
+        </div>
+      ) : null}
+
+      {llmLoadWarning ? (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <p className="text-sm text-amber-900 dark:text-amber-100">{llmLoadWarning}</p>
         </div>
       ) : null}
 

@@ -2,26 +2,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { strings } from '@/lib/strings';
+import { getCachedClientPreferences, initClientPreferences, patchClientPreferences } from '@/lib/clientPreferences';
 
 const s = strings.settings;
-
-const CONTENT_STUDIO_AI_KEY = 'content-studio-ai-enabled';
-
-function loadContentStudioAi(): boolean {
-  try {
-    const raw = localStorage.getItem(CONTENT_STUDIO_AI_KEY);
-    if (raw === '0') return false;
-    return true; // default on
-  } catch {
-    return true;
-  }
-}
-
-function saveContentStudioAi(value: boolean): void {
-  try {
-    localStorage.setItem(CONTENT_STUDIO_AI_KEY, value ? '1' : '0');
-  } catch { /* ignore */ }
-}
 
 function Toggle({
   checked,
@@ -54,15 +37,22 @@ function Toggle({
 }
 
 export default function WritingPanel() {
-  const [aiEnabled, setAiEnabled] = useState(true);
+  const [aiEnabled, setAiEnabled] = useState(() => getCachedClientPreferences().contentStudioAiEnabled);
 
   useEffect(() => {
-    setAiEnabled(loadContentStudioAi());
+    void initClientPreferences().then((prefs) => {
+      setAiEnabled(prefs.contentStudioAiEnabled);
+    });
   }, []);
 
   const handleAiToggle = (value: boolean) => {
     setAiEnabled(value);
-    saveContentStudioAi(value);
+    try {
+      localStorage.setItem('content-studio-ai-enabled', value ? '1' : '0');
+    } catch {
+      /* ignore */
+    }
+    patchClientPreferences({ contentStudioAiEnabled: value });
   };
 
   return (
@@ -94,7 +84,7 @@ export default function WritingPanel() {
       </section>
 
       <p className="mt-4 text-[11px] text-muted-foreground">
-        This preference is saved to your browser only. The server-side AI gate for Content Studio is on the{' '}
+        This preference syncs across browsers. The server-side AI gate for Content Studio is on the{' '}
         <Link to="/pipeline?group=content-ai" className="text-link hover:underline underline-offset-2">
           Pipeline → Content & AI
         </Link>{' '}

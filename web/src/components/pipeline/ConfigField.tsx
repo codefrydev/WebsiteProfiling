@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+import { DraftInput, DraftTextarea } from '@/components/shared/DraftTextInput';
 import { formatSecretSavedAt, isSecretMaskedStored } from '@/lib/secretsConfigSchema';
 
 export type ConfigFieldDef = {
@@ -67,13 +69,13 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
     return (
       <div className={outerClass}>
         {labelBlock}
-        <input
+        <DraftInput
           id={id}
           type="url"
-          placeholder={f.placeholder || undefined}
           value={strVal}
+          placeholder={f.placeholder || undefined}
           disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
+          onCommit={onChange}
           className={inputClass}
         />
       </div>
@@ -204,14 +206,14 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
       <div className={outerClass}>
         <div className="rounded-lg border border-default bg-brand-900/50 px-4 py-3">
           {labelBlock}
-          <input
+          <DraftInput
             id={id}
             type="password"
             autoComplete="off"
             placeholder={placeholder}
             value={displayValue}
             disabled={disabled}
-            onChange={(e) => onChange(e.target.value)}
+            onCommit={onChange}
             className={`${inputClass} font-mono`}
           />
           {isMasked ? (
@@ -323,12 +325,12 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
     return (
       <div className={outerClass}>
         {labelBlock}
-        <textarea
+        <DraftTextarea
           id={id}
           rows={4}
           value={strVal}
           disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
+          onCommit={onChange}
           className={`${inputClass} font-mono resize-y`}
         />
       </div>
@@ -350,14 +352,14 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
               <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{f.help}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2 sm:pl-4">
-              <input
+              <DraftInput
                 id={id}
                 type="text"
                 inputMode="decimal"
                 placeholder={f.placeholder || undefined}
                 value={strVal}
                 disabled={disabled}
-                onChange={(e) => onChange(e.target.value)}
+                onCommit={onChange}
                 aria-label={f.label}
                 className={`${inputClass} w-full min-w-[5.5rem] max-w-[7rem] font-mono tabular-nums sm:text-right`}
               />
@@ -381,7 +383,7 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
           {f.required ? <span className="ml-0.5 text-red-600 dark:text-red-400" aria-hidden>*</span> : null}
         </label>
       )}
-      <input
+      <DraftInput
         id={id}
         type="text"
         inputMode={isNumeric ? 'decimal' : undefined}
@@ -390,7 +392,7 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
         disabled={disabled}
         required={f.required}
         aria-required={f.required || undefined}
-        onChange={(e) => onChange(e.target.value)}
+        onCommit={onChange}
         className={`${inputClass}${isNumeric ? ' font-mono' : ''}`}
       />
     </div>

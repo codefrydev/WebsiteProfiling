@@ -99,9 +99,14 @@ export default function PipelineRunPanel() {
   const [crawlAuthorized, setCrawlAuthorized] = useState(false);
 
   const urlInputRef = useRef<HTMLInputElement>(null);
+  const [urlDraft, setUrlDraft] = useState(startUrl);
   const [step, setStep] = useState<WizardStep>(1);
   const [maxStep, setMaxStep] = useState<WizardStep>(1);
   const [outputOpen, setOutputOpen] = useState(true);
+
+  useEffect(() => {
+    setUrlDraft(startUrl);
+  }, [startUrl]);
 
   useEffect(() => {
     if (step === 1) {
@@ -125,7 +130,17 @@ export default function PipelineRunPanel() {
   }, [status, log]);
 
   const disabled = busy || loading || readOnly;
-  const urlValid = isValidUrl(startUrl);
+  const urlValid = isValidUrl(urlDraft);
+
+  const commitStartUrl = () => {
+    const normalized = normalizeUrl(urlDraft);
+    if (normalized !== urlDraft) {
+      setUrlDraft(normalized);
+    }
+    if (normalized !== normalizeUrl(startUrl)) {
+      handleStartUrlChange(normalized);
+    }
+  };
   const presetCopy = PRESET_COPY[presetId];
   const crawlOnlyNote =
     presetId === 'crawl-only' ? strings.reportSelector.crawlOnlyNote : null;
@@ -158,7 +173,7 @@ export default function PipelineRunPanel() {
 
   const handleContinueFromUrl = () => {
     if (!urlValid) return;
-    handleStartUrlChange(normalizeUrl(startUrl));
+    commitStartUrl();
     goToStep(2);
   };
 
@@ -246,8 +261,9 @@ export default function PipelineRunPanel() {
             ref={urlInputRef}
             id="pipe-start-url"
             type="url"
-            value={startUrl}
-            onChange={(e) => handleStartUrlChange(e.target.value)}
+            value={urlDraft}
+            onChange={(e) => setUrlDraft(e.target.value)}
+            onBlur={commitStartUrl}
             onKeyDown={handleUrlKeyDown}
             disabled={disabled}
             placeholder={s.startUrlPlaceholder}

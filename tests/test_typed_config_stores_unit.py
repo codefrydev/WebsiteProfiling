@@ -326,6 +326,28 @@ def test_pipeline_and_secrets_stores() -> None:
     write_integration_secrets(conn10, IntegrationSecrets())
 
 
+def test_client_preferences_store() -> None:
+    from website_profiling.db.typed_config.models import ClientPreferences
+    from website_profiling.db.typed_config.client_preferences_store import (
+        patch_client_preferences,
+        read_client_preferences,
+        write_client_preferences,
+    )
+
+    conn = FakeConn()
+    _queue_read(conn, ClientPreferences, default_landing_view="issues")
+    assert read_client_preferences(conn).default_landing_view == "issues"
+
+    conn2 = FakeConn()
+    _queue_read(conn2, ClientPreferences)
+    patch_client_preferences(conn2, {"chat_fab_corner": "top-left", "sidebar_collapsed": "true"})
+    assert conn2.executed
+
+    conn3 = FakeConn()
+    write_client_preferences(conn3, ClientPreferences(network_view_mode="3d"), columns=["network_view_mode"])
+    assert conn3.executed
+
+
 def test_ui_preferences_store() -> None:
     from website_profiling.db.typed_config.models import UiPreferences
     from website_profiling.db.typed_config.ui_preferences_store import (
