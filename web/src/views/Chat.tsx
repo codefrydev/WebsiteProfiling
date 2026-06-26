@@ -594,12 +594,16 @@ export default function ChatPage() {
   const handleDeleteSession = async (id: number) => {
     if (!propertyId) return;
     if (sessionId === id) abortRef.current?.abort();
-    await apiFetch(apiUrl(`/chat/sessions/${id}?propertyId=${propertyId}`), { method: 'DELETE' });
-    if (sessionId === id) {
-      setSessionId(null);
-      setMessages([]);
+    try {
+      await apiFetch(apiUrl(`/chat/sessions/${id}?propertyId=${propertyId}`), { method: 'DELETE' });
+      if (sessionId === id) {
+        setSessionId(null);
+        setMessages([]);
+      }
+      await loadSessions(propertyId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete session');
     }
-    await loadSessions(propertyId);
   };
 
   const modelPicker = llmEnabled ? (

@@ -11,7 +11,7 @@ This file is the canonical entry point for agents. For full detail see [AGENT.md
 - `src/website_profiling/` — core Python package
   - `cli.py`, `config.py`, `api/`, `worker/`, `crawl/`, `db/`, `reporting/`, `analysis/`, `llm_client_http.py`, `tools/`
 - `web/` — Vite + React SPA (static nginx in prod); browser calls `services/Bff/` for all `/api/*`
-- `services/Bff/` — .NET BFF (auth, CORS, proxy to FastAPI + Data + AiService + FileService)
+- `services/Bff/` — .NET BFF (auth, CORS, proxy to FastAPI + IntegrationsService + Data + AiService + FileService)
 - `services/Data/` — .NET read service (report payloads, portfolio, issue status, filters; port 8091)
 - `services/AiService/` — .NET AI service (Microsoft.Extensions.AI, chat, enrichment, MCP, **secrets/llm-config writes**; port 8092). See [services/AiService/README.md](services/AiService/README.md)
 - `services/IntegrationsService/` — .NET Google/Bing integrations (GSC/GA4 fetch, OAuth, page-live, keyword reads; port 8093). See [services/IntegrationsService/README.md](services/IntegrationsService/README.md)

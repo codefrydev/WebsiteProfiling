@@ -5,6 +5,9 @@ from typing import Any
 
 import statistics
 
+from .audit_text import audit_help_text, audit_title, failure_row_from_audit
+from .schema import _audit_id_to_category
+
 def _evidence_from_audit(audit: dict[str, Any]) -> list[str]:
     """Extract resource URLs or selectors from audit details."""
     evidence: list[str] = []
@@ -73,6 +76,7 @@ def extract_from_lighthouse_json(data: dict) -> dict[str, Any]:
 
     # Resolve impact from warning_mapper for each failure
     from ..tools.warnings import resolve_impact
+    audit_to_cat = _audit_id_to_category(cats) if isinstance(cats, dict) else {}
     failures = []
     for aid, a in audits.items():
         if a is None:
@@ -81,17 +85,18 @@ def extract_from_lighthouse_json(data: dict) -> dict[str, Any]:
         if score is None:
             continue
         if score < 1:
-            title = a.get("title") or aid
-            help_text = a.get("helpText") or ""
+            title = audit_title(a, aid)
+            help_text = audit_help_text(a)
             impact = resolve_impact(aid, title, help_text)
-            evidence = _evidence_from_audit(a)
-            failures.append({
-                "id": aid,
-                "score": score,
-                "helpText": help_text,
-                "impact": impact,
-                "evidence": evidence,
-            })
+            failures.append(
+                failure_row_from_audit(
+                    aid,
+                    a,
+                    category=audit_to_cat.get(aid),
+                    impact=impact,
+                    evidence=_evidence_from_audit(a),
+                )
+            )
     failures.sort(key=lambda x: (x["score"] or 0))
     out["top_failures"] = failures[:10]
 

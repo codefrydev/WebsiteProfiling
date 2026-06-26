@@ -41,7 +41,7 @@
 
 # Site Audit
 
-**Developer-friendly SEO audit platform** — open-source crawl and technical audit tooling built with **React, Python, PostgreSQL, and .NET**. The stack is split into focused services: **Python FastAPI** (crawl, pipeline, integrations), **.NET AiService** (AI chat, LLM config, secrets, MCP), **.NET Data** (report reads, portfolio, issue status), **.NET FileService** (PDF/Excel export), and a **.NET BFF** as the single browser-facing API gateway.
+**Developer-friendly SEO audit platform** — open-source crawl and technical audit tooling built with **React, Python, PostgreSQL, and .NET**. The stack is split into focused services: **Python FastAPI** (crawl, pipeline, pipeline-config), **.NET IntegrationsService** (Google/Bing OAuth, GSC/GA4 fetch, keywords), **.NET AiService** (AI chat, LLM config, secrets, MCP), **.NET Data** (report reads, portfolio, issue status), **.NET FileService** (PDF/Excel export), and a **.NET BFF** as the single browser-facing API gateway.
 
 ## Overview
 
@@ -140,13 +140,21 @@ Also included: **AI chat** over audit data (optional), **Content studio** (write
 
 ## Architecture
 
-```text
-Browser  →  web (:3000)  →  bff (:8090)  →  fastapi (:8001)   crawl, pipeline, integrations, pipeline-config
-                              │              ai (:8092)       chat, LLM config, secrets, MCP, enrichment
-                              │              data (:8091)     report reads, portfolio, issue status, filters
-                              │              files (:8080)    PDF + Excel export
-                              worker          background pipeline jobs (same Python image; reads llm_config from Postgres)
-                              postgres        audit data store
+```mermaid
+flowchart TB
+    Browser([Browser]) --> Web["web :3000<br/>React SPA"]
+    Web --> BFF["bff :8090<br/>.NET API gateway"]
+
+    BFF --> FastAPI["fastapi :8001<br/>Crawl · pipeline · pipeline-config"]
+    BFF --> Integrations["integrations :8093<br/>Google/Bing OAuth · GSC/GA4 · keywords"]
+    BFF --> Ai["ai :8092<br/>Chat · LLM config · secrets · MCP"]
+    BFF --> Data["data :8091<br/>Report reads · portfolio · issue status"]
+    BFF --> Files["files :8080<br/>PDF · Excel export"]
+
+    subgraph Background["Background"]
+        Worker["worker<br/>Pipeline jobs (same Python image)"]
+        Postgres[("postgres<br/>Audit data store")]
+    end
 ```
 
 ```
@@ -173,6 +181,7 @@ WebsiteProfiling/
 │   ├── src/lib/               # Client helpers, BFF apiUrl/apiFetch
 │   └── public/                # Static assets (logo, favicon)
 ├── services/Bff/              # .NET BFF — auth + /api/* proxy (port 8090)
+├── services/IntegrationsService/  # .NET Google/Bing integrations — OAuth, GSC/GA4, keywords (port 8093)
 ├── services/AiService/        # .NET AI — chat, secrets, LLM config, MCP, enrichment (port 8092)
 ├── services/Data/             # .NET read service — report/portfolio/issue reads (port 8091)
 ├── services/FileService/      # .NET PDF + Excel workbook export (port 8080)
@@ -195,9 +204,10 @@ WebsiteProfiling/
 
 | Path                                  | Purpose                                                                        |
 | ------------------------------------- | ------------------------------------------------------------------------------ |
-| `src/website_profiling/`              | Crawl, analyze, report, Lighthouse, integrations — run via `python -m src` |
-| `src/website_profiling/api/`          | FastAPI — pipeline, crawl, integrations, pipeline-config (not secrets/chat) |
-| `services/Bff/`                       | Browser API gateway — auth, CORS, routes `/api/*` to FastAPI, AiService, Data, FileService |
+| `src/website_profiling/`              | Crawl, analyze, report, Lighthouse — run via `python -m src` |
+| `src/website_profiling/api/`          | FastAPI — pipeline, crawl, pipeline-config (not secrets/chat/integrations) |
+| `services/Bff/`                       | Browser API gateway — auth, CORS, routes `/api/*` to FastAPI, IntegrationsService, AiService, Data, FileService |
+| `services/IntegrationsService/`       | Google/Bing OAuth, GSC/GA4 fetch, keywords, page-live — see [services/IntegrationsService/README.md](services/IntegrationsService/README.md) |
 | `services/AiService/`                 | AI chat, secrets, LLM config, MCP, enrichment — see [services/AiService/README.md](services/AiService/README.md) |
 | `services/Data/`                      | .NET read/mutation service for report payloads, portfolio, issue status, saved filters |
 | `services/FileService/`               | PDF and Excel workbook export — see [services/FileService/README.md](services/FileService/README.md) |
@@ -220,7 +230,7 @@ For layout details and common development patterns, see [AGENT.md](AGENT.md).
 | **Docker** | Postgres container (local dev) and full-stack compose |
 | **Python 3.12+** | Audit engine, FastAPI, pipeline worker, tests |
 | **Node 20+** | Vite + React SPA |
-| **.NET SDK 10+** | BFF, AiService, Data, and FileService (required for `./local-run`; optional if you only use Docker) |
+| **.NET SDK 10+** | BFF, IntegrationsService, AiService, Data, and FileService (required for `./local-run`; optional if you only use Docker) |
 
 ### Docker
 
@@ -230,9 +240,9 @@ Build and run the full dev stack from source:
 docker compose up --build
 ```
 
-Services: **postgres**, **fastapi** (`:8001`, internal), **worker**, **ai** (`:8092`, internal), **data** (`:8091`, internal), **bff** (`:8090`), **web** (`:3000`), **files** (`:8080`, internal).
+Services: **postgres**, **fastapi** (`:8001`, internal), **worker**, **integrations** (`:8093`, internal), **ai** (`:8092`, internal), **data** (`:8091`, internal), **bff** (`:8090`), **web** (`:3000`), **files** (`:8080`, internal).
 
-Open [http://localhost:3000/home](http://localhost:3000/home). The browser talks only to the **BFF** (`:8090`); the BFF proxies to FastAPI (crawl/pipeline), AiService (AI/secrets), Data (report reads), and FileService (PDF/workbook export).
+Open [http://localhost:3000/home](http://localhost:3000/home). The browser talks only to the **BFF** (`:8090`); the BFF proxies to FastAPI (crawl/pipeline), IntegrationsService (Google/Bing), AiService (AI/secrets), Data (report reads), and FileService (PDF/workbook export).
 
 Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTGRES_PASSWORD`, `AUTH_SECRET`, `BFF_ALLOWED_ORIGINS`, and `BFF_PUBLIC_URL`. Optional remote MCP: `docker compose -f docker-compose.prod.yml --profile mcp up`. Pre-built images: `docker-compose.pull.yml` (`BACKEND_IMAGE`, `WEB_IMAGE`).
 
@@ -247,7 +257,7 @@ Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTG
 ./local-prod        # Same DB, Vite production build + preview (no hot reload)
 ```
 
-`./local-run` starts (in order): **FileService** `:8080`, **Data** `:8091`, **AiService** `:8092` (MCP HTTP enabled), **pipeline worker**, **FastAPI** `:8001`, **BFF** `:8090`, and **Vite** `:3000`. Use `localhost` (not `127.0.0.1`) for pipeline APIs so CORS and cookies match the BFF origin.
+`./local-run` starts (in order): **FileService** `:8080`, **Data** `:8091`, **AiService** `:8092` (MCP HTTP enabled), **IntegrationsService** `:8093`, **pipeline worker**, **FastAPI** `:8001`, **BFF** `:8090`, and **Vite** `:3000`. Use `localhost` (not `127.0.0.1`) for pipeline APIs so CORS and cookies match the BFF origin.
 
 Default local `DATABASE_URL`: `postgres://postgres:dev@127.0.0.1:5432/website_profiling` (Docker Compose dev stack uses `profiling:profiling`).
 
@@ -276,7 +286,7 @@ Increase `PIPELINE_JOB_STALE_HOURS` for crawls that routinely exceed one hour.
 ./local-test all --no-cov # Full run without pytest coverage gate
 ```
 
-CI runs separate jobs for **Python** (coverage gates), **web**, **Data**, **AiService**, **Bff**, **FileService**, and **Docker** (image build, browser pytest in container, compose smoke). See [.github/workflows/ci.yml](.github/workflows/ci.yml).
+CI runs separate jobs for **Python** (coverage gates), **web**, **Data**, **AiService**, **IntegrationsService**, **Bff**, **FileService**, and **Docker** (image build, browser pytest in container, compose smoke). See [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
 ## Configuration
 
@@ -344,6 +354,7 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and 
 | [docs/MCP.md](docs/MCP.md)                             | MCP server setup                           |
 | [docs/OPS.md](docs/OPS.md)                             | Scheduled audits, alerts, production ops   |
 | [services/AiService/README.md](services/AiService/README.md) | AI chat, secrets, LLM config, MCP      |
+| [services/IntegrationsService/README.md](services/IntegrationsService/README.md) | Google/Bing OAuth, GSC/GA4, keywords |
 
 
 ## Star History

@@ -37,6 +37,34 @@ def test_contrast_from_axe_violations():
     assert issues[0]["url"] == "https://ex.com/page"
 
 
+def test_lighthouse_accessibility_issues_from_summary():
+    from website_profiling.reporting.categories.accessibility import (
+        lighthouse_accessibility_issues_from_summary,
+    )
+
+    lh = {
+        "top_failures": [
+            {
+                "id": "image-alt",
+                "title": "Image elements do not have `[alt]` attributes",
+                "description": "Informative elements should aim for short, descriptive alternate text.",
+                "score": 0,
+                "category": "accessibility",
+            },
+            {
+                "id": "largest-contentful-paint",
+                "title": "LCP slow",
+                "score": 0.3,
+                "category": "performance",
+            },
+        ],
+    }
+    issues = lighthouse_accessibility_issues_from_summary(lh)
+    assert len(issues) == 1
+    assert "Image elements" in issues[0]["message"]
+    assert "alt" in issues[0]["recommendation"].lower()
+
+
 def test_contrast_from_lighthouse_failures():
     df = pd.DataFrame([
         {"url": "https://ex.com/a", "status": "200", "h1_count": 1, "images_total": 0, "images_without_alt": 0},
@@ -94,7 +122,14 @@ def test_contrast_skips_non_matching_axe_and_lighthouse_rows():
             ],
         },
     }
-    assert contrast_issues_from_sources(df, lh) == []
+    assert contrast_issues_from_sources(df, lh) == [
+        {
+            "message": "Lighthouse: Image Alt: missing alt",
+            "url": "https://ex.com/b",
+            "priority": "High",
+            "recommendation": 'Add alt attribute to <img> (use alt="" for decorative images).',
+        }
+    ]
 
 
 def test_contrast_deduplicates_lighthouse_when_axe_already_reported():

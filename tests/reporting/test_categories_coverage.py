@@ -327,14 +327,47 @@ def test_category_core_web_vitals_from_lighthouse_top_failures() -> None:
     lh = {
         "median_metrics": {"performance_score": 0.75},
         "top_failures": [
-            {"id": "lcp", "helpText": "LCP too slow", "score": 0.3},
+            {
+                "id": "largest-contentful-paint",
+                "title": "Largest Contentful Paint",
+                "helpText": "LCP too slow",
+                "score": 0.3,
+                "category": "performance",
+            },
+            {
+                "id": "image-alt",
+                "title": "Image elements do not have alt",
+                "score": 0.0,
+                "category": "accessibility",
+            },
             {"id": "", "helpText": "", "score": 0.6},
             {"helpText": "No id failure", "score": 0.8},
         ],
     }
     cat = category_core_web_vitals_from_lighthouse(lh)
-    assert len(cat["issues"]) == 3
+    assert len(cat["issues"]) == 1
+    assert "Largest Contentful Paint" in cat["issues"][0]["message"]
     assert cat["score"] == 75
+
+
+def test_category_core_web_vitals_from_lighthouse_uses_title_when_help_missing() -> None:
+    lh = {
+        "median_metrics": {"performance_score": 0.6},
+        "top_failures": [
+            {
+                "id": "total-blocking-time",
+                "title": "Reduce JavaScript execution time",
+                "helpText": "",
+                "score": 0.4,
+                "category": "performance",
+            },
+        ],
+    }
+    cat = category_core_web_vitals_from_lighthouse(lh)
+    assert len(cat["issues"]) == 1
+    assert cat["issues"][0]["message"] == "Reduce JavaScript execution time"
+    assert cat["issues"][0]["recommendation"]
+    assert "JavaScript" in cat["issues"][0]["recommendation"] or len(cat["issues"][0]["recommendation"]) > 10
 
 
 def test_category_core_web_vitals_from_lighthouse_low_perf_recommendation() -> None:

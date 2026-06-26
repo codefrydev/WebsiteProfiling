@@ -24,34 +24,20 @@ public static class UrlJoinBuilder
 
     public static string UrlToPath(string url)
     {
-        try
-        {
-            return Uri.TryCreate(url, UriKind.Absolute, out var parsed)
-                ? parsed.AbsolutePath.Length > 0 ? parsed.AbsolutePath : "/"
-                : url;
-        }
-        catch
-        {
-            return url;
-        }
+        return Uri.TryCreate(url, UriKind.Absolute, out var parsed)
+            ? parsed.AbsolutePath.Length > 0 ? parsed.AbsolutePath : "/"
+            : url;
     }
 
     public static string PathToUrl(string path, string startUrl)
     {
-        try
-        {
-            if (!Uri.TryCreate(startUrl, UriKind.Absolute, out var parsed))
-            {
-                return path;
-            }
-
-            var origin = $"{parsed.Scheme}://{parsed.Host}";
-            return origin + (path.StartsWith('/') ? path : "/" + path);
-        }
-        catch
+        if (!Uri.TryCreate(startUrl, UriKind.Absolute, out var parsed))
         {
             return path;
         }
+
+        var origin = $"{parsed.Scheme}://{parsed.Host}";
+        return origin + (path.StartsWith('/') ? path : "/" + path);
     }
 
     public static UrlJoinResult ComputeUrlJoin(

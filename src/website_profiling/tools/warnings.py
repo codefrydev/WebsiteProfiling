@@ -9,6 +9,8 @@ import re
 import sys
 from typing import Any
 
+from ..lighthouse.audit_text import audit_help_text, audit_title
+
 
 # Mapping: audit/rule id or phrase -> detection, primary_impact, secondary_impacts, explanation, one_line_fix, severity
 # primary_impact one of: LCP, CLS, FID, Accessibility, SEO, UX
@@ -127,6 +129,14 @@ AUDIT_MAP: dict[str, dict[str, Any]] = {
         "one_line_fix": "Use descriptive link text (e.g. 'Download report' instead of 'click here').",
         "severity": "Medium",
     },
+    "link-name": {
+        "detection": "Lighthouse: links do not have a discernible name",
+        "primary_impact": "Accessibility",
+        "secondary_impacts": ["UX"],
+        "explanation": "Links without accessible names are not usable with screen readers.",
+        "one_line_fix": "Add visible link text or aria-label so each link has a discernible name.",
+        "severity": "High",
+    },
     "image-alt": {
         "detection": "Lighthouse/axe: image missing alt",
         "primary_impact": "Accessibility",
@@ -189,6 +199,14 @@ AUDIT_MAP: dict[str, dict[str, Any]] = {
         "secondary_impacts": ["UX"],
         "explanation": "Content Security Policy can mitigate XSS; missing or weak CSP is flagged.",
         "one_line_fix": "Add a Content-Security-Policy header (or meta tag) with at least default-src and script-src.",
+        "severity": "Medium",
+    },
+    "inspector-issues": {
+        "detection": "Chrome DevTools Issues panel",
+        "primary_impact": "UX",
+        "secondary_impacts": ["SEO"],
+        "explanation": "Chrome reported issues in the page (CORS, mixed content, quirks, etc.).",
+        "one_line_fix": "Open DevTools Issues panel for the URL and resolve each reported problem.",
         "severity": "Medium",
     },
 }
@@ -324,8 +342,8 @@ def _parse_lighthouse_data(data: dict[str, Any]) -> list[dict[str, Any]]:
         score = audit.get("score")
         if score is not None and score >= 1:
             continue
-        title = audit.get("title") or audit_id
-        help_text = audit.get("helpText") or ""
+        title = audit_title(audit, audit_id)
+        help_text = audit_help_text(audit)
         warning = title if title else audit_id
         if help_text:
             warning = f"{title}: {help_text}"[:200]
@@ -358,8 +376,8 @@ def parse_lighthouse_to_diagnostics(
         score = audit.get("score")
         if score is not None and score >= 1:
             continue
-        title = audit.get("title") or audit_id
-        help_text = audit.get("helpText") or ""
+        title = audit_title(audit, audit_id)
+        help_text = audit_help_text(audit)
         warning = title if title else audit_id
         if help_text:
             warning = f"{title}: {help_text}"[:200]

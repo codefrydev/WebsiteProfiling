@@ -2,6 +2,7 @@ using System.Text.Json;
 using IntegrationsService.Application.Google;
 using IntegrationsService.Application.Repositories;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace IntegrationsService.Api.Controllers;
 
@@ -18,7 +19,8 @@ public sealed class PropertyGoogleController(
     IGa4ReportClient ga4Client,
     GscLinksDataRepository gscLinks,
     PythonCliRunner python,
-    FastApiPythonBridge fastApiBridge) : ControllerBase
+    FastApiPythonBridge fastApiBridge,
+    ILogger<PropertyGoogleController> logger) : ControllerBase
 {
     [HttpGet("status")]
     public async Task<IActionResult> Status(long propertyId, CancellationToken cancellationToken)
@@ -138,7 +140,7 @@ public sealed class PropertyGoogleController(
         }
         catch (InvalidOperationException ex)
         {
-            return Ok(new { ok = false, log = ex.Message, exitCode = 1 });
+            return BadRequest(new { ok = false, log = ex.Message, exitCode = 1 });
         }
     }
 
@@ -231,9 +233,10 @@ public sealed class PropertyGoogleController(
             var status = await gscLinks.ReadStatusAsync(propertyId, cancellationToken);
             return Ok(status);
         }
-        catch
+        catch (Exception ex)
         {
-            return Ok(new { hasData = false });
+            logger.LogError(ex, "Failed to read GSC links status for property {PropertyId}", propertyId);
+            return StatusCode(500, new { error = "Failed to read links status" });
         }
     }
 

@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
+import { issueDisplayMessage } from '@/lib/issueDisplayMessage';
 import type { ReportIssue } from '@/types';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
 import { LabelWithHint } from '@/components';
@@ -116,7 +117,7 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
         <LabelWithHint label="Impact score" helpKey="shared.impactScore" />
       </p>
       {sorted.map((item, i) => {
-        const msg = item.issue.message || '';
+        const msg = issueDisplayMessage(item.issue.message) || '';
         const fp = Object.values(statusByFingerprint).find(
           (r) => r.message === msg && (r.url || '') === (item.issue.url || ''),
         )?.issueFingerprint;

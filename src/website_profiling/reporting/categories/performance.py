@@ -14,6 +14,12 @@ from ._helpers import (
     _score_deductions,
     _sort_issues,
 )
+from ...lighthouse.audit_text import (
+    failure_display_message,
+    failure_help_text,
+    is_core_web_vitals_failure,
+)
+from ...tools.warnings import _resolve_entry, resolve_impact
 from ..terminology import (
     CATEGORY_CORE_WEB_VITALS,
     CATEGORY_PERFORMANCE,
@@ -46,13 +52,22 @@ def category_core_web_vitals_from_lighthouse(
     if isinstance(mm.get("performance_score"), (int, float)):
         perf_score = max(0, min(100, int(round(mm["performance_score"] * 100))))
     for f in lighthouse_summary.get("top_failures") or []:
-        aid = f.get("id") or ""
-        help_text = (f.get("helpText") or "")[:200]
-        msg = f"{aid}: {help_text}" if aid else help_text or "Audit failed"
+        if not isinstance(f, dict):
+            continue
+        if not is_core_web_vitals_failure(f, resolve_impact=resolve_impact):
+            continue
+        aid = str(f.get("id") or "")
+        title = str(f.get("title") or "")
+        help_text = failure_help_text(f)
+        msg = failure_display_message(f)
+        entry = _resolve_entry(aid, title or None, help_text or None)
+        rec = str(entry.get("one_line_fix") or "").strip()
+        if not rec:
+            rec = "See Lighthouse performance recommendations in this audit, or re-run Lighthouse from Run audit."
         issues.append(_issue(
             msg,
             priority="High" if (f.get("score") or 0) < 0.5 else "Medium",
-            recommendation="See Performance (Core Web Vitals) in this audit, or re-run Lighthouse from Run audit.",
+            recommendation=rec,
         ))
     if not issues and perf_score is not None and perf_score < 80:
         recommendations.append("Improve Core Web Vitals (LCP, CLS, TBT) per Lighthouse recommendations.")

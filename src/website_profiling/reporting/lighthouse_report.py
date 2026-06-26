@@ -103,7 +103,9 @@ def build_lighthouse_by_url_for_report(conn: Any) -> dict[str, Any]:
         read_lighthouse_page_summaries,
         read_lighthouse_run_json,
     )
+    from ..lighthouse.audit_text import audit_help_text, audit_title, failure_row_from_audit
     from ..lighthouse.runner import _evidence_from_audit, extract_from_lighthouse_json
+    from ..lighthouse.schema import _audit_id_to_category
     from ..tools.warnings import parse_lighthouse_to_diagnostics, resolve_impact
 
     summaries = read_lighthouse_page_summaries(conn)
@@ -151,6 +153,12 @@ def build_lighthouse_by_url_for_report(conn: Any) -> dict[str, Any]:
             if raw:
                 lr = raw.get("lighthouseResult") or raw
                 audits_map = lr.get("audits") or {}
+                categories_map = lr.get("categories") or {}
+                audit_to_cat = (
+                    _audit_id_to_category(categories_map)
+                    if isinstance(categories_map, dict)
+                    else {}
+                )
                 failures: list[dict[str, Any]] = []
                 for aid, a in audits_map.items():
                     if not isinstance(a, dict):
@@ -158,16 +166,16 @@ def build_lighthouse_by_url_for_report(conn: Any) -> dict[str, Any]:
                     score = a.get("score")
                     if score is None or score >= 1:
                         continue
-                    title = a.get("title") or aid
-                    help_text = a.get("helpText") or ""
+                    title = audit_title(a, aid)
+                    help_text = audit_help_text(a)
                     failures.append(
-                        {
-                            "id": aid,
-                            "score": score,
-                            "helpText": help_text,
-                            "impact": resolve_impact(aid, title, help_text),
-                            "evidence": _evidence_from_audit(a),
-                        }
+                        failure_row_from_audit(
+                            aid,
+                            a,
+                            category=audit_to_cat.get(aid),
+                            impact=resolve_impact(aid, title, help_text),
+                            evidence=_evidence_from_audit(a),
+                        )
                     )
                 failures.sort(key=lambda x: (x["score"] or 0))
                 base["top_failures"] = failures

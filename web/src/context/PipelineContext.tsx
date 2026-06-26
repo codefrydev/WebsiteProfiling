@@ -145,9 +145,11 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
   const pollStopRef = useRef<(() => void) | null>(null);
   const activeJobIdRef = useRef('');
   const startUrlPresetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const saveMsgTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => {
     if (startUrlPresetTimerRef.current) clearTimeout(startUrlPresetTimerRef.current);
+    if (saveMsgTimerRef.current) clearTimeout(saveMsgTimerRef.current);
   }, []);
 
   const refreshBrowserCrawlStatus = useCallback(async () => {
@@ -501,7 +503,8 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       setConfigPath(data.configPath || data.dbPath || configPath);
       setConfigSource('store');
       setSaveMsg(s.saved);
-      setTimeout(() => setSaveMsg(''), 3000);
+      if (saveMsgTimerRef.current) clearTimeout(saveMsgTimerRef.current);
+      saveMsgTimerRef.current = setTimeout(() => setSaveMsg(''), 3000);
       return true;
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
