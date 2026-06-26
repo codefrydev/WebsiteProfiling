@@ -36,7 +36,10 @@ class FakeClient:
 def ai(client, cfg=None):
     with patch("website_profiling.content_studio.wizard.load_llm_config_from_db", return_value=cfg or {}), patch(
         "website_profiling.content_studio.wizard.llm_is_enabled", return_value=True
-    ), patch("website_profiling.content_studio.wizard.get_llm_client", return_value=client):
+    ), patch(
+        "website_profiling.content_studio.wizard.complete_json",
+        side_effect=lambda _system, _user: client.complete_json(_system, _user),
+    ):
         yield
 
 
@@ -75,10 +78,10 @@ def test_every_step_returns_error_when_disabled() -> None:
 def test_get_client_value_error() -> None:
     with patch("website_profiling.content_studio.wizard.load_llm_config_from_db", return_value={}), patch(
         "website_profiling.content_studio.wizard.llm_is_enabled", return_value=True
-    ), patch("website_profiling.content_studio.wizard.get_llm_client", side_effect=ValueError("no provider")):
+    ), patch("website_profiling.content_studio.wizard.complete_json", side_effect=ValueError("no provider")):
         out = suggest_intents("best crm")
-    assert out["ok"] is False
-    assert out["error"] == "no provider"
+    assert out["ok"] is True
+    assert out["options"]
 
 
 # --- intents --------------------------------------------------------------

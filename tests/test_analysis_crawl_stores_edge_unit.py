@@ -399,7 +399,7 @@ def test_pipeline_cmd_js_extra_wait_branches(monkeypatch) -> None:
     monkeypatch.setitem(
         sys.modules,
         "website_profiling.crawl.crawler",
-        types.SimpleNamespace(run_crawler=lambda **_k: None),
+        types.SimpleNamespace(run_crawler=lambda **_k: (None, 1)),
     )
     pipeline_cmd._run_crawl({"crawl_render_mode": "static"}, True)
 

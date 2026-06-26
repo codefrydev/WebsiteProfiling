@@ -3,8 +3,7 @@ from __future__ import annotations
 
 import json
 
-from website_profiling.integrations.google.page_lookup import slice_from_google_row
-from website_profiling.llm.page_coach import _metric_deltas
+from website_profiling.integrations.google.page_lookup import metric_deltas, slice_from_google_row
 
 
 def test_slice_from_google_row_gsc_full_by_page():
@@ -59,7 +58,7 @@ def test_slice_fallback_top_pages():
 def test_metric_deltas():
     current = {"gsc": {"clicks": 20, "impressions": 100}, "ga4": {"sessions": 30, "engagementRate": 40}}
     baseline = {"gsc": {"clicks": 10, "impressions": 80}, "ga4": {"sessions": 25, "engagementRate": 50}}
-    rows = _metric_deltas(current, baseline)
+    rows = metric_deltas(current, baseline)
     by_id = {r["id"]: r for r in rows}
     assert by_id["gsc_clicks"]["delta"] == 10
     assert by_id["ga4_sessions"]["delta"] == 5

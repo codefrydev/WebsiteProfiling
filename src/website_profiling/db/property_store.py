@@ -43,8 +43,6 @@ def is_valid_canonical_domain(domain: str) -> bool:
     if len(d) < 4 or "." not in d or d in _RESERVED:
         return False
     labels = d.split(".")
-    if len(labels) < 2:
-        return False
     for label in labels:
         if not label or len(label) > 63 or not _LABEL_RE.match(label):
             return False

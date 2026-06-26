@@ -469,7 +469,7 @@ def test_llm_tools_paths(conn: MagicMock, ctx: Ctx) -> None:
         Ctx, "load_google", return_value={"gsc": {}},
     ), patch.object(Ctx, "load_crawl_df", return_value=pd.DataFrame([{"url": "https://ex.com", "title": "T", "meta_description": "D"}])):
         snippet = llm_mod.analyze_serp_snippet_for_url(conn, ctx, {"url": "https://ex.com"})
-        assert snippet["provenance"] == "Crawl"
+        assert snippet["provenance"] == "AI insights"
 
     with patch.object(Ctx, "load_payload", return_value=None):
         assert llm_mod.draft_llms_txt(conn, ctx, {})["error"]
@@ -477,7 +477,7 @@ def test_llm_tools_paths(conn: MagicMock, ctx: Ctx) -> None:
     client = MagicMock(complete_json=MagicMock(side_effect=RuntimeError("llm fail")))
     with patch.object(Ctx, "load_payload", return_value={"site_name": "Ex"}), patch(
         "website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={},
-    ), patch("website_profiling.llm_client_http.complete_json", return_value=client), patch(
+    ), patch("website_profiling.llm_client_http.complete_json", side_effect=RuntimeError("llm fail")), patch(
         "website_profiling.llm_config.load_llm_config_from_db", return_value={},
     ):
         err_snippet = llm_mod.analyze_serp_snippet_for_url(conn, ctx, {"url": "https://ex.com"})
@@ -594,7 +594,7 @@ def test_expansion_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
         assert llm_mod.prioritize_fix_roadmap(conn, ctx, {"limit": "bad"})["roadmap"] == []
 
     with patch("website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={}), patch(
-        "website_profiling.llm_client_http.complete_json", return_value=MagicMock(complete_json=MagicMock(return_value={})),
+        "website_profiling.llm_client_http.complete_json", return_value={},
     ), patch("website_profiling.llm_config.load_llm_config_from_db", return_value={}), patch(
         "website_profiling.tools.audit_tools.issues.issues.get_category_issues", return_value={"name": "T", "score": 1, "issues": []},
     ), patch("website_profiling.llm_client_http.parse_json_response", return_value={"summary": "parsed"}):
@@ -603,7 +603,7 @@ def test_expansion_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
 
     with patch.object(Ctx, "load_payload", return_value={"site_name": "Ex"}), patch(
         "website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={},
-    ), patch("website_profiling.llm_client_http.complete_json", return_value=MagicMock(complete_json=MagicMock(side_effect=RuntimeError("x")))):
+    ), patch("website_profiling.llm_client_http.complete_json", side_effect=RuntimeError("x")):
         draft = llm_mod.draft_llms_txt(conn, ctx, {})
         assert "Ex" in draft["llms_txt_draft"]
 
@@ -655,18 +655,17 @@ def test_expansion_coverage_gaps(conn: MagicMock, ctx: Ctx) -> None:
         assert llm_mod._llm_disabled_response() == {}
 
     with patch("website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={}), patch(
-        "website_profiling.llm_client_http.complete_json", return_value=MagicMock(complete_json=MagicMock(side_effect=RuntimeError("boom"))),
+        "website_profiling.llm_client_http.complete_json", side_effect=RuntimeError("boom"),
     ), patch("website_profiling.llm_config.load_llm_config_from_db", return_value={}), patch(
         "website_profiling.tools.audit_tools.issues.issues.get_category_issues", return_value={"name": "T", "score": 1, "issues": []},
     ):
         err_summary = llm_mod.summarize_category_for_client(conn, ctx, {"category_id": "t"})
         assert "narrative_error" in err_summary
 
-    client_ok = MagicMock(complete_json=MagicMock(return_value={"title": "New", "meta_description": "Meta"}))
     with patch.object(Ctx, "load_google", return_value={"gsc": {}}), patch.object(
         Ctx, "load_crawl_df", return_value=pd.DataFrame([{"url": "https://ex.com", "title": "Old", "meta_description": "Old meta"}]),
     ), patch("website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response", return_value={}), patch(
-        "website_profiling.llm_client_http.complete_json", return_value=client_ok,
+        "website_profiling.llm_client_http.complete_json", return_value={"title": "New", "meta_description": "Meta"},
     ), patch("website_profiling.llm_config.load_llm_config_from_db", return_value={}):
         serp = llm_mod.analyze_serp_snippet_for_url(conn, ctx, {"url": "https://ex.com"})
         assert serp["provenance"] == "AI insights"

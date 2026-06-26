@@ -105,7 +105,7 @@ def test_properties_ensure_creates_valid_domain(api_client: TestClient) -> None:
         assert again.status_code == 200
         assert int(again.json()["id"]) == property_id
     finally:
-        api_client.delete(f"/api/properties/{property_id}")
+        deleted = api_client.delete(f"/api/properties/{property_id}")
         assert deleted.json()["ok"] is True
 
 

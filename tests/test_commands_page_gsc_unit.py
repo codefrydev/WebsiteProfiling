@@ -304,15 +304,14 @@ def test_page_coach_cmd_success_and_env(monkeypatch, capsys) -> None:
 
     captured: dict = {}
 
-    def fake_run(url, cfg, **kwargs):
+    def fake_run(url, **kwargs):
         captured["url"] = url
         captured["kwargs"] = kwargs
         return {"ok": True, "suggestions": []}
 
-    monkeypatch.setitem(
-        sys.modules,
+    monkeypatch.setattr(
         "website_profiling.llm_client_http.run_page_coach",
-        types.SimpleNamespace(run_page_coach=fake_run),
+        fake_run,
     )
     monkeypatch.setenv("WP_PAGE_COACH_CURRENT", "crawl:5")
     monkeypatch.setenv("WP_PAGE_COACH_BASELINE", "crawl:2")
@@ -337,14 +336,13 @@ def test_page_coach_cmd_malformed_env_does_not_crash(monkeypatch, capsys) -> Non
 
     captured: dict = {}
 
-    def fake_run(url, cfg, **kwargs):
+    def fake_run(url, **kwargs):
         captured["kwargs"] = kwargs
         return {"ok": True, "suggestions": []}
 
-    monkeypatch.setitem(
-        sys.modules,
+    monkeypatch.setattr(
         "website_profiling.llm_client_http.run_page_coach",
-        types.SimpleNamespace(run_page_coach=fake_run),
+        fake_run,
     )
     monkeypatch.setenv("WP_PAGE_COACH_CURRENT", "live:abc")
     monkeypatch.setenv("WP_PAGE_COACH_BASELINE", "snapshot:")
@@ -361,10 +359,9 @@ def test_page_coach_cmd_malformed_env_does_not_crash(monkeypatch, capsys) -> Non
 def test_page_coach_cmd_failure_exit(monkeypatch, capsys) -> None:
     from website_profiling.commands import page_coach_cmd
 
-    monkeypatch.setitem(
-        sys.modules,
+    monkeypatch.setattr(
         "website_profiling.llm_client_http.run_page_coach",
-        types.SimpleNamespace(run_page_coach=lambda *_a, **_k: {"ok": False}),
+        lambda _url, **_k: {"ok": False},
     )
     monkeypatch.delenv("WP_PAGE_COACH_CURRENT", raising=False)
     monkeypatch.delenv("WP_PAGE_COACH_BASELINE", raising=False)

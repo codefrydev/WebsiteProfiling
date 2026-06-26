@@ -160,8 +160,8 @@ export function resolvePreferredChatSession(
 }
 
 export function readSessionPropertyId(session: {
-  propertyId?: number;
-  property_id?: number;
+  propertyId?: unknown;
+  property_id?: unknown;
 }): number | null {
   const raw = session.propertyId ?? session.property_id;
   const n = typeof raw === 'number' ? raw : Number(raw);

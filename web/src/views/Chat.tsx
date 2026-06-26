@@ -22,7 +22,7 @@ import ChatActivityBar from '@/components/chat/ChatActivityBar';
 import { ChatFollowUpProvider } from '@/components/chat/ChatFollowUpContext';
 import { usePipeline } from '@/context/PipelineContext';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
-import { format, strings } from '@/lib/strings';
+import { strings } from '@/lib/strings';
 import { statusFromSseEvent } from '@/components/chat/chatStatusLabels';
 import { consumeChatSse, resolveToolActivityIndex } from '@/components/chat/parseChatSse';
 import { toolEventsToActivity } from '@/components/chat/deriveChatBlocks';
@@ -34,7 +34,6 @@ import {
   parseChatUrlContext,
   readChatComposerDraft,
   readStoredChatContext,
-  readSessionPropertyId,
   resolvePreferredChatSession,
   normalizeChatSessionRow,
   normalizeSessionId,
@@ -61,8 +60,6 @@ interface PropertyOption {
   canonical_domain: string;
 }
 
-interface SessionRow extends ChatSessionRow {}
-
 export default function ChatPage() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -71,7 +68,7 @@ export default function ChatPage() {
   const initialUrlCtx = parseChatUrlContext(searchParams);
   const [properties, setProperties] = useState<PropertyOption[]>([]);
   const [propertyId, setPropertyId] = useState<number | null>(initialUrlCtx.propertyId);
-  const [sessions, setSessions] = useState<SessionRow[]>([]);
+  const [sessions, setSessions] = useState<ChatSessionRow[]>([]);
   const [sessionId, setSessionId] = useState<number | null>(initialUrlCtx.sessionId);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [busy, setBusy] = useState(false);
@@ -178,7 +175,7 @@ export default function ChatPage() {
     try {
       const res = await apiFetch(apiUrl(`/chat/sessions/${sid}`));
       if (!res.ok) return false;
-      const data = (await res.json()) as { session?: SessionRow };
+      const data = (await res.json()) as { session?: ChatSessionRow };
       const session = data.session ? normalizeChatSessionRow(data.session) : null;
       if (!session) return false;
       if (pid != null && session.propertyId !== pid) {
@@ -197,11 +194,11 @@ export default function ChatPage() {
     try {
       const res = await apiFetch(apiUrl(`/chat/sessions?propertyId=${pid}`));
       if (!res.ok) throw new Error('Failed to load sessions');
-      const data = (await res.json()) as { sessions?: SessionRow[] };
+      const data = (await res.json()) as { sessions?: ChatSessionRow[] };
       setSessions(
         (data.sessions || [])
           .map((row) => normalizeChatSessionRow(row))
-          .filter((row): row is SessionRow => row != null),
+          .filter((row): row is ChatSessionRow => row != null),
       );
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

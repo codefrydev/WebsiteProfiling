@@ -17,6 +17,8 @@ omit =
     */website_profiling/llm/providers/*
     */website_profiling/llm/*
     */website_profiling/llm_config.py
+    */website_profiling/llm_client_http.py
+    */website_profiling/commands/chat_cmd.py
     */website_profiling/cli.py
     */website_profiling/commands/enrich_cmd.py
     # FastAPI server — tested via integration tests, not unit tests

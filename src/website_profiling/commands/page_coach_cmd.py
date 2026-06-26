@@ -40,7 +40,6 @@ def run(cfg: dict, cwd: str, args: argparse.Namespace) -> None:
 
     result = run_page_coach(
         url,
-        cfg,
         refresh=refresh,
         current_type=current_type,
         current_id=current_id,

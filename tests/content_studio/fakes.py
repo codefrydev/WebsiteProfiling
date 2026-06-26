@@ -1,8 +1,22 @@
 """Shared test doubles for Content Studio agent tests."""
 from __future__ import annotations
 
+from dataclasses import dataclass, field
+
 from website_profiling.content_studio.context import ContentStudioContext
-from website_profiling.llm.base import ChatResult
+
+
+@dataclass
+class ToolCall:
+    id: str
+    name: str
+    arguments: dict
+
+
+@dataclass
+class ChatResult:
+    content: str = ""
+    tool_calls: list[ToolCall] = field(default_factory=list)
 
 
 class FakeToolClient:

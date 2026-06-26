@@ -351,9 +351,12 @@ def test_category_core_web_vitals_from_lighthouse_top_failures() -> None:
 
 
 def test_category_core_web_vitals_from_lighthouse_uses_title_when_help_missing() -> None:
+    from unittest.mock import patch
+
     lh = {
         "median_metrics": {"performance_score": 0.6},
         "top_failures": [
+            "bad",
             {
                 "id": "total-blocking-time",
                 "title": "Reduce JavaScript execution time",
@@ -361,13 +364,29 @@ def test_category_core_web_vitals_from_lighthouse_uses_title_when_help_missing()
                 "score": 0.4,
                 "category": "performance",
             },
+            {
+                "id": "unknown-cwv-audit",
+                "title": "Slow metric",
+                "helpText": "",
+                "score": 0.2,
+                "category": "performance",
+            },
         ],
     }
-    cat = category_core_web_vitals_from_lighthouse(lh)
-    assert len(cat["issues"]) == 1
+    with patch(
+        "website_profiling.reporting.categories.performance._resolve_entry",
+        side_effect=[
+            {"one_line_fix": "Defer non-critical JavaScript."},
+            {},
+        ],
+    ):
+        cat = category_core_web_vitals_from_lighthouse(lh)
+    assert len(cat["issues"]) == 2
     assert cat["issues"][0]["message"] == "Reduce JavaScript execution time"
     assert cat["issues"][0]["recommendation"]
-    assert "JavaScript" in cat["issues"][0]["recommendation"] or len(cat["issues"][0]["recommendation"]) > 10
+    assert cat["issues"][1]["recommendation"] == (
+        "See Lighthouse performance recommendations in this audit, or re-run Lighthouse from Run audit."
+    )
 
 
 def test_category_core_web_vitals_from_lighthouse_low_perf_recommendation() -> None:

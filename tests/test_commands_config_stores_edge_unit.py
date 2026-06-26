@@ -1097,7 +1097,7 @@ def test_pipeline_cmd_js_extra_wait_none_branch(monkeypatch) -> None:
     monkeypatch.setitem(
         sys.modules,
         "website_profiling.crawl.crawler",
-        types.SimpleNamespace(run_crawler=lambda **_k: None),
+        types.SimpleNamespace(run_crawler=lambda **_k: (None, 1)),
     )
     monkeypatch.setattr(pipeline_cmd, "require_start_url", lambda *_a, **_k: "https://a.com")
     pipeline_cmd._run_crawl(
