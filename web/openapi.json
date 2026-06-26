@@ -588,6 +588,50 @@
         }
       }
     },
+    "/api/properties/ensure": {
+      "post": {
+        "tags": [
+          "properties"
+        ],
+        "summary": "Ensure Property",
+        "description": "Create a property row when the URL is complete (OAuth / explicit actions only).",
+        "operationId": "ensure_property_api_properties_ensure_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PropertyEnsureBody"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Ensure Property Api Properties Ensure Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/properties/resolve": {
       "get": {
         "tags": [
@@ -1666,7 +1710,6 @@
           "integrations"
         ],
         "summary": "Google Disconnect",
-        "description": "Global disconnect is deprecated \u2014 use per-property disconnect.",
         "operationId": "google_disconnect_api_integrations_google_disconnect_post",
         "responses": {
           "200": {
@@ -1852,7 +1895,6 @@
           "integrations"
         ],
         "summary": "Google Properties Deprecated",
-        "description": "Deprecated \u2014 use /api/properties/{id}/google/properties.",
         "operationId": "google_properties_deprecated_api_integrations_google_properties_get",
         "parameters": [
           {
@@ -1904,7 +1946,6 @@
           "integrations"
         ],
         "summary": "Google Test",
-        "description": "Run `python -m src google --test` and return stdout log.",
         "operationId": "google_test_api_integrations_google_test_post",
         "responses": {
           "200": {
@@ -2305,7 +2346,6 @@
           "integrations"
         ],
         "summary": "Bing Sync",
-        "description": "Fetch Bing Webmaster backlinks summary using config from DB.",
         "operationId": "bing_sync_api_integrations_bing_sync_post",
         "responses": {
           "200": {
@@ -2329,7 +2369,6 @@
           "integrations"
         ],
         "summary": "Google Page Compare",
-        "description": "Compare two page Google data snapshots.",
         "operationId": "google_page_compare_api_integrations_google_page_compare_get",
         "parameters": [
           {
@@ -2412,7 +2451,6 @@
           "integrations"
         ],
         "summary": "Google Page Live History",
-        "description": "Return history of page Google snapshots for a URL.",
         "operationId": "google_page_live_history_api_integrations_google_page_live_history_get",
         "parameters": [
           {
@@ -2469,7 +2507,6 @@
           "integrations"
         ],
         "summary": "Google Keywords History Batch",
-        "description": "Batch keyword history: { keywords: str[], limit?: int, propertyId?: int, domain?: str }",
         "operationId": "google_keywords_history_batch_api_integrations_google_keywords_history_batch_post",
         "requestBody": {
           "content": {
@@ -2584,6 +2621,96 @@
                   "additionalProperties": true,
                   "type": "object",
                   "title": "Response Google Keywords Planner Api Integrations Google Keywords Planner Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/integrations/keywords/enrich": {
+      "post": {
+        "tags": [
+          "internal-integrations"
+        ],
+        "summary": "Internal Keyword Enrich",
+        "operationId": "internal_keyword_enrich_internal_integrations_keywords_enrich_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Internal Keyword Enrich Internal Integrations Keywords Enrich Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/internal/integrations/gsc-links/import": {
+      "post": {
+        "tags": [
+          "internal-integrations"
+        ],
+        "summary": "Internal Gsc Links Import",
+        "operationId": "internal_gsc_links_import_internal_integrations_gsc_links_import_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": true,
+                "type": "object",
+                "title": "Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Internal Gsc Links Import Internal Integrations Gsc Links Import Post"
                 }
               }
             }
@@ -4236,6 +4363,23 @@
         },
         "type": "object",
         "title": "PresetBody"
+      },
+      "PropertyEnsureBody": {
+        "properties": {
+          "startUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Starturl"
+          }
+        },
+        "type": "object",
+        "title": "PropertyEnsureBody"
       },
       "PropertyUpsertBody": {
         "properties": {

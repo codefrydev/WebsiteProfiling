@@ -40,46 +40,6 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Report Meta
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Report_meta_api_report_meta_getAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Report Payload
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Report_payload_api_report_payload_getAsync(Reportid? reportId = null, Domain? domain = null, Section? section = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Report History
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Report_history_api_report_history_getAsync(Propertyid? propertyId = null, Anonymous? domain = null, int? limit = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Crawl Payload
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Crawl_payload_api_report_crawl_payload_getAsync(Crawlrunid? crawlRunId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Mobile Delta
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Mobile_delta_api_report_mobile_delta_getAsync(Id? id = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
         /// Run Pipeline
         /// </summary>
         /// <returns>Successful Response</returns>
@@ -128,62 +88,6 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Chat Turn
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Chat_turn_api_chat__postAsync(ChatRequest body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// List Sessions
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> List_sessions_api_chat_sessions_getAsync(int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Create Session
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Create_session_api_chat_sessions_postAsync(ChatSessionCreate body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Get Session Route
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Get_session_route_api_chat_sessions__session_id__getAsync(int session_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Delete Session Route
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Delete_session_route_api_chat_sessions__session_id__deleteAsync(int session_id, int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Get Session Messages
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Get_session_messages_api_chat_sessions__session_id__messages_getAsync(int session_id, int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Get Artifact
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Get_artifact_api_chat_artifacts__artifact_id__getAsync(string artifact_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
         /// Browser Status Check
         /// </summary>
         /// <remarks>
@@ -204,7 +108,7 @@ namespace Bff.Application.Generated
         /// <param name="crawlRunId">Crawl run ID</param>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Get_page_html_api_crawl_page_html_getAsync(string url, Anonymous2? crawlRunId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Get_page_html_api_crawl_page_html_getAsync(string url, Crawlrunid? crawlRunId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -221,38 +125,6 @@ namespace Bff.Application.Generated
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Put_pipeline_config_api_pipeline_config_putAsync(PipelineConfigBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Get Llm Config
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Get_llm_config_api_llm_config_getAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Put Llm Config
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Put_llm_config_api_llm_config_putAsync(LlmConfigBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Get Secrets
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Get_secrets_api_secrets_getAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Put Secrets
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Put_secrets_api_secrets_putAsync(SecretsBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -286,6 +158,17 @@ namespace Bff.Application.Generated
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Create_property_api_properties_postAsync(PropertyUpsertBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Ensure Property
+        /// </summary>
+        /// <remarks>
+        /// Create a property row when the URL is complete (OAuth / explicit actions only).
+        /// </remarks>
+        /// <returns>Successful Response</returns>
+        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<object> Ensure_property_api_properties_ensure_postAsync(PropertyEnsureBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -472,31 +355,6 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// List Filters
-        /// </summary>
-        /// <param name="propertyId">Property ID</param>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> List_filters_api_filters_getAsync(int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Upsert Filter
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Upsert_filter_api_filters_postAsync(FilterUpsertBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Delete Filter
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Delete_filter_api_filters_deleteAsync(FilterDeleteBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
         /// Get Google Credentials
         /// </summary>
         /// <remarks>
@@ -508,14 +366,6 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Save Google Credentials
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Save_google_credentials_api_integrations_google_credentials_postAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
         /// Google Status
         /// </summary>
         /// <returns>Successful Response</returns>
@@ -524,19 +374,8 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Upload Google Credentials
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Upload_google_credentials_api_integrations_google_credentials_upload_postAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
         /// Google Disconnect
         /// </summary>
-        /// <remarks>
-        /// Global disconnect is deprecated — use per-property disconnect.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Google_disconnect_api_integrations_google_disconnect_postAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -547,7 +386,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Google_oauth_start_api_integrations_google_auth_getAsync(Anonymous3? propertyId = null, Starturl? startUrl = null, Returnto? returnTo = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Google_oauth_start_api_integrations_google_auth_getAsync(Propertyid? propertyId = null, Starturl? startUrl = null, Returnto? returnTo = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -561,20 +400,14 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Google Properties Deprecated
         /// </summary>
-        /// <remarks>
-        /// Deprecated — use /api/properties/{id}/google/properties.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Google_properties_deprecated_api_integrations_google_properties_getAsync(Anonymous4? propertyId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Google_properties_deprecated_api_integrations_google_properties_getAsync(Anonymous? propertyId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Google Test
         /// </summary>
-        /// <remarks>
-        /// Run `python -m src google --test` and return stdout log.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Google_test_api_integrations_google_test_postAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -585,7 +418,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Google_page_data_api_integrations_google_page_data_getAsync(string url, Googlesnapshotid? googleSnapshotId = null, Anonymous5? propertyId = null, Anonymous6? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Google_page_data_api_integrations_google_page_data_getAsync(string url, Googlesnapshotid? googleSnapshotId = null, Anonymous2? propertyId = null, Domain? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -593,7 +426,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Google_page_data_history_api_integrations_google_page_data_history_getAsync(string url, Anonymous7? propertyId = null, Anonymous8? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Google_page_data_history_api_integrations_google_page_data_history_getAsync(string url, Anonymous3? propertyId = null, Anonymous4? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -609,7 +442,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Google_keywords_by_page_api_integrations_google_keywords_by_page_getAsync(string url, Anonymous9? propertyId = null, Anonymous10? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Google_keywords_by_page_api_integrations_google_keywords_by_page_getAsync(string url, Anonymous5? propertyId = null, Anonymous6? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -617,15 +450,12 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Google_keywords_history_api_integrations_google_keywords_history_getAsync(string keyword, Anonymous11? propertyId = null, Anonymous12? domain = null, int? limit = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Google_keywords_history_api_integrations_google_keywords_history_getAsync(string keyword, Anonymous7? propertyId = null, Anonymous8? domain = null, int? limit = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
         /// Bing Sync
         /// </summary>
-        /// <remarks>
-        /// Fetch Bing Webmaster backlinks summary using config from DB.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Bing_sync_api_integrations_bing_sync_postAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -634,9 +464,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Google Page Compare
         /// </summary>
-        /// <remarks>
-        /// Compare two page Google data snapshots.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Google_page_compare_api_integrations_google_page_compare_getAsync(string url, int currentId, int baselineId, string? currentType = null, string? baselineType = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -645,9 +472,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Google Page Live History
         /// </summary>
-        /// <remarks>
-        /// Return history of page Google snapshots for a URL.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Google_page_live_history_api_integrations_google_page_live_history_getAsync(string url, int? limit = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -656,9 +480,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Google Keywords History Batch
         /// </summary>
-        /// <remarks>
-        /// Batch keyword history: { keywords: str[], limit?: int, propertyId?: int, domain?: str }
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Google_keywords_history_batch_api_integrations_google_keywords_history_batch_postAsync(object body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
@@ -687,43 +508,19 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// List Issue Status Route
+        /// Internal Keyword Enrich
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> List_issue_status_route_api_issues_status_getAsync(int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Internal_keyword_enrich_internal_integrations_keywords_enrich_postAsync(object body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Upsert Issue Status Route
+        /// Internal Gsc Links Import
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Upsert_issue_status_route_api_issues_status_putAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Issues Fix Suggestion
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Issues_fix_suggestion_api_issues_fix_suggestion_postAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Issues Action Plan
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Issues_action_plan_api_issues_action_plan_postAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Ai Fix Suggestion
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Ai_fix_suggestion_api_ai_fix_suggestion_postAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Internal_gsc_links_import_internal_integrations_gsc_links_import_postAsync(object body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -867,31 +664,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Page_markdown_runs_route_api_page_markdown_runs_getAsync(Anonymous13? propertyId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Ollama Status
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Ollama_status_api_ollama_status_getAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Mcp Tools
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Mcp_tools_api_mcp_tools_getAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Delete Portfolio Item
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Delete_portfolio_item_api_portfolio_delete_deleteAsync(DeletePortfolioBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
+        System.Threading.Tasks.Task<object> Page_markdown_runs_route_api_page_markdown_runs_getAsync(Anonymous9? propertyId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
@@ -927,46 +700,11 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Page Coach
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Page_coach_api_links_page_coach_postAsync(PageCoachBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
         /// Run Audit Tool
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<object> Run_audit_tool_api_report_audit_tool_postAsync(AuditToolBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Export Report
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Export_report_api_report_export_getAsync(string? format = null, Anonymous14? reportId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Export Sitemap
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Export_sitemap_api_report_export_sitemap_getAsync(Anonymous15? reportId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Report Portfolio
-        /// </summary>
-        /// <remarks>
-        /// Return portfolio data — groups, crawl history, summary, or single card.
-        /// </remarks>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<object> Report_portfolio_api_report_portfolio_getAsync(string? widget = null, Ids? ids = null, Anonymous16? reportId = null, Anonymous17? crawlRunId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken));
 
     }
 
@@ -1055,456 +793,6 @@ namespace Bff.Application.Generated
                                 throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
                             }
                             return objectResponse_.Object;
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Report Meta
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Report_meta_api_report_meta_getAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/report/meta"
-                    urlBuilder_.Append("api/report/meta");
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Report Payload
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Report_payload_api_report_payload_getAsync(Reportid? reportId = null, Domain? domain = null, Section? section = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/report/payload"
-                    urlBuilder_.Append("api/report/payload");
-                    urlBuilder_.Append('?');
-                    if (reportId != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("reportId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(reportId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    if (domain != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("domain")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(domain, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    if (section != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("section")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(section, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    urlBuilder_.Length--;
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Report History
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Report_history_api_report_history_getAsync(Propertyid? propertyId = null, Anonymous? domain = null, int? limit = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/report/history"
-                    urlBuilder_.Append("api/report/history");
-                    urlBuilder_.Append('?');
-                    if (propertyId != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("propertyId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(propertyId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    if (domain != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("domain")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(domain, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    if (limit != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("limit")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(limit, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    urlBuilder_.Length--;
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Crawl Payload
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Crawl_payload_api_report_crawl_payload_getAsync(Crawlrunid? crawlRunId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/report/crawl-payload"
-                    urlBuilder_.Append("api/report/crawl-payload");
-                    urlBuilder_.Append('?');
-                    if (crawlRunId != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("crawlRunId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(crawlRunId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    urlBuilder_.Length--;
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Mobile Delta
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Mobile_delta_api_report_mobile_delta_getAsync(Id? id = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/report/mobile-delta"
-                    urlBuilder_.Append("api/report/mobile-delta");
-                    urlBuilder_.Append('?');
-                    if (id != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("id")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(id, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    urlBuilder_.Length--;
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
                         }
                         else
                         {
@@ -2067,643 +1355,6 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Chat Turn
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Chat_turn_api_chat__postAsync(ChatRequest body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (body == null)
-                throw new System.ArgumentNullException("body");
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    var json_ = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(body, JsonSerializerSettings);
-                    var content_ = new System.Net.Http.ByteArrayContent(json_);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/chat/"
-                    urlBuilder_.Append("api/chat/");
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// List Sessions
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> List_sessions_api_chat_sessions_getAsync(int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (propertyId == null)
-                throw new System.ArgumentNullException("propertyId");
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/chat/sessions"
-                    urlBuilder_.Append("api/chat/sessions");
-                    urlBuilder_.Append('?');
-                    urlBuilder_.Append(System.Uri.EscapeDataString("propertyId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(propertyId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    urlBuilder_.Length--;
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Create Session
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Create_session_api_chat_sessions_postAsync(ChatSessionCreate body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (body == null)
-                throw new System.ArgumentNullException("body");
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    var json_ = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(body, JsonSerializerSettings);
-                    var content_ = new System.Net.Http.ByteArrayContent(json_);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/chat/sessions"
-                    urlBuilder_.Append("api/chat/sessions");
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Get Session Route
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Get_session_route_api_chat_sessions__session_id__getAsync(int session_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (session_id == null)
-                throw new System.ArgumentNullException("session_id");
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/chat/sessions/{session_id}"
-                    urlBuilder_.Append("api/chat/sessions/");
-                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(session_id, System.Globalization.CultureInfo.InvariantCulture)));
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Delete Session Route
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Delete_session_route_api_chat_sessions__session_id__deleteAsync(int session_id, int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (session_id == null)
-                throw new System.ArgumentNullException("session_id");
-
-            if (propertyId == null)
-                throw new System.ArgumentNullException("propertyId");
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("DELETE");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/chat/sessions/{session_id}"
-                    urlBuilder_.Append("api/chat/sessions/");
-                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(session_id, System.Globalization.CultureInfo.InvariantCulture)));
-                    urlBuilder_.Append('?');
-                    urlBuilder_.Append(System.Uri.EscapeDataString("propertyId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(propertyId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    urlBuilder_.Length--;
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Get Session Messages
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Get_session_messages_api_chat_sessions__session_id__messages_getAsync(int session_id, int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (session_id == null)
-                throw new System.ArgumentNullException("session_id");
-
-            if (propertyId == null)
-                throw new System.ArgumentNullException("propertyId");
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/chat/sessions/{session_id}/messages"
-                    urlBuilder_.Append("api/chat/sessions/");
-                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(session_id, System.Globalization.CultureInfo.InvariantCulture)));
-                    urlBuilder_.Append("/messages");
-                    urlBuilder_.Append('?');
-                    urlBuilder_.Append(System.Uri.EscapeDataString("propertyId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(propertyId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    urlBuilder_.Length--;
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Get Artifact
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Get_artifact_api_chat_artifacts__artifact_id__getAsync(string artifact_id, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (artifact_id == null)
-                throw new System.ArgumentNullException("artifact_id");
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/chat/artifacts/{artifact_id}"
-                    urlBuilder_.Append("api/chat/artifacts/");
-                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(artifact_id, System.Globalization.CultureInfo.InvariantCulture)));
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
         /// Browser Status Check
         /// </summary>
         /// <remarks>
@@ -2790,7 +1441,7 @@ namespace Bff.Application.Generated
         /// <param name="crawlRunId">Crawl run ID</param>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Get_page_html_api_crawl_page_html_getAsync(string url, Anonymous2? crawlRunId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Get_page_html_api_crawl_page_html_getAsync(string url, Crawlrunid? crawlRunId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (url == null)
                 throw new System.ArgumentNullException("url");
@@ -2980,336 +1631,6 @@ namespace Bff.Application.Generated
                 
                     // Operation Path: "api/pipeline-config"
                     urlBuilder_.Append("api/pipeline-config");
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Get Llm Config
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Get_llm_config_api_llm_config_getAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/llm-config"
-                    urlBuilder_.Append("api/llm-config");
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Put Llm Config
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Put_llm_config_api_llm_config_putAsync(LlmConfigBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (body == null)
-                throw new System.ArgumentNullException("body");
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    var json_ = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(body, JsonSerializerSettings);
-                    var content_ = new System.Net.Http.ByteArrayContent(json_);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("PUT");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/llm-config"
-                    urlBuilder_.Append("api/llm-config");
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Get Secrets
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Get_secrets_api_secrets_getAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/secrets"
-                    urlBuilder_.Append("api/secrets");
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Put Secrets
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Put_secrets_api_secrets_putAsync(SecretsBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (body == null)
-                throw new System.ArgumentNullException("body");
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    var json_ = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(body, JsonSerializerSettings);
-                    var content_ = new System.Net.Http.ByteArrayContent(json_);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("PUT");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/secrets"
-                    urlBuilder_.Append("api/secrets");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -3682,6 +2003,100 @@ namespace Bff.Application.Generated
 
                         var status_ = (int)response_.StatusCode;
                         if (status_ == 201)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        if (status_ == 422)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
+                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Ensure Property
+        /// </summary>
+        /// <remarks>
+        /// Create a property row when the URL is complete (OAuth / explicit actions only).
+        /// </remarks>
+        /// <returns>Successful Response</returns>
+        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<object> Ensure_property_api_properties_ensure_postAsync(PropertyEnsureBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        {
+            if (body == null)
+                throw new System.ArgumentNullException("body");
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    var json_ = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(body, JsonSerializerSettings);
+                    var content_ = new System.Net.Http.ByteArrayContent(json_);
+                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
+                    request_.Content = content_;
+                    request_.Method = new System.Net.Http.HttpMethod("POST");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    var urlBuilder_ = new System.Text.StringBuilder();
+                
+                    // Operation Path: "api/properties/ensure"
+                    urlBuilder_.Append("api/properties/ensure");
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        foreach (var item_ in response_.Headers)
+                            headers_[item_.Key] = item_.Value;
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
                         {
                             var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
                             if (objectResponse_.Object == null)
@@ -5739,279 +4154,6 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// List Filters
-        /// </summary>
-        /// <param name="propertyId">Property ID</param>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> List_filters_api_filters_getAsync(int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (propertyId == null)
-                throw new System.ArgumentNullException("propertyId");
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/filters"
-                    urlBuilder_.Append("api/filters");
-                    urlBuilder_.Append('?');
-                    urlBuilder_.Append(System.Uri.EscapeDataString("propertyId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(propertyId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    urlBuilder_.Length--;
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Upsert Filter
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Upsert_filter_api_filters_postAsync(FilterUpsertBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (body == null)
-                throw new System.ArgumentNullException("body");
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    var json_ = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(body, JsonSerializerSettings);
-                    var content_ = new System.Net.Http.ByteArrayContent(json_);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/filters"
-                    urlBuilder_.Append("api/filters");
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Delete Filter
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Delete_filter_api_filters_deleteAsync(FilterDeleteBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (body == null)
-                throw new System.ArgumentNullException("body");
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    var json_ = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(body, JsonSerializerSettings);
-                    var content_ = new System.Net.Http.ByteArrayContent(json_);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("DELETE");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/filters"
-                    urlBuilder_.Append("api/filters");
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
         /// Get Google Credentials
         /// </summary>
         /// <remarks>
@@ -6066,94 +4208,6 @@ namespace Bff.Application.Generated
                                 throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
                             }
                             return objectResponse_.Object;
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Save Google Credentials
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Save_google_credentials_api_integrations_google_credentials_postAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    var json_ = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(body, JsonSerializerSettings);
-                    var content_ = new System.Net.Http.ByteArrayContent(json_);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/integrations/google/credentials"
-                    urlBuilder_.Append("api/integrations/google/credentials");
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
                         }
                         else
                         {
@@ -6251,99 +4305,8 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Upload Google Credentials
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Upload_google_credentials_api_integrations_google_credentials_upload_postAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    var json_ = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(body, JsonSerializerSettings);
-                    var content_ = new System.Net.Http.ByteArrayContent(json_);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/integrations/google/credentials/upload"
-                    urlBuilder_.Append("api/integrations/google/credentials/upload");
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
         /// Google Disconnect
         /// </summary>
-        /// <remarks>
-        /// Global disconnect is deprecated — use per-property disconnect.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task<object> Google_disconnect_api_integrations_google_disconnect_postAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
@@ -6421,7 +4384,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Google_oauth_start_api_integrations_google_auth_getAsync(Anonymous3? propertyId = null, Starturl? startUrl = null, Returnto? returnTo = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Google_oauth_start_api_integrations_google_auth_getAsync(Propertyid? propertyId = null, Starturl? startUrl = null, Returnto? returnTo = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -6615,12 +4578,9 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Google Properties Deprecated
         /// </summary>
-        /// <remarks>
-        /// Deprecated — use /api/properties/{id}/google/properties.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Google_properties_deprecated_api_integrations_google_properties_getAsync(Anonymous4? propertyId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Google_properties_deprecated_api_integrations_google_properties_getAsync(Anonymous? propertyId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -6708,9 +4668,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Google Test
         /// </summary>
-        /// <remarks>
-        /// Run `python -m src google --test` and return stdout log.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task<object> Google_test_api_integrations_google_test_postAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
@@ -6788,7 +4745,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Google_page_data_api_integrations_google_page_data_getAsync(string url, Googlesnapshotid? googleSnapshotId = null, Anonymous5? propertyId = null, Anonymous6? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Google_page_data_api_integrations_google_page_data_getAsync(string url, Googlesnapshotid? googleSnapshotId = null, Anonymous2? propertyId = null, Domain? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (url == null)
                 throw new System.ArgumentNullException("url");
@@ -6890,7 +4847,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Google_page_data_history_api_integrations_google_page_data_history_getAsync(string url, Anonymous7? propertyId = null, Anonymous8? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Google_page_data_history_api_integrations_google_page_data_history_getAsync(string url, Anonymous3? propertyId = null, Anonymous4? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (url == null)
                 throw new System.ArgumentNullException("url");
@@ -7076,7 +5033,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Google_keywords_by_page_api_integrations_google_keywords_by_page_getAsync(string url, Anonymous9? propertyId = null, Anonymous10? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Google_keywords_by_page_api_integrations_google_keywords_by_page_getAsync(string url, Anonymous5? propertyId = null, Anonymous6? domain = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (url == null)
                 throw new System.ArgumentNullException("url");
@@ -7174,7 +5131,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Google_keywords_history_api_integrations_google_keywords_history_getAsync(string keyword, Anonymous11? propertyId = null, Anonymous12? domain = null, int? limit = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Google_keywords_history_api_integrations_google_keywords_history_getAsync(string keyword, Anonymous7? propertyId = null, Anonymous8? domain = null, int? limit = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             if (keyword == null)
                 throw new System.ArgumentNullException("keyword");
@@ -7274,9 +5231,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Bing Sync
         /// </summary>
-        /// <remarks>
-        /// Fetch Bing Webmaster backlinks summary using config from DB.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task<object> Bing_sync_api_integrations_bing_sync_postAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
@@ -7352,9 +5306,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Google Page Compare
         /// </summary>
-        /// <remarks>
-        /// Compare two page Google data snapshots.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task<object> Google_page_compare_api_integrations_google_page_compare_getAsync(string url, int currentId, int baselineId, string? currentType = null, string? baselineType = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
@@ -7461,9 +5412,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Google Page Live History
         /// </summary>
-        /// <remarks>
-        /// Return history of page Google snapshots for a URL.
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task<object> Google_page_live_history_api_integrations_google_page_live_history_getAsync(string url, int? limit = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
@@ -7558,9 +5506,6 @@ namespace Bff.Application.Generated
         /// <summary>
         /// Google Keywords History Batch
         /// </summary>
-        /// <remarks>
-        /// Batch keyword history: { keywords: str[], limit?: int, propertyId?: int, domain?: str }
-        /// </remarks>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
         public virtual async System.Threading.Tasks.Task<object> Google_keywords_history_batch_api_integrations_google_keywords_history_batch_postAsync(object body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
@@ -7838,190 +5783,15 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// List Issue Status Route
+        /// Internal Keyword Enrich
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> List_issue_status_route_api_issues_status_getAsync(int propertyId, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Internal_keyword_enrich_internal_integrations_keywords_enrich_postAsync(object body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
-            if (propertyId == null)
-                throw new System.ArgumentNullException("propertyId");
+            if (body == null)
+                throw new System.ArgumentNullException("body");
 
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/issues/status"
-                    urlBuilder_.Append("api/issues/status");
-                    urlBuilder_.Append('?');
-                    urlBuilder_.Append(System.Uri.EscapeDataString("propertyId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(propertyId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    urlBuilder_.Length--;
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Upsert Issue Status Route
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Upsert_issue_status_route_api_issues_status_putAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    var json_ = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(body, JsonSerializerSettings);
-                    var content_ = new System.Net.Http.ByteArrayContent(json_);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("PUT");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/issues/status"
-                    urlBuilder_.Append("api/issues/status");
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Issues Fix Suggestion
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Issues_fix_suggestion_api_issues_fix_suggestion_postAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
             var client_ = _httpClient;
             var disposeClient_ = false;
             try
@@ -8037,8 +5807,8 @@ namespace Bff.Application.Generated
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "api/issues/fix-suggestion"
-                    urlBuilder_.Append("api/issues/fix-suggestion");
+                    // Operation Path: "internal/integrations/keywords/enrich"
+                    urlBuilder_.Append("internal/integrations/keywords/enrich");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -8104,12 +5874,15 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Issues Action Plan
+        /// Internal Gsc Links Import
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Issues_action_plan_api_issues_action_plan_postAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Internal_gsc_links_import_internal_integrations_gsc_links_import_postAsync(object body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
+            if (body == null)
+                throw new System.ArgumentNullException("body");
+
             var client_ = _httpClient;
             var disposeClient_ = false;
             try
@@ -8125,96 +5898,8 @@ namespace Bff.Application.Generated
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "api/issues/action-plan"
-                    urlBuilder_.Append("api/issues/action-plan");
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Ai Fix Suggestion
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Ai_fix_suggestion_api_ai_fix_suggestion_postAsync(object? body = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    var json_ = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(body, JsonSerializerSettings);
-                    var content_ = new System.Net.Http.ByteArrayContent(json_);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/ai/fix-suggestion"
-                    urlBuilder_.Append("api/ai/fix-suggestion");
+                    // Operation Path: "internal/integrations/gsc-links/import"
+                    urlBuilder_.Append("internal/integrations/gsc-links/import");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -9808,7 +7493,7 @@ namespace Bff.Application.Generated
         /// </summary>
         /// <returns>Successful Response</returns>
         /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Page_markdown_runs_route_api_page_markdown_runs_getAsync(Anonymous13? propertyId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
+        public virtual async System.Threading.Tasks.Task<object> Page_markdown_runs_route_api_page_markdown_runs_getAsync(Anonymous9? propertyId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
         {
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -9829,245 +7514,6 @@ namespace Bff.Application.Generated
                         urlBuilder_.Append(System.Uri.EscapeDataString("propertyId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(propertyId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
                     }
                     urlBuilder_.Length--;
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Ollama Status
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Ollama_status_api_ollama_status_getAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/ollama/status"
-                    urlBuilder_.Append("api/ollama/status");
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Mcp Tools
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Mcp_tools_api_mcp_tools_getAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/mcp-tools"
-                    urlBuilder_.Append("api/mcp-tools");
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Delete Portfolio Item
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Delete_portfolio_item_api_portfolio_delete_deleteAsync(DeletePortfolioBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (body == null)
-                throw new System.ArgumentNullException("body");
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    var json_ = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(body, JsonSerializerSettings);
-                    var content_ = new System.Net.Http.ByteArrayContent(json_);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("DELETE");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/portfolio/delete"
-                    urlBuilder_.Append("api/portfolio/delete");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -10493,97 +7939,6 @@ namespace Bff.Application.Generated
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <summary>
-        /// Page Coach
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Page_coach_api_links_page_coach_postAsync(PageCoachBody body, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            if (body == null)
-                throw new System.ArgumentNullException("body");
-
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    var json_ = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(body, JsonSerializerSettings);
-                    var content_ = new System.Net.Http.ByteArrayContent(json_);
-                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
-                    request_.Content = content_;
-                    request_.Method = new System.Net.Http.HttpMethod("POST");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/links/page-coach"
-                    urlBuilder_.Append("api/links/page-coach");
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
         /// Run Audit Tool
         /// </summary>
         /// <returns>Successful Response</returns>
@@ -10610,295 +7965,6 @@ namespace Bff.Application.Generated
                 
                     // Operation Path: "api/report/audit-tool"
                     urlBuilder_.Append("api/report/audit-tool");
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Export Report
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Export_report_api_report_export_getAsync(string? format = null, Anonymous14? reportId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/report/export"
-                    urlBuilder_.Append("api/report/export");
-                    urlBuilder_.Append('?');
-                    if (format != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("format")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(format, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    if (reportId != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("reportId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(reportId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    urlBuilder_.Length--;
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Export Sitemap
-        /// </summary>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Export_sitemap_api_report_export_sitemap_getAsync(Anonymous15? reportId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/report/export-sitemap"
-                    urlBuilder_.Append("api/report/export-sitemap");
-                    urlBuilder_.Append('?');
-                    if (reportId != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("reportId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(reportId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    urlBuilder_.Length--;
-
-                    PrepareRequest(client_, request_, urlBuilder_);
-
-                    var url_ = urlBuilder_.ToString();
-                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
-
-                    PrepareRequest(client_, request_, url_);
-
-                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
-                    var disposeResponse_ = true;
-                    try
-                    {
-                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
-                        foreach (var item_ in response_.Headers)
-                            headers_[item_.Key] = item_.Value;
-                        if (response_.Content != null && response_.Content.Headers != null)
-                        {
-                            foreach (var item_ in response_.Content.Headers)
-                                headers_[item_.Key] = item_.Value;
-                        }
-
-                        ProcessResponse(client_, response_);
-
-                        var status_ = (int)response_.StatusCode;
-                        if (status_ == 200)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<object>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            return objectResponse_.Object;
-                        }
-                        else
-                        if (status_ == 422)
-                        {
-                            var objectResponse_ = await ReadObjectResponseAsync<HTTPValidationError>(response_, headers_, cancellationToken).ConfigureAwait(false);
-                            if (objectResponse_.Object == null)
-                            {
-                                throw new FastApiClientException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
-                            }
-                            throw new FastApiClientException<HTTPValidationError>("Validation Error", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
-                        }
-                        else
-                        {
-                            var responseData_ = response_.Content == null ? null : await ReadAsStringAsync(response_.Content, cancellationToken).ConfigureAwait(false);
-                            throw new FastApiClientException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
-                        }
-                    }
-                    finally
-                    {
-                        if (disposeResponse_)
-                            response_.Dispose();
-                    }
-                }
-            }
-            finally
-            {
-                if (disposeClient_)
-                    client_.Dispose();
-            }
-        }
-
-        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
-        /// <summary>
-        /// Report Portfolio
-        /// </summary>
-        /// <remarks>
-        /// Return portfolio data — groups, crawl history, summary, or single card.
-        /// </remarks>
-        /// <returns>Successful Response</returns>
-        /// <exception cref="FastApiClientException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<object> Report_portfolio_api_report_portfolio_getAsync(string? widget = null, Ids? ids = null, Anonymous16? reportId = null, Anonymous17? crawlRunId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken))
-        {
-            var client_ = _httpClient;
-            var disposeClient_ = false;
-            try
-            {
-                using (var request_ = new System.Net.Http.HttpRequestMessage())
-                {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
-                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
-
-                    var urlBuilder_ = new System.Text.StringBuilder();
-                
-                    // Operation Path: "api/report/portfolio"
-                    urlBuilder_.Append("api/report/portfolio");
-                    urlBuilder_.Append('?');
-                    if (widget != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("widget")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(widget, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    if (ids != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("ids")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(ids, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    if (reportId != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("reportId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(reportId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    if (crawlRunId != null)
-                    {
-                        urlBuilder_.Append(System.Uri.EscapeDataString("crawlRunId")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(crawlRunId, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
-                    }
-                    urlBuilder_.Length--;
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -11185,54 +8251,6 @@ namespace Bff.Application.Generated
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class ChatRequest
-    {
-
-        [System.Text.Json.Serialization.JsonPropertyName("sessionId")]
-        public int SessionId { get; set; } = default!;
-
-        [System.Text.Json.Serialization.JsonPropertyName("propertyId")]
-        public int PropertyId { get; set; } = default!;
-
-        [System.Text.Json.Serialization.JsonPropertyName("message")]
-        public string Message { get; set; } = default!;
-
-        [System.Text.Json.Serialization.JsonPropertyName("reportId")]
-        public ReportId2 ReportId { get; set; } = default!;
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class ChatSessionCreate
-    {
-
-        [System.Text.Json.Serialization.JsonPropertyName("propertyId")]
-        public int PropertyId { get; set; } = default!;
-
-        [System.Text.Json.Serialization.JsonPropertyName("title")]
-        public string Title { get; set; } = "New chat";
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class CompareExportBody
     {
 
@@ -11279,7 +8297,7 @@ namespace Bff.Application.Generated
         public PropertyId PropertyId { get; set; } = default!;
 
         [System.Text.Json.Serialization.JsonPropertyName("reportId")]
-        public ReportId3 ReportId { get; set; } = default!;
+        public ReportId2 ReportId { get; set; } = default!;
 
         [System.Text.Json.Serialization.JsonPropertyName("current")]
         public Current Current { get; set; } = default!;
@@ -11337,72 +8355,6 @@ namespace Bff.Application.Generated
 
         [System.Text.Json.Serialization.JsonPropertyName("isDefault")]
         public IsDefault IsDefault { get; set; } = default!;
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class DeletePortfolioBody
-    {
-
-        [System.Text.Json.Serialization.JsonPropertyName("reportId")]
-        public ReportId4 ReportId { get; set; } = default!;
-
-        [System.Text.Json.Serialization.JsonPropertyName("crawlRunId")]
-        public CrawlRunId CrawlRunId { get; set; } = default!;
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class FilterDeleteBody
-    {
-
-        [System.Text.Json.Serialization.JsonPropertyName("propertyId")]
-        public int PropertyId { get; set; } = default!;
-
-        [System.Text.Json.Serialization.JsonPropertyName("name")]
-        public string Name { get; set; } = default!;
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class FilterUpsertBody
-    {
-
-        [System.Text.Json.Serialization.JsonPropertyName("propertyId")]
-        public int PropertyId { get; set; } = default!;
-
-        [System.Text.Json.Serialization.JsonPropertyName("name")]
-        public string Name { get; set; } = default!;
-
-        [System.Text.Json.Serialization.JsonPropertyName("filterJson")]
-        public FilterJson FilterJson { get; set; } = default!;
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
@@ -11518,24 +8470,6 @@ namespace Bff.Application.Generated
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class LlmConfigBody
-    {
-
-        [System.Text.Json.Serialization.JsonPropertyName("state")]
-        public object State { get; set; } = new object();
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class OpsSettingsBody
     {
 
@@ -11547,42 +8481,6 @@ namespace Bff.Application.Generated
 
         [System.Text.Json.Serialization.JsonPropertyName("alertEmail")]
         public AlertEmail AlertEmail { get; set; } = default!;
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class PageCoachBody
-    {
-
-        [System.Text.Json.Serialization.JsonPropertyName("url")]
-        public Url Url { get; set; } = default!;
-
-        [System.Text.Json.Serialization.JsonPropertyName("refresh")]
-        public bool Refresh { get; set; } = false;
-
-        [System.Text.Json.Serialization.JsonPropertyName("currentType")]
-        public CurrentType CurrentType { get; set; } = default!;
-
-        [System.Text.Json.Serialization.JsonPropertyName("currentId")]
-        public CurrentId CurrentId { get; set; } = default!;
-
-        [System.Text.Json.Serialization.JsonPropertyName("baselineType")]
-        public BaselineType BaselineType { get; set; } = default!;
-
-        [System.Text.Json.Serialization.JsonPropertyName("baselineId")]
-        public BaselineId BaselineId { get; set; } = default!;
-
-        [System.Text.Json.Serialization.JsonPropertyName("propertyId")]
-        public PropertyId2 PropertyId { get; set; } = default!;
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
@@ -11656,6 +8554,24 @@ namespace Bff.Application.Generated
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class PropertyEnsureBody
+    {
+
+        [System.Text.Json.Serialization.JsonPropertyName("startUrl")]
+        public StartUrl StartUrl { get; set; } = default!;
+
+        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
+
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+        {
+            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
+            set { _additionalProperties = value; }
+        }
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class PropertyUpsertBody
     {
 
@@ -11716,11 +8632,8 @@ namespace Bff.Application.Generated
         [System.Text.Json.Serialization.JsonPropertyName("unknownKeys")]
         public System.Collections.Generic.List<UnknownKeyEntry> UnknownKeys { get; set; } = default!;
 
-        [System.Text.Json.Serialization.JsonPropertyName("llmState")]
-        public LlmState LlmState { get; set; } = default!;
-
         [System.Text.Json.Serialization.JsonPropertyName("propertyId")]
-        public PropertyId3 PropertyId { get; set; } = default!;
+        public PropertyId2 PropertyId { get; set; } = default!;
 
         [System.Text.Json.Serialization.JsonPropertyName("python")]
         public Python Python { get; set; } = default!;
@@ -11745,24 +8658,6 @@ namespace Bff.Application.Generated
 
         [System.Text.Json.Serialization.JsonPropertyName("jobId")]
         public string JobId { get; set; } = default!;
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class SecretsBody
-    {
-
-        [System.Text.Json.Serialization.JsonPropertyName("state")]
-        public object State { get; set; } = new object();
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
 
@@ -11826,81 +8721,9 @@ namespace Bff.Application.Generated
 
     }
 
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Reportid
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Domain
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Section
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Propertyid
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Anonymous
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
+    /// <summary>
+    /// Crawl run ID
+    /// </summary>
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class Crawlrunid
     {
@@ -11917,40 +8740,7 @@ namespace Bff.Application.Generated
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Id
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    /// <summary>
-    /// Crawl run ID
-    /// </summary>
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Anonymous2
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Anonymous3
+    public partial class Propertyid
     {
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
@@ -12040,7 +8830,7 @@ namespace Bff.Application.Generated
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Anonymous4
+    public partial class Anonymous
     {
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
@@ -12056,6 +8846,66 @@ namespace Bff.Application.Generated
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class Googlesnapshotid
+    {
+
+        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
+
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+        {
+            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
+            set { _additionalProperties = value; }
+        }
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class Anonymous2
+    {
+
+        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
+
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+        {
+            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
+            set { _additionalProperties = value; }
+        }
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class Domain
+    {
+
+        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
+
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+        {
+            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
+            set { _additionalProperties = value; }
+        }
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class Anonymous3
+    {
+
+        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
+
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+        {
+            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
+            set { _additionalProperties = value; }
+        }
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class Anonymous4
     {
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
@@ -12130,66 +8980,6 @@ namespace Bff.Application.Generated
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Anonymous9
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Anonymous10
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Anonymous11
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Anonymous12
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class Q
     {
 
@@ -12205,82 +8995,7 @@ namespace Bff.Application.Generated
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Anonymous13
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Anonymous14
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Anonymous15
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Ids
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Anonymous16
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Anonymous17
+    public partial class Anonymous9
     {
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
@@ -12311,21 +9026,6 @@ namespace Bff.Application.Generated
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class Error2
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class ReportId2
     {
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
@@ -12400,7 +9100,7 @@ namespace Bff.Application.Generated
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class ReportId3
+    public partial class ReportId2
     {
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
@@ -12506,51 +9206,6 @@ namespace Bff.Application.Generated
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class IsDefault
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class ReportId4
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class CrawlRunId
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class FilterJson
     {
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
@@ -12775,96 +9430,6 @@ namespace Bff.Application.Generated
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class Url
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class CurrentType
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class CurrentId
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class BaselineType
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class BaselineId
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class PropertyId2
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class Error3
     {
 
@@ -12896,6 +9461,21 @@ namespace Bff.Application.Generated
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class Preset
+    {
+
+        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
+
+        [System.Text.Json.Serialization.JsonExtensionData]
+        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
+        {
+            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
+            set { _additionalProperties = value; }
+        }
+
+    }
+
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
+    public partial class StartUrl
     {
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
@@ -13015,22 +9595,7 @@ namespace Bff.Application.Generated
     }
 
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class LlmState
-    {
-
-        private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
-
-        [System.Text.Json.Serialization.JsonExtensionData]
-        public System.Collections.Generic.IDictionary<string, object> AdditionalProperties
-        {
-            get { return _additionalProperties ?? (_additionalProperties = new System.Collections.Generic.Dictionary<string, object>()); }
-            set { _additionalProperties = value; }
-        }
-
-    }
-
-    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.7.1.0 (NJsonSchema v11.6.1.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class PropertyId3
+    public partial class PropertyId2
     {
 
         private System.Collections.Generic.IDictionary<string, object>? _additionalProperties;
