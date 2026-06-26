@@ -1,14 +1,14 @@
 using System.Text.Json.Nodes;
 using AiService.Tools.Context;
-using Npgsql;
 
+using AiService.Tools.Persistence;
 namespace AiService.Tools.Slice;
 
 /// <summary>Common capped payload array reads.</summary>
 public static class PayloadArrayHelpers
 {
     public static async Task<JsonObject> CapPayloadArrayAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         string payloadKey,
@@ -19,7 +19,7 @@ public static class PayloadArrayHelpers
         Func<JsonNode?, bool>? filter = null)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return MissingList(outputKey);

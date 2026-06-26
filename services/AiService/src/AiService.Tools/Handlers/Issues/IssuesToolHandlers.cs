@@ -1,16 +1,16 @@
 using System.Text.Json.Nodes;
 using AiService.Tools.Context;
 using AiService.Tools.Handlers.Report;
-using Npgsql;
 using WebsiteProfiling.Contracts.Json;
 
+using AiService.Tools.Persistence;
 namespace AiService.Tools.Handlers.Issues;
 
 /// <summary>Category-scoped issue tools — ports Python <c>issues/issues.py</c>.</summary>
 public static class IssuesToolHandlers
 {
     public static async Task<JsonObject> GetCategoryIssuesAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -22,7 +22,7 @@ public static class IssuesToolHandlers
             return new JsonObject { ["error"] = "category_id is required" };
         }
 
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found" };
@@ -75,7 +75,7 @@ public static class IssuesToolHandlers
     }
 
     public static Task<JsonObject> ListIssuesByCategoryAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -88,6 +88,6 @@ public static class IssuesToolHandlers
 
         var withCategory = args.DeepClone() as JsonObject ?? [];
         withCategory["category_id"] = categoryId;
-        return ReportToolHandlers.ListIssuesAsync(conn, ctx, withCategory, cancellationToken);
+        return ReportToolHandlers.ListIssuesAsync(db, ctx, withCategory, cancellationToken);
     }
 }

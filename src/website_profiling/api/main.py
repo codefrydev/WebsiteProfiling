@@ -18,6 +18,7 @@ from .routers import (
     health,
     integrations,
     internal_integrations,
+    internal_report,
     keywords,
     logs,
     page_markdown,
@@ -69,20 +70,24 @@ app.include_router(report.router, prefix="/api")
 app.include_router(pipeline.router, prefix="/api")
 app.include_router(crawl.router, prefix="/api")
 
+# Internal bridges for .NET services without Python runtime
+app.include_router(internal_integrations.router)
+app.include_router(internal_report.router)
+
 # Config: pipeline-settings + ui-preferences only (secrets/llm-settings → AiService via BFF)
 app.include_router(config.router, prefix="/api")
 
 app.include_router(properties.router, prefix="/api")
-app.include_router(dashboards.router, prefix="/api")
+if os.environ.get("DEPRECATE_PYTHON_REPORT_ROUTES", "").strip() != "1":
+    app.include_router(dashboards.router, prefix="/api")
+    app.include_router(compare.router, prefix="/api")
 app.include_router(integrations.router, prefix="/api")
-app.include_router(internal_integrations.router)
 app.include_router(keywords.router, prefix="/api")
 app.include_router(content.router, prefix="/api")
 app.include_router(page_markdown.router, prefix="/api")
 app.include_router(alerts.router, prefix="/api")
 app.include_router(schedule.router, prefix="/api")
 app.include_router(logs.router, prefix="/api")
-app.include_router(compare.router, prefix="/api")
 
 # Audit tool dispatch — internal bridge for AiService unported tools
 app.include_router(report_audit_tool.router, prefix="/api")

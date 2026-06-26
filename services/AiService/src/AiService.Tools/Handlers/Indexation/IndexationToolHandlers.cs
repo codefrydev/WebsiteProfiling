@@ -1,9 +1,9 @@
 using System.Text.Json.Nodes;
 using AiService.Tools.Context;
 using AiService.Tools.Slice;
-using Npgsql;
 using WebsiteProfiling.Contracts.Json;
 
+using AiService.Tools.Persistence;
 namespace AiService.Tools.Handlers.Indexation;
 
 /// <summary>Indexation coverage tools — ports Python <c>indexation/indexation_tools.py</c>.</summary>
@@ -17,13 +17,13 @@ public static class IndexationToolHandlers
     };
 
     public static async Task<JsonObject> GetIndexationCoverageAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found" };
@@ -42,13 +42,13 @@ public static class IndexationToolHandlers
     }
 
     public static async Task<JsonObject> ListIndexationGapsAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return PayloadArrayHelpers.MissingList("urls");
@@ -104,13 +104,13 @@ public static class IndexationToolHandlers
     }
 
     public static async Task<JsonObject> GetIndexationUrlJoinAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found" };

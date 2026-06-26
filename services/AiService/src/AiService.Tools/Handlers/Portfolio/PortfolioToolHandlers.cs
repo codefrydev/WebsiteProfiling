@@ -1,8 +1,10 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using AiService.Tools.Context;
 using AiService.Tools.Handlers.Report;
+using AiService.Tools.Persistence;
 using AiService.Tools.Slice;
-using Npgsql;
+using Microsoft.EntityFrameworkCore;
 using WebsiteProfiling.Contracts.Json;
 
 namespace AiService.Tools.Handlers.Portfolio;
@@ -11,108 +13,54 @@ namespace AiService.Tools.Handlers.Portfolio;
 public static class PortfolioToolHandlers
 {
     public static async Task<JsonObject> GetPortfolioSummaryAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         _ = ctx;
         var limit = PayloadSliceHelpers.ParseLimit(args["limit"], 50, 100);
-        var summaries = new JsonArray();
-
-        await using (var propsCmd = conn.CreateCommand())
-        {
-            propsCmd.CommandText =
-                "SELECT id, name, canonical_domain FROM properties ORDER BY id ASC";
-            await using var reader = await propsCmd.ExecuteReaderAsync(cancellationToken);
-            var count = 0;
-            while (await reader.ReadAsync(cancellationToken) && count < limit)
-            {
-                if (reader.IsDBNull(0))
-                {
-                    continue;
-                }
-
-                var pid = reader.GetInt32(0);
-                var name = reader.IsDBNull(1) ? null : reader.GetString(1);
-                var domain = reader.IsDBNull(2) ? null : reader.GetString(2);
-                summaries.Add(new JsonObject
-                {
-                    ["property_id"] = pid,
-                    ["name"] = name,
-                    ["canonical_domain"] = domain,
-                });
-                count++;
-            }
-        }
+        var properties = await db.Properties.AsNoTracking()
+            .OrderBy(x => x.Id)
+            .Take(limit)
+            .Select(x => new { x.Id, x.Name, x.CanonicalDomain })
+            .ToListAsync(cancellationToken);
 
         var enriched = new JsonArray();
         var scores = new List<double>();
-        foreach (var node in summaries)
+        foreach (var prop in properties)
         {
-            if (node is not JsonObject prop || prop["property_id"] is not JsonValue pidValue || !pidValue.TryGetValue(out int pid))
+            var snap = await db.AuditHealthSnapshots.AsNoTracking()
+                .Where(x => x.PropertyId == prop.Id)
+                .OrderByDescending(x => x.GeneratedAt)
+                .ThenByDescending(x => x.Id)
+                .Select(x => new { x.HealthScore, x.GeneratedAt, x.ReportId, x.IssueCounts })
+                .FirstOrDefaultAsync(cancellationToken);
+
+            double? healthScore = snap?.HealthScore;
+            if (healthScore is not null)
             {
-                continue;
+                scores.Add(healthScore.Value);
             }
 
-            await using var snapCmd = conn.CreateCommand();
-            snapCmd.CommandText =
-                """
-                SELECT health_score, generated_at, report_id, issue_counts
-                FROM audit_health_snapshots
-                WHERE property_id = @pid
-                ORDER BY generated_at DESC, id DESC
-                LIMIT 1
-                """;
-            snapCmd.Parameters.AddWithValue("pid", pid);
-            await using var snapReader = await snapCmd.ExecuteReaderAsync(cancellationToken);
-            double? healthScore = null;
-            string generatedAt = "";
-            int? reportId = null;
             JsonNode? issueCounts = null;
-            if (await snapReader.ReadAsync(cancellationToken))
+            if (!string.IsNullOrWhiteSpace(snap?.IssueCounts))
             {
-                if (!snapReader.IsDBNull(0))
+                try
                 {
-                    healthScore = Convert.ToDouble(snapReader.GetValue(0));
-                    scores.Add(healthScore.Value);
+                    issueCounts = JsonNode.Parse(snap.IssueCounts);
                 }
-
-                if (!snapReader.IsDBNull(1))
-                {
-                    generatedAt = snapReader.GetDateTime(1).ToString("O");
-                }
-
-                if (!snapReader.IsDBNull(2))
-                {
-                    reportId = snapReader.GetInt32(2);
-                }
-
-                if (!snapReader.IsDBNull(3))
-                {
-                    var raw = snapReader.GetString(3);
-                    if (!string.IsNullOrWhiteSpace(raw))
-                    {
-                        try
-                        {
-                            issueCounts = JsonNode.Parse(raw);
-                        }
-                        catch (System.Text.Json.JsonException)
-                        {
-                            issueCounts = new JsonObject();
-                        }
-                    }
-                }
+                catch (JsonException) { }
             }
 
             enriched.Add(new JsonObject
             {
-                ["property_id"] = pid,
-                ["name"] = prop["name"]?.DeepClone(),
-                ["canonical_domain"] = prop["canonical_domain"]?.DeepClone(),
+                ["property_id"] = (int)prop.Id,
+                ["name"] = prop.Name,
+                ["canonical_domain"] = prop.CanonicalDomain,
                 ["health_score"] = healthScore,
-                ["report_id"] = reportId,
-                ["generated_at"] = generatedAt,
+                ["generated_at"] = snap?.GeneratedAt.ToString("O") ?? "",
+                ["report_id"] = snap?.ReportId,
                 ["issue_counts"] = issueCounts?.DeepClone(),
             });
         }
@@ -136,13 +84,13 @@ public static class PortfolioToolHandlers
     }
 
     public static async Task<JsonObject> GetCrawlSummaryAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found" };
@@ -158,40 +106,40 @@ public static class PortfolioToolHandlers
     }
 
     public static async Task<JsonObject> GetMimeTypeBreakdownAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => await LabelValuePairAsync(conn, ctx, args, "mime_labels", "mime_values", cancellationToken);
+        => await LabelValuePairAsync(db, ctx, args, "mime_labels", "mime_values", cancellationToken);
 
     public static async Task<JsonObject> GetTitleLengthDistributionAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => await LabelValuePairAsync(conn, ctx, args, "title_labels", "title_counts", cancellationToken);
+        => await LabelValuePairAsync(db, ctx, args, "title_labels", "title_counts", cancellationToken);
 
     public static async Task<JsonObject> GetDomainLinkDistributionAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => await LabelValuePairAsync(conn, ctx, args, "domain_labels", "domain_values", cancellationToken);
+        => await LabelValuePairAsync(db, ctx, args, "domain_labels", "domain_values", cancellationToken);
 
     public static async Task<JsonObject> GetOutlinkDistributionAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => await LabelValuePairAsync(conn, ctx, args, "outlink_labels", "outlink_counts", cancellationToken);
+        => await LabelValuePairAsync(db, ctx, args, "outlink_labels", "outlink_counts", cancellationToken);
 
     public static async Task<JsonObject> GetIssuePriorityBreakdownAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
-        var summary = await ReportToolHandlers.GetReportSummaryAsync(conn, ctx, args, cancellationToken);
+        var summary = await ReportToolHandlers.GetReportSummaryAsync(db, ctx, args, cancellationToken);
         if (summary.TryGetPropertyValue("error", out _))
         {
             return summary;
@@ -216,13 +164,13 @@ public static class PortfolioToolHandlers
     }
 
     public static async Task<JsonObject> GetTopCrawledPagesAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject
@@ -246,7 +194,7 @@ public static class PortfolioToolHandlers
     }
 
     private static async Task<JsonObject> LabelValuePairAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         string labelsKey,
@@ -254,7 +202,7 @@ public static class PortfolioToolHandlers
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found" };

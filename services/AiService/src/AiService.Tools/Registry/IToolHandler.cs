@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
 using AiService.Tools.Context;
-using Npgsql;
+using AiService.Tools.Persistence;
 
 namespace AiService.Tools.Registry;
 
@@ -10,7 +10,7 @@ public interface IToolHandler
     string ToolName { get; }
 
     Task<JsonObject> HandleAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken);

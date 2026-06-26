@@ -17,11 +17,9 @@ from ..progress import emit_phase_done, emit_phase_start, emit_progress
 from .config_resolve import (
     active_property_id_from_cfg,
     cleanup_lighthouse_work_dir,
-    google_db_has_gsc,
     lighthouse_work_dir,
     require_lighthouse_url,
     require_start_url,
-    should_enrich_keywords_after_report,
 )
 
 _ALLOWED_RENDER_MODES = frozenset({"static", "javascript", "auto"})
@@ -124,6 +122,15 @@ def select_lighthouse_urls_from_gsc(
     return crawl_urls[:max_pages]
 
 
+def _report_via_service() -> bool:
+    return bool((os.environ.get("REPORT_SERVICE_URL") or "").strip())
+
+
+def _orchestrate_via_report_service() -> bool:
+    flag = (os.environ.get("PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE") or "").strip().lower()
+    return flag in {"1", "true", "yes"}
+
+
 def run(cfg: dict, args: argparse.Namespace) -> None:
     use_database = True
 
@@ -133,6 +140,8 @@ def run(cfg: dict, args: argparse.Namespace) -> None:
         or (args.command is None and get_bool(cfg, "run_content_analysis", False))
     )
     run_report = args.command == "report" or (args.command is None and get_bool(cfg, "run_report", True))
+    if run_report and args.command is None and _orchestrate_via_report_service():
+        run_report = False
     run_plot = args.command == "plot" or (args.command is None and get_bool(cfg, "run_plot", False))
     run_lighthouse = args.command is None and get_bool(cfg, "run_lighthouse", False)
     run_lighthouse_on_pages = args.command is None and get_bool(cfg, "run_lighthouse_on_pages", False)
@@ -491,80 +500,23 @@ def _run_single_lighthouse(cfg: dict, use_database: bool) -> None:
 
 
 def _run_report(cfg: dict, use_database: bool) -> None:
-    from ..reporting.builder import run_simple_report
+    from .report_build import build_report_resilient
 
-    max_fetch = get_int(cfg, "max_fetch_for_edges", 300)
-    same_domain = get_bool(cfg, "same_domain_only", True)
-    max_nodes = get_int(cfg, "max_nodes_plot", 400)
-    site_name = (cfg.get("site_name") or "").strip()
-    report_title = (cfg.get("report_title") or "").strip()
-    start_url = require_start_url(cfg, for_step="report")
-    run_security_scan_flag = get_bool(cfg, "run_security_scan", True)
-    security_scan_active = get_bool(cfg, "security_scan_active", False)
-    security_max_urls_probe = _cfg_int(cfg, "security_max_urls_probe", 20)
-    console_print("[Report] Starting...", flush=True)
-    emit_phase_start("report")
-    out = run_simple_report(
-        max_fetch_for_edges=max_fetch,
-        concurrency=6,
-        timeout=8,
-        same_domain_only=same_domain,
-        max_nodes_plot=max_nodes or 300,
-        site_name=site_name or None,
-        report_title=report_title or None,
-        start_url=start_url,
-        run_security_scan_flag=run_security_scan_flag,
-        security_scan_active=security_scan_active,
-        security_max_urls_probe=security_max_urls_probe,
-        lighthouse_summary_path=None,
-        use_database=use_database,
-        config=cfg,
-    )
-    console_print("[Report] Done.", flush=True)
-    emit_phase_done("report")
-    console_print(f"Report written: {out}")
-
-    enable_planner = get_bool(cfg, "enable_google_keyword_planner", False)
-    if should_enrich_keywords_after_report(cfg) and (google_db_has_gsc(cfg) or enable_planner):
-        source_label = "Search Console" if google_db_has_gsc(cfg) else "Keyword Planner"
-        console_print(f"[Keywords] Post-audit keyword research ({source_label} data)...", flush=True)
-        emit_phase_start("keywords")
-        integrations_url = (os.environ.get("INTEGRATIONS_SERVICE_URL") or "").strip().rstrip("/")
-        property_id = active_property_id_from_cfg(cfg)
+    property_id = active_property_id_from_cfg(cfg)
+    pid = int(property_id) if property_id else None
+    if _report_via_service() and pid:
+        console_print("[Report] Starting via ReportService...", flush=True)
+        emit_phase_start("report")
         try:
-            enriched = False
-            if integrations_url and property_id:
-                import json
-                import urllib.error
-                import urllib.request
+            out = build_report_resilient(cfg, pid, use_database=use_database)
+        except Exception as exc:
+            emit_progress("report", "error", message=str(exc))
+            raise
+        emit_phase_done("report")
+        console_print(f"Report written: {out}")
+        return
 
-                req = urllib.request.Request(
-                    f"{integrations_url}/internal/integrations/keywords/enrich",
-                    data=json.dumps({"propertyId": int(property_id)}).encode("utf-8"),
-                    headers={"Content-Type": "application/json"},
-                    method="POST",
-                )
-                try:
-                    with urllib.request.urlopen(req, timeout=120) as resp:
-                        result = json.loads(resp.read().decode("utf-8"))
-                    if not result.get("ok"):
-                        raise RuntimeError(result.get("log") or "Keyword enrich failed")
-                    enriched = True
-                except Exception:
-                    console_print(
-                        "Warning: Integrations keyword enrich failed; falling back to in-process enrich.",
-                        file=sys.stderr,
-                    )
-
-            if not enriched:
-                from ..integrations.google.keyword_enrich import run_enrichment
-
-                run_enrichment(cfg)
-            console_print("[Keywords] Post-audit keyword research done.", flush=True)
-            emit_phase_done("keywords")
-        except Exception as e:
-            console_print(f"Warning: post-audit keyword research failed: {e}", file=sys.stderr)
-            emit_progress("keywords", "error", message=str(e))
+    build_report_resilient(cfg, pid, use_database=use_database)
 
 
 def _run_plot(cfg: dict, use_database: bool) -> None:

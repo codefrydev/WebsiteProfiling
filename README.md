@@ -145,16 +145,20 @@ flowchart TB
     Browser([Browser]) --> Web["web :3000<br/>React SPA"]
     Web --> BFF["bff :8090<br/>.NET API gateway"]
 
-    BFF --> FastAPI["fastapi :8001<br/>Crawl · pipeline · pipeline-config"]
+    BFF --> FastAPI["fastapi :8001<br/>Crawl · jobs · pipeline-config"]
+    BFF --> Report["report :8094<br/>Report build · orchestration"]
     BFF --> Integrations["integrations :8093<br/>Google/Bing OAuth · GSC/GA4 · keywords"]
     BFF --> Ai["ai :8092<br/>Chat · LLM config · secrets · MCP"]
     BFF --> Data["data :8091<br/>Report reads · portfolio · issue status"]
     BFF --> Files["files :8080<br/>PDF · Excel export"]
 
     subgraph Background["Background"]
-        Worker["worker<br/>Pipeline jobs (same Python image)"]
+        Worker["worker<br/>Crawl + Lighthouse jobs"]
         Postgres[("postgres<br/>Audit data store")]
     end
+
+    Worker --> Report
+    Report --> FastAPI
 ```
 
 ```
@@ -163,7 +167,7 @@ WebsiteProfiling/
 │   ├── api/                   # FastAPI app (uvicorn :8001)
 │   ├── worker/                # Background pipeline job runner
 │   ├── crawl/                 # Crawler, fetchers, JS rendering
-│   ├── reporting/             # Report builder, issue categories
+│   ├── reporting/             # Report builder (Python bridge; native build in ReportService)
 │   ├── analysis/              # On-page / local analysis
 │   ├── content_studio/        # Content writing + live SEO scoring
 │   ├── lighthouse/            # Lighthouse runner
@@ -181,6 +185,7 @@ WebsiteProfiling/
 │   ├── src/lib/               # Client helpers, BFF apiUrl/apiFetch
 │   └── public/                # Static assets (logo, favicon)
 ├── services/Bff/              # .NET BFF — auth + /api/* proxy (port 8090)
+├── services/ReportService/    # .NET report build + pipeline orchestration (port 8094)
 ├── services/IntegrationsService/  # .NET Google/Bing integrations — OAuth, GSC/GA4, keywords (port 8093)
 ├── services/AiService/        # .NET AI — chat, secrets, LLM config, MCP, enrichment (port 8092)
 ├── services/Data/             # .NET read service — report/portfolio/issue reads (port 8091)

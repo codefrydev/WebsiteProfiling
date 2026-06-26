@@ -5,9 +5,9 @@ using AiService.Tools.Registry;
 using AiService.Tools.Selection;
 using AiService.Tools.Slice;
 using Microsoft.Extensions.DependencyInjection;
-using Npgsql;
 using WebsiteProfiling.Contracts.Json;
 
+using AiService.Tools.Persistence;
 namespace AiService.Tools.Handlers.Core;
 
 /// <summary>Tier-0 workflow orchestrators — ports Python <c>core/router_tools.py</c>.</summary>
@@ -15,7 +15,7 @@ public static class WorkflowToolHandlers
 {
     public static async Task<JsonObject> RunInsightWorkflowAsync(
         IServiceProvider services,
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -72,12 +72,12 @@ public static class WorkflowToolHandlers
 
     public static async Task<JsonObject> RunTechnicalWorkflowAsync(
         IServiceProvider services,
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
-        _ = conn;
+        _ = db;
         var scoped = ctx.WithArgs(args);
         var baseArgs = BuildBaseArgs(scoped);
         var plan = new List<(string, JsonObject)>
@@ -100,12 +100,12 @@ public static class WorkflowToolHandlers
 
     public static async Task<JsonObject> RunKeywordWorkflowAsync(
         IServiceProvider services,
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
-        _ = conn;
+        _ = db;
         var scoped = ctx.WithArgs(args);
         if (scoped.PropertyId is null)
         {
@@ -129,12 +129,12 @@ public static class WorkflowToolHandlers
 
     public static async Task<JsonObject> RunDomainAgentAsync(
         IServiceProvider services,
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
-        _ = conn;
+        _ = db;
         var scoped = ctx.WithArgs(args);
         var task = JsonCoercion.AsString(args["task"])?.Trim() ?? "";
         var domain = (JsonCoercion.AsString(args["domain"]) ?? "").Trim().ToLowerInvariant();
@@ -233,11 +233,9 @@ public static class WorkflowToolHandlers
         CancellationToken cancellationToken)
     {
         var dispatcher = services.GetRequiredService<ToolDispatcher>();
-        var dataSource = services.GetRequiredService<Npgsql.NpgsqlDataSource>();
         var steps = new JsonArray();
         var tasks = plan.Select(async step =>
         {
-            await using var stepConn = await dataSource.OpenConnectionAsync(cancellationToken);
             var result = await dispatcher.DispatchAsync(step.Tool, ctx, step.ToolArgs, cancellationToken);
             return new JsonObject { ["tool"] = step.Tool, ["result"] = result };
         });

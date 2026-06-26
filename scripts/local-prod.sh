@@ -176,13 +176,17 @@ cmd_start() {
   trap cleanup_prod EXIT INT TERM
 
   start_host_dotnet_base "$ROOT" Production
+  start_host_report_service "$ROOT" Production
   disown_bg "$FILE_SERVICE_PID"
   disown_bg "$DATA_PID"
   disown_bg "$AI_PID"
+  disown_bg "$REPORT_PID"
 
   export AI_SERVICE_URL="${AI_SERVICE_URL:-http://127.0.0.1:8092}"
   export INTEGRATIONS_SERVICE_URL="${INTEGRATIONS_SERVICE_URL:-http://127.0.0.1:8093}"
   export FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}"
+  export REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-http://127.0.0.1:8094}"
+  export PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE="${PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE:-1}"
 
   log "Starting pipeline worker"
   "$ROOT/.venv/bin/python" -m website_profiling.worker &

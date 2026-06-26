@@ -69,6 +69,8 @@ def run_job(job: dict) -> None:
         args.extend(command.split())
 
     env = _get_spawn_env(property_id)
+    if (os.environ.get("PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE") or "").strip().lower() in {"1", "true", "yes"}:
+        env["PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE"] = "1"
 
     try:
         proc = subprocess.Popen(
@@ -120,7 +122,6 @@ def run_job(job: dict) -> None:
             job_row = conn.execute(
                 "SELECT log_text FROM pipeline_jobs WHERE id = %s::uuid", (job_id,)
             ).fetchone()
-            log_text = str((job_row or {}).get("log_text") or "")
             log_truncated_row = conn.execute(
                 "SELECT log_truncated FROM pipeline_jobs WHERE id = %s::uuid", (job_id,)
             ).fetchone()
@@ -128,7 +129,40 @@ def run_job(job: dict) -> None:
             finish_job(conn, job_id, "paused", exit_code, log_truncated=log_truncated)
         return
 
+    if exit_code == 0 and _should_post_crawl_report(command) and property_id is not None:
+        _finish_job_after_post_crawl_report(job_id, property_id)
+        return
+
     status = "success" if exit_code == 0 else "error"
     error = None if exit_code == 0 else f"Process exited with code {exit_code}"
     with db_session() as conn:
         finish_job(conn, job_id, status, exit_code, error)
+
+
+def _should_post_crawl_report(command: str | None) -> bool:
+    flag = (os.environ.get("PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE") or "").strip().lower()
+    if flag not in {"1", "true", "yes"}:
+        return False
+    if command and command.strip() and command.split()[0] not in {None, "", "crawl"}:
+        return False
+    return True
+
+
+def _finish_job_after_post_crawl_report(job_id: str, property_id: Any) -> None:
+    """Run post-crawl report via ReportService and finish the pipeline job with combined status."""
+    try:
+        with db_session() as conn:
+            append_job_log(conn, job_id, "\n[Report] Post-crawl report build starting...\n")
+        from website_profiling.commands.report_build import build_report_resilient, load_config_for_property
+
+        with db_session() as conn:
+            cfg = load_config_for_property(conn, int(property_id), None, None)
+        out = build_report_resilient(cfg, int(property_id))
+        with db_session() as conn:
+            append_job_log(conn, job_id, f"\n[Report] Done. Output: {out}\n")
+            finish_job(conn, job_id, "success", 0, None)
+    except Exception as exc:
+        print(f"[worker] Post-crawl report build failed: {exc}", file=sys.stderr)
+        with db_session() as conn:
+            append_job_log(conn, job_id, f"\n[Report] Failed: {exc}\n")
+            finish_job(conn, job_id, "error", 1, str(exc))

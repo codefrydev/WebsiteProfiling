@@ -24,6 +24,9 @@ public static class DependencyInjection
     /// <summary>Named HttpClient for the internal Integrations service — idempotent retry.</summary>
     public const string IntegrationsClient = "integrations";
 
+    /// <summary>Named HttpClient for the internal Report service — idempotent retry.</summary>
+    public const string ReportClient = "report";
+
     /// <summary>Named HttpClient for Ai service streaming (chat SSE) — no retry/buffering.</summary>
     public const string AiStreamClient = "ai-stream";
 
@@ -74,6 +77,17 @@ public static class DependencyInjection
                 if (!string.IsNullOrWhiteSpace(integrationsRoutes))
                 {
                     o.IntegrationsRoutes = integrationsRoutes
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                }
+                var report = Environment.GetEnvironmentVariable("REPORT_SERVICE_URL");
+                if (!string.IsNullOrWhiteSpace(report))
+                {
+                    o.ReportBaseUrl = report.Trim();
+                }
+                var reportRoutes = Environment.GetEnvironmentVariable("REPORT_ROUTES");
+                if (!string.IsNullOrWhiteSpace(reportRoutes))
+                {
+                    o.ReportRoutes = reportRoutes
                         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 }
             });
@@ -168,6 +182,15 @@ public static class DependencyInjection
             {
                 var opts = GetUpstream(sp);
                 client.BaseAddress = NormalizeBase(opts.IntegrationsBaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(Math.Max(5, opts.TimeoutSeconds));
+            })
+            .AddHttpMessageHandler<IdempotentRetryHandler>();
+
+        services.AddHttpClient(ReportClient)
+            .ConfigureHttpClient((sp, client) =>
+            {
+                var opts = GetUpstream(sp);
+                client.BaseAddress = NormalizeBase(opts.ReportBaseUrl);
                 client.Timeout = TimeSpan.FromSeconds(Math.Max(5, opts.TimeoutSeconds));
             })
             .AddHttpMessageHandler<IdempotentRetryHandler>();

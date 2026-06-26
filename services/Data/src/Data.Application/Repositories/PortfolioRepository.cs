@@ -46,24 +46,11 @@ public sealed class PortfolioRepository(
     {
         try
         {
-            await using var conn = await dataSource.OpenConnectionAsync(cancellationToken);
-            await using var cmd = new NpgsqlCommand(
-                """
-                SELECT
-                  (SELECT COUNT(*)::int FROM report_payload),
-                  (SELECT COALESCE(MAX(id), 0)::bigint FROM report_payload),
-                  (SELECT COUNT(*)::int FROM crawl_runs),
-                  (SELECT COALESCE(MAX(id), 0)::bigint FROM crawl_runs)
-                """,
-                conn);
-            await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
-            if (!await reader.ReadAsync(cancellationToken))
-                return (0, 0, 0, 0);
-            return (
-                reader.GetInt32(0),
-                reader.GetInt64(1),
-                reader.GetInt32(2),
-                reader.GetInt64(3));
+            var reportCount = await db.ReportPayloads.CountAsync(cancellationToken);
+            var reportMaxId = await db.ReportPayloads.MaxAsync(x => (long?)x.Id, cancellationToken) ?? 0L;
+            var crawlCount = await db.CrawlRuns.CountAsync(cancellationToken);
+            var crawlMaxId = await db.CrawlRuns.MaxAsync(x => (long?)x.Id, cancellationToken) ?? 0L;
+            return (reportCount, reportMaxId, crawlCount, crawlMaxId);
         }
         catch (Exception ex)
         {

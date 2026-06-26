@@ -1,6 +1,7 @@
 using IntegrationsService.Application.Google;
 using IntegrationsService.Application.Options;
 using IntegrationsService.Application.Persistence;
+using IntegrationsService.Application.Report;
 using IntegrationsService.Application.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -48,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<GscLinksDataRepository>();
         services.AddScoped<KeywordDataRepository>();
         services.AddScoped<PipelineConfigRepository>();
+        services.AddScoped<ReportEnrichmentService>();
         services.AddScoped<PropertyRepository>();
         services.AddScoped<GoogleAppSettingsRepository>();
         services.AddScoped<GoogleFetchService>();

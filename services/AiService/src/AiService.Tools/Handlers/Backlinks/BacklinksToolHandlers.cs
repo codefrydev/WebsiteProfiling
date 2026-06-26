@@ -1,7 +1,9 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using AiService.Tools.Context;
 using AiService.Tools.Slice;
-using Npgsql;
+using AiService.Tools.Persistence;
+using Microsoft.EntityFrameworkCore;
 using WebsiteProfiling.Contracts.Json;
 
 namespace AiService.Tools.Handlers.Backlinks;
@@ -10,7 +12,7 @@ namespace AiService.Tools.Handlers.Backlinks;
 public static class BacklinksToolHandlers
 {
     public static async Task<JsonObject> GetGscLinksSummaryAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -21,7 +23,7 @@ public static class BacklinksToolHandlers
             return new JsonObject { ["error"] = "property_id is required for GSC links data" };
         }
 
-        var data = await scoped.LoadGscLinksAsync(conn, cancellationToken);
+        var data = await scoped.LoadGscLinksAsync(db, cancellationToken);
         if (data is null)
         {
             return new JsonObject
@@ -48,7 +50,7 @@ public static class BacklinksToolHandlers
     }
 
     public static async Task<JsonObject> GetGscLinksImportStatusAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -59,7 +61,7 @@ public static class BacklinksToolHandlers
             return new JsonObject { ["error"] = "property_id is required" };
         }
 
-        var data = await scoped.LoadGscLinksAsync(conn, cancellationToken);
+        var data = await scoped.LoadGscLinksAsync(db, cancellationToken);
         if (data is null)
         {
             return new JsonObject { ["hasData"] = false };
@@ -79,13 +81,13 @@ public static class BacklinksToolHandlers
     }
 
     public static async Task<JsonObject> GetCompetitorLinkGapAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found" };
@@ -104,21 +106,21 @@ public static class BacklinksToolHandlers
     }
 
     public static async Task<JsonObject> GetGscSampleLinksAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => await CapGscLinksAsync(conn, ctx, args, "sample_links", "sample_links_full_count", cancellationToken);
+        => await CapGscLinksAsync(db, ctx, args, "sample_links", "sample_links_full_count", cancellationToken);
 
     public static async Task<JsonObject> GetGscLatestLinksAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => await CapGscLinksAsync(conn, ctx, args, "latest_links", "latest_links_full_count", cancellationToken);
+        => await CapGscLinksAsync(db, ctx, args, "latest_links", "latest_links_full_count", cancellationToken);
 
     public static async Task<JsonObject> GetThirdPartyLinksOverlayAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -129,7 +131,7 @@ public static class BacklinksToolHandlers
             return new JsonObject { ["error"] = "property_id is required" };
         }
 
-        var data = await scoped.LoadGscLinksAsync(conn, cancellationToken);
+        var data = await scoped.LoadGscLinksAsync(db, cancellationToken);
         if (data is null)
         {
             return new JsonObject { ["error"] = "no GSC links data", ["missing"] = true, ["overlays"] = new JsonArray() };
@@ -156,7 +158,7 @@ public static class BacklinksToolHandlers
     }
 
     public static async Task<JsonObject> GetBacklinksVelocityAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -168,29 +170,26 @@ public static class BacklinksToolHandlers
         }
 
         var limit = PayloadSliceHelpers.ParseLimit(args["limit"], 52, 52);
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText =
-            """
-            SELECT fetched_at, referring_domains, top_domains
-            FROM gsc_links_snapshots
-            WHERE property_id = @pid
-            ORDER BY fetched_at ASC
-            LIMIT @limit
-            """;
-        cmd.Parameters.AddWithValue("pid", propertyId);
-        cmd.Parameters.AddWithValue("limit", limit);
+        var rows = await db.GscLinksSnapshots.AsNoTracking()
+            .Where(x => x.PropertyId == propertyId)
+            .OrderBy(x => x.FetchedAt)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
 
         var snapshots = new JsonArray();
-        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken))
+        foreach (var row in rows)
         {
-            var fetched = reader.IsDBNull(0) ? "" : reader.GetDateTime(0).ToString("O");
-            var referringDomains = reader.IsDBNull(1) ? null : JsonNode.Parse(reader.GetValue(1)?.ToString() ?? "null");
-            var topDomains = reader.IsDBNull(2) ? null : JsonNode.Parse(reader.GetValue(2)?.ToString() ?? "null");
+            JsonNode? topDomains = null;
+            try
+            {
+                topDomains = JsonNode.Parse(row.TopDomains);
+            }
+            catch (JsonException) { }
+
             snapshots.Add(new JsonObject
             {
-                ["captured_at"] = fetched,
-                ["referring_domains"] = referringDomains?.DeepClone(),
+                ["captured_at"] = row.FetchedAt.ToString("O"),
+                ["referring_domains"] = row.ReferringDomains,
                 ["top_domains"] = topDomains?.DeepClone(),
             });
         }
@@ -204,7 +203,7 @@ public static class BacklinksToolHandlers
     }
 
     private static async Task<JsonObject> CapGscLinksAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         string linksKey,
@@ -217,7 +216,7 @@ public static class BacklinksToolHandlers
             return new JsonObject { ["error"] = "property_id is required" };
         }
 
-        var data = await scoped.LoadGscLinksAsync(conn, cancellationToken);
+        var data = await scoped.LoadGscLinksAsync(db, cancellationToken);
         if (data is null)
         {
             return new JsonObject

@@ -4,15 +4,15 @@ using System.Text.Json.Nodes;
 using AiService.Tools.Services.Citations;
 using AiService.Tools.Context;
 using AiService.Tools.Slice;
-using Npgsql;
 using WebsiteProfiling.Contracts.Json;
 
+using AiService.Tools.Persistence;
 namespace AiService.Tools.Handlers.Integrations;
 
 public static class IntegrationToolHandlers
 {
     public static async Task<JsonObject> CheckAiCitationsLiveAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CitationCheckService citationService,
@@ -38,7 +38,7 @@ public static class IntegrationToolHandlers
         var scoped = ctx.WithArgs(args);
         var brand = JsonCoercion.AsString(args["brand"])?.Trim() ?? "";
         var query = JsonCoercion.AsString(args["query"])?.Trim() ?? "";
-        var domain = await scoped.ResolvePropertyDomainAsync(conn, cancellationToken) ?? "";
+        var domain = await scoped.ResolvePropertyDomainAsync(db, cancellationToken) ?? "";
         var provider = (JsonCoercion.AsString(args["provider"]) ?? "perplexity").Trim().ToLowerInvariant();
         var apiKey = JsonCoercion.AsString(args["api_key"]) ?? JsonCoercion.AsString(args["apiKey"]);
 

@@ -2,17 +2,18 @@ using System.Diagnostics;
 using System.Text.Json.Nodes;
 using AiService.Tools.Bridge;
 using AiService.Tools.Context;
+using AiService.Tools.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Npgsql;
 
 namespace AiService.Tools.Registry;
 
 /// <summary>
-/// Dispatches a tool call using a pooled Postgres connection. Native C# handlers take
-/// precedence; unported tools fall back to the Python FastAPI audit-tool bridge.
+/// Dispatches a tool call using EF Core. Native C# handlers take precedence;
+/// unported tools fall back to the Python FastAPI audit-tool bridge.
 /// </summary>
 public sealed class ToolDispatcher(
-    NpgsqlDataSource dataSource,
+    IDbContextFactory<AuditToolsDbContext> dbFactory,
     ToolRegistry registry,
     PythonToolBridgeClient pythonBridge,
     ILogger<ToolDispatcher> logger)
@@ -26,8 +27,8 @@ public sealed class ToolDispatcher(
         if (registry.TryGet(toolName, out var handler) && handler is not null)
         {
             var sw = Stopwatch.StartNew();
-            await using var conn = await dataSource.OpenConnectionAsync(cancellationToken);
-            var result = await handler.HandleAsync(conn, ctx, args, cancellationToken);
+            await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+            var result = await handler.HandleAsync(db, ctx, args, cancellationToken);
             sw.Stop();
             logger.LogDebug(
                 "Audit tool {ToolName} dispatched via native handler in {ElapsedMs}ms",
@@ -42,6 +43,7 @@ public sealed class ToolDispatcher(
         }
 
         var bridgeSw = Stopwatch.StartNew();
+        PythonBridgeMetrics.RecordBridgeDispatch();
         var bridgeResult = await pythonBridge.InvokeAsync(toolName, args, propertyId, ctx.ReportId, cancellationToken);
         bridgeSw.Stop();
         logger.LogInformation(

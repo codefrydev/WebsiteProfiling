@@ -1,22 +1,22 @@
 using System.Text.Json.Nodes;
 using AiService.Tools.Context;
 using AiService.Tools.Slice;
-using Npgsql;
 using WebsiteProfiling.Contracts.Json;
 
+using AiService.Tools.Persistence;
 namespace AiService.Tools.Handlers.Core;
 
 /// <summary>Extra payload slice tools — ports Python <c>core/payload_extras.py</c>.</summary>
 public static class PayloadExtrasToolHandlers
 {
     public static async Task<JsonObject> GetRichResultsSummaryAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found", ["missing"] = true };
@@ -41,13 +41,13 @@ public static class PayloadExtrasToolHandlers
     }
 
     public static async Task<JsonObject> ListRichResultsFailuresAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         return await PayloadArrayHelpers.CapPayloadArrayAsync(
-            conn,
+            db,
             ctx,
             args,
             "rich_results_validation",
@@ -61,32 +61,32 @@ public static class PayloadExtrasToolHandlers
     }
 
     public static Task<JsonObject> GetCompetitorKeywordGapAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => CapCompetitorKeywordGapAsync(conn, ctx, args, cancellationToken);
+        => CapCompetitorKeywordGapAsync(db, ctx, args, cancellationToken);
 
     private static async Task<JsonObject> CapCompetitorKeywordGapAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var result = await PayloadArrayHelpers.CapPayloadArrayAsync(
-            conn, ctx, args, "competitor_keyword_gap", "rows", 30, 50, cancellationToken);
+            db, ctx, args, "competitor_keyword_gap", "rows", 30, 50, cancellationToken);
         result["provenance"] = "Estimated";
         return result;
     }
 
     public static async Task<JsonObject> GetSiteAnchorTextSummaryAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return PayloadArrayHelpers.MissingList("anchors");
@@ -138,13 +138,13 @@ public static class PayloadExtrasToolHandlers
     }
 
     public static async Task<JsonObject> GetPaginationAuditSummaryAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var rows = await scoped.LoadCrawlDfAsync(conn, cancellationToken);
+        var rows = await scoped.LoadCrawlDfAsync(db, cancellationToken);
         if (rows.Count == 0)
         {
             return EmptyPaginationSummary();

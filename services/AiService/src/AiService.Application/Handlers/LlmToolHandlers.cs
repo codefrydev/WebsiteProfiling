@@ -12,9 +12,9 @@ using AiService.Tools.Handlers.Core;
 using AiService.Tools.Registry;
 using AiService.Tools.Slice;
 using Microsoft.Extensions.DependencyInjection;
-using Npgsql;
 using WebsiteProfiling.Contracts.Json;
 
+using AiService.Tools.Persistence;
 namespace AiService.Application.Handlers;
 
 /// <summary>LLM-powered audit tools — ports Python <c>integrations/llm_tools.py</c>.</summary>
@@ -60,7 +60,7 @@ public static class LlmToolHandlers
     }
 
     public static async Task<JsonObject> PrioritizeFixRoadmapAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -68,7 +68,7 @@ public static class LlmToolHandlers
         var withSort = args.DeepClone() as JsonObject ?? [];
         withSort["sort"] = "impact";
         var limit = PayloadSliceHelpers.ParseLimit(args["limit"], 15, 30);
-        var result = await ReportToolHandlers.ListIssuesAsync(conn, ctx, withSort, cancellationToken);
+        var result = await ReportToolHandlers.ListIssuesAsync(db, ctx, withSort, cancellationToken);
         if (result.TryGetPropertyValue("error", out _))
         {
             return new JsonObject { ["error"] = result["error"]?.DeepClone(), ["roadmap"] = new JsonArray() };
@@ -109,12 +109,12 @@ public static class LlmToolHandlers
 
     private static async Task<JsonObject> GenerateIssueFixAsync(
         IServiceProvider services,
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
-        _ = conn;
+        _ = db;
         _ = ctx;
         var message = JsonCoercion.AsString(args["message"])?.Trim() ?? "";
         if (message.Length == 0)
@@ -142,12 +142,12 @@ public static class LlmToolHandlers
 
     private static async Task<JsonObject> GetPageCoachAsync(
         IServiceProvider services,
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
-        _ = conn;
+        _ = db;
         var url = JsonCoercion.AsString(args["url"])?.Trim() ?? "";
         if (url.Length == 0)
         {
@@ -162,7 +162,7 @@ public static class LlmToolHandlers
     }
 
     private static async Task<JsonObject> GenerateContentBriefAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -177,7 +177,7 @@ public static class LlmToolHandlers
         var rows = new List<JsonObject>();
         if (scoped.PropertyId is not null)
         {
-            var kwData = await scoped.LoadKeywordsAsync(conn, cancellationToken);
+            var kwData = await scoped.LoadKeywordsAsync(db, cancellationToken);
             if (kwData?["rows"] is JsonArray allRows)
             {
                 var needle = keyword.ToLowerInvariant();
@@ -237,12 +237,12 @@ public static class LlmToolHandlers
 
     private static async Task<JsonObject> SummarizeCategoryForClientAsync(
         IServiceProvider services,
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
-        var data = await IssuesToolHandlers.GetCategoryIssuesAsync(conn, ctx, args, cancellationToken);
+        var data = await IssuesToolHandlers.GetCategoryIssuesAsync(db, ctx, args, cancellationToken);
         if (data.TryGetPropertyValue("error", out _))
         {
             return data;
@@ -308,7 +308,7 @@ public static class LlmToolHandlers
 
     private static async Task<JsonObject> AnalyzeSerpSnippetForUrlAsync(
         IServiceProvider services,
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -320,10 +320,10 @@ public static class LlmToolHandlers
             return new JsonObject { ["error"] = "url is required" };
         }
 
-        var google = await scoped.LoadGoogleAsync(conn, cancellationToken);
+        var google = await scoped.LoadGoogleAsync(db, cancellationToken);
         var gscSlice = google is not null ? InsightLogic.SliceFromGoogleRow(google, url) : new JsonObject();
         var gscPage = gscSlice["gsc"] as JsonObject;
-        var rows = await scoped.LoadCrawlDfAsync(conn, cancellationToken);
+        var rows = await scoped.LoadCrawlDfAsync(db, cancellationToken);
         JsonObject? pageRow = null;
         var needle = url.TrimEnd('/').ToLowerInvariant();
         foreach (var row in rows)
@@ -379,12 +379,12 @@ public static class LlmToolHandlers
 
     private static async Task<JsonObject> DraftLlmsTxtAsync(
         IServiceProvider services,
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
-        var draft = await GeoGenerationToolHandlers.DraftLlmsTxtAsync(conn, ctx, args, cancellationToken);
+        var draft = await GeoGenerationToolHandlers.DraftLlmsTxtAsync(db, ctx, args, cancellationToken);
         if (draft.TryGetPropertyValue("error", out _))
         {
             return draft;

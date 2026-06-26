@@ -1,45 +1,45 @@
 using System.Text.Json.Nodes;
 using AiService.Tools.Context;
 using AiService.Tools.Slice;
-using Npgsql;
 using WebsiteProfiling.Contracts.Json;
 
+using AiService.Tools.Persistence;
 namespace AiService.Tools.Handlers.Links;
 
 /// <summary>Internal linking tools — ports Python <c>links/links.py</c>.</summary>
 public static class LinksToolHandlers
 {
     public static Task<JsonObject> ListOrphanPagesAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
-        return CapOrphansAsync(conn, ctx, args, cancellationToken);
+        return CapOrphansAsync(db, ctx, args, cancellationToken);
     }
 
     public static Task<JsonObject> GetTopLinkedPagesAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => PayloadArrayHelpers.CapPayloadArrayAsync(conn, ctx, args, "top_pages", "pages", 30, 50, cancellationToken);
+        => PayloadArrayHelpers.CapPayloadArrayAsync(db, ctx, args, "top_pages", "pages", 30, 50, cancellationToken);
 
     public static Task<JsonObject> GetOutboundLinkDomainsAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => PayloadArrayHelpers.CapPayloadArrayAsync(conn, ctx, args, "outbound_link_domains", "domains", 30, 50, cancellationToken);
+        => PayloadArrayHelpers.CapPayloadArrayAsync(db, ctx, args, "outbound_link_domains", "domains", 30, 50, cancellationToken);
 
     public static async Task<JsonObject> GetLinkGraphSummaryAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found" };
@@ -70,20 +70,20 @@ public static class LinksToolHandlers
     }
 
     public static Task<JsonObject> GetUrlFingerprintsAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => PayloadArrayHelpers.CapPayloadArrayAsync(conn, ctx, args, "url_fingerprints", "fingerprints", 30, 50, cancellationToken);
+        => PayloadArrayHelpers.CapPayloadArrayAsync(db, ctx, args, "url_fingerprints", "fingerprints", 30, 50, cancellationToken);
 
     public static async Task<JsonObject> ListBrokenLinkSourcesAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return PayloadArrayHelpers.MissingList("sources");
@@ -174,13 +174,13 @@ public static class LinksToolHandlers
     }
 
     public static async Task<JsonObject> GetLinkRelSummaryAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found" };
@@ -195,7 +195,7 @@ public static class LinksToolHandlers
     }
 
     public static async Task<JsonObject> GetInlinkAnchorsAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -203,7 +203,7 @@ public static class LinksToolHandlers
         var target = (JsonCoercion.AsString(args["url"]) ?? JsonCoercion.AsString(args["target_url"]) ?? "")
             .Trim().TrimEnd('/').ToLowerInvariant();
         return await PayloadArrayHelpers.CapPayloadArrayAsync(
-            conn,
+            db,
             ctx,
             args,
             "inlink_anchor_matrix",
@@ -224,12 +224,12 @@ public static class LinksToolHandlers
     }
 
     public static Task<JsonObject> ListNofollowInternalLinksAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
         => PayloadArrayHelpers.CapPayloadArrayAsync(
-            conn,
+            db,
             ctx,
             args,
             "link_edges",
@@ -243,13 +243,13 @@ public static class LinksToolHandlers
                     || string.Equals(JsonCoercion.AsString(edge["is_nofollow"]), "true", StringComparison.OrdinalIgnoreCase)));
 
     private static async Task<JsonObject> CapOrphansAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return PayloadArrayHelpers.MissingList("orphans");

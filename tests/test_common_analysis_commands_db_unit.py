@@ -627,19 +627,23 @@ def test_pipeline_cmd_remaining_branches(monkeypatch) -> None:
     monkeypatch.setattr(pipeline_cmd, "cleanup_lighthouse_work_dir", lambda _p: None)
     pipeline_cmd._run_lighthouse_on_pages({"lighthouse_strategy": "bogus"}, 5)
 
+    from website_profiling.commands import pipeline_cmd, report_build
+
     # report keyword enrich path
-    monkeypatch.setattr(pipeline_cmd, "require_start_url", lambda *_a, **_k: "https://a.com")
-    monkeypatch.setattr(pipeline_cmd, "should_enrich_keywords_after_report", lambda _cfg: True)
-    monkeypatch.setattr(pipeline_cmd, "google_db_has_gsc", lambda _cfg=None: True)
+    monkeypatch.setattr(report_build, "require_start_url", lambda *_a, **_k: "https://a.com")
+    monkeypatch.setattr(report_build, "should_enrich_keywords_after_report", lambda _cfg: True)
+    monkeypatch.setattr(report_build, "google_db_has_gsc", lambda _cfg=None: True)
+    monkeypatch.setattr(report_build, "console_print", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "emit_phase_start", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "emit_phase_done", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "emit_progress", lambda *_a, **_k: None)
+    monkeypatch.delenv("REPORT_SERVICE_URL", raising=False)
+    monkeypatch.setenv("INTEGRATIONS_SERVICE_URL", "http://integrations:8093")
+    monkeypatch.setattr(report_build, "active_property_id_from_cfg", lambda _c: 1)
     monkeypatch.setitem(
         __import__("sys").modules,
         "website_profiling.reporting.builder",
         types.SimpleNamespace(run_simple_report=lambda **_k: "out.json"),
-    )
-    monkeypatch.setitem(
-        __import__("sys").modules,
-        "website_profiling.integrations.google.keyword_enrich",
-        types.SimpleNamespace(run_enrichment=lambda _cfg: None),
     )
     pipeline_cmd._run_report({}, True)
 

@@ -68,9 +68,9 @@ public static class DependencyInjection
         });
 
         services.AddScoped<ILlmSettingsRepository, LlmSettingsRepository>();
-        services.AddSingleton<IIntegrationSecretsRepository, IntegrationSecretsRepository>();
-        services.AddSingleton<IMcpSettingsRepository, McpSettingsRepository>();
-        services.AddSingleton<IFeatureFlagsRepository, FeatureFlagsRepository>();
+        services.AddScoped<IIntegrationSecretsRepository, IntegrationSecretsRepository>();
+        services.AddScoped<IMcpSettingsRepository, McpSettingsRepository>();
+        services.AddScoped<IFeatureFlagsRepository, FeatureFlagsRepository>();
         services.AddScoped<IGoogleAppSettingsRepository, GoogleAppSettingsRepository>();
         services.AddScoped<SecretsService>();
         services.AddScoped<LlmCacheRepository>();

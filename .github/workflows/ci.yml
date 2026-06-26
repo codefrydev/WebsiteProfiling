@@ -69,6 +69,7 @@ jobs:
         run: |
           docker compose -f docker-compose.pull.yml up -d --wait
           curl -fsS http://127.0.0.1:8090/health
+          curl -fsS http://127.0.0.1:8094/health
           curl -fsS http://127.0.0.1:8090/api/jobs
           curl -fsS http://127.0.0.1:8090/api/report/meta
           curl -fsS http://127.0.0.1:3000/home
@@ -153,3 +154,13 @@ jobs:
           dotnet-version: '10.0.x'
       - name: Test IntegrationsService
         run: dotnet test services/IntegrationsService/IntegrationsService.slnx
+
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Test ReportService
+        run: dotnet test services/ReportService/ReportService.slnx

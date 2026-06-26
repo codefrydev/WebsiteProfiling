@@ -556,8 +556,15 @@ def test_pipeline_lighthouse_on_pages_and_enrich_failure(monkeypatch) -> None:
         5,
     )
 
-    monkeypatch.setattr(pipeline_cmd, "should_enrich_keywords_after_report", lambda _c: True)
-    monkeypatch.setattr(pipeline_cmd, "google_db_has_gsc", lambda _c: True)
+    from website_profiling.commands import report_build
+
+    monkeypatch.setattr(report_build, "should_enrich_keywords_after_report", lambda _c: True)
+    monkeypatch.setattr(report_build, "google_db_has_gsc", lambda _c: True)
+    monkeypatch.setattr(report_build, "console_print", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "emit_phase_start", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "emit_phase_done", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "emit_progress", lambda *_a, **_k: None)
+    monkeypatch.delenv("REPORT_SERVICE_URL", raising=False)
     monkeypatch.setitem(
         sys.modules,
         "website_profiling.integrations.google.keyword_enrich",
@@ -568,7 +575,7 @@ def test_pipeline_lighthouse_on_pages_and_enrich_failure(monkeypatch) -> None:
         "website_profiling.reporting.builder",
         types.SimpleNamespace(run_simple_report=lambda **_k: "/tmp/report.html"),
     )
-    monkeypatch.setattr(pipeline_cmd, "require_start_url", lambda _c, for_step="": "https://a.com")
+    monkeypatch.setattr(report_build, "require_start_url", lambda _c, for_step="": "https://a.com")
     pipeline_cmd._run_report({}, True)
 
     monkeypatch.setitem(

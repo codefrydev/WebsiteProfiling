@@ -3,9 +3,9 @@ using AiService.Tools.Context;
 using AiService.Tools.Mapping;
 using AiService.Tools.Models.Insight;
 using AiService.Tools.Slice;
-using Npgsql;
 using WebsiteProfiling.Contracts.Json;
 
+using AiService.Tools.Persistence;
 namespace AiService.Tools.Handlers.Insight;
 
 /// <summary>
@@ -15,26 +15,26 @@ namespace AiService.Tools.Handlers.Insight;
 public static class InsightToolHandlers
 {
     public static async Task<JsonObject> GetLandingPageBlendedTableAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
         var parsedArgs = ToolArgsMapper.Parse<BlendedTableArgs>(args);
-        var result = await BuildBlendedTableAsync(conn, scoped, parsedArgs, cancellationToken);
+        var result = await BuildBlendedTableAsync(db, scoped, parsedArgs, cancellationToken);
         return ToolResultMapper.ToJsonObject(result);
     }
 
     public static async Task<JsonObject> GetOpportunityMatrixAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
         var parsedArgs = ToolArgsMapper.Parse<BlendedTableArgs>(args);
-        var blended = await BuildBlendedTableAsync(conn, scoped, parsedArgs, cancellationToken);
+        var blended = await BuildBlendedTableAsync(db, scoped, parsedArgs, cancellationToken);
         if (blended.Error is not null)
         {
             return ToolResultMapper.ToJsonObject(blended);
@@ -79,14 +79,14 @@ public static class InsightToolHandlers
     }
 
     public static async Task<JsonObject> GetTrafficHealthCheckAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var raw = await scoped.LoadGoogleFullAsync(conn, cancellationToken)
-            ?? await scoped.LoadGoogleAsync(conn, cancellationToken);
+        var raw = await scoped.LoadGoogleFullAsync(db, cancellationToken)
+            ?? await scoped.LoadGoogleAsync(db, cancellationToken);
         if (raw is null)
         {
             return ToolResultMapper.ToJsonObject(new TrafficHealthResult
@@ -108,12 +108,12 @@ public static class InsightToolHandlers
     }
 
     private static async Task<BlendedTableResult> BuildBlendedTableAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext scoped,
         BlendedTableArgs args,
         CancellationToken cancellationToken)
     {
-        var raw = await scoped.LoadGoogleFullAsync(conn, cancellationToken);
+        var raw = await scoped.LoadGoogleFullAsync(db, cancellationToken);
         if (raw is null)
         {
             return new BlendedTableResult
@@ -186,14 +186,14 @@ public static class InsightToolHandlers
     }
 
     public static async Task<JsonObject> GetIssueToTrafficMapAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var withSort = args.DeepClone() as JsonObject ?? [];
         withSort["sort"] = "impact";
-        var result = await Handlers.Report.ReportToolHandlers.ListIssuesAsync(conn, ctx, withSort, cancellationToken);
+        var result = await Handlers.Report.ReportToolHandlers.ListIssuesAsync(db, ctx, withSort, cancellationToken);
         if (result.TryGetPropertyValue("error", out _))
         {
             return result;
@@ -233,7 +233,7 @@ public static class InsightToolHandlers
     }
 
     public static async Task<JsonObject> GetLandingPageFullDiagnosisAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -245,14 +245,14 @@ public static class InsightToolHandlers
             return new JsonObject { ["error"] = "url is required" };
         }
 
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found", ["missing"] = true };
         }
 
-        var raw = await scoped.LoadGoogleFullAsync(conn, cancellationToken)
-            ?? await scoped.LoadGoogleAsync(conn, cancellationToken)
+        var raw = await scoped.LoadGoogleFullAsync(db, cancellationToken)
+            ?? await scoped.LoadGoogleAsync(db, cancellationToken)
             ?? [];
         var sliceData = InsightLogic.SliceFromGoogleRow(raw, url);
         var flags = InsightLogic.PageIssueFlags(url, payload);

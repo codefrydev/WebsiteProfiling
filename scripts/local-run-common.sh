@@ -35,6 +35,7 @@ start_host_dotnet_base() {
   export REPORT_API_URL="${REPORT_API_URL:-http://127.0.0.1:8001}"
   export AI_SERVICE_URL="${AI_SERVICE_URL:-http://127.0.0.1:8092}"
   export INTEGRATIONS_SERVICE_URL="${INTEGRATIONS_SERVICE_URL:-http://127.0.0.1:8093}"
+  export REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-http://127.0.0.1:8094}"
   export FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}"
 
   free_port 8080
@@ -70,6 +71,25 @@ start_host_dotnet_base() {
   wait_for_http "http://127.0.0.1:8092/health" "AiService"
 }
 
+start_host_report_service() {
+  local root="$1"
+  local mode="${2:-Development}"
+
+  free_port 8094
+  printf '\033[1;36m→\033[0m Starting ReportService on port 8094\n'
+  (cd "$root/services/ReportService" && \
+    DATABASE_URL="$DATABASE_URL" \
+    FASTAPI_URL="http://127.0.0.1:8001" \
+    INTEGRATIONS_SERVICE_URL="$INTEGRATIONS_SERVICE_URL" \
+    REPORT_SERVICE_USE_PYTHON_BRIDGE="${REPORT_SERVICE_USE_PYTHON_BRIDGE:-1}" \
+    REPORT_SERVICE_VALIDATE_NATIVE="${REPORT_SERVICE_VALIDATE_NATIVE:-1}" \
+    ASPNETCORE_URLS="http://127.0.0.1:8094" \
+    ASPNETCORE_ENVIRONMENT="$mode" \
+    dotnet run --project src/ReportService.Api --no-launch-profile) &
+  REPORT_PID=$!
+  wait_for_http "http://127.0.0.1:8094/health" "ReportService"
+}
+
 start_host_integrations_bff() {
   local root="$1"
   local mode="${2:-Development}"
@@ -98,6 +118,8 @@ start_host_integrations_bff() {
     DATA_SERVICE_URL="http://127.0.0.1:8091" \
     AI_SERVICE_URL="$AI_SERVICE_URL" \
     INTEGRATIONS_SERVICE_URL="$INTEGRATIONS_SERVICE_URL" \
+    REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-http://127.0.0.1:8094}" \
+    REPORT_ROUTES="${REPORT_ROUTES:-/api/compare,/api/dashboards}" \
     DATA_ROUTES="${DATA_ROUTES:-/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters}" \
     AI_ROUTES="${AI_ROUTES:-/api/chat,/api/links/page-coach,/api/issues/fix-suggestion,/api/issues/action-plan,/api/ai/fix-suggestion,/api/dashboards/ai-generate,/api/content/analyze,/api/content/wizard,/api/llm-settings,/api/secrets,/api/ollama/status,/api/report/audit-tool,/api/mcp-tools}" \
     INTEGRATIONS_ROUTES="${INTEGRATIONS_ROUTES:-/api/integrations/google,/api/integrations/bing}" \
@@ -117,6 +139,7 @@ start_host_dotnet_stack() {
   local root="$1"
   local mode="${2:-Development}"
   start_host_dotnet_base "$root" "$mode"
+  start_host_report_service "$root" "$mode"
   start_host_integrations_bff "$root" "$mode"
 }
 
@@ -126,6 +149,8 @@ stop_host_dotnet_stack() {
   BFF_PID=""
   "$stop_service_fn" "IntegrationsService" "${INTEGRATIONS_PID:-}" 8093
   INTEGRATIONS_PID=""
+  "$stop_service_fn" "ReportService" "${REPORT_PID:-}" 8094
+  REPORT_PID=""
   "$stop_service_fn" "AiService" "${AI_PID:-}" 8092
   AI_PID=""
   "$stop_service_fn" "Data" "${DATA_PID:-}" 8091

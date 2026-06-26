@@ -246,19 +246,24 @@ cmd_start() {
 
   if command -v dotnet >/dev/null 2>&1; then
     start_host_dotnet_base "$ROOT" Development
+    start_host_report_service "$ROOT" Development
     disown_bg "$FILE_SERVICE_PID"
     disown_bg "$DATA_PID"
     disown_bg "$AI_PID"
+    disown_bg "$REPORT_PID"
   else
     warn "dotnet not found — PDF export requires FileService (see services/FileService/README.md)"
     warn "dotnet not found — Data service unavailable on port 8091"
     warn "dotnet not found — AiService unavailable on port 8092"
+    warn "dotnet not found — ReportService unavailable on port 8094"
     warn "dotnet not found — IntegrationsService unavailable on port 8093"
   fi
 
   export AI_SERVICE_URL="${AI_SERVICE_URL:-http://127.0.0.1:8092}"
   export INTEGRATIONS_SERVICE_URL="${INTEGRATIONS_SERVICE_URL:-http://127.0.0.1:8093}"
   export FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}"
+  export REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-http://127.0.0.1:8094}"
+  export PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE="${PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE:-1}"
 
   log "Starting pipeline worker"
   "$VENV/bin/python" -m website_profiling.worker &
@@ -270,6 +275,7 @@ cmd_start() {
   export FASTAPI_URL="http://127.0.0.1:8001"
   export FASTAPI_ALLOWED_ORIGINS="http://localhost:8090"
   export DEPRECATE_PYTHON_INTEGRATIONS="${DEPRECATE_PYTHON_INTEGRATIONS:-1}"
+  export DEPRECATE_PYTHON_REPORT_ROUTES="${DEPRECATE_PYTHON_REPORT_ROUTES:-1}"
   "$VENV/bin/uvicorn" website_profiling.api.main:app \
     --host 0.0.0.0 --port 8001 --workers 1 &
   UVICORN_PID=$!
@@ -290,6 +296,7 @@ cmd_start() {
   log "PYTHON=$PYTHON"
   log "VITE_BFF_BASE_URL=${VITE_BFF_BASE_URL:-http://localhost:8090}"
   log "FILE_SERVICE_URL=${FILE_SERVICE_URL:-http://127.0.0.1:8080}"
+  log "REPORT_SERVICE_URL=${REPORT_SERVICE_URL:-http://127.0.0.1:8094}"
   log "DATA_ROUTES=${DATA_ROUTES:-/api/report/meta,...}"
   export FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}"
   export VITE_BFF_BASE_URL="${VITE_BFF_BASE_URL:-http://localhost:8090}"

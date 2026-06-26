@@ -77,6 +77,8 @@ public static class ProxyEndpoints
             var matchesDataRoute = upstream.DataRoutes.Any(prefix =>
                 path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
             var matchesIntegrationsRoute = MatchesIntegrationsRoute(path, upstream.IntegrationsRoutes);
+            var matchesReportRoute = upstream.ReportRoutes.Any(prefix =>
+                path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
             var matchesAiRoute = upstream.AiRoutes.Any(prefix =>
                 path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
             var toData = !streaming
@@ -95,9 +97,19 @@ public static class ProxyEndpoints
                     || HttpMethods.IsPut(ctx.Request.Method)
                     || HttpMethods.IsPatch(ctx.Request.Method)
                     || HttpMethods.IsDelete(ctx.Request.Method));
+            var toReport = !streaming
+                && !toData
+                && !toIntegrations
+                && matchesReportRoute
+                && (HttpMethods.IsGet(ctx.Request.Method)
+                    || HttpMethods.IsHead(ctx.Request.Method)
+                    || HttpMethods.IsPost(ctx.Request.Method)
+                    || HttpMethods.IsPut(ctx.Request.Method)
+                    || HttpMethods.IsDelete(ctx.Request.Method));
             var toAi = !streaming
                 && !toData
                 && !toIntegrations
+                && !toReport
                 && matchesAiRoute
                 && (HttpMethods.IsGet(ctx.Request.Method)
                     || HttpMethods.IsHead(ctx.Request.Method)
@@ -109,9 +121,11 @@ public static class ProxyEndpoints
                 ? DependencyInjection.DataClient
                 : toIntegrations
                     ? DependencyInjection.IntegrationsClient
-                    : toAi
-                        ? DependencyInjection.AiClient
-                        : streaming ? DependencyInjection.FastApiStreamClient : DependencyInjection.FastApiClient;
+                    : toReport
+                        ? DependencyInjection.ReportClient
+                        : toAi
+                            ? DependencyInjection.AiClient
+                            : streaming ? DependencyInjection.FastApiStreamClient : DependencyInjection.FastApiClient;
 
             return (IResult)new ForwardingResult(
                 client,

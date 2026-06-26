@@ -45,4 +45,13 @@ public sealed class UpstreamOptions
     /// always matched when any Integrations route is configured.
     /// </summary>
     public string[] IntegrationsRoutes { get; set; } = [];
+
+    /// <summary>Report service base URL (env override: REPORT_SERVICE_URL). Internal report build + compare/dashboard proxies.</summary>
+    public string ReportBaseUrl { get; set; } = "http://127.0.0.1:8094";
+
+    /// <summary>
+    /// Comma-separated /api path prefixes routed to the Report service instead of FastAPI
+    /// (env override: REPORT_ROUTES).
+    /// </summary>
+    public string[] ReportRoutes { get; set; } = [];
 }

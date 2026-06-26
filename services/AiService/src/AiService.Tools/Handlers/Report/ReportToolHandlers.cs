@@ -1,7 +1,7 @@
 using System.Text.Json.Nodes;
 using AiService.Tools.Context;
-using Npgsql;
 
+using AiService.Tools.Persistence;
 namespace AiService.Tools.Handlers.Report;
 
 /// <summary>
@@ -31,13 +31,13 @@ public static class ReportToolHandlers
     private const int IssueLimitMax = 50;
 
     public static async Task<JsonObject> GetReportSummaryAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found" };
@@ -70,13 +70,13 @@ public static class ReportToolHandlers
     }
 
     public static async Task<JsonObject> ListIssuesAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject
@@ -135,25 +135,25 @@ public static class ReportToolHandlers
     }
 
     public static Task<JsonObject> GetCriticalIssuesAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var withPriority = args.DeepClone() as JsonObject ?? [];
         withPriority["priority"] = "Critical";
-        return ListIssuesAsync(conn, ctx, withPriority, cancellationToken);
+        return ListIssuesAsync(db, ctx, withPriority, cancellationToken);
     }
 
     public static Task<JsonObject> ListTopImpactIssuesAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var withSort = args.DeepClone() as JsonObject ?? [];
         withSort["sort"] = "impact";
-        return ListIssuesAsync(conn, ctx, withSort, cancellationToken);
+        return ListIssuesAsync(db, ctx, withSort, cancellationToken);
     }
 
     public static List<JsonObject> IterCategoryIssuesPublic(JsonObject payload) => IterCategoryIssues(payload);
@@ -161,13 +161,13 @@ public static class ReportToolHandlers
     public static string CategoryDisplayNamePublic(string name) => CategoryDisplayName(name);
 
     public static async Task<JsonObject> GetCategoryScoresAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found", ["categories"] = new JsonArray() };
@@ -181,13 +181,13 @@ public static class ReportToolHandlers
     }
 
     public static async Task<JsonObject> GetExecutiveSummaryAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found" };
@@ -206,13 +206,13 @@ public static class ReportToolHandlers
     }
 
     public static async Task<JsonObject> GetReportMetaAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found" };
@@ -227,13 +227,13 @@ public static class ReportToolHandlers
     }
 
     public static async Task<JsonObject> GetSiteLevelAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found" };

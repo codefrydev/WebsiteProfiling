@@ -141,17 +141,18 @@ def test_google_cmd_integrations_http_helpers(monkeypatch) -> None:
 
 
 def test_pipeline_keyword_enrich_via_integrations(monkeypatch, capsys) -> None:
-    from website_profiling.commands import pipeline_cmd
+    from website_profiling.commands import pipeline_cmd, report_build
 
     monkeypatch.setenv("INTEGRATIONS_SERVICE_URL", "http://integrations:8093")
-    monkeypatch.setattr(pipeline_cmd, "console_print", lambda *_a, **_k: None)
-    monkeypatch.setattr(pipeline_cmd, "emit_phase_start", lambda *_a, **_k: None)
-    monkeypatch.setattr(pipeline_cmd, "emit_phase_done", lambda *_a, **_k: None)
-    monkeypatch.setattr(pipeline_cmd, "emit_progress", lambda *_a, **_k: None)
-    monkeypatch.setattr(pipeline_cmd, "require_start_url", lambda *_a, **_k: "https://ex.com")
-    monkeypatch.setattr(pipeline_cmd, "should_enrich_keywords_after_report", lambda _c: True)
-    monkeypatch.setattr(pipeline_cmd, "google_db_has_gsc", lambda _c: True)
-    monkeypatch.setattr(pipeline_cmd, "active_property_id_from_cfg", lambda _c: 9)
+    monkeypatch.delenv("REPORT_SERVICE_URL", raising=False)
+    monkeypatch.setattr(report_build, "console_print", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "emit_phase_start", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "emit_phase_done", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "emit_progress", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "require_start_url", lambda *_a, **_k: "https://ex.com")
+    monkeypatch.setattr(report_build, "should_enrich_keywords_after_report", lambda _c: True)
+    monkeypatch.setattr(report_build, "google_db_has_gsc", lambda _c: True)
+    monkeypatch.setattr(report_build, "active_property_id_from_cfg", lambda _c: 9)
     monkeypatch.setitem(
         __import__("sys").modules,
         "website_profiling.reporting.builder",
@@ -333,17 +334,18 @@ def test_property_store_domain_validation_and_google_status() -> None:
 
 
 def test_pipeline_keyword_enrich_rejects_failed_response(monkeypatch) -> None:
-    from website_profiling.commands import pipeline_cmd
+    from website_profiling.commands import pipeline_cmd, report_build
 
     monkeypatch.setenv("INTEGRATIONS_SERVICE_URL", "http://integrations:8093")
-    monkeypatch.setattr(pipeline_cmd, "console_print", lambda *_a, **_k: None)
-    monkeypatch.setattr(pipeline_cmd, "emit_phase_start", lambda *_a, **_k: None)
-    monkeypatch.setattr(pipeline_cmd, "emit_phase_done", lambda *_a, **_k: None)
-    monkeypatch.setattr(pipeline_cmd, "emit_progress", lambda *_a, **_k: None)
-    monkeypatch.setattr(pipeline_cmd, "require_start_url", lambda *_a, **_k: "https://ex.com")
-    monkeypatch.setattr(pipeline_cmd, "active_property_id_from_cfg", lambda _c: 9)
-    monkeypatch.setattr(pipeline_cmd, "google_db_has_gsc", lambda _c: True)
-    monkeypatch.setattr(pipeline_cmd, "should_enrich_keywords_after_report", lambda _c: True)
+    monkeypatch.delenv("REPORT_SERVICE_URL", raising=False)
+    monkeypatch.setattr(report_build, "console_print", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "emit_phase_start", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "emit_phase_done", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "emit_progress", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "require_start_url", lambda *_a, **_k: "https://ex.com")
+    monkeypatch.setattr(report_build, "active_property_id_from_cfg", lambda _c: 9)
+    monkeypatch.setattr(report_build, "google_db_has_gsc", lambda _c: True)
+    monkeypatch.setattr(report_build, "should_enrich_keywords_after_report", lambda _c: True)
     monkeypatch.setitem(
         __import__("sys").modules,
         "website_profiling.reporting.builder",
@@ -360,19 +362,13 @@ def test_pipeline_keyword_enrich_rejects_failed_response(monkeypatch) -> None:
         def __exit__(self, *_a):
             return False
 
-    with patch("urllib.request.urlopen", return_value=_Resp()), patch(
-        "website_profiling.integrations.google.keyword_enrich.run_enrichment",
-        lambda **_k: None,
-    ):
+    with patch("urllib.request.urlopen", return_value=_Resp()):
         pipeline_cmd._run_report(
             {"start_url": "https://ex.com", "enable_google_search_console": True},
             use_database=True,
         )
 
-    with patch("urllib.request.urlopen", side_effect=RuntimeError("down")), patch(
-        "website_profiling.integrations.google.keyword_enrich.run_enrichment",
-        lambda **_k: None,
-    ):
+    with patch("urllib.request.urlopen", side_effect=RuntimeError("down")):
         pipeline_cmd._run_report(
             {"start_url": "https://ex.com", "enable_google_search_console": True},
             use_database=True,

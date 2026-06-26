@@ -1,136 +1,92 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using AiService.Application.Persistence;
 using AiService.Domain.Repositories;
-using Npgsql;
-using NpgsqlTypes;
+using Microsoft.EntityFrameworkCore;
 
 namespace AiService.Application.Repositories;
 
-public sealed class GoogleAppSettingsRepository(NpgsqlDataSource dataSource) : IGoogleAppSettingsRepository
+public sealed class GoogleAppSettingsRepository(AiDbContext db) : IGoogleAppSettingsRepository
 {
-    private const int SingletonId = 1;
+    private const long SingletonId = 1;
 
     public async Task<GoogleAppSettings> LoadAsync(CancellationToken cancellationToken = default)
     {
-        await using var conn = await dataSource.OpenConnectionAsync(cancellationToken);
-        await using var cmd = new NpgsqlCommand(
-            """
-            SELECT client_id, client_secret, service_account_json,
-                   default_date_range_days, developer_token, login_customer_id
-            FROM google_app_settings WHERE id = $1
-            """,
-            conn);
-        cmd.Parameters.AddWithValue(SingletonId);
-        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
-
-        if (!await reader.ReadAsync(cancellationToken))
+        var row = await db.GoogleAppSettings.AsNoTracking()
+            .FirstOrDefaultAsync(x => x.Id == SingletonId, cancellationToken);
+        if (row is null)
         {
             return new GoogleAppSettings();
         }
 
         return new GoogleAppSettings
         {
-            ClientId = reader.IsDBNull(0) ? "" : reader.GetString(0).Trim(),
-            ClientSecret = reader.IsDBNull(1) ? "" : reader.GetString(1).Trim(),
-            ServiceAccountJson = ParseServiceAccountJson(reader, 2),
-            DefaultDateRangeDays = reader.IsDBNull(3) ? 28 : reader.GetInt32(3),
-            DeveloperToken = reader.IsDBNull(4) ? "" : (reader.GetString(4) ?? "").Trim(),
-            LoginCustomerId = reader.IsDBNull(5) ? "" : (reader.GetString(5) ?? "").Trim(),
+            ClientId = row.ClientId.Trim(),
+            ClientSecret = row.ClientSecret.Trim(),
+            ServiceAccountJson = ParseServiceAccountJson(row.ServiceAccountJson),
+            DefaultDateRangeDays = row.DefaultDateRangeDays,
+            DeveloperToken = (row.DeveloperToken ?? "").Trim(),
+            LoginCustomerId = (row.LoginCustomerId ?? "").Trim(),
         };
     }
 
     public async Task MergeAsync(GoogleAppSettingsPatch patch, CancellationToken cancellationToken = default)
     {
-        var sets = new List<string> { "updated_at = now()" };
-        var cmd = new NpgsqlCommand();
-        var paramIndex = 1;
-
-        if (patch.ClientId is not null)
-        {
-            sets.Add($"client_id = ${paramIndex++}");
-            cmd.Parameters.AddWithValue(patch.ClientId);
-        }
-
-        if (patch.ClientSecret is not null)
-        {
-            sets.Add($"client_secret = ${paramIndex++}");
-            cmd.Parameters.AddWithValue(patch.ClientSecret);
-        }
-
-        if (patch.ServiceAccountJson is not null)
-        {
-            sets.Add($"service_account_json = ${paramIndex++}");
-            cmd.Parameters.Add(new NpgsqlParameter
-            {
-                Value = patch.ServiceAccountJson,
-                NpgsqlDbType = NpgsqlDbType.Jsonb,
-            });
-        }
-
-        if (patch.DefaultDateRangeDays is not null)
-        {
-            sets.Add($"default_date_range_days = ${paramIndex++}");
-            cmd.Parameters.AddWithValue(patch.DefaultDateRangeDays.Value);
-        }
-
-        if (patch.DeveloperToken is not null)
-        {
-            sets.Add($"developer_token = ${paramIndex++}");
-            cmd.Parameters.AddWithValue(
-                string.IsNullOrWhiteSpace(patch.DeveloperToken) ? DBNull.Value : patch.DeveloperToken);
-        }
-
-        if (patch.LoginCustomerId is not null)
-        {
-            sets.Add($"login_customer_id = ${paramIndex++}");
-            cmd.Parameters.AddWithValue(
-                string.IsNullOrWhiteSpace(patch.LoginCustomerId) ? DBNull.Value : patch.LoginCustomerId);
-        }
-
-        if (cmd.Parameters.Count == 0)
+        var row = await db.GoogleAppSettings.AsTracking()
+            .FirstOrDefaultAsync(x => x.Id == SingletonId, cancellationToken);
+        if (row is null)
         {
             return;
         }
 
-        cmd.Parameters.AddWithValue(SingletonId);
-        cmd.CommandText = $"UPDATE google_app_settings SET {string.Join(", ", sets)} WHERE id = ${paramIndex}";
+        var changed = false;
+        if (patch.ClientId is not null) { row.ClientId = patch.ClientId; changed = true; }
+        if (patch.ClientSecret is not null) { row.ClientSecret = patch.ClientSecret; changed = true; }
+        if (patch.ServiceAccountJson is not null)
+        {
+            row.ServiceAccountJson = patch.ServiceAccountJson.ToJsonString();
+            changed = true;
+        }
 
-        await using var conn = await dataSource.OpenConnectionAsync(cancellationToken);
-        cmd.Connection = conn;
-        await cmd.ExecuteNonQueryAsync(cancellationToken);
+        if (patch.DefaultDateRangeDays is not null)
+        {
+            row.DefaultDateRangeDays = patch.DefaultDateRangeDays.Value;
+            changed = true;
+        }
+
+        if (patch.DeveloperToken is not null)
+        {
+            row.DeveloperToken = string.IsNullOrWhiteSpace(patch.DeveloperToken) ? null : patch.DeveloperToken;
+            changed = true;
+        }
+
+        if (patch.LoginCustomerId is not null)
+        {
+            row.LoginCustomerId = string.IsNullOrWhiteSpace(patch.LoginCustomerId) ? null : patch.LoginCustomerId;
+            changed = true;
+        }
+
+        if (!changed)
+        {
+            return;
+        }
+
+        row.UpdatedAt = DateTimeOffset.UtcNow;
+        await db.SaveChangesAsync(cancellationToken);
     }
 
-    private static JsonObject? ParseServiceAccountJson(NpgsqlDataReader reader, int ordinal)
+    private static JsonObject? ParseServiceAccountJson(string? raw)
     {
-        if (reader.IsDBNull(ordinal))
+        if (string.IsNullOrWhiteSpace(raw))
         {
             return null;
         }
 
-        if (reader.GetFieldType(ordinal) == typeof(string))
-        {
-            var raw = reader.GetString(ordinal);
-            if (string.IsNullOrWhiteSpace(raw))
-            {
-                return null;
-            }
-
-            try
-            {
-                return JsonNode.Parse(raw) as JsonObject;
-            }
-            catch (JsonException)
-            {
-                return null;
-            }
-        }
-
         try
         {
-            var obj = reader.GetFieldValue<JsonObject>(ordinal);
-            return obj;
+            return JsonNode.Parse(raw) as JsonObject;
         }
-        catch
+        catch (JsonException)
         {
             return null;
         }

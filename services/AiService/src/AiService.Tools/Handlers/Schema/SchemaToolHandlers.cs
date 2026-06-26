@@ -1,22 +1,22 @@
 using System.Text.Json.Nodes;
 using AiService.Tools.Context;
 using AiService.Tools.Slice;
-using Npgsql;
 using WebsiteProfiling.Contracts.Json;
 
+using AiService.Tools.Persistence;
 namespace AiService.Tools.Handlers.Schema;
 
 /// <summary>Schema markup audit tools — ports Python <c>schema/schema.py</c>.</summary>
 public static class SchemaToolHandlers
 {
     public static async Task<JsonObject> GetSchemaCoverageAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var rows = await scoped.LoadCrawlDfAsync(conn, cancellationToken);
+        var rows = await scoped.LoadCrawlDfAsync(db, cancellationToken);
         if (rows.Count == 0)
         {
             return new JsonObject
@@ -61,19 +61,19 @@ public static class SchemaToolHandlers
     }
 
     public static async Task<JsonObject> ListPagesWithoutSchemaAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var rows = await scoped.LoadCrawlDfAsync(conn, cancellationToken);
+        var rows = await scoped.LoadCrawlDfAsync(db, cancellationToken);
         var limit = PayloadSliceHelpers.ParseLimit(args["limit"], 30, 30);
         return CrawlSliceHelpers.CrawlFilter(rows, hasSchema: false, limit: limit, maxCap: 30);
     }
 
     public static async Task<JsonObject> SearchPagesBySchemaTypeAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -85,7 +85,7 @@ public static class SchemaToolHandlers
         }
 
         var scoped = ctx.WithArgs(args);
-        var rows = await scoped.LoadCrawlDfAsync(conn, cancellationToken);
+        var rows = await scoped.LoadCrawlDfAsync(db, cancellationToken);
         var limit = PayloadSliceHelpers.ParseLimit(args["limit"], 30, 30);
         return CrawlSliceHelpers.CrawlFilter(rows, schemaType: schemaType, limit: limit, maxCap: 30);
     }

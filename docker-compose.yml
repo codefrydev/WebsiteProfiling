@@ -34,6 +34,8 @@ services:
       LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
       FASTAPI_ALLOWED_ORIGINS: "http://localhost:8090"
       DEPRECATE_PYTHON_INTEGRATIONS: "1"
+      DEPRECATE_PYTHON_REPORT_ROUTES: "1"
+      REPORT_SERVICE_URL: http://report:8094
     volumes:
       - profiling-data:/data
     healthcheck:
@@ -52,6 +54,8 @@ services:
         condition: service_healthy
       files:
         condition: service_started
+      report:
+        condition: service_healthy
     environment:
       WP_ROLE: worker
       WEBSITE_PROFILING_ROOT: /app
@@ -64,6 +68,8 @@ services:
       FILE_SERVICE_URL: http://files:8080
       AI_SERVICE_URL: http://ai:8092
       INTEGRATIONS_SERVICE_URL: http://integrations:8093
+      REPORT_SERVICE_URL: http://report:8094
+      PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE: "1"
     volumes:
       - profiling-data:/data
 
@@ -131,6 +137,31 @@ services:
       retries: 3
       start_period: 20s
 
+  report:
+    build:
+      context: ./services
+      dockerfile: ReportService/Dockerfile
+    environment:
+      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
+      ASPNETCORE_URLS: http://+:8094
+      FASTAPI_URL: http://fastapi:8001
+      INTEGRATIONS_SERVICE_URL: http://integrations:8093
+      REPORT_SERVICE_USE_PYTHON_BRIDGE: "1"
+      USE_FASTAPI_PYTHON_BRIDGE: "1"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      fastapi:
+        condition: service_started
+      integrations:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8094/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
   # .NET BFF — the single browser-facing API surface (owns auth + CORS).
   bff:
     build:
@@ -144,6 +175,8 @@ services:
       DATA_SERVICE_URL: http://data:8091
       AI_SERVICE_URL: http://ai:8092
       INTEGRATIONS_SERVICE_URL: http://integrations:8093
+      REPORT_SERVICE_URL: http://report:8094
+      REPORT_ROUTES: "/api/compare,/api/dashboards"
       AUTH_SECRET: ${AUTH_SECRET:-}
       DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters"
       AI_ROUTES: "/api/chat,/api/links/page-coach,/api/issues/fix-suggestion,/api/issues/action-plan,/api/ai/fix-suggestion,/api/dashboards/ai-generate,/api/content/analyze,/api/content/wizard,/api/llm-settings,/api/secrets,/api/ollama/status,/api/report/audit-tool,/api/mcp-tools"
@@ -158,6 +191,8 @@ services:
       ai:
         condition: service_healthy
       integrations:
+        condition: service_healthy
+      report:
         condition: service_healthy
 
   # Vite SPA (nginx). The browser calls the BFF (:8090) for all /api/*.

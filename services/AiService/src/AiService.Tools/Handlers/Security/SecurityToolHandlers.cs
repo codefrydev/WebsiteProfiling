@@ -1,23 +1,23 @@
 using System.Text.Json.Nodes;
 using AiService.Tools.Context;
 using AiService.Tools.Slice;
-using Npgsql;
 using WebsiteProfiling.Contracts.Json;
 
+using AiService.Tools.Persistence;
 namespace AiService.Tools.Handlers.Security;
 
 /// <summary>Security findings tools — ports Python <c>security/security.py</c>.</summary>
 public static class SecurityToolHandlers
 {
     public static async Task<JsonObject> GetSecurityFindingsAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var severity = (JsonCoercion.AsString(args["severity"]) ?? "").Trim().ToLowerInvariant();
         return await PayloadArrayHelpers.CapPayloadArrayAsync(
-            conn,
+            db,
             ctx,
             args,
             "security_findings",
@@ -38,13 +38,13 @@ public static class SecurityToolHandlers
     }
 
     public static async Task<JsonObject> GetSecurityFindingsSummaryAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found", ["summary"] = new JsonArray(), ["total_findings"] = 0 };
@@ -92,7 +92,7 @@ public static class SecurityToolHandlers
     }
 
     public static async Task<JsonObject> ListSecurityFindingsByTypeAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -110,7 +110,7 @@ public static class SecurityToolHandlers
         }
 
         var result = await PayloadArrayHelpers.CapPayloadArrayAsync(
-            conn,
+            db,
             ctx,
             args,
             "security_findings",

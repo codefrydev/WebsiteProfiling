@@ -1,22 +1,22 @@
 using System.Text.Json.Nodes;
 using AiService.Tools.Context;
 using AiService.Tools.Slice;
-using Npgsql;
 using WebsiteProfiling.Contracts.Json;
 
+using AiService.Tools.Persistence;
 namespace AiService.Tools.Handlers.Performance;
 
 /// <summary>Lighthouse performance tools — ports Python <c>performance/lighthouse.py</c> (payload-only paths).</summary>
 public static class PerformanceToolHandlers
 {
     public static async Task<JsonObject> GetLighthouseSummaryAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         var summary = payload["lighthouse_summary"] as JsonObject ?? [];
         var human = payload["lighthouse_human_summary"];
         var diagnostics = payload["lighthouse_diagnostics"] as JsonArray;
@@ -48,7 +48,7 @@ public static class PerformanceToolHandlers
     }
 
     public static async Task<JsonObject> GetLighthouseForUrlAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -60,7 +60,7 @@ public static class PerformanceToolHandlers
         }
 
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         var byUrl = payload["lighthouse_by_url"] as JsonObject ?? [];
         JsonNode? data = byUrl[url] ?? byUrl[url + "/"];
         if (data is null)
@@ -72,30 +72,30 @@ public static class PerformanceToolHandlers
     }
 
     public static Task<JsonObject> GetLighthouseDiagnosticsAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => PayloadArrayHelpers.CapPayloadArrayAsync(conn, ctx, args, "lighthouse_diagnostics", "diagnostics", 30, 50, cancellationToken);
+        => PayloadArrayHelpers.CapPayloadArrayAsync(db, ctx, args, "lighthouse_diagnostics", "diagnostics", 30, 50, cancellationToken);
 
     public static async Task<JsonObject> ListSlowPagesAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var threshold = PayloadSliceHelpers.ParseLimit(args["performance_threshold"], 50, 100);
-        return await ListPoorLighthousePagesAsync(conn, ctx, args, ["performance"], "performance", threshold, cancellationToken);
+        return await ListPoorLighthousePagesAsync(db, ctx, args, ["performance"], "performance", threshold, cancellationToken);
     }
 
     public static async Task<JsonObject> GetLighthouseHumanSummaryAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found" };
@@ -117,17 +117,17 @@ public static class PerformanceToolHandlers
     }
 
     public static async Task<JsonObject> ListLighthousePoorSeoPagesAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var threshold = PayloadSliceHelpers.ParseLimit(args["seo_threshold"], 80, 100);
-        return await ListPoorLighthousePagesAsync(conn, ctx, args, ["seo"], "seo", threshold, cancellationToken);
+        return await ListPoorLighthousePagesAsync(db, ctx, args, ["seo"], "seo", threshold, cancellationToken);
     }
 
     private static async Task<JsonObject> ListPoorLighthousePagesAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         string[] scoreKeys,
@@ -136,7 +136,7 @@ public static class PerformanceToolHandlers
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
         if (payload.Count == 0)
         {
             return new JsonObject { ["error"] = "no report found", ["pages"] = new JsonArray(), ["total"] = 0 };

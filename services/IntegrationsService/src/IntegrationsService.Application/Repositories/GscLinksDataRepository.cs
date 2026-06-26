@@ -1,9 +1,10 @@
 using System.Text.Json;
-using Npgsql;
+using IntegrationsService.Application.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace IntegrationsService.Application.Repositories;
 
-public sealed class GscLinksDataRepository(NpgsqlDataSource dataSource)
+public sealed class GscLinksDataRepository(IntegrationsDbContext db)
 {
     public async Task<IReadOnlyDictionary<string, object?>> ReadStatusAsync(
         long propertyId,
@@ -32,21 +33,13 @@ public sealed class GscLinksDataRepository(NpgsqlDataSource dataSource)
         long propertyId,
         CancellationToken cancellationToken = default)
     {
-        await using var conn = await dataSource.OpenConnectionAsync(cancellationToken);
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            SELECT data FROM gsc_links_data
-            WHERE property_id = @property_id
-            ORDER BY id DESC LIMIT 1
-            """;
-        cmd.Parameters.AddWithValue("property_id", propertyId);
-        var result = await cmd.ExecuteScalarAsync(cancellationToken);
-        if (result is not string json || string.IsNullOrWhiteSpace(json))
-        {
-            return null;
-        }
+        var json = await db.GscLinksData.AsNoTracking()
+            .Where(x => x.PropertyId == propertyId)
+            .OrderByDescending(x => x.Id)
+            .Select(x => x.Data)
+            .FirstOrDefaultAsync(cancellationToken);
 
-        return JsonDocument.Parse(json);
+        return string.IsNullOrWhiteSpace(json) ? null : JsonDocument.Parse(json);
     }
 
     private static string? GetString(JsonDocument doc, string key)

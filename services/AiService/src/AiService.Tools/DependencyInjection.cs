@@ -4,6 +4,7 @@ using AiService.Tools.Persistence;
 using AiService.Tools.Registry;
 using AiService.Tools.Selection;
 using AiService.Tools.Services.Citations;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -15,7 +16,7 @@ public static class DependencyInjection
     public const string PythonBridgeHttpClient = "python-audit-tool-bridge";
 
     /// <summary>
-    /// Registers audit tool catalog, Postgres pool, C# handlers, and the Python HTTP bridge.
+    /// Registers audit tool catalog, EF Core read context, C# handlers, and the Python HTTP bridge.
     /// </summary>
     public static IServiceCollection AddAiServiceTools(this IServiceCollection services)
     {
@@ -49,6 +50,15 @@ public static class DependencyInjection
             builder.ConnectionStringBuilder.MaxPoolSize = o.MaxPoolSize;
             builder.ConnectionStringBuilder.CommandTimeout = o.CommandTimeoutSeconds;
             return builder.Build();
+        });
+
+        services.AddDbContextFactory<AuditToolsDbContext>((sp, options) =>
+        {
+            var o = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
+            var dataSource = sp.GetRequiredService<NpgsqlDataSource>();
+            options
+                .UseNpgsql(dataSource, npg => npg.CommandTimeout(o.CommandTimeoutSeconds))
+                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
         });
 
         services.AddSingleton<ToolCatalog>();

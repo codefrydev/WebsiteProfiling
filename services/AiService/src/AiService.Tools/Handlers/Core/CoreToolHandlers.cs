@@ -1,11 +1,12 @@
 using System.Text.Json.Nodes;
 using AiService.Tools.Context;
 using AiService.Tools.Domain;
+using AiService.Tools.Persistence;
 using AiService.Tools.Registry;
 using AiService.Tools.Selection;
 using AiService.Tools.Slice;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Npgsql;
 using WebsiteProfiling.Contracts.Json;
 
 namespace AiService.Tools.Handlers.Core;
@@ -14,12 +15,12 @@ public static class CoreToolHandlers
 {
     public static Task<JsonObject> SearchAuditToolsAsync(
         ToolCatalog catalog,
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
-        _ = conn;
+        _ = db;
         _ = ctx;
         _ = cancellationToken;
         var query = JsonCoercion.AsString(args["query"]) ?? JsonCoercion.AsString(args["q"]) ?? "";
@@ -48,12 +49,12 @@ public static class CoreToolHandlers
 
     public static Task<JsonObject> ListToolDomainsAsync(
         ToolCatalog catalog,
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
-        _ = conn;
+        _ = db;
         _ = ctx;
         _ = args;
         _ = cancellationToken;
@@ -89,7 +90,7 @@ public static class CoreToolHandlers
     }
 
     public static async Task<JsonObject> GetDataCoverageReportAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -100,24 +101,22 @@ public static class CoreToolHandlers
             return new JsonObject { ["error"] = "property_id is required", ["checks"] = new JsonArray() };
         }
 
-        await using var propCmd = conn.CreateCommand();
-        propCmd.CommandText =
-            "SELECT google_refresh_token, canonical_domain, gsc_site_url FROM properties WHERE id = @id";
-        propCmd.Parameters.AddWithValue("id", propertyId);
-        await using var reader = await propCmd.ExecuteReaderAsync(cancellationToken);
-        if (!await reader.ReadAsync(cancellationToken))
+        var property = await db.Properties.AsNoTracking()
+            .Where(x => x.Id == propertyId)
+            .Select(x => new { x.GoogleRefreshToken })
+            .FirstOrDefaultAsync(cancellationToken);
+        if (property is null)
         {
             return new JsonObject { ["error"] = "property not found", ["checks"] = new JsonArray() };
         }
 
-        var hasGoogleOAuth = !reader.IsDBNull(0) && reader.GetString(0).Length > 0;
-        await reader.CloseAsync();
+        var hasGoogleOAuth = !string.IsNullOrWhiteSpace(property.GoogleRefreshToken);
 
-        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
-        var google = await scoped.LoadGoogleAsync(conn, cancellationToken);
-        var keywords = await scoped.LoadKeywordsAsync(conn, cancellationToken);
-        var gscLinks = await scoped.LoadGscLinksAsync(conn, cancellationToken);
-        var googleFull = await scoped.LoadGoogleFullAsync(conn, cancellationToken);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
+        var google = await scoped.LoadGoogleAsync(db, cancellationToken);
+        var keywords = await scoped.LoadKeywordsAsync(db, cancellationToken);
+        var gscLinks = await scoped.LoadGscLinksAsync(db, cancellationToken);
+        var googleFull = await scoped.LoadGoogleFullAsync(db, cancellationToken);
 
         var checks = new JsonArray
         {
@@ -192,15 +191,15 @@ public static class CoreToolHandlers
 
 public sealed class InjectingToolHandler(
     string toolName,
-    Func<IServiceProvider, NpgsqlConnection, AuditToolContext, JsonObject, CancellationToken, Task<JsonObject>> handle,
+    Func<IServiceProvider, AuditToolsDbContext, AuditToolContext, JsonObject, CancellationToken, Task<JsonObject>> handle,
     IServiceProvider serviceProvider) : IToolHandler
 {
     public string ToolName { get; } = toolName;
 
     public Task<JsonObject> HandleAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => handle(serviceProvider, conn, ctx, args, cancellationToken);
+        => handle(serviceProvider, db, ctx, args, cancellationToken);
 }

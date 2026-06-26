@@ -16,6 +16,16 @@ public sealed class IntegrationsDbContext(DbContextOptions<IntegrationsDbContext
 
     public DbSet<PageGoogleSnapshot> PageGoogleSnapshots => Set<PageGoogleSnapshot>();
 
+    public DbSet<KeywordDataRow> KeywordData => Set<KeywordDataRow>();
+
+    public DbSet<KeywordHistoryRow> KeywordHistory => Set<KeywordHistoryRow>();
+
+    public DbSet<GscLinksDataRow> GscLinksData => Set<GscLinksDataRow>();
+
+    public DbSet<CrawlSettingsRow> CrawlSettings => Set<CrawlSettingsRow>();
+
+    public DbSet<IntegrationSecretsRow> IntegrationSecrets => Set<IntegrationSecretsRow>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<GoogleData>(e =>
@@ -70,6 +80,56 @@ public sealed class IntegrationsDbContext(DbContextOptions<IntegrationsDbContext
             e.Property(x => x.UrlNorm).HasColumnName("url_norm");
             e.Property(x => x.FetchedAt).HasColumnName("fetched_at");
             e.Property(x => x.Data).HasColumnName("data").HasColumnType("jsonb");
+        });
+
+        modelBuilder.Entity<KeywordDataRow>(e =>
+        {
+            e.ToTable("keyword_data");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.PropertyId).HasColumnName("property_id");
+            e.Property(x => x.FetchedAt).HasColumnName("fetched_at");
+            e.Property(x => x.Data).HasColumnName("data").HasColumnType("jsonb");
+        });
+
+        modelBuilder.Entity<KeywordHistoryRow>(e =>
+        {
+            e.ToTable("keyword_history");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.PropertyId).HasColumnName("property_id");
+            e.Property(x => x.Keyword).HasColumnName("keyword");
+            e.Property(x => x.FetchedAt).HasColumnName("fetched_at");
+            e.Property(x => x.Position).HasColumnName("position");
+            e.Property(x => x.Clicks).HasColumnName("clicks");
+            e.Property(x => x.Impressions).HasColumnName("impressions");
+            e.Property(x => x.Ctr).HasColumnName("ctr");
+        });
+
+        modelBuilder.Entity<GscLinksDataRow>(e =>
+        {
+            e.ToTable("gsc_links_data");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.PropertyId).HasColumnName("property_id");
+            e.Property(x => x.FetchedAt).HasColumnName("fetched_at");
+            e.Property(x => x.Data).HasColumnName("data").HasColumnType("jsonb");
+        });
+
+        modelBuilder.Entity<CrawlSettingsRow>(e =>
+        {
+            e.ToTable("crawl_settings");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.StartUrl).HasColumnName("start_url");
+        });
+
+        modelBuilder.Entity<IntegrationSecretsRow>(e =>
+        {
+            e.ToTable("integration_secrets");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.BingWebmasterApiKey).HasColumnName("bing_webmaster_api_key");
         });
     }
 }

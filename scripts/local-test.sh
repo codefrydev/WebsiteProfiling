@@ -332,6 +332,7 @@ steps_dotnet() {
     return 0
   fi
   run_step "dotnet test Data (services/Data/Data.slnx)" dotnet_test_sln "Data" "Data.slnx"
+  run_step "dotnet test ReportService (services/ReportService/ReportService.slnx)" dotnet_test_sln "ReportService" "ReportService.slnx"
   run_step "dotnet test AiService (services/AiService/AiService.slnx)" dotnet_test_sln "AiService" "AiService.slnx"
   run_step "dotnet test Bff (services/Bff/Bff.slnx)" dotnet_test_sln "Bff" "Bff.slnx"
   run_step_or_skip_openapi

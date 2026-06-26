@@ -1,21 +1,21 @@
 using System.Text.Json.Nodes;
 using AiService.Tools.Context;
 using AiService.Tools.Slice;
-using Npgsql;
 using WebsiteProfiling.Contracts.Json;
 
+using AiService.Tools.Persistence;
 namespace AiService.Tools.Handlers.Google;
 
 public static class GoogleToolHandlers
 {
     public static async Task<JsonObject> GetGoogleSummaryAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var data = await scoped.LoadGoogleAsync(conn, cancellationToken);
+        var data = await scoped.LoadGoogleAsync(db, cancellationToken);
         if (data is null)
         {
             return new JsonObject
@@ -70,27 +70,27 @@ public static class GoogleToolHandlers
     }
 
     public static async Task<JsonObject> GetGscTopQueriesAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => await CapGoogleListAsync(conn, ctx, args, "gsc", ["top_queries", "queries"], "queries", cancellationToken);
+        => await CapGoogleListAsync(db, ctx, args, "gsc", ["top_queries", "queries"], "queries", cancellationToken);
 
     public static async Task<JsonObject> GetGscTopPagesAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => await CapGoogleListAsync(conn, ctx, args, "gsc", ["top_pages", "pages"], "pages", cancellationToken);
+        => await CapGoogleListAsync(db, ctx, args, "gsc", ["top_pages", "pages"], "pages", cancellationToken);
 
     public static async Task<JsonObject> GetGa4SummaryAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var data = await scoped.LoadGoogleAsync(conn, cancellationToken);
+        var data = await scoped.LoadGoogleAsync(db, cancellationToken);
         if (data is null)
         {
             return new JsonObject { ["error"] = "no google data found" };
@@ -119,7 +119,7 @@ public static class GoogleToolHandlers
     }
 
     public static async Task<JsonObject> GetGscPageQuerySliceAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -131,8 +131,8 @@ public static class GoogleToolHandlers
             return new JsonObject { ["error"] = "url is required" };
         }
 
-        var data = await scoped.LoadGoogleFullAsync(conn, cancellationToken)
-            ?? await scoped.LoadGoogleAsync(conn, cancellationToken);
+        var data = await scoped.LoadGoogleFullAsync(db, cancellationToken)
+            ?? await scoped.LoadGoogleAsync(db, cancellationToken);
         if (data is null)
         {
             return new JsonObject { ["error"] = "no google data found" };
@@ -147,35 +147,35 @@ public static class GoogleToolHandlers
     }
 
     public static async Task<JsonObject> GetGscDailyTrendAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => await GoogleSeriesAsync(conn, ctx, "gsc", "daily", cancellationToken);
+        => await GoogleSeriesAsync(db, ctx, "gsc", "daily", cancellationToken);
 
     public static async Task<JsonObject> GetGa4DailyTrendAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => await GoogleSeriesAsync(conn, ctx, "ga4", "daily", cancellationToken);
+        => await GoogleSeriesAsync(db, ctx, "ga4", "daily", cancellationToken);
 
     public static async Task<JsonObject> GetGa4ByDeviceAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => await GoogleSeriesAsync(conn, ctx, "ga4", "by_device", cancellationToken);
+        => await GoogleSeriesAsync(db, ctx, "ga4", "by_device", cancellationToken);
 
     public static async Task<JsonObject> GetGa4ByChannelAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
-        => await GoogleSeriesAsync(conn, ctx, "ga4", "by_channel", cancellationToken);
+        => await GoogleSeriesAsync(db, ctx, "ga4", "by_channel", cancellationToken);
 
     public static async Task<JsonObject> GetGscPageQueriesAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
@@ -187,8 +187,8 @@ public static class GoogleToolHandlers
             return new JsonObject { ["error"] = "url is required" };
         }
 
-        var raw = await scoped.LoadGoogleFullAsync(conn, cancellationToken)
-            ?? await scoped.LoadGoogleAsync(conn, cancellationToken);
+        var raw = await scoped.LoadGoogleFullAsync(db, cancellationToken)
+            ?? await scoped.LoadGoogleAsync(db, cancellationToken);
         if (raw is null)
         {
             return new JsonObject { ["error"] = "no google data found", ["missing"] = true };
@@ -210,13 +210,13 @@ public static class GoogleToolHandlers
     }
 
     public static async Task<JsonObject> GetGscCtrOpportunityPagesAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var data = await scoped.LoadGoogleAsync(conn, cancellationToken);
+        var data = await scoped.LoadGoogleAsync(db, cancellationToken);
         if (data is null)
         {
             return new JsonObject
@@ -316,7 +316,7 @@ public static class GoogleToolHandlers
     }
 
     private static async Task<JsonObject> CapGoogleListAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         string section,
@@ -325,7 +325,7 @@ public static class GoogleToolHandlers
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        var data = await scoped.LoadGoogleAsync(conn, cancellationToken);
+        var data = await scoped.LoadGoogleAsync(db, cancellationToken);
         if (data is null)
         {
             return new JsonObject
@@ -359,13 +359,13 @@ public static class GoogleToolHandlers
     }
 
     private static async Task<JsonObject> GoogleSeriesAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         string section,
         string key,
         CancellationToken cancellationToken)
     {
-        var data = await ctx.LoadGoogleAsync(conn, cancellationToken);
+        var data = await ctx.LoadGoogleAsync(db, cancellationToken);
         if (data is null)
         {
             return new JsonObject { ["error"] = "no google data found", ["missing"] = true };

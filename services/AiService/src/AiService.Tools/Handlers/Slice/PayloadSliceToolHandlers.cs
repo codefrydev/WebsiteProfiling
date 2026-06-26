@@ -2,8 +2,8 @@ using System.Text.Json.Nodes;
 using AiService.Tools.Context;
 using AiService.Tools.Registry;
 using AiService.Tools.Slice;
-using Npgsql;
 
+using AiService.Tools.Persistence;
 namespace AiService.Tools.Handlers.Slice;
 
 /// <summary>
@@ -36,37 +36,37 @@ public static class PayloadSliceToolHandlers
         {
             yield return new DelegatingToolHandler(
                 toolName,
-                (conn, ctx, args, ct) => DictSliceAsync(conn, ctx, payloadKey, ct));
+                (db, ctx, args, ct) => DictSliceAsync(db, ctx, payloadKey, ct));
         }
 
         yield return new DelegatingToolHandler(
             "get_semantic_keyword_clusters",
-            (conn, ctx, args, ct) => FieldSliceAsync(conn, ctx, args, "semantic_keyword_clusters", "clusters", ct));
+            (db, ctx, args, ct) => FieldSliceAsync(db, ctx, args, "semantic_keyword_clusters", "clusters", ct));
 
         yield return new DelegatingToolHandler(
             "get_content_duplicates",
-            (conn, ctx, args, ct) => FieldSliceAsync(conn, ctx, args, "content_duplicates", "duplicates", ct));
+            (db, ctx, args, ct) => FieldSliceAsync(db, ctx, args, "content_duplicates", "duplicates", ct));
     }
 
     private static async Task<JsonObject> DictSliceAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         string payloadKey,
         CancellationToken cancellationToken)
     {
-        var payload = await ctx.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await ctx.LoadPayloadAsync(db, cancellationToken);
         return PayloadSliceHelpers.PayloadDictSlice(payload, payloadKey);
     }
 
     private static async Task<JsonObject> FieldSliceAsync(
-        NpgsqlConnection conn,
+        AuditToolsDbContext db,
         AuditToolContext ctx,
         JsonObject args,
         string payloadKey,
         string itemKey,
         CancellationToken cancellationToken)
     {
-        var payload = await ctx.LoadPayloadAsync(conn, cancellationToken);
+        var payload = await ctx.LoadPayloadAsync(db, cancellationToken);
         var limit = PayloadSliceHelpers.ParseLimit(args["limit"], 50, 50);
         return PayloadSliceHelpers.PayloadField(payload, payloadKey, limit, 50, itemKey: itemKey);
     }

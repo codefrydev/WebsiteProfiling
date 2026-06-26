@@ -37,6 +37,7 @@ Or use `./local-run` / `./local-prod` from the repo root (starts IntegrationsSer
 | `GET /health` | Health check |
 | `POST /internal/integrations/google/fetch` | Worker fetch (stores `google_data`) |
 | `POST /internal/integrations/keywords/enrich` | Pipeline keyword enrichment |
+| `GET /internal/integrations/report/enrichment?propertyId=` | Report build: latest Google/keyword/GSC links snapshots |
 | `GET/POST /api/properties/{id}/google/*` | Property Google config, credentials, test, disconnect |
 | `GET/POST /api/integrations/google/*` | OAuth auth/callback, status, page-data, page-live, url-inspection, keywords |
 | `POST /api/integrations/bing/sync` | Bing Webmaster sync |
