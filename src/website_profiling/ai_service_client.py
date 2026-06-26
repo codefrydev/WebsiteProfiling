@@ -1,4 +1,4 @@
-"""HTTP client for AiService — replaces direct Python LLM imports during report build."""
+"""HTTP client for AiService — worker/pipeline integration for enrichment and LLM helpers."""
 from __future__ import annotations
 
 import json

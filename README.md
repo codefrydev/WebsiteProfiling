@@ -168,7 +168,7 @@ WebsiteProfiling/
 │   ├── content_studio/        # Content writing + live SEO scoring
 │   ├── lighthouse/            # Lighthouse runner
 │   ├── integrations/          # Google Search Console, GA4, Bing, CrUX
-│   ├── llm_client_http.py     # Worker/CLI → AiService HTTP client (enrichment, page coach, …)
+│   ├── ai_service_client.py     # Worker/CLI → AiService HTTP client (enrichment, page coach, …)
 │   ├── tools/                 # Exports, audit query tools, audit-tool bridge
 │   ├── db/                    # PostgreSQL storage layer
 │   ├── commands/              # CLI subcommands

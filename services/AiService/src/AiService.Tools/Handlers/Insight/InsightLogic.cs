@@ -290,4 +290,206 @@ public static class InsightLogic
 
         return result;
     }
+
+    public static JsonObject SliceFromGoogleRow(JsonObject raw, string pageUrl)
+    {
+        var (gscBlob, ga4Blob) = GscGa4Blobs(raw);
+        var byPage = gscBlob["by_page"] as JsonObject ?? [];
+        var byPath = ga4Blob["by_path"] as JsonObject ?? [];
+        var norm = GoogleUrl.NormalizeUrl(pageUrl);
+
+        JsonObject? gscPage = null;
+        foreach (var (key, val) in byPage)
+        {
+            if (GoogleUrl.NormalizeUrl(key) == norm || key == pageUrl)
+            {
+                gscPage = val as JsonObject;
+                break;
+            }
+        }
+
+        if (gscPage is null && gscBlob["top_pages"] is JsonArray topPages)
+        {
+            foreach (var node in topPages)
+            {
+                if (node is JsonObject row
+                    && GoogleUrl.NormalizeUrl(JsonCoercion.AsString(row["page"]) ?? "") == norm)
+                {
+                    gscPage = row;
+                    break;
+                }
+            }
+        }
+
+        JsonObject? ga4Page = null;
+        var path = GoogleUrl.UrlToPath(pageUrl);
+        if (byPath.TryGetPropertyValue(path, out var ga4Node) && ga4Node is JsonObject ga4Direct)
+        {
+            ga4Page = ga4Direct;
+        }
+        else
+        {
+            foreach (var (p, val) in byPath)
+            {
+                if (val is JsonObject row
+                    && (GoogleUrl.NormalizeUrl(JsonCoercion.AsString(row["full_url"]) ?? p) == norm
+                        || p == path))
+                {
+                    ga4Page = row;
+                    break;
+                }
+            }
+        }
+
+        return new JsonObject
+        {
+            ["gsc"] = gscPage?.DeepClone(),
+            ["ga4"] = ga4Page?.DeepClone(),
+            ["siteBenchmarks"] = new JsonObject
+            {
+                ["gsc"] = gscBlob["summary"]?.DeepClone(),
+                ["ga4"] = ga4Blob["summary"]?.DeepClone(),
+            },
+        };
+    }
+
+    public static JsonArray PageIssueFlags(string url, JsonObject payload)
+    {
+        var norm = GoogleUrl.NormalizeUrl(url);
+        var flags = new JsonArray();
+        if (payload["categories"] is not JsonArray categories)
+        {
+            return flags;
+        }
+
+        foreach (var catNode in categories)
+        {
+            if (catNode is not JsonObject cat || cat["issues"] is not JsonArray issueList)
+            {
+                continue;
+            }
+
+            foreach (var issueNode in issueList)
+            {
+                if (issueNode is not JsonObject issue)
+                {
+                    continue;
+                }
+
+                var issueUrl = JsonCoercion.AsString(issue["url"]) ?? "";
+                if (issueUrl.Length > 0 && GoogleUrl.NormalizeUrl(issueUrl) != norm)
+                {
+                    continue;
+                }
+
+                flags.Add(new JsonObject
+                {
+                    ["priority"] = issue["priority"]?.DeepClone(),
+                    ["category_id"] = cat["id"]?.DeepClone(),
+                    ["message"] = issue["message"]?.DeepClone(),
+                    ["url"] = issueUrl.Length > 0 ? issueUrl : url,
+                });
+
+                if (flags.Count >= 30)
+                {
+                    return flags;
+                }
+            }
+        }
+
+        return flags;
+    }
+
+    public static JsonObject? LookupLighthouse(string url, JsonObject payload)
+    {
+        if (payload["lighthouse_by_url"] is not JsonObject map)
+        {
+            return null;
+        }
+
+        if (map[url] is JsonObject direct)
+        {
+            return direct;
+        }
+
+        var norm = url.TrimEnd('/');
+        foreach (var (key, val) in map)
+        {
+            if (key.TrimEnd('/') == norm && val is JsonObject lh)
+            {
+                return lh;
+            }
+        }
+
+        return null;
+    }
+
+    public static JsonObject CompositePageScore(
+        JsonObject sliceData,
+        JsonArray issueFlags,
+        JsonObject? lighthouse)
+    {
+        var gscPage = sliceData["gsc"] as JsonObject;
+        var ga4Page = sliceData["ga4"] as JsonObject;
+        var benchmarks = sliceData["siteBenchmarks"] as JsonObject ?? [];
+        var gscSite = benchmarks["gsc"] as JsonObject;
+        var ga4Site = benchmarks["ga4"] as JsonObject;
+
+        var score = 75.0;
+        var flagsOut = new JsonArray();
+        var sitePos = Num(gscSite?["position"], 10);
+        var pagePos = Num(gscPage?["position"], sitePos);
+        if (pagePos > sitePos + 5)
+        {
+            score -= 10;
+            flagsOut.Add("below_avg_gsc_position");
+        }
+
+        var siteEng = Num(ga4Site?["engagementRate"], 0.5);
+        var pageEng = Num(ga4Page?["engagementRate"], siteEng);
+        if (ga4Page is not null && pageEng < siteEng * 0.7)
+        {
+            score -= 10;
+            flagsOut.Add("low_engagement");
+        }
+
+        var crit = issueFlags.Count(n => n?["priority"]?.GetValue<string>() == "Critical");
+        var high = issueFlags.Count(n => n?["priority"]?.GetValue<string>() == "High");
+        if (crit > 0)
+        {
+            score -= Math.Min(20, crit * 10);
+            flagsOut.Add("critical_issues");
+        }
+        else if (high > 0)
+        {
+            score -= Math.Min(10, high * 5);
+            flagsOut.Add("high_issues");
+        }
+
+        if (lighthouse is not null)
+        {
+            var perf = Num(lighthouse["performance"], 100);
+            var seo = Num(lighthouse["seo"], 100);
+            if (perf < 50)
+            {
+                score -= 8;
+                flagsOut.Add("poor_lighthouse_performance");
+            }
+
+            if (seo < 70)
+            {
+                score -= 5;
+                flagsOut.Add("poor_lighthouse_seo");
+            }
+        }
+
+        score = Math.Clamp(Math.Round(score), 0, 100);
+        var band = score >= 75 ? "green" : score >= 50 ? "amber" : "red";
+        return new JsonObject
+        {
+            ["score"] = score,
+            ["band"] = band,
+            ["flags"] = flagsOut,
+        };
+    }
 }

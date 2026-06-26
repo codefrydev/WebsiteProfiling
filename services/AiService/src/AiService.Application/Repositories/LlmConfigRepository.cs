@@ -38,15 +38,29 @@ public sealed class LlmConfigRepository(AiDbContext db) : ILlmConfigRepository
     {
         var existingRows = await db.LlmConfig.AsNoTracking().ToListAsync(cancellationToken);
         var existing = existingRows.ToDictionary(x => x.Key, x => x.Value, StringComparer.Ordinal);
+        var existingTimestamps = existingRows.ToDictionary(x => x.Key, x => x.UpdatedAt, StringComparer.Ordinal);
         var existingSecrets = existingRows.Where(x => x.IsSecret).Select(x => x.Key).ToHashSet(StringComparer.Ordinal);
 
         var merged = new Dictionary<string, string>(existing, StringComparer.Ordinal);
+        var touchedKeys = new HashSet<string>(StringComparer.Ordinal);
         foreach (var (key, rawValue) in entries)
         {
             var val = rawValue ?? "";
             if (IsMaskedSentinel(val) && existing.TryGetValue(key, out var prior))
             {
                 val = prior;
+            }
+            else if (LlmConfigSecrets.IsSecretKey(key)
+                     && string.IsNullOrWhiteSpace(val)
+                     && existing.TryGetValue(key, out prior)
+                     && !string.IsNullOrWhiteSpace(prior))
+            {
+                continue;
+            }
+
+            if (!string.Equals(existing.GetValueOrDefault(key), val, StringComparison.Ordinal))
+            {
+                touchedKeys.Add(key);
             }
 
             merged[key] = val;
@@ -65,12 +79,15 @@ public sealed class LlmConfigRepository(AiDbContext db) : ILlmConfigRepository
         db.LlmConfig.RemoveRange(await db.LlmConfig.ToListAsync(cancellationToken));
         foreach (var (key, (value, isSecret)) in normalized)
         {
+            var updatedAt = touchedKeys.Contains(key)
+                ? now
+                : existingTimestamps.GetValueOrDefault(key, now);
             db.LlmConfig.Add(new LlmConfigEntry
             {
                 Key = key,
                 Value = value,
                 IsSecret = isSecret,
-                UpdatedAt = now,
+                UpdatedAt = updatedAt,
             });
         }
 

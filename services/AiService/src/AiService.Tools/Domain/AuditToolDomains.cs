@@ -499,6 +499,39 @@ public static class McpToolDomains
         return int.TryParse(raw, out var pid) && pid > 0 ? pid : null;
     }
 
+    public static Dictionary<string, List<string>> GroupToolsByDomain(IEnumerable<string> toolNames)
+    {
+        var byDomain = CanonicalDomains.ToDictionary(d => d, _ => new List<string>(), StringComparer.Ordinal);
+        foreach (var name in toolNames)
+        {
+            var domain = ClassifyToolDomain(name);
+            if (!byDomain.TryGetValue(domain, out var list))
+            {
+                list = [];
+                byDomain[domain] = list;
+            }
+
+            list.Add(name);
+        }
+
+        return byDomain;
+    }
+
+    public static readonly IReadOnlyDictionary<string, string> DomainExamplePrompts =
+        new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["core"] = "Search tools or run an insight workflow",
+            ["portfolio"] = "Summarize portfolio health across properties",
+            ["issues"] = "List critical issues sorted by traffic impact",
+            ["crawl"] = "Find crawl errors and status code breakdowns",
+            ["google"] = "Summarize GSC and GA4 performance",
+            ["insight"] = "Show landing page opportunity matrix",
+            ["links"] = "List broken internal links",
+            ["keywords"] = "Find striking-distance keywords",
+            ["export"] = "Export audit as PDF or Excel",
+            ["geo"] = "Check AI citation readiness",
+        };
+
     public static JsonObject BuildListToolsPayload(
         IReadOnlyCollection<string> exposedNames,
         ToolCatalogEntryLookup catalog,

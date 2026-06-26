@@ -131,4 +131,32 @@ internal static class ConfigSecretHelpers
 
         return trimmed.StartsWith('*') && trimmed.Length <= 4;
     }
+
+    /// <summary>Blank or masked writes must not replace an existing stored secret.</summary>
+    internal static bool ShouldPreserveExistingSecret(string key, string? incoming, string? existing)
+    {
+        if (string.IsNullOrWhiteSpace(existing))
+        {
+            return false;
+        }
+
+        if (IsMaskedSentinel(incoming))
+        {
+            return true;
+        }
+
+        if (!IsSecretKey(key) && !SecretsKeyCatalog.LlmApiKeyFields.Contains(key)
+            && !SecretsKeyCatalog.IsPipelineSecretKey(key))
+        {
+            return false;
+        }
+
+        if (key.StartsWith("google_", StringComparison.Ordinal)
+            && key is not ("google_client_secret" or "google_developer_token" or "google_service_account_json"))
+        {
+            return false;
+        }
+
+        return string.IsNullOrWhiteSpace(incoming);
+    }
 }

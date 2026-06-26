@@ -13,7 +13,7 @@ import html
 import re
 from typing import Any
 
-from ..llm_client_http import complete_json, parse_json_response
+from ..ai_service_client import complete_json, parse_json_response
 from ..llm_config import load_llm_config_from_db, llm_is_enabled
 from ..text_sanitize import strip_surrogates
 

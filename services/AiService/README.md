@@ -55,7 +55,7 @@ Browser clients never call AiService directly. The BFF proxies these paths (see 
 |----------|---------|-------------|
 | `DATABASE_URL` | — | Postgres (`llm_config`, `llm_cache`, `chat_sessions`, `pipeline_config`, `google_app_settings`, `report_payload`) |
 | `FASTAPI_URL` | `http://127.0.0.1:8001` | Python audit-tool bridge for unported tools |
-| `AI_SERVICE_URL` | — | Used by Python worker (`llm_client_http.py`) |
+| `AI_SERVICE_URL` | — | Used by Python worker (`ai_service_client.py`) |
 | `ASPNETCORE_URLS` | `http://+:8092` | Bind address |
 | `WP_MCP_HTTP` | — | Set `1` to expose MCP at `/mcp` |
 | `WP_MCP_DOMAIN` | `core` | MCP tool bundle: core, crawl, google, links, full |
@@ -68,7 +68,7 @@ BFF (:8090) → AiService (:8092)
                 ├─ SecretsService → llm_config / pipeline_config / google_app_settings
                 ├─ ToolDispatcher → native C# handlers + Python bridge (369 tools)
                 └─ MCP (stdio or HTTP on /mcp)
-Python worker → POST /internal/enrichment/* and llm_client_http → AiService
+Python worker → POST /internal/enrichment/* and ai_service_client → AiService
 ```
 
 ## Projects

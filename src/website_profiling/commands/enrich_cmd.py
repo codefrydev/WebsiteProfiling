@@ -6,7 +6,7 @@ import sys
 
 from ..analysis import merge_analysis_into_payload, merge_bundles, run_local_enrichment
 from ..db import db_session, get_latest_crawl_run_id, read_crawl, read_report_payload, write_report_payload
-from ..llm_client_http import run_llm_enrichment
+from ..ai_service_client import run_llm_enrichment
 from ..llm_config import load_llm_config_from_db, llm_is_enabled
 
 

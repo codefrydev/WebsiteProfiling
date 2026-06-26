@@ -6,6 +6,7 @@ using AiService.Application.Services;
 using AiService.Domain.Repositories;
 using AiService.Providers;
 using AiService.Tools;
+using AiService.Tools.Registry;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -19,6 +20,8 @@ public static class DependencyInjection
     {
         services.AddAiServiceProviders();
         services.AddAiServiceTools();
+
+        services.AddSingleton<ToolRegistry>(ToolRegistryExtensions.CreateToolRegistry);
 
         services.AddOptions<DatabaseOptions>()
             .BindConfiguration(DatabaseOptions.SectionName)

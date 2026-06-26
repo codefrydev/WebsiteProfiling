@@ -310,7 +310,7 @@ def test_page_coach_cmd_success_and_env(monkeypatch, capsys) -> None:
         return {"ok": True, "suggestions": []}
 
     monkeypatch.setattr(
-        "website_profiling.llm_client_http.run_page_coach",
+        "website_profiling.ai_service_client.run_page_coach",
         fake_run,
     )
     monkeypatch.setenv("WP_PAGE_COACH_CURRENT", "crawl:5")
@@ -341,7 +341,7 @@ def test_page_coach_cmd_malformed_env_does_not_crash(monkeypatch, capsys) -> Non
         return {"ok": True, "suggestions": []}
 
     monkeypatch.setattr(
-        "website_profiling.llm_client_http.run_page_coach",
+        "website_profiling.ai_service_client.run_page_coach",
         fake_run,
     )
     monkeypatch.setenv("WP_PAGE_COACH_CURRENT", "live:abc")
@@ -360,7 +360,7 @@ def test_page_coach_cmd_failure_exit(monkeypatch, capsys) -> None:
     from website_profiling.commands import page_coach_cmd
 
     monkeypatch.setattr(
-        "website_profiling.llm_client_http.run_page_coach",
+        "website_profiling.ai_service_client.run_page_coach",
         lambda _url, **_k: {"ok": False},
     )
     monkeypatch.delenv("WP_PAGE_COACH_CURRENT", raising=False)

@@ -877,7 +877,7 @@ def test_builder_exposes_llm_keyword_cluster_imports() -> None:
     """Regression: LLM keyword cluster branch must not NameError after builder split."""
     import website_profiling.reporting.builder as builder_mod
     from website_profiling.analysis.text_hygiene import is_junk_semantic_term
-    from website_profiling.llm_client_http import cluster_keywords_llm
+    from website_profiling.ai_service_client import cluster_keywords_llm
 
     assert builder_mod.is_junk_semantic_term is is_junk_semantic_term
     assert builder_mod.cluster_keywords_llm is cluster_keywords_llm

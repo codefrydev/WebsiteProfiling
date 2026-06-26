@@ -1,3 +1,5 @@
+import { formatSecretSavedAt, isSecretMaskedStored } from '@/lib/secretsConfigSchema';
+
 export type ConfigFieldDef = {
   key: string;
   label: string;
@@ -19,6 +21,8 @@ export interface ConfigFieldProps {
   value: string | boolean | undefined;
   disabled?: boolean;
   onChange: (v: string | boolean) => void;
+  /** ISO timestamp when a masked secret was last saved server-side. */
+  savedAt?: string;
 }
 
 function fieldSpan(f: ConfigFieldDef): 1 | 2 {
@@ -39,7 +43,7 @@ const inputClass =
   'w-full rounded-lg border border-default bg-brand-900 px-3 py-2 text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20';
 
 /** Single config row for any field type. */
-export default function ConfigField({ field: f, value, disabled, onChange }: ConfigFieldProps) {
+export default function ConfigField({ field: f, value, disabled, onChange, savedAt }: ConfigFieldProps) {
   const id = `pipe-cfg-${f.key}`;
   const span = fieldSpan(f);
   const outerClass = wrapClass(span);
@@ -187,11 +191,14 @@ export default function ConfigField({ field: f, value, disabled, onChange }: Con
 
   if (f.type === 'secret') {
     const strVal = value == null ? '' : String(value);
-    const isMasked = strVal.startsWith('••••');
+    const isMasked = isSecretMaskedStored(strVal);
     const displayValue = isMasked ? '' : strVal;
+    const savedLabel = strVal.startsWith('••••') ? strVal : '••••';
     const placeholder = isMasked
       ? 'Paste a new key to replace the saved one'
       : 'Paste API key (or use env vars — see below)';
+
+    const savedAtLabel = formatSecretSavedAt(savedAt);
 
     return (
       <div className={outerClass}>
@@ -208,9 +215,14 @@ export default function ConfigField({ field: f, value, disabled, onChange }: Con
             className={`${inputClass} font-mono`}
           />
           {isMasked ? (
-            <p className="mt-2 flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-              Key saved ({strVal}). Leave blank to keep it.
+            <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-green-700 dark:text-green-400">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
+                Key saved ({savedLabel}). Leave blank to keep it.
+              </span>
+              {savedAtLabel ? (
+                <span className="text-muted-foreground">Last saved {savedAtLabel}</span>
+              ) : null}
             </p>
           ) : null}
         </div>

@@ -184,4 +184,107 @@ public static class InsightToolHandlers
             ],
         };
     }
+
+    public static async Task<JsonObject> GetIssueToTrafficMapAsync(
+        NpgsqlConnection conn,
+        AuditToolContext ctx,
+        JsonObject args,
+        CancellationToken cancellationToken)
+    {
+        var withSort = args.DeepClone() as JsonObject ?? [];
+        withSort["sort"] = "impact";
+        var result = await Handlers.Report.ReportToolHandlers.ListIssuesAsync(conn, ctx, withSort, cancellationToken);
+        if (result.TryGetPropertyValue("error", out _))
+        {
+            return result;
+        }
+
+        var rows = new JsonArray();
+        if (result["issues"] is JsonArray issues)
+        {
+            foreach (var node in issues)
+            {
+                if (node is not JsonObject issue)
+                {
+                    continue;
+                }
+
+                rows.Add(new JsonObject
+                {
+                    ["url"] = issue["url"]?.DeepClone(),
+                    ["priority"] = issue["priority"]?.DeepClone(),
+                    ["category"] = issue["category"]?.DeepClone(),
+                    ["message"] = issue["message"]?.DeepClone(),
+                    ["impact_score"] = issue["impact_score"]?.DeepClone(),
+                    ["gsc_clicks"] = issue["gsc_clicks"]?.DeepClone(),
+                    ["ga4_sessions"] = issue["ga4_sessions"]?.DeepClone(),
+                });
+            }
+        }
+
+        return new JsonObject
+        {
+            ["issues"] = rows,
+            ["total"] = result["total"]?.DeepClone(),
+            ["truncated"] = result["truncated"]?.DeepClone(),
+            ["provenance"] = InsightLogic.ProvenanceBlockJson(["audit", "gsc", "ga4"], null),
+            ["insights"] = new JsonArray(JsonValue.Create("Issues sorted by traffic-weighted impact_score.")),
+        };
+    }
+
+    public static async Task<JsonObject> GetLandingPageFullDiagnosisAsync(
+        NpgsqlConnection conn,
+        AuditToolContext ctx,
+        JsonObject args,
+        CancellationToken cancellationToken)
+    {
+        var scoped = ctx.WithArgs(args);
+        var url = JsonCoercion.AsString(args["url"])?.Trim() ?? "";
+        if (string.IsNullOrEmpty(url))
+        {
+            return new JsonObject { ["error"] = "url is required" };
+        }
+
+        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        if (payload.Count == 0)
+        {
+            return new JsonObject { ["error"] = "no report found", ["missing"] = true };
+        }
+
+        var raw = await scoped.LoadGoogleFullAsync(conn, cancellationToken)
+            ?? await scoped.LoadGoogleAsync(conn, cancellationToken)
+            ?? [];
+        var sliceData = InsightLogic.SliceFromGoogleRow(raw, url);
+        var flags = InsightLogic.PageIssueFlags(url, payload);
+        var lh = InsightLogic.LookupLighthouse(url, payload);
+        var score = InsightLogic.CompositePageScore(sliceData, flags, lh);
+        JsonObject? crawlRow = null;
+        if (payload["top_pages"] is JsonArray topPages)
+        {
+            foreach (var node in topPages)
+            {
+                if (node is JsonObject row
+                    && string.Equals(JsonCoercion.AsString(row["url"])?.TrimEnd('/'),
+                        url.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+                {
+                    crawlRow = row;
+                    break;
+                }
+            }
+        }
+
+        return new JsonObject
+        {
+            ["url"] = url,
+            ["gsc_ga4"] = sliceData,
+            ["issues"] = flags,
+            ["lighthouse"] = lh?.DeepClone(),
+            ["crawl"] = crawlRow?.DeepClone(),
+            ["diagnosis"] = score,
+            ["provenance"] = InsightLogic.ProvenanceBlockJson(
+                ["gsc", "ga4", "crawl", "audit"],
+                raw["fetched_at"] ?? payload["report_generated_at"]),
+            ["insights"] = score["flags"] as JsonArray ?? new JsonArray(),
+        };
+    }
 }

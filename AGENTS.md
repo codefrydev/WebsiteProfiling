@@ -9,7 +9,7 @@ This file is the canonical entry point for agents. For full detail see [AGENT.md
 **Key paths**
 
 - `src/website_profiling/` — core Python package
-  - `cli.py`, `config.py`, `api/`, `worker/`, `crawl/`, `db/`, `reporting/`, `analysis/`, `llm_client_http.py`, `tools/`
+  - `cli.py`, `config.py`, `api/`, `worker/`, `crawl/`, `db/`, `reporting/`, `analysis/`, `ai_service_client.py`, `tools/`
 - `web/` — Vite + React SPA (static nginx in prod); browser calls `services/Bff/` for all `/api/*`
 - `services/Bff/` — .NET BFF (auth, CORS, proxy to FastAPI + IntegrationsService + Data + AiService + FileService)
 - `services/Data/` — .NET read service (report payloads, portfolio, issue status, filters; port 8091)

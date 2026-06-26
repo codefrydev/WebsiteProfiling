@@ -30,7 +30,7 @@ import {
   validateRequiredPipelineFields,
 } from '@/lib/pipelineConfigSchema';
 import { buildInitialLlmConfigState, normalizeLlmConfigState } from '@/lib/llmConfigSchema';
-import { isLlmProviderApiKeyField } from '@/lib/llmProviderApiKeys';
+import { isLlmApiKeyMaskedStored, isLlmProviderApiKeyField } from '@/lib/llmProviderApiKeys';
 import { resolvePipelineRunState } from '@/lib/pipelineRunPreview';
 import { applyLlmModelChange, applyLlmProviderChange } from '@/lib/llmProviderModels';
 import {
@@ -302,8 +302,12 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
             masked[k] = Boolean(v);
             continue;
           }
-          if (isLlmProviderApiKeyField(k) && String(v ?? '').trim() === '*') {
+          if (isLlmProviderApiKeyField(k) && isLlmApiKeyMaskedStored(v)) {
             masked[`${k}_masked`] = true;
+            continue;
+          }
+          if (k === 'llm_api_key' && isLlmApiKeyMaskedStored(v)) {
+            masked.llm_api_key_masked = true;
           }
         }
         setLlmConfigMasked(masked);
@@ -391,7 +395,27 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const buildLlmPayload = useCallback(
-    () => ({ ...llmConfigState, ...llmConfigMasked }),
+    (overrides?: Partial<LlmConfigState>) => {
+      const merged = { ...llmConfigState, ...llmConfigMasked, ...overrides };
+      const payload: Record<string, string | boolean> = {};
+
+      for (const [key, value] of Object.entries(merged)) {
+        if (key.endsWith('_masked')) {
+          continue;
+        }
+        if (key === 'llm_api_key' || isLlmProviderApiKeyField(key)) {
+          const trimmed = String(value ?? '').trim();
+          if (!trimmed) {
+            continue;
+          }
+          payload[key] = isLlmApiKeyMaskedStored(value) ? '*' : value;
+          continue;
+        }
+        payload[key] = value;
+      }
+
+      return payload;
+    },
     [llmConfigState, llmConfigMasked],
   );
 
@@ -527,7 +551,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            state: { ...llmConfigState, ...llmConfigMasked, ...nextState },
+            state: buildLlmPayload(nextState),
           }),
         });
         const data = await res.json().catch(() => ({}));
@@ -557,7 +581,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            state: { ...llmConfigState, ...llmConfigMasked, ...nextState },
+            state: buildLlmPayload(nextState),
           }),
         });
         const data = await res.json().catch(() => ({}));

@@ -9,8 +9,8 @@ from psycopg import Connection
 from ....db._common import _row_field
 from ....db.property_store import list_properties_public
 from ....integrations.google.suggest import batch_expand
-from ....llm_client_http import generate_content_brief as build_content_brief
-from ....llm_client_http import run_page_coach
+from ....ai_service_client import generate_content_brief as build_content_brief
+from ....ai_service_client import run_page_coach
 from .._slice import parse_limit
 from ..context import AuditToolContext
 
@@ -140,7 +140,7 @@ def _llm_disabled_response() -> dict[str, Any]:
 
 
 def generate_issue_fix(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
-    from ....llm_client_http import generate_issue_fix_suggestion
+    from ....ai_service_client import generate_issue_fix_suggestion
     from ....llm_config import load_llm_config_from_db
 
     err = _llm_disabled_response()
@@ -188,7 +188,7 @@ def summarize_category_for_client(conn: Connection, ctx: AuditToolContext, args:
     }
     err = _llm_disabled_response()
     if not err:
-        from ....llm_client_http import complete_json, parse_json_response
+        from ....ai_service_client import complete_json, parse_json_response
 
         try:
             user = (
@@ -265,7 +265,7 @@ def analyze_serp_snippet_for_url(conn: Connection, ctx: AuditToolContext, args: 
         base["note"] = err.get("error")
         base["provenance"] = "Crawl"
         return base
-    from ....llm_client_http import complete_json
+    from ....ai_service_client import complete_json
 
     prompt = (
         "Suggest improved title and meta description for better CTR. "
@@ -305,7 +305,7 @@ def draft_llms_txt(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]
     ]
     err = _llm_disabled_response()
     if not err:
-        from ....llm_client_http import complete_json
+        from ....ai_service_client import complete_json
 
         try:
             raw = complete_json(
@@ -418,7 +418,7 @@ def generate_schema(conn: Connection, ctx: AuditToolContext, args: dict[str, Any
 
     err = _llm_disabled_response()
     if not err:
-        from ....llm_client_http import complete_json
+        from ....ai_service_client import complete_json
 
         try:
             raw = complete_json(

@@ -11,7 +11,7 @@ from ..llm_config import load_llm_config_from_db, llm_is_enabled
 
 PROMPT_VERSION = "v2"
 
-from ..llm_client_http import call_ai_api
+from ..ai_service_client import call_ai_api
 from .context import ContentStudioContext
 from .score import score_content_draft
 from .tools import run_all_content_studio_tools

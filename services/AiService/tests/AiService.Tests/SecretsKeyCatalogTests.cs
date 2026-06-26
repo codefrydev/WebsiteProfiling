@@ -19,10 +19,25 @@ public sealed class SecretsKeyCatalogTests
     [InlineData("*", true)]
     [InlineData("••••", true)]
     [InlineData("{configured}", true)]
-    [InlineData("sk-live-key", false)]
     [InlineData("", false)]
+    [InlineData("   ", false)]
+    [InlineData("sk-live-key", false)]
     public void IsMaskedSentinel_DetectsPlaceholders(string value, bool expected)
     {
         Assert.Equal(expected, ConfigSecretHelpers.IsMaskedSentinel(value));
+    }
+
+    [Theory]
+    [InlineData("llm_api_key_groq", "", "gsk-old", true)]
+    [InlineData("llm_api_key_groq", "*", "gsk-old", true)]
+    [InlineData("llm_api_key_groq", "gsk-new", "gsk-old", false)]
+    [InlineData("google_client_id", "", "client-id", false)]
+    public void ShouldPreserveExistingSecret_BlocksBlankSecretOverwrite(
+        string key,
+        string incoming,
+        string existing,
+        bool expected)
+    {
+        Assert.Equal(expected, ConfigSecretHelpers.ShouldPreserveExistingSecret(key, incoming, existing));
     }
 }

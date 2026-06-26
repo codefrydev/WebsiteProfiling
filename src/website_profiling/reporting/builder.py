@@ -15,7 +15,7 @@ import requests
 from ..analysis import merge_bundles, run_local_enrichment
 from ..analysis.text_hygiene import is_junk_semantic_term
 from ..config import get_bool, get_int
-from ..llm_client_http import cluster_keywords_llm, run_llm_enrichment
+from ..ai_service_client import cluster_keywords_llm, run_llm_enrichment
 from ..llm_config import load_llm_config_from_db, llm_is_enabled
 from ..security_scanner import run_security_scan
 from ..scoring import round_half_up
@@ -688,7 +688,7 @@ def run_simple_report(
         except Exception as e:
             report_data.setdefault("ml_errors", []).append(f"bing: {e}")
         try:
-            from ..llm_client_http import enrich_top_issues_with_llm
+            from ..ai_service_client import enrich_top_issues_with_llm
 
             gsc_pages = []
             gsc_block = (report_data.get("google") or {}).get("gsc") or {}
@@ -702,7 +702,7 @@ def run_simple_report(
         except Exception as e:
             report_data.setdefault("ml_errors", []).append(f"issue_fixes: {e}")
         try:
-            from ..llm_client_http import generate_audit_executive_summary
+            from ..ai_service_client import generate_audit_executive_summary
 
             report_data["executive_summary"] = generate_audit_executive_summary(report_data, config)
         except Exception:

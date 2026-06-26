@@ -4,7 +4,7 @@ using Npgsql;
 
 namespace AiService.Tools.Registry;
 
-internal sealed class DelegatingToolHandler(
+public sealed class DelegatingToolHandler(
     string toolName,
     Func<NpgsqlConnection, AuditToolContext, JsonObject, CancellationToken, Task<JsonObject>> handle) : IToolHandler
 {

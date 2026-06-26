@@ -1,9 +1,9 @@
 using AiService.Tools.Bridge;
-using AiService.Tools.Modules;
 using AiService.Tools.Options;
 using AiService.Tools.Persistence;
 using AiService.Tools.Registry;
 using AiService.Tools.Selection;
+using AiService.Tools.Services.Citations;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -52,15 +52,15 @@ public static class DependencyInjection
         });
 
         services.AddSingleton<ToolCatalog>();
-        services.AddSingleton<ToolRegistry>(sp =>
-        {
-            var registry = new ToolRegistry();
-            registry.RegisterRange(ToolHandlerModules.AllHandlers());
-            return registry;
-        });
         services.AddSingleton<ToolDispatcher>();
         services.AddMemoryCache();
         services.AddSingleton<AuditToolSelectionService>();
+
+        services.AddScoped<CitationCheckService>();
+        services.AddHttpClient(nameof(CitationCheckService), client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(20);
+        });
 
         services.AddHttpClient<PythonToolBridgeClient>((sp, client) =>
         {

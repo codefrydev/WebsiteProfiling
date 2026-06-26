@@ -4,13 +4,13 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 
 **What it is:** `python -m src` from repo root (`src/__main__.py` -> package **`website_profiling`**). Config: stored in **PostgreSQL** (`pipeline_config` table, `key/value/is_unknown/updated_at`). A shadow **`pipeline-config.txt`** is auto-written to `DATA_DIR` on every Save/Run. CLI loads DB first (`DATABASE_URL`), then shadow file; `--config` overrides with a file. Reference keys: `input.txt.example` and `pipeline-config.example.txt` (not auto-loaded).
 
-**LLM / AI:** Settings live in **`llm_config`** (and related tables) in PostgreSQL. Providers: OpenAI, Google Gemini, Anthropic, Groq, Ollama (`web/src/lib/llmConfigSchema.ts`). **Browser writes** for API keys and LLM toggles go **BFF → AiService** (`PUT /api/secrets`, `PUT /api/llm-config`). Configure via **Secrets** (`/secrets`) and **Run audit → AI settings**. Never in `pipeline-config.txt` or `--config`. Worker/CLI calls AiService via `llm_client_http.py` (`AI_SERVICE_URL`, default `:8092`).
+**LLM / AI:** Settings live in **`llm_config`** (and related tables) in PostgreSQL. Providers: OpenAI, Google Gemini, Anthropic, Groq, Ollama (`web/src/lib/llmConfigSchema.ts`). **Browser writes** for API keys and LLM toggles go **BFF → AiService** (`PUT /api/secrets`, `PUT /api/llm-config`). Configure via **Secrets** (`/secrets`) and **Run audit → AI settings**. Never in `pipeline-config.txt` or `--config`. Worker/CLI calls AiService via `ai_service_client.py` (`AI_SERVICE_URL`, default `:8092`). Chat, MCP, enrichment, and Tier-0 audit tools run natively in AiService; remaining audit tools fall back to the Python FastAPI bridge until ported.
 
 **Frontend:** **`web/`** (Vite + React SPA) — browser calls **`services/Bff/`** for all `/api/*`; BFF proxies to FastAPI, AiService, Data, and FileService.
 
 **Key paths**
 
-- `src/website_profiling/` -- `cli.py`, `config.py`, `crawl/`, `db/storage.py`, `lighthouse/`, `reporting/`, `analysis/`, `llm_client_http.py`, `tools/`
+- `src/website_profiling/` -- `cli.py`, `config.py`, `crawl/`, `db/storage.py`, `lighthouse/`, `reporting/`, `analysis/`, `ai_service_client.py`, `tools/`
 - `services/Bff/` -- .NET BFF (auth, CORS, `/api/*` proxy to FastAPI + AiService + Data + FileService)
 - `services/AiService/` -- .NET AI (chat, secrets, LLM config, MCP, enrichment; port 8092)
 - `services/Data/` -- .NET read service (report payloads, portfolio, issue status; port 8091)
@@ -46,7 +46,7 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 | PDF / workbook export | `services/FileService/` (rendering); BFF routes `/api/report/export` and `/api/report/export-workbook` to FileService |
 | DB schema | `alembic/versions/` |
 | Local analysis | `analysis/local.py`, `requirements.txt` |
-| AI insights (LLM) | `services/AiService/` (browser-facing), `llm_client_http.py` (worker/CLI), `llm_config.py` |
+| AI insights (LLM) | `services/AiService/` (browser-facing + MCP + native audit tools), `ai_service_client.py` (worker/CLI), `llm_config.py` |
 | Audit query tools (MCP + chat) | `services/AiService/src/AiService.Tools/`, `services/AiService/src/AiService.Mcp/`, `tools/audit_tools/`, `commands/chat_cmd.py` |
 | Agent readiness checks | `tools/audit_tools/geo/agent_readiness.py`, `tools/audit_tools/_aeo_helpers.py` |
 | Config / CLI | `config.py` (`load_config`, `load_config_from_db`), `cli.py`, `input.txt.example` |

@@ -5,7 +5,7 @@ from website_profiling.integrations.google.competitor_links import (
     build_competitor_domain_gap,
     parse_referring_domains_from_csv,
 )
-from website_profiling.llm_client_http import generate_audit_executive_summary
+from website_profiling.ai_service_client import generate_audit_executive_summary
 
 
 def test_parse_referring_domains_from_csv() -> None:
@@ -35,7 +35,7 @@ def test_executive_summary_deterministic() -> None:
     }
     summary_text = "Prioritize fixes below by severity and Search Console traffic impact."
     with patch(
-        "website_profiling.llm_client_http._post",
+        "website_profiling.ai_service_client._post",
         return_value={
             "ok": True,
             "source": "deterministic",
@@ -54,7 +54,7 @@ def test_executive_summary_deterministic() -> None:
 
 def test_executive_summary_empty_payload() -> None:
     with patch(
-        "website_profiling.llm_client_http._post",
+        "website_profiling.ai_service_client._post",
         return_value={"ok": True, "source": "deterministic", "summary": "No audit data.", "top_issues": [], "priorities": []},
     ):
         result = generate_audit_executive_summary({}, {})

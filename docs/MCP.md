@@ -51,8 +51,6 @@ For a dedicated stdio MCP host, use `AddAiServiceMcpStdioHost()` (see `AiService
 
 For remote access over HTTP, see [Remote Streamable HTTP](#remote-streamable-http).
 
-> **Legacy:** `python -m website_profiling.mcp` still exists under `src/website_profiling/mcp/` but is no longer the recommended path — use AiService.
-
 ---
 
 ## Domain-scoped servers

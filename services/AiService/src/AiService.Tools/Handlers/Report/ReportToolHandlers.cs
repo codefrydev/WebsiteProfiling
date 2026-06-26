@@ -109,6 +109,15 @@ public static class ReportToolHandlers
             issues = issues.Where(i => (i["url"]?.GetValue<string>() ?? string.Empty).ToLowerInvariant().Contains(urlContains, StringComparison.Ordinal)).ToList();
         }
 
+        var sortMode = GetStringArg(args, "sort").ToLowerInvariant();
+        if (sortMode == "impact")
+        {
+            issues = issues
+                .OrderByDescending(i => i["impact_score"]?.GetValue<double?>() ?? 0)
+                .ThenByDescending(i => i["gsc_clicks"]?.GetValue<double?>() ?? 0)
+                .ToList();
+        }
+
         var total = issues.Count;
         var truncated = total > limit;
         var page = new JsonArray();
@@ -134,6 +143,108 @@ public static class ReportToolHandlers
         var withPriority = args.DeepClone() as JsonObject ?? [];
         withPriority["priority"] = "Critical";
         return ListIssuesAsync(conn, ctx, withPriority, cancellationToken);
+    }
+
+    public static Task<JsonObject> ListTopImpactIssuesAsync(
+        NpgsqlConnection conn,
+        AuditToolContext ctx,
+        JsonObject args,
+        CancellationToken cancellationToken)
+    {
+        var withSort = args.DeepClone() as JsonObject ?? [];
+        withSort["sort"] = "impact";
+        return ListIssuesAsync(conn, ctx, withSort, cancellationToken);
+    }
+
+    public static List<JsonObject> IterCategoryIssuesPublic(JsonObject payload) => IterCategoryIssues(payload);
+
+    public static string CategoryDisplayNamePublic(string name) => CategoryDisplayName(name);
+
+    public static async Task<JsonObject> GetCategoryScoresAsync(
+        NpgsqlConnection conn,
+        AuditToolContext ctx,
+        JsonObject args,
+        CancellationToken cancellationToken)
+    {
+        var scoped = ctx.WithArgs(args);
+        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        if (payload.Count == 0)
+        {
+            return new JsonObject { ["error"] = "no report found", ["categories"] = new JsonArray() };
+        }
+
+        return new JsonObject
+        {
+            ["categories"] = BuildCategorySummaries(payload),
+            ["health_score"] = HealthScore(payload),
+        };
+    }
+
+    public static async Task<JsonObject> GetExecutiveSummaryAsync(
+        NpgsqlConnection conn,
+        AuditToolContext ctx,
+        JsonObject args,
+        CancellationToken cancellationToken)
+    {
+        var scoped = ctx.WithArgs(args);
+        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        if (payload.Count == 0)
+        {
+            return new JsonObject { ["error"] = "no report found" };
+        }
+
+        if (payload["executive_summary"] is null)
+        {
+            return new JsonObject
+            {
+                ["error"] = "executive_summary not generated — enable AI in audit settings",
+                ["missing"] = true,
+            };
+        }
+
+        return new JsonObject { ["executive_summary"] = payload["executive_summary"].DeepClone() };
+    }
+
+    public static async Task<JsonObject> GetReportMetaAsync(
+        NpgsqlConnection conn,
+        AuditToolContext ctx,
+        JsonObject args,
+        CancellationToken cancellationToken)
+    {
+        var scoped = ctx.WithArgs(args);
+        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        if (payload.Count == 0)
+        {
+            return new JsonObject { ["error"] = "no report found" };
+        }
+
+        if (payload["report_meta"] is not JsonObject meta)
+        {
+            return new JsonObject { ["error"] = "report_meta not in payload", ["missing"] = true };
+        }
+
+        return new JsonObject { ["report_meta"] = meta.DeepClone() };
+    }
+
+    public static async Task<JsonObject> GetSiteLevelAsync(
+        NpgsqlConnection conn,
+        AuditToolContext ctx,
+        JsonObject args,
+        CancellationToken cancellationToken)
+    {
+        var scoped = ctx.WithArgs(args);
+        var payload = await scoped.LoadPayloadAsync(conn, cancellationToken);
+        if (payload.Count == 0)
+        {
+            return new JsonObject { ["error"] = "no report found" };
+        }
+
+        if (payload["site_level"] is not JsonObject siteLevel)
+        {
+            return new JsonObject { ["error"] = "site_level not in payload", ["missing"] = true };
+        }
+
+        return new JsonObject { ["site_level"] = siteLevel.DeepClone() };
     }
 
     private static List<JsonObject> IterCategoryIssues(JsonObject payload)

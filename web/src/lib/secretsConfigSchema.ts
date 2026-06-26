@@ -217,6 +217,18 @@ export const ALL_SECRETS_KEYS = new Set([
 
 export const SECRETS_MASK_SENTINEL = '__MASKED__';
 
+/** Masked DB / secrets values mean a key is stored server-side. */
+export function isSecretMaskedStored(value: string | boolean | undefined): boolean {
+  if (value === true) return true;
+  const trimmed = String(value ?? '').trim();
+  return (
+    trimmed === '*'
+    || trimmed === SECRETS_MASK_SENTINEL
+    || trimmed.startsWith('••••')
+    || trimmed === '{configured}'
+  );
+}
+
 export function isPipelineSecretKey(key: string): boolean {
   return PIPELINE_SECRET_KEYS.has(key);
 }
@@ -275,6 +287,52 @@ export function buildInitialSecretsState(): SecretsState {
     }
   }
   return out;
+}
+
+/** Omit blank/unchanged secrets so PUT never wipes stored keys. */
+export function buildSecretsSavePayload(state: SecretsState, baseline?: SecretsState): SecretsState {
+  const base = baseline ?? {};
+  const payload: SecretsState = {};
+
+  for (const [key, value] of Object.entries(state)) {
+    if (
+      key.endsWith('_masked')
+      || key.endsWith('_saved_at')
+      || key === 'google_has_service_account'
+    ) {
+      continue;
+    }
+
+    const field = getSecretsFieldByKey(key);
+    if (field && (field.type === 'secret' || field.type === 'textarea')) {
+      const trimmed = String(value ?? '').trim();
+      if (!trimmed) {
+        continue;
+      }
+      const baseTrimmed = String(base[key] ?? '').trim();
+      if (isSecretMaskedStored(value) && isSecretMaskedStored(base[key])) {
+        continue;
+      }
+      if (!isSecretMaskedStored(value) && trimmed === baseTrimmed) {
+        continue;
+      }
+      payload[key] = isSecretMaskedStored(value) ? '*' : value;
+      continue;
+    }
+
+    if (value !== base[key]) {
+      payload[key] = value;
+    }
+  }
+
+  return payload;
+}
+
+export function formatSecretSavedAt(iso: string | boolean | undefined): string | null {
+  if (!iso || typeof iso === 'boolean') return null;
+  const parsed = Date.parse(String(iso));
+  if (Number.isNaN(parsed)) return null;
+  return new Date(parsed).toLocaleString();
 }
 
 export function collectEnvHints(): Record<string, boolean> {

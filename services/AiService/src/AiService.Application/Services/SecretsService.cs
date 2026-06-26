@@ -33,6 +33,10 @@ public sealed class SecretsService(
             if (row.IsSecret || ConfigSecretHelpers.IsSecretKey(row.Key))
             {
                 state[$"{row.Key}_masked"] = true;
+                if (row.UpdatedAt != default)
+                {
+                    state[$"{row.Key}_saved_at"] = row.UpdatedAt.UtcDateTime.ToString("O");
+                }
             }
         }
 
@@ -103,7 +107,20 @@ public sealed class SecretsService(
             }
 
             var val = prop.Value?.ToString() ?? "";
+            if (key.EndsWith("_saved_at", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
             if (ConfigSecretHelpers.IsMaskedSentinel(val))
+            {
+                continue;
+            }
+
+            if (string.IsNullOrWhiteSpace(val)
+                && (SecretsKeyCatalog.LlmApiKeyFields.Contains(key)
+                    || SecretsKeyCatalog.IsPipelineSecretKey(key)
+                    || key is "google_client_secret" or "google_developer_token"))
             {
                 continue;
             }
@@ -134,6 +151,14 @@ public sealed class SecretsService(
             var mergedKnown = new Dictionary<string, string>(known, StringComparer.Ordinal);
             foreach (var (key, value) in pipelineUpdates)
             {
+                if (SecretsKeyCatalog.IsPipelineSecretKey(key)
+                    && string.IsNullOrWhiteSpace(value)
+                    && known.TryGetValue(key, out var existing)
+                    && !string.IsNullOrWhiteSpace(existing))
+                {
+                    continue;
+                }
+
                 mergedKnown[key] = value;
             }
 

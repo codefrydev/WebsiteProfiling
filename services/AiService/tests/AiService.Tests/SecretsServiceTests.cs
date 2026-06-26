@@ -73,6 +73,28 @@ public sealed class SecretsServiceTests
         Assert.Empty(pipeline.Known);
     }
 
+    [Fact]
+    public async Task PutStateAsync_SkipsBlankSecretWrites()
+    {
+        var llm = new FakeLlmConfigRepository();
+        var pipeline = new FakePipelineConfigRepository();
+        var google = new FakeGoogleAppSettingsRepository();
+        var service = new SecretsService(llm, pipeline, google);
+
+        var incoming = new JsonObject
+        {
+            ["llm_api_key_groq"] = "",
+            ["bing_webmaster_api_key"] = "   ",
+            ["google_client_id"] = "client.apps.googleusercontent.com",
+        };
+        await service.PutStateAsync(incoming);
+
+        Assert.Null(llm.SavedEntries);
+        Assert.Empty(pipeline.Known);
+        Assert.True(google.Merged);
+        Assert.Equal("client.apps.googleusercontent.com", google.LastPatch!.ClientId);
+    }
+
     private sealed class FakeLlmConfigRepository : ILlmConfigRepository
     {
         public IReadOnlyDictionary<string, string>? SavedEntries { get; private set; }
