@@ -71,7 +71,8 @@ services:
   # Internal: only the BFF reaches it (no published host port).
   data:
     build:
-      context: ./services/Data
+      context: ./services
+      dockerfile: Data/Dockerfile
     environment:
       DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
       ASPNETCORE_URLS: http://+:8091
@@ -87,7 +88,8 @@ services:
 
   ai:
     build:
-      context: ./services/AiService
+      context: ./services
+      dockerfile: AiService/Dockerfile
     environment:
       DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
       FASTAPI_URL: http://fastapi:8001
@@ -107,7 +109,8 @@ services:
 
   integrations:
     build:
-      context: ./services/IntegrationsService
+      context: ./services
+      dockerfile: IntegrationsService/Dockerfile
     environment:
       DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
       ASPNETCORE_URLS: http://+:8093
@@ -178,7 +181,8 @@ services:
   # File export service (PDF/Excel). Internal: only the BFF reaches it.
   files:
     build:
-      context: ./services/FileService
+      context: ./services
+      dockerfile: FileService/Dockerfile
     environment:
       DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
       REPORT_API_URL: http://fastapi:8001

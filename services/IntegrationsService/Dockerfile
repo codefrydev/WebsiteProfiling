@@ -1,13 +1,15 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY IntegrationsService.slnx ./
-COPY src/IntegrationsService.Domain/IntegrationsService.Domain.csproj src/IntegrationsService.Domain/
-COPY src/IntegrationsService.Application/IntegrationsService.Application.csproj src/IntegrationsService.Application/
-COPY src/IntegrationsService.Providers/IntegrationsService.Providers.csproj src/IntegrationsService.Providers/
-COPY src/IntegrationsService.Api/IntegrationsService.Api.csproj src/IntegrationsService.Api/
-RUN dotnet restore src/IntegrationsService.Api/IntegrationsService.Api.csproj
-COPY src/ src/
-RUN dotnet publish src/IntegrationsService.Api/IntegrationsService.Api.csproj -c Release -o /app/publish --no-restore
+COPY Shared/WebsiteProfiling.Contracts/WebsiteProfiling.Contracts.csproj Shared/WebsiteProfiling.Contracts/
+COPY IntegrationsService/IntegrationsService.slnx IntegrationsService/
+COPY IntegrationsService/src/IntegrationsService.Domain/IntegrationsService.Domain.csproj IntegrationsService/src/IntegrationsService.Domain/
+COPY IntegrationsService/src/IntegrationsService.Application/IntegrationsService.Application.csproj IntegrationsService/src/IntegrationsService.Application/
+COPY IntegrationsService/src/IntegrationsService.Providers/IntegrationsService.Providers.csproj IntegrationsService/src/IntegrationsService.Providers/
+COPY IntegrationsService/src/IntegrationsService.Api/IntegrationsService.Api.csproj IntegrationsService/src/IntegrationsService.Api/
+RUN dotnet restore IntegrationsService/src/IntegrationsService.Api/IntegrationsService.Api.csproj
+COPY Shared/WebsiteProfiling.Contracts/ Shared/WebsiteProfiling.Contracts/
+COPY IntegrationsService/src/ IntegrationsService/src/
+RUN dotnet publish IntegrationsService/src/IntegrationsService.Api/IntegrationsService.Api.csproj -c Release -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
