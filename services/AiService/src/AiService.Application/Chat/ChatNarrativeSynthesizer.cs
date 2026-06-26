@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using AiService.Application.Prompts;
+using AiService.Domain.Models;
 using AiService.Providers.Chat;
 
 namespace AiService.Application.Chat;
@@ -12,7 +13,7 @@ public sealed class ChatNarrativeSynthesizer(StructuredCompletionService complet
     public string NarrativeFailedMessage => NarrativeFailedMsg;
 
     public async Task<ChatNarrative> SynthesizeAsync(
-        IReadOnlyDictionary<string, string> cfg,
+        LlmSettings settings,
         string userMessage,
         IReadOnlyList<ChatToolEvent> toolEvents,
         Action<string>? onStatus = null,
@@ -23,7 +24,7 @@ public sealed class ChatNarrativeSynthesizer(StructuredCompletionService complet
         try
         {
             return await SynthesizeCoreAsync(
-                cfg,
+                settings,
                 userMessage,
                 toolEvents,
                 onStatus,
@@ -38,7 +39,7 @@ public sealed class ChatNarrativeSynthesizer(StructuredCompletionService complet
     }
 
     private async Task<ChatNarrative> SynthesizeCoreAsync(
-        IReadOnlyDictionary<string, string> cfg,
+        LlmSettings settings,
         string userMessage,
         IReadOnlyList<ChatToolEvent> toolEvents,
         Action<string>? onStatus,
@@ -52,7 +53,7 @@ public sealed class ChatNarrativeSynthesizer(StructuredCompletionService complet
         var parsed = await completionService.CompleteJsonStreamingAsync(
             LlmPrompts.ChatNarrativeSystem,
             payload,
-            cfg,
+            settings,
             delta =>
             {
                 onToken?.Invoke(delta);
@@ -89,7 +90,7 @@ public sealed class ChatNarrativeSynthesizer(StructuredCompletionService complet
         var repaired = await completionService.CompleteJsonAsync(
             LlmPrompts.ChatNarrativeRepairSystem,
             repairPayload,
-            cfg,
+            settings,
             cancellationToken);
 
         var (narrative2, errors2) = ChatNarrativeParser.ValidateNarrative(

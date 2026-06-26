@@ -1,3 +1,5 @@
+using AiService.Domain.Models;
+
 namespace AiService.Providers.Chat;
 
 public static class LlmConfigHelpers
@@ -12,59 +14,33 @@ public static class LlmConfigHelpers
         ["groq"] = "GROQ_API_KEY",
     };
 
-    public static bool IsEnabled(IReadOnlyDictionary<string, string> cfg)
+    public static bool IsEnabled(LlmSettings settings)
     {
-        if (cfg.Count == 0)
+        if (!settings.Enabled)
         {
             return false;
         }
 
-        if (!IsTruthy(cfg.GetValueOrDefault("llm_enabled")))
-        {
-            return false;
-        }
-
-        var provider = (cfg.GetValueOrDefault("llm_provider") ?? "none").Trim().ToLowerInvariant();
+        var provider = settings.Provider.Trim().ToLowerInvariant();
         return provider is not "" and not "none";
     }
 
     public static bool IsTruthy(string? value)
         => (value ?? "").Trim().ToLowerInvariant() is "true" or "1" or "yes";
 
-    public static IReadOnlyDictionary<string, string> WithResolvedApiKey(IReadOnlyDictionary<string, string> cfg)
+    public static string ResolveApiKey(LlmSettings settings, string? provider = null)
     {
-        var provider = (cfg.GetValueOrDefault("llm_provider") ?? "none").Trim().ToLowerInvariant();
-        var resolved = ResolveApiKey(cfg, provider);
-        if (string.IsNullOrWhiteSpace(resolved))
-        {
-            return cfg;
-        }
-
-        var copy = new Dictionary<string, string>(cfg, StringComparer.Ordinal)
-        {
-            ["llm_api_key"] = resolved,
-        };
-        return copy;
-    }
-
-    public static string ResolveApiKey(IReadOnlyDictionary<string, string> cfg, string? provider = null)
-    {
-        provider ??= (cfg.GetValueOrDefault("llm_provider") ?? "none").Trim().ToLowerInvariant();
+        provider ??= settings.Provider.Trim().ToLowerInvariant();
 
         if (CloudProviders.Contains(provider, StringComparer.OrdinalIgnoreCase))
         {
-            var perProviderKey = $"llm_api_key_{provider}";
-            var specific = (cfg.GetValueOrDefault(perProviderKey) ?? "").Trim();
+            var profile = settings.Providers.FirstOrDefault(
+                p => string.Equals(p.Provider, provider, StringComparison.OrdinalIgnoreCase));
+            var specific = (profile?.ApiKey ?? "").Trim();
             if (!string.IsNullOrEmpty(specific))
             {
                 return specific;
             }
-        }
-
-        var generic = (cfg.GetValueOrDefault("llm_api_key") ?? "").Trim();
-        if (!string.IsNullOrEmpty(generic))
-        {
-            return generic;
         }
 
         if (EnvKeyByProvider.TryGetValue(provider, out var envVar))
@@ -73,6 +49,22 @@ public static class LlmConfigHelpers
         }
 
         return "";
+    }
+
+    public static bool IsApiKeyConfigured(LlmSettings settings)
+    {
+        var provider = settings.Provider.Trim().ToLowerInvariant();
+        if (provider is "" or "none")
+        {
+            return false;
+        }
+
+        if (provider == "ollama")
+        {
+            return true;
+        }
+
+        return !string.IsNullOrWhiteSpace(ResolveApiKey(settings));
     }
 
     public static bool IsOllamaBaseUrl(string? url)
@@ -86,9 +78,9 @@ public static class LlmConfigHelpers
         return normalized.EndsWith(":11434", StringComparison.Ordinal);
     }
 
-    public static string? OptionalCloudBaseUrl(IReadOnlyDictionary<string, string> cfg)
+    public static string? OptionalCloudBaseUrl(LlmSettings settings)
     {
-        var baseUrl = (cfg.GetValueOrDefault("llm_base_url") ?? "").Trim().TrimEnd('/');
+        var baseUrl = settings.OllamaBaseUrl.Trim().TrimEnd('/');
         if (string.IsNullOrEmpty(baseUrl) || IsOllamaBaseUrl(baseUrl))
         {
             return null;
@@ -97,12 +89,14 @@ public static class LlmConfigHelpers
         return baseUrl;
     }
 
-    public static double TimeoutSeconds(IReadOnlyDictionary<string, string> cfg, double defaultSeconds = 120)
-    {
-        var raw = (cfg.GetValueOrDefault("llm_timeout_s") ?? "").Trim();
-        return double.TryParse(raw, out var seconds) && seconds > 0 ? seconds : defaultSeconds;
-    }
+    public static double TimeoutSeconds(LlmSettings settings, double defaultSeconds = 120)
+        => settings.TimeoutSeconds > 0 ? settings.TimeoutSeconds : defaultSeconds;
 
-    public static string ModelOrDefault(IReadOnlyDictionary<string, string> cfg, string defaultModel)
-        => (cfg.GetValueOrDefault("llm_model") ?? defaultModel).Trim();
+    public static string ModelOrDefault(LlmSettings settings, string defaultModel)
+        => string.IsNullOrWhiteSpace(settings.ActiveModel) ? defaultModel : settings.ActiveModel.Trim();
+
+    public static string DisplayModel(LlmSettings settings)
+        => string.IsNullOrWhiteSpace(settings.ActiveModel)
+            ? settings.Provider.Trim()
+            : settings.ActiveModel.Trim();
 }

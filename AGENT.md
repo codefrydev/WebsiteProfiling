@@ -2,9 +2,9 @@
 
 Developer reference for agents and contributors. User-facing overview: [README.md](README.md). Full doc index: [docs/README.md](docs/README.md).
 
-**What it is:** `python -m src` from repo root (`src/__main__.py` -> package **`website_profiling`**). Config: stored in **PostgreSQL** (`pipeline_config` table, `key/value/is_unknown/updated_at`). A shadow **`pipeline-config.txt`** is auto-written to `DATA_DIR` on every Save/Run. CLI loads DB first (`DATABASE_URL`), then shadow file; `--config` overrides with a file. Reference keys: `input.txt.example` and `pipeline-config.example.txt` (not auto-loaded).
+**What it is:** `python -m src` from repo root (`src/__main__.py` -> package **`website_profiling`**). Config: stored in **PostgreSQL typed settings tables** (`crawl_settings`, `report_settings`, `llm_settings`, `integration_secrets`, etc.). Schema inventory: `config/typed_config_manifest.json`; parity tests in `tests/test_typed_config_schema_parity.py`.
 
-**LLM / AI:** Settings live in **`llm_config`** (and related tables) in PostgreSQL. Providers: OpenAI, Google Gemini, Anthropic, Groq, Ollama (`web/src/lib/llmConfigSchema.ts`). **Browser writes** for API keys and LLM toggles go **BFF → AiService** (`PUT /api/secrets`, `PUT /api/llm-config`). Configure via **Secrets** (`/secrets`) and **Run audit → AI settings**. Never in `pipeline-config.txt` or `--config`. Worker/CLI calls AiService via `ai_service_client.py` (`AI_SERVICE_URL`, default `:8092`). Chat, MCP, enrichment, and Tier-0 audit tools run natively in AiService; remaining audit tools fall back to the Python FastAPI bridge until ported.
+**LLM / AI:** Settings live in **`llm_settings`** + **`llm_provider_profiles`**. Providers: OpenAI, Google Gemini, Anthropic, Groq, Ollama (`web/src/lib/llmConfigSchema.ts`). **Browser writes** for API keys and LLM toggles go **BFF → AiService** (`PUT /api/secrets`, `PUT /api/llm-settings` or legacy `PUT /api/llm-config`). Configure via **Secrets** (`/secrets`) and **Run audit → AI settings**. Worker spawn reads typed DB settings only. Worker/CLI calls AiService via `ai_service_client.py` (`AI_SERVICE_URL`, default `:8092`).
 
 **Frontend:** **`web/`** (Vite + React SPA) — browser calls **`services/Bff/`** for all `/api/*`; BFF proxies to FastAPI, AiService, Data, and FileService.
 
@@ -24,13 +24,13 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 
 **Run / APIs**
 
-- Run audit (CLI): `python -m src` — reads config from PostgreSQL (`pipeline_config`); shadow `DATA_DIR/pipeline-config.txt` if table empty. CLI override: `python -m src --config path`
+- Run audit (worker): `python -m src` — reads typed pipeline settings from PostgreSQL (`DATABASE_URL` required)
 - Optional step: `crawl` | `report` | `plot` | `lighthouse` | `keywords` | `warnings` | `enrich` | `google` | `chat`
 - **`preserve_crawl_history`** (default true): append crawls; `false` truncates crawl tables but restores `report_payload`, Lighthouse, `google_data`, `keyword_data`, `keyword_history`, `keyword_suggest_cache`, and `crawl_runs`
-- **`DATABASE_URL`** env: PostgreSQL connection string (required). **`DATA_DIR`**: shadow pipeline config and local artifacts (Docker: `/data`); API keys live in Postgres via AiService.
+- **`DATABASE_URL`** env: PostgreSQL connection string (required). **`DATA_DIR`**: local artifacts (Docker: `/data`); settings and API keys live in Postgres.
 - **Pipeline storage** (crawl, edges, nodes, report payload, Lighthouse, keywords, warnings) lives in **PostgreSQL only**. Deliverables use the Export view, `GET /api/report/export`, or MCP `export_*` tools — not files written by the main pipeline step.
 - **Pool tuning:** `DB_POOL_MIN` / `DB_POOL_MAX` (Python). Bulk crawl writes via `executemany`; optional **`crawl_stream_to_db`** streams rows during fetch. Per-URL raw HTML: `crawl_page_html` table (migration `015`); API `GET/POST /api/crawl/page-html`.
-- **Browser API (BFF):** All `/api/*` routes are served by `services/Bff/`. **FastAPI:** `/api/run`, `/api/jobs/*`, `/api/pipeline-config`, crawl, integrations (OAuth reads), properties, content drafts, etc. **AiService:** `/api/chat` (SSE), `/api/llm-config`, `/api/secrets`, `/api/ollama/status`, `/api/issues/fix-suggestion`, `/api/issues/action-plan`, `/api/dashboards/ai-generate`, `/api/content/analyze`, `/api/content/wizard`, `/api/links/page-coach`, `/api/mcp-tools`, `/api/report/audit-tool`. **Data:** report payload reads, portfolio, issue status, saved filters (see `DATA_ROUTES`). **FileService:** PDF/workbook export. `PipelineRunnerFab` saves pipeline config (FastAPI) and LLM state (`PUT /api/llm-config` → AiService) before each run. OpenAPI: `web/openapi.json` (FastAPI routes only — AiService routes are not in this spec); BFF client: `services/Bff/src/Bff.Application/Generated/`.
+- **Browser API (BFF):** All `/api/*` routes are served by `services/Bff/`. **FastAPI:** `/api/run`, `/api/jobs/*`, `/api/pipeline-config`, `/api/pipeline-settings`, `/api/ui-preferences`, crawl, integrations (OAuth reads), properties, content drafts, etc. **AiService:** `/api/chat` (SSE), `/api/llm-settings`, `/api/llm-config` (legacy adapter), `/api/secrets`, `/api/ollama/status`, etc. **Data:** report payload reads, portfolio, issue status, saved filters (see `DATA_ROUTES`). **FileService:** PDF/workbook export. `PipelineRunnerFab` saves pipeline config (FastAPI) and LLM state (`PUT /api/llm-config` → AiService) before each run.
 - **MCP:** AiService (.NET) — stdio host or HTTP at `/mcp` when `WP_MCP_HTTP=1` on `:8092`. Configure at **`/mcp`** in the web UI. See `docs/MCP.md` and [services/AiService/README.md](services/AiService/README.md).
 - **AI Chat UI:** `/chat` — property-scoped chat with saved sessions (`chat_sessions`, `chat_messages`; migration `012_chat_sessions`).
 - **Job store:** PostgreSQL `pipeline_jobs` (FastAPI); live job status via `/api/jobs/*` through the BFF.
@@ -46,7 +46,7 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 | PDF / workbook export | `services/FileService/` (rendering); BFF routes `/api/report/export` and `/api/report/export-workbook` to FileService |
 | DB schema | `alembic/versions/` |
 | Local analysis | `analysis/local.py`, `requirements.txt` |
-| AI insights (LLM) | `services/AiService/` (browser-facing + MCP + native audit tools), `ai_service_client.py` (worker/CLI), `llm_config.py` |
+| AI insights (LLM) | `services/AiService/` (browser-facing + MCP + native audit tools), `ai_service_client.py` (worker), `llm_config.py` (typed loader) |
 | Audit query tools (MCP + chat) | `services/AiService/src/AiService.Tools/`, `services/AiService/src/AiService.Mcp/`, `tools/audit_tools/`, `commands/chat_cmd.py` |
 | Agent readiness checks | `tools/audit_tools/geo/agent_readiness.py`, `tools/audit_tools/_aeo_helpers.py` |
 | Config / CLI | `config.py` (`load_config`, `load_config_from_db`), `cli.py`, `input.txt.example` |

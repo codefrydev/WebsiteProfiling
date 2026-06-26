@@ -1,4 +1,5 @@
-using AiService.Application;
+using AiService.Domain.Models;
+using AiService.Domain.Repositories;
 using AiService.Tools.Services.Citations;
 
 namespace AiService.Tests;
@@ -8,8 +9,8 @@ public sealed class CitationCheckServiceTests
     [Fact]
     public async Task ResolveApiKey_prefers_provided_key()
     {
-        var pipeline = new FakePipelineConfigRepository(new Dictionary<string, string>(StringComparer.Ordinal));
-        var service = new CitationCheckService(pipeline, new FakeHttpClientFactory());
+        var llm = new FakeLlmSettingsRepository();
+        var service = new CitationCheckService(llm, new FakeHttpClientFactory());
         var key = await service.ResolveApiKeyAsync("openai", "sk-test");
         Assert.Equal("sk-test", key);
     }
@@ -17,26 +18,26 @@ public sealed class CitationCheckServiceTests
     [Fact]
     public async Task CheckAsync_unknown_provider_throws()
     {
-        var pipeline = new FakePipelineConfigRepository(new Dictionary<string, string>(StringComparer.Ordinal));
-        var service = new CitationCheckService(pipeline, new FakeHttpClientFactory());
+        var llm = new FakeLlmSettingsRepository();
+        var service = new CitationCheckService(llm, new FakeHttpClientFactory());
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             service.CheckAsync(new CitationCheckRequest("q", "Brand", "example.com", "unknown", "key")));
     }
 
-    private sealed class FakePipelineConfigRepository(IReadOnlyDictionary<string, string> data)
-        : AiService.Domain.Repositories.IPipelineConfigRepository
+    private sealed class FakeLlmSettingsRepository : ILlmSettingsRepository
     {
-        public Task<IReadOnlyDictionary<string, string>> LoadAsync(CancellationToken cancellationToken = default)
-            => Task.FromResult(data);
+        public Task<LlmSettings> LoadAsync(CancellationToken cancellationToken = default)
+            => Task.FromResult(new LlmSettings());
 
-        public Task<(IReadOnlyDictionary<string, string> Known, IReadOnlyList<AiService.Domain.Repositories.PipelineConfigUnknownEntry> Unknown)> LoadFullAsync(
-            CancellationToken cancellationToken = default)
-            => Task.FromResult<(IReadOnlyDictionary<string, string>, IReadOnlyList<AiService.Domain.Repositories.PipelineConfigUnknownEntry>)>(
-                (data, []));
+        public Task<LlmSettings> LoadForClientAsync(CancellationToken cancellationToken = default)
+            => LoadAsync(cancellationToken);
 
-        public Task SaveAsync(
-            IReadOnlyDictionary<string, string> known,
-            IReadOnlyList<AiService.Domain.Repositories.PipelineConfigUnknownEntry> unknown,
+        public Task MergeAsync(LlmSettingsPatch patch, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+
+        public Task MergeProviderApiKeyAsync(
+            string provider,
+            string? apiKey,
             CancellationToken cancellationToken = default)
             => Task.CompletedTask;
     }

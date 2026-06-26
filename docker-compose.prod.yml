@@ -165,7 +165,7 @@ services:
       AI_SERVICE_URL: http://ai:8092
       INTEGRATIONS_SERVICE_URL: http://integrations:8093
       DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters"
-      AI_ROUTES: "/api/chat,/api/links/page-coach,/api/issues/fix-suggestion,/api/issues/action-plan,/api/ai/fix-suggestion,/api/dashboards/ai-generate,/api/content/analyze,/api/content/wizard,/api/llm-config,/api/secrets,/api/ollama/status,/api/report/audit-tool,/api/mcp-tools"
+      AI_ROUTES: "/api/chat,/api/links/page-coach,/api/issues/fix-suggestion,/api/issues/action-plan,/api/ai/fix-suggestion,/api/dashboards/ai-generate,/api/content/analyze,/api/content/wizard,/api/llm-settings,/api/secrets,/api/ollama/status,/api/report/audit-tool,/api/mcp-tools"
       INTEGRATIONS_ROUTES: "/api/integrations/google,/api/integrations/bing"
       AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET}
       AUTH_PASSWORD: ${AUTH_PASSWORD:-}

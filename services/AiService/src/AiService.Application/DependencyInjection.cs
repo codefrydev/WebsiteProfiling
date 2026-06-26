@@ -67,9 +67,10 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(15);
         });
 
-        services.AddScoped<ILlmConfigRepository, LlmConfigRepository>();
-        // Singleton: stateless Npgsql reads; consumed by singleton AuditToolSelectionService (MCP/chat).
-        services.AddSingleton<IPipelineConfigRepository, PipelineConfigRepository>();
+        services.AddScoped<ILlmSettingsRepository, LlmSettingsRepository>();
+        services.AddSingleton<IIntegrationSecretsRepository, IntegrationSecretsRepository>();
+        services.AddSingleton<IMcpSettingsRepository, McpSettingsRepository>();
+        services.AddSingleton<IFeatureFlagsRepository, FeatureFlagsRepository>();
         services.AddScoped<IGoogleAppSettingsRepository, GoogleAppSettingsRepository>();
         services.AddScoped<SecretsService>();
         services.AddScoped<LlmCacheRepository>();

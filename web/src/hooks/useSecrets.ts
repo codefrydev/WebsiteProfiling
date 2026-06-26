@@ -75,7 +75,7 @@ export function useSecrets() {
       } else {
         await load();
       }
-      window.dispatchEvent(new CustomEvent('llm-config-changed'));
+      window.dispatchEvent(new CustomEvent('llm-settings-changed'));
       setSaveMsg('Secrets saved.');
       return true;
     } catch (e) {

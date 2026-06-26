@@ -99,7 +99,7 @@ start_host_integrations_bff() {
     AI_SERVICE_URL="$AI_SERVICE_URL" \
     INTEGRATIONS_SERVICE_URL="$INTEGRATIONS_SERVICE_URL" \
     DATA_ROUTES="${DATA_ROUTES:-/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters}" \
-    AI_ROUTES="${AI_ROUTES:-/api/chat,/api/links/page-coach,/api/issues/fix-suggestion,/api/issues/action-plan,/api/ai/fix-suggestion,/api/dashboards/ai-generate,/api/content/analyze,/api/content/wizard,/api/llm-config,/api/secrets,/api/ollama/status,/api/report/audit-tool,/api/mcp-tools}" \
+    AI_ROUTES="${AI_ROUTES:-/api/chat,/api/links/page-coach,/api/issues/fix-suggestion,/api/issues/action-plan,/api/ai/fix-suggestion,/api/dashboards/ai-generate,/api/content/analyze,/api/content/wizard,/api/llm-settings,/api/secrets,/api/ollama/status,/api/report/audit-tool,/api/mcp-tools}" \
     INTEGRATIONS_ROUTES="${INTEGRATIONS_ROUTES:-/api/integrations/google,/api/integrations/bing}" \
     BFF_ALLOWED_ORIGINS="${BFF_ALLOWED_ORIGINS:-http://localhost:3000}" \
     AUTH_SECRET="${AUTH_SECRET:-}" \

@@ -11,7 +11,7 @@ using AiService.Providers.Chat;
 namespace AiService.Application.Services;
 
 public sealed class IssuesActionPlanService(
-    ILlmConfigRepository configRepository,
+    ILlmSettingsRepository configRepository,
     LlmCacheRepository cacheRepository,
     StructuredCompletionService completionService)
 {
@@ -22,13 +22,13 @@ public sealed class IssuesActionPlanService(
         bool refresh = false,
         CancellationToken cancellationToken = default)
     {
-        var cfg = await configRepository.LoadAsync(cancellationToken);
-        if (!LlmConfigHelpers.IsEnabled(cfg))
+        var settings = await configRepository.LoadAsync(cancellationToken);
+        if (!LlmConfigHelpers.IsEnabled(settings))
         {
             return new JsonObject { ["ok"] = false, ["error"] = "AI insights are disabled." };
         }
 
-        if (!FixSuggestionSupport.FixSuggestionsEnabled(cfg))
+        if (!FixSuggestionSupport.FixSuggestionsEnabled(settings))
         {
             return new JsonObject { ["ok"] = false, ["error"] = "Issue fix suggestions are disabled in AI task settings." };
         }
@@ -45,7 +45,7 @@ public sealed class IssuesActionPlanService(
             return new JsonObject { ["ok"] = false, ["error"] = "issues required." };
         }
 
-        var model = (cfg.GetValueOrDefault("llm_model") ?? cfg.GetValueOrDefault("llm_provider") ?? "unknown").Trim();
+        var model = LlmConfigHelpers.DisplayModel(settings);
         var cachePayload = new JsonObject
         {
             ["domain"] = domain,
@@ -77,7 +77,7 @@ public sealed class IssuesActionPlanService(
             var parsed = await completionService.CompleteJsonAsync(
                 LlmPrompts.IssuesActionPlanSystem,
                 user,
-                cfg,
+                settings,
                 cancellationToken);
 
             if (parsed.Count == 0)

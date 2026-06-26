@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { RISK_SETTINGS_KEYS } from '@/lib/secretsConfigSchema';
 import { useSecrets } from '@/hooks/useSecrets';
+import type { LlmSettingsGetResponse } from '@/lib/llmSettingsMapper';
 
 export interface RiskLlmState {
   llm_enabled: boolean;
@@ -18,29 +19,34 @@ const DEFAULT_LLM: RiskLlmState = {
   llm_chat_allow_client_readonly: true,
 };
 
-async function loadLlmRiskState(): Promise<RiskLlmState | null> {
+async function loadLlmRiskState(secretsState: Record<string, string | boolean>): Promise<RiskLlmState> {
+  let enabled = DEFAULT_LLM.llm_enabled;
   try {
-    const res = await apiFetch(apiUrl('/llm-config'));
-    if (!res.ok) return null;
-    const data = (await res.json()) as { state?: Record<string, unknown> };
-    const s = data.state ?? {};
-    return {
-      llm_enabled: s.llm_enabled !== false && s.llm_enabled !== 'false',
-      llm_write_enabled: s.llm_write_enabled !== false && s.llm_write_enabled !== 'false',
-      llm_chat_allow_client_readonly:
-        s.llm_chat_allow_client_readonly !== false && s.llm_chat_allow_client_readonly !== 'false',
-    };
+    const res = await apiFetch(apiUrl('/llm-settings'));
+    if (res.ok) {
+      const data = (await res.json()) as LlmSettingsGetResponse;
+      enabled = Boolean(data.settings?.enabled);
+    }
   } catch {
-    return null;
+    /* keep default */
   }
+
+  const writeVal = secretsState.feature_write_enabled;
+  const writeEnabled = writeVal !== 'false' && writeVal !== false;
+
+  return {
+    llm_enabled: enabled,
+    llm_write_enabled: writeEnabled,
+    llm_chat_allow_client_readonly: DEFAULT_LLM.llm_chat_allow_client_readonly,
+  };
 }
 
-async function saveLlmField(key: string, value: boolean): Promise<boolean> {
+async function saveLlmEnabled(value: boolean): Promise<boolean> {
   try {
-    const res = await apiFetch(apiUrl('/llm-config'), {
+    const res = await apiFetch(apiUrl('/llm-settings'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ state: { [key]: value } }),
+      body: JSON.stringify({ settings: { enabled: value } }),
     });
     return res.ok;
   } catch {
@@ -77,34 +83,45 @@ export function parseEnabledDomains(raw: string | boolean | undefined): Set<stri
 export function useRiskSettings() {
   const secrets = useSecrets();
 
-  // ── LLM config ──────────────────────────────────────────────────────────
   const [llmState, setLlmState] = useState<RiskLlmState>(DEFAULT_LLM);
   const [llmLoading, setLlmLoading] = useState(true);
   const [llmSaveStatus, setLlmSaveStatus] = useState<LlmSaveStatus>('idle');
   const llmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    void loadLlmRiskState().then((s) => {
-      if (s) setLlmState(s);
+    if (secrets.loading) return;
+    void loadLlmRiskState(secrets.state).then((s) => {
+      setLlmState(s);
       setLlmLoading(false);
     });
     return () => {
       if (llmTimerRef.current) clearTimeout(llmTimerRef.current);
     };
-  }, []);
+  }, [secrets.loading, secrets.state]);
 
   const showLlmSave = (ok: boolean) => {
     setLlmSaveStatus(ok ? 'saved' : 'error');
     setTimeout(() => setLlmSaveStatus('idle'), 2500);
   };
 
-  const setLlmField = useCallback((key: keyof RiskLlmState, value: boolean) => {
-    setLlmState((prev) => ({ ...prev, [key]: value }));
-    setLlmSaveStatus('saving');
-    void saveLlmField(key, value).then(showLlmSave);
-  }, []);
+  const setLlmField = useCallback(
+    (key: keyof RiskLlmState, value: boolean) => {
+      setLlmState((prev) => ({ ...prev, [key]: value }));
+      setLlmSaveStatus('saving');
+      if (key === 'llm_enabled') {
+        void saveLlmEnabled(value).then(showLlmSave);
+        return;
+      }
+      if (key === 'llm_write_enabled') {
+        secrets.setField('feature_write_enabled', value ? 'true' : 'false');
+        showLlmSave(true);
+        return;
+      }
+      showLlmSave(true);
+    },
+    [secrets],
+  );
 
-  // ── Disabled tools (pipeline_config: mcp_disabled_tools) ─────────────────
   const disabledTools = parseDisabledTools(secrets.state.mcp_disabled_tools);
   const enabledDomains = parseEnabledDomains(secrets.state.mcp_enabled_domains);
 
@@ -135,11 +152,9 @@ export function useRiskSettings() {
     [secrets],
   );
 
-  // ── Feature visibility (pipeline_config: feature_*) ───────────────────────
   const featureEnabled = useCallback(
     (id: string): boolean => {
       const key = `feature_${id.replace(/-/g, '_').replace('pages_md', 'pages_md')}_enabled`;
-      // Handle the special case keys
       const specialKeys: Record<string, string> = {
         mcp: 'feature_mcp_visible',
         secrets: 'feature_secrets_visible',
@@ -171,7 +186,6 @@ export function useRiskSettings() {
   const isRiskKey = (key: string) => RISK_SETTINGS_KEYS.has(key);
 
   return {
-    // Secrets (pipeline_config) — MCP domain, disabled tools, feature flags
     state: secrets.state,
     loading: secrets.loading || llmLoading,
     saving: secrets.saving,
@@ -179,16 +193,13 @@ export function useRiskSettings() {
     loadError: secrets.loadError,
     setField: secrets.setField,
     save: secrets.save,
-    // Disabled tools
     disabledTools,
     setToolDisabled,
     enabledDomains,
     setDomainEnabled,
-    // Feature visibility
     featureEnabled,
     setFeatureEnabled,
     isRiskKey,
-    // LLM config
     llmState,
     llmSaveStatus,
     setLlmField,

@@ -1,4 +1,5 @@
 using System.Text.Json;
+using AiService.Domain.Models;
 using AiService.Domain.Repositories;
 using AiService.Tools.Domain;
 using AiService.Tools.Registry;
@@ -7,11 +8,11 @@ using Microsoft.Extensions.Caching.Memory;
 namespace AiService.Tools.Selection;
 
 /// <summary>
-/// Resolves which audit tools are enabled from pipeline config, env, and per-tool opt-outs.
+/// Resolves which audit tools are enabled from MCP settings, env, and per-tool opt-outs.
 /// Shared by MCP, chat, and <c>/api/mcp-tools</c>.
 /// </summary>
 public sealed class AuditToolSelectionService(
-    IPipelineConfigRepository pipelineConfigRepository,
+    IMcpSettingsRepository mcpSettingsRepository,
     ToolCatalog catalog,
     IMemoryCache cache)
 {
@@ -42,19 +43,19 @@ public sealed class AuditToolSelectionService(
 
     private async Task<AuditToolSelectionSnapshot> BuildSnapshotAsync(CancellationToken cancellationToken)
     {
-        IReadOnlyDictionary<string, string> pipeline;
+        McpSettings mcp;
         try
         {
-            pipeline = await pipelineConfigRepository.LoadAsync(cancellationToken);
+            mcp = await mcpSettingsRepository.LoadAsync(cancellationToken);
         }
         catch
         {
-            pipeline = new Dictionary<string, string>(StringComparer.Ordinal);
+            mcp = new McpSettings();
         }
 
-        var bundleKey = ResolveBundleKey(pipeline);
-        var enabledDomains = ResolveEnabledDomains(pipeline, bundleKey);
-        var disabledTools = ParseDisabledTools(pipeline.GetValueOrDefault("mcp_disabled_tools"));
+        var bundleKey = ResolveBundleKey(mcp);
+        var enabledDomains = ResolveEnabledDomains(mcp, bundleKey);
+        var disabledTools = ParseDisabledTools(mcp.DisabledTools);
         var allNames = catalog.ToolNames.ToHashSet(StringComparer.Ordinal);
 
         HashSet<string> baseNames;
@@ -82,7 +83,7 @@ public sealed class AuditToolSelectionService(
             GroupToolsByDomain(baseNames));
     }
 
-    public static string ResolveBundleKey(IReadOnlyDictionary<string, string> pipeline)
+    public static string ResolveBundleKey(McpSettings mcp)
     {
         var env = Environment.GetEnvironmentVariable("WP_MCP_DOMAIN")?.Trim().ToLowerInvariant();
         if (!string.IsNullOrEmpty(env))
@@ -90,7 +91,7 @@ public sealed class AuditToolSelectionService(
             return NormalizeBundleKey(env);
         }
 
-        var db = pipeline.GetValueOrDefault("mcp_domain")?.Trim().ToLowerInvariant();
+        var db = mcp.ToolBundle.Trim().ToLowerInvariant();
         return NormalizeBundleKey(string.IsNullOrEmpty(db) ? "core" : db);
     }
 
@@ -106,7 +107,7 @@ public sealed class AuditToolSelectionService(
     }
 
     public static IReadOnlyList<string> ResolveEnabledDomains(
-        IReadOnlyDictionary<string, string> pipeline,
+        McpSettings mcp,
         string bundleKey)
     {
         if (!string.Equals(bundleKey, "custom", StringComparison.Ordinal))
@@ -119,8 +120,7 @@ public sealed class AuditToolSelectionService(
             return ["core", "insight"];
         }
 
-        var raw = pipeline.GetValueOrDefault("mcp_enabled_domains");
-        var parsed = ParseDomainList(raw);
+        var parsed = ParseDomainList(mcp.EnabledDomains);
         if (parsed.Count == 0)
         {
             return ["core", "insight"];

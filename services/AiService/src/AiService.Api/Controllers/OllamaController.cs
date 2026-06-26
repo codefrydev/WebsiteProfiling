@@ -13,12 +13,12 @@ public sealed class OllamaController : ControllerBase
 {
     private const string DefaultBase = "http://127.0.0.1:11434";
 
-    private readonly ILlmConfigRepository _config;
+    private readonly ILlmSettingsRepository _settings;
     private readonly OllamaCatalogService _catalog;
 
-    public OllamaController(ILlmConfigRepository config, OllamaCatalogService catalog)
+    public OllamaController(ILlmSettingsRepository settings, OllamaCatalogService catalog)
     {
-        _config = config;
+        _settings = settings;
         _catalog = catalog;
     }
 
@@ -26,9 +26,9 @@ public sealed class OllamaController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> Status(CancellationToken cancellationToken)
     {
-        var cfg = await _config.LoadAsync(cancellationToken);
-        var baseUrl = (cfg.GetValueOrDefault("llm_base_url") ?? DefaultBase).Trim().TrimEnd('/');
-        var configuredModel = (cfg.GetValueOrDefault("llm_model") ?? "").Trim();
+        var settings = await _settings.LoadAsync(cancellationToken);
+        var baseUrl = (settings.OllamaBaseUrl ?? DefaultBase).Trim().TrimEnd('/');
+        var configuredModel = (settings.ActiveModel ?? "").Trim();
 
         var result = await _catalog.FetchModelsAsync(baseUrl, cancellationToken);
         if (result["ok"]?.GetValue<bool?>() != true)

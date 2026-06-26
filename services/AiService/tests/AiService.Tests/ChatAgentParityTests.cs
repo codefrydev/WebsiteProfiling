@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using AiService.Application.Chat;
 using AiService.Application.Prompts;
+using AiService.Domain.Models;
 using AiService.Tools.Domain;
 using AiService.Tools.Selection;
 
@@ -11,12 +12,9 @@ public sealed class ChatAgentParityTests
     [Fact]
     public void ResolveSystemPrompt_adds_crawl_suffix_when_enabled()
     {
-        var cfg = new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["llm_chat_allow_crawl"] = "true",
-        };
+        var settings = new LlmSettings { ChatAllowCrawl = true };
 
-        var prompt = ChatAgentConfig.ResolveSystemPrompt(cfg);
+        var prompt = ChatAgentConfig.ResolveSystemPrompt(settings);
         Assert.Contains(LlmPrompts.ChatAgentCrawlSuffix.Trim(), prompt);
         Assert.DoesNotContain(LlmPrompts.ChatAgentReadOnlySuffix.Trim(), prompt);
     }
@@ -24,12 +22,9 @@ public sealed class ChatAgentParityTests
     [Fact]
     public void ResolveSystemPrompt_adds_readonly_suffix_when_crawl_disabled()
     {
-        var cfg = new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["llm_chat_allow_crawl"] = "false",
-        };
+        var settings = new LlmSettings { ChatAllowCrawl = false };
 
-        var prompt = ChatAgentConfig.ResolveSystemPrompt(cfg);
+        var prompt = ChatAgentConfig.ResolveSystemPrompt(settings);
         Assert.Contains(LlmPrompts.ChatAgentReadOnlySuffix.Trim(), prompt);
         Assert.DoesNotContain("prepare_audit_run", prompt);
     }
@@ -37,15 +32,12 @@ public sealed class ChatAgentParityTests
     [Fact]
     public void ResolveMaxToolRounds_honors_env_overrides()
     {
-        var cfg = new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["llm_chat_unlimited_tool_rounds"] = "false",
-        };
+        var settings = new LlmSettings { ChatUnlimitedToolRounds = false };
 
         Environment.SetEnvironmentVariable("CHAT_MAX_TOOL_ROUNDS", "17");
         try
         {
-            Assert.Equal(17, ChatAgentConfig.ResolveMaxToolRounds(cfg));
+            Assert.Equal(17, ChatAgentConfig.ResolveMaxToolRounds(settings));
         }
         finally
         {

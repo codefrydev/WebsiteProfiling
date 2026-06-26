@@ -45,7 +45,7 @@ export function isLlmApiKeyMaskedStored(value: string | boolean | undefined): bo
 
 /**
  * True when the active provider has an API key in Postgres (masked `*` counts) or Ollama (no key).
- * Pass `serverConfigured` from GET /llm-config when available (includes env vars).
+ * Pass `serverConfigured` from GET /llm-settings when available (includes env vars).
  */
 export function isLlmApiKeyConfigured(
   cfg: Record<string, string | boolean | undefined>,

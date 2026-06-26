@@ -1,3 +1,4 @@
+using AiService.Domain.Models;
 using AiService.Tools.Domain;
 using AiService.Tools.Registry;
 using AiService.Tools.Selection;
@@ -38,16 +39,16 @@ public sealed class AuditToolSelectionTests
     [Fact]
     public void Disabled_tools_are_removed_from_snapshot()
     {
-        var pipeline = new Dictionary<string, string>(StringComparer.Ordinal)
+        var mcp = new McpSettings
         {
-            ["mcp_domain"] = "full",
-            ["mcp_disabled_tools"] = """["list_issues"]""",
+            ToolBundle = "full",
+            DisabledTools = """["list_issues"]""",
         };
 
-        var bundle = AuditToolSelectionService.ResolveBundleKey(pipeline);
+        var bundle = AuditToolSelectionService.ResolveBundleKey(mcp);
         Assert.Equal("full", bundle);
 
-        var disabled = AuditToolSelectionService.ParseDisabledTools(pipeline["mcp_disabled_tools"]);
+        var disabled = AuditToolSelectionService.ParseDisabledTools(mcp.DisabledTools);
         Assert.Contains("list_issues", disabled);
     }
 

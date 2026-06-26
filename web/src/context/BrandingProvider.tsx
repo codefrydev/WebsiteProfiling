@@ -3,38 +3,35 @@ import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react
 import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { BrandingContext, DEFAULT_BRANDING, type BrandingState } from './BrandingContext';
 
-const BRAND_NAME_KEY = 'brand_name';
-const BRAND_SUBTITLE_KEY = 'brand_subtitle';
-const BRAND_LOGO_KEY = 'brand_logo_url';
-
 async function loadBrandingFromDb(): Promise<Partial<BrandingState>> {
   try {
-    const [nameRes, subtitleRes, logoRes] = await Promise.all([
-      apiFetch(apiUrl(`/app-settings?key=${BRAND_NAME_KEY}`)),
-      apiFetch(apiUrl(`/app-settings?key=${BRAND_SUBTITLE_KEY}`)),
-      apiFetch(apiUrl(`/app-settings?key=${BRAND_LOGO_KEY}`)),
-    ]);
-    const [nameData, subtitleData, logoData] = await Promise.all([
-      nameRes.ok ? (nameRes.json() as Promise<{ value: string | null }>) : Promise.resolve({ value: null }),
-      subtitleRes.ok ? (subtitleRes.json() as Promise<{ value: string | null }>) : Promise.resolve({ value: null }),
-      logoRes.ok ? (logoRes.json() as Promise<{ value: string | null }>) : Promise.resolve({ value: null }),
-    ]);
+    const res = await apiFetch(apiUrl('/ui-preferences'));
+    if (!res.ok) return {};
+    const data = (await res.json()) as {
+      brandName?: string;
+      brandSubtitle?: string;
+      brandLogoUrl?: string;
+    };
     const result: Partial<BrandingState> = {};
-    if (nameData.value) result.productName = nameData.value;
-    if (subtitleData.value) result.productSubtitle = subtitleData.value;
-    if (logoData.value) result.logoUrl = logoData.value;
+    if (data.brandName) result.productName = data.brandName;
+    if (data.brandSubtitle) result.productSubtitle = data.brandSubtitle;
+    if (data.brandLogoUrl) result.logoUrl = data.brandLogoUrl;
     return result;
   } catch {
     return {};
   }
 }
 
-async function saveBrandKey(key: string, value: string): Promise<void> {
+async function saveBrandingPatch(patch: {
+  brandName?: string;
+  brandSubtitle?: string;
+  brandLogoUrl?: string;
+}): Promise<void> {
   try {
-    await apiFetch(apiUrl('/app-settings'), {
+    await apiFetch(apiUrl('/ui-preferences'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key, value }),
+      body: JSON.stringify(patch),
     });
   } catch { /* ignore */ }
 }
@@ -55,17 +52,17 @@ export default function BrandingProvider({ children }: { children: ReactNode }):
 
   const setBrandName = useCallback((name: string) => {
     setBranding((prev) => ({ ...prev, productName: name || DEFAULT_BRANDING.productName }));
-    void saveBrandKey(BRAND_NAME_KEY, name);
+    void saveBrandingPatch({ brandName: name });
   }, []);
 
   const setBrandSubtitle = useCallback((subtitle: string) => {
     setBranding((prev) => ({ ...prev, productSubtitle: subtitle || DEFAULT_BRANDING.productSubtitle }));
-    void saveBrandKey(BRAND_SUBTITLE_KEY, subtitle);
+    void saveBrandingPatch({ brandSubtitle: subtitle });
   }, []);
 
   const setLogoUrl = useCallback((url: string) => {
     setBranding((prev) => ({ ...prev, logoUrl: url }));
-    void saveBrandKey(BRAND_LOGO_KEY, url);
+    void saveBrandingPatch({ brandLogoUrl: url });
   }, []);
 
   const value = useMemo(

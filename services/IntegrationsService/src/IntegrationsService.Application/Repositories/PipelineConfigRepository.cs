@@ -2,22 +2,34 @@ namespace IntegrationsService.Application.Repositories;
 
 public sealed class PipelineConfigRepository(Npgsql.NpgsqlDataSource dataSource)
 {
+    private const int SingletonId = 1;
+
     public async Task<IReadOnlyDictionary<string, string>> ReadKnownAsync(
         CancellationToken cancellationToken = default)
     {
-        await using var conn = await dataSource.OpenConnectionAsync(cancellationToken);
-        await using var cmd = conn.CreateCommand();
-        cmd.CommandText = """
-            SELECT key, value FROM pipeline_config
-            WHERE is_unknown = false
-            ORDER BY key
-            """;
-
         var result = new Dictionary<string, string>(StringComparer.Ordinal);
-        await using var reader = await cmd.ExecuteReaderAsync(cancellationToken);
-        while (await reader.ReadAsync(cancellationToken))
+        await using var conn = await dataSource.OpenConnectionAsync(cancellationToken);
+
+        await using (var cmd = conn.CreateCommand())
         {
-            result[reader.GetString(0)] = reader.GetString(1);
+            cmd.CommandText = "SELECT start_url FROM crawl_settings WHERE id = $1";
+            cmd.Parameters.AddWithValue(SingletonId);
+            var startUrl = await cmd.ExecuteScalarAsync(cancellationToken);
+            if (startUrl is string s && !string.IsNullOrWhiteSpace(s))
+            {
+                result["start_url"] = s;
+            }
+        }
+
+        await using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "SELECT bing_webmaster_api_key FROM integration_secrets WHERE id = $1";
+            cmd.Parameters.AddWithValue(SingletonId);
+            var key = await cmd.ExecuteScalarAsync(cancellationToken);
+            if (key is string s && !string.IsNullOrWhiteSpace(s))
+            {
+                result["bing_webmaster_api_key"] = s;
+            }
         }
 
         return result;

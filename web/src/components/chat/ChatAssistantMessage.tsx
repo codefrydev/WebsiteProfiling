@@ -132,7 +132,7 @@ export default function ChatAssistantMessage({
           content={sanitizeChatProse(preprocessChatMarkdown(content))}
           streaming={streaming}
         />
-      ) : streaming && statusText ? (
+      ) : streaming && statusText && !showStreamingPanel ? (
         <ChatStreamingStatus statusText={statusText} toolActivity={toolActivity} />
       ) : null}
     </div>

@@ -1,6 +1,6 @@
 using AiService.Application.Prompts;
+using AiService.Domain.Models;
 using AiService.Providers.Chat;
-using System.Text.Json.Nodes;
 
 namespace AiService.Application.Chat;
 
@@ -12,9 +12,9 @@ public static class ChatAgentConfig
     public const string ChatCrawlTool = "prepare_audit_run";
     public const string NarrativeFailedMessage = "Could not generate a summary. Tool results are shown below.";
 
-    public static int ResolveMaxToolRounds(IReadOnlyDictionary<string, string> cfg)
+    public static int ResolveMaxToolRounds(LlmSettings settings)
     {
-        if (LlmConfigHelpers.IsTruthy(cfg.GetValueOrDefault("llm_chat_unlimited_tool_rounds") ?? "false"))
+        if (settings.ChatUnlimitedToolRounds)
         {
             var extendedRaw = Environment.GetEnvironmentVariable("CHAT_MAX_TOOL_ROUNDS_EXTENDED")?.Trim();
             if (int.TryParse(extendedRaw, out var extended) && extended > 0)
@@ -34,10 +34,10 @@ public static class ChatAgentConfig
         return MaxToolRoundsDefault;
     }
 
-    public static string ResolveSystemPrompt(IReadOnlyDictionary<string, string> cfg)
+    public static string ResolveSystemPrompt(LlmSettings settings)
     {
         var prompt = LlmPrompts.ChatAgentSystemBase;
-        if (LlmConfigHelpers.IsTruthy(cfg.GetValueOrDefault("llm_chat_allow_crawl") ?? "false"))
+        if (settings.ChatAllowCrawl)
         {
             return prompt + LlmPrompts.ChatAgentCrawlSuffix;
         }
@@ -45,10 +45,9 @@ public static class ChatAgentConfig
         return prompt + LlmPrompts.ChatAgentReadOnlySuffix;
     }
 
-    public static bool ChatAllowCrawl(IReadOnlyDictionary<string, string> cfg)
-        => LlmConfigHelpers.IsTruthy(cfg.GetValueOrDefault("llm_chat_allow_crawl") ?? "false");
+    public static bool ChatAllowCrawl(LlmSettings settings) => settings.ChatAllowCrawl;
 
-    public static bool FastNarrativeEnabled(IReadOnlyDictionary<string, string>? cfg = null)
+    public static bool FastNarrativeEnabled(LlmSettings? settings = null)
     {
         var env = Environment.GetEnvironmentVariable("CHAT_FAST_NARRATIVE")?.Trim();
         if (!string.IsNullOrEmpty(env))
@@ -56,7 +55,7 @@ public static class ChatAgentConfig
             return LlmConfigHelpers.IsTruthy(env);
         }
 
-        return LlmConfigHelpers.IsTruthy(cfg?.GetValueOrDefault("llm_chat_fast_narrative") ?? "false");
+        return settings?.ChatFastNarrative ?? false;
     }
 
     private static readonly HashSet<string> WorkflowToolNames = new(StringComparer.Ordinal)
@@ -67,9 +66,9 @@ public static class ChatAgentConfig
         "run_domain_agent",
     };
 
-    public static bool ShouldFastFinishAfterBatch(IReadOnlyList<ChatToolEvent> batch, IReadOnlyDictionary<string, string> cfg)
+    public static bool ShouldFastFinishAfterBatch(IReadOnlyList<ChatToolEvent> batch, LlmSettings settings)
     {
-        if (!FastNarrativeEnabled(cfg) || batch.Count == 0)
+        if (!FastNarrativeEnabled(settings) || batch.Count == 0)
         {
             return false;
         }
@@ -81,7 +80,7 @@ public static class ChatAgentConfig
                 return false;
             }
 
-            if (JsonNode.Parse(ev.ResultJson) is not JsonObject parsed)
+            if (System.Text.Json.Nodes.JsonNode.Parse(ev.ResultJson) is not System.Text.Json.Nodes.JsonObject parsed)
             {
                 return false;
             }
@@ -90,7 +89,7 @@ public static class ChatAgentConfig
         });
     }
 
-    public static string MapAgentError(Exception ex, IReadOnlyDictionary<string, string> cfg)
+    public static string MapAgentError(Exception ex, LlmSettings settings)
     {
         var msg = ex.Message.Trim();
         if (string.IsNullOrEmpty(msg))
@@ -98,7 +97,7 @@ public static class ChatAgentConfig
             msg = ex.GetType().Name;
         }
 
-        var provider = (cfg.GetValueOrDefault("llm_provider") ?? "").Trim().ToLowerInvariant();
+        var provider = settings.Provider.Trim().ToLowerInvariant();
         if (msg.Contains("Connection error", StringComparison.OrdinalIgnoreCase) && provider == "groq")
         {
             return

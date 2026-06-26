@@ -8,13 +8,7 @@ import sys
 import tempfile
 from collections.abc import Callable
 
-from ..config import get_bool, load_config, load_config_from_db
-
-
-def shadow_config_path() -> str:
-    from ..db.storage import get_data_dir
-
-    return os.path.join(get_data_dir(), "pipeline-config.txt")
+from ..config import get_bool, load_config_from_db
 
 
 def require_database_url() -> None:
@@ -205,63 +199,36 @@ def make_path_fn(cfg: dict[str, str], cwd: str) -> PathFn:
 
 
 def resolve_config(args: argparse.Namespace) -> tuple[dict[str, str], str]:
-    cfg: dict[str, str] = {}
-    cwd: str = os.getcwd()
+    del args
+    try:
+        require_database_url()
+    except RuntimeError as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(1)
 
-    if args.config:
-        cfg_path = os.path.abspath(args.config)
-        if not os.path.isfile(cfg_path):
-            print(f"Config file not found: {cfg_path}", file=sys.stderr)
-            sys.exit(1)
-        cfg = load_config(cfg_path)
-        cwd = os.path.dirname(cfg_path) or os.getcwd()
-    else:
-        try:
-            require_database_url()
-        except RuntimeError as e:
-            print(str(e), file=sys.stderr)
-            sys.exit(1)
-        cfg = load_config_from_db()
-        from ..db.storage import get_data_dir
+    cfg = load_config_from_db()
+    from ..db.storage import get_data_dir
 
-        cwd = get_data_dir()
-        if cfg:
-            print(
-                "[Config] Loaded from pipeline_config table (PostgreSQL)",
-                file=sys.stderr,
-                flush=True,
-            )
-        else:
-            shadow = shadow_config_path()
-            if os.path.isfile(shadow):
-                cfg = load_config(shadow)
-                cwd = os.path.dirname(shadow) or os.getcwd()
-                print(
-                    f"[Config] Loaded from shadow file ({shadow})",
-                    file=sys.stderr,
-                    flush=True,
-                )
-            else:
-                print(
-                    "No audit settings found. Open Run audit in the web app, "
-                    "configure settings, and click Save — or pass --config path.",
-                    file=sys.stderr,
-                )
-                sys.exit(1)
+    cwd = get_data_dir()
+    if not cfg:
+        print(
+            "No audit settings found. Open Run audit in the web app and save settings.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
+    print(
+        "[Config] Loaded typed pipeline settings from PostgreSQL",
+        file=sys.stderr,
+        flush=True,
+    )
     cfg = apply_property_spawn_overlay(cfg)
     return cfg, cwd
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Site Audit CLI: crawl a property, build site audit reports, and sync Google data. Settings from Run audit or --config."
-    )
-    parser.add_argument(
-        "--config",
-        "-c",
-        default=None,
-        help="Optional key=value config file (default: pipeline_config in PostgreSQL)",
+        description="Site Audit worker: crawl a property, build site audit reports, and sync Google data. Settings from PostgreSQL."
     )
     parser.add_argument(
         "command",

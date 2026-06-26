@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { PipelineConfigSource, PipelineJobStatus, PipelineUnknownKey } from '@/types/api';
+import type { PipelineConfigSource, PipelineJobStatus } from '@/types/api';
 import type { LlmConfigState, PipelineConfigState } from '@/types/api';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { PIPELINE_JOB_STARTED, pollPipelineJob } from '@/lib/pipelineJobEvents';
@@ -34,6 +34,11 @@ import { isLlmApiKeyMaskedStored, isLlmProviderApiKeyField } from '@/lib/llmProv
 import { resolvePipelineRunState } from '@/lib/pipelineRunPreview';
 import { applyLlmModelChange, applyLlmProviderChange } from '@/lib/llmProviderModels';
 import {
+  flatStateToLlmSettingsPatch,
+  llmSettingsDtoToFlatState,
+  type LlmSettingsGetResponse,
+} from '@/lib/llmSettingsMapper';
+import {
   applyPreset,
   commandToPresetId,
   DEFAULT_PRESET_ID,
@@ -52,11 +57,9 @@ export interface PipelineContextValue {
   customCommand: string;
   configState: PipelineConfigState;
   llmConfigState: LlmConfigState;
-  /** Server truth: active cloud provider has API key in DB or env (from GET /llm-config). */
+  /** Server truth: active cloud provider has API key in DB or env (from GET /llm-settings). */
   llmApiKeyConfigured: boolean;
-  unknownKeys: PipelineUnknownKey[];
   configSource: PipelineConfigSource | null;
-  legacyBannerDismissed: boolean;
   loadError: string;
   loading: boolean;
   /** True after the first pipeline/LLM config fetch completes. */
@@ -87,7 +90,6 @@ export interface PipelineContextValue {
   crawlPresetId: CrawlPresetId | '';
   handleCrawlPresetChange: (id: CrawlPresetId) => void;
   resetConfig: () => void;
-  dismissLegacyBanner: () => void;
   loadConfig: () => Promise<void>;
   saveSettings: () => Promise<boolean>;
   saveLlmModel: (model: string) => Promise<boolean>;
@@ -122,10 +124,8 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
   const [llmConfigState, setLlmConfigState] = useState(buildInitialLlmConfigState);
   const [llmApiKeyConfigured, setLlmApiKeyConfigured] = useState(false);
   const [llmConfigMasked, setLlmConfigMasked] = useState<Record<string, boolean>>({});
-  const [unknownKeys, setUnknownKeys] = useState<PipelineUnknownKey[]>([]);
   const [configPath, setConfigPath] = useState('');
   const [configSource, setConfigSource] = useState<PipelineConfigSource | null>(null);
-  const [legacyBannerDismissed, setLegacyBannerDismissed] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -275,11 +275,11 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     setLoadError('');
     try {
       const [pipeRes, llmRes] = await Promise.all([
-        apiFetch(apiUrl('/pipeline-config')),
-        apiFetch(apiUrl('/llm-config')),
+        apiFetch(apiUrl('/pipeline-settings')),
+        apiFetch(apiUrl('/llm-settings')),
       ]);
       const data = await pipeRes.json().catch(() => ({}));
-      const llmData = await llmRes.json().catch(() => ({}));
+      const llmData = (await llmRes.json().catch(() => ({}))) as LlmSettingsGetResponse;
       if (!pipeRes.ok) throw new Error(data.error || pipeRes.statusText);
       const loaded = data.state || buildInitialPipelineConfigState();
       const siteName = String(loaded.site_name ?? '').trim();
@@ -290,24 +290,17 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         loaded.site_name = 'Site';
       }
       setConfigState(loaded);
-      setUnknownKeys(Array.isArray(data.unknownKeys) ? data.unknownKeys : []);
       setConfigPath(data.dbPath || data.configPath || '');
       setConfigSource(data.source || 'defaults');
-      if (llmRes.ok && llmData.state) {
-        setLlmConfigState(normalizeLlmConfigState(llmData.state as LlmConfigState));
+      if (llmRes.ok && llmData.settings) {
+        const flat = llmSettingsDtoToFlatState(llmData.settings);
+        setLlmConfigState(normalizeLlmConfigState(flat));
         setLlmApiKeyConfigured(Boolean(llmData.apiKeyConfigured));
         const masked: Record<string, boolean> = {};
-        for (const [k, v] of Object.entries(llmData.state as Record<string, unknown>)) {
-          if (k.endsWith('_masked')) {
-            masked[k] = Boolean(v);
-            continue;
-          }
-          if (isLlmProviderApiKeyField(k) && isLlmApiKeyMaskedStored(v)) {
-            masked[`${k}_masked`] = true;
-            continue;
-          }
-          if (k === 'llm_api_key' && isLlmApiKeyMaskedStored(v)) {
-            masked.llm_api_key_masked = true;
+        for (const profile of llmData.settings.providers ?? []) {
+          const provider = profile.provider?.trim().toLowerCase();
+          if (provider && profile.apiKey === '*') {
+            masked[`llm_api_key_${provider}_masked`] = true;
           }
         }
         setLlmConfigMasked(masked);
@@ -316,7 +309,6 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         setLlmApiKeyConfigured(false);
         setLlmConfigMasked({});
       }
-      setLegacyBannerDismissed(false);
       setConfigLoaded(true);
     } catch (e) {
       setLoadError(e instanceof Error ? e.message : String(e));
@@ -339,8 +331,8 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     const onLlmConfigChanged = () => {
       void loadConfig();
     };
-    window.addEventListener('llm-config-changed', onLlmConfigChanged);
-    return () => window.removeEventListener('llm-config-changed', onLlmConfigChanged);
+    window.addEventListener('llm-settings-changed', onLlmConfigChanged);
+    return () => window.removeEventListener('llm-settings-changed', onLlmConfigChanged);
   }, [loadConfig]);
 
   /** Resume polling the active DB-backed job after refresh or server restart. */
@@ -507,17 +499,17 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     setSaving(true);
     setSaveMsg('');
     try {
-      const res = await apiFetch(apiUrl('/pipeline-config'), {
+      const res = await apiFetch(apiUrl('/pipeline-settings'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: configState, unknownKeys }),
+        body: JSON.stringify({ state: configState }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || res.statusText);
-      const llmRes = await apiFetch(apiUrl('/llm-config'), {
+      const llmRes = await apiFetch(apiUrl('/llm-settings'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: buildLlmPayload() }),
+        body: JSON.stringify(flatStateToLlmSettingsPatch(llmConfigState)),
       });
       const llmData = await llmRes.json().catch(() => ({}));
       if (!llmRes.ok) throw new Error(llmData.error || llmRes.statusText);
@@ -537,7 +529,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     } finally {
       setSaving(false);
     }
-  }, [configState, unknownKeys, configPath, buildLlmPayload]);
+  }, [configState, configPath, buildLlmPayload]);
 
   const saveLlmModel = useCallback(
     async (model: string): Promise<boolean> => {
@@ -547,12 +539,10 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       setLlmConfigState(nextState);
       setSaving(true);
       try {
-        const res = await apiFetch(apiUrl('/llm-config'), {
+        const res = await apiFetch(apiUrl('/llm-settings'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            state: buildLlmPayload(nextState),
-          }),
+          body: JSON.stringify(flatStateToLlmSettingsPatch(nextState)),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || res.statusText);
@@ -577,12 +567,10 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       setLlmConfigState(nextState);
       setSaving(true);
       try {
-        const res = await apiFetch(apiUrl('/llm-config'), {
+        const res = await apiFetch(apiUrl('/llm-settings'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            state: buildLlmPayload(nextState),
-          }),
+          body: JSON.stringify(flatStateToLlmSettingsPatch(nextState)),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || res.statusText);
@@ -604,12 +592,15 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       setLlmConfigState((prev) => ({ ...prev, llm_chat_unlimited_tool_rounds: enabled }));
       setSaving(true);
       try {
-        const res = await apiFetch(apiUrl('/llm-config'), {
+        const res = await apiFetch(apiUrl('/llm-settings'), {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            state: { ...buildLlmPayload(), llm_chat_unlimited_tool_rounds: enabled },
-          }),
+          body: JSON.stringify(
+            flatStateToLlmSettingsPatch({
+              ...llmConfigState,
+              llm_chat_unlimited_tool_rounds: enabled,
+            }),
+          ),
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || res.statusText);
@@ -653,10 +644,10 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     setStatus('starting');
     setBackgroundMode(false);
     try {
-      const llmRes = await apiFetch(apiUrl('/llm-config'), {
+      const llmRes = await apiFetch(apiUrl('/llm-settings'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ state: buildLlmPayload() }),
+        body: JSON.stringify(flatStateToLlmSettingsPatch(llmConfigState)),
       });
       const llmData = await llmRes.json().catch(() => ({}));
       if (!llmRes.ok) throw new Error(llmData.error || llmRes.statusText);
@@ -670,7 +661,6 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({
           command,
           state: runState,
-          unknownKeys,
           python: pythonExe.trim() || undefined,
           repoRoot: repoRoot.trim() || undefined,
         }),
@@ -700,7 +690,6 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
     presetId,
     configState,
     crawlPresetId,
-    unknownKeys,
     buildLlmPayload,
     pythonExe,
     repoRoot,
@@ -755,9 +744,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       configState,
       llmConfigState,
       llmApiKeyConfigured,
-      unknownKeys,
       configSource,
-      legacyBannerDismissed,
       loadError,
       loading,
       configLoaded,
@@ -787,7 +774,6 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       crawlPresetId,
       handleCrawlPresetChange,
       resetConfig,
-      dismissLegacyBanner: () => setLegacyBannerDismissed(true),
       loadConfig,
       saveSettings,
       saveLlmModel,
@@ -804,9 +790,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       configState,
       llmConfigState,
       llmApiKeyConfigured,
-      unknownKeys,
       configSource,
-      legacyBannerDismissed,
       loadError,
       loading,
       configLoaded,

@@ -1,4 +1,5 @@
 using System.Text.Json.Nodes;
+using AiService.Domain.Models;
 using AiService.Tools.Context;
 using AiService.Tools.Registry;
 using AiService.Tools.Selection;
@@ -17,13 +18,13 @@ public sealed class ChatAgentLoop(AuditChatToolsBuilder toolsBuilder, ToolDispat
         List<ChatMessage> messages,
         HashSet<string> activeTools,
         IReadOnlySet<string> allowedTools,
-        IReadOnlyDictionary<string, string> cfg,
+        LlmSettings settings,
         AuditToolContext context,
         ChatTurnProgress progress,
         int maxRounds,
         CancellationToken cancellationToken)
     {
-        var gated = ChatToolSelector.ResolveChatToolMode(cfg) != "full";
+        var gated = ChatToolSelector.ResolveChatToolMode() != "full";
         var sessionTools = new HashSet<string>(activeTools, StringComparer.Ordinal);
         var finished = false;
 
@@ -63,8 +64,7 @@ public sealed class ChatAgentLoop(AuditChatToolsBuilder toolsBuilder, ToolDispat
                     result.Name,
                     result.ResultObject,
                     activeTools,
-                    allowedTools,
-                    cfg);
+                    allowedTools);
                 sessionTools.UnionWith(activeTools);
 
                 messages.Add(new ChatMessage(
@@ -73,7 +73,7 @@ public sealed class ChatAgentLoop(AuditChatToolsBuilder toolsBuilder, ToolDispat
             }
 
             var batchEvents = progress.ToolEvents.Skip(batchStart).ToList();
-            if (ChatAgentConfig.ShouldFastFinishAfterBatch(batchEvents, cfg))
+            if (ChatAgentConfig.ShouldFastFinishAfterBatch(batchEvents, settings))
             {
                 finished = true;
                 break;

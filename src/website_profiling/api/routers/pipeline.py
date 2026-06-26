@@ -65,13 +65,11 @@ def run_pipeline(body: RunPostBody, conn: DbDep) -> dict[str, Any]:
 
     # Resolve state — fall back to saved config if not provided
     raw_state = body.state
-    unknown_keys = [{"key": u.key, "value": u.value} for u in (body.unknownKeys or [])]
 
     if not raw_state:
         try:
-            saved_state, saved_unknown = read_pipeline_config(conn)
+            saved_state, _saved_unknown = read_pipeline_config(conn)
             raw_state = saved_state
-            unknown_keys = saved_unknown
         except Exception as exc:
             raise HTTPException(
                 status_code=400,
@@ -82,14 +80,6 @@ def run_pipeline(body: RunPostBody, conn: DbDep) -> dict[str, Any]:
         raise HTTPException(status_code=400, detail="Missing state object")
 
     state = coerce_pipeline_state(raw_state)
-
-    # Filter unknown keys
-    safe_unknown = [
-        u for u in unknown_keys
-        if isinstance(u, dict)
-        and not str(u.get("key", "")).startswith("llm_")
-        and not str(u.get("key", "")).startswith("ml_")
-    ]
 
     # Resolve property ID from start_url
     start_url = str(state.get("start_url") or "").strip()
@@ -114,7 +104,7 @@ def run_pipeline(body: RunPostBody, conn: DbDep) -> dict[str, Any]:
     # Save pipeline config
     str_state = {k: str(v) for k, v in state.items() if v is not None}
     try:
-        write_pipeline_config(conn, str_state, safe_unknown)
+        write_pipeline_config(conn, str_state)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to save config: {exc}")
 

@@ -2,13 +2,14 @@ using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using AiService.Application.Prompts;
+using AiService.Domain.Models;
 using AiService.Domain.Repositories;
 using AiService.Providers.Chat;
 
 namespace AiService.Application.Services;
 
 public sealed class ContentWizardService(
-    ILlmConfigRepository configRepository,
+    ILlmSettingsRepository configRepository,
     StructuredCompletionService completionService)
 {
     private const int MaxOptions = 6;
@@ -50,28 +51,20 @@ public sealed class ContentWizardService(
         };
     }
 
-    private async Task<(StructuredCompletionService Client, JsonObject? Error)> GetClientAsync(CancellationToken cancellationToken)
+    private async Task<(LlmSettings? Settings, JsonObject? Error)> GetSettingsAsync(CancellationToken cancellationToken)
     {
-        var cfg = await configRepository.LoadAsync(cancellationToken);
-        if (!LlmConfigHelpers.IsEnabled(cfg)
-            || !LlmConfigHelpers.IsTruthy(cfg.GetValueOrDefault("llm_enable_content_studio") ?? "true"))
+        var settings = await configRepository.LoadAsync(cancellationToken);
+        if (!LlmConfigHelpers.IsEnabled(settings) || !settings.EnableContentStudio)
         {
-            return (completionService, new JsonObject { ["ok"] = false, ["error"] = "AI is disabled. Enable it in Run audit → AI settings." });
+            return (null, new JsonObject { ["ok"] = false, ["error"] = "AI is disabled. Enable it in Run audit → AI settings." });
         }
 
-        try
-        {
-            return (completionService, null);
-        }
-        catch (Exception ex)
-        {
-            return (completionService, new JsonObject { ["ok"] = false, ["error"] = ex.Message });
-        }
+        return (settings, null);
     }
 
     private async Task<JsonObject> SuggestIntentsAsync(JsonObject payload, CancellationToken cancellationToken)
     {
-        var (_, err) = await GetClientAsync(cancellationToken);
+        var (settings, err) = await GetSettingsAsync(cancellationToken);
         if (err is not null)
         {
             return err;
@@ -89,15 +82,14 @@ public sealed class ContentWizardService(
             "search intents a reader might have. Return JSON: " +
             "{\"intents\":[{\"label\":\"short intent label\",\"description\":\"one sentence\"}]}";
 
-        var cfg = await configRepository.LoadAsync(cancellationToken);
-        var data = await SafeCompleteAsync(user, cfg, cancellationToken);
+        var data = await SafeCompleteAsync(user, settings!, cancellationToken);
         var options = NormalizeOptions(data["intents"]) ?? FallbackIntents(kw);
         return new JsonObject { ["ok"] = true, ["options"] = options };
     }
 
     private async Task<JsonObject> SuggestContentTypesAsync(JsonObject payload, CancellationToken cancellationToken)
     {
-        var (_, err) = await GetClientAsync(cancellationToken);
+        var (settings, err) = await GetSettingsAsync(cancellationToken);
         if (err is not null)
         {
             return err;
@@ -110,15 +102,14 @@ public sealed class ContentWizardService(
             $"Recommend up to {MaxOptions} content types that best serve this, best first. " +
             "Return JSON: {\"content_types\":[{\"label\":\"type\",\"description\":\"why it fits\"}]}";
 
-        var cfg = await configRepository.LoadAsync(cancellationToken);
-        var data = await SafeCompleteAsync(user, cfg, cancellationToken);
+        var data = await SafeCompleteAsync(user, settings!, cancellationToken);
         var options = NormalizeOptions(data["content_types"]) ?? OptionsFromPairs(FallbackContentTypes);
         return new JsonObject { ["ok"] = true, ["options"] = options };
     }
 
     private async Task<JsonObject> SuggestTonesAsync(JsonObject payload, CancellationToken cancellationToken)
     {
-        var (_, err) = await GetClientAsync(cancellationToken);
+        var (settings, err) = await GetSettingsAsync(cancellationToken);
         if (err is not null)
         {
             return err;
@@ -129,15 +120,14 @@ public sealed class ContentWizardService(
             $"(intent: \"{Clean(payload["intent"]?.GetValue<string>())}\"), recommend up to {MaxOptions} writing tones, best first. " +
             "Return JSON: {\"tones\":[{\"label\":\"tone\",\"description\":\"when to use it\"}]}";
 
-        var cfg = await configRepository.LoadAsync(cancellationToken);
-        var data = await SafeCompleteAsync(user, cfg, cancellationToken);
+        var data = await SafeCompleteAsync(user, settings!, cancellationToken);
         var options = NormalizeOptions(data["tones"]) ?? OptionsFromPairs(FallbackTones);
         return new JsonObject { ["ok"] = true, ["options"] = options };
     }
 
     private async Task<JsonObject> SuggestTitlesAsync(JsonObject payload, CancellationToken cancellationToken)
     {
-        var (_, err) = await GetClientAsync(cancellationToken);
+        var (settings, err) = await GetSettingsAsync(cancellationToken);
         if (err is not null)
         {
             return err;
@@ -152,15 +142,14 @@ public sealed class ContentWizardService(
             "Keep each under 60 characters where possible and include the keyword naturally. " +
             "Return JSON: {\"titles\":[\"title one\",\"title two\"]}";
 
-        var cfg = await configRepository.LoadAsync(cancellationToken);
-        var data = await SafeCompleteAsync(user, cfg, cancellationToken);
+        var data = await SafeCompleteAsync(user, settings!, cancellationToken);
         var titles = NormalizeStringList(data["titles"]) ?? FallbackTitles(kw);
         return new JsonObject { ["ok"] = true, ["titles"] = titles };
     }
 
     private async Task<JsonObject> ResearchPanelAsync(JsonObject payload, CancellationToken cancellationToken)
     {
-        var (_, err) = await GetClientAsync(cancellationToken);
+        var (settings, err) = await GetSettingsAsync(cancellationToken);
         if (err is not null)
         {
             return err;
@@ -185,8 +174,7 @@ public sealed class ContentWizardService(
             "{\"label\":\"source name or type\",\"description\":\"what to cite it for\"}. " +
             "Return JSON: {\"questions\":[\"...\"],\"sources\":[{\"label\":\"...\",\"description\":\"...\"}]}";
 
-        var cfg = await configRepository.LoadAsync(cancellationToken);
-        var data = await SafeCompleteAsync(user, cfg, cancellationToken);
+        var data = await SafeCompleteAsync(user, settings!, cancellationToken);
         var questions = NormalizeStringList(data["questions"]) ?? FallbackQuestions(kw);
         var sources = NormalizeOptions(data["sources"]) ?? FallbackSources();
         return new JsonObject
@@ -199,7 +187,7 @@ public sealed class ContentWizardService(
 
     private async Task<JsonObject> SuggestOutlineAsync(JsonObject payload, CancellationToken cancellationToken)
     {
-        var (_, err) = await GetClientAsync(cancellationToken);
+        var (settings, err) = await GetSettingsAsync(cancellationToken);
         if (err is not null)
         {
             return err;
@@ -213,15 +201,14 @@ public sealed class ContentWizardService(
             "Use h2 for main sections and h3 for sub-points. Do not include the title as a heading. " +
             "Return JSON: {\"outline\":[{\"level\":\"h2\",\"text\":\"Section heading\"},{\"level\":\"h3\",\"text\":\"Sub-point\"}]}";
 
-        var cfg = await configRepository.LoadAsync(cancellationToken);
-        var data = await SafeCompleteAsync(user, cfg, cancellationToken);
+        var data = await SafeCompleteAsync(user, settings!, cancellationToken);
         var outline = NormalizeOutline(data["outline"], title);
         return new JsonObject { ["ok"] = true, ["outline"] = outline };
     }
 
     private async Task<JsonObject> GenerateDraftAsync(JsonObject payload, CancellationToken cancellationToken)
     {
-        var (_, err) = await GetClientAsync(cancellationToken);
+        var (settings, err) = await GetSettingsAsync(cancellationToken);
         if (err is not null)
         {
             return err;
@@ -248,8 +235,7 @@ public sealed class ContentWizardService(
             "\"sections\":[\"prose for heading 1\",\"prose for heading 2\", ...]} " +
             "with one sections entry per heading, in the same order.";
 
-        var cfg = await configRepository.LoadAsync(cancellationToken);
-        var data = await SafeCompleteAsync(user, cfg, cancellationToken);
+        var data = await SafeCompleteAsync(user, settings!, cancellationToken);
         var titleTag = Clean(data["title_tag"]?.GetValue<string>());
         if (string.IsNullOrEmpty(titleTag))
         {
@@ -278,12 +264,12 @@ public sealed class ContentWizardService(
 
     private async Task<JsonObject> SafeCompleteAsync(
         string user,
-        IReadOnlyDictionary<string, string> cfg,
+        LlmSettings settings,
         CancellationToken cancellationToken)
     {
         try
         {
-            return await completionService.CompleteJsonAsync(LlmPrompts.ContentWizardJsonSystem, user, cfg, cancellationToken);
+            return await completionService.CompleteJsonAsync(LlmPrompts.ContentWizardJsonSystem, user, settings, cancellationToken);
         }
         catch (Exception)
         {

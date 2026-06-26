@@ -46,7 +46,7 @@ export interface SecretsPutBody {
   state?: SecretsState;
 }
 
-export type PipelineConfigSource = 'store' | 'legacy' | 'defaults';
+export type PipelineConfigSource = 'store' | 'defaults';
 
 export interface PipelineConfigLoadResult {
   state: PipelineConfigState;

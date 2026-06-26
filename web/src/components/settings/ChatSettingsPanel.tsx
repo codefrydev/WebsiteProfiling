@@ -11,7 +11,7 @@ import {
   DEFAULT_CHAT_ASSISTANT_AVATAR,
 } from '@/lib/chatAssistantBranding';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
-import { parseLlmBool } from '@/lib/llmConfigSchema';
+import { llmSettingsDtoToFlatState, type LlmSettingsGetResponse } from '@/lib/llmSettingsMapper';
 import { strings } from '@/lib/strings';
 
 const s = strings.settings;
@@ -96,14 +96,15 @@ interface ChatLlmState {
 
 async function loadChatLlmSettings(): Promise<ChatLlmState | null> {
   try {
-    const res = await apiFetch(apiUrl('/llm-config'));
+    const res = await apiFetch(apiUrl('/llm-settings'));
     if (!res.ok) return null;
-    const data = (await res.json()) as { state?: Record<string, unknown> };
-    const state = data.state ?? {};
+    const data = (await res.json()) as LlmSettingsGetResponse;
+    if (!data.settings) return null;
+    const flat = llmSettingsDtoToFlatState(data.settings);
     return {
-      llm_chat_assistant_name: String(state.llm_chat_assistant_name ?? ''),
-      llm_chat_assistant_avatar_url: String(state.llm_chat_assistant_avatar_url ?? ''),
-      llm_chat_unlimited_tool_rounds: parseLlmBool(state.llm_chat_unlimited_tool_rounds as string | boolean),
+      llm_chat_assistant_name: String(flat.llm_chat_assistant_name ?? ''),
+      llm_chat_assistant_avatar_url: String(flat.llm_chat_assistant_avatar_url ?? ''),
+      llm_chat_unlimited_tool_rounds: Boolean(flat.llm_chat_unlimited_tool_rounds),
     };
   } catch {
     return null;
@@ -112,10 +113,14 @@ async function loadChatLlmSettings(): Promise<ChatLlmState | null> {
 
 async function saveChatLlmField(key: string, value: string | boolean): Promise<boolean> {
   try {
-    const res = await apiFetch(apiUrl('/llm-config'), {
+    const patch: Record<string, unknown> = {};
+    if (key === 'llm_chat_assistant_name') patch.chatAssistantName = String(value);
+    if (key === 'llm_chat_assistant_avatar_url') patch.chatAssistantAvatarUrl = String(value);
+    if (key === 'llm_chat_unlimited_tool_rounds') patch.chatUnlimitedToolRounds = Boolean(value);
+    const res = await apiFetch(apiUrl('/llm-settings'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ state: { [key]: value } }),
+      body: JSON.stringify({ settings: patch }),
     });
     return res.ok;
   } catch {

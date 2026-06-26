@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json.Nodes;
+using AiService.Domain.Models;
 using Microsoft.Extensions.AI;
 
 namespace AiService.Providers.Chat;
@@ -10,18 +11,18 @@ public sealed class StructuredCompletionService(IChatClientFactory chatClientFac
     public Task<JsonObject> CompleteJsonAsync(
         string system,
         string user,
-        IReadOnlyDictionary<string, string> cfg,
+        LlmSettings settings,
         CancellationToken cancellationToken = default)
-        => CompleteJsonStreamingAsync(system, user, cfg, onToken: null, cancellationToken);
+        => CompleteJsonStreamingAsync(system, user, settings, onToken: null, cancellationToken);
 
     public async Task<JsonObject> CompleteJsonStreamingAsync(
         string system,
         string user,
-        IReadOnlyDictionary<string, string> cfg,
+        LlmSettings settings,
         Action<string>? onToken,
         CancellationToken cancellationToken = default)
     {
-        var client = chatClientFactory.CreateClient(cfg);
+        var client = chatClientFactory.CreateClient(settings);
         var messages = new List<ChatMessage>
         {
             new(ChatRole.System, system),

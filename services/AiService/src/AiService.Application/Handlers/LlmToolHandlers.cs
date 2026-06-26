@@ -276,7 +276,7 @@ public static class LlmToolHandlers
         };
 
         await using var scope = services.CreateAsyncScope();
-        var configRepo = scope.ServiceProvider.GetRequiredService<ILlmConfigRepository>();
+        var configRepo = scope.ServiceProvider.GetRequiredService<ILlmSettingsRepository>();
         var completion = scope.ServiceProvider.GetRequiredService<StructuredCompletionService>();
         var cfg = await configRepo.LoadAsync(cancellationToken);
         if (LlmConfigHelpers.IsEnabled(cfg))
@@ -345,7 +345,7 @@ public static class LlmToolHandlers
         };
 
         await using var scope = services.CreateAsyncScope();
-        var configRepo = scope.ServiceProvider.GetRequiredService<ILlmConfigRepository>();
+        var configRepo = scope.ServiceProvider.GetRequiredService<ILlmSettingsRepository>();
         var completion = scope.ServiceProvider.GetRequiredService<StructuredCompletionService>();
         var cfg = await configRepo.LoadAsync(cancellationToken);
         if (!LlmConfigHelpers.IsEnabled(cfg))
@@ -391,7 +391,7 @@ public static class LlmToolHandlers
         }
 
         await using var scope = services.CreateAsyncScope();
-        var configRepo = scope.ServiceProvider.GetRequiredService<ILlmConfigRepository>();
+        var configRepo = scope.ServiceProvider.GetRequiredService<ILlmSettingsRepository>();
         var completion = scope.ServiceProvider.GetRequiredService<StructuredCompletionService>();
         var cfg = await configRepo.LoadAsync(cancellationToken);
         if (!LlmConfigHelpers.IsEnabled(cfg))

@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using AiService.Application.Prompts;
 using AiService.Application.Repositories;
+using AiService.Domain.Models;
 using AiService.Domain.Repositories;
 using AiService.Providers.Chat;
 
@@ -36,6 +37,5 @@ internal static class LlmTaskCache
 
 internal static class FixSuggestionSupport
 {
-    public static bool FixSuggestionsEnabled(IReadOnlyDictionary<string, string> cfg)
-        => LlmConfigHelpers.IsTruthy(cfg.GetValueOrDefault("llm_enable_issue_fixes") ?? "true");
+    public static bool FixSuggestionsEnabled(LlmSettings settings) => settings.EnableIssueFixes;
 }

@@ -173,7 +173,7 @@ WebsiteProfiling/
 │   ├── db/                    # PostgreSQL storage layer
 │   ├── commands/              # CLI subcommands
 │   ├── cli.py                 # Pipeline entrypoint
-│   └── config.py              # Config load (DB + shadow file)
+│   └── config.py              # Config load from typed PostgreSQL tables
 ├── web/                       # Vite + React SPA (nginx in prod)
 │   ├── src/AppRoutes.tsx      # React Router routes
 │   ├── src/components/        # React UI components
@@ -216,7 +216,7 @@ WebsiteProfiling/
 | `alembic/versions/`                   | Database migrations — run `./local-run migrate`                                |
 | `tests/`                              | Backend tests; `./local-test browser` for Playwright crawl integration         |
 | `docs/MCP.md`                         | MCP server setup for IDE and agent integrations                                |
-| `data/`                               | Shadow `pipeline-config.txt` and local artifacts (gitignored; secrets live in Postgres) |
+| `data/`                               | Local artifacts (gitignored); settings live in Postgres typed tables |
 
 
 For layout details and common development patterns, see [AGENT.md](AGENT.md).

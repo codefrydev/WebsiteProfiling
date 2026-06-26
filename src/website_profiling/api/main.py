@@ -69,7 +69,7 @@ app.include_router(report.router, prefix="/api")
 app.include_router(pipeline.router, prefix="/api")
 app.include_router(crawl.router, prefix="/api")
 
-# Config: pipeline-config + app-settings only (secrets/llm-config → AiService via BFF)
+# Config: pipeline-settings + ui-preferences only (secrets/llm-settings → AiService via BFF)
 app.include_router(config.router, prefix="/api")
 
 app.include_router(properties.router, prefix="/api")
@@ -89,5 +89,5 @@ app.include_router(report_audit_tool.router, prefix="/api")
 
 # AI + secrets routes removed — served by services/AiService (.NET) via BFF:
 # chat, issues/fix-suggestion, issues/action-plan, ai/fix-suggestion,
-# dashboards/ai-generate, links/page-coach, llm-config, secrets, ollama/status, mcp-tools
+# dashboards/ai-generate, links/page-coach, llm-settings, secrets, ollama/status, mcp-tools
 # App-level Google credential writes (POST integrations/google/credentials*) → use /api/secrets (AiService)

@@ -31,7 +31,7 @@ python -m src        # Run audit pipeline
 
 **MCP:** 369 read-only audit tools via Model Context Protocol (AiService). See [docs/MCP.md](docs/MCP.md).
 
-**Secrets / credentials:** Browser writes go BFF → AiService only (`PUT /api/secrets`, `PUT /api/llm-config`). Python FastAPI keeps `pipeline-config` and read-only integration routes; worker/crawl reads `llm_config` / `google_app_settings` from Postgres at runtime.
+**Secrets / credentials:** Browser writes go BFF → AiService only (`PUT /api/secrets`, `PUT /api/llm-settings`). Python FastAPI keeps typed pipeline settings (`PUT /api/pipeline-config`, `GET/PUT /api/pipeline-settings`, `GET/PUT /api/ui-preferences`); worker/crawl reads typed settings from Postgres at runtime.
 
 **Edit targets**
 

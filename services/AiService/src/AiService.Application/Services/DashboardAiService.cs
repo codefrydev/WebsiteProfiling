@@ -1,12 +1,13 @@
 using System.Text.Json.Nodes;
 using AiService.Application.Prompts;
+using AiService.Application.Repositories;
 using AiService.Domain.Repositories;
 using AiService.Providers.Chat;
 
 namespace AiService.Application.Services;
 
 public sealed class DashboardAiService(
-    ILlmConfigRepository configRepository,
+    ILlmSettingsRepository configRepository,
     StructuredCompletionService completionService)
 {
     private static readonly HashSet<string> ValidModes = new(StringComparer.OrdinalIgnoreCase)
@@ -18,13 +19,13 @@ public sealed class DashboardAiService(
         JsonObject payload,
         CancellationToken cancellationToken = default)
     {
-        var cfg = await configRepository.LoadAsync(cancellationToken);
-        if (!LlmConfigHelpers.IsEnabled(cfg))
+        var settings = await configRepository.LoadAsync(cancellationToken);
+        if (!LlmConfigHelpers.IsEnabled(settings))
         {
             return new JsonObject { ["ok"] = false, ["error"] = "AI insights are disabled.", ["missing"] = true };
         }
 
-        if (!LlmConfigHelpers.IsTruthy(cfg.GetValueOrDefault("llm_enable_dashboards") ?? "true"))
+        if (!settings.EnableDashboards)
         {
             return new JsonObject { ["ok"] = false, ["error"] = "Dashboard AI is disabled in task settings.", ["missing"] = true };
         }
@@ -47,7 +48,7 @@ public sealed class DashboardAiService(
             var result = await completionService.CompleteJsonAsync(
                 LlmPrompts.DashboardAiSystem,
                 user,
-                cfg,
+                settings,
                 cancellationToken);
 
             if (result.Count == 0)

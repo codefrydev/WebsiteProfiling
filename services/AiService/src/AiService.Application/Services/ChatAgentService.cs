@@ -1,4 +1,5 @@
 using AiService.Application.Chat;
+using AiService.Domain.Models;
 using AiService.Domain.Repositories;
 using AiService.Providers.Chat;
 using AiService.Tools.Context;
@@ -11,7 +12,7 @@ namespace AiService.Application.Services;
 /// Chat agent turn orchestration — ports Python <c>run_agent_turn</c> using a manual tool loop.
 /// </summary>
 public sealed class ChatAgentService(
-    ILlmConfigRepository configRepository,
+    ILlmSettingsRepository configRepository,
     IChatClientFactory chatClientFactory,
     ChatAgentLoop agentLoop,
     ChatNarrativeSynthesizer narrativeSynthesizer,
@@ -24,8 +25,8 @@ public sealed class ChatAgentService(
         CancellationToken cancellationToken = default)
     {
         var progress = new ChatTurnProgress(onEvent);
-        var cfg = await configRepository.LoadAsync(cancellationToken);
-        if (!LlmConfigHelpers.IsEnabled(cfg))
+        var settings = await configRepository.LoadAsync(cancellationToken);
+        if (!LlmConfigHelpers.IsEnabled(settings))
         {
             const string err = "AI is disabled. Enable AI insights in the AI settings tab and configure a provider.";
             progress.EmitError(err);
@@ -35,7 +36,7 @@ public sealed class ChatAgentService(
         IChatClient client;
         try
         {
-            client = chatClientFactory.CreateClient(cfg);
+            client = chatClientFactory.CreateClient(settings);
         }
         catch (Exception ex)
         {
@@ -43,14 +44,14 @@ public sealed class ChatAgentService(
             return new ChatTurnResult(false, null, progress.ToolEvents, ex.Message);
         }
 
-        var systemPrompt = ChatAgentConfig.ResolveSystemPrompt(cfg);
+        var systemPrompt = ChatAgentConfig.ResolveSystemPrompt(settings);
         var messages = BuildMessages(history, systemPrompt);
         var lastUser = LastUserMessage(history);
-        var maxRounds = ChatAgentConfig.ResolveMaxToolRounds(cfg);
+        var maxRounds = ChatAgentConfig.ResolveMaxToolRounds(settings);
 
         var enabledTools = (await toolSelection.GetEnabledToolNamesAsync(cancellationToken))
             .ToHashSet(StringComparer.Ordinal);
-        if (ChatAgentConfig.ChatAllowCrawl(cfg))
+        if (ChatAgentConfig.ChatAllowCrawl(settings))
         {
             enabledTools.Add(ChatAgentConfig.ChatCrawlTool);
         }
@@ -60,7 +61,7 @@ public sealed class ChatAgentService(
             .Select(m => m.Content)
             .ToList();
 
-        HashSet<string>? extraTools = ChatAgentConfig.ChatAllowCrawl(cfg)
+        HashSet<string>? extraTools = ChatAgentConfig.ChatAllowCrawl(settings)
             ? [ChatAgentConfig.ChatCrawlTool]
             : null;
 
@@ -68,7 +69,6 @@ public sealed class ChatAgentService(
             lastUser,
             priorUserMessages,
             enabledTools,
-            cfg,
             extraNames: extraTools);
 
         ChatAgentLoopResult loopResult;
@@ -79,7 +79,7 @@ public sealed class ChatAgentService(
                 messages,
                 activeTools,
                 enabledTools,
-                cfg,
+                settings,
                 context,
                 progress,
                 maxRounds,
@@ -87,16 +87,16 @@ public sealed class ChatAgentService(
         }
         catch (Exception ex)
         {
-            var msg = ChatAgentConfig.MapAgentError(ex, cfg);
+            var msg = ChatAgentConfig.MapAgentError(ex, settings);
             progress.EmitError(msg);
             return new ChatTurnResult(false, null, progress.ToolEvents, msg);
         }
 
-        return await FinishWithNarrativeAsync(cfg, lastUser, progress, loopResult.PartialNote, cancellationToken);
+        return await FinishWithNarrativeAsync(settings, lastUser, progress, loopResult.PartialNote, cancellationToken);
     }
 
     private async Task<ChatTurnResult> FinishWithNarrativeAsync(
-        IReadOnlyDictionary<string, string> cfg,
+        LlmSettings settings,
         string userMessage,
         ChatTurnProgress progress,
         string? partialNote,
@@ -112,7 +112,7 @@ public sealed class ChatAgentService(
         try
         {
             var narrative = await narrativeSynthesizer.SynthesizeAsync(
-                cfg,
+                settings,
                 userMessage,
                 progress.ToolEvents,
                 phase =>

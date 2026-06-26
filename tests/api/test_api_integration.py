@@ -137,7 +137,7 @@ def test_integrations_google_status(api_client: TestClient) -> None:
 
 
 def test_pipeline_config_wrapper(api_client: TestClient) -> None:
-    pipe = api_client.get("/api/pipeline-config")
+    pipe = api_client.get("/api/pipeline-settings")
     assert pipe.status_code == 200
     pipe_body = pipe.json()
     assert "state" in pipe_body

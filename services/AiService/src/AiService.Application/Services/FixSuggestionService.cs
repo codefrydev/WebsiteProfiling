@@ -10,7 +10,7 @@ using AiService.Providers.Chat;
 namespace AiService.Application.Services;
 
 public sealed class FixSuggestionService(
-    ILlmConfigRepository configRepository,
+    ILlmSettingsRepository configRepository,
     LlmCacheRepository cacheRepository,
     StructuredCompletionService completionService)
 {
@@ -25,13 +25,13 @@ public sealed class FixSuggestionService(
         bool refresh = false,
         CancellationToken cancellationToken = default)
     {
-        var cfg = await configRepository.LoadAsync(cancellationToken);
-        if (!LlmConfigHelpers.IsEnabled(cfg))
+        var settings = await configRepository.LoadAsync(cancellationToken);
+        if (!LlmConfigHelpers.IsEnabled(settings))
         {
             return new JsonObject { ["ok"] = false, ["error"] = "AI insights are disabled." };
         }
 
-        if (!FixSuggestionSupport.FixSuggestionsEnabled(cfg))
+        if (!FixSuggestionSupport.FixSuggestionsEnabled(settings))
         {
             return new JsonObject { ["ok"] = false, ["error"] = "Issue fix suggestions are disabled in AI task settings." };
         }
@@ -44,7 +44,7 @@ public sealed class FixSuggestionService(
         }
 
         var source = userPayload["source"]?.GetValue<string>() ?? "issue";
-        var model = (cfg.GetValueOrDefault("llm_model") ?? cfg.GetValueOrDefault("llm_provider") ?? "unknown").Trim();
+        var model = LlmConfigHelpers.DisplayModel(settings);
         var cacheKey = SHA256.HashData(
             Encoding.UTF8.GetBytes($"fix_suggestion:{LlmPrompts.Version}:{model}:{source}:{userPayload.ToJsonString()}"));
         var cacheKeyHex = Convert.ToHexStringLower(cacheKey);
@@ -72,7 +72,7 @@ public sealed class FixSuggestionService(
         try
         {
             var user = Truncate(userPayload.ToJsonString(), 8000);
-            var fix = await completionService.CompleteJsonAsync(system, user, cfg, cancellationToken);
+            var fix = await completionService.CompleteJsonAsync(system, user, settings, cancellationToken);
             if (fix.Count == 0 || string.IsNullOrWhiteSpace(fix["fix"]?.GetValue<string>()))
             {
                 fix = DefaultFix.DeepClone() as JsonObject ?? [];

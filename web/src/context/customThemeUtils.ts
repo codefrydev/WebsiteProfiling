@@ -80,11 +80,10 @@ export function serializeCustomThemeForScript(state: CustomThemeState): string {
 /** Load custom theme from DB (via API). Returns null on any failure. */
 export async function loadCustomThemeFromDb(): Promise<CustomThemeState | null> {
   try {
-    const res = await apiFetch(apiUrl(`/app-settings?key=${CUSTOM_THEME_DB_KEY}`));
+    const res = await apiFetch(apiUrl('/ui-preferences'));
     if (!res.ok) return null;
-    const data = (await res.json()) as { key: string; value: string | null };
-    if (!data.value) return null;
-    const parsed = JSON.parse(data.value) as unknown;
+    const data = (await res.json()) as { customThemeJson?: CustomThemeState | null };
+    const parsed = data.customThemeJson;
     if (
       typeof parsed === 'object' &&
       parsed !== null &&
@@ -101,13 +100,12 @@ export async function loadCustomThemeFromDb(): Promise<CustomThemeState | null> 
 
 /** Save custom theme to DB (via API). Also writes localStorage for FOUC cache. */
 export async function saveCustomThemeToDb(state: CustomThemeState): Promise<void> {
-  // Always keep localStorage in sync as a fast FOUC cache
   setStoredCustomTheme(state);
   try {
-    await apiFetch(apiUrl('/app-settings'), {
+    await apiFetch(apiUrl('/ui-preferences'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: CUSTOM_THEME_DB_KEY, value: JSON.stringify(state) }),
+      body: JSON.stringify({ customThemeJson: state }),
     });
   } catch {
     /* ignore — localStorage is the fallback */

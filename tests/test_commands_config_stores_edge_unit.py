@@ -275,8 +275,8 @@ def test_load_config_from_db_success(monkeypatch) -> None:
     monkeypatch.setattr("website_profiling.db.storage.get_database_url", lambda: "postgres://x")
     monkeypatch.setattr("website_profiling.db.db_session", lambda: Ctx())
     monkeypatch.setattr(
-        "website_profiling.db.storage.read_pipeline_config",
-        lambda _c: ({"start_url": "https://a.com"}, []),
+        "website_profiling.db.typed_config.worker_config.load_worker_pipeline_config",
+        lambda _c: {"start_url": "https://a.com"},
     )
     assert load_config_from_db()["start_url"] == "https://a.com"
 
@@ -678,11 +678,14 @@ def test_db_common_remaining() -> None:
     assert _common._sanitize_for_json(float("nan")) is None
 
 
-def test_config_store_write_empty_unknown() -> None:
+def test_config_store_write_empty_entries_noop() -> None:
     from website_profiling.db.config_store import write_pipeline_config
 
     conn = FakeConn()
-    write_pipeline_config(conn, {}, unknown_keys=[])  # type: ignore[arg-type]
+    write_pipeline_config(conn, {})  # type: ignore[arg-type]
+    assert conn.executed == []
+
+    write_pipeline_config(conn, {"start_url": "https://x"})  # type: ignore[arg-type]
     assert conn.executed
 
 
@@ -844,11 +847,8 @@ def test_google_app_store_sa_dict(monkeypatch) -> None:
     assert out["ok"] is True
 
 
-def test_config_resolve_shadow_and_missing(monkeypatch, tmp_path, capsys) -> None:
+def test_config_resolve_db_only(monkeypatch, tmp_path, capsys) -> None:
     from website_profiling.commands import config_resolve
-
-    monkeypatch.setattr("website_profiling.db.storage.get_data_dir", lambda: str(tmp_path))
-    assert config_resolve.shadow_config_path().endswith("pipeline-config.txt")
 
     monkeypatch.setattr("website_profiling.db.storage.get_database_url", lambda: "postgres://x")
     config_resolve.require_database_url()
@@ -858,31 +858,19 @@ def test_config_resolve_shadow_and_missing(monkeypatch, tmp_path, capsys) -> Non
 
     assert config_resolve.resolve_property_id_from_cfg(None) is None
 
-    args = argparse.Namespace(config=str(tmp_path / "missing.cfg"))
-    with pytest.raises(SystemExit):
-        config_resolve.resolve_config(args)
-
     monkeypatch.setattr(config_resolve, "require_database_url", lambda: (_ for _ in ()).throw(RuntimeError("no db")))
-    args2 = argparse.Namespace(config=None)
     with pytest.raises(SystemExit):
-        config_resolve.resolve_config(args2)
+        config_resolve.resolve_config(argparse.Namespace())
 
-    shadow = tmp_path / "pipeline-config.txt"
-    shadow.write_text("start_url = https://shadow.com\n", encoding="utf-8")
     monkeypatch.setattr(config_resolve, "require_database_url", lambda: None)
-    monkeypatch.setattr(config_resolve, "load_config_from_db", lambda: {})
-    monkeypatch.setattr("website_profiling.db.storage.get_data_dir", lambda: str(tmp_path))
-    cfg, _cwd = config_resolve.resolve_config(argparse.Namespace(config=None))
-    assert cfg["start_url"] == "https://shadow.com"
-
     monkeypatch.setattr(config_resolve, "load_config_from_db", lambda: {"start_url": "https://db.com"})
-    cfg2, _ = config_resolve.resolve_config(argparse.Namespace(config=None))
+    monkeypatch.setattr("website_profiling.db.storage.get_data_dir", lambda: str(tmp_path))
+    cfg2, _ = config_resolve.resolve_config(argparse.Namespace())
     assert cfg2["start_url"] == "https://db.com"
 
     monkeypatch.setattr(config_resolve, "load_config_from_db", lambda: {})
-    (tmp_path / "pipeline-config.txt").unlink()
     with pytest.raises(SystemExit):
-        config_resolve.resolve_config(argparse.Namespace(config=None))
+        config_resolve.resolve_config(argparse.Namespace())
 
 
 def test_remaining_gaps_misc(monkeypatch) -> None:

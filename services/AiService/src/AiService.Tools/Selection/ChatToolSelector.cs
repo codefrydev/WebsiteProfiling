@@ -64,7 +64,7 @@ public static class ChatToolSelector
         ["core web vitals"] = ["get_lighthouse_summary", "list_pages_slow_response"],
     };
 
-    public static string ResolveChatToolMode(IReadOnlyDictionary<string, string>? llmConfig = null)
+    public static string ResolveChatToolMode()
     {
         var env = Environment.GetEnvironmentVariable("CHAT_TOOL_MODE");
         if (!string.IsNullOrWhiteSpace(env))
@@ -72,8 +72,7 @@ public static class ChatToolSelector
             return env.Trim().ToLowerInvariant();
         }
 
-        var cfg = llmConfig?.GetValueOrDefault("llm_chat_tool_mode")?.Trim().ToLowerInvariant();
-        return string.IsNullOrEmpty(cfg) ? "dynamic" : cfg;
+        return "dynamic";
     }
 
     public static int ResolveChatToolMax()
@@ -95,11 +94,10 @@ public static class ChatToolSelector
         string userMessage,
         IReadOnlyList<string>? priorUserMessages,
         IReadOnlySet<string> allowedTools,
-        IReadOnlyDictionary<string, string>? llmConfig = null,
         int? maxTools = null,
         IReadOnlySet<string>? extraNames = null)
     {
-        if (ResolveChatToolMode(llmConfig) == "full")
+        if (ResolveChatToolMode() == "full")
         {
             return allowedTools.ToHashSet(StringComparer.Ordinal);
         }
@@ -202,8 +200,7 @@ public static class ChatToolSelector
         string toolName,
         System.Text.Json.Nodes.JsonObject toolResult,
         HashSet<string> active,
-        IReadOnlySet<string> allowedTools,
-        IReadOnlyDictionary<string, string>? llmConfig = null)
+        IReadOnlySet<string> allowedTools)
     {
         var expanded = new HashSet<string>(active, StringComparer.Ordinal);
         var pinned = new HashSet<string>(StringComparer.Ordinal);
@@ -244,7 +241,7 @@ public static class ChatToolSelector
             }
         }
 
-        if (ResolveChatToolMode(llmConfig) != "full" && pinned.Count > 0)
+        if (ResolveChatToolMode() != "full" && pinned.Count > 0)
         {
             return ApplyToolCap(expanded, ResolveChatToolSearchCap(), pinned);
         }

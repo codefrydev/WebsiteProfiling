@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AiService.Application.Services;
 
 public sealed class PageCoachService(
-    ILlmConfigRepository configRepository,
+    ILlmSettingsRepository configRepository,
     LlmCacheRepository cacheRepository,
     StructuredCompletionService completionService,
     AiDbContext db)
@@ -22,8 +22,8 @@ public sealed class PageCoachService(
         bool refresh = false,
         CancellationToken cancellationToken = default)
     {
-        var cfg = await configRepository.LoadAsync(cancellationToken);
-        if (!LlmConfigHelpers.IsEnabled(cfg))
+        var settings = await configRepository.LoadAsync(cancellationToken);
+        if (!LlmConfigHelpers.IsEnabled(settings))
         {
             return new JsonObject
             {
@@ -32,13 +32,13 @@ public sealed class PageCoachService(
             };
         }
 
-        if (!LlmConfigHelpers.IsTruthy(cfg.GetValueOrDefault("llm_enable_page_coach") ?? "true"))
+        if (!settings.EnablePageCoach)
         {
             return new JsonObject { ["ok"] = false, ["error"] = "Page coach is disabled in AI task settings." };
         }
 
         var context = await BuildPageContextAsync(pageUrl, cancellationToken);
-        var model = (cfg.GetValueOrDefault("llm_model") ?? cfg.GetValueOrDefault("llm_provider") ?? "unknown").Trim();
+        var model = LlmConfigHelpers.DisplayModel(settings);
         var payloadStr = context.ToJsonString();
         var cacheKey = SHA256.HashData(
             Encoding.UTF8.GetBytes($"page_coach:v2:{LlmPrompts.Version}:{model}:{pageUrl}:{payloadStr}"));
@@ -65,7 +65,7 @@ public sealed class PageCoachService(
             var coach = await completionService.CompleteJsonAsync(
                 LlmPrompts.PageCoachSystem,
                 user,
-                cfg,
+                settings,
                 cancellationToken);
 
             if (coach.Count == 0)

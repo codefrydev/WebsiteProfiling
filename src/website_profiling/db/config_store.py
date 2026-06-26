@@ -1,118 +1,91 @@
 """Pipeline and LLM config tables."""
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
-import pandas as pd
 from psycopg import Connection
-from urllib.parse import urlparse
 
-from ._common import (
-    _executemany,
-    _json_val,
-    _now_iso,
-    _parse_json_field,
-    _row_field,
-    _sanitize_for_json,
+from ._common import _row_field
+from .typed_config.worker_config import (
+    load_worker_llm_config,
+    load_worker_pipeline_config,
+    save_worker_llm_config,
+    save_worker_pipeline_config,
 )
-from .pool import db_session, get_data_dir, get_database_url
+
 
 def read_pipeline_config(conn: Connection) -> tuple[dict[str, str], list[dict[str, str]]]:
     try:
-        cur = conn.execute("SELECT key, value, is_unknown FROM pipeline_config ORDER BY key")
-        rows = cur.fetchall()
-        known: dict[str, str] = {}
-        unknown: list[dict[str, str]] = []
-        for row in rows:
-            k, v = str(row["key"]), str(row["value"])
-            if row["is_unknown"]:
-                unknown.append({"key": k, "value": v})
-            else:
-                known[k] = v
-        return known, unknown
+        return load_worker_pipeline_config(conn), []
     except Exception:
         return {}, []
 
 
-def write_pipeline_config(
-    conn: Connection,
-    entries: dict[str, str],
-    unknown_keys: list[dict[str, str]] | None = None,
-) -> None:
-    now = _now_iso()
-    if unknown_keys is None:
-        unknown_keys = []
-    with conn.transaction():
-        conn.execute("DELETE FROM pipeline_config")
-        for k, v in entries.items():
-            conn.execute(
-                "INSERT INTO pipeline_config (key, value, is_unknown, updated_at) VALUES (%s, %s, false, %s)",
-                (str(k), str(v), now),
-            )
-        for item in unknown_keys:
-            conn.execute(
-                """INSERT INTO pipeline_config (key, value, is_unknown, updated_at)
-                   VALUES (%s, %s, true, %s)
-                   ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, is_unknown = true, updated_at = EXCLUDED.updated_at""",
-                (str(item["key"]), str(item.get("value", "")), now),
-            )
+def write_pipeline_config(conn: Connection, entries: dict[str, str]) -> None:
+    save_worker_pipeline_config(conn, entries)
 
 
 def read_llm_config(conn: Connection) -> dict[str, str]:
     try:
-        cur = conn.execute("SELECT key, value FROM llm_config ORDER BY key")
-        return {str(row["key"]): str(row["value"]) for row in cur.fetchall()}
+        return load_worker_llm_config(conn)
     except Exception:
         return {}
 
 
 def write_llm_config(conn: Connection, entries: dict[str, str], secret_keys: set[str] | None = None) -> None:
-    now = _now_iso()
-    secret_keys = secret_keys or set()
-    with conn.transaction():
-        conn.execute("DELETE FROM llm_config")
-        for k, v in entries.items():
-            conn.execute(
-                "INSERT INTO llm_config (key, value, is_secret, updated_at) VALUES (%s, %s, %s, %s)",
-                (str(k), str(v), k in secret_keys, now),
-            )
+    del secret_keys
+    save_worker_llm_config(conn, entries)
 
 
 def read_llm_config_full(conn: Connection) -> list[dict[str, Any]]:
-    """Return llm_config rows including the is_secret flag."""
+    """Return llm config rows including the is_secret flag."""
     try:
-        cur = conn.execute("SELECT key, value, is_secret FROM llm_config ORDER BY key")
-        return [
-            {
-                "key": str(_row_field(row, "key", index=0)),
-                "value": str(_row_field(row, "value", index=1)),
-                "is_secret": bool(_row_field(row, "is_secret", index=2)),
-            }
-            for row in cur.fetchall() or []
-        ]
+        flat = load_worker_llm_config(conn)
+        secret_suffixes = ("_api_key", "_key", "_token", "_password", "_secret")
+        rows: list[dict[str, Any]] = []
+        for key in sorted(flat):
+            val = flat[key]
+            key_lower = key.lower()
+            is_secret = (
+                key_lower.endswith(secret_suffixes)
+                or "api_key" in key_lower
+                or "secret" in key_lower
+                or "password" in key_lower
+                or "token" in key_lower
+            )
+            rows.append({"key": key, "value": val, "is_secret": is_secret})
+        return rows
     except Exception:
         return []
 
 
 def read_app_setting(conn: Connection, key: str) -> str | None:
     try:
-        cur = conn.execute("SELECT value FROM app_settings WHERE key = %s", (key,))
-        row = cur.fetchone()
-        if not row:
+        from .typed_config.ui_preferences_store import read_ui_preferences
+
+        prefs = read_ui_preferences(conn)
+        col_map = {
+            "brand_name": prefs.brand_name,
+            "brand_subtitle": prefs.brand_subtitle,
+            "brand_logo_url": prefs.brand_logo_url,
+            "custom_theme": prefs.custom_theme_json,
+            "ui_prefs": prefs.ui_prefs_json,
+        }
+        val = col_map.get(key.strip())
+        if val is None:
             return None
-        val = _row_field(row, "value", index=0)
-        return str(val) if val is not None else None
+        if isinstance(val, (dict, list)):
+            import json
+
+            return json.dumps(val)
+        text = str(val).strip()
+        return text or None
     except Exception:
         return None
 
 
 def write_app_setting(conn: Connection, key: str, value: str) -> None:
-    conn.execute(
-        """INSERT INTO app_settings (key, value, updated_at)
-           VALUES (%s, %s, now())
-           ON CONFLICT (key) DO UPDATE
-             SET value = EXCLUDED.value,
-                 updated_at = now()""",
-        (key, value),
-    )
+    from .typed_config.ui_preferences_store import patch_ui_preferences
+
+    patch_ui_preferences(conn, {key.strip(): value})
     conn.commit()

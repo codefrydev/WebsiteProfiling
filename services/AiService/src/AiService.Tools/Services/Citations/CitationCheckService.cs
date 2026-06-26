@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using AiService.Domain.Models;
 using AiService.Domain.Repositories;
 
 namespace AiService.Tools.Services.Citations;
@@ -10,7 +11,7 @@ namespace AiService.Tools.Services.Citations;
 /// Live AI citation checks — ports Python <c>integrations/ai_citations</c>.
 /// </summary>
 public sealed partial class CitationCheckService(
-    IPipelineConfigRepository pipelineConfigRepository,
+    ILlmSettingsRepository llmSettingsRepository,
     IHttpClientFactory httpClientFactory)
 {
     private static readonly Dictionary<string, string> EnvKeys = new(StringComparer.OrdinalIgnoreCase)
@@ -31,7 +32,8 @@ public sealed partial class CitationCheckService(
             return providedKey.Trim();
         }
 
-        var envName = EnvKeys.GetValueOrDefault(provider.Trim().ToLowerInvariant());
+        var normalized = provider.Trim().ToLowerInvariant();
+        var envName = EnvKeys.GetValueOrDefault(normalized);
         if (envName is not null)
         {
             var envVal = Environment.GetEnvironmentVariable(envName)?.Trim();
@@ -43,20 +45,26 @@ public sealed partial class CitationCheckService(
 
         try
         {
-            var pipeline = await pipelineConfigRepository.LoadAsync(cancellationToken);
-            if (envName is not null
-                && pipeline.TryGetValue(envName, out var fromDb)
-                && !string.IsNullOrWhiteSpace(fromDb))
+            var settings = await llmSettingsRepository.LoadAsync(cancellationToken);
+            var fromSettings = ResolveApiKeyFromSettings(settings, normalized);
+            if (!string.IsNullOrWhiteSpace(fromSettings))
             {
-                return fromDb.Trim();
+                return fromSettings.Trim();
             }
         }
         catch
         {
-            // pipeline_config optional
+            // llm_settings optional
         }
 
         return null;
+    }
+
+    private static string ResolveApiKeyFromSettings(LlmSettings settings, string provider)
+    {
+        var profile = settings.Providers.FirstOrDefault(
+            p => string.Equals(p.Provider, provider, StringComparison.OrdinalIgnoreCase));
+        return (profile?.ApiKey ?? "").Trim();
     }
 
     public async Task<CitationResult> CheckAsync(

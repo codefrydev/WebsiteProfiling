@@ -421,11 +421,8 @@ def test_merge_bundles_and_payload_edges() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_shadow_config_path_and_require_database_url(monkeypatch, tmp_path) -> None:
+def test_require_database_url(monkeypatch, tmp_path) -> None:
     from website_profiling.commands import config_resolve
-
-    monkeypatch.setattr("website_profiling.db.storage.get_data_dir", lambda: str(tmp_path))
-    assert config_resolve.shadow_config_path().endswith("pipeline-config.txt")
 
     monkeypatch.setattr("website_profiling.db.storage.get_database_url", lambda: "postgres://localhost/db")
     config_resolve.require_database_url()
@@ -467,39 +464,22 @@ def test_should_enrich_keywords_fallback_to_gsc_flag() -> None:
     assert should_enrich_keywords_after_report({"enable_google_search_console": "true"}) is True
 
 
-def test_resolve_config_db_and_shadow_paths(monkeypatch, tmp_path) -> None:
+def test_resolve_config_db_only(monkeypatch, tmp_path) -> None:
     from website_profiling.commands import config_resolve
 
-    # Missing config file
-    args = argparse.Namespace(config=str(tmp_path / "missing.txt"))
-    with pytest.raises(SystemExit) as e:
-        config_resolve.resolve_config(args)
-    assert e.value.code == 1
-
-    # DB path with shadow fallback
-    shadow = tmp_path / "pipeline-config.txt"
-    shadow.write_text("start_url = https://shadow.com\n", encoding="utf-8")
     monkeypatch.setattr(config_resolve, "require_database_url", lambda: None)
-    monkeypatch.setattr(config_resolve, "load_config_from_db", lambda: {})
-    monkeypatch.setattr(config_resolve, "shadow_config_path", lambda: str(shadow))
+    monkeypatch.setattr(config_resolve, "load_config_from_db", lambda: {"start_url": "https://db.com"})
     monkeypatch.setattr("website_profiling.db.storage.get_data_dir", lambda: str(tmp_path))
 
-    cfg, cwd = config_resolve.resolve_config(argparse.Namespace(config=None))
-    assert cfg["start_url"] == "https://shadow.com"
+    cfg, cwd = config_resolve.resolve_config(argparse.Namespace())
+    assert cfg["start_url"] == "https://db.com"
+    assert cwd == str(tmp_path)
 
-    # DB path with config loaded
-    monkeypatch.setattr(config_resolve, "load_config_from_db", lambda: {"start_url": "https://db.com"})
-    cfg2, _ = config_resolve.resolve_config(argparse.Namespace(config=None))
-    assert cfg2["start_url"] == "https://db.com"
-
-    # No config anywhere
     monkeypatch.setattr(config_resolve, "load_config_from_db", lambda: {})
-    monkeypatch.setattr(config_resolve, "shadow_config_path", lambda: str(tmp_path / "nope.txt"))
     with pytest.raises(SystemExit) as e2:
-        config_resolve.resolve_config(argparse.Namespace(config=None))
+        config_resolve.resolve_config(argparse.Namespace())
     assert e2.value.code == 1
 
-    # DB URL missing
     def _boom():
         raise RuntimeError("no DATABASE_URL")
 
@@ -796,25 +776,18 @@ def test_db_common_json_val_executemany_and_sanitize() -> None:
     assert sum(len(c.executemany_calls) for c in conn.cursors) >= 2
 
 
-def test_config_store_read_write_pipeline(monkeypatch) -> None:
+def test_config_store_read_write_pipeline() -> None:
     from website_profiling.db.config_store import read_pipeline_config, write_pipeline_config
 
     conn = FakeConn()
-    conn.set_next_cursor(
-        FakeCursor(
-            fetchall_value=[
-                {"key": "start_url", "value": "https://a.com", "is_unknown": False},
-                {"key": "legacy", "value": "v", "is_unknown": True},
-            ]
-        )
-    )
+    conn.set_next_cursor(FakeCursor(fetchone_value={"start_url": "https://a.com"}))
     known, unknown = read_pipeline_config(conn)  # type: ignore[arg-type]
     assert known["start_url"] == "https://a.com"
-    assert unknown[0]["key"] == "legacy"
+    assert unknown == []
 
     wconn = FakeConn()
-    write_pipeline_config(wconn, {"k": "v"}, unknown_keys=[{"key": "u", "value": "1"}])  # type: ignore[arg-type]
-    assert any("INSERT INTO pipeline_config" in sql for sql, _ in wconn.executed)
+    write_pipeline_config(wconn, {"start_url": "https://b.com"})  # type: ignore[arg-type]
+    assert any("UPDATE crawl_settings" in sql for sql, _ in wconn.executed)
 
 
 def test_crawl_store_branches(monkeypatch) -> None:

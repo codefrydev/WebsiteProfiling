@@ -9,29 +9,22 @@ def test_read_pipeline_config_splits_known_and_unknown() -> None:
     conn = FakeConn()
     conn.set_next_cursor(
         FakeCursor(
-            fetchall_value=[
-                {"key": "start_url", "value": "https://x", "is_unknown": False},
-                {"key": "weird_key", "value": "123", "is_unknown": True},
-            ]
+            fetchall_value=[],
+            fetchone_value=None,
         )
     )
     known, unknown = read_pipeline_config(conn)  # type: ignore[arg-type]
-    assert known["start_url"] == "https://x"
-    assert unknown == [{"key": "weird_key", "value": "123"}]
+    assert unknown == []
+    assert "start_url" in known
 
 
-def test_write_pipeline_config_writes_known_and_unknown() -> None:
+def test_write_pipeline_config_patches_typed_tables() -> None:
     from website_profiling.db.config_store import write_pipeline_config
 
     conn = FakeConn()
-    write_pipeline_config(  # type: ignore[arg-type]
-        conn,
-        entries={"a": "1", "b": "2"},
-        unknown_keys=[{"key": "x", "value": "y"}],
-    )
+    write_pipeline_config(conn, entries={"start_url": "https://x"})  # type: ignore[arg-type]
     sqls = [s for (s, _p) in conn.executed]
-    assert any("DELETE FROM pipeline_config" in s for s in sqls)
-    assert sum("INSERT INTO pipeline_config" in s for s in sqls) >= 3
+    assert any("UPDATE" in s for s in sqls)
 
 
 def test_crawl_rows_from_df_skips_missing_url_and_strips_trailing_slash() -> None:
@@ -176,8 +169,8 @@ def test_config_store_write_llm_config() -> None:
     from website_profiling.db.config_store import write_llm_config
 
     conn = _LegacyConn()
-    write_llm_config(conn, {"k": "v"}, secret_keys={"k"})  # type: ignore[arg-type]
-    assert any("INSERT INTO llm_config" in s for s, _ in conn.executed)
+    write_llm_config(conn, {"llm_enabled": "true", "llm_provider": "ollama"}, secret_keys=set())  # type: ignore[arg-type]
+    assert any("INSERT INTO" in s or "UPDATE" in s for s, _ in conn.executed)
 
 
 def test_llm_cache_write_and_batch_read_error() -> None:

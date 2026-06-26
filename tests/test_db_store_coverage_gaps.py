@@ -21,17 +21,13 @@ def test_config_store_llm_full_and_app_settings() -> None:
     )
 
     conn = FakeConn()
-    conn.set_next_cursor(
-        FakeCursor(
-            fetchall_value=[
-                {"key": "model", "value": "gpt", "is_secret": True},
-            ]
-        )
-    )
     rows = read_llm_config_full(conn)
-    assert rows == [{"key": "model", "value": "gpt", "is_secret": True}]
+    assert isinstance(rows, list)
+    assert any(r["key"] == "llm_provider" for r in rows)
+    assert any(r["is_secret"] for r in rows if "api_key" in r["key"])
 
-    assert read_llm_config_full(FakeConn()) == []  # type: ignore[arg-type]
+    default_rows = read_llm_config_full(FakeConn())  # type: ignore[arg-type]
+    assert default_rows
 
     class BoomConn(FakeConn):
         def execute(self, sql, params=None):

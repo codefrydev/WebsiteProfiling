@@ -8,8 +8,6 @@ namespace FileService.Application.Clients;
 
 public sealed class AppSettingsClient : IAppSettingsClient
 {
-    private static readonly string[] BrandKeys = ["brand_name", "brand_subtitle", "brand_logo_url"];
-
     private readonly HttpClient _http;
     private readonly ILogoFetcher _logoFetcher;
     private readonly ILogger<AppSettingsClient> _logger;
@@ -37,32 +35,20 @@ public sealed class AppSettingsClient : IAppSettingsClient
         string? subtitle = null;
         string? logoUrl = null;
 
-        foreach (var key in BrandKeys)
+        try
         {
-            try
+            using var response = await _http.GetAsync("api/ui-preferences", cancellationToken);
+            if (response.IsSuccessStatusCode)
             {
-                using var response = await _http.GetAsync($"api/app-settings?key={key}", cancellationToken);
-                if (!response.IsSuccessStatusCode)
-                {
-                    continue;
-                }
-                var data = await response.Content.ReadFromJsonAsync<SettingResponse>(cancellationToken);
-                var value = data?.Value?.Trim();
-                if (string.IsNullOrEmpty(value))
-                {
-                    continue;
-                }
-                switch (key)
-                {
-                    case "brand_name": name = value; break;
-                    case "brand_subtitle": subtitle = value; break;
-                    case "brand_logo_url": logoUrl = value; break;
-                }
+                var data = await response.Content.ReadFromJsonAsync<UiPreferencesResponse>(cancellationToken);
+                name = data?.BrandName?.Trim();
+                subtitle = data?.BrandSubtitle?.Trim();
+                logoUrl = data?.BrandLogoUrl?.Trim();
             }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Failed to load app setting {Key}", key);
-            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to load ui preferences for PDF branding");
         }
 
         byte[]? logoBytes = null;
@@ -80,9 +66,13 @@ public sealed class AppSettingsClient : IAppSettingsClient
         };
     }
 
-    private sealed class SettingResponse
+    private sealed class UiPreferencesResponse
     {
-        public string? Value { get; set; }
+        public string? BrandName { get; set; }
+
+        public string? BrandSubtitle { get; set; }
+
+        public string? BrandLogoUrl { get; set; }
     }
 }
 

@@ -11,7 +11,7 @@ using AiService.Providers.Chat;
 namespace AiService.Application.Services;
 
 public sealed class ContentAnalyzeService(
-    ILlmConfigRepository configRepository,
+    ILlmSettingsRepository configRepository,
     LlmCacheRepository cacheRepository,
     StructuredCompletionService completionService)
 {
@@ -49,16 +49,15 @@ public sealed class ContentAnalyzeService(
             return result;
         }
 
-        var cfg = await configRepository.LoadAsync(cancellationToken);
-        if (!LlmConfigHelpers.IsEnabled(cfg)
-            || !LlmConfigHelpers.IsTruthy(cfg.GetValueOrDefault("llm_enable_content_studio") ?? "true"))
+        var settings = await configRepository.LoadAsync(cancellationToken);
+        if (!LlmConfigHelpers.IsEnabled(settings) || !settings.EnableContentStudio)
         {
             result["provenance"] = $"{result["provenance"]?.GetValue<string>()} · AI off (enable in Run audit → AI settings)";
             result["ai_error"] = "AI insights disabled in settings.";
             return result;
         }
 
-        var model = (cfg.GetValueOrDefault("llm_model") ?? cfg.GetValueOrDefault("llm_provider") ?? "unknown").Trim();
+        var model = LlmConfigHelpers.DisplayModel(settings);
         var bodyHash = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(bodyHtml ?? "")))[..16];
         var cachePayload = new JsonObject
         {
@@ -99,7 +98,7 @@ public sealed class ContentAnalyzeService(
                 aiBlock = await completionService.CompleteJsonAsync(
                     LlmPrompts.ContentStudioAnalyzeSystem,
                     userPayload.ToJsonString(),
-                    cfg,
+                    settings,
                     cancellationToken);
 
                 if (aiBlock.Count > 0)

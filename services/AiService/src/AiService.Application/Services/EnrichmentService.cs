@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using AiService.Application.Json;
 using AiService.Application.Prompts;
 using AiService.Application.Repositories;
+using AiService.Domain.Models;
 using AiService.Domain.Repositories;
 using AiService.Providers.Chat;
 
@@ -12,7 +13,7 @@ namespace AiService.Application.Services;
 /// LLM enrichment endpoints for <c>/internal/enrichment/*</c> — ports enrich.py, issue_fixes.py, audit_summary.py.
 /// </summary>
 public sealed class EnrichmentService(
-    ILlmConfigRepository configRepository,
+    ILlmSettingsRepository configRepository,
     LlmCacheRepository cacheRepository,
     StructuredCompletionService completionService,
     FixSuggestionService fixSuggestionService)
@@ -21,15 +22,14 @@ public sealed class EnrichmentService(
         IReadOnlyList<string> keywords,
         CancellationToken cancellationToken = default)
     {
-        var cfg = await configRepository.LoadAsync(cancellationToken);
-        if (keywords.Count < 2 || !LlmConfigHelpers.IsEnabled(cfg)
-            || !LlmConfigHelpers.IsTruthy(cfg.GetValueOrDefault("llm_enable_keyword_clusters") ?? "false"))
+        var settings = await configRepository.LoadAsync(cancellationToken);
+        if (keywords.Count < 2 || !LlmConfigHelpers.IsEnabled(settings) || !settings.EnableKeywordClusters)
         {
             return new JsonObject { ["clusters"] = new JsonArray() };
         }
 
         var kws = keywords.Take(200).ToList();
-        var model = (cfg.GetValueOrDefault("llm_model") ?? cfg.GetValueOrDefault("llm_provider") ?? "").Trim();
+        var model = LlmConfigHelpers.DisplayModel(settings);
         var payload = new JsonObject { ["keywords"] = new JsonArray(kws.Select(x => JsonValue.Create(x)).ToArray()) };
         var cacheKey = LlmTaskCache.CacheKey("kw_clusters", model, payload);
 
@@ -44,7 +44,7 @@ public sealed class EnrichmentService(
             data = await completionService.CompleteJsonAsync(
                 LlmPrompts.KeywordClusterSystem,
                 payload.ToJsonString(),
-                cfg,
+                settings,
                 cancellationToken);
             await cacheRepository.WriteObjectAsync(cacheKey, data, cancellationToken);
         }
@@ -77,7 +77,7 @@ public sealed class EnrichmentService(
         JsonArray pages,
         CancellationToken cancellationToken = default)
     {
-        var cfg = await configRepository.LoadAsync(cancellationToken);
+        var settings = await configRepository.LoadAsync(cancellationToken);
         var bundle = new JsonObject
         {
             ["spacy_by_url"] = new JsonObject(),
@@ -87,12 +87,12 @@ public sealed class EnrichmentService(
             ["ml_errors"] = new JsonArray(),
         };
 
-        if (pages.Count == 0 || !LlmConfigHelpers.IsEnabled(cfg))
+        if (pages.Count == 0 || !LlmConfigHelpers.IsEnabled(settings))
         {
             return bundle;
         }
 
-        var maxPages = ParseInt(cfg.GetValueOrDefault("llm_max_pages"), 60);
+        var maxPages = settings.MaxPages > 0 ? settings.MaxPages : 60;
         var items = BuildPageItems(pages, maxPages);
         if (items.Count == 0)
         {
@@ -101,31 +101,31 @@ public sealed class EnrichmentService(
 
         try
         {
-            if (LlmConfigHelpers.IsTruthy(cfg.GetValueOrDefault("llm_enable_ner") ?? "true"))
+            if (settings.EnableNer)
             {
-                bundle["spacy_by_url"] = await RunBatchedTaskAsync("ner", LlmPrompts.NerSystem, items, cfg, ApplyNerBatch, cancellationToken);
+                bundle["spacy_by_url"] = await RunBatchedTaskAsync("ner", LlmPrompts.NerSystem, items, settings, ApplyNerBatch, cancellationToken);
             }
 
-            if (LlmConfigHelpers.IsTruthy(cfg.GetValueOrDefault("llm_enable_keyphrases") ?? "true"))
+            if (settings.EnableKeyphrases)
             {
                 bundle["keyphrases_by_url"] = await RunBatchedTaskAsync(
                     "keyphrases",
                     LlmPrompts.KeyphrasesSystem,
                     items,
-                    cfg,
+                    settings,
                     ApplyKeyphraseBatch,
                     cancellationToken);
             }
 
-            if (LlmConfigHelpers.IsTruthy(cfg.GetValueOrDefault("llm_enable_similar_internal") ?? "true"))
+            if (settings.EnableSimilarInternal)
             {
-                bundle["similar_internal_by_url"] = await RunSimilarInternalAsync(items, cfg, cancellationToken);
+                bundle["similar_internal_by_url"] = await RunSimilarInternalAsync(items, settings, cancellationToken);
             }
 
             bundle["ner_site_summary"] = AggregateNerSiteSummary(bundle["spacy_by_url"] as JsonObject ?? []);
             bundle["llm_meta"] = new JsonObject
             {
-                ["model"] = (cfg.GetValueOrDefault("llm_model") ?? "unknown").Trim(),
+                ["model"] = LlmConfigHelpers.DisplayModel(settings),
                 ["prompt_version"] = LlmPrompts.Version,
                 ["generated_at"] = DateTimeOffset.UtcNow.ToString("O"),
             };
@@ -149,7 +149,7 @@ public sealed class EnrichmentService(
         JsonObject reportPayload,
         CancellationToken cancellationToken = default)
     {
-        var cfg = await configRepository.LoadAsync(cancellationToken);
+        var settings = await configRepository.LoadAsync(cancellationToken);
         var categories = reportPayload["categories"] as JsonArray ?? [];
         var gsc = (reportPayload["google"] as JsonObject)?["gsc"] as JsonObject;
         var gscPages = gsc?["top_pages"] as JsonArray;
@@ -160,10 +160,10 @@ public sealed class EnrichmentService(
         var source = "deterministic";
         var priorities = new JsonArray();
 
-        if (LlmConfigHelpers.IsEnabled(cfg) && LlmConfigHelpers.IsTruthy(cfg.GetValueOrDefault("llm_enable_audit_summary") ?? "true"))
+        if (LlmConfigHelpers.IsEnabled(settings) && settings.EnableAuditSummary)
         {
             source = "ai_insights";
-            var llmResult = await GenerateLlmExecutiveSummaryAsync(reportPayload, topIssues, cfg, cancellationToken);
+            var llmResult = await GenerateLlmExecutiveSummaryAsync(reportPayload, topIssues, settings, cancellationToken);
             var summary = llmResult["summary"]?.GetValue<string>();
             if (!string.IsNullOrWhiteSpace(summary))
             {
@@ -178,7 +178,7 @@ public sealed class EnrichmentService(
                 fallback = DeterministicSummaryText(avg, topIssues, llmUnavailable: true);
             }
         }
-        else if (LlmConfigHelpers.IsEnabled(cfg))
+        else if (LlmConfigHelpers.IsEnabled(settings))
         {
             fallback = DeterministicSummaryText(avg, topIssues, hintEnableLlm: true);
         }
@@ -195,12 +195,12 @@ public sealed class EnrichmentService(
 
     private async Task<JsonObject> RunSimilarInternalAsync(
         IReadOnlyList<JsonObject> items,
-        IReadOnlyDictionary<string, string> cfg,
+        LlmSettings settings,
         CancellationToken cancellationToken)
     {
-        var topK = Math.Min(ParseInt(cfg.GetValueOrDefault("llm_similar_top_k"), 5), 15);
+        var topK = Math.Min(settings.SimilarTopK > 0 ? settings.SimilarTopK : 5, 15);
         var allUrls = items.Select(x => x["url"]?.GetValue<string>() ?? "").Where(x => !string.IsNullOrEmpty(x)).ToList();
-        var batchSize = Math.Max(1, Math.Min(ParseInt(cfg.GetValueOrDefault("llm_batch_size"), 5), 3));
+        var batchSize = Math.Max(1, Math.Min(settings.BatchSize > 0 ? settings.BatchSize : 5, 3));
         var batches = new List<JsonObject>();
         for (var i = 0; i < items.Count; i += batchSize)
         {
@@ -216,7 +216,7 @@ public sealed class EnrichmentService(
         var outObj = new JsonObject();
         foreach (var batch in batches)
         {
-            var result = await RunSingleBatchAsync("similar", LlmPrompts.SimilarSystem, batch, cfg, cancellationToken);
+            var result = await RunSingleBatchAsync("similar", LlmPrompts.SimilarSystem, batch, settings, cancellationToken);
             if (result["pages"] is JsonArray pages)
             {
                 foreach (var pageNode in pages)
@@ -263,11 +263,11 @@ public sealed class EnrichmentService(
         string task,
         string system,
         IReadOnlyList<JsonObject> items,
-        IReadOnlyDictionary<string, string> cfg,
+        LlmSettings settings,
         Action<JsonObject, JsonObject> applyBatch,
         CancellationToken cancellationToken)
     {
-        var batchSize = Math.Max(1, ParseInt(cfg.GetValueOrDefault("llm_batch_size"), 5));
+        var batchSize = Math.Max(1, settings.BatchSize > 0 ? settings.BatchSize : 5);
         var outObj = new JsonObject();
         for (var i = 0; i < items.Count; i += batchSize)
         {
@@ -275,7 +275,7 @@ public sealed class EnrichmentService(
             {
                 ["pages"] = new JsonArray(items.Skip(i).Take(batchSize).Select(x => x.DeepClone()).ToArray()),
             };
-            var result = await RunSingleBatchAsync(task, system, batch, cfg, cancellationToken);
+            var result = await RunSingleBatchAsync(task, system, batch, settings, cancellationToken);
             applyBatch(outObj, result);
         }
 
@@ -286,10 +286,10 @@ public sealed class EnrichmentService(
         string task,
         string system,
         JsonObject batch,
-        IReadOnlyDictionary<string, string> cfg,
+        LlmSettings settings,
         CancellationToken cancellationToken)
     {
-        var model = (cfg.GetValueOrDefault("llm_model") ?? cfg.GetValueOrDefault("llm_provider") ?? "").Trim();
+        var model = LlmConfigHelpers.DisplayModel(settings);
         var cacheKey = LlmTaskCache.CacheKey(task, model, batch);
         var cached = await cacheRepository.ReadObjectAsync(cacheKey, cancellationToken);
         if (cached is not null)
@@ -297,7 +297,7 @@ public sealed class EnrichmentService(
             return cached;
         }
 
-        var result = await completionService.CompleteJsonAsync(system, batch.ToJsonString(), cfg, cancellationToken);
+        var result = await completionService.CompleteJsonAsync(system, batch.ToJsonString(), settings, cancellationToken);
         await cacheRepository.WriteObjectAsync(cacheKey, result, cancellationToken);
         return result;
     }
@@ -436,7 +436,7 @@ public sealed class EnrichmentService(
     private async Task<JsonObject> GenerateLlmExecutiveSummaryAsync(
         JsonObject reportPayload,
         IReadOnlyList<JsonObject> topIssues,
-        IReadOnlyDictionary<string, string> cfg,
+        LlmSettings settings,
         CancellationToken cancellationToken)
     {
         var categories = reportPayload["categories"] as JsonArray ?? [];
@@ -462,7 +462,7 @@ public sealed class EnrichmentService(
         try
         {
             var user = payload.ToJsonString()[..Math.Min(payload.ToJsonString().Length, 10_000)];
-            return await completionService.CompleteJsonAsync(LlmPrompts.AuditExecutiveSystem, user, cfg, cancellationToken);
+            return await completionService.CompleteJsonAsync(LlmPrompts.AuditExecutiveSystem, user, settings, cancellationToken);
         }
         catch (Exception)
         {

@@ -145,11 +145,11 @@ export function setStoredUiPrefs(prefs: UiPrefs): void {
 
 export async function loadUiPrefsFromDb(): Promise<UiPrefs | null> {
   try {
-    const res = await apiFetch(apiUrl(`/app-settings?key=${UI_PREFS_DB_KEY}`));
+    const res = await apiFetch(apiUrl('/ui-preferences'));
     if (!res.ok) return null;
-    const data = (await res.json()) as { key: string; value: string | null };
-    if (!data.value) return null;
-    const p = JSON.parse(data.value) as Partial<UiPrefs>;
+    const data = (await res.json()) as { uiPrefsJson?: Partial<UiPrefs> | null };
+    const p = data.uiPrefsJson;
+    if (!p || typeof p !== 'object') return null;
     return {
       radius: isRadiusScale(p.radius) ? p.radius : DEFAULT_UI_PREFS.radius,
       density: isDensityScale(p.density) ? p.density : DEFAULT_UI_PREFS.density,
@@ -164,10 +164,10 @@ export async function loadUiPrefsFromDb(): Promise<UiPrefs | null> {
 export async function saveUiPrefsToDb(prefs: UiPrefs): Promise<void> {
   setStoredUiPrefs(prefs);
   try {
-    await apiFetch(apiUrl('/app-settings'), {
+    await apiFetch(apiUrl('/ui-preferences'), {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ key: UI_PREFS_DB_KEY, value: JSON.stringify(prefs) }),
+      body: JSON.stringify({ uiPrefsJson: prefs }),
     });
   } catch { /* ignore — localStorage is the fallback */ }
 }

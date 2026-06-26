@@ -1,0 +1,139 @@
+{
+  "version": 1,
+  "tables": {
+    "llm_settings": {
+      "singleton": true,
+      "columns": {
+        "enabled": { "legacy_key": "llm_enabled", "type": "bool", "default": false },
+        "provider": { "legacy_key": "llm_provider", "type": "text", "default": "none" },
+        "active_model": { "legacy_key": "llm_model", "type": "text", "default": "" },
+        "ollama_base_url": { "legacy_key": "llm_base_url", "type": "text", "default": "http://127.0.0.1:11434" },
+        "enable_ner": { "legacy_key": "llm_enable_ner", "type": "bool", "default": true },
+        "enable_keyphrases": { "legacy_key": "llm_enable_keyphrases", "type": "bool", "default": true },
+        "enable_similar_internal": { "legacy_key": "llm_enable_similar_internal", "type": "bool", "default": true },
+        "enable_keyword_clusters": { "legacy_key": "llm_enable_keyword_clusters", "type": "bool", "default": true },
+        "enable_issue_fixes": { "legacy_key": "llm_enable_issue_fixes", "type": "bool", "default": true },
+        "enable_audit_summary": { "legacy_key": "llm_enable_audit_summary", "type": "bool", "default": true },
+        "enable_page_coach": { "legacy_key": "llm_enable_page_coach", "type": "bool", "default": true },
+        "enable_content_studio": { "legacy_key": "llm_enable_content_studio", "type": "bool", "default": true },
+        "enable_dashboards": { "legacy_key": "llm_enable_dashboards", "type": "bool", "default": true },
+        "chat_assistant_name": { "legacy_key": "llm_chat_assistant_name", "type": "text", "default": "AI Assistant" },
+        "chat_assistant_avatar_url": { "legacy_key": "llm_chat_assistant_avatar_url", "type": "text", "default": "" },
+        "chat_unlimited_tool_rounds": { "legacy_key": "llm_chat_unlimited_tool_rounds", "type": "bool", "default": false },
+        "chat_allow_crawl": { "legacy_key": "llm_chat_allow_crawl", "type": "bool", "default": false },
+        "chat_fast_narrative": { "legacy_key": "llm_chat_fast_narrative", "type": "bool", "default": false },
+        "max_pages": { "legacy_key": "llm_max_pages", "type": "int", "default": 60 },
+        "batch_size": { "legacy_key": "llm_batch_size", "type": "int", "default": 5 },
+        "concurrency": { "legacy_key": "llm_concurrency", "type": "int", "default": 2 },
+        "timeout_seconds": { "legacy_key": "llm_timeout_s", "type": "int", "default": 120 },
+        "similar_top_k": { "legacy_key": "llm_similar_top_k", "type": "int", "default": 5 }
+      }
+    },
+    "llm_provider_profiles": {
+      "singleton": false,
+      "primary_key": "provider",
+      "columns": {
+        "provider": { "type": "text" },
+        "api_key": { "type": "text", "default": "" },
+        "saved_model": { "type": "text", "default": "" },
+        "api_key_updated_at": { "type": "timestamptz", "nullable": true }
+      },
+      "legacy_key_patterns": {
+        "api_key": "llm_api_key_{provider}",
+        "saved_model": "llm_model_{provider}"
+      }
+    },
+    "integration_secrets": {
+      "singleton": true,
+      "columns": {
+        "bing_webmaster_api_key": { "legacy_key": "bing_webmaster_api_key", "type": "text", "default": "" },
+        "serp_api_key": { "legacy_key": "serp_api_key", "type": "text", "default": "" },
+        "google_rich_results_api_key": { "legacy_key": "google_rich_results_api_key", "type": "text", "default": "" },
+        "crawl_auth_password": { "legacy_key": "crawl_auth_password", "type": "text", "default": "" },
+        "crawl_cookies": { "legacy_key": "crawl_cookies", "type": "text", "default": "" }
+      }
+    },
+    "mcp_settings": {
+      "singleton": true,
+      "columns": {
+        "bearer_token": { "legacy_key": "mcp_token", "type": "text", "default": "" },
+        "allowed_hosts": { "legacy_key": "mcp_allowed_hosts", "type": "text", "default": "" },
+        "allowed_origins": { "legacy_key": "mcp_allowed_origins", "type": "text", "default": "" },
+        "public_url": { "legacy_key": "mcp_public_url", "type": "text", "default": "" },
+        "tool_bundle": { "legacy_key": "mcp_domain", "type": "text", "default": "core" },
+        "disabled_tools": { "legacy_key": "mcp_disabled_tools", "type": "text", "default": "" },
+        "enabled_domains": { "legacy_key": "mcp_enabled_domains", "type": "text", "default": "[\"core\",\"insight\"]" }
+      }
+    },
+    "feature_flags": {
+      "singleton": true,
+      "columns": {
+        "pipeline_enabled": { "legacy_key": "feature_pipeline_enabled", "type": "bool", "default": true },
+        "write_enabled": { "legacy_key": "feature_write_enabled", "type": "bool", "default": true },
+        "pages_md_enabled": { "legacy_key": "feature_pages_md_enabled", "type": "bool", "default": true },
+        "chat_enabled": { "legacy_key": "feature_chat_enabled", "type": "bool", "default": true },
+        "mcp_visible": { "legacy_key": "feature_mcp_visible", "type": "bool", "default": true },
+        "secrets_visible": { "legacy_key": "feature_secrets_visible", "type": "bool", "default": true }
+      }
+    },
+    "workspace_settings": {
+      "singleton": true,
+      "columns": {
+        "active_property_id": { "legacy_key": "active_property_id", "type": "int", "nullable": true },
+        "warning_mapper_input": { "legacy_key": "warning_mapper_input", "type": "text", "default": "" },
+        "warning_mapper_input_type": { "legacy_key": "warning_mapper_input_type", "type": "text", "default": "lighthouse" }
+      }
+    },
+    "ui_preferences": {
+      "singleton": true,
+      "columns": {
+        "brand_name": { "legacy_app_key": "brand_name", "type": "text", "default": "" },
+        "brand_subtitle": { "legacy_app_key": "brand_subtitle", "type": "text", "default": "" },
+        "brand_logo_url": { "legacy_app_key": "brand_logo_url", "type": "text", "default": "" },
+        "custom_theme_json": { "legacy_app_key": "custom_theme", "type": "jsonb", "nullable": true },
+        "ui_prefs_json": { "legacy_app_key": "ui_prefs", "type": "jsonb", "nullable": true }
+      }
+    }
+  },
+  "pipeline_domain_tables": {
+    "crawl_settings": [
+      "start_url", "crawl_discovery_mode", "crawl_url_list", "crawl_user_agent_preset", "crawl_user_agent_custom",
+      "compare_mobile_desktop", "crawl_auth_username", "crawl_extra_headers", "crawl_robots_txt_override",
+      "custom_extractors", "max_pages", "concurrency", "timeout", "max_depth", "polite_delay", "ignore_robots",
+      "allow_external", "store_outlinks", "store_content_excerpt", "content_excerpt_max_chars", "store_page_html",
+      "max_stored_html_bytes", "run_content_analysis", "content_analysis_strategy", "content_analysis_workers",
+      "custom_extraction_regex", "crawl_path_segments", "crawl_ignore_params", "competitor_domains", "export_logo_url",
+      "preserve_crawl_history", "crawl_stream_to_db", "crawl_exclude_urls", "crawl_render_mode", "crawl_js_concurrency",
+      "crawl_js_timeout", "crawl_js_wait_until", "crawl_js_extra_wait_ms", "crawl_js_block_resources",
+      "crawl_js_capture_console", "crawl_js_console_levels", "crawl_js_capture_failed_requests",
+      "crawl_js_console_max_per_page"
+    ],
+    "report_settings": [
+      "outbound_domain_max_rows", "include_keyword_opportunities", "site_name", "report_title", "max_fetch_for_edges",
+      "same_domain_only", "max_nodes_plot", "run_security_scan", "security_scan_active", "security_max_urls_probe",
+      "probe_image_inventory", "max_image_probe_urls", "image_probe_concurrency", "image_probe_timeout",
+      "image_unoptimized_min_kb", "enable_subdomain_discovery", "subdomain_ct_lookup", "enable_rdap_org_lookup"
+    ],
+    "lighthouse_settings": [
+      "lighthouse_url", "lighthouse_mode", "lighthouse_strategy", "lighthouse_categories", "lighthouse_iterations",
+      "run_lighthouse", "run_lighthouse_on_pages", "enable_crux", "enable_rich_results_validation", "enable_axe",
+      "enable_spell_check", "enable_html_validation", "enable_amp_audit", "enable_wayback_lookup",
+      "lighthouse_max_pages", "lighthouse_concurrency"
+    ],
+    "content_analysis_settings": [
+      "enable_duplicate_detection", "enable_language_detection", "analysis_fuzzy_threshold", "analysis_simhash_hamming",
+      "analysis_simhash_max_urls", "analysis_fuzzy_max_urls", "analysis_dup_max_pages"
+    ],
+    "audit_step_settings": ["run_crawl", "run_report", "run_plot"],
+    "google_pipeline_settings": [
+      "enable_google_search_console", "enable_google_analytics", "google_date_range_days", "google_url_gap_list_limit",
+      "enrich_keywords_after_report", "enable_google_keyword_planner", "enable_keyword_forecast",
+      "google_ads_language_id", "google_ads_geo_ids"
+    ],
+    "keyword_settings": [
+      "keyword_max_pages", "keyword_gsc_max_rows", "brand_name", "keyword_seeds", "enable_google_suggest",
+      "enable_google_trends", "enable_wikipedia_topic", "enable_datamuse", "keyword_suggest_top_n",
+      "keyword_max_suggest_results"
+    ]
+  }
+}

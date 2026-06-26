@@ -33,10 +33,10 @@ def _resolve_llm_api_key(cfg: dict[str, str]) -> str:
 def load_llm_config_from_db() -> dict[str, str]:
     try:
         from .db import db_session
-        from .db.storage import read_llm_config
+        from .db.typed_config.worker_config import load_worker_llm_config
 
         with db_session() as conn:
-            cfg = read_llm_config(conn)
+            cfg = load_worker_llm_config(conn)
     except Exception:
         return {}
 

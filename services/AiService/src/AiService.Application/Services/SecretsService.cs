@@ -1,63 +1,62 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using AiService.Application.Repositories;
+using AiService.Domain.Models;
 using AiService.Domain.Repositories;
 
 namespace AiService.Application.Services;
 
 public sealed class SecretsService(
-    ILlmConfigRepository llmConfig,
-    IPipelineConfigRepository pipelineConfig,
+    ILlmSettingsRepository llmSettings,
+    IIntegrationSecretsRepository integrationSecrets,
+    IMcpSettingsRepository mcpSettings,
+    IFeatureFlagsRepository featureFlags,
     IGoogleAppSettingsRepository googleSettings)
 {
     public async Task<JsonObject> GetStateAsync(CancellationToken cancellationToken = default)
     {
         var state = new JsonObject();
 
-        var llmRows = await llmConfig.LoadFullAsync(cancellationToken);
-        foreach (var row in llmRows)
+        var llmSettingsRow = await llmSettings.LoadForClientAsync(cancellationToken);
+        foreach (var profile in llmSettingsRow.Providers)
         {
-            var isSecret = row.IsSecret || ConfigSecretHelpers.IsSecretKey(row.Key);
-            if (!isSecret)
+            if (string.IsNullOrEmpty(profile.ApiKey))
             {
                 continue;
             }
 
-            if (string.IsNullOrEmpty(row.Value))
+            var key = $"llm_api_key_{profile.Provider}";
+            state[key] = LlmSettingsSecretMask.Mask;
+            state[$"{key}_masked"] = true;
+            if (profile.ApiKeyUpdatedAt is { } savedAt)
             {
-                continue;
-            }
-
-            state[row.Key] = row.IsSecret || !string.Equals(row.Value, ConfigSecretHelpers.Mask, StringComparison.Ordinal)
-                ? ConfigSecretHelpers.Mask
-                : row.Value;
-            if (row.IsSecret || ConfigSecretHelpers.IsSecretKey(row.Key))
-            {
-                state[$"{row.Key}_masked"] = true;
-                if (row.UpdatedAt != default)
-                {
-                    state[$"{row.Key}_saved_at"] = row.UpdatedAt.UtcDateTime.ToString("O");
-                }
+                state[$"{key}_saved_at"] = savedAt.UtcDateTime.ToString("O");
             }
         }
 
-        var (pipelineKnown, _) = await pipelineConfig.LoadFullAsync(cancellationToken);
-        foreach (var (key, value) in pipelineKnown)
-        {
-            if (!SecretsKeyCatalog.IsManagedPipelineKey(key) || string.IsNullOrEmpty(value))
-            {
-                continue;
-            }
+        var integration = await integrationSecrets.LoadAsync(cancellationToken);
+        AddMaskedSecret(state, "bing_webmaster_api_key", integration.BingWebmasterApiKey);
+        AddMaskedSecret(state, "serp_api_key", integration.SerpApiKey);
+        AddMaskedSecret(state, "google_rich_results_api_key", integration.GoogleRichResultsApiKey);
+        AddMaskedSecret(state, "crawl_auth_password", integration.CrawlAuthPassword);
+        AddMaskedSecret(state, "crawl_cookies", integration.CrawlCookies);
 
-            if (SecretsKeyCatalog.IsPipelineSecretKey(key))
-            {
-                state[key] = ConfigSecretHelpers.Mask;
-                state[$"{key}_masked"] = true;
-            }
-            else
-            {
-                state[key] = value;
-            }
-        }
+        var mcp = await mcpSettings.LoadAsync(cancellationToken);
+        AddMaskedSecret(state, "mcp_token", mcp.BearerToken);
+        AddPlainValue(state, "mcp_allowed_hosts", mcp.AllowedHosts);
+        AddPlainValue(state, "mcp_allowed_origins", mcp.AllowedOrigins);
+        AddPlainValue(state, "mcp_public_url", mcp.PublicUrl);
+        AddPlainValue(state, "mcp_domain", mcp.ToolBundle);
+        AddPlainValue(state, "mcp_disabled_tools", mcp.DisabledTools);
+        AddPlainValue(state, "mcp_enabled_domains", mcp.EnabledDomains);
+
+        var flags = await featureFlags.LoadAsync(cancellationToken);
+        state["feature_pipeline_enabled"] = flags.PipelineEnabled;
+        state["feature_write_enabled"] = flags.WriteEnabled;
+        state["feature_pages_md_enabled"] = flags.PagesMdEnabled;
+        state["feature_chat_enabled"] = flags.ChatEnabled;
+        state["feature_mcp_visible"] = flags.McpVisible;
+        state["feature_secrets_visible"] = flags.SecretsVisible;
 
         var google = await googleSettings.LoadAsync(cancellationToken);
         if (!string.IsNullOrEmpty(google.ClientId))
@@ -94,9 +93,12 @@ public sealed class SecretsService(
 
     public async Task PutStateAsync(JsonObject incoming, CancellationToken cancellationToken = default)
     {
-        var llmUpdates = new Dictionary<string, string>(StringComparer.Ordinal);
-        var pipelineUpdates = new Dictionary<string, string>(StringComparer.Ordinal);
+        var llmApiKeyUpdates = new Dictionary<string, string>(StringComparer.Ordinal);
+        var integrationPatch = new IntegrationSecretsPatchBuilder();
+        var mcpPatch = new McpSettingsPatchBuilder();
+        var featurePatch = new FeatureFlagsPatchBuilder();
         var googlePatch = new GoogleAppSettingsPatchBuilder();
+        string? genericLlmApiKey = null;
 
         foreach (var prop in incoming)
         {
@@ -129,10 +131,22 @@ public sealed class SecretsService(
             switch (storage)
             {
                 case SecretsKeyCatalog.SecretsStorage.Llm:
-                    llmUpdates[key] = val;
+                    if (key.StartsWith("llm_api_key_", StringComparison.Ordinal))
+                    {
+                        var provider = key["llm_api_key_".Length..];
+                        if (!string.IsNullOrEmpty(provider))
+                        {
+                            llmApiKeyUpdates[provider] = val;
+                        }
+                    }
+                    else if (key == "llm_api_key")
+                    {
+                        genericLlmApiKey = val;
+                    }
+
                     break;
                 case SecretsKeyCatalog.SecretsStorage.Pipeline:
-                    pipelineUpdates[key] = val;
+                    ApplyPipelinePatch(integrationPatch, mcpPatch, featurePatch, key, val);
                     break;
                 case SecretsKeyCatalog.SecretsStorage.Google:
                     ApplyGooglePatch(googlePatch, key, val);
@@ -140,29 +154,39 @@ public sealed class SecretsService(
             }
         }
 
-        if (llmUpdates.Count > 0)
+        if (genericLlmApiKey is not null)
         {
-            await llmConfig.SaveAsync(llmUpdates, cancellationToken);
+            var current = await llmSettings.LoadAsync(cancellationToken);
+            var provider = current.Provider.Trim().ToLowerInvariant();
+            if (provider is not "" and not "none")
+            {
+                llmApiKeyUpdates[provider] = genericLlmApiKey;
+            }
         }
 
-        if (pipelineUpdates.Count > 0)
+        if (llmApiKeyUpdates.Count > 0)
         {
-            var (known, unknown) = await pipelineConfig.LoadFullAsync(cancellationToken);
-            var mergedKnown = new Dictionary<string, string>(known, StringComparer.Ordinal);
-            foreach (var (key, value) in pipelineUpdates)
+            foreach (var (provider, apiKey) in llmApiKeyUpdates)
             {
-                if (SecretsKeyCatalog.IsPipelineSecretKey(key)
-                    && string.IsNullOrWhiteSpace(value)
-                    && known.TryGetValue(key, out var existing)
-                    && !string.IsNullOrWhiteSpace(existing))
-                {
-                    continue;
-                }
-
-                mergedKnown[key] = value;
+                await llmSettings.MergeProviderApiKeyAsync(provider, apiKey, cancellationToken);
             }
+        }
 
-            await pipelineConfig.SaveAsync(mergedKnown, unknown, cancellationToken);
+        if (integrationPatch.HasChanges)
+        {
+            var current = await integrationSecrets.LoadAsync(cancellationToken);
+            await integrationSecrets.MergeAsync(integrationPatch.Build(current), cancellationToken);
+        }
+
+        if (mcpPatch.HasChanges)
+        {
+            var current = await mcpSettings.LoadAsync(cancellationToken);
+            await mcpSettings.MergeAsync(mcpPatch.Build(current), cancellationToken);
+        }
+
+        if (featurePatch.HasChanges)
+        {
+            await featureFlags.MergeAsync(featurePatch.Build(), cancellationToken);
         }
 
         if (googlePatch.HasChanges)
@@ -170,6 +194,94 @@ public sealed class SecretsService(
             await googleSettings.MergeAsync(googlePatch.Build(), cancellationToken);
         }
     }
+
+    private static void ApplyPipelinePatch(
+        IntegrationSecretsPatchBuilder integration,
+        McpSettingsPatchBuilder mcp,
+        FeatureFlagsPatchBuilder features,
+        string key,
+        string val)
+    {
+        switch (key)
+        {
+            case "bing_webmaster_api_key":
+                integration.BingWebmasterApiKey = val;
+                break;
+            case "serp_api_key":
+                integration.SerpApiKey = val;
+                break;
+            case "google_rich_results_api_key":
+                integration.GoogleRichResultsApiKey = val;
+                break;
+            case "crawl_auth_password":
+                integration.CrawlAuthPassword = val;
+                break;
+            case "crawl_cookies":
+                integration.CrawlCookies = val;
+                break;
+            case "mcp_token":
+                mcp.BearerToken = val;
+                break;
+            case "mcp_allowed_hosts":
+                mcp.AllowedHosts = val;
+                break;
+            case "mcp_allowed_origins":
+                mcp.AllowedOrigins = val;
+                break;
+            case "mcp_public_url":
+                mcp.PublicUrl = val;
+                break;
+            case "mcp_domain":
+                mcp.ToolBundle = val;
+                break;
+            case "mcp_disabled_tools":
+                mcp.DisabledTools = val;
+                break;
+            case "mcp_enabled_domains":
+                mcp.EnabledDomains = val;
+                break;
+            case "feature_pipeline_enabled":
+                features.PipelineEnabled = ParseBool(val);
+                break;
+            case "feature_write_enabled":
+                features.WriteEnabled = ParseBool(val);
+                break;
+            case "feature_pages_md_enabled":
+                features.PagesMdEnabled = ParseBool(val);
+                break;
+            case "feature_chat_enabled":
+                features.ChatEnabled = ParseBool(val);
+                break;
+            case "feature_mcp_visible":
+                features.McpVisible = ParseBool(val);
+                break;
+            case "feature_secrets_visible":
+                features.SecretsVisible = ParseBool(val);
+                break;
+        }
+    }
+
+    private static void AddMaskedSecret(JsonObject state, string key, string value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return;
+        }
+
+        state[key] = ConfigSecretHelpers.Mask;
+        state[$"{key}_masked"] = true;
+    }
+
+    private static void AddPlainValue(JsonObject state, string key, string value)
+    {
+        if (!string.IsNullOrEmpty(value))
+        {
+            state[key] = value;
+        }
+    }
+
+    private static bool ParseBool(string value)
+        => value.Trim().ToLowerInvariant() is "true" or "1" or "yes";
 
     private static void ApplyGooglePatch(GoogleAppSettingsPatchBuilder patch, string key, string val)
     {
@@ -217,6 +329,135 @@ public sealed class SecretsService(
 
                 break;
         }
+    }
+
+    private sealed class IntegrationSecretsPatchBuilder
+    {
+        public string? BingWebmasterApiKey { get; set; }
+
+        public string? SerpApiKey { get; set; }
+
+        public string? GoogleRichResultsApiKey { get; set; }
+
+        public string? CrawlAuthPassword { get; set; }
+
+        public string? CrawlCookies { get; set; }
+
+        public bool HasChanges =>
+            BingWebmasterApiKey is not null
+            || SerpApiKey is not null
+            || GoogleRichResultsApiKey is not null
+            || CrawlAuthPassword is not null
+            || CrawlCookies is not null;
+
+        public IntegrationSecretsPatch Build(IntegrationSecrets current) => new()
+        {
+            BingWebmasterApiKey = ResolveSecret(BingWebmasterApiKey, current.BingWebmasterApiKey),
+            SerpApiKey = ResolveSecret(SerpApiKey, current.SerpApiKey),
+            GoogleRichResultsApiKey = ResolveSecret(GoogleRichResultsApiKey, current.GoogleRichResultsApiKey),
+            CrawlAuthPassword = ResolveSecret(CrawlAuthPassword, current.CrawlAuthPassword),
+            CrawlCookies = ResolveSecret(CrawlCookies, current.CrawlCookies),
+        };
+
+        private static string? ResolveSecret(string? incoming, string existing)
+        {
+            if (incoming is null)
+            {
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(incoming) && !string.IsNullOrWhiteSpace(existing))
+            {
+                return null;
+            }
+
+            return incoming;
+        }
+    }
+
+    private sealed class McpSettingsPatchBuilder
+    {
+        public string? BearerToken { get; set; }
+
+        public string? AllowedHosts { get; set; }
+
+        public string? AllowedOrigins { get; set; }
+
+        public string? PublicUrl { get; set; }
+
+        public string? ToolBundle { get; set; }
+
+        public string? DisabledTools { get; set; }
+
+        public string? EnabledDomains { get; set; }
+
+        public bool HasChanges =>
+            BearerToken is not null
+            || AllowedHosts is not null
+            || AllowedOrigins is not null
+            || PublicUrl is not null
+            || ToolBundle is not null
+            || DisabledTools is not null
+            || EnabledDomains is not null;
+
+        public McpSettingsPatch Build(McpSettings current) => new()
+        {
+            BearerToken = ResolveSecret(BearerToken, current.BearerToken),
+            AllowedHosts = AllowedHosts,
+            AllowedOrigins = AllowedOrigins,
+            PublicUrl = PublicUrl,
+            ToolBundle = ToolBundle,
+            DisabledTools = DisabledTools,
+            EnabledDomains = EnabledDomains,
+        };
+
+        private static string? ResolveSecret(string? incoming, string existing)
+        {
+            if (incoming is null)
+            {
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(incoming) && !string.IsNullOrWhiteSpace(existing))
+            {
+                return null;
+            }
+
+            return incoming;
+        }
+    }
+
+    private sealed class FeatureFlagsPatchBuilder
+    {
+        public bool? PipelineEnabled { get; set; }
+
+        public bool? WriteEnabled { get; set; }
+
+        public bool? PagesMdEnabled { get; set; }
+
+        public bool? ChatEnabled { get; set; }
+
+        public bool? McpVisible { get; set; }
+
+        public bool? SecretsVisible { get; set; }
+
+        public bool HasChanges =>
+            PipelineEnabled is not null
+            || WriteEnabled is not null
+            || PagesMdEnabled is not null
+            || ChatEnabled is not null
+            || McpVisible is not null
+            || SecretsVisible is not null;
+
+        public FeatureFlagsPatch Build() => new()
+        {
+            PipelineEnabled = PipelineEnabled,
+            WriteEnabled = WriteEnabled,
+            PagesMdEnabled = PagesMdEnabled,
+            ChatEnabled = ChatEnabled,
+            McpVisible = McpVisible,
+            SecretsVisible = SecretsVisible,
+        };
     }
 
     private sealed class GoogleAppSettingsPatchBuilder

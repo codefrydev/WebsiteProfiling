@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
+using AiService.Domain.Models;
 using AiService.Providers.Chat;
 using Microsoft.Extensions.AI;
 
@@ -13,11 +14,12 @@ public sealed class StructuredCompletionStreamingTests
         var factory = new FakeChatClientFactory(["{\"power_", "insights\": [\"Hello\"]}"]);
         var service = new StructuredCompletionService(factory);
         var tokens = new List<string>();
+        var settings = new LlmSettings { Provider = "openai", Enabled = true };
 
         var result = await service.CompleteJsonStreamingAsync(
             "system",
             "user",
-            new Dictionary<string, string> { ["llm_provider"] = "openai", ["openai_api_key"] = "test" },
+            settings,
             tokens.Add);
 
         Assert.Equal(2, tokens.Count);
@@ -29,11 +31,12 @@ public sealed class StructuredCompletionStreamingTests
     {
         var factory = new FakeChatClientFactory(["{\"ok\": true}"]);
         var service = new StructuredCompletionService(factory);
+        var settings = new LlmSettings { Provider = "openai", Enabled = true };
 
         var result = await service.CompleteJsonAsync(
             "system",
             "user",
-            new Dictionary<string, string> { ["llm_provider"] = "openai", ["openai_api_key"] = "test" });
+            settings);
 
         Assert.True(result["ok"]!.GetValue<bool>());
     }
@@ -41,9 +44,9 @@ public sealed class StructuredCompletionStreamingTests
     private sealed class FakeChatClientFactory(string[] chunks) : IChatClientFactory
     {
         public Task<IChatClient> CreateFromConfigAsync(CancellationToken cancellationToken = default)
-            => Task.FromResult<IChatClient>(CreateClient(new Dictionary<string, string>()));
+            => Task.FromResult<IChatClient>(CreateClient(new LlmSettings()));
 
-        public IChatClient CreateClient(IReadOnlyDictionary<string, string> cfg)
+        public IChatClient CreateClient(LlmSettings settings)
             => new FakeChatClient(chunks);
     }
 

@@ -8,8 +8,6 @@ namespace AiService.Application.Persistence;
 /// </summary>
 public sealed class AiDbContext(DbContextOptions<AiDbContext> options) : DbContext(options)
 {
-    public DbSet<LlmConfigEntry> LlmConfig => Set<LlmConfigEntry>();
-
     public DbSet<LlmCacheEntry> LlmCache => Set<LlmCacheEntry>();
 
     public DbSet<ChatSession> ChatSessions => Set<ChatSession>();
@@ -20,16 +18,6 @@ public sealed class AiDbContext(DbContextOptions<AiDbContext> options) : DbConte
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<LlmConfigEntry>(e =>
-        {
-            e.ToTable("llm_config");
-            e.HasKey(x => x.Key);
-            e.Property(x => x.Key).HasColumnName("key");
-            e.Property(x => x.Value).HasColumnName("value");
-            e.Property(x => x.IsSecret).HasColumnName("is_secret");
-            e.Property(x => x.UpdatedAt).HasColumnName("updated_at");
-        });
-
         modelBuilder.Entity<LlmCacheEntry>(e =>
         {
             e.ToTable("llm_cache");

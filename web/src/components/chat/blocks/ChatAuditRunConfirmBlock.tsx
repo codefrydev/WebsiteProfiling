@@ -4,7 +4,6 @@ import { Loader2, Play } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Button from '@/components/Button';
 import CrawlAuthorizeCheckbox from '@/components/pipeline/CrawlAuthorizeCheckbox';
-import { usePipeline } from '@/context/PipelineContext';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
 import {
@@ -22,7 +21,6 @@ type AuditRunConfirmBlock = Extract<ChatBlock, { type: 'audit_run_confirm' }>;
 const c = strings.components.chat.auditRunConfirm;
 
 export default function ChatAuditRunConfirmBlock({ block }: { block: AuditRunConfirmBlock }) {
-  const { unknownKeys } = usePipeline();
   const { readOnly } = useReadOnlySession();
   const [authorized, setAuthorized] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -103,7 +101,6 @@ export default function ChatAuditRunConfirmBlock({ block }: { block: AuditRunCon
         body: JSON.stringify({
           command: block.runSpec.command || null,
           state: mergedState,
-          unknownKeys,
           propertyId: propertyId ?? undefined,
         }),
       });
@@ -134,7 +131,7 @@ export default function ChatAuditRunConfirmBlock({ block }: { block: AuditRunCon
       setJobStatus('error');
       setBusy(false);
     }
-  }, [authorized, readOnly, busy, block.runSpec, unknownKeys]);
+  }, [authorized, readOnly, busy, block.runSpec]);
 
   const runDisabled = !authorized || readOnly || busy || jobStatus === 'done';
   const showRunControls = jobStatus !== 'running' && jobStatus !== 'done';
