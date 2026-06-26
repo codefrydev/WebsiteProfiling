@@ -2,11 +2,12 @@ using System.Text;
 using System.Text.Json.Nodes;
 using AiService.Domain.Models;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging;
 
 namespace AiService.Providers.Chat;
 
 /// <summary>Structured JSON completions via <see cref="IChatClient"/>.</summary>
-public sealed class StructuredCompletionService(IChatClientFactory chatClientFactory)
+public sealed class StructuredCompletionService(IChatClientFactory chatClientFactory, ILogger<StructuredCompletionService> logger)
 {
     public Task<JsonObject> CompleteJsonAsync(
         string system,
@@ -14,6 +15,24 @@ public sealed class StructuredCompletionService(IChatClientFactory chatClientFac
         LlmSettings settings,
         CancellationToken cancellationToken = default)
         => CompleteJsonStreamingAsync(system, user, settings, onToken: null, cancellationToken);
+
+    /// <summary>Returns null when the provider is unreachable (Ollama down, network error, timeout).</summary>
+    public async Task<JsonObject?> TryCompleteJsonAsync(
+        string system,
+        string user,
+        LlmSettings settings,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            return await CompleteJsonAsync(system, user, settings, cancellationToken);
+        }
+        catch (Exception ex) when (LlmTransportFailures.IsUnavailable(ex))
+        {
+            logger.LogWarning("LLM completion skipped: {Reason}", LlmTransportFailures.Describe(ex));
+            return null;
+        }
+    }
 
     public async Task<JsonObject> CompleteJsonStreamingAsync(
         string system,

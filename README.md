@@ -284,16 +284,16 @@ Increase `PIPELINE_JOB_STALE_HOURS` for crawls that routinely exceed one hour.
 ### Testing
 
 ```bash
-./local-test              # Full CI parity: Python + web + .NET (Data, ReportService, AiService, Bff, FileService)
+./local-test              # Full CI parity: Python + web + .NET (services/WebsiteProfiling.slnx)
 ./local-test python       # Backend: three 100% coverage gates + browser pytest + CLI smoke
 ./local-test browser      # JS crawl integration tests (skips if Chromium unavailable)
 ./local-test web          # Frontend: build, typecheck, lint, vitest
-./local-test dotnet       # dotnet test Data + ReportService + AiService + Bff + FileService + BFF OpenAPI drift gate
+./local-test dotnet       # dotnet test services/WebsiteProfiling.slnx + BFF OpenAPI drift gate
 ./local-test quick        # Fast loop; requires DB already running (no coverage gate)
 ./local-test all --no-cov # Full run without pytest coverage gate
 ```
 
-CI runs separate jobs for **Python** (coverage gates), **web**, **Data**, **ReportService**, **AiService**, **IntegrationsService**, **Bff**, **FileService**, and **Docker** (image build, browser pytest in container, compose smoke). See [.github/workflows/ci.yml](.github/workflows/ci.yml).
+CI runs separate jobs for **Python** (coverage gates), **web**, **dotnet** (`services/WebsiteProfiling.slnx` + Bff OpenAPI drift gate), and **Docker** (image build, browser pytest in container, compose smoke). See [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
 ## Configuration
 

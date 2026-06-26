@@ -1,18 +1,15 @@
-using AiService.Application;
+using AiService.Api;
 using AiService.Mcp;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
-builder.Services.AddAiServiceApplication();
-builder.Services.AddAiServiceMcpCatalog();
-
-if (McpServerExtensions.IsMcpHttpEnabled())
+builder.Host.UseDefaultServiceProvider((_, options) =>
 {
-    builder.Services
-        .AddAiServiceMcp()
-        .WithHttpTransport(options => options.Stateless = true);
-}
+    options.ValidateOnBuild = true;
+    options.ValidateScopes = true;
+});
+
+builder.Services.AddAiServiceHost(enableMcpHttp: McpServerExtensions.IsMcpHttpEnabled());
 
 var app = builder.Build();
 
@@ -33,3 +30,5 @@ if (McpServerExtensions.IsMcpHttpEnabled())
 }
 
 app.Run();
+
+public partial class Program;

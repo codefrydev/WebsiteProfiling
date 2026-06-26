@@ -22,10 +22,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function listDashboards(propertyId: number): Promise<DashboardRowClient[]> {
-  const data = await request<{ dashboards: DashboardRowClient[] }>(
+  const data = await request<{ dashboards?: DashboardRowClient[] }>(
     `/dashboards?propertyId=${propertyId}`,
   );
-  return data.dashboards;
+  return Array.isArray(data.dashboards) ? data.dashboards : [];
 }
 
 export async function createDashboard(

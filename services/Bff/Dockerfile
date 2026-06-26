@@ -1,6 +1,5 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY Bff.slnx ./
 COPY src/Bff.Domain/Bff.Domain.csproj src/Bff.Domain/
 COPY src/Bff.Application/Bff.Application.csproj src/Bff.Application/
 COPY src/Bff.Api/Bff.Api.csproj src/Bff.Api/

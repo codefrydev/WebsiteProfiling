@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Testing\WebsiteProfiling.Testing.csproj" />
     <ProjectReference Include="..\..\src\FileService.Api\FileService.Api.csproj" />
     <ProjectReference Include="..\..\src\FileService.Application\FileService.Application.csproj" />
     <ProjectReference Include="..\..\src\FileService.Rendering\FileService.Rendering.csproj" />

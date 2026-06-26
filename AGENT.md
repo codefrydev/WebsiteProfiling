@@ -164,4 +164,9 @@ These recur when adding features. Verify explicitly — do not assume tests caug
    )
    ```
 
-**Checklist:** new report page uses `ReportShell` · no duplicate local imports in long functions · new `fetchone()` uses `_row_field` · `./local-test` passes all three coverage gates · new tools coverage test file listed in CI + both local-test scripts · `runpy` main-guard tests pop `sys.modules` first
+6. **.NET — DI lifetime / host registration**
+   - Unit tests do **not** build the ASP.NET DI graph. Singleton injecting scoped services (e.g. `DbContext`) only fails at `./local-run` unless you test registration.
+   - **Do:** Every API service enables `ValidateOnBuild` + `ValidateScopes` in `Program.cs` and ships `ServiceRegistrationValidationTests` (`WebApplicationFactory<Program>`). Shared env helper: `services/Shared/WebsiteProfiling.Testing/`.
+   - **Don't:** Add scoped dependencies to singletons without resolving via `IServiceScopeFactory`, or skip the registration test when adding new host services.
+
+**Checklist:** new report page uses `ReportShell` · no duplicate local imports in long functions · new `fetchone()` uses `_row_field` · `./local-test` passes all three coverage gates · new tools coverage test file listed in CI + both local-test scripts · `runpy` main-guard tests pop `sys.modules` first · new .NET API service has DI validation test

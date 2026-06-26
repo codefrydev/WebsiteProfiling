@@ -1,7 +1,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY Shared/WebsiteProfiling.Contracts/WebsiteProfiling.Contracts.csproj Shared/WebsiteProfiling.Contracts/
-COPY ReportService/ReportService.slnx ReportService/
 COPY ReportService/src/ReportService.Domain/ReportService.Domain.csproj ReportService/src/ReportService.Domain/
 COPY ReportService/src/ReportService.Application/ReportService.Application.csproj ReportService/src/ReportService.Application/
 COPY ReportService/src/ReportService.Api/ReportService.Api.csproj ReportService/src/ReportService.Api/

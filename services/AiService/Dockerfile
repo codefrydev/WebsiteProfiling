@@ -1,7 +1,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY Shared/WebsiteProfiling.Contracts/WebsiteProfiling.Contracts.csproj Shared/WebsiteProfiling.Contracts/
-COPY AiService/AiService.slnx AiService/
 COPY AiService/src/AiService.Domain/AiService.Domain.csproj AiService/src/AiService.Domain/
 COPY AiService/src/AiService.Providers/AiService.Providers.csproj AiService/src/AiService.Providers/
 COPY AiService/src/AiService.Tools/AiService.Tools.csproj AiService/src/AiService.Tools/

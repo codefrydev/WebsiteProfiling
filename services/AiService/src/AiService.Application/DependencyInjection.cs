@@ -62,9 +62,14 @@ public static class DependencyInjection
             options.UseNpgsql(dataSource, npg => npg.CommandTimeout(o.CommandTimeoutSeconds));
         });
 
-        services.AddHttpClient(nameof(OllamaCatalogService), client =>
+        services.AddHttpClient(OllamaCatalogService.LocalProbeClientName, client =>
         {
-            client.Timeout = TimeSpan.FromSeconds(15);
+            client.Timeout = TimeSpan.FromSeconds(8);
+        });
+
+        services.AddHttpClient(OllamaCatalogService.CloudCatalogClientName, client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(12);
         });
 
         services.AddScoped<ILlmSettingsRepository, LlmSettingsRepository>();

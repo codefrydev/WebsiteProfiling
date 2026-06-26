@@ -4,6 +4,7 @@ using AiService.Domain.Repositories;
 using AiService.Tools.Domain;
 using AiService.Tools.Registry;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AiService.Tools.Selection;
 
@@ -12,7 +13,7 @@ namespace AiService.Tools.Selection;
 /// Shared by MCP, chat, and <c>/api/mcp-tools</c>.
 /// </summary>
 public sealed class AuditToolSelectionService(
-    IMcpSettingsRepository mcpSettingsRepository,
+    IServiceScopeFactory scopeFactory,
     ToolCatalog catalog,
     IMemoryCache cache)
 {
@@ -46,6 +47,8 @@ public sealed class AuditToolSelectionService(
         McpSettings mcp;
         try
         {
+            using var scope = scopeFactory.CreateScope();
+            var mcpSettingsRepository = scope.ServiceProvider.GetRequiredService<IMcpSettingsRepository>();
             mcp = await mcpSettingsRepository.LoadAsync(cancellationToken);
         }
         catch

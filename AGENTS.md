@@ -20,6 +20,7 @@ This file is the canonical entry point for agents. For full detail see [AGENT.md
 - `services/IntegrationsService/` — .NET Google/Bing integrations (GSC/GA4 fetch, OAuth, page-live, keyword reads; port 8093). See [services/IntegrationsService/README.md](services/IntegrationsService/README.md)
 - `services/FileService/` — .NET PDF + Excel workbook export (port 8080). HTTP-only via `REPORT_API_URL`; no Postgres. Profiles: `executive|standard|full|premium`. Details: [services/FileService/README.md](services/FileService/README.md). Env: `FILE_SERVICE_URL` (MCP), `REPORT_API_URL` (FileService).
 - `alembic/` — DB migrations
+- `services/WebsiteProfiling.slnx` — unified .NET solution (all six services + shared libs)
 - `docs/` — documentation index
 - `tests/` — pytest suite
 
@@ -27,7 +28,7 @@ This file is the canonical entry point for agents. For full detail see [AGENT.md
 
 ```bash
 ./local-run          # Start Postgres + FileService + Data + AiService + ReportService + IntegrationsService + worker + FastAPI + BFF + Vite
-./local-test         # Python + web + .NET tests (CI parity)
+./local-test         # Python + web + .NET tests (CI parity; dotnet: services/WebsiteProfiling.slnx)
 python -m src        # Run audit pipeline
 # MCP: AiService stdio/HTTP — see services/AiService/README.md and docs/MCP.md
 ```

@@ -1,7 +1,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY Shared/WebsiteProfiling.Contracts/WebsiteProfiling.Contracts.csproj Shared/WebsiteProfiling.Contracts/
-COPY FileService/FileService.slnx FileService/
 COPY FileService/src/FileService.Domain/FileService.Domain.csproj FileService/src/FileService.Domain/
 COPY FileService/src/FileService.Rendering/FileService.Rendering.csproj FileService/src/FileService.Rendering/
 COPY FileService/src/FileService.Application/FileService.Application.csproj FileService/src/FileService.Application/

@@ -3,6 +3,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Circle, Cloud, HardDrive, Loader2, RefreshCw, Sparkles } from 'lucide-react';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { format, strings } from '@/lib/strings';
+import {
+  ollamaHealthDotClass,
+  ollamaHealthLabel,
+  resolveOllamaHealth,
+} from '@/lib/ollamaConnectionHealth';
 
 const s = strings.pipelineRunner.ollama;
 
@@ -27,6 +32,7 @@ interface OllamaModelEntry {
 interface OllamaStatus {
   ok: boolean;
   error?: string;
+  localOk?: boolean;
   cloudCatalogOk?: boolean;
   catalogSource?: string;
   cloudModelCount?: number;
@@ -66,6 +72,10 @@ export default function OllamaModelPicker({
     setLoading(true);
     try {
       const res = await apiFetch(apiUrl('/ollama/status'));
+      if (!res.ok) {
+        setStatus({ ok: false, error: s.unreachable });
+        return;
+      }
       const data = (await res.json()) as OllamaStatus;
       setStatus(data);
       if (data.ok && data.models?.length && !model) {
@@ -86,7 +96,8 @@ export default function OllamaModelPicker({
     void refresh();
   }, [refresh, baseUrl]);
 
-  const connected = status?.ok === true;
+  const health = resolveOllamaHealth(status, loading);
+  const catalogUsable = health === 'healthy' || health === 'degraded';
   const models = status?.models || [];
   const selected = models.find((m) => m.name === model);
 
@@ -133,11 +144,24 @@ export default function OllamaModelPicker({
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
         <span className="flex items-center gap-1.5">
           <Circle
-            className={`h-2 w-2 fill-current ${connected ? 'text-emerald-400' : 'text-red-400'}`}
+            className={`h-2 w-2 fill-current ${ollamaHealthDotClass(health)}`}
             aria-hidden
           />
-          <span className={connected ? 'text-emerald-300' : 'text-red-400'}>
-            {connected ? s.connected : status?.error || s.disconnected}
+          <span
+            className={
+              health === 'healthy'
+                ? 'text-emerald-300'
+                : health === 'degraded'
+                  ? 'text-amber-300'
+                  : 'text-red-400'
+            }
+          >
+            {ollamaHealthLabel(health, status, {
+              connected: s.connected,
+              degraded: s.degraded,
+              disconnected: s.disconnected,
+              unreachable: s.unreachable,
+            })}
           </span>
         </span>
         {status?.cloudCatalogOk ? (
@@ -179,7 +203,7 @@ export default function OllamaModelPicker({
         <label htmlFor="ollama-model-search" className="mb-1 block text-xs font-medium text-foreground">
           {s.modelLabel}
         </label>
-        {connected && models.length ? (
+        {catalogUsable && models.length ? (
           <div className="space-y-2">
             <input
               id="ollama-model-search"
@@ -254,7 +278,7 @@ export default function OllamaModelPicker({
             className="w-full rounded-lg border border-default bg-brand-900 px-3 py-2 text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
           />
         )}
-        {connected && !status?.cloudCatalogOk ? (
+        {catalogUsable && !status?.cloudCatalogOk ? (
           <p className="mt-2 flex items-center gap-1.5 text-xs text-amber-400">
             <HardDrive className="h-3 w-3" />
             {s.cloudCatalogUnavailable}

@@ -81,7 +81,14 @@ Use the [QuestPDF Companion](https://www.questpdf.com/companion/) app for live l
 ## Tests
 
 ```bash
-dotnet test
+# From repo root — all .NET services:
+dotnet test services/WebsiteProfiling.slnx
+
+# Or from services/:
+cd services && dotnet test WebsiteProfiling.slnx
+
+# This service only:
+dotnet test services/FileService/tests/FileService.Tests/FileService.Tests.csproj
 ```
 
 Fixtures: `tests/FileService.Tests/fixtures/minimal-payload.json`, `full-payload.json`.

@@ -81,6 +81,8 @@ def cluster_keywords_llm(keywords: list[str], cfg: dict[str, str] | None = None)
         return []
     try:
         out = _post("/internal/enrichment/cluster-keywords", {"keywords": keywords[:200]})
+        if out.get("skipped"):
+            raise RuntimeError(str(out.get("reason") or "LLM keyword clustering unavailable"))
         clusters = out.get("clusters") or []
         return clusters if isinstance(clusters, list) else []
     except Exception as e:

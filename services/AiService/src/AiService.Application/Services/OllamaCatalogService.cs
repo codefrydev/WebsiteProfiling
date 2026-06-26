@@ -1,14 +1,18 @@
 using System.Net.Http.Json;
+using System.Net.Sockets;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using AiService.Application.Json;
+using Microsoft.Extensions.Logging;
 
 namespace AiService.Application.Services;
 
 /// <summary>Port of <c>ollama_catalog.py</c> — local + cloud Ollama model catalog.</summary>
-public sealed class OllamaCatalogService(IHttpClientFactory httpClientFactory)
+public sealed class OllamaCatalogService(IHttpClientFactory httpClientFactory, ILogger<OllamaCatalogService> logger)
 {
     public const string OllamaCloudCatalogUrl = "https://ollama.com/api/tags";
+    public const string LocalProbeClientName = "OllamaLocalProbe";
+    public const string CloudCatalogClientName = "OllamaCloudCatalog";
 
     private static readonly Regex[] ProCloudModelPatterns =
     [
@@ -34,12 +38,32 @@ public sealed class OllamaCatalogService(IHttpClientFactory httpClientFactory)
             normalizedBase = "http://127.0.0.1:11434";
         }
 
-        var http = httpClientFactory.CreateClient(nameof(OllamaCatalogService));
-        var localData = await FetchJsonAsync(http, $"{normalizedBase}/api/tags", TimeSpan.FromSeconds(8), cancellationToken);
-        var cloudData = await FetchJsonAsync(http, OllamaCloudCatalogUrl, TimeSpan.FromSeconds(12), cancellationToken);
+        var localHttp = httpClientFactory.CreateClient(LocalProbeClientName);
+        var cloudHttp = httpClientFactory.CreateClient(CloudCatalogClientName);
+
+        var localTask = FetchJsonAsync(
+            localHttp,
+            $"{normalizedBase}/api/tags",
+            TimeSpan.FromSeconds(8),
+            probeKind: "local",
+            cancellationToken);
+        var cloudTask = FetchJsonAsync(
+            cloudHttp,
+            OllamaCloudCatalogUrl,
+            TimeSpan.FromSeconds(12),
+            probeKind: "cloud",
+            cancellationToken);
+
+        await Task.WhenAll(localTask, cloudTask);
+
+        var localData = await localTask;
+        var cloudData = await cloudTask;
 
         var localOk = localData is not null;
         var cloudCatalogOk = cloudData is not null;
+        var health = OllamaConnectionHealth.Resolve(localOk, cloudCatalogOk);
+        var catalogUsable = OllamaConnectionHealth.CatalogUsable(localOk, cloudCatalogOk);
+        var warning = OllamaConnectionHealth.Warning(localOk, cloudCatalogOk, normalizedBase);
 
         var localModels = (localData?["models"] as JsonArray ?? [])
             .Select(NormalizeLocalModel)
@@ -55,26 +79,31 @@ public sealed class OllamaCatalogService(IHttpClientFactory httpClientFactory)
 
         var models = MergeOllamaModels(localModels, cloudModels);
 
-        if (!localOk && !cloudCatalogOk)
+        if (!catalogUsable)
         {
             return new JsonObject
             {
                 ["ok"] = false,
+                ["health"] = health,
                 ["baseUrl"] = normalizedBase,
                 ["models"] = new JsonArray(),
                 ["cloudCatalogOk"] = false,
                 ["localOk"] = false,
-                ["error"] = "Cannot reach Ollama or the cloud model catalog.",
+                ["warning"] = null,
+                ["error"] = OllamaConnectionHealth.OfflineError(localOk, cloudCatalogOk),
             };
         }
 
         return new JsonObject
         {
-            ["ok"] = localOk || cloudCatalogOk,
+            ["ok"] = true,
+            ["health"] = health,
             ["baseUrl"] = normalizedBase,
             ["models"] = new JsonArray(models.Select(x => x.DeepClone()).ToArray()),
             ["cloudCatalogOk"] = cloudCatalogOk,
             ["localOk"] = localOk,
+            ["warning"] = warning,
+            ["error"] = null,
         };
     }
 
@@ -93,10 +122,11 @@ public sealed class OllamaCatalogService(IHttpClientFactory httpClientFactory)
     public static bool ModelsSupportTools(IEnumerable<JsonObject> models)
         => models.Any(m => m["capabilities"] is JsonArray caps && caps.Any(c => c?.GetValue<string>() == "tools"));
 
-    private static async Task<JsonObject?> FetchJsonAsync(
+    private async Task<JsonObject?> FetchJsonAsync(
         HttpClient http,
         string url,
         TimeSpan timeout,
+        string probeKind,
         CancellationToken cancellationToken)
     {
         try
@@ -109,10 +139,29 @@ public sealed class OllamaCatalogService(IHttpClientFactory httpClientFactory)
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<JsonObject>(cancellationToken: cts.Token);
         }
-        catch (Exception)
+        catch (Exception ex) when (IsExpectedProbeFailure(ex))
         {
+            logger.LogDebug(ex, "Ollama {ProbeKind} probe failed for {Url}", probeKind, url);
             return null;
         }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Ollama {ProbeKind} probe failed for {Url}", probeKind, url);
+            return null;
+        }
+    }
+
+    private static bool IsExpectedProbeFailure(Exception ex)
+    {
+        for (var current = ex; current is not null; current = current.InnerException)
+        {
+            if (current is HttpRequestException or SocketException or TaskCanceledException)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static JsonObject? NormalizeLocalModel(JsonNode? raw)
@@ -203,7 +252,6 @@ public sealed class OllamaCatalogService(IHttpClientFactory httpClientFactory)
         var tier = ResolveBillingTier(
             entry["name"]?.GetValue<string>() ?? "",
             entry["source"]?.GetValue<string>() ?? "local");
-        // Copy scalar values — do not assign tier child nodes directly (JsonNode single-parent rule).
         entry["billing"] = tier["billing"]?.GetValue<string>();
         entry["requires_subscription"] = tier["requires_subscription"]?.GetValue<bool>() ?? false;
         return entry;

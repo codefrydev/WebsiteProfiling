@@ -1,7 +1,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY Shared/WebsiteProfiling.Contracts/WebsiteProfiling.Contracts.csproj Shared/WebsiteProfiling.Contracts/
-COPY IntegrationsService/IntegrationsService.slnx IntegrationsService/
 COPY IntegrationsService/src/IntegrationsService.Domain/IntegrationsService.Domain.csproj IntegrationsService/src/IntegrationsService.Domain/
 COPY IntegrationsService/src/IntegrationsService.Application/IntegrationsService.Application.csproj IntegrationsService/src/IntegrationsService.Application/
 COPY IntegrationsService/src/IntegrationsService.Providers/IntegrationsService.Providers.csproj IntegrationsService/src/IntegrationsService.Providers/

@@ -41,11 +41,17 @@ public sealed class EnrichmentService(
         }
         else
         {
-            data = await completionService.CompleteJsonAsync(
+            var generated = await completionService.TryCompleteJsonAsync(
                 LlmPrompts.KeywordClusterSystem,
                 payload.ToJsonString(),
                 settings,
                 cancellationToken);
+            if (generated is null)
+            {
+                return SkippedKeywordClusters(settings);
+            }
+
+            data = generated;
             await cacheRepository.WriteObjectAsync(cacheKey, data, cancellationToken);
         }
 
@@ -71,6 +77,21 @@ public sealed class EnrichmentService(
 
         var sorted = new JsonArray(clusters.OrderByDescending(x => x?["cluster_score"]?.GetValue<double?>() ?? 0).Select(x => x!.DeepClone()).ToArray());
         return new JsonObject { ["clusters"] = sorted };
+    }
+
+    private static JsonObject SkippedKeywordClusters(LlmSettings settings)
+    {
+        var provider = settings.Provider.Trim().ToLowerInvariant();
+        var reason = provider == "ollama"
+            ? "Ollama is not reachable. Start the daemon or choose a cloud model."
+            : "LLM provider is not reachable for keyword clustering.";
+
+        return new JsonObject
+        {
+            ["clusters"] = new JsonArray(),
+            ["skipped"] = true,
+            ["reason"] = reason,
+        };
     }
 
     public async Task<JsonObject> RunEnrichmentAsync(
@@ -297,7 +318,12 @@ public sealed class EnrichmentService(
             return cached;
         }
 
-        var result = await completionService.CompleteJsonAsync(system, batch.ToJsonString(), settings, cancellationToken);
+        var result = await completionService.TryCompleteJsonAsync(system, batch.ToJsonString(), settings, cancellationToken);
+        if (result is null)
+        {
+            return [];
+        }
+
         await cacheRepository.WriteObjectAsync(cacheKey, result, cancellationToken);
         return result;
     }

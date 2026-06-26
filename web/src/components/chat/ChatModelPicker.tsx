@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, ChevronDown, Circle, Loader2, RefreshCw } from 'lucide-react';
+import { ollamaHealthDotClass } from '@/lib/ollamaConnectionHealth';
 import { useOllamaModels, type OllamaModelEntry } from '@/hooks/useOllamaModels';
 import {
   cloudModelPresets,
@@ -79,7 +80,7 @@ export default function ChatModelPicker({
 }: ChatModelPickerProps) {
   const { saveLlmModel, saving } = usePipeline();
   const isOllama = provider === 'ollama';
-  const { status, loading, refresh, models, connected } = useOllamaModels(baseUrl, isOllama);
+  const { status, loading, refresh, models, health, catalogUsable } = useOllamaModels(baseUrl, isOllama);
   const [open, setOpen] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [query, setQuery] = useState('');
@@ -149,9 +150,7 @@ export default function ChatModelPicker({
       >
         {isOllama ? (
           <Circle
-            className={`h-2 w-2 shrink-0 fill-current ${
-              loading ? 'text-amber-400' : connected ? 'text-emerald-400' : 'text-red-400'
-            }`}
+            className={`h-2 w-2 shrink-0 fill-current ${ollamaHealthDotClass(health)}`}
             aria-hidden
           />
         ) : null}
@@ -170,7 +169,7 @@ export default function ChatModelPicker({
           }`}
           role="listbox"
         >
-          {isOllama && connected && models.length ? (
+          {isOllama && catalogUsable && models.length ? (
             <>
               <div className="border-b border-muted/50 p-2">
                 <input
@@ -248,7 +247,7 @@ export default function ChatModelPicker({
           ) : (
             <div className="p-3 text-xs text-muted-foreground">
               {isOllama ? (
-                connected ? (
+                catalogUsable ? (
                   <p>{model || c.ollamaNoModel}</p>
                 ) : (
                   <p className="text-red-400">{c.ollamaUnreachable}</p>
@@ -260,8 +259,11 @@ export default function ChatModelPicker({
           )}
 
           <div className="space-y-1 border-t border-muted/50 p-2 text-xs">
-            {isOllama && connected ? (
+            {isOllama && catalogUsable ? (
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-muted-foreground">
+                {health === 'degraded' ? (
+                  <span className="w-full text-amber-300/90">{c.ollamaDegraded}</span>
+                ) : null}
                 {status?.supportsTools ? (
                   <span className="text-emerald-300/90">{c.ollamaToolsMode}</span>
                 ) : (

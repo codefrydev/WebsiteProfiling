@@ -4,7 +4,7 @@
 #   (default) all     — Postgres + migrations + Python + web + .NET (Data, Bff, FileService)
 #   python            — DB + pytest + CLI smoke only
 #   web               — build, typecheck, lint, vitest (no Postgres)
-#   dotnet            — dotnet test Data + Bff + FileService + Bff OpenAPI drift gate
+#   dotnet            — dotnet test services/WebsiteProfiling.slnx + Bff OpenAPI drift gate
 #   quick             — pytest --no-cov + web + dotnet (DB must already be running)
 #   help              — show commands
 set -uo pipefail
@@ -229,9 +229,7 @@ run_web_lint() { (cd "$WEB" && npm run lint); }
 run_web_test() { (cd "$WEB" && npm test); }
 
 dotnet_test_sln() {
-  local service_dir="$1"
-  local slnx="$2"
-  (cd "$ROOT/services/${service_dir}" && dotnet test "$slnx")
+  (cd "$ROOT/services" && dotnet test WebsiteProfiling.slnx -m:1)
 }
 
 run_bff_openapi_drift_gate() {
@@ -328,15 +326,11 @@ steps_web() {
 
 steps_dotnet() {
   if ! need_cmd dotnet; then
-    skip_step ".NET tests (Data, Bff, FileService)" "dotnet not found"
+    skip_step ".NET tests (WebsiteProfiling.slnx)" "dotnet not found"
     return 0
   fi
-  run_step "dotnet test Data (services/Data/Data.slnx)" dotnet_test_sln "Data" "Data.slnx"
-  run_step "dotnet test ReportService (services/ReportService/ReportService.slnx)" dotnet_test_sln "ReportService" "ReportService.slnx"
-  run_step "dotnet test AiService (services/AiService/AiService.slnx)" dotnet_test_sln "AiService" "AiService.slnx"
-  run_step "dotnet test Bff (services/Bff/Bff.slnx)" dotnet_test_sln "Bff" "Bff.slnx"
+  run_step "dotnet test (WebsiteProfiling.slnx)" dotnet_test_sln
   run_step_or_skip_openapi
-  run_step "dotnet test FileService (services/FileService/FileService.slnx)" dotnet_test_sln "FileService" "FileService.slnx"
 }
 
 steps_python() {
@@ -405,7 +399,7 @@ Local test runner — mirrors .github/workflows/ci.yml
   ./local-test python       DB + pytest (core + reporting + tools) + browser pytest + CLI smoke
   ./local-test browser      Browser integration pytest only (skips if no Chromium)
   ./local-test web          build, typecheck, lint, vitest (no Docker)
-  ./local-test dotnet       dotnet test Data + Bff + FileService + Bff OpenAPI drift gate
+  ./local-test dotnet       dotnet test services/WebsiteProfiling.slnx + Bff OpenAPI drift gate
   ./local-test quick        pytest --no-cov + web + dotnet (DB must be ready)
 
   ./local-test all --no-cov     skip pytest coverage gates (faster)

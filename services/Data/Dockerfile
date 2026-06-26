@@ -1,7 +1,6 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY Shared/WebsiteProfiling.Contracts/WebsiteProfiling.Contracts.csproj Shared/WebsiteProfiling.Contracts/
-COPY Data/Data.slnx Data/
 COPY Data/src/Data.Domain/Data.Domain.csproj Data/src/Data.Domain/
 COPY Data/src/Data.Application/Data.Application.csproj Data/src/Data.Application/
 COPY Data/src/Data.Api/Data.Api.csproj Data/src/Data.Api/

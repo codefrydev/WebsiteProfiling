@@ -69,7 +69,14 @@ src/ReportService.Application/Integrations/
 ## Tests
 
 ```bash
-dotnet test ReportService.slnx
+# From repo root — all .NET services:
+dotnet test services/WebsiteProfiling.slnx
+
+# Or from services/:
+cd services && dotnet test WebsiteProfiling.slnx
+
+# This service only:
+dotnet test services/ReportService/tests/ReportService.Tests/ReportService.Tests.csproj
 ```
 
 Included in `./local-test` (dotnet gate) and CI (`.github/workflows/ci.yml`).
