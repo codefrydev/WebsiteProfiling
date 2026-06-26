@@ -1,5 +1,5 @@
 /**
- * Per-provider LLM models stored in llm_config (llm_model_<provider>).
+ * Per-provider LLM models stored in `llm_provider_profiles` (flat key `llm_model_<provider>`).
  * The active llm_model follows llm_provider; slots remember each provider's last choice.
  */
 import type { LlmConfigState } from '@/types/api';

@@ -4,7 +4,9 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 
 **What it is:** `python -m src` from repo root (`src/__main__.py` -> package **`website_profiling`**). Config: stored in **PostgreSQL typed settings tables** (`crawl_settings`, `report_settings`, `llm_settings`, `integration_secrets`, etc.). Schema inventory: `config/typed_config_manifest.json`; parity tests in `tests/test_typed_config_schema_parity.py`.
 
-**LLM / AI:** Settings live in **`llm_settings`** + **`llm_provider_profiles`**. Providers: OpenAI, Google Gemini, Anthropic, Groq, Ollama (`web/src/lib/llmConfigSchema.ts`). **Browser writes** for API keys and LLM toggles go **BFF → AiService** (`PUT /api/secrets`, `PUT /api/llm-settings` or legacy `PUT /api/llm-config`). Configure via **Secrets** (`/secrets`) and **Run audit → AI settings**. Worker spawn reads typed DB settings only. Worker/CLI calls AiService via `ai_service_client.py` (`AI_SERVICE_URL`, default `:8092`).
+**LLM / AI:** Settings live in **`llm_settings`** + **`llm_provider_profiles`**. Providers: OpenAI, Google Gemini, Anthropic, Groq, Ollama (`web/src/lib/llmConfigSchema.ts`). **Browser writes** for API keys and LLM toggles go **BFF → AiService** (`PUT /api/secrets`, `PUT /api/llm-settings`). Configure via **Secrets** (`/secrets`) and **Run audit → AI settings**. Worker spawn reads typed DB settings only. Worker/CLI calls AiService via `ai_service_client.py` (`AI_SERVICE_URL`, default `:8092`).
+
+**Typed configuration (PostgreSQL):** Flat keys (`start_url`, `llm_provider`, `bing_webmaster_api_key`, …) map to typed columns via `config/typed_config_manifest.json`. Stores include `crawl_settings`, `report_settings`, `lighthouse_settings`, `llm_settings`, `llm_provider_profiles`, `integration_secrets`, `mcp_settings`, `feature_flags`, `workspace_settings`, and `ui_preferences`. Python: `src/website_profiling/db/typed_config/` + `config_store.py`. .NET AiService: `TypedConfigRepositories` / `LlmSettingsRepository`. Migrations `026_typed_config` / `027_drop_eav_config`.
 
 **Frontend:** **`web/`** (Vite + React SPA) — browser calls **`services/Bff/`** for all `/api/*`; BFF proxies to FastAPI, AiService, Data, and FileService.
 
@@ -31,26 +33,28 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 - **`DATABASE_URL`** env: PostgreSQL connection string (required). **`DATA_DIR`**: local artifacts (Docker: `/data`); settings and API keys live in Postgres.
 - **Pipeline storage** (crawl, edges, nodes, report payload, Lighthouse, keywords, warnings) lives in **PostgreSQL only**. Deliverables use the Export view, `GET /api/report/export`, or MCP `export_*` tools — not files written by the main pipeline step.
 - **Pool tuning:** `DB_POOL_MIN` / `DB_POOL_MAX` (Python). Bulk crawl writes via `executemany`; optional **`crawl_stream_to_db`** streams rows during fetch. Per-URL raw HTML: `crawl_page_html` table (migration `015`); API `GET/POST /api/crawl/page-html`.
-- **Browser API (BFF):** All `/api/*` routes are served by `services/Bff/`. **FastAPI:** `/api/run`, `/api/jobs/*`, `/api/pipeline-config`, `/api/pipeline-settings`, `/api/ui-preferences`, crawl, integrations (OAuth reads), properties, content drafts, etc. **AiService:** `/api/chat` (SSE), `/api/llm-settings`, `/api/llm-config` (legacy adapter), `/api/secrets`, `/api/ollama/status`, etc. **Data:** report payload reads, portfolio, issue status, saved filters (see `DATA_ROUTES`). **FileService:** PDF/workbook export. `PipelineRunnerFab` saves pipeline config (FastAPI) and LLM state (`PUT /api/llm-config` → AiService) before each run.
+- **Browser API (BFF):** All `/api/*` routes are served by `services/Bff/`. **FastAPI:** `/api/run`, `/api/jobs/*`, `/api/pipeline-config`, `/api/pipeline-settings`, `/api/ui-preferences`, crawl, integrations (OAuth reads), properties, content drafts, etc. **ReportService:** report build + full-audit orchestration (internal; worker uses `REPORT_SERVICE_URL`). **IntegrationsService:** Google/Bing OAuth and fetch (browser + internal report enrichment). **AiService:** `/api/chat` (SSE), `/api/llm-settings`, `/api/secrets`, `/api/ollama/status`, etc. **Data:** report payload reads, portfolio, issue status, saved filters (see `DATA_ROUTES`). **FileService:** PDF/workbook export. `PipelineRunnerFab` saves pipeline config (FastAPI) and LLM state (`PUT /api/llm-settings` → AiService) before each run.
 - **MCP:** AiService (.NET) — stdio host or HTTP at `/mcp` when `WP_MCP_HTTP=1` on `:8092`. Configure at **`/mcp`** in the web UI. See `docs/MCP.md` and [services/AiService/README.md](services/AiService/README.md).
 - **AI Chat UI:** `/chat` — property-scoped chat with saved sessions (`chat_sessions`, `chat_messages`; migration `012_chat_sessions`).
 - **Job store:** PostgreSQL `pipeline_jobs` (FastAPI); live job status via `/api/jobs/*` through the BFF.
-- **Schema head:** `015_crawl_page_html` (recent: `013` link_edges/discovery, `014` job log truncation, `015` per-URL HTML storage).
-- **Docker:** Root `Dockerfile` (Python backend); `web/Dockerfile` (Vite SPA + nginx); `docker-compose.yml` (postgres + fastapi + worker + ai + data + bff + web + FileService); **`docker-compose.prod.yml`** (production + optional MCP profile mapping host `:8000` → AiService `:8092`); **`docker-compose.pull.yml`** for pre-built images (`BACKEND_IMAGE`, `WEB_IMAGE`); **`LIGHTHOUSE_CHROME_FLAGS`**
+- **Schema head:** `027_drop_eav_config` (recent: `026_typed_config` typed settings tables, `015` per-URL HTML storage).
+- **Docker:** Root `Dockerfile` (Python backend); `web/Dockerfile` (Vite SPA + nginx); `docker-compose.yml` (postgres + fastapi + worker + report + integrations + ai + data + bff + web + FileService); **`docker-compose.prod.yml`** (production + optional MCP profile mapping host `:8000` → AiService `:8092`); **`docker-compose.pull.yml`** for pre-built images (`BACKEND_IMAGE`, `WEB_IMAGE`); **`LIGHTHOUSE_CHROME_FLAGS`**
 
 **Where to edit**
 
 | Task | Where |
 |------|--------|
 | Crawl | `crawl/crawler.py`, `crawl/fetchers/` |
-| Report | `reporting/builder.py`, `reporting/categories.py` |
+| Report (native build) | `services/ReportService/src/ReportService.Application/Build/` |
+| Report (Python bridge) | `reporting/builder.py`, `reporting/categories/` |
 | PDF / workbook export | `services/FileService/` (rendering); BFF routes `/api/report/export` and `/api/report/export-workbook` to FileService |
 | DB schema | `alembic/versions/` |
 | Local analysis | `analysis/local.py`, `requirements.txt` |
 | AI insights (LLM) | `services/AiService/` (browser-facing + MCP + native audit tools), `ai_service_client.py` (worker), `llm_config.py` (typed loader) |
 | Audit query tools (MCP + chat) | `services/AiService/src/AiService.Tools/`, `services/AiService/src/AiService.Mcp/`, `tools/audit_tools/`, `commands/chat_cmd.py` |
 | Agent readiness checks | `tools/audit_tools/geo/agent_readiness.py`, `tools/audit_tools/_aeo_helpers.py` |
-| Config / CLI | `config.py` (`load_config`, `load_config_from_db`), `cli.py`, `input.txt.example` |
+| Typed settings / DB | `db/typed_config/`, `config/typed_config_manifest.json`, `db/config_store.py` |
+| Config / CLI | `config.py` (`load_config`, `load_config_from_db`), `cli.py` |
 | UI pipeline schema | `web/src/lib/pipelineConfigSchema.ts` |
 | UI LLM schema | `web/src/lib/llmConfigSchema.ts` |
 | UI secrets schema | `web/src/lib/secretsConfigSchema.ts`, `web/src/hooks/useSecrets.ts` |

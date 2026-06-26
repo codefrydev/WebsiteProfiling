@@ -1,5 +1,5 @@
 """
-Load LLM settings from llm_config table only (UI-managed).
+Load LLM settings from typed PostgreSQL tables (`llm_settings`, `llm_provider_profiles`).
 Not read from pipeline-config.txt or --config files.
 """
 from __future__ import annotations

@@ -1,5 +1,5 @@
 /**
- * AI insights settings — stored only in PostgreSQL (llm_config table).
+ * AI insights settings — stored in PostgreSQL (`llm_settings` + `llm_provider_profiles`).
  * Not part of audit settings files or CLI --config.
  */
 import type { LlmConfigState } from '@/types/api';
@@ -199,7 +199,7 @@ export function buildInitialLlmConfigState(): LlmConfigState {
   return out;
 }
 
-/** Parse llm_config bool values stored as strings in PostgreSQL. */
+/** Parse LLM settings bool values stored as strings in PostgreSQL. */
 export function parseLlmBool(
   value: string | boolean | undefined,
   defaultValue = false,
@@ -211,7 +211,7 @@ export function parseLlmBool(
   return defaultValue;
 }
 
-/** Coerce API/DB llm_config rows to typed UI state (bools as boolean, not "true" strings). */
+/** Coerce API/DB LLM settings to typed UI state (bools as boolean, not "true" strings). */
 export function normalizeLlmConfigState(raw: LlmConfigState): LlmConfigState {
   const out = buildInitialLlmConfigState();
   for (const section of LLM_CONFIG_SECTIONS) {

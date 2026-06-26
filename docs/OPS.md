@@ -33,9 +33,9 @@ The endpoint invokes `schedule_runner.py`, which:
 
 1. Evaluates each property's `schedule_cron` expression (UTC, five-field cron syntax) against the current minute.
 2. Spawns a full audit (`python -m src`) with `WP_PROPERTY_ID` and `WP_SCHEDULED_SPAWN=1`.
-3. Reads `pipeline_config` for shared integration keys (Google, and similar) only. Crawl settings are derived from the property's `site_url` and `default_crawl_preset` (`starter`, `spa`, `ecommerce`, or `performance`).
+3. Reads typed integration settings from PostgreSQL (`integration_secrets`, Google-related keys) for shared credentials. Crawl settings are derived from the property's `site_url` and `default_crawl_preset` (`starter`, `spa`, `ecommerce`, or `performance`).
 
-**Important:** Scheduled runs never write to or overwrite `pipeline_config`. Manual **Run audit** actions from the web UI also use saved `pipeline_config` without modification.
+**Important:** Scheduled runs never write to or overwrite saved audit settings. Manual **Run audit** actions from the web UI also use saved settings without modification.
 
 ### Example
 

@@ -1,6 +1,6 @@
 /**
  * Central registry for credentials managed on the /secrets page.
- * Values are stored in llm_config, pipeline_config, or google_app_settings.
+ * Values are stored in `integration_secrets`, `llm_settings` / `llm_provider_profiles`, or `google_app_settings`.
  */
 import type { SecretsState } from '@/types/api';
 import {

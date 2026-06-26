@@ -400,7 +400,10 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
           if (!trimmed) {
             continue;
           }
-          payload[key] = isLlmApiKeyMaskedStored(value) ? '*' : value;
+          payload[key] = isLlmApiKeyMaskedStored(value) ? '*' : trimmed;
+          continue;
+        }
+        if (value === undefined || value === null) {
           continue;
         }
         payload[key] = value;

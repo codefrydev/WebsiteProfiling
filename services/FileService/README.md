@@ -22,7 +22,7 @@ In **Development**, Swagger UI is at **http://localhost:8080/docs** and the Open
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `REPORT_API_URL` | `http://127.0.0.1:8001` | Base URL for report payload, meta, and app-settings HTTP API |
+| `REPORT_API_URL` | `http://127.0.0.1:8001` | Base URL for report payload, meta, and ui-preferences HTTP API |
 | `ASPNETCORE_URLS` | `http://127.0.0.1:8080` | Bind address (Docker sets `http://+:8080`) |
 
 ## Upstream HTTP contract
@@ -33,7 +33,7 @@ Routes on `REPORT_API_URL`:
 |-------|---------|
 | `GET /api/report/payload?reportId=` | Report JSON for PDF/workbook |
 | `GET /api/report/meta` | Domain → report list |
-| `GET /api/app-settings?key=` | Agency branding (optional) |
+| `GET /api/ui-preferences` | Agency branding (`brand_name`, `brand_subtitle`, `brand_logo_url`) |
 
 ## API
 
@@ -50,7 +50,7 @@ Routes on `REPORT_API_URL`:
 | Param | Default | Description |
 |-------|---------|-------------|
 | `profile` | `standard` | `executive`, `standard`, `full`, or `premium` |
-| `branding` | `true` | Load agency name/logo/subtitle from report API app-settings |
+| `branding` | `true` | Load agency name/logo/subtitle from `GET /api/ui-preferences` |
 | `disposition` | `attachment` | `inline` for iframe preview, `attachment` for download |
 
 **Workbook query params**

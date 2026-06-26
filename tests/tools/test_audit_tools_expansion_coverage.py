@@ -372,6 +372,10 @@ def test_integration_tools_paths(conn: MagicMock, ctx: Ctx) -> None:
 
     with patch("website_profiling.tools.audit_tools.integrations.integration_tools.get_property_by_id", return_value={"canonical_domain": "ex.com"}):
         assert int_mod.get_bing_index_status(conn, ctx, {})["missing"]
+        with patch("website_profiling.db.config_store.read_pipeline_config", return_value=({}, [])):
+            missing_key = int_mod.get_bing_index_status(conn, ctx, {"url": "https://ex.com/page"})
+            assert missing_key["missing"]
+            assert "bing_webmaster_api_key" in missing_key["error"]
         with patch("website_profiling.db.config_store.read_pipeline_config", return_value=({"bing_webmaster_api_key": "key"}, {})):
             with patch("website_profiling.integrations.bing.webmaster._bing_json_get", return_value={"d": {"indexed": True}}):
                 bing = int_mod.get_bing_index_status(conn, ctx, {"url": "https://ex.com/page"})

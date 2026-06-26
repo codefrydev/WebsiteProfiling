@@ -33,7 +33,7 @@ Match CI before opening a pull request:
 ./local-test quick        # faster; DB must already be running
 ```
 
-CI also runs a **Docker** job (image build, browser pytest in container, compose smoke). `./local-test` does not run that job — see [.github/workflows/ci.yml](.github/workflows/ci.yml).
+CI also runs a **Docker** job (image build, browser pytest in container, compose smoke) plus **IntegrationsService** and **ReportService** dotnet tests. `./local-test` includes ReportService but not IntegrationsService — run `dotnet test services/IntegrationsService/IntegrationsService.slnx` before push if you changed that service. See [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
 When adding tools coverage tests, register new files in `scripts/local-test.sh`, `scripts/local-test.ps1`, and `.github/workflows/ci.yml` (see [AGENT.md](AGENT.md)).
 

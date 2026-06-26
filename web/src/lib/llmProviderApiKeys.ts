@@ -1,5 +1,5 @@
 /**
- * Per-provider LLM API keys stored in llm_config (llm_api_key_<provider>).
+ * Per-provider LLM API keys stored in `llm_provider_profiles` (flat key `llm_api_key_<provider>`).
  * The active provider from Pipeline → Content & AI resolves to llm_api_key at runtime.
  */
 export const LLM_CLOUD_PROVIDERS = ['openai', 'gemini', 'anthropic', 'groq'] as const;
