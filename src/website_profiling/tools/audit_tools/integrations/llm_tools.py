@@ -248,9 +248,9 @@ def analyze_serp_snippet_for_url(conn: Connection, ctx: AuditToolContext, args: 
     scoped_df = scoped.load_crawl_df(conn)
     page_row: dict[str, Any] = {}
     if scoped_df is not None and not scoped_df.empty:
-        needle = url.rstrip("/").lower()
+        needle = url.lower()
         for _, row in scoped_df.iterrows():
-            if str(row.get("url") or "").rstrip("/").lower() == needle:
+            if str(row.get("url") or "").lower() == needle:
                 page_row = row.to_dict()
                 break
     base = {
@@ -390,7 +390,7 @@ def generate_schema(conn: Connection, ctx: AuditToolContext, args: dict[str, Any
         if df is not None and not df.empty:
             for _, row in df.iterrows():
                 rec = row.to_dict()
-                if str(rec.get("url") or "").rstrip("/").lower() == url.rstrip("/").lower():
+                if str(rec.get("url") or "").lower() == url.lower():
                     headline = str(rec.get("title") or "")
                     description = str(rec.get("meta_description") or rec.get("content_excerpt") or "")[:200]
                     break
@@ -474,10 +474,10 @@ def generate_meta_tags(conn: Connection, ctx: AuditToolContext, args: dict[str, 
     df = scoped.load_crawl_df(conn)
     if df is None or df.empty:
         return {"error": "no crawl data", "url": url}
-    needle = url.rstrip("/").lower()
+    needle = url.lower()
     for _, row in df.iterrows():
         rec = row.to_dict()
-        if str(rec.get("url") or "").rstrip("/").lower() != needle:
+        if str(rec.get("url") or "").lower() != needle:
             continue
         title = str(rec.get("title") or "")
         desc = str(rec.get("meta_description") or rec.get("content_excerpt") or "")[:160]

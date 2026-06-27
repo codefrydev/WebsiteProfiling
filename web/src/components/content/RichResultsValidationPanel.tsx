@@ -13,6 +13,7 @@ import { buildRichResultsContext } from '@/lib/fixSuggestionContext';
 interface RichResultsValidationPanelProps {
   rows: RichResultsValidationRow[];
   meta?: RichResultsMeta | null;
+  devData?: unknown;
 }
 
 function statusBadgeVariant(status: string): string {
@@ -29,7 +30,7 @@ function statusBadgeVariant(status: string): string {
   }
 }
 
-export default function RichResultsValidationPanel({ rows, meta }: RichResultsValidationPanelProps) {
+export default function RichResultsValidationPanel({ rows, meta, devData }: RichResultsValidationPanelProps) {
   const vca = strings.views.contentAnalytics;
   const columns = useMemo((): TableColumn[] => [
     { key: 'url', label: vca.richResultsColUrl },
@@ -60,7 +61,7 @@ export default function RichResultsValidationPanel({ rows, meta }: RichResultsVa
     (meta.api_count ?? 0) === 0;
 
   return (
-    <Card padding="tight" shadow>
+    <Card padding="tight" shadow devData={devData}>
       <div className="flex items-center gap-2 mb-2">
         <Sparkles className="h-4 w-4 text-violet-700 dark:text-violet-400" />
         <h3 className="text-sm font-bold text-foreground">{vca.richResultsTitle}</h3>

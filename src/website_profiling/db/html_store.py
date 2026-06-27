@@ -22,7 +22,7 @@ ON CONFLICT (crawl_run_id, url) DO UPDATE SET
 
 
 def _normalize_url(url: str) -> str:
-    return str(url or "").rstrip("/")
+    return str(url or "")
 
 
 def _rows_from_records(records: list[dict[str, Any]], crawl_run_id: int) -> list[tuple]:

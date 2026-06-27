@@ -330,7 +330,7 @@ def google_keywords_by_page(
 
     data = read_latest_keyword_data(conn, property_id) or {}
     all_rows = data.get("rows") or []
-    normalized_target = page_url.lower().rstrip("/")
+    normalized_target = page_url.lower()
 
     page_keywords = [
         r for r in all_rows
@@ -341,7 +341,7 @@ def google_keywords_by_page(
     cannib = [
         c for c in cannib_raw
         if any(
-            (p.get("url") or "").lower().rstrip("/") == normalized_target
+            (p.get("url") or "").lower() == normalized_target
             for p in (c.get("pages") or [])
         )
     ]
@@ -357,7 +357,7 @@ def google_keywords_by_page(
 
 
 def _matches_url(candidate: str, target: str) -> bool:
-    u = candidate.lower().rstrip("/")
+    u = candidate.lower()
     return u == target or u in target or target in u
 
 

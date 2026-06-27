@@ -1,4 +1,5 @@
 
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertCircle,
@@ -9,6 +10,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { Card, HelpHint } from '@/components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { CategoryScoreGauge } from '@/components/charts/CategoryScoreGauge';
 import { strings, format } from '@/lib/strings';
 import type { PortfolioBenchmark, PortfolioBenchmarkStatus } from '@/types/report';
@@ -118,22 +120,70 @@ export function PortfolioBenchmarkCard({
   portfolioHref = '/',
   categoriesAnchorId = 'overview-health-categories',
 }: PortfolioBenchmarkCardProps) {
-  if (!benchmark) return null;
-
-  const status = benchmark.status;
-  const property = benchmark.property_health_score;
-  const median = benchmark.median_health_score;
-  const propertyCount = benchmark.property_count;
+  const status = benchmark?.status;
+  const property = benchmark?.property_health_score;
+  const median = benchmark?.median_health_score;
+  const propertyCount = benchmark?.property_count;
   const isComparable = status === 'ok' || status == null;
   const delta =
     property != null && median != null ? property - median : null;
   const deltaNarrative = portfolioDeltaNarrative(delta);
 
+  const headerDevData = useMemo(
+    () => {
+      if (!benchmark) return null;
+      return {
+        widget: 'overview.health.portfolioBenchmark.header',
+        title: vo.portfolioBenchmarkTitle,
+        subtitle: vo.portfolioBenchmarkSubtitle,
+        status,
+        propertyCount,
+        isComparable,
+        links: {
+          portfolioHref,
+          compareHref: compareHref && reportCount > 1 ? compareHref : null,
+        },
+      };
+    },
+    [
+      benchmark,
+      compareHref,
+      isComparable,
+      portfolioHref,
+      propertyCount,
+      reportCount,
+      status,
+      vo.portfolioBenchmarkSubtitle,
+      vo.portfolioBenchmarkTitle,
+    ],
+  );
+
+  const bodyDevData = useMemo(
+    () => {
+      if (!benchmark) return null;
+      return {
+        widget: 'overview.health.portfolioBenchmark.body',
+        status,
+        property,
+        median,
+        delta,
+        deltaNarrative,
+        isComparable,
+        message: benchmark.message,
+        raw: { portfolio_benchmark: benchmark },
+      };
+    },
+    [benchmark, delta, deltaNarrative, isComparable, median, property, status],
+  );
+
+  if (!benchmark) return null;
+
   if (!isComparable && property == null && !benchmark.message) return null;
 
   return (
     <Card shadow className="mb-8 overflow-hidden border border-default">
-      <div className="border-b border-muted/60 p-4 sm:p-5">
+      <div className="relative group/dev-card border-b border-muted/60 p-4 sm:p-5">
+        <DevCopyJsonButton data={headerDevData} />
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -171,7 +221,8 @@ export function PortfolioBenchmarkCard({
         </div>
       </div>
 
-      <div className="space-y-5 p-4 sm:p-5">
+      <div className="relative group/dev-card space-y-5 p-4 sm:p-5">
+        <DevCopyJsonButton data={bodyDevData} />
         {!isComparable && benchmark.message ? (
           <StatusBanner status={status ?? 'unavailable'} message={benchmark.message} portfolioHref={portfolioHref} />
         ) : null}

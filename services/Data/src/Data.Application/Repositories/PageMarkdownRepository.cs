@@ -116,7 +116,7 @@ public sealed class PageMarkdownRepository(NpgsqlDataSource dataSource) : IPageM
         string url,
         CancellationToken cancellationToken)
     {
-        var norm = (url ?? "").Trim().TrimEnd('/');
+        var norm = (url ?? "").Trim();
         if (string.IsNullOrEmpty(norm))
         {
             return null;

@@ -22,6 +22,7 @@ import {
 import { goToPipeline } from '../lib/pipelineReturn';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Button, ViewTabs, ViewTabPanel, Select, LabelWithHint } from '../components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import type { ViewTabItem } from '../components';
 import {
@@ -298,6 +299,159 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
     return items;
   }, [hasMulti, urlPool.length, quickWinFailCount, failingAuditsDetailed.length, diagnosticsList.length, tabLabels]);
 
+  const settingsDevData = useMemo(
+    () => ({
+      widget: 'lighthouse.settings',
+      displayUrl,
+      url: summary?.url ?? null,
+      mode,
+      device,
+      strategy,
+      categories,
+      runTimestamp: runTimestamp || null,
+      iterations,
+    }),
+    [categories, device, displayUrl, iterations, mode, runTimestamp, strategy, summary?.url],
+  );
+
+  const cruxDevData = useMemo(
+    () => ({
+      widget: 'lighthouse.crux',
+      ok: data?.crux_summary?.ok ?? false,
+      pass: data?.crux_summary?.pass ?? null,
+      metrics: data?.crux_summary?.metrics ?? null,
+    }),
+    [data?.crux_summary],
+  );
+
+  const overviewScoresDevData = useMemo(
+    () => ({
+      widget: 'lighthouse.overview.scores',
+      displayUrl,
+      categoryScores: cs,
+      scores: CATEGORIES.map(({ id, label }) => ({
+        id,
+        label,
+        score: cs[id] != null ? Number(cs[id]) : null,
+      })),
+    }),
+    [cs, displayUrl],
+  );
+
+  const summaryDevData = useMemo(
+    () => ({
+      widget: 'lighthouse.overview.summary',
+      displayUrl,
+      humanSummary,
+    }),
+    [displayUrl, humanSummary],
+  );
+
+  const pagesTableDevData = useMemo(
+    () => ({
+      widget: 'lighthouse.pages.table',
+      urlCount: urlPool.length,
+      selectedUrl,
+      rows: Object.entries(byUrlForTable).map(([url, d]) => ({
+        url,
+        category_scores: d.category_scores ?? null,
+        median_metrics: d.median_metrics ?? null,
+      })),
+    }),
+    [byUrlForTable, selectedUrl, urlPool.length],
+  );
+
+  const pageDetailDevData = useMemo(
+    () =>
+      selectedPageSummary && selectedUrl
+        ? {
+            widget: 'lighthouse.pages.detail',
+            selectedUrl,
+            categoryScores: selectedPageSummary.category_scores ?? {},
+            humanSummary:
+              selectedPageSummary.human_summary_full || selectedPageSummary.human_summary || '',
+          }
+        : { widget: 'lighthouse.pages.detail', selectedUrl: null },
+    [selectedPageSummary, selectedUrl],
+  );
+
+  const metricsDevData = useMemo(
+    () => ({
+      widget: 'lighthouse.metrics',
+      displayUrl,
+      iterations,
+      medianMetrics: mm,
+      metrics: (Object.keys(METRIC_THRESHOLDS) as Array<keyof typeof METRIC_THRESHOLDS>).map((key) => ({
+        key,
+        label: METRIC_THRESHOLDS[key].label,
+        value: (mm[key] as number | null | undefined) ?? null,
+      })),
+    }),
+    [displayUrl, iterations, mm],
+  );
+
+  const quickWinsDevData = useMemo(
+    () => ({
+      widget: 'lighthouse.quickWins',
+      displayUrl,
+      failCount: quickWinFailCount,
+      wins: QUICK_WINS.map((win) => ({
+        id: win.id,
+        title: win.title,
+        passed: quickWinStatus[win.id] ?? false,
+      })),
+    }),
+    [displayUrl, quickWinFailCount, quickWinStatus],
+  );
+
+  const auditsDevData = useMemo(
+    () => ({
+      widget: 'lighthouse.audits',
+      displayUrl,
+      searchQuery: q || null,
+      totalFailing: failingAuditsDetailed.length,
+      audits: failingAuditsForDisplay.map((a) => ({
+        id: a.id,
+        title: a.title ?? null,
+        score: a.score ?? null,
+        displayValue: a.displayValue ?? null,
+      })),
+    }),
+    [displayUrl, failingAuditsDetailed.length, failingAuditsForDisplay, q],
+  );
+
+  const diagnosticsDevData = useMemo(
+    () => ({
+      widget: 'lighthouse.diagnostics',
+      displayUrl,
+      searchQuery: q || null,
+      activeGroup: resolvedImpactGroup,
+      page: safeDiagnosticPage,
+      totalPages: diagnosticTotalPages,
+      from: diagnosticFrom,
+      to: diagnosticTo,
+      total: activeDiagnosticTotal,
+      items: visibleDiagnostics.map((d) => ({
+        id: d.lighthouse_audit_id || d.id,
+        warning: d.warning ?? null,
+        primary_impact: d.primary_impact ?? null,
+        severity: d.severity ?? null,
+        one_line_fix: d.one_line_fix ?? null,
+      })),
+    }),
+    [
+      activeDiagnosticTotal,
+      diagnosticFrom,
+      diagnosticTo,
+      diagnosticTotalPages,
+      displayUrl,
+      q,
+      resolvedImpactGroup,
+      safeDiagnosticPage,
+      visibleDiagnostics,
+    ],
+  );
+
   const urlPicker = hasMulti && activeTab !== 'pages' ? (
     <div className="flex items-center gap-2 min-w-0 max-w-md">
       <Globe className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />
@@ -367,7 +521,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
         />
       </div>
 
-      <Card padding="tight">
+      <Card padding="tight" devData={settingsDevData}>
         <h3 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-3">{vlh.analysisSettings}</h3>
         <div className="flex flex-wrap gap-6 text-sm">
           <div><span className="text-muted-foreground block text-xs mb-0.5">{vlh.mode}</span><span className="text-foreground font-medium capitalize">{mode}</span></div>
@@ -390,7 +544,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
       </Card>
 
       {data?.crux_summary?.ok && (
-        <Card padding="tight">
+        <Card padding="tight" devData={cruxDevData}>
           <h3 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-3">
             Real users (CrUX)
           </h3>
@@ -431,7 +585,8 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'overview' && (
         <div id="lh-tab-overview" role="tabpanel" aria-labelledby="lh-tab-btn-overview" className="space-y-6">
-          <div>
+          <div className="relative group/dev-card">
+            <DevCopyJsonButton data={overviewScoresDevData} />
             <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-4">
               <LabelWithHint label={vlh.categoriesSection} helpKey="views.lighthouse.categoryScores" />
             </h2>
@@ -448,7 +603,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
           </div>
 
           {humanSummary ? (
-            <Card>
+            <Card devData={summaryDevData}>
               <h2 className="text-foreground text-sm font-bold uppercase tracking-wider mb-3">{vlh.summary}</h2>
               <pre className="text-muted-foreground text-sm whitespace-pre-wrap font-sans">{humanSummary}</pre>
             </Card>
@@ -459,11 +614,12 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
       {activeTab === 'pages' && hasMulti && (
         <div id="lh-tab-pages" role="tabpanel" aria-labelledby="lh-tab-btn-pages" className="space-y-4">
           <p className="text-muted-foreground text-sm">{vlh.multiCompareHint}</p>
-          <Card padding="none" overflowHidden>
+          <Card padding="none" overflowHidden devData={pagesTableDevData}>
             <MultiPageTable byUrl={byUrlForTable} selectedUrl={selectedUrl} onSelect={handleSelectUrl} />
           </Card>
           {selectedPageSummary ? (
-            <div ref={pageDetailRef} className="space-y-6">
+            <div ref={pageDetailRef} className="relative group/dev-card space-y-6">
+              <DevCopyJsonButton data={pageDetailDevData} />
               <div>
                 <h2 className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-4">
                   <LabelWithHint label={vlh.categoriesSection} helpKey="views.lighthouse.categoryScores" />
@@ -494,7 +650,7 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
           <p className="text-muted-foreground text-sm">
             {format(vlh.metricsHint, { runs: iterations || 1 })}
           </p>
-          <Card overflowHidden padding="none">
+          <Card overflowHidden padding="none" devData={metricsDevData}>
             <div className="divide-y divide-muted">
               {(Object.keys(METRIC_THRESHOLDS) as Array<keyof typeof METRIC_THRESHOLDS>).map((key) => (
                 <ThresholdBar key={key} metricKey={key} value={mm[key] as number | null | undefined} />
@@ -507,7 +663,8 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
       {activeTab === 'quick-wins' && (
         <div id="lh-tab-quick-wins" role="tabpanel" aria-labelledby="lh-tab-btn-quick-wins" className="space-y-4">
           <p className="text-muted-foreground text-sm">{vlh.quickWinsHint}</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="relative group/dev-card grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <DevCopyJsonButton data={quickWinsDevData} />
             {QUICK_WINS.map((win) => (
               <QuickWinCard key={win.id} win={win} passed={quickWinStatus[win.id] ?? false} />
             ))}
@@ -521,11 +678,14 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
           {failingAuditsDetailed.length === 0 ? (
             <Card className="p-6 text-center text-muted-foreground text-sm">{vlh.allChecksPassed}</Card>
           ) : failingAuditsForDisplay.length > 0 ? (
-            <ul className="space-y-2">
+            <div className="relative group/dev-card space-y-2">
+              <DevCopyJsonButton data={auditsDevData} />
+              <ul className="space-y-2">
               {failingAuditsForDisplay.map((a) => (
                 <LhAuditExpandable key={a.id} audit={a} />
               ))}
-            </ul>
+              </ul>
+            </div>
           ) : (
             <Card className="p-4 text-muted-foreground text-sm">{vlh.noAuditsSearch}</Card>
           )}
@@ -540,7 +700,8 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
           ) : diagnosticsForGroups.length === 0 ? (
             <Card className="p-6 text-center text-muted-foreground text-sm">{vlh.noDiagnosticsSearch}</Card>
           ) : (
-            <div className="space-y-4">
+            <div className="relative group/dev-card space-y-4">
+              <DevCopyJsonButton data={diagnosticsDevData} />
               {impactGroupTabs.length > 1 ? (
                 <ViewTabs
                   tabs={impactGroupTabs}

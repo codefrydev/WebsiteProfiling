@@ -8,7 +8,10 @@ namespace ReportService.Application.Build;
 public static partial class CategoryHelpers
 {
     public const int ResponseTimeSlowMs = 2000;
-    public const int RedirectChainLong = 2;
+    public const int RedirectChainLong = 3;
+    public const int MaxIssuesPerCheck = 20;
+    public const int MaxHreflangIssuesPerCheck = 15;
+    public const int ThinContentWords = 200;
 
     private static readonly Dictionary<string, int> PriorityOrder = new(StringComparer.Ordinal)
     {
@@ -134,18 +137,24 @@ public static partial class CategoryHelpers
                     url,
                     "High",
                     "Each hreflang alternate should use a unique language/region code."));
-                break;
+                if (issues.Count(i => i.Message.StartsWith("Duplicate hreflang", StringComparison.Ordinal)) >= MaxHreflangIssuesPerCheck)
+                {
+                    continue;
+                }
             }
 
             if (!string.IsNullOrEmpty(url) && hrefs.Count > 0
-                && !hrefs.Select(h => h.Trim().TrimEnd('/')).Contains(url.Trim().TrimEnd('/')))
+                && !hrefs.Select(h => h.Trim()).Contains(url.Trim()))
             {
                 issues.Add(Issue(
                     "Hreflang cluster missing self-referencing alternate.",
                     url,
                     "Medium",
                     "Include a hreflang link pointing to this page URL."));
-                break;
+                if (issues.Count(i => i.Message.StartsWith("Hreflang cluster missing", StringComparison.Ordinal)) >= MaxHreflangIssuesPerCheck)
+                {
+                    continue;
+                }
             }
         }
 
@@ -246,7 +255,100 @@ public static partial class CategoryHelpers
             }
         }
 
+        var sitemapUrls = ExtractSitemapUrls(indexation);
+        if (sitemapUrls.Count > 0)
+        {
+            var sitemapNorm = new HashSet<string>(
+                sitemapUrls.Select(UrlNormalizeHelper.NormalizeUrl).Where(u => u.Length > 0),
+                StringComparer.Ordinal);
+            var noindexCount = 0;
+            foreach (var row in SuccessRows(rows))
+            {
+                if (noindexCount >= 15)
+                {
+                    break;
+                }
+
+                if (row.Noindex != true)
+                {
+                    continue;
+                }
+
+                var url = row.Url.Trim();
+                if (string.IsNullOrEmpty(url))
+                {
+                    continue;
+                }
+
+                if (!sitemapNorm.Contains(UrlNormalizeHelper.NormalizeUrl(url)))
+                {
+                    continue;
+                }
+
+                issues.Add(Issue(
+                    "Page has noindex but is listed in XML sitemap.",
+                    url,
+                    "Critical",
+                    "Remove the URL from the sitemap or remove noindex if the page should be indexed."));
+                noindexCount++;
+            }
+        }
+
         return issues;
+    }
+
+    private static List<string> ExtractSitemapUrls(IReadOnlyDictionary<string, object?> indexation)
+    {
+        if (!indexation.TryGetValue("sitemap_urls", out var urlsObj) || urlsObj is null)
+        {
+            return [];
+        }
+
+        if (urlsObj is JsonElement el && el.ValueKind == JsonValueKind.Array)
+        {
+            return el.EnumerateArray()
+                .Select(u => u.GetString()?.Trim() ?? "")
+                .Where(u => u.Length > 0)
+                .ToList();
+        }
+
+        if (urlsObj is IEnumerable<object?> list)
+        {
+            return list
+                .Select(u => u?.ToString()?.Trim() ?? "")
+                .Where(u => u.Length > 0)
+                .ToList();
+        }
+
+        return [];
+    }
+
+    public static void MergeIssuesIntoCategory(
+        IList<ReportCategory> categories,
+        string categoryId,
+        IEnumerable<CategoryIssue> extra)
+    {
+        var extraList = extra.ToList();
+        if (extraList.Count == 0)
+        {
+            return;
+        }
+
+        for (var i = 0; i < categories.Count; i++)
+        {
+            if (!string.Equals(categories[i].Id, categoryId, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var merged = SortIssues(categories[i].Issues.Concat(extraList));
+            categories[i] = categories[i] with
+            {
+                Issues = merged,
+                Recommendations = RecommendationsFromIssues(merged),
+            };
+            break;
+        }
     }
 
     public static void MergeIndexationIssues(

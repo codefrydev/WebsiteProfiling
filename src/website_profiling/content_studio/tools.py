@@ -123,14 +123,14 @@ def tool_get_keyword_gsc_context(ctx: ContentStudioContext) -> dict[str, Any]:
         except Exception:
             rows = []
 
-    landing_norm = (ctx.landing_url or "").strip().lower().rstrip("/")
+    landing_norm = (ctx.landing_url or "").strip().lower()
     related: list[dict[str, Any]] = []
     for row in rows:
         q = str(row.get("keyword") or "").strip()
         if not q:
             continue
         q_lower = q.lower()
-        gsc_url = str(row.get("gsc_url") or "").strip().lower().rstrip("/")
+        gsc_url = str(row.get("gsc_url") or "").strip().lower()
         if (
             kw in q_lower
             or q_lower in kw

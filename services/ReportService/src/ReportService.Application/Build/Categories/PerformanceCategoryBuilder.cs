@@ -57,13 +57,17 @@ public static class PerformanceCategoryBuilder
             if (totalImgs > 0)
             {
                 var noLazy = success.Sum(r => r.ImgWithoutLazy ?? 0);
-                if (noLazy > totalImgs * 0.5)
+                if (noLazy > 0)
                 {
-                    issues.Add(CategoryHelpers.Issue(
-                        "Many images without lazy loading.",
-                        priority: "Medium",
-                        recommendation: "Add loading='lazy' to off-screen images."));
-                    deductions.Add((10, true));
+                    var lazyPct = noLazy * 100.0 / totalImgs;
+                    if (lazyPct > 20)
+                    {
+                        issues.Add(CategoryHelpers.Issue(
+                            "Many images without lazy loading.",
+                            priority: "Medium",
+                            recommendation: "Add loading='lazy' to off-screen images."));
+                        deductions.Add((Math.Min(15, (int)(noLazy * 10.0 / totalImgs)), true));
+                    }
                 }
 
                 var noDims = success.Sum(r => r.ImgWithoutDimensions ?? 0);

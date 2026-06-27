@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { strings, format } from '@/lib/strings';
 import { Card, ChartTitleWithHint } from '@/components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { ChartBlockSkeleton } from '@/components/SectionWidgetSkeleton';
 import { OVERVIEW_TAB_SECTIONS, isSectionPending } from '@/lib/reportViewSections';
 import { useTabSections } from '@/hooks/useTabSections';
@@ -56,6 +57,18 @@ function ChartSection({
   );
 }
 
+function chartBlockDevSummary(block: OverviewChartBlock | null) {
+  if (!block) return null;
+  return {
+    takeaway: block.takeaway,
+    viewHref: block.viewHref,
+    viewLabel: block.viewLabel,
+    horizontal: block.horizontal,
+    data: block.data,
+    aria: block.aria,
+  };
+}
+
 function ChartInsightCard({
   title,
   helpKey,
@@ -63,6 +76,7 @@ function ChartInsightCard({
   takeaway,
   viewHref,
   viewLabel,
+  devData,
   className = '',
   children,
 }: {
@@ -72,11 +86,12 @@ function ChartInsightCard({
   takeaway?: string;
   viewHref?: string;
   viewLabel?: string;
+  devData?: unknown;
   className?: string;
   children: ReactNode;
 }) {
   return (
-    <Card shadow className={`flex h-full flex-col ${className}`.trim()}>
+    <Card shadow devData={devData} className={`flex h-full flex-col ${className}`.trim()}>
       <ChartTitleWithHint title={title} helpKey={helpKey} hint={hint} />
       {takeaway ? (
         <p className="mb-3 text-xs font-medium leading-relaxed text-foreground/90">{takeaway}</p>
@@ -178,6 +193,87 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
   const hasContentSection = wordCountChart || titleMetaChart || readingLevelChart;
   const hasDiscoverySection = mimeChart || outlinksChart || domainsChart;
 
+  const insightsGlanceDevData = useMemo(
+    () => ({
+      widget: 'overview.charts.insightsGlance',
+      title: vo.insightsGlance,
+      subtitle: vo.chartsSubtitle,
+      concerns,
+      chartCount: charts.chartCount,
+      concernCount: charts.concernCount,
+      sections: {
+        lighthouse: Boolean(lighthouseScores),
+        crawl: hasCrawlSection,
+        content: hasContentSection,
+        discovery: hasDiscoverySection,
+        social: Boolean(socialStats),
+      },
+      charts: {
+        lighthouseScores: lighthouseScores
+          ? {
+              takeaway: lighthouseScores.takeaway,
+              viewHref: lighthouseScores.viewHref,
+              scores: lighthouseScores.scores,
+            }
+          : null,
+        statusDistribution: statusDistribution
+          ? {
+              takeaway: statusDistribution.takeaway,
+              viewHref: statusDistribution.viewHref,
+              distribution: statusDistribution.distribution,
+            }
+          : null,
+        responseTimeChart: chartBlockDevSummary(responseTimeChart),
+        depthChart: depthChart
+          ? {
+              ...chartBlockDevSummary(depthChart),
+              depthSummary: {
+                maxDepth: depth.max_depth ?? null,
+                avgDepth: depth.avg_depth ?? null,
+              },
+            }
+          : null,
+        wordCountChart: chartBlockDevSummary(wordCountChart),
+        titleMetaChart: chartBlockDevSummary(titleMetaChart),
+        readingLevelChart: chartBlockDevSummary(readingLevelChart),
+        mimeChart: chartBlockDevSummary(mimeChart),
+        outlinksChart: chartBlockDevSummary(outlinksChart),
+        domainsChart: chartBlockDevSummary(domainsChart),
+        socialStats: socialStats
+          ? {
+              takeaway: socialStats.takeaway,
+              viewHref: socialStats.viewHref,
+              og: socialStats.og,
+              twitter: socialStats.twitter,
+              ogImage: socialStats.ogImage,
+            }
+          : null,
+      },
+    }),
+    [
+      charts.chartCount,
+      charts.concernCount,
+      concerns,
+      depth,
+      depthChart,
+      domainsChart,
+      hasContentSection,
+      hasCrawlSection,
+      hasDiscoverySection,
+      lighthouseScores,
+      mimeChart,
+      outlinksChart,
+      readingLevelChart,
+      responseTimeChart,
+      socialStats,
+      statusDistribution,
+      titleMetaChart,
+      wordCountChart,
+      vo.chartsSubtitle,
+      vo.insightsGlance,
+    ],
+  );
+
   const chartSectionStatus = useTabSections(OVERVIEW_TAB_SECTIONS.charts, true);
   const chartsPending = isSectionPending(OVERVIEW_TAB_SECTIONS.charts, chartSectionStatus);
 
@@ -198,7 +294,8 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
     <OverviewTabPanel tabId="charts" className="space-y-8">
       {hasInsightCharts ? (
         <>
-          <div className="space-y-4">
+          <div className="relative group/dev-card space-y-4">
+            <DevCopyJsonButton data={insightsGlanceDevData} />
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0">
                 <h2 className="flex items-center gap-2 text-xl font-bold text-bright">
@@ -246,6 +343,13 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
                 takeaway={lighthouseScores.takeaway}
                 viewHref={lighthouseScores.viewHref}
                 viewLabel={lighthouseScores.viewLabel}
+                devData={{
+                  widget: 'overview.charts.lighthouseScores',
+                  title: vo.lhCategoryScores,
+                  takeaway: lighthouseScores.takeaway,
+                  scores: lighthouseScores.scores,
+                  viewHref: lighthouseScores.viewHref,
+                }}
                 className="lg:col-span-2"
               >
                 <LighthouseScoreGrid
@@ -270,6 +374,13 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
                   takeaway={statusDistribution.takeaway}
                   viewHref={statusDistribution.viewHref}
                   viewLabel={statusDistribution.viewLabel}
+                  devData={{
+                    widget: 'overview.charts.statusDistribution',
+                    title: vo.statusDist,
+                    takeaway: statusDistribution.takeaway,
+                    distribution: statusDistribution.distribution,
+                    viewHref: statusDistribution.viewHref,
+                  }}
                 >
                   <StatusDistributionChart distribution={statusDistribution.distribution} heightClass={CHART_HEIGHT} />
                 </ChartInsightCard>
@@ -281,6 +392,11 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
                   takeaway={responseTimeChart.takeaway}
                   viewHref={responseTimeChart.viewHref}
                   viewLabel={responseTimeChart.viewLabel}
+                  devData={{
+                    widget: 'overview.charts.responseTime',
+                    title: vo.serverLatency,
+                    ...chartBlockDevSummary(responseTimeChart),
+                  }}
                 >
                   <OverviewBarChart chart={responseTimeChart} yTitle={vo.chartUrls} />
                 </ChartInsightCard>
@@ -292,6 +408,15 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
                   takeaway={depthChart.takeaway}
                   viewHref={depthChart.viewHref}
                   viewLabel={depthChart.viewLabel}
+                  devData={{
+                    widget: 'overview.charts.crawlDepth',
+                    title: vo.crawlDepth,
+                    ...chartBlockDevSummary(depthChart),
+                    depthSummary: {
+                      maxDepth: depth.max_depth ?? null,
+                      avgDepth: depth.avg_depth ?? null,
+                    },
+                  }}
                 >
                   <div className="mb-2 text-xs tabular-nums text-muted-foreground">
                     {format(vo.depthSummaryLine, {
@@ -323,6 +448,11 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
                   takeaway={wordCountChart.takeaway}
                   viewHref={wordCountChart.viewHref}
                   viewLabel={wordCountChart.viewLabel}
+                  devData={{
+                    widget: 'overview.charts.wordCount',
+                    title: vo.contentDepth,
+                    ...chartBlockDevSummary(wordCountChart),
+                  }}
                 >
                   <OverviewBarChart chart={wordCountChart} yTitle={vo.chartPages} />
                 </ChartInsightCard>
@@ -334,6 +464,11 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
                   takeaway={titleMetaChart.takeaway}
                   viewHref={titleMetaChart.viewHref}
                   viewLabel={titleMetaChart.viewLabel}
+                  devData={{
+                    widget: 'overview.charts.titleMeta',
+                    title: vo.titleMetaHealth,
+                    ...chartBlockDevSummary(titleMetaChart),
+                  }}
                 >
                   <D3GroupedBarChart
                     data={titleMetaChart.data}
@@ -350,6 +485,11 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
                   takeaway={readingLevelChart.takeaway}
                   viewHref={readingLevelChart.viewHref}
                   viewLabel={readingLevelChart.viewLabel}
+                  devData={{
+                    widget: 'overview.charts.readingLevel',
+                    title: vo.readingLevel,
+                    ...chartBlockDevSummary(readingLevelChart),
+                  }}
                 >
                   <OverviewBarChart chart={readingLevelChart} yTitle={vo.chartPages} />
                 </ChartInsightCard>
@@ -370,6 +510,11 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
                   takeaway={mimeChart.takeaway}
                   viewHref={mimeChart.viewHref}
                   viewLabel={mimeChart.viewLabel}
+                  devData={{
+                    widget: 'overview.charts.mimeTypes',
+                    title: vo.topMime,
+                    ...chartBlockDevSummary(mimeChart),
+                  }}
                 >
                   <OverviewBarChart chart={mimeChart} yTitle={vo.chartUrls} />
                 </ChartInsightCard>
@@ -381,6 +526,11 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
                   takeaway={outlinksChart.takeaway}
                   viewHref={outlinksChart.viewHref}
                   viewLabel={outlinksChart.viewLabel}
+                  devData={{
+                    widget: 'overview.charts.outlinks',
+                    title: vo.outlinksTitle,
+                    ...chartBlockDevSummary(outlinksChart),
+                  }}
                 >
                   <OverviewBarChart chart={outlinksChart} yTitle={vo.chartUrls} />
                 </ChartInsightCard>
@@ -392,6 +542,11 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
                   takeaway={domainsChart.takeaway}
                   viewHref={domainsChart.viewHref}
                   viewLabel={domainsChart.viewLabel}
+                  devData={{
+                    widget: 'overview.charts.topDomains',
+                    title: vo.topDomains,
+                    ...chartBlockDevSummary(domainsChart),
+                  }}
                   className="lg:col-span-2"
                 >
                   <OverviewBarChart chart={domainsChart} yTitle={vo.chartUrls} heightClass="h-72" />
@@ -412,6 +567,15 @@ export function OverviewChartsTab({ charts, depth, data, querySuffix }: Overview
                 takeaway={socialStats.takeaway}
                 viewHref={socialStats.viewHref}
                 viewLabel={socialStats.viewLabel}
+                devData={{
+                  widget: 'overview.charts.socialPreview',
+                  title: vo.socialPreview,
+                  takeaway: socialStats.takeaway,
+                  viewHref: socialStats.viewHref,
+                  og: socialStats.og,
+                  twitter: socialStats.twitter,
+                  ogImage: socialStats.ogImage,
+                }}
                 className="lg:col-span-2"
               >
                 <SocialCoverageRings

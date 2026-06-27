@@ -60,7 +60,7 @@ public sealed class SitemapDiscoveryService(IHttpClientFactory httpClientFactory
                 {
                     if (SameOrigin(page, origin))
                     {
-                        collected.Add(page.Trim().TrimEnd('/'));
+                        collected.Add(page.Trim());
                     }
 
                     if (collected.Count >= MaxSitemapUrls)
@@ -134,12 +134,12 @@ public sealed class SitemapDiscoveryService(IHttpClientFactory httpClientFactory
     {
         if (Uri.TryCreate(href, UriKind.Absolute, out var absolute))
         {
-            return absolute.ToString().TrimEnd('/');
+            return absolute.ToString();
         }
 
         if (Uri.TryCreate(new Uri(baseUrl), href, out var combined))
         {
-            return combined.ToString().TrimEnd('/');
+            return combined.ToString();
         }
 
         return href.Trim();

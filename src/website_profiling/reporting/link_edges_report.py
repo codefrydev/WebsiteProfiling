@@ -23,9 +23,9 @@ def build_inlink_anchor_matrix(edges: list[dict[str, Any]], *, limit: int = 500)
     for e in edges:
         if str(e.get("link_type") or "") != "internal":
             continue
-        target = str(e.get("to_url") or "").rstrip("/")
+        target = str(e.get("to_url") or "")
         anchor = str(e.get("anchor_text") or "").strip() or "(empty)"
-        source = str(e.get("from_url") or "").rstrip("/")
+        source = str(e.get("from_url") or "")
         if not target or not source:
             continue
         key = (target, anchor)

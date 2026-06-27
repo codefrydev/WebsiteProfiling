@@ -50,17 +50,16 @@ def search_pages(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) 
 
 def get_page_details(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
     scoped = ctx.with_args(args)
-    url = str(args.get("url") or "").strip().rstrip("/")
+    url = str(args.get("url") or "").strip()
     if not url:
         return {"error": "url is required"}
 
     df = scoped.load_crawl_df(conn)
     crawl_row: dict[str, Any] | None = None
     if df is not None and not df.empty and "url" in df.columns:
-        norm = url.rstrip("/")
         for _, row in df.iterrows():
-            row_url = str(row.get("url") or "").rstrip("/")
-            if row_url == norm or row_url == url:
+            row_url = str(row.get("url") or "")
+            if row_url == url:
                 crawl_row = {
                     "url": row_url,
                     "status": str(row.get("status") or ""),
@@ -96,7 +95,7 @@ def get_page_details(conn: Connection, ctx: AuditToolContext, args: dict[str, An
 
 def get_internal_links(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
     scoped = ctx.with_args(args)
-    url = str(args.get("url") or "").strip().rstrip("/")
+    url = str(args.get("url") or "").strip()
     if not url:
         return {"error": "url is required"}
 
@@ -110,8 +109,8 @@ def get_internal_links(conn: Connection, ctx: AuditToolContext, args: dict[str, 
         rid = None
 
     edges = read_edges(conn, rid)
-    outlinks = [b for a, b in edges if a.rstrip("/") == url]
-    inlinks = [a for a, b in edges if b.rstrip("/") == url]
+    outlinks = [b for a, b in edges if a == url]
+    inlinks = [a for a, b in edges if b == url]
     limit = 50
     return {
         "url": url,
@@ -238,15 +237,15 @@ def list_status_5xx_pages(conn: Connection, ctx: AuditToolContext, args: dict[st
 
 def get_page_analysis(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
     scoped = ctx.with_args(args)
-    url = str(args.get("url") or "").strip().rstrip("/")
+    url = str(args.get("url") or "").strip()
     if not url:
         return {"error": "url is required"}
     df = scoped.load_crawl_df(conn)
     if df is None or df.empty:
         return {"error": "no crawl data", "url": url}
     for _, row in df.iterrows():
-        row_url = str(row.get("url") or "").rstrip("/")
-        if row_url == url or row_url == url.rstrip("/"):
+        row_url = str(row.get("url") or "")
+        if row_url == url:
             rec = row.to_dict()
             return {"url": row_url, "page_analysis": _parse_page_analysis(rec), "fetch_method": rec.get("fetch_method")}
     return {"error": "url not found in crawl", "url": url}
@@ -417,7 +416,7 @@ def list_pages_js_rendering_delta(conn: Connection, ctx: AuditToolContext, args:
         return {"pages": [], "total": 0, "truncated": False, "note": "fetch_method not in crawl — use javascript or auto render mode"}
     by_url: dict[str, dict[str, dict[str, Any]]] = {}
     for _, row in df.iterrows():
-        url = str(row.get("url") or "").rstrip("/").lower()
+        url = str(row.get("url") or "").lower()
         method = str(row.get("fetch_method") or "static").lower()
         if not url:
             continue

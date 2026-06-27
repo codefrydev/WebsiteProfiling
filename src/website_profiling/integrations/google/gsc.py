@@ -142,8 +142,11 @@ def fetch_gsc_data(
         round(total_clicks / total_impressions * 100, 2) if total_impressions else 0.0
     )
     avg_position = (
-        round(sum(r["position"] for r in all_pages) / len(all_pages), 1)
-        if all_pages
+        round(
+            sum(r["position"] * r["impressions"] for r in all_pages) / total_impressions,
+            1,
+        )
+        if total_impressions
         else 0.0
     )
 

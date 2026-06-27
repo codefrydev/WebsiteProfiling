@@ -54,7 +54,7 @@ def load_edges(path: str) -> list[tuple[str, str]]:
             return []
         edf = pd.read_csv(path)
         if {"from", "to"}.issubset(edf.columns):
-            return [(str(a).rstrip("/"), str(b).rstrip("/")) for a, b in edf[["from", "to"]].values]
+            return [(str(a), str(b)) for a, b in edf[["from", "to"]].values]
     except Exception:
         pass
     return []

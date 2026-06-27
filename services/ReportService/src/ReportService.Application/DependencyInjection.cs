@@ -93,12 +93,20 @@ public static class DependencyInjection
                 {
                     o.IntegrationsServiceUrl = integrations.Trim();
                 }
+
+                var aiService = Environment.GetEnvironmentVariable("AISERVICE_URL");
+                if (!string.IsNullOrWhiteSpace(aiService))
+                {
+                    o.AiServiceUrl = aiService.Trim();
+                }
             });
 
         services.AddHttpClient();
         services.AddHttpClient(nameof(FastApiPythonBridge));
         services.AddHttpClient(nameof(ReportBuildService));
         services.AddHttpClient(nameof(IntegrationsReportDataClient));
+        services.AddHttpClient(nameof(AiServiceEnrichmentClient));
+        services.AddHttpClient(nameof(OptionalAuditsBuilder));
         services.AddHttpClient(nameof(SitemapDiscoveryService));
         services.AddHttpClient(nameof(SiteLevelBuilder));
         services.AddHttpClient(nameof(SubdomainInventoryBuilder));
@@ -129,6 +137,8 @@ public static class DependencyInjection
         services.AddScoped<LighthouseDbReader>();
         services.AddScoped<LinkEdgesReader>();
         services.AddScoped<IntegrationsReportDataClient>();
+        services.AddScoped<AiServiceEnrichmentClient>();
+        services.AddScoped<CrawlPageHtmlReader>();
         services.AddScoped<SitemapDiscoveryService>();
         services.AddScoped<SiteLevelBuilder>();
         services.AddScoped<SubdomainInventoryBuilder>();

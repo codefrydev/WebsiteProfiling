@@ -53,46 +53,6 @@ def category_security(
             ))
             deductions.append((20, True))
 
-    success_df = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns else pd.DataFrame()
-    if len(success_df) > 0:
-        # Security headers: sample from first row or aggregate (optional columns)
-        missing_hsts = (success_df["strict_transport_security"].fillna("").astype(str).str.strip() == "").sum() if "strict_transport_security" in success_df.columns else len(success_df)
-        missing_xcto = (success_df["x_content_type_options"].fillna("").astype(str).str.strip() == "").sum() if "x_content_type_options" in success_df.columns else len(success_df)
-        missing_xfo = (success_df["x_frame_options"].fillna("").astype(str).str.strip() == "").sum() if "x_frame_options" in success_df.columns else len(success_df)
-        if missing_hsts >= len(success_df) * 0.5:
-            issues.append(_issue(
-                "Strict-Transport-Security header not set.",
-                priority="High",
-                recommendation="Add Strict-Transport-Security to enforce HTTPS.",
-            ))
-            deductions.append((15, True))
-        if missing_xcto >= len(success_df) * 0.5:
-            issues.append(_issue(
-                "X-Content-Type-Options header not set.",
-                priority="Medium",
-                recommendation="Add X-Content-Type-Options: nosniff.",
-            ))
-            deductions.append((5, True))
-        if missing_xfo >= len(success_df) * 0.5:
-            issues.append(_issue(
-                "X-Frame-Options header not set.",
-                priority="Medium",
-                recommendation="Add X-Frame-Options: DENY or SAMEORIGIN.",
-            ))
-            deductions.append((5, True))
-
-    if "mixed_content_count" in success_df.columns:
-        mixed = success_df["mixed_content_count"].fillna(0).astype(int).sum()
-        scheme = (parsed.scheme or "").lower()
-        if mixed > 0 and scheme == "https":
-            issues.append(_issue(
-                f"Mixed content: {int(mixed)} HTTP resource(s) on HTTPS pages.",
-                priority="High",
-                recommendation="Load all resources over HTTPS to avoid mixed content.",
-            ))
-            deductions.append((15, True))
-
-    # Merge vulnerability scan findings (same format as issues: message, url, priority, recommendation)
     if security_findings:
         for f in security_findings:
             severity = f.get("severity", "Medium")

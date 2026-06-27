@@ -1,5 +1,5 @@
 
-import { type MouseEvent, type RefObject } from 'react';
+import { type MouseEvent, type RefObject, useMemo } from 'react';
 import { Search, ExternalLink } from 'lucide-react';
 import type { ReportLink } from '@/types';
 import { strings, format } from '@/lib/strings';
@@ -95,6 +95,22 @@ export function LinksExplorerTableTab({
   const jsErrorsHint = normalizeHintContent(metricHelpHint('views.links.explorerJsErrors'));
   const visibleCols = resolveColumns(columns);
 
+  const tableDevData = useMemo(
+    () => ({
+      widget: 'links.explorer.table',
+      filteredCount: filtered.length,
+      page,
+      totalPages,
+      sortBy,
+      sortDesc,
+      pageLinks,
+      filters: filterValues,
+      advancedConditions: advConditions,
+      columns: columns ?? null,
+    }),
+    [advConditions, columns, filtered.length, filterValues, page, pageLinks, sortBy, sortDesc, totalPages],
+  );
+
   return (
     <LinksExplorerTabPanel tabId="urls" className="flex flex-col gap-4">
       <LinksFilterBar
@@ -122,7 +138,7 @@ export function LinksExplorerTableTab({
         </div>
       ) : null}
 
-      <Card overflowHidden padding="none" className="flex flex-col">
+      <Card overflowHidden padding="none" devData={tableDevData} className="flex flex-col">
         <div
           className="overflow-auto touch-pan-x overscroll-x-contain relative scroll-smooth max-h-[min(70vh,640px)]"
           ref={tableRef}

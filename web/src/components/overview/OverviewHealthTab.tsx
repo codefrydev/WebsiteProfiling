@@ -1,4 +1,5 @@
 
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
 import { ChevronRight, Lightbulb } from 'lucide-react';
@@ -7,6 +8,7 @@ import { strings, format } from '@/lib/strings';
 import { categoryDisplayName } from '@/lib/categoryDisplayNames';
 import { CategoryScoreGauge } from '@/components/charts/CategoryScoreGauge';
 import { Card } from '@/components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { SectionLoadingGate } from '@/components/SectionLoadingGate';
 import { CardBlockSkeleton } from '@/components/SectionWidgetSkeleton';
 import { OverviewTabPanel } from './OverviewTabPanel';
@@ -52,6 +54,56 @@ export function OverviewHealthTab({
         0),
   );
 
+  const categoriesDevData = useMemo(
+    () => ({
+      widget: 'overview.health.categories',
+      title: vo.healthByCategory,
+      count: categoriesFiltered.length,
+      categories: categoriesFiltered.map((cat) => ({
+        id: cat.id,
+        name: categoryDisplayName(String(cat.name ?? cat.id ?? '')),
+        score: cat.score,
+        issueCount: cat.issues?.length ?? 0,
+      })),
+      raw: { categories: data.categories },
+    }),
+    [categoriesFiltered, data.categories, vo.healthByCategory],
+  );
+
+  const siteConfigurationDevData = useMemo(() => {
+    const siteLevel = data.site_level;
+    if (!siteLevel || (siteLevel.robots_present == null && siteLevel.sitemap_present == null)) {
+      return null;
+    }
+    return {
+      widget: 'overview.health.siteConfiguration',
+      title: vo.siteConfiguration,
+      robotsPresent: siteLevel.robots_present,
+      sitemapPresent: siteLevel.sitemap_present,
+      sitemapValid: siteLevel.sitemap_valid,
+      adsTxtPresent: siteLevel.ads_txt_present,
+      adsTxtValid: siteLevel.ads_txt_valid,
+      securityTxtPresent: siteLevel.security_txt_present,
+      securityTxtContactCount: siteLevel.security_txt_contact?.length ?? 0,
+      links: {
+        subdomains: hasSubdomains ? `/subdomains${querySuffix}` : null,
+        contacts: hasContacts ? `/contacts${querySuffix}` : null,
+      },
+      raw: { site_level: siteLevel },
+    };
+  }, [data.site_level, hasContacts, hasSubdomains, querySuffix, vo.siteConfiguration]);
+
+  const recommendationsDevData = useMemo(
+    () => ({
+      widget: 'overview.health.recommendations',
+      title: vo.recommendations,
+      count: recommendationsFiltered.length,
+      recommendations: recommendationsFiltered,
+      raw: { recommendations: data.recommendations },
+    }),
+    [data.recommendations, recommendationsFiltered, vo.recommendations],
+  );
+
   return (
     <OverviewTabPanel tabId="health" className="space-y-8">
       <PortfolioBenchmarkCard
@@ -59,13 +111,25 @@ export function OverviewHealthTab({
         compareHref={compareHref}
         reportCount={reportCount}
       />
-      <div id="overview-health-categories">
+      <div id="overview-health-categories" className="relative group/dev-card">
+        <DevCopyJsonButton data={categoriesDevData} />
         <h2 className="text-xl font-bold text-bright mb-4">{vo.healthByCategory}</h2>
         {data.categories && data.categories.length > 0 ? (
           categoriesFiltered.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {categoriesFiltered.map((cat, i) => (
-                <Card key={i} className="p-4">
+                <Card
+                  key={i}
+                  className="p-4"
+                  devData={{
+                    widget: 'overview.health.category',
+                    id: cat.id,
+                    name: categoryDisplayName(String(cat.name ?? cat.id ?? '')),
+                    score: cat.score,
+                    issues: cat.issues,
+                    raw: cat,
+                  }}
+                >
                   <CategoryScoreGauge
                     name={categoryDisplayName(String(cat.name ?? cat.id ?? ''))}
                     score={cat.score}
@@ -82,7 +146,8 @@ export function OverviewHealthTab({
       </div>
 
       {data.site_level && (data.site_level.robots_present != null || data.site_level.sitemap_present != null) && (
-        <div className="mb-8">
+        <div className="relative group/dev-card mb-8">
+          {siteConfigurationDevData ? <DevCopyJsonButton data={siteConfigurationDevData} /> : null}
           <h2 className="text-xl font-bold text-bright mb-3">{vo.siteConfiguration}</h2>
           <Card padding="tight" className="flex gap-6 flex-wrap">
             <div className="flex items-center gap-2">
@@ -150,7 +215,8 @@ export function OverviewHealthTab({
       )}
 
       {(data.recommendations || []).length > 0 && (
-        <div className="mb-8">
+        <div className="relative group/dev-card mb-8">
+          <DevCopyJsonButton data={recommendationsDevData} />
           <h2 className="text-xl font-bold text-bright mb-4 flex items-center gap-2">
             <Lightbulb className="h-5 w-5 text-amber-700 dark:text-amber-400" /> {vo.recommendations}
           </h2>

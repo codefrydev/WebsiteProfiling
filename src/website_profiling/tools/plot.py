@@ -52,7 +52,7 @@ def run_plot(
 
     if not df.empty:
         df = df.copy()
-        df["url"] = df["url"].astype(str).str.rstrip("/")
+        df["url"] = df["url"].astype(str)
 
     if not edges and not df.empty:
         emit_progress("plot", "build_edges", message="Building link graph from crawl data")

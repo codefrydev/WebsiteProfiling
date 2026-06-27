@@ -105,6 +105,61 @@ export function OverviewExecutiveSummary({
   const issuesHref = `/issues${querySuffix}`;
   const showHero = currentHealth != null || topIssues.length > 0 || Boolean(execSummary);
 
+  const healthHeroDevData = useMemo(
+    () => ({
+      widget: 'overview.executiveSummary.healthHero',
+      currentHealth,
+      healthDelta,
+      healthTrend,
+      historyError,
+      issueCounts,
+      topIssues: topIssues.slice(0, 5),
+      links: {
+        issuesHref,
+        compareHref: reportCount >= 2 ? compareHref : null,
+      },
+      raw: {
+        executive_summary: data.executive_summary,
+        site_health_score: data.site_health_score,
+        summary_site_health: data.summary?.site_health_score,
+      },
+    }),
+    [
+      compareHref,
+      currentHealth,
+      data.executive_summary,
+      data.site_health_score,
+      data.summary?.site_health_score,
+      healthDelta,
+      healthTrend,
+      historyError,
+      issueCounts,
+      issuesHref,
+      reportCount,
+      topIssues,
+    ],
+  );
+
+  const executiveAiDevData = useMemo(
+    () => ({
+      widget: 'overview.executiveSummary.aiSummary',
+      source: execSource,
+      summary: execSummary,
+      priorities: execPriorities,
+      executive_summary: data.executive_summary,
+    }),
+    [data.executive_summary, execPriorities, execSource, execSummary],
+  );
+
+  const executiveTextDevData = useMemo(
+    () => ({
+      widget: 'overview.executiveSummary.textSummary',
+      summary: execSummary,
+      executive_summary: data.executive_summary,
+    }),
+    [data.executive_summary, execSummary],
+  );
+
   useEffect(() => {
     const domain = data.site_name || '';
     setHealthDelta(null);
@@ -135,7 +190,7 @@ export function OverviewExecutiveSummary({
   return (
     <div className="space-y-4">
       {(currentHealth != null || topIssues.length > 0) && (
-        <Card shadow className="border border-default overflow-hidden">
+        <Card shadow devData={healthHeroDevData} className="border border-default overflow-hidden">
           {currentHealth != null ? (
             <div className="flex flex-col gap-5 border-b border-muted/60 p-4 sm:p-5 lg:flex-row lg:items-center" ref={historyRef}>
               <CategoryScoreGauge name={vo.auditHealth} score={currentHealth} size="lg" />
@@ -240,7 +295,7 @@ export function OverviewExecutiveSummary({
       )}
 
       {isAiSummary || execPriorities.length > 0 ? (
-        <Card shadow className="border border-fuchsia-500/20 bg-fuchsia-500/5">
+        <Card shadow devData={executiveAiDevData} className="border border-fuchsia-500/20 bg-fuchsia-500/5">
           <div className="p-4 sm:p-5">
             <div className="mb-2 flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-fuchsia-700 dark:text-fuchsia-300" aria-hidden />
@@ -264,7 +319,7 @@ export function OverviewExecutiveSummary({
           </div>
         </Card>
       ) : !isAiSummary && execSummary && topIssues.length === 0 ? (
-        <Card padding="tight">
+        <Card padding="tight" devData={executiveTextDevData}>
           <p className="text-sm text-muted-foreground">{execSummary}</p>
         </Card>
       ) : null}

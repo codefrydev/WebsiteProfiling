@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import types
 
 import pandas as pd
@@ -220,6 +221,22 @@ def test_parse_tech_stack_and_wappalyzer_fallbacks(monkeypatch):
     soup = BeautifulSoup(html, "lxml")
     stack = parse_tech_stack(soup, {"Server": "nginx", "cf-ray": "x"}, "https://a.com")
     assert "Next.js" in stack or "Drupal" in stack
+
+    hugo_html = (
+        '<html><head><meta name="generator" content="Hugo 0.160.1">'
+        '<link rel=preconnect href=https://www.googletagmanager.com>'
+        '<script src=https://www.clarity.ms/tag/foo></script></head><body></body></html>'
+    )
+    hugo_soup = BeautifulSoup(hugo_html, "lxml")
+    hugo_stack = json.loads(parse_tech_stack(
+        hugo_soup,
+        {"Server": "GitHub.com"},
+        "https://codefrydev.in/",
+    ))
+    assert "Hugo" in hugo_stack
+    assert "Google Tag Manager" in hugo_stack
+    assert "Microsoft Clarity" in hugo_stack
+    assert "GitHub Pages" in hugo_stack
 
     class FakeW:
         def analyze_with_versions_and_categories(self, _web):

@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using ReportService.Application.Repositories;
 
@@ -9,7 +10,11 @@ public static class MobileCategoryBuilder
         "width|device-width",
         RegexOptions.IgnoreCase | RegexOptions.CultureInvariant | RegexOptions.Compiled);
 
-    public static ReportCategory Build(IReadOnlyList<CrawlRow> rows)
+    private static readonly string[] LighthouseMobileAudits = ["tap-targets", "font-size"];
+
+    public static ReportCategory Build(
+        IReadOnlyList<CrawlRow> rows,
+        IReadOnlyDictionary<string, JsonNode>? lighthouseByUrl = null)
     {
         var success = CategoryHelpers.SuccessRows(rows);
         if (success.Count == 0)
@@ -49,6 +54,42 @@ public static class MobileCategoryBuilder
             }
         }
 
+        if (lighthouseByUrl is { Count: > 0 })
+        {
+            foreach (var auditId in LighthouseMobileAudits)
+            {
+                var failing = new List<string>();
+                foreach (var (url, node) in lighthouseByUrl)
+                {
+                    if (node is not JsonObject lh || !TryGetAuditScore(lh, auditId, out var score) || score >= 0.9)
+                    {
+                        continue;
+                    }
+
+                    failing.Add(url);
+                }
+
+                if (failing.Count == 0)
+                {
+                    continue;
+                }
+
+                var label = auditId switch
+                {
+                    "tap-targets" => "tap targets too small or too close",
+                    "font-size" => "text too small to read on mobile",
+                    _ => auditId,
+                };
+                issues.Add(CategoryHelpers.Issue(
+                    $"{failing.Count} page(s) failed Lighthouse {auditId} ({label}).",
+                    priority: "High",
+                    recommendation: auditId == "tap-targets"
+                        ? "Ensure tap targets are at least 48×48px with adequate spacing."
+                        : "Use a base font size of at least 12px and avoid fixed small text."));
+                deductions.Add((Math.Min(15, failing.Count * 3), true));
+            }
+        }
+
         var sorted = CategoryHelpers.SortIssues(issues);
         return new ReportCategory(
             "mobile",
@@ -56,5 +97,40 @@ public static class MobileCategoryBuilder
             CategoryHelpers.ScoreDeductions(100, deductions),
             sorted,
             CategoryHelpers.RecommendationsFromIssues(sorted));
+    }
+
+    private static bool TryGetAuditScore(JsonObject lh, string auditId, out double score)
+    {
+        score = 0;
+        if (!lh.TryGetPropertyValue("audits", out var auditsNode) || auditsNode is not JsonArray audits)
+        {
+            return false;
+        }
+
+        foreach (var item in audits)
+        {
+            if (item is not JsonObject audit)
+            {
+                continue;
+            }
+
+            if (!audit.TryGetPropertyValue("id", out var idNode)
+                || idNode is not JsonValue idVal
+                || !idVal.TryGetValue(out string? id)
+                || !string.Equals(id, auditId, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            if (audit.TryGetPropertyValue("score", out var scoreNode)
+                && scoreNode is JsonValue scoreVal
+                && scoreVal.TryGetValue(out double raw))
+            {
+                score = raw;
+                return true;
+            }
+        }
+
+        return false;
     }
 }

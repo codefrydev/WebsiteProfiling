@@ -278,7 +278,7 @@ def test_lighthouse_report_helpers() -> None:
     filtered = lighthouse_report.filter_lighthouse_by_host(by_url, "example.com")
     assert len(filtered) == 1
 
-    assert lighthouse_report.lighthouse_for_url(by_url, "https://example.com")["score"] == 90
+    assert lighthouse_report.lighthouse_for_url(by_url, "https://example.com/")["score"] == 90
     assert lighthouse_report.lighthouse_for_url(by_url, "https://missing.com") is None
 
     host = lighthouse_report._derive_expected_host("", pd.DataFrame({"url": ["https://derived.com/x"]}))
@@ -852,8 +852,8 @@ def test_lighthouse_report_remaining_lines(monkeypatch) -> None:
     out2 = lighthouse_report.build_lighthouse_by_url_for_report(conn2)
     assert out2["https://needs-url.com"]["url"] == "https://needs-url.com"
 
-    assert lighthouse_report.lighthouse_for_url({"https://example.com/": {"score": 9}}, "https://example.com")["score"] == 9
-    assert lighthouse_report.lighthouse_for_url({"https://example.com": {"score": 7}}, "https://example.com/")["score"] == 7
+    assert lighthouse_report.lighthouse_for_url({"https://example.com/": {"score": 9}}, "https://example.com/")["score"] == 9
+    assert lighthouse_report.lighthouse_for_url({"https://example.com": {"score": 7}}, "https://example.com")["score"] == 7
 
 
 def test_build_edges_remaining_lines(monkeypatch) -> None:

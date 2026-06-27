@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Data.Application.Dto.Portfolio;
 using Data.Application.Mapping;
+using WebsiteProfiling.Contracts.Report;
 
 namespace Data.Application.Portfolio;
 
@@ -174,7 +175,7 @@ internal static class PortfolioGrouping
         var successPct = urlCount > 0
             ? (int)Math.Round(statusCounts.S2xx / (double)urlCount * 100, MidpointRounding.ToEven)
             : 0;
-        var healthScore = ScoreFromCategories(PortfolioHelpers.GetArrayOrEmpty(payload, "categories")) ?? 0;
+        var healthScore = SiteHealthScoreBuilder.ResolveFromPayload(payload) ?? 0;
 
         var runCreatedAt = runIdInt is not null && maps.RunCreatedAtByRunId.TryGetValue(runIdInt.Value, out var rc)
             ? rc : "";
@@ -250,19 +251,6 @@ internal static class PortfolioGrouping
     }
 
     private static PortfolioIssueCountsDto EmptyIssueCounts() => new();
-
-    private static int? ScoreFromCategories(JsonElement categories)
-    {
-        if (categories.ValueKind != JsonValueKind.Array) return null;
-        var nums = new List<double>();
-        foreach (var cat in categories.EnumerateArray())
-        {
-            if (cat.TryGetProperty("score", out var sc) && sc.ValueKind == JsonValueKind.Number)
-                nums.Add(sc.GetDouble());
-        }
-        if (nums.Count == 0) return null;
-        return (int)Math.Round(nums.Sum() / nums.Count, MidpointRounding.ToEven);
-    }
 
     private static (PortfolioIssueCountsDto Counts, int Total) IssueCountsFromPayload(JsonElement payload)
     {

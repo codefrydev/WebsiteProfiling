@@ -14,7 +14,7 @@ _REDIRECT_CHAIN_MIN = REDIRECT_CHAIN_LONG
 
 
 def _norm_url(url: str) -> str:
-    return str(url or "").strip().rstrip("/").lower()
+    return str(url or "").strip().lower()
 
 
 def _is_2xx(status: Any) -> bool:
@@ -530,9 +530,9 @@ def get_heading_outline_for_url(conn: Connection, ctx: AuditToolContext, args: d
     df = scoped.load_crawl_df(conn)
     if df is None or df.empty:
         return {"error": "no crawl data", "url": url}
-    needle = url.rstrip("/").lower()
+    needle = url.lower()
     for _, row in df.iterrows():
-        row_url = str(row.get("url") or "").rstrip("/").lower()
+        row_url = str(row.get("url") or "").lower()
         if row_url != needle:
             continue
         rec = row.to_dict()

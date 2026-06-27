@@ -11,6 +11,9 @@ import {
   type CompareExtrasLabels,
   type ReportCompareExtras,
 } from './reportCompareExtras';
+import { siteHealthScoreFromPayload } from './siteHealthScore';
+
+export type { CompareExtrasLabels };
 
 export type {
   IssueDeltaRow,
@@ -77,16 +80,6 @@ export interface ReportCompareSummary {
   currentGeneratedAt: string | null;
   baselineGeneratedAt: string | null;
   extras: ReportCompareExtras;
-}
-
-export type { CompareExtrasLabels };
-
-function scoreFromCategories(categories: ReportCategory[] = []): number | null {
-  const numeric = categories
-    .map((c) => Number(c?.score))
-    .filter((n) => Number.isFinite(n));
-  if (!numeric.length) return null;
-  return Math.round(numeric.reduce((a, b) => a + b, 0) / numeric.length);
 }
 
 function countCategoryIssues(categories: ReportCategory[] = []): number {
@@ -275,8 +268,8 @@ export function buildReportCompareSummary(
     deltaRow(
       'health_score',
       labels.healthScore,
-      scoreFromCategories(current.categories ?? []),
-      scoreFromCategories(baseline.categories ?? []),
+      siteHealthScoreFromPayload(current),
+      siteHealthScoreFromPayload(baseline),
       true,
       'score',
     ),

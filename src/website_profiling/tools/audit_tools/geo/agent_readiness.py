@@ -402,7 +402,7 @@ _JS_EMPTY_WORDS_THRESHOLD = 50  # fewer words in static = likely JS-required
 def _probe_markdown_sibling(url: str) -> bool:
     """Return True if a .md counterpart of the URL exists."""
     parsed = urlparse(url)
-    path = parsed.path.rstrip("/")
+    path = parsed.path or "/"
     if path.endswith(".html"):
         path = path[:-5]
     candidates = [path + ".md", path + "/index.md"]

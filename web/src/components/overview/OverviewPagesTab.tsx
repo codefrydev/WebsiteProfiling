@@ -1,4 +1,5 @@
 
+import { useMemo } from 'react';
 import { ExternalLink, Medal, TrendingUp } from 'lucide-react';
 import type { ReportTopPage } from '@/types';
 import { strings, format } from '@/lib/strings';
@@ -13,6 +14,7 @@ import {
   TableRow,
   TableCell,
 } from '@/components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
 import { InlinksMetricCell, RelativeMetricBar } from '@/components/links';
 import { OverviewTabPanel } from './OverviewTabPanel';
@@ -24,11 +26,23 @@ export interface OverviewPagesTabProps {
 
 export function OverviewPagesTab({ topPages, hasTopPages }: OverviewPagesTabProps) {
   const vo = strings.views.overview;
-  const sj = strings.common;
+
+  const pagesTabDevData = useMemo(
+    () => ({
+      widget: 'overview.pages',
+      title: vo.topPagesTitle,
+      hint: vo.topPagesHint,
+      hasTopPages,
+      pageCount: topPages.length,
+      pages: topPages,
+    }),
+    [hasTopPages, topPages, vo.topPagesHint, vo.topPagesTitle],
+  );
 
   return (
     <OverviewTabPanel tabId="pages">
-      <div>
+      <div className="relative group/dev-card">
+        <DevCopyJsonButton data={pagesTabDevData} />
         <h2 className="text-xl font-bold text-bright mb-2 flex items-center gap-2">
           <TrendingUp className="h-5 w-5 text-link shrink-0" /> {vo.topPagesTitle}
         </h2>
@@ -53,8 +67,37 @@ function TopPagesTable({ pages }: { pages: ReportTopPage[] }) {
   const maxPR = Math.max(...pages.map((p) => (p.pagerank != null ? Number(p.pagerank) : 0)), 0.0001);
   const maxDeg = Math.max(...pages.map((p) => p.degree ?? p.outlinks ?? 0), 1);
 
+  const tableDevData = useMemo(
+    () => ({
+      widget: 'overview.pages.table',
+      title: vo.topPagesTitle,
+      pageCount: pages.length,
+      maxPagerank: maxPR,
+      maxConnections: maxDeg,
+      rows: pages.map((p, i) => {
+        const pr = p.pagerank != null ? Number(p.pagerank) : null;
+        const deg = p.degree ?? p.outlinks ?? null;
+        const prPct = pr != null ? Math.round((pr / maxPR) * 100) : null;
+        return {
+          rank: i + 1,
+          url: p.url,
+          title: p.title,
+          status: p.status,
+          pagerank: pr,
+          importancePct: prPct,
+          connections: deg,
+          inlinks: p.inlinks,
+          outlinks: p.outlinks,
+          degree: p.degree,
+          raw: p,
+        };
+      }),
+    }),
+    [maxDeg, maxPR, pages, vo.topPagesTitle],
+  );
+
   return (
-    <Card overflowHidden padding="none">
+    <Card overflowHidden padding="none" devData={tableDevData}>
       <p className="sm:hidden text-xs text-muted-foreground px-4 py-2 border-b border-muted bg-brand-900/40">
         {sj.tableSwipeHint}
       </p>

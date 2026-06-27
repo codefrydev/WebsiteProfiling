@@ -9,6 +9,7 @@ import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { LINKS_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Button, AlertBanner, ViewTabs } from '../components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import type { ViewTabItem } from '../components';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { useLocation, useSearchParams, useNavigate } from 'react-router-dom';
@@ -338,7 +339,10 @@ export default function Links({ searchQuery = '' }: ViewProps) {
       if (entry) {
         let detail: string | null = null;
         if (key === 'meta_desc_short' || key === 'meta_desc_long') detail = `${entry.meta_desc_len ?? 0} chars`;
-        if (key === 'thin_content') detail = `${entry.content_length ?? 0} chars`;
+        if (key === 'thin_content') {
+          const words = entry.word_count;
+          detail = words != null ? `${words} words` : `${entry.content_length ?? 0} chars`;
+        }
         if (key === 'multiple_h1') detail = `${entry.h1_count ?? 0} H1s`;
         contentFlags.push({
           type: key,
@@ -404,6 +408,75 @@ export default function Links({ searchQuery = '' }: ViewProps) {
     return rows.slice(0, 40);
   }, [data?.issues, searchQuery]);
 
+  const totalPages = useMemo(() => Math.max(1, Math.ceil(filtered.length / perPage)), [filtered.length, perPage]);
+  const pageLinks = useMemo(
+    () => filtered.slice((page - 1) * perPage, page * perPage),
+    [filtered, page, perPage],
+  );
+
+  const linksExplorerDevData = useMemo(
+    () => ({
+      widget: 'links.explorer',
+      explorerTab,
+      totalLinks: links.length,
+      filteredCount: filtered.length,
+      crawledCount,
+      hasLinkAttributes,
+      filters: {
+        inlinksFilter,
+        statusFilter,
+        rtFilter,
+        wcFilter,
+        jsErrorFilter,
+      },
+      advancedConditions: advConditions,
+      searchQuery: (searchQuery || '').trim(),
+      pagination: { page, totalPages, perPage },
+      pageLinks,
+    }),
+    [
+      advConditions,
+      crawledCount,
+      explorerTab,
+      filtered.length,
+      hasLinkAttributes,
+      inlinksFilter,
+      jsErrorFilter,
+      links.length,
+      page,
+      pageLinks,
+      perPage,
+      rtFilter,
+      searchQuery,
+      statusFilter,
+      totalPages,
+      wcFilter,
+    ],
+  );
+
+  const siteTechnicalDevData = useMemo(
+    () => ({
+      widget: 'links.siteTechnicalIssues',
+      title: vl.siteTechnicalIssuesTitle,
+      count: siteTechnicalIssues.length,
+      issues: siteTechnicalIssues,
+    }),
+    [siteTechnicalIssues, vl.siteTechnicalIssuesTitle],
+  );
+
+  const inspectorDevData = useMemo(() => {
+    if (!matchedInspectUrl) return null;
+    const link = inspectorUrl ? (links.find((l) => l.url === inspectorUrl) || null) : null;
+    return {
+      widget: 'links.inspector',
+      url: matchedInspectUrl,
+      activeTab: inspectorTab,
+      link,
+      inspectorDetails,
+      lighthouse: data?.lighthouse_by_url?.[matchedInspectUrl] ?? null,
+    };
+  }, [data?.lighthouse_by_url, inspectorDetails, inspectorTab, inspectorUrl, links, matchedInspectUrl]);
+
   const handleRowMouseEnter = useCallback((e: MouseEvent<HTMLTableRowElement>, link: ReportLink) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const containerRect = tableRef.current?.getBoundingClientRect?.() || { top: 0, left: 0, width: 800 };
@@ -417,9 +490,6 @@ export default function Links({ searchQuery = '' }: ViewProps) {
   if (!linksReady) {
     return <ViewSectionLoading title={vl.title} />;
   }
-
-  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
-  const pageLinks = filtered.slice((page - 1) * perPage, page * perPage);
 
   const toggleSort = (key: string) => {
     const sortKey = key as LinkSortKey;
@@ -515,6 +585,8 @@ export default function Links({ searchQuery = '' }: ViewProps) {
       )}
       {!inInspector ? (
         <>
+          <div className="relative group/dev-card">
+            <DevCopyJsonButton data={linksExplorerDevData} className="top-0 right-0" />
           <PageHeader
             title={vl.title}
             subtitle={
@@ -539,6 +611,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
               ) : undefined
             }
           />
+          </div>
 
           <ViewTabs
             tabs={explorerTabItems}
@@ -549,7 +622,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
           />
 
           {siteTechnicalIssues.length > 0 ? (
-            <Card className="p-4 space-y-3">
+            <Card devData={siteTechnicalDevData} className="p-4 space-y-3">
               <h2 className="text-sm font-bold text-foreground">{vl.siteTechnicalIssuesTitle}</h2>
               <p className="text-xs text-muted-foreground">{vl.siteTechnicalIssuesHint}</p>
               <ul className="space-y-3 max-h-64 overflow-y-auto">
@@ -623,7 +696,7 @@ export default function Links({ searchQuery = '' }: ViewProps) {
               <LinkIcon className="h-4 w-4" />
             </a>
           </div>
-          <Card padding="none" overflowHidden className="flex flex-col min-h-[min(400px,60vh)]">
+          <Card padding="none" overflowHidden devData={inspectorDevData ?? undefined} className="flex flex-col min-h-[min(400px,60vh)]">
             {linkForInspector ? (
               <InspectorTabs
                 link={linkForInspector}

@@ -113,10 +113,21 @@ export default function IssueTrendChart({ domain }: IssueTrendChartProps) {
   );
 
   // Need at least 2 snapshots for a trend to be meaningful
+  const devData = useMemo(
+    () => ({
+      widget: 'issues.trendChart',
+      domain,
+      snapshotCount: rows.length,
+      history: rows,
+      chart: chartData,
+    }),
+    [chartData, domain, rows],
+  );
+
   if (!domain || loading || rows.length < 2) return null;
 
   return (
-    <Card padding="tight" shadow overflowHidden className="min-w-0">
+    <Card padding="tight" shadow overflowHidden devData={devData} className="min-w-0">
       <div className="flex items-center gap-2 mb-1">
         <TrendingUp className="h-4 w-4 text-link" />
         <h2 className="text-sm font-bold text-foreground">Issue trend</h2>

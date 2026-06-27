@@ -38,6 +38,11 @@ public sealed class BrowserDiagnosticsAggregatorTests
         Assert.NotEmpty(top);
         Assert.Equal("Same error", top[0]["text"]);
         Assert.Equal(2, top[0]["count"]);
+
+        var topExceptions = Assert.IsType<List<Dictionary<string, object?>>>(agg["top_page_errors"]);
+        Assert.NotEmpty(topExceptions);
+        Assert.Equal("Uncaught", topExceptions[0]["text"]);
+        Assert.Equal(2, topExceptions[0]["count"]);
     }
 
     [Fact]

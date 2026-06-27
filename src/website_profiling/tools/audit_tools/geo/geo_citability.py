@@ -198,10 +198,10 @@ def get_citability_for_url(conn: Connection, ctx: AuditToolContext, args: dict[s
     df = scoped.load_crawl_df(conn)
     if df is None or df.empty:
         return {"error": "no crawl data", "url": url}
-    needle = url.rstrip("/").lower()
+    needle = url.lower()
     for _, row in df.iterrows():
         rec = row.to_dict()
-        if str(rec.get("url") or "").rstrip("/").lower() != needle:
+        if str(rec.get("url") or "").lower() != needle:
             continue
         result = _citability_signals(rec)
         result["url"] = str(rec.get("url") or "")

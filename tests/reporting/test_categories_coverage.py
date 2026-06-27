@@ -400,6 +400,14 @@ def test_category_core_web_vitals_from_lighthouse_crux_inp_cls_failures() -> Non
     crux = {"ok": True, "pass": {"lcp": True, "inp": False, "cls": False}}
     cat = category_core_web_vitals_from_lighthouse(lh, crux)
     assert len([i for i in cat["issues"] if "CrUX" in i["message"]]) == 2
+    assert cat["score"] == 60
+
+
+def test_category_core_web_vitals_from_lighthouse_crux_all_fail_deducts_score() -> None:
+    lh = {"median_metrics": {"performance_score": 0.95}, "top_failures": []}
+    crux = {"ok": True, "pass": {"lcp": False, "inp": False, "cls": False}}
+    cat = category_core_web_vitals_from_lighthouse(lh, crux)
+    assert cat["score"] == 50
 
 
 def test_build_categories_without_lighthouse() -> None:
@@ -439,6 +447,20 @@ def test_category_performance_slow_response_and_p95() -> None:
 def test_category_performance_lazy_load_img_cache_scripts() -> None:
     rows = [
         {
+            "url": "https://example.com/",
+            "status": "200",
+            "response_time_ms": 100,
+            "images_total": 20,
+            "img_without_lazy": 7,
+        }
+    ]
+    cat = category_performance(pd.DataFrame(rows))
+    msgs = " ".join(i["message"].lower() for i in cat["issues"])
+    assert "lazy loading" in msgs
+    assert cat["score"] == 97
+
+    rows_full = [
+        {
             "url": f"https://example.com/{i}",
             "status": "200",
             "response_time_ms": 100,
@@ -450,12 +472,11 @@ def test_category_performance_lazy_load_img_cache_scripts() -> None:
         }
         for i in range(2)
     ]
-    cat = category_performance(pd.DataFrame(rows))
-    msgs = " ".join(i["message"].lower() for i in cat["issues"])
-    assert "lazy loading" in msgs
-    assert "without width/height" in msgs
-    assert "cache-control" in msgs
-    assert "script tags" in msgs
+    cat_full = category_performance(pd.DataFrame(rows_full))
+    msgs_full = " ".join(i["message"].lower() for i in cat_full["issues"])
+    assert "without width/height" in msgs_full
+    assert "cache-control" in msgs_full
+    assert "script tags" in msgs_full
 
 
 # ---------------------------------------------------------------------------
@@ -523,7 +544,7 @@ def test_category_html_accessibility_score_zero_floor() -> None:
         return_value=0,
     ):
         cat = category_html_accessibility(df)
-    assert cat["score"] == 5
+    assert cat["score"] == 0
 
 
 # ---------------------------------------------------------------------------
@@ -589,6 +610,8 @@ def test_category_mobile_viewport_missing_and_invalid() -> None:
 
 
 def test_category_security_headers_mixed_content_findings() -> None:
+    from website_profiling.security_scanner import run_security_scan
+
     df = pd.DataFrame([
         {
             "url": "https://example.com/",
@@ -600,7 +623,8 @@ def test_category_security_headers_mixed_content_findings() -> None:
             "mixed_content_count": 2,
         },
     ])
-    findings = [
+    findings = run_security_scan(df, "https://example.com/", max_urls_to_probe=0)
+    findings.extend([
         {
             "severity": "Critical",
             "finding_type": "sql_injection",
@@ -609,7 +633,7 @@ def test_category_security_headers_mixed_content_findings() -> None:
             "recommendation": "Sanitize inputs",
         },
         {"severity": "Unknown", "message": "Minor issue", "url": "", "recommendation": ""},
-    ]
+    ])
     cat = category_security(df, {}, "https://example.com/", findings)
     msgs = " ".join(i["message"].lower() for i in cat["issues"])
     assert "strict-transport-security" in msgs

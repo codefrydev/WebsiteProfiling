@@ -9,7 +9,7 @@ def test_normalize_link_filters_schemes_and_strips_fragment_and_slash() -> None:
     assert normalize_link("https://x.com", "ftp://x.com/a") is None
 
     assert normalize_link("https://x.com/base/", "/a#frag") == "https://x.com/a"
-    assert normalize_link("https://x.com/base/", "https://x.com/a/") == "https://x.com/a"
+    assert normalize_link("https://x.com/base/", "https://x.com/a/") == "https://x.com/a/"
 
 
 def test_strip_crawl_query_params_removes_tracking_and_facets() -> None:
@@ -79,7 +79,7 @@ def test_parse_seo_and_extended_flags() -> None:
     assert meta_len == 4
     assert h1_text == "H1"
     assert h1_count == 1
-    assert canon == "https://s.com/canon"
+    assert canon == "https://s.com/canon/"
 
     ext = parse_seo_extended(html, "https://s.com")
     assert ext["viewport_present"] is True

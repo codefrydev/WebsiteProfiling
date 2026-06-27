@@ -34,7 +34,7 @@ public sealed class CategoryBuilder
             PerformanceCategoryBuilder.Build(rows),
             HtmlAccessibilityCategoryBuilder.Build(rows, lighthouseByUrl, lighthouseSummary),
             LinkHealthCategoryBuilder.Build(rows, edges, broken, redirects),
-            MobileCategoryBuilder.Build(rows),
+            MobileCategoryBuilder.Build(rows, lighthouseByUrl),
             SecurityCategoryBuilder.Build(rows, startUrl, securityFindings),
             IntelligenceCategoryBuilder.Build(mlBundle),
         };

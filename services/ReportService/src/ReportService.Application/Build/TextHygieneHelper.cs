@@ -10,10 +10,20 @@ public static class TextHygieneHelper
         "http", "https", "www", "com", "org", "net", "null", "undefined", "nan",
     };
 
+    private static readonly HashSet<string> HeadingTokens = new(StringComparer.Ordinal)
+    {
+        "h1", "h2", "h3", "h4", "h5", "h6",
+    };
+
     public static bool IsJunkSemanticTerm(string? term)
     {
         var tokens = Tokenize(term);
         if (tokens.Count == 0)
+        {
+            return true;
+        }
+
+        if (tokens.All(t => HeadingTokens.Contains(t)))
         {
             return true;
         }
@@ -23,7 +33,35 @@ public static class TextHygieneHelper
             return true;
         }
 
-        return tokens.Any(t => JunkTokens.Contains(t));
+        return false;
+    }
+
+    public static List<string> FilterSemanticTerms(IEnumerable<string> terms) =>
+        terms.Where(t => !string.IsNullOrWhiteSpace(t) && !IsJunkSemanticTerm(t)).ToList();
+
+    public static List<Dictionary<string, object?>> FilterTopicClusters(
+        IReadOnlyList<Dictionary<string, object?>> clusters)
+    {
+        var output = new List<Dictionary<string, object?>>();
+        foreach (var cluster in clusters)
+        {
+            var top = (cluster.GetValueOrDefault("top_keyword")?.ToString()
+                ?? cluster.GetValueOrDefault("representative")?.ToString() ?? "").Trim();
+            if (string.IsNullOrEmpty(top) || IsJunkSemanticTerm(top))
+            {
+                continue;
+            }
+
+            var copy = new Dictionary<string, object?>(cluster);
+            if (copy.TryGetValue("keywords", out var keywordsObj) && keywordsObj is IEnumerable<object?> keywords)
+            {
+                copy["keywords"] = FilterSemanticTerms(keywords.Select(k => k?.ToString() ?? ""));
+            }
+
+            output.Add(copy);
+        }
+
+        return output;
     }
 
     private static List<string> Tokenize(string? term) =>

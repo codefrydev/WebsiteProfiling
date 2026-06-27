@@ -30,9 +30,10 @@ const ChartCard = GoogleChartCard;
 
 interface TopPagesBySessionsChartProps {
   pages: Ga4PageRow[];
+  devData?: unknown;
 }
 
-export function TopPagesBySessionsChart({ pages }: TopPagesBySessionsChartProps) {
+export function TopPagesBySessionsChart({ pages, devData }: TopPagesBySessionsChartProps) {
   const tf = strings.views.traffic;
   const chart = useMemo(() => {
     if (!pages?.length) return null;
@@ -58,7 +59,7 @@ export function TopPagesBySessionsChart({ pages }: TopPagesBySessionsChartProps)
 
   if (!chart) {
     return (
-      <ChartCard title={tf.charts.topPagesTitle} hint={tf.charts.topPagesHint} ariaLabel={tf.charts.topPagesAria}>
+      <ChartCard title={tf.charts.topPagesTitle} hint={tf.charts.topPagesHint} ariaLabel={tf.charts.topPagesAria} devData={devData}>
         <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
           {strings.common.notEnoughData}
         </div>
@@ -67,7 +68,7 @@ export function TopPagesBySessionsChart({ pages }: TopPagesBySessionsChartProps)
   }
 
   return (
-    <ChartCard title={tf.charts.topPagesTitle} hint={tf.charts.topPagesHint} ariaLabel={tf.charts.topPagesAria}>
+    <ChartCard title={tf.charts.topPagesTitle} hint={tf.charts.topPagesHint} ariaLabel={tf.charts.topPagesAria} devData={devData}>
       <Bar data={chart.data} options={opts} />
     </ChartCard>
   );
@@ -75,9 +76,10 @@ export function TopPagesBySessionsChart({ pages }: TopPagesBySessionsChartProps)
 
 interface EngagementDistributionChartProps {
   pages: Ga4PageRow[];
+  devData?: unknown;
 }
 
-export function EngagementDistributionChart({ pages }: EngagementDistributionChartProps) {
+export function EngagementDistributionChart({ pages, devData }: EngagementDistributionChartProps) {
   const tf = strings.views.traffic;
   const chart = useMemo(() => {
     const buckets = buildEngagementBuckets(pages);
@@ -121,6 +123,7 @@ export function EngagementDistributionChart({ pages }: EngagementDistributionCha
         title={tf.charts.engagementTitle}
         hint={tf.charts.engagementHint}
         ariaLabel={tf.charts.engagementAria}
+        devData={devData}
       >
         <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
           {strings.common.notEnoughData}
@@ -130,7 +133,7 @@ export function EngagementDistributionChart({ pages }: EngagementDistributionCha
   }
 
   return (
-    <ChartCard title={tf.charts.engagementTitle} hint={tf.charts.engagementHint} ariaLabel={tf.charts.engagementAria}>
+    <ChartCard title={tf.charts.engagementTitle} hint={tf.charts.engagementHint} ariaLabel={tf.charts.engagementAria} devData={devData}>
       <Bar data={chart.data} options={opts} />
     </ChartCard>
   );
@@ -138,9 +141,10 @@ export function EngagementDistributionChart({ pages }: EngagementDistributionCha
 
 interface SessionsEngagementScatterProps {
   rows: Ga4PageRow[];
+  devData?: unknown;
 }
 
-export function SessionsEngagementScatter({ rows }: SessionsEngagementScatterProps) {
+export function SessionsEngagementScatter({ rows, devData }: SessionsEngagementScatterProps) {
   const tf = strings.views.traffic;
   const chart = useMemo(() => {
     const source = (rows || []).slice(0, SCATTER_MAX);
@@ -210,7 +214,7 @@ export function SessionsEngagementScatter({ rows }: SessionsEngagementScatterPro
 
   if (!chart) {
     return (
-      <ChartCard title={tf.charts.scatterTitle} hint={tf.charts.scatterHint} ariaLabel={tf.charts.scatterAria} heightClass="h-64">
+      <ChartCard title={tf.charts.scatterTitle} hint={tf.charts.scatterHint} ariaLabel={tf.charts.scatterAria} heightClass="h-64" devData={devData}>
         <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
           {strings.common.notEnoughData}
         </div>
@@ -219,7 +223,7 @@ export function SessionsEngagementScatter({ rows }: SessionsEngagementScatterPro
   }
 
   return (
-    <ChartCard title={tf.charts.scatterTitle} hint={tf.charts.scatterHint} ariaLabel={tf.charts.scatterAria} heightClass="h-64">
+    <ChartCard title={tf.charts.scatterTitle} hint={tf.charts.scatterHint} ariaLabel={tf.charts.scatterAria} heightClass="h-64" devData={devData}>
       <Scatter data={chart} options={opts} />
     </ChartCard>
   );
@@ -227,9 +231,10 @@ export function SessionsEngagementScatter({ rows }: SessionsEngagementScatterPro
 
 interface Ga4DailyTrendChartProps {
   daily: Ga4DailyRow[];
+  devData?: unknown;
 }
 
-export function Ga4DailyTrendChart({ daily }: Ga4DailyTrendChartProps) {
+export function Ga4DailyTrendChart({ daily, devData }: Ga4DailyTrendChartProps) {
   const tf = strings.views.traffic;
   const series = [{ key: 'sessions', label: tf.charts.axisSessions }];
   if (!daily?.length) return null;
@@ -239,6 +244,7 @@ export function Ga4DailyTrendChart({ daily }: Ga4DailyTrendChartProps) {
       hint={tf.charts.dailyHint}
       ariaLabel={tf.charts.dailyAria}
       heightClass="h-64"
+      devData={devData}
     >
       <GoogleTimeSeriesChart rows={daily} xKey="date" series={series} yAxisLabel={tf.charts.axisSessions} />
     </GoogleChartCard>
@@ -247,9 +253,10 @@ export function Ga4DailyTrendChart({ daily }: Ga4DailyTrendChartProps) {
 
 interface Ga4ChannelDoughnutProps {
   by_channel: Ga4ChannelRow[];
+  devData?: unknown;
 }
 
-export function Ga4ChannelDoughnut({ by_channel }: Ga4ChannelDoughnutProps) {
+export function Ga4ChannelDoughnut({ by_channel, devData }: Ga4ChannelDoughnutProps) {
   const tf = strings.views.traffic;
   const chart = useMemo(() => {
     if (!by_channel?.length) return null;
@@ -268,7 +275,7 @@ export function Ga4ChannelDoughnut({ by_channel }: Ga4ChannelDoughnutProps) {
 
   if (!chart) return null;
   return (
-    <GoogleChartCard title={tf.charts.channelTitle} hint={tf.charts.channelHint} ariaLabel={chart.aria} heightClass="h-56">
+    <GoogleChartCard title={tf.charts.channelTitle} hint={tf.charts.channelHint} ariaLabel={chart.aria} heightClass="h-56" devData={devData}>
       <ChartAccessibleFallback summary={chart.aria} rows={chart.rows}>
         <Doughnut data={chart.data} options={opts} />
       </ChartAccessibleFallback>
@@ -278,9 +285,10 @@ export function Ga4ChannelDoughnut({ by_channel }: Ga4ChannelDoughnutProps) {
 
 interface Ga4DeviceDoughnutProps {
   by_device: Ga4DeviceRow[];
+  devData?: unknown;
 }
 
-export function Ga4DeviceDoughnut({ by_device }: Ga4DeviceDoughnutProps) {
+export function Ga4DeviceDoughnut({ by_device, devData }: Ga4DeviceDoughnutProps) {
   const tf = strings.views.traffic;
   const chart = useMemo(() => {
     if (!by_device?.length) return null;
@@ -299,7 +307,7 @@ export function Ga4DeviceDoughnut({ by_device }: Ga4DeviceDoughnutProps) {
 
   if (!chart) return null;
   return (
-    <GoogleChartCard title={tf.charts.deviceTitle} hint={tf.charts.deviceHint} ariaLabel={chart.aria} heightClass="h-56">
+    <GoogleChartCard title={tf.charts.deviceTitle} hint={tf.charts.deviceHint} ariaLabel={chart.aria} heightClass="h-56" devData={devData}>
       <ChartAccessibleFallback summary={chart.aria} rows={chart.rows}>
         <Doughnut data={chart.data} options={opts} />
       </ChartAccessibleFallback>

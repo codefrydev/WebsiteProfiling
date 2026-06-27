@@ -15,6 +15,7 @@ import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { integrationGuideHref } from '@/lib/docs/integrationGuides';
 import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs, EmptyState } from '../components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import GoogleTableToolbar from '../components/google/GoogleTableToolbar';
 import { filterBySearch, exportCsv } from '../components/google/tableUtils';
@@ -33,6 +34,7 @@ import {
   formatEngagementPercent,
   formatDuration,
   buildPageExportColumns,
+  buildEngagementBuckets,
 } from '../components/traffic/ga4TableUtils';
 import { syncChartJsDefaultsColor } from '../utils/chartJsDefaults';
 import { buildLinksInspectHref } from '../lib/reportNav';
@@ -193,6 +195,154 @@ export default function Traffic() {
     </span>
   ) : null;
 
+  const kpiDevData = useMemo(
+    () => ({
+      widget: 'traffic.kpiSummary',
+      dateRange: dateRange || null,
+      propertyId: ga4?.property_id ?? null,
+      sessions: ga4?.summary?.sessions ?? null,
+      activeUsers: ga4?.summary?.activeUsers ?? null,
+      screenPageViews: ga4?.summary?.screenPageViews ?? null,
+    }),
+    [dateRange, ga4?.property_id, ga4?.summary],
+  );
+
+  const dailyTrendDevData = useMemo(
+    () => ({
+      widget: 'traffic.overview.dailyTrend',
+      rows: ga4?.daily ?? [],
+    }),
+    [ga4?.daily],
+  );
+
+  const topPagesOverviewDevData = useMemo(
+    () => ({
+      widget: 'traffic.overview.topPages',
+      pages: [...(ga4?.top_pages ?? [])]
+        .sort((a, b) => (b.sessions || 0) - (a.sessions || 0))
+        .slice(0, 10),
+    }),
+    [ga4?.top_pages],
+  );
+
+  const topPagesTabDevData = useMemo(
+    () => ({
+      widget: 'traffic.pages.chart',
+      pages: [...(ga4?.top_pages ?? [])]
+        .sort((a, b) => (b.sessions || 0) - (a.sessions || 0))
+        .slice(0, 10),
+    }),
+    [ga4?.top_pages],
+  );
+
+  const engagementDistDevData = useMemo(
+    () => ({
+      widget: 'traffic.overview.engagementDistribution',
+      buckets: buildEngagementBuckets(ga4?.top_pages ?? []),
+      bucketLabels: tf.charts.engagementBuckets,
+    }),
+    [ga4?.top_pages, tf.charts.engagementBuckets],
+  );
+
+  const channelDevData = useMemo(
+    () => ({
+      widget: 'traffic.overview.channel',
+      rows: ga4?.by_channel ?? [],
+    }),
+    [ga4?.by_channel],
+  );
+
+  const deviceDevData = useMemo(
+    () => ({
+      widget: 'traffic.overview.device',
+      rows: ga4?.by_device ?? [],
+    }),
+    [ga4?.by_device],
+  );
+
+  const urlCoverageOverviewDevData = useMemo(
+    () => ({
+      widget: 'traffic.overview.urlCoverage',
+      matched: urlJoin?.matched ?? null,
+      crawlOnly: urlJoin?.crawl_only ?? null,
+      gscOnly: urlJoin?.gsc_only ?? null,
+      ga4Only: urlJoin?.ga4_only ?? null,
+    }),
+    [urlJoin],
+  );
+
+  const insightsDevData = useMemo(
+    () => ({
+      widget: 'traffic.overview.insights',
+      bullets: insights,
+    }),
+    [insights],
+  );
+
+  const pagesTableDevData = useMemo(
+    () => ({
+      widget: 'traffic.pages.table',
+      searchQuery: pathSearch || null,
+      rowCount: filteredPages.length,
+      rows: filteredPages,
+    }),
+    [filteredPages, pathSearch],
+  );
+
+  const scatterDevData = useMemo(
+    () => ({
+      widget: 'traffic.engagement.scatter',
+      points: lowEngagement.slice(0, 50).map((row) => ({
+        path: row.path,
+        sessions: row.sessions ?? 0,
+        engagementRate: row.engagementRate ?? null,
+      })),
+    }),
+    [lowEngagement],
+  );
+
+  const engagementTableDevData = useMemo(
+    () => ({
+      widget: 'traffic.engagement.table',
+      rowCount: lowEngagement.length,
+      rows: lowEngagement,
+    }),
+    [lowEngagement],
+  );
+
+  const coverageDoughnutDevData = useMemo(
+    () => ({
+      widget: 'traffic.coverage.doughnut',
+      matched: urlJoin?.matched ?? null,
+      crawlOnly: urlJoin?.crawl_only ?? null,
+      gscOnly: urlJoin?.gsc_only ?? null,
+      ga4Only: urlJoin?.ga4_only ?? null,
+    }),
+    [urlJoin],
+  );
+
+  const coverageStatsDevData = useMemo(
+    () => ({
+      widget: 'traffic.coverage.stats',
+      matched: urlJoin?.matched ?? null,
+      crawlOnly: urlJoin?.crawl_only ?? null,
+      gscOnly: urlJoin?.gsc_only ?? null,
+      ga4Only: urlJoin?.ga4_only ?? null,
+    }),
+    [urlJoin],
+  );
+
+  const gapListsDevData = useMemo(
+    () => ({
+      widget: 'traffic.coverage.gapLists',
+      ga4Only: urlJoin?.lists?.ga4_only ?? [],
+      crawlOnly: urlJoin?.lists?.crawl_only ?? [],
+      totals: urlJoin?.lists_total ?? null,
+      listLimit: urlJoin?.list_limit ?? null,
+    }),
+    [urlJoin],
+  );
+
   if (!google) {
     if (!trafficReady) {
       return <ViewSectionLoading title={tf.title} />;
@@ -265,7 +415,8 @@ export default function Traffic() {
       )}
 
       {ga4?.summary && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-3 gap-4">
+          <DevCopyJsonButton data={kpiDevData} />
           <StatCard
             label={tf.kpi.sessions}
             value={ga4.summary.sessions?.toLocaleString()}
@@ -296,22 +447,27 @@ export default function Traffic() {
           {activeTab === 'overview' && (
             <div id="ga4-tab-overview" role="tabpanel" aria-labelledby="ga4-tab-btn-overview" className="space-y-6">
               {(ga4.daily?.length ?? 0) > 0 && (
-                <Ga4DailyTrendChart daily={ga4.daily ?? []} />
+                <Ga4DailyTrendChart daily={ga4.daily ?? []} devData={dailyTrendDevData} />
               )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <TopPagesBySessionsChart pages={ga4.top_pages ?? []} />
-                <EngagementDistributionChart pages={ga4.top_pages ?? []} />
+                <TopPagesBySessionsChart pages={ga4.top_pages ?? []} devData={topPagesOverviewDevData} />
+                <EngagementDistributionChart pages={ga4.top_pages ?? []} devData={engagementDistDevData} />
               </div>
               {((ga4.by_channel?.length ?? 0) > 0 || (ga4.by_device?.length ?? 0) > 0) && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {(ga4.by_channel?.length ?? 0) > 0 && <Ga4ChannelDoughnut by_channel={ga4.by_channel ?? []} />}
-                  {(ga4.by_device?.length ?? 0) > 0 && <Ga4DeviceDoughnut by_device={ga4.by_device ?? []} />}
+                  {(ga4.by_channel?.length ?? 0) > 0 && (
+                    <Ga4ChannelDoughnut by_channel={ga4.by_channel ?? []} devData={channelDevData} />
+                  )}
+                  {(ga4.by_device?.length ?? 0) > 0 && (
+                    <Ga4DeviceDoughnut by_device={ga4.by_device ?? []} devData={deviceDevData} />
+                  )}
                 </div>
               )}
               {urlJoin ? (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <UrlCoverageDoughnut urlJoin={urlJoin} />
-                  <div className="bg-brand-800 border border-default rounded-xl p-4">
+                  <UrlCoverageDoughnut urlJoin={urlJoin} devData={urlCoverageOverviewDevData} />
+                  <div className="relative group/dev-card bg-brand-800 border border-default rounded-xl p-4">
+                    <DevCopyJsonButton data={insightsDevData} />
                     <h3 className="text-sm font-bold text-foreground mb-3">{tf.coverage.title}</h3>
                     <ul className="space-y-2 text-sm text-muted-foreground">
                       {insights.map((line, i) => (
@@ -328,7 +484,8 @@ export default function Traffic() {
                 </div>
               ) : (
                 insights.length > 0 && (
-                  <div className="bg-brand-800 border border-default rounded-xl p-4">
+                  <div className="relative group/dev-card bg-brand-800 border border-default rounded-xl p-4">
+                    <DevCopyJsonButton data={insightsDevData} />
                     <ul className="space-y-2 text-sm text-muted-foreground">
                       {insights.map((line, i) => (
                         <li key={i}>{line}</li>
@@ -342,8 +499,8 @@ export default function Traffic() {
 
           {activeTab === 'pages' && (
             <div id="ga4-tab-pages" role="tabpanel" aria-labelledby="ga4-tab-btn-pages" className="space-y-4">
-              <TopPagesBySessionsChart pages={ga4.top_pages ?? []} />
-              <Card padding="none" className="overflow-hidden">
+              <TopPagesBySessionsChart pages={ga4.top_pages ?? []} devData={topPagesTabDevData} />
+              <Card padding="none" className="overflow-hidden" devData={pagesTableDevData}>
                 <GoogleTableToolbar
                   searchPlaceholder={tf.pages.searchPlaceholder}
                   search={pathSearch}
@@ -383,8 +540,8 @@ export default function Traffic() {
               className="space-y-4"
             >
               <p className="text-xs text-muted-foreground">{tf.engagement.description}</p>
-              <SessionsEngagementScatter rows={lowEngagement} />
-              <Card padding="none" className="overflow-hidden">
+              <SessionsEngagementScatter rows={lowEngagement} devData={scatterDevData} />
+              <Card padding="none" className="overflow-hidden" devData={engagementTableDevData}>
                 <div className="flex justify-end p-4 pb-0">
                   <button
                     type="button"
@@ -425,8 +582,9 @@ export default function Traffic() {
               {urlJoin ? (
                 <>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <UrlCoverageDoughnut urlJoin={urlJoin} />
-                    <div className="grid grid-cols-2 gap-3">
+                    <UrlCoverageDoughnut urlJoin={urlJoin} devData={coverageDoughnutDevData} />
+                    <div className="relative group/dev-card grid grid-cols-2 gap-3">
+                      <DevCopyJsonButton data={coverageStatsDevData} />
                       <StatCard
                         label={sp.urlJoin.matched}
                         value={urlJoin.matched}
@@ -460,6 +618,7 @@ export default function Traffic() {
                       showGa4
                       showCrawl
                       showGsc={false}
+                      devData={gapListsDevData}
                     />
                   ) : (
                     <p className="text-xs text-muted-foreground border border-default/60 rounded-lg px-3 py-2 bg-brand-800/50">

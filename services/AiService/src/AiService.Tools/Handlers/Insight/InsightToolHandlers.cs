@@ -264,8 +264,8 @@ public static class InsightToolHandlers
             foreach (var node in topPages)
             {
                 if (node is JsonObject row
-                    && string.Equals(JsonCoercion.AsString(row["url"])?.TrimEnd('/'),
-                        url.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+                    && string.Equals(JsonCoercion.AsString(row["url"])?.Trim(),
+                        url.Trim(), StringComparison.OrdinalIgnoreCase))
                 {
                     crawlRow = row;
                     break;

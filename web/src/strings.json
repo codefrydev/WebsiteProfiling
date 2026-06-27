@@ -39,7 +39,7 @@
       },
       "healthScore": {
         "title": "Site health",
-        "body": "Score from 0-100 averaged across this audit's category scores. Higher is better. Mainly reflects technical SEO health; also includes real Search Console performance (rankings, CTR, trends) when Google is connected."
+        "body": "Weighted score from 0–100 across fixable audit categories (Technical SEO, Link health, Performance, Security, Core Web Vitals, Mobile, Accessibility). Excludes Search performance and Intelligence. Higher is better."
       },
       "impactScore": {
         "title": "Impact score",
@@ -344,7 +344,7 @@
           "body": "How pages are distributed by crawl depth — hops from the start URL via internal links."
         },
         "thinSmallBody": {
-          "body": "Pages flagged as thin by visible character count thresholds (separate from the under-300-word list)."
+          "body": "Pages flagged as thin in SEO health (under 200 words)."
         },
         "wordCountDist": {
           "body": "Pages grouped by visible word-count bands from extracted crawl text."
@@ -377,7 +377,7 @@
           "body": "Share of pages whose title, meta description, and H1 fall in recommended length or count ranges."
         },
         "thinSignals": {
-          "body": "Comparison of thin-content signals: under 300 words vs small visible body character count."
+          "body": "Comparison of thin-content signals: analytics list (under 300 words) vs SEO health flag (under 200 words)."
         },
         "h1Dist": {
           "body": "Pages grouped by H1 heading count — SEO best practice is exactly one H1 per page."
@@ -555,6 +555,12 @@
         },
         "exceptionTotal": {
           "body": "Total uncaught JavaScript exceptions captured during this crawl."
+        },
+        "failedPages": {
+          "body": "Pages where at least one network request failed during browser render."
+        },
+        "failedTotal": {
+          "body": "Total failed network requests captured during JavaScript rendering."
         },
         "renderMode": {
           "body": "Crawl render mode for this audit: static HTML only, JavaScript rendering, or auto."
@@ -1599,7 +1605,7 @@
       "missing_meta_desc": "Add a meta description (70–160 chars).",
       "meta_desc_short": "Aim for 70–160 characters.",
       "meta_desc_long": "Shorten to 70–160 characters.",
-      "thin_content": "Expand content to at least 300 characters."
+      "thin_content": "Expand content to at least 200 words."
     },
     "seoIssueRecommendations": {
       "missing_title": "Add a unique title (30–60 chars).",
@@ -1609,7 +1615,7 @@
       "meta_desc_long": "Shorten to 70–160 characters.",
       "h1_missing": "Add exactly one H1 per page.",
       "h1_multi": "Use a single H1 per page.",
-      "thin_content": "Expand content to at least 300 characters."
+      "thin_content": "Expand content to at least 200 words."
     }
   },
   "views": {
@@ -2506,6 +2512,7 @@
       "categoryOther": "Other",
       "noSearchMatch": "No technologies match your search.",
       "noData": "No technology data yet. Run a crawl from Run audit first.",
+      "noTechnologiesDetected": "Pages were crawled but no known technologies matched. Re-run the audit to refresh fingerprints after engine updates.",
       "breakdownTitle": "Technology Breakdown",
       "colTechnology": "Technology",
       "colCategory": "Category",
@@ -2646,7 +2653,7 @@
         {
           "key": "thin_content",
           "label": "Thin Content",
-          "guidance": "Pages with very little text (under ~300 words) are often low-value to search engines. Expand or consolidate thin pages."
+          "guidance": "Pages with very little text (under ~200 words) are often low-value to search engines. Expand or consolidate thin pages."
         }
       ],
       "dupClusters": "Near-duplicate clusters",
@@ -2666,6 +2673,7 @@
       "tableLength": "Length",
       "tableH1Count": "H1 Count",
       "tableChars": "Chars",
+      "tableWords": "Words",
       "urlOne": "URL",
       "urlMany": "URLs"
     },
@@ -2806,26 +2814,33 @@
       "emptyStaticBody": "Browser console and runtime errors are only captured when the crawl uses JavaScript or Auto rendering. Re-run the audit with JavaScript rendering enabled and console capture turned on.",
       "runAudit": "Run audit",
       "emptyCleanTitle": "No JavaScript errors detected",
-      "emptyCleanBody": "No console errors or uncaught exceptions were logged during JavaScript rendering for this crawl.",
+      "emptyCleanBody": "No console errors, uncaught exceptions, or failed network requests were logged during JavaScript rendering for this crawl.",
       "emptyFiltered": "No errors match the current filters or search.",
       "consolePagesCard": "Pages with console errors",
       "consoleTotalCard": "Total console errors",
       "exceptionPagesCard": "Pages with uncaught exceptions",
       "exceptionTotalCard": "Total uncaught exceptions",
+      "failedPagesCard": "Pages with failed requests",
+      "failedTotalCard": "Total failed requests",
       "renderMode": "Render mode",
       "topRecurring": "Top recurring console errors",
       "topRecurringHint": "Grouped by message text across the crawl",
+      "topRecurringExceptions": "Top recurring uncaught exceptions",
+      "topRecurringExceptionsHint": "Grouped by exception message across the crawl",
       "thMessage": "Message",
       "thCount": "Count",
+      "thOccurrences": "Occurrences",
       "thSampleUrls": "Sample URLs",
       "allErrors": "All errors",
-      "allErrorsHint": "Console errors and uncaught exceptions with source location where available",
+      "allErrorsHint": "Console errors, uncaught exceptions, and failed network requests with source location where available",
+      "consoleLevelsNote": "Only console errors are listed here. Warnings, info, and debug messages appear in the page inspector.",
       "thUrl": "URL",
       "thType": "Type",
       "thSource": "Source",
       "thActions": "Actions",
       "typeConsole": "Console",
       "typeException": "Exception",
+      "typeFailedRequest": "Failed request",
       "typeAll": "All types",
       "viewDetails": "View details",
       "expandStack": "Show stack trace",
@@ -4174,10 +4189,10 @@
       "lhCategoryHint": "From the attached Lighthouse summary (typically the audited landing or representative URL). Scores are 0–100; bars use the same good / needs work / poor coloring as elsewhere.",
       "healthByCategory": "Health by Category",
       "portfolioBenchmarkTitle": "Portfolio benchmark",
-      "portfolioBenchmarkHint": "Compare this property’s average category score to the median across all properties on this instance.",
-      "portfolioBenchmarkSubtitle": "See whether this site’s average audit health is ahead or behind your portfolio median.",
+      "portfolioBenchmarkHint": "Compare this property's site health score to the median across all properties on this instance.",
+      "portfolioBenchmarkSubtitle": "See whether this site's weighted audit health is ahead or behind your portfolio median.",
       "portfolioBenchmarkHelpTitle": "About portfolio benchmark",
-      "portfolioBenchmarkHelpBody": "We average category scores (Technical SEO, Performance, etc.) for this property and compare to the median across all properties on this instance.",
+      "portfolioBenchmarkHelpBody": "Site health uses a weighted blend of fixable category scores (excluding Search performance and Intelligence). We compare this property's score to the median across all properties on this instance.",
       "portfolioPropertyScore": "This property",
       "portfolioMedianScore": "Portfolio median",
       "portfolioDelta": "Vs median",
@@ -4188,7 +4203,7 @@
       "portfolioEvenMedian": "Matches portfolio median",
       "portfolioViewPortfolio": "View portfolio",
       "portfolioCompareRuns": "Compare audit runs",
-      "portfolioGaugeLabel": "Average category score",
+      "portfolioGaugeLabel": "Site health score",
       "portfolioNoBenchmarkLabel": "Your site health (no benchmark yet)",
       "portfolioSinglePropertyCta": "Add another property",
       "portfolioScrollCategories": "Review categories below",
@@ -4335,9 +4350,9 @@
       "pagesGoodRanges": "Pages in “good” ranges",
       "stackedInRange": "In range / optimal",
       "stackedNeeds": "Needs attention",
-      "thinSignals": "Thin content signals",
-      "thinUnder300": "Under 300 words",
-      "thinSmallBody": "Small HTML body",
+      "thinSignals": "Thin content comparison",
+      "thinUnder300": "Analytics list (<300 words)",
+      "thinSmallBody": "SEO health flag (<200 words)",
       "thinMatchSearch": "{shown} of {total} thin page{plural} match search",
       "thinHaveLittle": "{count} page{plural} have very little content",
       "noThinSearch": "No thin pages match your search.",
@@ -4794,6 +4809,9 @@
       "copy": "Copy",
       "copied": "Copied!",
       "title": "Copy to clipboard"
+    },
+    "devCopyJson": {
+      "title": "Copy widget JSON"
     },
     "linkTabs": {
       "overview": {

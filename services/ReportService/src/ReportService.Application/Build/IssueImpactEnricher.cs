@@ -42,7 +42,7 @@ public static class IssueImpactEnricher
         IReadOnlyDictionary<string, Dictionary<string, double>> clicksByUrl,
         IReadOnlyDictionary<string, Dictionary<string, double>> sessionsByPath)
     {
-        var url = (issue.Url ?? "").Trim().ToLowerInvariant().TrimEnd('/');
+        var url = (issue.Url ?? "").Trim().ToLowerInvariant();
         clicksByUrl.TryGetValue(url, out var gsc);
         var gscClicks = gsc?.GetValueOrDefault("gsc_clicks") ?? 0;
         var gscImpressions = gsc?.GetValueOrDefault("gsc_impressions") ?? 0;
@@ -52,8 +52,8 @@ public static class IssueImpactEnricher
         {
             foreach (var (pathKey, ga) in sessionsByPath)
             {
-                var key = pathKey.TrimEnd('/');
-                if (string.IsNullOrEmpty(key))
+                var key = pathKey;
+                if (string.IsNullOrEmpty(key) || key == "/")
                 {
                     continue;
                 }
@@ -89,7 +89,7 @@ public static class IssueImpactEnricher
         {
             foreach (var row in JsonObjectParser.AsDictRows(gsc.GetValueOrDefault("top_pages")))
             {
-                var url = (row.GetValueOrDefault("page")?.ToString() ?? "").Trim().ToLowerInvariant().TrimEnd('/');
+                var url = (row.GetValueOrDefault("page")?.ToString() ?? "").Trim().ToLowerInvariant();
                 if (string.IsNullOrEmpty(url))
                 {
                     continue;

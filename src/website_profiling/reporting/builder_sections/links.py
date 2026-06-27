@@ -184,7 +184,7 @@ def build_links_list(
 
         rec["lighthouse"] = lighthouse_for_url(lighthouse_by_url or {}, u)
 
-        uk = u.rstrip("/")
+        uk = u
         if isinstance(rec["page_analysis"], dict):
             if uk in lang_map:
                 rec["page_analysis"].setdefault("signals", {})["language"] = lang_map[uk]

@@ -30,6 +30,7 @@ export interface GoogleChartCardProps {
   ariaLabel: string;
   heightClass?: string;
   children?: ReactNode;
+  devData?: unknown;
 }
 
 export interface UrlGapRow {

@@ -84,10 +84,20 @@ def category_core_web_vitals_from_lighthouse(
                     priority="High",
                     recommendation=rec,
                 ))
+    crux_deduction = 0
+    if crux_summary and crux_summary.get("ok"):
+        pw = crux_summary.get("pass") or {}
+        for metric in ("lcp", "inp", "cls"):
+            if pw.get(metric) is False:
+                crux_deduction += 15
+        crux_deduction = min(45, crux_deduction)
+    score = perf_score
+    if crux_deduction > 0:
+        score = max(0, (perf_score if perf_score is not None else 0) - crux_deduction)
     return {
         "id": "core_web_vitals",
         "name": CATEGORY_CORE_WEB_VITALS,
-        "score": perf_score,
+        "score": score,
         "issues": _sort_issues(issues),
         "recommendations": recommendations or ["Core Web Vitals measured by Lighthouse; see median_metrics in lighthouse_summary.json."],
     }
@@ -126,13 +136,15 @@ def category_performance(df: pd.DataFrame) -> dict:
         total_imgs = success_df["images_total"].fillna(0).astype(int).sum()
         if total_imgs > 0 and "img_without_lazy" in success_df.columns:
             no_lazy = success_df["img_without_lazy"].fillna(0).astype(int).sum()
-            if no_lazy > total_imgs * 0.5:
-                issues.append(_issue(
-                    "Many images without lazy loading.",
-                    priority="Medium",
-                    recommendation="Add loading='lazy' to off-screen images.",
-                ))
-                deductions.append((10, True))
+            if no_lazy > 0:
+                lazy_pct = no_lazy * 100.0 / total_imgs
+                if lazy_pct > 20:
+                    issues.append(_issue(
+                        "Many images without lazy loading.",
+                        priority="Medium",
+                        recommendation="Add loading='lazy' to off-screen images.",
+                    ))
+                    deductions.append((min(15, int(no_lazy * 10.0 / total_imgs)), True))
         if total_imgs > 0 and "img_without_dimensions" in success_df.columns:
             no_dims = success_df["img_without_dimensions"].fillna(0).astype(int).sum()
             if no_dims > 0:

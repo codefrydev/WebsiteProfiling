@@ -20,6 +20,7 @@ import {
   TableRow,
   TableCell,
 } from '@/components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { fetchAuditTool } from '@/lib/fetchAuditTool';
@@ -104,6 +105,68 @@ export default function AccessibilityView({ searchQuery = '' }: ViewProps) {
     return clientRules.map((r) => ({ rule_id: r.ruleId, count: r.count }));
   }, [apiSummary, clientRules]);
 
+  const summaryStatsDevData = useMemo(
+    () => ({
+      widget: 'accessibility.summary.stats',
+      renderMode: scope.renderMode,
+      usesBrowser: scope.usesBrowser,
+      pagesWithViolations,
+      totalViolations,
+      ruleCount: topRules.length,
+      summaryError,
+    }),
+    [
+      pagesWithViolations,
+      scope.renderMode,
+      scope.usesBrowser,
+      summaryError,
+      topRules.length,
+      totalViolations,
+    ],
+  );
+
+  const topRulesDevData = useMemo(
+    () => ({
+      widget: 'accessibility.summary.topRules',
+      source:
+        Array.isArray(apiSummary?.violations_by_rule) && apiSummary.violations_by_rule.length
+          ? 'api'
+          : 'client',
+      totalRuleTypes: topRules.length,
+      rules: topRules.slice(0, 15).map((rule) => ({
+        rule_id: rule.rule_id ?? null,
+        count: rule.count ?? null,
+      })),
+    }),
+    [apiSummary?.violations_by_rule, topRules],
+  );
+
+  const pagesTableDevData = useMemo(
+    () => ({
+      widget: 'accessibility.pages.table',
+      searchQuery: q || null,
+      page: pagination.page,
+      totalPages: pagination.totalPages,
+      from: pagination.from,
+      to: pagination.to,
+      total: pagination.total,
+      expanded,
+      rows: pagination.slice.map((row) => ({
+        id: row.id,
+        url: row.url,
+        title: row.title ?? null,
+        violationCount: row.violationCount,
+        violations: row.violations.map((v) => ({
+          id: v.id ?? null,
+          impact: v.impact ?? null,
+          description: v.description ?? null,
+          nodes: v.nodes ?? null,
+        })),
+      })),
+    }),
+    [expanded, pagination, q],
+  );
+
   const emptyBecauseNoAxe = allRows.length === 0 && !scope.usesBrowser;
 
   if (!linksReady) {
@@ -147,7 +210,8 @@ export default function AccessibilityView({ searchQuery = '' }: ViewProps) {
 
           {activeTab === 'summary' ? (
           <ViewTabPanel idPrefix="accessibility" tabId="summary" className="space-y-6">
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+            <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+              <DevCopyJsonButton data={summaryStatsDevData} />
               <StatCard label={va.statPages} value={pagesWithViolations} />
               <StatCard label={va.statViolations} value={totalViolations} />
               <StatCard label={va.statRules} value={topRules.length} />
@@ -155,7 +219,7 @@ export default function AccessibilityView({ searchQuery = '' }: ViewProps) {
             {summaryError ? (
               <p className="text-xs text-muted-foreground mb-4">{summaryError}</p>
             ) : null}
-            <Card>
+            <Card devData={topRulesDevData}>
               <h3 className="text-sm font-semibold text-foreground mb-3">{va.topRulesTitle}</h3>
               {topRules.length === 0 ? (
                 <p className="text-sm text-muted-foreground">{va.noViolations}</p>
@@ -184,7 +248,7 @@ export default function AccessibilityView({ searchQuery = '' }: ViewProps) {
                 <p className="text-sm text-muted-foreground">{va.noViolations}</p>
               </Card>
             ) : (
-              <Card className="overflow-hidden">
+              <Card className="overflow-hidden" devData={pagesTableDevData}>
                 <Table>
                   <TableHead>
                     <TableRow>

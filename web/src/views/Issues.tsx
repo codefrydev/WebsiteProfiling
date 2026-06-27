@@ -9,6 +9,7 @@ import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { useOptionalPipeline } from '../context/PipelineContext';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Badge, ViewTabs, ViewTabPanel, Button, LabelWithHint } from '../components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
 import IssueTaskBoard from '@/components/issues/IssueTaskBoard';
@@ -52,15 +53,29 @@ interface IssueCardProps {
   emDash: string;
 }
 
+function issueItemDevPayload(item: CategoryIssueItem) {
+  return {
+    category: item.category,
+    categoryLabel: categoryDisplayName(item.category),
+    issue: item.issue,
+  };
+}
+
 function IssueCard({ item, vi, emDash }: IssueCardProps) {
   const iss = item.issue;
   const p = normalizePriority(iss.priority);
   const cfg = PRIORITY_CONFIG[p];
   const Icon = PRIORITY_ICONS[p];
+  const devData = {
+    widget: 'issues.issueCard',
+    priority: p,
+    ...issueItemDevPayload(item),
+  };
   return (
     <div
-      className={`bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.border} flex flex-col md:flex-row gap-4 p-5 hover:border-brand-700/80 transition-colors min-w-0 max-w-full overflow-hidden`}
+      className={`relative group/dev-card bg-brand-800 border border-default rounded-xl border-l-4 ${cfg.border} flex flex-col md:flex-row gap-4 p-5 hover:border-brand-700/80 transition-colors min-w-0 max-w-full overflow-hidden`}
     >
+      <DevCopyJsonButton data={devData} />
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-2">
           <Icon className={`h-4 w-4 flex-shrink-0 ${cfg.text}`} />
@@ -294,6 +309,98 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
     };
   }, [vi, categoryChartLabels]);
 
+  const categoryChartDevData = useMemo(
+    () => ({
+      widget: 'issues.charts.byCategory',
+      title: vi.issuesByCategory,
+      hint: vi.issuesByCategoryHint,
+      labels: categoryChartLabels,
+      values: categoryChartValues,
+    }),
+    [categoryChartLabels, categoryChartValues, vi.issuesByCategory, vi.issuesByCategoryHint],
+  );
+
+  const priorityChartDevData = useMemo(
+    () => ({
+      widget: 'issues.charts.byPriority',
+      title: vi.issuesByPriority,
+      hint: vi.issuesByPriorityHint,
+      labels: priorityChart.labels,
+      values: priorityChart.values,
+      colors: priorityChart.colors,
+      rows: priorityChart.rows,
+    }),
+    [priorityChart, vi.issuesByPriority, vi.issuesByPriorityHint],
+  );
+
+  const priorityStatsDevData = useMemo(
+    () => ({
+      widget: 'issues.priorityStats',
+      counts: priorityCounts,
+      activeFilter: priorityFilter,
+    }),
+    [priorityCounts, priorityFilter],
+  );
+
+  const issueListDevData = useMemo(
+    () => ({
+      widget: 'issues.list',
+      domain,
+      priorityFilter,
+      searchQuery: q,
+      resolvedCategory,
+      categoryTabs: categoryTabs.map((t) => ({ id: t.id, label: t.label, count: t.badge })),
+      pagination: {
+        page: safePage,
+        totalPages,
+        from,
+        to,
+        total: activeTotal,
+        pageSize: PAGE_SIZE,
+      },
+      visibleIssues: visibleIssues.map(issueItemDevPayload),
+      filteredCount: filtered.length,
+    }),
+    [
+      activeTotal,
+      categoryTabs,
+      domain,
+      filtered.length,
+      from,
+      priorityFilter,
+      q,
+      resolvedCategory,
+      safePage,
+      to,
+      totalPages,
+      visibleIssues,
+    ],
+  );
+
+  const issuesPageDevData = useMemo(
+    () => ({
+      widget: 'issues.page',
+      domain,
+      reportId: selectedReportId,
+      issuesTab,
+      totalIssues: list.length,
+      priorityCounts,
+      priorityFilter,
+      searchQuery: q,
+      showCharts: list.length > 0 && forCharts.length > 0,
+    }),
+    [
+      domain,
+      forCharts.length,
+      issuesTab,
+      list.length,
+      priorityCounts,
+      priorityFilter,
+      q,
+      selectedReportId,
+    ],
+  );
+
   if (!issuesReady) {
     return <ViewSectionLoading title={vi.title} />;
   }
@@ -306,6 +413,8 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
 
   return (
     <PageLayout className="space-y-6 min-w-0 max-w-full">
+      <div className="relative group/dev-card">
+        <DevCopyJsonButton data={issuesPageDevData} className="top-0 right-0" />
       <PageHeader
         title={vi.title}
         subtitle={subtitle}
@@ -320,6 +429,7 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
           ) : null
         }
       />
+      </div>
 
       <ViewTabs
         tabs={[
@@ -347,7 +457,7 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
 
       {issuesTab === 'audit' && showCharts && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-w-0">
-          <Card padding="tight" shadow overflowHidden className="min-w-0">
+          <Card padding="tight" shadow overflowHidden devData={categoryChartDevData} className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <BarChart2 className="h-4 w-4 text-link" />
               <h2 className="text-sm font-bold text-foreground">{vi.issuesByCategory}</h2>
@@ -363,7 +473,7 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
               />
             </div>
           </Card>
-          <Card padding="tight" shadow overflowHidden className="min-w-0">
+          <Card padding="tight" shadow overflowHidden devData={priorityChartDevData} className="min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <BarChart2 className="h-4 w-4 text-link" />
               <h2 className="text-sm font-bold text-foreground">{vi.issuesByPriority}</h2>
@@ -405,7 +515,8 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
       )}
 
       {issuesTab === 'audit' && (
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 min-w-0">
+      <div className="relative group/dev-card grid grid-cols-2 lg:grid-cols-4 gap-4 min-w-0">
+        <DevCopyJsonButton data={priorityStatsDevData} />
         {priorityOrder.map((p) => {
           const cfg = PRIORITY_CONFIG[p];
           const Icon = PRIORITY_ICONS[p];
@@ -414,6 +525,12 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
             <Card
               key={p}
               shadow
+              devData={{
+                widget: 'issues.priorityStat',
+                priority: p,
+                count,
+                active: priorityFilter === p,
+              }}
               className={`cursor-pointer transition-all ${
                 priorityFilter === p ? `${cfg.ring || 'ring-1 ring-brand-700/30'} border-brand-700` : 'hover:border-brand-700'
               }`}
@@ -469,7 +586,8 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
           <p className="text-muted-foreground text-sm">{vi.noMatches}</p>
         </Card>
       ) : (
-        <div className="space-y-4 min-w-0 max-w-full">
+        <div className="relative group/dev-card space-y-4 min-w-0 max-w-full">
+          <DevCopyJsonButton data={issueListDevData} />
           {categoryTabs.length > 1 ? (
             <ViewTabs
               tabs={categoryTabs}

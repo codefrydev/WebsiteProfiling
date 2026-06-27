@@ -38,7 +38,7 @@ def _build_outbound_link_domains(
         st = str(row.get("status", "")).strip()
         if st.startswith(("4", "5")):
             continue
-        u = str(row.get("url") or "").strip().rstrip("/")
+        u = str(row.get("url") or "").strip()
         if not u:
             continue
         seen_on_page: set[str] = set()
@@ -82,7 +82,7 @@ def _build_url_fingerprints(df: pd.DataFrame) -> list[dict[str, Any]]:
         return int(n) if pd.notna(n) else 0
 
     for _, row in df.iterrows():
-        u = str(row.get("url") or "").strip().rstrip("/")
+        u = str(row.get("url") or "").strip()
         if not u:
             continue
         title = str(row.get("title") or "")

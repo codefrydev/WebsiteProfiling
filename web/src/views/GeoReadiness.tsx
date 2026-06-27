@@ -14,6 +14,7 @@ import {
   TableRow,
   TableCell,
 } from '@/components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import { fetchAuditTool } from '@/lib/fetchAuditTool';
 import { strings } from '@/lib/strings';
@@ -172,6 +173,209 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
   const gradeColor = (g: string) =>
     g === 'A' ? 'text-green-600' : g === 'B' ? 'text-green-500' : g === 'C' ? 'text-yellow-600' : g === 'D' ? 'text-orange-500' : g === 'F' ? 'text-destructive' : 'text-muted-foreground';
 
+  const citationStatsDevData = useMemo(
+    () => ({
+      widget: 'geoReadiness.citation.stats',
+      score,
+      band,
+      citabilityScore,
+      llmsFound: Boolean(llms?.found),
+      llmsUrl: llms?.url ?? null,
+    }),
+    [band, citabilityScore, llms?.found, llms?.url, score],
+  );
+
+  const citationCategoriesDevData = useMemo(
+    () => ({
+      widget: 'geoReadiness.citation.categories',
+      categories: Object.entries(categories).map(([key, val]) => ({
+        key,
+        score: val.score,
+        max: val.max,
+      })),
+      components,
+    }),
+    [categories, components],
+  );
+
+  const llmsPanelDevData = useMemo(
+    () => ({
+      widget: 'geoReadiness.citation.llmsTxt',
+      found: Boolean(llms?.found),
+      url: llms?.url ?? null,
+      llmsFullTxtFound: Boolean(llms?.llms_full_txt_found),
+      depth: llms?.depth ?? null,
+      preview: llms?.preview ?? null,
+    }),
+    [llms],
+  );
+
+  const aiDiscoveryDevData = useMemo(
+    () => ({
+      widget: 'geoReadiness.citation.aiDiscovery',
+      foundCount: aiDiscovery?.found_count ?? null,
+      discoveryScore: aiDiscovery?.discovery_score ?? null,
+      endpoints: Object.entries(aiDiscoveryEndpoints).map(([key, ep]) => ({
+        key,
+        found: ep.found,
+        url: ep.url,
+      })),
+    }),
+    [aiDiscovery?.discovery_score, aiDiscovery?.found_count, aiDiscoveryEndpoints],
+  );
+
+  const robotsDevData = useMemo(
+    () => ({
+      widget: 'geoReadiness.citation.robots',
+      robotsScore: robotsScore?.robots_score ?? null,
+      bots: robotsPerBot.slice(0, 12).map((bot) => ({
+        agent: bot.agent,
+        tier: bot.tier,
+        access: bot.access,
+      })),
+    }),
+    [robotsPerBot, robotsScore?.robots_score],
+  );
+
+  const citabilityDevData = useMemo(
+    () => ({
+      widget: 'geoReadiness.citation.citability',
+      citabilityScore,
+      pagesAbove50: citability?.pages_above_50 ?? null,
+      pagesAbove75: citability?.pages_above_75 ?? null,
+    }),
+    [citability, citabilityScore],
+  );
+
+  const negativeSignalsDevData = useMemo(
+    () => ({
+      widget: 'geoReadiness.citation.negativeSignals',
+      pages: negativePages.slice(0, 10).map((row) => ({
+        url: row.url ?? null,
+        signals: row.signals ?? [],
+      })),
+    }),
+    [negativePages],
+  );
+
+  const eeatDevData = useMemo(
+    () => ({
+      widget: 'geoReadiness.citation.eeat',
+      missing: Boolean(eeat?.missing),
+      pagesWithAuthorSchema: eeat?.pages_with_author_schema ?? null,
+      pagesWithOrganizationSchema: eeat?.pages_with_organization_schema ?? null,
+      aboutContactPages: eeat?.about_contact_pages ?? null,
+    }),
+    [eeat],
+  );
+
+  const faqStatsDevData = useMemo(
+    () => ({
+      widget: 'geoReadiness.citation.faqStats',
+      coveragePct: faq?.coverage_pct ?? null,
+      pagesWithFaqSchema: faq?.pages_with_faq_schema ?? null,
+    }),
+    [faq],
+  );
+
+  const missingFaqDevData = useMemo(
+    () => ({
+      widget: 'geoReadiness.citation.missingFaq',
+      searchQuery: q || null,
+      total: missingFaq.length,
+      filteredCount: filteredFaq.length,
+      page: pagination.page,
+      from: pagination.from,
+      to: pagination.to,
+      urls: pagination.slice.map((row) => String(row.url || '')),
+    }),
+    [filteredFaq.length, missingFaq.length, pagination, q],
+  );
+
+  const agentStatsDevData = useMemo(
+    () => ({
+      widget: 'geoReadiness.agent.stats',
+      percentage: agentPct,
+      grade: agentGrade,
+      agentsMdFound: Boolean(agentsMd?.found),
+      skillMdFound: Boolean(skillMd?.found),
+    }),
+    [agentGrade, agentPct, agentsMd?.found, skillMd?.found],
+  );
+
+  const agentCategoriesDevData = useMemo(
+    () => ({
+      widget: 'geoReadiness.agent.categories',
+      categories: Object.entries(agentCategories).map(([key, val]) => ({
+        key,
+        score: val.score,
+        max: val.max,
+      })),
+    }),
+    [agentCategories],
+  );
+
+  const agentDiscoveryDevData = useMemo(
+    () => ({
+      widget: 'geoReadiness.agent.discoveryFiles',
+      files: [
+        { name: 'AGENTS.md', found: Boolean(agentsMd?.found), url: agentsMd?.url ?? null },
+        { name: 'skill.md', found: Boolean(skillMd?.found), url: skillMd?.url ?? null },
+        {
+          name: 'agent-permissions.json',
+          found: Boolean(agentPermissions?.found),
+          url: agentPermissions?.url ?? null,
+        },
+      ],
+    }),
+    [agentPermissions, agentsMd, skillMd],
+  );
+
+  const tokenBudgetDevData = useMemo(
+    () => ({
+      widget: 'geoReadiness.agent.tokenBudget',
+      missing: Boolean(tokenBudget?.missing),
+      p50Tokens: tokenBudget?.p50_tokens ?? null,
+      p95Tokens: tokenBudget?.p95_tokens ?? null,
+      pagesOverWarn: tokenBudget?.pages_over_warn ?? null,
+      pagesOverMax: tokenBudget?.pages_over_max ?? null,
+    }),
+    [tokenBudget],
+  );
+
+  const oversizedPagesDevData = useMemo(
+    () => ({
+      widget: 'geoReadiness.agent.oversizedPages',
+      pages: oversizedPages.slice(0, 20).map((row) => ({
+        url: row.url ?? null,
+        token_count: row.token_count ?? null,
+      })),
+    }),
+    [oversizedPages],
+  );
+
+  const copyForAiDevData = useMemo(
+    () => ({
+      widget: 'geoReadiness.agent.copyForAi',
+      allPagesPct: copyForAi?.all_pages_pct ?? null,
+      docPagesPct: copyForAi?.doc_pages_pct ?? null,
+      uxScore: copyForAi?.ux_score ?? null,
+    }),
+    [copyForAi],
+  );
+
+  const agentBundleDevData = useMemo(
+    () => ({
+      widget: 'geoReadiness.agent.bundle',
+      generated: agentBundle != null,
+      missingFiles: agentBundle?.missing_files ?? null,
+      hasAgentsMd: Boolean(agentBundle?.agents_md),
+      hasSkillMd: Boolean(agentBundle?.skill_md),
+      hasPermissionsJson: Boolean(agentBundle?.agent_permissions_json),
+    }),
+    [agentBundle],
+  );
+
   return (
     <PageLayout>
       <PageHeader
@@ -206,7 +410,8 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
       ) : (
         <>
           {/* Top stat row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <DevCopyJsonButton data={citationStatsDevData} />
             <StatCard label={vg.scoreLabel} value={score} />
             <StatCard label={vg.bandLabel} value={band} />
             <StatCard label={vg.citabilityLabel} value={citabilityScore} />
@@ -218,7 +423,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
 
           {/* 8-category score breakdown */}
           <div className="grid gap-4 lg:grid-cols-2 mb-6">
-            <Card className="p-4">
+            <Card className="p-4" devData={citationCategoriesDevData}>
               <h3 className="text-sm font-semibold text-foreground mb-3">{vg.componentsTitle}</h3>
               <ul className="space-y-2">
                 {Object.entries(categories).map(([key, val]) => {
@@ -237,7 +442,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
             </Card>
 
             {/* llms.txt panel */}
-            <Card className="p-4">
+            <Card className="p-4" devData={llmsPanelDevData}>
               <h3 className="text-sm font-semibold text-foreground mb-3">{vg.llmsPanelTitle}</h3>
               {llms?.found ? (
                 <>
@@ -268,7 +473,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
           </div>
 
           {/* AI discovery endpoints */}
-          <Card className="p-4 mb-6">
+          <Card className="p-4 mb-6" devData={aiDiscoveryDevData}>
             <h3 className="text-sm font-semibold text-foreground mb-3">{vg.aiDiscoveryTitle}</h3>
             <ul className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
               {Object.entries(aiDiscoveryEndpoints).map(([key, ep]) => (
@@ -290,7 +495,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
 
           {/* Robots AI-bot tier table */}
           {robotsPerBot.length > 0 && (
-            <Card className="overflow-hidden mb-6">
+            <Card className="overflow-hidden mb-6" devData={robotsDevData}>
               <h3 className="text-sm font-semibold text-foreground px-4 pt-4 pb-2">{vg.robotsTitle}</h3>
               <p className="px-4 pb-2 text-xs text-muted-foreground">
                 Score: {String(robotsScore?.robots_score ?? '—')}/18
@@ -331,7 +536,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
           )}
 
           {/* Citability score */}
-          <Card className="p-4 mb-6">
+          <Card className="p-4 mb-6" devData={citabilityDevData}>
             <h3 className="text-sm font-semibold text-foreground mb-1">{vg.citabilityTitle}</h3>
             <p className="text-xs text-muted-foreground mb-3">{vg.citabilitySubtitle}</p>
             {citability ? (
@@ -356,7 +561,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
 
           {/* Negative signals */}
           {negativePages.length > 0 && (
-            <Card className="overflow-hidden mb-6">
+            <Card className="overflow-hidden mb-6" devData={negativeSignalsDevData}>
               <h3 className="text-sm font-semibold text-foreground px-4 pt-4 pb-2">{vg.negativeSectionTitle}</h3>
               <Table>
                 <TableHead>
@@ -396,7 +601,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
 
           {/* E-E-A-T */}
           {eeat && !eeat.missing ? (
-            <Card className="p-4 mb-6">
+            <Card className="p-4 mb-6" devData={eeatDevData}>
               <h3 className="text-sm font-semibold text-foreground mb-2">{vg.eeatTitle}</h3>
               <ul className="grid grid-cols-3 gap-3 text-xs">
                 <li>
@@ -416,13 +621,14 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
           ) : null}
 
           {/* FAQ coverage stat */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <DevCopyJsonButton data={faqStatsDevData} />
             <StatCard label={vg.faqCoverageLabel} value={`${faq?.coverage_pct ?? '—'}%`} />
             <StatCard label={vg.faqPagesLabel} value={Number(faq?.pages_with_faq_schema) || 0} />
           </div>
 
           {/* Missing FAQ schema */}
-          <Card className="overflow-hidden mb-6">
+          <Card className="overflow-hidden mb-6" devData={missingFaqDevData}>
             <h3 className="text-sm font-semibold text-foreground px-4 pt-4 pb-2">{vg.missingFaqTitle}</h3>
             {filteredFaq.length === 0 ? (
               <p className="px-4 pb-4 text-sm text-muted-foreground">{vg.missingFaqEmpty}</p>
@@ -470,7 +676,8 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
       ) : (
         <>
           {/* Agent score header */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+            <DevCopyJsonButton data={agentStatsDevData} />
             <StatCard label={vg.agentScoreLabel} value={agentPct} />
             <StatCard label={vg.agentGradeLabel} value={<span className={gradeColor(agentGrade)}>{agentGrade}</span>} />
             <StatCard label={vg.agentAgentsMdLabel} value={agentsMd?.found ? vg.agentAgentsMdFound : vg.agentAgentsMdMissing} />
@@ -478,7 +685,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
           </div>
 
           {/* 5-category score breakdown */}
-          <Card className="p-4 mb-6">
+          <Card className="p-4 mb-6" devData={agentCategoriesDevData}>
             <h3 className="text-sm font-semibold text-foreground mb-3">{vg.agentCategoriesTitle}</h3>
             <ul className="space-y-2">
               {Object.entries(agentCategories).map(([key, val]) => {
@@ -497,7 +704,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
           </Card>
 
           {/* Discovery files */}
-          <Card className="p-4 mb-6">
+          <Card className="p-4 mb-6" devData={agentDiscoveryDevData}>
             <h3 className="text-sm font-semibold text-foreground mb-3">{vg.agentDiscoveryFilesTitle}</h3>
             <ul className="space-y-2 text-sm">
               {[
@@ -519,7 +726,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
           </Card>
 
           {/* Token budget */}
-          <Card className="p-4 mb-6">
+          <Card className="p-4 mb-6" devData={tokenBudgetDevData}>
             <h3 className="text-sm font-semibold text-foreground mb-1">{vg.agentTokenBudgetTitle}</h3>
             <p className="text-xs text-muted-foreground mb-3">{vg.agentTokenBudgetSubtitle}</p>
             {tokenBudget && !tokenBudget.missing ? (
@@ -548,7 +755,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
 
           {/* Oversized pages */}
           {oversizedPages.length > 0 ? (
-            <Card className="overflow-hidden mb-6">
+            <Card className="overflow-hidden mb-6" devData={oversizedPagesDevData}>
               <h3 className="text-sm font-semibold text-foreground px-4 pt-4 pb-2">{vg.agentOversizedTitle}</h3>
               <Table>
                 <TableHead>
@@ -580,13 +787,13 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
               </Table>
             </Card>
           ) : (
-            <Card className="p-4 mb-6">
+            <Card className="p-4 mb-6" devData={oversizedPagesDevData}>
               <p className="text-sm text-muted-foreground">{vg.agentOversizedEmpty}</p>
             </Card>
           )}
 
           {/* Copy-for-AI */}
-          <Card className="p-4 mb-6">
+          <Card className="p-4 mb-6" devData={copyForAiDevData}>
             <h3 className="text-sm font-semibold text-foreground mb-1">{vg.agentCopyForAiTitle}</h3>
             <p className="text-xs text-muted-foreground mb-3">{vg.agentCopyForAiSubtitle}</p>
             {copyForAi ? (
@@ -610,7 +817,7 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
           </Card>
 
           {/* Generate bundle CTA */}
-          <Card className="p-4 border-violet-500/25 bg-violet-500/5">
+          <Card className="p-4 border-violet-500/25 bg-violet-500/5" devData={agentBundleDevData}>
             <h3 className="text-sm font-semibold text-foreground mb-1">{vg.agentBundleTitle}</h3>
             <p className="text-xs text-muted-foreground mb-3">{vg.agentBundleSubtitle}</p>
             {!agentBundle ? (

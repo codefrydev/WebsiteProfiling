@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { Smartphone } from 'lucide-react';
 import { Card } from '@/components';
@@ -41,14 +41,29 @@ export default function MobileDesktopDelta({ runId }: Props) {
       .finally(() => setLoading(false));
   }, [runId]);
 
-  if (loading || !rows.length) return null;
-
   const statusDiffs = rows.filter((r) => r.status_differs).length;
   const titleDiffs = rows.filter((r) => r.title_differs).length;
   const h1Diffs = rows.filter((r) => r.h1_differs).length;
 
+  const devData = useMemo(
+    () => {
+      if (!rows.length) return null;
+      return {
+        widget: 'issues.mobileDesktopDelta',
+        runId,
+        totalDiffering: rows.length,
+        summary: { statusDiffs, titleDiffs, h1Diffs },
+        rows: rows.slice(0, 50),
+        raw: { deltas: rows },
+      };
+    },
+    [h1Diffs, rows, runId, statusDiffs, titleDiffs],
+  );
+
+  if (loading || !rows.length) return null;
+
   return (
-    <Card className="p-4 space-y-3">
+    <Card devData={devData ?? undefined} className="p-4 space-y-3">
       <div className="flex items-center gap-2">
         <Smartphone className="h-4 w-4 text-blue-400 shrink-0" />
         <h3 className="text-sm font-semibold">Mobile vs Desktop differences</h3>

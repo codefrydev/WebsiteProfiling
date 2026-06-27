@@ -65,6 +65,7 @@ export interface ContentUrlEntry {
   meta_desc_len?: number;
   h1_count?: number;
   content_length?: number;
+  word_count?: number;
 }
 
 export type ContentUrlsMap = Record<string, ContentUrlEntry[]>;
@@ -637,6 +638,7 @@ export interface ReportPayload {
   link_rel_summary?: LinkRelSummary;
   inlink_anchor_matrix?: InlinkAnchorRow[];
   portfolio_benchmark?: PortfolioBenchmark;
+  site_health_score?: number | null;
   rich_results_validation?: RichResultsValidationRow[];
   rich_results_meta?: RichResultsMeta;
   competitor_keyword_gap?: CompetitorKeywordGapRow[];
@@ -722,6 +724,8 @@ export interface ReportSummary {
   success_rate?: number;
   crawl_time_s?: number;
   avg_outlinks?: number;
+  site_health_score?: number | null;
+  category_scores?: Record<string, number>;
 }
 
 export interface ReportCategory {
@@ -1018,9 +1022,12 @@ export interface TopConsoleMessage {
 export interface BrowserDiagnosticsAggregate {
   pages_with_console_errors?: number;
   pages_with_page_errors?: number;
+  pages_with_failed_requests?: number;
   total_console_errors?: number;
   total_page_errors?: number;
+  total_failed_requests?: number;
   top_console_messages?: TopConsoleMessage[];
+  top_page_errors?: TopConsoleMessage[];
 }
 
 export interface PageAnalysis {

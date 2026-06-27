@@ -247,7 +247,7 @@ public sealed class EnrichmentService(
                         continue;
                     }
 
-                    var url = (page["url"]?.GetValue<string>() ?? "").Trim().TrimEnd('/');
+                    var url = (page["url"]?.GetValue<string>() ?? "").Trim();
                     if (string.IsNullOrEmpty(url))
                     {
                         continue;
@@ -342,7 +342,7 @@ public sealed class EnrichmentService(
                 continue;
             }
 
-            var url = (page["url"]?.GetValue<string>() ?? "").Trim().TrimEnd('/');
+            var url = (page["url"]?.GetValue<string>() ?? "").Trim();
             if (string.IsNullOrEmpty(url))
             {
                 continue;
@@ -370,7 +370,7 @@ public sealed class EnrichmentService(
                 continue;
             }
 
-            var url = (page["url"]?.GetValue<string>() ?? "").Trim().TrimEnd('/');
+            var url = (page["url"]?.GetValue<string>() ?? "").Trim();
             if (string.IsNullOrEmpty(url))
             {
                 continue;
@@ -402,7 +402,7 @@ public sealed class EnrichmentService(
                 continue;
             }
 
-            var url = (row["url"]?.GetValue<string>() ?? "").Trim().TrimEnd('/');
+            var url = (row["url"]?.GetValue<string>() ?? "").Trim();
             var text = (row["text"]?.GetValue<string>() ?? "").Trim();
             if (string.IsNullOrEmpty(url) || text.Length < 40)
             {

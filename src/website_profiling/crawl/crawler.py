@@ -402,7 +402,7 @@ class Crawler:
 
         # A redirect (3xx) has no crawlable body; enqueue its target so the
         # destination is fetched and recorded as its own row (per-hop chain).
-        if is_redirect and final_url and final_url.rstrip("/") != url.rstrip("/"):
+        if is_redirect and final_url and final_url != url:
             self.frontier.try_enqueue_link(final_url, url)
 
         ext["response_time_ms"] = response_time_ms if response_time_ms is not None else ""

@@ -113,7 +113,7 @@ def build_lighthouse_by_url_for_report(conn: Any) -> dict[str, Any]:
 
     summaries_norm: dict[str, Any] = {}
     for k, v in summaries.items():
-        nk = str(k).strip().rstrip("/")
+        nk = str(k).strip()
         summaries_norm[nk] = v
 
     all_urls = set(summaries_norm.keys()) | set(runs_map.keys())
@@ -131,7 +131,7 @@ def build_lighthouse_by_url_for_report(conn: Any) -> dict[str, Any]:
                 lr = raw.get("lighthouseResult") or raw
                 final_u = lr.get("finalUrl") or lr.get("requestedUrl") or u
                 base = {
-                    "url": str(final_u).strip().rstrip("/"),
+                    "url": str(final_u).strip(),
                     "median_metrics": {
                         "lcp_ms": ex.get("lcp_ms"),
                         "cls": ex.get("cls"),
@@ -191,13 +191,10 @@ def build_lighthouse_by_url_for_report(conn: Any) -> dict[str, Any]:
 
 
 def lighthouse_for_url(lighthouse_by_url: dict[str, Any], url: str) -> Optional[dict[str, Any]]:
-    """Resolve Lighthouse summary for a crawled URL (trailing-slash tolerant)."""
+    """Resolve Lighthouse summary for a crawled URL."""
     if not lighthouse_by_url or not url:
         return None
-    u = str(url).strip().rstrip("/")
+    u = str(url).strip()
     if u in lighthouse_by_url:
         return lighthouse_by_url[u]
-    for k, v in lighthouse_by_url.items():
-        if str(k).strip().rstrip("/") == u:
-            return v
     return None

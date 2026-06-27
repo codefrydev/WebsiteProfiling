@@ -51,7 +51,7 @@ def build_page_html_record(
         return None
     text = str(html)
     return {
-        "url": str(url or "").rstrip("/"),
+        "url": str(url or ""),
         "html": text,
         "status": str(status),
         "content_type": str(content_type or ""),

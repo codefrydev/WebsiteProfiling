@@ -16,7 +16,9 @@ TITLE_LEN_MIN = 30
 TITLE_LEN_MAX = 60
 META_DESC_LEN_MIN = 70
 META_DESC_LEN_MAX = 160
-REDIRECT_CHAIN_LONG = 2
+REDIRECT_CHAIN_LONG = 3
+MAX_ISSUES_PER_CHECK = 20
+MAX_HREFLANG_ISSUES_PER_CHECK = 15
 
 
 def _issue(message: str, url: Optional[str] = None, priority: str = "Medium", recommendation: str = "") -> dict:
@@ -55,6 +57,8 @@ def _hreflang_issues(success_df: pd.DataFrame) -> list[dict]:
     issues: list[dict] = []
     if "page_analysis" not in success_df.columns:
         return issues
+    duplicate_count = 0
+    self_ref_count = 0
     for _, row in success_df.iterrows():
         pa = _page_analysis_dict(row)
         alts = pa.get("hreflang_alternates") or []
@@ -64,21 +68,23 @@ def _hreflang_issues(success_df: pd.DataFrame) -> list[dict]:
         langs = [str(a.get("hreflang") or a.get("lang") or "").strip().lower() for a in alts if isinstance(a, dict)]
         hrefs = [str(a.get("href") or "").strip() for a in alts if isinstance(a, dict)]
         if langs and len(set(langs)) < len(langs):
-            issues.append(_issue(
-                "Duplicate hreflang language codes on page.",
-                url=url,
-                priority="High",
-                recommendation="Each hreflang alternate should use a unique language/region code.",
-            ))
-            break
-        if url and hrefs and url.rstrip("/") not in [h.rstrip("/") for h in hrefs]:
-            issues.append(_issue(
-                "Hreflang cluster missing self-referencing alternate.",
-                url=url,
-                priority="Medium",
-                recommendation="Include a hreflang link pointing to this page URL.",
-            ))
-            break
+            if duplicate_count < MAX_HREFLANG_ISSUES_PER_CHECK:
+                issues.append(_issue(
+                    "Duplicate hreflang language codes on page.",
+                    url=url,
+                    priority="High",
+                    recommendation="Each hreflang alternate should use a unique language/region code.",
+                ))
+                duplicate_count += 1
+        if url and hrefs and url not in hrefs:
+            if self_ref_count < MAX_HREFLANG_ISSUES_PER_CHECK:
+                issues.append(_issue(
+                    "Hreflang cluster missing self-referencing alternate.",
+                    url=url,
+                    priority="Medium",
+                    recommendation="Include a hreflang link pointing to this page URL.",
+                ))
+                self_ref_count += 1
     return issues
 
 
@@ -166,7 +172,10 @@ def _indexation_coverage_issues(
 
         sitemap_norm = {normalize_url(u) for u in sitemap_urls}
         success = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns else df
+        noindex_in_sitemap = 0
         for _, row in success.iterrows():
+            if noindex_in_sitemap >= 15:
+                break
             url = str(row.get("url") or "").strip()
             if not url:
                 continue
@@ -178,7 +187,7 @@ def _indexation_coverage_issues(
                     priority="Critical",
                     recommendation="Remove the URL from the sitemap or remove noindex if the page should be indexed.",
                 ))
-                break
+                noindex_in_sitemap += 1
     return issues
 
 

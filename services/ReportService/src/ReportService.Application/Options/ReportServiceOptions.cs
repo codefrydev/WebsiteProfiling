@@ -11,4 +11,6 @@ public sealed class ReportServiceOptions
     public bool UsePythonBridge { get; set; } = true;
 
     public string IntegrationsServiceUrl { get; set; } = "http://127.0.0.1:8093";
+
+    public string AiServiceUrl { get; set; } = "http://127.0.0.1:8092";
 }

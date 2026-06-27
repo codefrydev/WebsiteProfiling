@@ -325,10 +325,10 @@ public static class LlmToolHandlers
         var gscPage = gscSlice["gsc"] as JsonObject;
         var rows = await scoped.LoadCrawlDfAsync(db, cancellationToken);
         JsonObject? pageRow = null;
-        var needle = url.TrimEnd('/').ToLowerInvariant();
+        var needle = url.ToLowerInvariant();
         foreach (var row in rows)
         {
-            if ((JsonCoercion.AsString(row["url"]) ?? "").TrimEnd('/').ToLowerInvariant() == needle)
+            if ((JsonCoercion.AsString(row["url"]) ?? "").Trim().ToLowerInvariant() == needle)
             {
                 pageRow = row;
                 break;

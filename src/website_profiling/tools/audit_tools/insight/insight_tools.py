@@ -106,12 +106,6 @@ def get_landing_page_full_diagnosis(conn: Connection, ctx: AuditToolContext, arg
     benchmarks = slice_data.get("siteBenchmarks") or {}
     flags = page_issue_flags(url, payload)
     lh = (payload.get("lighthouse_by_url") or {}).get(url) or {}
-    if not lh:
-        norm_url = url.rstrip("/")
-        for k, v in (payload.get("lighthouse_by_url") or {}).items():
-            if str(k).rstrip("/") == norm_url:
-                lh = v
-                break
     score = composite_page_score(
         gsc_page, ga4_page,
         (benchmarks.get("gsc") or {}) if isinstance(benchmarks.get("gsc"), dict) else {},
@@ -121,7 +115,7 @@ def get_landing_page_full_diagnosis(conn: Connection, ctx: AuditToolContext, arg
     )
     crawl_row = None
     for row in payload.get("top_pages") or []:
-        if isinstance(row, dict) and str(row.get("url") or "").rstrip("/") == url.rstrip("/"):
+        if isinstance(row, dict) and str(row.get("url") or "") == url:
             crawl_row = row
             break
     return {

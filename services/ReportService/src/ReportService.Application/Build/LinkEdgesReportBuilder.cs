@@ -33,14 +33,14 @@ public static class LinkEdgesReportBuilder
                 continue;
             }
 
-            var target = (edge.GetValueOrDefault("to_url")?.ToString() ?? "").TrimEnd('/');
+            var target = (edge.GetValueOrDefault("to_url")?.ToString() ?? "").Trim();
             var anchor = (edge.GetValueOrDefault("anchor_text")?.ToString() ?? "").Trim();
             if (string.IsNullOrEmpty(anchor))
             {
                 anchor = "(empty)";
             }
 
-            var source = (edge.GetValueOrDefault("from_url")?.ToString() ?? "").TrimEnd('/');
+            var source = (edge.GetValueOrDefault("from_url")?.ToString() ?? "").Trim();
             if (string.IsNullOrEmpty(target) || string.IsNullOrEmpty(source))
             {
                 continue;

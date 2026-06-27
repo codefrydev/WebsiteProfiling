@@ -51,7 +51,7 @@ export function finalizeRollup(r: PathRollup): PathRollupMetrics {
   };
 }
 
-/** Pathname for tree keys: leading slash, no trailing slash except root `/`. */
+/** Pathname for tree keys: leading slash; trailing slash preserved when present in the URL. */
 export function normalizePathname(url: string, expectedHost = ''): string | null {
   if (!url || typeof url !== 'string') return null;
   const trimmed = url.trim();
@@ -68,10 +68,7 @@ export function normalizePathname(url: string, expectedHost = ''): string | null
   }
   const host = u.hostname.toLowerCase();
   if (expectedHost && host && host !== expectedHost.toLowerCase()) return null;
-  let p = u.pathname || '/';
-  if (p !== '/' && p.endsWith('/')) {
-    p = p.replace(/\/+$/, '') || '/';
-  }
+  const p = u.pathname || '/';
   return p || '/';
 }
 
@@ -83,15 +80,18 @@ export function linkMatchesPathKey(url: string, pathKey: string, expectedHost = 
   return pathname === pathKey || pathname.startsWith(`${pathKey}/`);
 }
 
-/** Prefix paths from pathname: `/`, `/blog`, `/blog/a` for `/blog/a`. */
+/** Prefix paths from pathname: `/`, `/blog`, `/blog/a/` for `/blog/a/`. */
 export function prefixKeysForPathname(pathname: string): string[] {
   if (!pathname || pathname === '/') return ['/'];
-  const parts = pathname.split('/').filter(Boolean);
+  const trailing = pathname.endsWith('/') && pathname.length > 1;
+  const core = trailing ? pathname.slice(0, -1) : pathname;
+  const parts = core.split('/').filter(Boolean);
   const keys = ['/'];
   let acc = '';
-  for (const part of parts) {
-    acc += `/${part}`;
-    keys.push(acc);
+  for (let i = 0; i < parts.length; i++) {
+    acc += `/${parts[i]}`;
+    const isLast = i === parts.length - 1;
+    keys.push(isLast && trailing ? `${acc}/` : acc);
   }
   return keys;
 }

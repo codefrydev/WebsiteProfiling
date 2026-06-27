@@ -141,5 +141,5 @@ public sealed class PageCoachService(
     }
 
     private static string NormalizeUrl(string url)
-        => url.Trim().TrimEnd('/').ToLowerInvariant();
+        => url.Trim().ToLowerInvariant();
 }

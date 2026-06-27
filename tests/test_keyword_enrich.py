@@ -30,6 +30,11 @@ def test_opportunity_clicks_boundary_position_three() -> None:
     assert opportunity_clicks(1000, 3.0, target_pos=3) == 0
 
 
-def test_industry_ctr_uses_ceil() -> None:
-    assert industry_ctr(2.1) == CTR_CURVE[3]
+def test_industry_ctr_interpolates_between_slots() -> None:
+    assert industry_ctr(3.0) == pytest.approx(CTR_CURVE[3])
+    assert industry_ctr(3.1) == pytest.approx(0.100, rel=1e-3)
+    assert industry_ctr(3.9) == pytest.approx(0.076, rel=1e-3)
+
+
+def test_industry_ctr_exact_slot() -> None:
     assert industry_ctr(3.0) == CTR_CURVE[3]

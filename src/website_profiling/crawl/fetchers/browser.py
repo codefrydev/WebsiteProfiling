@@ -353,7 +353,7 @@ class BrowserFetcher:
                 content_length=0,
                 final_url=final_url,
                 headers_dict={},
-                redirect_chain_length=1 if final_url.rstrip("/") != url.rstrip("/") else 0,
+                redirect_chain_length=1 if final_url != url else 0,
                 fetch_method="rendered",
                 browser_diagnostics=browser_diagnostics,
             )

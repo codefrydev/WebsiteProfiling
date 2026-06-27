@@ -6,6 +6,7 @@ from typing import Any, Optional
 import pandas as pd
 
 from ._helpers import (
+    MAX_ISSUES_PER_CHECK,
     PRIORITY_ORDER,
     _broken_link_sources,
     _hreflang_issues,
@@ -68,6 +69,7 @@ def category_technical_seo(
 
     # Canonical: missing or self-mismatch
     if "canonical_url" in df.columns and len(success_df) > 0:
+        missing_canon_issues = 0
         for _, row in success_df.iterrows():
             url = row.get("url")
             canon = row.get("canonical_url")
@@ -76,23 +78,31 @@ def category_technical_seo(
             url = str(url).strip()
             canon = "" if pd.isna(canon) else str(canon).strip()
             if not canon:
+                if missing_canon_issues >= MAX_ISSUES_PER_CHECK:
+                    continue
                 issues.append(_issue("Missing canonical URL.", url=url, priority="Medium", recommendation="Add a canonical link tag pointing to the preferred URL."))
-                break
+                missing_canon_issues += 1
         missing_canon = success_df["canonical_url"].fillna("").astype(str).str.strip().eq("").sum()
         if missing_canon > 0:
             deductions.append((min(15, missing_canon * 2), True))
-        # Self-canonical mismatch: canonical points to different URL
+        cross_canon_issues = 0
+        cross_canon_count = 0
         for _, row in success_df.iterrows():
             url = row.get("url")
             canon = row.get("canonical_url")
             if pd.isna(url) or pd.isna(canon) or not str(canon).strip():
                 continue
-            url = str(url).rstrip("/")
-            canon = str(canon).strip().rstrip("/")
-            if url != canon:
-                issues.append(_issue(f"Canonical points to different URL: {canon}", url=url, priority="High", recommendation="Set canonical to this page URL or the preferred duplicate."))
-                deductions.append((10, True))
-                break
+            url = str(url)
+            canon = str(canon).strip()
+            if url == canon:
+                continue
+            cross_canon_count += 1
+            if cross_canon_issues >= MAX_ISSUES_PER_CHECK:
+                continue
+            issues.append(_issue(f"Canonical points to different URL: {canon}", url=url, priority="High", recommendation="Set canonical to this page URL or the preferred duplicate."))
+            cross_canon_issues += 1
+        if cross_canon_count > 0:
+            deductions.append((min(10, cross_canon_count * 2), True))
 
     # Noindex on important pages (CSV may store True/False as strings)
     if "noindex" in df.columns and len(success_df) > 0:

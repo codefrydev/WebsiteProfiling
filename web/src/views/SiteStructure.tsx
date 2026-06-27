@@ -30,6 +30,7 @@ import {
   linkMatchesPathKey,
 } from '../lib/siteStructureTree';
 import { PageLayout, PageHeader, Card, Button, StatCard, AlertBanner, ViewTabs, ViewTabPanel } from '../components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { metricHelpHint } from '@/lib/metricHelp';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
 import type { ViewTabItem } from '../components';
@@ -127,6 +128,36 @@ function SiteStructureTreePanel({
 
   const topSections = tree.children ?? [];
 
+  const treePanelDevData = useMemo(
+    () => ({
+      widget: 'siteStructure.tree',
+      visibleRowCount: visibleRows.length,
+      totalPrefixCount: merged.size,
+      page,
+      totalPages,
+      expanded: [...expanded],
+      hasCompare,
+      showCompareCharts,
+      pageRows,
+      topSections: topSections.map((node) => ({
+        pathKey: node.pathKey,
+        segment: node.segment,
+        pages: node.current?.pages ?? 0,
+      })),
+    }),
+    [
+      expanded,
+      hasCompare,
+      merged.size,
+      page,
+      pageRows,
+      showCompareCharts,
+      topSections,
+      totalPages,
+      visibleRows.length,
+    ],
+  );
+
   if (visibleRows.length === 0) {
     return (
       <p className="text-muted-foreground text-sm py-12 text-center">
@@ -136,7 +167,8 @@ function SiteStructureTreePanel({
   }
 
   return (
-    <>
+    <div className="relative group/dev-card">
+      <DevCopyJsonButton data={treePanelDevData} />
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 px-4 py-3 border-b border-muted bg-brand-900/40">
         <div className="min-w-0">
           <h2 className="text-sm font-bold text-foreground">{s.treeTitle}</h2>
@@ -238,7 +270,7 @@ function SiteStructureTreePanel({
           </div>
         </div>
       ) : null}
-    </>
+    </div>
   );
 }
 
@@ -347,6 +379,64 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
     ];
   }, [s.tabs, merged.size, filteredLinks.length, data?.graph_nodes?.length]);
 
+  const overviewStatsDevData = useMemo(
+    () => ({
+      widget: 'siteStructure.overview.stats',
+      urls: rootMetrics?.pages ?? filteredLinks.length,
+      pathPrefixes: merged.size,
+      totalInlinks: rootMetrics?.inlinks ?? null,
+      avgWords: rootMetrics?.avgWordCount ?? null,
+      avgResponseMs: rootMetrics?.avgResponseMs ?? null,
+      avgPerfScore: rootMetrics?.avgPerfScore ?? null,
+      filteredLinkCount: filteredLinks.length,
+      searchActive,
+      pathPrefixFilter,
+    }),
+    [
+      filteredLinks.length,
+      merged.size,
+      pathPrefixFilter,
+      rootMetrics,
+      searchActive,
+    ],
+  );
+
+  const crawlSegmentsDevData = useMemo(
+    () => ({
+      widget: 'siteStructure.overview.crawlSegments',
+      overallHealth: crawlSegments?.overall_health ?? null,
+      segments: crawlSegments?.segments ?? [],
+    }),
+    [crawlSegments],
+  );
+
+  const topInlinksDevData = useMemo(
+    () => ({
+      widget: 'siteStructure.overview.topInlinks',
+      links: topLinksByInlinks.map((link) => ({
+        url: link.url,
+        inlinks: Number(link.inlinks || 0),
+        status: link.status ?? null,
+      })),
+    }),
+    [topLinksByInlinks],
+  );
+
+  const mapDevData = useMemo(
+    () => ({
+      widget: 'siteStructure.map',
+      pathPrefixFilter,
+      crawlSegments: crawlSegments?.segments ?? [],
+      treeRoot: {
+        pathKey: tree?.pathKey ?? '/',
+        segment: tree?.segment ?? '/',
+        pages: tree?.current?.pages ?? 0,
+        childCount: tree?.children?.length ?? 0,
+      },
+    }),
+    [crawlSegments?.segments, pathPrefixFilter, tree],
+  );
+
   const primarySections = activeTab === 'overview' ? (['links'] as const) : (['structure'] as const);
   if (shouldBlockViewForSections(primarySections, sectionStatus, data)) {
     return <ViewSectionLoading title={s.title} />;
@@ -381,7 +471,8 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
           )}
 
           {tree ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+              <DevCopyJsonButton data={overviewStatsDevData} />
               <StatCard
                 label={s.stats.urls}
                 value={fmtMetric(rootMetrics?.pages ?? filteredLinks.length)}
@@ -421,7 +512,7 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
             </div>
           ) : null}
           {crawlSegments?.segments?.length ? (
-            <Card className="mt-4" padding="tight">
+            <Card className="mt-4" padding="tight" devData={crawlSegmentsDevData}>
               <h3 className="text-sm font-bold text-foreground mb-1">{s.crawlSegmentsTitle}</h3>
               <p className="text-xs text-muted-foreground mb-3">{s.crawlSegmentsHint}</p>
               {crawlSegments.overall_health != null ? (
@@ -456,7 +547,7 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
             </Card>
           ) : null}
           {topLinksByInlinks.length > 0 ? (
-            <Card className="mt-4" padding="tight">
+            <Card className="mt-4" padding="tight" devData={topInlinksDevData}>
               <h3 className="text-sm font-bold text-foreground mb-3">Top pages by inlinks</h3>
               <ul className="space-y-2 text-xs">
                 {topLinksByInlinks.map((link) => (
@@ -526,15 +617,18 @@ export default function SiteStructure({ searchQuery = '' }: ViewProps) {
               </Button>
             </AlertBanner>
           ) : null}
-          <CrawlMapPanel
-            tree={tree}
-            crawlSegments={crawlSegments}
-            selectedPath={pathPrefixFilter}
-            onSelectPath={(pathKey) => {
-              setPathPrefixFilter(pathKey);
-              setActiveTab('tree');
-            }}
-          />
+          <div className="relative group/dev-card">
+            <DevCopyJsonButton data={mapDevData} />
+            <CrawlMapPanel
+              tree={tree}
+              crawlSegments={crawlSegments}
+              selectedPath={pathPrefixFilter}
+              onSelectPath={(pathKey) => {
+                setPathPrefixFilter(pathKey);
+                setActiveTab('tree');
+              }}
+            />
+          </div>
         </ViewTabPanel>
       ) : null}
 

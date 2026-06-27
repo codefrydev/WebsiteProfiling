@@ -23,7 +23,7 @@ ON CONFLICT (crawl_run_id, url) DO UPDATE SET
 
 
 def _normalize_url(url: str) -> str:
-    return str(url or "").rstrip("/")
+    return str(url or "")
 
 
 def write_page_markdown_batch(

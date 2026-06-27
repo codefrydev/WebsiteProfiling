@@ -18,7 +18,12 @@ def test_contrast_from_axe_violations():
                 "id": "color-contrast",
                 "description": "Elements must have sufficient color contrast",
                 "help": "Fix contrast",
-            }
+            },
+            {
+                "id": "color-contrast",
+                "description": "Second contrast failure",
+                "help": "Fix contrast",
+            },
         ]
     }
     df = pd.DataFrame([
@@ -32,7 +37,7 @@ def test_contrast_from_axe_violations():
         }
     ])
     issues = contrast_issues_from_sources(df, {})
-    assert len(issues) == 1
+    assert len(issues) == 2
     assert "axe" in issues[0]["message"].lower()
     assert issues[0]["url"] == "https://ex.com/page"
 

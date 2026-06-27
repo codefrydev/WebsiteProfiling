@@ -11,6 +11,7 @@ import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, ViewTabs, ViewTabPanel, StatCard, ChartTitleWithHint } from '../components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import type { ViewTabItem } from '../components';
 import { palette } from '../utils/chartPalette';
 import { getGridColor, getChartCanvasTextColor } from '../utils/chartJsDefaults';
@@ -43,11 +44,11 @@ const barValueLabelsPlugin = {
 };
 
 const TECH_CATEGORIES: Record<string, string[]> = {
-  CMS: ['WordPress', 'Drupal', 'Joomla', 'Shopify', 'Squarespace', 'Wix'],
+  CMS: ['WordPress', 'Drupal', 'Joomla', 'Hugo', 'Jekyll', 'Shopify', 'Squarespace', 'Wix'],
   'JS Frameworks': ['React', 'Next.js', 'Vue.js', 'Nuxt.js', 'Angular', 'Svelte', 'Gatsby', 'jQuery'],
   'CSS Frameworks': ['Bootstrap', 'Tailwind CSS'],
-  Analytics: ['Google Analytics', 'Google Tag Manager', 'Facebook Pixel', 'Hotjar'],
-  Infrastructure: ['Cloudflare', 'Nginx', 'Apache', 'LiteSpeed', 'Vercel', 'Netlify', 'Amazon CloudFront', 'AWS'],
+  Analytics: ['Google Analytics', 'Google Tag Manager', 'Facebook Pixel', 'Hotjar', 'Microsoft Clarity'],
+  Infrastructure: ['Cloudflare', 'Nginx', 'Apache', 'LiteSpeed', 'Vercel', 'Netlify', 'GitHub Pages', 'Amazon CloudFront', 'AWS'],
   Fonts: ['Google Fonts', 'Font Awesome'],
 };
 
@@ -98,11 +99,60 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
     },
   ], [vr.tabs, techs.length]);
 
+  const overviewCategoryStatsDevData = useMemo(() => {
+    const categoryCounts: Record<string, number> = {};
+    techs.forEach((t) => {
+      const cat = categorizeTech(t.name || '');
+      categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+    });
+    return {
+      widget: 'techStack.overview.categoryStats',
+      categories: Object.entries(categoryCounts).map(([category, count]) => ({ category, count })),
+      displayedCategories: Object.entries(categoryCounts).slice(0, 4).map(([category, count]) => ({ category, count })),
+    };
+  }, [techs]);
+
+  const detectedChartDevData = useMemo(
+    () => ({
+      widget: 'techStack.overview.detectedChart',
+      searchQuery: q || null,
+      totalPagesAnalyzed: ts.total_pages_analyzed || 0,
+      technologies: techs.map((t) => ({
+        name: t.name,
+        count: t.count ?? 0,
+        category: categorizeTech(t.name || ''),
+      })),
+    }),
+    [q, techs, ts.total_pages_analyzed],
+  );
+
+  const breakdownTableDevData = useMemo(
+    () => ({
+      widget: 'techStack.breakdown.table',
+      searchQuery: q || null,
+      totalInReport: (ts.technologies || []).length,
+      filteredCount: techs.length,
+      rows: techs.map((t) => ({
+        name: t.name,
+        category: categorizeTech(t.name || ''),
+        count: t.count ?? 0,
+        sample_urls: t.sample_urls ?? [],
+      })),
+    }),
+    [q, techs, ts.technologies],
+  );
+
   if (!techReady) {
     return <ViewSectionLoading title={vr.title} />;
   }
 
   const totalAnalyzed = ts.total_pages_analyzed || 0;
+  const emptyMessage =
+    (ts.technologies || []).length > 0
+      ? vr.noSearchMatch
+      : totalAnalyzed > 0
+        ? vr.noTechnologiesDetected
+        : vr.noData;
   const chartLabels = techs.map((t) => t.name);
   const chartValues = techs.map((t) => t.count);
 
@@ -129,7 +179,8 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'overview' && (
         <ViewTabPanel idPrefix="tech-stack" tabId="overview" className="space-y-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="relative group/dev-card grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <DevCopyJsonButton data={overviewCategoryStatsDevData} />
             {Object.entries(categoryCounts).slice(0, 4).map(([cat, count]) => (
               <StatCard
                 key={cat}
@@ -142,7 +193,7 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
             ))}
           </div>
 
-          <Card padding="tight">
+          <Card padding="tight" devData={detectedChartDevData}>
             <ChartTitleWithHint as="h3" title={vr.cardDetected} helpKey="views.techStack.detectedChart" />
             <div style={{ height: Math.max(200, techs.length * 28 + 40) }}>
               {chartLabels.length > 0 ? (
@@ -171,7 +222,7 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
               ) : (ts.technologies || []).length > 0 ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{vr.noSearchMatch}</div>
               ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{vr.noData}</div>
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{emptyMessage}</div>
               )}
             </div>
           </Card>
@@ -181,7 +232,7 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
       {activeTab === 'breakdown' && (
         <ViewTabPanel idPrefix="tech-stack" tabId="breakdown">
           {techs.length > 0 ? (
-            <Card overflowHidden padding="none">
+            <Card overflowHidden padding="none" devData={breakdownTableDevData}>
               <Table>
                 <TableHead>
                   <tr>
@@ -211,7 +262,7 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
             </Card>
           ) : (
             <Card className="p-8 text-center text-muted-foreground text-sm">
-              {(ts.technologies || []).length > 0 ? vr.noSearchMatch : vr.noData}
+              {techs.length === 0 ? emptyMessage : vr.noSearchMatch}
             </Card>
           )}
         </ViewTabPanel>

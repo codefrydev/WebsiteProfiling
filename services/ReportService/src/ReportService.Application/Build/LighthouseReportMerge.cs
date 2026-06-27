@@ -65,18 +65,10 @@ public static class LighthouseReportMerge
             return null;
         }
 
-        var normalized = url.Trim().TrimEnd('/');
+        var normalized = url.Trim();
         if (byUrl.TryGetValue(normalized, out var direct))
         {
             return direct;
-        }
-
-        foreach (var (key, value) in byUrl)
-        {
-            if (key.Trim().TrimEnd('/') == normalized)
-            {
-                return value;
-            }
         }
 
         return null;

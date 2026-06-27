@@ -102,7 +102,7 @@ public static partial class CrawlSegmentsBuilder
         }
 
         var prefix = pattern;
-        return path == prefix || path.StartsWith(prefix.TrimEnd('/') + "/", StringComparison.Ordinal);
+        return path == prefix || path.StartsWith(prefix.EndsWith('/') ? prefix : prefix + "/", StringComparison.Ordinal);
     }
 
     internal static int SegmentHealth(IReadOnlyList<CrawlRow> segmentRows)

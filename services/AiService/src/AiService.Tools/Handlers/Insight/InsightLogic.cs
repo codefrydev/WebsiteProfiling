@@ -412,10 +412,10 @@ public static class InsightLogic
             return direct;
         }
 
-        var norm = url.TrimEnd('/');
+        var norm = url.Trim();
         foreach (var (key, val) in map)
         {
-            if (key.TrimEnd('/') == norm && val is JsonObject lh)
+            if (key.Trim() == norm && val is JsonObject lh)
             {
                 return lh;
             }

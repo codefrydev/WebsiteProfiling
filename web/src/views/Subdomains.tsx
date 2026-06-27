@@ -21,6 +21,7 @@ import {
   TableRow,
   TableCell,
 } from '../components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { metricHelpHint } from '@/lib/metricHelp';
 import type { SubdomainHostEntry, ViewProps } from '@/types';
 
@@ -53,6 +54,51 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
   const gscGapHosts = inv?.gsc_hosts_not_crawled || [];
   const outOfScope = inv?.out_of_scope_discovered || [];
 
+  const statsDevData = useMemo(
+    () => ({
+      widget: 'subdomains.stats',
+      apex: inv?.apex ?? null,
+      inScopeHostCount: inScopeHosts.length,
+      gscNotCrawledCount: gscGapHosts.length,
+      outOfScopeCount: outOfScope.length,
+    }),
+    [gscGapHosts.length, inScopeHosts.length, inv?.apex, outOfScope.length],
+  );
+
+  const ctWarningDevData = useMemo(
+    () => ({
+      widget: 'subdomains.ctWarning',
+      crtshError: inv?.crtsh_error ?? null,
+    }),
+    [inv?.crtsh_error],
+  );
+
+  const gscGapDevData = useMemo(
+    () => ({
+      widget: 'subdomains.gscGap',
+      hosts: gscGapHosts,
+    }),
+    [gscGapHosts],
+  );
+
+  const hostsTableDevData = useMemo(
+    () => ({
+      widget: 'subdomains.hosts.table',
+      searchQuery: q || null,
+      rowCount: inScopeHosts.length,
+      rows: inScopeHosts,
+    }),
+    [inScopeHosts, q],
+  );
+
+  const outOfScopeDevData = useMemo(
+    () => ({
+      widget: 'subdomains.outOfScope',
+      hosts: outOfScope,
+    }),
+    [outOfScope],
+  );
+
   if (!techReady) {
     return <ViewSectionLoading title={vs.title} />;
   }
@@ -83,18 +129,20 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
     <PageLayout>
       <PageHeader title={vs.title} subtitle={vs.subtitle} icon={<Globe2 className="h-7 w-7 text-link shrink-0" />} />
       {inv.crtsh_error ? (
-        <Card className="mb-4 border-amber-500/30 bg-amber-500/5">
+        <Card className="mb-4 border-amber-500/30 bg-amber-500/5 relative group/dev-card">
+          <DevCopyJsonButton data={ctWarningDevData} />
           <p className="text-sm text-muted-foreground">{vs.ctWarning}</p>
         </Card>
       ) : null}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <DevCopyJsonButton data={statsDevData} />
         <StatCard label={vs.apex} value={inv.apex || '—'} hint={metricHelpHint('views.subdomains.apex')} />
         <StatCard label={vs.inScopeHosts} value={inScopeHosts.length} hint={metricHelpHint('views.subdomains.inScopeHosts')} />
         <StatCard label={vs.gscNotCrawled} value={gscGapHosts.length} hint={metricHelpHint('views.subdomains.gscNotCrawled')} />
         <StatCard label={vs.outOfScope} value={outOfScope.length} hint={metricHelpHint('views.subdomains.outOfScope')} />
       </div>
       {gscGapHosts.length > 0 ? (
-        <Card className="mb-6">
+        <Card className="mb-6 relative group/dev-card" devData={gscGapDevData}>
           <h3 className="text-sm font-semibold text-foreground mb-2">{vs.gscGapTitle}</h3>
           <p className="text-sm text-muted-foreground mb-3">{vs.gscGapHint}</p>
           <ul className="flex flex-wrap gap-2">
@@ -114,7 +162,7 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
           </p>
         </Card>
       ) : null}
-      <Card>
+      <Card devData={hostsTableDevData}>
         <h3 className="text-sm font-semibold text-foreground mb-4">{vs.hostsTitle}</h3>
         <div className="overflow-x-auto">
           <Table>
@@ -161,7 +209,7 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
         </div>
       </Card>
       {outOfScope.length > 0 ? (
-        <Card className="mt-6">
+        <Card className="mt-6 relative group/dev-card" devData={outOfScopeDevData}>
           <h3 className="text-sm font-semibold text-foreground mb-2">{vs.outOfScopeTitle}</h3>
           <p className="text-sm text-muted-foreground mb-3">{vs.outOfScopeHint}</p>
           <ul className="text-sm font-mono text-xs space-y-1 max-h-40 overflow-y-auto">

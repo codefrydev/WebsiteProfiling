@@ -203,7 +203,7 @@ def amp_audit_issues(df: pd.DataFrame) -> list[dict]:
                 priority="Medium",
                 recommendation="Add canonical link pointing to the preferred non-AMP URL.",
             ))
-        elif amphtml and canon and amphtml.rstrip("/") != canon.rstrip("/") and is_amp:
+        elif amphtml and canon and amphtml != canon and is_amp:
             issues.append(_issue(
                 "AMP page canonical does not match linked amphtml href.",
                 url=url,
@@ -227,7 +227,7 @@ def wayback_issues(df: pd.DataFrame, *, max_lookups: int = 15) -> list[dict]:
         url = str(row.get("url") or "").strip()
         if not url:
             continue
-        cache_key = url.rstrip("/")
+        cache_key = url
         with _WAYBACK_LOCK:
             cached = _WAYBACK_CACHE.get(cache_key, None)
         if cached is not None:

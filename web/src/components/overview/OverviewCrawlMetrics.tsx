@@ -1,5 +1,5 @@
 
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -18,6 +18,7 @@ import { strings, format } from '@/lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { crawledUrlCount } from '@/lib/crawlCounts';
 import { Card, StatCard } from '@/components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import CountUp from '@/components/CountUp';
 import {
   bandClassName,
@@ -45,16 +46,19 @@ function MetricSection({
   hint,
   viewAllHref,
   viewAllLabel,
+  devData,
   children,
 }: {
   title: string;
   hint: string;
   viewAllHref?: string;
   viewAllLabel?: string;
+  devData?: unknown;
   children: ReactNode;
 }) {
   return (
-    <div>
+    <div className={devData != null ? 'relative group/dev-card' : undefined}>
+      {devData != null ? <DevCopyJsonButton data={devData} /> : null}
       <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h3 className="text-sm font-bold text-bright">{title}</h3>
@@ -118,9 +122,125 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
     formatSlowResponse: (ms) => format(vo.crawlConcernSlowResponse, { ms }),
   });
 
+  const crawlSnapshotHeaderDevData = useMemo(
+    () => ({
+      widget: 'overview.crawlMetrics.header',
+      title: vo.crawlSnapshotTitle,
+      subtitle: vo.crawlSnapshotSubtitle,
+      concerns,
+      chartsHref,
+      summaryMetrics: {
+        totalUrls: crawledCount,
+        successRate,
+        brokenCount,
+        missingH1: h1Zero,
+        responseP50Ms: p50,
+      },
+    }),
+    [
+      brokenCount,
+      chartsHref,
+      concerns,
+      crawledCount,
+      h1Zero,
+      p50,
+      successRate,
+      vo.crawlSnapshotSubtitle,
+      vo.crawlSnapshotTitle,
+    ],
+  );
+
+  const crawlHealthDevData = useMemo(
+    () => ({
+      widget: 'overview.crawlMetrics.crawlHealth',
+      title: vo.crawlHealthSection,
+      hint: vo.crawlHealthSectionHint,
+      metrics: {
+        totalUrls: crawledCount,
+        successRate,
+        successBand,
+        brokenCount,
+        count4xx: s.count_4xx ?? 0,
+        count5xx: s.count_5xx ?? 0,
+        missingH1: h1Zero,
+        h1Pct,
+      },
+      links: { linksHref, contentHref },
+      raw: {
+        summary: s,
+        seo_health: data.seo_health,
+      },
+    }),
+    [
+      contentHref,
+      crawledCount,
+      data.seo_health,
+      h1Zero,
+      h1Pct,
+      linksHref,
+      brokenCount,
+      s,
+      successBand,
+      successRate,
+      vo.crawlHealthSection,
+      vo.crawlHealthSectionHint,
+    ],
+  );
+
+  const crawlContentDevData = useMemo(
+    () => ({
+      widget: 'overview.crawlMetrics.content',
+      title: vo.crawlContentSection,
+      hint: vo.crawlContentSectionHint,
+      metrics: {
+        medianWords,
+        wordsBand,
+        ogCoveragePct: ogPct,
+        ogBand,
+        technologyCount: techCount,
+        responseP50Ms: p50,
+        responseP95Ms: p95,
+        responseBand,
+      },
+      links: {
+        contentAnalyticsHref,
+        contentHref,
+        techHref,
+        networkHref,
+      },
+      raw: {
+        content_analytics: data.content_analytics,
+        social_coverage: data.social_coverage,
+        tech_stack_summary: data.tech_stack_summary,
+        response_time_stats: data.response_time_stats,
+      },
+    }),
+    [
+      contentAnalyticsHref,
+      contentHref,
+      data.content_analytics,
+      data.response_time_stats,
+      data.social_coverage,
+      data.tech_stack_summary,
+      medianWords,
+      networkHref,
+      ogBand,
+      ogPct,
+      p50,
+      p95,
+      responseBand,
+      techCount,
+      techHref,
+      vo.crawlContentSection,
+      vo.crawlContentSectionHint,
+      wordsBand,
+    ],
+  );
+
   return (
     <Card shadow className="mb-8 overflow-hidden border border-default">
-      <div className="border-b border-muted/60 p-4 sm:p-5">
+      <div className="relative group/dev-card border-b border-muted/60 p-4 sm:p-5">
+        <DevCopyJsonButton data={crawlSnapshotHeaderDevData} />
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h2 className="text-lg font-bold text-bright">{vo.crawlSnapshotTitle}</h2>
@@ -158,7 +278,13 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
       </div>
 
       <div className="space-y-6 p-4 sm:p-5">
-        <MetricSection title={vo.crawlHealthSection} hint={vo.crawlHealthSectionHint} viewAllHref={linksHref} viewAllLabel={vo.crawlOpenLinks}>
+        <MetricSection
+          title={vo.crawlHealthSection}
+          hint={vo.crawlHealthSectionHint}
+          viewAllHref={linksHref}
+          viewAllLabel={vo.crawlOpenLinks}
+          devData={crawlHealthDevData}
+        >
           <StatCard
             shadow
             href={linksHref}
@@ -225,6 +351,7 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
           hint={vo.crawlContentSectionHint}
           viewAllHref={contentAnalyticsHref}
           viewAllLabel={vo.crawlOpenContentAnalytics}
+          devData={crawlContentDevData}
         >
           <StatCard
             shadow

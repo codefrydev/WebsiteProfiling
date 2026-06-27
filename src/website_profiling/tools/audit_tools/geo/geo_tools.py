@@ -547,9 +547,9 @@ def get_aeo_content_signals_for_url(conn: Connection, ctx: AuditToolContext, arg
     df = scoped.load_crawl_df(conn)
     if df is None or df.empty:
         return {"error": "no crawl data", "url": url}
-    needle = url.rstrip("/").lower()
+    needle = url.lower()
     for _, row in df.iterrows():
-        if str(row.get("url") or "").rstrip("/").lower() != needle:
+        if str(row.get("url") or "").lower() != needle:
             continue
         rec = row.to_dict()
         excerpt = str(rec.get("content_excerpt") or "")
@@ -630,7 +630,7 @@ def get_js_rendering_delta(conn: Connection, ctx: AuditToolContext, args: dict[s
         return {"deltas": [], "total": 0, "note": "fetch_method not in crawl — use javascript or auto render mode"}
     by_url: dict[str, dict[str, dict[str, Any]]] = {}
     for _, row in df.iterrows():
-        url = str(row.get("url") or "").rstrip("/").lower()
+        url = str(row.get("url") or "").lower()
         method = str(row.get("fetch_method") or "static").lower()
         if not url:
             continue
@@ -701,7 +701,7 @@ def get_internal_link_suggestions(conn: Connection, ctx: AuditToolContext, args:
         docs.append({"url": url, "tokens": tokens, "title": str(rec.get("title") or "")})
     if len(docs) < 2:
         return {"url": source_url, "suggestions": [], "note": "insufficient crawl pages"}
-    source_doc = next((d for d in docs if d["url"].rstrip("/").lower() == source_url.rstrip("/").lower()), None)
+    source_doc = next((d for d in docs if d["url"].lower() == source_url.lower()), None)
     if not source_doc:
         return {"error": "source url not in crawl", "url": source_url}
     df_counts = len(docs)
@@ -717,7 +717,7 @@ def get_internal_link_suggestions(conn: Connection, ctx: AuditToolContext, args:
     source_norm = math.sqrt(sum(v * v for v in source_vec.values())) or 1
     scored: list[dict[str, Any]] = []
     for d in docs:
-        if d["url"].rstrip("/").lower() == source_url.rstrip("/").lower():
+        if d["url"].lower() == source_url.lower():
             continue
         target_tf = Counter(d["tokens"])
         target_vec = {t: (target_tf[t] / len(d["tokens"])) * idf.get(t, 1) for t in target_tf}

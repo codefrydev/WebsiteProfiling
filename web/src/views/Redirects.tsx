@@ -64,6 +64,34 @@ export default function Redirects({ searchQuery = '' }: ViewProps) {
     };
   }, [statusLabels]);
 
+  const statusChartDevData = useMemo(
+    () => ({
+      widget: 'redirects.statusChart',
+      title: vr.chartTitle,
+      hint: vr.chartHint,
+      labels: statusLabels,
+      values: statusValues,
+      total: statusValues.reduce((sum, n) => sum + n, 0),
+      searchQuery: q || null,
+    }),
+    [q, statusLabels, statusValues, vr.chartHint, vr.chartTitle],
+  );
+
+  const tableDevData = useMemo(
+    () => ({
+      widget: 'redirects.table',
+      searchQuery: q || null,
+      totalInReport: (data?.redirects || []).length,
+      filteredCount: redirects.length,
+      rows: redirects.map((r) => ({
+        from: r.url || r.from || '',
+        status: r.status ?? null,
+        to: r.final_url || r.to || '',
+      })),
+    }),
+    [data?.redirects, q, redirects],
+  );
+
   if (!issuesReady) {
     return <ViewSectionLoading title={vr.title} />;
   }
@@ -72,7 +100,7 @@ export default function Redirects({ searchQuery = '' }: ViewProps) {
     <PageLayout className="space-y-6">
       <PageHeader title={vr.title} subtitle={vr.subtitle} />
       {redirects.length > 0 && statusLabels.length > 0 && (
-        <Card padding="tight" shadow overflowHidden className="min-w-0 max-w-full">
+        <Card padding="tight" shadow overflowHidden className="min-w-0 max-w-full" devData={statusChartDevData}>
           <h2 className="text-sm font-bold text-foreground mb-1">{vr.chartTitle}</h2>
           <p className="text-xs text-muted-foreground mb-3">{vr.chartHint}</p>
           <div className="relative h-48 min-w-0 w-full max-w-xl overflow-hidden">
@@ -86,7 +114,7 @@ export default function Redirects({ searchQuery = '' }: ViewProps) {
           </div>
         </Card>
       )}
-      <Card overflowHidden padding="none">
+      <Card overflowHidden padding="none" devData={tableDevData}>
         {redirects.length > 0 ? (
           <Table>
             <TableHead>

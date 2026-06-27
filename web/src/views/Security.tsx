@@ -9,6 +9,7 @@ import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Badge, ViewTabs, ViewTabPanel, Button, StatCard, ChartTitleWithHint } from '../components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import type { ViewTabItem } from '../components';
@@ -221,6 +222,73 @@ export default function Security({ searchQuery = '' }: ViewProps) {
     ];
   }, [vs.tabs, allFindings.length, typeLabels.length]);
 
+  const severityChartDevData = useMemo(
+    () => ({
+      widget: 'security.charts.bySeverity',
+      title: vs.findingsBySeverity,
+      labels: severityChart.labels,
+      values: severityChart.values,
+      colors: severityChart.colors,
+      total: allFindings.length,
+    }),
+    [allFindings.length, severityChart, vs.findingsBySeverity],
+  );
+
+  const typeChartDevData = useMemo(
+    () => ({
+      widget: 'security.charts.byType',
+      title: vs.findingsByType,
+      labels: typeLabels,
+      values: typeValues,
+      total: allFindings.length,
+    }),
+    [allFindings.length, typeLabels, typeValues, vs.findingsByType],
+  );
+
+  const severityStatsDevData = useMemo(
+    () => ({
+      widget: 'security.findings.severityStats',
+      severityFilter,
+      counts: SEVERITY_ORDER.map((s) => ({
+        severity: s,
+        count: allFindings.filter((f) => (f.severity || 'Info') === s).length,
+      })),
+      total: allFindings.length,
+    }),
+    [allFindings, severityFilter],
+  );
+
+  const findingsListDevData = useMemo(
+    () => ({
+      widget: 'security.findings.list',
+      severityFilter,
+      searchQuery: q || null,
+      page: safeFindingsPage,
+      totalPages: findingsTotalPages,
+      from: findingsFrom,
+      to: findingsTo,
+      total: filteredFindingsTotal,
+      findings: visibleFindings.map((f) => ({
+        finding_type: f.finding_type,
+        finding_type_label: securityFindingLabel(f.finding_type),
+        severity: f.severity ?? 'Info',
+        url: f.url ?? null,
+        message: f.message ?? null,
+        recommendation: f.recommendation ?? null,
+      })),
+    }),
+    [
+      filteredFindingsTotal,
+      findingsFrom,
+      findingsTo,
+      findingsTotalPages,
+      q,
+      safeFindingsPage,
+      severityFilter,
+      visibleFindings,
+    ],
+  );
+
   if (!securityReady) {
     return <ViewSectionLoading title={vs.title} />;
   }
@@ -253,7 +321,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
       {activeTab === 'charts' && allFindings.length > 0 && (
         <ViewTabPanel idPrefix="security" tabId="charts" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-w-0">
-            <Card padding="tight" shadow overflowHidden className="min-w-0">
+            <Card padding="tight" shadow overflowHidden className="min-w-0" devData={severityChartDevData}>
               <ChartTitleWithHint as="h2" title={vs.findingsBySeverity} helpKey="views.security.findingsBySeverityChart" />
               <div className="h-56 flex items-center justify-center min-w-0 overflow-hidden">
                 <div className="w-full max-w-[260px] h-48">
@@ -277,7 +345,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
               </div>
             </Card>
             {typeLabels.length > 0 && (
-              <Card padding="tight" shadow overflowHidden className="min-w-0">
+              <Card padding="tight" shadow overflowHidden className="min-w-0" devData={typeChartDevData}>
                 <ChartTitleWithHint as="h2" title={vs.findingsByType} helpKey="views.security.findingsByTypeChart" />
                 <div className="relative h-56 min-w-0 w-full overflow-hidden">
                   <Bar
@@ -302,7 +370,8 @@ export default function Security({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'findings' && (
         <ViewTabPanel idPrefix="security" tabId="findings" className="space-y-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <DevCopyJsonButton data={severityStatsDevData} />
             {SEVERITY_ORDER.map((sev) => {
               const cfg = SEVERITY_CONFIG[sev];
               const Icon = cfg.icon;
@@ -364,7 +433,8 @@ export default function Security({ searchQuery = '' }: ViewProps) {
               </div>
             </Card>
           ) : (
-            <div className="space-y-4">
+            <div className="relative group/dev-card space-y-4">
+              <DevCopyJsonButton data={findingsListDevData} />
               <div className="space-y-3">
                 {visibleFindings.map((f, i) => {
                   const sev = (f.severity || 'Info') as SeverityKey;

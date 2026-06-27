@@ -69,7 +69,7 @@ public static class SearchPerformanceCategoryBuilder
 
         if (impressions >= MinImpressionsForCtr && position > 0)
         {
-            var expected = ExpectedCtr(position);
+            var expected = CtrCurve.IndustryCtrPercent(position);
             if (ctr < expected * 0.6)
             {
                 issues.Add(new CategoryIssue(
@@ -78,6 +78,26 @@ public static class SearchPerformanceCategoryBuilder
                     Recommendation: "Improve titles and meta descriptions, and add structured data for richer SERP snippets."));
                 deductions.Add((10, true));
             }
+        }
+
+        const double HighOpportunityMinImpressions = 50;
+        var highOpportunity = topQueries
+            .Where(q =>
+            {
+                var pos = ToDouble(q.GetValueOrDefault("position"));
+                var impr = ToDouble(q.GetValueOrDefault("impressions"));
+                return pos > 3 && pos <= 10 && impr >= HighOpportunityMinImpressions;
+            })
+            .ToList();
+        if (highOpportunity.Count > 0)
+        {
+            var sample = string.Join(", ", highOpportunity.Take(3).Select(q => q.GetValueOrDefault("query")?.ToString()).Where(s => !string.IsNullOrEmpty(s)));
+            var more = highOpportunity.Count > 3 ? $" (+{highOpportunity.Count - 3} more)" : "";
+            issues.Add(new CategoryIssue(
+                $"{highOpportunity.Count} quer(y/ies) rank on page 1 (positions 4–10): {sample}{more}.",
+                Priority: "Medium",
+                Recommendation: "Optimize titles, content, and internal links to push these queries into the top 3."));
+            deductions.Add((Math.Min(8, highOpportunity.Count), true));
         }
 
         var striking = topQueries
@@ -156,36 +176,6 @@ public static class SearchPerformanceCategoryBuilder
             score,
             CategoryHelpers.SortIssues(issues),
             recommendations);
-    }
-
-    private static double ExpectedCtr(double position)
-    {
-        if (position <= 1.5)
-        {
-            return 28.0;
-        }
-
-        if (position <= 2.5)
-        {
-            return 15.0;
-        }
-
-        if (position <= 3.5)
-        {
-            return 11.0;
-        }
-
-        if (position <= 5.0)
-        {
-            return 7.0;
-        }
-
-        if (position <= 10.0)
-        {
-            return 3.0;
-        }
-
-        return 1.0;
     }
 
     private static double ToDouble(object? value) =>

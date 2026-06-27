@@ -139,12 +139,12 @@ def get_inlink_anchors(conn: Connection, ctx: AuditToolContext, args: dict[str, 
     if not payload:
         return {"error": "no report found", "rows": [], "total": 0, "truncated": False}
     limit = parse_limit(args.get("limit"), 50, 200)
-    target = str(args.get("url") or args.get("target_url") or "").strip().rstrip("/").lower()
+    target = str(args.get("url") or args.get("target_url") or "").strip().lower()
     rows = payload.get("inlink_anchor_matrix") or []
     if not isinstance(rows, list):
         rows = []
     if target:
-        rows = [r for r in rows if str(r.get("target_url") or "").lower().rstrip("/") == target]
+        rows = [r for r in rows if str(r.get("target_url") or "").lower() == target]
     sliced = cap_list(rows, limit, max_cap=200)
     return {"rows": sliced["items"], "total": sliced["total"], "truncated": sliced["truncated"]}
 

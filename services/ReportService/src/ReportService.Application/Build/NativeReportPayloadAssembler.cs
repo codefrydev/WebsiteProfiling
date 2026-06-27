@@ -68,8 +68,14 @@ public static class NativeReportPayloadAssembler
         }
 
         payload["security_findings"] = slice.SecurityFindings ?? [];
-        payload["keyword_opportunities"] = new Dictionary<string, object?>();
-        payload["semantic_keyword_clusters"] = Array.Empty<object>();
+        payload["keyword_opportunities"] = slice.KeywordOpportunities
+            ?? new Dictionary<string, object?>
+            {
+                ["quick_wins"] = Array.Empty<object>(),
+                ["high_value"] = Array.Empty<object>(),
+                ["token_topic_clusters"] = Array.Empty<object>(),
+            };
+        payload["semantic_keyword_clusters"] = slice.SemanticKeywordClusters ?? [];
         payload["image_inventory"] = slice.ImageInventory ?? [];
         payload["image_inventory_summary"] = slice.ImageInventorySummary
             ?? new Dictionary<string, object?>
@@ -81,13 +87,21 @@ public static class NativeReportPayloadAssembler
                 ["unoptimized_min_kb"] = 200,
                 ["inventory_available"] = false,
             };
-        payload["optional_audit_urls"] = new Dictionary<string, object?>
+        payload["optional_audit_urls"] = slice.OptionalAuditUrls
+            ?? new Dictionary<string, object?>
+            {
+                ["spell"] = Array.Empty<object>(),
+                ["html"] = Array.Empty<object>(),
+                ["amp"] = Array.Empty<object>(),
+                ["pagination"] = Array.Empty<object>(),
+            };
+        if (slice.OptionalAuditMeta is not null)
         {
-            ["spell"] = Array.Empty<object>(),
-            ["html"] = Array.Empty<object>(),
-            ["amp"] = Array.Empty<object>(),
-            ["pagination"] = Array.Empty<object>(),
-        };
+            foreach (var (key, value) in slice.OptionalAuditMeta)
+            {
+                payload[key] = value;
+            }
+        }
         payload["lighthouse_failure_urls"] = slice.LighthouseFailureUrls
             ?? new Dictionary<string, object?>
             {
@@ -113,6 +127,11 @@ public static class NativeReportPayloadAssembler
             payload["lighthouse_summary"] = slice.LighthouseSummary;
             payload["lighthouse_diagnostics"] = LighthouseJsonHelper.ExtractList(slice.LighthouseSummary, "diagnostics");
             payload["lighthouse_human_summary"] = LighthouseJsonHelper.ExtractHumanSummary(slice.LighthouseSummary);
+        }
+
+        if (slice.CruxSummary is not null)
+        {
+            payload["crux_summary"] = slice.CruxSummary;
         }
 
         MergeAnalysisIntoPayload(payload, mlBundle);
@@ -156,12 +175,20 @@ public static class NativeReportPayloadAssembler
         siteLevel ??= new Dictionary<string, object?>();
         mlBundle ??= new Dictionary<string, object?>();
 
+        var (categoryScores, siteHealthScore) = SiteHealthScoreBuilder.ComputeWithCategoryScores(slice.Categories);
+        var summary = new Dictionary<string, object?>(slice.Summary)
+        {
+            ["site_health_score"] = siteHealthScore,
+            ["category_scores"] = categoryScores,
+        };
+
         var payload = new Dictionary<string, object?>
         {
             ["site_name"] = siteName ?? "",
             ["report_title"] = reportTitle ?? "",
             ["report_generated_at"] = DateTimeOffset.UtcNow.ToString("O"),
-            ["summary"] = slice.Summary,
+            ["summary"] = summary,
+            ["site_health_score"] = siteHealthScore,
             ["seo_health"] = slice.SeoHealth,
             ["issues"] = slice.Issues,
             ["recommendations"] = slice.Recommendations,
@@ -246,7 +273,6 @@ public static class NativeReportPayloadAssembler
         foreach (var rec in links)
         {
             var url = rec.GetValueOrDefault("url")?.ToString()?.Trim() ?? "";
-            var urlKey = url.TrimEnd('/');
 
             rec.Remove("duplicate_group_id");
             rec.Remove("similar_internal");
@@ -255,27 +281,27 @@ public static class NativeReportPayloadAssembler
             rec.Remove("ml_anomaly");
             rec.Remove("keyphrases");
 
-            if (dupGid.TryGetValue(urlKey, out var gid) || dupGid.TryGetValue(url, out gid))
+            if (dupGid.TryGetValue(url, out var gid))
             {
                 rec["duplicate_group_id"] = LinksListBuilder.UnwrapJsonValue(gid);
             }
 
-            if (simMap.TryGetValue(urlKey, out var similar) || simMap.TryGetValue(url, out similar))
+            if (simMap.TryGetValue(url, out var similar))
             {
                 rec["similar_internal"] = similar;
             }
 
-            if (langMap.TryGetValue(urlKey, out var lang) || langMap.TryGetValue(url, out lang))
+            if (langMap.TryGetValue(url, out var lang))
             {
                 rec["detected_language"] = lang;
             }
 
-            if (nlpMap.TryGetValue(urlKey, out var nlp) || nlpMap.TryGetValue(url, out nlp))
+            if (nlpMap.TryGetValue(url, out var nlp))
             {
                 rec["nlp_entities"] = nlp;
             }
 
-            if (kpMap.TryGetValue(urlKey, out var kp) || kpMap.TryGetValue(url, out kp))
+            if (kpMap.TryGetValue(url, out var kp))
             {
                 rec["keyphrases"] = kp;
             }
@@ -293,12 +319,12 @@ public static class NativeReportPayloadAssembler
                     }
                 }
 
-                if (langMap.TryGetValue(urlKey, out lang) || langMap.TryGetValue(url, out lang))
+                if (langMap.TryGetValue(url, out lang))
                 {
                     EnsureSignals(pageAnalysis)["language"] = lang;
                 }
 
-                if (nlpMap.TryGetValue(urlKey, out nlp) || nlpMap.TryGetValue(url, out nlp))
+                if (nlpMap.TryGetValue(url, out nlp))
                 {
                     EnsureSignals(pageAnalysis)["nlp_entities"] = nlp;
                 }

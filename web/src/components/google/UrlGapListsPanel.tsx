@@ -6,6 +6,7 @@ import { buildLinksInspectHref } from '../../lib/reportNav';
 import { filterBySearch, exportCsv } from './tableUtils';
 import GoogleTableToolbar from './GoogleTableToolbar';
 import SortablePaginatedTable from './SortablePaginatedTable';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import type { TableColumn, UrlGapRow, UrlJoinData } from '@/types/components';
 
 interface UrlGapSegment {
@@ -21,6 +22,7 @@ interface UrlGapListsPanelProps {
   showGsc?: boolean;
   showGa4?: boolean;
   showCrawl?: boolean;
+  devData?: unknown;
 }
 
 /**
@@ -32,6 +34,7 @@ export default function UrlGapListsPanel({
   showGsc = true,
   showGa4 = true,
   showCrawl = true,
+  devData,
 }: UrlGapListsPanelProps) {
   const sp = strings.views.searchPerformance;
   const cg = strings.components.urlGapLists;
@@ -156,7 +159,8 @@ export default function UrlGapListsPanel({
   if (!segments.length) return null;
 
   return (
-    <div>
+    <div className={devData != null ? 'relative group/dev-card' : undefined}>
+      {devData != null ? <DevCopyJsonButton data={devData} /> : null}
       <div className="flex gap-2 mb-4 flex-wrap">
         {segments.map((seg) => (
           <button

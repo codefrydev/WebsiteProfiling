@@ -16,7 +16,7 @@ def _metrics_by_url(google_data: dict[str, Any] | None) -> tuple[dict[str, dict]
         for row in (gsc.get("top_pages") or []):
             if not isinstance(row, dict):
                 continue
-            url = str(row.get("page") or "").strip().lower().rstrip("/")
+            url = str(row.get("page") or "").strip().lower()
             if not url:
                 continue
             clicks[url] = {
@@ -57,15 +57,14 @@ def enrich_categories_with_traffic_impact(
         for issue in cat.get("issues") or []:
             if not isinstance(issue, dict):
                 continue
-            url = str(issue.get("url") or "").strip().lower().rstrip("/")
+            url = str(issue.get("url") or "").strip().lower()
             gsc = clicks_by_url.get(url, {})
             ga4_sess = 0.0
             if url:
                 for path_key, ga in sessions_by_path.items():
-                    key = path_key.rstrip("/")
-                    # Skip the homepage "/" key (rstrip -> ""), which would make
-                    # url.endswith("") match every issue. Match GA4 paths as URL suffixes.
-                    if not key:
+                    key = path_key
+                    # Skip the homepage "/" key, which would make url.endswith("/") match every issue.
+                    if key in ("/", ""):
                         continue
                     if url.endswith(key):
                         ga4_sess = max(ga4_sess, float(ga.get("ga4_sessions") or 0))

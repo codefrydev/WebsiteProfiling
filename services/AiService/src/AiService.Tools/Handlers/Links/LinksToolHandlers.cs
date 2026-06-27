@@ -201,7 +201,7 @@ public static class LinksToolHandlers
         CancellationToken cancellationToken)
     {
         var target = (JsonCoercion.AsString(args["url"]) ?? JsonCoercion.AsString(args["target_url"]) ?? "")
-            .Trim().TrimEnd('/').ToLowerInvariant();
+            .Trim().ToLowerInvariant();
         return await PayloadArrayHelpers.CapPayloadArrayAsync(
             db,
             ctx,
@@ -219,7 +219,7 @@ public static class LinksToolHandlers
                 }
 
                 return node is JsonObject row
-                    && (JsonCoercion.AsString(row["target_url"]) ?? "").TrimEnd('/').ToLowerInvariant() == target;
+                    && (JsonCoercion.AsString(row["target_url"]) ?? "").Trim().ToLowerInvariant() == target;
             });
     }
 

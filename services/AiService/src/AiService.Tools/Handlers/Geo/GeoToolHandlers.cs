@@ -306,10 +306,10 @@ public static class GeoToolHandlers
             return new JsonObject { ["error"] = "no crawl data", ["url"] = url };
         }
 
-        var needle = url.TrimEnd('/').ToLowerInvariant();
+        var needle = url.ToLowerInvariant();
         foreach (var row in rows)
         {
-            var rowUrl = (JsonCoercion.AsString(row["url"]) ?? "").TrimEnd('/').ToLowerInvariant();
+            var rowUrl = (JsonCoercion.AsString(row["url"]) ?? "").Trim().ToLowerInvariant();
             if (rowUrl != needle)
             {
                 continue;
@@ -444,7 +444,7 @@ public static class GeoToolHandlers
         var byUrl = new Dictionary<string, Dictionary<string, JsonObject>>(StringComparer.OrdinalIgnoreCase);
         foreach (var row in rows)
         {
-            var url = (JsonCoercion.AsString(row["url"]) ?? "").TrimEnd('/').ToLowerInvariant();
+            var url = (JsonCoercion.AsString(row["url"]) ?? "").Trim().ToLowerInvariant();
             if (url.Length == 0)
             {
                 continue;
@@ -555,7 +555,7 @@ public static class GeoToolHandlers
         }
 
         var sourceDoc = docs.FirstOrDefault(d =>
-            d.Url.TrimEnd('/').Equals(sourceUrl.TrimEnd('/'), StringComparison.OrdinalIgnoreCase));
+            d.Url.Equals(sourceUrl, StringComparison.OrdinalIgnoreCase));
         if (string.IsNullOrEmpty(sourceDoc.Url))
         {
             return new JsonObject { ["error"] = "source url not in crawl", ["url"] = sourceUrl };
@@ -590,7 +590,7 @@ public static class GeoToolHandlers
         var scored = new List<JsonObject>();
         foreach (var doc in docs)
         {
-            if (doc.Url.TrimEnd('/').Equals(sourceUrl.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+            if (doc.Url.Equals(sourceUrl, StringComparison.OrdinalIgnoreCase))
             {
                 continue;
             }

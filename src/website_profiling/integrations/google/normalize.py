@@ -9,11 +9,11 @@ from ...common import strip_www_prefix
 
 
 def normalize_url(url: str) -> str:
-    """Strip scheme, www., trailing slash, lowercase -- for join key."""
+    """Strip scheme, www., lowercase -- for join key."""
     url = url.strip()
     parsed = urlparse(url)
     host = strip_www_prefix(parsed.netloc.lower())
-    path = parsed.path.rstrip("/") or "/"
+    path = parsed.path or "/"
     return f"{host}{path}"
 
 

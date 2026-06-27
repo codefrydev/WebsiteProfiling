@@ -27,7 +27,7 @@ internal static class MlBundleMaps
                     continue;
                 }
 
-                result[prop.Name.Trim().TrimEnd('/')] = ParseJsonArray(prop.Value);
+                result[prop.Name.Trim()] = ParseJsonArray(prop.Value);
             }
 
             return result;
@@ -37,7 +37,7 @@ internal static class MlBundleMaps
         {
             foreach (var (url, list) in typedMap)
             {
-                result[url.Trim().TrimEnd('/')] = list;
+                result[url.Trim()] = list;
             }
         }
 
@@ -77,7 +77,7 @@ internal static class MlBundleMaps
         {
             foreach (var prop in el.EnumerateObject())
             {
-                result[prop.Name.Trim().TrimEnd('/')] = mapValue(prop.Value);
+                result[prop.Name.Trim()] = mapValue(prop.Value);
             }
 
             return result;
@@ -87,7 +87,7 @@ internal static class MlBundleMaps
         {
             foreach (var (url, value) in stringMap)
             {
-                result[url.Trim().TrimEnd('/')] = mapValueFromObject(value);
+                result[url.Trim()] = mapValueFromObject(value);
             }
 
             return result;
@@ -97,7 +97,7 @@ internal static class MlBundleMaps
         {
             foreach (var (url, value) in objectMap)
             {
-                result[url.Trim().TrimEnd('/')] = mapValueFromObject(value);
+                result[url.Trim()] = mapValueFromObject(value);
             }
         }
 

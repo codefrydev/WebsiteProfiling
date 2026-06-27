@@ -50,6 +50,7 @@ import {
   SectionHeader,
   ChartTitleWithHint,
 } from '../components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import type { ViewTabItem } from '../components';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import { PAGE_SIZE, paginateSlice } from '../components/google/tableUtils';
@@ -373,6 +374,140 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
     [vtca],
   );
 
+  const overviewPrimaryStatsDevData = useMemo(
+    () => ({
+      widget: 'textContentAnalysis.overview.statsPrimary',
+      uniqueTerms: vocab.unique_terms ?? null,
+      pagesWithKeywords: vocab.pages_with_keywords ?? null,
+      meanWords: wcStats.mean ?? null,
+      medianWords: wcStats.median ?? null,
+    }),
+    [vocab, wcStats.mean, wcStats.median],
+  );
+
+  const overviewSecondaryStatsDevData = useMemo(
+    () => ({
+      widget: 'textContentAnalysis.overview.statsSecondary',
+      avgTermsPerPage: vocab.avg_terms_per_page ?? null,
+      totalTermOccurrences: vocab.total_term_occurrences ?? null,
+    }),
+    [vocab],
+  );
+
+  const byPageDevData = useMemo(
+    () => ({
+      widget: 'textContentAnalysis.overview.byPage',
+      searchQuery: (searchQuery || '').trim() || null,
+      rowCount: byPageRows.length,
+      rows: byPageRows,
+    }),
+    [byPageRows, searchQuery],
+  );
+
+  const histChartDevData = useMemo(
+    () =>
+      histChart
+        ? { widget: 'textContentAnalysis.keywords.histogram', labels: histChart.labels, values: histChart.values }
+        : null,
+    [histChart],
+  );
+
+  const keywordIndexDevData = useMemo(
+    () => ({
+      widget: 'textContentAnalysis.keywords.index',
+      searchQuery: (searchQuery || '').trim() || null,
+      total: keywordIndex.length,
+      filteredCount: keywordIndexFiltered.length,
+      rows: keywordIndexFiltered.map((row) => ({
+        word: row.word,
+        total_count: row.total_count,
+        page_count: row.page_count,
+        top_pages: row.top_pages ?? [],
+      })),
+    }),
+    [keywordIndex.length, keywordIndexFiltered, searchQuery],
+  );
+
+  const topKeywordsChartDevData = useMemo(
+    () =>
+      keywordsChart
+        ? {
+            widget: 'textContentAnalysis.analytics.topKeywordsChart',
+            page: keywordsChartPagination.page,
+            totalPages: keywordsChartPagination.totalPages,
+            from: keywordsChartPagination.from,
+            to: keywordsChartPagination.to,
+            total: keywordsChartPagination.total,
+            labels: keywordsChart.labels,
+            values: keywordsChart.values,
+          }
+        : null,
+    [keywordsChart, keywordsChartPagination],
+  );
+
+  const wordCountDistDevData = useMemo(
+    () => ({ widget: 'textContentAnalysis.analytics.wordCountDist', labels: wcLabels, values: wcValues }),
+    [wcLabels, wcValues],
+  );
+
+  const readingLevelDevData = useMemo(
+    () => ({ widget: 'textContentAnalysis.analytics.readingLevelDist', labels: rlLabels, values: rlValues }),
+    [rlLabels, rlValues],
+  );
+
+  const contentRatioDevData = useMemo(
+    () => ({ widget: 'textContentAnalysis.analytics.contentHtmlRatio', labels: crLabels, values: crValues }),
+    [crLabels, crValues],
+  );
+
+  const wordCountLadderDevData = useMemo(
+    () =>
+      hasWcPercBar
+        ? { widget: 'textContentAnalysis.analytics.wordCountLadder', labels: wcPercLabels, values: wcPercValues }
+        : null,
+    [hasWcPercBar, wcPercLabels, wcPercValues],
+  );
+
+  const languageMixDevData = useMemo(
+    () =>
+      languageMlChart
+        ? { widget: 'textContentAnalysis.topics.languageMix', ...languageMlChart }
+        : null,
+    [languageMlChart],
+  );
+
+  const entityLabelsDevData = useMemo(
+    () =>
+      nerSiteChart
+        ? { widget: 'textContentAnalysis.topics.entityLabels', ...nerSiteChart }
+        : null,
+    [nerSiteChart],
+  );
+
+  const tokenTopicsDevData = useMemo(
+    () => ({
+      widget: 'textContentAnalysis.topics.tokenTopics',
+      clusters: tokenClusters.map((cl) => ({
+        top_keyword: cl.top_keyword ?? cl.representative ?? null,
+        cluster_score: cl.cluster_score ?? null,
+        keywords: cl.keywords ?? [],
+      })),
+    }),
+    [tokenClusters],
+  );
+
+  const semanticTopicsDevData = useMemo(
+    () => ({
+      widget: 'textContentAnalysis.topics.semanticTopics',
+      clusters: semanticClusters.map((cl) => ({
+        top_keyword: cl.top_keyword ?? cl.representative ?? null,
+        cluster_score: cl.cluster_score ?? null,
+        keywords: cl.keywords ?? [],
+      })),
+    }),
+    [semanticClusters],
+  );
+
   if (shouldBlockViewForSections(['content', 'indexation', 'keywords'], sectionStatus, data)) {
     return <ViewSectionLoading title={vtca.title} />;
   }
@@ -391,7 +526,8 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'overview' && (
         <ViewTabPanel idPrefix="text-content-analysis" tabId="overview" className="space-y-6">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="relative group/dev-card grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <DevCopyJsonButton data={overviewPrimaryStatsDevData} />
             <Card shadow>
               <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vtca.uniqueTerms}</div>
               <div className="text-3xl font-bold text-bright">{vocab.unique_terms ?? sj.emDash}</div>
@@ -420,7 +556,8 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
             </Card>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
+          <div className="relative group/dev-card grid grid-cols-2 lg:grid-cols-2 gap-4">
+            <DevCopyJsonButton data={overviewSecondaryStatsDevData} />
             <Card shadow>
               <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vtca.avgTermsPerPage}</div>
               <div className="text-2xl font-bold text-bright">{vocab.avg_terms_per_page ?? sj.emDash}</div>
@@ -433,7 +570,8 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
             </Card>
           </div>
 
-          <div className="space-y-4">
+          <div className="relative group/dev-card space-y-4">
+            <DevCopyJsonButton data={byPageDevData} />
             <SectionHeader icon={AlignLeft} title={vtca.byPageTitle} description={vtca.byPageDesc} helpKey="views.textContentAnalysis.byPageSection" size="sm" />
             <SortablePaginatedTable
               columns={byPageColumns}
@@ -451,7 +589,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
       {activeTab === 'keywords' && (
         <ViewTabPanel idPrefix="text-content-analysis" tabId="keywords" className="space-y-6">
           {histChart ? (
-            <Card padding="tight" shadow>
+            <Card padding="tight" shadow devData={histChartDevData ?? undefined}>
               <div className="flex items-center gap-2 mb-3">
                 <BarChart2 className="h-4 w-4 text-link" />
                 <h3 className="text-sm font-bold text-foreground">{vtca.keywordFrequencyHist}</h3>
@@ -469,7 +607,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
             </Card>
           ) : null}
 
-          <Card padding="default" shadow>
+          <Card padding="default" shadow devData={keywordIndexDevData}>
             <KeywordIndexTable rows={keywordIndexFiltered} vtca={vtca} sj={sj} />
           </Card>
         </ViewTabPanel>
@@ -478,7 +616,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
       {activeTab === 'analytics' && (
         <ViewTabPanel idPrefix="text-content-analysis" tabId="analytics" className="space-y-6">
           {keywordsChart ? (
-            <Card padding="tight" shadow>
+            <Card padding="tight" shadow devData={topKeywordsChartDevData ?? undefined}>
               <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
                 <div className="flex items-center gap-2">
                   <Tag className="h-4 w-4 text-link" />
@@ -549,7 +687,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
 
           <SectionHeader icon={BarChart2} title={vtca.tabs.analytics} helpKey="views.textContentAnalysis.analyticsSection" size="sm" />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
-            <Card padding="tight">
+            <Card padding="tight" devData={wordCountDistDevData}>
               <ChartTitleWithHint title={vtca.wordCountDist} helpKey="views.textContentAnalysis.wordCountDist" />
               <ChartPanel heightClass="h-64">
                 {wcLabels.length > 0 ? (
@@ -564,7 +702,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
               </ChartPanel>
             </Card>
 
-            <Card padding="tight">
+            <Card padding="tight" devData={readingLevelDevData}>
               <ChartTitleWithHint title={vtca.readingLevelDist} helpKey="views.textContentAnalysis.readingLevelDist" />
               <ChartPanel heightClass="h-64">
                 {rlLabels.length > 0 ? (
@@ -588,7 +726,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
               </ChartPanel>
             </Card>
 
-            <Card padding="tight">
+            <Card padding="tight" devData={contentRatioDevData}>
               <ChartTitleWithHint title={vtca.contentHtmlRatio} helpKey="views.textContentAnalysis.contentHtmlRatio" />
               <ChartPanel heightClass="h-64">
                 {crLabels.length > 0 ? (
@@ -604,7 +742,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
             </Card>
 
             {hasWcPercBar ? (
-              <Card padding="tight">
+              <Card padding="tight" devData={wordCountLadderDevData ?? undefined}>
                 <ChartTitleWithHint title={vtca.wordCountLadder} helpKey="views.textContentAnalysis.wordCountLadder" />
                 <ChartPanel>
                   <Bar
@@ -642,7 +780,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
       {activeTab === 'topics' && (
         <ViewTabPanel idPrefix="text-content-analysis" tabId="topics" className="space-y-6">
           {languageMlChart ? (
-            <Card padding="tight" shadow>
+            <Card padding="tight" shadow devData={languageMixDevData ?? undefined}>
               <div className="flex items-center gap-2 mb-3">
                 <Globe className="h-4 w-4 text-violet-700 dark:text-violet-400" />
                 <h3 className="text-sm font-bold text-foreground">{vtca.languageMix}</h3>
@@ -660,7 +798,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
           ) : null}
 
           {nerSiteChart ? (
-            <Card padding="tight" shadow>
+            <Card padding="tight" shadow devData={entityLabelsDevData ?? undefined}>
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="h-4 w-4 text-cyan-700 dark:text-cyan-400" />
                 <h3 className="text-sm font-bold text-foreground">{vtca.entityLabels}</h3>
@@ -678,7 +816,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
           ) : null}
 
           {tokenClusters.length > 0 ? (
-            <Card padding="tight" shadow>
+            <Card padding="tight" shadow devData={tokenTopicsDevData}>
               <div className="flex items-center gap-2 mb-3">
                 <Tag className="h-4 w-4 text-amber-700 dark:text-amber-400" />
                 <h3 className="text-sm font-bold text-foreground">{vtca.parentTopicsToken}</h3>
@@ -713,7 +851,7 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
           ) : null}
 
           {semanticClusters.length > 0 ? (
-            <Card padding="tight" shadow>
+            <Card padding="tight" shadow devData={semanticTopicsDevData}>
               <div className="flex items-center gap-2 mb-3">
                 <Layers className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
                 <h3 className="text-sm font-bold text-foreground">{vtca.parentTopicsSemantic}</h3>

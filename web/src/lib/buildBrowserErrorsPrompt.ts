@@ -16,10 +16,12 @@ import {
 const TYPE_LABELS: Record<FlatBrowserErrorRow['type'], string> = {
   console: 'Console error',
   exception: 'Uncaught exception',
+  failed_request: 'Failed network request',
 };
 
 const TYPE_PRIORITY: Record<FlatBrowserErrorRow['type'], PriorityKey> = {
   exception: 'High',
+  failed_request: 'High',
   console: 'Medium',
 };
 

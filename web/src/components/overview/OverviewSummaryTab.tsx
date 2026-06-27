@@ -9,11 +9,13 @@ import {
   FileDown,
 } from 'lucide-react';
 import type { ReportPayload } from '@/types';
+import { siteHealthScoreFromPayload } from '@/lib/siteHealthScore';
 import type { DataSourceId } from '@/lib/dataProvenance';
 import { strings, format } from '@/lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { googleSnapshotStatus } from '@/lib/googleSnapshot';
 import { Card, AlertBanner, StatCard } from '@/components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { SectionLoadingGate } from '@/components/SectionLoadingGate';
 import { CardBlockSkeleton, StatRowSkeleton } from '@/components/SectionWidgetSkeleton';
 import { DataSourceBadgeRow } from '@/components/DataSourceBadge';
@@ -49,13 +51,7 @@ export function OverviewSummaryTab({
   );
 
   const { currentHealth, topIssues } = useMemo(() => {
-    const scores = (data.categories || [])
-      .map((c) => Number(c?.score))
-      .filter((n) => Number.isFinite(n));
-    const health =
-      scores.length > 0
-        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
-        : null;
+    const health = siteHealthScoreFromPayload(data);
     const exec = (data.executive_summary?.top_issues || []).slice(0, 5);
     const fallback = (data.categories || [])
       .flatMap((cat) =>
@@ -67,7 +63,7 @@ export function OverviewSummaryTab({
       .filter((iss) => iss.priority === 'Critical' || iss.priority === 'High')
       .slice(0, 3);
     return { currentHealth: health, topIssues: exec.length > 0 ? exec : fallback };
-  }, [data.categories, data.executive_summary]);
+  }, [data]);
 
   const googleData = data.google;
   const googleSnap = googleSnapshotStatus(googleData);
@@ -84,6 +80,36 @@ export function OverviewSummaryTab({
       })
       .filter((v, i, a) => a.indexOf(v) === i) as DataSourceId[];
   }, [data.report_meta]);
+
+  const googleTrafficDevData = useMemo(() => {
+    if (!googleData) return null;
+    const metrics: Array<{ id: string; label: string; value: number | null | undefined }> = [];
+    if (googleData.gsc) {
+      metrics.push(
+        { id: 'gscClicks', label: vo.gscClicksCard, value: googleData.gsc.summary?.clicks },
+        { id: 'gscImpressions', label: vo.gscImpressionsCard, value: googleData.gsc.summary?.impressions },
+      );
+    }
+    if (googleData.ga4) {
+      metrics.push(
+        { id: 'ga4Sessions', label: vo.ga4SessionsCard, value: googleData.ga4.summary?.sessions },
+        { id: 'ga4ActiveUsers', label: vo.ga4UsersCard, value: googleData.ga4.summary?.activeUsers },
+      );
+    }
+    return {
+      widget: 'overview.summary.googleTraffic',
+      googleSnapshot: googleSnap,
+      metrics,
+      raw: { google: googleData },
+    };
+  }, [
+    googleData,
+    googleSnap,
+    vo.ga4SessionsCard,
+    vo.ga4UsersCard,
+    vo.gscClicksCard,
+    vo.gscImpressionsCard,
+  ]);
 
   return (
     <OverviewTabPanel tabId="summary" className="space-y-6">
@@ -140,7 +166,8 @@ export function OverviewSummaryTab({
               <p className="text-xs text-muted-foreground">{vo.googleConnectSubtitle}</p>
             </AlertBanner>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {googleTrafficDevData ? <DevCopyJsonButton data={googleTrafficDevData} /> : null}
               {googleData.gsc ? (
                 <>
                   <StatCard

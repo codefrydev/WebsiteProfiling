@@ -14,6 +14,9 @@ public sealed class NativeReportBuilder(
     LighthouseDbReader lighthouseDbReader,
     LinkEdgesReader linkEdgesReader,
     IntegrationsReportDataClient integrationsReportData,
+    AiServiceEnrichmentClient aiServiceEnrichment,
+    CrawlPageHtmlReader crawlPageHtmlReader,
+    IHttpClientFactory httpClientFactory,
     SitemapDiscoveryService sitemapDiscovery,
     SiteLevelBuilder siteLevelBuilder,
     SubdomainInventoryBuilder subdomainInventoryBuilder,
@@ -94,8 +97,15 @@ public sealed class NativeReportBuilder(
         var outbound = ReportMetadataBuilder.BuildOutboundLinkDomains(rows, startUrl, maxOutbound);
         var summarySeo = BuildSummarySeoPayload(seo.Issues);
         var siteLevel = await siteLevelBuilder.FetchAsync(startUrl, cancellationToken);
+        siteLevel = MergeSiteLevelConfig(siteLevel, config);
         var runSecurityScan = ParseBool(config, "run_security_scan", defaultValue: true);
         var securityFindings = SecurityScanBuilder.BuildPassive(rows, startUrl, runSecurityScan);
+        Dictionary<string, object?>? cruxSummary = null;
+        if (ParseBool(config, "enable_crux", defaultValue: false) && !string.IsNullOrWhiteSpace(startUrl))
+        {
+            cruxSummary = await CruxOriginMetricsFetcher.FetchAsync(httpClientFactory, startUrl, cancellationToken);
+        }
+
         var categories = categoryBuilder.BuildCategories(
             rows,
             edges,
@@ -103,12 +113,22 @@ public sealed class NativeReportBuilder(
             siteLevel,
             startUrl,
             lighthouseSummary,
-            cruxSummary: null,
+            cruxSummary: cruxSummary,
             lighthouseByUrl: lhByUrl,
             mlBundle: mlBundle,
             securityFindings: securityFindings);
 
         var categoryList = categories.ToList();
+
+        var (auditedCategories, optionalAuditMeta) = await OptionalAuditsBuilder.ApplyAsync(
+            categoryList,
+            rows,
+            config,
+            crawlRunId,
+            crawlPageHtmlReader,
+            httpClientFactory,
+            cancellationToken);
+        categoryList = auditedCategories.ToList();
 
         var gapLimit = int.TryParse(config?.GetValueOrDefault("google_url_gap_list_limit"), out var gl) ? gl : 200;
         var indexation = await IndexationCoverageBuilder.BuildAsync(
@@ -159,6 +179,12 @@ public sealed class NativeReportBuilder(
         var successRows = CategoryHelpers.SuccessRows(rows);
         var contentUrls = ContentUrlListsBuilder.Build(rows, successRows);
         var contentAnalytics = ContentAnalyticsBuilder.BuildContentAnalytics(rows);
+        var keywordOpportunities = KeywordOpportunitiesBuilder.Build(rows, config, googleData);
+        var semanticKeywordClusters = await BuildSemanticKeywordClustersAsync(
+            contentAnalytics,
+            mlBundle,
+            cancellationToken);
+        var optionalAuditUrls = OptionalAuditUrlsBuilder.Build(categoryList);
         var responseTimeStats = ContentAnalyticsBuilder.BuildResponseTimeStats(rows);
         var depthDistribution = ContentAnalyticsBuilder.BuildDepthDistribution(rows);
         var chartData = ReportChartDataBuilder.Build(rows);
@@ -213,12 +239,17 @@ public sealed class NativeReportBuilder(
             competitorGap,
             securityFindings,
             lighthouseSummary,
+            CruxSummary: cruxSummary,
             ContactIntelligence: contactIntelligence,
             ImageInventory: imageInventory,
             ImageInventorySummary: imageInventorySummary,
             Subdomains: subdomains,
             CrawlSegments: crawlSegments,
-            LighthouseFailureUrls: lighthouseFailureUrls);
+            LighthouseFailureUrls: lighthouseFailureUrls,
+            KeywordOpportunities: keywordOpportunities,
+            SemanticKeywordClusters: semanticKeywordClusters,
+            OptionalAuditUrls: optionalAuditUrls,
+            OptionalAuditMeta: optionalAuditMeta);
 
         var corePayload = NativeReportPayloadAssembler.AssembleCore(
             slice,
@@ -276,6 +307,52 @@ public sealed class NativeReportBuilder(
             var log = ex.ToString();
             var rawBody = JsonSerializer.Serialize(new { ok = false, exitCode = 1, log, outputPath = (string?)null });
             return new ReportBuildBridgeResult(false, 1, log, null, rawBody);
+        }
+    }
+
+    private async Task<List<Dictionary<string, object?>>> BuildSemanticKeywordClustersAsync(
+        Dictionary<string, object?> contentAnalytics,
+        IReadOnlyDictionary<string, object?>? mlBundle,
+        CancellationToken cancellationToken)
+    {
+        var words = new List<string>();
+        if (contentAnalytics.TryGetValue("top_keywords_site", out var topObj)
+            && topObj is IEnumerable<Dictionary<string, object?>> topKeywords)
+        {
+            foreach (var item in topKeywords)
+            {
+                var word = item.GetValueOrDefault("word")?.ToString()?.Trim();
+                if (!string.IsNullOrEmpty(word) && !TextHygieneHelper.IsJunkSemanticTerm(word))
+                {
+                    words.Add(word);
+                }
+            }
+        }
+
+        if (words.Count < 2)
+        {
+            return [];
+        }
+
+        try
+        {
+            return await aiServiceEnrichment.TryClusterKeywordsAsync(words, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            if (mlBundle is Dictionary<string, object?> mutable)
+            {
+                if (!mutable.TryGetValue("ml_errors", out var errorsObj)
+                    || errorsObj is not List<object?> errors)
+                {
+                    errors = [];
+                    mutable["ml_errors"] = errors;
+                }
+
+                errors.Add(ex.Message);
+            }
+
+            return [];
         }
     }
 
@@ -354,6 +431,20 @@ public sealed class NativeReportBuilder(
             .Where(s => s.Length > 0)
             .ToList();
     }
+
+    private static Dictionary<string, object?> MergeSiteLevelConfig(
+        IReadOnlyDictionary<string, object?>? siteLevel,
+        IReadOnlyDictionary<string, string>? config)
+    {
+        var merged = siteLevel is Dictionary<string, object?> dict
+            ? new Dictionary<string, object?>(dict)
+            : siteLevel?.ToDictionary(kv => kv.Key, kv => kv.Value)
+              ?? new Dictionary<string, object?>();
+
+        merged["enable_ads_txt_check"] = ParseBool(config, "enable_ads_txt_check", defaultValue: false);
+        merged["enable_security_txt_check"] = ParseBool(config, "enable_security_txt_check", defaultValue: false);
+        return merged;
+    }
 }
 
 public sealed record NativeReportSlice(
@@ -391,12 +482,17 @@ public sealed record NativeReportSlice(
     Dictionary<string, object?>? CompetitorLinkGap = null,
     List<Dictionary<string, object?>>? SecurityFindings = null,
     Dictionary<string, object?>? LighthouseSummary = null,
+    Dictionary<string, object?>? CruxSummary = null,
     Dictionary<string, object?>? ContactIntelligence = null,
     List<Dictionary<string, object?>>? ImageInventory = null,
     Dictionary<string, object?>? ImageInventorySummary = null,
     Dictionary<string, object?>? Subdomains = null,
     Dictionary<string, object?>? CrawlSegments = null,
     Dictionary<string, object?>? LighthouseFailureUrls = null,
+    Dictionary<string, object?>? KeywordOpportunities = null,
+    List<Dictionary<string, object?>>? SemanticKeywordClusters = null,
+    Dictionary<string, object?>? OptionalAuditUrls = null,
+    Dictionary<string, object?>? OptionalAuditMeta = null,
     IReadOnlyDictionary<string, object?>? MlBundle = null)
 {
     public Dictionary<string, object?>? CorePayload { get; init; }

@@ -445,7 +445,7 @@ public static class LocalEnrichmentBuilder
         return count;
     }
 
-    private static string NormalizeUrl(string? url) => (url ?? "").Trim().TrimEnd('/');
+    private static string NormalizeUrl(string? url) => (url ?? "").Trim();
 
     private static bool CfgBool(IReadOnlyDictionary<string, string>? config, string key, bool defaultValue = false)
     {

@@ -42,7 +42,6 @@ public static class LinksListBuilder
             }
 
             var url = row.Url.Trim();
-            var urlKey = url.TrimEnd('/');
             var pageAnalysis = MaterializePageAnalysis(row.PageAnalysisJson);
             var browser = BrowserDiagnosticsHelper.SummaryFromPageAnalysis(pageAnalysis);
 
@@ -50,7 +49,7 @@ public static class LinksListBuilder
             {
                 ["url"] = url,
                 ["status"] = (row.Status ?? "").Trim(),
-                ["inlinks"] = inDegree.GetValueOrDefault(url, inDegree.GetValueOrDefault(urlKey, 0)),
+                ["inlinks"] = inDegree.GetValueOrDefault(url, 0),
                 ["title"] = (row.Title ?? "").Trim(),
                 ["content_length"] = row.ContentLength ?? 0,
                 ["word_count"] = row.WordCount ?? 0,
@@ -100,7 +99,9 @@ public static class LinksListBuilder
                 ["external_link_count"] = ToInt(pageAnalysis.GetValueOrDefault("external_link_count")),
                 ["console_error_count"] = browser.ConsoleErrorCount,
                 ["page_error_count"] = browser.PageErrorCount,
-                ["has_browser_errors"] = browser.ConsoleErrorCount > 0 || browser.PageErrorCount > 0,
+                ["has_browser_errors"] = browser.ConsoleErrorCount > 0
+                    || browser.PageErrorCount > 0
+                    || browser.FailedRequestCount > 0,
                 ["lighthouse"] = SerializeLighthouse(LighthouseReportMerge.LighthouseForUrl(lighthouseByUrl, url)),
             };
 
@@ -109,7 +110,7 @@ public static class LinksListBuilder
                 rec["depth"] = row.Depth.Value;
             }
 
-            ApplyMlOverlays(rec, pageAnalysis, url, urlKey, dupGid, simMap, langMap, spacyMap, kpMap);
+            ApplyMlOverlays(rec, pageAnalysis, url, dupGid, simMap, langMap, spacyMap, kpMap);
             links.Add(rec);
         }
 
@@ -158,36 +159,35 @@ public static class LinksListBuilder
         Dictionary<string, object?> rec,
         Dictionary<string, object?> pageAnalysis,
         string url,
-        string urlKey,
         IReadOnlyDictionary<string, object?> dupGid,
         IReadOnlyDictionary<string, List<object?>> simMap,
         IReadOnlyDictionary<string, string> langMap,
         IReadOnlyDictionary<string, object?> spacyMap,
         IReadOnlyDictionary<string, List<object?>> kpMap)
     {
-        if (langMap.TryGetValue(urlKey, out var lang) || langMap.TryGetValue(url, out lang))
+        if (langMap.TryGetValue(url, out var lang))
         {
             EnsureSignals(pageAnalysis)["language"] = lang;
             rec["detected_language"] = lang;
         }
 
-        if (spacyMap.TryGetValue(urlKey, out var spacy) || spacyMap.TryGetValue(url, out spacy))
+        if (spacyMap.TryGetValue(url, out var spacy))
         {
             EnsureSignals(pageAnalysis)["nlp_entities"] = spacy;
             rec["nlp_entities"] = spacy;
         }
 
-        if (dupGid.TryGetValue(urlKey, out var gid) || dupGid.TryGetValue(url, out gid))
+        if (dupGid.TryGetValue(url, out var gid))
         {
             rec["duplicate_group_id"] = UnwrapJsonValue(gid);
         }
 
-        if (simMap.TryGetValue(urlKey, out var similar) || simMap.TryGetValue(url, out similar))
+        if (simMap.TryGetValue(url, out var similar))
         {
             rec["similar_internal"] = similar;
         }
 
-        if (kpMap.TryGetValue(urlKey, out var kp) || kpMap.TryGetValue(url, out kp))
+        if (kpMap.TryGetValue(url, out var kp))
         {
             rec["keyphrases"] = kp;
         }

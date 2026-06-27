@@ -48,8 +48,11 @@ python -m src        # Run audit pipeline
 | GEO / AEO / Agent readiness | `src/website_profiling/tools/audit_tools/geo/geo_tools.py`, `geo/agent_readiness.py` |
 | DB schema | `alembic/versions/` |
 | UI | `web/src/views/`, `web/src/pages/`, `web/src/AppRoutes.tsx` |
+| Report/card widgets (dev JSON copy) | `Card` `devData` prop — see [AGENT.md](AGENT.md) § Dev widget JSON copy; reference: `web/src/components/overview/OverviewExecutiveSummary.tsx` |
 | Charts | D3: `web/src/components/charts/d3/`, `web/src/lib/viz/` · Chart.js: GSC/GA4/Links etc. — see [AGENT.md](AGENT.md) § Charts |
 
 **Charts:** Use **both** Chart.js and D3 — choose per chart (Overview/Compare → D3; standard GSC/GA4 bars → Chart.js). Full rules in [AGENT.md](AGENT.md).
+
+**Dev widget JSON copy:** In local dev, each report card/panel should pass `devData` on `Card` so agents/devs can copy the widget’s JSON from the top-right `{ }` button. Wire on every widget you add or touch; full conventions in [AGENT.md](AGENT.md) § Dev widget JSON copy.
 
 **Common pitfalls:** See [AGENT.md](AGENT.md) for the full footguns checklist (React context, Python local imports, psycopg dict rows, coverage gates).

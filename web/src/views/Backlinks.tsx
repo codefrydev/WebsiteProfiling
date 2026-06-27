@@ -14,6 +14,7 @@ import { useActivePropertyContext } from '@/hooks/useActivePropertyContext';
 import { apiUrl, apiFetch } from '../lib/publicBase';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, ViewTabs, EmptyState } from '../components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import GoogleTableToolbar from '../components/google/GoogleTableToolbar';
 import GscLinksSummaryCards from '../components/backlinks/GscLinksSummaryCards';
@@ -28,6 +29,7 @@ import {
   exportCsv,
   filterBySearch,
   hasGscLinksExportType,
+  summaryCounts,
 } from '../components/backlinks/backlinksTableUtils';
 import { buildLinksInspectHref } from '../lib/reportNav';
 import type { TableColumn } from '@/types/components';
@@ -252,6 +254,125 @@ export default function Backlinks(_props: ViewProps) {
     [vb.table, searchParams],
   );
 
+  const kpiDevData = useMemo(
+    () => ({
+      widget: 'backlinks.kpiSummary',
+      importedAt: gscLinks?.imported_at ?? null,
+      exportTypes: gscLinks?.export_types ?? [],
+      ...summaryCounts(gscLinks),
+    }),
+    [gscLinks],
+  );
+
+  const bingDevData = useMemo(
+    () => ({
+      widget: 'backlinks.overview.bing',
+      ok: bingBacklinks?.ok ?? false,
+      linkedPageCount: bingBacklinks?.linked_page_count ?? null,
+      totalInboundLinks: bingBacklinks?.total_inbound_links ?? null,
+      linkedPages: (bingBacklinks?.linked_pages ?? []).slice(0, 8).map((row) => ({
+        url: row.url,
+        inbound_links: row.inbound_links ?? null,
+      })),
+    }),
+    [bingBacklinks],
+  );
+
+  const thirdPartyDevData = useMemo(
+    () => ({
+      widget: 'backlinks.overview.thirdParty',
+      overlays: gscLinks?.third_party_overlays ?? [],
+    }),
+    [gscLinks?.third_party_overlays],
+  );
+
+  const competitorImportDevData = useMemo(
+    () => ({
+      widget: 'backlinks.overview.competitorImport',
+      referringDomainCount: gscLinks?.top_linking_sites?.length ?? 0,
+      referringDomains: (gscLinks?.top_linking_sites ?? []).slice(0, 20).map((row) => row.site),
+    }),
+    [gscLinks?.top_linking_sites],
+  );
+
+  const competitorGapDevData = useMemo(
+    () => ({
+      widget: 'backlinks.overview.competitorGap',
+      provenance: competitorGap?.provenance ?? null,
+      competitors: (competitorGap?.competitors ?? []) as Array<{
+        competitor?: string;
+        links_to_us?: boolean;
+      }>,
+    }),
+    [competitorGap],
+  );
+
+  const velocityDevData = useMemo(
+    () => ({
+      widget: 'backlinks.overview.velocity',
+      snapshots: velocity,
+    }),
+    [velocity],
+  );
+
+  const overviewTopDomainsDevData = useMemo(
+    () => ({
+      widget: 'backlinks.overview.topDomains',
+      rows: (gscLinks?.top_linking_sites ?? []).slice(0, 10),
+    }),
+    [gscLinks?.top_linking_sites],
+  );
+
+  const overviewTopPagesDevData = useMemo(
+    () => ({
+      widget: 'backlinks.overview.topPages',
+      rows: (gscLinks?.top_linked_pages ?? []).slice(0, 10),
+    }),
+    [gscLinks?.top_linked_pages],
+  );
+
+  const domainsTableDevData = useMemo(
+    () => ({
+      widget: 'backlinks.domains.table',
+      searchQuery: domainSearch || null,
+      rowCount: filteredDomains.length,
+      rows: filteredDomains,
+    }),
+    [domainSearch, filteredDomains],
+  );
+
+  const pagesTableDevData = useMemo(
+    () => ({
+      widget: 'backlinks.pages.table',
+      searchQuery: pageSearch || null,
+      rowCount: filteredPages.length,
+      rows: filteredPages,
+    }),
+    [filteredPages, pageSearch],
+  );
+
+  const anchorsTableDevData = useMemo(
+    () => ({
+      widget: 'backlinks.anchors.table',
+      searchQuery: anchorSearch || null,
+      rowCount: filteredAnchors.length,
+      rows: filteredAnchors,
+    }),
+    [anchorSearch, filteredAnchors],
+  );
+
+  const sampleTableDevData = useMemo(
+    () => ({
+      widget: 'backlinks.sample.table',
+      searchQuery: sampleSearch || null,
+      hasSampleExport,
+      hasLatestExport,
+      rowCount: filteredSample.length,
+      rows: filteredSample,
+    }),
+    [filteredSample, hasLatestExport, hasSampleExport, sampleSearch],
+  );
+
   if (!gscLinks?.export_types?.length) {
     if (!gscLinksReady) {
       return <ViewSectionLoading title={vb.title} />;
@@ -296,7 +417,10 @@ export default function Backlinks(_props: ViewProps) {
         }
       />
 
-      <GscLinksSummaryCards data={gscLinks} labels={vb.kpi} />
+      <div className="relative group/dev-card">
+        <DevCopyJsonButton data={kpiDevData} />
+        <GscLinksSummaryCards data={gscLinks} labels={vb.kpi} />
+      </div>
 
       <ViewTabs
         tabs={backlinksTabItems}
@@ -307,7 +431,8 @@ export default function Backlinks(_props: ViewProps) {
       />
 
       {activeTab === 'overview' && bingBacklinks?.ok ? (
-        <div className="mb-6 p-4 rounded-xl border border-default bg-brand-800/50">
+        <div className="relative group/dev-card mb-6 p-4 rounded-xl border border-default bg-brand-800/50">
+          <DevCopyJsonButton data={bingDevData} />
           <h3 className="text-sm font-bold text-foreground mb-2">{vb.bingTitle}</h3>
           <p className="text-xs text-muted-foreground mb-3">{vb.bingHint}</p>
           <div className="flex flex-wrap gap-4 text-sm">
@@ -334,13 +459,22 @@ export default function Backlinks(_props: ViewProps) {
       ) : null}
 
       {activeTab === 'overview' ? (
-        <ThirdPartyLinksImport gscLinks={gscLinks} onImported={() => void loadReport()} />
+        <div className="relative group/dev-card">
+          <DevCopyJsonButton data={thirdPartyDevData} />
+          <ThirdPartyLinksImport gscLinks={gscLinks} onImported={() => void loadReport()} />
+        </div>
       ) : null}
 
-      {activeTab === 'overview' && gscLinks ? <CompetitorGapImport gscLinks={gscLinks} /> : null}
+      {activeTab === 'overview' && gscLinks ? (
+        <div className="relative group/dev-card">
+          <DevCopyJsonButton data={competitorImportDevData} />
+          <CompetitorGapImport gscLinks={gscLinks} />
+        </div>
+      ) : null}
 
       {activeTab === 'overview' && competitorGap?.competitors?.length ? (
-        <div className="mb-6 p-4 rounded-xl border border-default bg-brand-800/50">
+        <div className="relative group/dev-card mb-6 p-4 rounded-xl border border-default bg-brand-800/50">
+          <DevCopyJsonButton data={competitorGapDevData} />
           <h3 className="text-sm font-bold text-foreground mb-2">Competitor link gap</h3>
           <p className="text-xs text-muted-foreground mb-3">
             Based on imported GSC Links sample ({competitorGap.provenance || 'Search Console'}).
@@ -359,7 +493,8 @@ export default function Backlinks(_props: ViewProps) {
       ) : null}
 
       {activeTab === 'overview' && velocity.length >= 2 && (
-        <div className="mb-6 p-4 rounded-xl border border-default bg-brand-800/50">
+        <div className="relative group/dev-card mb-6 p-4 rounded-xl border border-default bg-brand-800/50">
+          <DevCopyJsonButton data={velocityDevData} />
           <h3 className="text-sm font-bold text-foreground mb-2">Referring domain velocity</h3>
           <p className="text-xs text-muted-foreground mb-3">
             {format('{latest} domains ({delta} vs prior snapshot)', {
@@ -388,7 +523,8 @@ export default function Backlinks(_props: ViewProps) {
 
       {activeTab === 'overview' && (
         <div className="grid gap-6 lg:grid-cols-2">
-          <div>
+          <div className="relative group/dev-card">
+            <DevCopyJsonButton data={overviewTopDomainsDevData} />
             <h3 className="text-sm font-bold text-foreground mb-3">{vb.overview.topDomainsTitle}</h3>
             <SortablePaginatedTable
               rows={(gscLinks.top_linking_sites ?? []).slice(0, 10) as Record<string, unknown>[]}
@@ -397,7 +533,8 @@ export default function Backlinks(_props: ViewProps) {
               paginationLabels={paginationLabels}
             />
           </div>
-          <div>
+          <div className="relative group/dev-card">
+            <DevCopyJsonButton data={overviewTopPagesDevData} />
             <h3 className="text-sm font-bold text-foreground mb-3">{vb.overview.topPagesTitle}</h3>
             <SortablePaginatedTable
               rows={(gscLinks.top_linked_pages ?? []).slice(0, 10) as Record<string, unknown>[]}
@@ -410,7 +547,8 @@ export default function Backlinks(_props: ViewProps) {
       )}
 
       {activeTab === 'domains' && (
-        <>
+        <div className="relative group/dev-card space-y-4">
+          <DevCopyJsonButton data={domainsTableDevData} />
           <GoogleTableToolbar
             search={domainSearch}
             onSearch={setDomainSearch}
@@ -430,11 +568,12 @@ export default function Backlinks(_props: ViewProps) {
             emptyMessage={vb.table.noData}
             paginationLabels={paginationLabels}
           />
-        </>
+        </div>
       )}
 
       {activeTab === 'pages' && (
-        <>
+        <div className="relative group/dev-card space-y-4">
+          <DevCopyJsonButton data={pagesTableDevData} />
           <GoogleTableToolbar
             search={pageSearch}
             onSearch={setPageSearch}
@@ -454,11 +593,12 @@ export default function Backlinks(_props: ViewProps) {
             emptyMessage={vb.table.noData}
             paginationLabels={paginationLabels}
           />
-        </>
+        </div>
       )}
 
       {activeTab === 'anchors' && (
-        <>
+        <div className="relative group/dev-card space-y-4">
+          <DevCopyJsonButton data={anchorsTableDevData} />
           <GoogleTableToolbar
             search={anchorSearch}
             onSearch={setAnchorSearch}
@@ -478,11 +618,12 @@ export default function Backlinks(_props: ViewProps) {
             emptyMessage={vb.table.noData}
             paginationLabels={paginationLabels}
           />
-        </>
+        </div>
       )}
 
       {activeTab === 'sample' && (
-        <>
+        <div className="relative group/dev-card space-y-4">
+          <DevCopyJsonButton data={sampleTableDevData} />
           <GoogleTableToolbar
             search={sampleSearch}
             onSearch={setSampleSearch}
@@ -502,7 +643,7 @@ export default function Backlinks(_props: ViewProps) {
             emptyMessage={sampleTabHint}
             paginationLabels={paginationLabels}
           />
-        </>
+        </div>
       )}
     </PageLayout>
   );

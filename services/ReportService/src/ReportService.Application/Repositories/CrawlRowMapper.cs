@@ -7,7 +7,7 @@ internal static class CrawlRowMapper
 {
     public static CrawlRow FromEntity(CrawlResult entity)
     {
-        var url = entity.Url.Trim().TrimEnd('/');
+        var url = entity.Url.Trim();
         var fetchMethod = string.IsNullOrWhiteSpace(entity.FetchMethod) ? "static" : entity.FetchMethod.Trim();
         return MergeRow(url, fetchMethod, entity.Data, entity.Status);
     }

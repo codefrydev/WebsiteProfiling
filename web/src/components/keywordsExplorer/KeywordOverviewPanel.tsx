@@ -15,6 +15,7 @@ import type { LucideIcon } from 'lucide-react';
 import type { KeywordRow } from '@/types/components';
 import { strings } from '../../lib/strings';
 import { Card } from '../index';
+import DevCopyJsonButton from '../DevCopyJsonButton';
 import { IntentMixChart, SourceMixChart } from './KeywordCharts';
 import type { KeywordTabId } from './keywordTabMeta';
 
@@ -38,6 +39,12 @@ export interface KeywordOverviewPanelProps {
     cannib: number;
   };
   onNavigate: (tab: KeywordTabId) => void;
+  exploreDevData?: unknown;
+  intentDevData?: unknown;
+  sourceDevData?: unknown;
+  topQuickWinsDevData?: unknown;
+  topOpportunitiesDevData?: unknown;
+  insightsDevData?: unknown;
 }
 
 function MiniKeywordRow({
@@ -71,6 +78,12 @@ export default function KeywordOverviewPanel({
   pageCount,
   counts,
   onNavigate,
+  exploreDevData,
+  intentDevData,
+  sourceDevData,
+  topQuickWinsDevData,
+  topOpportunitiesDevData,
+  insightsDevData,
 }: KeywordOverviewPanelProps) {
   const o = strings.views.keywordsExplorer.overview;
   const tabs = strings.views.keywordsExplorer.tabs as Record<KeywordTabId, string>;
@@ -112,7 +125,8 @@ export default function KeywordOverviewPanel({
 
   return (
     <div id="kw-tab-overview" role="tabpanel" className="space-y-6 mb-6">
-      <Card padding="default" className="!bg-brand-900/40">
+      <Card padding="default" className="!bg-brand-900/40 relative group/dev-card">
+        {exploreDevData != null ? <DevCopyJsonButton data={exploreDevData} /> : null}
         <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
           {o.exploreTitle}
         </h3>
@@ -139,14 +153,14 @@ export default function KeywordOverviewPanel({
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <IntentMixChart rows={rows} />
-        <SourceMixChart rows={rows} />
+        <IntentMixChart rows={rows} devData={intentDevData} />
+        <SourceMixChart rows={rows} devData={sourceDevData} />
       </div>
 
       {(topQuickWins.length > 0 || topOpportunities.length > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {topQuickWins.length > 0 && (
-            <Card>
+            <Card devData={topQuickWinsDevData}>
               <div className="flex items-center justify-between gap-2 mb-3">
                 <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                   <Zap className="w-4 h-4 text-amber-500" aria-hidden />
@@ -168,7 +182,7 @@ export default function KeywordOverviewPanel({
             </Card>
           )}
           {topOpportunities.length > 0 && (
-            <Card>
+            <Card devData={topOpportunitiesDevData}>
               <div className="flex items-center justify-between gap-2 mb-3">
                 <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
                   <Lightbulb className="w-4 h-4 text-violet-400" aria-hidden />
@@ -193,7 +207,7 @@ export default function KeywordOverviewPanel({
       )}
 
       {insights.length > 0 && (
-        <Card>
+        <Card devData={insightsDevData}>
           <h3 className="text-sm font-bold text-foreground mb-3 flex items-center gap-2">
             <BarChart3 className="w-4 h-4 text-link" aria-hidden />
             {strings.views.keywordsExplorer.insights.title}

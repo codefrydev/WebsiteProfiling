@@ -6,6 +6,7 @@ import { strings } from '@/lib/strings';
 import type { KeywordRow } from '@/types/components';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 import { Card, Button } from '@/components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 
 const TEMPLATES = [
   {
@@ -34,9 +35,14 @@ interface ContentBriefResult {
 interface ContentTemplatesPanelProps {
   defaultKeyword?: string;
   clusterRows?: KeywordRow[];
+  devData?: unknown;
 }
 
-export default function ContentTemplatesPanel({ defaultKeyword = '', clusterRows = [] }: ContentTemplatesPanelProps) {
+export default function ContentTemplatesPanel({
+  defaultKeyword = '',
+  clusterRows = [],
+  devData,
+}: ContentTemplatesPanelProps) {
   const s = strings.views.keywordsExplorer.contentBrief;
   const { readOnly } = useReadOnlySession();
   const [activeTemplate, setActiveTemplate] = useState<(typeof TEMPLATES)[number] | null>(null);
@@ -88,7 +94,8 @@ export default function ContentTemplatesPanel({ defaultKeyword = '', clusterRows
 
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="relative group/dev-card grid gap-4 sm:grid-cols-3">
+        {devData != null ? <DevCopyJsonButton data={devData} /> : null}
         {TEMPLATES.map((t) => (
           <Card key={t.id} className="p-4 flex flex-col">
             <h3 className="text-sm font-semibold">{t.title}</h3>

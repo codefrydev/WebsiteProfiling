@@ -12,7 +12,6 @@ public static partial class SeoSummaryBuilder
     public const int TitleLenMax = 60;
     public const int MetaDescLenMin = 70;
     public const int MetaDescLenMax = 160;
-    public const int ThinContentChars = 300;
 
     public sealed record SeoSummaryResult(
         Dictionary<string, object?> Summary,
@@ -28,9 +27,13 @@ public static partial class SeoSummaryBuilder
         var count4Xx = 0;
         var count5Xx = 0;
         var countError = 0;
-        var outlinkSum = 0;
-        var titleLenSum = 0;
-        double? crawlTimeS = rows.FirstOrDefault()?.CrawlTimeS;
+        var outlinkSum2Xx = 0;
+        var titleLenSum2Xx = 0;
+        var successCount = 0;
+        var crawlTimes = rows.Select(r => r.CrawlTimeS).Where(t => t.HasValue).Select(t => t!.Value).ToList();
+        double? crawlTimeS = crawlTimes.Count >= 2
+            ? crawlTimes.Max() - crawlTimes.Min()
+            : crawlTimes.FirstOrDefault();
 
         var issues = new Dictionary<string, List<Dictionary<string, string>>>
         {
@@ -61,6 +64,114 @@ public static partial class SeoSummaryBuilder
             if (Status2Xx().IsMatch(st))
             {
                 count2Xx++;
+                successCount++;
+                outlinkSum2Xx += row.Outlinks ?? 0;
+
+                var title = (row.Title ?? "").Trim();
+                var titleLen = title.Length;
+                titleLenSum2Xx += titleLen;
+
+                if (titleLen == 0)
+                {
+                    seoHealth["missing_title"]++;
+                    issues["seo"].Add(new Dictionary<string, string>
+                    {
+                        ["type"] = "missing_title",
+                        ["url"] = row.Url,
+                        ["message"] = "Missing title",
+                    });
+                }
+                else if (titleLen < TitleLenMin)
+                {
+                    seoHealth["title_short"]++;
+                    issues["seo"].Add(new Dictionary<string, string>
+                    {
+                        ["type"] = "title_short",
+                        ["url"] = row.Url,
+                        ["message"] = $"Title too short ({titleLen} chars)",
+                    });
+                }
+                else if (titleLen > TitleLenMax)
+                {
+                    seoHealth["title_long"]++;
+                    issues["seo"].Add(new Dictionary<string, string>
+                    {
+                        ["type"] = "title_long",
+                        ["url"] = row.Url,
+                        ["message"] = $"Title too long ({titleLen} chars)",
+                    });
+                }
+                else
+                {
+                    seoHealth["title_ok"]++;
+                }
+
+                var mdLen = row.MetaDescriptionLen ?? 0;
+                if (mdLen == 0)
+                {
+                    seoHealth["missing_meta_desc"]++;
+                }
+                else if (mdLen < MetaDescLenMin)
+                {
+                    seoHealth["meta_desc_short"]++;
+                    issues["seo"].Add(new Dictionary<string, string>
+                    {
+                        ["type"] = "meta_desc_short",
+                        ["url"] = row.Url,
+                        ["message"] = $"Meta description too short ({mdLen} chars)",
+                    });
+                }
+                else if (mdLen > MetaDescLenMax)
+                {
+                    seoHealth["meta_desc_long"]++;
+                    issues["seo"].Add(new Dictionary<string, string>
+                    {
+                        ["type"] = "meta_desc_long",
+                        ["url"] = row.Url,
+                        ["message"] = $"Meta description too long ({mdLen} chars)",
+                    });
+                }
+                else
+                {
+                    seoHealth["meta_desc_ok"]++;
+                }
+
+                var h1c = row.H1Count ?? -1;
+                if (h1c == 0)
+                {
+                    seoHealth["h1_zero"]++;
+                    issues["seo"].Add(new Dictionary<string, string>
+                    {
+                        ["type"] = "h1_missing",
+                        ["url"] = row.Url,
+                        ["message"] = "Missing H1",
+                    });
+                }
+                else if (h1c == 1)
+                {
+                    seoHealth["h1_one"]++;
+                }
+                else if (h1c > 1)
+                {
+                    seoHealth["h1_multi"]++;
+                    issues["seo"].Add(new Dictionary<string, string>
+                    {
+                        ["type"] = "h1_multi",
+                        ["url"] = row.Url,
+                        ["message"] = $"Multiple H1s ({h1c})",
+                    });
+                }
+
+                if (ThinContentHelper.IsThin(row))
+                {
+                    seoHealth["thin_content"]++;
+                    issues["seo"].Add(new Dictionary<string, string>
+                    {
+                        ["type"] = "thin_content",
+                        ["url"] = row.Url,
+                        ["message"] = ThinContentHelper.ThinContentMessage(row),
+                    });
+                }
             }
             else if (Status3Xx().IsMatch(st))
             {
@@ -89,114 +200,6 @@ public static partial class SeoSummaryBuilder
 
                 issues["broken"].Add(new Dictionary<string, string> { ["url"] = row.Url, ["status"] = st });
             }
-
-            outlinkSum += row.Outlinks ?? 0;
-            var title = (row.Title ?? "").Trim();
-            var titleLen = title.Length;
-            titleLenSum += titleLen;
-
-            if (titleLen == 0)
-            {
-                seoHealth["missing_title"]++;
-                issues["seo"].Add(new Dictionary<string, string>
-                {
-                    ["type"] = "missing_title",
-                    ["url"] = row.Url,
-                    ["message"] = "Missing title",
-                });
-            }
-            else if (titleLen < TitleLenMin)
-            {
-                seoHealth["title_short"]++;
-                issues["seo"].Add(new Dictionary<string, string>
-                {
-                    ["type"] = "title_short",
-                    ["url"] = row.Url,
-                    ["message"] = $"Title too short ({titleLen} chars)",
-                });
-            }
-            else if (titleLen > TitleLenMax)
-            {
-                seoHealth["title_long"]++;
-                issues["seo"].Add(new Dictionary<string, string>
-                {
-                    ["type"] = "title_long",
-                    ["url"] = row.Url,
-                    ["message"] = $"Title too long ({titleLen} chars)",
-                });
-            }
-            else
-            {
-                seoHealth["title_ok"]++;
-            }
-
-            var mdLen = row.MetaDescriptionLen ?? 0;
-            if (mdLen == 0)
-            {
-                seoHealth["missing_meta_desc"]++;
-            }
-            else if (mdLen < MetaDescLenMin)
-            {
-                seoHealth["meta_desc_short"]++;
-                issues["seo"].Add(new Dictionary<string, string>
-                {
-                    ["type"] = "meta_desc_short",
-                    ["url"] = row.Url,
-                    ["message"] = $"Meta description too short ({mdLen} chars)",
-                });
-            }
-            else if (mdLen > MetaDescLenMax)
-            {
-                seoHealth["meta_desc_long"]++;
-                issues["seo"].Add(new Dictionary<string, string>
-                {
-                    ["type"] = "meta_desc_long",
-                    ["url"] = row.Url,
-                    ["message"] = $"Meta description too long ({mdLen} chars)",
-                });
-            }
-            else
-            {
-                seoHealth["meta_desc_ok"]++;
-            }
-
-            var h1c = row.H1Count ?? -1;
-            if (h1c == 0)
-            {
-                seoHealth["h1_zero"]++;
-                issues["seo"].Add(new Dictionary<string, string>
-                {
-                    ["type"] = "h1_missing",
-                    ["url"] = row.Url,
-                    ["message"] = "Missing H1",
-                });
-            }
-            else if (h1c == 1)
-            {
-                seoHealth["h1_one"]++;
-            }
-            else if (h1c > 1)
-            {
-                seoHealth["h1_multi"]++;
-                issues["seo"].Add(new Dictionary<string, string>
-                {
-                    ["type"] = "h1_multi",
-                    ["url"] = row.Url,
-                    ["message"] = $"Multiple H1s ({h1c})",
-                });
-            }
-
-            var cl = row.ContentLength ?? 0;
-            if (cl > 0 && cl < ThinContentChars)
-            {
-                seoHealth["thin_content"]++;
-                issues["seo"].Add(new Dictionary<string, string>
-                {
-                    ["type"] = "thin_content",
-                    ["url"] = row.Url,
-                    ["message"] = $"Thin content ({cl} chars)",
-                });
-            }
         }
 
         var summary = new Dictionary<string, object?>
@@ -208,8 +211,8 @@ public static partial class SeoSummaryBuilder
             ["count_5xx"] = count5Xx,
             ["count_error"] = countError,
             ["success_rate"] = total > 0 ? Math.Round(100.0 * count2Xx / total, 1) : 0,
-            ["avg_outlinks"] = total > 0 ? Math.Round((double)outlinkSum / total, 1) : 0,
-            ["avg_title_len"] = total > 0 ? Math.Round((double)titleLenSum / total, 1) : 0,
+            ["avg_outlinks"] = successCount > 0 ? Math.Round((double)outlinkSum2Xx / successCount, 1) : 0,
+            ["avg_title_len"] = successCount > 0 ? Math.Round((double)titleLenSum2Xx / successCount, 1) : 0,
             ["crawl_time_s"] = crawlTimeS is not null ? Math.Round(crawlTimeS.Value, 1) : null,
         };
 
@@ -264,7 +267,7 @@ public static partial class SeoSummaryBuilder
 
         if (seoHealth["thin_content"] > 0)
         {
-            recs.Add($"Expand thin content on {seoHealth["thin_content"]} page(s) (under {ThinContentChars} chars).");
+            recs.Add($"Expand thin content on {seoHealth["thin_content"]} page(s) (under {CategoryHelpers.ThinContentWords} words).");
         }
 
         return recs;

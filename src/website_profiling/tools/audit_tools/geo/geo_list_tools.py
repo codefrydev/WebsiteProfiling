@@ -188,9 +188,9 @@ def _llms_urls(llms_preview: str, llms_url: str) -> set[str]:
     urls: set[str] = set()
     for line in (llms_preview or "").splitlines():
         for match in re.findall(r"https?://[^\s)>]+", line):
-            urls.add(match.rstrip("/").lower())
+            urls.add(match.lower())
     if llms_url:
-        urls.add(llms_url.rstrip("/").lower())
+        urls.add(llms_url.lower())
     return urls
 
 
@@ -305,7 +305,7 @@ def list_pages_missing_llms_txt_reference(conn: Connection, ctx: AuditToolContex
     seen: set[str] = set()
     missing: list[dict[str, Any]] = []
     for url in candidates:
-        norm = url.rstrip("/").lower()
+        norm = url.lower()
         if norm in seen:
             continue
         seen.add(norm)
