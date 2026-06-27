@@ -47,6 +47,8 @@ public sealed class CrawlRow
 
     public bool? ViewportPresent { get; init; }
 
+    public string? ViewportContent { get; init; }
+
     public int? ResponseTimeMs { get; init; }
 
     public bool? HasSchema { get; init; }

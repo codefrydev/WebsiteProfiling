@@ -7,13 +7,13 @@ from datetime import datetime, timezone
 from psycopg import Connection
 
 from ._manifest import (
-    llm_legacy_key_to_column,
     llm_providers,
+    llm_state_key_to_column,
     load_manifest,
     pipeline_domain_tables,
-    provider_legacy_key,
+    provider_state_key,
 )
-from ._serialize import column_to_legacy, legacy_to_bool
+from ._serialize import column_to_state_string, parse_bool
 from .llm_settings_store import (
     read_llm_provider_profiles,
     read_llm_settings,
@@ -37,12 +37,12 @@ from .secrets_store import (
 )
 
 
-def _singleton_table_legacy_keys(table: str) -> dict[str, str]:
+def _singleton_table_state_keys(table: str) -> dict[str, str]:
     out: dict[str, str] = {}
     for column, col_spec in load_manifest()["tables"][table]["columns"].items():
-        lk = col_spec.get("legacy_key")
-        if lk:
-            out[column] = lk
+        state_key = col_spec.get("state_key")
+        if state_key:
+            out[column] = state_key
     return out
 
 
@@ -55,11 +55,11 @@ def load_worker_pipeline_config(conn: Connection) -> dict[str, str]:
             out[key] = str(getattr(model, key, "") or "")
 
     workspace = read_workspace_settings(conn)
-    ws_cols = _singleton_table_legacy_keys("workspace_settings")
+    ws_cols = _singleton_table_state_keys("workspace_settings")
     ws_specs = load_manifest()["tables"]["workspace_settings"]["columns"]
-    for column, legacy_key in ws_cols.items():
+    for column, state_key in ws_cols.items():
         value = getattr(workspace, column)
-        out[legacy_key] = column_to_legacy(ws_specs[column], value)
+        out[state_key] = column_to_state_string(ws_specs[column], value)
 
     for table, reader in (
         ("integration_secrets", read_integration_secrets),
@@ -68,8 +68,8 @@ def load_worker_pipeline_config(conn: Connection) -> dict[str, str]:
     ):
         model = reader(conn)
         col_specs = load_manifest()["tables"][table]["columns"]
-        for column, legacy_key in _singleton_table_legacy_keys(table).items():
-            out[legacy_key] = column_to_legacy(col_specs[column], getattr(model, column))
+        for column, state_key in _singleton_table_state_keys(table).items():
+            out[state_key] = column_to_state_string(col_specs[column], getattr(model, column))
 
     return out
 
@@ -84,14 +84,14 @@ def save_worker_pipeline_config(conn: Connection, entries: dict[str, str]) -> No
             routing[key] = ("domain", table, key)
 
     for table in ("integration_secrets", "mcp_settings", "feature_flags", "workspace_settings"):
-        for column, legacy_key in _singleton_table_legacy_keys(table).items():
-            routing[legacy_key] = ("singleton", table, column)
+        for column, state_key in _singleton_table_state_keys(table).items():
+            routing[state_key] = ("singleton", table, column)
 
     domain_updates: dict[str, dict[str, str]] = {}
     singleton_updates: dict[str, dict[str, str]] = {}
 
-    for legacy_key, value in entries.items():
-        route = routing.get(legacy_key)
+    for state_key, value in entries.items():
+        route = routing.get(state_key)
         if not route:
             continue
         kind, table, column = route
@@ -120,19 +120,19 @@ def load_worker_llm_config(conn: Connection) -> dict[str, str]:
     settings = read_llm_settings(conn)
     col_specs = load_manifest()["tables"]["llm_settings"]["columns"]
     for column, col_spec in col_specs.items():
-        legacy_key = col_spec.get("legacy_key")
-        if legacy_key:
-            out[legacy_key] = column_to_legacy(col_spec, getattr(settings, column))
+        state_key = col_spec.get("state_key")
+        if state_key:
+            out[state_key] = column_to_state_string(col_spec, getattr(settings, column))
 
     profiles = read_llm_provider_profiles(conn)
     for provider in llm_providers():
         profile = profiles.get(provider, LlmProviderProfile(provider=provider))
-        out[provider_legacy_key("api_key", provider)] = profile.api_key
-        out[provider_legacy_key("saved_model", provider)] = profile.saved_model
+        out[provider_state_key("api_key", provider)] = profile.api_key
+        out[provider_state_key("saved_model", provider)] = profile.saved_model
 
     provider = (out.get("llm_provider") or "none").strip().lower()
     if provider and provider != "none":
-        per_provider_key = provider_legacy_key("api_key", provider)
+        per_provider_key = provider_state_key("api_key", provider)
         resolved = (out.get(per_provider_key) or "").strip()
         if resolved:
             out["llm_api_key"] = resolved
@@ -144,7 +144,7 @@ def save_worker_llm_config(conn: Connection, entries: dict[str, str]) -> None:
     if not entries:
         return
 
-    legacy_to_col = llm_legacy_key_to_column()
+    state_key_to_col = llm_state_key_to_column()
     col_specs = load_manifest()["tables"]["llm_settings"]["columns"]
     settings = read_llm_settings(conn)
     settings_cols: list[str] = []
@@ -152,9 +152,9 @@ def save_worker_llm_config(conn: Connection, entries: dict[str, str]) -> None:
     profiles = read_llm_provider_profiles(conn)
     touched_profiles: dict[str, LlmProviderProfile] = {}
 
-    for legacy_key, raw_value in entries.items():
+    for state_key, raw_value in entries.items():
         value = str(raw_value)
-        column = legacy_to_col.get(legacy_key)
+        column = state_key_to_col.get(state_key)
         if column:
             col_spec = col_specs[column]
             col_type = col_spec.get("type", "text")
@@ -162,12 +162,12 @@ def save_worker_llm_config(conn: Connection, entries: dict[str, str]) -> None:
                 setattr(
                     settings,
                     column,
-                    legacy_to_bool(value, default=bool(col_spec.get("default", False))),
+                    parse_bool(value, default=bool(col_spec.get("default", False))),
                 )
             elif col_type == "int":
-                from ._serialize import legacy_to_int
+                from ._serialize import parse_int
 
-                parsed = legacy_to_int(value, default=col_spec.get("default"))
+                parsed = parse_int(value, default=col_spec.get("default"))
                 setattr(settings, column, parsed if parsed is not None else col_spec.get("default"))
             else:
                 setattr(settings, column, value)
@@ -176,7 +176,7 @@ def save_worker_llm_config(conn: Connection, entries: dict[str, str]) -> None:
 
         matched_provider = False
         for provider in llm_providers():
-            if legacy_key == provider_legacy_key("api_key", provider):
+            if state_key == provider_state_key("api_key", provider):
                 profile = profiles.get(provider, LlmProviderProfile(provider=provider))
                 profile.api_key = value
                 if value.strip():
@@ -184,7 +184,7 @@ def save_worker_llm_config(conn: Connection, entries: dict[str, str]) -> None:
                 touched_profiles[provider] = profile
                 matched_provider = True
                 break
-            if legacy_key == provider_legacy_key("saved_model", provider):
+            if state_key == provider_state_key("saved_model", provider):
                 profile = profiles.get(provider, LlmProviderProfile(provider=provider))
                 profile.saved_model = value
                 touched_profiles[provider] = profile
@@ -193,7 +193,7 @@ def save_worker_llm_config(conn: Connection, entries: dict[str, str]) -> None:
         if matched_provider:
             continue
 
-        if legacy_key == "llm_api_key":
+        if state_key == "llm_api_key":
             provider = (entries.get("llm_provider") or settings.provider or "none").strip().lower()
             if provider and provider != "none":
                 profile = profiles.get(provider, LlmProviderProfile(provider=provider))

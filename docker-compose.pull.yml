@@ -46,33 +46,7 @@ services:
       retries: 3
       start_period: 30s
 
-  worker:
-    image: ${BACKEND_IMAGE:-website-profiling:latest}
-    depends_on:
-      fastapi:
-        condition: service_started
-      postgres:
-        condition: service_healthy
-      files:
-        condition: service_started
-      report:
-        condition: service_healthy
-    environment:
-      WP_ROLE: worker
-      WEBSITE_PROFILING_ROOT: /app
-      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
-      DATA_DIR: /data
-      PYTHON: /opt/venv/bin/python
-      CHROME_PATH: /usr/bin/chromium
-      LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
-      LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
-      FILE_SERVICE_URL: http://files:8080
-      AI_SERVICE_URL: http://ai:8092
-      INTEGRATIONS_SERVICE_URL: http://integrations:8093
-      REPORT_SERVICE_URL: http://report:8094
-      PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE: "1"
-    volumes:
-      - profiling-data:/data
+  # Pipeline worker runs inside ReportService (C# BackgroundService).
 
   data:
     build:
@@ -144,7 +118,7 @@ services:
       ASPNETCORE_URLS: http://+:8094
       FASTAPI_URL: http://fastapi:8001
       INTEGRATIONS_SERVICE_URL: http://integrations:8093
-      REPORT_SERVICE_USE_PYTHON_BRIDGE: "1"
+      REPORT_SERVICE_USE_PYTHON_BRIDGE: "0"
       USE_FASTAPI_PYTHON_BRIDGE: "1"
     depends_on:
       postgres:
@@ -185,9 +159,9 @@ services:
       AI_SERVICE_URL: http://ai:8092
       INTEGRATIONS_SERVICE_URL: http://integrations:8093
       REPORT_SERVICE_URL: http://report:8094
-      REPORT_ROUTES: "/api/compare,/api/dashboards"
+      REPORT_ROUTES: "/api/compare,/api/dashboards,/api/run,/api/jobs,/api/schedule,/api/crawl"
       BFF_ALLOWED_ORIGINS: "http://localhost:3000"
-      DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters"
+      DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters,/api/properties,/api/content-drafts,/api/content/score,/api/keywords,/api/page-markdown,/api/alerts,/api/logs,/api/backlinks"
       AI_ROUTES: "/api/chat,/api/links/page-coach,/api/issues/fix-suggestion,/api/issues/action-plan,/api/ai/fix-suggestion,/api/dashboards/ai-generate,/api/content/analyze,/api/content/wizard,/api/llm-settings,/api/secrets,/api/ollama/status,/api/report/audit-tool,/api/mcp-tools"
       INTEGRATIONS_ROUTES: "/api/integrations/google,/api/integrations/bing"
     depends_on:

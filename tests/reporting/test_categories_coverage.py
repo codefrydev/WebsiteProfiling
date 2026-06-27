@@ -603,6 +603,7 @@ def test_category_security_headers_mixed_content_findings() -> None:
     findings = [
         {
             "severity": "Critical",
+            "finding_type": "sql_injection",
             "message": "SQL injection risk",
             "url": "https://example.com/login",
             "recommendation": "Sanitize inputs",
@@ -616,6 +617,8 @@ def test_category_security_headers_mixed_content_findings() -> None:
     assert "x-frame-options" in msgs
     assert "mixed content" in msgs
     assert "sql injection" in msgs
+    scanner = next(i for i in cat["issues"] if "sql injection" in i["message"].lower())
+    assert scanner.get("finding_type") == "sql_injection"
 
 
 # ---------------------------------------------------------------------------

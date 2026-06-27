@@ -40,6 +40,23 @@ All `/api/*` calls from the SPA go to the **BFF** (`:8090`). The BFF forwards su
 
 See [AGENT.md](../AGENT.md) for the full route split and [services/AiService/README.md](../services/AiService/README.md) for `AI_ROUTES`.
 
+### API documentation (Swagger)
+
+During local development (`./local-run`, `ASPNETCORE_ENVIRONMENT=Development`), each .NET service and the Python bridge expose OpenAPI:
+
+| Service | Port | Swagger UI |
+| ------- | ---- | ---------- |
+| BFF | 8090 | [http://localhost:8090/docs](http://localhost:8090/docs) |
+| Data | 8091 | [http://localhost:8091/docs](http://localhost:8091/docs) |
+| AiService | 8092 | [http://localhost:8092/docs](http://localhost:8092/docs) |
+| IntegrationsService | 8093 | [http://localhost:8093/docs](http://localhost:8093/docs) |
+| ReportService | 8094 | [http://localhost:8094/docs](http://localhost:8094/docs) |
+| ConfigService | 8095 | [http://localhost:8095/docs](http://localhost:8095/docs) |
+| FileService | 8080 | [http://localhost:8080/docs](http://localhost:8080/docs) |
+| Python bridge | 8001 | [http://localhost:8001/docs](http://localhost:8001/docs) |
+
+OpenAPI JSON for .NET services: `/swagger/v1/swagger.json`. See the main [README.md](../README.md#api-documentation-swagger) for details.
+
 ---
 
 ## Brand assets

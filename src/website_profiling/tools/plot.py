@@ -54,8 +54,6 @@ def run_plot(
         df = df.copy()
         df["url"] = df["url"].astype(str).str.rstrip("/")
 
-    mode = (render_mode or "static").strip().lower()
-
     if not edges and not df.empty:
         emit_progress("plot", "build_edges", message="Building link graph from crawl data")
         print("  Building edges from crawl data...", flush=True)
@@ -67,7 +65,8 @@ def run_plot(
             concurrency,
             timeout,
             polite_delay,
-            render_mode=mode,
+            # Never spin up Playwright again during plot — use stored outlinks or fast HTTP.
+            render_mode="static",
             js_timeout=js_timeout,
             js_concurrency=js_concurrency,
             js_wait_until=js_wait_until,

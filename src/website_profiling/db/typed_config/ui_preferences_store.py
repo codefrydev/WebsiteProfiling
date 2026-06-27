@@ -6,6 +6,7 @@ from dataclasses import fields
 from psycopg import Connection
 
 from ._base import read_singleton, write_singleton
+from ._manifest import load_manifest
 from .models import UiPreferences
 
 
@@ -24,21 +25,20 @@ def write_ui_preferences(
 
 def patch_ui_preferences(conn: Connection, updates: dict[str, str]) -> None:
     current = read_ui_preferences(conn)
-    col_map = {
-        "brand_name": "brand_name",
-        "brand_subtitle": "brand_subtitle",
-        "brand_logo_url": "brand_logo_url",
-        "custom_theme": "custom_theme_json",
-        "ui_prefs": "ui_prefs_json",
+    col_specs = load_manifest()["tables"]["ui_preferences"]["columns"]
+    app_key_to_column = {
+        col_spec["app_key"]: column
+        for column, col_spec in col_specs.items()
+        if col_spec.get("app_key")
     }
     cols: list[str] = []
-    for legacy_key, value in updates.items():
-        column = col_map.get(legacy_key, legacy_key)
+    for app_key, value in updates.items():
+        column = app_key_to_column.get(app_key, app_key)
         if column in {f.name for f in fields(UiPreferences)}:
             if column.endswith("_json"):
-                from ._serialize import legacy_to_json
+                from ._serialize import parse_json
 
-                setattr(current, column, legacy_to_json(value))
+                setattr(current, column, parse_json(value))
             else:
                 setattr(current, column, str(value))
             cols.append(column)

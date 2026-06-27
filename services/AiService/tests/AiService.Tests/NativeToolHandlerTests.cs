@@ -23,6 +23,8 @@ public sealed class NativeToolHandlerTests
         Assert.Contains("check_ai_citations_live", handlers);
         Assert.Contains("get_crux_summary", handlers);
         Assert.Contains("get_gsc_top_queries", handlers);
+        Assert.Contains("list_gsc_queries_by_impressions", handlers);
+        Assert.Contains("list_lighthouse_cwv_failures", handlers);
         Assert.Contains("generate_robots_txt", handlers);
         Assert.Contains("get_category_issues", handlers);
         Assert.Contains("get_portfolio_summary", handlers);
@@ -31,5 +33,8 @@ public sealed class NativeToolHandlerTests
         Assert.Contains("get_schema_coverage", handlers);
         Assert.Contains("get_gsc_links_summary", handlers);
         Assert.Contains("get_indexation_coverage", handlers);
+        Assert.Contains("get_geo_readiness_score", handlers);
+        Assert.Contains("get_llms_txt_status", handlers);
+        Assert.Contains("get_faq_schema_coverage", handlers);
     }
 }

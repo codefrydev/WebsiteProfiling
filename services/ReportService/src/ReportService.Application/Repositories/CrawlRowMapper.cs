@@ -9,10 +9,10 @@ internal static class CrawlRowMapper
     {
         var url = entity.Url.Trim().TrimEnd('/');
         var fetchMethod = string.IsNullOrWhiteSpace(entity.FetchMethod) ? "static" : entity.FetchMethod.Trim();
-        return MergeRow(url, fetchMethod, entity.Data);
+        return MergeRow(url, fetchMethod, entity.Data, entity.Status);
     }
 
-    public static CrawlRow MergeRow(string url, string fetchMethod, string dataJson)
+    public static CrawlRow MergeRow(string url, string fetchMethod, string dataJson, string? columnStatus = null)
     {
         using var doc = JsonDocument.Parse(string.IsNullOrWhiteSpace(dataJson) ? "{}" : dataJson);
         var root = doc.RootElement;
@@ -20,7 +20,7 @@ internal static class CrawlRowMapper
         {
             Url = url,
             FetchMethod = string.IsNullOrWhiteSpace(fetchMethod) ? "static" : fetchMethod.Trim(),
-            Status = GetString(root, "status") ?? GetString(root, "status_code"),
+            Status = GetStatusString(root) ?? NormalizeStatus(columnStatus),
             Title = GetString(root, "title"),
             FinalUrl = GetString(root, "final_url"),
             MetaDescriptionLen = GetInt(root, "meta_description_len"),
@@ -43,6 +43,7 @@ internal static class CrawlRowMapper
             Noindex = GetBool(root, "noindex"),
             CanonicalUrl = GetString(root, "canonical_url"),
             ViewportPresent = GetBool(root, "viewport_present"),
+            ViewportContent = GetString(root, "viewport_content"),
             ResponseTimeMs = GetInt(root, "response_time_ms"),
             HasSchema = GetBool(root, "has_schema"),
             ImagesTotal = GetInt(root, "images_total"),
@@ -80,6 +81,48 @@ internal static class CrawlRowMapper
 
     private static string? GetString(JsonElement root, string name) =>
         root.TryGetProperty(name, out var el) && el.ValueKind == JsonValueKind.String ? el.GetString() : null;
+
+    private static string? GetStatusString(JsonElement root)
+    {
+        if (TryGetStatusFromProperty(root, "status", out var status))
+        {
+            return status;
+        }
+
+        if (TryGetStatusFromProperty(root, "status_code", out status))
+        {
+            return status;
+        }
+
+        return null;
+    }
+
+    private static bool TryGetStatusFromProperty(JsonElement root, string name, out string? status)
+    {
+        status = null;
+        if (!root.TryGetProperty(name, out var el))
+        {
+            return false;
+        }
+
+        status = el.ValueKind switch
+        {
+            JsonValueKind.String => el.GetString()?.Trim(),
+            JsonValueKind.Number when el.TryGetInt64(out var n) => n.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            JsonValueKind.Number => ((long)el.GetDouble()).ToString(System.Globalization.CultureInfo.InvariantCulture),
+            JsonValueKind.True => "true",
+            JsonValueKind.False => "false",
+            _ => null,
+        };
+
+        return !string.IsNullOrWhiteSpace(status);
+    }
+
+    private static string? NormalizeStatus(string? status)
+    {
+        var trimmed = status?.Trim();
+        return string.IsNullOrEmpty(trimmed) ? null : trimmed;
+    }
 
     private static int? GetInt(JsonElement root, string name)
     {

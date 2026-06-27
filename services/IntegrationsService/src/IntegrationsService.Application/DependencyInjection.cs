@@ -57,6 +57,7 @@ public static class DependencyInjection
         services.AddScoped<PageLiveService>();
         services.AddScoped<PageCompareService>();
         services.AddScoped<BingWebmasterService>();
+        services.AddScoped<KeywordExpandPlannerService>();
         services.AddSingleton<PythonCliRunner>();
         services.AddSingleton<FastApiPythonBridge>();
 

@@ -49,9 +49,9 @@ def patch_workspace_settings(conn: Connection, updates: dict[str, str]) -> None:
     for key, value in updates.items():
         if key in valid:
             if key == "active_property_id":
-                from ._serialize import legacy_to_int
+                from ._serialize import parse_int
 
-                current.active_property_id = legacy_to_int(value)
+                current.active_property_id = parse_int(value)
             else:
                 setattr(current, key, str(value))
             cols.append(key)

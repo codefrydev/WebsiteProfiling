@@ -140,26 +140,70 @@ Also included: **AI chat** over audit data (optional), **Content studio** (write
 
 ## Architecture
 
+The SPA talks only to the **BFF** (`:8090`). The BFF reverse-proxies `/api/*` to the right upstream by path prefix (`AI_ROUTES`, `DATA_ROUTES`, `INTEGRATIONS_ROUTES`, `REPORT_ROUTES`; everything else → FastAPI). Background jobs and internal builds call services **directly** over HTTP — not through the BFF.
+
 ```mermaid
 flowchart TB
     Browser([Browser]) --> Web["web :3000<br/>React SPA"]
-    Web --> BFF["bff :8090<br/>.NET API gateway"]
+    Web -->|"/api/*"| BFF["bff :8090<br/>Auth · CORS · reverse proxy"]
 
-    BFF --> FastAPI["fastapi :8001<br/>Crawl · jobs · pipeline-config"]
-    BFF --> Report["report :8094<br/>Report build · orchestration"]
-    BFF --> Integrations["integrations :8093<br/>Google/Bing OAuth · GSC/GA4 · keywords"]
-    BFF --> Ai["ai :8092<br/>Chat · LLM config · secrets · MCP"]
-    BFF --> Data["data :8091<br/>Report reads · portfolio · issue status"]
-    BFF --> Files["files :8080<br/>PDF · Excel export"]
-
-    subgraph Background["Background"]
-        Worker["worker<br/>Crawl + Lighthouse jobs"]
-        Postgres[("postgres<br/>Audit data store")]
+    subgraph BffRoutes["BFF upstream routing"]
+        direction LR
+        BFF --> FastAPI["fastapi :8001<br/>Crawl · jobs · pipeline settings"]
+        BFF --> Report["report :8094<br/>Report build · orchestration"]
+        BFF --> Integrations["integrations :8093<br/>Google/Bing · GSC/GA4 · keywords"]
+        BFF --> Ai["ai :8092<br/>Chat · LLM · secrets · MCP"]
+        BFF --> Data["data :8091<br/>Report reads · portfolio · issues"]
+        BFF --> Files["files :8080<br/>PDF · Excel export"]
     end
 
-    Worker --> Report
-    Report --> FastAPI
+    subgraph Pipeline["Background pipeline"]
+        Worker["worker<br/>Crawl + Lighthouse jobs"]
+        Worker -->|"REPORT_SERVICE_URL"| Report
+        Worker -->|"INTEGRATIONS_SERVICE_URL"| Integrations
+        Worker -->|"AI_SERVICE_URL"| Ai
+    end
+
+    subgraph Internal["Service-to-service HTTP (internal)"]
+        direction TB
+        Report -->|"Python bridge · strangler proxy"| FastAPI
+        Report -->|"GET /internal/integrations/report/enrichment"| Integrations
+        Integrations -->|"keyword / GSC bridge"| FastAPI
+        Ai -->|"audit-tool bridge"| FastAPI
+        Files -->|"REPORT_API_URL — payload · meta · branding"| FastAPI
+    end
+
+    Postgres[("postgres<br/>Audit data · typed settings")]
+
+    FastAPI --- Postgres
+    Worker --- Postgres
+    Report --- Postgres
+    Integrations --- Postgres
+    Ai --- Postgres
+    Data --- Postgres
+
+    Integrations --> Google[(Google / Bing APIs)]
+    Ai --> LLM[(LLM · Ollama)]
+    MCP([IDE / agent]) -.->|"MCP stdio or HTTP"| Ai
 ```
+
+| From | To | When |
+| ---- | -- | ---- |
+| **Browser** | BFF → FastAPI | Crawl jobs, pipeline config/settings, most `/api/*` |
+| **Browser** | BFF → Data | Report payload/meta, portfolio, issue status, saved filters (`DATA_ROUTES`) |
+| **Browser** | BFF → Integrations | Google/Bing OAuth, GSC/GA4, keywords (`INTEGRATIONS_ROUTES`) |
+| **Browser** | BFF → AiService | Chat (SSE), secrets, LLM settings, content AI, MCP catalog (`AI_ROUTES`) |
+| **Browser** | BFF → ReportService | Compare runs, dashboards (`REPORT_ROUTES`; strangler proxy to FastAPI) |
+| **Browser** | BFF → FileService | Report PDF/Excel export (`/api/report/export`) |
+| **Worker** | ReportService | Post-crawl report build and full-pipeline orchestration |
+| **Worker** | IntegrationsService | Google fetch, keyword enrichment |
+| **Worker** | AiService | ML enrichment, page coach, structured completions |
+| **ReportService** | FastAPI | Python report bridge; dashboard/compare strangler |
+| **ReportService** | IntegrationsService | Google/keyword/GSC snapshots for native report build |
+| **IntegrationsService** | FastAPI | Keyword enrich + GSC link import when Python bridge is enabled |
+| **AiService** | FastAPI | Audit tools not yet ported to C# |
+| **FileService** | FastAPI | Report JSON and branding — **no Postgres** |
+| **Data · Ai · Report · Integrations · FastAPI · worker** | Postgres | Direct reads/writes to typed settings and audit tables |
 
 ```
 WebsiteProfiling/
@@ -264,9 +308,26 @@ Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTG
 ./local-prod        # Same DB, Vite production build + preview (no hot reload)
 ```
 
-`./local-run` starts (in order): **FileService** `:8080`, **Data** `:8091`, **AiService** `:8092` (MCP HTTP enabled), **ReportService** `:8094`, **IntegrationsService** `:8093`, **pipeline worker**, **FastAPI** `:8001`, **BFF** `:8090`, and **Vite** `:3000`. Use `localhost` (not `127.0.0.1`) for pipeline APIs so CORS and cookies match the BFF origin.
+`./local-run` starts (in order): **FileService** `:8080`, **Data** `:8091`, **AiService** `:8092` (MCP HTTP enabled), **ReportService** `:8094`, **IntegrationsService** `:8093`, **ConfigService** `:8095`, **FastAPI** `:8001` (Python bridge), **BFF** `:8090`, and **Vite** `:3000`. Use `localhost` (not `127.0.0.1`) for pipeline APIs so CORS and cookies match the BFF origin.
 
 Default local `DATABASE_URL`: `postgres://postgres:dev@127.0.0.1:5432/website_profiling` (Docker Compose dev stack uses `profiling:profiling`).
+
+### API documentation (Swagger)
+
+With `./local-run`, each service runs in **Development** and exposes interactive OpenAPI docs. The browser SPA only calls the **BFF**; use upstream Swagger to inspect handlers and internal routes.
+
+| Service | Port | Swagger UI | OpenAPI JSON |
+| ------- | ---- | ---------- | ------------ |
+| **BFF** | 8090 | [http://localhost:8090/docs](http://localhost:8090/docs) | `/swagger/v1/swagger.json` |
+| **Data** | 8091 | [http://localhost:8091/docs](http://localhost:8091/docs) | `/swagger/v1/swagger.json` |
+| **AiService** | 8092 | [http://localhost:8092/docs](http://localhost:8092/docs) | `/swagger/v1/swagger.json` |
+| **IntegrationsService** | 8093 | [http://localhost:8093/docs](http://localhost:8093/docs) | `/swagger/v1/swagger.json` |
+| **ReportService** | 8094 | [http://localhost:8094/docs](http://localhost:8094/docs) | `/swagger/v1/swagger.json` |
+| **ConfigService** | 8095 | [http://localhost:8095/docs](http://localhost:8095/docs) | `/swagger/v1/swagger.json` |
+| **FileService** | 8080 | [http://localhost:8080/docs](http://localhost:8080/docs) | `/swagger/v1/swagger.json` |
+| **Python bridge** (FastAPI) | 8001 | [http://localhost:8001/docs](http://localhost:8001/docs) | `/openapi.json` |
+
+Swagger UI is disabled when `ASPNETCORE_ENVIRONMENT=Production`. The legacy `web/openapi.json` reflects the old monolithic FastAPI app and is not a complete map of the current C# services.
 
 `requirements.txt` pins direct Python dependencies to versions verified by `./local-test python`. Re-run the full test suite after intentional upgrades.
 

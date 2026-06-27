@@ -19,7 +19,7 @@ import type { KeywordRow } from '@/types';
 import { computeReportFingerprintDiff } from '../lib/reportDiff';
 import { buildReportCompareSummary } from '../lib/reportCompare';
 import { strings } from '../lib/strings';
-import { reportApi, apiFetch } from '../lib/publicBase';
+import { reportApi, apiFetch, readApiErrorMessage } from '../lib/publicBase';
 import { loadReportCompare } from '../lib/reportCompareClient';
 import type { ReportContextValue } from './reportContextTypes';
 import { SECTION_KEYS, type SectionKey } from '../lib/reportSections';
@@ -177,7 +177,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
         payload?: Partial<ReportPayload>;
         error?: string;
       };
-      if (!res.ok) throw new Error(body.error || res.statusText);
+      if (!res.ok) throw new Error(readApiErrorMessage(body as Record<string, unknown>, res));
       if (sectionCacheKeyRef.current !== cacheKeySnapshot) {
         setSectionStatus((prev) => {
           if (prev[section] !== 'loading') return prev;
@@ -236,7 +236,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
             );
       const res = await apiFetch(url);
       const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
-      if (!res.ok) throw new Error(body.error || res.statusText);
+      if (!res.ok) throw new Error(readApiErrorMessage(body as Record<string, unknown>, res));
       const coreData = sanitizePayloadForDomain(body.payload ?? null, scoped);
       setData((prev) => (prev == null ? coreData : { ...prev, ...(coreData ?? {}) }));
       setSectionStatus((prev) => ({ ...prev, core: 'loaded' }));
@@ -255,7 +255,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
               : reportApi('/payload?section=core'),
           );
           const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
-          if (!res.ok) throw new Error(body.error || res.statusText);
+          if (!res.ok) throw new Error(readApiErrorMessage(body as Record<string, unknown>, res));
           const coreData = sanitizePayloadForDomain(body.payload ?? null, scoped);
           setData((prev) => (prev == null ? coreData : { ...prev, ...(coreData ?? {}) }));
           setSectionStatus((prev) => ({ ...prev, core: 'loaded' }));
@@ -277,7 +277,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     try {
       const res = await apiFetch(reportApi('/meta'));
       const body = (await res.json().catch(() => ({}))) as MetaApiResponse;
-      if (!res.ok) throw new Error(body.error || res.statusText);
+      if (!res.ok) throw new Error(readApiErrorMessage(body as Record<string, unknown>, res));
 
       const reps = Array.isArray(body.reports) ? body.reports : [];
       const cr = Array.isArray(body.crawlRuns) ? body.crawlRuns : [];
@@ -338,7 +338,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
         reportApi(`/crawl-payload?crawlRunId=${encodeURIComponent(String(crawlRunId))}`),
       );
       const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
-      if (!res.ok) throw new Error(body.error || res.statusText);
+      if (!res.ok) throw new Error(readApiErrorMessage(body as Record<string, unknown>, res));
       setData(body.payload ?? null);
       setSelectedReportId(null);
       setCrawlPreviewRunId(Number(crawlRunId));

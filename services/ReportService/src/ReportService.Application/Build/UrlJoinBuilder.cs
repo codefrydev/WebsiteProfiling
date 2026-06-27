@@ -13,9 +13,7 @@ public static class UrlJoinBuilder
     {
         gscByPage ??= new Dictionary<string, IReadOnlyDictionary<string, object?>>(StringComparer.Ordinal);
 
-        var crawlNorm = crawlUrls
-            .Where(u => !string.IsNullOrWhiteSpace(u))
-            .ToDictionary(UrlNormalizeHelper.NormalizeUrl, u => u, StringComparer.Ordinal);
+        var crawlNorm = UrlNormalizeHelper.ToNormalizedUrlMap(crawlUrls);
 
         var gscNorm = new Dictionary<string, (string Url, IReadOnlyDictionary<string, object?> Metrics)>(StringComparer.Ordinal);
         foreach (var url in gscPages.Where(u => !string.IsNullOrWhiteSpace(u)))

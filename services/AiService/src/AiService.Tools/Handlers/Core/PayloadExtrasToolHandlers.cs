@@ -204,6 +204,7 @@ public static class PayloadExtrasToolHandlers
         ["amp_mismatch_count"] = 0,
         ["pages_with_rel_next"] = 0,
         ["pages_with_rel_prev"] = 0,
+        ["provenance"] = "Crawl",
     };
 
     private static JsonObject ParsePagination(JsonObject row)

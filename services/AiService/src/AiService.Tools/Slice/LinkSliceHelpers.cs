@@ -26,8 +26,7 @@ public static class LinkSliceHelpers
             }
 
             internalCount++;
-            if (edge["is_nofollow"]?.GetValue<bool?>() == true
-                || string.Equals(JsonCoercion.AsString(edge["is_nofollow"]), "true", StringComparison.OrdinalIgnoreCase))
+            if (JsonCoercion.IsTruthy(edge["is_nofollow"]))
             {
                 nofollowInternal++;
             }

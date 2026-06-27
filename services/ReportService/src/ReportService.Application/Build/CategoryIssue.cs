@@ -8,7 +8,8 @@ public sealed record CategoryIssue(
     double GscClicks = 0,
     double GscImpressions = 0,
     double Ga4Sessions = 0,
-    double? ImpactScore = null);
+    double? ImpactScore = null,
+    string FindingType = "");
 
 public sealed record ReportCategory(
     string Id,

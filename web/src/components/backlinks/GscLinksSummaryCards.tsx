@@ -15,6 +15,8 @@ interface GscLinksSummaryCardsProps {
 
 export default function GscLinksSummaryCards({ data, labels }: GscLinksSummaryCardsProps) {
   const counts = summaryCounts(data);
+  const formatCount = (value: number, available: boolean) =>
+    available ? value.toLocaleString() : '—';
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
       <SummaryCard
@@ -29,12 +31,12 @@ export default function GscLinksSummaryCards({ data, labels }: GscLinksSummaryCa
       />
       <SummaryCard
         label={labels.sampleLinks}
-        value={counts.sampleLinks.toLocaleString()}
+        value={formatCount(counts.sampleLinks, counts.hasSampleExport)}
         hint={metricHelpHint('shared.sampleLinks')}
       />
       <SummaryCard
         label={labels.latestLinks}
-        value={counts.latestLinks.toLocaleString()}
+        value={formatCount(counts.latestLinks, counts.hasLatestExport)}
         hint={metricHelpHint('views.backlinks.latestLinks')}
       />
     </div>

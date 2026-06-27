@@ -4,29 +4,29 @@
     "llm_settings": {
       "singleton": true,
       "columns": {
-        "enabled": { "legacy_key": "llm_enabled", "type": "bool", "default": false },
-        "provider": { "legacy_key": "llm_provider", "type": "text", "default": "none" },
-        "active_model": { "legacy_key": "llm_model", "type": "text", "default": "" },
-        "ollama_base_url": { "legacy_key": "llm_base_url", "type": "text", "default": "http://127.0.0.1:11434" },
-        "enable_ner": { "legacy_key": "llm_enable_ner", "type": "bool", "default": true },
-        "enable_keyphrases": { "legacy_key": "llm_enable_keyphrases", "type": "bool", "default": true },
-        "enable_similar_internal": { "legacy_key": "llm_enable_similar_internal", "type": "bool", "default": true },
-        "enable_keyword_clusters": { "legacy_key": "llm_enable_keyword_clusters", "type": "bool", "default": true },
-        "enable_issue_fixes": { "legacy_key": "llm_enable_issue_fixes", "type": "bool", "default": true },
-        "enable_audit_summary": { "legacy_key": "llm_enable_audit_summary", "type": "bool", "default": true },
-        "enable_page_coach": { "legacy_key": "llm_enable_page_coach", "type": "bool", "default": true },
-        "enable_content_studio": { "legacy_key": "llm_enable_content_studio", "type": "bool", "default": true },
-        "enable_dashboards": { "legacy_key": "llm_enable_dashboards", "type": "bool", "default": true },
-        "chat_assistant_name": { "legacy_key": "llm_chat_assistant_name", "type": "text", "default": "AI Assistant" },
-        "chat_assistant_avatar_url": { "legacy_key": "llm_chat_assistant_avatar_url", "type": "text", "default": "" },
-        "chat_unlimited_tool_rounds": { "legacy_key": "llm_chat_unlimited_tool_rounds", "type": "bool", "default": false },
-        "chat_allow_crawl": { "legacy_key": "llm_chat_allow_crawl", "type": "bool", "default": false },
-        "chat_fast_narrative": { "legacy_key": "llm_chat_fast_narrative", "type": "bool", "default": false },
-        "max_pages": { "legacy_key": "llm_max_pages", "type": "int", "default": 60 },
-        "batch_size": { "legacy_key": "llm_batch_size", "type": "int", "default": 5 },
-        "concurrency": { "legacy_key": "llm_concurrency", "type": "int", "default": 2 },
-        "timeout_seconds": { "legacy_key": "llm_timeout_s", "type": "int", "default": 120 },
-        "similar_top_k": { "legacy_key": "llm_similar_top_k", "type": "int", "default": 5 }
+        "enabled": { "state_key": "llm_enabled", "type": "bool", "default": false },
+        "provider": { "state_key": "llm_provider", "type": "text", "default": "none" },
+        "active_model": { "state_key": "llm_model", "type": "text", "default": "" },
+        "ollama_base_url": { "state_key": "llm_base_url", "type": "text", "default": "http://127.0.0.1:11434" },
+        "enable_ner": { "state_key": "llm_enable_ner", "type": "bool", "default": true },
+        "enable_keyphrases": { "state_key": "llm_enable_keyphrases", "type": "bool", "default": true },
+        "enable_similar_internal": { "state_key": "llm_enable_similar_internal", "type": "bool", "default": true },
+        "enable_keyword_clusters": { "state_key": "llm_enable_keyword_clusters", "type": "bool", "default": true },
+        "enable_issue_fixes": { "state_key": "llm_enable_issue_fixes", "type": "bool", "default": true },
+        "enable_audit_summary": { "state_key": "llm_enable_audit_summary", "type": "bool", "default": true },
+        "enable_page_coach": { "state_key": "llm_enable_page_coach", "type": "bool", "default": true },
+        "enable_content_studio": { "state_key": "llm_enable_content_studio", "type": "bool", "default": true },
+        "enable_dashboards": { "state_key": "llm_enable_dashboards", "type": "bool", "default": true },
+        "chat_assistant_name": { "state_key": "llm_chat_assistant_name", "type": "text", "default": "AI Assistant" },
+        "chat_assistant_avatar_url": { "state_key": "llm_chat_assistant_avatar_url", "type": "text", "default": "" },
+        "chat_unlimited_tool_rounds": { "state_key": "llm_chat_unlimited_tool_rounds", "type": "bool", "default": false },
+        "chat_allow_crawl": { "state_key": "llm_chat_allow_crawl", "type": "bool", "default": false },
+        "chat_fast_narrative": { "state_key": "llm_chat_fast_narrative", "type": "bool", "default": false },
+        "max_pages": { "state_key": "llm_max_pages", "type": "int", "default": 60 },
+        "batch_size": { "state_key": "llm_batch_size", "type": "int", "default": 5 },
+        "concurrency": { "state_key": "llm_concurrency", "type": "int", "default": 2 },
+        "timeout_seconds": { "state_key": "llm_timeout_s", "type": "int", "default": 120 },
+        "similar_top_k": { "state_key": "llm_similar_top_k", "type": "int", "default": 5 }
       }
     },
     "llm_provider_profiles": {
@@ -38,7 +38,7 @@
         "saved_model": { "type": "text", "default": "" },
         "api_key_updated_at": { "type": "timestamptz", "nullable": true }
       },
-      "legacy_key_patterns": {
+      "state_key_patterns": {
         "api_key": "llm_api_key_{provider}",
         "saved_model": "llm_model_{provider}"
       }
@@ -46,52 +46,52 @@
     "integration_secrets": {
       "singleton": true,
       "columns": {
-        "bing_webmaster_api_key": { "legacy_key": "bing_webmaster_api_key", "type": "text", "default": "" },
-        "serp_api_key": { "legacy_key": "serp_api_key", "type": "text", "default": "" },
-        "google_rich_results_api_key": { "legacy_key": "google_rich_results_api_key", "type": "text", "default": "" },
-        "crawl_auth_password": { "legacy_key": "crawl_auth_password", "type": "text", "default": "" },
-        "crawl_cookies": { "legacy_key": "crawl_cookies", "type": "text", "default": "" }
+        "bing_webmaster_api_key": { "state_key": "bing_webmaster_api_key", "type": "text", "default": "" },
+        "serp_api_key": { "state_key": "serp_api_key", "type": "text", "default": "" },
+        "google_rich_results_api_key": { "state_key": "google_rich_results_api_key", "type": "text", "default": "" },
+        "crawl_auth_password": { "state_key": "crawl_auth_password", "type": "text", "default": "" },
+        "crawl_cookies": { "state_key": "crawl_cookies", "type": "text", "default": "" }
       }
     },
     "mcp_settings": {
       "singleton": true,
       "columns": {
-        "bearer_token": { "legacy_key": "mcp_token", "type": "text", "default": "" },
-        "allowed_hosts": { "legacy_key": "mcp_allowed_hosts", "type": "text", "default": "" },
-        "allowed_origins": { "legacy_key": "mcp_allowed_origins", "type": "text", "default": "" },
-        "public_url": { "legacy_key": "mcp_public_url", "type": "text", "default": "" },
-        "tool_bundle": { "legacy_key": "mcp_domain", "type": "text", "default": "core" },
-        "disabled_tools": { "legacy_key": "mcp_disabled_tools", "type": "text", "default": "" },
-        "enabled_domains": { "legacy_key": "mcp_enabled_domains", "type": "text", "default": "[\"core\",\"insight\"]" }
+        "bearer_token": { "state_key": "mcp_token", "type": "text", "default": "" },
+        "allowed_hosts": { "state_key": "mcp_allowed_hosts", "type": "text", "default": "" },
+        "allowed_origins": { "state_key": "mcp_allowed_origins", "type": "text", "default": "" },
+        "public_url": { "state_key": "mcp_public_url", "type": "text", "default": "" },
+        "tool_bundle": { "state_key": "mcp_domain", "type": "text", "default": "core" },
+        "disabled_tools": { "state_key": "mcp_disabled_tools", "type": "text", "default": "" },
+        "enabled_domains": { "state_key": "mcp_enabled_domains", "type": "text", "default": "[\"core\",\"insight\"]" }
       }
     },
     "feature_flags": {
       "singleton": true,
       "columns": {
-        "pipeline_enabled": { "legacy_key": "feature_pipeline_enabled", "type": "bool", "default": true },
-        "write_enabled": { "legacy_key": "feature_write_enabled", "type": "bool", "default": true },
-        "pages_md_enabled": { "legacy_key": "feature_pages_md_enabled", "type": "bool", "default": true },
-        "chat_enabled": { "legacy_key": "feature_chat_enabled", "type": "bool", "default": true },
-        "mcp_visible": { "legacy_key": "feature_mcp_visible", "type": "bool", "default": true },
-        "secrets_visible": { "legacy_key": "feature_secrets_visible", "type": "bool", "default": true }
+        "pipeline_enabled": { "state_key": "feature_pipeline_enabled", "type": "bool", "default": true },
+        "write_enabled": { "state_key": "feature_write_enabled", "type": "bool", "default": true },
+        "pages_md_enabled": { "state_key": "feature_pages_md_enabled", "type": "bool", "default": true },
+        "chat_enabled": { "state_key": "feature_chat_enabled", "type": "bool", "default": true },
+        "mcp_visible": { "state_key": "feature_mcp_visible", "type": "bool", "default": true },
+        "secrets_visible": { "state_key": "feature_secrets_visible", "type": "bool", "default": true }
       }
     },
     "workspace_settings": {
       "singleton": true,
       "columns": {
-        "active_property_id": { "legacy_key": "active_property_id", "type": "int", "nullable": true },
-        "warning_mapper_input": { "legacy_key": "warning_mapper_input", "type": "text", "default": "" },
-        "warning_mapper_input_type": { "legacy_key": "warning_mapper_input_type", "type": "text", "default": "lighthouse" }
+        "active_property_id": { "state_key": "active_property_id", "type": "int", "nullable": true },
+        "warning_mapper_input": { "state_key": "warning_mapper_input", "type": "text", "default": "" },
+        "warning_mapper_input_type": { "state_key": "warning_mapper_input_type", "type": "text", "default": "lighthouse" }
       }
     },
     "ui_preferences": {
       "singleton": true,
       "columns": {
-        "brand_name": { "legacy_app_key": "brand_name", "type": "text", "default": "" },
-        "brand_subtitle": { "legacy_app_key": "brand_subtitle", "type": "text", "default": "" },
-        "brand_logo_url": { "legacy_app_key": "brand_logo_url", "type": "text", "default": "" },
-        "custom_theme_json": { "legacy_app_key": "custom_theme", "type": "jsonb", "nullable": true },
-        "ui_prefs_json": { "legacy_app_key": "ui_prefs", "type": "jsonb", "nullable": true }
+        "brand_name": { "app_key": "brand_name", "type": "text", "default": "" },
+        "brand_subtitle": { "app_key": "brand_subtitle", "type": "text", "default": "" },
+        "brand_logo_url": { "app_key": "brand_logo_url", "type": "text", "default": "" },
+        "custom_theme_json": { "app_key": "custom_theme", "type": "jsonb", "nullable": true },
+        "ui_prefs_json": { "app_key": "ui_prefs", "type": "jsonb", "nullable": true }
       }
     },
     "client_preferences": {

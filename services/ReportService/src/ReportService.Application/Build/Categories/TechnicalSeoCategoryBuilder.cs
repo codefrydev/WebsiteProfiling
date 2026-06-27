@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ReportService.Application.Build;
 using ReportService.Application.Repositories;
 
 namespace ReportService.Application.Build.Categories;
@@ -10,11 +11,6 @@ public static class TechnicalSeoCategoryBuilder
         IReadOnlyDictionary<string, object?>? siteLevel)
     {
         var success = CategoryHelpers.SuccessRows(rows);
-        if (success.Count == 0)
-        {
-            return new ReportCategory("technical_seo", "Technical SEO", 0, [], []);
-        }
-
         var issues = new List<CategoryIssue>();
         var deductions = new List<(int, bool)>();
         siteLevel ??= new Dictionary<string, object?>();
@@ -63,41 +59,176 @@ public static class TechnicalSeoCategoryBuilder
                 recommendation: "Publish security.txt at /.well-known/security.txt with a Contact field for security reporting."));
         }
 
-        var noindexCount = success.Count(r => r.Noindex == true);
-        if (noindexCount > 0)
+        if (success.Count > 0)
         {
-            issues.Add(CategoryHelpers.Issue(
-                $"{noindexCount} page(s) have noindex.",
-                priority: noindexCount > 5 ? "High" : "Medium",
-                recommendation: "Remove noindex from pages that should be indexed, or keep for intentional no-index pages."));
-            deductions.Add((Math.Min(15, noindexCount * 3), true));
-        }
-
-        foreach (var row in success)
-        {
-            var canonical = row.CanonicalUrl?.Trim();
-            if (string.IsNullOrEmpty(canonical))
-            {
-                continue;
-            }
-
-            var pageUrl = row.Url.Trim().TrimEnd('/');
-            var canon = canonical.TrimEnd('/');
-            if (!string.Equals(pageUrl, canon, StringComparison.OrdinalIgnoreCase))
+            var noindexCount = success.Count(r => r.Noindex == true);
+            if (noindexCount > 0)
             {
                 issues.Add(CategoryHelpers.Issue(
-                    $"Canonical points to different URL: {canon}",
-                    row.Url,
-                    "High",
-                    "Set canonical to this page URL or the preferred duplicate."));
-                deductions.Add((10, true));
-                break;
+                    $"{noindexCount} page(s) have noindex.",
+                    priority: noindexCount > 5 ? "High" : "Medium",
+                    recommendation: "Remove noindex from pages that should be indexed, or keep for intentional no-index pages."));
+                deductions.Add((Math.Min(15, noindexCount * 3), true));
+            }
+
+            if (rows.Any(r => r.CanonicalUrl is not null))
+            {
+                foreach (var row in success)
+                {
+                    var canonical = row.CanonicalUrl?.Trim();
+                    if (string.IsNullOrEmpty(canonical))
+                    {
+                        issues.Add(CategoryHelpers.Issue(
+                            "Missing canonical URL.",
+                            row.Url,
+                            "Medium",
+                            "Add a canonical link tag pointing to the preferred URL."));
+                        break;
+                    }
+                }
+
+                var missingCanon = success.Count(r => string.IsNullOrWhiteSpace(r.CanonicalUrl));
+                if (missingCanon > 0)
+                {
+                    deductions.Add((Math.Min(15, missingCanon * 2), true));
+                }
+
+                foreach (var row in success)
+                {
+                    var canonical = row.CanonicalUrl?.Trim();
+                    if (string.IsNullOrEmpty(canonical))
+                    {
+                        continue;
+                    }
+
+                    var pageUrl = row.Url.Trim().TrimEnd('/');
+                    var canon = canonical.TrimEnd('/');
+                    if (!string.Equals(pageUrl, canon, StringComparison.OrdinalIgnoreCase))
+                    {
+                        issues.Add(CategoryHelpers.Issue(
+                            $"Canonical points to different URL: {canon}",
+                            row.Url,
+                            "High",
+                            "Set canonical to this page URL or the preferred duplicate."));
+                        deductions.Add((10, true));
+                        break;
+                    }
+                }
+            }
+
+            if (success.Count > 1 && success.Any(r => r.Title is not null || r.MetaDescription is not null))
+            {
+                var groups = success
+                    .GroupBy(r => $"{r.Title ?? ""}|{r.MetaDescription ?? ""}", StringComparer.Ordinal)
+                    .Where(g => g.Count() > 1)
+                    .ToList();
+                if (groups.Count > 0)
+                {
+                    issues.Add(CategoryHelpers.Issue(
+                        $"Possible duplicate content: {groups.Count} group(s) of pages share same title and meta description.",
+                        priority: "Medium",
+                        recommendation: "Differentiate titles and meta descriptions, or use canonicals to designate the preferred URL."));
+                    deductions.Add((10, true));
+                }
+            }
+
+            if (rows.Any(r => r.OgTitle is not null))
+            {
+                var ogPresent = success.Count(r => !string.IsNullOrWhiteSpace(r.OgTitle));
+                var ogPct = (double)ogPresent / success.Count;
+                if (ogPct < 0.5)
+                {
+                    issues.Add(CategoryHelpers.Issue(
+                        $"Open Graph tags missing on {(int)((1 - ogPct) * 100)}% of pages.",
+                        priority: "Medium",
+                        recommendation: "Add og:title, og:description, and og:image meta tags for social sharing."));
+                    deductions.Add((5, true));
+                }
+            }
+
+            if (rows.Any(r => r.TwitterCard is not null))
+            {
+                var twPresent = success.Count(r => !string.IsNullOrWhiteSpace(r.TwitterCard));
+                var twPct = (double)twPresent / success.Count;
+                if (twPct < 0.2)
+                {
+                    issues.Add(CategoryHelpers.Issue(
+                        $"Twitter Card tags missing on {(int)((1 - twPct) * 100)}% of pages.",
+                        priority: "Low",
+                        recommendation: "Add twitter:card meta tags for better Twitter/X sharing previews."));
+                    deductions.Add((3, true));
+                }
+            }
+
+            if (success.Any(r => r.HasSchema.HasValue))
+            {
+                var withSchema = success.Count(r => r.HasSchema == true);
+                if (withSchema == 0)
+                {
+                    issues.Add(CategoryHelpers.Issue(
+                        "No structured data (JSON-LD or microdata) detected.",
+                        priority: "Low",
+                        recommendation: "Add schema.org markup (e.g. Organization, Article) for rich results."));
+                    deductions.Add((5, true));
+                }
+            }
+
+            var missingLang = 0;
+            foreach (var row in success)
+            {
+                if (string.IsNullOrWhiteSpace(ResolveHtmlLang(row)))
+                {
+                    missingLang++;
+                }
+            }
+
+            if (missingLang > 0 && success.Count >= 3)
+            {
+                var ratio = (double)missingLang / success.Count;
+                if (ratio > 0.1)
+                {
+                    issues.Add(CategoryHelpers.Issue(
+                        $"{missingLang} page(s) missing <html lang> (of {success.Count} OK responses).",
+                        priority: ratio > 0.5 ? "Medium" : "Low",
+                        recommendation: "Add <html lang=\"...\"> matching the primary language of each page."));
+                    deductions.Add((Math.Min(10, Math.Max(2, missingLang / 5)), true));
+                }
+            }
+
+            issues.AddRange(CategoryHelpers.HreflangIssues(success));
+            issues.AddRange(CategoryHelpers.SchemaIssues(success));
+            issues.AddRange(CategoryHelpers.Soft404Issues(success));
+
+            var pagesWithConsole = 0;
+            foreach (var row in success)
+            {
+                var pa = CategoryHelpers.ParsePageAnalysisCell(row.PageAnalysisJson);
+                var counts = BrowserDiagnosticsHelper.SummaryFromPageAnalysis(pa);
+                if (counts.PageErrorCount > 0)
+                {
+                    issues.Add(CategoryHelpers.Issue(
+                        "Uncaught JavaScript error during browser render.",
+                        row.Url,
+                        "High",
+                        "Fix runtime JS errors that may break page functionality or SEO signals."));
+                    deductions.Add((5, true));
+                }
+
+                if (counts.ConsoleErrorCount > 0)
+                {
+                    pagesWithConsole++;
+                }
+            }
+
+            if (pagesWithConsole > 0)
+            {
+                issues.Add(CategoryHelpers.Issue(
+                    $"{pagesWithConsole} page(s) logged console errors during JavaScript rendering.",
+                    priority: pagesWithConsole > 3 ? "High" : "Medium",
+                    recommendation: "Inspect browser console errors on affected URLs; fix broken scripts or API calls."));
+                deductions.Add((Math.Min(15, pagesWithConsole * 2), true));
             }
         }
-
-        issues.AddRange(CategoryHelpers.HreflangIssues(success));
-        issues.AddRange(CategoryHelpers.SchemaIssues(success));
-        issues.AddRange(CategoryHelpers.Soft404Issues(success));
 
         var sorted = CategoryHelpers.SortIssues(issues);
         return new ReportCategory(
@@ -123,5 +254,21 @@ public static class TechnicalSeoCategoryBuilder
             string s when bool.TryParse(s, out var b) => b,
             _ => defaultValue,
         };
+    }
+
+    private static string? ResolveHtmlLang(CrawlRow row)
+    {
+        if (!string.IsNullOrWhiteSpace(row.HtmlLang))
+        {
+            return row.HtmlLang.Trim();
+        }
+
+        var pa = CategoryHelpers.ParsePageAnalysisCell(row.PageAnalysisJson);
+        if (pa.TryGetValue("html_lang", out var lang) && lang is not null)
+        {
+            return lang.ToString()?.Trim();
+        }
+
+        return null;
     }
 }

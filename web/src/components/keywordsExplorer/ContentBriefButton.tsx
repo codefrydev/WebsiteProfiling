@@ -1,15 +1,20 @@
 
 import { useState, useCallback } from 'react';
 import { FileText, Loader2, X } from 'lucide-react';
-import { apiUrl, apiFetch } from '@/lib/publicBase';
+import { apiUrl, apiFetch, readApiErrorMessage } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
 import type { KeywordRow } from '@/types/components';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
 
 interface ContentBriefResult {
   keyword?: string;
-  summary?: string;
+  summary?: string | string[];
   provenance?: string;
+}
+
+function formatBriefSummary(summary: string | string[] | undefined): string {
+  if (!summary) return '';
+  return Array.isArray(summary) ? summary.join('\n') : summary;
 }
 
 export interface ContentBriefButtonProps {
@@ -40,9 +45,10 @@ export default function ContentBriefButton({ keyword, clusterRows }: ContentBrie
           rows: clusterRows.slice(0, 20),
         }),
       });
-      const payload = await res.json();
-      if (!res.ok) throw new Error(payload.error || s.failed);
-      setBrief((payload.brief || null) as ContentBriefResult | null);
+      const payload = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+      if (!res.ok) throw new Error(readApiErrorMessage(payload, res, s.failed));
+      const rawBrief = (payload.brief || null) as ContentBriefResult | null;
+      setBrief(rawBrief);
     } catch (e) {
       setError(e instanceof Error ? e.message : s.failed);
     } finally {
@@ -93,10 +99,10 @@ export default function ContentBriefButton({ keyword, clusterRows }: ContentBrie
                 </p>
               ) : error ? (
                 <p className="text-red-700 dark:text-red-400 text-xs">{error}</p>
-              ) : brief?.summary ? (
+              ) : formatBriefSummary(brief?.summary) ? (
                 <>
                   <pre className="whitespace-pre-wrap text-xs text-muted-foreground leading-relaxed font-sans">
-                    {brief.summary}
+                    {formatBriefSummary(brief.summary)}
                   </pre>
                   {brief.provenance ? (
                     <p className="text-[10px] text-muted-foreground">{s.provenance}: {brief.provenance}</p>

@@ -91,6 +91,11 @@ public static class ToolHandlerModules
             yield return handler;
         }
 
+        foreach (var handler in GeoModule(serviceProvider))
+        {
+            yield return handler;
+        }
+
         foreach (var handler in PayloadExtrasModule())
         {
             yield return handler;
@@ -177,6 +182,10 @@ public static class ToolHandlerModules
         yield return new DelegatingToolHandler("get_ga4_by_channel", GoogleToolHandlers.GetGa4ByChannelAsync);
         yield return new DelegatingToolHandler("get_gsc_page_queries", GoogleToolHandlers.GetGscPageQueriesAsync);
         yield return new DelegatingToolHandler("get_gsc_ctr_opportunity_pages", GoogleToolHandlers.GetGscCtrOpportunityPagesAsync);
+        yield return new DelegatingToolHandler("list_gsc_queries_by_impressions", GoogleToolHandlers.ListGscQueriesByImpressionsAsync);
+        yield return new DelegatingToolHandler("list_gsc_queries_by_clicks", GoogleToolHandlers.ListGscQueriesByClicksAsync);
+        yield return new DelegatingToolHandler("list_gsc_pages_by_impressions", GoogleToolHandlers.ListGscPagesByImpressionsAsync);
+        yield return new DelegatingToolHandler("list_gsc_pages_by_clicks", GoogleToolHandlers.ListGscPagesByClicksAsync);
     }
 
     public static IEnumerable<IToolHandler> LinksModule()
@@ -232,6 +241,32 @@ public static class ToolHandlerModules
         yield return new DelegatingToolHandler("list_slow_pages", PerformanceToolHandlers.ListSlowPagesAsync);
         yield return new DelegatingToolHandler("get_lighthouse_human_summary", PerformanceToolHandlers.GetLighthouseHumanSummaryAsync);
         yield return new DelegatingToolHandler("list_lighthouse_poor_seo_pages", PerformanceToolHandlers.ListLighthousePoorSeoPagesAsync);
+        yield return new DelegatingToolHandler("list_lighthouse_cwv_failures", PerformanceToolHandlers.ListLighthouseCwvFailuresAsync);
+    }
+
+    public static IEnumerable<IToolHandler> GeoModule(IServiceProvider serviceProvider)
+    {
+        static HttpClient CreateHttp(IServiceProvider sp) =>
+            sp.GetRequiredService<IHttpClientFactory>().CreateClient("GeoAudit");
+
+        yield return new DelegatingToolHandler("get_faq_schema_coverage", GeoToolHandlers.GetFaqSchemaCoverageAsync);
+        yield return new DelegatingToolHandler("list_pages_missing_faq_schema", GeoToolHandlers.ListPagesMissingFaqSchemaAsync);
+        yield return new DelegatingToolHandler("get_aeo_content_signals_for_url", GeoToolHandlers.GetAeoContentSignalsForUrlAsync);
+        yield return new DelegatingToolHandler("get_eeat_signals_summary", GeoToolHandlers.GetEeatSignalsSummaryAsync);
+        yield return new DelegatingToolHandler("get_js_rendering_delta", GeoToolHandlers.GetJsRenderingDeltaAsync);
+        yield return new DelegatingToolHandler("get_internal_link_suggestions", GeoToolHandlers.GetInternalLinkSuggestionsAsync);
+        yield return new InjectingToolHandler(
+            "get_llms_txt_status",
+            (sp, db, ctx, args, ct) => GeoToolHandlers.GetLlmsTxtStatusAsync(CreateHttp(sp), db, ctx, args, ct),
+            serviceProvider);
+        yield return new InjectingToolHandler(
+            "get_ai_discovery_status",
+            (sp, db, ctx, args, ct) => GeoToolHandlers.GetAiDiscoveryStatusAsync(CreateHttp(sp), db, ctx, args, ct),
+            serviceProvider);
+        yield return new InjectingToolHandler(
+            "get_geo_readiness_score",
+            (sp, db, ctx, args, ct) => GeoToolHandlers.GetGeoReadinessScoreAsync(CreateHttp(sp), db, ctx, args, ct),
+            serviceProvider);
     }
 
     public static IEnumerable<IToolHandler> PayloadExtrasModule()

@@ -164,4 +164,6 @@ public sealed class CategoryBuilderGoldenTests
 
         throw new InvalidOperationException("Could not locate repo root for fixtures.");
     }
+
+    internal static string FindRepoRootForTests() => FindRepoRoot();
 }

@@ -98,4 +98,47 @@ public static class JsonCoercion
             _ => @default,
         };
     }
+
+    /// <summary>Python truthy check for JSON scalars (true, "true", "1", "yes", non-zero number).</summary>
+    public static bool IsTruthy(JsonNode? node)
+    {
+        if (node is null)
+        {
+            return false;
+        }
+
+        if (node is JsonValue value)
+        {
+            if (value.TryGetValue<bool>(out var b))
+            {
+                return b;
+            }
+
+            if (value.TryGetValue<int>(out var i))
+            {
+                return i != 0;
+            }
+
+            if (value.TryGetValue<long>(out var l))
+            {
+                return l != 0;
+            }
+
+            if (value.TryGetValue<double>(out var d))
+            {
+                return d != 0;
+            }
+
+            if (value.TryGetValue<string>(out var s))
+            {
+                return s.ToLowerInvariant() switch
+                {
+                    "" or "false" or "0" or "no" => false,
+                    _ => true,
+                };
+            }
+        }
+
+        return false;
+    }
 }

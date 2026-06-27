@@ -187,13 +187,11 @@ cmd_start() {
   export FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}"
   export REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-http://127.0.0.1:8094}"
   export PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE="${PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE:-1}"
+  export PYTHON="${PYTHON:-$ROOT/.venv/bin/python}"
+  export WEBSITE_PROFILING_ROOT="$ROOT"
 
-  log "Starting pipeline worker"
-  "$ROOT/.venv/bin/python" -m website_profiling.worker &
-  WORKER_PID=$!
-  disown_bg "$WORKER_PID"
-
-  log "Starting FastAPI on port 8001"
+  log "Pipeline jobs run in ReportService C# worker"
+  log "Starting Python bridge (audit-tool + keyword enrich CLI) on port 8001"
   export FASTAPI_URL="http://127.0.0.1:8001"
   export FASTAPI_ALLOWED_ORIGINS="http://localhost:8090"
   "$ROOT/.venv/bin/uvicorn" website_profiling.api.main:app \

@@ -91,6 +91,15 @@ public static class ReportMetadataBuilder
             crawlScope["pages_rendered"] = pagesRendered;
         }
 
+        var browserAgg = BrowserDiagnosticsAggregator.Aggregate(rows);
+        if (browserAgg is not null
+            && (renderMode != "static"
+                || (browserAgg.TryGetValue("total_console_errors", out var tceObj)
+                    && Convert.ToInt32(tceObj) > 0)))
+        {
+            crawlScope["browser_diagnostics"] = browserAgg;
+        }
+
         var meta = new Dictionary<string, object?>
         {
             ["data_sources"] = sources,
@@ -208,7 +217,7 @@ public static class ReportMetadataBuilder
             }
 
             total++;
-            var pa = ParsePageAnalysis(row.PageAnalysisJson);
+            var pa = CategoryHelpers.ParsePageAnalysis(row.PageAnalysisJson);
             if (string.IsNullOrWhiteSpace(pa.GetValueOrDefault("html_lang")?.ToString()))
             {
                 missingLang++;
@@ -252,7 +261,7 @@ public static class ReportMetadataBuilder
             }
 
             var seenOnPage = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var pa = ParsePageAnalysis(row.PageAnalysisJson);
+            var pa = CategoryHelpers.ParsePageAnalysis(row.PageAnalysisJson);
             foreach (var link in EnumerateExternalLinks(pa.GetValueOrDefault("external_links")))
             {
                 TrackOutbound(link, siteHost, u, hostPages, hostLinkCount, seenOnPage, alwaysCount: true);
@@ -335,44 +344,6 @@ public static class ReportMetadataBuilder
         }
 
         seenOnPage.Add(link);
-    }
-
-    private static Dictionary<string, object?> ParsePageAnalysis(string? raw)
-    {
-        if (string.IsNullOrWhiteSpace(raw) || raw == "{}")
-        {
-            return new Dictionary<string, object?>();
-        }
-
-        try
-        {
-            using var doc = JsonDocument.Parse(raw);
-            if (doc.RootElement.ValueKind != JsonValueKind.Object)
-            {
-                return new Dictionary<string, object?>();
-            }
-
-            var dict = new Dictionary<string, object?>();
-            foreach (var prop in doc.RootElement.EnumerateObject())
-            {
-                dict[prop.Name] = prop.Value.ValueKind switch
-                {
-                    JsonValueKind.String => prop.Value.GetString(),
-                    JsonValueKind.Number => prop.Value.TryGetInt64(out var n) ? n : prop.Value.GetDouble(),
-                    JsonValueKind.True => true,
-                    JsonValueKind.False => false,
-                    JsonValueKind.Array => prop.Value,
-                    JsonValueKind.Object => prop.Value,
-                    _ => null,
-                };
-            }
-
-            return dict;
-        }
-        catch (JsonException)
-        {
-            return new Dictionary<string, object?>();
-        }
     }
 
     private static string UrlHost(string url)

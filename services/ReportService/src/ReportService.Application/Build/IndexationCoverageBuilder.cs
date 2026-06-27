@@ -20,9 +20,9 @@ public static class IndexationCoverageBuilder
         var gscPages = ExtractGscPageUrls(googleData);
         var gscByPage = ExtractGscByPage(googleData);
 
-        var crawlNorm = crawlUrls.ToDictionary(UrlNormalizeHelper.NormalizeUrl, u => u, StringComparer.Ordinal);
-        var sitemapNorm = sitemapUrls.ToDictionary(UrlNormalizeHelper.NormalizeUrl, u => u, StringComparer.Ordinal);
-        var gscNorm = gscPages.ToDictionary(UrlNormalizeHelper.NormalizeUrl, u => u, StringComparer.Ordinal);
+        var crawlNorm = UrlNormalizeHelper.ToNormalizedUrlMap(crawlUrls);
+        var sitemapNorm = UrlNormalizeHelper.ToNormalizedUrlMap(sitemapUrls);
+        var gscNorm = UrlNormalizeHelper.ToNormalizedUrlMap(gscPages);
 
         var sitemapOnlyNorm = sitemapNorm.Keys.Except(crawlNorm.Keys).ToHashSet(StringComparer.Ordinal);
         var crawledNotSitemapNorm = crawlNorm.Keys.Except(sitemapNorm.Keys).ToHashSet(StringComparer.Ordinal);

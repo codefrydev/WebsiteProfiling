@@ -32,6 +32,7 @@ public static class GoogleToolHandlers
 
         var topQueries = CapJsonList(gsc["top_queries"], 10);
         var topPages = CapJsonList(gsc["top_pages"], 10);
+        var ga4TopPages = CapJsonList(ga4["top_pages"], 10);
 
         return new JsonObject
         {
@@ -48,7 +49,9 @@ public static class GoogleToolHandlers
             {
                 ["property_id"] = ga4["property_id"]?.DeepClone(),
                 ["summary"] = ga4Summary.DeepClone(),
+                ["top_pages"] = ga4TopPages,
             },
+            ["errors"] = data["errors"] is JsonArray errors ? errors.DeepClone() : new JsonArray(),
             ["property_id"] = scoped.PropertyId,
         };
     }
@@ -82,6 +85,34 @@ public static class GoogleToolHandlers
         JsonObject args,
         CancellationToken cancellationToken)
         => await CapGoogleListAsync(db, ctx, args, "gsc", ["top_pages", "pages"], "pages", cancellationToken);
+
+    public static Task<JsonObject> ListGscQueriesByImpressionsAsync(
+        AuditToolsDbContext db,
+        AuditToolContext ctx,
+        JsonObject args,
+        CancellationToken cancellationToken)
+        => ListGscSortedAsync(db, ctx, args, "queries", "queries", "impressions", cancellationToken);
+
+    public static Task<JsonObject> ListGscQueriesByClicksAsync(
+        AuditToolsDbContext db,
+        AuditToolContext ctx,
+        JsonObject args,
+        CancellationToken cancellationToken)
+        => ListGscSortedAsync(db, ctx, args, "queries", "queries", "clicks", cancellationToken);
+
+    public static Task<JsonObject> ListGscPagesByImpressionsAsync(
+        AuditToolsDbContext db,
+        AuditToolContext ctx,
+        JsonObject args,
+        CancellationToken cancellationToken)
+        => ListGscSortedAsync(db, ctx, args, "pages", "pages", "impressions", cancellationToken);
+
+    public static Task<JsonObject> ListGscPagesByClicksAsync(
+        AuditToolsDbContext db,
+        AuditToolContext ctx,
+        JsonObject args,
+        CancellationToken cancellationToken)
+        => ListGscSortedAsync(db, ctx, args, "pages", "pages", "clicks", cancellationToken);
 
     public static async Task<JsonObject> GetGa4SummaryAsync(
         AuditToolsDbContext db,
@@ -313,6 +344,90 @@ public static class GoogleToolHandlers
             10 => 0.018,
             _ => 0.008,
         };
+    }
+
+    private static async Task<JsonObject> ListGscSortedAsync(
+        AuditToolsDbContext db,
+        AuditToolContext ctx,
+        JsonObject args,
+        string rowKey,
+        string outputKey,
+        string sortField,
+        CancellationToken cancellationToken)
+    {
+        var scoped = ctx.WithArgs(args);
+        var data = await scoped.LoadGoogleFullAsync(db, cancellationToken)
+            ?? await scoped.LoadGoogleAsync(db, cancellationToken);
+        if (data is null)
+        {
+            return new JsonObject
+            {
+                ["error"] = "no google data found",
+                ["missing"] = true,
+                [outputKey] = new JsonArray(),
+                ["total"] = 0,
+                ["truncated"] = false,
+            };
+        }
+
+        var rows = GscRows(data, rowKey);
+        var limit = PayloadSliceHelpers.ParseLimit(args["limit"], 30, 50);
+        var sliced = SortGscRows(rows, sortField, limit);
+        return new JsonObject
+        {
+            [outputKey] = sliced["items"]?.DeepClone(),
+            ["total"] = sliced["total"]?.DeepClone(),
+            ["truncated"] = sliced["truncated"]?.DeepClone(),
+        };
+    }
+
+    private static List<JsonObject> GscRows(JsonObject data, string key)
+    {
+        var gsc = ResolveGscBlock(data);
+        JsonArray? array = null;
+        if (gsc[key] is JsonArray direct)
+        {
+            array = direct;
+        }
+        else if (gsc[$"top_{key}"] is JsonArray top)
+        {
+            array = top;
+        }
+
+        var rows = new List<JsonObject>();
+        if (array is null)
+        {
+            return rows;
+        }
+
+        foreach (var node in array)
+        {
+            if (node is JsonObject row)
+            {
+                rows.Add(row);
+            }
+        }
+
+        return rows;
+    }
+
+    private static JsonObject ResolveGscBlock(JsonObject data)
+    {
+        if (data["gsc_full"] is JsonObject full)
+        {
+            return full;
+        }
+
+        return data["gsc"] as JsonObject ?? [];
+    }
+
+    private static JsonObject SortGscRows(IReadOnlyList<JsonObject> rows, string sortField, int limit)
+    {
+        var sorted = rows
+            .OrderByDescending(r => JsonCoercion.Num(r[sortField]))
+            .Cast<JsonNode?>()
+            .ToList();
+        return PayloadSliceHelpers.CapList(sorted, limit, 50);
     }
 
     private static async Task<JsonObject> CapGoogleListAsync(

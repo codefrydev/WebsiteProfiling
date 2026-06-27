@@ -22,14 +22,16 @@ def _extract_field_keys(ts_path: Path) -> set[str]:
     return keys
 
 
-def _legacy_keys_from_manifest(manifest: dict) -> dict[str, set[str]]:
-    """Map table name -> set of legacy pipeline/llm keys covered."""
+def _state_keys_from_manifest(manifest: dict) -> dict[str, set[str]]:
+    """Map table name -> set of flat pipeline/LLM state keys covered."""
     out: dict[str, set[str]] = {}
     for table, spec in manifest["tables"].items():
         keys: set[str] = set()
         for col_spec in spec.get("columns", {}).values():
-            if "legacy_key" in col_spec:
-                keys.add(col_spec["legacy_key"])
+            if "state_key" in col_spec:
+                keys.add(col_spec["state_key"])
+            if "app_key" in col_spec:
+                keys.add(col_spec["app_key"])
         if keys:
             out[table] = keys
     for table, key_list in manifest.get("pipeline_domain_tables", {}).items():
@@ -37,9 +39,9 @@ def _legacy_keys_from_manifest(manifest: dict) -> dict[str, set[str]]:
     return out
 
 
-def _all_manifest_legacy_keys(manifest: dict) -> set[str]:
+def _all_manifest_state_keys(manifest: dict) -> set[str]:
     covered: set[str] = set()
-    for keys in _legacy_keys_from_manifest(manifest).values():
+    for keys in _state_keys_from_manifest(manifest).values():
         covered |= keys
     # Per-provider dynamic keys
     covered.add("llm_api_key")
@@ -56,7 +58,7 @@ def test_manifest_file_exists():
 def test_llm_schema_keys_covered_by_manifest():
     manifest = _load_manifest()
     llm_keys = _extract_field_keys(WEB_ROOT / "llmConfigSchema.ts")
-    covered = _all_manifest_legacy_keys(manifest)
+    covered = _all_manifest_state_keys(manifest)
     missing = llm_keys - covered
     assert not missing, f"LLM schema keys not in manifest: {sorted(missing)}"
 
@@ -65,7 +67,7 @@ def test_pipeline_schema_keys_covered_by_manifest():
     manifest = _load_manifest()
     pipeline_keys = _extract_field_keys(WEB_ROOT / "pipelineConfigSchema.ts")
     pipeline_keys.add("active_property_id")
-    covered = _all_manifest_legacy_keys(manifest)
+    covered = _all_manifest_state_keys(manifest)
     # Secrets moved to integration_secrets / mcp_settings
     secret_or_mcp = {
         "crawl_auth_password", "crawl_cookies", "google_rich_results_api_key",
@@ -82,13 +84,28 @@ def test_pipeline_schema_keys_covered_by_manifest():
     assert not missing, f"Pipeline schema keys not in manifest: {sorted(missing)}"
 
 
-def test_no_duplicate_legacy_key_mappings():
+def _pipeline_state_keys_from_manifest(manifest: dict) -> dict[str, set[str]]:
+    """State keys used for pipeline/LLM flat config routing (must be globally unique)."""
+    out: dict[str, set[str]] = {}
+    for table, spec in manifest["tables"].items():
+        keys: set[str] = set()
+        for col_spec in spec.get("columns", {}).values():
+            if "state_key" in col_spec:
+                keys.add(col_spec["state_key"])
+        if keys:
+            out[table] = keys
+    for table, key_list in manifest.get("pipeline_domain_tables", {}).items():
+        out[table] = set(key_list)
+    return out
+
+
+def test_no_duplicate_state_key_mappings():
     manifest = _load_manifest()
     seen: dict[str, str] = {}
-    for table, keys in _legacy_keys_from_manifest(manifest).items():
+    for table, keys in _pipeline_state_keys_from_manifest(manifest).items():
         for key in keys:
             if key in seen and seen[key] != table:
-                raise AssertionError(f"Legacy key {key!r} mapped to both {seen[key]!r} and {table!r}")
+                raise AssertionError(f"State key {key!r} mapped to both {seen[key]!r} and {table!r}")
             seen[key] = table
 
 

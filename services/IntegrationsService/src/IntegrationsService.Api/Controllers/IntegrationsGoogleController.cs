@@ -17,6 +17,7 @@ public sealed class IntegrationsGoogleController(
     PageCompareService pageCompare,
     PageGoogleSnapshotRepository pageSnapshots,
     KeywordDataRepository keywordData,
+    KeywordExpandPlannerService keywordExpandPlanner,
     IGoogleCredentialFactory credentials,
     IGscSearchAnalyticsClient gscClient) : ControllerBase
 {
@@ -112,6 +113,29 @@ public sealed class IntegrationsGoogleController(
             developerToken = (cfg.DeveloperToken ?? "").Trim(),
             loginCustomerId = (cfg.LoginCustomerId ?? "").Trim(),
         });
+    }
+
+    [HttpPost("keywords/expand")]
+    public async Task<IActionResult> KeywordsExpand(
+        [FromBody] KeywordExpandBody body,
+        CancellationToken cancellationToken)
+    {
+        var (status, payload) = await keywordExpandPlanner.ExpandAsync(
+            body.Keyword ?? "",
+            body.PropertyId,
+            cancellationToken);
+        return StatusCode(status, payload ?? new { });
+    }
+
+    [HttpPost("keywords/planner")]
+    public async Task<IActionResult> KeywordsPlanner(
+        [FromBody] KeywordPlannerBody body,
+        CancellationToken cancellationToken)
+    {
+        var (status, payload) = await keywordExpandPlanner.PlannerAsync(
+            body.Keywords ?? [],
+            cancellationToken);
+        return StatusCode(status, payload ?? new { });
     }
 
     [HttpGet("url-inspection")]
@@ -619,4 +643,16 @@ public sealed class KeywordHistoryBatchBody
     public long? PropertyId { get; init; }
 
     public string? Domain { get; init; }
+}
+
+public sealed class KeywordExpandBody
+{
+    public string? Keyword { get; init; }
+
+    public long? PropertyId { get; init; }
+}
+
+public sealed class KeywordPlannerBody
+{
+    public List<object?>? Keywords { get; init; }
 }

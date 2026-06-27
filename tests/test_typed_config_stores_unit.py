@@ -23,24 +23,24 @@ def _queue_read(conn: FakeConn, model_cls: type[Any], **overrides: Any) -> None:
 def test_serialize_helpers() -> None:
     from website_profiling.db.typed_config import _serialize as ser
 
-    assert ser.bool_to_legacy(True) == "true"
-    assert ser.legacy_to_bool("yes") is True
-    assert ser.legacy_to_bool(None, default=True) is True
-    assert ser.legacy_to_bool("bogus", default=False) is False
+    assert ser.bool_to_state_string(True) == "true"
+    assert ser.parse_bool("yes") is True
+    assert ser.parse_bool(None, default=True) is True
+    assert ser.parse_bool("bogus", default=False) is False
 
-    assert ser.int_to_legacy(None) == ""
-    assert ser.int_to_legacy(42) == "42"
-    assert ser.legacy_to_int("7") == 7
-    assert ser.legacy_to_int("x", default=3) == 3
+    assert ser.int_to_state_string(None) == ""
+    assert ser.int_to_state_string(42) == "42"
+    assert ser.parse_int("7") == 7
+    assert ser.parse_int("x", default=3) == 3
 
-    assert ser.json_to_legacy(None) == ""
-    assert ser.json_to_legacy('{"a":1}') == '{"a":1}'
-    assert ser.json_to_legacy({"a": 1}) == '{"a":1}'
+    assert ser.json_to_state_string(None) == ""
+    assert ser.json_to_state_string('{"a":1}') == '{"a":1}'
+    assert ser.json_to_state_string({"a": 1}) == '{"a":1}'
 
-    assert ser.legacy_to_json(None) is None
-    assert ser.legacy_to_json({"k": "v"}) == {"k": "v"}
-    assert ser.legacy_to_json("{bad") == "{bad"
-    assert ser.legacy_to_json('{"ok":true}') == {"ok": True}
+    assert ser.parse_json(None) is None
+    assert ser.parse_json({"k": "v"}) == {"k": "v"}
+    assert ser.parse_json("{bad") == "{bad"
+    assert ser.parse_json('{"ok":true}') == {"ok": True}
 
     assert ser.column_from_row(None, "x") is None
     assert ser.column_from_row({"a": 1}, "a") == 1
@@ -87,11 +87,11 @@ def test_serialize_helpers() -> None:
     assert ser.serialize_column_value(ts_spec, "") is None
     assert ser.serialize_column_value(text_spec, None) == "fallback"
 
-    assert ser.column_to_legacy(bool_spec, True) == "true"
-    assert ser.column_to_legacy(int_spec, None) == "5"
-    assert ser.column_to_legacy(int_spec, 10) == "10"
-    assert ser.column_to_legacy(json_spec, {"a": 1}) == '{"a":1}'
-    assert ser.column_to_legacy(text_spec, None) == "fallback"
+    assert ser.column_to_state_string(bool_spec, True) == "true"
+    assert ser.column_to_state_string(int_spec, None) == "5"
+    assert ser.column_to_state_string(int_spec, 10) == "10"
+    assert ser.column_to_state_string(json_spec, {"a": 1}) == '{"a":1}'
+    assert ser.column_to_state_string(text_spec, None) == "fallback"
 
 
 def test_manifest_helpers() -> None:
@@ -102,12 +102,12 @@ def test_manifest_helpers() -> None:
     assert manifest.llm_providers()[0] == "openai"
     assert "llm_settings" in manifest.singleton_tables()
     assert "crawl_settings" in manifest.pipeline_domain_tables()
-    assert manifest.legacy_key_for_column("llm_settings", "provider") == "llm_provider"
-    assert manifest.column_for_legacy_key("llm_settings", "llm_provider") == "provider"
-    assert manifest.column_for_legacy_key("llm_settings", "missing_key") is None
-    assert manifest.pipeline_legacy_key_to_column()["start_url"] == ("crawl_settings", "start_url")
-    assert manifest.llm_legacy_key_to_column()["llm_provider"] == "provider"
-    assert manifest.provider_legacy_key("api_key", "openai") == "llm_api_key_openai"
+    assert manifest.flat_key_for_column("llm_settings", "provider") == "llm_provider"
+    assert manifest.column_for_flat_key("llm_settings", "llm_provider") == "provider"
+    assert manifest.column_for_flat_key("llm_settings", "missing_key") is None
+    assert manifest.pipeline_state_key_to_column()["start_url"] == ("crawl_settings", "start_url")
+    assert manifest.llm_state_key_to_column()["llm_provider"] == "provider"
+    assert manifest.provider_state_key("api_key", "openai") == "llm_api_key_openai"
 
 
 def test_models_dataclass_columns() -> None:

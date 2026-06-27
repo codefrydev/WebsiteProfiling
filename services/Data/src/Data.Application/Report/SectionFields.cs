@@ -41,7 +41,7 @@ public static class SectionFields
                 "lighthouse_human_summary",
             ],
             ["security"] = ["security_findings"],
-            ["gsc-links"] = ["gsc_links", "bing_backlinks"],
+            ["gsc-links"] = ["gsc_links", "bing_backlinks", "competitor_link_gap"],
             ["structure"] = ["graph_nodes", "graph_edges", "depth_distribution"],
             ["tech"] = ["tech_stack_summary", "subdomains", "contact_intelligence"],
             ["indexation"] =

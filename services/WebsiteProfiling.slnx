@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/shared/">
     <Project Path="Shared/WebsiteProfiling.Contracts/WebsiteProfiling.Contracts.csproj" />
+    <Project Path="Shared/WebsiteProfiling.TypedConfig/WebsiteProfiling.TypedConfig.csproj" />
     <Project Path="Shared/WebsiteProfiling.Testing/WebsiteProfiling.Testing.csproj" />
   </Folder>
   <Folder Name="/ai-service/">
@@ -43,5 +44,10 @@
     <Project Path="ReportService/src/ReportService.Application/ReportService.Application.csproj" />
     <Project Path="ReportService/src/ReportService.Domain/ReportService.Domain.csproj" />
     <Project Path="ReportService/tests/ReportService.Tests/ReportService.Tests.csproj" />
+  </Folder>
+  <Folder Name="/config-service/">
+    <Project Path="ConfigService/src/ConfigService.Api/ConfigService.Api.csproj" />
+    <Project Path="ConfigService/src/ConfigService.Application/ConfigService.Application.csproj" />
+    <Project Path="ConfigService/tests/ConfigService.Tests/ConfigService.Tests.csproj" />
   </Folder>
 </Solution>

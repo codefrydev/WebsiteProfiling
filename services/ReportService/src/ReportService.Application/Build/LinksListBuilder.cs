@@ -207,7 +207,7 @@ public static class LinksListBuilder
         return signals;
     }
 
-    private static object? UnwrapJsonValue(object? value) =>
+    internal static object? UnwrapJsonValue(object? value) =>
         value switch
         {
             JsonElement { ValueKind: JsonValueKind.Number } el when el.TryGetInt32(out var n) => n,

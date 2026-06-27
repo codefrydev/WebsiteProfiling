@@ -48,20 +48,21 @@ public static class HtmlAccessibilityCategoryBuilder
             var pagesWithSkippedHeading = 0;
             foreach (var row in success)
             {
-                if (HasSkippedHeadingLevel(row.HeadingSequence))
+                if (!HasSkippedHeadingLevel(row.HeadingSequence))
                 {
-                    if (pagesWithSkippedHeading == 0)
-                    {
-                        issues.Add(CategoryHelpers.Issue(
-                            "Skipped heading level (e.g. H1 then H3).",
-                            row.Url,
-                            "Medium",
-                            "Use heading levels in order (H1, H2, H3) without skipping."));
-                    }
-
-                    pagesWithSkippedHeading++;
-                    break;
+                    continue;
                 }
+
+                if (pagesWithSkippedHeading == 0)
+                {
+                    issues.Add(CategoryHelpers.Issue(
+                        "Skipped heading level (e.g. H1 then H3).",
+                        row.Url,
+                        "Medium",
+                        "Use heading levels in order (H1, H2, H3) without skipping."));
+                }
+
+                pagesWithSkippedHeading++;
             }
 
             if (pagesWithSkippedHeading > 0)

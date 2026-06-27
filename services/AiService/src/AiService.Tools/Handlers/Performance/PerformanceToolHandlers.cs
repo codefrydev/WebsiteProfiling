@@ -126,6 +126,83 @@ public static class PerformanceToolHandlers
         return await ListPoorLighthousePagesAsync(db, ctx, args, ["seo"], "seo", threshold, cancellationToken);
     }
 
+    public static async Task<JsonObject> ListLighthouseCwvFailuresAsync(
+        AuditToolsDbContext db,
+        AuditToolContext ctx,
+        JsonObject args,
+        CancellationToken cancellationToken)
+    {
+        const double LcpGoodMs = 2500;
+        const double ClsGood = 0.1;
+        const double TbtGoodMs = 200;
+
+        var scoped = ctx.WithArgs(args);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
+        if (payload.Count == 0)
+        {
+            return new JsonObject
+            {
+                ["error"] = "no report found",
+                ["pages"] = new JsonArray(),
+                ["total"] = 0,
+                ["truncated"] = false,
+            };
+        }
+
+        var byUrl = payload["lighthouse_by_url"] as JsonObject ?? [];
+        var failures = new List<JsonObject>();
+        foreach (var (url, node) in byUrl)
+        {
+            if (node is not JsonObject data)
+            {
+                continue;
+            }
+
+            var metrics = data["median_metrics"] as JsonObject ?? data;
+            var lcp = metrics["lcp_ms"];
+            var cls = metrics["cls"];
+            var tbt = metrics["tbt_ms"];
+            var failed = new JsonArray();
+            if (JsonCoercion.Num(lcp, -1) > LcpGoodMs)
+            {
+                failed.Add("lcp");
+            }
+
+            if (JsonCoercion.Num(cls, -1) > ClsGood)
+            {
+                failed.Add("cls");
+            }
+
+            if (JsonCoercion.Num(tbt, -1) > TbtGoodMs)
+            {
+                failed.Add("tbt");
+            }
+
+            if (failed.Count == 0)
+            {
+                continue;
+            }
+
+            failures.Add(new JsonObject
+            {
+                ["url"] = url,
+                ["failed_metrics"] = failed,
+                ["lcp_ms"] = lcp?.DeepClone(),
+                ["cls"] = cls?.DeepClone(),
+                ["tbt_ms"] = tbt?.DeepClone(),
+            });
+        }
+
+        var limit = PayloadSliceHelpers.ParseLimit(args["limit"], 30, 50);
+        var sliced = PayloadSliceHelpers.CapList(failures.Cast<JsonNode?>().ToList(), limit, 50);
+        return new JsonObject
+        {
+            ["pages"] = sliced["items"]?.DeepClone(),
+            ["total"] = sliced["total"]?.DeepClone(),
+            ["truncated"] = sliced["truncated"]?.DeepClone(),
+        };
+    }
+
     private static async Task<JsonObject> ListPoorLighthousePagesAsync(
         AuditToolsDbContext db,
         AuditToolContext ctx,

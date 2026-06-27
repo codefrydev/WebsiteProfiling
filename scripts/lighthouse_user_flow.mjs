@@ -37,10 +37,18 @@ function chromeArgs() {
   return raw.split(/\s+/).filter(Boolean);
 }
 
+function filterCliCategories(categories) {
+  const allowed = new Set(['performance', 'accessibility', 'best-practices', 'seo']);
+  if (!categories?.length) return null;
+  const out = categories.filter((c) => allowed.has(c));
+  return out.length ? out : null;
+}
+
 function flowConfig(strategy, categories) {
   const base = strategy === 'desktop' ? desktopConfig : undefined;
-  if (!categories?.length) return base;
-  const settings = { ...(base?.settings || {}), onlyCategories: categories };
+  const cliCategories = filterCliCategories(categories);
+  if (!cliCategories?.length) return base;
+  const settings = { ...(base?.settings || {}), onlyCategories: cliCategories };
   return base ? { ...base, settings } : { extends: 'lighthouse:default', settings };
 }
 

@@ -22,7 +22,8 @@ public sealed class CategoryBuilder
         IReadOnlyDictionary<string, object?>? lighthouseSummary = null,
         IReadOnlyDictionary<string, object?>? cruxSummary = null,
         IReadOnlyDictionary<string, JsonNode>? lighthouseByUrl = null,
-        IReadOnlyDictionary<string, object?>? mlBundle = null)
+        IReadOnlyDictionary<string, object?>? mlBundle = null,
+        IReadOnlyList<Dictionary<string, object?>>? securityFindings = null)
     {
         var (broken, redirects) = ParseSeoIssues(summarySeo);
 
@@ -34,7 +35,7 @@ public sealed class CategoryBuilder
             HtmlAccessibilityCategoryBuilder.Build(rows, lighthouseByUrl, lighthouseSummary),
             LinkHealthCategoryBuilder.Build(rows, edges, broken, redirects),
             MobileCategoryBuilder.Build(rows),
-            SecurityCategoryBuilder.Build(rows, startUrl),
+            SecurityCategoryBuilder.Build(rows, startUrl, securityFindings),
             IntelligenceCategoryBuilder.Build(mlBundle),
         };
 
@@ -46,6 +47,11 @@ public sealed class CategoryBuilder
         IReadOnlyList<CrawlRow> rows,
         IReadOnlyDictionary<string, object?>? indexation) =>
         CategoryHelpers.MergeIndexationIssues(categories, rows, indexation);
+
+    public void MergeSubdomainIssues(
+        IList<ReportCategory> categories,
+        IReadOnlyDictionary<string, object?>? subdomains) =>
+        CategoryHelpers.MergeSubdomainIssues(categories, subdomains);
 
     public static IReadOnlyList<(string From, string To)> BuildEdges(
         IReadOnlyList<CrawlRow> rows,

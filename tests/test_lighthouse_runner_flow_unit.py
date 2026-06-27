@@ -34,10 +34,20 @@ def test_run_lighthouse_once_navigation_uses_cli() -> None:
                 "mobile",
                 "/tmp/out.json",
                 mode="navigation",
+                categories=["performance", "seo", "pwa"],
             )
     assert out is proc
     cmd = mock_run.call_args[0][0]
     assert cmd[0] == "lighthouse"
+    assert "--only-categories=performance,seo" in cmd
+    assert "pwa" not in " ".join(cmd)
+
+
+def test_categories_for_cli_strips_pwa() -> None:
+    from website_profiling.lighthouse.runner import _categories_for_cli, _parse_categories
+
+    assert _categories_for_cli(_parse_categories("performance,pwa,seo")) == ["performance", "seo"]
+    assert _categories_for_cli(_parse_categories("pwa")) is None
 
 
 def test_normalize_lighthouse_mode_rejects_unknown() -> None:

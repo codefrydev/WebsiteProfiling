@@ -18,35 +18,48 @@ internal static class MlBundleMaps
             return result;
         }
 
-        if (raw is not JsonElement el || el.ValueKind != JsonValueKind.Object)
+        if (raw is JsonElement el && el.ValueKind == JsonValueKind.Object)
         {
+            foreach (var prop in el.EnumerateObject())
+            {
+                if (prop.Value.ValueKind != JsonValueKind.Array)
+                {
+                    continue;
+                }
+
+                result[prop.Name.Trim().TrimEnd('/')] = ParseJsonArray(prop.Value);
+            }
+
             return result;
         }
 
-        foreach (var prop in el.EnumerateObject())
+        if (raw is IEnumerable<KeyValuePair<string, List<object?>>> typedMap)
         {
-            if (prop.Value.ValueKind != JsonValueKind.Array)
+            foreach (var (url, list) in typedMap)
             {
-                continue;
+                result[url.Trim().TrimEnd('/')] = list;
             }
-
-            var list = new List<object?>();
-            foreach (var item in prop.Value.EnumerateArray())
-            {
-                list.Add(item.ValueKind switch
-                {
-                    JsonValueKind.String => item.GetString(),
-                    JsonValueKind.Number => item.TryGetInt32(out var n) ? n : item.GetDouble(),
-                    JsonValueKind.True => true,
-                    JsonValueKind.False => false,
-                    _ => item.Clone(),
-                });
-            }
-
-            result[prop.Name.Trim().TrimEnd('/')] = list;
         }
 
         return result;
+    }
+
+    private static List<object?> ParseJsonArray(JsonElement arrayEl)
+    {
+        var list = new List<object?>();
+        foreach (var item in arrayEl.EnumerateArray())
+        {
+            list.Add(item.ValueKind switch
+            {
+                JsonValueKind.String => item.GetString(),
+                JsonValueKind.Number => item.TryGetInt32(out var n) ? n : item.GetDouble(),
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                _ => item.Clone(),
+            });
+        }
+
+        return list;
     }
 
     private static Dictionary<string, T> ParseUrlMap<T>(
@@ -60,16 +73,43 @@ internal static class MlBundleMaps
             return result;
         }
 
-        if (raw is not JsonElement el || el.ValueKind != JsonValueKind.Object)
+        if (raw is JsonElement el && el.ValueKind == JsonValueKind.Object)
         {
+            foreach (var prop in el.EnumerateObject())
+            {
+                result[prop.Name.Trim().TrimEnd('/')] = mapValue(prop.Value);
+            }
+
             return result;
         }
 
-        foreach (var prop in el.EnumerateObject())
+        if (raw is IReadOnlyDictionary<string, string> stringMap)
         {
-            result[prop.Name.Trim().TrimEnd('/')] = mapValue(prop.Value);
+            foreach (var (url, value) in stringMap)
+            {
+                result[url.Trim().TrimEnd('/')] = mapValueFromObject(value);
+            }
+
+            return result;
+        }
+
+        if (raw is IEnumerable<KeyValuePair<string, object?>> objectMap)
+        {
+            foreach (var (url, value) in objectMap)
+            {
+                result[url.Trim().TrimEnd('/')] = mapValueFromObject(value);
+            }
         }
 
         return result;
+
+        T mapValueFromObject(object? value) =>
+            value switch
+            {
+                JsonElement jsonEl => mapValue(jsonEl),
+                null => default!,
+                string s when typeof(T) == typeof(string) => (T)(object)s,
+                _ => typeof(T) == typeof(object) ? (T)value! : default!,
+            };
     }
 }

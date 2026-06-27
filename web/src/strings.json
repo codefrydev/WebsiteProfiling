@@ -3041,7 +3041,12 @@
       "sitemapOnly": "Sitemap only",
       "gapsTitle": "URL coverage gaps",
       "gapsHint": "URLs present in one source but missing from another. Measured from crawl; Search Console from Google API.",
-      "sitemapOnlyList": "In sitemap but not crawled"
+      "sitemapOnlyList": "In sitemap but not crawled",
+      "crawledNotInSitemapList": "Crawled but not in sitemap",
+      "gscNotCrawled": "GSC not crawled",
+      "crawledNotInSitemap": "Crawled not in sitemap",
+      "noSearchGaps": "No Search Console vs crawl gaps in this report.",
+      "listSampleHint": "Showing up to {limit} of {total} URLs."
     },
     "subdomains": {
       "title": "Subdomains",
@@ -3244,6 +3249,7 @@
         "topDomainsTitle": "Top referring domains",
         "topPagesTitle": "Most linked pages on your site"
       },
+      "sampleTabNotImported": "Import the Sample links and/or Latest links CSV exports from Search Console to populate this tab.",
       "bingTitle": "Bing Webmaster inbound links",
       "bingHint": "From Bing Webmaster GetLinkCounts when bing_webmaster_api_key is set in Run audit settings.",
       "bingLinkedPages": "Pages with inbound links",

@@ -116,7 +116,12 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
   const totalConsole = Number(agg?.total_console_errors ?? 0);
   const pagesWithExceptions = Number(agg?.pages_with_page_errors ?? 0);
   const totalExceptions = Number(agg?.total_page_errors ?? 0);
-  const hasAnyErrors = allRows.length > 0;
+  const hasAnyErrors =
+    allRows.length > 0
+    || totalConsole > 0
+    || totalExceptions > 0
+    || pagesWithConsole > 0
+    || pagesWithExceptions > 0;
 
   if (!scopeInfo.usesBrowser) {
     return (

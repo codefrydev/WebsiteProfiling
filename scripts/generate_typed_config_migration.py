@@ -64,7 +64,7 @@ def create_singleton_table(name: str, spec: dict) -> str:
 def backfill_singleton(name: str, spec: dict, source: str) -> str:
     sets = []
     for col, col_spec in spec["columns"].items():
-        legacy = col_spec.get("legacy_key") or col_spec.get("legacy_app_key")
+        legacy = col_spec.get("state_key") or col_spec.get("app_key")
         if not legacy:
             continue
         sets.append(

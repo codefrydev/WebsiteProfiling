@@ -1,42 +1,41 @@
-using System.Text.Json;
-using ReportService.Application.Bridge;
 using ReportService.Application.Build;
+using ReportService.Application.Bridge;
+using ReportService.Application.Pipeline;
 
 namespace ReportService.Application.Orchestration;
 
 /// <summary>
-/// Full-audit orchestrator: enqueue crawl+lighthouse on Python worker, poll job, then build report.
+/// Full-audit orchestrator: enqueue crawl+lighthouse on C# worker, poll job, then build report.
 /// </summary>
 public sealed class PipelineOrchestratorService(
-    FastApiPythonBridge bridge,
+    PipelineRunService pipelineRunService,
+    PipelineJobRepository pipelineJobs,
     ReportBuildService reportBuildService)
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    };
-
     public async Task<OrchestratorResult> RunFullAuditAsync(
         OrchestratorRunRequest request,
         CancellationToken cancellationToken = default)
     {
-        var state = new Dictionary<string, string>(request.State ?? new Dictionary<string, string>(), StringComparer.Ordinal)
+        var state = new Dictionary<string, object?>(StringComparer.Ordinal);
+        if (request.State is not null)
         {
-            ["run_report"] = "false",
-        };
-
-        var enqueue = await bridge.EnqueuePipelineRunAsync(
-            new
+            foreach (var (key, value) in request.State)
             {
-                command = request.Command,
-                propertyId = request.PropertyId,
-                state,
-            },
+                state[key] = value;
+            }
+        }
+
+        state["run_report"] = "false";
+
+        var enqueue = await pipelineRunService.EnqueueRunAsync(
+            request.Command,
+            state,
+            request.PropertyId,
             cancellationToken);
 
-        if (!enqueue.Ok || string.IsNullOrWhiteSpace(enqueue.JobId))
+        if (!enqueue.Success || string.IsNullOrWhiteSpace(enqueue.JobId))
         {
-            return new OrchestratorResult(false, enqueue.JobId, enqueue.RawBody, "Failed to enqueue crawl job");
+            return new OrchestratorResult(false, enqueue.JobId, enqueue.Error, enqueue.Error ?? "Failed to enqueue crawl job");
         }
 
         var jobId = enqueue.JobId;
@@ -44,18 +43,21 @@ public sealed class PipelineOrchestratorService(
         while (DateTime.UtcNow < deadline)
         {
             await Task.Delay(TimeSpan.FromSeconds(2), cancellationToken);
-            using var jobDoc = await bridge.GetJobAsync(jobId, cancellationToken);
-            if (jobDoc is null)
+            var job = await pipelineJobs.GetAsync(jobId, cancellationToken);
+            if (job is null)
             {
                 continue;
             }
 
-            var status = jobDoc.RootElement.TryGetProperty("status", out var st) ? st.GetString() : null;
-            if (status is "done" or "error" or "cancelled")
+            if (job.Status is "success" or "error" or "paused")
             {
-                if (status != "done")
+                if (!string.Equals(job.Status, "success", StringComparison.OrdinalIgnoreCase))
                 {
-                    return new OrchestratorResult(false, jobId, jobDoc.RootElement.GetRawText(), $"Crawl job ended with status {status}");
+                    return new OrchestratorResult(
+                        false,
+                        jobId,
+                        job.Log,
+                        $"Crawl job ended with status {job.Status}");
                 }
 
                 break;

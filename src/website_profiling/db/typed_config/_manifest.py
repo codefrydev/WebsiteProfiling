@@ -32,23 +32,23 @@ def pipeline_domain_tables() -> dict[str, list[str]]:
     return load_manifest()["pipeline_domain_tables"]
 
 
-def legacy_key_for_column(table: str, column: str) -> str | None:
+def flat_key_for_column(table: str, column: str) -> str | None:
     spec = load_manifest()["tables"].get(table, {})
     col_spec = spec.get("columns", {}).get(column, {})
-    return col_spec.get("legacy_key") or col_spec.get("legacy_app_key")
+    return col_spec.get("state_key") or col_spec.get("app_key")
 
 
-def column_for_legacy_key(table: str, legacy_key: str) -> str | None:
+def column_for_flat_key(table: str, flat_key: str) -> str | None:
     spec = load_manifest()["tables"].get(table, {})
     for column, col_spec in spec.get("columns", {}).items():
-        lk = col_spec.get("legacy_key") or col_spec.get("legacy_app_key")
-        if lk == legacy_key:
+        fk = col_spec.get("state_key") or col_spec.get("app_key")
+        if fk == flat_key:
             return column
     return None
 
 
-def pipeline_legacy_key_to_column() -> dict[str, tuple[str, str]]:
-    """Map legacy pipeline key -> (table_name, column_name)."""
+def pipeline_state_key_to_column() -> dict[str, tuple[str, str]]:
+    """Map flat pipeline state key -> (table_name, column_name)."""
     out: dict[str, tuple[str, str]] = {}
     for table, keys in pipeline_domain_tables().items():
         for key in keys:
@@ -56,21 +56,21 @@ def pipeline_legacy_key_to_column() -> dict[str, tuple[str, str]]:
     for table, spec in singleton_tables().items():
         if table in ("integration_secrets", "mcp_settings", "feature_flags", "workspace_settings"):
             for column, col_spec in spec.get("columns", {}).items():
-                lk = col_spec.get("legacy_key")
-                if lk:
-                    out[lk] = (table, column)
+                state_key = col_spec.get("state_key")
+                if state_key:
+                    out[state_key] = (table, column)
     return out
 
 
-def llm_legacy_key_to_column() -> dict[str, str]:
+def llm_state_key_to_column() -> dict[str, str]:
     out: dict[str, str] = {}
     for column, col_spec in load_manifest()["tables"]["llm_settings"]["columns"].items():
-        lk = col_spec.get("legacy_key")
-        if lk:
-            out[lk] = column
+        state_key = col_spec.get("state_key")
+        if state_key:
+            out[state_key] = column
     return out
 
 
-def provider_legacy_key(column: str, provider: str) -> str:
-    patterns = load_manifest()["tables"]["llm_provider_profiles"]["legacy_key_patterns"]
+def provider_state_key(column: str, provider: str) -> str:
+    patterns = load_manifest()["tables"]["llm_provider_profiles"]["state_key_patterns"]
     return patterns[column].replace("{provider}", provider)

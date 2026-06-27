@@ -1,4 +1,7 @@
-"""FastAPI application entry point."""
+"""Minimal FastAPI app — audit-tool bridge and internal Python CLI bridges only.
+
+All browser-facing routes are served by C# services via the BFF.
+"""
 from __future__ import annotations
 
 import os
@@ -8,26 +11,7 @@ from typing import AsyncIterator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import (
-    alerts,
-    compare,
-    config,
-    content,
-    crawl,
-    dashboards,
-    health,
-    integrations,
-    internal_integrations,
-    internal_report,
-    keywords,
-    logs,
-    page_markdown,
-    pipeline,
-    properties,
-    report,
-    report_audit_tool,
-    schedule,
-)
+from .routers import health, internal_integrations, report_audit_tool
 
 
 @asynccontextmanager
@@ -39,12 +23,13 @@ async def _lifespan(app: FastAPI) -> AsyncIterator[None]:
         close_db_pool()
     except Exception as exc:
         import logging
+
         logging.getLogger(__name__).warning("Error closing DB pool on shutdown: %s", exc)
 
 
 app = FastAPI(
-    title="Website Profiling API",
-    version="1.0.0",
+    title="Website Profiling Python Bridge",
+    version="2.0.0",
     lifespan=_lifespan,
 )
 
@@ -64,35 +49,6 @@ if _origins_raw:
         allow_headers=["*"],
     )
 
-# Core + crawl/pipeline
 app.include_router(health.router, prefix="/api")
-app.include_router(report.router, prefix="/api")
-app.include_router(pipeline.router, prefix="/api")
-app.include_router(crawl.router, prefix="/api")
-
-# Internal bridges for .NET services without Python runtime
 app.include_router(internal_integrations.router)
-app.include_router(internal_report.router)
-
-# Config: pipeline-settings + ui-preferences only (secrets/llm-settings → AiService via BFF)
-app.include_router(config.router, prefix="/api")
-
-app.include_router(properties.router, prefix="/api")
-if os.environ.get("DEPRECATE_PYTHON_REPORT_ROUTES", "").strip() != "1":
-    app.include_router(dashboards.router, prefix="/api")
-    app.include_router(compare.router, prefix="/api")
-app.include_router(integrations.router, prefix="/api")
-app.include_router(keywords.router, prefix="/api")
-app.include_router(content.router, prefix="/api")
-app.include_router(page_markdown.router, prefix="/api")
-app.include_router(alerts.router, prefix="/api")
-app.include_router(schedule.router, prefix="/api")
-app.include_router(logs.router, prefix="/api")
-
-# Audit tool dispatch — internal bridge for AiService unported tools
 app.include_router(report_audit_tool.router, prefix="/api")
-
-# AI + secrets routes removed — served by services/AiService (.NET) via BFF:
-# chat, issues/fix-suggestion, issues/action-plan, ai/fix-suggestion,
-# dashboards/ai-generate, links/page-coach, llm-settings, secrets, ollama/status, mcp-tools
-# App-level Google credential writes (POST integrations/google/credentials*) → use /api/secrets (AiService)

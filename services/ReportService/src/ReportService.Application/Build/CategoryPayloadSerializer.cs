@@ -29,6 +29,11 @@ public static class CategoryPayloadSerializer
                         ?? IssueImpactEnricher.ComputeImpactScore(i.Priority, i.GscClicks, i.Ga4Sessions);
                 }
 
+                if (!string.IsNullOrEmpty(i.FindingType))
+                {
+                    issue["finding_type"] = i.FindingType;
+                }
+
                 return issue;
             }).ToList(),
             ["recommendations"] = category.Recommendations,

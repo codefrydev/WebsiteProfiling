@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { portfolioCardKey } from '@/components/portfolio/portfolioCardUtils';
 import { computePortfolioSummary } from '@/lib/homePortfolio';
-import { reportApi, apiFetch } from '@/lib/publicBase';
+import { reportApi, apiFetch, readApiErrorMessage } from '@/lib/publicBase';
 import { useReport } from './useReport';
 import type {
   PortfolioContextValue,
@@ -94,7 +94,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
     try {
       const res = await apiFetch(reportApi('/portfolio?widget=groups'));
       const body = (await res.json().catch(() => ({}))) as GroupsApiResponse;
-      if (!res.ok) throw new Error(body.error || res.statusText);
+      if (!res.ok) throw new Error(readApiErrorMessage(body as Record<string, unknown>, res));
 
       if (cacheKeyRef.current !== cacheKey) {
         return;
@@ -147,7 +147,7 @@ export function PortfolioProvider({ children }: { children: ReactNode }) {
 
     const res = await apiFetch(reportApi(`/portfolio?${params.toString()}`));
     const body = (await res.json().catch(() => ({}))) as CardApiResponse;
-    if (!res.ok) throw new Error(body.error || res.statusText);
+    if (!res.ok) throw new Error(readApiErrorMessage(body as Record<string, unknown>, res));
     if (body.group) {
       setCardByKey((prev) => ({ ...prev, [key]: body.group! }));
     }

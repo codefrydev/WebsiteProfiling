@@ -25,6 +25,24 @@ public static class UrlNormalizeHelper
         return $"{host}{path}";
     }
 
+    /// <summary>Map normalized URL key → canonical input URL (last wins, matching Python dict comprehension).</summary>
+    public static Dictionary<string, string> ToNormalizedUrlMap(IEnumerable<string> urls)
+    {
+        var map = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var url in urls)
+        {
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                continue;
+            }
+
+            var trimmed = url.Trim();
+            map[NormalizeUrl(trimmed)] = trimmed;
+        }
+
+        return map;
+    }
+
     public static string PathToUrl(string path, string startUrl)
     {
         if (!Uri.TryCreate(startUrl, UriKind.Absolute, out var start))

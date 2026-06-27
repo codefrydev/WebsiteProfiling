@@ -239,8 +239,7 @@ public static class LinksToolHandlers
             cancellationToken,
             filter: node => node is JsonObject edge
                 && string.Equals(JsonCoercion.AsString(edge["link_type"]), "internal", StringComparison.Ordinal)
-                && (edge["is_nofollow"]?.GetValue<bool?>() == true
-                    || string.Equals(JsonCoercion.AsString(edge["is_nofollow"]), "true", StringComparison.OrdinalIgnoreCase)));
+                && JsonCoercion.IsTruthy(edge["is_nofollow"]));
 
     private static async Task<JsonObject> CapOrphansAsync(
         AuditToolsDbContext db,

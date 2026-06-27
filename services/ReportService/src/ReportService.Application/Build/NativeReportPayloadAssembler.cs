@@ -70,16 +70,17 @@ public static class NativeReportPayloadAssembler
         payload["security_findings"] = slice.SecurityFindings ?? [];
         payload["keyword_opportunities"] = new Dictionary<string, object?>();
         payload["semantic_keyword_clusters"] = Array.Empty<object>();
-        payload["image_inventory"] = Array.Empty<object>();
-        payload["image_inventory_summary"] = new Dictionary<string, object?>
-        {
-            ["probed"] = 0,
-            ["failed"] = 0,
-            ["total_bytes"] = 0,
-            ["over_threshold_count"] = 0,
-            ["unoptimized_min_kb"] = 200,
-            ["inventory_available"] = false,
-        };
+        payload["image_inventory"] = slice.ImageInventory ?? [];
+        payload["image_inventory_summary"] = slice.ImageInventorySummary
+            ?? new Dictionary<string, object?>
+            {
+                ["probed"] = 0,
+                ["failed"] = 0,
+                ["total_bytes"] = 0,
+                ["over_threshold_count"] = 0,
+                ["unoptimized_min_kb"] = 200,
+                ["inventory_available"] = false,
+            };
         payload["optional_audit_urls"] = new Dictionary<string, object?>
         {
             ["spell"] = Array.Empty<object>(),
@@ -87,14 +88,24 @@ public static class NativeReportPayloadAssembler
             ["amp"] = Array.Empty<object>(),
             ["pagination"] = Array.Empty<object>(),
         };
-        payload["lighthouse_failure_urls"] = new Dictionary<string, object?>
+        payload["lighthouse_failure_urls"] = slice.LighthouseFailureUrls
+            ?? new Dictionary<string, object?>
+            {
+                ["lcp"] = Array.Empty<object>(),
+                ["inp"] = Array.Empty<object>(),
+                ["cls"] = Array.Empty<object>(),
+                ["seo"] = Array.Empty<object>(),
+            };
+        payload["contact_intelligence"] = slice.ContactIntelligence ?? new Dictionary<string, object?>();
+        if (slice.Subdomains is not null)
         {
-            ["lcp"] = Array.Empty<object>(),
-            ["inp"] = Array.Empty<object>(),
-            ["cls"] = Array.Empty<object>(),
-            ["seo"] = Array.Empty<object>(),
-        };
-        payload["contact_intelligence"] = new Dictionary<string, object?>();
+            payload["subdomains"] = slice.Subdomains;
+        }
+
+        if (slice.CrawlSegments is not null)
+        {
+            payload["crawl_segments"] = slice.CrawlSegments;
+        }
         payload["lighthouse_by_url"] = SerializeLighthouseByUrl(slice.LighthouseByUrl);
 
         if (slice.LighthouseSummary is not null)
@@ -104,9 +115,7 @@ public static class NativeReportPayloadAssembler
             payload["lighthouse_human_summary"] = LighthouseJsonHelper.ExtractHumanSummary(slice.LighthouseSummary);
         }
 
-        payload["content_duplicates"] = Array.Empty<object>();
-        payload["language_summary"] = new Dictionary<string, object?>();
-        payload["ml_errors"] = Array.Empty<object>();
+        MergeAnalysisIntoPayload(payload, mlBundle);
 
         if (propertyId is not null)
         {
@@ -147,7 +156,7 @@ public static class NativeReportPayloadAssembler
         siteLevel ??= new Dictionary<string, object?>();
         mlBundle ??= new Dictionary<string, object?>();
 
-        return new Dictionary<string, object?>
+        var payload = new Dictionary<string, object?>
         {
             ["site_name"] = siteName ?? "",
             ["report_title"] = reportTitle ?? "",
@@ -169,9 +178,6 @@ public static class NativeReportPayloadAssembler
             ["content_analytics"] = slice.ContentAnalytics,
             ["response_time_stats"] = slice.ResponseTimeStats,
             ["depth_distribution"] = slice.DepthDistribution,
-            ["content_duplicates"] = Array.Empty<object>(),
-            ["language_summary"] = new Dictionary<string, object?>(),
-            ["ml_errors"] = Array.Empty<object>(),
             ["native_build"] = new Dictionary<string, object?>
             {
                 ["partial"] = true,
@@ -183,7 +189,144 @@ public static class NativeReportPayloadAssembler
                 ["content_url_list_keys"] = slice.ContentUrls.Count,
             },
         };
+
+        MergeAnalysisIntoPayload(payload, mlBundle);
+        return payload;
     }
+
+    /// <summary>Port of Python analysis/local.py merge_analysis_into_payload.</summary>
+    public static void MergeAnalysisIntoPayload(
+        Dictionary<string, object?> payload,
+        IReadOnlyDictionary<string, object?>? mlBundle)
+    {
+        mlBundle ??= new Dictionary<string, object?>();
+
+        payload["content_duplicates"] = mlBundle.GetValueOrDefault("content_duplicates") ?? Array.Empty<object>();
+        payload.Remove("anomalies");
+
+        payload["language_summary"] = mlBundle.GetValueOrDefault("language_summary")
+            ?? new Dictionary<string, object?> { ["counts"] = new Dictionary<string, int>(), ["mixed_site"] = false };
+
+        if (mlBundle.TryGetValue("ner_site_summary", out var nerSummary)
+            && nerSummary is Dictionary<string, object?> nerDict
+            && nerDict.Count > 0)
+        {
+            payload["ner_site_summary"] = nerDict;
+        }
+        else
+        {
+            payload.Remove("ner_site_summary");
+        }
+
+        if (mlBundle.TryGetValue("ml_errors", out var errRaw) && errRaw is not null && HasMlErrors(errRaw))
+        {
+            payload["ml_errors"] = errRaw switch
+            {
+                List<string> stringErrors => stringErrors.Cast<object?>().ToList(),
+                IEnumerable<object?> objectErrors => objectErrors.ToList(),
+                _ => [errRaw.ToString()],
+            };
+        }
+        else
+        {
+            payload.Remove("ml_errors");
+        }
+
+        var dupGid = MlBundleMaps.UrlObjectMap(mlBundle, "url_duplicate_group_id");
+        var simMap = MlBundleMaps.UrlListMap(mlBundle, "similar_internal_by_url");
+        var langMap = MlBundleMaps.UrlStringMap(mlBundle, "language_by_url");
+        var nlpMap = MlBundleMaps.UrlObjectMap(mlBundle, "spacy_by_url");
+        var kpMap = MlBundleMaps.UrlListMap(mlBundle, "keyphrases_by_url");
+
+        if (payload.GetValueOrDefault("links") is not List<Dictionary<string, object?>> links)
+        {
+            return;
+        }
+
+        foreach (var rec in links)
+        {
+            var url = rec.GetValueOrDefault("url")?.ToString()?.Trim() ?? "";
+            var urlKey = url.TrimEnd('/');
+
+            rec.Remove("duplicate_group_id");
+            rec.Remove("similar_internal");
+            rec.Remove("detected_language");
+            rec.Remove("nlp_entities");
+            rec.Remove("ml_anomaly");
+            rec.Remove("keyphrases");
+
+            if (dupGid.TryGetValue(urlKey, out var gid) || dupGid.TryGetValue(url, out gid))
+            {
+                rec["duplicate_group_id"] = LinksListBuilder.UnwrapJsonValue(gid);
+            }
+
+            if (simMap.TryGetValue(urlKey, out var similar) || simMap.TryGetValue(url, out similar))
+            {
+                rec["similar_internal"] = similar;
+            }
+
+            if (langMap.TryGetValue(urlKey, out var lang) || langMap.TryGetValue(url, out lang))
+            {
+                rec["detected_language"] = lang;
+            }
+
+            if (nlpMap.TryGetValue(urlKey, out var nlp) || nlpMap.TryGetValue(url, out nlp))
+            {
+                rec["nlp_entities"] = nlp;
+            }
+
+            if (kpMap.TryGetValue(urlKey, out var kp) || kpMap.TryGetValue(url, out kp))
+            {
+                rec["keyphrases"] = kp;
+            }
+
+            if (rec.GetValueOrDefault("page_analysis") is Dictionary<string, object?> pageAnalysis)
+            {
+                if (pageAnalysis.TryGetValue("signals", out var signalsObj)
+                    && signalsObj is Dictionary<string, object?> signals)
+                {
+                    signals.Remove("language");
+                    signals.Remove("nlp_entities");
+                    if (signals.Count == 0)
+                    {
+                        pageAnalysis.Remove("signals");
+                    }
+                }
+
+                if (langMap.TryGetValue(urlKey, out lang) || langMap.TryGetValue(url, out lang))
+                {
+                    EnsureSignals(pageAnalysis)["language"] = lang;
+                }
+
+                if (nlpMap.TryGetValue(urlKey, out nlp) || nlpMap.TryGetValue(url, out nlp))
+                {
+                    EnsureSignals(pageAnalysis)["nlp_entities"] = nlp;
+                }
+
+                rec["page_analysis"] = pageAnalysis;
+            }
+        }
+    }
+
+    private static Dictionary<string, object?> EnsureSignals(Dictionary<string, object?> pageAnalysis)
+    {
+        if (!pageAnalysis.TryGetValue("signals", out var signalsObj)
+            || signalsObj is not Dictionary<string, object?> signals)
+        {
+            signals = new Dictionary<string, object?>();
+            pageAnalysis["signals"] = signals;
+        }
+
+        return signals;
+    }
+
+    private static bool HasMlErrors(object errRaw) =>
+        errRaw switch
+        {
+            List<string> stringErrors => stringErrors.Count > 0,
+            IEnumerable<object?> objectErrors => objectErrors.Any(),
+            _ => !string.IsNullOrWhiteSpace(errRaw.ToString()),
+        };
 
     private static object ExtractList(IReadOnlyDictionary<string, object?> dict, string key) =>
         dict.TryGetValue(key, out var val) && val is not null ? val : Array.Empty<object>();

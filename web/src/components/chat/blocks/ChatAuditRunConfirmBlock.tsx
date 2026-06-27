@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import Button from '@/components/Button';
 import CrawlAuthorizeCheckbox from '@/components/pipeline/CrawlAuthorizeCheckbox';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
-import { apiUrl, apiFetch } from '@/lib/publicBase';
+import { apiUrl, apiFetch, readApiErrorMessage } from '@/lib/publicBase';
 import {
   crawlRenderModeUsesBrowser,
   fetchBrowserCrawlStatus,
@@ -64,7 +64,7 @@ export default function ChatAuditRunConfirmBlock({ block }: { block: AuditRunCon
           id?: number;
           error?: string;
         };
-        if (!propRes.ok) throw new Error(propData.error || propRes.statusText);
+        if (!propRes.ok) throw new Error(readApiErrorMessage(propData, propRes));
         propertyId = Number(propData.id);
         if (!Number.isFinite(propertyId)) throw new Error('Property creation did not return an id');
       }
@@ -104,8 +104,8 @@ export default function ChatAuditRunConfirmBlock({ block }: { block: AuditRunCon
           propertyId: propertyId ?? undefined,
         }),
       });
-      const data = (await res.json().catch(() => ({}))) as { jobId?: string; error?: string };
-      if (!res.ok) throw new Error(data.error || res.statusText);
+      const data = (await res.json().catch(() => ({}))) as { jobId?: string; detail?: string; error?: string };
+      if (!res.ok) throw new Error(readApiErrorMessage(data, res));
 
       const jobId = data.jobId;
       if (!jobId) throw new Error('Server did not return a job id');

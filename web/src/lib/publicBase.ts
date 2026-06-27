@@ -49,3 +49,35 @@ export function apiFetch(input: string, init?: RequestInit): Promise<Response> {
   const url = /^https?:\/\//.test(input) ? input : `${bffBaseUrl()}${input}`;
   return fetch(url, { credentials: 'include', ...init });
 }
+
+/** Parse FastAPI `{ detail }` or legacy `{ error }` JSON error bodies from failed BFF responses. */
+export function readApiErrorMessage(
+  data: unknown,
+  res: Response,
+  fallback = 'Request failed',
+): string {
+  const body =
+    data !== null && typeof data === 'object'
+      ? (data as { detail?: unknown; error?: unknown })
+      : null;
+  const detail = body?.detail;
+  if (typeof detail === 'string' && detail.trim()) {
+    return detail;
+  }
+  if (Array.isArray(detail)) {
+    const parts = detail
+      .map((item) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object' && 'msg' in item) {
+          return String((item as { msg?: unknown }).msg ?? '');
+        }
+        return String(item);
+      })
+      .filter(Boolean);
+    if (parts.length > 0) return parts.join(' ');
+  }
+  if (typeof body?.error === 'string' && body.error.trim()) {
+    return body.error;
+  }
+  return res.statusText || fallback;
+}

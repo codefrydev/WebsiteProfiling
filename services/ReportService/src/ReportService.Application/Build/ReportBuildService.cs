@@ -37,7 +37,7 @@ public sealed class ReportBuildService(
             await TryKeywordEnrichAsync(propertyId, cancellationToken);
         }
 
-        if (result.Ok && ShouldValidateNative())
+        if (result.Ok && useBridge && ShouldValidateNative())
         {
             result = await AppendNativeValidationWarningsAsync(result, crawlRunId, cancellationToken);
         }
@@ -62,10 +62,9 @@ public sealed class ReportBuildService(
             var rows = await crawlRepository.ReadCrawlAsync(crawlRunId, cancellationToken);
             using var doc = JsonDocument.Parse(result.RawBody);
             var root = doc.RootElement;
-            JsonElement payload = root;
-            if (root.TryGetProperty("payload", out var payloadEl))
+            if (!TryGetBridgePayload(root, out var payload))
             {
-                payload = payloadEl;
+                return result;
             }
 
             var warnings = ReportNativeValidator.ValidateUrlCounts(payload, rows.Count);
@@ -126,6 +125,24 @@ public sealed class ReportBuildService(
                 Log = result.Log + Environment.NewLine + $"  WARNING: native validation skipped: {ex.Message}",
             };
         }
+    }
+
+    private static bool TryGetBridgePayload(JsonElement root, out JsonElement payload)
+    {
+        if (root.TryGetProperty("payload", out var nested) && nested.ValueKind == JsonValueKind.Object)
+        {
+            payload = nested;
+            return true;
+        }
+
+        if (root.TryGetProperty("links", out _))
+        {
+            payload = root;
+            return true;
+        }
+
+        payload = default;
+        return false;
     }
 
     private async Task TryKeywordEnrichAsync(long propertyId, CancellationToken cancellationToken)

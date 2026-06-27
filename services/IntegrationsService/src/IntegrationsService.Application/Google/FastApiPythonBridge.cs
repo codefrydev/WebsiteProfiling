@@ -96,6 +96,40 @@ public sealed class FastApiPythonBridge(IHttpClientFactory httpClientFactory)
         }
     }
 
+    public async Task<(int StatusCode, JsonDocument? Document)> ForwardJsonPostAsync(
+        string path,
+        object body,
+        CancellationToken cancellationToken = default)
+    {
+        var client = CreateClient();
+        using var response = await client.PostAsJsonAsync(
+            path.TrimStart('/'),
+            body,
+            JsonOptions,
+            cancellationToken);
+        var raw = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            try
+            {
+                return ((int)response.StatusCode, JsonDocument.Parse(raw));
+            }
+            catch (JsonException)
+            {
+                return ((int)response.StatusCode, null);
+            }
+        }
+
+        try
+        {
+            return (200, JsonDocument.Parse(string.IsNullOrWhiteSpace(raw) ? "{}" : raw));
+        }
+        catch (JsonException)
+        {
+            return (200, null);
+        }
+    }
+
     private HttpClient CreateClient()
     {
         var client = httpClientFactory.CreateClient(nameof(FastApiPythonBridge));

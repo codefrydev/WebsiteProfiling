@@ -12,7 +12,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import type { PipelineConfigSource, PipelineJobStatus } from '@/types/api';
 import type { LlmConfigState, PipelineConfigState } from '@/types/api';
-import { apiUrl, apiFetch } from '@/lib/publicBase';
+import { apiUrl, apiFetch, readApiErrorMessage } from '@/lib/publicBase';
 import { PIPELINE_JOB_STARTED, pollPipelineJob } from '@/lib/pipelineJobEvents';
 import { formatPipelineJobLog, logPipelineFailure } from '@/lib/pipelineDebug';
 import { currentPathForReturn, readPipelineReturnPath, storePipelineReturnPath, buildPipelineHref } from '@/lib/pipelineReturn';
@@ -290,7 +290,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       ]);
       const data = await pipeRes.json().catch(() => ({}));
       const llmData = (await llmRes.json().catch(() => ({}))) as LlmSettingsGetResponse;
-      if (!pipeRes.ok) throw new Error(data.error || pipeRes.statusText);
+      if (!pipeRes.ok) throw new Error(readApiErrorMessage(data, pipeRes));
       const loaded = data.state || buildInitialPipelineConfigState();
       const siteName = String(loaded.site_name ?? '').trim();
       const startUrl = String(loaded.start_url ?? '').trim();
@@ -316,7 +316,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         setLlmConfigMasked(masked);
       } else {
         const llmBody = llmData as LlmSettingsGetResponse & { error?: string };
-        const llmMsg = String(llmBody.error || llmRes.statusText || 'LLM settings unavailable');
+        const llmMsg = readApiErrorMessage(llmBody, llmRes, 'LLM settings unavailable');
         setLlmLoadWarning(format(s.llmLoadWarning, { message: llmMsg }));
         setLlmConfigState(buildInitialLlmConfigState());
         setLlmApiKeyConfigured(false);
@@ -359,7 +359,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         const data = await res.json().catch(() => ({}));
         if (cancelled) return;
         if (!res.ok) {
-          const errMsg = String(data.error || res.statusText || s.resumeJobFailed);
+          const errMsg = readApiErrorMessage(data, res, s.resumeJobFailed);
           setLoadError(errMsg);
           logPipelineFailure('Resume active job failed', { status: res.status, error: errMsg });
           return;
@@ -490,7 +490,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         .then(async (res) => {
           if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            setSaveMsg(String(data.error || s.presetSaveFailed));
+            setSaveMsg(readApiErrorMessage(data as Record<string, unknown>, res, s.presetSaveFailed));
           }
         })
         .catch(() => setSaveMsg(s.presetSaveFailed));
@@ -517,14 +517,14 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ state: configState }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || res.statusText);
+      if (!res.ok) throw new Error(readApiErrorMessage(data, res));
       const llmRes = await apiFetch(apiUrl('/llm-settings'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(flatStateToLlmSettingsPatch(llmConfigState)),
       });
       const llmData = await llmRes.json().catch(() => ({}));
-      if (!llmRes.ok) throw new Error(llmData.error || llmRes.statusText);
+      if (!llmRes.ok) throw new Error(readApiErrorMessage(llmData, llmRes));
       if (typeof llmData.apiKeyConfigured === 'boolean') {
         setLlmApiKeyConfigured(llmData.apiKeyConfigured);
       }
@@ -557,7 +557,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify(flatStateToLlmSettingsPatch(nextState)),
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || res.statusText);
+        if (!res.ok) throw new Error(readApiErrorMessage(data, res));
         if (typeof data.apiKeyConfigured === 'boolean') {
           setLlmApiKeyConfigured(data.apiKeyConfigured);
         }
@@ -588,7 +588,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify(flatStateToLlmSettingsPatch(nextState)),
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || res.statusText);
+        if (!res.ok) throw new Error(readApiErrorMessage(data, res));
         if (typeof data.apiKeyConfigured === 'boolean') {
           setLlmApiKeyConfigured(data.apiKeyConfigured);
         }
@@ -621,7 +621,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
           ),
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.error || res.statusText);
+        if (!res.ok) throw new Error(readApiErrorMessage(data, res));
         if (typeof data.apiKeyConfigured === 'boolean') {
           setLlmApiKeyConfigured(data.apiKeyConfigured);
         }
@@ -668,7 +668,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(flatStateToLlmSettingsPatch(llmConfigState)),
       });
       const llmData = await llmRes.json().catch(() => ({}));
-      if (!llmRes.ok) throw new Error(llmData.error || llmRes.statusText);
+      if (!llmRes.ok) throw new Error(readApiErrorMessage(llmData, llmRes));
       if (typeof llmData.apiKeyConfigured === 'boolean') {
         setLlmApiKeyConfigured(llmData.apiKeyConfigured);
       }
@@ -684,7 +684,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || res.statusText);
+      if (!res.ok) throw new Error(readApiErrorMessage(data, res));
       const jobId = data.jobId;
       if (typeof jobId !== 'string' || !jobId.trim()) {
         throw new Error('Server did not return a job id');
@@ -731,7 +731,7 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const message = typeof data.error === 'string' ? data.error : res.statusText;
+        const message = readApiErrorMessage(data, res);
         logPipelineFailure('Cancel job failed', { jobId, message, status: res.status });
         setStatus('error');
         setLog(format(s.stopJobFailed, { message }));
@@ -740,6 +740,11 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
         setBusy(false);
         return false;
       }
+      setStatus('error');
+      setLog((prev) => (prev ? `${prev}\nCancelled by user.` : 'Cancelled by user.'));
+      stopPoll();
+      activeJobIdRef.current = '';
+      setBusy(false);
       return true;
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);

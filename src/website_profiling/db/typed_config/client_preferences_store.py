@@ -7,7 +7,7 @@ from typing import Any
 from psycopg import Connection
 
 from ._base import read_singleton, write_singleton
-from ._serialize import legacy_to_bool
+from ._serialize import parse_bool
 from .models import ClientPreferences
 
 
@@ -28,7 +28,7 @@ def _coerce_field(name: str, value: Any) -> Any:
     if name in ("sidebar_collapsed", "content_studio_ai_enabled", "animations_enabled"):
         if isinstance(value, bool):
             return value
-        return legacy_to_bool(str(value))
+        return parse_bool(str(value))
     return str(value) if value is not None else ""
 
 

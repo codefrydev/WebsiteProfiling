@@ -110,5 +110,8 @@ def build_edges_from_df(
                     edges.append((src, t))
     finally:
         if fetcher is not None:
-            fetcher.close()
+            try:
+                fetcher.close()
+            except Exception:
+                pass
     return edges

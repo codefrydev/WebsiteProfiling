@@ -22,8 +22,9 @@ public static partial class CategoryHelpers
         string message,
         string? url = null,
         string priority = "Medium",
-        string recommendation = "") =>
-        new(message, url ?? "", priority, recommendation);
+        string recommendation = "",
+        string findingType = "") =>
+        new(message, url ?? "", priority, recommendation, FindingType: findingType);
 
     public static List<CategoryIssue> SortIssues(IEnumerable<CategoryIssue> issues) =>
         issues.OrderBy(i => PriorityOrder.GetValueOrDefault(i.Priority, 99)).ToList();
@@ -63,8 +64,8 @@ public static partial class CategoryHelpers
                     JsonValueKind.String => prop.Value.GetString(),
                     JsonValueKind.True => true,
                     JsonValueKind.False => false,
-                    JsonValueKind.Array => prop.Value,
-                    JsonValueKind.Object => prop.Value,
+                    JsonValueKind.Array => prop.Value.Clone(),
+                    JsonValueKind.Object => prop.Value.Clone(),
                     JsonValueKind.Number => prop.Value.TryGetInt64(out var n) ? n : prop.Value.GetDouble(),
                     _ => null,
                 };
@@ -271,6 +272,62 @@ public static partial class CategoryHelpers
             {
                 Issues = merged,
                 Recommendations = merged.Select(x => x.Recommendation).Where(r => !string.IsNullOrEmpty(r)).Distinct().ToList(),
+            };
+            break;
+        }
+    }
+
+    public static void MergeSubdomainIssues(
+        IList<ReportCategory> categories,
+        IReadOnlyDictionary<string, object?>? subdomains)
+    {
+        if (subdomains is null)
+        {
+            return;
+        }
+
+        if (subdomains.TryGetValue("disabled", out var disabled) && disabled is true)
+        {
+            return;
+        }
+
+        if (!subdomains.TryGetValue("gsc_hosts_not_crawled", out var hostsObj))
+        {
+            return;
+        }
+
+        var hosts = hostsObj switch
+        {
+            IEnumerable<string> list => list.Where(h => !string.IsNullOrWhiteSpace(h)).ToList(),
+            IEnumerable<object?> objects => objects.Select(o => o?.ToString() ?? "").Where(h => h.Length > 0).ToList(),
+            _ => [],
+        };
+
+        if (hosts.Count == 0)
+        {
+            return;
+        }
+
+        var preview = string.Join(", ", hosts.Take(5));
+        var suffix = hosts.Count > 5 ? $" (+{hosts.Count - 5} more)" : "";
+        var issue = Issue(
+            $"GSC shows URLs on subdomain(s) not reached by crawl: {preview}{suffix}.",
+            "",
+            "Medium",
+            "Include these hosts in crawl scope or verify they are intentional separate properties.");
+
+        for (var i = 0; i < categories.Count; i++)
+        {
+            if (categories[i].Id != "technical_seo")
+            {
+                continue;
+            }
+
+            var merged = SortIssues(categories[i].Issues.Append(issue));
+            categories[i] = categories[i] with
+            {
+                Issues = merged,
+                Recommendations = RecommendationsFromIssues(merged),
             };
             break;
         }

@@ -67,38 +67,67 @@ public static class IntelligenceCategoryBuilder
             return groups;
         }
 
-        if (raw is not JsonElement el || el.ValueKind != JsonValueKind.Array)
+        if (raw is JsonElement el && el.ValueKind == JsonValueKind.Array)
         {
+            foreach (var item in el.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.Object)
+                {
+                    continue;
+                }
+
+                var urls = new List<string>();
+                if (item.TryGetProperty("member_urls", out var urlsEl) && urlsEl.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var u in urlsEl.EnumerateArray())
+                    {
+                        if (u.ValueKind == JsonValueKind.String)
+                        {
+                            var s = u.GetString();
+                            if (!string.IsNullOrWhiteSpace(s))
+                            {
+                                urls.Add(s);
+                            }
+                        }
+                    }
+                }
+
+                var memberCount = item.TryGetProperty("member_count", out var countEl) && countEl.TryGetInt32(out var c)
+                    ? c
+                    : urls.Count;
+                groups.Add(new DuplicateGroup(memberCount, urls));
+            }
+
             return groups;
         }
 
-        foreach (var item in el.EnumerateArray())
+        if (raw is IEnumerable<object?> list)
         {
-            if (item.ValueKind != JsonValueKind.Object)
+            foreach (var item in list)
             {
-                continue;
-            }
-
-            var urls = new List<string>();
-            if (item.TryGetProperty("member_urls", out var urlsEl) && urlsEl.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var u in urlsEl.EnumerateArray())
+                if (item is not Dictionary<string, object?> group)
                 {
-                    if (u.ValueKind == JsonValueKind.String)
+                    continue;
+                }
+
+                var urls = new List<string>();
+                if (group.TryGetValue("member_urls", out var urlsRaw) && urlsRaw is IEnumerable<object?> urlList)
+                {
+                    foreach (var u in urlList)
                     {
-                        var s = u.GetString();
+                        var s = u?.ToString()?.Trim();
                         if (!string.IsNullOrWhiteSpace(s))
                         {
                             urls.Add(s);
                         }
                     }
                 }
-            }
 
-            var memberCount = item.TryGetProperty("member_count", out var countEl) && countEl.TryGetInt32(out var c)
-                ? c
-                : urls.Count;
-            groups.Add(new DuplicateGroup(memberCount, urls));
+                var memberCount = group.TryGetValue("member_count", out var countRaw) && countRaw is int c
+                    ? c
+                    : urls.Count;
+                groups.Add(new DuplicateGroup(memberCount, urls));
+            }
         }
 
         return groups;
@@ -147,6 +176,11 @@ public static class IntelligenceCategoryBuilder
         if (!dict.TryGetValue(key, out var raw) || raw is null)
         {
             return result;
+        }
+
+        if (raw is Dictionary<string, int> intDict)
+        {
+            return new Dictionary<string, int>(intDict, StringComparer.Ordinal);
         }
 
         if (raw is JsonElement el && el.ValueKind == JsonValueKind.Object)

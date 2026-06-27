@@ -66,7 +66,7 @@ def build_upgrade() -> str:
     llm_sets = []
     spec = MANIFEST["tables"]["llm_settings"]["columns"]
     for col, col_spec in spec.items():
-        legacy = col_spec["legacy_key"]
+        legacy = col_spec["state_key"]
         t = col_spec["type"]
         if t == "bool":
             llm_sets.append(_bool_backfill(col, legacy))
@@ -101,7 +101,7 @@ WHERE provider = (SELECT LOWER(TRIM(provider)) FROM llm_settings WHERE id = 1)
         spec = MANIFEST["tables"][table]
         sets = []
         for col, col_spec in spec["columns"].items():
-            legacy = col_spec["legacy_key"]
+            legacy = col_spec["state_key"]
             t = col_spec.get("type", "text")
             if t == "bool":
                 sets.append(_bool_backfill(col, legacy, "pipeline_config"))
@@ -117,7 +117,7 @@ WHERE provider = (SELECT LOWER(TRIM(provider)) FROM llm_settings WHERE id = 1)
     # ui_preferences from app_settings
     ui_sets = []
     for col, col_spec in MANIFEST["tables"]["ui_preferences"]["columns"].items():
-        legacy = col_spec.get("legacy_app_key", col)
+        legacy = col_spec.get("app_key", col)
         if col_spec.get("type") == "jsonb":
             ui_sets.append(
                 f"{col} = (SELECT NULLIF(TRIM(value), '')::JSONB FROM app_settings WHERE key = '{legacy}')"

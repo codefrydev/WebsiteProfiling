@@ -264,14 +264,11 @@ cmd_start() {
   export FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}"
   export REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-http://127.0.0.1:8094}"
   export PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE="${PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE:-1}"
+  export PYTHON="${PYTHON:-$VENV/bin/python}"
+  export WEBSITE_PROFILING_ROOT="$ROOT"
 
-  log "Starting pipeline worker"
-  "$VENV/bin/python" -m website_profiling.worker &
-  WORKER_PID=$!
-  disown_bg "$WORKER_PID"
-
-  free_port 8001
-  log "Starting FastAPI on port 8001"
+  log "Pipeline jobs run in ReportService C# worker (Python subprocess for crawl/lighthouse only)"
+  log "Starting Python bridge (audit-tool + keyword enrich CLI only) on port 8001"
   export FASTAPI_URL="http://127.0.0.1:8001"
   export FASTAPI_ALLOWED_ORIGINS="http://localhost:8090"
   export DEPRECATE_PYTHON_INTEGRATIONS="${DEPRECATE_PYTHON_INTEGRATIONS:-1}"

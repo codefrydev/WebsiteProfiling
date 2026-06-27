@@ -72,6 +72,12 @@ public static class DependencyInjection
             client.Timeout = TimeSpan.FromSeconds(20);
         });
 
+        services.AddHttpClient("GeoAudit", client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(8);
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("SiteAudit/1.0");
+        });
+
         services.AddHttpClient<PythonToolBridgeClient>((sp, client) =>
         {
             var opts = sp.GetRequiredService<IOptions<FastApiOptions>>().Value;

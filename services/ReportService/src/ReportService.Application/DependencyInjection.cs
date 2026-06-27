@@ -1,12 +1,16 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using ReportService.Application.Bridge;
 using ReportService.Application.Build;
+using ReportService.Application.Compare;
+using ReportService.Application.Dashboard;
 using ReportService.Application.Integrations;
 using ReportService.Application.Orchestration;
 using ReportService.Application.Options;
+using ReportService.Application.Pipeline;
 using ReportService.Application.Persistence;
 using ReportService.Application.Repositories;
 
@@ -38,6 +42,36 @@ public static class DependencyInjection
                 }
             });
 
+        services.AddOptions<WorkerOptions>()
+            .BindConfiguration(WorkerOptions.SectionName)
+            .PostConfigure(o =>
+            {
+                var root = Environment.GetEnvironmentVariable("WEBSITE_PROFILING_ROOT");
+                if (!string.IsNullOrWhiteSpace(root))
+                {
+                    o.RepoRoot = root.Trim();
+                }
+
+                var dataDir = Environment.GetEnvironmentVariable("DATA_DIR");
+                if (!string.IsNullOrWhiteSpace(dataDir))
+                {
+                    o.DataDir = dataDir.Trim();
+                }
+
+                var python = Environment.GetEnvironmentVariable("PYTHON");
+                if (!string.IsNullOrWhiteSpace(python))
+                {
+                    o.PythonExecutable = python.Trim();
+                }
+
+                var enabled = Environment.GetEnvironmentVariable("REPORT_SERVICE_WORKER_ENABLED");
+                if (string.Equals(enabled, "0", StringComparison.Ordinal)
+                    || string.Equals(enabled, "false", StringComparison.OrdinalIgnoreCase))
+                {
+                    o.Enabled = false;
+                }
+            });
+
         services.AddOptions<ReportServiceOptions>()
             .BindConfiguration(ReportServiceOptions.SectionName)
             .PostConfigure(o =>
@@ -66,6 +100,8 @@ public static class DependencyInjection
         services.AddHttpClient(nameof(ReportBuildService));
         services.AddHttpClient(nameof(IntegrationsReportDataClient));
         services.AddHttpClient(nameof(SitemapDiscoveryService));
+        services.AddHttpClient(nameof(SiteLevelBuilder));
+        services.AddHttpClient(nameof(SubdomainInventoryBuilder));
 
         services.AddSingleton<NpgsqlDataSource>(sp =>
         {
@@ -76,7 +112,7 @@ public static class DependencyInjection
             return builder.Build();
         });
 
-        services.AddDbContextPool<ReportDbContext>((sp, options) =>
+        services.AddPooledDbContextFactory<ReportDbContext>((sp, options) =>
         {
             var o = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
             var dataSource = sp.GetRequiredService<NpgsqlDataSource>();
@@ -84,18 +120,31 @@ public static class DependencyInjection
                 .UseNpgsql(dataSource, npg => npg.CommandTimeout(o.CommandTimeoutSeconds))
                 .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
         });
+        services.AddScoped(sp =>
+            sp.GetRequiredService<IDbContextFactory<ReportDbContext>>().CreateDbContext());
 
         services.AddSingleton<FastApiPythonBridge>();
         services.AddScoped<CrawlRepository>();
+        services.AddScoped<CrawlEdgesReader>();
         services.AddScoped<LighthouseDbReader>();
         services.AddScoped<LinkEdgesReader>();
         services.AddScoped<IntegrationsReportDataClient>();
         services.AddScoped<SitemapDiscoveryService>();
+        services.AddScoped<SiteLevelBuilder>();
+        services.AddScoped<SubdomainInventoryBuilder>();
         services.AddScoped<ReportPayloadWriter>();
         services.AddScoped<CategoryBuilder>();
         services.AddScoped<NativeReportBuilder>();
         services.AddScoped<ReportBuildService>();
         services.AddScoped<PipelineOrchestratorService>();
+        services.AddScoped<PipelineJobRepository>();
+        services.AddScoped<PipelineConfigRepository>();
+        services.AddScoped<PipelinePropertyRepository>();
+        services.AddScoped<PipelineRunService>();
+        services.AddScoped<PipelineJobRunner>();
+        services.AddHostedService<PipelineWorkerBackgroundService>();
+        services.AddScoped<DashboardRepository>();
+        services.AddScoped<CompareExportService>();
 
         return services;
     }

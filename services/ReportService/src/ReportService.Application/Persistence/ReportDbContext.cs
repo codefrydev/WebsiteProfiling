@@ -4,7 +4,7 @@ using ReportService.Domain.Entities;
 namespace ReportService.Application.Persistence;
 
 /// <summary>
-/// Read-only EF Core context over the Alembic-owned schema. No migrations; tracking disabled globally.
+/// EF Core context over the Alembic-owned schema. No migrations; tracking disabled globally for reads.
 /// Mirrors Data and FileService DbContext patterns.
 /// </summary>
 public sealed class ReportDbContext(DbContextOptions<ReportDbContext> options) : DbContext(options)
@@ -21,7 +21,11 @@ public sealed class ReportDbContext(DbContextOptions<ReportDbContext> options) :
 
     public DbSet<LinkEdge> LinkEdges => Set<LinkEdge>();
 
+    public DbSet<CrawlGraphEdge> CrawlGraphEdges => Set<CrawlGraphEdge>();
+
     public DbSet<LighthouseGlobalSummary> LighthouseGlobalSummaries => Set<LighthouseGlobalSummary>();
+
+    public DbSet<PipelineJob> PipelineJobs => Set<PipelineJob>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -101,6 +105,15 @@ public sealed class ReportDbContext(DbContextOptions<ReportDbContext> options) :
             e.Property(x => x.Position).HasColumnName("position");
         });
 
+        modelBuilder.Entity<CrawlGraphEdge>(e =>
+        {
+            e.ToTable("edges");
+            e.HasKey(x => new { x.CrawlRunId, x.FromUrl, x.ToUrl });
+            e.Property(x => x.CrawlRunId).HasColumnName("crawl_run_id");
+            e.Property(x => x.FromUrl).HasColumnName("from_url");
+            e.Property(x => x.ToUrl).HasColumnName("to_url");
+        });
+
         modelBuilder.Entity<LighthouseGlobalSummary>(e =>
         {
             e.ToTable("lighthouse_summary");
@@ -108,6 +121,27 @@ public sealed class ReportDbContext(DbContextOptions<ReportDbContext> options) :
             e.Property(x => x.Id).HasColumnName("id");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
             e.Property(x => x.Data).HasColumnName("data").HasColumnType("jsonb");
+        });
+
+        modelBuilder.Entity<PipelineJob>(e =>
+        {
+            e.ToTable("pipeline_jobs");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.JobType).HasColumnName("job_type");
+            e.Property(x => x.Status).HasColumnName("status");
+            e.Property(x => x.ExitCode).HasColumnName("exit_code");
+            e.Property(x => x.LogText).HasColumnName("log_text");
+            e.Property(x => x.ErrorText).HasColumnName("error_text");
+            e.Property(x => x.PropertyId).HasColumnName("property_id");
+            e.Property(x => x.ConfigHash).HasColumnName("config_hash");
+            e.Property(x => x.StartedAt).HasColumnName("started_at");
+            e.Property(x => x.FinishedAt).HasColumnName("finished_at");
+            e.Property(x => x.LogTruncated).HasColumnName("log_truncated");
+            e.Property(x => x.Command).HasColumnName("command");
+            e.Property(x => x.CancelRequested).HasColumnName("cancel_requested");
+            e.Property(x => x.PauseRequested).HasColumnName("pause_requested");
+            e.Property(x => x.WorkerPid).HasColumnName("worker_pid");
         });
     }
 }

@@ -1,4 +1,4 @@
-import { apiUrl, apiFetch } from '@/lib/publicBase';
+import { apiUrl, apiFetch, readApiErrorMessage } from '@/lib/publicBase';
 import type { PipelineJob } from '@/types/api';
 import { logPipelineFailure } from '@/lib/pipelineDebug';
 
@@ -73,7 +73,7 @@ export function pollPipelineJob(
       } = await res.json().catch(() => ({}));
       if (cancelled) return;
       if (!res.ok) {
-        const errMsg = data.error || res.statusText;
+        const errMsg = readApiErrorMessage(data, res);
         logPipelineFailure('Job poll HTTP error', { jobId, status: res.status, error: errMsg, body: data });
         onUpdate({
           status: 'error',

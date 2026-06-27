@@ -27,6 +27,9 @@ public static class DependencyInjection
     /// <summary>Named HttpClient for the internal Report service — idempotent retry.</summary>
     public const string ReportClient = "report";
 
+    /// <summary>Named HttpClient for the internal Config service — idempotent retry.</summary>
+    public const string ConfigClient = "config";
+
     /// <summary>Named HttpClient for Ai service streaming (chat SSE) — no retry/buffering.</summary>
     public const string AiStreamClient = "ai-stream";
 
@@ -88,6 +91,17 @@ public static class DependencyInjection
                 if (!string.IsNullOrWhiteSpace(reportRoutes))
                 {
                     o.ReportRoutes = reportRoutes
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                }
+                var config = Environment.GetEnvironmentVariable("CONFIG_SERVICE_URL");
+                if (!string.IsNullOrWhiteSpace(config))
+                {
+                    o.ConfigBaseUrl = config.Trim();
+                }
+                var configRoutes = Environment.GetEnvironmentVariable("CONFIG_ROUTES");
+                if (!string.IsNullOrWhiteSpace(configRoutes))
+                {
+                    o.ConfigRoutes = configRoutes
                         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 }
             });
@@ -191,6 +205,15 @@ public static class DependencyInjection
             {
                 var opts = GetUpstream(sp);
                 client.BaseAddress = NormalizeBase(opts.ReportBaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(Math.Max(5, opts.TimeoutSeconds));
+            })
+            .AddHttpMessageHandler<IdempotentRetryHandler>();
+
+        services.AddHttpClient(ConfigClient)
+            .ConfigureHttpClient((sp, client) =>
+            {
+                var opts = GetUpstream(sp);
+                client.BaseAddress = NormalizeBase(opts.ConfigBaseUrl);
                 client.Timeout = TimeSpan.FromSeconds(Math.Max(5, opts.TimeoutSeconds));
             })
             .AddHttpMessageHandler<IdempotentRetryHandler>();

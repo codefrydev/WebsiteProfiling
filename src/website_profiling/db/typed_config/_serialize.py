@@ -1,4 +1,4 @@
-"""Convert between DB column types and flat legacy string values."""
+"""Convert between DB column types and flat pipeline state strings."""
 from __future__ import annotations
 
 import json
@@ -6,23 +6,23 @@ from datetime import datetime
 from typing import Any
 
 
-def bool_to_legacy(value: bool) -> str:
+def bool_to_state_string(value: bool) -> str:
     return "true" if value else "false"
 
 
-def legacy_to_bool(raw: str | None, *, default: bool = False) -> bool:
+def parse_bool(raw: str | None, *, default: bool = False) -> bool:
     if raw is None or str(raw).strip() == "":
         return default
     return str(raw).strip().lower() in ("true", "1", "yes")
 
 
-def int_to_legacy(value: int | None) -> str:
+def int_to_state_string(value: int | None) -> str:
     if value is None:
         return ""
     return str(value)
 
 
-def legacy_to_int(raw: str | None, *, default: int | None = None) -> int | None:
+def parse_int(raw: str | None, *, default: int | None = None) -> int | None:
     if raw is None or str(raw).strip() == "":
         return default
     try:
@@ -31,7 +31,7 @@ def legacy_to_int(raw: str | None, *, default: int | None = None) -> int | None:
         return default
 
 
-def json_to_legacy(value: Any) -> str:
+def json_to_state_string(value: Any) -> str:
     if value is None:
         return ""
     if isinstance(value, str):
@@ -39,7 +39,7 @@ def json_to_legacy(value: Any) -> str:
     return json.dumps(value, separators=(",", ":"))
 
 
-def legacy_to_json(raw: str | None) -> Any:
+def parse_json(raw: str | None) -> Any:
     if raw is None or str(raw).strip() == "":
         return None
     if isinstance(raw, (dict, list)):
@@ -77,14 +77,14 @@ def parse_column_value(col_spec: dict, raw: Any) -> Any:
         default = bool(col_spec.get("default", False))
         if isinstance(raw, bool):
             return raw
-        return legacy_to_bool(str(raw), default=default)
+        return parse_bool(str(raw), default=default)
     if col_type == "int":
         default = col_spec.get("default")
         if isinstance(raw, int):
             return raw
-        return legacy_to_int(str(raw), default=default if default is not None else None)
+        return parse_int(str(raw), default=default if default is not None else None)
     if col_type == "jsonb":
-        return legacy_to_json(raw if isinstance(raw, str) else json.dumps(raw))
+        return parse_json(raw if isinstance(raw, str) else json.dumps(raw))
     if col_type == "timestamptz":
         if isinstance(raw, datetime):
             return raw
@@ -99,16 +99,16 @@ def serialize_column_value(col_spec: dict, value: Any) -> Any:
     if col_type == "bool":
         if isinstance(value, bool):
             return value
-        return legacy_to_bool(str(value), default=bool(col_spec.get("default", False)))
+        return parse_bool(str(value), default=bool(col_spec.get("default", False)))
     if col_type == "int":
         if value is None or value == "":
             return col_spec.get("default")
         if isinstance(value, int):
             return value
-        parsed = legacy_to_int(str(value), default=col_spec.get("default"))
+        parsed = parse_int(str(value), default=col_spec.get("default"))
         return parsed if parsed is not None else col_spec.get("default")
     if col_type == "jsonb":
-        return legacy_to_json(value if isinstance(value, str) else json.dumps(value) if value is not None else None)
+        return parse_json(value if isinstance(value, str) else json.dumps(value) if value is not None else None)
     if col_type == "timestamptz":
         return value if value not in ("", None) else None
     if value is None:
@@ -116,16 +116,16 @@ def serialize_column_value(col_spec: dict, value: Any) -> Any:
     return str(value)
 
 
-def column_to_legacy(col_spec: dict, value: Any) -> str:
+def column_to_state_string(col_spec: dict, value: Any) -> str:
     col_type = col_spec.get("type", "text")
     if col_type == "bool":
-        return bool_to_legacy(bool(value))
+        return bool_to_state_string(bool(value))
     if col_type == "int":
         if value is None:
-            return int_to_legacy(col_spec.get("default"))
-        return int_to_legacy(int(value))
+            return int_to_state_string(col_spec.get("default"))
+        return int_to_state_string(int(value))
     if col_type == "jsonb":
-        return json_to_legacy(value)
+        return json_to_state_string(value)
     if value is None:
         return str(col_spec.get("default", ""))
     return str(value)

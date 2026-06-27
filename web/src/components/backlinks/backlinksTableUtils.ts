@@ -53,11 +53,25 @@ export function combinedSampleLinks(data: GscLinksReportData | undefined) {
   return [...sample, ...latest];
 }
 
+export function hasGscLinksExportType(
+  data: GscLinksReportData | undefined,
+  exportType: string,
+): boolean {
+  return (data?.export_types ?? []).includes(exportType);
+}
+
 export function summaryCounts(data: GscLinksReportData | undefined) {
+  const rowCounts = data?.row_counts ?? {};
   return {
-    referringDomains: data?.top_linking_sites?.length ?? 0,
-    linkedPages: data?.top_linked_pages?.length ?? 0,
-    sampleLinks: data?.sample_links?.length ?? 0,
-    latestLinks: data?.latest_links?.length ?? 0,
+    referringDomains:
+      Number(rowCounts.top_linking_sites) || data?.top_linking_sites?.length || 0,
+    linkedPages:
+      Number(rowCounts.top_linked_pages) || data?.top_linked_pages?.length || 0,
+    sampleLinks:
+      Number(data?.sample_links_full_count) || data?.sample_links?.length || 0,
+    latestLinks:
+      Number(data?.latest_links_full_count) || data?.latest_links?.length || 0,
+    hasSampleExport: hasGscLinksExportType(data, 'sample_links'),
+    hasLatestExport: hasGscLinksExportType(data, 'latest_links'),
   };
 }

@@ -89,6 +89,7 @@ public sealed class AuditToolContext
             {
                 if (data["rows"] is JsonArray rows && rows.Count > 1000)
                 {
+                    data["total_rows"] = rows.Count;
                     var capped = new JsonArray();
                     for (var i = 0; i < 1000; i++)
                     {
@@ -96,6 +97,7 @@ public sealed class AuditToolContext
                     }
 
                     data["rows"] = capped;
+                    data["truncated"] = true;
                 }
 
                 return data;

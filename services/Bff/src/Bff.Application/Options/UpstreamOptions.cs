@@ -54,4 +54,13 @@ public sealed class UpstreamOptions
     /// (env override: REPORT_ROUTES).
     /// </summary>
     public string[] ReportRoutes { get; set; } = [];
+
+    /// <summary>Config service base URL (env override: CONFIG_SERVICE_URL). Internal typed-config service.</summary>
+    public string ConfigBaseUrl { get; set; } = "http://127.0.0.1:8095";
+
+    /// <summary>
+    /// Comma-separated /api path prefixes routed to the Config service instead of FastAPI
+    /// (env override: CONFIG_ROUTES).
+    /// </summary>
+    public string[] ConfigRoutes { get; set; } = [];
 }

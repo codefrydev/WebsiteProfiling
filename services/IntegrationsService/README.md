@@ -19,6 +19,8 @@ DATABASE_URL=postgres://profiling:profiling@127.0.0.1:5432/website_profiling \
 
 Or use `./local-run` / `./local-prod` from the repo root (starts IntegrationsService on 8093 when `dotnet` is available).
 
+In **Development**, Swagger UI is at **http://localhost:8093/docs** (OpenAPI JSON at `/swagger/v1/swagger.json`).
+
 ## Environment
 
 | Variable | Purpose |

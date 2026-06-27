@@ -73,6 +73,47 @@ public static class CrawlSliceHelpers
         return val is "true" or "1" or "yes";
     }
 
+    /// <summary>Status code as string — handles JSON numbers (e.g. 200) and strings.</summary>
+    public static string RowStatus(JsonObject row)
+    {
+        var node = row["status"];
+        if (node is null)
+        {
+            return "";
+        }
+
+        if (node is JsonValue value)
+        {
+            if (value.TryGetValue<string>(out var s))
+            {
+                return s.Trim();
+            }
+
+            if (value.TryGetValue<int>(out var i))
+            {
+                return i.ToString();
+            }
+
+            if (value.TryGetValue<long>(out var l))
+            {
+                return l.ToString();
+            }
+
+            if (value.TryGetValue<double>(out var d))
+            {
+                return ((int)d).ToString();
+            }
+        }
+
+        return node.ToString()?.Trim() ?? "";
+    }
+
+    public static bool IsSuccess2xx(JsonObject row)
+    {
+        var status = RowStatus(row);
+        return status.Length > 0 && status[0] == '2';
+    }
+
     public static IReadOnlyList<string> RowSchemaTypesList(JsonObject row)
     {
         var pa = ParsePageAnalysisInternal(row);

@@ -10,16 +10,16 @@ namespace ReportService.Application.Build;
 /// <summary>Native report build orchestration. Core sections are native; enrichments (Google, security scan) remain optional stubs.</summary>
 public sealed class NativeReportBuilder(
     CrawlRepository crawlRepository,
+    CrawlEdgesReader crawlEdgesReader,
     LighthouseDbReader lighthouseDbReader,
     LinkEdgesReader linkEdgesReader,
     IntegrationsReportDataClient integrationsReportData,
     SitemapDiscoveryService sitemapDiscovery,
+    SiteLevelBuilder siteLevelBuilder,
+    SubdomainInventoryBuilder subdomainInventoryBuilder,
     CategoryBuilder categoryBuilder,
     ReportPayloadWriter reportPayloadWriter)
 {
-    private static readonly IReadOnlyDictionary<string, object?> EmptyMlBundle =
-        new Dictionary<string, object?>();
-
     /// <summary>Native build writes a full UI payload without runtime ML enrichment.</summary>
     public bool IsFullBuildComplete => true;
 
@@ -30,11 +30,32 @@ public sealed class NativeReportBuilder(
         IReadOnlyDictionary<string, object?>? mlBundle = null,
         CancellationToken cancellationToken = default)
     {
-        var rows = await crawlRepository.ReadCrawlAsync(crawlRunId, cancellationToken);
-        var lhDb = await lighthouseDbReader.ReadPageSummariesAsync(cancellationToken);
         var startUrl = config?.GetValueOrDefault("start_url")?.Trim() ?? "";
         var siteName = config?.GetValueOrDefault("site_name")?.Trim();
         var reportTitle = config?.GetValueOrDefault("report_title")?.Trim();
+
+        var resolvedRunId = await crawlRepository.ResolveCrawlRunIdAsync(
+            propertyId,
+            startUrl,
+            crawlRunId,
+            cancellationToken);
+        if (resolvedRunId is null)
+        {
+            throw new InvalidOperationException("No crawl run found in database. Run crawl first.");
+        }
+
+        crawlRunId = resolvedRunId;
+        var rows = await crawlRepository.ReadCrawlAsync(crawlRunId, cancellationToken);
+        mlBundle ??= LocalEnrichmentBuilder.RunLocalEnrichment(rows, config);
+        var linkEdgeRows = await linkEdgesReader.ReadAsync(crawlRunId, cancellationToken: cancellationToken);
+        var crawlGraphEdges = await crawlEdgesReader.ReadAsync(crawlRunId, cancellationToken);
+        var edges = ReportEdgeResolver.Resolve(rows, crawlGraphEdges, linkEdgeRows);
+        if (rows.Count == 0 && edges.Count == 0)
+        {
+            throw new InvalidOperationException("No crawl or edges data in database. Run crawl first.");
+        }
+
+        var lhDb = await lighthouseDbReader.ReadPageSummariesAsync(cancellationToken);
         var crawlRunCreatedAt = await crawlRepository.GetCrawlRunCreatedAtIsoAsync(crawlRunId, cancellationToken);
 
         var enrichment = propertyId is > 0
@@ -62,18 +83,19 @@ public sealed class NativeReportBuilder(
             pickedLhNode,
             googleData,
             keywordsData,
-            EmptyMlBundle,
+            mlBundle,
             crawlRunId,
             crawlRunCreatedAt,
             gscLinksData);
 
-        var maxOutbound = int.TryParse(config?.GetValueOrDefault("max_outbound_domains"), out var mo) ? mo : 50;
+        var maxOutbound = ParseOutboundMaxRows(config);
         var fingerprints = ReportMetadataBuilder.BuildUrlFingerprints(rows);
         var hreflang = ReportMetadataBuilder.BuildHreflangSummary(rows);
         var outbound = ReportMetadataBuilder.BuildOutboundLinkDomains(rows, startUrl, maxOutbound);
-        var edges = CategoryBuilder.BuildEdges(rows);
         var summarySeo = BuildSummarySeoPayload(seo.Issues);
-        var siteLevel = new Dictionary<string, object?>();
+        var siteLevel = await siteLevelBuilder.FetchAsync(startUrl, cancellationToken);
+        var runSecurityScan = ParseBool(config, "run_security_scan", defaultValue: true);
+        var securityFindings = SecurityScanBuilder.BuildPassive(rows, startUrl, runSecurityScan);
         var categories = categoryBuilder.BuildCategories(
             rows,
             edges,
@@ -83,7 +105,8 @@ public sealed class NativeReportBuilder(
             lighthouseSummary,
             cruxSummary: null,
             lighthouseByUrl: lhByUrl,
-            mlBundle: EmptyMlBundle);
+            mlBundle: mlBundle,
+            securityFindings: securityFindings);
 
         var categoryList = categories.ToList();
 
@@ -97,6 +120,29 @@ public sealed class NativeReportBuilder(
             cancellationToken);
         categoryBuilder.MergeIndexationIssues(categoryList, rows, indexation);
 
+        var subdomains = await subdomainInventoryBuilder.BuildAsync(
+            rows,
+            indexation,
+            startUrl,
+            config,
+            cancellationToken);
+        categoryBuilder.MergeSubdomainIssues(categoryList, subdomains);
+
+        var crawlPathSegments = ParsePathPrefixes(config);
+        var crawlSegments = crawlPathSegments.Count > 0
+            ? CrawlSegmentsBuilder.Build(rows, categoryList, crawlPathSegments)
+            : null;
+
+        var contactIntelligence = await ContactIntelligenceBuilder.BuildAsync(
+            rows,
+            siteLevel,
+            startUrl,
+            siteLevelBuilder,
+            config,
+            cancellationToken);
+
+        var (imageInventory, imageInventorySummary) = ImageInventoryBuilder.Build(rows, config);
+
         if (googleData is not null)
         {
             categoryList = IssueImpactEnricher.Enrich(categoryList, googleData).ToList();
@@ -108,7 +154,7 @@ public sealed class NativeReportBuilder(
         }
 
         var inDegree = LinksListBuilder.BuildInDegree(edges);
-        var links = LinksListBuilder.BuildLinksList(rows, inDegree, lhByUrl, null);
+        var links = LinksListBuilder.BuildLinksList(rows, inDegree, lhByUrl, mlBundle);
         var orphanUrls = LinksListBuilder.BuildOrphanUrls(links);
         var successRows = CategoryHelpers.SuccessRows(rows);
         var contentUrls = ContentUrlListsBuilder.Build(rows, successRows);
@@ -122,7 +168,6 @@ public sealed class NativeReportBuilder(
         var socialCoverage = ContentAnalyticsBuilder.BuildSocialCoverage(rows);
         var techStackSummary = ContentAnalyticsBuilder.BuildTechStackSummary(rows);
         var hreflangIssueUrls = HreflangIssueUrlsBuilder.Build(successRows);
-        var linkEdgeRows = await linkEdgesReader.ReadAsync(crawlRunId, cancellationToken: cancellationToken);
         var linkEdges = LinkEdgesReportBuilder.ToPayloadRows(linkEdgeRows);
         var linkRelSummary = linkEdges.Count > 0
             ? LinkEdgesReportBuilder.SummarizeLinkRel(linkEdges)
@@ -130,9 +175,7 @@ public sealed class NativeReportBuilder(
         var inlinkAnchorMatrix = linkEdges.Count > 0
             ? LinkEdgesReportBuilder.BuildInlinkAnchorMatrix(linkEdges)
             : [];
-
-        var runSecurityScan = ParseBool(config, "run_security_scan", defaultValue: true);
-        var securityFindings = SecurityScanBuilder.BuildPassive(rows, startUrl, runSecurityScan);
+        var lighthouseFailureUrls = LighthouseFailureUrlsBuilder.Build(lhByUrl);
         var competitorGap = CompetitorLinkGapBuilder.Build(gscLinksData, ParseCompetitorDomains(config));
 
         var slice = new NativeReportSlice(
@@ -169,16 +212,22 @@ public sealed class NativeReportBuilder(
             indexation,
             competitorGap,
             securityFindings,
-            lighthouseSummary);
+            lighthouseSummary,
+            ContactIntelligence: contactIntelligence,
+            ImageInventory: imageInventory,
+            ImageInventorySummary: imageInventorySummary,
+            Subdomains: subdomains,
+            CrawlSegments: crawlSegments,
+            LighthouseFailureUrls: lighthouseFailureUrls);
 
         var corePayload = NativeReportPayloadAssembler.AssembleCore(
             slice,
             siteName,
             reportTitle,
             siteLevel,
-            EmptyMlBundle);
+            mlBundle);
 
-        return slice with { CorePayload = corePayload };
+        return slice with { CorePayload = corePayload, MlBundle = mlBundle };
     }
 
     public async Task<ReportBuildBridgeResult> BuildAsync(
@@ -192,15 +241,21 @@ public sealed class NativeReportBuilder(
             var slice = await BuildNativeSliceAsync(propertyId, crawlRunId, config, null, cancellationToken);
             var siteName = config?.GetValueOrDefault("site_name")?.Trim();
             var reportTitle = config?.GetValueOrDefault("report_title")?.Trim();
-            var crawlRunCreatedAt = await crawlRepository.GetCrawlRunCreatedAtIsoAsync(crawlRunId, cancellationToken);
+            var resolvedRunId = await crawlRepository.ResolveCrawlRunIdAsync(
+                propertyId,
+                config?.GetValueOrDefault("start_url"),
+                crawlRunId,
+                cancellationToken);
+            var crawlRunCreatedAt = await crawlRepository.GetCrawlRunCreatedAtIsoAsync(resolvedRunId, cancellationToken);
 
             var payload = NativeReportPayloadAssembler.AssembleFull(
                 slice,
                 siteName,
                 reportTitle,
                 propertyId,
-                crawlRunId,
-                crawlRunCreatedAt);
+                resolvedRunId,
+                crawlRunCreatedAt,
+                mlBundle: slice.MlBundle);
 
             var reportId = await reportPayloadWriter.WriteAsync(payload, propertyId, cancellationToken);
             var outputPath = "postgresql";
@@ -242,6 +297,25 @@ public sealed class NativeReportBuilder(
         };
     }
 
+    private static int ParseOutboundMaxRows(IReadOnlyDictionary<string, string>? config)
+    {
+        if (config is not null
+            && int.TryParse(config.GetValueOrDefault("outbound_domain_max_rows"), out var primary)
+            && primary > 0)
+        {
+            return primary;
+        }
+
+        if (config is not null
+            && int.TryParse(config.GetValueOrDefault("max_outbound_domains"), out var legacy)
+            && legacy > 0)
+        {
+            return legacy;
+        }
+
+        return 200;
+    }
+
     private static bool ParseBool(IReadOnlyDictionary<string, string>? config, string key, bool defaultValue)
     {
         if (config is null || !config.TryGetValue(key, out var raw))
@@ -255,6 +329,18 @@ public sealed class NativeReportBuilder(
             "1" or "true" or "yes" or "on" => true,
             _ => defaultValue,
         };
+    }
+
+    private static List<string> ParsePathPrefixes(IReadOnlyDictionary<string, string>? config)
+    {
+        if (config is null || !config.TryGetValue("crawl_path_segments", out var raw))
+        {
+            return [];
+        }
+
+        return raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(s => s.Length > 0)
+            .ToList();
     }
 
     private static List<string> ParseCompetitorDomains(IReadOnlyDictionary<string, string>? config)
@@ -304,7 +390,14 @@ public sealed record NativeReportSlice(
     Dictionary<string, object?>? IndexationCoverage = null,
     Dictionary<string, object?>? CompetitorLinkGap = null,
     List<Dictionary<string, object?>>? SecurityFindings = null,
-    Dictionary<string, object?>? LighthouseSummary = null)
+    Dictionary<string, object?>? LighthouseSummary = null,
+    Dictionary<string, object?>? ContactIntelligence = null,
+    List<Dictionary<string, object?>>? ImageInventory = null,
+    Dictionary<string, object?>? ImageInventorySummary = null,
+    Dictionary<string, object?>? Subdomains = null,
+    Dictionary<string, object?>? CrawlSegments = null,
+    Dictionary<string, object?>? LighthouseFailureUrls = null,
+    IReadOnlyDictionary<string, object?>? MlBundle = null)
 {
     public Dictionary<string, object?>? CorePayload { get; init; }
 }

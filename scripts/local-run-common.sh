@@ -55,6 +55,16 @@ start_host_dotnet_base() {
     dotnet run --project src/Data.Api --no-launch-profile) &
   DATA_PID=$!
 
+  free_port 8095
+  printf '\033[1;36m→\033[0m Starting ConfigService on port 8095\n'
+  (cd "$root/services/ConfigService" && \
+    DATABASE_URL="$DATABASE_URL" \
+    WEBSITE_PROFILING_ROOT="$root" \
+    ASPNETCORE_URLS="http://127.0.0.1:8095" \
+    ASPNETCORE_ENVIRONMENT="$mode" \
+    dotnet run --project src/ConfigService.Api --no-launch-profile) &
+  CONFIG_PID=$!
+
   free_port 8092
   printf '\033[1;36m→\033[0m Starting AiService on port 8092\n'
   (cd "$root/services/AiService" && \
@@ -68,6 +78,7 @@ start_host_dotnet_base() {
 
   wait_for_http "http://127.0.0.1:8080/health" "FileService"
   wait_for_http "http://127.0.0.1:8091/health" "Data service"
+  wait_for_http "http://127.0.0.1:8095/health" "ConfigService"
   wait_for_http "http://127.0.0.1:8092/health" "AiService"
 }
 
@@ -81,8 +92,12 @@ start_host_report_service() {
     DATABASE_URL="$DATABASE_URL" \
     FASTAPI_URL="http://127.0.0.1:8001" \
     INTEGRATIONS_SERVICE_URL="$INTEGRATIONS_SERVICE_URL" \
-    REPORT_SERVICE_USE_PYTHON_BRIDGE="${REPORT_SERVICE_USE_PYTHON_BRIDGE:-1}" \
+    WEBSITE_PROFILING_ROOT="$root" \
+    DATA_DIR="${DATA_DIR:-$root/data}" \
+    PYTHON="${PYTHON:-$root/.venv/bin/python}" \
+    REPORT_SERVICE_USE_PYTHON_BRIDGE="${REPORT_SERVICE_USE_PYTHON_BRIDGE:-0}" \
     REPORT_SERVICE_VALIDATE_NATIVE="${REPORT_SERVICE_VALIDATE_NATIVE:-1}" \
+    REPORT_SERVICE_WORKER_ENABLED="${REPORT_SERVICE_WORKER_ENABLED:-1}" \
     ASPNETCORE_URLS="http://127.0.0.1:8094" \
     ASPNETCORE_ENVIRONMENT="$mode" \
     dotnet run --project src/ReportService.Api --no-launch-profile) &
@@ -119,8 +134,10 @@ start_host_integrations_bff() {
     AI_SERVICE_URL="$AI_SERVICE_URL" \
     INTEGRATIONS_SERVICE_URL="$INTEGRATIONS_SERVICE_URL" \
     REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-http://127.0.0.1:8094}" \
-    REPORT_ROUTES="${REPORT_ROUTES:-/api/compare,/api/dashboards}" \
-    DATA_ROUTES="${DATA_ROUTES:-/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters}" \
+    REPORT_ROUTES="${REPORT_ROUTES:-/api/compare,/api/dashboards,/api/run,/api/jobs,/api/schedule,/api/crawl}" \
+    CONFIG_SERVICE_URL="${CONFIG_SERVICE_URL:-http://127.0.0.1:8095}" \
+    CONFIG_ROUTES="${CONFIG_ROUTES:-/api/pipeline-settings,/api/ui-preferences,/api/client-preferences}" \
+    DATA_ROUTES="${DATA_ROUTES:-/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters,/api/properties,/api/content-drafts,/api/content/score,/api/keywords,/api/page-markdown,/api/alerts,/api/logs,/api/backlinks}" \
     AI_ROUTES="${AI_ROUTES:-/api/chat,/api/links/page-coach,/api/issues/fix-suggestion,/api/issues/action-plan,/api/ai/fix-suggestion,/api/dashboards/ai-generate,/api/content/analyze,/api/content/wizard,/api/llm-settings,/api/secrets,/api/ollama/status,/api/report/audit-tool,/api/mcp-tools}" \
     INTEGRATIONS_ROUTES="${INTEGRATIONS_ROUTES:-/api/integrations/google,/api/integrations/bing}" \
     BFF_ALLOWED_ORIGINS="${BFF_ALLOWED_ORIGINS:-http://localhost:3000}" \
@@ -153,6 +170,8 @@ stop_host_dotnet_stack() {
   REPORT_PID=""
   "$stop_service_fn" "AiService" "${AI_PID:-}" 8092
   AI_PID=""
+  "$stop_service_fn" "ConfigService" "${CONFIG_PID:-}" 8095
+  CONFIG_PID=""
   "$stop_service_fn" "Data" "${DATA_PID:-}" 8091
   DATA_PID=""
   "$stop_service_fn" "FileService" "${FILE_SERVICE_PID:-}" 8080
