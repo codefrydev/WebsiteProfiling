@@ -92,6 +92,7 @@ start_host_report_service() {
     DATABASE_URL="$DATABASE_URL" \
     FASTAPI_URL="http://127.0.0.1:8001" \
     INTEGRATIONS_SERVICE_URL="$INTEGRATIONS_SERVICE_URL" \
+    AISERVICE_URL="${AISERVICE_URL:-${AI_SERVICE_URL:-http://127.0.0.1:8092}}" \
     WEBSITE_PROFILING_ROOT="$root" \
     DATA_DIR="${DATA_DIR:-$root/data}" \
     PYTHON="${PYTHON:-$root/.venv/bin/python}" \

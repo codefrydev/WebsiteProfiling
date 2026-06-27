@@ -68,8 +68,14 @@ public static class NativeReportPayloadAssembler
         }
 
         payload["security_findings"] = slice.SecurityFindings ?? [];
-        payload["keyword_opportunities"] = new Dictionary<string, object?>();
-        payload["semantic_keyword_clusters"] = Array.Empty<object>();
+        payload["keyword_opportunities"] = slice.KeywordOpportunities
+            ?? new Dictionary<string, object?>
+            {
+                ["quick_wins"] = Array.Empty<object>(),
+                ["high_value"] = Array.Empty<object>(),
+                ["token_topic_clusters"] = Array.Empty<object>(),
+            };
+        payload["semantic_keyword_clusters"] = slice.SemanticKeywordClusters ?? [];
         payload["image_inventory"] = slice.ImageInventory ?? [];
         payload["image_inventory_summary"] = slice.ImageInventorySummary
             ?? new Dictionary<string, object?>
@@ -81,13 +87,21 @@ public static class NativeReportPayloadAssembler
                 ["unoptimized_min_kb"] = 200,
                 ["inventory_available"] = false,
             };
-        payload["optional_audit_urls"] = new Dictionary<string, object?>
+        payload["optional_audit_urls"] = slice.OptionalAuditUrls
+            ?? new Dictionary<string, object?>
+            {
+                ["spell"] = Array.Empty<object>(),
+                ["html"] = Array.Empty<object>(),
+                ["amp"] = Array.Empty<object>(),
+                ["pagination"] = Array.Empty<object>(),
+            };
+        if (slice.OptionalAuditMeta is not null)
         {
-            ["spell"] = Array.Empty<object>(),
-            ["html"] = Array.Empty<object>(),
-            ["amp"] = Array.Empty<object>(),
-            ["pagination"] = Array.Empty<object>(),
-        };
+            foreach (var (key, value) in slice.OptionalAuditMeta)
+            {
+                payload[key] = value;
+            }
+        }
         payload["lighthouse_failure_urls"] = slice.LighthouseFailureUrls
             ?? new Dictionary<string, object?>
             {

@@ -249,6 +249,34 @@ public static partial class CategoryHelpers
         return issues;
     }
 
+    public static void MergeIssuesIntoCategory(
+        IList<ReportCategory> categories,
+        string categoryId,
+        IEnumerable<CategoryIssue> extra)
+    {
+        var extraList = extra.ToList();
+        if (extraList.Count == 0)
+        {
+            return;
+        }
+
+        for (var i = 0; i < categories.Count; i++)
+        {
+            if (!string.Equals(categories[i].Id, categoryId, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var merged = SortIssues(categories[i].Issues.Concat(extraList));
+            categories[i] = categories[i] with
+            {
+                Issues = merged,
+                Recommendations = RecommendationsFromIssues(merged),
+            };
+            break;
+        }
+    }
+
     public static void MergeIndexationIssues(
         IList<ReportCategory> categories,
         IReadOnlyList<CrawlRow> rows,

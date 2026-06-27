@@ -14,6 +14,9 @@ public sealed class NativeReportBuilder(
     LighthouseDbReader lighthouseDbReader,
     LinkEdgesReader linkEdgesReader,
     IntegrationsReportDataClient integrationsReportData,
+    AiServiceEnrichmentClient aiServiceEnrichment,
+    CrawlPageHtmlReader crawlPageHtmlReader,
+    IHttpClientFactory httpClientFactory,
     SitemapDiscoveryService sitemapDiscovery,
     SiteLevelBuilder siteLevelBuilder,
     SubdomainInventoryBuilder subdomainInventoryBuilder,
@@ -110,6 +113,16 @@ public sealed class NativeReportBuilder(
 
         var categoryList = categories.ToList();
 
+        var (auditedCategories, optionalAuditMeta) = await OptionalAuditsBuilder.ApplyAsync(
+            categoryList,
+            rows,
+            config,
+            crawlRunId,
+            crawlPageHtmlReader,
+            httpClientFactory,
+            cancellationToken);
+        categoryList = auditedCategories.ToList();
+
         var gapLimit = int.TryParse(config?.GetValueOrDefault("google_url_gap_list_limit"), out var gl) ? gl : 200;
         var indexation = await IndexationCoverageBuilder.BuildAsync(
             rows,
@@ -159,6 +172,12 @@ public sealed class NativeReportBuilder(
         var successRows = CategoryHelpers.SuccessRows(rows);
         var contentUrls = ContentUrlListsBuilder.Build(rows, successRows);
         var contentAnalytics = ContentAnalyticsBuilder.BuildContentAnalytics(rows);
+        var keywordOpportunities = KeywordOpportunitiesBuilder.Build(rows, config);
+        var semanticKeywordClusters = await BuildSemanticKeywordClustersAsync(
+            contentAnalytics,
+            mlBundle,
+            cancellationToken);
+        var optionalAuditUrls = OptionalAuditUrlsBuilder.Build(categoryList);
         var responseTimeStats = ContentAnalyticsBuilder.BuildResponseTimeStats(rows);
         var depthDistribution = ContentAnalyticsBuilder.BuildDepthDistribution(rows);
         var chartData = ReportChartDataBuilder.Build(rows);
@@ -218,7 +237,11 @@ public sealed class NativeReportBuilder(
             ImageInventorySummary: imageInventorySummary,
             Subdomains: subdomains,
             CrawlSegments: crawlSegments,
-            LighthouseFailureUrls: lighthouseFailureUrls);
+            LighthouseFailureUrls: lighthouseFailureUrls,
+            KeywordOpportunities: keywordOpportunities,
+            SemanticKeywordClusters: semanticKeywordClusters,
+            OptionalAuditUrls: optionalAuditUrls,
+            OptionalAuditMeta: optionalAuditMeta);
 
         var corePayload = NativeReportPayloadAssembler.AssembleCore(
             slice,
@@ -276,6 +299,52 @@ public sealed class NativeReportBuilder(
             var log = ex.ToString();
             var rawBody = JsonSerializer.Serialize(new { ok = false, exitCode = 1, log, outputPath = (string?)null });
             return new ReportBuildBridgeResult(false, 1, log, null, rawBody);
+        }
+    }
+
+    private async Task<List<Dictionary<string, object?>>> BuildSemanticKeywordClustersAsync(
+        Dictionary<string, object?> contentAnalytics,
+        IReadOnlyDictionary<string, object?>? mlBundle,
+        CancellationToken cancellationToken)
+    {
+        var words = new List<string>();
+        if (contentAnalytics.TryGetValue("top_keywords_site", out var topObj)
+            && topObj is IEnumerable<Dictionary<string, object?>> topKeywords)
+        {
+            foreach (var item in topKeywords)
+            {
+                var word = item.GetValueOrDefault("word")?.ToString()?.Trim();
+                if (!string.IsNullOrEmpty(word) && !TextHygieneHelper.IsJunkSemanticTerm(word))
+                {
+                    words.Add(word);
+                }
+            }
+        }
+
+        if (words.Count < 2)
+        {
+            return [];
+        }
+
+        try
+        {
+            return await aiServiceEnrichment.TryClusterKeywordsAsync(words, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            if (mlBundle is Dictionary<string, object?> mutable)
+            {
+                if (!mutable.TryGetValue("ml_errors", out var errorsObj)
+                    || errorsObj is not List<object?> errors)
+                {
+                    errors = [];
+                    mutable["ml_errors"] = errors;
+                }
+
+                errors.Add(ex.Message);
+            }
+
+            return [];
         }
     }
 
@@ -397,6 +466,10 @@ public sealed record NativeReportSlice(
     Dictionary<string, object?>? Subdomains = null,
     Dictionary<string, object?>? CrawlSegments = null,
     Dictionary<string, object?>? LighthouseFailureUrls = null,
+    Dictionary<string, object?>? KeywordOpportunities = null,
+    List<Dictionary<string, object?>>? SemanticKeywordClusters = null,
+    Dictionary<string, object?>? OptionalAuditUrls = null,
+    Dictionary<string, object?>? OptionalAuditMeta = null,
     IReadOnlyDictionary<string, object?>? MlBundle = null)
 {
     public Dictionary<string, object?>? CorePayload { get; init; }
