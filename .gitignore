@@ -34,7 +34,7 @@ skills-lock.json
 crawl_results.csv
 commit.*
 .cursor/
-.claude/
+.claude*
 # .NET services (FileService, Bff, …) — build output and IDE artifacts
 services/**/bin/
 services/**/obj/

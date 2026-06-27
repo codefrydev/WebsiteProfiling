@@ -7,6 +7,10 @@ import {
   isChatFabVisiblePath,
   parseChatUrlContext,
   readChatComposerDraft,
+  readSessionPropertyId,
+  resolvePreferredChatSession,
+  sessionIdsEqual,
+  upsertChatSession,
   writeChatComposerDraft,
 } from './chatUrlState';
 
@@ -69,5 +73,59 @@ describe('chatUrlState', () => {
     expect(isChatFabVisiblePath('/chat')).toBe(false);
     expect(isChatFabVisiblePath('/pipeline')).toBe(false);
     expect(isChatFabVisiblePath('/content-studio')).toBe(false);
+  });
+
+  it('resolvePreferredChatSession prefers URL, then stored for same property, then latest', () => {
+    expect(
+      resolvePreferredChatSession(
+        3,
+        { propertyId: 3, sessionId: 99 },
+        { propertyId: 3, sessionId: 40 },
+        [{ id: 10 }],
+      ),
+    ).toBe(99);
+    expect(
+      resolvePreferredChatSession(
+        3,
+        { propertyId: 3, sessionId: null },
+        { propertyId: 3, sessionId: 40 },
+        [{ id: 10 }],
+      ),
+    ).toBe(40);
+    expect(
+      resolvePreferredChatSession(
+        3,
+        { propertyId: 3, sessionId: null },
+        { propertyId: 5, sessionId: 40 },
+        [{ id: 10 }, { id: 11 }],
+      ),
+    ).toBe(10);
+    expect(
+      resolvePreferredChatSession(3, { propertyId: 3, sessionId: null }, { propertyId: null, sessionId: null }, []),
+    ).toBeNull();
+  });
+
+  it('readSessionPropertyId accepts API camelCase and legacy snake_case', () => {
+    expect(readSessionPropertyId({ propertyId: 3 })).toBe(3);
+    expect(readSessionPropertyId({ property_id: 7 })).toBe(7);
+  });
+
+  it('buildChatSearchQuery adds session when restoring from property-only URL', () => {
+    expect(buildChatSearchQuery('property=3', { propertyId: 3, sessionId: 42 })).toBe(
+      'property=3&session=42',
+    );
+  });
+
+  it('sessionIdsEqual normalizes string and number ids', () => {
+    expect(sessionIdsEqual(10, '10')).toBe(true);
+    expect(sessionIdsEqual(10, 11)).toBe(false);
+  });
+
+  it('upsertChatSession replaces existing row and prepends', () => {
+    const rows = upsertChatSession(
+      [{ id: 1, propertyId: 3, title: 'old' }],
+      { id: 1, propertyId: 3, title: 'hi' },
+    );
+    expect(rows).toEqual([{ id: 1, propertyId: 3, title: 'hi' }]);
   });
 });

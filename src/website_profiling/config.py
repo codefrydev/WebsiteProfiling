@@ -95,11 +95,10 @@ def load_config_from_db() -> dict[str, str]:
 
     try:
         from .db import db_session  # avoid circular at module level
-        from .db.storage import read_pipeline_config
+        from .db.typed_config.worker_config import load_worker_pipeline_config
 
         with db_session() as conn:
-            known, _unknown = read_pipeline_config(conn)
-            return known
+            return load_worker_pipeline_config(conn)
     except Exception as e:
         print(
             f"[Config] Could not load pipeline_config from PostgreSQL ({e}); "

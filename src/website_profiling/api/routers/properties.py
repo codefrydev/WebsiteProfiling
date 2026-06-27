@@ -1,6 +1,7 @@
 """Properties router — /api/properties/*"""
 from __future__ import annotations
 
+import os
 from typing import Annotated, Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -13,11 +14,25 @@ router = APIRouter(tags=["properties"])
 
 DbDep = Annotated[Connection, Depends(get_db)]
 
+_GOOGLE_MIGRATED_DETAIL = (
+    "Property Google endpoints moved to IntegrationsService. "
+    "Configure INTEGRATIONS_ROUTES on the BFF."
+)
+
+
+def _raise_if_google_migrated() -> None:
+    if os.environ.get("DEPRECATE_PYTHON_INTEGRATIONS", "").strip() == "1":
+        raise HTTPException(status_code=410, detail=_GOOGLE_MIGRATED_DETAIL)
+
 
 class PropertyUpsertBody(BaseModel):
     name: Optional[str] = None
     canonical_domain: Optional[str] = None
     site_url: Optional[str] = None
+
+
+class PropertyEnsureBody(BaseModel):
+    startUrl: Optional[str] = None
 
 
 class OpsSettingsBody(BaseModel):
@@ -66,6 +81,32 @@ def create_property(body: PropertyUpsertBody, conn: DbDep) -> dict[str, Any]:
     return {"id": prop_id, "name": name, "canonical_domain": domain}
 
 
+@router.post("/properties/ensure", status_code=200)
+def ensure_property(body: PropertyEnsureBody, conn: DbDep) -> dict[str, Any]:
+    """Create a property row when the URL is complete (OAuth / explicit actions only)."""
+    from website_profiling.db.property_store import (
+        canonical_domain_from_start_url,
+        ensure_property_from_start_url,
+        get_property_by_domain,
+    )
+
+    start_url = (body.startUrl or "").strip()
+    if not start_url:
+        raise HTTPException(status_code=400, detail="startUrl required")
+
+    prop_id = ensure_property_from_start_url(conn, start_url)
+    if prop_id is None:
+        raise HTTPException(status_code=400, detail="Valid site URL with a domain is required")
+
+    domain = canonical_domain_from_start_url(start_url)
+    prop = get_property_by_domain(conn, domain) if domain else None
+    return {
+        "id": prop_id,
+        "canonical_domain": domain,
+        "default_crawl_preset": prop.get("default_crawl_preset") if prop else None,
+    }
+
+
 @router.get("/properties/resolve")
 def resolve_property(
     conn: DbDep,
@@ -74,14 +115,14 @@ def resolve_property(
     from website_profiling.db.property_store import (
         canonical_domain_from_start_url,
         get_property_by_domain,
-        resolve_property_id_from_start_url,
+        lookup_property_id_from_start_url,
     )
 
     start_url = startUrl.strip()
     if not start_url:
         raise HTTPException(status_code=400, detail="startUrl required")
 
-    prop_id = resolve_property_id_from_start_url(conn, start_url)
+    prop_id = lookup_property_id_from_start_url(conn, start_url)
     domain = canonical_domain_from_start_url(start_url)
     prop = get_property_by_domain(conn, domain) if domain else None
     return {
@@ -171,6 +212,7 @@ def authorize_property_crawl_route(property_id: int, conn: DbDep) -> dict[str, A
 
 @router.get("/properties/{property_id}/google/status")
 def property_google_status(property_id: int, conn: DbDep) -> dict[str, Any]:
+    _raise_if_google_migrated()
     from website_profiling.db.property_store import get_property_google_status
 
     status = get_property_google_status(conn, property_id)
@@ -181,6 +223,7 @@ def property_google_status(property_id: int, conn: DbDep) -> dict[str, Any]:
 
 @router.post("/properties/{property_id}/google/test")
 def property_google_test(property_id: int, conn: DbDep) -> dict[str, Any]:
+    _raise_if_google_migrated()
     from website_profiling.db.property_store import get_property_by_id
 
     if not get_property_by_id(conn, property_id):
@@ -197,6 +240,7 @@ def property_google_test(property_id: int, conn: DbDep) -> dict[str, Any]:
 
 @router.get("/properties/{property_id}/google/properties")
 def property_google_properties(property_id: int, conn: DbDep) -> dict[str, Any]:
+    _raise_if_google_migrated()
     from website_profiling.db.property_store import get_property_by_id
 
     if not get_property_by_id(conn, property_id):
@@ -213,6 +257,7 @@ def property_google_properties(property_id: int, conn: DbDep) -> dict[str, Any]:
 
 @router.get("/properties/{property_id}/google/links/status")
 def property_google_links_status(property_id: int, conn: DbDep) -> dict[str, Any]:
+    _raise_if_google_migrated()
     from website_profiling.db.property_store import get_property_by_id
 
     if not get_property_by_id(conn, property_id):
@@ -226,6 +271,7 @@ def property_google_links_status(property_id: int, conn: DbDep) -> dict[str, Any
 
 @router.post("/properties/{property_id}/google/links/import")
 def property_google_links_import(property_id: int, conn: DbDep) -> dict[str, Any]:
+    _raise_if_google_migrated()
     from website_profiling.db.property_store import get_property_by_id
 
     if not get_property_by_id(conn, property_id):
@@ -281,6 +327,7 @@ def _apply_google_credentials_from_patch(
 def patch_property_google_credentials(
     property_id: int, body: GoogleCredentialsPatch, conn: DbDep
 ) -> dict[str, Any]:
+    _raise_if_google_migrated()
     from website_profiling.db.property_store import get_property_by_id
 
     if not get_property_by_id(conn, property_id):
@@ -293,6 +340,7 @@ def patch_property_google_credentials(
 def post_property_google_credentials(
     property_id: int, body: GoogleCredentialsPostBody, conn: DbDep
 ) -> dict[str, Any]:
+    _raise_if_google_migrated()
     from website_profiling.db.property_store import get_property_by_id, get_property_google_public_status
 
     if not get_property_by_id(conn, property_id):
@@ -316,6 +364,7 @@ def post_property_google_credentials(
 
 @router.post("/properties/{property_id}/google/disconnect")
 def post_property_google_disconnect(property_id: int, conn: DbDep) -> dict[str, Any]:
+    _raise_if_google_migrated()
     from website_profiling.db.property_store import disconnect_property_google, get_property_by_id
 
     if not get_property_by_id(conn, property_id):

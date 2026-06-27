@@ -19,7 +19,7 @@ import type { KeywordRow } from '@/types';
 import { computeReportFingerprintDiff } from '../lib/reportDiff';
 import { buildReportCompareSummary } from '../lib/reportCompare';
 import { strings } from '../lib/strings';
-import { reportApi, apiFetch } from '../lib/publicBase';
+import { reportApi, apiFetch, readApiErrorMessage } from '../lib/publicBase';
 import { loadReportCompare } from '../lib/reportCompareClient';
 import type { ReportContextValue } from './reportContextTypes';
 import { SECTION_KEYS, type SectionKey } from '../lib/reportSections';
@@ -146,11 +146,15 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     return scopedList;
   }, [domainSlug, reportListFull, scopedList]);
 
-  const loadSection = useCallback(async (section: SectionKey, reportId: number | null) => {
+  const fetchSection = useCallback(async (
+    section: SectionKey,
+    reportId: number | null,
+    force: boolean,
+  ) => {
     if (inFlightSectionsRef.current.has(section)) return;
     inFlightSectionsRef.current.add(section);
     setSectionStatus((prev) => {
-      if (prev[section] === 'loaded') return prev;
+      if (!force && prev[section] === 'loaded') return prev;
       return { ...prev, [section]: 'loading' };
     });
     const cacheKeySnapshot = sectionCacheKeyRef.current;
@@ -173,7 +177,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
         payload?: Partial<ReportPayload>;
         error?: string;
       };
-      if (!res.ok) throw new Error(body.error || res.statusText);
+      if (!res.ok) throw new Error(readApiErrorMessage(body as Record<string, unknown>, res));
       if (sectionCacheKeyRef.current !== cacheKeySnapshot) {
         setSectionStatus((prev) => {
           if (prev[section] !== 'loading') return prev;
@@ -196,7 +200,16 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     } finally {
       inFlightSectionsRef.current.delete(section);
     }
-  }, []); // all dependencies are stable refs or stable setters
+  }, []);
+
+  const loadSection = useCallback(async (section: SectionKey, reportId: number | null) => {
+    await fetchSection(section, reportId, false);
+  }, [fetchSection]);
+
+  const reloadSection = useCallback(async (section: SectionKey, reportId: number | null) => {
+    inFlightSectionsRef.current.delete(section);
+    await fetchSection(section, reportId, true);
+  }, [fetchSection]);
 
   const applyPayload = useCallback(async (reportId: number | null) => {
     const scoped = domainSlugRef.current;
@@ -223,7 +236,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
             );
       const res = await apiFetch(url);
       const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
-      if (!res.ok) throw new Error(body.error || res.statusText);
+      if (!res.ok) throw new Error(readApiErrorMessage(body as Record<string, unknown>, res));
       const coreData = sanitizePayloadForDomain(body.payload ?? null, scoped);
       setData((prev) => (prev == null ? coreData : { ...prev, ...(coreData ?? {}) }));
       setSectionStatus((prev) => ({ ...prev, core: 'loaded' }));
@@ -242,7 +255,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
               : reportApi('/payload?section=core'),
           );
           const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
-          if (!res.ok) throw new Error(body.error || res.statusText);
+          if (!res.ok) throw new Error(readApiErrorMessage(body as Record<string, unknown>, res));
           const coreData = sanitizePayloadForDomain(body.payload ?? null, scoped);
           setData((prev) => (prev == null ? coreData : { ...prev, ...(coreData ?? {}) }));
           setSectionStatus((prev) => ({ ...prev, core: 'loaded' }));
@@ -264,7 +277,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     try {
       const res = await apiFetch(reportApi('/meta'));
       const body = (await res.json().catch(() => ({}))) as MetaApiResponse;
-      if (!res.ok) throw new Error(body.error || res.statusText);
+      if (!res.ok) throw new Error(readApiErrorMessage(body as Record<string, unknown>, res));
 
       const reps = Array.isArray(body.reports) ? body.reports : [];
       const cr = Array.isArray(body.crawlRuns) ? body.crawlRuns : [];
@@ -325,7 +338,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
         reportApi(`/crawl-payload?crawlRunId=${encodeURIComponent(String(crawlRunId))}`),
       );
       const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
-      if (!res.ok) throw new Error(body.error || res.statusText);
+      if (!res.ok) throw new Error(readApiErrorMessage(body as Record<string, unknown>, res));
       setData(body.payload ?? null);
       setSelectedReportId(null);
       setCrawlPreviewRunId(Number(crawlRunId));
@@ -596,6 +609,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       domainSlug: domainSlug ?? null,
       sectionStatus,
       loadSection,
+      reloadSection,
     }),
     [
       data,
@@ -619,6 +633,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       domainSlug,
       sectionStatus,
       loadSection,
+      reloadSection,
     ],
   );
 

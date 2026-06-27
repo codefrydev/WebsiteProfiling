@@ -1,6 +1,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { apiUrl, apiFetch } from '@/lib/publicBase';
+import { apiUrl, apiFetch, readApiErrorMessage } from '@/lib/publicBase';
 import { Loader2, RefreshCw, Sparkles, Radio } from 'lucide-react';
 import type { LinkDetail } from '@/types/report';
 import type { CompareMetricRow } from '@/lib/reportCompare';
@@ -109,8 +109,9 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
     const q = new URLSearchParams(pageGoogleQuery);
     if (googleSnapshotId != null) q.set('googleSnapshotId', String(googleSnapshotId));
     const res = await apiFetch(apiUrl(`/integrations/google/page-data?${q}`));
-    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
-    return (await res.json()) as PageDataResponse;
+    const body = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    if (!res.ok) throw new Error(readApiErrorMessage(body, res));
+    return body as unknown as PageDataResponse;
   }, [pageGoogleQuery]);
 
   const loadHistories = useCallback(async () => {
@@ -208,18 +209,25 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: pageUrl }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as Record<string, unknown> & {
+        ok?: boolean;
+        snapshotId?: number;
+        gsc?: PageGscSlice | null;
+        ga4?: PageGa4Slice | null;
+        fetchedAt?: string | null;
+        dateRange?: PageDataResponse['dateRange'];
+      };
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || sr.liveFetchFailed);
+        throw new Error(readApiErrorMessage(data, res, sr.liveFetchFailed));
       }
       setCurrentType('live');
       setCurrentId(data.snapshotId ?? null);
       setPageData({
         source: 'live',
-        snapshotId: data.snapshotId,
-        gsc: data.gsc,
-        ga4: data.ga4,
-        fetchedAt: data.fetchedAt,
+        snapshotId: data.snapshotId ?? null,
+        gsc: data.gsc ?? null,
+        ga4: data.ga4 ?? null,
+        fetchedAt: data.fetchedAt ?? null,
         dateRange: data.dateRange,
         coverage: pageData?.coverage,
         siteBenchmarks: pageData?.siteBenchmarks,
@@ -274,9 +282,13 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      const data = await res.json();
+      const data = (await res.json()) as Record<string, unknown> & {
+        ok?: boolean;
+        coach?: CoachPayload;
+        cached?: boolean;
+      };
       if (!res.ok || !data.ok) {
-        throw new Error(data.error || sr.coachFailed);
+        throw new Error(readApiErrorMessage(data, res, sr.coachFailed));
       }
       setCoach((data.coach || {}) as CoachPayload);
       setCoachCached(!!data.cached);

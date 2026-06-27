@@ -1,9 +1,9 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { Loader2, Save, X } from 'lucide-react';
+import { Loader2, Save } from 'lucide-react';
 import { strings, format } from '@/lib/strings';
-import type { IntegrationToast, PipelineUnknownKey } from '@/types/api';
+import type { IntegrationToast } from '@/types/api';
 import { crawlRenderModeUsesBrowser } from '@/lib/browserCrawlStatus';
 import {
   PIPELINE_CONFIG_SECTIONS,
@@ -93,7 +93,6 @@ function RunnerSettingsFields({
   customCommand,
   pythonExe,
   repoRoot,
-  unknownKeys,
   disabled,
   onCustomCommandChange,
   onPythonExeChange,
@@ -103,7 +102,6 @@ function RunnerSettingsFields({
   customCommand: string;
   pythonExe: string;
   repoRoot: string;
-  unknownKeys: PipelineUnknownKey[];
   disabled: boolean;
   onCustomCommandChange: (value: string) => void;
   onPythonExeChange: (value: string) => void;
@@ -166,20 +164,6 @@ function RunnerSettingsFields({
           />
         </div>
       </div>
-      {unknownKeys.length > 0 ? (
-        <div>
-          <p className="mb-2 text-xs text-muted-foreground">{s.unknownKeysHelp}</p>
-          <div className="space-y-1 rounded-lg border border-default bg-brand-900 p-3 font-mono text-xs text-foreground">
-            {unknownKeys.map(({ key, value }) => (
-              <div key={key}>
-                <span className="text-link">{key}</span>
-                {' = '}
-                <span>{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
       <div className="flex justify-end pt-2">
         <Button
           variant="secondary"
@@ -271,10 +255,8 @@ export default function PipelineSettingsPanel({
     loading,
     configState,
     llmConfigState,
-    unknownKeys,
-    configSource,
-    legacyBannerDismissed,
     loadError,
+    llmLoadWarning,
     pythonExe,
     repoRoot,
     customCommand,
@@ -285,7 +267,6 @@ export default function PipelineSettingsPanel({
     setCustomCommand,
     handleStartUrlChange,
     resetConfig,
-    dismissLegacyBanner,
     browserCrawlStatus,
     browserCrawlChecking,
   } = usePipeline();
@@ -297,7 +278,6 @@ export default function PipelineSettingsPanel({
     (browserCrawlChecking || (browserCrawlStatus != null && !browserCrawlStatus.ok));
 
   const group = PIPELINE_SETTINGS_GROUPS.find((g) => g.id === activeGroup);
-  const showLegacyBanner = configSource === 'legacy' && !legacyBannerDismissed && activeGroup === 'crawl-report';
 
   const sectionTabs = useMemo(() => buildSectionTabs(group), [group]);
   const sectionTabIds = useMemo(
@@ -345,7 +325,6 @@ export default function PipelineSettingsPanel({
           customCommand={customCommand}
           pythonExe={pythonExe}
           repoRoot={repoRoot}
-          unknownKeys={unknownKeys}
           disabled={fieldsDisabled}
           onCustomCommandChange={setCustomCommand}
           onPythonExeChange={setPythonExe}
@@ -427,17 +406,10 @@ export default function PipelineSettingsPanel({
           </p>
         </div>
       ) : null}
-      {showLegacyBanner ? (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
-          <p className="flex-1 text-sm text-amber-950 dark:text-amber-100/90">{s.legacyBanner}</p>
-          <button
-            type="button"
-            onClick={dismissLegacyBanner}
-            className="shrink-0 rounded-lg p-1.5 text-amber-800 hover:bg-amber-500/20 dark:text-amber-200"
-            aria-label={s.close}
-          >
-            <X className="h-4 w-4" />
-          </button>
+
+      {llmLoadWarning ? (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <p className="text-sm text-amber-900 dark:text-amber-100">{llmLoadWarning}</p>
         </div>
       ) : null}
 

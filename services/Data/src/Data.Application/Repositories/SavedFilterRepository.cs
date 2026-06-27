@@ -3,19 +3,11 @@ using Data.Application.Dto.Filters;
 using Data.Application.Json;
 using Data.Application.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Npgsql;
-using NpgsqlTypes;
 
 namespace Data.Application.Repositories;
 
-public sealed class SavedFilterRepository(DataDbContext db, NpgsqlDataSource dataSource) : ISavedFilterRepository
+public sealed class SavedFilterRepository(DataDbContext db) : ISavedFilterRepository
 {
-    private const string UpsertSql = """
-        INSERT INTO saved_crawl_filters (property_id, name, filter_json)
-        VALUES (@property_id, @name, @filter_json)
-        ON CONFLICT (property_id, name) DO UPDATE SET filter_json = EXCLUDED.filter_json
-        """;
-
     public async Task<IReadOnlyList<SavedFilterRowDto>> ListAsync(
         int propertyId, CancellationToken cancellationToken)
     {
@@ -31,15 +23,27 @@ public sealed class SavedFilterRepository(DataDbContext db, NpgsqlDataSource dat
     public async Task UpsertAsync(
         long propertyId, string name, JsonElement filterJson, CancellationToken cancellationToken)
     {
-        await using var conn = await dataSource.OpenConnectionAsync(cancellationToken);
-        await using var cmd = new NpgsqlCommand(UpsertSql, conn);
-        cmd.Parameters.AddWithValue("property_id", propertyId);
-        cmd.Parameters.AddWithValue("name", name);
-        cmd.Parameters.Add(new NpgsqlParameter("filter_json", NpgsqlDbType.Jsonb)
+        var existing = await db.Set<Data.Domain.Entities.SavedCrawlFilter>()
+            .AsTracking()
+            .FirstOrDefaultAsync(x => x.PropertyId == propertyId && x.Name == name, cancellationToken);
+
+        var raw = filterJson.GetRawText();
+        if (existing is null)
         {
-            Value = filterJson.GetRawText(),
-        });
-        await cmd.ExecuteNonQueryAsync(cancellationToken);
+            db.Set<Data.Domain.Entities.SavedCrawlFilter>().Add(new Data.Domain.Entities.SavedCrawlFilter
+            {
+                PropertyId = propertyId,
+                Name = name,
+                FilterJson = raw,
+                CreatedAt = DateTimeOffset.UtcNow,
+            });
+        }
+        else
+        {
+            existing.FilterJson = raw;
+        }
+
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     public async Task<bool> DeleteAsync(long propertyId, string name, CancellationToken cancellationToken)

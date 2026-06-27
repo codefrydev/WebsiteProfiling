@@ -106,7 +106,11 @@ def build_categories(
         category_technical_seo(df, site_level),
         cwv,
         category_performance(df),
-        category_html_accessibility(df, lighthouse_by_url=lighthouse_by_url),
+        category_html_accessibility(
+            df,
+            lighthouse_by_url=lighthouse_by_url,
+            lighthouse_summary=lighthouse_summary,
+        ),
         category_link_health(df, edges, issues_broken, issues_redirects),
         category_mobile(df),
         category_security(df, site_level, start_url or "", security_findings=security_findings),

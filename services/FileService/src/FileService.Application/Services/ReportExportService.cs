@@ -1,6 +1,8 @@
 using System.Text.Json;
 using FileService.Application.Clients;
 using FileService.Application.Domain;
+using FileService.Application.Mapping;
+using FileService.Domain.Models;
 using FileService.Rendering.Exports;
 
 namespace FileService.Application.Services;
@@ -39,10 +41,10 @@ public sealed class ReportExportService(
         RenderByDomainAsync(domain, json.Generate, cancellationToken);
 
     public Task<string> GetSitemapByReportIdAsync(int reportId, CancellationToken cancellationToken = default) =>
-        RenderByIdAsync(reportId, p => sitemap.Generate(p), cancellationToken);
+        RenderSitemapByIdAsync(reportId, cancellationToken);
 
     public Task<string> GetSitemapByDomainAsync(string domain, CancellationToken cancellationToken = default) =>
-        RenderByDomainAsync(domain, p => sitemap.Generate(p), cancellationToken);
+        RenderSitemapByDomainAsync(domain, cancellationToken);
 
     private async Task<string> RenderByIdAsync(int reportId, Func<JsonElement, string> render, CancellationToken ct)
     {
@@ -63,5 +65,33 @@ public sealed class ReportExportService(
             throw new KeyNotFoundException($"No report found for domain '{domain}'");
         }
         return await RenderByIdAsync(reportId.Value, render, ct);
+    }
+
+    private async Task<string> RenderSitemapByIdAsync(int reportId, CancellationToken ct)
+    {
+        var payload = await client.GetPayloadAsync(reportId, ct);
+        if (payload is null)
+        {
+            throw new KeyNotFoundException($"Report {reportId} not found");
+        }
+
+        var model = new AuditReportModel
+        {
+            ReportId = reportId,
+            LinkSamples = ChapterMappers.MapSitemapLinks(payload.Value),
+        };
+        return sitemap.GenerateFromModel(model);
+    }
+
+    private async Task<string> RenderSitemapByDomainAsync(string domain, CancellationToken ct)
+    {
+        var reports = await client.ListReportsAsync(ct);
+        var reportId = DomainResolver.ResolveReportId(reports, domain);
+        if (reportId is null)
+        {
+            throw new KeyNotFoundException($"No report found for domain '{domain}'");
+        }
+
+        return await RenderSitemapByIdAsync(reportId.Value, ct);
     }
 }

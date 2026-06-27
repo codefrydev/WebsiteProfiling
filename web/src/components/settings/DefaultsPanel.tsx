@@ -6,6 +6,7 @@ import {
   getDefaultLandingView,
   setDefaultLandingView,
 } from '@/lib/defaultViewPref';
+import { initClientPreferences } from '@/lib/clientPreferences';
 import type { ViewId } from '@/routes';
 
 function SelectRow({
@@ -55,7 +56,9 @@ export default function DefaultsPanel() {
   const [defaultView, setDefaultView] = useState<ViewId>(DEFAULT_LANDING_VIEW);
 
   useEffect(() => {
-    setDefaultView(getDefaultLandingView());
+    void initClientPreferences().then(() => {
+      setDefaultView(getDefaultLandingView());
+    });
   }, []);
 
   const handleDefaultViewChange = (id: string) => {
@@ -69,7 +72,7 @@ export default function DefaultsPanel() {
       <div className="mb-8">
         <h1 className="text-xl font-semibold text-bright">Defaults</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Choose which view opens when you select a site from the home page. Saved to this browser.
+          Choose which view opens when you select a site from the home page. Syncs across browsers.
         </p>
       </div>
 

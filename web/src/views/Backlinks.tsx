@@ -27,6 +27,7 @@ import {
   combinedSampleLinks,
   exportCsv,
   filterBySearch,
+  hasGscLinksExportType,
 } from '../components/backlinks/backlinksTableUtils';
 import { buildLinksInspectHref } from '../lib/reportNav';
 import type { TableColumn } from '@/types/components';
@@ -95,6 +96,10 @@ export default function Backlinks(_props: ViewProps) {
     [gscLinks?.top_linking_text, anchorSearch],
   );
   const allSample = useMemo(() => combinedSampleLinks(gscLinks), [gscLinks]);
+  const hasSampleExport = hasGscLinksExportType(gscLinks, 'sample_links');
+  const hasLatestExport = hasGscLinksExportType(gscLinks, 'latest_links');
+  const sampleTabHint =
+    !hasSampleExport && !hasLatestExport ? vb.sampleTabNotImported : vb.table.noData;
   const filteredSample = useMemo(() => {
     const q = sampleSearch.trim().toLowerCase();
     if (!q) return allSample;
@@ -494,7 +499,7 @@ export default function Backlinks(_props: ViewProps) {
           <SortablePaginatedTable
             rows={filteredSample as Record<string, unknown>[]}
             columns={sampleColumns}
-            emptyMessage={vb.table.noData}
+            emptyMessage={sampleTabHint}
             paginationLabels={paginationLabels}
           />
         </>

@@ -1,6 +1,7 @@
 using System.Text.Json.Nodes;
 using Data.Application.Dto.Meta;
 using Data.Application.Dto.Report;
+using Data.Application.Report;
 
 namespace Data.Application.Repositories;
 
@@ -14,6 +15,9 @@ public interface IReportRepository
     /// resolving by <paramref name="reportId"/> or by domain match. Returns null if not found.
     /// </summary>
     Task<string?> GetPayloadDataAsync(long? reportId, string? domain, CancellationToken ct);
+
+    /// <summary>Report payload JSON plus <c>canonical_domain</c> from the report row.</summary>
+    Task<ReportPayloadContext?> GetPayloadContextAsync(long? reportId, string? domain, CancellationToken ct);
 
     /// <summary>
     /// Port of <c>list_audit_history</c>: ordered by generated_at DESC, optional domain filter

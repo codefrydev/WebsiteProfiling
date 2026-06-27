@@ -15,8 +15,47 @@ This directory contains product, integration, and operations documentation for *
 | [COMPANY_STANDARDS.md](COMPANY_STANDARDS.md) | Agencies / operators | Data classification, crawl scope, security policy |
 | [MCP.md](MCP.md) | Integrators | Model Context Protocol server configuration and tool reference |
 | [OPS.md](OPS.md) | Operators | Scheduled audits, alerts, migrations, production notes |
+| [services/ReportService/README.md](../services/ReportService/README.md) | Developers | Report build + pipeline orchestration (port 8094) |
+| [services/AiService/README.md](../services/AiService/README.md) | Developers | AI chat, secrets, LLM settings, MCP, enrichment (port 8092) |
+| [services/IntegrationsService/README.md](../services/IntegrationsService/README.md) | Developers | Google/Bing OAuth, GSC/GA4 fetch, keywords (port 8093) |
 | [services/FileService/README.md](../services/FileService/README.md) | Developers / operators | PDF and Excel workbook export service |
-| `services/Data/` | Developers | .NET read service — report payloads, portfolio, issue status, saved filters |
+| `services/Data/` | Developers | .NET read service — report payloads, portfolio, issue status, saved filters (port 8091) |
+
+---
+
+## API routing (browser)
+
+All `/api/*` calls from the SPA go to the **BFF** (`:8090`). The BFF forwards subsets to:
+
+| Upstream | Examples |
+|----------|----------|
+| **FastAPI** (`:8001`) | `/api/run`, `/api/jobs/*`, `/api/pipeline-config`, `/api/pipeline-settings`, `/api/ui-preferences`, crawl, properties |
+| **ReportService** (`:8094`, internal) | Report build and full-audit orchestration (worker; not browser-facing) |
+| **IntegrationsService** (`:8093`) | `/api/integrations/google/*`, `/api/integrations/bing/*`, property Google config |
+| **AiService** (`:8092`) | `/api/chat`, `/api/secrets`, `/api/llm-settings`, MCP-related APIs |
+| **Data** (`:8091`) | Report payload reads, portfolio, issue status, saved filters |
+| **FileService** (`:8080`) | PDF and Excel export |
+
+**Internal service-to-service:** ReportService reads Google/keyword snapshots from IntegrationsService (`GET /internal/integrations/report/enrichment`) during native report build — not via the BFF.
+
+See [AGENT.md](../AGENT.md) for the full route split and [services/AiService/README.md](../services/AiService/README.md) for `AI_ROUTES`.
+
+### API documentation (Swagger)
+
+During local development (`./local-run`, `ASPNETCORE_ENVIRONMENT=Development`), each .NET service and the Python bridge expose OpenAPI:
+
+| Service | Port | Swagger UI |
+| ------- | ---- | ---------- |
+| BFF | 8090 | [http://localhost:8090/docs](http://localhost:8090/docs) |
+| Data | 8091 | [http://localhost:8091/docs](http://localhost:8091/docs) |
+| AiService | 8092 | [http://localhost:8092/docs](http://localhost:8092/docs) |
+| IntegrationsService | 8093 | [http://localhost:8093/docs](http://localhost:8093/docs) |
+| ReportService | 8094 | [http://localhost:8094/docs](http://localhost:8094/docs) |
+| ConfigService | 8095 | [http://localhost:8095/docs](http://localhost:8095/docs) |
+| FileService | 8080 | [http://localhost:8080/docs](http://localhost:8080/docs) |
+| Python bridge | 8001 | [http://localhost:8001/docs](http://localhost:8001/docs) |
+
+OpenAPI JSON for .NET services: `/swagger/v1/swagger.json`. See the main [README.md](../README.md#api-documentation-swagger) for details.
 
 ---
 
@@ -41,7 +80,7 @@ Marketing and README assets are stored in [assets/](assets/):
 |------|-------------|
 | [SECURITY.md](../SECURITY.md) | Vulnerability reporting policy |
 | [CODE_OF_CONDUCT.md](../CODE_OF_CONDUCT.md) | Community standards |
-| [pipeline-config.example.txt](../pipeline-config.example.txt) | Pipeline configuration key reference |
+| [config/typed_config_manifest.json](../config/typed_config_manifest.json) | Typed PostgreSQL settings schema (pipeline, LLM, secrets, UI prefs) |
 
 ## Agent discovery files
 

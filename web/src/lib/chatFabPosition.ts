@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
+import { getCachedClientPreferences, patchClientPreferences, type ChatFabCorner } from '@/lib/clientPreferences';
 
-export type ChatFabCorner = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+export type { ChatFabCorner };
 
 const STORAGE_KEY = 'wp-chat-fab-position:v1';
 export const CHAT_FAB_SIZE_PX = 56;
@@ -20,14 +21,8 @@ export function isChatFabCorner(value: unknown): value is ChatFabCorner {
 
 export function loadChatFabCorner(defaultCorner: ChatFabCorner = 'bottom-right'): ChatFabCorner {
   if (typeof window === 'undefined') return defaultCorner;
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultCorner;
-    const parsed = JSON.parse(raw) as { corner?: unknown };
-    return isChatFabCorner(parsed.corner) ? parsed.corner : defaultCorner;
-  } catch {
-    return defaultCorner;
-  }
+  const corner = getCachedClientPreferences().chatFabCorner;
+  return isChatFabCorner(corner) ? corner : defaultCorner;
 }
 
 export function saveChatFabCorner(corner: ChatFabCorner): void {
@@ -37,6 +32,7 @@ export function saveChatFabCorner(corner: ChatFabCorner): void {
   } catch {
     /* quota / private mode */
   }
+  patchClientPreferences({ chatFabCorner: corner });
 }
 
 export function chatFabCornerStyle(corner: ChatFabCorner): CSSProperties {

@@ -255,7 +255,7 @@ export default function Dashboards(_props: ViewProps) {
     const seed = starterDoc();
     try {
       const created = await createDashboard(propertyId, 'New dashboard', seed);
-      const isFirst = dashboards.length === 0;
+      const isFirst = (dashboards ?? []).length === 0;
       let row = created;
       if (isFirst) row = await updateDashboard(created.id, propertyId, { isDefault: true });
       setDashboards((prev) => [row, ...prev.map((d) => ({ ...d, isDefault: isFirst ? false : d.isDefault }))]);
@@ -266,7 +266,7 @@ export default function Dashboards(_props: ViewProps) {
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : 'Create failed');
     }
-  }, [propertyId, dashboards.length, resetInteractions]);
+  }, [propertyId, dashboards?.length ?? 0, resetInteractions]);
 
   const handleCreateFromPreset = useCallback(async (presetId: string) => {
     if (!propertyId) return;
@@ -275,7 +275,7 @@ export default function Dashboards(_props: ViewProps) {
     const seed = preset.build();
     try {
       const created = await createDashboard(propertyId, preset.name, seed);
-      const isFirst = dashboards.length === 0;
+      const isFirst = (dashboards ?? []).length === 0;
       let row = created;
       if (isFirst) row = await updateDashboard(created.id, propertyId, { isDefault: true });
       setDashboards((prev) => [row, ...prev.map((d) => ({ ...d, isDefault: isFirst ? false : d.isDefault }))]);
@@ -286,10 +286,10 @@ export default function Dashboards(_props: ViewProps) {
     } catch (e) {
       setSaveError(e instanceof Error ? e.message : 'Create failed');
     }
-  }, [propertyId, dashboards.length, resetInteractions]);
+  }, [propertyId, dashboards?.length ?? 0, resetInteractions]);
 
   const selectDashboard = useCallback((id: number) => {
-    const found = dashboards.find((d) => d.id === id);
+    const found = (dashboards ?? []).find((d) => d.id === id);
     if (!found) return;
     setActiveId(id);
     setDoc(migrateDocToV2(found.layoutJson));
@@ -307,7 +307,7 @@ export default function Dashboards(_props: ViewProps) {
       setSaveError(e instanceof Error ? e.message : 'Delete failed');
       return;
     }
-    const next = dashboards.filter((d) => d.id !== activeId);
+    const next = (dashboards ?? []).filter((d) => d.id !== activeId);
     setDashboards(next);
     const n0 = next[0] ?? null;
     setActiveId(n0?.id ?? null);
@@ -317,9 +317,11 @@ export default function Dashboards(_props: ViewProps) {
   }, [propertyId, activeId, dashboards, resetInteractions]);
 
   const groups = useMemo(() => datasetsByGroup(), []);
+  const widgets = doc.widgets ?? [];
+  const slicers = doc.slicers ?? [];
   const selectedWidget = useMemo(
-    () => doc.widgets.find((w) => w.id === selectedWidgetId) ?? null,
-    [doc.widgets, selectedWidgetId],
+    () => widgets.find((w) => w.id === selectedWidgetId) ?? null,
+    [widgets, selectedWidgetId],
   );
 
   if (ready && !propertyId) {
@@ -337,13 +339,13 @@ export default function Dashboards(_props: ViewProps) {
     <PageLayout variant="fullHeight" className="flex flex-col min-h-0 gap-0">
       <style>{PRINT_CSS}</style>
       <div className="mb-3 flex flex-wrap items-center gap-2 shrink-0">
-            {dashboards.length > 0 && (
+            {(dashboards ?? []).length > 0 && (
               <select
                 value={activeId ?? ''}
                 onChange={(e) => selectDashboard(Number(e.target.value))}
                 className="px-2 py-1.5 text-sm bg-brand-800 border border-default rounded-lg text-bright focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
-                {dashboards.map((d) => (
+                {(dashboards ?? []).map((d) => (
                   <option key={d.id} value={d.id}>{d.name}{d.isDefault ? ' ★' : ''}</option>
                 ))}
               </select>
@@ -448,7 +450,7 @@ export default function Dashboards(_props: ViewProps) {
       ) : (
         <div className="flex-1 min-h-0 flex flex-col">
           <SlicerBar
-            slicers={doc.slicers}
+            slicers={slicers}
             slicerValues={slicerValues}
             crossFilter={crossFilter}
             editing={isEditing}
@@ -459,14 +461,14 @@ export default function Dashboards(_props: ViewProps) {
           />
           <div className="flex-1 min-h-0 flex">
             <div ref={containerRef} id="dash-print-root" className="flex-1 min-h-0 overflow-y-auto py-3 px-1">
-              {doc.widgets.length === 0 ? (
+              {widgets.length === 0 ? (
                 <div className="flex flex-col items-center justify-center min-h-[300px] border-2 border-dashed border-default rounded-xl text-muted-foreground text-sm gap-2 mx-1">
                   <p className="font-medium">This dashboard is empty.</p>
                   <p className="text-xs">{isEditing ? 'Use “+ Add widget…” to add a chart.' : 'Switch to Edit to add widgets.'}</p>
                 </div>
               ) : mounted && containerWidth > 0 ? (
                 <DashboardCanvas
-                  widgets={doc.widgets}
+                  widgets={widgets}
                   isEditing={isEditing}
                   containerWidth={containerWidth}
                   selectedWidgetId={selectedWidgetId}

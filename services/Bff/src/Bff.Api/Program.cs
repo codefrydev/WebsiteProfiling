@@ -10,6 +10,12 @@ const string CorsPolicy = "bff";
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Host.UseDefaultServiceProvider((_, options) =>
+{
+    options.ValidateOnBuild = true;
+    options.ValidateScopes = true;
+});
+
 builder.Services.AddBffApplication();
 builder.Services.AddSingleton<IUpstreamForwarder, UpstreamForwarder>();
 

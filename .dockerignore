@@ -25,6 +25,12 @@ report.db
 report.db.*
 *.backup-*
 
+# .NET build output (must not overwrite Docker restore layers)
+**/bin/
+**/obj/
+**/.vs/
+**/TestResults/
+
 # UI-generated configs
 .website-profiling-ui-*.txt
 .web-pipeline

@@ -27,7 +27,7 @@ def test_run_crawler_auto_discovers_js_links(spa_server):
     validate_browser_available()
     base = spa_server.rsplit("/", 1)[0]
     start_url = f"{base}/post_parse_shell.html"
-    df = run_crawler(
+    df, _ = run_crawler(
         start_url=start_url,
         render_mode="auto",
         max_pages=10,

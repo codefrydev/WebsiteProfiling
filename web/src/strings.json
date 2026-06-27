@@ -1115,6 +1115,7 @@
       "liveCatalog": "Live catalog",
       "refresh": "Refresh",
       "connected": "Connected",
+      "degraded": "Local Ollama unavailable — cloud catalog OK",
       "disconnected": "Not connected",
       "unreachable": "Cannot reach Ollama at the configured base URL",
       "modelLabel": "Model",
@@ -1143,6 +1144,7 @@
     "unknownKeysHelp": "These keys are not in the UI schema but were found in your config. They are preserved on save.",
     "legacyBanner": "Settings were imported from an older config file — click Save settings to store them in the app.",
     "loadError": "Could not load saved config: {message}. Showing defaults.",
+    "llmLoadWarning": "Could not load LLM settings from the server ({message}). Chat and AI features may use defaults until you save again.",
     "openIntegrations": "Connect Search Console & Analytics",
     "googleGroupHint": "Search Console site and Analytics property IDs are saved with Save properties in Step 3 (Integrations tab). The footer Save settings button only saves pipeline toggles in the other tabs, not these fields.",
     "googleSavePropertiesHint": "Click Save properties, or tab out of a field to auto-save. The page footer Save settings does not store Search Console or Analytics values.",
@@ -1658,7 +1660,7 @@
       "stat3Value": "Crawl · Lighthouse · Issues",
       "stat3Hint": "Full-site crawl, performance scores, and issue triage",
       "stat4Label": "AI workflow",
-      "stat4Value": "340 MCP tools",
+      "stat4Value": "369 MCP tools",
       "stat4Hint": "AI chat plus programmatic access from Cursor and Claude Desktop",
       "trustTitle": "Runs on your stack",
       "trustGithub": "View on GitHub",
@@ -1724,7 +1726,7 @@
       "spotlight5Bullets": [
         "\"What are my top critical issues?\" — real issue tables",
         "\"Export a PDF report\" — download buttons in the thread",
-        "340 MCP tools for Cursor and Claude Desktop — same data, programmatic"
+        "369 MCP tools for Cursor and Claude Desktop — same data, programmatic"
       ],
       "spotlight5Cta": "Open AI Chat",
       "spotlight5CtaHref": "/chat",
@@ -2084,15 +2086,15 @@
               "title": "Before you start",
               "items": [
                 "PostgreSQL running with at least one crawled property.",
-                "Python environment from ./local-run setup (for local stdio MCP).",
-                "For remote HTTP: a public URL or VPN access to your Site Audit host."
+                ".NET SDK 10+ and repo checkout (for local stdio MCP via AiService).",
+                "For remote HTTP: AiService with WP_MCP_HTTP=1 (./local-run enables this on :8092)."
               ]
             },
             "localStdio": {
               "title": "Local stdio (same machine)",
               "items": [
-                "Set DATABASE_URL and PYTHONPATH=src in your MCP client config.",
-                "Command: python -m website_profiling.mcp",
+                "Run from the repo root with DATABASE_URL and FASTAPI_URL in your MCP client env.",
+                "Command: dotnet run --project services/AiService/src/AiService.Api",
                 "Set WP_MCP_DOMAIN to core (default), crawl, google, links, or full.",
                 "Set WP_PROPERTY_ID to the default property id for tools that omit property_id.",
                 "Copy the Local stdio snippet from MCP settings after saving a token (optional for localhost)."
@@ -2103,7 +2105,7 @@
               "items": [
                 "On MCP settings: generate a bearer token and add allowed hostnames.",
                 "Set Public MCP base URL to your deployed origin (no trailing slash).",
-                "Start the MCP HTTP service on the server (see copy-paste commands on MCP settings).",
+                "Start AiService with WP_MCP_HTTP=1 on the server (see copy-paste commands on MCP settings).",
                 "In Cursor or Claude Desktop, use the Remote Streamable HTTP config with Authorization: Bearer …"
               ]
             },
@@ -2113,7 +2115,7 @@
                 "Open MCP settings (/mcp) from the app sidebar.",
                 "Generate token → add hostname from URL → pick tool bundle (WP_MCP_DOMAIN).",
                 "Save settings, then copy the client JSON into .cursor/mcp.json or Claude Desktop config.",
-                "See docs/MCP.md in the repo for domain bundles and the full 340-tool catalog."
+                "See docs/MCP.md in the repo for domain bundles and the full 369-tool catalog."
               ]
             },
             "examplePrompts": {
@@ -3039,7 +3041,12 @@
       "sitemapOnly": "Sitemap only",
       "gapsTitle": "URL coverage gaps",
       "gapsHint": "URLs present in one source but missing from another. Measured from crawl; Search Console from Google API.",
-      "sitemapOnlyList": "In sitemap but not crawled"
+      "sitemapOnlyList": "In sitemap but not crawled",
+      "crawledNotInSitemapList": "Crawled but not in sitemap",
+      "gscNotCrawled": "GSC not crawled",
+      "crawledNotInSitemap": "Crawled not in sitemap",
+      "noSearchGaps": "No Search Console vs crawl gaps in this report.",
+      "listSampleHint": "Showing up to {limit} of {total} URLs."
     },
     "subdomains": {
       "title": "Subdomains",
@@ -3095,6 +3102,12 @@
       "emptyTitle": "No Search Console data yet",
       "emptyBody": "Connect your Google account to see real search queries, impressions, and click data from Google Search Console.",
       "emptyIntegrationsHint": "Open Integrations from the top-right header to connect Google Search Console.",
+      "refreshGsc": "Refresh GSC data",
+      "refreshingGsc": "Refreshing…",
+      "refreshGscSuccess": "Search Console data updated.",
+      "refreshGscFailed": "Refresh failed:",
+      "refreshGscNoProperty": "Connect Google in Integrations to refresh Search Console data.",
+      "refreshGscReadOnly": "Read-only session — cannot refresh Google data.",
       "tabs": {
         "overview": "Overview",
         "queries": "Queries",
@@ -3236,6 +3249,7 @@
         "topDomainsTitle": "Top referring domains",
         "topPagesTitle": "Most linked pages on your site"
       },
+      "sampleTabNotImported": "Import the Sample links and/or Latest links CSV exports from Search Console to populate this tab.",
       "bingTitle": "Bing Webmaster inbound links",
       "bingHint": "From Bing Webmaster GetLinkCounts when bing_webmaster_api_key is set in Run audit settings.",
       "bingLinkedPages": "Pages with inbound links",
@@ -3274,6 +3288,12 @@
       "emptyBody": "Connect your Google account to see real sessions, users, and page view data from Google Analytics 4.",
       "emptyIntegrationsHint": "Open Integrations from the top-right header to connect Google Analytics 4.",
       "notConfigured": "Analytics data not configured. Open Integrations to set your Analytics property ID.",
+      "refreshGoogle": "Refresh GSC & GA4",
+      "refreshingGoogle": "Refreshing…",
+      "refreshGoogleSuccess": "Search Console and Analytics data updated.",
+      "refreshGoogleFailed": "Refresh failed:",
+      "refreshGoogleNoProperty": "Connect Google in Integrations to refresh analytics data.",
+      "refreshGoogleReadOnly": "Read-only session — cannot refresh Google data.",
       "tabs": {
         "overview": "Overview",
         "pages": "Pages",
@@ -4503,6 +4523,11 @@
       "sendLabel": "Send message",
       "emptyHint": "Ask questions about your latest audit — issues, crawl pages, Core Web Vitals, keywords, or Search Console metrics.",
       "thinking": "Thinking…",
+      "thinkingStep": "Thinking — step {step} of {total}…",
+      "planningStep": "Planning next step…",
+      "toolsProgress": "{done} of {total} tools complete",
+      "expandToolActivity": "Show tool details",
+      "collapseToolActivity": "Hide tool details",
       "suggestedTitle": "Suggested questions",
       "suggestedPrompts": [
         "What are the top critical issues?",
@@ -4546,10 +4571,14 @@
       "assistantAppearanceLink": "Assistant appearance",
       "sessionError": "Could not create chat session",
       "agentError": "The assistant encountered an error",
+      "apiKeyMissingTitle": "API key required",
+      "apiKeyMissingHint": "Add your {provider} API key on the Secrets page and click Save. Keys are stored in the database and work across browsers and restarts.",
+      "openSecrets": "Open Secrets",
       "ollamaLabel": "Ollama",
       "ollamaNoModel": "no model selected",
       "cloudNoModel": "no model selected",
       "ollamaUnreachable": "Cannot reach Ollama",
+      "ollamaDegraded": "Local Ollama offline — cloud models only",
       "fabTitle": "AI Chat",
       "fabDragTitle": "AI Chat — drag to move to any corner",
       "fabAria": "Open AI chat for this site",
@@ -4608,6 +4637,7 @@
       "queryingData": "Querying audit data…",
       "sending": "Sending your message…",
       "writing": "Writing response…",
+      "writingSummary": "Writing summary…",
       "synthesizing": "Summarizing insights…",
       "synthesizingRetry": "Retrying summary…",
       "narrativeFailed": "Could not generate a summary. Tool results are shown below.",

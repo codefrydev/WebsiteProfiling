@@ -32,6 +32,7 @@ import {
   getBrowserDiagnosticsScope,
   getLinksWithBrowserErrors,
 } from '@/lib/browserErrors';
+import { getCachedClientPreferences, initClientPreferences, patchClientPreferences } from '@/lib/clientPreferences';
 
 interface IntegrationsToast {
   type: 'success' | 'error';
@@ -77,7 +78,9 @@ export default function AppShell({
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => getCachedClientPreferences().sidebarCollapsed,
+  );
   const [integrationsOpen, setIntegrationsOpen] = useState(false);
   const [integrationsToast, setIntegrationsToast] = useState<IntegrationsToast | null>(null);
   const { data, startUrlByRunId } = useReport();
@@ -96,18 +99,15 @@ export default function AppShell({
       } catch {
         /* ignore storage errors */
       }
+      patchClientPreferences({ sidebarCollapsed: next });
       return next;
     });
   };
 
   useEffect(() => {
-    try {
-      if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === '1') {
-        setSidebarCollapsed(true);
-      }
-    } catch {
-      /* ignore storage errors */
-    }
+    void initClientPreferences().then((prefs) => {
+      setSidebarCollapsed(prefs.sidebarCollapsed);
+    });
   }, []);
 
   useEffect(() => {

@@ -46,7 +46,7 @@ export interface SecretsPutBody {
   state?: SecretsState;
 }
 
-export type PipelineConfigSource = 'store' | 'legacy' | 'defaults';
+export type PipelineConfigSource = 'store' | 'defaults';
 
 export interface PipelineConfigLoadResult {
   state: PipelineConfigState;
@@ -63,7 +63,6 @@ export interface RunPostBody {
   command?: string | null | undefined;
   state?: PipelineConfigState;
   unknownKeys?: PipelineUnknownKey[];
-  llmState?: LlmConfigState;
   python?: string;
   repoRoot?: string;
   propertyId?: number | null;

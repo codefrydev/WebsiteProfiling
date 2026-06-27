@@ -15,6 +15,8 @@ export interface ToolActivityItem {
 
 export interface ChatToolActivityProps {
   items: ToolActivityItem[];
+  /** When true, expand the tool list while work is in flight. */
+  streaming?: boolean;
 }
 
 const WORKFLOW_TOOLS = new Set([
@@ -36,8 +38,10 @@ function groupLabel(name: string): string {
   return c.toolGroupData;
 }
 
-export default function ChatToolActivity({ items }: ChatToolActivityProps) {
+export default function ChatToolActivity({ items, streaming }: ChatToolActivityProps) {
+  const hasRunning = items.some((i) => i.status === 'running');
   const [open, setOpen] = useState(false);
+  const expanded = open || Boolean(streaming && hasRunning);
 
   const failed = useMemo(() => items.filter(isFailed), [items]);
   const groups = useMemo(() => {
@@ -73,13 +77,13 @@ export default function ChatToolActivity({ items }: ChatToolActivityProps) {
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-        aria-expanded={open}
+        aria-expanded={expanded}
       >
-        {open ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+        {expanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
         <Wrench className="h-3.5 w-3.5" />
         <span>{format(c.toolsUsedSummary, { count: items.length })}</span>
       </button>
-      {open ? (
+      {expanded ? (
         <div className="mt-2 space-y-2 border-l border-muted/50 pl-3 text-xs">
           {groups.map(([label, groupItems]) => (
             <div key={label}>

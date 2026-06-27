@@ -1,7 +1,8 @@
-# Production-style layout: postgres + fastapi + worker + bff + web + files (+ optional mcp).
+# Production-style layout: postgres + fastapi + bff + web + files (+ optional mcp).
 # The browser talks only to `bff`; FastAPI and FileService are network-internal.
 services:
   postgres:
+    container_name: wp-postgres
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-website_profiling}
@@ -16,6 +17,7 @@ services:
       retries: 5
 
   fastapi:
+    container_name: wp-fastapi
     build:
       context: .
       dockerfile: Dockerfile
@@ -32,6 +34,9 @@ services:
       CHROME_PATH: /usr/bin/chromium
       LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
       LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
+      DEPRECATE_PYTHON_INTEGRATIONS: "1"
+      DEPRECATE_PYTHON_REPORT_ROUTES: "1"
+      REPORT_SERVICE_URL: http://report:8094
     volumes:
       - profiling-data:/data
     healthcheck:
@@ -41,31 +46,11 @@ services:
       retries: 3
       start_period: 30s
 
-  worker:
-    image: website-profiling:latest
-    depends_on:
-      fastapi:
-        condition: service_started
-      postgres:
-        condition: service_healthy
-      files:
-        condition: service_started
-    environment:
-      WP_ROLE: worker
-      WEBSITE_PROFILING_ROOT: /app
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
-      DATA_DIR: /data
-      PYTHON: /opt/venv/bin/python
-      CHROME_PATH: /usr/bin/chromium
-      LIGHTHOUSE_PATH: /usr/local/bin/lighthouse
-      LIGHTHOUSE_CHROME_FLAGS: --headless --no-sandbox --disable-dev-shm-usage --disable-gpu
-      FILE_SERVICE_URL: http://files:8080
-    volumes:
-      - profiling-data:/data
-
   data:
+    container_name: wp-data
     build:
-      context: ./services/Data
+      context: ./services
+      dockerfile: Data/Dockerfile
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
       ASPNETCORE_URLS: http://+:8091
@@ -79,9 +64,86 @@ services:
       retries: 3
       start_period: 15s
 
-  files:
+  ai:
+    container_name: wp-ai
     build:
-      context: ./services/FileService
+      context: ./services
+      dockerfile: AiService/Dockerfile
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
+      FASTAPI_URL: http://fastapi:8001
+      ASPNETCORE_URLS: http://+:8092
+      WP_MCP_HTTP: "1"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      fastapi:
+        condition: service_started
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:8092/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  integrations:
+    container_name: wp-integrations
+    build:
+      context: ./services
+      dockerfile: IntegrationsService/Dockerfile
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
+      ASPNETCORE_URLS: http://+:8093
+      FASTAPI_URL: http://fastapi:8001
+      USE_FASTAPI_PYTHON_BRIDGE: "1"
+      ASPNETCORE_ENVIRONMENT: Production
+      AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      fastapi:
+        condition: service_started
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:8093/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  report:
+    container_name: wp-report
+    build:
+      context: .
+      dockerfile: services/ReportService/Dockerfile
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
+      ASPNETCORE_URLS: http://+:8094
+      FASTAPI_URL: http://fastapi:8001
+      INTEGRATIONS_SERVICE_URL: http://integrations:8093
+      REPORT_SERVICE_USE_PYTHON_BRIDGE: "0"
+      USE_FASTAPI_PYTHON_BRIDGE: "1"
+      REPORT_SERVICE_WORKER_ENABLED: "1"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      fastapi:
+        condition: service_started
+      integrations:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:8094/health']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  files:
+    container_name: wp-files
+    build:
+      context: ./services
+      dockerfile: FileService/Dockerfile
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
       REPORT_API_URL: http://fastapi:8001
@@ -92,6 +154,7 @@ services:
         condition: service_started
 
   bff:
+    container_name: wp-bff
     build:
       context: ./services/Bff
     depends_on:
@@ -101,13 +164,25 @@ services:
         condition: service_started
       data:
         condition: service_healthy
+      ai:
+        condition: service_healthy
+      integrations:
+        condition: service_healthy
+      report:
+        condition: service_healthy
     ports:
       - '${BFF_PORT:-8090}:8090'
     environment:
       FASTAPI_URL: http://fastapi:8001
       FILE_SERVICE_URL: http://files:8080
       DATA_SERVICE_URL: http://data:8091
-      DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters"
+      AI_SERVICE_URL: http://ai:8092
+      INTEGRATIONS_SERVICE_URL: http://integrations:8093
+      REPORT_SERVICE_URL: http://report:8094
+      REPORT_ROUTES: "/api/compare,/api/dashboards,/api/run,/api/jobs,/api/schedule,/api/crawl"
+      DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters,/api/properties,/api/content-drafts,/api/content/score,/api/keywords,/api/page-markdown,/api/alerts,/api/logs,/api/backlinks"
+      AI_ROUTES: "/api/chat,/api/links/page-coach,/api/issues/fix-suggestion,/api/issues/action-plan,/api/ai/fix-suggestion,/api/dashboards/ai-generate,/api/content/analyze,/api/content/wizard,/api/llm-settings,/api/secrets,/api/ollama/status,/api/report/audit-tool,/api/mcp-tools"
+      INTEGRATIONS_ROUTES: "/api/integrations/google,/api/integrations/bing"
       AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET}
       AUTH_PASSWORD: ${AUTH_PASSWORD:-}
       BFF_ALLOWED_ORIGINS: ${BFF_ALLOWED_ORIGINS:?set BFF_ALLOWED_ORIGINS (the public UI origin)}
@@ -117,6 +192,7 @@ services:
       BFF_COOKIE_DOMAIN: ${BFF_COOKIE_DOMAIN:-}
 
   web:
+    container_name: wp-web
     build:
       context: ./web
       args:
@@ -134,28 +210,24 @@ services:
       start_period: 30s
 
   mcp:
-    image: website-profiling:latest
+    container_name: wp-mcp
+    build:
+      context: ./services
+      dockerfile: AiService/Dockerfile
     depends_on:
-      postgres:
+      ai:
         condition: service_healthy
-      files:
-        condition: service_started
-    command: ['/opt/venv/bin/python', '-m', 'website_profiling.mcp.http']
     environment:
-      WEBSITE_PROFILING_ROOT: /app
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
-      FILE_SERVICE_URL: http://files:8080
-      WP_MCP_HTTP_HOST: 0.0.0.0
-      WP_MCP_HTTP_PORT: 8000
-      WP_MCP_TOKEN: ${WP_MCP_TOKEN:?set WP_MCP_TOKEN}
-      WP_MCP_ALLOWED_HOSTS: ${WP_MCP_ALLOWED_HOSTS:-}
-      WP_MCP_ALLOWED_ORIGINS: ${WP_MCP_ALLOWED_ORIGINS:-}
+      FASTAPI_URL: http://fastapi:8001
+      ASPNETCORE_URLS: http://+:8092
+      WP_MCP_HTTP: "1"
       WP_MCP_DOMAIN: ${WP_MCP_DOMAIN:-core}
       WP_PROPERTY_ID: ${WP_PROPERTY_ID:-}
     profiles:
       - mcp
     ports:
-      - '${MCP_PORT:-8000}:8000'
+      - '${MCP_PORT:-8000}:8092'
 
 volumes:
   pg-data:

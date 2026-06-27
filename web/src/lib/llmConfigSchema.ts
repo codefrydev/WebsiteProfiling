@@ -1,8 +1,10 @@
 /**
- * AI insights settings — stored only in PostgreSQL (llm_config table).
+ * AI insights settings — stored in PostgreSQL (`llm_settings` + `llm_provider_profiles`).
  * Not part of audit settings files or CLI --config.
  */
 import type { LlmConfigState } from '@/types/api';
+import { isLlmProviderApiKeyField } from '@/lib/llmProviderApiKeys';
+import { backfillProviderModelsFromActive, isLlmProviderModelField } from '@/lib/llmProviderModels';
 
 export const LLM_CONFIG_SECTIONS = [
   {
@@ -195,6 +197,50 @@ export function buildInitialLlmConfigState(): LlmConfigState {
     }
   }
   return out;
+}
+
+/** Parse LLM settings bool values stored as strings in PostgreSQL. */
+export function parseLlmBool(
+  value: string | boolean | undefined,
+  defaultValue = false,
+): boolean {
+  if (value === true || value === false) return value;
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (normalized === 'true' || normalized === '1' || normalized === 'yes') return true;
+  if (normalized === 'false' || normalized === '0' || normalized === 'no') return false;
+  return defaultValue;
+}
+
+/** Coerce API/DB LLM settings to typed UI state (bools as boolean, not "true" strings). */
+export function normalizeLlmConfigState(raw: LlmConfigState): LlmConfigState {
+  const out = buildInitialLlmConfigState();
+  for (const section of LLM_CONFIG_SECTIONS) {
+    for (const f of section.fields) {
+      const value = raw[f.key];
+      if (value === undefined) continue;
+      if (f.type === 'bool') {
+        out[f.key] = parseLlmBool(value, f.defaultValue as boolean);
+      } else {
+        out[f.key] = String(value ?? '');
+      }
+    }
+  }
+
+  const parsedMap: Record<string, string> = {};
+  for (const [key, value] of Object.entries(raw)) {
+    if (value === undefined || value === null) continue;
+    parsedMap[key] = String(value);
+    if (isLlmProviderApiKeyField(key) || isLlmProviderModelField(key)) {
+      out[key] = String(value ?? '');
+    }
+  }
+  backfillProviderModelsFromActive(parsedMap, out);
+  return out;
+}
+
+/** True when AI insights are on and a provider is selected (matches backend llm_is_enabled). */
+export function isLlmInsightsEnabled(state: LlmConfigState): boolean {
+  return parseLlmBool(state.llm_enabled) && String(state.llm_provider || 'none') !== 'none';
 }
 
 /** Mask stored API key for GET responses. */

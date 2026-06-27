@@ -127,8 +127,10 @@ def _preset_for_strategy(strategy: str) -> str:
     return "perf"  # mobile -> perf (mobile-like throttling in current Lighthouse)
 
 
-# Valid Lighthouse category IDs for --only-categories
+# Valid category IDs in stored config / UI (legacy reports may include pwa).
 LIGHTHOUSE_CATEGORY_IDS = {"performance", "accessibility", "best-practices", "seo", "pwa"}
+# Categories Lighthouse CLI accepts in --only-categories (pwa removed in Lighthouse 12+).
+LIGHTHOUSE_CLI_CATEGORY_IDS = frozenset({"performance", "accessibility", "best-practices", "seo"})
 
 
 def _parse_categories(categories: str | list[str] | None) -> list[str] | None:
@@ -141,6 +143,14 @@ def _parse_categories(categories: str | list[str] | None) -> list[str] | None:
         return None
     out = [c for c in categories if c in LIGHTHOUSE_CATEGORY_IDS]
     return out if out else None
+
+
+def _categories_for_cli(categories: list[str] | None) -> list[str] | None:
+    """Drop categories the installed Lighthouse CLI no longer supports."""
+    if not categories:
+        return None
+    cli = [c for c in categories if c in LIGHTHOUSE_CLI_CATEGORY_IDS]
+    return cli if cli else None
 
 
 def run_lighthouse_flow_once(
@@ -165,8 +175,9 @@ def run_lighthouse_flow_once(
         f"--output={output_path}",
         f"--wait-ms={max(0, int(wait_ms))}",
     ]
-    if categories:
-        flow_args.append("--categories=" + ",".join(categories))
+    cli_categories = _categories_for_cli(categories)
+    if cli_categories:
+        flow_args.append("--categories=" + ",".join(cli_categories))
     if npx is not None:
         cmd = [npx, "-y", "-p", "lighthouse", "-p", "puppeteer", "node", script, *flow_args]
     else:
@@ -220,8 +231,9 @@ def run_lighthouse_once(
         f"--preset={preset}",
         "--quiet",
     ]
-    if categories:
-        cmd.append("--only-categories=" + ",".join(categories))
+    cli_categories = _categories_for_cli(categories)
+    if cli_categories:
+        cmd.append("--only-categories=" + ",".join(cli_categories))
     try:
         run_kwargs = {
             "capture_output": True,
@@ -273,8 +285,15 @@ def run_lighthouse_audit(
     runs: list[dict[str, Any]] = []
 
     categories = _parse_categories(categories) if categories else None
+    cli_categories = _categories_for_cli(categories)
     if categories:
         console_print(f"  Categories: {', '.join(categories)}", flush=True)
+        dropped = set(categories) - set(cli_categories or [])
+        if dropped:
+            console_print(
+                f"  Note: skipping unsupported Lighthouse CLI categories: {', '.join(sorted(dropped))}",
+                flush=True,
+            )
 
     for i in range(iterations):
         console_print(f"  Lighthouse run {i + 1}/{iterations} ({strategy})...", flush=True)
@@ -284,7 +303,7 @@ def run_lighthouse_audit(
             url,
             strategy,
             out_path,
-            categories=categories,
+            categories=cli_categories,
             mode=lh_mode,
             wait_ms=wait_ms,
         )

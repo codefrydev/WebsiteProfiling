@@ -201,10 +201,11 @@ def test_build_report_metadata_aggregates_browser_diagnostics():
 
 
 def test_run_report_and_plot_paths(monkeypatch):
-    from website_profiling.commands import pipeline_cmd
+    from website_profiling.commands import pipeline_cmd, report_build
 
-    monkeypatch.setattr(pipeline_cmd, "require_start_url", lambda *_a, **_k: "https://a.com")
-    monkeypatch.setattr(pipeline_cmd, "should_enrich_keywords_after_report", lambda _cfg: False)
+    monkeypatch.setattr(report_build, "require_start_url", lambda *_a, **_k: "https://a.com")
+    monkeypatch.setattr(report_build, "should_enrich_keywords_after_report", lambda _cfg: False)
+    monkeypatch.delenv("REPORT_SERVICE_URL", raising=False)
     monkeypatch.setitem(__import__("sys").modules, "website_profiling.reporting.builder", types.SimpleNamespace(run_simple_report=lambda **_k: "report.json"))
     monkeypatch.setitem(__import__("sys").modules, "website_profiling.tools.plot", types.SimpleNamespace(run_plot=lambda **_k: 0))
     pipeline_cmd._run_report({}, True)

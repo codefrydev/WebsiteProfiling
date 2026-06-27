@@ -15,13 +15,16 @@ def _resolved_property_id(cfg: dict, args: argparse.Namespace) -> int | None:
 
 
 def run(cfg: dict, cwd: str, path: PathFn, args: argparse.Namespace) -> None:
-    from ..integrations.google.fetch import fetch_google_data, list_properties
-
     property_id = _resolved_property_id(cfg, args)
 
     if getattr(args, "list_properties", False):
         try:
-            props = list_properties(property_id=property_id)
+            if _integrations_url():
+                props = _list_properties_via_integrations(property_id)
+            else:
+                from ..integrations.google.fetch import list_properties
+
+                props = list_properties(property_id=property_id)
             import json as _json
 
             print(_json.dumps(props), flush=True)
@@ -36,7 +39,6 @@ def run(cfg: dict, cwd: str, path: PathFn, args: argparse.Namespace) -> None:
 
     print("Site Audit: Google fetch...", flush=True)
     from ..db import db_session, get_latest_crawl_run_id, read_crawl
-    from ..integrations.google.store import write_google_data
 
     date_range_days = get_int(cfg, "google_date_range_days", 28) or 28
 
@@ -52,28 +54,47 @@ def run(cfg: dict, cwd: str, path: PathFn, args: argparse.Namespace) -> None:
     except Exception as e:
         print(f"  Warning: could not read crawl URLs for join stats: {e}", flush=True)
 
-    try:
-        import google.auth.exceptions as _gae
+    integrations_url = _integrations_url()
+    if integrations_url:
+        try:
+            google_data = _fetch_via_integrations(
+                integrations_url,
+                property_id=property_id,
+                date_range_days=date_range_days,
+                crawl_urls=crawl_urls,
+                start_url=start_url_for_join,
+                config=cfg,
+            )
+        except RuntimeError as e:
+            print(f"Google fetch error: {e}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        from ..integrations.google.store import write_google_data
 
-        google_data = fetch_google_data(
-            date_range_days=date_range_days,
-            crawl_urls=crawl_urls,
-            start_url=start_url_for_join,
-            config=cfg,
-            property_id=property_id,
-        )
-    except _gae.RefreshError:
-        print(
-            "Google connection expired -- reconnect Google for this site.",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-    except RuntimeError as e:
-        print(f"Google fetch error: {e}", file=sys.stderr)
-        sys.exit(1)
+        try:
+            import google.auth.exceptions as _gae
 
-    with db_session() as conn:
-        write_google_data(conn, google_data, property_id=property_id)
+            from ..integrations.google.fetch import fetch_google_data
+
+            google_data = fetch_google_data(
+                date_range_days=date_range_days,
+                crawl_urls=crawl_urls,
+                start_url=start_url_for_join,
+                config=cfg,
+                property_id=property_id,
+            )
+        except _gae.RefreshError:
+            print(
+                "Google connection expired -- reconnect Google for this site.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        except RuntimeError as e:
+            print(f"Google fetch error: {e}", file=sys.stderr)
+            sys.exit(1)
+
+        with db_session() as conn:
+            write_google_data(conn, google_data, property_id=property_id)
 
     if google_data.get("errors"):
         print("  Partial errors:", flush=True)
@@ -85,6 +106,31 @@ def run(cfg: dict, cwd: str, path: PathFn, args: argparse.Namespace) -> None:
 
 
 def _run_google_test(property_id: int | None) -> None:
+    integrations_url = _integrations_url()
+    if integrations_url and property_id:
+        try:
+            import json
+            import urllib.error
+            import urllib.request
+
+            req = urllib.request.Request(
+                f"{integrations_url}/api/properties/{property_id}/google/test",
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=120) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+            log = str(result.get("log") or "")
+            if log:
+                print(log, flush=True)
+            sys.exit(int(result.get("exitCode") or (0 if result.get("ok") else 1)))
+        except urllib.error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            print(detail or f"Google test failed: HTTP {exc.code}", file=sys.stderr)
+            sys.exit(1)
+        except Exception as e:
+            print(f"Google test failed: {e}", file=sys.stderr)
+            sys.exit(1)
+
     print("Site Audit: Google credentials test...", flush=True)
     from ..integrations.google.auth import build_credentials, resolve_google_targets
 
@@ -187,3 +233,70 @@ def _run_google_test(property_id: int | None) -> None:
     except Exception as e:
         print(f"Google test failed: {e}", file=sys.stderr)
         sys.exit(1)
+
+
+def _integrations_url() -> str:
+    import os
+
+    return (os.environ.get("INTEGRATIONS_SERVICE_URL") or "").strip().rstrip("/")
+
+
+def _fetch_via_integrations(
+    base_url: str,
+    *,
+    property_id: int | None,
+    date_range_days: int,
+    crawl_urls: list[str],
+    start_url: str,
+    config: dict,
+) -> dict:
+    import json
+    import urllib.error
+    import urllib.request
+
+    if property_id is None:
+        raise RuntimeError("No property selected for Google fetch.")
+
+    body = {
+        "propertyId": property_id,
+        "dateRangeDays": date_range_days,
+        "crawlUrls": crawl_urls,
+        "startUrl": start_url,
+        "config": {
+            "keywordGscMaxRows": config.get("keyword_gsc_max_rows") or 25000,
+            "googleUrlGapListLimit": config.get("google_url_gap_list_limit") or 200,
+        },
+    }
+    req = urllib.request.Request(
+        f"{base_url}/internal/integrations/google/fetch",
+        data=json.dumps(body).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(detail or f"Integrations fetch failed: HTTP {exc.code}") from exc
+
+
+def _list_properties_via_integrations(property_id: int | None) -> dict:
+    import json
+    import urllib.error
+    import urllib.request
+
+    if property_id is None:
+        raise RuntimeError("property_id is required to list Google properties.")
+
+    base = _integrations_url()
+    req = urllib.request.Request(
+        f"{base}/api/properties/{property_id}/google/properties",
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=120) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise RuntimeError(detail or f"Integrations list failed: HTTP {exc.code}") from exc

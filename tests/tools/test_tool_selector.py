@@ -5,7 +5,12 @@ import os
 from unittest.mock import patch
 
 from website_profiling.tools.audit_tools.registry import mcp_tool_names, tier0_tool_names, tool_handler_names
-from website_profiling.tools.audit_tools.tool_selector import chat_tool_max, select_tools_for_turn
+from website_profiling.tools.audit_tools.tool_selector import (
+    chat_tool_max,
+    chat_tool_search_cap,
+    expand_active_tools_from_result,
+    select_tools_for_turn,
+)
 
 
 def test_select_tools_always_includes_tier0() -> None:
@@ -75,12 +80,9 @@ def test_catalog_does_not_match_ops_domain() -> None:
 
 
 def test_search_expansion_applies_soft_cap() -> None:
-    from website_profiling.llm.agent import _expand_active_tools_from_result
-    from website_profiling.tools.audit_tools.tool_selector import chat_tool_search_cap, tier0_tool_names
-
     active = tier0_tool_names()
     many = [f"tool_{i}" for i in range(100)]
-    expanded = _expand_active_tools_from_result(
+    expanded = expand_active_tools_from_result(
         "search_audit_tools",
         {"tool_names": many},
         active,
@@ -89,13 +91,22 @@ def test_search_expansion_applies_soft_cap() -> None:
 
 
 def test_search_audit_tools_expansion_names() -> None:
-    from website_profiling.llm.agent import _expand_active_tools_from_result
-
     active = tier0_tool_names()
-    expanded = _expand_active_tools_from_result(
+    expanded = expand_active_tools_from_result(
         "search_audit_tools",
         {"tool_names": ["list_broken_links", "get_schema_coverage"]},
         active,
     )
     assert "list_broken_links" in expanded
     assert "get_schema_coverage" in expanded
+
+
+def test_domain_agent_expansion_names() -> None:
+    active = tier0_tool_names()
+    expanded = expand_active_tools_from_result(
+        "run_domain_agent",
+        {"tools_used": ["get_lighthouse_summary", "list_broken_links"]},
+        active,
+    )
+    assert "get_lighthouse_summary" in expanded
+    assert "list_broken_links" in expanded

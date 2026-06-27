@@ -1,6 +1,6 @@
 /**
  * Central registry for credentials managed on the /secrets page.
- * Values are stored in llm_config, pipeline_config, or google_app_settings.
+ * Values are stored in `integration_secrets`, `llm_settings` / `llm_provider_profiles`, or `google_app_settings`.
  */
 import type { SecretsState } from '@/types/api';
 import {
@@ -52,6 +52,7 @@ export const MCP_MANAGED_KEYS = new Set([
   'mcp_allowed_origins',
   'mcp_public_url',
   'mcp_domain',
+  'mcp_enabled_domains',
 ]);
 
 export const SECRETS_SECTIONS: SecretsSection[] = [
@@ -199,6 +200,7 @@ export const MCP_SETTINGS_FIELDS: SecretsField[] = [
 /** Keys managed on the /risk-settings page — stored in pipeline_config but hidden from /secrets UI. */
 export const RISK_SETTINGS_KEYS = new Set([
   'mcp_disabled_tools',
+  'mcp_enabled_domains',
   'feature_pipeline_enabled',
   'feature_write_enabled',
   'feature_pages_md_enabled',
@@ -214,6 +216,18 @@ export const ALL_SECRETS_KEYS = new Set([
 ]);
 
 export const SECRETS_MASK_SENTINEL = '__MASKED__';
+
+/** Masked DB / secrets values mean a key is stored server-side. */
+export function isSecretMaskedStored(value: string | boolean | undefined): boolean {
+  if (value === true) return true;
+  const trimmed = String(value ?? '').trim();
+  return (
+    trimmed === '*'
+    || trimmed === SECRETS_MASK_SENTINEL
+    || trimmed.startsWith('••••')
+    || trimmed === '{configured}'
+  );
+}
 
 export function isPipelineSecretKey(key: string): boolean {
   return PIPELINE_SECRET_KEYS.has(key);
@@ -266,12 +280,59 @@ export function buildInitialSecretsState(): SecretsState {
     out[f.key] = f.key === 'mcp_domain' ? 'core' : '';
   }
   out['mcp_disabled_tools'] = '';
+  out['mcp_enabled_domains'] = JSON.stringify(['core', 'insight']);
   for (const key of RISK_SETTINGS_KEYS) {
-    if (key !== 'mcp_disabled_tools') {
+    if (key !== 'mcp_disabled_tools' && key !== 'mcp_enabled_domains') {
       out[key] = 'true';
     }
   }
   return out;
+}
+
+/** Omit blank/unchanged secrets so PUT never wipes stored keys. */
+export function buildSecretsSavePayload(state: SecretsState, baseline?: SecretsState): SecretsState {
+  const base = baseline ?? {};
+  const payload: SecretsState = {};
+
+  for (const [key, value] of Object.entries(state)) {
+    if (
+      key.endsWith('_masked')
+      || key.endsWith('_saved_at')
+      || key === 'google_has_service_account'
+    ) {
+      continue;
+    }
+
+    const field = getSecretsFieldByKey(key);
+    if (field && (field.type === 'secret' || field.type === 'textarea')) {
+      const trimmed = String(value ?? '').trim();
+      if (!trimmed) {
+        continue;
+      }
+      const baseTrimmed = String(base[key] ?? '').trim();
+      if (isSecretMaskedStored(value) && isSecretMaskedStored(base[key])) {
+        continue;
+      }
+      if (!isSecretMaskedStored(value) && trimmed === baseTrimmed) {
+        continue;
+      }
+      payload[key] = isSecretMaskedStored(value) ? '*' : value;
+      continue;
+    }
+
+    if (value !== base[key]) {
+      payload[key] = value;
+    }
+  }
+
+  return payload;
+}
+
+export function formatSecretSavedAt(iso: string | boolean | undefined): string | null {
+  if (!iso || typeof iso === 'boolean') return null;
+  const parsed = Date.parse(String(iso));
+  if (Number.isNaN(parsed)) return null;
+  return new Date(parsed).toLocaleString();
 }
 
 export function collectEnvHints(): Record<string, boolean> {

@@ -25,7 +25,7 @@ def _parse_ref(raw: str) -> tuple[str | None, int | None]:
 
 
 def run(cfg: dict, cwd: str, args: argparse.Namespace) -> None:
-    from ..llm.page_coach import run_page_coach
+    from ..ai_service_client import run_page_coach
 
     url = (getattr(args, "url", None) or "").strip()
     if not url:
@@ -40,7 +40,6 @@ def run(cfg: dict, cwd: str, args: argparse.Namespace) -> None:
 
     result = run_page_coach(
         url,
-        cfg,
         refresh=refresh,
         current_type=current_type,
         current_id=current_id,

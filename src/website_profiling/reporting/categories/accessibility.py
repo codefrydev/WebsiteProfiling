@@ -7,6 +7,8 @@ from typing import Any, Optional
 import pandas as pd
 
 from ..terminology import CATEGORY_ACCESSIBILITY
+from ...lighthouse.audit_text import failure_display_message, failure_help_text
+from ...tools.warnings import _resolve_entry, resolve_impact
 from ._helpers import (
     _issue,
     _page_analysis_dict,
@@ -14,6 +16,95 @@ from ._helpers import (
     _score_deductions,
     _sort_issues,
 )
+
+def lighthouse_accessibility_issues_from_sources(
+    lighthouse_by_url: Optional[dict[str, Any]] = None,
+    *,
+    skip_lh_contrast_urls: Optional[set[str]] = None,
+) -> list[dict]:
+    """Accessibility issues from per-URL Lighthouse failures (accessibility category)."""
+    issues: list[dict] = []
+    seen: set[tuple[str, str]] = set()
+    skip_contrast = skip_lh_contrast_urls or set()
+    for url, summary in (lighthouse_by_url or {}).items():
+        if not isinstance(summary, dict):
+            continue
+        u = str(url or summary.get("url") or "").strip().rstrip("/")
+        if not u:
+            continue
+        for fail in summary.get("top_failures") or []:
+            if not isinstance(fail, dict):
+                continue
+            aid = str(fail.get("id") or "").strip()
+            if not aid:
+                continue
+            if aid == "color-contrast" and u in skip_contrast:
+                continue
+            category = str(fail.get("category") or fail.get("category_id") or "").strip()
+            if category == "accessibility":
+                pass
+            elif category:
+                continue
+            else:
+                title = str(fail.get("title") or "")
+                help_text = failure_help_text(fail)
+                impact = str(fail.get("impact") or resolve_impact(aid, title, help_text))
+                if impact != "Accessibility":
+                    continue
+            key = (u, aid)
+            if key in seen:
+                continue
+            seen.add(key)
+            msg = failure_display_message(fail)
+            entry = _resolve_entry(aid, str(fail.get("title") or None), failure_help_text(fail) or None)
+            rec = str(entry.get("one_line_fix") or "").strip()
+            if not rec:
+                rec = "See Lighthouse accessibility recommendations for this page."
+            issues.append(_issue(
+                f"Lighthouse: {msg if msg != 'Audit failed' else aid.replace('-', ' ')}",
+                url=u,
+                priority="High" if entry.get("severity") == "High" else "Medium",
+                recommendation=rec,
+            ))
+    return issues
+
+
+def lighthouse_accessibility_issues_from_summary(
+    lighthouse_summary: Optional[dict[str, Any]] = None,
+) -> list[dict]:
+    """Site-level accessibility failures from the global Lighthouse summary."""
+    if not isinstance(lighthouse_summary, dict):
+        return []
+    issues: list[dict] = []
+    seen: set[str] = set()
+    for fail in lighthouse_summary.get("top_failures") or []:
+        if not isinstance(fail, dict):
+            continue
+        aid = str(fail.get("id") or "").strip()
+        if not aid or aid in seen:
+            continue
+        category = str(fail.get("category") or fail.get("category_id") or "").strip()
+        if category == "accessibility":
+            pass
+        elif category:
+            continue
+        else:
+            title = str(fail.get("title") or "")
+            help_text = failure_help_text(fail)
+            impact = str(fail.get("impact") or resolve_impact(aid, title, help_text))
+            if impact != "Accessibility":
+                continue
+        seen.add(aid)
+        msg = failure_display_message(fail)
+        entry = _resolve_entry(aid, str(fail.get("title") or None), failure_help_text(fail) or None)
+        rec = str(entry.get("one_line_fix") or "").strip() or "See Lighthouse accessibility recommendations."
+        issues.append(_issue(
+            f"Lighthouse: {msg if msg != 'Audit failed' else aid.replace('-', ' ')}",
+            priority="High" if entry.get("severity") == "High" else "Medium",
+            recommendation=rec,
+        ))
+    return issues
+
 
 def contrast_issues_from_sources(
     df: pd.DataFrame,
@@ -51,27 +142,12 @@ def contrast_issues_from_sources(
                 ),
             ))
 
-    lh_map = lighthouse_by_url or {}
-    for url, summary in lh_map.items():
-        if not isinstance(summary, dict):
-            continue
-        u = str(url or summary.get("url") or "").strip().rstrip("/")
-        if not u or u in seen_urls:
-            continue
-        for fail in summary.get("top_failures") or []:
-            if not isinstance(fail, dict):
-                continue
-            if str(fail.get("id") or "") != "color-contrast":
-                continue
-            seen_urls.add(u)
-            help_text = str(fail.get("helpText") or "Low color contrast")
-            issues.append(_issue(
-                f"Lighthouse: {help_text}",
-                url=u,
-                priority="Medium",
-                recommendation="Increase contrast ratio between text and background to meet WCAG AA.",
-            ))
-            break
+    issues.extend(
+        lighthouse_accessibility_issues_from_sources(
+            lighthouse_by_url,
+            skip_lh_contrast_urls=seen_urls,
+        )
+    )
 
     return issues[:40]
 
@@ -79,6 +155,7 @@ def contrast_issues_from_sources(
 def category_html_accessibility(
     df: pd.DataFrame,
     lighthouse_by_url: Optional[dict[str, Any]] = None,
+    lighthouse_summary: Optional[dict[str, Any]] = None,
 ) -> dict:
     """HTML and Accessibility: semantic HTML, heading structure, alt, ARIA, contrast."""
     issues = []
@@ -164,6 +241,9 @@ def category_html_accessibility(
             deductions.append((min(10, complex_pages * 2), True))
 
     contrast_issues = contrast_issues_from_sources(df, lighthouse_by_url)
+    lh_a11y = lighthouse_accessibility_issues_from_summary(lighthouse_summary)
+    if lh_a11y:
+        contrast_issues = contrast_issues + lh_a11y
     if contrast_issues:
         issues.extend(contrast_issues)
         deductions.append((min(25, len(contrast_issues) * 4), True))

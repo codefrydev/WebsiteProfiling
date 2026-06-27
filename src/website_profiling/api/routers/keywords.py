@@ -64,7 +64,7 @@ def keywords_content_brief(
     gaps = body.get("gaps") or []
 
     try:
-        from website_profiling.llm.content_brief import generate_content_brief  # type: ignore[import]
+        from website_profiling.ai_service_client import generate_content_brief
 
         brief = generate_content_brief(keyword, rows, gaps)
         return {"brief": brief}

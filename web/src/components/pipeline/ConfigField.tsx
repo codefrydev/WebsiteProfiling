@@ -1,3 +1,7 @@
+import type { ReactNode } from 'react';
+import { DraftInput, DraftTextarea } from '@/components/shared/DraftTextInput';
+import { formatSecretSavedAt, isSecretMaskedStored } from '@/lib/secretsConfigSchema';
+
 export type ConfigFieldDef = {
   key: string;
   label: string;
@@ -19,6 +23,8 @@ export interface ConfigFieldProps {
   value: string | boolean | undefined;
   disabled?: boolean;
   onChange: (v: string | boolean) => void;
+  /** ISO timestamp when a masked secret was last saved server-side. */
+  savedAt?: string;
 }
 
 function fieldSpan(f: ConfigFieldDef): 1 | 2 {
@@ -39,7 +45,7 @@ const inputClass =
   'w-full rounded-lg border border-default bg-brand-900 px-3 py-2 text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20';
 
 /** Single config row for any field type. */
-export default function ConfigField({ field: f, value, disabled, onChange }: ConfigFieldProps) {
+export default function ConfigField({ field: f, value, disabled, onChange, savedAt }: ConfigFieldProps) {
   const id = `pipe-cfg-${f.key}`;
   const span = fieldSpan(f);
   const outerClass = wrapClass(span);
@@ -63,13 +69,13 @@ export default function ConfigField({ field: f, value, disabled, onChange }: Con
     return (
       <div className={outerClass}>
         {labelBlock}
-        <input
+        <DraftInput
           id={id}
           type="url"
-          placeholder={f.placeholder || undefined}
           value={strVal}
+          placeholder={f.placeholder || undefined}
           disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
+          onCommit={onChange}
           className={inputClass}
         />
       </div>
@@ -187,30 +193,38 @@ export default function ConfigField({ field: f, value, disabled, onChange }: Con
 
   if (f.type === 'secret') {
     const strVal = value == null ? '' : String(value);
-    const isMasked = strVal.startsWith('••••');
+    const isMasked = isSecretMaskedStored(strVal);
     const displayValue = isMasked ? '' : strVal;
+    const savedLabel = strVal.startsWith('••••') ? strVal : '••••';
     const placeholder = isMasked
       ? 'Paste a new key to replace the saved one'
       : 'Paste API key (or use env vars — see below)';
+
+    const savedAtLabel = formatSecretSavedAt(savedAt);
 
     return (
       <div className={outerClass}>
         <div className="rounded-lg border border-default bg-brand-900/50 px-4 py-3">
           {labelBlock}
-          <input
+          <DraftInput
             id={id}
             type="password"
             autoComplete="off"
             placeholder={placeholder}
             value={displayValue}
             disabled={disabled}
-            onChange={(e) => onChange(e.target.value)}
+            onCommit={onChange}
             className={`${inputClass} font-mono`}
           />
           {isMasked ? (
-            <p className="mt-2 flex items-center gap-1.5 text-xs text-green-700 dark:text-green-400">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
-              Key saved ({strVal}). Leave blank to keep it.
+            <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-green-700 dark:text-green-400">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-current" aria-hidden />
+                Key saved ({savedLabel}). Leave blank to keep it.
+              </span>
+              {savedAtLabel ? (
+                <span className="text-muted-foreground">Last saved {savedAtLabel}</span>
+              ) : null}
             </p>
           ) : null}
         </div>
@@ -311,12 +325,12 @@ export default function ConfigField({ field: f, value, disabled, onChange }: Con
     return (
       <div className={outerClass}>
         {labelBlock}
-        <textarea
+        <DraftTextarea
           id={id}
           rows={4}
           value={strVal}
           disabled={disabled}
-          onChange={(e) => onChange(e.target.value)}
+          onCommit={onChange}
           className={`${inputClass} font-mono resize-y`}
         />
       </div>
@@ -338,14 +352,14 @@ export default function ConfigField({ field: f, value, disabled, onChange }: Con
               <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{f.help}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2 sm:pl-4">
-              <input
+              <DraftInput
                 id={id}
                 type="text"
                 inputMode="decimal"
                 placeholder={f.placeholder || undefined}
                 value={strVal}
                 disabled={disabled}
-                onChange={(e) => onChange(e.target.value)}
+                onCommit={onChange}
                 aria-label={f.label}
                 className={`${inputClass} w-full min-w-[5.5rem] max-w-[7rem] font-mono tabular-nums sm:text-right`}
               />
@@ -369,7 +383,7 @@ export default function ConfigField({ field: f, value, disabled, onChange }: Con
           {f.required ? <span className="ml-0.5 text-red-600 dark:text-red-400" aria-hidden>*</span> : null}
         </label>
       )}
-      <input
+      <DraftInput
         id={id}
         type="text"
         inputMode={isNumeric ? 'decimal' : undefined}
@@ -378,7 +392,7 @@ export default function ConfigField({ field: f, value, disabled, onChange }: Con
         disabled={disabled}
         required={f.required}
         aria-required={f.required || undefined}
-        onChange={(e) => onChange(e.target.value)}
+        onCommit={onChange}
         className={`${inputClass}${isNumeric ? ' font-mono' : ''}`}
       />
     </div>

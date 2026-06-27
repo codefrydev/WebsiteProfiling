@@ -75,42 +75,6 @@ export type CancelResponse = {
 };
 
 /**
- * ChatRequest
- */
-export type ChatRequest = {
-    /**
-     * Sessionid
-     */
-    sessionId: number;
-    /**
-     * Propertyid
-     */
-    propertyId: number;
-    /**
-     * Message
-     */
-    message: string;
-    /**
-     * Reportid
-     */
-    reportId?: number | null;
-};
-
-/**
- * ChatSessionCreate
- */
-export type ChatSessionCreate = {
-    /**
-     * Propertyid
-     */
-    propertyId: number;
-    /**
-     * Title
-     */
-    title?: string;
-};
-
-/**
  * CompareExportBody
  */
 export type CompareExportBody = {
@@ -217,52 +181,6 @@ export type DashboardUpdateBody = {
 };
 
 /**
- * DeletePortfolioBody
- */
-export type DeletePortfolioBody = {
-    /**
-     * Reportid
-     */
-    reportId?: number | null;
-    /**
-     * Crawlrunid
-     */
-    crawlRunId?: number | null;
-};
-
-/**
- * FilterDeleteBody
- */
-export type FilterDeleteBody = {
-    /**
-     * Propertyid
-     */
-    propertyId: number;
-    /**
-     * Name
-     */
-    name: string;
-};
-
-/**
- * FilterUpsertBody
- */
-export type FilterUpsertBody = {
-    /**
-     * Propertyid
-     */
-    propertyId: number;
-    /**
-     * Name
-     */
-    name: string;
-    /**
-     * Filterjson
-     */
-    filterJson?: unknown | null;
-};
-
-/**
  * GoogleCredentialsPatch
  */
 export type GoogleCredentialsPatch = {
@@ -347,18 +265,6 @@ export type JobsListResponse = {
 };
 
 /**
- * LlmConfigBody
- */
-export type LlmConfigBody = {
-    /**
-     * State
-     */
-    state: {
-        [key: string]: unknown;
-    };
-};
-
-/**
  * OpsSettingsBody
  */
 export type OpsSettingsBody = {
@@ -374,40 +280,6 @@ export type OpsSettingsBody = {
      * Alertemail
      */
     alertEmail?: string | null;
-};
-
-/**
- * PageCoachBody
- */
-export type PageCoachBody = {
-    /**
-     * Url
-     */
-    url?: string | null;
-    /**
-     * Refresh
-     */
-    refresh?: boolean;
-    /**
-     * Currenttype
-     */
-    currentType?: string | null;
-    /**
-     * Currentid
-     */
-    currentId?: number | null;
-    /**
-     * Baselinetype
-     */
-    baselineType?: string | null;
-    /**
-     * Baselineid
-     */
-    baselineId?: number | null;
-    /**
-     * Propertyid
-     */
-    propertyId?: number | null;
 };
 
 /**
@@ -507,12 +379,6 @@ export type RunPostBody = {
      */
     unknownKeys?: Array<UnknownKeyEntry>;
     /**
-     * Llmstate
-     */
-    llmState?: {
-        [key: string]: unknown;
-    } | null;
-    /**
      * Propertyid
      */
     propertyId?: number | null;
@@ -534,18 +400,6 @@ export type RunResponse = {
      * Jobid
      */
     jobId: string;
-};
-
-/**
- * SecretsBody
- */
-export type SecretsBody = {
-    /**
-     * State
-     */
-    state: {
-        [key: string]: unknown;
-    };
 };
 
 /**
@@ -609,178 +463,6 @@ export type HealthCheckApiHealthGetResponses = {
 };
 
 export type HealthCheckApiHealthGetResponse = HealthCheckApiHealthGetResponses[keyof HealthCheckApiHealthGetResponses];
-
-export type ReportMetaApiReportMetaGetData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/report/meta';
-};
-
-export type ReportMetaApiReportMetaGetResponses = {
-    /**
-     * Response Report Meta Api Report Meta Get
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type ReportMetaApiReportMetaGetResponse = ReportMetaApiReportMetaGetResponses[keyof ReportMetaApiReportMetaGetResponses];
-
-export type ReportPayloadApiReportPayloadGetData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Reportid
-         */
-        reportId?: number | null;
-        /**
-         * Domain
-         */
-        domain?: string | null;
-        /**
-         * Section
-         */
-        section?: string | null;
-    };
-    url: '/api/report/payload';
-};
-
-export type ReportPayloadApiReportPayloadGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ReportPayloadApiReportPayloadGetError = ReportPayloadApiReportPayloadGetErrors[keyof ReportPayloadApiReportPayloadGetErrors];
-
-export type ReportPayloadApiReportPayloadGetResponses = {
-    /**
-     * Response Report Payload Api Report Payload Get
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type ReportPayloadApiReportPayloadGetResponse = ReportPayloadApiReportPayloadGetResponses[keyof ReportPayloadApiReportPayloadGetResponses];
-
-export type ReportHistoryApiReportHistoryGetData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Propertyid
-         */
-        propertyId?: number | null;
-        /**
-         * Domain
-         */
-        domain?: string | null;
-        /**
-         * Limit
-         */
-        limit?: number;
-    };
-    url: '/api/report/history';
-};
-
-export type ReportHistoryApiReportHistoryGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ReportHistoryApiReportHistoryGetError = ReportHistoryApiReportHistoryGetErrors[keyof ReportHistoryApiReportHistoryGetErrors];
-
-export type ReportHistoryApiReportHistoryGetResponses = {
-    /**
-     * Response Report History Api Report History Get
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type ReportHistoryApiReportHistoryGetResponse = ReportHistoryApiReportHistoryGetResponses[keyof ReportHistoryApiReportHistoryGetResponses];
-
-export type CrawlPayloadApiReportCrawlPayloadGetData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Crawlrunid
-         */
-        crawlRunId?: number | null;
-    };
-    url: '/api/report/crawl-payload';
-};
-
-export type CrawlPayloadApiReportCrawlPayloadGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type CrawlPayloadApiReportCrawlPayloadGetError = CrawlPayloadApiReportCrawlPayloadGetErrors[keyof CrawlPayloadApiReportCrawlPayloadGetErrors];
-
-export type CrawlPayloadApiReportCrawlPayloadGetResponses = {
-    /**
-     * Response Crawl Payload Api Report Crawl Payload Get
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type CrawlPayloadApiReportCrawlPayloadGetResponse = CrawlPayloadApiReportCrawlPayloadGetResponses[keyof CrawlPayloadApiReportCrawlPayloadGetResponses];
-
-export type MobileDeltaApiReportMobileDeltaGetData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Id
-         */
-        id?: number | null;
-    };
-    url: '/api/report/mobile-delta';
-};
-
-export type MobileDeltaApiReportMobileDeltaGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type MobileDeltaApiReportMobileDeltaGetError = MobileDeltaApiReportMobileDeltaGetErrors[keyof MobileDeltaApiReportMobileDeltaGetErrors];
-
-export type MobileDeltaApiReportMobileDeltaGetResponses = {
-    /**
-     * Response Mobile Delta Api Report Mobile Delta Get
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type MobileDeltaApiReportMobileDeltaGetResponse = MobileDeltaApiReportMobileDeltaGetResponses[keyof MobileDeltaApiReportMobileDeltaGetResponses];
 
 export type RunPipelineApiRunPostData = {
     body: RunPostBody;
@@ -961,234 +643,6 @@ export type ResumePipelineJobApiJobsJobIdResumePostResponses = {
 
 export type ResumePipelineJobApiJobsJobIdResumePostResponse = ResumePipelineJobApiJobsJobIdResumePostResponses[keyof ResumePipelineJobApiJobsJobIdResumePostResponses];
 
-export type ChatTurnApiChatPostData = {
-    body: ChatRequest;
-    path?: never;
-    query?: never;
-    url: '/api/chat/';
-};
-
-export type ChatTurnApiChatPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ChatTurnApiChatPostError = ChatTurnApiChatPostErrors[keyof ChatTurnApiChatPostErrors];
-
-export type ChatTurnApiChatPostResponses = {
-    /**
-     * Successful Response
-     */
-    200: unknown;
-};
-
-export type ListSessionsApiChatSessionsGetData = {
-    body?: never;
-    path?: never;
-    query: {
-        /**
-         * Propertyid
-         */
-        propertyId: number;
-    };
-    url: '/api/chat/sessions';
-};
-
-export type ListSessionsApiChatSessionsGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ListSessionsApiChatSessionsGetError = ListSessionsApiChatSessionsGetErrors[keyof ListSessionsApiChatSessionsGetErrors];
-
-export type ListSessionsApiChatSessionsGetResponses = {
-    /**
-     * Response List Sessions Api Chat Sessions Get
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type ListSessionsApiChatSessionsGetResponse = ListSessionsApiChatSessionsGetResponses[keyof ListSessionsApiChatSessionsGetResponses];
-
-export type CreateSessionApiChatSessionsPostData = {
-    body: ChatSessionCreate;
-    path?: never;
-    query?: never;
-    url: '/api/chat/sessions';
-};
-
-export type CreateSessionApiChatSessionsPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type CreateSessionApiChatSessionsPostError = CreateSessionApiChatSessionsPostErrors[keyof CreateSessionApiChatSessionsPostErrors];
-
-export type CreateSessionApiChatSessionsPostResponses = {
-    /**
-     * Response Create Session Api Chat Sessions Post
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type CreateSessionApiChatSessionsPostResponse = CreateSessionApiChatSessionsPostResponses[keyof CreateSessionApiChatSessionsPostResponses];
-
-export type DeleteSessionRouteApiChatSessionsSessionIdDeleteData = {
-    body?: never;
-    path: {
-        /**
-         * Session Id
-         */
-        session_id: number;
-    };
-    query: {
-        /**
-         * Propertyid
-         */
-        propertyId: number;
-    };
-    url: '/api/chat/sessions/{session_id}';
-};
-
-export type DeleteSessionRouteApiChatSessionsSessionIdDeleteErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type DeleteSessionRouteApiChatSessionsSessionIdDeleteError = DeleteSessionRouteApiChatSessionsSessionIdDeleteErrors[keyof DeleteSessionRouteApiChatSessionsSessionIdDeleteErrors];
-
-export type DeleteSessionRouteApiChatSessionsSessionIdDeleteResponses = {
-    /**
-     * Response Delete Session Route Api Chat Sessions  Session Id  Delete
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type DeleteSessionRouteApiChatSessionsSessionIdDeleteResponse = DeleteSessionRouteApiChatSessionsSessionIdDeleteResponses[keyof DeleteSessionRouteApiChatSessionsSessionIdDeleteResponses];
-
-export type GetSessionRouteApiChatSessionsSessionIdGetData = {
-    body?: never;
-    path: {
-        /**
-         * Session Id
-         */
-        session_id: number;
-    };
-    query?: never;
-    url: '/api/chat/sessions/{session_id}';
-};
-
-export type GetSessionRouteApiChatSessionsSessionIdGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetSessionRouteApiChatSessionsSessionIdGetError = GetSessionRouteApiChatSessionsSessionIdGetErrors[keyof GetSessionRouteApiChatSessionsSessionIdGetErrors];
-
-export type GetSessionRouteApiChatSessionsSessionIdGetResponses = {
-    /**
-     * Response Get Session Route Api Chat Sessions  Session Id  Get
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type GetSessionRouteApiChatSessionsSessionIdGetResponse = GetSessionRouteApiChatSessionsSessionIdGetResponses[keyof GetSessionRouteApiChatSessionsSessionIdGetResponses];
-
-export type GetSessionMessagesApiChatSessionsSessionIdMessagesGetData = {
-    body?: never;
-    path: {
-        /**
-         * Session Id
-         */
-        session_id: number;
-    };
-    query: {
-        /**
-         * Propertyid
-         */
-        propertyId: number;
-    };
-    url: '/api/chat/sessions/{session_id}/messages';
-};
-
-export type GetSessionMessagesApiChatSessionsSessionIdMessagesGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetSessionMessagesApiChatSessionsSessionIdMessagesGetError = GetSessionMessagesApiChatSessionsSessionIdMessagesGetErrors[keyof GetSessionMessagesApiChatSessionsSessionIdMessagesGetErrors];
-
-export type GetSessionMessagesApiChatSessionsSessionIdMessagesGetResponses = {
-    /**
-     * Response Get Session Messages Api Chat Sessions  Session Id  Messages Get
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type GetSessionMessagesApiChatSessionsSessionIdMessagesGetResponse = GetSessionMessagesApiChatSessionsSessionIdMessagesGetResponses[keyof GetSessionMessagesApiChatSessionsSessionIdMessagesGetResponses];
-
-export type GetArtifactApiChatArtifactsArtifactIdGetData = {
-    body?: never;
-    path: {
-        /**
-         * Artifact Id
-         */
-        artifact_id: string;
-    };
-    query?: never;
-    url: '/api/chat/artifacts/{artifact_id}';
-};
-
-export type GetArtifactApiChatArtifactsArtifactIdGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type GetArtifactApiChatArtifactsArtifactIdGetError = GetArtifactApiChatArtifactsArtifactIdGetErrors[keyof GetArtifactApiChatArtifactsArtifactIdGetErrors];
-
-export type GetArtifactApiChatArtifactsArtifactIdGetResponses = {
-    /**
-     * Response Get Artifact Api Chat Artifacts  Artifact Id  Get
-     *
-     * Successful Response
-     */
-    200: unknown;
-};
-
 export type BrowserStatusCheckApiCrawlBrowserStatusGetData = {
     body?: never;
     path?: never;
@@ -1299,104 +753,6 @@ export type PutPipelineConfigApiPipelineConfigPutResponses = {
 };
 
 export type PutPipelineConfigApiPipelineConfigPutResponse = PutPipelineConfigApiPipelineConfigPutResponses[keyof PutPipelineConfigApiPipelineConfigPutResponses];
-
-export type GetLlmConfigApiLlmConfigGetData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/llm-config';
-};
-
-export type GetLlmConfigApiLlmConfigGetResponses = {
-    /**
-     * Response Get Llm Config Api Llm Config Get
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type GetLlmConfigApiLlmConfigGetResponse = GetLlmConfigApiLlmConfigGetResponses[keyof GetLlmConfigApiLlmConfigGetResponses];
-
-export type PutLlmConfigApiLlmConfigPutData = {
-    body: LlmConfigBody;
-    path?: never;
-    query?: never;
-    url: '/api/llm-config';
-};
-
-export type PutLlmConfigApiLlmConfigPutErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type PutLlmConfigApiLlmConfigPutError = PutLlmConfigApiLlmConfigPutErrors[keyof PutLlmConfigApiLlmConfigPutErrors];
-
-export type PutLlmConfigApiLlmConfigPutResponses = {
-    /**
-     * Response Put Llm Config Api Llm Config Put
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type PutLlmConfigApiLlmConfigPutResponse = PutLlmConfigApiLlmConfigPutResponses[keyof PutLlmConfigApiLlmConfigPutResponses];
-
-export type GetSecretsApiSecretsGetData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/secrets';
-};
-
-export type GetSecretsApiSecretsGetResponses = {
-    /**
-     * Response Get Secrets Api Secrets Get
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type GetSecretsApiSecretsGetResponse = GetSecretsApiSecretsGetResponses[keyof GetSecretsApiSecretsGetResponses];
-
-export type PutSecretsApiSecretsPutData = {
-    body: SecretsBody;
-    path?: never;
-    query?: never;
-    url: '/api/secrets';
-};
-
-export type PutSecretsApiSecretsPutErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type PutSecretsApiSecretsPutError = PutSecretsApiSecretsPutErrors[keyof PutSecretsApiSecretsPutErrors];
-
-export type PutSecretsApiSecretsPutResponses = {
-    /**
-     * Response Put Secrets Api Secrets Put
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type PutSecretsApiSecretsPutResponse = PutSecretsApiSecretsPutResponses[keyof PutSecretsApiSecretsPutResponses];
 
 export type GetAppSettingApiAppSettingsGetData = {
     body?: never;
@@ -1548,7 +904,7 @@ export type ResolvePropertyApiPropertiesResolveGetResponses = {
 
 export type ResolvePropertyApiPropertiesResolveGetResponse = ResolvePropertyApiPropertiesResolveGetResponses[keyof ResolvePropertyApiPropertiesResolveGetResponses];
 
-export type DeletePropertyApiPropertiesPropertyIdDeleteData = {
+export type DeletePropertyRouteApiPropertiesPropertyIdDeleteData = {
     body?: never;
     path: {
         /**
@@ -1560,18 +916,18 @@ export type DeletePropertyApiPropertiesPropertyIdDeleteData = {
     url: '/api/properties/{property_id}';
 };
 
-export type DeletePropertyApiPropertiesPropertyIdDeleteErrors = {
+export type DeletePropertyRouteApiPropertiesPropertyIdDeleteErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type DeletePropertyApiPropertiesPropertyIdDeleteError = DeletePropertyApiPropertiesPropertyIdDeleteErrors[keyof DeletePropertyApiPropertiesPropertyIdDeleteErrors];
+export type DeletePropertyRouteApiPropertiesPropertyIdDeleteError = DeletePropertyRouteApiPropertiesPropertyIdDeleteErrors[keyof DeletePropertyRouteApiPropertiesPropertyIdDeleteErrors];
 
-export type DeletePropertyApiPropertiesPropertyIdDeleteResponses = {
+export type DeletePropertyRouteApiPropertiesPropertyIdDeleteResponses = {
     /**
-     * Response Delete Property Api Properties  Property Id  Delete
+     * Response Delete Property Route Api Properties  Property Id  Delete
      *
      * Successful Response
      */
@@ -1580,7 +936,7 @@ export type DeletePropertyApiPropertiesPropertyIdDeleteResponses = {
     };
 };
 
-export type DeletePropertyApiPropertiesPropertyIdDeleteResponse = DeletePropertyApiPropertiesPropertyIdDeleteResponses[keyof DeletePropertyApiPropertiesPropertyIdDeleteResponses];
+export type DeletePropertyRouteApiPropertiesPropertyIdDeleteResponse = DeletePropertyRouteApiPropertiesPropertyIdDeleteResponses[keyof DeletePropertyRouteApiPropertiesPropertyIdDeleteResponses];
 
 export type GetPropertyApiPropertiesPropertyIdGetData = {
     body?: never;
@@ -1616,7 +972,7 @@ export type GetPropertyApiPropertiesPropertyIdGetResponses = {
 
 export type GetPropertyApiPropertiesPropertyIdGetResponse = GetPropertyApiPropertiesPropertyIdGetResponses[keyof GetPropertyApiPropertiesPropertyIdGetResponses];
 
-export type GetPropertyOpsApiPropertiesPropertyIdOpsGetData = {
+export type GetPropertyOpsRouteApiPropertiesPropertyIdOpsGetData = {
     body?: never;
     path: {
         /**
@@ -1628,18 +984,18 @@ export type GetPropertyOpsApiPropertiesPropertyIdOpsGetData = {
     url: '/api/properties/{property_id}/ops';
 };
 
-export type GetPropertyOpsApiPropertiesPropertyIdOpsGetErrors = {
+export type GetPropertyOpsRouteApiPropertiesPropertyIdOpsGetErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type GetPropertyOpsApiPropertiesPropertyIdOpsGetError = GetPropertyOpsApiPropertiesPropertyIdOpsGetErrors[keyof GetPropertyOpsApiPropertiesPropertyIdOpsGetErrors];
+export type GetPropertyOpsRouteApiPropertiesPropertyIdOpsGetError = GetPropertyOpsRouteApiPropertiesPropertyIdOpsGetErrors[keyof GetPropertyOpsRouteApiPropertiesPropertyIdOpsGetErrors];
 
-export type GetPropertyOpsApiPropertiesPropertyIdOpsGetResponses = {
+export type GetPropertyOpsRouteApiPropertiesPropertyIdOpsGetResponses = {
     /**
-     * Response Get Property Ops Api Properties  Property Id  Ops Get
+     * Response Get Property Ops Route Api Properties  Property Id  Ops Get
      *
      * Successful Response
      */
@@ -1648,9 +1004,9 @@ export type GetPropertyOpsApiPropertiesPropertyIdOpsGetResponses = {
     };
 };
 
-export type GetPropertyOpsApiPropertiesPropertyIdOpsGetResponse = GetPropertyOpsApiPropertiesPropertyIdOpsGetResponses[keyof GetPropertyOpsApiPropertiesPropertyIdOpsGetResponses];
+export type GetPropertyOpsRouteApiPropertiesPropertyIdOpsGetResponse = GetPropertyOpsRouteApiPropertiesPropertyIdOpsGetResponses[keyof GetPropertyOpsRouteApiPropertiesPropertyIdOpsGetResponses];
 
-export type UpdatePropertyOpsApiPropertiesPropertyIdOpsPutData = {
+export type UpdatePropertyOpsRouteApiPropertiesPropertyIdOpsPutData = {
     body: OpsSettingsBody;
     path: {
         /**
@@ -1662,18 +1018,18 @@ export type UpdatePropertyOpsApiPropertiesPropertyIdOpsPutData = {
     url: '/api/properties/{property_id}/ops';
 };
 
-export type UpdatePropertyOpsApiPropertiesPropertyIdOpsPutErrors = {
+export type UpdatePropertyOpsRouteApiPropertiesPropertyIdOpsPutErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type UpdatePropertyOpsApiPropertiesPropertyIdOpsPutError = UpdatePropertyOpsApiPropertiesPropertyIdOpsPutErrors[keyof UpdatePropertyOpsApiPropertiesPropertyIdOpsPutErrors];
+export type UpdatePropertyOpsRouteApiPropertiesPropertyIdOpsPutError = UpdatePropertyOpsRouteApiPropertiesPropertyIdOpsPutErrors[keyof UpdatePropertyOpsRouteApiPropertiesPropertyIdOpsPutErrors];
 
-export type UpdatePropertyOpsApiPropertiesPropertyIdOpsPutResponses = {
+export type UpdatePropertyOpsRouteApiPropertiesPropertyIdOpsPutResponses = {
     /**
-     * Response Update Property Ops Api Properties  Property Id  Ops Put
+     * Response Update Property Ops Route Api Properties  Property Id  Ops Put
      *
      * Successful Response
      */
@@ -1682,7 +1038,7 @@ export type UpdatePropertyOpsApiPropertiesPropertyIdOpsPutResponses = {
     };
 };
 
-export type UpdatePropertyOpsApiPropertiesPropertyIdOpsPutResponse = UpdatePropertyOpsApiPropertiesPropertyIdOpsPutResponses[keyof UpdatePropertyOpsApiPropertiesPropertyIdOpsPutResponses];
+export type UpdatePropertyOpsRouteApiPropertiesPropertyIdOpsPutResponse = UpdatePropertyOpsRouteApiPropertiesPropertyIdOpsPutResponses[keyof UpdatePropertyOpsRouteApiPropertiesPropertyIdOpsPutResponses];
 
 export type GetPropertyPresetApiPropertiesPropertyIdPresetGetData = {
     body?: never;
@@ -1752,7 +1108,7 @@ export type UpdatePropertyPresetApiPropertiesPropertyIdPresetPutResponses = {
 
 export type UpdatePropertyPresetApiPropertiesPropertyIdPresetPutResponse = UpdatePropertyPresetApiPropertiesPropertyIdPresetPutResponses[keyof UpdatePropertyPresetApiPropertiesPropertyIdPresetPutResponses];
 
-export type AuthorizePropertyCrawlApiPropertiesPropertyIdAuthorizePostData = {
+export type AuthorizePropertyCrawlRouteApiPropertiesPropertyIdAuthorizePostData = {
     body?: never;
     path: {
         /**
@@ -1764,18 +1120,18 @@ export type AuthorizePropertyCrawlApiPropertiesPropertyIdAuthorizePostData = {
     url: '/api/properties/{property_id}/authorize';
 };
 
-export type AuthorizePropertyCrawlApiPropertiesPropertyIdAuthorizePostErrors = {
+export type AuthorizePropertyCrawlRouteApiPropertiesPropertyIdAuthorizePostErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type AuthorizePropertyCrawlApiPropertiesPropertyIdAuthorizePostError = AuthorizePropertyCrawlApiPropertiesPropertyIdAuthorizePostErrors[keyof AuthorizePropertyCrawlApiPropertiesPropertyIdAuthorizePostErrors];
+export type AuthorizePropertyCrawlRouteApiPropertiesPropertyIdAuthorizePostError = AuthorizePropertyCrawlRouteApiPropertiesPropertyIdAuthorizePostErrors[keyof AuthorizePropertyCrawlRouteApiPropertiesPropertyIdAuthorizePostErrors];
 
-export type AuthorizePropertyCrawlApiPropertiesPropertyIdAuthorizePostResponses = {
+export type AuthorizePropertyCrawlRouteApiPropertiesPropertyIdAuthorizePostResponses = {
     /**
-     * Response Authorize Property Crawl Api Properties  Property Id  Authorize Post
+     * Response Authorize Property Crawl Route Api Properties  Property Id  Authorize Post
      *
      * Successful Response
      */
@@ -1784,7 +1140,7 @@ export type AuthorizePropertyCrawlApiPropertiesPropertyIdAuthorizePostResponses 
     };
 };
 
-export type AuthorizePropertyCrawlApiPropertiesPropertyIdAuthorizePostResponse = AuthorizePropertyCrawlApiPropertiesPropertyIdAuthorizePostResponses[keyof AuthorizePropertyCrawlApiPropertiesPropertyIdAuthorizePostResponses];
+export type AuthorizePropertyCrawlRouteApiPropertiesPropertyIdAuthorizePostResponse = AuthorizePropertyCrawlRouteApiPropertiesPropertyIdAuthorizePostResponses[keyof AuthorizePropertyCrawlRouteApiPropertiesPropertyIdAuthorizePostResponses];
 
 export type PropertyGoogleStatusApiPropertiesPropertyIdGoogleStatusGetData = {
     body?: never;
@@ -2262,90 +1618,16 @@ export type DashboardsAiGenerateApiDashboardsAiGeneratePostResponses = {
     200: unknown;
 };
 
-export type DeleteFilterApiFiltersDeleteData = {
-    body: FilterDeleteBody;
-    path?: never;
-    query?: never;
-    url: '/api/filters';
-};
-
-export type DeleteFilterApiFiltersDeleteErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type DeleteFilterApiFiltersDeleteError = DeleteFilterApiFiltersDeleteErrors[keyof DeleteFilterApiFiltersDeleteErrors];
-
-export type DeleteFilterApiFiltersDeleteResponses = {
-    /**
-     * Response Delete Filter Api Filters Delete
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type DeleteFilterApiFiltersDeleteResponse = DeleteFilterApiFiltersDeleteResponses[keyof DeleteFilterApiFiltersDeleteResponses];
-
-export type ListFiltersApiFiltersGetData = {
+export type GetGoogleCredentialsApiIntegrationsGoogleCredentialsGetData = {
     body?: never;
     path?: never;
-    query: {
-        /**
-         * Propertyid
-         *
-         * Property ID
-         */
-        propertyId: number;
-    };
-    url: '/api/filters';
-};
-
-export type ListFiltersApiFiltersGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ListFiltersApiFiltersGetError = ListFiltersApiFiltersGetErrors[keyof ListFiltersApiFiltersGetErrors];
-
-export type ListFiltersApiFiltersGetResponses = {
-    /**
-     * Response List Filters Api Filters Get
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type ListFiltersApiFiltersGetResponse = ListFiltersApiFiltersGetResponses[keyof ListFiltersApiFiltersGetResponses];
-
-export type UpsertFilterApiFiltersPostData = {
-    body: FilterUpsertBody;
-    path?: never;
     query?: never;
-    url: '/api/filters';
+    url: '/api/integrations/google/credentials';
 };
 
-export type UpsertFilterApiFiltersPostErrors = {
+export type GetGoogleCredentialsApiIntegrationsGoogleCredentialsGetResponses = {
     /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UpsertFilterApiFiltersPostError = UpsertFilterApiFiltersPostErrors[keyof UpsertFilterApiFiltersPostErrors];
-
-export type UpsertFilterApiFiltersPostResponses = {
-    /**
-     * Response Upsert Filter Api Filters Post
+     * Response Get Google Credentials Api Integrations Google Credentials Get
      *
      * Successful Response
      */
@@ -2354,7 +1636,7 @@ export type UpsertFilterApiFiltersPostResponses = {
     };
 };
 
-export type UpsertFilterApiFiltersPostResponse = UpsertFilterApiFiltersPostResponses[keyof UpsertFilterApiFiltersPostResponses];
+export type GetGoogleCredentialsApiIntegrationsGoogleCredentialsGetResponse = GetGoogleCredentialsApiIntegrationsGoogleCredentialsGetResponses[keyof GetGoogleCredentialsApiIntegrationsGoogleCredentialsGetResponses];
 
 export type GoogleStatusApiIntegrationsGoogleStatusGetData = {
     body?: never;
@@ -2376,74 +1658,6 @@ export type GoogleStatusApiIntegrationsGoogleStatusGetResponses = {
 
 export type GoogleStatusApiIntegrationsGoogleStatusGetResponse = GoogleStatusApiIntegrationsGoogleStatusGetResponses[keyof GoogleStatusApiIntegrationsGoogleStatusGetResponses];
 
-export type SaveGoogleCredentialsApiIntegrationsGoogleCredentialsPostData = {
-    /**
-     * Body
-     */
-    body?: {
-        [key: string]: unknown;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/integrations/google/credentials';
-};
-
-export type SaveGoogleCredentialsApiIntegrationsGoogleCredentialsPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type SaveGoogleCredentialsApiIntegrationsGoogleCredentialsPostError = SaveGoogleCredentialsApiIntegrationsGoogleCredentialsPostErrors[keyof SaveGoogleCredentialsApiIntegrationsGoogleCredentialsPostErrors];
-
-export type SaveGoogleCredentialsApiIntegrationsGoogleCredentialsPostResponses = {
-    /**
-     * Response Save Google Credentials Api Integrations Google Credentials Post
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type SaveGoogleCredentialsApiIntegrationsGoogleCredentialsPostResponse = SaveGoogleCredentialsApiIntegrationsGoogleCredentialsPostResponses[keyof SaveGoogleCredentialsApiIntegrationsGoogleCredentialsPostResponses];
-
-export type UploadGoogleCredentialsApiIntegrationsGoogleCredentialsUploadPostData = {
-    /**
-     * Body
-     */
-    body?: {
-        [key: string]: unknown;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/integrations/google/credentials/upload';
-};
-
-export type UploadGoogleCredentialsApiIntegrationsGoogleCredentialsUploadPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UploadGoogleCredentialsApiIntegrationsGoogleCredentialsUploadPostError = UploadGoogleCredentialsApiIntegrationsGoogleCredentialsUploadPostErrors[keyof UploadGoogleCredentialsApiIntegrationsGoogleCredentialsUploadPostErrors];
-
-export type UploadGoogleCredentialsApiIntegrationsGoogleCredentialsUploadPostResponses = {
-    /**
-     * Response Upload Google Credentials Api Integrations Google Credentials Upload Post
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type UploadGoogleCredentialsApiIntegrationsGoogleCredentialsUploadPostResponse = UploadGoogleCredentialsApiIntegrationsGoogleCredentialsUploadPostResponses[keyof UploadGoogleCredentialsApiIntegrationsGoogleCredentialsUploadPostResponses];
-
 export type GoogleDisconnectApiIntegrationsGoogleDisconnectPostData = {
     body?: never;
     path?: never;
@@ -2463,6 +1677,82 @@ export type GoogleDisconnectApiIntegrationsGoogleDisconnectPostResponses = {
 };
 
 export type GoogleDisconnectApiIntegrationsGoogleDisconnectPostResponse = GoogleDisconnectApiIntegrationsGoogleDisconnectPostResponses[keyof GoogleDisconnectApiIntegrationsGoogleDisconnectPostResponses];
+
+export type GoogleOauthStartApiIntegrationsGoogleAuthGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Propertyid
+         */
+        propertyId?: number | null;
+        /**
+         * Starturl
+         */
+        startUrl?: string | null;
+        /**
+         * Returnto
+         */
+        returnTo?: string | null;
+    };
+    url: '/api/integrations/google/auth';
+};
+
+export type GoogleOauthStartApiIntegrationsGoogleAuthGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GoogleOauthStartApiIntegrationsGoogleAuthGetError = GoogleOauthStartApiIntegrationsGoogleAuthGetErrors[keyof GoogleOauthStartApiIntegrationsGoogleAuthGetErrors];
+
+export type GoogleOauthStartApiIntegrationsGoogleAuthGetResponses = {
+    /**
+     * Response Google Oauth Start Api Integrations Google Auth Get
+     *
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type GoogleOauthCallbackApiIntegrationsGoogleCallbackGetData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Code
+         */
+        code?: string | null;
+        /**
+         * State
+         */
+        state?: string | null;
+        /**
+         * Error
+         */
+        error?: string | null;
+    };
+    url: '/api/integrations/google/callback';
+};
+
+export type GoogleOauthCallbackApiIntegrationsGoogleCallbackGetErrors = {
+    /**
+     * Validation Error
+     */
+    422: HttpValidationError;
+};
+
+export type GoogleOauthCallbackApiIntegrationsGoogleCallbackGetError = GoogleOauthCallbackApiIntegrationsGoogleCallbackGetErrors[keyof GoogleOauthCallbackApiIntegrationsGoogleCallbackGetErrors];
+
+export type GoogleOauthCallbackApiIntegrationsGoogleCallbackGetResponses = {
+    /**
+     * Response Google Oauth Callback Api Integrations Google Callback Get
+     *
+     * Successful Response
+     */
+    200: unknown;
+};
 
 export type GooglePropertiesDeprecatedApiIntegrationsGooglePropertiesGetData = {
     body?: never;
@@ -2938,164 +2228,6 @@ export type GoogleKeywordsPlannerApiIntegrationsGoogleKeywordsPlannerPostRespons
 
 export type GoogleKeywordsPlannerApiIntegrationsGoogleKeywordsPlannerPostResponse = GoogleKeywordsPlannerApiIntegrationsGoogleKeywordsPlannerPostResponses[keyof GoogleKeywordsPlannerApiIntegrationsGoogleKeywordsPlannerPostResponses];
 
-export type ListIssueStatusApiIssuesStatusGetData = {
-    body?: never;
-    path?: never;
-    query: {
-        /**
-         * Propertyid
-         */
-        propertyId: number;
-    };
-    url: '/api/issues/status';
-};
-
-export type ListIssueStatusApiIssuesStatusGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ListIssueStatusApiIssuesStatusGetError = ListIssueStatusApiIssuesStatusGetErrors[keyof ListIssueStatusApiIssuesStatusGetErrors];
-
-export type ListIssueStatusApiIssuesStatusGetResponses = {
-    /**
-     * Response List Issue Status Api Issues Status Get
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type ListIssueStatusApiIssuesStatusGetResponse = ListIssueStatusApiIssuesStatusGetResponses[keyof ListIssueStatusApiIssuesStatusGetResponses];
-
-export type UpsertIssueStatusApiIssuesStatusPutData = {
-    /**
-     * Body
-     */
-    body?: {
-        [key: string]: unknown;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/issues/status';
-};
-
-export type UpsertIssueStatusApiIssuesStatusPutErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type UpsertIssueStatusApiIssuesStatusPutError = UpsertIssueStatusApiIssuesStatusPutErrors[keyof UpsertIssueStatusApiIssuesStatusPutErrors];
-
-export type UpsertIssueStatusApiIssuesStatusPutResponses = {
-    /**
-     * Response Upsert Issue Status Api Issues Status Put
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type UpsertIssueStatusApiIssuesStatusPutResponse = UpsertIssueStatusApiIssuesStatusPutResponses[keyof UpsertIssueStatusApiIssuesStatusPutResponses];
-
-export type IssuesFixSuggestionApiIssuesFixSuggestionPostData = {
-    /**
-     * Body
-     */
-    body?: {
-        [key: string]: unknown;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/issues/fix-suggestion';
-};
-
-export type IssuesFixSuggestionApiIssuesFixSuggestionPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type IssuesFixSuggestionApiIssuesFixSuggestionPostError = IssuesFixSuggestionApiIssuesFixSuggestionPostErrors[keyof IssuesFixSuggestionApiIssuesFixSuggestionPostErrors];
-
-export type IssuesFixSuggestionApiIssuesFixSuggestionPostResponses = {
-    /**
-     * Response Issues Fix Suggestion Api Issues Fix Suggestion Post
-     *
-     * Successful Response
-     */
-    200: unknown;
-};
-
-export type IssuesActionPlanApiIssuesActionPlanPostData = {
-    /**
-     * Body
-     */
-    body?: {
-        [key: string]: unknown;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/issues/action-plan';
-};
-
-export type IssuesActionPlanApiIssuesActionPlanPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type IssuesActionPlanApiIssuesActionPlanPostError = IssuesActionPlanApiIssuesActionPlanPostErrors[keyof IssuesActionPlanApiIssuesActionPlanPostErrors];
-
-export type IssuesActionPlanApiIssuesActionPlanPostResponses = {
-    /**
-     * Response Issues Action Plan Api Issues Action Plan Post
-     *
-     * Successful Response
-     */
-    200: unknown;
-};
-
-export type AiFixSuggestionApiAiFixSuggestionPostData = {
-    /**
-     * Body
-     */
-    body?: {
-        [key: string]: unknown;
-    };
-    path?: never;
-    query?: never;
-    url: '/api/ai/fix-suggestion';
-};
-
-export type AiFixSuggestionApiAiFixSuggestionPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type AiFixSuggestionApiAiFixSuggestionPostError = AiFixSuggestionApiAiFixSuggestionPostErrors[keyof AiFixSuggestionApiAiFixSuggestionPostErrors];
-
-export type AiFixSuggestionApiAiFixSuggestionPostResponses = {
-    /**
-     * Response Ai Fix Suggestion Api Ai Fix Suggestion Post
-     *
-     * Successful Response
-     */
-    200: unknown;
-};
-
 export type KeywordsCompetitorImportApiKeywordsCompetitorImportPostData = {
     /**
      * Body
@@ -3368,7 +2500,7 @@ export type ContentWizardApiContentWizardPostResponses = {
 
 export type ContentWizardApiContentWizardPostResponse = ContentWizardApiContentWizardPostResponses[keyof ContentWizardApiContentWizardPostResponses];
 
-export type ListContentDraftsApiContentDraftsGetData = {
+export type ListContentDraftsRouteApiContentDraftsGetData = {
     body?: never;
     path?: never;
     query: {
@@ -3380,18 +2512,18 @@ export type ListContentDraftsApiContentDraftsGetData = {
     url: '/api/content-drafts';
 };
 
-export type ListContentDraftsApiContentDraftsGetErrors = {
+export type ListContentDraftsRouteApiContentDraftsGetErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type ListContentDraftsApiContentDraftsGetError = ListContentDraftsApiContentDraftsGetErrors[keyof ListContentDraftsApiContentDraftsGetErrors];
+export type ListContentDraftsRouteApiContentDraftsGetError = ListContentDraftsRouteApiContentDraftsGetErrors[keyof ListContentDraftsRouteApiContentDraftsGetErrors];
 
-export type ListContentDraftsApiContentDraftsGetResponses = {
+export type ListContentDraftsRouteApiContentDraftsGetResponses = {
     /**
-     * Response List Content Drafts Api Content Drafts Get
+     * Response List Content Drafts Route Api Content Drafts Get
      *
      * Successful Response
      */
@@ -3400,9 +2532,9 @@ export type ListContentDraftsApiContentDraftsGetResponses = {
     };
 };
 
-export type ListContentDraftsApiContentDraftsGetResponse = ListContentDraftsApiContentDraftsGetResponses[keyof ListContentDraftsApiContentDraftsGetResponses];
+export type ListContentDraftsRouteApiContentDraftsGetResponse = ListContentDraftsRouteApiContentDraftsGetResponses[keyof ListContentDraftsRouteApiContentDraftsGetResponses];
 
-export type CreateContentDraftApiContentDraftsPostData = {
+export type CreateContentDraftRouteApiContentDraftsPostData = {
     /**
      * Body
      */
@@ -3414,18 +2546,18 @@ export type CreateContentDraftApiContentDraftsPostData = {
     url: '/api/content-drafts';
 };
 
-export type CreateContentDraftApiContentDraftsPostErrors = {
+export type CreateContentDraftRouteApiContentDraftsPostErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type CreateContentDraftApiContentDraftsPostError = CreateContentDraftApiContentDraftsPostErrors[keyof CreateContentDraftApiContentDraftsPostErrors];
+export type CreateContentDraftRouteApiContentDraftsPostError = CreateContentDraftRouteApiContentDraftsPostErrors[keyof CreateContentDraftRouteApiContentDraftsPostErrors];
 
-export type CreateContentDraftApiContentDraftsPostResponses = {
+export type CreateContentDraftRouteApiContentDraftsPostResponses = {
     /**
-     * Response Create Content Draft Api Content Drafts Post
+     * Response Create Content Draft Route Api Content Drafts Post
      *
      * Successful Response
      */
@@ -3434,9 +2566,9 @@ export type CreateContentDraftApiContentDraftsPostResponses = {
     };
 };
 
-export type CreateContentDraftApiContentDraftsPostResponse = CreateContentDraftApiContentDraftsPostResponses[keyof CreateContentDraftApiContentDraftsPostResponses];
+export type CreateContentDraftRouteApiContentDraftsPostResponse = CreateContentDraftRouteApiContentDraftsPostResponses[keyof CreateContentDraftRouteApiContentDraftsPostResponses];
 
-export type DeleteContentDraftApiContentDraftsDraftIdDeleteData = {
+export type DeleteContentDraftRouteApiContentDraftsDraftIdDeleteData = {
     body?: never;
     path: {
         /**
@@ -3448,18 +2580,18 @@ export type DeleteContentDraftApiContentDraftsDraftIdDeleteData = {
     url: '/api/content-drafts/{draft_id}';
 };
 
-export type DeleteContentDraftApiContentDraftsDraftIdDeleteErrors = {
+export type DeleteContentDraftRouteApiContentDraftsDraftIdDeleteErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type DeleteContentDraftApiContentDraftsDraftIdDeleteError = DeleteContentDraftApiContentDraftsDraftIdDeleteErrors[keyof DeleteContentDraftApiContentDraftsDraftIdDeleteErrors];
+export type DeleteContentDraftRouteApiContentDraftsDraftIdDeleteError = DeleteContentDraftRouteApiContentDraftsDraftIdDeleteErrors[keyof DeleteContentDraftRouteApiContentDraftsDraftIdDeleteErrors];
 
-export type DeleteContentDraftApiContentDraftsDraftIdDeleteResponses = {
+export type DeleteContentDraftRouteApiContentDraftsDraftIdDeleteResponses = {
     /**
-     * Response Delete Content Draft Api Content Drafts  Draft Id  Delete
+     * Response Delete Content Draft Route Api Content Drafts  Draft Id  Delete
      *
      * Successful Response
      */
@@ -3468,9 +2600,9 @@ export type DeleteContentDraftApiContentDraftsDraftIdDeleteResponses = {
     };
 };
 
-export type DeleteContentDraftApiContentDraftsDraftIdDeleteResponse = DeleteContentDraftApiContentDraftsDraftIdDeleteResponses[keyof DeleteContentDraftApiContentDraftsDraftIdDeleteResponses];
+export type DeleteContentDraftRouteApiContentDraftsDraftIdDeleteResponse = DeleteContentDraftRouteApiContentDraftsDraftIdDeleteResponses[keyof DeleteContentDraftRouteApiContentDraftsDraftIdDeleteResponses];
 
-export type GetContentDraftApiContentDraftsDraftIdGetData = {
+export type GetContentDraftRouteApiContentDraftsDraftIdGetData = {
     body?: never;
     path: {
         /**
@@ -3482,18 +2614,18 @@ export type GetContentDraftApiContentDraftsDraftIdGetData = {
     url: '/api/content-drafts/{draft_id}';
 };
 
-export type GetContentDraftApiContentDraftsDraftIdGetErrors = {
+export type GetContentDraftRouteApiContentDraftsDraftIdGetErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type GetContentDraftApiContentDraftsDraftIdGetError = GetContentDraftApiContentDraftsDraftIdGetErrors[keyof GetContentDraftApiContentDraftsDraftIdGetErrors];
+export type GetContentDraftRouteApiContentDraftsDraftIdGetError = GetContentDraftRouteApiContentDraftsDraftIdGetErrors[keyof GetContentDraftRouteApiContentDraftsDraftIdGetErrors];
 
-export type GetContentDraftApiContentDraftsDraftIdGetResponses = {
+export type GetContentDraftRouteApiContentDraftsDraftIdGetResponses = {
     /**
-     * Response Get Content Draft Api Content Drafts  Draft Id  Get
+     * Response Get Content Draft Route Api Content Drafts  Draft Id  Get
      *
      * Successful Response
      */
@@ -3502,9 +2634,9 @@ export type GetContentDraftApiContentDraftsDraftIdGetResponses = {
     };
 };
 
-export type GetContentDraftApiContentDraftsDraftIdGetResponse = GetContentDraftApiContentDraftsDraftIdGetResponses[keyof GetContentDraftApiContentDraftsDraftIdGetResponses];
+export type GetContentDraftRouteApiContentDraftsDraftIdGetResponse = GetContentDraftRouteApiContentDraftsDraftIdGetResponses[keyof GetContentDraftRouteApiContentDraftsDraftIdGetResponses];
 
-export type UpdateContentDraftApiContentDraftsDraftIdPatchData = {
+export type UpdateContentDraftRouteApiContentDraftsDraftIdPatchData = {
     /**
      * Body
      */
@@ -3521,18 +2653,18 @@ export type UpdateContentDraftApiContentDraftsDraftIdPatchData = {
     url: '/api/content-drafts/{draft_id}';
 };
 
-export type UpdateContentDraftApiContentDraftsDraftIdPatchErrors = {
+export type UpdateContentDraftRouteApiContentDraftsDraftIdPatchErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type UpdateContentDraftApiContentDraftsDraftIdPatchError = UpdateContentDraftApiContentDraftsDraftIdPatchErrors[keyof UpdateContentDraftApiContentDraftsDraftIdPatchErrors];
+export type UpdateContentDraftRouteApiContentDraftsDraftIdPatchError = UpdateContentDraftRouteApiContentDraftsDraftIdPatchErrors[keyof UpdateContentDraftRouteApiContentDraftsDraftIdPatchErrors];
 
-export type UpdateContentDraftApiContentDraftsDraftIdPatchResponses = {
+export type UpdateContentDraftRouteApiContentDraftsDraftIdPatchResponses = {
     /**
-     * Response Update Content Draft Api Content Drafts  Draft Id  Patch
+     * Response Update Content Draft Route Api Content Drafts  Draft Id  Patch
      *
      * Successful Response
      */
@@ -3541,9 +2673,9 @@ export type UpdateContentDraftApiContentDraftsDraftIdPatchResponses = {
     };
 };
 
-export type UpdateContentDraftApiContentDraftsDraftIdPatchResponse = UpdateContentDraftApiContentDraftsDraftIdPatchResponses[keyof UpdateContentDraftApiContentDraftsDraftIdPatchResponses];
+export type UpdateContentDraftRouteApiContentDraftsDraftIdPatchResponse = UpdateContentDraftRouteApiContentDraftsDraftIdPatchResponses[keyof UpdateContentDraftRouteApiContentDraftsDraftIdPatchResponses];
 
-export type DeletePageMarkdownApiPageMarkdownDeleteData = {
+export type DeletePageMarkdownRouteApiPageMarkdownDeleteData = {
     /**
      * Body
      */
@@ -3555,18 +2687,18 @@ export type DeletePageMarkdownApiPageMarkdownDeleteData = {
     url: '/api/page-markdown';
 };
 
-export type DeletePageMarkdownApiPageMarkdownDeleteErrors = {
+export type DeletePageMarkdownRouteApiPageMarkdownDeleteErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type DeletePageMarkdownApiPageMarkdownDeleteError = DeletePageMarkdownApiPageMarkdownDeleteErrors[keyof DeletePageMarkdownApiPageMarkdownDeleteErrors];
+export type DeletePageMarkdownRouteApiPageMarkdownDeleteError = DeletePageMarkdownRouteApiPageMarkdownDeleteErrors[keyof DeletePageMarkdownRouteApiPageMarkdownDeleteErrors];
 
-export type DeletePageMarkdownApiPageMarkdownDeleteResponses = {
+export type DeletePageMarkdownRouteApiPageMarkdownDeleteResponses = {
     /**
-     * Response Delete Page Markdown Api Page Markdown Delete
+     * Response Delete Page Markdown Route Api Page Markdown Delete
      *
      * Successful Response
      */
@@ -3575,9 +2707,9 @@ export type DeletePageMarkdownApiPageMarkdownDeleteResponses = {
     };
 };
 
-export type DeletePageMarkdownApiPageMarkdownDeleteResponse = DeletePageMarkdownApiPageMarkdownDeleteResponses[keyof DeletePageMarkdownApiPageMarkdownDeleteResponses];
+export type DeletePageMarkdownRouteApiPageMarkdownDeleteResponse = DeletePageMarkdownRouteApiPageMarkdownDeleteResponses[keyof DeletePageMarkdownRouteApiPageMarkdownDeleteResponses];
 
-export type ListPageMarkdownApiPageMarkdownGetData = {
+export type ListPageMarkdownRouteApiPageMarkdownGetData = {
     body?: never;
     path?: never;
     query: {
@@ -3601,18 +2733,18 @@ export type ListPageMarkdownApiPageMarkdownGetData = {
     url: '/api/page-markdown';
 };
 
-export type ListPageMarkdownApiPageMarkdownGetErrors = {
+export type ListPageMarkdownRouteApiPageMarkdownGetErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type ListPageMarkdownApiPageMarkdownGetError = ListPageMarkdownApiPageMarkdownGetErrors[keyof ListPageMarkdownApiPageMarkdownGetErrors];
+export type ListPageMarkdownRouteApiPageMarkdownGetError = ListPageMarkdownRouteApiPageMarkdownGetErrors[keyof ListPageMarkdownRouteApiPageMarkdownGetErrors];
 
-export type ListPageMarkdownApiPageMarkdownGetResponses = {
+export type ListPageMarkdownRouteApiPageMarkdownGetResponses = {
     /**
-     * Response List Page Markdown Api Page Markdown Get
+     * Response List Page Markdown Route Api Page Markdown Get
      *
      * Successful Response
      */
@@ -3621,9 +2753,9 @@ export type ListPageMarkdownApiPageMarkdownGetResponses = {
     };
 };
 
-export type ListPageMarkdownApiPageMarkdownGetResponse = ListPageMarkdownApiPageMarkdownGetResponses[keyof ListPageMarkdownApiPageMarkdownGetResponses];
+export type ListPageMarkdownRouteApiPageMarkdownGetResponse = ListPageMarkdownRouteApiPageMarkdownGetResponses[keyof ListPageMarkdownRouteApiPageMarkdownGetResponses];
 
-export type PageMarkdownContentApiPageMarkdownContentGetData = {
+export type PageMarkdownContentRouteApiPageMarkdownContentGetData = {
     body?: never;
     path?: never;
     query: {
@@ -3639,18 +2771,18 @@ export type PageMarkdownContentApiPageMarkdownContentGetData = {
     url: '/api/page-markdown/content';
 };
 
-export type PageMarkdownContentApiPageMarkdownContentGetErrors = {
+export type PageMarkdownContentRouteApiPageMarkdownContentGetErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type PageMarkdownContentApiPageMarkdownContentGetError = PageMarkdownContentApiPageMarkdownContentGetErrors[keyof PageMarkdownContentApiPageMarkdownContentGetErrors];
+export type PageMarkdownContentRouteApiPageMarkdownContentGetError = PageMarkdownContentRouteApiPageMarkdownContentGetErrors[keyof PageMarkdownContentRouteApiPageMarkdownContentGetErrors];
 
-export type PageMarkdownContentApiPageMarkdownContentGetResponses = {
+export type PageMarkdownContentRouteApiPageMarkdownContentGetResponses = {
     /**
-     * Response Page Markdown Content Api Page Markdown Content Get
+     * Response Page Markdown Content Route Api Page Markdown Content Get
      *
      * Successful Response
      */
@@ -3659,7 +2791,7 @@ export type PageMarkdownContentApiPageMarkdownContentGetResponses = {
     };
 };
 
-export type PageMarkdownContentApiPageMarkdownContentGetResponse = PageMarkdownContentApiPageMarkdownContentGetResponses[keyof PageMarkdownContentApiPageMarkdownContentGetResponses];
+export type PageMarkdownContentRouteApiPageMarkdownContentGetResponse = PageMarkdownContentRouteApiPageMarkdownContentGetResponses[keyof PageMarkdownContentRouteApiPageMarkdownContentGetResponses];
 
 export type PageMarkdownExtractApiPageMarkdownExtractPostData = {
     /**
@@ -3695,7 +2827,7 @@ export type PageMarkdownExtractApiPageMarkdownExtractPostResponses = {
 
 export type PageMarkdownExtractApiPageMarkdownExtractPostResponse = PageMarkdownExtractApiPageMarkdownExtractPostResponses[keyof PageMarkdownExtractApiPageMarkdownExtractPostResponses];
 
-export type PageMarkdownRunsApiPageMarkdownRunsGetData = {
+export type PageMarkdownRunsRouteApiPageMarkdownRunsGetData = {
     body?: never;
     path?: never;
     query?: {
@@ -3707,18 +2839,18 @@ export type PageMarkdownRunsApiPageMarkdownRunsGetData = {
     url: '/api/page-markdown/runs';
 };
 
-export type PageMarkdownRunsApiPageMarkdownRunsGetErrors = {
+export type PageMarkdownRunsRouteApiPageMarkdownRunsGetErrors = {
     /**
      * Validation Error
      */
     422: HttpValidationError;
 };
 
-export type PageMarkdownRunsApiPageMarkdownRunsGetError = PageMarkdownRunsApiPageMarkdownRunsGetErrors[keyof PageMarkdownRunsApiPageMarkdownRunsGetErrors];
+export type PageMarkdownRunsRouteApiPageMarkdownRunsGetError = PageMarkdownRunsRouteApiPageMarkdownRunsGetErrors[keyof PageMarkdownRunsRouteApiPageMarkdownRunsGetErrors];
 
-export type PageMarkdownRunsApiPageMarkdownRunsGetResponses = {
+export type PageMarkdownRunsRouteApiPageMarkdownRunsGetResponses = {
     /**
-     * Response Page Markdown Runs Api Page Markdown Runs Get
+     * Response Page Markdown Runs Route Api Page Markdown Runs Get
      *
      * Successful Response
      */
@@ -3727,76 +2859,7 @@ export type PageMarkdownRunsApiPageMarkdownRunsGetResponses = {
     };
 };
 
-export type PageMarkdownRunsApiPageMarkdownRunsGetResponse = PageMarkdownRunsApiPageMarkdownRunsGetResponses[keyof PageMarkdownRunsApiPageMarkdownRunsGetResponses];
-
-export type OllamaStatusApiOllamaStatusGetData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/ollama/status';
-};
-
-export type OllamaStatusApiOllamaStatusGetResponses = {
-    /**
-     * Response Ollama Status Api Ollama Status Get
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type OllamaStatusApiOllamaStatusGetResponse = OllamaStatusApiOllamaStatusGetResponses[keyof OllamaStatusApiOllamaStatusGetResponses];
-
-export type McpToolsApiMcpToolsGetData = {
-    body?: never;
-    path?: never;
-    query?: never;
-    url: '/api/mcp-tools';
-};
-
-export type McpToolsApiMcpToolsGetResponses = {
-    /**
-     * Response Mcp Tools Api Mcp Tools Get
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type McpToolsApiMcpToolsGetResponse = McpToolsApiMcpToolsGetResponses[keyof McpToolsApiMcpToolsGetResponses];
-
-export type DeletePortfolioItemApiPortfolioDeleteDeleteData = {
-    body: DeletePortfolioBody;
-    path?: never;
-    query?: never;
-    url: '/api/portfolio/delete';
-};
-
-export type DeletePortfolioItemApiPortfolioDeleteDeleteErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type DeletePortfolioItemApiPortfolioDeleteDeleteError = DeletePortfolioItemApiPortfolioDeleteDeleteErrors[keyof DeletePortfolioItemApiPortfolioDeleteDeleteErrors];
-
-export type DeletePortfolioItemApiPortfolioDeleteDeleteResponses = {
-    /**
-     * Response Delete Portfolio Item Api Portfolio Delete Delete
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type DeletePortfolioItemApiPortfolioDeleteDeleteResponse = DeletePortfolioItemApiPortfolioDeleteDeleteResponses[keyof DeletePortfolioItemApiPortfolioDeleteDeleteResponses];
+export type PageMarkdownRunsRouteApiPageMarkdownRunsGetResponse = PageMarkdownRunsRouteApiPageMarkdownRunsGetResponses[keyof PageMarkdownRunsRouteApiPageMarkdownRunsGetResponses];
 
 export type AlertsCheckApiAlertsCheckPostData = {
     body?: never;
@@ -3904,35 +2967,6 @@ export type CompareExportApiCompareExportPostResponses = {
     200: unknown;
 };
 
-export type PageCoachApiLinksPageCoachPostData = {
-    body: PageCoachBody;
-    path?: never;
-    query?: never;
-    url: '/api/links/page-coach';
-};
-
-export type PageCoachApiLinksPageCoachPostErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type PageCoachApiLinksPageCoachPostError = PageCoachApiLinksPageCoachPostErrors[keyof PageCoachApiLinksPageCoachPostErrors];
-
-export type PageCoachApiLinksPageCoachPostResponses = {
-    /**
-     * Response Page Coach Api Links Page Coach Post
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type PageCoachApiLinksPageCoachPostResponse = PageCoachApiLinksPageCoachPostResponses[keyof PageCoachApiLinksPageCoachPostResponses];
-
 export type RunAuditToolApiReportAuditToolPostData = {
     body: AuditToolBody;
     path?: never;
@@ -3961,137 +2995,3 @@ export type RunAuditToolApiReportAuditToolPostResponses = {
 };
 
 export type RunAuditToolApiReportAuditToolPostResponse = RunAuditToolApiReportAuditToolPostResponses[keyof RunAuditToolApiReportAuditToolPostResponses];
-
-export type ExportReportApiReportExportGetData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Format
-         */
-        format?: string;
-        /**
-         * Reportid
-         */
-        reportId?: number | null;
-    };
-    url: '/api/report/export';
-};
-
-export type ExportReportApiReportExportGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ExportReportApiReportExportGetError = ExportReportApiReportExportGetErrors[keyof ExportReportApiReportExportGetErrors];
-
-export type ExportReportApiReportExportGetResponses = {
-    /**
-     * Successful Response
-     */
-    200: unknown;
-};
-
-export type ExportSitemapApiReportExportSitemapGetData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Reportid
-         */
-        reportId?: number | null;
-    };
-    url: '/api/report/export-sitemap';
-};
-
-export type ExportSitemapApiReportExportSitemapGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ExportSitemapApiReportExportSitemapGetError = ExportSitemapApiReportExportSitemapGetErrors[keyof ExportSitemapApiReportExportSitemapGetErrors];
-
-export type ExportSitemapApiReportExportSitemapGetResponses = {
-    /**
-     * Successful Response
-     */
-    200: unknown;
-};
-
-export type ExportWorkbookApiReportExportWorkbookGetData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Reportid
-         */
-        reportId?: number | null;
-    };
-    url: '/api/report/export-workbook';
-};
-
-export type ExportWorkbookApiReportExportWorkbookGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ExportWorkbookApiReportExportWorkbookGetError = ExportWorkbookApiReportExportWorkbookGetErrors[keyof ExportWorkbookApiReportExportWorkbookGetErrors];
-
-export type ExportWorkbookApiReportExportWorkbookGetResponses = {
-    /**
-     * Successful Response
-     */
-    200: unknown;
-};
-
-export type ReportPortfolioApiReportPortfolioGetData = {
-    body?: never;
-    path?: never;
-    query?: {
-        /**
-         * Widget
-         */
-        widget?: string;
-        /**
-         * Ids
-         */
-        ids?: string | null;
-        /**
-         * Reportid
-         */
-        reportId?: number | null;
-        /**
-         * Crawlrunid
-         */
-        crawlRunId?: number | null;
-    };
-    url: '/api/report/portfolio';
-};
-
-export type ReportPortfolioApiReportPortfolioGetErrors = {
-    /**
-     * Validation Error
-     */
-    422: HttpValidationError;
-};
-
-export type ReportPortfolioApiReportPortfolioGetError = ReportPortfolioApiReportPortfolioGetErrors[keyof ReportPortfolioApiReportPortfolioGetErrors];
-
-export type ReportPortfolioApiReportPortfolioGetResponses = {
-    /**
-     * Response Report Portfolio Api Report Portfolio Get
-     *
-     * Successful Response
-     */
-    200: {
-        [key: string]: unknown;
-    };
-};
-
-export type ReportPortfolioApiReportPortfolioGetResponse = ReportPortfolioApiReportPortfolioGetResponses[keyof ReportPortfolioApiReportPortfolioGetResponses];

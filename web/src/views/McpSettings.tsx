@@ -29,7 +29,7 @@ const MCP_DOMAIN_OPTIONS = [
   { value: 'crawl', label: 'crawl — technical crawl tools' },
   { value: 'google', label: 'google — GSC / GA4 tools' },
   { value: 'links', label: 'links — link architecture' },
-  { value: 'full', label: 'full — all 340 tools' },
+  { value: 'full', label: 'full — all 369 tools' },
 ];
 
 export default function McpSettingsPage() {

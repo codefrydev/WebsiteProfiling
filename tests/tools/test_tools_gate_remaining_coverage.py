@@ -446,34 +446,8 @@ def test_score_robots_ai_access_handles_request_error() -> None:
 def test_check_ai_citations_live_paths(conn: MagicMock, ctx: Ctx) -> None:
     assert int_mod.check_ai_citations_live(conn, ctx, {})["error"] == "opt_in required"
 
-    with patch.object(Ctx, "resolve_property_domain", return_value=""):
-        assert int_mod.check_ai_citations_live(conn, ctx, {"opt_in": True})["error"] == "brand or property domain is required"
-
-    fake_result = MagicMock()
-    fake_result.to_dict.return_value = {"query": "q", "brand_mentioned": True, "domain_cited": False}
-    with patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), patch(
-        "website_profiling.integrations.ai_citations.resolve_api_key",
-        return_value="sk-test",
-    ), patch(
-        "website_profiling.integrations.ai_citations.check_citations",
-        return_value=fake_result,
-    ):
-        live = int_mod.check_ai_citations_live(
-            conn, ctx, {"opt_in": True, "brand": "Ex", "query": "What is Ex?", "multi_query": "Alt query"},
-        )
-    assert live["provenance"] == "Live"
-    assert live["queries_run"] == 2
-    assert live["brand_mentioned"] is True
-
-    with patch.object(Ctx, "resolve_property_domain", return_value="ex.com"), patch(
-        "website_profiling.integrations.ai_citations.resolve_api_key",
-        return_value="sk-test",
-    ), patch(
-        "website_profiling.integrations.ai_citations.check_citations",
-        side_effect=RuntimeError("api down"),
-    ):
-        err = int_mod.check_ai_citations_live(conn, ctx, {"opt_in": True, "brand": "Ex"})
-    assert err["results"][0]["error"] == "api down"
+    routed = int_mod.check_ai_citations_live(conn, ctx, {"opt_in": True, "brand": "Ex"})
+    assert "AiService" in routed["error"]
 
 
 # ---------------------------------------------------------------------------
@@ -501,8 +475,8 @@ def test_llm_generator_tools(conn: MagicMock, ctx: Ctx) -> None:
         "website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response",
         return_value={},
     ), patch(
-        "website_profiling.llm.base.get_llm_client",
-        return_value=MagicMock(complete_json=MagicMock(return_value={"schema_json": {"@type": "WebSite", "name": "Ex"}})),
+        "website_profiling.ai_service_client.complete_json",
+        return_value={"schema_json": {"@type": "WebSite", "name": "Ex"}},
     ), patch("website_profiling.llm_config.load_llm_config_from_db", return_value={}):
         schema = llm_mod.generate_schema(conn, ctx, {"schema_type": "FAQPage"})
         assert schema["schema_type"] == "FAQPage"
@@ -696,8 +670,8 @@ def test_remaining_geo_and_llm_gaps(conn: MagicMock, ctx: Ctx) -> None:
         "website_profiling.tools.audit_tools.integrations.llm_tools._llm_disabled_response",
         return_value={},
     ), patch(
-        "website_profiling.llm.base.get_llm_client",
-        return_value=MagicMock(complete_json=MagicMock(side_effect=RuntimeError("llm down"))),
+        "website_profiling.ai_service_client.complete_json",
+        side_effect=RuntimeError("llm down"),
     ), patch("website_profiling.llm_config.load_llm_config_from_db", return_value={}):
         faq_schema = llm_mod.generate_schema(conn, ctx, {"schema_type": "FAQPage"})
     assert len(faq_schema["schema_json"]["mainEntity"]) == 10

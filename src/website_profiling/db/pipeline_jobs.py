@@ -190,8 +190,7 @@ def reconcile_stale_jobs(conn: Connection) -> int:
         (str(_STALE_PENDING_MINUTES),),
     )
     count += len(cur2.fetchall())
-    if count:
-        conn.commit()
+    conn.commit()
     return count
 
 

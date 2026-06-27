@@ -146,3 +146,63 @@ export function applyChatUrlContext(
     params.delete('sessionId');
   }
 }
+
+/** Session id to open after refresh: URL → stored (same property) → most recent in list. */
+export function resolvePreferredChatSession(
+  propertyId: number,
+  urlCtx: ChatUrlContext,
+  stored: ChatUrlContext,
+  sessions: ReadonlyArray<{ id: number }>,
+): number | null {
+  if (urlCtx.sessionId) return urlCtx.sessionId;
+  if (stored.propertyId === propertyId && stored.sessionId) return stored.sessionId;
+  return sessions[0]?.id ?? null;
+}
+
+export function readSessionPropertyId(session: {
+  propertyId?: unknown;
+  property_id?: unknown;
+}): number | null {
+  const raw = session.propertyId ?? session.property_id;
+  const n = typeof raw === 'number' ? raw : Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+export function normalizeSessionId(value: unknown): number | null {
+  const n = typeof value === 'number' ? value : Number(value);
+  if (!Number.isFinite(n) || n <= 0 || !Number.isInteger(n)) return null;
+  return n;
+}
+
+export function sessionIdsEqual(a: unknown, b: unknown): boolean {
+  const na = normalizeSessionId(a);
+  const nb = normalizeSessionId(b);
+  return na != null && nb != null && na === nb;
+}
+
+export interface ChatSessionRow {
+  id: number;
+  propertyId: number;
+  title: string;
+}
+
+export function normalizeChatSessionRow(raw: {
+  id?: unknown;
+  propertyId?: unknown;
+  property_id?: unknown;
+  title?: unknown;
+}): ChatSessionRow | null {
+  const id = normalizeSessionId(raw.id);
+  const propertyId = readSessionPropertyId(raw);
+  if (id == null || propertyId == null) return null;
+  const title = String(raw.title ?? '').trim() || 'New chat';
+  return { id, propertyId, title };
+}
+
+export function upsertChatSession(
+  sessions: ReadonlyArray<ChatSessionRow>,
+  session: ChatSessionRow,
+): ChatSessionRow[] {
+  const rest = sessions.filter((s) => !sessionIdsEqual(s.id, session.id));
+  return [session, ...rest];
+}

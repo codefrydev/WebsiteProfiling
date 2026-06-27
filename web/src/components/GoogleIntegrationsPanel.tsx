@@ -14,7 +14,7 @@ import {
   Settings2,
 } from 'lucide-react';
 import type { GooglePropertiesResponse, GoogleStatusResponse, IntegrationToast } from '@/types/api';
-import { apiUrl, apiFetch } from '@/lib/publicBase';
+import { apiUrl, apiFetch, readApiErrorMessage } from '@/lib/publicBase';
 import { strings, format } from '@/lib/strings';
 import { dispatchPipelineJobStarted, pollPipelineJob } from '@/lib/pipelineJobEvents';
 import { useOptionalReport } from '@/context/useReport';
@@ -391,14 +391,26 @@ export default function GoogleIntegrationsPanel({
   const ensurePropertyIdForOAuth = useCallback(async (): Promise<number | null> => {
     if (effectivePropertyId != null) return effectivePropertyId;
     const url = startUrl.trim();
-    if (!url) return null;
+    if (!url || !url.includes('.')) return null;
     try {
-      const res = await apiFetch(apiUrl(`/properties/resolve?startUrl=${encodeURIComponent(url)}`));
-      if (!res.ok) return null;
-      const data = (await res.json()) as { id?: number };
-      if (data.id == null || !Number.isFinite(data.id)) return null;
-      setSelectedPropertyId(data.id);
-      return data.id;
+      const resolveRes = await apiFetch(apiUrl(`/properties/resolve?startUrl=${encodeURIComponent(url)}`));
+      if (resolveRes.ok) {
+        const resolved = (await resolveRes.json()) as { id?: number | null };
+        if (resolved.id != null && Number.isFinite(resolved.id)) {
+          setSelectedPropertyId(resolved.id);
+          return resolved.id;
+        }
+      }
+      const ensureRes = await apiFetch(apiUrl('/properties/ensure'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ startUrl: url }),
+      });
+      if (!ensureRes.ok) return null;
+      const ensured = (await ensureRes.json()) as { id?: number };
+      if (ensured.id == null || !Number.isFinite(ensured.id)) return null;
+      setSelectedPropertyId(ensured.id);
+      return ensured.id;
     } catch {
       return null;
     }
@@ -492,10 +504,10 @@ export default function GoogleIntegrationsPanel({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fileContent, fileName: file.name }),
         });
-        const data = (await res.json()) as { ok?: boolean; error?: string };
+        const data = (await res.json()) as Record<string, unknown> & { ok?: boolean };
         if (!res.ok || !data.ok) {
           setLinksUploadMessage(
-            format(s.gscLinksUploadFailed, { message: data.error || res.statusText }),
+            format(s.gscLinksUploadFailed, { message: readApiErrorMessage(data, res) }),
           );
           return;
         }
@@ -572,9 +584,11 @@ export default function GoogleIntegrationsPanel({
             dateRangeDays: Number(dateRangeDays) || 28,
           }),
         });
-        const data = await res.json();
+        const data = (await res.json()) as Record<string, unknown> & {
+          status?: GoogleStatusResponse;
+        };
         if (!res.ok) {
-          const msg = data.error || s.googlePropertiesSaveFailed;
+          const msg = readApiErrorMessage(data, res, s.googlePropertiesSaveFailed);
           setPropertiesSaveState({ phase: 'error', message: msg });
           setToast({ type: 'error', message: msg });
           return false;
@@ -645,11 +659,11 @@ export default function GoogleIntegrationsPanel({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refreshToken: refreshToken.trim() }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as Record<string, unknown> & { status?: GoogleStatusResponse };
       if (!res.ok) {
-        setToast({ type: 'error', message: data.error || 'Save failed' });
+        setToast({ type: 'error', message: readApiErrorMessage(data, res, 'Save failed') });
       } else {
-        setStatus(data.status);
+        if (data.status) setStatus(data.status);
         setRefreshToken('');
         setToast({ type: 'success', message: 'Connection token saved.' });
       }
@@ -713,13 +727,20 @@ export default function GoogleIntegrationsPanel({
           state: startUrl.trim() ? { start_url: startUrl.trim() } : undefined,
         }),
       });
-      const data = await res.json();
+      const data = (await res.json()) as Record<string, unknown>;
       if (!res.ok) {
-        setFetchLog(`Error: ${data.error}`);
+        const errMsg = readApiErrorMessage(data, res, 'Fetch failed');
+        setFetchLog(`Error: ${errMsg}`);
         setFetchJobStatus('error');
-        setToast({ type: 'error', message: data.error || 'Fetch failed' });
+        setToast({ type: 'error', message: errMsg });
       } else {
-        const jobId = data.jobId;
+        const jobId = data.jobId != null ? String(data.jobId) : '';
+        if (!jobId) {
+          setFetchLog('Error: No job id returned');
+          setFetchJobStatus('error');
+          setToast({ type: 'error', message: 'No job id returned' });
+          return;
+        }
         setFetchLog(`Job ${jobId}\nStatus: running\n\nWaiting for output…`);
         setToast({
           type: 'success',

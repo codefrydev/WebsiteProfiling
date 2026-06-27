@@ -188,6 +188,17 @@ function resolvePreviewState(
   return configState;
 }
 
+/** State sent to the worker: crawl preset + pipeline preset patches applied. */
+export function resolvePipelineRunState(
+  presetId: PipelinePresetId,
+  configState: PipelineConfigState,
+  crawlPresetId: CrawlPresetId | '',
+): PipelineConfigState {
+  const mergedConfig = resolvePreviewState(configState, crawlPresetId);
+  const { configState: state } = applyPreset(presetId, mergedConfig);
+  return state;
+}
+
 export function buildPipelineRunPreview({
   presetId,
   configState,

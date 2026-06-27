@@ -4,13 +4,28 @@ from unittest.mock import patch
 import pytest
 
 
-def test_resolve_config_uses_explicit_file(tmp_path) -> None:
+def test_resolve_config_requires_database(monkeypatch) -> None:
+    from website_profiling.commands import config_resolve
+
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    args = argparse.Namespace()
+    with pytest.raises(SystemExit):
+        config_resolve.resolve_config(args)
+
+
+def test_resolve_config_loads_from_db(monkeypatch, tmp_path) -> None:
     from website_profiling.commands.config_resolve import resolve_config
 
-    p = tmp_path / "c.txt"
-    p.write_text("start_url = https://x.com\n", encoding="utf-8")
-    args = argparse.Namespace(config=str(p))
-    cfg, cwd = resolve_config(args)
+    monkeypatch.setenv("DATABASE_URL", "postgres://u:p@localhost:5432/test")
+    monkeypatch.setattr(
+        "website_profiling.commands.config_resolve.load_config_from_db",
+        lambda: {"start_url": "https://x.com"},
+    )
+    monkeypatch.setattr(
+        "website_profiling.db.storage.get_data_dir",
+        lambda: str(tmp_path),
+    )
+    cfg, cwd = resolve_config(argparse.Namespace())
     assert cfg["start_url"] == "https://x.com"
     assert cwd == str(tmp_path)
 

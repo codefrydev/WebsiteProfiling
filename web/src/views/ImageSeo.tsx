@@ -33,12 +33,18 @@ function summaryFromApi(raw: Record<string, unknown>): ImageAuditSummaryData {
     pagesWithoutLazy: Number(raw.pages_without_lazy_images) || 0,
     pagesMissingDimensions: Number(raw.pages_missing_image_dimensions) || 0,
     lighthouseImageDiagnostics: Number(raw.lighthouse_image_diagnostics) || 0,
-    imagesTotal: Number(raw.images_total) || 0,
-    ogCoveragePct: raw.og_coverage_pct != null ? Number(raw.og_coverage_pct) : null,
-    ogMissingCount: raw.og_missing_count != null ? Number(raw.og_missing_count) : null,
+    imagesTotal: Number(raw.images_total_crawled) || 0,
+    ogCoveragePct: raw.og_image_coverage_pct != null ? Number(raw.og_image_coverage_pct) : null,
+    ogMissingCount: raw.og_image_missing_count != null ? Number(raw.og_image_missing_count) : null,
     inventoryAvailable: Boolean(raw.image_inventory_available),
-    inventoryProbed: inv?.probed_urls != null ? Number(inv.probed_urls) : null,
+    inventoryProbed: inv?.probed != null ? Number(inv.probed) : null,
   };
+}
+
+function listRowsFromApi(data: Record<string, unknown>): Array<Record<string, unknown>> {
+  if (Array.isArray(data.pages)) return data.pages as Array<Record<string, unknown>>;
+  if (Array.isArray(data.items)) return data.items as Array<Record<string, unknown>>;
+  return [];
 }
 
 export default function ImageSeo({ searchQuery = '' }: ViewProps) {
@@ -88,7 +94,10 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
         reportId,
         args: { limit: 500 },
       });
-      const pages = Array.isArray(data.pages) ? (data.pages as Array<Record<string, unknown>>) : [];
+      if (typeof data.error === 'string' && data.error.trim()) {
+        throw new Error(data.error);
+      }
+      const pages = listRowsFromApi(data);
       setListRows(pages);
       setListTotal(Number(data.total) || pages.length);
     } catch (err) {

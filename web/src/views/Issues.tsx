@@ -28,6 +28,7 @@ import {
   normalizePriority,
   type PriorityKey,
 } from '@/lib/issuePriority';
+import { issueDisplayMessage } from '@/lib/issueDisplayMessage';
 
 registerChartJsBase();
 
@@ -66,7 +67,9 @@ function IssueCard({ item, vi, emDash }: IssueCardProps) {
           <Badge value={p} />
           <span className="text-xs text-muted-foreground font-medium">{categoryDisplayName(item.category)}</span>
         </div>
-        <h3 className="text-foreground font-medium text-sm leading-snug">{iss.message || emDash}</h3>
+        <h3 className="text-foreground font-medium text-sm leading-snug">
+          {issueDisplayMessage(iss.message) || emDash}
+        </h3>
         {iss.url && (
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <a

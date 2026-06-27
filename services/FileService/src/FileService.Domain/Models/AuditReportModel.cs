@@ -1,3 +1,5 @@
+using WebsiteProfiling.Contracts.Report;
+
 namespace FileService.Domain.Models;
 
 public enum PdfProfile
@@ -22,7 +24,7 @@ public sealed class AuditReportModel
     public PdfBrandingModel Branding { get; init; } = new();
     public ExecutiveSummaryModel ExecutiveSummary { get; init; } = new();
     public IReadOnlyList<CategoryScoreModel> CategoryScores { get; init; } = [];
-    public IReadOnlyList<IssueModel> Issues { get; init; } = [];
+    public IReadOnlyList<IssueRecord> Issues { get; init; } = [];
     public IReadOnlyDictionary<string, int> IssueCounts { get; init; } = new Dictionary<string, int>();
     public AuditSnapshotModel? Snapshot { get; init; }
     public LighthouseChapterModel? Lighthouse { get; init; }
@@ -42,7 +44,7 @@ public sealed class ExecutiveSummaryModel
     public string Summary { get; init; } = "";
     public string SourceLabel { get; init; } = "";
     public IReadOnlyList<string> Priorities { get; init; } = [];
-    public IReadOnlyList<IssueModel> TopIssues { get; init; } = [];
+    public IReadOnlyList<IssueRecord> TopIssues { get; init; } = [];
 }
 
 public sealed class CategoryScoreModel
@@ -50,20 +52,6 @@ public sealed class CategoryScoreModel
     public string Name { get; init; } = "";
     public int? Score { get; init; }
     public int IssueCount { get; init; }
-}
-
-public sealed class IssueModel
-{
-    public string Category { get; init; } = "";
-    public string Priority { get; init; } = "";
-    public string Message { get; init; } = "";
-    public string Headline { get; init; } = "";
-    public string Url { get; init; } = "";
-    public string UrlPath { get; init; } = "";
-    public string Recommendation { get; init; } = "";
-    public int? GscClicks { get; init; }
-    public int? GscImpressions { get; init; }
-    public int? ImpactScore { get; init; }
 }
 
 public sealed class LighthouseSummaryModel

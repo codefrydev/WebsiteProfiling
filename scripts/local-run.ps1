@@ -269,13 +269,8 @@ function Invoke-Start {
         Write-Warn "dotnet not found — PDF export requires FileService (see services/FileService/README.md)"
     }
 
-    Write-Log "Starting pipeline worker"
-    Start-Process -FilePath $VENV_PYTHON `
-        -ArgumentList @("-m", "website_profiling.worker") `
-        -WorkingDirectory $ROOT `
-        -WindowStyle Minimized | Out-Null
-
-    Write-Log "Starting FastAPI on port 8001"
+    Write-Log "Pipeline jobs run in ReportService C# worker"
+    Write-Log "Starting Python bridge on port 8001"
     $env:FASTAPI_URL = "http://127.0.0.1:8001"
     $env:FASTAPI_ALLOWED_ORIGINS = "http://localhost:8090"
     Start-Process -FilePath $VENV_PYTHON `

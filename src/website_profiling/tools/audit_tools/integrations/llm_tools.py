@@ -9,8 +9,8 @@ from psycopg import Connection
 from ....db._common import _row_field
 from ....db.property_store import list_properties_public
 from ....integrations.google.suggest import batch_expand
-from ....llm.content_brief import generate_content_brief as build_content_brief
-from ....llm.page_coach import run_page_coach
+from ....ai_service_client import generate_content_brief as build_content_brief
+from ....ai_service_client import run_page_coach
 from .._slice import parse_limit
 from ..context import AuditToolContext
 
@@ -140,7 +140,7 @@ def _llm_disabled_response() -> dict[str, Any]:
 
 
 def generate_issue_fix(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
-    from ....llm.issue_fixes import generate_issue_fix_suggestion
+    from ....ai_service_client import generate_issue_fix_suggestion
     from ....llm_config import load_llm_config_from_db
 
     err = _llm_disabled_response()
@@ -188,17 +188,14 @@ def summarize_category_for_client(conn: Connection, ctx: AuditToolContext, args:
     }
     err = _llm_disabled_response()
     if not err:
-        from ....llm.base import get_llm_client, parse_json_response
-        from ....llm_config import load_llm_config_from_db
+        from ....ai_service_client import complete_json, parse_json_response
 
-        cfg = load_llm_config_from_db()
         try:
-            client = get_llm_client(cfg)
             user = (
                 "Write a 2-3 sentence client-friendly summary of this audit category. "
                 f"Return JSON with key summary. Data: {json.dumps(summary, default=str)[:3000]}"
             )
-            raw = client.complete_json("You are a technical SEO consultant writing for clients.", user)
+            raw = complete_json("You are a technical SEO consultant writing for clients.", user)
             if isinstance(raw, dict) and raw.get("summary"):
                 summary["narrative"] = raw["summary"]
             else:
@@ -268,20 +265,14 @@ def analyze_serp_snippet_for_url(conn: Connection, ctx: AuditToolContext, args: 
         base["note"] = err.get("error")
         base["provenance"] = "Crawl"
         return base
-    from ....llm.base import get_llm_client
-    from ....llm_config import load_llm_config_from_db
+    from ....ai_service_client import complete_json
 
-    cfg = load_llm_config_from_db()
-    client = get_llm_client(cfg)
-    if not client:
-        base["provenance"] = "Crawl"
-        return base
     prompt = (
         "Suggest improved title and meta description for better CTR. "
         f"Context: {json.dumps(base, default=str)[:2500]}"
     )
     try:
-        suggestions = client.complete_json(
+        suggestions = complete_json(
             "You are an SEO copywriter. Return JSON with title, meta_description, rationale.",
             prompt,
         )
@@ -314,12 +305,10 @@ def draft_llms_txt(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]
     ]
     err = _llm_disabled_response()
     if not err:
-        from ....llm.base import get_llm_client
-        from ....llm_config import load_llm_config_from_db
+        from ....ai_service_client import complete_json
 
         try:
-            client = get_llm_client(load_llm_config_from_db())
-            raw = client.complete_json(
+            raw = complete_json(
                 "You write concise llms.txt files per emerging conventions. Return JSON with key content.",
                 "Polish this llms.txt draft:\n" + "\n".join(draft_lines),
             )
@@ -429,12 +418,10 @@ def generate_schema(conn: Connection, ctx: AuditToolContext, args: dict[str, Any
 
     err = _llm_disabled_response()
     if not err:
-        from ....llm.base import get_llm_client
-        from ....llm_config import load_llm_config_from_db
+        from ....ai_service_client import complete_json
 
         try:
-            client = get_llm_client(load_llm_config_from_db())
-            raw = client.complete_json(
+            raw = complete_json(
                 "You generate valid JSON-LD schema.org markup. Return JSON with key schema_json.",
                 f"Improve this {schema_type_clean} JSON-LD for AI readability:\n{json.dumps(schema_obj, indent=2)[:1500]}",
             )

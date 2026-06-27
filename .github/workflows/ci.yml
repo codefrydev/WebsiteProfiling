@@ -69,6 +69,7 @@ jobs:
         run: |
           docker compose -f docker-compose.pull.yml up -d --wait
           curl -fsS http://127.0.0.1:8090/health
+          curl -fsS http://127.0.0.1:8094/health
           curl -fsS http://127.0.0.1:8090/api/jobs
           curl -fsS http://127.0.0.1:8090/api/report/meta
           curl -fsS http://127.0.0.1:3000/home
@@ -97,25 +98,15 @@ jobs:
       - name: Test
         run: npm test
 
-  files:
+  dotnet:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
-      - name: Test FileService
-        run: dotnet test services/FileService/FileService.slnx
-
-  bff:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-      - name: Test BFF
-        run: dotnet test services/Bff/Bff.slnx
+      - name: Test .NET services
+        run: dotnet test services/WebsiteProfiling.slnx
       - name: Generated client drift gate
         run: |
           dotnet tool install -g NSwag.ConsoleCore
@@ -123,13 +114,3 @@ jobs:
           (cd services/Bff && nswag run nswag.json)
           git diff --exit-code services/Bff/src/Bff.Application/Generated/FastApiClient.g.cs \
             || (echo "::error::FastApiClient.g.cs is stale — run services/Bff/generate-client.sh and commit." && exit 1)
-
-  data:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-      - name: Test Data service
-        run: dotnet test services/Data/Data.slnx

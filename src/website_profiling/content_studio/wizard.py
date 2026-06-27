@@ -13,7 +13,7 @@ import html
 import re
 from typing import Any
 
-from ..llm.base import get_llm_client, parse_json_response
+from ..ai_service_client import complete_json, parse_json_response
 from ..llm_config import load_llm_config_from_db, llm_is_enabled
 from ..text_sanitize import strip_surrogates
 
@@ -51,20 +51,17 @@ def _content_studio_ai_on(cfg: dict[str, str]) -> bool:
     return str(cfg.get("llm_enable_content_studio", "true")).lower() in ("true", "1", "yes")
 
 
-def _get_client() -> tuple[Any, dict[str, Any] | None]:
-    """Return (client, None) when AI is usable, else (None, error_dict)."""
+def _get_client() -> tuple[bool, dict[str, Any] | None]:
+    """Return (ai_ok, error_dict)."""
     cfg = load_llm_config_from_db()
     if not llm_is_enabled(cfg) or not _content_studio_ai_on(cfg):
-        return None, {"ok": False, "error": "AI is disabled. Enable it in Run audit → AI settings."}
-    try:
-        return get_llm_client(cfg), None
-    except ValueError as e:
-        return None, {"ok": False, "error": str(e)}
+        return False, {"ok": False, "error": "AI is disabled. Enable it in Run audit → AI settings."}
+    return True, None
 
 
-def _safe_complete(client: Any, system: str, user: str) -> dict[str, Any]:
+def _safe_complete(_client: Any, system: str, user: str) -> dict[str, Any]:
     try:
-        data = client.complete_json(system, user)
+        data = complete_json(system, user)
     except Exception:
         return {}
     if isinstance(data, dict):
@@ -161,7 +158,7 @@ def _fallback_outline(title: str) -> list[dict[str, str]]:
 
 
 def suggest_intents(keyword: str, locale: str = "en-US") -> dict[str, Any]:
-    client, err = _get_client()
+    ai_ok, err = _get_client()
     if err:
         return err
     kw = (keyword or "").strip()
@@ -172,13 +169,13 @@ def suggest_intents(keyword: str, locale: str = "en-US") -> dict[str, Any]:
         "search intents a reader might have. Return JSON: "
         '{"intents":[{"label":"short intent label","description":"one sentence"}]}'
     )
-    data = _safe_complete(client, _JSON_SYSTEM, user)
+    data = _safe_complete(ai_ok, _JSON_SYSTEM, user)
     options = _normalize_options(data.get("intents")) or _fallback_intents(kw)
     return {"ok": True, "options": options[:_MAX_OPTIONS]}
 
 
 def suggest_content_types(keyword: str, intent: str) -> dict[str, Any]:
-    client, err = _get_client()
+    ai_ok, err = _get_client()
     if err:
         return err
     user = (
@@ -186,13 +183,13 @@ def suggest_content_types(keyword: str, intent: str) -> dict[str, Any]:
         f'"{intent.strip()}". Recommend up to {_MAX_OPTIONS} content types that best serve this, '
         'best first. Return JSON: {"content_types":[{"label":"type","description":"why it fits"}]}'
     )
-    data = _safe_complete(client, _JSON_SYSTEM, user)
+    data = _safe_complete(ai_ok, _JSON_SYSTEM, user)
     options = _normalize_options(data.get("content_types")) or _options_from_pairs(_FALLBACK_CONTENT_TYPES)
     return {"ok": True, "options": options[:_MAX_OPTIONS]}
 
 
 def suggest_tones(keyword: str, intent: str, content_type: str) -> dict[str, Any]:
-    client, err = _get_client()
+    ai_ok, err = _get_client()
     if err:
         return err
     user = (
@@ -200,13 +197,13 @@ def suggest_tones(keyword: str, intent: str, content_type: str) -> dict[str, Any
         f"recommend up to {_MAX_OPTIONS} writing tones, best first. "
         'Return JSON: {"tones":[{"label":"tone","description":"when to use it"}]}'
     )
-    data = _safe_complete(client, _JSON_SYSTEM, user)
+    data = _safe_complete(ai_ok, _JSON_SYSTEM, user)
     options = _normalize_options(data.get("tones")) or _options_from_pairs(_FALLBACK_TONES)
     return {"ok": True, "options": options[:_MAX_OPTIONS]}
 
 
 def suggest_titles(keyword: str, intent: str, content_type: str, tone: str) -> dict[str, Any]:
-    client, err = _get_client()
+    ai_ok, err = _get_client()
     if err:
         return err
     kw = (keyword or "").strip()
@@ -216,7 +213,7 @@ def suggest_titles(keyword: str, intent: str, content_type: str, tone: str) -> d
         "Keep each under 60 characters where possible and include the keyword naturally. "
         'Return JSON: {"titles":["title one","title two"]}'
     )
-    data = _safe_complete(client, _JSON_SYSTEM, user)
+    data = _safe_complete(ai_ok, _JSON_SYSTEM, user)
     titles = _normalize_str_list(data.get("titles")) or _fallback_titles(kw)
     return {"ok": True, "titles": titles[:_MAX_TITLES]}
 
@@ -244,7 +241,7 @@ def _fallback_sources() -> list[dict[str, str]]:
 
 def research_panel(keyword: str, intent: str = "", title: str = "") -> dict[str, Any]:
     """People-Also-Ask style questions + suggested reference sources for a keyword."""
-    client, err = _get_client()
+    ai_ok, err = _get_client()
     if err:
         return err
     kw = (keyword or "").strip()
@@ -258,14 +255,14 @@ def research_panel(keyword: str, intent: str = "", title: str = "") -> dict[str,
         '{"label":"source name or type","description":"what to cite it for"}. '
         'Return JSON: {"questions":["..."],"sources":[{"label":"...","description":"..."}]}'
     )
-    data = _safe_complete(client, _JSON_SYSTEM, user)
+    data = _safe_complete(ai_ok, _JSON_SYSTEM, user)
     questions = _normalize_str_list(data.get("questions")) or _fallback_questions(kw)
     sources = _normalize_options(data.get("sources")) or _fallback_sources()
     return {"ok": True, "questions": questions[:8], "sources": sources[:6]}
 
 
 def suggest_outline(keyword: str, intent: str, content_type: str, tone: str, title: str) -> dict[str, Any]:
-    client, err = _get_client()
+    ai_ok, err = _get_client()
     if err:
         return err
     user = (
@@ -274,7 +271,7 @@ def suggest_outline(keyword: str, intent: str, content_type: str, tone: str, tit
         "Use h2 for main sections and h3 for sub-points. Do not include the title as a heading. "
         'Return JSON: {"outline":[{"level":"h2","text":"Section heading"},{"level":"h3","text":"Sub-point"}]}'
     )
-    data = _safe_complete(client, _JSON_SYSTEM, user)
+    data = _safe_complete(ai_ok, _JSON_SYSTEM, user)
     outline = _normalize_outline(data.get("outline"), title)
     return {"ok": True, "outline": outline}
 
@@ -302,7 +299,7 @@ def generate_draft(
     title: str,
     outline: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    client, err = _get_client()
+    ai_ok, err = _get_client()
     if err:
         return err
 
@@ -319,7 +316,7 @@ def generate_draft(
         '"sections":["prose for heading 1","prose for heading 2", ...]} '
         "with one sections entry per heading, in the same order."
     )
-    data = _safe_complete(client, _JSON_SYSTEM, user)
+    data = _safe_complete(ai_ok, _JSON_SYSTEM, user)
 
     title_tag = (_clean(data.get("title_tag")) or h1_text)[:70]
     meta = (_clean(data.get("meta_description")) or f"{h1_text}. Learn about {keyword.strip()}.")[:170]

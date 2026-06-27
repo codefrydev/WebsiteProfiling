@@ -41,7 +41,7 @@
 
 # Site Audit
 
-**Developer-friendly SEO audit platform** — open-source crawl and technical audit tooling built with **React, Python, PostgreSQL, and .NET**. The stack is split into focused services: a **Python FastAPI** backend (crawl, pipeline, chat, integrations), a **.NET BFF** as the browser-facing API gateway, a **.NET Data** read service (report payloads, portfolio, issue status), and a **.NET FileService** for PDF/Excel export.
+**Developer-friendly SEO audit platform** — open-source crawl and technical audit tooling built with **React, Python, PostgreSQL, and .NET**. The stack is split into focused services: **Python FastAPI** (crawl, pipeline jobs), **.NET ReportService** (report build + orchestration), **.NET IntegrationsService** (Google/Bing OAuth, GSC/GA4 fetch, keywords), **.NET AiService** (AI chat, LLM settings, secrets, MCP), **.NET Data** (report reads, portfolio, issue status), **.NET FileService** (PDF/Excel export), and a **.NET BFF** as the single browser-facing API gateway.
 
 ## Overview
 
@@ -71,7 +71,7 @@ Site Audit is a **developer-friendly SEO audit** tool: self-hosted, transparent,
 
 ## SEO feedback loop
 
-Site Audit is built for a **continuous improve-and-verify cycle**, not one-off dashboard checks. Crawl your site, generate reports, expose audit data to AI agents in **Cursor, Claude Code, or Copilot** via [340 MCP tools](docs/MCP.md), fix issues in your repository, then **review** the next run to compare health scores and issue deltas.
+Site Audit is built for a **continuous improve-and-verify cycle**, not one-off dashboard checks. Crawl your site, generate reports, expose audit data to AI agents in **Cursor, Claude Code, or Copilot** via [369 MCP tools](docs/MCP.md), fix issues in your repository, then **review** the next run to compare health scores and issue deltas.
 
 ```text
 Audit → Report → MCP → Fix → Review → (repeat)
@@ -87,7 +87,7 @@ Audit → Report → MCP → Fix → Review → (repeat)
 |------|-------------|---------------|
 | **Audit** | Crawl and score the site | Pipeline (`python -m src`), Lighthouse, on-page checks |
 | **Report** | Export and prioritize fixes | PDF, Excel workbook, CSV, and JSON exports; issue board; fix roadmap |
-| **MCP** | Pull audit context into your IDE | `python -m website_profiling.mcp` — read-only tools for Cursor / Claude Desktop |
+| **MCP** | Pull audit context into your IDE | AiService MCP (stdio or HTTP on `:8092`) — see [docs/MCP.md](docs/MCP.md) |
 | **Fix** | Ship changes in your codebase | Your PR workflow (MCP does not write to the site) |
 | **Review** | Prove improvement | Compare runs, category deltas, GSC metric changes |
 
@@ -134,19 +134,76 @@ Site Audit focuses on **honest, self-hosted technical SEO**. It is not a drop-in
   </tr>
 </table>
 
-Also included: **AI chat** over audit data (optional), **Content studio** (write &amp; optimize with live SEO scoring), **340 MCP tools** (local stdio or remote Streamable HTTP), image SEO, GEO/AEO readiness, keyword explorer (GSC + on-site), backlinks (GSC Links import), compare runs, portfolio management for agencies, and the **agent-driven feedback loop** above.
+Also included: **AI chat** over audit data (optional), **Content studio** (write &amp; optimize with live SEO scoring), **369 MCP tools** (AiService stdio or remote Streamable HTTP), image SEO, GEO/AEO readiness, keyword explorer (GSC + on-site), backlinks (GSC Links import), compare runs, portfolio management for agencies, and the **agent-driven feedback loop** above.
 
 <img src="docs/assets/social-preview.png" alt="Site Audit — developer-friendly SEO audit preview" width="100%">
 
 ## Architecture
 
-```text
-Browser  →  web (:3000)  →  bff (:8090)  →  fastapi (:8001)   crawl, pipeline, chat, integrations
-                              │              data (:8091)     report reads, portfolio, issue status, filters
-                              │              files (:8080)    PDF + Excel export
-                              worker          background pipeline jobs (same Python image)
-                              postgres        audit data store
+The SPA talks only to the **BFF** (`:8090`). The BFF reverse-proxies `/api/*` to the right upstream by path prefix (`AI_ROUTES`, `DATA_ROUTES`, `INTEGRATIONS_ROUTES`, `REPORT_ROUTES`; everything else → FastAPI). Background jobs and internal builds call services **directly** over HTTP — not through the BFF.
+
+```mermaid
+flowchart TB
+    Browser([Browser]) --> Web["web :3000<br/>React SPA"]
+    Web -->|"/api/*"| BFF["bff :8090<br/>Auth · CORS · reverse proxy"]
+
+    subgraph BffRoutes["BFF upstream routing"]
+        direction LR
+        BFF --> FastAPI["fastapi :8001<br/>Crawl · jobs · pipeline settings"]
+        BFF --> Report["report :8094<br/>Report build · orchestration"]
+        BFF --> Integrations["integrations :8093<br/>Google/Bing · GSC/GA4 · keywords"]
+        BFF --> Ai["ai :8092<br/>Chat · LLM · secrets · MCP"]
+        BFF --> Data["data :8091<br/>Report reads · portfolio · issues"]
+        BFF --> Files["files :8080<br/>PDF · Excel export"]
+    end
+
+    subgraph Pipeline["Background pipeline"]
+        Worker["worker<br/>Crawl + Lighthouse jobs"]
+        Worker -->|"REPORT_SERVICE_URL"| Report
+        Worker -->|"INTEGRATIONS_SERVICE_URL"| Integrations
+        Worker -->|"AI_SERVICE_URL"| Ai
+    end
+
+    subgraph Internal["Service-to-service HTTP (internal)"]
+        direction TB
+        Report -->|"Python bridge · strangler proxy"| FastAPI
+        Report -->|"GET /internal/integrations/report/enrichment"| Integrations
+        Integrations -->|"keyword / GSC bridge"| FastAPI
+        Ai -->|"audit-tool bridge"| FastAPI
+        Files -->|"REPORT_API_URL — payload · meta · branding"| FastAPI
+    end
+
+    Postgres[("postgres<br/>Audit data · typed settings")]
+
+    FastAPI --- Postgres
+    Worker --- Postgres
+    Report --- Postgres
+    Integrations --- Postgres
+    Ai --- Postgres
+    Data --- Postgres
+
+    Integrations --> Google[(Google / Bing APIs)]
+    Ai --> LLM[(LLM · Ollama)]
+    MCP([IDE / agent]) -.->|"MCP stdio or HTTP"| Ai
 ```
+
+| From | To | When |
+| ---- | -- | ---- |
+| **Browser** | BFF → FastAPI | Crawl jobs, pipeline config/settings, most `/api/*` |
+| **Browser** | BFF → Data | Report payload/meta, portfolio, issue status, saved filters (`DATA_ROUTES`) |
+| **Browser** | BFF → Integrations | Google/Bing OAuth, GSC/GA4, keywords (`INTEGRATIONS_ROUTES`) |
+| **Browser** | BFF → AiService | Chat (SSE), secrets, LLM settings, content AI, MCP catalog (`AI_ROUTES`) |
+| **Browser** | BFF → ReportService | Compare runs, dashboards (`REPORT_ROUTES`; strangler proxy to FastAPI) |
+| **Browser** | BFF → FileService | Report PDF/Excel export (`/api/report/export`) |
+| **Worker** | ReportService | Post-crawl report build and full-pipeline orchestration |
+| **Worker** | IntegrationsService | Google fetch, keyword enrichment |
+| **Worker** | AiService | ML enrichment, page coach, structured completions |
+| **ReportService** | FastAPI | Python report bridge; dashboard/compare strangler |
+| **ReportService** | IntegrationsService | Google/keyword/GSC snapshots for native report build |
+| **IntegrationsService** | FastAPI | Keyword enrich + GSC link import when Python bridge is enabled |
+| **AiService** | FastAPI | Audit tools not yet ported to C# |
+| **FileService** | FastAPI | Report JSON and branding — **no Postgres** |
+| **Data · Ai · Report · Integrations · FastAPI · worker** | Postgres | Direct reads/writes to typed settings and audit tables |
 
 ```
 WebsiteProfiling/
@@ -154,18 +211,17 @@ WebsiteProfiling/
 │   ├── api/                   # FastAPI app (uvicorn :8001)
 │   ├── worker/                # Background pipeline job runner
 │   ├── crawl/                 # Crawler, fetchers, JS rendering
-│   ├── reporting/             # Report builder, issue categories
+│   ├── reporting/             # Report builder (Python bridge; native build in ReportService)
 │   ├── analysis/              # On-page / local analysis
 │   ├── content_studio/        # Content writing + live SEO scoring
 │   ├── lighthouse/            # Lighthouse runner
 │   ├── integrations/          # Google Search Console, GA4, Bing, CrUX
-│   ├── llm/                   # AI enrich + chat agent
-│   ├── tools/                 # Exports, audit query tools, MCP helpers
-│   ├── mcp/                   # MCP server (stdio + remote HTTP, domain bundles)
+│   ├── ai_service_client.py     # Worker/CLI → AiService HTTP client (enrichment, page coach, …)
+│   ├── tools/                 # Exports, audit query tools, audit-tool bridge
 │   ├── db/                    # PostgreSQL storage layer
 │   ├── commands/              # CLI subcommands
 │   ├── cli.py                 # Pipeline entrypoint
-│   └── config.py              # Config load (DB + shadow file)
+│   └── config.py              # Config load from typed PostgreSQL tables
 ├── web/                       # Vite + React SPA (nginx in prod)
 │   ├── src/AppRoutes.tsx      # React Router routes
 │   ├── src/components/        # React UI components
@@ -173,6 +229,9 @@ WebsiteProfiling/
 │   ├── src/lib/               # Client helpers, BFF apiUrl/apiFetch
 │   └── public/                # Static assets (logo, favicon)
 ├── services/Bff/              # .NET BFF — auth + /api/* proxy (port 8090)
+├── services/ReportService/    # .NET report build + pipeline orchestration (port 8094)
+├── services/IntegrationsService/  # .NET Google/Bing integrations — OAuth, GSC/GA4, keywords (port 8093)
+├── services/AiService/        # .NET AI — chat, secrets, LLM config, MCP, enrichment (port 8092)
 ├── services/Data/             # .NET read service — report/portfolio/issue reads (port 8091)
 ├── services/FileService/      # .NET PDF + Excel workbook export (port 8080)
 ├── alembic/versions/          # PostgreSQL schema migrations
@@ -188,23 +247,27 @@ WebsiteProfiling/
 ├── local-prod                 # Production build + preview (no hot reload)
 ├── local-test                 # Full test suite (CI parity)
 ├── requirements.txt           # Python dependencies
-└── pipeline-config.example.txt
+└── config/typed_config_manifest.json  # Typed settings schema (replaces legacy EAV keys)
 ```
 
 
 | Path                                  | Purpose                                                                        |
 | ------------------------------------- | ------------------------------------------------------------------------------ |
-| `src/website_profiling/`              | Crawl, analyze, report, Lighthouse, integrations, AI — run via `python -m src` |
-| `src/website_profiling/api/`          | FastAPI HTTP layer — pipeline, chat, integrations, crawl control               |
-| `services/Bff/`                       | Browser API gateway — auth, CORS, routes `/api/*` to FastAPI, Data, FileService |
+| `src/website_profiling/`              | Crawl, analyze, report, Lighthouse — run via `python -m src` |
+| `src/website_profiling/api/`          | FastAPI — pipeline jobs, crawl, pipeline-config / pipeline-settings / ui-preferences |
+| `services/Bff/`                       | Browser API gateway — auth, CORS, routes `/api/*` to FastAPI, ReportService, IntegrationsService, AiService, Data, FileService |
+| `services/IntegrationsService/`       | Google/Bing OAuth, GSC/GA4 fetch, keywords, page-live — see [services/IntegrationsService/README.md](services/IntegrationsService/README.md) |
+| `services/AiService/`                 | AI chat, secrets, LLM settings, MCP, enrichment — see [services/AiService/README.md](services/AiService/README.md) |
 | `services/Data/`                      | .NET read/mutation service for report payloads, portfolio, issue status, saved filters |
 | `services/FileService/`               | PDF and Excel workbook export — see [services/FileService/README.md](services/FileService/README.md) |
 | `web/src/lib/publicBase.ts`           | BFF base URL (`VITE_BFF_BASE_URL`) and `apiFetch` / `apiUrl`                   |
 | `web/src/lib/pipelineConfigSchema.ts` | Audit settings schema (UI ↔ PostgreSQL)                                        |
+| `services/ReportService/`             | .NET report build + full-audit orchestration — see [services/ReportService/README.md](services/ReportService/README.md) |
+| `config/typed_config_manifest.json`   | Typed PostgreSQL settings schema (pipeline, LLM, secrets, UI prefs) |
 | `alembic/versions/`                   | Database migrations — run `./local-run migrate`                                |
 | `tests/`                              | Backend tests; `./local-test browser` for Playwright crawl integration         |
 | `docs/MCP.md`                         | MCP server setup for IDE and agent integrations                                |
-| `data/`                               | Local secrets and shadow `pipeline-config.txt` (gitignored)                    |
+| `data/`                               | Local artifacts (gitignored); settings live in Postgres typed tables |
 
 
 For layout details and common development patterns, see [AGENT.md](AGENT.md).
@@ -218,7 +281,7 @@ For layout details and common development patterns, see [AGENT.md](AGENT.md).
 | **Docker** | Postgres container (local dev) and full-stack compose |
 | **Python 3.12+** | Audit engine, FastAPI, pipeline worker, tests |
 | **Node 20+** | Vite + React SPA |
-| **.NET SDK 10+** | BFF, Data, and FileService (required for `./local-run`; optional if you only use Docker) |
+| **.NET SDK 10+** | BFF, IntegrationsService, AiService, Data, and FileService (required for `./local-run`; optional if you only use Docker) |
 
 ### Docker
 
@@ -228,9 +291,9 @@ Build and run the full dev stack from source:
 docker compose up --build
 ```
 
-Services: **postgres**, **fastapi** (`:8001`, internal), **worker**, **data** (`:8091`, internal), **bff** (`:8090`), **web** (`:3000`), **files** (`:8080`, internal).
+Services: **postgres**, **fastapi** (`:8001`, internal), **worker**, **report** (`:8094`, internal), **integrations** (`:8093`, internal), **ai** (`:8092`, internal), **data** (`:8091`, internal), **bff** (`:8090`), **web** (`:3000`), **files** (`:8080`, internal).
 
-Open [http://localhost:3000/home](http://localhost:3000/home). The browser talks only to the **BFF** (`:8090`); the BFF proxies to FastAPI, the Data service (report reads and portfolio routes), and FileService (PDF/workbook export).
+Open [http://localhost:3000/home](http://localhost:3000/home). The browser talks only to the **BFF** (`:8090`); the BFF proxies to FastAPI (crawl/pipeline), IntegrationsService (Google/Bing), AiService (AI/secrets), Data (report reads), and FileService (PDF/workbook export).
 
 Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTGRES_PASSWORD`, `AUTH_SECRET`, `BFF_ALLOWED_ORIGINS`, and `BFF_PUBLIC_URL`. Optional remote MCP: `docker compose -f docker-compose.prod.yml --profile mcp up`. Pre-built images: `docker-compose.pull.yml` (`BACKEND_IMAGE`, `WEB_IMAGE`).
 
@@ -245,9 +308,26 @@ Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTG
 ./local-prod        # Same DB, Vite production build + preview (no hot reload)
 ```
 
-`./local-run` starts (in order): **FileService** `:8080`, **Data** `:8091`, **pipeline worker**, **FastAPI** `:8001`, **BFF** `:8090`, and **Vite** `:3000`. Use `localhost` (not `127.0.0.1`) for pipeline APIs so CORS and cookies match the BFF origin.
+`./local-run` starts (in order): **FileService** `:8080`, **Data** `:8091`, **AiService** `:8092` (MCP HTTP enabled), **ReportService** `:8094`, **IntegrationsService** `:8093`, **ConfigService** `:8095`, **FastAPI** `:8001` (Python bridge), **BFF** `:8090`, and **Vite** `:3000`. Use `localhost` (not `127.0.0.1`) for pipeline APIs so CORS and cookies match the BFF origin.
 
 Default local `DATABASE_URL`: `postgres://postgres:dev@127.0.0.1:5432/website_profiling` (Docker Compose dev stack uses `profiling:profiling`).
+
+### API documentation (Swagger)
+
+With `./local-run`, each service runs in **Development** and exposes interactive OpenAPI docs. The browser SPA only calls the **BFF**; use upstream Swagger to inspect handlers and internal routes.
+
+| Service | Port | Swagger UI | OpenAPI JSON |
+| ------- | ---- | ---------- | ------------ |
+| **BFF** | 8090 | [http://localhost:8090/docs](http://localhost:8090/docs) | `/swagger/v1/swagger.json` |
+| **Data** | 8091 | [http://localhost:8091/docs](http://localhost:8091/docs) | `/swagger/v1/swagger.json` |
+| **AiService** | 8092 | [http://localhost:8092/docs](http://localhost:8092/docs) | `/swagger/v1/swagger.json` |
+| **IntegrationsService** | 8093 | [http://localhost:8093/docs](http://localhost:8093/docs) | `/swagger/v1/swagger.json` |
+| **ReportService** | 8094 | [http://localhost:8094/docs](http://localhost:8094/docs) | `/swagger/v1/swagger.json` |
+| **ConfigService** | 8095 | [http://localhost:8095/docs](http://localhost:8095/docs) | `/swagger/v1/swagger.json` |
+| **FileService** | 8080 | [http://localhost:8080/docs](http://localhost:8080/docs) | `/swagger/v1/swagger.json` |
+| **Python bridge** (FastAPI) | 8001 | [http://localhost:8001/docs](http://localhost:8001/docs) | `/openapi.json` |
+
+Swagger UI is disabled when `ASPNETCORE_ENVIRONMENT=Production`. The legacy `web/openapi.json` reflects the old monolithic FastAPI app and is not a complete map of the current C# services.
 
 `requirements.txt` pins direct Python dependencies to versions verified by `./local-test python`. Re-run the full test suite after intentional upgrades.
 
@@ -265,16 +345,16 @@ Increase `PIPELINE_JOB_STALE_HOURS` for crawls that routinely exceed one hour.
 ### Testing
 
 ```bash
-./local-test              # Full CI parity: Python + web + .NET (Data, Bff, FileService)
+./local-test              # Full CI parity: Python + web + .NET (services/WebsiteProfiling.slnx)
 ./local-test python       # Backend: three 100% coverage gates + browser pytest + CLI smoke
 ./local-test browser      # JS crawl integration tests (skips if Chromium unavailable)
 ./local-test web          # Frontend: build, typecheck, lint, vitest
-./local-test dotnet       # dotnet test Data + Bff + FileService + BFF OpenAPI drift gate
+./local-test dotnet       # dotnet test services/WebsiteProfiling.slnx + BFF OpenAPI drift gate
 ./local-test quick        # Fast loop; requires DB already running (no coverage gate)
 ./local-test all --no-cov # Full run without pytest coverage gate
 ```
 
-CI runs separate jobs for **Python** (coverage gates), **web**, **Data**, **Bff**, **FileService**, and **Docker** (image build, browser pytest in container, compose smoke). See [.github/workflows/ci.yml](.github/workflows/ci.yml).
+CI runs separate jobs for **Python** (coverage gates), **web**, **dotnet** (`services/WebsiteProfiling.slnx` + Bff OpenAPI drift gate), and **Docker** (image build, browser pytest in container, compose smoke). See [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
 ## Configuration
 
@@ -298,9 +378,17 @@ The overlay enriches keywords that have no Search Console impressions with `plan
 
 In Audit settings, set **Crawl rendering** to `javascript` (always headless Chromium) or `auto` (static first, browser when SPA heuristics match). Requires Playwright from `requirements.txt` and Chromium on `PATH` or `CHROME_PATH` (included in Docker). The UI preflights via `GET /api/crawl/browser-status` before runs when JS or auto mode is selected.
 
+### Audit settings and typed configuration
+
+Pipeline, crawl, Lighthouse, and report options are stored in **typed PostgreSQL tables** (`crawl_settings`, `report_settings`, `lighthouse_settings`, etc.). The UI reads/writes via **`GET/PUT /api/pipeline-config`** (legacy flat map) and **`GET/PUT /api/pipeline-settings`** (structured). Branding and theme use **`GET/PUT /api/ui-preferences`**. Full key inventory: [`config/typed_config_manifest.json`](config/typed_config_manifest.json).
+
+### Secrets and AI settings
+
+API keys, Google OAuth app credentials, and remote MCP tokens are saved on the **Secrets** page (`/secrets`) — browser writes go **BFF → AiService** (`PUT /api/secrets`). LLM provider/model toggles and risk settings use **`PUT /api/llm-settings`**. Audit pipeline keys remain on **`PUT /api/pipeline-config`** (FastAPI). The pipeline run FAB saves LLM state via `/api/llm-settings` before each run.
+
 ### AI chat (optional)
 
-Ask questions about audit data at [http://localhost:3000/chat](http://localhost:3000/chat). Enable a provider under **Run audit → AI settings** (`llm_enabled`, provider, model). `./local-run setup` installs Python deps from `requirements.txt` (including `httpx`, OpenAI, Anthropic, and Groq SDKs; Gemini uses `httpx` via REST).
+Ask questions about audit data at [http://localhost:3000/chat](http://localhost:3000/chat). Enable a provider under **Run audit → AI settings** (`llm_enabled`, provider, model) or on **Secrets**. AiService handles chat, tool dispatch, and streaming; `./local-run` starts it on `:8092`.
 
 
 | Provider                   | Notes                                                                                                                                                                      |
@@ -311,7 +399,7 @@ Ask questions about audit data at [http://localhost:3000/chat](http://localhost:
 | **Groq**                   | API key in AI settings or `GROQ_API_KEY`; official Groq Python SDK; native tool calling with streaming. Default model `openai/gpt-oss-120b`.                               |
 
 
-The agent uses the same **340 read-only audit tools** as the MCP server ([docs/MCP.md](docs/MCP.md)), with **dynamic routing** (~45 tools per turn). Responses stream over SSE (`POST /api/chat`). Sessions persist per property (`chat_sessions` / `chat_messages`).
+The agent uses the same **369 read-only audit tools** as the MCP server ([docs/MCP.md](docs/MCP.md)), with **dynamic routing** (~45 tools per turn). Responses stream over SSE (`POST /api/chat` via BFF → AiService). Sessions persist per property (`chat_sessions` / `chat_messages`).
 
 **Read-only SQL chat tool (opt-in):** Set `CHAT_SQL_TOOL_ENABLED=true` to expose `get_sql_schema` and `run_sql_query` to the LLM. The agent can then answer arbitrary data questions by generating and executing a single read-only SELECT. Queries are validated by a four-layer guard (regex pre-filter → `sqlglot` AST + table allowlist → `BEGIN TRANSACTION READ ONLY` → optional least-privilege DB role); DELETE/UPDATE/INSERT/DDL and non-allowlisted tables are always blocked. In multi-property deployments, scope-binding CTEs are automatically injected to enforce tenant isolation. See [docs/OPS.md](docs/OPS.md#read-only-sql-chat-tool) for setup including the recommended `audit_readonly` Postgres role and optional RLS configuration.
 
@@ -337,6 +425,9 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for setup and 
 | [docs/COMPANY_STANDARDS.md](docs/COMPANY_STANDARDS.md) | Data and security policy                   |
 | [docs/MCP.md](docs/MCP.md)                             | MCP server setup                           |
 | [docs/OPS.md](docs/OPS.md)                             | Scheduled audits, alerts, production ops   |
+| [services/ReportService/README.md](services/ReportService/README.md) | Report build + pipeline orchestration (port 8094) |
+| [services/AiService/README.md](services/AiService/README.md) | AI chat, secrets, LLM settings, MCP      |
+| [services/IntegrationsService/README.md](services/IntegrationsService/README.md) | Google/Bing OAuth, GSC/GA4, keywords |
 
 
 ## Star History

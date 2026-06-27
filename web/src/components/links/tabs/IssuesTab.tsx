@@ -7,6 +7,7 @@ import { SELECT_CLASS, SEO_ISSUE_RECOMMENDATIONS, severityBg } from '../../../ut
 import { formatLhMetric } from '../../../utils/linkUtils';
 import { palette, scoreBandColor } from '../../../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal } from '../../../utils/chartJsDefaults';
+import { lighthouseFailureLabel } from '@/lib/issueDisplayMessage';
 import { RankedBarChart } from '../../../components/charts';
 import { formatCompositionAria } from '../../../lib/chartDoughnutUtils';
 import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
@@ -165,14 +166,17 @@ export default function IssuesTab({ lhData, inspectorDetails, pageUrl }: IssuesT
               <>
                 <div className="text-xs text-muted-foreground mb-2">{it.lighthouseFailures}</div>
                 <div className="space-y-2">
-                  {topFailures.map((f: LighthouseAuditRef, i: number) => (
+                  {topFailures.map((f: LighthouseAuditRef, i: number) => {
+                    const label = lighthouseFailureLabel(f);
+                    return (
                     <div key={i} className="bg-brand-800 border border-default rounded-lg px-3 py-2 text-xs text-foreground space-y-2">
-                      <span>{f.helpText || f.id}</span>
+                      <span>{label || f.id}</span>
                       <AiSuggestionButton
-                        request={buildLighthouseFailureContext(f.helpText || f.id || '', f.id, pageUrl)}
+                        request={buildLighthouseFailureContext(label || f.id || '', f.id, pageUrl)}
                       />
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </>
             )}

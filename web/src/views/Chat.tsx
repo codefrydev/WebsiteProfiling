@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
@@ -9,6 +9,7 @@ import ChatSidebar from '@/components/chat/ChatSidebar';
 import ChatMessageList, {
   agentErrorFromToolResult,
   narrativeFromToolResult,
+  narrativeFromLegacyContent,
   type ChatMessage,
 } from '@/components/chat/ChatMessageList';
 import ChatComposer from '@/components/chat/ChatComposer';
@@ -16,12 +17,14 @@ import SuggestedPrompts from '@/components/chat/SuggestedPrompts';
 import ChatModelPicker from '@/components/chat/ChatModelPicker';
 import ChatProviderPicker from '@/components/chat/ChatProviderPicker';
 import ChatUnlimitedToolsToggle from '@/components/chat/ChatUnlimitedToolsToggle';
+import ChatApiKeyBanner from '@/components/chat/ChatApiKeyBanner';
 import ChatActivityBar from '@/components/chat/ChatActivityBar';
 import { ChatFollowUpProvider } from '@/components/chat/ChatFollowUpContext';
 import { usePipeline } from '@/context/PipelineContext';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
-import { format, strings } from '@/lib/strings';
-import { consumeChatSse } from '@/components/chat/parseChatSse';
+import { strings } from '@/lib/strings';
+import { statusFromSseEvent } from '@/components/chat/chatStatusLabels';
+import { consumeChatSse, resolveToolActivityIndex } from '@/components/chat/parseChatSse';
 import { toolEventsToActivity } from '@/components/chat/deriveChatBlocks';
 import type { ChatNarrative } from '@/types/chatNarrative';
 import type { ToolActivityItem } from '@/components/chat/ChatToolActivity';
@@ -31,8 +34,18 @@ import {
   parseChatUrlContext,
   readChatComposerDraft,
   readStoredChatContext,
+  resolvePreferredChatSession,
+  normalizeChatSessionRow,
+  normalizeSessionId,
+  sessionIdsEqual,
+  upsertChatSession,
+  type ChatSessionRow,
   writeStoredChatContext,
 } from '@/lib/chatUrlState';
+import {
+  isLlmInsightsEnabled,
+  parseLlmBool,
+} from '@/lib/llmConfigSchema';
 import {
   normalizePropertyId,
   pickInitialPropertyId,
@@ -47,25 +60,19 @@ interface PropertyOption {
   canonical_domain: string;
 }
 
-interface SessionRow {
-  id: number;
-  property_id: number;
-  title: string;
-}
-
 export default function ChatPage() {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
-  const { configState, configLoaded, llmConfigState } = usePipeline();
+  const { configState, configLoaded, llmConfigState, llmApiKeyConfigured } = usePipeline();
   const initialUrlCtx = parseChatUrlContext(searchParams);
   const [properties, setProperties] = useState<PropertyOption[]>([]);
   const [propertyId, setPropertyId] = useState<number | null>(initialUrlCtx.propertyId);
-  const [sessions, setSessions] = useState<SessionRow[]>([]);
+  const [sessions, setSessions] = useState<ChatSessionRow[]>([]);
   const [sessionId, setSessionId] = useState<number | null>(initialUrlCtx.sessionId);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [busy, setBusy] = useState(false);
-  const [loadingSessions, setLoadingSessions] = useState(false);
+  const [loadingSessions, setLoadingSessions] = useState(Boolean(initialUrlCtx.propertyId));
   const [loadingMessages, setLoadingMessages] = useState(Boolean(initialUrlCtx.sessionId));
   const [loadingProperties, setLoadingProperties] = useState(true);
   const [error, setError] = useState('');
@@ -99,16 +106,27 @@ export default function ChatPage() {
     setComposerDraft(prompt);
   }, []);
 
-  const llmEnabled =
-    llmConfigState.llm_enabled === true &&
-    String(llmConfigState.llm_provider || 'none') !== 'none';
+  const llmEnabled = isLlmInsightsEnabled(llmConfigState);
+  const llmProvider = String(llmConfigState.llm_provider || 'none');
+  const needsApiKey =
+    llmEnabled && configLoaded && !llmApiKeyConfigured && llmProvider !== 'none' && llmProvider !== 'ollama';
 
-  const crawlChatEnabled = llmConfigState.llm_chat_allow_crawl === true;
+  const crawlChatEnabled = parseLlmBool(llmConfigState.llm_chat_allow_crawl);
 
   const showConversation = Boolean(sessionId) || messages.length > 0 || busy || loadingMessages;
   const isHero = !showConversation;
   const activeProperty = properties.find((p) => propertyIdsEqual(p.id, propertyId)) ?? null;
-  const activeSession = sessions.find((s) => s.id === sessionId) ?? null;
+  const activeSession = sessions.find((s) => sessionIdsEqual(s.id, sessionId)) ?? null;
+  const contextSessionTitle = useMemo(() => {
+    if (activeSession?.title && activeSession.title !== 'New chat') {
+      return activeSession.title;
+    }
+    const firstUser = messages.find((m) => m.role === 'user' && m.content.trim());
+    if (firstUser?.content.trim()) {
+      return firstUser.content.trim().slice(0, 80);
+    }
+    return activeSession?.title ?? null;
+  }, [activeSession, messages]);
 
   const loadProperties = useCallback(async () => {
     if (!configLoaded) return;
@@ -143,7 +161,8 @@ export default function ChatPage() {
       });
       setPropertyId((current) => {
         if (nextId != null) return nextId;
-        return current != null ? null : current;
+        if (urlCtx.propertyId != null) return urlCtx.propertyId;
+        return current;
       });
     } catch {
       /* ignore */
@@ -156,12 +175,13 @@ export default function ChatPage() {
     try {
       const res = await apiFetch(apiUrl(`/chat/sessions/${sid}`));
       if (!res.ok) return false;
-      const data = (await res.json()) as { session?: SessionRow };
-      const session = data.session;
+      const data = (await res.json()) as { session?: ChatSessionRow };
+      const session = data.session ? normalizeChatSessionRow(data.session) : null;
       if (!session) return false;
-      if (pid != null && session.property_id !== pid) {
-        setPropertyId(session.property_id);
+      if (pid != null && session.propertyId !== pid) {
+        setPropertyId(session.propertyId);
       }
+      setSessions((prev) => upsertChatSession(prev, session));
       setSessionId(session.id);
       return true;
     } catch {
@@ -174,8 +194,12 @@ export default function ChatPage() {
     try {
       const res = await apiFetch(apiUrl(`/chat/sessions?propertyId=${pid}`));
       if (!res.ok) throw new Error('Failed to load sessions');
-      const data = (await res.json()) as { sessions?: SessionRow[] };
-      setSessions(data.sessions || []);
+      const data = (await res.json()) as { sessions?: ChatSessionRow[] };
+      setSessions(
+        (data.sessions || [])
+          .map((row) => normalizeChatSessionRow(row))
+          .filter((row): row is ChatSessionRow => row != null),
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -204,11 +228,13 @@ export default function ChatPage() {
           .map((m) => {
             const toolActivity = toolEventsToActivity(m.tool_result);
             const agentError = agentErrorFromToolResult(m.tool_result);
-            const narrative = narrativeFromToolResult(m.tool_result);
+            const narrative =
+              narrativeFromToolResult(m.tool_result) ??
+              (m.role === 'assistant' ? narrativeFromLegacyContent(m.content) : undefined);
             return {
               id: m.id,
               role: m.role as 'user' | 'assistant',
-              content: m.content,
+              content: narrative ? '' : m.content,
               narrative,
               toolActivity: toolActivity.length ? toolActivity : undefined,
               partialError: Boolean(agentError && toolActivity.length > 0),
@@ -240,12 +266,16 @@ export default function ChatPage() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (propertyId) void loadSessions(propertyId);
-  }, [propertyId, loadSessions]);
-
-  useEffect(() => {
     setUrlSyncEnabled(false);
-  }, [propertyId]);
+    sessionRestoredForProperty.current = null;
+    if (!propertyId) {
+      setLoadingSessions(false);
+      setSessions([]);
+      return;
+    }
+    setLoadingSessions(true);
+    void loadSessions(propertyId);
+  }, [propertyId, loadSessions]);
 
   useEffect(() => {
     if (!propertyId || loadingSessions) return;
@@ -253,7 +283,7 @@ export default function ChatPage() {
 
     const urlCtx = parseChatUrlContext(searchParams);
     const stored = readStoredChatContext();
-    const preferredSession = urlCtx.sessionId ?? stored.sessionId;
+    const preferredSession = resolvePreferredChatSession(propertyId, urlCtx, stored, sessions);
 
     const finishRestore = () => {
       sessionRestoredForProperty.current = propertyId;
@@ -265,16 +295,20 @@ export default function ChatPage() {
       return;
     }
 
-    if (sessions.some((s) => s.id === preferredSession)) {
-      setSessionId(preferredSession);
+    if (sessions.some((s) => sessionIdsEqual(s.id, preferredSession))) {
+      setSessionId(normalizeSessionId(preferredSession));
       finishRestore();
       return;
     }
 
     void resolveSessionFromUrl(preferredSession, propertyId).then((ok) => {
-      if (!ok && urlCtx.sessionId === preferredSession) {
-        setSessionId(null);
-        setMessages([]);
+      if (!ok) {
+        if (urlCtx.sessionId === preferredSession) {
+          setSessionId(null);
+          setMessages([]);
+        } else if (sessions.length > 0) {
+          setSessionId(sessions[0]!.id);
+        }
       }
       finishRestore();
     });
@@ -290,6 +324,12 @@ export default function ChatPage() {
     if (sessionId && propertyId) void loadMessages(sessionId, propertyId);
     else if (!sessionId) setMessages([]);
   }, [sessionId, propertyId, loadMessages, busy]);
+
+  useEffect(() => {
+    if (!sessionId || !propertyId) return;
+    if (sessions.some((s) => sessionIdsEqual(s.id, sessionId))) return;
+    void resolveSessionFromUrl(sessionId, propertyId);
+  }, [sessionId, propertyId, sessions, resolveSessionFromUrl]);
 
   useEffect(() => {
     if (!busy || !startedAt) {
@@ -376,6 +416,7 @@ export default function ChatPage() {
       let narrative: ChatNarrative | undefined;
       let streamError = '';
       const tools: ToolActivityItem[] = [];
+      let lastProgressAt = 0;
 
       const patchAssistant = (patch: Partial<ChatMessage>) => {
         setMessages((prev) =>
@@ -385,16 +426,28 @@ export default function ChatPage() {
 
       await consumeChatSse(res, (evt) => {
         if (evt.type === 'status' && evt.detail) {
-          setActivityText(evt.detail);
-          patchAssistant({ statusText: evt.detail, streaming: true });
+          const label = statusFromSseEvent(evt);
+          setActivityText(label);
+          patchAssistant({ statusText: label, streaming: true });
         } else if (evt.type === 'token') {
-          content += evt.text;
-          setActivityText(c.writing);
-          patchAssistant({ content, streaming: true, statusText: c.writing, error: false });
+          const label = statusFromSseEvent(evt);
+          setActivityText(label);
+          patchAssistant({ streaming: true, statusText: label, error: false });
+        } else if (evt.type === 'narrative_partial') {
+          narrative = evt.narrative;
+          patchAssistant({
+            narrative: evt.narrative,
+            streaming: true,
+            statusText: undefined,
+            error: false,
+            partialError: false,
+          });
         } else if (evt.type === 'tool_start') {
-          setActivityText(format(c.toolStatus, { name: evt.name || 'tool' }));
+          const callId = evt.callId || `${evt.name}-${tools.length}`;
+          const label = statusFromSseEvent(evt);
+          setActivityText(label);
           tools.push({
-            id: `${evt.name}-${tools.length}`,
+            id: callId,
             name: evt.name || 'tool',
             args: evt.args,
             status: 'running',
@@ -402,10 +455,22 @@ export default function ChatPage() {
           patchAssistant({
             toolActivity: [...tools],
             streaming: true,
-            statusText: format(c.toolStatus, { name: evt.name || 'tool' }),
+            statusText: label,
+          });
+        } else if (evt.type === 'tool_progress' && evt.detail) {
+          const now = Date.now();
+          if (now - lastProgressAt < 100) {
+            return;
+          }
+          lastProgressAt = now;
+          const label = statusFromSseEvent(evt);
+          setActivityText(label);
+          patchAssistant({
+            streaming: true,
+            statusText: label,
           });
         } else if (evt.type === 'tool_end') {
-          const idx = tools.findIndex((t) => t.name === evt.name && t.status === 'running');
+          const idx = resolveToolActivityIndex(tools, evt);
           if (idx >= 0) {
             tools[idx] = { ...tools[idx], result: evt.result, status: 'done' };
           }
@@ -440,17 +505,23 @@ export default function ChatPage() {
           });
         } else if (evt.type === 'error') {
           streamError = evt.message || c.agentError;
-          setError(streamError);
           const hasTools = tools.length > 0;
+          const hasNarrativeContent = Boolean(
+            narrative &&
+              (narrative.power_insights.length > 0 || narrative.recommended_actions.length > 0),
+          );
+          if (!hasNarrativeContent) {
+            setError(streamError);
+          }
           const fallbackContent =
             content.trim() || (hasTools ? c.partialToolsSaved : streamError);
           patchAssistant({
             content: fallbackContent,
             narrative,
             streaming: false,
-            error: !hasTools,
-            partialError: hasTools,
-            agentError: streamError,
+            error: !hasTools && !hasNarrativeContent,
+            partialError: hasTools && !hasNarrativeContent,
+            agentError: hasNarrativeContent ? null : streamError,
             statusText: undefined,
             toolActivity: tools,
           });
@@ -520,12 +591,16 @@ export default function ChatPage() {
   const handleDeleteSession = async (id: number) => {
     if (!propertyId) return;
     if (sessionId === id) abortRef.current?.abort();
-    await apiFetch(apiUrl(`/chat/sessions/${id}?propertyId=${propertyId}`), { method: 'DELETE' });
-    if (sessionId === id) {
-      setSessionId(null);
-      setMessages([]);
+    try {
+      await apiFetch(apiUrl(`/chat/sessions/${id}?propertyId=${propertyId}`), { method: 'DELETE' });
+      if (sessionId === id) {
+        setSessionId(null);
+        setMessages([]);
+      }
+      await loadSessions(propertyId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete session');
     }
-    await loadSessions(propertyId);
   };
 
   const modelPicker = llmEnabled ? (
@@ -546,7 +621,7 @@ export default function ChatPage() {
 
   const composer = (
     <ChatComposer
-      disabled={!llmEnabled || !propertyId}
+      disabled={!llmEnabled || !propertyId || needsApiKey}
       busy={busy}
       onSend={(msg) => void handleSend(msg)}
       trailing={modelPicker}
@@ -555,6 +630,12 @@ export default function ChatPage() {
       onDraftApplied={() => setComposerDraft('')}
     />
   );
+
+  const apiKeyStrip = needsApiKey ? (
+    <div className="mx-auto w-full max-w-3xl px-4 pb-2">
+      <ChatApiKeyBanner provider={llmProvider} />
+    </div>
+  ) : null;
 
   const errorStrip = error ? (
     <div
@@ -603,7 +684,7 @@ export default function ChatPage() {
           <ChatContextBar
             property={activeProperty}
             propertyId={propertyId}
-            sessionTitle={activeSession?.title}
+            sessionTitle={contextSessionTitle}
             loading={loadingProperties}
             crawlActionsEnabled={crawlChatEnabled && llmEnabled}
           />
@@ -629,10 +710,13 @@ export default function ChatPage() {
                 <p className="mt-3 max-w-md text-center text-sm text-muted-foreground">
                   {c.emptySubline}
                 </p>
-                <div className="mt-10 w-full">{composer}</div>
+                <div className="mt-10 w-full space-y-3">
+                  {apiKeyStrip}
+                  {composer}
+                </div>
                 <SuggestedPrompts
                   onSelect={(p) => void handleSend(p)}
-                  disabled={busy || !propertyId}
+                  disabled={busy || !propertyId || needsApiKey}
                   crawlEnabled={crawlChatEnabled}
                 />
               </div>
@@ -648,6 +732,7 @@ export default function ChatPage() {
               )}
               <div className="chat-composer-dock">
                 <ChatActivityBar busy={busy} statusText={activityText} elapsedSec={elapsedSec} />
+                {apiKeyStrip}
                 {errorStrip}
                 {composer}
               </div>

@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Testing\WebsiteProfiling.Testing.csproj" />
     <ProjectReference Include="..\..\src\Data.Api\Data.Api.csproj" />
     <ProjectReference Include="..\..\src\Data.Application\Data.Application.csproj" />
     <ProjectReference Include="..\..\src\Data.Domain\Data.Domain.csproj" />

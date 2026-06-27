@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isChatNarrative, narrativeFromToolResult } from '@/types/chatNarrative';
+import { isChatNarrative, narrativeFromToolResult, narrativeFromLegacyContent } from '@/types/chatNarrative';
 
 describe('chatNarrative types', () => {
   it('validates narrative shape', () => {
@@ -22,5 +22,15 @@ describe('chatNarrative types', () => {
       },
     });
     expect(narrative?.power_insights).toEqual(['x']);
+  });
+
+  it('reads narrative from legacy content JSON', () => {
+    const narrative = narrativeFromLegacyContent(
+      JSON.stringify({
+        power_insights: ['legacy insight'],
+        recommended_actions: ['legacy action'],
+      }),
+    );
+    expect(narrative?.power_insights).toEqual(['legacy insight']);
   });
 });

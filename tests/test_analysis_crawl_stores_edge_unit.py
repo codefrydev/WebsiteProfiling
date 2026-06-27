@@ -285,10 +285,10 @@ def test_db_stores_last_lines(monkeypatch) -> None:
     assert _common._sanitize_for_json(None) is None
 
     conn = FakeConn()
-    config_store.write_pipeline_config(conn, {"k": "v"}, unknown_keys=None)  # type: ignore[arg-type]
+    config_store.write_pipeline_config(conn, {"k": "v"})  # type: ignore[arg-type]
 
     wconn = FakeConn()
-    config_store.write_llm_config(wconn, {"model": "gpt"}, secret_keys={"api_key"})  # type: ignore[arg-type]
+    config_store.write_llm_config(wconn, {"llm_model": "gpt"}, secret_keys=set())  # type: ignore[arg-type]
     assert wconn.executed
 
     lconn = FakeConn()
@@ -399,7 +399,7 @@ def test_pipeline_cmd_js_extra_wait_branches(monkeypatch) -> None:
     monkeypatch.setitem(
         sys.modules,
         "website_profiling.crawl.crawler",
-        types.SimpleNamespace(run_crawler=lambda **_k: None),
+        types.SimpleNamespace(run_crawler=lambda **_k: (None, 1)),
     )
     pipeline_cmd._run_crawl({"crawl_render_mode": "static"}, True)
 
@@ -463,10 +463,10 @@ def test_remaining_in_scope_edge_cases(monkeypatch) -> None:
     assert _common._row_field("plain", "col") is None
     assert _common._row_field(("a",), "missing", index=3) is None
 
-    # config_store read_llm_config success
+    # config_store read_llm_config success (typed defaults when tables are empty)
     ok_conn = FakeConn()
-    ok_conn.set_next_cursor(FakeCursor(fetchall_value=[{"key": "model", "value": "gpt"}]))
-    assert config_store.read_llm_config(ok_conn)["model"] == "gpt"  # type: ignore[arg-type]
+    cfg = config_store.read_llm_config(ok_conn)  # type: ignore[arg-type]
+    assert cfg.get("llm_provider") == "none"
 
     # crawl_store: delete-only when no run, or resolve latest run id
     nconn = CrawlConn()

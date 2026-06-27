@@ -417,58 +417,8 @@ def test_generate_geo_fix_bundle_returns_structure() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Phase 4: live citation client
+# Live citation tool (native in AiService — Python bridge returns redirect)
 # ---------------------------------------------------------------------------
-
-from website_profiling.integrations.ai_citations import (
-    _detect_competitors,
-    _domain_in_sources,
-    resolve_api_key,
-)
-
-
-def test_domain_in_sources_match() -> None:
-    assert _domain_in_sources("example.com", ["https://example.com/page", "https://other.org"])
-
-
-def test_domain_in_sources_no_match() -> None:
-    assert not _domain_in_sources("example.com", ["https://other.org", "https://third.io"])
-
-
-def test_domain_in_sources_www_strip() -> None:
-    assert _domain_in_sources("example.com", ["https://www.example.com/about"])
-
-
-def test_detect_competitors_excludes_own_domain() -> None:
-    sources = ["https://competitor.com/page", "https://example.com/page", "https://rival.io"]
-    comps = _detect_competitors(sources, "example.com")
-    assert "competitor.com" in comps
-    assert "rival.io" in comps
-    assert "example.com" not in comps
-
-
-def test_detect_competitors_dedup() -> None:
-    sources = ["https://rival.com/a", "https://rival.com/b"]
-    comps = _detect_competitors(sources, "mine.com")
-    assert comps.count("rival.com") == 1
-
-
-def test_resolve_api_key_explicit() -> None:
-    key = resolve_api_key("perplexity", "my-secret-key")
-    assert key == "my-secret-key"
-
-
-def test_resolve_api_key_from_env(monkeypatch) -> None:
-    monkeypatch.setenv("PERPLEXITY_API_KEY", "env-key")
-    key = resolve_api_key("perplexity", None)
-    assert key == "env-key"
-
-
-def test_resolve_api_key_missing(monkeypatch) -> None:
-    monkeypatch.delenv("PERPLEXITY_API_KEY", raising=False)
-    key = resolve_api_key("perplexity", None)
-    assert not key
-
 
 def test_check_ai_citations_live_requires_opt_in() -> None:
     from website_profiling.tools.audit_tools.integrations.integration_tools import check_ai_citations_live
@@ -478,19 +428,13 @@ def test_check_ai_citations_live_requires_opt_in() -> None:
     assert result["error"] == "opt_in required"
 
 
-def test_check_ai_citations_live_missing_key() -> None:
+def test_check_ai_citations_live_routes_to_aiservice() -> None:
     from website_profiling.tools.audit_tools.integrations.integration_tools import check_ai_citations_live
-    import os
+
     conn, ctx = _make_conn_ctx()
-    env_key = "PERPLEXITY_API_KEY"
-    saved = os.environ.pop(env_key, None)
-    try:
-        result = check_ai_citations_live(conn, ctx, {"brand": "Example", "provider": "perplexity", "opt_in": True})
-        assert "error" in result
-        assert "API key" in result["error"]
-    finally:
-        if saved:
-            os.environ[env_key] = saved
+    result = check_ai_citations_live(conn, ctx, {"brand": "Example", "provider": "perplexity", "opt_in": True})
+    assert "error" in result
+    assert "AiService" in result["error"]
 
 
 # ---------------------------------------------------------------------------

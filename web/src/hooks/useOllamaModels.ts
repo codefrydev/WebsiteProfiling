@@ -1,6 +1,7 @@
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
+import { resolveOllamaHealth, type OllamaHealth } from '@/lib/ollamaConnectionHealth';
 
 export type OllamaBillingTier = 'free_local' | 'cloud_free' | 'cloud_pro';
 
@@ -15,7 +16,10 @@ export interface OllamaModelEntry {
 
 export interface OllamaModelsStatus {
   ok: boolean;
+  health?: OllamaHealth;
   error?: string;
+  warning?: string;
+  localOk?: boolean;
   cloudCatalogOk?: boolean;
   catalogSource?: string;
   cloudModelCount?: number;
@@ -34,6 +38,10 @@ export function useOllamaModels(baseUrl: string, enabled = true) {
     setLoading(true);
     try {
       const res = await apiFetch(apiUrl('/ollama/status'));
+      if (!res.ok) {
+        setStatus({ ok: false, error: 'unreachable' });
+        return;
+      }
       const data = (await res.json()) as OllamaModelsStatus;
       setStatus(data);
     } catch {
@@ -42,6 +50,11 @@ export function useOllamaModels(baseUrl: string, enabled = true) {
       setLoading(false);
     }
   }, [enabled]);
+
+  const health = useMemo(
+    () => resolveOllamaHealth(status, loading),
+    [status, loading],
+  );
 
   useEffect(() => {
     void refresh();
@@ -52,6 +65,9 @@ export function useOllamaModels(baseUrl: string, enabled = true) {
     loading,
     refresh,
     models: status?.models ?? [],
+    /** @deprecated Prefer `health` — true only for healthy or degraded (catalog usable). */
     connected: status?.ok === true,
+    health,
+    catalogUsable: health === 'healthy' || health === 'degraded',
   };
 }

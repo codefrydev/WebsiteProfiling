@@ -2,11 +2,12 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal
 
 import pandas as pd
 
@@ -16,11 +17,9 @@ from ..progress import emit_phase_done, emit_phase_start, emit_progress
 from .config_resolve import (
     active_property_id_from_cfg,
     cleanup_lighthouse_work_dir,
-    google_db_has_gsc,
     lighthouse_work_dir,
     require_lighthouse_url,
     require_start_url,
-    should_enrich_keywords_after_report,
 )
 
 _ALLOWED_RENDER_MODES = frozenset({"static", "javascript", "auto"})
@@ -45,13 +44,15 @@ class PhaseResult:
     name: str
     status: Literal["ok", "failed"]
     error: str | None = None
+    crawl_run_id: int | None = None
 
 
-def run_pipeline_phase(name: str, fn: Callable[[], None]) -> PhaseResult:
+def run_pipeline_phase(name: str, fn: Callable[[], Any]) -> PhaseResult:
     """Run one pipeline phase; failures are recorded and do not abort the process."""
     try:
-        fn()
-        return PhaseResult(name, "ok")
+        payload = fn()
+        crawl_run_id = payload if name == "crawl" and isinstance(payload, int) else None
+        return PhaseResult(name, "ok", crawl_run_id=crawl_run_id)
     except Exception as e:
         emit_progress(name, "error", message=str(e))
         console_print(f"[{name}] failed: {e}", file=sys.stderr)
@@ -121,6 +122,15 @@ def select_lighthouse_urls_from_gsc(
     return crawl_urls[:max_pages]
 
 
+def _report_via_service() -> bool:
+    return bool((os.environ.get("REPORT_SERVICE_URL") or "").strip())
+
+
+def _orchestrate_via_report_service() -> bool:
+    flag = (os.environ.get("PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE") or "").strip().lower()
+    return flag in {"1", "true", "yes"}
+
+
 def run(cfg: dict, args: argparse.Namespace) -> None:
     use_database = True
 
@@ -130,6 +140,8 @@ def run(cfg: dict, args: argparse.Namespace) -> None:
         or (args.command is None and get_bool(cfg, "run_content_analysis", False))
     )
     run_report = args.command == "report" or (args.command is None and get_bool(cfg, "run_report", True))
+    if run_report and args.command is None and _orchestrate_via_report_service():
+        run_report = False
     run_plot = args.command == "plot" or (args.command is None and get_bool(cfg, "run_plot", False))
     run_lighthouse = args.command is None and get_bool(cfg, "run_lighthouse", False)
     run_lighthouse_on_pages = args.command is None and get_bool(cfg, "run_lighthouse_on_pages", False)
@@ -156,14 +168,19 @@ def run(cfg: dict, args: argparse.Namespace) -> None:
         emit_phase_done("config")
 
     phase_results: list[PhaseResult] = []
+    pipeline_crawl_run_id: int | None = None
 
     resume_run_id = getattr(args, "resume_run_id", None)
     if resume_run_id is not None:
-        phase_results.append(
-            run_pipeline_phase("crawl", lambda: _run_crawl(cfg, use_database, resume_run_id=resume_run_id))
+        crawl_phase = run_pipeline_phase(
+            "crawl", lambda: _run_crawl(cfg, use_database, resume_run_id=resume_run_id)
         )
+        phase_results.append(crawl_phase)
+        pipeline_crawl_run_id = crawl_phase.crawl_run_id
     elif run_crawl:
-        phase_results.append(run_pipeline_phase("crawl", lambda: _run_crawl(cfg, use_database)))
+        crawl_phase = run_pipeline_phase("crawl", lambda: _run_crawl(cfg, use_database))
+        phase_results.append(crawl_phase)
+        pipeline_crawl_run_id = crawl_phase.crawl_run_id
 
     if run_content_analysis and use_database:
         phase_results.append(
@@ -171,10 +188,11 @@ def run(cfg: dict, args: argparse.Namespace) -> None:
         )
 
     if run_lighthouse_on_pages and use_database:
+        lh_crawl_run_id = pipeline_crawl_run_id
         phase_results.append(
             run_pipeline_phase(
                 "lighthouse",
-                lambda: _run_lighthouse_on_pages(cfg, lighthouse_max_pages),
+                lambda: _run_lighthouse_on_pages(cfg, lighthouse_max_pages, crawl_run_id=lh_crawl_run_id),
             )
         )
 
@@ -214,7 +232,7 @@ def _finalize_pipeline_run(phase_results: list[PhaseResult]) -> None:
     sys.exit(1)
 
 
-def _run_crawl(cfg: dict, use_database: bool, resume_run_id: int | None = None) -> None:
+def _run_crawl(cfg: dict, use_database: bool, resume_run_id: int | None = None) -> int | None:
     from ..crawl.crawler import run_crawler
 
     console_print("[Crawl] Starting...", flush=True)
@@ -262,7 +280,7 @@ def _run_crawl(cfg: dict, use_database: bool, resume_run_id: int | None = None) 
     custom_extractors = parse_extractors_config(cfg.get("custom_extractors"))
     enable_axe = get_bool(cfg, "enable_axe", False)
     console_print("Crawling...")
-    run_crawler(
+    _, crawl_run_id = run_crawler(
         start_url=start_url,
         max_pages=max_pages,
         concurrency=concurrency,
@@ -314,6 +332,7 @@ def _run_crawl(cfg: dict, use_database: bool, resume_run_id: int | None = None) 
     console_print("[Crawl] Done.", flush=True)
     emit_phase_done("crawl")
     console_print("Crawl results: PostgreSQL")
+    return crawl_run_id if use_database else None
 
 
 def _run_content_analysis(cfg: dict, use_database: bool) -> None:
@@ -343,23 +362,53 @@ def _run_content_analysis(cfg: dict, use_database: bool) -> None:
     console_print("[Content analysis] Done.", flush=True)
 
 
-def _run_lighthouse_on_pages(cfg: dict, lighthouse_max_pages: int) -> None:
-    from ..db import db_session, get_latest_crawl_run_id, read_crawl
+def _run_lighthouse_on_pages(
+    cfg: dict,
+    lighthouse_max_pages: int,
+    *,
+    crawl_run_id: int | None = None,
+) -> None:
+    from ..db import db_session, read_crawl, resolve_crawl_run_id_for_cfg
     from ..lighthouse.runner import run_lighthouse_on_pages as do_lighthouse_on_pages
+    from .config_resolve import active_property_id_from_cfg
 
     console_print("[Lighthouse on pages] Starting...", flush=True)
     emit_phase_start("lighthouse", message="Lighthouse on pages")
+    property_id = active_property_id_from_cfg(cfg)
+    start_url = (cfg.get("start_url") or "").strip()
+    run_id = crawl_run_id
     with db_session() as conn:
-        run_id = get_latest_crawl_run_id(conn)
-        df = read_crawl(conn, run_id)
+        if run_id is None:
+            run_id = resolve_crawl_run_id_for_cfg(
+                conn,
+                property_id=property_id,
+                start_url=start_url or None,
+            )
+        if run_id is None:
+            df = read_crawl(conn, None)
+        else:
+            df = read_crawl(conn, run_id)
         google_data = None
         try:
             from ..integrations.google.store import read_latest_google_data
-            from .config_resolve import active_property_id_from_cfg
 
-            google_data = read_latest_google_data(conn, property_id=active_property_id_from_cfg(cfg))
+            google_data = read_latest_google_data(conn, property_id=property_id)
         except Exception:
             google_data = None
+    if run_id is not None:
+        try:
+            from ..db import get_crawl_run_info
+
+            with db_session() as conn:
+                info = get_crawl_run_info(conn, run_id)
+            if info and info.get("start_url"):
+                source = "this pipeline run" if crawl_run_id is not None else "database"
+                console_print(
+                    f"[Lighthouse on pages] Using crawl run {run_id} ({info['start_url']}, {source})",
+                    flush=True,
+                )
+        except Exception:
+            pass
     crawl_urls = select_lighthouse_urls_from_crawl(df, lighthouse_max_pages * 3)
     urls_200 = select_lighthouse_urls_from_gsc(google_data, crawl_urls, lighthouse_max_pages)
     if not urls_200:
@@ -451,53 +500,23 @@ def _run_single_lighthouse(cfg: dict, use_database: bool) -> None:
 
 
 def _run_report(cfg: dict, use_database: bool) -> None:
-    from ..reporting.builder import run_simple_report
+    from .report_build import build_report_resilient
 
-    max_fetch = get_int(cfg, "max_fetch_for_edges", 300)
-    same_domain = get_bool(cfg, "same_domain_only", True)
-    max_nodes = get_int(cfg, "max_nodes_plot", 400)
-    site_name = (cfg.get("site_name") or "").strip()
-    report_title = (cfg.get("report_title") or "").strip()
-    start_url = require_start_url(cfg, for_step="report")
-    run_security_scan_flag = get_bool(cfg, "run_security_scan", True)
-    security_scan_active = get_bool(cfg, "security_scan_active", False)
-    security_max_urls_probe = _cfg_int(cfg, "security_max_urls_probe", 20)
-    console_print("[Report] Starting...", flush=True)
-    emit_phase_start("report")
-    out = run_simple_report(
-        max_fetch_for_edges=max_fetch,
-        concurrency=6,
-        timeout=8,
-        same_domain_only=same_domain,
-        max_nodes_plot=max_nodes or 300,
-        site_name=site_name or None,
-        report_title=report_title or None,
-        start_url=start_url,
-        run_security_scan_flag=run_security_scan_flag,
-        security_scan_active=security_scan_active,
-        security_max_urls_probe=security_max_urls_probe,
-        lighthouse_summary_path=None,
-        use_database=use_database,
-        config=cfg,
-    )
-    console_print("[Report] Done.", flush=True)
-    emit_phase_done("report")
-    console_print(f"Report written: {out}")
-
-    enable_planner = get_bool(cfg, "enable_google_keyword_planner", False)
-    if should_enrich_keywords_after_report(cfg) and (google_db_has_gsc(cfg) or enable_planner):
-        source_label = "Search Console" if google_db_has_gsc(cfg) else "Keyword Planner"
-        console_print(f"[Keywords] Post-audit keyword research ({source_label} data)...", flush=True)
-        emit_phase_start("keywords")
-        from ..integrations.google.keyword_enrich import run_enrichment
-
+    property_id = active_property_id_from_cfg(cfg)
+    pid = int(property_id) if property_id else None
+    if _report_via_service() and pid:
+        console_print("[Report] Starting via ReportService...", flush=True)
+        emit_phase_start("report")
         try:
-            run_enrichment(cfg)
-            console_print("[Keywords] Post-audit keyword research done.", flush=True)
-            emit_phase_done("keywords")
-        except Exception as e:
-            console_print(f"Warning: post-audit keyword research failed: {e}", file=sys.stderr)
-            emit_progress("keywords", "error", message=str(e))
+            out = build_report_resilient(cfg, pid, use_database=use_database)
+        except Exception as exc:
+            emit_progress("report", "error", message=str(exc))
+            raise
+        emit_phase_done("report")
+        console_print(f"Report written: {out}")
+        return
+
+    build_report_resilient(cfg, pid, use_database=use_database)
 
 
 def _run_plot(cfg: dict, use_database: bool) -> None:

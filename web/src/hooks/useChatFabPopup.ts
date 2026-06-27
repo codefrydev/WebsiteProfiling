@@ -3,6 +3,7 @@ import { useCallback, useRef, useState } from 'react';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { consumeChatSse, type ChatSseEvent } from '@/components/chat/parseChatSse';
 import type { ChatNarrative } from '@/types/chatNarrative';
+import { strings } from '@/lib/strings';
 
 export interface FabChatMessage {
   id: string;
@@ -149,12 +150,24 @@ export function useChatFabPopup(domain: string | null): UseChatFabPopupReturn {
           }
 
           let lastNarrative: ChatNarrative | null = null;
+          let lastProgressAt = 0;
 
           await consumeChatSse(res, (evt: ChatSseEvent) => {
             if (evt.type === 'token') {
               setMessages((prev) =>
                 prev.map((m) =>
-                  m.id === assistantId ? { ...m, content: m.content + evt.text } : m,
+                  m.id === assistantId
+                    ? { ...m, toolStatus: strings.components.chat.writingSummary, streaming: true }
+                    : m,
+                ),
+              );
+            } else if (evt.type === 'narrative_partial') {
+              lastNarrative = evt.narrative;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId
+                    ? { ...m, narrative: evt.narrative, toolStatus: undefined, streaming: true }
+                    : m,
                 ),
               );
             } else if (evt.type === 'status') {
@@ -171,6 +184,17 @@ export function useChatFabPopup(domain: string | null): UseChatFabPopupReturn {
                   m.id === assistantId
                     ? { ...m, toolStatus: `Running ${evt.name ?? 'tool'}…` }
                     : m,
+                ),
+              );
+            } else if (evt.type === 'tool_progress' && evt.detail) {
+              const now = Date.now();
+              if (now - lastProgressAt < 100) {
+                return;
+              }
+              lastProgressAt = now;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId ? { ...m, toolStatus: evt.detail } : m,
                 ),
               );
             } else if (evt.type === 'tool_end') {

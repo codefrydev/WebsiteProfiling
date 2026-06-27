@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  buildLocalStdioConfig,
   buildRemoteCursorConfig,
   generateMcpToken,
   hostFromPublicUrl,
@@ -28,6 +29,19 @@ describe('mcpClientConfig', () => {
 
   it('generates token prefix', () => {
     expect(generateMcpToken().startsWith('wp_mcp_')).toBe(true);
+  });
+
+  it('builds local stdio json for AiService', () => {
+    const json = buildLocalStdioConfig({
+      publicUrl: '',
+      token: '',
+      domain: 'core',
+      propertyId: '2',
+    });
+    expect(json).toContain('"command": "dotnet"');
+    expect(json).toContain('services/AiService/src/AiService.Api');
+    expect(json).toContain('"FASTAPI_URL": "http://127.0.0.1:8001"');
+    expect(json).toContain('"WP_PROPERTY_ID": "2"');
   });
 
   it('normalizes domain bundle', () => {

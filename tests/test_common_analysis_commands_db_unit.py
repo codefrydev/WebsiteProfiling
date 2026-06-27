@@ -421,11 +421,8 @@ def test_merge_bundles_and_payload_edges() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_shadow_config_path_and_require_database_url(monkeypatch, tmp_path) -> None:
+def test_require_database_url(monkeypatch, tmp_path) -> None:
     from website_profiling.commands import config_resolve
-
-    monkeypatch.setattr("website_profiling.db.storage.get_data_dir", lambda: str(tmp_path))
-    assert config_resolve.shadow_config_path().endswith("pipeline-config.txt")
 
     monkeypatch.setattr("website_profiling.db.storage.get_database_url", lambda: "postgres://localhost/db")
     config_resolve.require_database_url()
@@ -467,39 +464,22 @@ def test_should_enrich_keywords_fallback_to_gsc_flag() -> None:
     assert should_enrich_keywords_after_report({"enable_google_search_console": "true"}) is True
 
 
-def test_resolve_config_db_and_shadow_paths(monkeypatch, tmp_path) -> None:
+def test_resolve_config_db_only(monkeypatch, tmp_path) -> None:
     from website_profiling.commands import config_resolve
 
-    # Missing config file
-    args = argparse.Namespace(config=str(tmp_path / "missing.txt"))
-    with pytest.raises(SystemExit) as e:
-        config_resolve.resolve_config(args)
-    assert e.value.code == 1
-
-    # DB path with shadow fallback
-    shadow = tmp_path / "pipeline-config.txt"
-    shadow.write_text("start_url = https://shadow.com\n", encoding="utf-8")
     monkeypatch.setattr(config_resolve, "require_database_url", lambda: None)
-    monkeypatch.setattr(config_resolve, "load_config_from_db", lambda: {})
-    monkeypatch.setattr(config_resolve, "shadow_config_path", lambda: str(shadow))
+    monkeypatch.setattr(config_resolve, "load_config_from_db", lambda: {"start_url": "https://db.com"})
     monkeypatch.setattr("website_profiling.db.storage.get_data_dir", lambda: str(tmp_path))
 
-    cfg, cwd = config_resolve.resolve_config(argparse.Namespace(config=None))
-    assert cfg["start_url"] == "https://shadow.com"
+    cfg, cwd = config_resolve.resolve_config(argparse.Namespace())
+    assert cfg["start_url"] == "https://db.com"
+    assert cwd == str(tmp_path)
 
-    # DB path with config loaded
-    monkeypatch.setattr(config_resolve, "load_config_from_db", lambda: {"start_url": "https://db.com"})
-    cfg2, _ = config_resolve.resolve_config(argparse.Namespace(config=None))
-    assert cfg2["start_url"] == "https://db.com"
-
-    # No config anywhere
     monkeypatch.setattr(config_resolve, "load_config_from_db", lambda: {})
-    monkeypatch.setattr(config_resolve, "shadow_config_path", lambda: str(tmp_path / "nope.txt"))
     with pytest.raises(SystemExit) as e2:
-        config_resolve.resolve_config(argparse.Namespace(config=None))
+        config_resolve.resolve_config(argparse.Namespace())
     assert e2.value.code == 1
 
-    # DB URL missing
     def _boom():
         raise RuntimeError("no DATABASE_URL")
 
@@ -627,7 +607,7 @@ def test_pipeline_cmd_remaining_branches(monkeypatch) -> None:
     monkeypatch.setitem(
         __import__("sys").modules,
         "website_profiling.crawl.crawler",
-        types.SimpleNamespace(run_crawler=lambda **_k: None),
+        types.SimpleNamespace(run_crawler=lambda **_k: (None, 1)),
     )
     pipeline_cmd._run_crawl({"crawl_js_extra_wait_ms": "", "crawl_render_mode": "auto"}, True)
 
@@ -640,25 +620,30 @@ def test_pipeline_cmd_remaining_branches(monkeypatch) -> None:
             return False
 
     monkeypatch.setattr("website_profiling.db.db_session", lambda: Ctx())
-    monkeypatch.setattr("website_profiling.db.get_latest_crawl_run_id", lambda _c: 1)
+    monkeypatch.setattr("website_profiling.db.resolve_crawl_run_id_for_cfg", lambda _c, **kw: 1)
+    monkeypatch.setattr("website_profiling.db.get_crawl_run_info", lambda _c, _rid: {"start_url": "https://a.com"})
     monkeypatch.setattr("website_profiling.db.read_crawl", lambda _c, _rid: pd.DataFrame())
     monkeypatch.setattr(pipeline_cmd, "lighthouse_work_dir", lambda: "/tmp/lh")
     monkeypatch.setattr(pipeline_cmd, "cleanup_lighthouse_work_dir", lambda _p: None)
     pipeline_cmd._run_lighthouse_on_pages({"lighthouse_strategy": "bogus"}, 5)
 
+    from website_profiling.commands import pipeline_cmd, report_build
+
     # report keyword enrich path
-    monkeypatch.setattr(pipeline_cmd, "require_start_url", lambda *_a, **_k: "https://a.com")
-    monkeypatch.setattr(pipeline_cmd, "should_enrich_keywords_after_report", lambda _cfg: True)
-    monkeypatch.setattr(pipeline_cmd, "google_db_has_gsc", lambda _cfg=None: True)
+    monkeypatch.setattr(report_build, "require_start_url", lambda *_a, **_k: "https://a.com")
+    monkeypatch.setattr(report_build, "should_enrich_keywords_after_report", lambda _cfg: True)
+    monkeypatch.setattr(report_build, "google_db_has_gsc", lambda _cfg=None: True)
+    monkeypatch.setattr(report_build, "console_print", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "emit_phase_start", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "emit_phase_done", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "emit_progress", lambda *_a, **_k: None)
+    monkeypatch.delenv("REPORT_SERVICE_URL", raising=False)
+    monkeypatch.setenv("INTEGRATIONS_SERVICE_URL", "http://integrations:8093")
+    monkeypatch.setattr(report_build, "active_property_id_from_cfg", lambda _c: 1)
     monkeypatch.setitem(
         __import__("sys").modules,
         "website_profiling.reporting.builder",
         types.SimpleNamespace(run_simple_report=lambda **_k: "out.json"),
-    )
-    monkeypatch.setitem(
-        __import__("sys").modules,
-        "website_profiling.integrations.google.keyword_enrich",
-        types.SimpleNamespace(run_enrichment=lambda _cfg: None),
     )
     pipeline_cmd._run_report({}, True)
 
@@ -795,25 +780,18 @@ def test_db_common_json_val_executemany_and_sanitize() -> None:
     assert sum(len(c.executemany_calls) for c in conn.cursors) >= 2
 
 
-def test_config_store_read_write_pipeline(monkeypatch) -> None:
+def test_config_store_read_write_pipeline() -> None:
     from website_profiling.db.config_store import read_pipeline_config, write_pipeline_config
 
     conn = FakeConn()
-    conn.set_next_cursor(
-        FakeCursor(
-            fetchall_value=[
-                {"key": "start_url", "value": "https://a.com", "is_unknown": False},
-                {"key": "legacy", "value": "v", "is_unknown": True},
-            ]
-        )
-    )
+    conn.set_next_cursor(FakeCursor(fetchone_value={"start_url": "https://a.com"}))
     known, unknown = read_pipeline_config(conn)  # type: ignore[arg-type]
     assert known["start_url"] == "https://a.com"
-    assert unknown[0]["key"] == "legacy"
+    assert unknown == []
 
     wconn = FakeConn()
-    write_pipeline_config(wconn, {"k": "v"}, unknown_keys=[{"key": "u", "value": "1"}])  # type: ignore[arg-type]
-    assert any("INSERT INTO pipeline_config" in sql for sql, _ in wconn.executed)
+    write_pipeline_config(wconn, {"start_url": "https://b.com"})  # type: ignore[arg-type]
+    assert any("UPDATE crawl_settings" in sql for sql, _ in wconn.executed)
 
 
 def test_crawl_store_branches(monkeypatch) -> None:

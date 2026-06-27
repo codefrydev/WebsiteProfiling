@@ -19,19 +19,10 @@ import { strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Button, DataViewLayout, LabelWithHint } from '../components';
 import type { ViewProps } from '@/types';
 
-const VIEW_MODE_STORAGE_KEY = 'network-view-mode';
+import { getCachedClientPreferences, initClientPreferences, patchClientPreferences } from '@/lib/clientPreferences';
 
 type NetworkViewMode = '2d' | '3d';
-
-function readStoredViewMode(): NetworkViewMode {
-  try {
-    const stored = localStorage.getItem(VIEW_MODE_STORAGE_KEY);
-    if (stored === '3d') return '3d';
-  } catch {
-    /* ignore */
-  }
-  return '2d';
-}
+const VIEW_MODE_STORAGE_KEY = 'network-view-mode';
 
 /** After the force simulation runs, 3d-force-graph mutates source/target into node objects. */
 interface GraphLinkRuntime {
@@ -102,7 +93,7 @@ export default function Network({ searchQuery = '' }: ViewProps) {
   const graphRef = useRef<ForceGraphInstance | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [viewMode, setViewMode] = useState<NetworkViewMode>(() =>
-    typeof window !== 'undefined' ? readStoredViewMode() : '2d',
+    typeof window !== 'undefined' ? getCachedClientPreferences().networkViewMode : '2d',
   );
   const [selected, setSelected] = useState<string | null>(null);
   const { data } = useReport();
@@ -118,6 +109,12 @@ export default function Network({ searchQuery = '' }: ViewProps) {
 
   const deferredSearch = useDeferredValue(searchQuery);
 
+  useEffect(() => {
+    void initClientPreferences().then((prefs) => {
+      setViewMode(prefs.networkViewMode);
+    });
+  }, []);
+
   const setViewModePersisted = useCallback((mode: NetworkViewMode) => {
     setViewMode(mode);
     try {
@@ -125,6 +122,7 @@ export default function Network({ searchQuery = '' }: ViewProps) {
     } catch {
       /* ignore */
     }
+    patchClientPreferences({ networkViewMode: mode });
   }, []);
 
   const graphPayload = useMemo(() => {

@@ -14,7 +14,7 @@ def test_pipeline_run_calls_crawl_with_minimal_config(monkeypatch) -> None:
 
     def fake_run_crawler(**_kwargs):
         called["crawl"] += 1
-        return pd.DataFrame([{"url": "https://site.com", "status": 200}])
+        return pd.DataFrame([{"url": "https://site.com", "status": 200}]), 42
 
     # Patch crawler module function used in _run_crawl
     import website_profiling.crawl.crawler as crawler_mod
@@ -34,6 +34,32 @@ def test_pipeline_run_calls_crawl_with_minimal_config(monkeypatch) -> None:
     assert called["crawl"] == 1
 
 
+def test_pipeline_skips_report_when_orchestrated(monkeypatch) -> None:
+    from website_profiling.commands import pipeline_cmd
+
+    monkeypatch.setenv("PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE", "1")
+    report_calls: list[int] = []
+    monkeypatch.setattr(pipeline_cmd, "_run_report", lambda *_a, **_k: report_calls.append(1))
+    monkeypatch.setattr(pipeline_cmd, "_run_crawl", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "_run_plot", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "emit_phase_start", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "emit_phase_done", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "emit_progress", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "console_print", lambda *_a, **_k: None)
+
+    cfg = {
+        "start_url": "https://site.com",
+        "run_crawl": "false",
+        "run_report": "true",
+        "run_plot": "false",
+        "run_lighthouse": "false",
+        "run_lighthouse_on_pages": "false",
+    }
+    args = argparse.Namespace(command=None)
+    pipeline_cmd.run(cfg, args)
+    assert report_calls == []
+
+
 def test_run_crawl_passes_render_mode_to_run_crawler(monkeypatch) -> None:
     from website_profiling.commands import pipeline_cmd
 
@@ -41,7 +67,7 @@ def test_run_crawl_passes_render_mode_to_run_crawler(monkeypatch) -> None:
 
     def fake_run_crawler(**kwargs):
         captured.update(kwargs)
-        return pd.DataFrame([{"url": "https://site.com", "status": 200}])
+        return pd.DataFrame([{"url": "https://site.com", "status": 200}]), 7
 
     import website_profiling.crawl.crawler as crawler_mod
 
@@ -80,7 +106,8 @@ def test_pipeline_lighthouse_on_pages_uses_selected_urls(monkeypatch) -> None:
     import website_profiling.db as db
 
     monkeypatch.setattr(db, "db_session", lambda: _Ctx())
-    monkeypatch.setattr(db, "get_latest_crawl_run_id", lambda _c: 1)
+    monkeypatch.setattr(db, "resolve_crawl_run_id_for_cfg", lambda _c, **kw: 1)
+    monkeypatch.setattr(db, "get_crawl_run_info", lambda _c, _rid: {"start_url": "https://a.com"})
     monkeypatch.setattr(
         db,
         "read_crawl",
@@ -106,6 +133,82 @@ def test_pipeline_lighthouse_on_pages_uses_selected_urls(monkeypatch) -> None:
     assert urls_seen["urls"] == ["https://a.com"]
 
 
+def test_pipeline_lighthouse_on_pages_prefers_pipeline_crawl_run_id(monkeypatch) -> None:
+    from website_profiling.commands import pipeline_cmd
+
+    class _Ctx:
+        def __enter__(self):
+            return object()
+
+        def __exit__(self, _t, _v, _tb):
+            return False
+
+    import website_profiling.db as db
+
+    resolve_calls: list[dict] = []
+    read_calls: list[int | None] = []
+
+    monkeypatch.setattr(db, "db_session", lambda: _Ctx())
+    monkeypatch.setattr(
+        db,
+        "resolve_crawl_run_id_for_cfg",
+        lambda _c, **kw: resolve_calls.append(kw) or 99,
+    )
+    monkeypatch.setattr(db, "get_crawl_run_info", lambda _c, rid: {"start_url": f"https://run-{rid}.com"})
+    monkeypatch.setattr(
+        db,
+        "read_crawl",
+        lambda _c, rid: (read_calls.append(rid), pd.DataFrame([{"url": "https://run-42.com", "status": 200}]))[1],
+    )
+    monkeypatch.setitem(
+        __import__("sys").modules,
+        "website_profiling.lighthouse.runner",
+        types.SimpleNamespace(
+            run_lighthouse_on_pages=lambda urls, **_k: {"attempted": len(urls), "succeeded": len(urls), "failed": 0},
+        ),
+    )
+    monkeypatch.setattr(pipeline_cmd, "lighthouse_work_dir", lambda: "/tmp/lh")
+    monkeypatch.setattr(pipeline_cmd, "cleanup_lighthouse_work_dir", lambda _p: None)
+
+    pipeline_cmd._run_lighthouse_on_pages({}, lighthouse_max_pages=5, crawl_run_id=42)
+    assert read_calls == [42]
+    assert resolve_calls == []
+
+    read_calls.clear()
+    pipeline_cmd._run_lighthouse_on_pages({}, lighthouse_max_pages=5)
+    assert read_calls == [99]
+    assert len(resolve_calls) == 1
+
+
+def test_pipeline_run_passes_crawl_run_id_to_lighthouse(monkeypatch) -> None:
+    from website_profiling.commands import pipeline_cmd
+
+    lh_crawl_ids: list[int | None] = []
+
+    def fake_crawl(*_a, **_k):
+        return 55
+
+    def fake_lh(cfg, max_pages, *, crawl_run_id=None):
+        lh_crawl_ids.append(crawl_run_id)
+
+    monkeypatch.setattr(pipeline_cmd, "_run_crawl", fake_crawl)
+    monkeypatch.setattr(pipeline_cmd, "_run_lighthouse_on_pages", fake_lh)
+    monkeypatch.setattr(pipeline_cmd, "_run_report", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "_run_plot", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "_run_content_analysis", lambda *_a, **_k: None)
+
+    cfg = {
+        "start_url": "https://site.com",
+        "run_crawl": "true",
+        "run_report": "false",
+        "run_plot": "false",
+        "run_lighthouse": "false",
+        "run_lighthouse_on_pages": "true",
+    }
+    pipeline_cmd.run(cfg, argparse.Namespace(command=None))
+    assert lh_crawl_ids == [55]
+
+
 def _patch_lighthouse_on_pages_db(monkeypatch):
     from website_profiling.commands import pipeline_cmd
 
@@ -119,7 +222,8 @@ def _patch_lighthouse_on_pages_db(monkeypatch):
     import website_profiling.db as db
 
     monkeypatch.setattr(db, "db_session", lambda: _Ctx())
-    monkeypatch.setattr(db, "get_latest_crawl_run_id", lambda _c: 1)
+    monkeypatch.setattr(db, "resolve_crawl_run_id_for_cfg", lambda _c, **kw: 1)
+    monkeypatch.setattr(db, "get_crawl_run_info", lambda _c, _rid: {"start_url": "https://a.com"})
     monkeypatch.setattr(
         db,
         "read_crawl",
@@ -213,7 +317,8 @@ def test_lighthouse_on_pages_swallows_google_data_errors(monkeypatch) -> None:
     import website_profiling.db as db
 
     monkeypatch.setattr(db, "db_session", lambda: _Ctx())
-    monkeypatch.setattr(db, "get_latest_crawl_run_id", lambda _c: 1)
+    monkeypatch.setattr(db, "resolve_crawl_run_id_for_cfg", lambda _c, **kw: 1)
+    monkeypatch.setattr(db, "get_crawl_run_info", lambda _c, _rid: {"start_url": "https://a.com"})
     monkeypatch.setattr(
         db,
         "read_crawl",

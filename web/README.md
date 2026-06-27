@@ -1,10 +1,10 @@
 # Site Audit — Web UI
 
-Vite + React SPA for [Site Audit](../README.md). The browser talks to the .NET **BFF** (`services/Bff/`) for all `/api/*` calls; the BFF proxies to FastAPI and FileService.
+Vite + React SPA for [Site Audit](../README.md). The browser talks to the .NET **BFF** (`services/Bff/`) for all `/api/*` calls; the BFF proxies to FastAPI, AiService, Data, and FileService.
 
 ## Development
 
-Use the repo root scripts — do not run `npm run dev` in isolation unless Postgres, FastAPI, and the BFF are already up:
+Use the repo root scripts — do not run `npm run dev` in isolation unless Postgres, FastAPI, AiService, and the BFF are already up:
 
 ```bash
 ./local-run setup   # first time

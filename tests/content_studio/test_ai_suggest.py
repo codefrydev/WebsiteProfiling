@@ -136,7 +136,7 @@ def test_analyze_with_ai_uses_cache() -> None:
     with patch("website_profiling.content_studio.ai_suggest.load_llm_config_from_db", return_value=cfg), patch(
         "website_profiling.content_studio.ai_suggest._read_cache",
         return_value=cached,
-    ), patch("website_profiling.content_studio.ai_suggest.run_content_studio_analyze") as mock_agent:
+    ), patch("website_profiling.content_studio.ai_suggest.call_ai_api") as mock_agent:
         result = analyze_content_draft(None, "best crm", "<p>best crm</p>", use_ai=True)
     mock_agent.assert_not_called()
     assert result["ai_used"] is True
@@ -162,7 +162,7 @@ def test_analyze_with_ai_agent_success() -> None:
         "website_profiling.content_studio.ai_suggest._read_cache",
         return_value=None,
     ), patch(
-        "website_profiling.content_studio.ai_suggest.run_content_studio_analyze",
+        "website_profiling.content_studio.ai_suggest.call_ai_api",
         return_value=agent_payload,
     ), patch("website_profiling.content_studio.ai_suggest._write_cache") as mock_write:
         result = analyze_content_draft(
@@ -185,7 +185,7 @@ def test_analyze_with_ai_agent_failure() -> None:
         "website_profiling.content_studio.ai_suggest._read_cache",
         return_value=None,
     ), patch(
-        "website_profiling.content_studio.ai_suggest.run_content_studio_analyze",
+        "website_profiling.content_studio.ai_suggest.call_ai_api",
         return_value={"ok": False, "error": "model timeout", "tool_events": []},
     ):
         result = analyze_content_draft(None, "best crm", "<p>best crm</p>", use_ai=True, refresh=True)
@@ -200,7 +200,7 @@ def test_analyze_with_ai_empty_block() -> None:
         "website_profiling.content_studio.ai_suggest._read_cache",
         return_value=None,
     ), patch(
-        "website_profiling.content_studio.ai_suggest.run_content_studio_analyze",
+        "website_profiling.content_studio.ai_suggest.call_ai_api",
         return_value={"ok": True, "ai_block": {}, "tool_events": []},
     ):
         result = analyze_content_draft(None, "best crm", "<p>best crm</p>", use_ai=True, refresh=True)

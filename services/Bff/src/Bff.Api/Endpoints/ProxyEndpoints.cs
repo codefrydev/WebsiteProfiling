@@ -14,11 +14,17 @@ public static class ProxyEndpoints
 {
     public static void MapProxyEndpoints(this IEndpointRouteBuilder app)
     {
-        // Chat: Server-Sent Events stream to FastAPI (upstream route has a trailing slash).
-        app.MapPost("/api/chat", (HttpContext ctx) => (IResult)new ForwardingResult(
-            DependencyInjection.FastApiStreamClient,
-            $"/api/chat/{ctx.Request.QueryString}",
-            disableResponseBuffering: true));
+        // Chat: Server-Sent Events stream to AiService (or FastAPI when AI_ROUTES is empty).
+        app.MapPost("/api/chat", (HttpContext ctx) =>
+        {
+            var upstream = ctx.RequestServices.GetRequiredService<IOptions<UpstreamOptions>>().Value;
+            var useAi = upstream.AiRoutes.Any(prefix =>
+                "/api/chat".StartsWith(prefix.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)
+                || prefix.Equals("/api/chat", StringComparison.OrdinalIgnoreCase));
+            var client = useAi ? DependencyInjection.AiStreamClient : DependencyInjection.FastApiStreamClient;
+            var path = useAi ? $"/api/chat/{ctx.Request.QueryString}" : $"/api/chat/{ctx.Request.QueryString}";
+            return (IResult)new ForwardingResult(client, path, disableResponseBuffering: true);
+        });
 
         // Report export: PDF/CSV/JSON are all rendered by the FileService (which reads Postgres
         // directly). A missing format defaults to csv (matches the old Python default); any other
@@ -70,8 +76,54 @@ public static class ProxyEndpoints
             var upstream = ctx.RequestServices.GetRequiredService<IOptions<UpstreamOptions>>().Value;
             var matchesDataRoute = upstream.DataRoutes.Any(prefix =>
                 path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+            var matchesIntegrationsRoute = MatchesIntegrationsRoute(path, upstream.IntegrationsRoutes);
+            var matchesReportRoute = upstream.ReportRoutes.Any(prefix =>
+                path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+            var matchesConfigRoute = upstream.ConfigRoutes.Any(prefix =>
+                path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+            var matchesAiRoute = upstream.AiRoutes.Any(prefix =>
+                path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
             var toData = !streaming
                 && matchesDataRoute
+                && (HttpMethods.IsGet(ctx.Request.Method)
+                    || HttpMethods.IsHead(ctx.Request.Method)
+                    || HttpMethods.IsPost(ctx.Request.Method)
+                    || HttpMethods.IsPut(ctx.Request.Method)
+                    || HttpMethods.IsDelete(ctx.Request.Method));
+            var toIntegrations = !streaming
+                && !toData
+                && matchesIntegrationsRoute
+                && (HttpMethods.IsGet(ctx.Request.Method)
+                    || HttpMethods.IsHead(ctx.Request.Method)
+                    || HttpMethods.IsPost(ctx.Request.Method)
+                    || HttpMethods.IsPut(ctx.Request.Method)
+                    || HttpMethods.IsPatch(ctx.Request.Method)
+                    || HttpMethods.IsDelete(ctx.Request.Method));
+            var toReport = !streaming
+                && !toData
+                && !toIntegrations
+                && matchesReportRoute
+                && (HttpMethods.IsGet(ctx.Request.Method)
+                    || HttpMethods.IsHead(ctx.Request.Method)
+                    || HttpMethods.IsPost(ctx.Request.Method)
+                    || HttpMethods.IsPut(ctx.Request.Method)
+                    || HttpMethods.IsDelete(ctx.Request.Method));
+            var toConfig = !streaming
+                && !toData
+                && !toIntegrations
+                && !toReport
+                && matchesConfigRoute
+                && (HttpMethods.IsGet(ctx.Request.Method)
+                    || HttpMethods.IsHead(ctx.Request.Method)
+                    || HttpMethods.IsPost(ctx.Request.Method)
+                    || HttpMethods.IsPut(ctx.Request.Method)
+                    || HttpMethods.IsDelete(ctx.Request.Method));
+            var toAi = !streaming
+                && !toData
+                && !toIntegrations
+                && !toReport
+                && !toConfig
+                && matchesAiRoute
                 && (HttpMethods.IsGet(ctx.Request.Method)
                     || HttpMethods.IsHead(ctx.Request.Method)
                     || HttpMethods.IsPost(ctx.Request.Method)
@@ -80,7 +132,15 @@ public static class ProxyEndpoints
 
             var client = toData
                 ? DependencyInjection.DataClient
-                : streaming ? DependencyInjection.FastApiStreamClient : DependencyInjection.FastApiClient;
+                : toIntegrations
+                    ? DependencyInjection.IntegrationsClient
+                    : toReport
+                        ? DependencyInjection.ReportClient
+                        : toConfig
+                            ? DependencyInjection.ConfigClient
+                            : toAi
+                                ? DependencyInjection.AiClient
+                                : streaming ? DependencyInjection.FastApiStreamClient : DependencyInjection.FastApiClient;
 
             return (IResult)new ForwardingResult(
                 client,
@@ -140,4 +200,23 @@ public static class ProxyEndpoints
 
     private static string Defaulted(string value, string fallback) =>
         string.IsNullOrEmpty(value) ? fallback : value;
+
+    private static bool MatchesIntegrationsRoute(string path, string[] routes)
+    {
+        if (routes.Length == 0)
+        {
+            return false;
+        }
+
+        foreach (var prefix in routes)
+        {
+            if (path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return path.StartsWith("/api/properties/", StringComparison.OrdinalIgnoreCase)
+            && path.Contains("/google", StringComparison.OrdinalIgnoreCase);
+    }
 }

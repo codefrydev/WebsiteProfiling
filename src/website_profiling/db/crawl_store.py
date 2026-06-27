@@ -52,6 +52,67 @@ def get_latest_crawl_run_id(conn: Connection) -> Optional[int]:
         return None
 
 
+def _normalize_start_url_key(url: str) -> str:
+    trimmed = (url or "").strip()
+    if not trimmed:
+        return ""
+    if not trimmed.startswith(("http://", "https://")):
+        trimmed = f"https://{trimmed}"
+    return trimmed.rstrip("/").lower()
+
+
+def get_latest_crawl_run_id_for_property(conn: Connection, property_id: int) -> Optional[int]:
+    """Latest crawl run scoped to a property, or None if none exist."""
+    try:
+        cur = conn.execute(
+            "SELECT id FROM crawl_runs WHERE property_id = %s ORDER BY id DESC LIMIT 1",
+            (int(property_id),),
+        )
+        row = cur.fetchone()
+        return int(row["id"]) if row else None
+    except Exception:
+        return None
+
+
+def get_latest_crawl_run_id_for_start_url(conn: Connection, start_url: str) -> Optional[int]:
+    """Latest crawl run whose start_url matches (scheme-insensitive, trailing slash ignored)."""
+    target = _normalize_start_url_key(start_url)
+    if not target:
+        return None
+    try:
+        cur = conn.execute(
+            """SELECT id, start_url FROM crawl_runs
+               WHERE start_url IS NOT NULL AND trim(start_url) <> ''
+               ORDER BY id DESC
+               LIMIT 100""",
+        )
+        for row in cur.fetchall() or []:
+            if _normalize_start_url_key(str(row.get("start_url") or "")) == target:
+                return int(row["id"])
+        return None
+    except Exception:
+        return None
+
+
+def resolve_crawl_run_id_for_cfg(
+    conn: Connection,
+    *,
+    property_id: Optional[int] = None,
+    start_url: Optional[str] = None,
+) -> Optional[int]:
+    """Pick crawl run for pipeline/report/Lighthouse: property, then start URL, then global latest."""
+    if property_id is not None:
+        rid = get_latest_crawl_run_id_for_property(conn, property_id)
+        if rid is not None:
+            return rid
+    site = (start_url or "").strip()
+    if site:
+        rid = get_latest_crawl_run_id_for_start_url(conn, site)
+        if rid is not None:
+            return rid
+    return get_latest_crawl_run_id(conn)
+
+
 def get_crawl_run_info(conn: Connection, run_id: int) -> Optional[dict[str, Any]]:
     try:
         cur = conn.execute(

@@ -1,6 +1,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { RotateCcw, Upload, X, ImageIcon } from 'lucide-react';
+import { DraftInput } from '@/components/shared/DraftTextInput';
 import { useBranding } from '@/context/useBranding';
 import { DEFAULT_BRANDING } from '@/context/BrandingContext';
 
@@ -21,22 +22,9 @@ function SettingRow({
   defaultValue: string;
   onSave: (v: string) => void;
 }) {
-  const [draft, setDraft] = useState(value);
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isCustom = value !== defaultValue && value !== '';
 
-  useEffect(() => {
-    setDraft(value);
-  }, [value]);
-
-  const handleChange = (next: string) => {
-    setDraft(next);
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => onSave(next), 600);
-  };
-
   const handleReset = () => {
-    setDraft(defaultValue);
     onSave('');
   };
 
@@ -53,11 +41,11 @@ function SettingRow({
         </div>
         <p className="text-xs text-muted-foreground mb-2">{description}</p>
         <div className="flex items-center gap-2">
-          <input
+          <DraftInput
             type="text"
-            value={draft}
+            value={value}
             placeholder={placeholder}
-            onChange={(e) => handleChange(e.target.value)}
+            onCommit={onSave}
             className="flex-1 rounded-lg border border-default bg-[var(--app-bg-muted)] px-3 py-1.5 text-sm text-foreground transition-colors focus:border-[var(--accent)] focus:outline-none"
           />
           {isCustom && (

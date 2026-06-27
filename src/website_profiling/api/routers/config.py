@@ -1,9 +1,12 @@
-"""Config routes: pipeline-config, llm-config, secrets, app-settings."""
+"""Config routes: typed pipeline-settings and ui-preferences only.
+
+Secrets and llm-settings are served by AiService via BFF.
+"""
 from __future__ import annotations
 
 from typing import Annotated, Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends
 from psycopg import Connection
 from pydantic import BaseModel
 
@@ -11,250 +14,194 @@ from ..deps import get_db
 
 router = APIRouter(tags=["config"])
 
-_MASK = "*"
 
-
-# ---------------------------------------------------------------------------
-# helpers
-# ---------------------------------------------------------------------------
-
-
-def _mask_secrets(data: dict[str, Any]) -> dict[str, Any]:
-    """Return a copy of *data* with secret-ish values replaced by ``'*'``."""
-    masked: dict[str, Any] = {}
-    for k, v in data.items():
-        val_str = str(v) if v is not None else ""
-        if val_str and (_is_secret_key(k)):
-            masked[k] = _MASK
-        else:
-            masked[k] = v
-    return masked
-
-
-def _is_secret_key(key: str) -> bool:
-    key_lower = key.lower()
-    return (
-        key_lower.endswith("_secret")
-        or key_lower.endswith("_api_key")
-        or key_lower.endswith("_key")
-        or "api_key" in key_lower
-        or "secret" in key_lower
-        or "password" in key_lower
-        or "token" in key_lower
+@router.get("/pipeline-settings")
+def get_pipeline_settings(conn: Annotated[Connection, Depends(get_db)]) -> dict[str, Any]:
+    from website_profiling.db.config_store import read_pipeline_config
+    from website_profiling.db.typed_config.pipeline_settings_store import (
+        read_all_pipeline_domains,
+        read_workspace_settings,
     )
 
+    state, _ = read_pipeline_config(conn)
+    domains = read_all_pipeline_domains(conn)
+    workspace = read_workspace_settings(conn)
 
-def _read_llm_config_full(conn: Connection) -> list[dict[str, Any]]:
-    from website_profiling.db.config_store import read_llm_config_full
-    return read_llm_config_full(conn)
+    def _domain_payload(model, exclude: frozenset[str] = frozenset({"updated_at"})) -> dict[str, Any]:
+        return {
+            k: getattr(model, k, "")
+            for k in model.__dataclass_fields__
+            if k not in exclude
+        }
+
+    return {
+        "crawl": _domain_payload(domains["crawl_settings"]),
+        "report": _domain_payload(domains["report_settings"]),
+        "lighthouse": _domain_payload(domains["lighthouse_settings"]),
+        "analysis": _domain_payload(domains["content_analysis_settings"]),
+        "auditSteps": _domain_payload(domains["audit_step_settings"]),
+        "google": _domain_payload(domains["google_pipeline_settings"]),
+        "keywords": _domain_payload(domains["keyword_settings"]),
+        "workspace": {
+            "activePropertyId": workspace.active_property_id,
+            "warningMapperInput": workspace.warning_mapper_input,
+            "warningMapperInputType": workspace.warning_mapper_input_type,
+        },
+        "state": state,
+        "source": "db",
+    }
 
 
-def _read_app_setting(conn: Connection, key: str) -> Optional[str]:
-    from website_profiling.db.config_store import read_app_setting
-    return read_app_setting(conn, key)
-
-
-def _write_app_setting(conn: Connection, key: str, value: str) -> None:
-    from website_profiling.db.config_store import write_app_setting
-    write_app_setting(conn, key, value)
-
-
-# ---------------------------------------------------------------------------
-# pipeline-config
-# ---------------------------------------------------------------------------
-
-
-@router.get("/pipeline-config")
-def get_pipeline_config(conn: Annotated[Connection, Depends(get_db)]) -> dict[str, Any]:
-    from website_profiling.db.config_store import read_pipeline_config
-
-    state, unknown_keys = read_pipeline_config(conn)
-    return {"state": state, "unknownKeys": unknown_keys, "source": "db"}
-
-
-class PipelineConfigBody(BaseModel):
+class PipelineSettingsBody(BaseModel):
     state: dict[str, Any]
-    unknownKeys: Optional[list[dict[str, str]]] = None
 
 
-@router.put("/pipeline-config")
-def put_pipeline_config(
-    body: PipelineConfigBody,
+@router.put("/pipeline-settings")
+def put_pipeline_settings(
+    body: PipelineSettingsBody,
     conn: Annotated[Connection, Depends(get_db)],
 ) -> dict[str, Any]:
     from website_profiling.db.config_store import write_pipeline_config
 
     coerced: dict[str, str] = {str(k): str(v) for k, v in body.state.items()}
-    unknown_keys: list[dict[str, str]] = body.unknownKeys or []
-    write_pipeline_config(conn, coerced, unknown_keys)
+    write_pipeline_config(conn, coerced)
     return {"ok": True, "source": "db"}
 
 
-# ---------------------------------------------------------------------------
-# llm-config
-# ---------------------------------------------------------------------------
+class UiPreferencesResponse(BaseModel):
+    brandName: str = ""
+    brandSubtitle: str = ""
+    brandLogoUrl: str = ""
+    customThemeJson: Optional[dict[str, Any]] = None
+    uiPrefsJson: Optional[dict[str, Any]] = None
 
 
-@router.get("/llm-config")
-def get_llm_config(conn: Annotated[Connection, Depends(get_db)]) -> dict[str, Any]:
-    rows = _read_llm_config_full(conn)
-    state: dict[str, Any] = {}
-    for row in rows:
-        k = str(row["key"])
-        v = str(row["value"])
-        is_secret = bool(row.get("is_secret"))
-        state[k] = _MASK if (is_secret and v) else v
-    return {"state": state, "source": "db"}
+class UiPreferencesBody(BaseModel):
+    brandName: Optional[str] = None
+    brandSubtitle: Optional[str] = None
+    brandLogoUrl: Optional[str] = None
+    customThemeJson: Optional[dict[str, Any]] = None
+    uiPrefsJson: Optional[dict[str, Any]] = None
 
 
-class LlmConfigBody(BaseModel):
-    state: dict[str, Any]
+@router.get("/ui-preferences")
+def get_ui_preferences(conn: Annotated[Connection, Depends(get_db)]) -> UiPreferencesResponse:
+    from website_profiling.db.typed_config.ui_preferences_store import read_ui_preferences
+
+    prefs = read_ui_preferences(conn)
+    return UiPreferencesResponse(
+        brandName=prefs.brand_name or "",
+        brandSubtitle=prefs.brand_subtitle or "",
+        brandLogoUrl=prefs.brand_logo_url or "",
+        customThemeJson=prefs.custom_theme_json if isinstance(prefs.custom_theme_json, dict) else None,
+        uiPrefsJson=prefs.ui_prefs_json if isinstance(prefs.ui_prefs_json, dict) else None,
+    )
 
 
-@router.put("/llm-config")
-def put_llm_config(
-    body: LlmConfigBody,
+@router.put("/ui-preferences")
+def put_ui_preferences(
+    body: UiPreferencesBody,
     conn: Annotated[Connection, Depends(get_db)],
 ) -> dict[str, Any]:
-    from website_profiling.db.config_store import write_llm_config
+    from website_profiling.db.typed_config.ui_preferences_store import patch_ui_preferences
 
-    # Preserve existing secret values when client sends "*" (masked sentinel)
-    existing_rows = _read_llm_config_full(conn)
-    existing: dict[str, str] = {str(r["key"]): str(r["value"]) for r in existing_rows}
-    existing_secrets: set[str] = {str(r["key"]) for r in existing_rows if r.get("is_secret")}
+    updates: dict[str, str] = {}
+    if body.brandName is not None:
+        updates["brand_name"] = body.brandName
+    if body.brandSubtitle is not None:
+        updates["brand_subtitle"] = body.brandSubtitle
+    if body.brandLogoUrl is not None:
+        updates["brand_logo_url"] = body.brandLogoUrl
+    if body.customThemeJson is not None:
+        import json
 
-    entries: dict[str, str] = {}
-    secret_keys: set[str] = set()
+        updates["custom_theme"] = json.dumps(body.customThemeJson)
+    if body.uiPrefsJson is not None:
+        import json
 
-    for k, v in body.state.items():
-        val = str(v) if v is not None else ""
-        is_masked_sentinel = val.strip() in (_MASK, "••••") or (
-            val.strip().startswith("*") and len(val.strip()) <= 4
-        )
-        if is_masked_sentinel and k in existing:
-            # Keep original value
-            entries[k] = existing[k]
-        else:
-            entries[k] = val
-
-        if k in existing_secrets or _is_secret_key(k):
-            secret_keys.add(k)
-
-    write_llm_config(conn, entries, secret_keys)
+        updates["ui_prefs"] = json.dumps(body.uiPrefsJson)
+    patch_ui_preferences(conn, updates)
+    conn.commit()
     return {"ok": True}
 
 
-# ---------------------------------------------------------------------------
-# secrets
-# ---------------------------------------------------------------------------
+class ClientPreferencesResponse(BaseModel):
+    defaultLandingView: str = "overview"
+    chatFabCorner: str = "bottom-right"
+    sidebarCollapsed: bool = False
+    networkViewMode: str = "2d"
+    contentStudioAiEnabled: bool = True
+    pipelinePythonExe: str = "python3"
+    pipelineRepoRoot: str = ""
+    radiusScale: str = "default"
+    densityScale: str = "default"
+    animationsEnabled: bool = True
+    fontSizeScale: str = "default"
 
 
-@router.get("/secrets")
-def get_secrets(conn: Annotated[Connection, Depends(get_db)]) -> dict[str, Any]:
-    from website_profiling.db.google_app_store import read_google_app_settings
-
-    llm_rows = _read_llm_config_full(conn)
-    state: dict[str, Any] = {}
-    for row in llm_rows:
-        k = str(row["key"])
-        v = str(row["value"])
-        is_secret = bool(row.get("is_secret")) or _is_secret_key(k)
-        if is_secret and v:
-            state[k] = _MASK
-            state[f"{k}_masked"] = True
-        elif v:
-            state[k] = v
-
-    google = read_google_app_settings(conn)
-    for field in ("client_id", "client_secret", "developer_token", "login_customer_id"):
-        raw = str(google.get(field) or "")
-        if raw:
-            state[f"google_{field}"] = _MASK if _is_secret_key(field) else raw
-            if _is_secret_key(field):
-                state[f"google_{field}_masked"] = True
-    state["google_has_service_account"] = bool(google.get("service_account_json"))
-
-    return {"state": state, "source": "db"}
+class ClientPreferencesBody(BaseModel):
+    defaultLandingView: Optional[str] = None
+    chatFabCorner: Optional[str] = None
+    sidebarCollapsed: Optional[bool] = None
+    networkViewMode: Optional[str] = None
+    contentStudioAiEnabled: Optional[bool] = None
+    pipelinePythonExe: Optional[str] = None
+    pipelineRepoRoot: Optional[str] = None
+    radiusScale: Optional[str] = None
+    densityScale: Optional[str] = None
+    animationsEnabled: Optional[bool] = None
+    fontSizeScale: Optional[str] = None
 
 
-class SecretsBody(BaseModel):
-    state: dict[str, Any]
+def _client_preferences_response(prefs) -> ClientPreferencesResponse:
+    return ClientPreferencesResponse(
+        defaultLandingView=prefs.default_landing_view or "overview",
+        chatFabCorner=prefs.chat_fab_corner or "bottom-right",
+        sidebarCollapsed=bool(prefs.sidebar_collapsed),
+        networkViewMode=prefs.network_view_mode or "2d",
+        contentStudioAiEnabled=bool(prefs.content_studio_ai_enabled),
+        pipelinePythonExe=prefs.pipeline_python_exe or "python3",
+        pipelineRepoRoot=prefs.pipeline_repo_root or "",
+        radiusScale=prefs.radius_scale or "default",
+        densityScale=prefs.density_scale or "default",
+        animationsEnabled=bool(prefs.animations_enabled),
+        fontSizeScale=prefs.font_size_scale or "default",
+    )
 
 
-@router.put("/secrets")
-def put_secrets(
-    body: SecretsBody,
+@router.get("/client-preferences")
+def get_client_preferences(conn: Annotated[Connection, Depends(get_db)]) -> ClientPreferencesResponse:
+    from website_profiling.db.typed_config.client_preferences_store import read_client_preferences
+
+    return _client_preferences_response(read_client_preferences(conn))
+
+
+@router.put("/client-preferences")
+def put_client_preferences(
+    body: ClientPreferencesBody,
     conn: Annotated[Connection, Depends(get_db)],
 ) -> dict[str, Any]:
-    from website_profiling.db.config_store import read_llm_config, write_llm_config
-    from website_profiling.db.google_app_store import read_google_app_settings, save_google_app_settings
+    from website_profiling.db.typed_config.client_preferences_store import patch_client_preferences
 
-    existing_llm = read_llm_config(conn)
-    existing_rows = _read_llm_config_full(conn)
-    existing_secrets_set: set[str] = {str(r["key"]) for r in existing_rows if r.get("is_secret")}
-
-    llm_updates: dict[str, str] = dict(existing_llm)
-    llm_secret_keys: set[str] = set(existing_secrets_set)
-    google_patch: dict[str, Any] = {}
-
-    for k, v in body.state.items():
-        if k.endswith("_masked") or k == "google_has_service_account":
-            continue
-
-        val = str(v) if v is not None else ""
-        is_masked_sentinel = val.strip() in (_MASK, "••••") or (
-            val.strip().startswith("*") and len(val.strip()) <= 4
-        )
-
-        if k.startswith("google_"):
-            field = k[len("google_"):]
-            if field in ("client_id", "client_secret", "developer_token", "login_customer_id"):
-                if not is_masked_sentinel:
-                    google_patch[field] = val
-        else:
-            if is_masked_sentinel:
-                # Preserve existing
-                pass
-            else:
-                llm_updates[k] = val
-                if _is_secret_key(k):
-                    llm_secret_keys.add(k)
-
-    write_llm_config(conn, llm_updates, llm_secret_keys)
-
-    if google_patch:
-        save_google_app_settings(conn, google_patch)
-
-    return {"ok": True}
-
-
-# ---------------------------------------------------------------------------
-# app-settings
-# ---------------------------------------------------------------------------
-
-
-@router.get("/app-settings")
-def get_app_setting(
-    conn: Annotated[Connection, Depends(get_db)],
-    key: str = Query(..., description="Settings key to retrieve"),
-) -> dict[str, Any]:
-    if not key or not key.strip():
-        raise HTTPException(status_code=400, detail="Missing key query parameter")
-    value = _read_app_setting(conn, key.strip())
-    return {"key": key.strip(), "value": value}
-
-
-class AppSettingBody(BaseModel):
-    key: str
-    value: str
-
-
-@router.put("/app-settings")
-def put_app_setting(
-    body: AppSettingBody,
-    conn: Annotated[Connection, Depends(get_db)],
-) -> dict[str, Any]:
-    if not body.key or not body.key.strip():
-        raise HTTPException(status_code=400, detail="key must not be empty")
-    _write_app_setting(conn, body.key.strip(), body.value)
+    field_map = {
+        "defaultLandingView": "default_landing_view",
+        "chatFabCorner": "chat_fab_corner",
+        "sidebarCollapsed": "sidebar_collapsed",
+        "networkViewMode": "network_view_mode",
+        "contentStudioAiEnabled": "content_studio_ai_enabled",
+        "pipelinePythonExe": "pipeline_python_exe",
+        "pipelineRepoRoot": "pipeline_repo_root",
+        "radiusScale": "radius_scale",
+        "densityScale": "density_scale",
+        "animationsEnabled": "animations_enabled",
+        "fontSizeScale": "font_size_scale",
+    }
+    updates: dict[str, Any] = {}
+    for camel, snake in field_map.items():
+        value = getattr(body, camel)
+        if value is not None:
+            updates[snake] = value
+    if updates:
+        patch_client_preferences(conn, updates)
+        conn.commit()
     return {"ok": True}

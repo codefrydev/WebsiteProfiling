@@ -92,6 +92,35 @@ def _score_domains(text: str) -> list[tuple[int, str]]:
     return scores
 
 
+def expand_active_tools_from_result(
+    tool_name: str,
+    tool_result: dict[str, Any],
+    active: set[str],
+) -> set[str]:
+    """Expand the active tool set after search/domain-agent tool results."""
+    expanded = set(active)
+    pinned: set[str] = set()
+
+    if tool_name == "search_audit_tools":
+        names = tool_result.get("tool_names")
+        if isinstance(names, list):
+            for name in names[:12]:
+                if isinstance(name, str) and name:
+                    expanded.add(name)
+                    pinned.add(name)
+    elif tool_name == "run_domain_agent":
+        names = tool_result.get("tools_used")
+        if isinstance(names, list):
+            for name in names:
+                if isinstance(name, str) and name:
+                    expanded.add(name)
+                    pinned.add(name)
+
+    if chat_tool_mode() != "full" and pinned:
+        expanded = apply_tool_cap(expanded, chat_tool_search_cap(), pinned=pinned)
+    return expanded
+
+
 def apply_tool_cap(
     selected: set[str],
     cap: int,

@@ -27,14 +27,13 @@ public class AppSettingsClientTests
     {
         using var http = TestHttpHandler.CreateClient(req =>
         {
-            var path = req.RequestUri!.AbsolutePath + req.RequestUri.Query;
-            return path switch
+            if (req.RequestUri!.AbsolutePath.Contains("ui-preferences", StringComparison.OrdinalIgnoreCase))
             {
-                var p when p.Contains("brand_name") => TestHttpHandler.Json("""{"value":"Agency Co"}"""),
-                var p when p.Contains("brand_subtitle") => TestHttpHandler.Json("""{"value":"Audits"}"""),
-                var p when p.Contains("brand_logo_url") => TestHttpHandler.Json("""{"value":"https://cdn/logo.png"}"""),
-                _ => new HttpResponseMessage(HttpStatusCode.NotFound),
-            };
+                return TestHttpHandler.Json(
+                    """{"brandName":"Agency Co","brandSubtitle":"Audits","brandLogoUrl":"https://cdn/logo.png"}""");
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
         });
         var logoFetcher = new FakeLogoFetcher { Bytes = [1, 2, 3] };
         var client = new AppSettingsClient(

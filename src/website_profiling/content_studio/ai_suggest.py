@@ -6,13 +6,36 @@ import json
 import re
 from typing import Any
 
+from ..db.llm_cache_store import read_llm_cache, write_llm_cache
 from ..llm_config import load_llm_config_from_db, llm_is_enabled
-from ..llm.enrich import _read_cache, _write_cache
-from ..llm.prompts import PROMPT_VERSION
-from .agent import run_content_studio_analyze
+
+PROMPT_VERSION = "v2"
+
+from ..ai_service_client import call_ai_api
 from .context import ContentStudioContext
 from .score import score_content_draft
 from .tools import run_all_content_studio_tools
+
+
+def _read_cache(cache_key: str) -> dict[str, Any] | None:
+    from ..db import db_session
+
+    with db_session() as conn:
+        raw = read_llm_cache(conn, cache_key)
+    if not raw:
+        return None
+    try:
+        data = json.loads(raw)
+        return data if isinstance(data, dict) else None
+    except json.JSONDecodeError:
+        return None
+
+
+def _write_cache(cache_key: str, payload: dict[str, Any]) -> None:
+    from ..db import db_session
+
+    with db_session() as conn:
+        write_llm_cache(conn, cache_key, json.dumps(payload, default=str))
 
 
 def _rule_suggestions(score: dict[str, Any]) -> list[dict[str, Any]]:
@@ -179,7 +202,24 @@ def analyze_content_draft(
             tool_events = cached.get("tool_events") if isinstance(cached.get("tool_events"), list) else []
 
     if not ai_block:
-        agent_result = run_content_studio_analyze(ctx, cfg)
+        try:
+            remote = call_ai_api(
+                "/api/content/analyze",
+                {
+                    "keyword": keyword,
+                    "propertyId": property_id,
+                    "bodyHtml": body_html,
+                    "titleTag": title_tag,
+                    "metaDescription": meta_description,
+                    "landingUrl": landing_url,
+                    "title": title,
+                    "useAi": True,
+                    "refresh": refresh,
+                },
+            )
+            agent_result = remote.get("analysis") if isinstance(remote.get("analysis"), dict) else remote
+        except Exception as exc:
+            agent_result = {"ok": False, "error": str(exc)}
         tool_events = agent_result.get("tool_events") if isinstance(agent_result.get("tool_events"), list) else []
         result["tools_used"] = [str(e.get("name") or "") for e in tool_events if e.get("name")]
         result["tool_events"] = tool_events

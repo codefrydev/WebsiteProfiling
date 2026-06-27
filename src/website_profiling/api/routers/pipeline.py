@@ -18,7 +18,6 @@ from ..schemas.pipeline import (
     ResumeResponse,
     RunPostBody,
     RunResponse,
-    coerce_llm_state,
     coerce_pipeline_state,
     validate_pipeline_run,
 )
@@ -52,8 +51,6 @@ def _get_pipeline_jobs_db(conn: Connection):
 def run_pipeline(body: RunPostBody, conn: DbDep) -> dict[str, Any]:
     from website_profiling.db.config_store import (
         read_pipeline_config,
-        read_llm_config,
-        write_llm_config,
         write_pipeline_config,
     )
     from website_profiling.db.pipeline_jobs import enqueue_job, reconcile_stale_jobs
@@ -68,13 +65,11 @@ def run_pipeline(body: RunPostBody, conn: DbDep) -> dict[str, Any]:
 
     # Resolve state — fall back to saved config if not provided
     raw_state = body.state
-    unknown_keys = [{"key": u.key, "value": u.value} for u in (body.unknownKeys or [])]
 
     if not raw_state:
         try:
-            saved_state, saved_unknown = read_pipeline_config(conn)
+            saved_state, _saved_unknown = read_pipeline_config(conn)
             raw_state = saved_state
-            unknown_keys = saved_unknown
         except Exception as exc:
             raise HTTPException(
                 status_code=400,
@@ -86,14 +81,6 @@ def run_pipeline(body: RunPostBody, conn: DbDep) -> dict[str, Any]:
 
     state = coerce_pipeline_state(raw_state)
 
-    # Filter unknown keys
-    safe_unknown = [
-        u for u in unknown_keys
-        if isinstance(u, dict)
-        and not str(u.get("key", "")).startswith("llm_")
-        and not str(u.get("key", "")).startswith("ml_")
-    ]
-
     # Resolve property ID from start_url
     start_url = str(state.get("start_url") or "").strip()
     property_id: int | None = body.propertyId
@@ -102,15 +89,9 @@ def run_pipeline(body: RunPostBody, conn: DbDep) -> dict[str, Any]:
         hostname = urlparse(start_url).hostname or ""
         if hostname:
             try:
-                from website_profiling.db.property_store import (
-                    canonical_domain_from_start_url,
-                    upsert_property_by_domain,
-                )
-                domain = canonical_domain_from_start_url(start_url)
-                if domain:
-                    property_id = upsert_property_by_domain(
-                        conn, domain, domain, start_url
-                    )
+                from website_profiling.db.property_store import ensure_property_from_start_url
+
+                property_id = ensure_property_from_start_url(conn, start_url) or property_id
             except Exception:
                 pass
         state["active_property_id"] = str(property_id or "")
@@ -123,18 +104,9 @@ def run_pipeline(body: RunPostBody, conn: DbDep) -> dict[str, Any]:
     # Save pipeline config
     str_state = {k: str(v) for k, v in state.items() if v is not None}
     try:
-        write_pipeline_config(conn, str_state, safe_unknown)
+        write_pipeline_config(conn, str_state)
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Failed to save config: {exc}")
-
-    # Save LLM config if provided
-    if body.llmState and isinstance(body.llmState, dict):
-        llm_coerced = coerce_llm_state(body.llmState)
-        str_llm = {k: str(v) for k, v in llm_coerced.items() if not str(k).endswith("_masked")}
-        try:
-            write_llm_config(conn, str_llm)
-        except Exception as exc:
-            raise HTTPException(status_code=500, detail=f"Failed to save LLM config: {exc}")
 
     # Enqueue job
     job_id = str(uuid.uuid4())

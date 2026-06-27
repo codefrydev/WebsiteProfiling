@@ -3,6 +3,12 @@ using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Host.UseDefaultServiceProvider((_, options) =>
+{
+    options.ValidateOnBuild = true;
+    options.ValidateScopes = true;
+});
+
 builder.Services.AddDataApplication();
 builder.Services.AddControllers();
 

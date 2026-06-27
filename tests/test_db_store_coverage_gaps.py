@@ -1,6 +1,7 @@
 """Unit tests for db store modules that lost coverage after legacy-path removal."""
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from unittest.mock import patch
 
@@ -19,44 +20,64 @@ def test_config_store_llm_full_and_app_settings() -> None:
         read_llm_config_full,
         write_app_setting,
     )
+    from website_profiling.db.typed_config.models import UiPreferences
 
     conn = FakeConn()
-    conn.set_next_cursor(
-        FakeCursor(
-            fetchall_value=[
-                {"key": "model", "value": "gpt", "is_secret": True},
-            ]
-        )
-    )
-    rows = read_llm_config_full(conn)
-    assert rows == [{"key": "model", "value": "gpt", "is_secret": True}]
+    with patch(
+        "website_profiling.db.config_store.load_worker_llm_config",
+        return_value={"llm_provider": "openai", "openai_api_key": "sk-test"},
+    ):
+        rows = read_llm_config_full(conn)
+        assert isinstance(rows, list)
+        assert any(r["key"] == "llm_provider" for r in rows)
+        assert any(r["is_secret"] for r in rows if "api_key" in r["key"])
 
-    assert read_llm_config_full(FakeConn()) == []  # type: ignore[arg-type]
+    with patch(
+        "website_profiling.db.config_store.load_worker_llm_config",
+        return_value={"llm_provider": "none"},
+    ):
+        assert read_llm_config_full(FakeConn())  # type: ignore[arg-type]
 
-    class BoomConn(FakeConn):
-        def execute(self, sql, params=None):
-            raise RuntimeError("db down")
+    with patch(
+        "website_profiling.db.config_store.load_worker_llm_config",
+        side_effect=RuntimeError("db down"),
+    ):
+        assert read_llm_config_full(FakeConn()) == []  # type: ignore[arg-type]
 
-    assert read_llm_config_full(BoomConn()) == []  # type: ignore[arg-type]
+    with patch(
+        "website_profiling.db.typed_config.ui_preferences_store.read_ui_preferences",
+        return_value=UiPreferences(brand_name="on"),
+    ):
+        assert read_app_setting(conn, "brand_name") == "on"
 
-    conn2 = FakeConn()
-    conn2.set_next_cursor(FakeCursor(fetchone_value={"value": "on"}))
-    assert read_app_setting(conn2, "feature") == "on"
+    with patch(
+        "website_profiling.db.typed_config.ui_preferences_store.read_ui_preferences",
+        return_value=UiPreferences(brand_name=""),
+    ):
+        assert read_app_setting(conn, "brand_name") is None
 
-    conn3 = FakeConn()
-    conn3.set_next_cursor(FakeCursor(fetchone_value=None))
-    assert read_app_setting(conn3, "missing") is None
+    with patch(
+        "website_profiling.db.typed_config.ui_preferences_store.read_ui_preferences",
+        return_value=UiPreferences(custom_theme_json={"primary": "#000"}),
+    ):
+        assert json.loads(read_app_setting(conn, "custom_theme") or "") == {"primary": "#000"}
 
-    class BoomConn(FakeConn):
-        def execute(self, sql, params=None):
-            raise RuntimeError("db down")
+    with patch(
+        "website_profiling.db.typed_config.ui_preferences_store.read_ui_preferences",
+        return_value=UiPreferences(),
+    ):
+        assert read_app_setting(conn, "unknown_setting_key") is None
 
-    assert read_app_setting(BoomConn(), "x") is None  # type: ignore[arg-type]
+    with patch(
+        "website_profiling.db.typed_config.ui_preferences_store.read_ui_preferences",
+        side_effect=RuntimeError("db down"),
+    ):
+        assert read_app_setting(conn, "brand_name") is None
 
     wconn = FakeConn()
-    write_app_setting(wconn, "k", "v")
+    write_app_setting(wconn, "brand_name", "Agency Co")
     assert wconn.commits == 1
-    assert "app_settings" in wconn.executed[0][0]
+    assert any("ui_preferences" in sql for sql, _ in wconn.executed)
 
 
 def test_portfolio_store_deletes() -> None:

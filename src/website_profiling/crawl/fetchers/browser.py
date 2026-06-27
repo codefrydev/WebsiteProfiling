@@ -451,9 +451,9 @@ class BrowserFetcher:
         for _ in range(self.js_concurrency):
             self._loop.call_soon_threadsafe(self._jobs.put_nowait, None)
         if self._thread is not None and self._thread.is_alive():
-            self._thread.join(timeout=30)
+            self._thread.join(timeout=10)
             if self._thread.is_alive():  # pragma: no cover - join-timeout path
                 logger.warning(
-                    "BrowserFetcher event-loop thread did not exit within 30s; "
+                    "BrowserFetcher event-loop thread did not exit within 10s; "
                     "the browser/Chromium process may not have shut down cleanly."
                 )

@@ -96,12 +96,16 @@ def category_security(
     if security_findings:
         for f in security_findings:
             severity = f.get("severity", "Medium")
-            issues.append(_issue(
+            issue = _issue(
                 f.get("message", ""),
                 url=f.get("url", ""),
                 priority=severity,
                 recommendation=f.get("recommendation", ""),
-            ))
+            )
+            finding_type = f.get("finding_type")
+            if finding_type:
+                issue["finding_type"] = finding_type
+            issues.append(issue)
             # Deduct by severity: Critical 15, High 10, Medium 5, Low 2
             ded = {"Critical": 15, "High": 10, "Medium": 5, "Low": 2}.get(severity, 2)
             deductions.append((min(ded, 15), True))

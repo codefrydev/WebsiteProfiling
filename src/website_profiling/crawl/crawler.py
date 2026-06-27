@@ -641,8 +641,11 @@ def run_crawler(
     enable_axe: bool = False,
     compare_mobile_desktop: bool = False,
     resume_run_id: Optional[int] = None,
-) -> pd.DataFrame:
-    """Run crawler and optionally save to CSV/JSON or PostgreSQL. Returns DataFrame."""
+) -> tuple[pd.DataFrame, Optional[int]]:
+    """Run crawler and optionally save to CSV/JSON or PostgreSQL.
+
+    Returns ``(dataframe, crawl_run_id)``. ``crawl_run_id`` is set when ``output_db`` is true.
+    """
     _resume_pause_state: Optional[dict] = None
     if resume_run_id is not None:
         from ..db import db_session
@@ -887,4 +890,5 @@ def run_crawler(
             df.to_json(output_csv, orient="records", indent=2, date_format="iso", default_handler=str)
         else:
             df.to_csv(output_csv, index=False)
-    return df
+    db_run_id = int(run_id) if output_db and run_id is not None else None
+    return df, db_run_id

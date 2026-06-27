@@ -36,4 +36,6 @@ export interface ReportContextValue {
   sectionStatus: Partial<Record<SectionKey, 'loading' | 'loaded' | 'error'>>;
   /** Trigger loading of a specific section. Idempotent — skips if already loading or loaded. */
   loadSection: (section: SectionKey, reportId: number | null) => Promise<void>;
+  /** Re-fetch a section even when already loaded (e.g. after google_data refresh). */
+  reloadSection: (section: SectionKey, reportId: number | null) => Promise<void>;
 }

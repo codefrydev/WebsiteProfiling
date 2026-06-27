@@ -117,8 +117,8 @@ class TestAssertReadOnlyRegex:
             assert_read_only_regex("TRUNCATE crawl_results")
 
     def test_rejects_secret_table(self) -> None:
-        with pytest.raises(ReadOnlyViolation, match="llm_config"):
-            assert_read_only_regex("SELECT * FROM llm_config")
+        with pytest.raises(ReadOnlyViolation, match="llm_settings"):
+            assert_read_only_regex("SELECT * FROM llm_settings")
 
     def test_comment_content_is_inert(self) -> None:
         # Block comment content is stripped; DELETE inside it is invisible.
@@ -160,7 +160,7 @@ class TestAssertReadOnlyRegex:
     def test_rejects_nested_secret_table_in_cte(self) -> None:
         with pytest.raises(ReadOnlyViolation):
             assert_read_only_regex(
-                "WITH s AS (SELECT * FROM pipeline_config) SELECT * FROM s"
+                "WITH s AS (SELECT * FROM llm_settings) SELECT * FROM s"
             )
 
 
@@ -238,7 +238,7 @@ class TestAssertReadOnlyRejectedMultiStatement:
 class TestAssertReadOnlyRejectedSecretTables:
     def test_llm_config(self) -> None:
         with pytest.raises(ReadOnlyViolation):
-            assert_read_only("SELECT * FROM llm_config")
+            assert_read_only("SELECT * FROM llm_settings")
 
     def test_google_app_settings(self) -> None:
         with pytest.raises(ReadOnlyViolation):
@@ -291,7 +291,7 @@ class TestAssertReadOnlyAllowlist:
     def test_secret_table_in_cte_rejected(self) -> None:
         with pytest.raises(ReadOnlyViolation):
             assert_read_only(
-                "WITH s AS (SELECT * FROM llm_config) SELECT * FROM s"
+                "WITH s AS (SELECT * FROM llm_settings) SELECT * FROM s"
             )
 
     def test_unlisted_table_in_subquery_rejected(self) -> None:
@@ -315,7 +315,7 @@ class TestAssertReadOnlyBlockedSchemas:
         with pytest.raises(ReadOnlyViolation, match="information_schema"):
             assert_read_only(
                 "SELECT column_name FROM information_schema.columns "
-                "WHERE table_name = 'llm_config'"
+                "WHERE table_name = 'llm_settings'"
             )
 
     def test_pg_catalog_rejected(self) -> None:
@@ -323,9 +323,9 @@ class TestAssertReadOnlyBlockedSchemas:
             assert_read_only("SELECT * FROM pg_catalog.pg_tables")
 
     def test_schema_qualified_secret_table_rejected(self) -> None:
-        # public.llm_config — still rejects via allowlist check
+        # public.llm_settings — still rejects via allowlist check
         with pytest.raises(ReadOnlyViolation):
-            assert_read_only("SELECT * FROM public.llm_config")
+            assert_read_only("SELECT * FROM public.llm_settings")
 
     def test_schema_qualified_allowed_table_rejected(self) -> None:
         # public.<allowed> resolves to the real base table and would bypass the
@@ -588,7 +588,7 @@ class TestRunSqlQuery:
             result = run_sql_query(
                 self._conn(),
                 self._ctx(),
-                {"sql": "SELECT * FROM llm_config"},
+                {"sql": "SELECT * FROM llm_settings"},
             )
         assert "error" in result
         assert not called
@@ -808,7 +808,7 @@ class TestGetSqlSchema:
             {"table_name": "crawl_runs", "column_name": "start_url", "data_type": "text",
              "is_nullable": "YES", "constraint_type": None},
             # secret table — must be excluded
-            {"table_name": "llm_config", "column_name": "key", "data_type": "text",
+            {"table_name": "llm_settings", "column_name": "provider", "data_type": "text",
              "is_nullable": "NO", "constraint_type": "PRIMARY KEY"},
             # non-allowlisted table — must be excluded
             {"table_name": "pipeline_jobs", "column_name": "id", "data_type": "uuid",
@@ -862,7 +862,7 @@ class TestGetSqlSchema:
 
         table_names = [t["table"] for t in result["tables"]]
         assert "crawl_runs" in table_names
-        assert "llm_config" not in table_names
+        assert "llm_settings" not in table_names
         assert "pipeline_jobs" not in table_names
         assert result["allowlisted_tables_only"] is True
 

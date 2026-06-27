@@ -1,12 +1,16 @@
 """Properties table: per-domain Google OAuth and GSC/GA4 mapping."""
 from __future__ import annotations
 
+import re
 from typing import Any, Optional
 from urllib.parse import urlparse
 
 from psycopg import Connection
 
 from ._common import _row_field
+
+_LABEL_RE = re.compile(r"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$")
+_RESERVED = frozenset({"http", "https", "www"})
 
 
 def _extract_hostname(url: str) -> str:
@@ -33,15 +37,32 @@ def derive_property_name(domain: str, site_url: str = "") -> str:
     return host or "Site"
 
 
+def is_valid_canonical_domain(domain: str) -> bool:
+    """Reject partial URLs / keystroke fragments (e.g. ``http``, ``codefrydev.i``)."""
+    d = (domain or "").strip().lower().rstrip(".")
+    if len(d) < 4 or "." not in d or d in _RESERVED:
+        return False
+    labels = d.split(".")
+    for label in labels:
+        if not label or len(label) > 63 or not _LABEL_RE.match(label):
+            return False
+    # Real TLDs are at least two characters (excludes ``codefrydev.i`` while typing).
+    if len(labels[-1]) < 2:
+        return False
+    return True
+
+
 def upsert_property_by_domain(
     conn: Connection,
     name: str,
     canonical_domain: str,
     site_url: str | None = None,
 ) -> int:
-    domain = (canonical_domain or "").strip().lower()
+    domain = (canonical_domain or "").strip().lower().rstrip(".")
     if not domain:
         raise ValueError("canonical_domain is required")
+    if not is_valid_canonical_domain(domain):
+        raise ValueError(f"canonical_domain is not a valid domain: {domain!r}")
     cur = conn.execute(
         """
         INSERT INTO properties (name, canonical_domain, site_url, updated_at)
@@ -59,9 +80,19 @@ def upsert_property_by_domain(
     return int(_row_field(row, "id", index=0))
 
 
-def resolve_property_id_from_start_url(conn: Connection, start_url: str) -> int | None:
+def lookup_property_id_from_start_url(conn: Connection, start_url: str) -> int | None:
+    """Read-only: resolve an existing property from a start URL (no insert)."""
     domain = canonical_domain_from_start_url(start_url)
-    if not domain:
+    if not domain or not is_valid_canonical_domain(domain):
+        return None
+    prop = get_property_by_domain(conn, domain)
+    return int(prop["id"]) if prop else None
+
+
+def ensure_property_from_start_url(conn: Connection, start_url: str) -> int | None:
+    """Create or return a property when the user explicitly connects or runs a job."""
+    domain = canonical_domain_from_start_url(start_url)
+    if not domain or not is_valid_canonical_domain(domain):
         return None
     prop = get_property_by_domain(conn, domain)
     if prop:
@@ -72,6 +103,11 @@ def resolve_property_id_from_start_url(conn: Connection, start_url: str) -> int 
         domain,
         start_url.strip() or None,
     )
+
+
+def resolve_property_id_from_start_url(conn: Connection, start_url: str) -> int | None:
+    """Backward-compatible alias for read-only lookup (does not create rows)."""
+    return lookup_property_id_from_start_url(conn, start_url)
 
 
 def get_property_by_id(conn: Connection, property_id: int) -> dict[str, Any] | None:

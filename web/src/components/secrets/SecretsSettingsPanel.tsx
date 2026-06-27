@@ -86,6 +86,7 @@ export default function SecretsSettingsPanel({
               key={field.key}
               field={toConfigField(field)}
               value={state[field.key]}
+              savedAt={String(state[`${field.key}_saved_at`] ?? '') || undefined}
               disabled={disabled}
               onChange={(value) => onChange(field.key, value)}
             />

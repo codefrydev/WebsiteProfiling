@@ -194,9 +194,13 @@ _WRITE_KW_RE: re.Pattern[str] = re.compile(
 
 # Layer 0 still fast-rejects the known secret table names (belt+suspenders).
 _SECRET_TABLES: frozenset[str] = frozenset({
-    "llm_config",
+    "llm_settings",
+    "llm_provider_profiles",
     "google_app_settings",
-    "pipeline_config",
+    "crawl_settings",
+    "integration_secrets",
+    "mcp_settings",
+    "feature_flags",
     "chat_sessions",
     "chat_messages",
     "content_drafts",

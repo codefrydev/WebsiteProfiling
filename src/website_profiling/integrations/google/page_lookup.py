@@ -164,3 +164,34 @@ def summary_from_slice(gsc: dict | None, ga4: dict | None) -> dict[str, Any]:
         if ga4
         else None,
     }
+
+
+def metric_deltas(current: dict[str, Any], baseline: dict[str, Any]) -> list[dict[str, Any]]:
+    """Compare GSC/GA4 page metrics between current and baseline slices."""
+    rows: list[dict[str, Any]] = []
+    pairs = [
+        ("gsc_clicks", "gsc", "clicks", True),
+        ("gsc_impressions", "gsc", "impressions", True),
+        ("gsc_ctr", "gsc", "ctr", True),
+        ("gsc_position", "gsc", "position", False),
+        ("ga4_sessions", "ga4", "sessions", True),
+        ("ga4_engagement", "ga4", "engagementRate", True),
+    ]
+    for mid, blob, key, higher in pairs:
+        c = (current.get(blob) or {}).get(key)
+        b = (baseline.get(blob) or {}).get(key)
+        if c is None and b is None:
+            continue
+        try:
+            c_f, b_f = float(c or 0), float(b or 0)
+            delta = round(c_f - b_f, 2)
+            rows.append({
+                "id": mid,
+                "current": c_f,
+                "baseline": b_f,
+                "delta": delta,
+                "higher_is_better": higher,
+            })
+        except (TypeError, ValueError):
+            continue
+    return rows

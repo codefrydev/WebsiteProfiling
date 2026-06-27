@@ -1,5 +1,5 @@
 /**
- * Per-provider LLM API keys stored in llm_config (llm_api_key_<provider>).
+ * Per-provider LLM API keys stored in `llm_provider_profiles` (flat key `llm_api_key_<provider>`).
  * The active provider from Pipeline → Content & AI resolves to llm_api_key at runtime.
  */
 export const LLM_CLOUD_PROVIDERS = ['openai', 'gemini', 'anthropic', 'groq'] as const;
@@ -36,6 +36,43 @@ export function isLlmCloudProvider(provider: string): provider is LlmCloudProvid
   return (LLM_CLOUD_PROVIDERS as readonly string[]).includes(provider);
 }
 
+/** Masked DB / secrets values mean a key is stored server-side. */
+export function isLlmApiKeyMaskedStored(value: string | boolean | undefined): boolean {
+  if (value === true) return true;
+  const trimmed = String(value ?? '').trim();
+  return trimmed === '*' || trimmed.startsWith('••••') || trimmed === '{configured}';
+}
+
+/**
+ * True when the active provider has an API key in Postgres (masked `*` counts) or Ollama (no key).
+ * Pass `serverConfigured` from GET /llm-settings when available (includes env vars).
+ */
+export function isLlmApiKeyConfigured(
+  cfg: Record<string, string | boolean | undefined>,
+  options?: { provider?: string; serverConfigured?: boolean },
+): boolean {
+  if (options?.serverConfigured === true) {
+    return true;
+  }
+
+  const selected = (options?.provider ?? String(cfg.llm_provider ?? 'none')).trim().toLowerCase();
+  if (!selected || selected === 'none') return false;
+  if (selected === 'ollama') return true;
+
+  if (isLlmCloudProvider(selected)) {
+    const field = llmProviderApiKeyField(selected);
+    if (cfg[`${field}_masked`] === true) return true;
+    const perProvider = String(cfg[field] ?? '').trim();
+    if (perProvider && !isLlmApiKeyMaskedStored(perProvider)) return true;
+    if (isLlmApiKeyMaskedStored(perProvider)) return true;
+  }
+
+  if (cfg.llm_api_key_masked === true) return true;
+  const legacy = String(cfg.llm_api_key ?? '').trim();
+  if (legacy && !isLlmApiKeyMaskedStored(legacy)) return true;
+  return isLlmApiKeyMaskedStored(legacy);
+}
+
 /** Resolve the API key for the selected (or given) cloud provider. */
 export function resolveLlmApiKey(
   cfg: Record<string, string | boolean | undefined>,
@@ -45,12 +82,12 @@ export function resolveLlmApiKey(
   if (isLlmCloudProvider(selected)) {
     const field = llmProviderApiKeyField(selected);
     const perProvider = String(cfg[field] ?? '').trim();
-    if (perProvider && !perProvider.startsWith('••••')) {
+    if (perProvider && !isLlmApiKeyMaskedStored(perProvider)) {
       return perProvider;
     }
   }
   const legacy = String(cfg.llm_api_key ?? '').trim();
-  if (legacy && !legacy.startsWith('••••')) {
+  if (legacy && !isLlmApiKeyMaskedStored(legacy)) {
     return legacy;
   }
   return '';

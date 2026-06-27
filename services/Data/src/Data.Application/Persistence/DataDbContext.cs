@@ -20,6 +20,10 @@ public sealed class DataDbContext(DbContextOptions<DataDbContext> options) : DbC
 
     public DbSet<SavedCrawlFilter> SavedCrawlFilters => Set<SavedCrawlFilter>();
 
+    public DbSet<GoogleData> GoogleDataRows => Set<GoogleData>();
+
+    public DbSet<Property> Properties => Set<Property>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ReportPayload>(e =>
@@ -85,6 +89,24 @@ public sealed class DataDbContext(DbContextOptions<DataDbContext> options) : DbC
             e.Property(x => x.Name).HasColumnName("name");
             e.Property(x => x.FilterJson).HasColumnName("filter_json").HasColumnType("jsonb");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
+        });
+
+        modelBuilder.Entity<GoogleData>(e =>
+        {
+            e.ToTable("google_data");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.FetchedAt).HasColumnName("fetched_at");
+            e.Property(x => x.PropertyId).HasColumnName("property_id");
+            e.Property(x => x.Data).HasColumnName("data").HasColumnType("jsonb");
+        });
+
+        modelBuilder.Entity<Property>(e =>
+        {
+            e.ToTable("properties");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.CanonicalDomain).HasColumnName("canonical_domain");
         });
     }
 }

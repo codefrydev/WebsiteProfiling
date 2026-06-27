@@ -159,59 +159,7 @@ def check_ai_citations_live(conn: Connection, ctx: AuditToolContext, args: dict[
             ),
             "provenance": "None",
         }
-    scoped = ctx.with_args(args)
-    brand = str(args.get("brand") or "").strip()
-    query = str(args.get("query") or "").strip()
-    domain = scoped.resolve_property_domain(conn)
-    provider = str(args.get("provider") or "perplexity").strip().lower()
-    api_key = str(args.get("api_key") or "").strip() or None
-
-    if not brand and not domain:
-        return {"error": "brand or property domain is required"}
-    if not query:
-        brand_name = brand or domain or "this brand"
-        query = f"What is {brand_name}? Can you tell me about their main products or services?"
-
-    from ....integrations.ai_citations import check_citations, resolve_api_key
-
-    key = resolve_api_key(provider, api_key)
-    if not key:
-        return {
-            "error": f"No API key found for provider '{provider}'",
-            "note": f"Set {provider.upper()}_API_KEY env var or pass api_key argument.",
-            "provenance": "None",
-        }
-
-    queries = [query]
-    if args.get("multi_query"):
-        extra = str(args.get("multi_query") or "")
-        if extra:
-            queries.append(extra)
-
-    results: list[dict] = []
-    for q in queries:
-        try:
-            result = check_citations(
-                query=q,
-                brand=brand or domain,
-                domain=domain,
-                provider=provider,
-                api_key=key,
-            )
-            results.append(result.to_dict())
-        except Exception as exc:
-            results.append({"query": q, "error": str(exc), "provider": provider})
-
-    overall_brand_mentioned = any(r.get("brand_mentioned") for r in results)
-    overall_domain_cited = any(r.get("domain_cited") for r in results)
-
     return {
-        "brand": brand or domain,
-        "domain": domain,
-        "provider": provider,
-        "queries_run": len(results),
-        "brand_mentioned": overall_brand_mentioned,
-        "domain_cited": overall_domain_cited,
-        "results": results,
-        "provenance": "Live",
+        "error": "check_ai_citations_live is native in AiService (.NET). Use chat/MCP or AiService tool dispatch.",
+        "provenance": "None",
     }

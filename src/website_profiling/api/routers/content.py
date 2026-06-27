@@ -14,9 +14,6 @@ router = APIRouter(tags=["content"])
 
 DbDep = Annotated[Connection, Depends(get_db)]
 
-_VALID_WIZARD_STEPS = {"intents", "content_types", "tones", "titles", "outline", "draft", "research"}
-
-
 # ── GET /api/backlinks/velocity ──────────────────────────────────────────────
 
 @router.get("/backlinks/velocity")
@@ -87,38 +84,6 @@ def backlinks_third_party_import(
         raise HTTPException(status_code=500, detail=f"Third-party backlink import failed: {exc}")
 
 
-# ── POST /api/content/analyze ─────────────────────────────────────────────────
-
-@router.post("/content/analyze")
-def content_analyze(
-    body: dict[str, Any] = Body(default={}),
-) -> dict[str, Any]:
-    keyword = str(body.get("keyword") or "").strip()
-    if not keyword:
-        raise HTTPException(status_code=400, detail="keyword required")
-
-    property_id_raw = body.get("propertyId")
-    property_id = int(property_id_raw) if property_id_raw else None
-
-    try:
-        from website_profiling.content_studio.ai_suggest import analyze_content_draft  # type: ignore[import]
-
-        analysis = analyze_content_draft(
-            property_id,
-            keyword,
-            body.get("bodyHtml") or "",
-            body.get("titleTag") or "",
-            body.get("metaDescription") or "",
-            body.get("landingUrl") or None,
-            use_ai=bool(body.get("useAi")),
-            refresh=bool(body.get("refresh")),
-            title=body.get("title") or "",
-        )
-        return {"analysis": analysis}
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Content analyze failed: {exc}")
-
-
 # ── POST /api/content/score ───────────────────────────────────────────────────
 
 @router.post("/content/score")
@@ -146,39 +111,6 @@ def content_score(
         return {"score": score}
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Content score failed: {exc}")
-
-
-# ── POST /api/content/wizard ──────────────────────────────────────────────────
-
-@router.post("/content/wizard")
-def content_wizard(
-    body: dict[str, Any] = Body(default={}),
-) -> dict[str, Any]:
-    step = str(body.get("step") or "").strip()
-    if step not in _VALID_WIZARD_STEPS:
-        raise HTTPException(status_code=400, detail="Invalid wizard step")
-
-    payload = {
-        "keyword": str(body.get("keyword") or "").strip(),
-        "locale": str(body.get("locale") or "en-US"),
-        "intent": str(body.get("intent") or ""),
-        "contentType": str(body.get("contentType") or ""),
-        "tone": str(body.get("tone") or ""),
-        "title": str(body.get("title") or ""),
-        "outline": body.get("outline") if isinstance(body.get("outline"), list) else [],
-    }
-
-    try:
-        from website_profiling.content_studio.wizard import run_wizard_step  # type: ignore[import]
-
-        result = run_wizard_step(step, payload)
-        if isinstance(result, dict) and result.get("ok") is False:
-            raise HTTPException(status_code=400, detail=result.get("error") or "Wizard step failed")
-        return {"result": result}
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=f"Wizard step failed: {exc}")
 
 
 # ── GET /api/content-drafts ───────────────────────────────────────────────────

@@ -1,4 +1,5 @@
 using FileService.Domain.Models;
+using WebsiteProfiling.Contracts.Report;
 using FileService.Rendering.Charts;
 using FileService.Rendering.Composition;
 using QuestPDF.Fluent;
@@ -252,7 +253,7 @@ public sealed class FindingsSection : IPdfSectionComposer
 
             foreach (var group in groups)
             {
-                IEnumerable<IGrouping<string, IssueModel>> subGroups;
+                IEnumerable<IGrouping<string, IssueRecord>> subGroups;
                 if (group.Count() > 8)
                 {
                     subGroups = group.GroupBy(i => i.Category).OrderBy(g => g.Key);
@@ -280,7 +281,7 @@ public sealed class FindingsSection : IPdfSectionComposer
         });
     }
 
-    private static void ComposeIssueCard(IContainer container, IssueModel issue, PdfProfile profile)
+    private static void ComposeIssueCard(IContainer container, IssueRecord issue, PdfProfile profile)
     {
         var priorityColor = PdfTheme.PriorityColors.GetValueOrDefault(issue.Priority.ToLowerInvariant(), PdfTheme.MutedColor);
         container.PaddingVertical(4).Row(row =>
@@ -320,10 +321,10 @@ public sealed class FindingsSection : IPdfSectionComposer
         _ => 9,
     };
 
-    private sealed class SimpleGrouping(string key, IEnumerable<IssueModel> items) : IGrouping<string, IssueModel>
+    private sealed class SimpleGrouping(string key, IEnumerable<IssueRecord> items) : IGrouping<string, IssueRecord>
     {
         public string Key { get; } = key;
-        public IEnumerator<IssueModel> GetEnumerator() => items.GetEnumerator();
+        public IEnumerator<IssueRecord> GetEnumerator() => items.GetEnumerator();
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => GetEnumerator();
     }
 }

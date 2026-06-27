@@ -1,4 +1,4 @@
-import { apiUrl, apiFetch } from '@/lib/publicBase';
+import { apiUrl, apiFetch, readApiErrorMessage } from '@/lib/publicBase';
 
 export interface FetchAuditToolParams {
   toolName: string;
@@ -15,7 +15,11 @@ export async function fetchAuditTool(params: FetchAuditToolParams): Promise<Reco
   });
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
-    throw new Error(String(data.error || 'Audit tool request failed'));
+    throw new Error(readApiErrorMessage(data, res, 'Audit tool request failed'));
+  }
+  const result = data.result;
+  if (result != null && typeof result === 'object' && !Array.isArray(result)) {
+    return result as Record<string, unknown>;
   }
   return data;
 }

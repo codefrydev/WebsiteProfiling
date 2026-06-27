@@ -327,14 +327,66 @@ def test_category_core_web_vitals_from_lighthouse_top_failures() -> None:
     lh = {
         "median_metrics": {"performance_score": 0.75},
         "top_failures": [
-            {"id": "lcp", "helpText": "LCP too slow", "score": 0.3},
+            {
+                "id": "largest-contentful-paint",
+                "title": "Largest Contentful Paint",
+                "helpText": "LCP too slow",
+                "score": 0.3,
+                "category": "performance",
+            },
+            {
+                "id": "image-alt",
+                "title": "Image elements do not have alt",
+                "score": 0.0,
+                "category": "accessibility",
+            },
             {"id": "", "helpText": "", "score": 0.6},
             {"helpText": "No id failure", "score": 0.8},
         ],
     }
     cat = category_core_web_vitals_from_lighthouse(lh)
-    assert len(cat["issues"]) == 3
+    assert len(cat["issues"]) == 1
+    assert "Largest Contentful Paint" in cat["issues"][0]["message"]
     assert cat["score"] == 75
+
+
+def test_category_core_web_vitals_from_lighthouse_uses_title_when_help_missing() -> None:
+    from unittest.mock import patch
+
+    lh = {
+        "median_metrics": {"performance_score": 0.6},
+        "top_failures": [
+            "bad",
+            {
+                "id": "total-blocking-time",
+                "title": "Reduce JavaScript execution time",
+                "helpText": "",
+                "score": 0.4,
+                "category": "performance",
+            },
+            {
+                "id": "unknown-cwv-audit",
+                "title": "Slow metric",
+                "helpText": "",
+                "score": 0.2,
+                "category": "performance",
+            },
+        ],
+    }
+    with patch(
+        "website_profiling.reporting.categories.performance._resolve_entry",
+        side_effect=[
+            {"one_line_fix": "Defer non-critical JavaScript."},
+            {},
+        ],
+    ):
+        cat = category_core_web_vitals_from_lighthouse(lh)
+    assert len(cat["issues"]) == 2
+    assert cat["issues"][0]["message"] == "Reduce JavaScript execution time"
+    assert cat["issues"][0]["recommendation"]
+    assert cat["issues"][1]["recommendation"] == (
+        "See Lighthouse performance recommendations in this audit, or re-run Lighthouse from Run audit."
+    )
 
 
 def test_category_core_web_vitals_from_lighthouse_low_perf_recommendation() -> None:
@@ -551,6 +603,7 @@ def test_category_security_headers_mixed_content_findings() -> None:
     findings = [
         {
             "severity": "Critical",
+            "finding_type": "sql_injection",
             "message": "SQL injection risk",
             "url": "https://example.com/login",
             "recommendation": "Sanitize inputs",
@@ -564,6 +617,8 @@ def test_category_security_headers_mixed_content_findings() -> None:
     assert "x-frame-options" in msgs
     assert "mixed content" in msgs
     assert "sql injection" in msgs
+    scanner = next(i for i in cat["issues"] if "sql injection" in i["message"].lower())
+    assert scanner.get("finding_type") == "sql_injection"
 
 
 # ---------------------------------------------------------------------------

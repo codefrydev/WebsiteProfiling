@@ -18,6 +18,21 @@ public static class DependencyInjection
     /// <summary>Named HttpClient for the internal Data service (direct-Postgres reads) — idempotent retry.</summary>
     public const string DataClient = "data";
 
+    /// <summary>Named HttpClient for the internal Ai service — idempotent retry.</summary>
+    public const string AiClient = "ai";
+
+    /// <summary>Named HttpClient for the internal Integrations service — idempotent retry.</summary>
+    public const string IntegrationsClient = "integrations";
+
+    /// <summary>Named HttpClient for the internal Report service — idempotent retry.</summary>
+    public const string ReportClient = "report";
+
+    /// <summary>Named HttpClient for the internal Config service — idempotent retry.</summary>
+    public const string ConfigClient = "config";
+
+    /// <summary>Named HttpClient for Ai service streaming (chat SSE) — no retry/buffering.</summary>
+    public const string AiStreamClient = "ai-stream";
+
     public static IServiceCollection AddBffApplication(this IServiceCollection services)
     {
         services.AddOptions<UpstreamOptions>()
@@ -43,6 +58,50 @@ public static class DependencyInjection
                 if (!string.IsNullOrWhiteSpace(dataRoutes))
                 {
                     o.DataRoutes = dataRoutes
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                }
+                var ai = Environment.GetEnvironmentVariable("AI_SERVICE_URL");
+                if (!string.IsNullOrWhiteSpace(ai))
+                {
+                    o.AiBaseUrl = ai.Trim();
+                }
+                var aiRoutes = Environment.GetEnvironmentVariable("AI_ROUTES");
+                if (!string.IsNullOrWhiteSpace(aiRoutes))
+                {
+                    o.AiRoutes = aiRoutes
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                }
+                var integrations = Environment.GetEnvironmentVariable("INTEGRATIONS_SERVICE_URL");
+                if (!string.IsNullOrWhiteSpace(integrations))
+                {
+                    o.IntegrationsBaseUrl = integrations.Trim();
+                }
+                var integrationsRoutes = Environment.GetEnvironmentVariable("INTEGRATIONS_ROUTES");
+                if (!string.IsNullOrWhiteSpace(integrationsRoutes))
+                {
+                    o.IntegrationsRoutes = integrationsRoutes
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                }
+                var report = Environment.GetEnvironmentVariable("REPORT_SERVICE_URL");
+                if (!string.IsNullOrWhiteSpace(report))
+                {
+                    o.ReportBaseUrl = report.Trim();
+                }
+                var reportRoutes = Environment.GetEnvironmentVariable("REPORT_ROUTES");
+                if (!string.IsNullOrWhiteSpace(reportRoutes))
+                {
+                    o.ReportRoutes = reportRoutes
+                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                }
+                var config = Environment.GetEnvironmentVariable("CONFIG_SERVICE_URL");
+                if (!string.IsNullOrWhiteSpace(config))
+                {
+                    o.ConfigBaseUrl = config.Trim();
+                }
+                var configRoutes = Environment.GetEnvironmentVariable("CONFIG_ROUTES");
+                if (!string.IsNullOrWhiteSpace(configRoutes))
+                {
+                    o.ConfigRoutes = configRoutes
                         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 }
             });
@@ -122,6 +181,49 @@ public static class DependencyInjection
                 client.Timeout = TimeSpan.FromSeconds(Math.Max(5, opts.TimeoutSeconds));
             })
             .AddHttpMessageHandler<IdempotentRetryHandler>();
+
+        services.AddHttpClient(AiClient)
+            .ConfigureHttpClient((sp, client) =>
+            {
+                var opts = GetUpstream(sp);
+                client.BaseAddress = NormalizeBase(opts.AiBaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(Math.Max(5, opts.TimeoutSeconds));
+            })
+            .AddHttpMessageHandler<IdempotentRetryHandler>();
+
+        services.AddHttpClient(IntegrationsClient)
+            .ConfigureHttpClient((sp, client) =>
+            {
+                var opts = GetUpstream(sp);
+                client.BaseAddress = NormalizeBase(opts.IntegrationsBaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(Math.Max(5, opts.TimeoutSeconds));
+            })
+            .AddHttpMessageHandler<IdempotentRetryHandler>();
+
+        services.AddHttpClient(ReportClient)
+            .ConfigureHttpClient((sp, client) =>
+            {
+                var opts = GetUpstream(sp);
+                client.BaseAddress = NormalizeBase(opts.ReportBaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(Math.Max(5, opts.TimeoutSeconds));
+            })
+            .AddHttpMessageHandler<IdempotentRetryHandler>();
+
+        services.AddHttpClient(ConfigClient)
+            .ConfigureHttpClient((sp, client) =>
+            {
+                var opts = GetUpstream(sp);
+                client.BaseAddress = NormalizeBase(opts.ConfigBaseUrl);
+                client.Timeout = TimeSpan.FromSeconds(Math.Max(5, opts.TimeoutSeconds));
+            })
+            .AddHttpMessageHandler<IdempotentRetryHandler>();
+
+        services.AddHttpClient(AiStreamClient)
+            .ConfigureHttpClient((sp, client) =>
+            {
+                client.BaseAddress = NormalizeBase(GetUpstream(sp).AiBaseUrl);
+                client.Timeout = Timeout.InfiniteTimeSpan;
+            });
 
         services.AddHttpClient(FastApiStreamClient)
             .ConfigureHttpClient((sp, client) =>

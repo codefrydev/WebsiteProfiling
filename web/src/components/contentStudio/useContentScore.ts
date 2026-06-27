@@ -1,6 +1,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiUrl, apiFetch } from '@/lib/publicBase';
+import { apiUrl, apiFetch, readApiErrorMessage } from '@/lib/publicBase';
 import type { ContentScoreResult } from '@/types/contentStudio';
 
 export interface UseContentScoreInput {
@@ -52,9 +52,9 @@ export function useContentScore({
           landingUrl: landingUrl || null,
         }),
       });
-      const payload = await res.json();
+      const payload = (await res.json().catch(() => ({}))) as Record<string, unknown>;
       if (gen !== genRef.current) return null;
-      if (!res.ok) throw new Error(payload.error || 'Score failed');
+      if (!res.ok) throw new Error(readApiErrorMessage(payload, res, 'Score failed'));
       const result = (payload.score || null) as ContentScoreResult | null;
       setScore(result);
       return result;

@@ -60,6 +60,7 @@ WORKDIR /app
 
 # Application source
 COPY pytest.ini /app/pytest.ini
+COPY config/typed_config_manifest.json /app/config/typed_config_manifest.json
 COPY src /app/src
 COPY tests /app/tests
 COPY alembic /app/alembic

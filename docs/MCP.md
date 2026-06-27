@@ -1,8 +1,11 @@
 # MCP Server Reference
 
-Site Audit exposes **340 read-only tools** via the [Model Context Protocol (MCP)](https://modelcontextprotocol.io). Connect from Cursor, Claude Desktop, or any MCP-compatible client to query audit data programmatically.
+Site Audit exposes **369 read-only tools** via the [Model Context Protocol (MCP)](https://modelcontextprotocol.io). The MCP server runs in **AiService** (.NET) — see [services/AiService/README.md](../services/AiService/README.md).
 
-The same tool catalog powers in-app **AI Chat** at `/chat`.
+- **stdio:** `dotnet run --project services/AiService/src/AiService.Api` with stdio MCP host (see AiService.Mcp)
+- **HTTP:** set `WP_MCP_HTTP=1` on AiService → endpoint `/mcp` (port 8092 by default)
+
+The same tool catalog powers in-app **AI Chat** at `/chat` (also served by AiService via the BFF).
 
 **Related documentation:** [GLOSSARY.md](GLOSSARY.md) · [Documentation index](README.md)
 
@@ -25,18 +28,26 @@ The same tool catalog powers in-app **AI Chat** at `/chat`.
 
 ## Prerequisites
 
+[.NET SDK 10+](https://dotnet.microsoft.com/download), Postgres, and `./local-run` (or AiService + FastAPI manually). AiService needs FastAPI on `:8001` for the audit-tool bridge until all tools are native C#.
+
 ```bash
-pip install -r requirements.txt
 export DATABASE_URL=postgres://profiling:profiling@localhost:5432/website_profiling  # Docker default
 # ./local-run default: postgres://postgres:dev@127.0.0.1:5432/website_profiling
-export PYTHONPATH=src
+export FASTAPI_URL=http://127.0.0.1:8001
 ```
 
-Start the local stdio server:
+### Local stdio (IDE subprocess)
+
+From the repo root, with Postgres running:
 
 ```bash
-python -m website_profiling.mcp
+cd services/AiService
+export DATABASE_URL=postgres://postgres:dev@127.0.0.1:5432/website_profiling
+export FASTAPI_URL=http://127.0.0.1:8001
+dotnet run --project src/AiService.Api
 ```
+
+For a dedicated stdio MCP host, use `AddAiServiceMcpStdioHost()` (see `AiService.Mcp/McpServerExtensions.cs`). `./local-run` starts AiService with **`WP_MCP_HTTP=1`** so HTTP MCP is available at **http://localhost:8092/mcp**.
 
 For remote access over HTTP, see [Remote Streamable HTTP](#remote-streamable-http).
 
@@ -44,7 +55,7 @@ For remote access over HTTP, see [Remote Streamable HTTP](#remote-streamable-htt
 
 ## Domain-scoped servers
 
-Rather than loading all 340 tools in a single server, Site Audit supports **domain-scoped bundles**. Connect only the domains relevant to your workflow.
+Rather than loading all 369 tools in a single server, Site Audit supports **domain-scoped bundles**. Connect only the domains relevant to your workflow.
 
 | `WP_MCP_DOMAIN` | Tool count | Scope | Recommended use |
 |-----------------|------------|-------|-----------------|
@@ -52,9 +63,9 @@ Rather than loading all 340 tools in a single server, Site Audit supports **doma
 | `crawl` | Domain subset | Crawl, on-page, schema, accessibility | Technical crawl audits |
 | `google` | Domain subset | Google, insight, CTR, keywords | GSC/GA4 analysis |
 | `links` | Domain subset | Links, backlinks, indexation | Link architecture |
-| `full` | 340 | All tools | Debugging, legacy single-server setup |
+| `full` | 369 | All tools | Debugging, legacy single-server setup |
 
-Tier 0 alone includes 16 router/insight tools (`TIER_0_TOOLS` in `tool_domains.py`). Use the `audit://tools` resource or `WP_MCP_DOMAIN=full` for the complete catalog.
+Tier 0 alone includes 16 router/insight tools. Use the `audit://tools` resource or `WP_MCP_DOMAIN=full` for the complete catalog.
 
 Set `WP_PROPERTY_ID` to the default property when tools omit an explicit `property_id` argument.
 
@@ -64,27 +75,27 @@ Set `WP_PROPERTY_ID` to the default property when tools omit an explicit `proper
 
 ### Multi-domain setup (recommended)
 
-Add to `.cursor/mcp.json` or your MCP client settings:
+Add to `.cursor/mcp.json` or your MCP client settings (stdio — spawn AiService; ensure Postgres and FastAPI are up):
 
 ```json
 {
   "mcpServers": {
     "site-audit-core": {
-      "command": "python",
-      "args": ["-m", "website_profiling.mcp"],
+      "command": "dotnet",
+      "args": ["run", "--project", "services/AiService/src/AiService.Api", "--no-launch-profile"],
       "env": {
-        "DATABASE_URL": "postgres://profiling:profiling@localhost:5432/website_profiling",
-        "PYTHONPATH": "src",
+        "DATABASE_URL": "postgres://postgres:dev@127.0.0.1:5432/website_profiling",
+        "FASTAPI_URL": "http://127.0.0.1:8001",
         "WP_MCP_DOMAIN": "core",
         "WP_PROPERTY_ID": "1"
       }
     },
     "site-audit-google": {
-      "command": "python",
-      "args": ["-m", "website_profiling.mcp"],
+      "command": "dotnet",
+      "args": ["run", "--project", "services/AiService/src/AiService.Api", "--no-launch-profile"],
       "env": {
-        "DATABASE_URL": "postgres://profiling:profiling@localhost:5432/website_profiling",
-        "PYTHONPATH": "src",
+        "DATABASE_URL": "postgres://postgres:dev@127.0.0.1:5432/website_profiling",
+        "FASTAPI_URL": "http://127.0.0.1:8001",
         "WP_MCP_DOMAIN": "google",
         "WP_PROPERTY_ID": "1"
       }
@@ -99,11 +110,11 @@ Add to `.cursor/mcp.json` or your MCP client settings:
 {
   "mcpServers": {
     "site-audit": {
-      "command": "python",
-      "args": ["-m", "website_profiling.mcp"],
+      "command": "dotnet",
+      "args": ["run", "--project", "services/AiService/src/AiService.Api", "--no-launch-profile"],
       "env": {
-        "DATABASE_URL": "postgres://profiling:profiling@localhost:5432/website_profiling",
-        "PYTHONPATH": "src",
+        "DATABASE_URL": "postgres://postgres:dev@127.0.0.1:5432/website_profiling",
+        "FASTAPI_URL": "http://127.0.0.1:8001",
         "WP_MCP_DOMAIN": "full",
         "WP_PROPERTY_ID": "1"
       }
@@ -120,40 +131,38 @@ Use this when Site Audit runs on a hosted server and your MCP client (Cursor, Cl
 
 ### Start the HTTP server
 
-Configure access on **MCP settings** (`/mcp`) in the web UI (recommended), or set environment variables. UI changes apply on the next MCP request without restarting the service.
+Configure access on **MCP settings** (`/mcp`) in the web UI (recommended), or set environment variables on **AiService**. `./local-run` and Docker Compose set `WP_MCP_HTTP=1` on AiService (`:8092`). Production compose can publish host port `8000` → AiService `8092` via the `mcp` profile.
 
 ```bash
 export DATABASE_URL=postgres://profiling:profiling@localhost:5432/website_profiling
-export PYTHONPATH=src
-export WP_MCP_HTTP_HOST=0.0.0.0
-export WP_MCP_HTTP_PORT=8000
+export FASTAPI_URL=http://127.0.0.1:8001
+export ASPNETCORE_URLS=http://0.0.0.0:8092
+export WP_MCP_HTTP=1
 export WP_MCP_DOMAIN=core
 export WP_PROPERTY_ID=1
 
-python -m website_profiling.mcp.http
+cd services/AiService && dotnet run --project src/AiService.Api
 ```
 
 Set **MCP bearer token** and **Allowed hostnames** on the Secrets page (or via `WP_MCP_TOKEN` / `WP_MCP_ALLOWED_HOSTS`). Environment variables override saved values when set.
 
-The MCP endpoint is `http://<host>:8000/mcp` by default (`WP_MCP_HTTP_PATH=/mcp`).
+The MCP endpoint is **`http://<host>:8092/mcp`** locally (`8092` is AiService's default port). With `docker-compose.prod.yml --profile mcp`, the host port defaults to **`8000`** mapped to AiService `8092`.
 
 ### Environment variables
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `WP_MCP_HTTP_HOST` | `127.0.0.1` | Bind address (`0.0.0.0` for Docker) |
-| `WP_MCP_HTTP_PORT` | `8000` | Listen port |
-| `WP_MCP_HTTP_PATH` | `/mcp` | Mount path |
+| `WP_MCP_HTTP` | unset | Set `1` on AiService to expose `/mcp` |
+| `ASPNETCORE_URLS` | `http://+:8092` | AiService bind address |
 | `WP_MCP_TOKEN` | unset | Bearer token (**required** when not binding localhost). Save on **Secrets → Remote MCP** or set here (env wins). |
 | `WP_MCP_ALLOWED_HOSTS` | unset | Comma-separated `Host` allowlist (**required** for non-localhost bind). Save on **Secrets → Remote MCP** or set here. |
 | `WP_MCP_ALLOWED_ORIGINS` | unset | Comma-separated `Origin` allowlist for browser clients |
-| `WP_MCP_JSON_RESPONSE` | `false` | JSON responses instead of SSE streams |
 | `WP_MCP_DOMAIN` | `core` | Tool bundle (same as stdio) |
 | `WP_PROPERTY_ID` | unset | Default property (same as stdio) |
 
-**Security:** `WP_MCP_TOKEN` is required when `WP_MCP_HTTP_HOST` is not localhost. Tools are read-only but expose audit, GSC, and GA4 data — treat the token like a database credential.
+**Security:** `WP_MCP_TOKEN` is required when AiService is reachable outside localhost. Tools are read-only but expose audit, GSC, and GA4 data — treat the token like a database credential.
 
-**DNS rebinding protection:** Whenever a token **and** allowed hosts are configured — via the UI **or** environment variables — the HTTP service enforces the bearer token plus the Host/Origin allowlist in its own middleware, and the MCP SDK's built-in DNS-rebinding check is turned off (the middleware supersedes it). The SDK check only applies as a fallback on a non-localhost bind that has no remote access configured (a state the startup validation otherwise refuses to boot in). Either way, set `WP_MCP_ALLOWED_HOSTS` to the public hostname clients use (e.g. `audit.example.com`).
+**DNS rebinding protection:** When a token **and** allowed hosts are configured — via the UI **or** environment variables — AiService enforces the bearer token plus the Host/Origin allowlist. Set `WP_MCP_ALLOWED_HOSTS` to the public hostname clients use (e.g. `audit.example.com`).
 
 ### Cursor / Claude Desktop (remote)
 

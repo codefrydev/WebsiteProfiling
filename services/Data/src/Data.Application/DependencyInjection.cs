@@ -1,6 +1,8 @@
 using Data.Application.Options;
 using Data.Application.Persistence;
 using Data.Application.Portfolio;
+using Data.Application.Python;
+using Data.Application.Report;
 using Data.Application.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,10 +51,19 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IReportRepository, ReportRepository>();
+        services.AddScoped<IGoogleDataRepository, GoogleDataRepository>();
+        services.AddScoped<IPropertyRepository, PropertyRepository>();
+        services.AddScoped<IReportSectionService, ReportSectionService>();
         services.AddScoped<IPortfolioRepository, PortfolioRepository>();
         services.AddScoped<IPortfolioService, PortfolioService>();
         services.AddScoped<IIssueStatusRepository, IssueStatusRepository>();
         services.AddScoped<ISavedFilterRepository, SavedFilterRepository>();
+        services.AddScoped<IPropertiesCrudRepository, PropertiesCrudRepository>();
+        services.AddScoped<IContentDraftRepository, ContentDraftRepository>();
+        services.AddScoped<IPageMarkdownRepository, PageMarkdownRepository>();
+        services.AddScoped<IPipelineJobEnqueueRepository, PipelineJobEnqueueRepository>();
+        services.AddScoped<IBacklinksRepository, BacklinksRepository>();
+        services.AddSingleton<DataPythonRunner>();
 
         return services;
     }
