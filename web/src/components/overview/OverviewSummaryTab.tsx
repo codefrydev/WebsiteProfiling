@@ -9,6 +9,7 @@ import {
   FileDown,
 } from 'lucide-react';
 import type { ReportPayload } from '@/types';
+import { siteHealthScoreFromPayload } from '@/lib/siteHealthScore';
 import type { DataSourceId } from '@/lib/dataProvenance';
 import { strings, format } from '@/lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
@@ -49,13 +50,7 @@ export function OverviewSummaryTab({
   );
 
   const { currentHealth, topIssues } = useMemo(() => {
-    const scores = (data.categories || [])
-      .map((c) => Number(c?.score))
-      .filter((n) => Number.isFinite(n));
-    const health =
-      scores.length > 0
-        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
-        : null;
+    const health = siteHealthScoreFromPayload(data);
     const exec = (data.executive_summary?.top_issues || []).slice(0, 5);
     const fallback = (data.categories || [])
       .flatMap((cat) =>

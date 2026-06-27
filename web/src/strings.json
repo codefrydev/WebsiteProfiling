@@ -344,7 +344,7 @@
           "body": "How pages are distributed by crawl depth — hops from the start URL via internal links."
         },
         "thinSmallBody": {
-          "body": "Pages flagged as thin by visible character count thresholds (separate from the under-300-word list)."
+          "body": "Pages flagged as thin in SEO health (under 200 words)."
         },
         "wordCountDist": {
           "body": "Pages grouped by visible word-count bands from extracted crawl text."
@@ -377,7 +377,7 @@
           "body": "Share of pages whose title, meta description, and H1 fall in recommended length or count ranges."
         },
         "thinSignals": {
-          "body": "Comparison of thin-content signals: under 300 words vs small visible body character count."
+          "body": "Comparison of thin-content signals: analytics list (under 300 words) vs SEO health flag (under 200 words)."
         },
         "h1Dist": {
           "body": "Pages grouped by H1 heading count — SEO best practice is exactly one H1 per page."
@@ -2646,7 +2646,7 @@
         {
           "key": "thin_content",
           "label": "Thin Content",
-          "guidance": "Pages with very little text (under ~300 words) are often low-value to search engines. Expand or consolidate thin pages."
+          "guidance": "Pages with very little text (under ~200 words) are often low-value to search engines. Expand or consolidate thin pages."
         }
       ],
       "dupClusters": "Near-duplicate clusters",
@@ -2666,6 +2666,7 @@
       "tableLength": "Length",
       "tableH1Count": "H1 Count",
       "tableChars": "Chars",
+      "tableWords": "Words",
       "urlOne": "URL",
       "urlMany": "URLs"
     },
@@ -4337,7 +4338,7 @@
       "stackedNeeds": "Needs attention",
       "thinSignals": "Thin content signals",
       "thinUnder300": "Under 300 words",
-      "thinSmallBody": "Small HTML body",
+      "thinSmallBody": "SEO flagged (<200 words)",
       "thinMatchSearch": "{shown} of {total} thin page{plural} match search",
       "thinHaveLittle": "{count} page{plural} have very little content",
       "noThinSearch": "No thin pages match your search.",

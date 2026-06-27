@@ -7,10 +7,11 @@ import type { ReportPayload } from '@/types/report';
 /** A payload that touches every section a dataset reads from. (Cast: real link
  *  rows carry more fields than the partial ReportLink interface declares.) */
 const PAYLOAD = {
-  summary: { total_urls: 100, count_2xx: 90, count_4xx: 8, count_5xx: 2, success_rate: 90, avg_outlinks: 5 },
+  summary: { total_urls: 100, count_2xx: 90, count_4xx: 8, count_5xx: 2, success_rate: 90, avg_outlinks: 5, site_health_score: 72 },
   seo_health: { missing_title: 3, missing_meta_desc: 4, thin_content: 6 },
   social_coverage: { og_coverage_pct: 65 },
   portfolio_benchmark: { property_health_score: 78 },
+  site_health_score: 72,
   status_counts: { '200': 90, '404': 8, '500': 2 },
   categories: [
     { id: 'seo', name: 'Technical SEO', score: 80, issues: [{ message: 'm1', priority: 'High', impact_score: 5 }] },
@@ -93,7 +94,7 @@ describe('dataset registry integrity', () => {
     expect(datasetById.get('issues')!.accessor(PAYLOAD)).toHaveLength(3);
     expect(datasetById.get('status_counts')!.accessor(PAYLOAD)).toHaveLength(3);
     expect(datasetById.get('mime_types')!.accessor(PAYLOAD)).toHaveLength(2);
-    expect(datasetById.get('summary')!.accessor(PAYLOAD)[0].health_score).toBe(78);
+    expect(datasetById.get('summary')!.accessor(PAYLOAD)[0].health_score).toBe(72);
     // links accessor derives host/path
     expect(datasetById.get('links')!.accessor(PAYLOAD)[0].host).toBe('x.com');
   });

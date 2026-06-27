@@ -65,6 +65,7 @@ export interface ContentUrlEntry {
   meta_desc_len?: number;
   h1_count?: number;
   content_length?: number;
+  word_count?: number;
 }
 
 export type ContentUrlsMap = Record<string, ContentUrlEntry[]>;

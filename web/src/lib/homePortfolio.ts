@@ -2,6 +2,7 @@ import { crawledUrlCount } from './crawlCounts';
 import { DATA_SOURCE_IDS, type DataSourceId } from './dataProvenance';
 import { canonicalDomainFromPayload, extractHostname, slugifyDomain } from './domainSlug';
 import { titleCoveragePct } from './portfolioCrawlHistory';
+import { siteHealthScoreFromPayload } from './siteHealthScore';
 import type {
   CrawlRunSummary,
   PortfolioCategorySnapshot,
@@ -112,15 +113,6 @@ function lighthouseScoresFromPayload(payload: ReportPayload): { perf: number | n
   return { perf, seo };
 }
 
-function scoreFromCategories(categories: Array<{ score?: number }> = []): number | null {
-  const numeric = (categories || [])
-    .map((c) => Number(c?.score))
-    .filter((n) => Number.isFinite(n));
-  if (!numeric.length) return null;
-  const avg = numeric.reduce((a, b) => a + b, 0) / numeric.length;
-  return Math.round(avg);
-}
-
 function toLocalDateTime(value: string | null | undefined): string {
   if (!value) return '';
   const d = new Date(value);
@@ -220,7 +212,7 @@ export async function computeDomainGroups(
     };
     const urlCount = crawledUrlCount(payload);
     const successPct = urlCount > 0 ? Math.round((statusCounts.s2xx / urlCount) * 100) : 0;
-    const healthScore = scoreFromCategories(payload?.categories) ?? 0;
+    const healthScore = siteHealthScoreFromPayload(payload ?? {}) ?? 0;
     const runCreatedAt = runId != null ? runCreatedAtByRunId.get(runId) : '';
     const lastCrawl = toLocalDateTime(
       runCreatedAt || payload?.crawl_run_created_at || payload?.report_generated_at || r.generated_at,

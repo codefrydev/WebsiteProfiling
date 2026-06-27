@@ -400,9 +400,9 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
   const h1OkPct = h1Total > 0 ? (100 * (seoHealth.h1_one || 0)) / h1Total : 0;
   const hasSeoOptimalBar = titleTotal > 0 && metaTotal > 0 && h1Total > 0;
 
-  const thinByWords = thinPages.length;
-  const thinByChars = Number(seoHealth.thin_content) || 0;
-  const hasThinCompare = thinByWords > 0 || thinByChars > 0;
+  const thinPagesListed = thinPages.length;
+  const thinSeoFlagged = Number(seoHealth.thin_content) || 0;
+  const hasThinCompare = thinPagesListed > 0 || thinSeoFlagged > 0;
 
   const titleBucketCounts = [
     seoHealth.missing_title || 0,
@@ -755,13 +755,13 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
                   <StatCard
                     label={vca.thinUnder300}
-                    value={thinByWords.toLocaleString()}
+                    value={thinPagesListed.toLocaleString()}
                     sub={sj.pages}
                     hint={metricHelpHint('shared.thinPages')}
                   />
                   <StatCard
                     label={vca.thinSmallBody}
-                    value={thinByChars.toLocaleString()}
+                    value={thinSeoFlagged.toLocaleString()}
                     sub={sj.pages}
                     hint={metricHelpHint('views.contentAnalytics.thinSmallBody')}
                   />

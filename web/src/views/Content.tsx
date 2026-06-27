@@ -312,7 +312,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
                     <TableHeadCell className="hidden md:table-cell text-center px-3 sm:px-4" hint={metricHelpHint('views.content.h1Count')}>{vc.tableH1Count}</TableHeadCell>
                   )}
                   {filter === 'thin_content' && (
-                    <TableHeadCell className="hidden md:table-cell text-center px-3 sm:px-4" hint={metricHelpHint('views.content.contentLength')}>{vc.tableChars}</TableHeadCell>
+                    <TableHeadCell className="hidden md:table-cell text-center px-3 sm:px-4" hint={metricHelpHint('views.content.contentLength')}>{vc.tableWords}</TableHeadCell>
                   )}
                 </tr>
               </TableHead>
@@ -364,7 +364,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
                             )}
                             {filter === 'thin_content' && (
                               <span className="font-semibold tabular-nums text-amber-700 dark:text-amber-400">
-                                {vc.tableChars}: {item.content_length ?? sj.emDash}
+                                {vc.tableWords}: {item.word_count ?? item.content_length ?? sj.emDash}
                               </span>
                             )}
                           </p>
@@ -387,7 +387,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
                     )}
                     {filter === 'thin_content' && (
                       <TableCell className="hidden md:table-cell text-center align-middle px-3 sm:px-4">
-                        <span className="text-sm font-bold tabular-nums text-amber-700 dark:text-amber-400">{item.content_length ?? sj.emDash}</span>
+                        <span className="text-sm font-bold tabular-nums text-amber-700 dark:text-amber-400">{item.word_count ?? item.content_length ?? sj.emDash}</span>
                       </TableCell>
                     )}
                   </TableRow>

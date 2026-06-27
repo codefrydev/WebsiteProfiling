@@ -338,7 +338,10 @@ export default function Links({ searchQuery = '' }: ViewProps) {
       if (entry) {
         let detail: string | null = null;
         if (key === 'meta_desc_short' || key === 'meta_desc_long') detail = `${entry.meta_desc_len ?? 0} chars`;
-        if (key === 'thin_content') detail = `${entry.content_length ?? 0} chars`;
+        if (key === 'thin_content') {
+          const words = entry.word_count;
+          detail = words != null ? `${words} words` : `${entry.content_length ?? 0} chars`;
+        }
         if (key === 'multiple_h1') detail = `${entry.h1_count ?? 0} H1s`;
         contentFlags.push({
           type: key,
