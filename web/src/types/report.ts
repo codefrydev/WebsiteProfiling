@@ -1022,9 +1022,12 @@ export interface TopConsoleMessage {
 export interface BrowserDiagnosticsAggregate {
   pages_with_console_errors?: number;
   pages_with_page_errors?: number;
+  pages_with_failed_requests?: number;
   total_console_errors?: number;
   total_page_errors?: number;
+  total_failed_requests?: number;
   top_console_messages?: TopConsoleMessage[];
+  top_page_errors?: TopConsoleMessage[];
 }
 
 export interface PageAnalysis {

@@ -556,6 +556,12 @@
         "exceptionTotal": {
           "body": "Total uncaught JavaScript exceptions captured during this crawl."
         },
+        "failedPages": {
+          "body": "Pages where at least one network request failed during browser render."
+        },
+        "failedTotal": {
+          "body": "Total failed network requests captured during JavaScript rendering."
+        },
         "renderMode": {
           "body": "Crawl render mode for this audit: static HTML only, JavaScript rendering, or auto."
         }
@@ -2808,26 +2814,33 @@
       "emptyStaticBody": "Browser console and runtime errors are only captured when the crawl uses JavaScript or Auto rendering. Re-run the audit with JavaScript rendering enabled and console capture turned on.",
       "runAudit": "Run audit",
       "emptyCleanTitle": "No JavaScript errors detected",
-      "emptyCleanBody": "No console errors or uncaught exceptions were logged during JavaScript rendering for this crawl.",
+      "emptyCleanBody": "No console errors, uncaught exceptions, or failed network requests were logged during JavaScript rendering for this crawl.",
       "emptyFiltered": "No errors match the current filters or search.",
       "consolePagesCard": "Pages with console errors",
       "consoleTotalCard": "Total console errors",
       "exceptionPagesCard": "Pages with uncaught exceptions",
       "exceptionTotalCard": "Total uncaught exceptions",
+      "failedPagesCard": "Pages with failed requests",
+      "failedTotalCard": "Total failed requests",
       "renderMode": "Render mode",
       "topRecurring": "Top recurring console errors",
       "topRecurringHint": "Grouped by message text across the crawl",
+      "topRecurringExceptions": "Top recurring uncaught exceptions",
+      "topRecurringExceptionsHint": "Grouped by exception message across the crawl",
       "thMessage": "Message",
       "thCount": "Count",
+      "thOccurrences": "Occurrences",
       "thSampleUrls": "Sample URLs",
       "allErrors": "All errors",
-      "allErrorsHint": "Console errors and uncaught exceptions with source location where available",
+      "allErrorsHint": "Console errors, uncaught exceptions, and failed network requests with source location where available",
+      "consoleLevelsNote": "Only console errors are listed here. Warnings, info, and debug messages appear in the page inspector.",
       "thUrl": "URL",
       "thType": "Type",
       "thSource": "Source",
       "thActions": "Actions",
       "typeConsole": "Console",
       "typeException": "Exception",
+      "typeFailedRequest": "Failed request",
       "typeAll": "All types",
       "viewDetails": "View details",
       "expandStack": "Show stack trace",

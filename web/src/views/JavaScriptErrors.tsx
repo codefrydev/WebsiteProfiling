@@ -15,11 +15,12 @@ import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import type { ViewTabItem } from '../components';
 import type { ViewProps } from '@/types';
 import {
-  buildTopConsoleSummary,
-  flattenBrowserErrorsForTable,
+  buildTopConsoleSummaryFromRows,
+  buildTopExceptionSummaryFromRows,
+  computeBrowserErrorStats,
   formatBrowserErrorSource,
+  formatPagesAffectedStat,
   getBrowserDiagnosticsScope,
-  getLinksWithBrowserErrors,
   linksInspectHref,
   type FlatBrowserErrorRow,
 } from '@/lib/browserErrors';
@@ -27,9 +28,76 @@ import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
 import BrowserErrorsPromptGenerator from '@/components/issues/BrowserErrorsPromptGenerator';
 import { buildBrowserErrorContext, buildBrowserErrorSummaryContext } from '@/lib/fixSuggestionContext';
 
-type TypeFilter = 'All' | 'console' | 'exception';
+type TypeFilter = 'All' | FlatBrowserErrorRow['type'];
 const JS_ERRORS_TABS = ['summary', 'errors'] as const;
 type JsErrorsTabId = (typeof JS_ERRORS_TABS)[number];
+
+function typeLabel(type: FlatBrowserErrorRow['type'], vj: typeof strings.views.javascriptErrors): string {
+  if (type === 'console') return vj.typeConsole;
+  if (type === 'exception') return vj.typeException;
+  return vj.typeFailedRequest;
+}
+
+function TopSummaryTable({
+  title,
+  hint,
+  rows,
+  trailingQuery,
+  vj,
+}: {
+  title: string;
+  hint: string;
+  rows: ReturnType<typeof buildTopConsoleSummaryFromRows>;
+  trailingQuery: string;
+  vj: typeof strings.views.javascriptErrors;
+}) {
+  return (
+    <Card>
+      <h2 className="text-sm font-bold text-foreground mb-1">{title}</h2>
+      <p className="text-xs text-muted-foreground mb-4">{hint}</p>
+      <div className="border border-default rounded-xl overflow-hidden">
+        <Table>
+          <TableHead>
+            <tr>
+              <TableHeadCell>{vj.thMessage}</TableHeadCell>
+              <TableHeadCell className="w-28">{vj.thOccurrences}</TableHeadCell>
+              <TableHeadCell>{vj.thSampleUrls}</TableHeadCell>
+            </tr>
+          </TableHead>
+          <TableBody>
+            {rows.map((row) => (
+              <TableRow key={row.text} className="align-top">
+                <TableCell className="font-mono text-xs break-all">
+                  <div className="space-y-2">
+                    <span>{row.text}</span>
+                    <AiSuggestionButton
+                      request={buildBrowserErrorSummaryContext(row.text, row.sample_urls, row.count)}
+                    />
+                  </div>
+                </TableCell>
+                <TableCell className="text-muted-foreground">{row.count.toLocaleString()}</TableCell>
+                <TableCell>
+                  <ul className="space-y-1">
+                    {row.sample_urls.map((url) => (
+                      <li key={url}>
+                        <Link
+                          to={linksInspectHref(url, 'analysis', trailingQuery.replace(/^\?/, ''))}
+                          className="text-link hover:underline font-mono text-xs break-all"
+                        >
+                          {url}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </Card>
+  );
+}
 
 export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
   const { data } = useReport();
@@ -48,12 +116,10 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
   const q = (searchQuery || '').toLowerCase().trim();
 
   const scopeInfo = useMemo(() => getBrowserDiagnosticsScope(data), [data]);
-  const errorLinks = useMemo(() => getLinksWithBrowserErrors(data?.links), [data?.links]);
-  const allRows = useMemo(() => flattenBrowserErrorsForTable(data?.links), [data?.links]);
-  const topMessages = useMemo(
-    () => buildTopConsoleSummary(scopeInfo.browserDiagnostics),
-    [scopeInfo.browserDiagnostics],
-  );
+  const stats = useMemo(() => computeBrowserErrorStats(data?.links), [data?.links]);
+  const { allRows } = stats;
+  const topMessages = useMemo(() => buildTopConsoleSummaryFromRows(allRows), [allRows]);
+  const topExceptions = useMemo(() => buildTopExceptionSummaryFromRows(allRows), [allRows]);
 
   const filteredRows = useMemo(() => {
     let rows: FlatBrowserErrorRow[] = allRows;
@@ -92,36 +158,28 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
     setExpandedRow(null);
   }, [typeFilter, q]);
 
+  const summaryBadgeCount = topMessages.length + topExceptions.length;
+
   const tabItems = useMemo((): ViewTabItem[] => [
     {
       id: 'summary',
       label: vj.tabs.summary,
       icon: <BarChart3 className="h-3.5 w-3.5 shrink-0" aria-hidden />,
-      badge: topMessages.length > 0 ? topMessages.length : null,
+      badge: summaryBadgeCount > 0 ? summaryBadgeCount : null,
     },
     {
       id: 'errors',
       label: vj.tabs.errors,
       icon: <List className="h-3.5 w-3.5 shrink-0" aria-hidden />,
-      badge: filteredRows.length > 0 ? filteredRows.length : null,
+      badge: allRows.length > 0 ? allRows.length : null,
     },
-  ], [vj.tabs, topMessages.length, filteredRows.length]);
+  ], [vj.tabs, summaryBadgeCount, allRows.length]);
 
   if (!linksReady) {
     return <ViewSectionLoading title={vj.title} />;
   }
 
-  const agg = scopeInfo.browserDiagnostics;
-  const pagesWithConsole = Number(agg?.pages_with_console_errors ?? 0);
-  const totalConsole = Number(agg?.total_console_errors ?? 0);
-  const pagesWithExceptions = Number(agg?.pages_with_page_errors ?? 0);
-  const totalExceptions = Number(agg?.total_page_errors ?? 0);
-  const hasAnyErrors =
-    allRows.length > 0
-    || totalConsole > 0
-    || totalExceptions > 0
-    || pagesWithConsole > 0
-    || pagesWithExceptions > 0;
+  const hasAnyErrors = allRows.length > 0;
 
   if (!scopeInfo.usesBrowser) {
     return (
@@ -158,7 +216,7 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
         title={vj.title}
         subtitle={`${vj.subtitle} ${format(vj.subtitleCount, {
           count: allRows.length,
-          pages: errorLinks.length,
+          pages: stats.affectedPages,
         })}`}
         actions={
           <BrowserErrorsPromptGenerator
@@ -179,62 +237,51 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'summary' && (
         <ViewTabPanel idPrefix="javascript-errors" tabId="summary" className="space-y-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-            <StatCard label={vj.consolePagesCard} value={pagesWithConsole.toLocaleString()} hint={metricHelpHint('views.jsErrors.consolePages')} />
-            <StatCard label={vj.consoleTotalCard} value={totalConsole.toLocaleString()} hint={metricHelpHint('views.jsErrors.consoleTotal')} />
-            <StatCard label={vj.exceptionPagesCard} value={pagesWithExceptions.toLocaleString()} hint={metricHelpHint('views.jsErrors.exceptionPages')} />
-            <StatCard label={vj.exceptionTotalCard} value={totalExceptions.toLocaleString()} hint={metricHelpHint('views.jsErrors.exceptionTotal')} />
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+            <StatCard
+              label={vj.consolePagesCard}
+              value={formatPagesAffectedStat(stats.pagesWithConsole, stats.totalPages)}
+              hint={metricHelpHint('views.jsErrors.consolePages')}
+            />
+            <StatCard label={vj.consoleTotalCard} value={stats.totalConsole.toLocaleString()} hint={metricHelpHint('views.jsErrors.consoleTotal')} />
+            <StatCard
+              label={vj.exceptionPagesCard}
+              value={formatPagesAffectedStat(stats.pagesWithExceptions, stats.totalPages)}
+              hint={metricHelpHint('views.jsErrors.exceptionPages')}
+            />
+            <StatCard label={vj.exceptionTotalCard} value={stats.totalExceptions.toLocaleString()} hint={metricHelpHint('views.jsErrors.exceptionTotal')} />
+            <StatCard
+              label={vj.failedPagesCard}
+              value={formatPagesAffectedStat(stats.pagesWithFailedRequests, stats.totalPages)}
+              hint={metricHelpHint('views.jsErrors.failedPages')}
+            />
+            <StatCard label={vj.failedTotalCard} value={stats.totalFailedRequests.toLocaleString()} hint={metricHelpHint('views.jsErrors.failedTotal')} />
             <StatCard label={vj.renderMode} value={<span className="capitalize">{scopeInfo.renderMode}</span>} hint={metricHelpHint('views.jsErrors.renderMode')} />
           </div>
 
           {topMessages.length > 0 ? (
-            <Card>
-              <h2 className="text-sm font-bold text-foreground mb-1">{vj.topRecurring}</h2>
-              <p className="text-xs text-muted-foreground mb-4">{vj.topRecurringHint}</p>
-              <div className="border border-default rounded-xl overflow-hidden">
-                <Table>
-                  <TableHead>
-                    <tr>
-                      <TableHeadCell>{vj.thMessage}</TableHeadCell>
-                      <TableHeadCell className="w-20">{vj.thCount}</TableHeadCell>
-                      <TableHeadCell>{vj.thSampleUrls}</TableHeadCell>
-                    </tr>
-                  </TableHead>
-                  <TableBody>
-                    {topMessages.map((row) => (
-                      <TableRow key={row.text} className="align-top">
-                        <TableCell className="font-mono text-xs break-all">
-                          <div className="space-y-2">
-                            <span>{row.text}</span>
-                            <AiSuggestionButton
-                              request={buildBrowserErrorSummaryContext(row.text, row.sample_urls, row.count)}
-                            />
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground">{row.count.toLocaleString()}</TableCell>
-                        <TableCell>
-                          <ul className="space-y-1">
-                            {row.sample_urls.map((url) => (
-                              <li key={url}>
-                                <Link
-                                  to={linksInspectHref(url, 'analysis', trailingQuery.replace(/^\?/, ''))}
-                                  className="text-link hover:underline font-mono text-xs break-all"
-                                >
-                                  {url}
-                                </Link>
-                              </li>
-                            ))}
-                          </ul>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </Card>
-          ) : (
+            <TopSummaryTable
+              title={vj.topRecurring}
+              hint={vj.topRecurringHint}
+              rows={topMessages}
+              trailingQuery={trailingQuery}
+              vj={vj}
+            />
+          ) : null}
+
+          {topExceptions.length > 0 ? (
+            <TopSummaryTable
+              title={vj.topRecurringExceptions}
+              hint={vj.topRecurringExceptionsHint}
+              rows={topExceptions}
+              trailingQuery={trailingQuery}
+              vj={vj}
+            />
+          ) : null}
+
+          {topMessages.length === 0 && topExceptions.length === 0 ? (
             <Card className="p-8 text-center text-muted-foreground text-sm">{vj.emptyFiltered}</Card>
-          )}
+          ) : null}
         </ViewTabPanel>
       )}
 
@@ -245,6 +292,7 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
               <div>
                 <h2 className="text-sm font-bold text-foreground">{vj.allErrors}</h2>
                 <p className="text-xs text-muted-foreground">{vj.allErrorsHint}</p>
+                <p className="text-xs text-muted-foreground mt-1">{vj.consoleLevelsNote}</p>
               </div>
               <Select
                 value={typeFilter}
@@ -254,6 +302,7 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
                 <option value="All">{vj.typeAll}</option>
                 <option value="console">{vj.typeConsole}</option>
                 <option value="exception">{vj.typeException}</option>
+                <option value="failed_request">{vj.typeFailedRequest}</option>
               </Select>
             </div>
 
@@ -286,6 +335,7 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
                                     type="button"
                                     className="p-1 text-muted-foreground hover:text-foreground"
                                     aria-expanded={expanded}
+                                    aria-label={expanded ? vj.collapseStack : vj.expandStack}
                                     onClick={() => setExpandedRow(expanded ? null : row.id)}
                                   >
                                     {expanded ? (
@@ -307,8 +357,8 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
                                   <ExternalLink className="h-3 w-3 shrink-0 mt-0.5" />
                                 </a>
                               </TableCell>
-                              <TableCell className="text-xs text-muted-foreground capitalize">
-                                {row.type === 'console' ? vj.typeConsole : vj.typeException}
+                              <TableCell className="text-xs text-muted-foreground">
+                                {typeLabel(row.type, vj)}
                               </TableCell>
                               <TableCell className="font-mono text-xs break-all">
                                 <div className="space-y-2">

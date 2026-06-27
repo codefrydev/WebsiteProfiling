@@ -62,4 +62,30 @@ public sealed class BrowserDiagnosticsHelperTests
         Assert.Equal(2, counts.ConsoleErrorCount);
         Assert.Equal(1, counts.PageErrorCount);
     }
+
+    [Fact]
+    public void SummaryFromPageAnalysis_prefers_console_array_over_stale_summary()
+    {
+        using var doc = JsonDocument.Parse(
+            """
+            {
+              "browser": {
+                "console": [{"level": "error", "text": "Actual error"}],
+                "summary": {
+                  "console_error_count": 9,
+                  "page_error_count": 0
+                }
+              }
+            }
+            """);
+        var pageAnalysis = new Dictionary<string, object?>
+        {
+            ["browser"] = JsonSerializer.Deserialize<Dictionary<string, object?>>(
+                doc.RootElement.GetProperty("browser").GetRawText()),
+        };
+
+        var counts = BrowserDiagnosticsHelper.SummaryFromPageAnalysis(pageAnalysis);
+        Assert.Equal(1, counts.ConsoleErrorCount);
+        Assert.Equal(0, counts.PageErrorCount);
+    }
 }

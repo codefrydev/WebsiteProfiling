@@ -100,7 +100,9 @@ public static class LinksListBuilder
                 ["external_link_count"] = ToInt(pageAnalysis.GetValueOrDefault("external_link_count")),
                 ["console_error_count"] = browser.ConsoleErrorCount,
                 ["page_error_count"] = browser.PageErrorCount,
-                ["has_browser_errors"] = browser.ConsoleErrorCount > 0 || browser.PageErrorCount > 0,
+                ["has_browser_errors"] = browser.ConsoleErrorCount > 0
+                    || browser.PageErrorCount > 0
+                    || browser.FailedRequestCount > 0,
                 ["lighthouse"] = SerializeLighthouse(LighthouseReportMerge.LighthouseForUrl(lighthouseByUrl, url)),
             };
 
