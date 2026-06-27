@@ -15,12 +15,12 @@ from .discovery import seed_sitemap_for_mode
 
 
 def url_matches_exclude(url: str, exclude_urls: list[str]) -> bool:
-    """True if url equals or is under any exclude prefix (trailing-slash normalized)."""
+    """True if url equals or is under any exclude prefix."""
     if not exclude_urls:
         return False
-    u = url.rstrip("/")
+    u = url
     for prefix in exclude_urls:
-        p = prefix.strip().rstrip("/")
+        p = prefix.strip()
         if not p:
             continue
         if u == p or u.startswith(p + "/"):
@@ -43,7 +43,7 @@ class CrawlFrontier:
         user_agent: str = "",
         crawl_robots_txt_override: str = "",
     ) -> None:
-        self.start_url = start_url.rstrip("/")
+        self.start_url = start_url
         self.start_netloc = urlparse(self.start_url).netloc
         self.allow_external = allow_external
         self.max_depth = max_depth
@@ -83,7 +83,7 @@ class CrawlFrontier:
             return False
 
     def enqueue_seed(self, url: str, depth: int = 0) -> None:
-        u = url.rstrip("/")
+        u = url
         if url_matches_exclude(u, self.exclude_urls):
             return
         if not self.allow_external and not self.same_domain(u):

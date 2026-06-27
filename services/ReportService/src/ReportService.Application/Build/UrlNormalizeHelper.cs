@@ -16,7 +16,7 @@ public static class UrlNormalizeHelper
         }
 
         var host = StripWww(uri.Host.ToLowerInvariant());
-        var path = uri.AbsolutePath.TrimEnd('/');
+        var path = uri.AbsolutePath;
         if (string.IsNullOrEmpty(path))
         {
             path = "/";

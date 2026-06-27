@@ -29,13 +29,13 @@ def norm_report_url(url: str) -> str:
         return ""
     try:
         p = urlparse(raw)
-        path = (p.path or "/").rstrip("/") or "/"
+        path = p.path or "/"
         host = (p.hostname or "").lower()
         if not host:
-            return raw.rstrip("/").lower()
+            return raw.lower()
         return f"{host}{path}"
     except Exception:
-        return raw.rstrip("/").lower()
+        return raw.lower()
 
 
 def _num(v: Any) -> float | None:

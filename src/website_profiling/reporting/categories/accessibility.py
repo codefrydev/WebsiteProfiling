@@ -29,7 +29,7 @@ def lighthouse_accessibility_issues_from_sources(
     for url, summary in (lighthouse_by_url or {}).items():
         if not isinstance(summary, dict):
             continue
-        u = str(url or summary.get("url") or "").strip().rstrip("/")
+        u = str(url or summary.get("url") or "").strip()
         if not u:
             continue
         for fail in summary.get("top_failures") or []:
@@ -129,7 +129,7 @@ def contrast_issues_from_sources(
             ]
             if not contrast_hits:
                 continue
-            seen_urls.add(url.rstrip("/"))
+            seen_urls.add(url)
             for violation in contrast_hits:
                 msg = str(violation.get("description") or violation.get("help") or "Color contrast violation")
                 issues.append(_issue(

@@ -125,7 +125,7 @@ public static class ContentUrlListsBuilder
                 {
                     result["missing_canonical"].Add(new Dictionary<string, object?> { ["url"] = url, ["title"] = title });
                 }
-                else if (!string.Equals(url.TrimEnd('/'), canon.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+                else if (!string.Equals(url, canon, StringComparison.OrdinalIgnoreCase))
                 {
                     result["canonical_mismatch"].Add(new Dictionary<string, object?>
                     {

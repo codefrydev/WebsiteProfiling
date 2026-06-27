@@ -772,6 +772,33 @@ def test_worker_records_redirect_and_enqueues_target(monkeypatch) -> None:
     assert c.frontier.queue_contains("https://site.com/new")
 
 
+def test_worker_enqueues_trailing_slash_redirect_target(monkeypatch) -> None:
+    """Slash-only 301 targets must still be enqueued (Hugo appendSlash sites)."""
+    from website_profiling.crawl.crawler import Crawler
+    from website_profiling.crawl.fetchers.base import FetchResult
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
+        lambda *_a, **_k: [],
+    )
+    c = Crawler(start_url="https://site.com/", ignore_robots=True, use_wappalyzer=False)
+    c.fetch = lambda _url: FetchResult(  # type: ignore[method-assign]
+        status=301,
+        content_type="",
+        text=None,
+        response_time_ms=1,
+        content_length=0,
+        final_url="https://site.com/history/",
+        headers_dict={},
+        redirect_chain_length=1,
+        fetch_method="static",
+    )
+    out = c.worker("https://site.com/history")
+    assert str(out["status"]) == "301"
+    assert out["final_url"] == "https://site.com/history/"
+    assert c.frontier.queue_contains("https://site.com/history/")
+
+
 def test_worker_does_not_enqueue_links_from_error_page(monkeypatch) -> None:
     from website_profiling.crawl.crawler import Crawler
     from website_profiling.crawl.fetchers.base import FetchResult

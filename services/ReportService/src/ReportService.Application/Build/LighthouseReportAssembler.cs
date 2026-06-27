@@ -27,7 +27,7 @@ public static class LighthouseReportAssembler
 
         foreach (var row in crawlRows)
         {
-            var url = row.Url.Trim().TrimEnd('/');
+            var url = row.Url.Trim();
             var match = LighthouseReportMerge.LighthouseForUrl(filtered, url);
             if (match is not null)
             {
@@ -39,7 +39,7 @@ public static class LighthouseReportAssembler
         {
             foreach (var kv in filtered)
             {
-                byUrl[kv.Key.Trim().TrimEnd('/')] = kv.Value;
+                byUrl[kv.Key.Trim()] = kv.Value;
             }
         }
 

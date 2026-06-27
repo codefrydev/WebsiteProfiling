@@ -129,7 +129,7 @@ def run_simple_report(
 
     df = df.copy()
     if not df.empty:
-        df["url"] = df["url"].astype(str).str.rstrip("/")
+        df["url"] = df["url"].astype(str)
 
     expected_host = _derive_expected_host(start_url or "", df)
     if lighthouse_by_url and expected_host:

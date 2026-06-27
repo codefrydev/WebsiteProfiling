@@ -15,7 +15,7 @@ def strip_crawl_query_params(url: str, ignore_params: list[str] | None = None) -
     """Remove tracking and facet query params for crawl deduplication."""
     parsed = urlparse(url)
     if not parsed.query:
-        return url.rstrip("/")
+        return url
     ignore = {p.lower() for p in (ignore_params or [])}
     parts = []
     for pair in parsed.query.split("&"):
@@ -31,7 +31,7 @@ def strip_crawl_query_params(url: str, ignore_params: list[str] | None = None) -
         parts.append(pair)
     query = "&".join(parts)
     rebuilt = parsed._replace(query=query).geturl()
-    return rebuilt.rstrip("/")
+    return rebuilt
 
 
 def normalize_link(
@@ -50,7 +50,7 @@ def normalize_link(
     parsed = urlparse(joined)
     if parsed.scheme not in ("http", "https"):
         return None
-    out = joined.rstrip("/")
+    out = joined
     if strip_params:
         out = strip_crawl_query_params(out, ignore_params)
     return out
@@ -143,7 +143,7 @@ def parse_link_edges(base_url: str, html_text: str) -> tuple[str, list[dict]]:
         nofollow, sponsored, ugc = _parse_rel_flags(rel_str)
         link_type = "internal" if urlparse(ln).netloc == start_netloc else "external"
         edges.append({
-            "to_url": ln.rstrip("/"),
+            "to_url": ln,
             "anchor_text": _anchor_text_from_tag(a),
             "rel": rel_str.strip(),
             "is_nofollow": nofollow,
@@ -177,7 +177,7 @@ def parse_links_serialized(raw) -> list[str]:
     if _is_empty(raw):
         return []
     if isinstance(raw, list):
-        return [str(x).strip().rstrip("/") for x in raw if x]
+        return [str(x).strip() for x in raw if x]
     s = str(raw).strip()
     if not s:
         return []
@@ -185,10 +185,10 @@ def parse_links_serialized(raw) -> list[str]:
         try:
             v = ast.literal_eval(s)
             if isinstance(v, (list, tuple)):
-                return [str(x).strip().rstrip("/") for x in v if x]
+                return [str(x).strip() for x in v if x]
         except Exception:
             pass
-    return [t.strip().rstrip("/") for t in s.split(",") if t.strip()]
+    return [t.strip() for t in s.split(",") if t.strip()]
 
 
 # Column names that may contain serialized outlink lists (for building edges from crawl CSV)

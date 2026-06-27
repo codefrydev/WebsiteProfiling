@@ -295,7 +295,7 @@ public static class OptionalAuditsBuilder
             }
             else if (!string.IsNullOrWhiteSpace(amphtml)
                      && isAmp
-                     && !string.Equals(amphtml.Trim().TrimEnd('/'), canon.TrimEnd('/'), StringComparison.OrdinalIgnoreCase))
+                     && !string.Equals(amphtml.Trim(), canon, StringComparison.OrdinalIgnoreCase))
             {
                 issues.Add(CategoryHelpers.Issue(
                     "AMP page canonical does not match linked amphtml href.",
@@ -344,7 +344,7 @@ public static class OptionalAuditsBuilder
                 continue;
             }
 
-            var cacheKey = url.TrimEnd('/');
+            var cacheKey = url;
             if (cache.TryGetValue(cacheKey, out var cachedAvailable))
             {
                 if (cachedAvailable)

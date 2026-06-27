@@ -54,10 +54,10 @@ def _payload(**overrides) -> dict:
 
 
 def test_norm_report_url() -> None:
-    assert norm_report_url("https://Ex.COM/page/") == "ex.com/page"
+    assert norm_report_url("https://Ex.COM/page/") == "ex.com/page/"
     assert norm_report_url("") == ""
     assert norm_report_url("  ") == ""
-    assert norm_report_url("relative/path/") == "relative/path"
+    assert norm_report_url("relative/path/") == "relative/path/"
     with patch("website_profiling.reporting.compare_payload.urlparse", side_effect=ValueError("bad")):
         assert norm_report_url("https://ex.com/x") == "https://ex.com/x"
 

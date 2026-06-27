@@ -19,13 +19,13 @@ def parse_crawl_url_list(raw: str | None, *, start_url: str = "") -> list[str]:
     out: list[str] = []
     for line in str(raw).replace("\r", "").split("\n"):
         for part in line.split(","):
-            u = part.strip().rstrip("/")
+            u = part.strip()
             if not u:
                 continue
             if start_url and not u.startswith(("http://", "https://")):
                 normalized = normalize_link(start_url, u)
                 if normalized:
-                    u = normalized.rstrip("/")
+                    u = normalized
             if u and u not in seen:
                 seen.add(u)
                 out.append(u)

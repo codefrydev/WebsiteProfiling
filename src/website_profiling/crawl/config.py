@@ -79,7 +79,7 @@ class CrawlConfig:
 
     def normalized(self) -> CrawlConfig:
         """Apply normalized derived fields in-place."""
-        self.start_url = self.start_url.rstrip("/")
+        self.start_url = self.start_url.strip()
         self.discovery_mode = normalize_discovery_mode(self.discovery_mode)
         self.render_mode = (self.render_mode or "static").strip().lower()
         self.js_concurrency = max(1, int(self.js_concurrency))
@@ -101,7 +101,7 @@ class CrawlConfig:
         self.custom_extractors = list(self.custom_extractors or [])
         self.crawl_ignore_params = list(self.crawl_ignore_params or [])
         self.crawl_url_list = [
-            u.rstrip("/") for u in (self.crawl_url_list or []) if u and str(u).strip()
+            u.strip() for u in (self.crawl_url_list or []) if u and str(u).strip()
         ]
         self.user_agent = resolve_crawl_user_agent(
             self.crawl_user_agent_preset,

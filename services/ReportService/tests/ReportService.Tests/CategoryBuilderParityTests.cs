@@ -18,7 +18,7 @@ public sealed class CategoryBuilderParityTests
         var rows = doc.RootElement.EnumerateArray()
             .Select(el =>
             {
-                var url = el.GetProperty("url").GetString()!.Trim().TrimEnd('/');
+                var url = el.GetProperty("url").GetString()!.Trim();
                 return CrawlRowMapper.MergeRow(url, "static", el.GetRawText());
             })
             .ToList();

@@ -113,8 +113,8 @@ public static class TechnicalSeoCategoryBuilder
                         continue;
                     }
 
-                    var pageUrl = row.Url.Trim().TrimEnd('/');
-                    var canon = canonical.TrimEnd('/');
+                    var pageUrl = row.Url.Trim();
+                    var canon = canonical.Trim();
                     if (string.Equals(pageUrl, canon, StringComparison.OrdinalIgnoreCase))
                     {
                         continue;

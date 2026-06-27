@@ -45,7 +45,7 @@ def _analyze_row(
         # A single page whose HTML breaks the analysis stack must not abort the
         # whole run (mirrors page_markdown.batch._extract_row); skip it instead.
         return None
-    return {"url": str(url).rstrip("/"), **fields}
+    return {"url": str(url), **fields}
 
 
 def analyze_run_html(

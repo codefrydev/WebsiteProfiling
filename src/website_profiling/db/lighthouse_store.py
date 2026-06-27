@@ -132,7 +132,7 @@ def read_lh_runs_by_url(conn: Connection) -> dict[str, list[int]]:
     try:
         cur = conn.execute("SELECT id, url FROM lighthouse_runs ORDER BY id")
         for row in cur.fetchall():
-            u = str(row["url"]).strip().rstrip("/")
+            u = str(row["url"]).strip()
             out.setdefault(u, []).append(int(row["id"]))
     except Exception:
         pass

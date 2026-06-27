@@ -14,7 +14,7 @@ public sealed class CategoryBuilderGoldenTests
         var rows = new List<CrawlRow>();
         foreach (var el in doc.RootElement.EnumerateArray())
         {
-            var url = el.GetProperty("url").GetString()!.Trim().TrimEnd('/');
+            var url = el.GetProperty("url").GetString()!.Trim();
             rows.Add(CrawlRowMapper.MergeRow(url, "static", el.GetRawText()));
         }
 

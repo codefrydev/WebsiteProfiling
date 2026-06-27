@@ -24,7 +24,7 @@ def _extract_row(
         fields = extract_page_markdown(str(html), strategy=strategy)
     except Exception:
         return None
-    return {"url": str(url).rstrip("/"), **fields}
+    return {"url": str(url), **fields}
 
 
 def extract_run_markdown(
@@ -56,11 +56,11 @@ def extract_run_markdown(
             if not items:
                 break
             for item in items:
-                all_existing_urls.add(str(item.get("url", "")).rstrip("/"))
+                all_existing_urls.add(str(item.get("url", "")))
             page_offset += len(items)
             if len(items) < page_limit:
                 break
-        rows = [r for r in rows if str(r.get("url", "")).rstrip("/") not in all_existing_urls]
+        rows = [r for r in rows if str(r.get("url", "")) not in all_existing_urls]
         if not rows:
             return []
 

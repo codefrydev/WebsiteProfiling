@@ -26,7 +26,7 @@ def test_non_www_hosts_are_untouched() -> None:
 
 
 def test_normalize_url_strips_www_label_not_chars() -> None:
-    assert normalize_url("https://www.washington.edu/admissions/") == "washington.edu/admissions"
+    assert normalize_url("https://www.washington.edu/admissions/") == "washington.edu/admissions/"
 
 
 def test_normalize_url_preserves_w_prefixed_host() -> None:

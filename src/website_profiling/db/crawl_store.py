@@ -58,7 +58,7 @@ def _normalize_start_url_key(url: str) -> str:
         return ""
     if not trimmed.startswith(("http://", "https://")):
         trimmed = f"https://{trimmed}"
-    return trimmed.rstrip("/").lower()
+    return trimmed.lower()
 
 
 def get_latest_crawl_run_id_for_property(conn: Connection, property_id: int) -> Optional[int]:
@@ -75,7 +75,7 @@ def get_latest_crawl_run_id_for_property(conn: Connection, property_id: int) -> 
 
 
 def get_latest_crawl_run_id_for_start_url(conn: Connection, start_url: str) -> Optional[int]:
-    """Latest crawl run whose start_url matches (scheme-insensitive, trailing slash ignored)."""
+    """Latest crawl run whose start_url matches (case-insensitive)."""
     target = _normalize_start_url_key(start_url)
     if not target:
         return None
@@ -171,7 +171,7 @@ def read_mobile_desktop_delta(conn: Connection, desktop_run_id: int) -> list[dic
         return []
 
     def _norm(s: Any) -> str:
-        return str(s or "").rstrip("/").lower()
+        return str(s or "").lower()
 
     def _int(v: Any) -> int:
         try:
@@ -323,7 +323,7 @@ def _crawl_rows_from_df(df: pd.DataFrame, crawl_run_id: int) -> list[tuple]:
         c for c in df.columns if c not in ("url", "crawl_run_id", "fetch_method")
     ]
     for rec in df.to_dict(orient="records"):
-        url = str(rec.get("url", "")).rstrip("/")
+        url = str(rec.get("url", "")).strip()
         if not url:
             continue
         payload = {c: _sanitize_for_json(rec[c]) if not pd.isna(rec.get(c)) else None for c in data_cols}
@@ -372,8 +372,6 @@ def write_crawl(conn: Connection, df: pd.DataFrame, crawl_run_id: Optional[int] 
         return
 
     df = df.copy()
-    if "url" in df.columns:
-        df["url"] = df["url"].astype(str).str.rstrip("/")
 
     with conn.transaction():
         if crawl_run_id is not None:
@@ -417,7 +415,7 @@ def merge_crawl_result_fields_batch(
         return 0
     params: list[tuple] = []
     for item in updates:
-        url = str(item.get("url") or "").rstrip("/")
+        url = str(item.get("url") or "").strip()
         if not url:
             continue
         fields = {k: _sanitize_for_json(v) for k, v in item.items() if k != "url"}
@@ -472,7 +470,7 @@ def write_edges(conn: Connection, edges: list[tuple[str, str]], crawl_run_id: Op
                 _executemany(
                     conn,
                     "INSERT INTO edges (crawl_run_id, from_url, to_url) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
-                    [(rid, a.rstrip("/"), b.rstrip("/")) for a, b in edges],
+                    [(rid, a, b) for a, b in edges],
                 )
         conn.commit()
         return
@@ -481,7 +479,7 @@ def write_edges(conn: Connection, edges: list[tuple[str, str]], crawl_run_id: Op
         _executemany(
             conn,
             "INSERT INTO edges (crawl_run_id, from_url, to_url) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
-            [(crawl_run_id, a.rstrip("/"), b.rstrip("/")) for a, b in edges],
+            [(crawl_run_id, a, b) for a, b in edges],
         )
     conn.commit()
 
@@ -498,8 +496,8 @@ def write_link_edges(
     conn.execute("DELETE FROM link_edges WHERE crawl_run_id = %s", (crawl_run_id,))
     rows = []
     for e in edges:
-        from_u = str(e.get("from_url") or "").rstrip("/")
-        to_u = str(e.get("to_url") or "").rstrip("/")
+        from_u = str(e.get("from_url") or "").strip()
+        to_u = str(e.get("to_url") or "").strip()
         if not from_u or not to_u:
             continue
         rows.append((

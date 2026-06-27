@@ -78,7 +78,7 @@ def get_duplicate_cluster(conn: Connection, ctx: AuditToolContext, args: dict[st
     clusters = payload.get("content_duplicates") or []
     if not isinstance(clusters, list):
         return {"error": "content_duplicates not in report", "missing": True}
-    url = str(args.get("url") or "").strip().rstrip("/").lower()
+    url = str(args.get("url") or "").strip().lower()
     cluster_index = args.get("cluster_index")
     if cluster_index is not None:
         try:
@@ -95,9 +95,9 @@ def get_duplicate_cluster(conn: Connection, ctx: AuditToolContext, args: dict[st
         for i, cluster in enumerate(clusters):
             if not isinstance(cluster, dict):
                 continue
-            rep = str(cluster.get("representative_url") or "").strip().rstrip("/").lower()
+            rep = str(cluster.get("representative_url") or "").strip().lower()
             members = cluster.get("member_urls") or []
-            member_norm = {str(u).strip().rstrip("/").lower() for u in members if u}
+            member_norm = {str(u).strip().lower() for u in members if u}
             if url == rep or url in member_norm:
                 return {"cluster_index": i, "cluster": cluster}
         return {"error": "url not found in duplicate clusters", "url": url}

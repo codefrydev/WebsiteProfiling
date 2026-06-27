@@ -75,7 +75,7 @@ def list_backlinks_to_url(conn: Connection, ctx: AuditToolContext, args: dict[st
     scoped = ctx.with_args(args)
     if scoped.property_id is None:
         return {"error": "property_id is required", "links": [], "total": 0, "truncated": False}
-    target = str(args.get("url") or args.get("target_page") or "").strip().lower().rstrip("/")
+    target = str(args.get("url") or args.get("target_page") or "").strip().lower()
     if not target:
         return {"error": "url is required", "links": [], "total": 0, "truncated": False}
     data = _load_links(scoped, conn)
@@ -84,8 +84,8 @@ def list_backlinks_to_url(conn: Connection, ctx: AuditToolContext, args: dict[st
     rows = _all_link_rows(data)
     matched = [
         r for r in rows
-        if target in str(r.get("target_page") or "").lower().rstrip("/")
-        or target in str(r.get("target_url_on_linking_page") or "").lower().rstrip("/")
+        if target in str(r.get("target_page") or "").lower()
+        or target in str(r.get("target_url_on_linking_page") or "").lower()
     ]
     limit = parse_limit(args.get("limit"), 30, 100)
     sliced = cap_list(matched, limit, max_cap=100)

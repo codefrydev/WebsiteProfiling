@@ -212,7 +212,7 @@ public static class HtmlAccessibilityCategoryBuilder
                         continue;
                     }
 
-                    skipLhContrast.Add(url.Trim().TrimEnd('/'));
+                    skipLhContrast.Add(url.Trim());
                     var msg = v.TryGetProperty("description", out var desc) ? desc.GetString()
                         : v.TryGetProperty("help", out var help) ? help.GetString() : "Color contrast violation";
                     var rec = v.TryGetProperty("help", out var helpRec) ? helpRec.GetString()
@@ -256,7 +256,7 @@ public static class HtmlAccessibilityCategoryBuilder
                 continue;
             }
 
-            var u = (url ?? summary["url"]?.GetValue<string>() ?? "").Trim().TrimEnd('/');
+            var u = (url ?? summary["url"]?.GetValue<string>() ?? "").Trim();
             if (string.IsNullOrEmpty(u))
             {
                 continue;

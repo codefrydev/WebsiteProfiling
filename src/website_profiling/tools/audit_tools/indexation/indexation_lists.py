@@ -234,7 +234,6 @@ def list_log_orphan_high_traffic(conn: Connection, ctx: AuditToolContext, args: 
             continue
         path = _norm_path(str(url))
         orphan_path_set.add(path)
-        orphan_path_set.add(path.rstrip("/") or "/")
     if not orphan_path_set:
         return {"paths": [], "total": 0, "truncated": False, "note": "no orphan URLs in report"}
     analysis = row.get("analysis") or {}
@@ -251,7 +250,7 @@ def list_log_orphan_high_traffic(conn: Connection, ctx: AuditToolContext, args: 
         hits = int(row_data.get("hits") or 0)
         if hits < min_hits:
             continue
-        if path not in orphan_path_set and path.rstrip("/") not in orphan_path_set:
+        if path not in orphan_path_set:
             continue
         items.append({"path": path, "hits": hits})
     items.sort(key=lambda x: -x["hits"])

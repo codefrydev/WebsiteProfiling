@@ -144,7 +144,7 @@ public static partial class CategoryHelpers
             }
 
             if (!string.IsNullOrEmpty(url) && hrefs.Count > 0
-                && !hrefs.Select(h => h.Trim().TrimEnd('/')).Contains(url.Trim().TrimEnd('/')))
+                && !hrefs.Select(h => h.Trim()).Contains(url.Trim()))
             {
                 issues.Add(Issue(
                     "Hreflang cluster missing self-referencing alternate.",

@@ -76,7 +76,7 @@ def _hreflang_issues(success_df: pd.DataFrame) -> list[dict]:
                     recommendation="Each hreflang alternate should use a unique language/region code.",
                 ))
                 duplicate_count += 1
-        if url and hrefs and url.rstrip("/") not in [h.rstrip("/") for h in hrefs]:
+        if url and hrefs and url not in hrefs:
             if self_ref_count < MAX_HREFLANG_ISSUES_PER_CHECK:
                 issues.append(_issue(
                     "Hreflang cluster missing self-referencing alternate.",

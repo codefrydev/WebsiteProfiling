@@ -88,7 +88,7 @@ def _write_report_html(output_dir: str, summary: dict[str, Any]) -> None:
 
 def _url_safe(s: str) -> str:
     """Return a filesystem-safe slug from URL for filenames."""
-    return re.sub(r"[^\w\-.]", "_", s.strip().rstrip("/"))[:80]
+    return re.sub(r"[^\w\-.]", "_", s.strip())[:80]
 
 
 def _lighthouse_cmd() -> list[str]:

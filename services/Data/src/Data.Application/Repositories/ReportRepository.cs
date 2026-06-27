@@ -379,8 +379,8 @@ public sealed class ReportRepository(DataDbContext db, ILogger<ReportRepository>
         var map = new Dictionary<string, CrawlPageSnapshot>(StringComparer.Ordinal);
         foreach (var row in rows)
         {
-            // Normalize key the same way Python does: rstrip('/') + lower().
-            var key = (row.Url ?? "").TrimEnd('/').ToLowerInvariant();
+            // Normalize key the same way Python does: trim + lower.
+            var key = (row.Url ?? "").Trim().ToLowerInvariant();
 
             JsonElement data = default;
             try

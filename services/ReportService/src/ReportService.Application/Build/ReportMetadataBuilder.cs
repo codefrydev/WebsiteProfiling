@@ -170,7 +170,7 @@ public static class ReportMetadataBuilder
         var outList = new List<Dictionary<string, object?>>();
         foreach (var row in rows)
         {
-            var url = row.Url.Trim().TrimEnd('/');
+            var url = row.Url.Trim();
             if (string.IsNullOrEmpty(url))
             {
                 continue;
@@ -254,7 +254,7 @@ public static class ReportMetadataBuilder
                 continue;
             }
 
-            var u = row.Url.Trim().TrimEnd('/');
+            var u = row.Url.Trim();
             if (string.IsNullOrEmpty(u))
             {
                 continue;

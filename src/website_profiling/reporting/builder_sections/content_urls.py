@@ -104,7 +104,7 @@ def build_content_url_lists(
             canon = "" if pd.isna(row.get("canonical_url")) else str(row.get("canonical_url")).strip()
             if not canon:
                 missing_canonical.append({"url": u, "title": title_str})
-            elif u.rstrip("/").lower() != canon.rstrip("/").lower():
+            elif u.lower() != canon.lower():
                 canonical_mismatch.append({"url": u, "canonical_url": canon, "title": title_str})
     if "images_without_alt" in success_df_urls.columns:
         alt_missing = pd.to_numeric(success_df_urls["images_without_alt"], errors="coerce").fillna(0).astype(int)

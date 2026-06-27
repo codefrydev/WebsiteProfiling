@@ -12,7 +12,7 @@ from ..context import AuditToolContext
 
 
 def _norm_url(url: str) -> str:
-    return str(url or "").strip().rstrip("/").lower()
+    return str(url or "").strip().lower()
 
 
 def _load_link_edges(payload: dict[str, Any]) -> list[dict[str, Any]]:

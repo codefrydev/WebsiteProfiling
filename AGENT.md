@@ -44,7 +44,7 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 
 | Task | Where |
 |------|--------|
-| Crawl | `crawl/crawler.py`, `crawl/fetchers/` |
+| Crawl | `crawl/crawler.py`, `crawl/fetchers/`, `parsing/links.py` (`normalize_link` preserves trailing slashes from `href`) |
 | Report (native build) | `services/ReportService/src/ReportService.Application/Build/` |
 | Report (Python bridge) | `reporting/builder.py`, `reporting/categories/` |
 | PDF / workbook export | `services/FileService/` (rendering); BFF routes `/api/report/export` and `/api/report/export-workbook` to FileService |
@@ -179,6 +179,11 @@ These recur when adding features. Verify explicitly — do not assume tests caug
    rid = _row_field(row, "id", index=0)
    report_id = int(rid) if rid is not None else None
    ```
+
+3a. **Crawl / page URLs — preserve trailing slashes**
+   - `normalize_link` and crawl storage keep the URL shape from `href` or the server (no `rstrip("/")` on page URLs). `/page` and `/page/` are distinct crawl keys.
+   - **Do:** Follow 3xx redirect targets with exact `final_url != url` (see `crawler.py`). Use `integrations/google/normalize.normalize_url` for GSC join keys (path shape preserved).
+   - **Don't:** Strip trailing slashes on crawl rows, link edges, or report `links[].url`. Service base URLs (`AI_SERVICE_URL`, etc.) may still trim for path joining only.
 
 4. **Python — local vs CI coverage gates (three jobs, not one)**
    - CI runs **three separate** pytest coverage jobs (see `.github/workflows/ci.yml` and `scripts/local-test.sh`):

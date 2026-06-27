@@ -92,8 +92,8 @@ def category_technical_seo(
             canon = row.get("canonical_url")
             if pd.isna(url) or pd.isna(canon) or not str(canon).strip():
                 continue
-            url = str(url).rstrip("/")
-            canon = str(canon).strip().rstrip("/")
+            url = str(url)
+            canon = str(canon).strip()
             if url == canon:
                 continue
             cross_canon_count += 1

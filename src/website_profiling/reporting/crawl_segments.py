@@ -24,7 +24,8 @@ def _matches_path(path: str, pattern: str, is_rx: bool, compiled: Any) -> bool:
     if is_rx:
         return bool(compiled.search(path))
     # Literal prefix: exact match or path starts with prefix + "/"
-    return path == pattern or path.startswith(pattern.rstrip("/") + "/")
+    prefix = pattern if pattern.endswith("/") else pattern + "/"
+    return path == pattern or path.startswith(prefix)
 
 
 def _segment_health(seg_df: pd.DataFrame) -> int:

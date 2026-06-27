@@ -34,8 +34,8 @@ public static class ReportEdgeResolver
                 continue;
             }
 
-            var from = row.FromUrl.Trim().TrimEnd('/');
-            var to = row.ToUrl.Trim().TrimEnd('/');
+            var from = row.FromUrl.Trim();
+            var to = row.ToUrl.Trim();
             if (string.IsNullOrEmpty(from) || string.IsNullOrEmpty(to))
             {
                 continue;

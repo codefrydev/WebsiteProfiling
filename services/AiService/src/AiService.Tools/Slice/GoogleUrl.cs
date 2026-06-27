@@ -7,18 +7,13 @@ namespace AiService.Tools.Slice;
 /// </summary>
 public static class GoogleUrl
 {
-    /// <summary>Strip scheme, leading <c>www.</c>, trailing slash; lowercase host — for join keys.</summary>
+    /// <summary>Strip scheme, leading <c>www.</c>; lowercase host — for join keys.</summary>
     public static string NormalizeUrl(string? url)
     {
         var (netloc, path) = Split(url?.Trim() ?? string.Empty);
         var host = StripWwwPrefix(netloc.ToLowerInvariant());
-        var trimmed = path.TrimEnd('/');
-        if (trimmed.Length == 0)
-        {
-            trimmed = "/";
-        }
-
-        return host + trimmed;
+        var normalizedPath = path.Length == 0 ? "/" : path;
+        return host + normalizedPath;
     }
 
     /// <summary>Just the path component of a URL (or <c>/</c>). Mirrors Python <c>url_to_path</c>.</summary>

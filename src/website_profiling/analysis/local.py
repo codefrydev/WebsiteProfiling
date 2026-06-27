@@ -116,7 +116,7 @@ def compute_duplicate_groups(
     url_to_fp: dict[str, str] = {}
     url_to_sh: dict[str, int] = {}
     for _, row in success.iterrows():
-        u = str(row.get("url") or "").strip().rstrip("/")
+        u = str(row.get("url") or "").strip()
         if not u:
             continue
         fp = normalize_fingerprint_text(row)
@@ -241,7 +241,7 @@ def compute_language_signals(df: pd.DataFrame, cfg: dict[str, str] | None) -> tu
     detect, LangDetectException = _import_langdetect()
     by_url: dict[str, str] = {}
     for _, row in df.iterrows():
-        u = str(row.get("url") or "").strip().rstrip("/")
+        u = str(row.get("url") or "").strip()
         if not u:
             continue
         st = str(row.get("status") or "")
@@ -351,7 +351,7 @@ def merge_analysis_into_payload(payload: dict[str, Any], bundle: dict[str, Any])
         if not isinstance(rec, dict):
             continue
         u = str(rec.get("url") or "").strip()
-        uk = u.rstrip("/")
+        uk = u
         rec.pop("duplicate_group_id", None)
         rec.pop("similar_internal", None)
         rec.pop("detected_language", None)

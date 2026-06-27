@@ -158,7 +158,7 @@ def validate_urls(
                 rows.append(_inspect_via_gsc(creds, str(site_url).strip(), u))
                 continue
             except Exception as exc:
-                link = links_by_url.get(u) or links_by_url.get(u.rstrip("/"))
+                link = links_by_url.get(u)
                 if api_key and api_calls < api_max_calls:
                     try:
                         rows.append(_inspect_via_rich_results_api(api_key, u))
@@ -178,5 +178,5 @@ def validate_urls(
                 continue
             except Exception:
                 pass
-        rows.append(_local_row(u, links_by_url.get(u) or links_by_url.get(u.rstrip("/"))))
+        rows.append(_local_row(u, links_by_url.get(u)))
     return rows

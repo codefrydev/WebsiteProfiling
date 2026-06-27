@@ -120,10 +120,10 @@ public static class GeoGenerationToolHandlers
             return new JsonObject { ["error"] = "no crawl data", ["url"] = url };
         }
 
-        var needle = url.TrimEnd('/').ToLowerInvariant();
+        var needle = url.ToLowerInvariant();
         foreach (var row in rows)
         {
-            var rowUrl = JsonCoercion.AsString(row["url"])?.TrimEnd('/').ToLowerInvariant() ?? "";
+            var rowUrl = JsonCoercion.AsString(row["url"])?.Trim().ToLowerInvariant() ?? "";
             if (rowUrl != needle)
             {
                 continue;
@@ -175,7 +175,7 @@ public static class GeoGenerationToolHandlers
         var baseUrl = BaseUrl(domain);
         if (baseUrl.Length == 0 && url.Length > 0)
         {
-            baseUrl = url.TrimEnd('/');
+            baseUrl = url.Trim();
         }
 
         var schemaTypeClean = schemaType switch
@@ -329,11 +329,11 @@ public static class GeoGenerationToolHandlers
         var description = "";
         if (url.Length > 0)
         {
-            var needle = url.TrimEnd('/').ToLowerInvariant();
+            var needle = url.ToLowerInvariant();
             var rows = await scoped.LoadCrawlDfAsync(db, cancellationToken);
             foreach (var row in rows)
             {
-                var rowUrl = JsonCoercion.AsString(row["url"])?.TrimEnd('/').ToLowerInvariant() ?? "";
+                var rowUrl = JsonCoercion.AsString(row["url"])?.Trim().ToLowerInvariant() ?? "";
                 if (rowUrl != needle)
                 {
                     continue;

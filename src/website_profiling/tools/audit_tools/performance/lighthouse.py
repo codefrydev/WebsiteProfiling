@@ -44,7 +44,7 @@ def get_lighthouse_summary(conn: Connection, ctx: AuditToolContext, args: dict[s
 
 def get_lighthouse_for_url(conn: Connection, ctx: AuditToolContext, args: dict[str, Any]) -> dict[str, Any]:
     scoped = ctx.with_args(args)
-    url = str(args.get("url") or "").strip().rstrip("/")
+    url = str(args.get("url") or "").strip()
     if not url:
         return {"error": "url is required"}
 

@@ -273,7 +273,6 @@ public static class NativeReportPayloadAssembler
         foreach (var rec in links)
         {
             var url = rec.GetValueOrDefault("url")?.ToString()?.Trim() ?? "";
-            var urlKey = url.TrimEnd('/');
 
             rec.Remove("duplicate_group_id");
             rec.Remove("similar_internal");
@@ -282,27 +281,27 @@ public static class NativeReportPayloadAssembler
             rec.Remove("ml_anomaly");
             rec.Remove("keyphrases");
 
-            if (dupGid.TryGetValue(urlKey, out var gid) || dupGid.TryGetValue(url, out gid))
+            if (dupGid.TryGetValue(url, out var gid))
             {
                 rec["duplicate_group_id"] = LinksListBuilder.UnwrapJsonValue(gid);
             }
 
-            if (simMap.TryGetValue(urlKey, out var similar) || simMap.TryGetValue(url, out similar))
+            if (simMap.TryGetValue(url, out var similar))
             {
                 rec["similar_internal"] = similar;
             }
 
-            if (langMap.TryGetValue(urlKey, out var lang) || langMap.TryGetValue(url, out lang))
+            if (langMap.TryGetValue(url, out var lang))
             {
                 rec["detected_language"] = lang;
             }
 
-            if (nlpMap.TryGetValue(urlKey, out var nlp) || nlpMap.TryGetValue(url, out nlp))
+            if (nlpMap.TryGetValue(url, out var nlp))
             {
                 rec["nlp_entities"] = nlp;
             }
 
-            if (kpMap.TryGetValue(urlKey, out var kp) || kpMap.TryGetValue(url, out kp))
+            if (kpMap.TryGetValue(url, out var kp))
             {
                 rec["keyphrases"] = kp;
             }
@@ -320,12 +319,12 @@ public static class NativeReportPayloadAssembler
                     }
                 }
 
-                if (langMap.TryGetValue(urlKey, out lang) || langMap.TryGetValue(url, out lang))
+                if (langMap.TryGetValue(url, out lang))
                 {
                     EnsureSignals(pageAnalysis)["language"] = lang;
                 }
 
-                if (nlpMap.TryGetValue(urlKey, out nlp) || nlpMap.TryGetValue(url, out nlp))
+                if (nlpMap.TryGetValue(url, out nlp))
                 {
                     EnsureSignals(pageAnalysis)["nlp_entities"] = nlp;
                 }

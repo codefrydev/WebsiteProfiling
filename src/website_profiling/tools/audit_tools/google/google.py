@@ -121,7 +121,7 @@ def get_ga4_page_metrics(conn: Connection, ctx: AuditToolContext, args: dict[str
             text = url_to_path(text)
         if not text.startswith("/"):
             text = f"/{text}"
-        return text.lower().rstrip("/") or "/"
+        return text.lower() or "/"
 
     needle = _ga4_path_key(path)
     for row in ga4.get("top_pages") or []:

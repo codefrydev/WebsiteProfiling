@@ -13,7 +13,7 @@ public static class UrlJoinBuilder
         }
 
         var host = StripWwwPrefix(parsed.Host.ToLowerInvariant());
-        var path = parsed.AbsolutePath.TrimEnd('/');
+        var path = parsed.AbsolutePath;
         if (string.IsNullOrEmpty(path))
         {
             path = "/";

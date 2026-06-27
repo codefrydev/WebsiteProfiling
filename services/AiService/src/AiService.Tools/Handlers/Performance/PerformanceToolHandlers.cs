@@ -53,7 +53,7 @@ public static class PerformanceToolHandlers
         JsonObject args,
         CancellationToken cancellationToken)
     {
-        var url = (JsonCoercion.AsString(args["url"]) ?? "").Trim().TrimEnd('/');
+        var url = (JsonCoercion.AsString(args["url"]) ?? "").Trim();
         if (url.Length == 0)
         {
             return new JsonObject { ["error"] = "url is required" };

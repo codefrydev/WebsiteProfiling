@@ -75,7 +75,7 @@ def _grade_label(score: int) -> str:
 
 
 def _normalize_url(url: str) -> str:
-    return (url or "").strip().lower().rstrip("/")
+    return (url or "").strip().lower()
 
 
 def _match_tokens(text: str) -> list[str]:
