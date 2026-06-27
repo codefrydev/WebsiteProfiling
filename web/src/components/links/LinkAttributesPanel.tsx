@@ -1,10 +1,12 @@
 
 import SortablePaginatedTable from '@/components/google/SortablePaginatedTable';
 import { Card } from '@/components';
+import { useMemo } from 'react';
 import { strings } from '@/lib/strings';
 import type { InlinkAnchorRow, LinkRelSummary } from '@/types/report';
 import type { TableColumn } from '@/types/components';
 import LinkAttributesCharts from './LinkAttributesCharts';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 
 const paginationLabels = {
   showingSlice: strings.views.backlinks.table.showingSlice,
@@ -35,6 +37,31 @@ interface LinkAttributesPanelProps {
 }
 
 export default function LinkAttributesPanel({ summary, anchors, labels }: LinkAttributesPanelProps) {
+  const panelDevData = useMemo(
+    () => {
+      if (!summary && !(anchors?.length)) return null;
+      return {
+        widget: 'links.explorer.anchors',
+        title: labels.title,
+        summary,
+        anchorCount: anchors?.length ?? 0,
+        anchors: anchors ?? [],
+      };
+    },
+    [anchors, labels.title, summary],
+  );
+
+  const summaryDevData = useMemo(
+    () =>
+      summary
+        ? {
+            widget: 'links.explorer.anchorSummary',
+            ...summary,
+          }
+        : null,
+    [summary],
+  );
+
   if (!summary && !(anchors?.length)) return null;
 
   const POSITION_COLORS: Record<string, string> = {
@@ -70,7 +97,8 @@ export default function LinkAttributesPanel({ summary, anchors, labels }: LinkAt
   ];
 
   return (
-    <div className="space-y-4 min-w-0">
+    <div className="relative group/dev-card space-y-4 min-w-0">
+      {panelDevData ? <DevCopyJsonButton data={panelDevData} /> : null}
       <LinkAttributesCharts
         summary={summary}
         anchors={anchors}
@@ -84,7 +112,7 @@ export default function LinkAttributesPanel({ summary, anchors, labels }: LinkAt
         }}
       />
       {summary ? (
-        <Card className="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-sm">
+        <Card devData={summaryDevData ?? undefined} className="p-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-sm">
           <div><span className="text-muted-foreground">{labels.total}</span><div className="font-semibold">{(summary.total_edges ?? 0).toLocaleString()}</div></div>
           <div><span className="text-muted-foreground">{labels.internal}</span><div className="font-semibold">{(summary.internal_edges ?? 0).toLocaleString()}</div></div>
           <div><span className="text-muted-foreground">{labels.nofollow}</span><div className="font-semibold">{(summary.nofollow_internal ?? 0).toLocaleString()}</div></div>
@@ -93,7 +121,15 @@ export default function LinkAttributesPanel({ summary, anchors, labels }: LinkAt
         </Card>
       ) : null}
       {anchors?.length ? (
-        <Card className="p-4 min-w-0 overflow-hidden">
+        <Card
+          devData={{
+            widget: 'links.explorer.anchorMatrix',
+            title: labels.anchorMatrix,
+            count: anchors.length,
+            rows: anchors,
+          }}
+          className="p-4 min-w-0 overflow-hidden"
+        >
           <h3 className="text-sm font-semibold mb-3">{labels.anchorMatrix}</h3>
           <SortablePaginatedTable
             rows={anchors as Record<string, unknown>[]}

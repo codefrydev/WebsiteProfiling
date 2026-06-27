@@ -61,6 +61,7 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 | Browser API client | `web/src/lib/publicBase.ts` (`apiUrl`, `apiFetch`, `VITE_BFF_BASE_URL`) |
 | D3 charts (custom / compare / overview) | `web/src/components/charts/d3/`, `web/src/lib/viz/` |
 | Chart.js charts (standard bar/line/doughnut) | `web/src/utils/chartJsDefaults.ts`, `react-chartjs-2` in views under `web/src/views/`, `web/src/components/searchPerformance/`, `web/src/components/traffic/` |
+| Dev widget JSON copy (report cards + dashboards) | `web/src/components/Card.tsx` (`devData`), `web/src/components/DevCopyJsonButton.tsx`, `web/src/lib/dashboard/widgets/WidgetFrame.tsx` — see **Dev widget JSON copy** below |
 
 Schema changes: add Alembic migration (`alembic revision`).
 
@@ -94,6 +95,52 @@ The web UI uses **both** Chart.js and D3.js. Pick the library that fits each cha
 - Theme helpers live in `web/src/utils/chartJsDefaults.ts` (`getGridColor`, `getChartTitleColor`, `truncateChartLabel`) — use them from D3 as well as Chart.js.
 - Keep chart-library types out of data-prep: use neutral shapes (`BarChartData`, `DualSeriesChartData` in `web/src/lib/viz/types.ts` and `web/src/lib/compareChartData.ts`); convert at the render layer via `web/src/lib/viz/adapters.ts` when needed.
 - Migrate page-by-page when D3 is the better fit; do not remove `chart.js` from `package.json` until all consumers are migrated.
+
+**Dev widget JSON copy (local dev only)**
+
+In **`npm run dev`** (`import.meta.env.DEV`), report **widgets** (cards, panels, stat blocks) and custom **dashboard widgets** expose a top-right **`{ }`** button on hover. Clicking copies pretty-printed JSON of what that widget displays. Production builds omit the button entirely (dead-code eliminated at build time).
+
+| Piece | Path |
+|-------|------|
+| Overlay button | `web/src/components/DevCopyJsonButton.tsx` |
+| Report card hook | `web/src/components/Card.tsx` — optional `devData?: unknown` |
+| Dashboard grid widgets | `web/src/lib/dashboard/widgets/WidgetFrame.tsx` — passes `devData` when `status === 'loaded'` |
+| Tooltip copy | `strings.json` → `components.devCopyJson.title` |
+
+**When adding or touching a widget, wire `devData`.** Goal: every user-visible widget in report views eventually has copy support.
+
+**Report views — use `Card` `devData`**
+
+Pass a **view-model object** (what the widget renders), not necessarily a single raw report key. Derived UI (computed counts, API-fetched trends, filtered rows) belongs in the payload.
+
+```tsx
+const widgetDevData = useMemo(
+  () => ({
+    widget: 'views.overview.executiveSummary.healthHero', // stable id for debugging
+    currentHealth,
+    healthDelta,
+    topIssues: topIssues.slice(0, 5),
+    raw: { executive_summary: data.executive_summary }, // optional source slices
+  }),
+  [currentHealth, healthDelta, topIssues, data.executive_summary],
+);
+
+<Card shadow devData={widgetDevData}>…</Card>
+```
+
+**Reference implementation:** `web/src/components/overview/OverviewExecutiveSummary.tsx` (health hero, AI summary, text summary cards).
+
+**`StatCard` and non-`Card` wrappers:** wrap with `<Card devData={…}>` only when it fits layout; otherwise wrap the section in a `relative group/dev-card` container and render `<DevCopyJsonButton data={…} />` directly (same hover behaviour).
+
+**Dashboard widgets:** `WidgetFrame` already copies `{ widget, status, result }` when loaded. No extra work unless you add a new widget shell outside `WidgetFrame`.
+
+**Conventions**
+
+- Always include a stable `widget: 'view.section.name'` string id.
+- Copy **displayed** values (including async-fetched state once available); add `raw: { … }` when source report slices help backend/debug work.
+- Use `useMemo` for `devData` when the payload depends on props/state/effects.
+- Do **not** gate on a custom env var unless staging preview also needs copy — default is `import.meta.env.DEV` only.
+- Async widgets: omit `devData` until data is ready, or include partial payload plus flags like `historyLoaded: false`.
 
 **Company standards:** UI copy in `web/src/strings.json` (Site Audit, Properties, Run audit). Data provenance on `report_meta` in report payload. Docs: `docs/COMPANY_STANDARDS.md`, `docs/GLOSSARY.md`. Migration `003_company_standards` (properties, pipeline_jobs, audit_log). **Export:** PDF/workbook via FileService (`FILE_SERVICE_URL` on MCP; `REPORT_API_URL` on FileService); CSV/JSON via `GET /api/report/export` and `src/website_profiling/tools/export_audit.py`.
 
@@ -169,4 +216,4 @@ These recur when adding features. Verify explicitly — do not assume tests caug
    - **Do:** Every API service enables `ValidateOnBuild` + `ValidateScopes` in `Program.cs` and ships `ServiceRegistrationValidationTests` (`WebApplicationFactory<Program>`). Shared env helper: `services/Shared/WebsiteProfiling.Testing/`.
    - **Don't:** Add scoped dependencies to singletons without resolving via `IServiceScopeFactory`, or skip the registration test when adding new host services.
 
-**Checklist:** new report page uses `ReportShell` · no duplicate local imports in long functions · new `fetchone()` uses `_row_field` · `./local-test` passes all three coverage gates · new tools coverage test file listed in CI + both local-test scripts · `runpy` main-guard tests pop `sys.modules` first · new .NET API service has DI validation test
+**Checklist:** new report page uses `ReportShell` · report/card widgets pass `Card` `devData` (see [AGENT.md](AGENT.md) § Dev widget JSON copy) · no duplicate local imports in long functions · new `fetchone()` uses `_row_field` · `./local-test` passes all three coverage gates · new tools coverage test file listed in CI + both local-test scripts · `runpy` main-guard tests pop `sys.modules` first · new .NET API service has DI validation test

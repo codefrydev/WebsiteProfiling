@@ -5,13 +5,15 @@ import { strings } from '@/lib/strings';
 import type { CompetitorKeywordGapRow } from '@/types/report';
 import type { TableColumn } from '@/types/components';
 import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { buildKeywordGapContext } from '@/lib/fixSuggestionContext';
 
 interface CompetitorKeywordGapPanelProps {
   rows: CompetitorKeywordGapRow[];
+  devData?: unknown;
 }
 
-export default function CompetitorKeywordGapPanel({ rows }: CompetitorKeywordGapPanelProps) {
+export default function CompetitorKeywordGapPanel({ rows, devData }: CompetitorKeywordGapPanelProps) {
   const ke = strings.views.keywordsExplorer.competitorGap;
   const columns = useMemo((): TableColumn[] => [
     { key: 'keyword', label: ke.colKeyword },
@@ -33,7 +35,8 @@ export default function CompetitorKeywordGapPanel({ rows }: CompetitorKeywordGap
   }
 
   return (
-    <div className="p-4 border-t border-default">
+    <div className="relative group/dev-card p-4 border-t border-default">
+      {devData != null ? <DevCopyJsonButton data={devData} /> : null}
       <h3 className="text-sm font-semibold text-foreground mb-1">{ke.title}</h3>
       <p className="text-xs text-muted-foreground mb-4">{ke.hint}</p>
       <SortablePaginatedTable

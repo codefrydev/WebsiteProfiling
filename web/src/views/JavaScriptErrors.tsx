@@ -11,6 +11,7 @@ import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, Button, StatCard, Select, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, ViewTabs, ViewTabPanel } from '../components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import type { ViewTabItem } from '../components';
 import type { ViewProps } from '@/types';
@@ -44,15 +45,17 @@ function TopSummaryTable({
   rows,
   trailingQuery,
   vj,
+  devData,
 }: {
   title: string;
   hint: string;
   rows: ReturnType<typeof buildTopConsoleSummaryFromRows>;
   trailingQuery: string;
   vj: typeof strings.views.javascriptErrors;
+  devData?: unknown;
 }) {
   return (
-    <Card>
+    <Card devData={devData}>
       <h2 className="text-sm font-bold text-foreground mb-1">{title}</h2>
       <p className="text-xs text-muted-foreground mb-4">{hint}</p>
       <div className="border border-default rounded-xl overflow-hidden">
@@ -175,6 +178,82 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
     },
   ], [vj.tabs, summaryBadgeCount, allRows.length]);
 
+  const summaryStatsDevData = useMemo(
+    () => ({
+      widget: 'javascriptErrors.summary.stats',
+      renderMode: scopeInfo.renderMode,
+      consolePages: stats.pagesWithConsole,
+      totalConsole: stats.totalConsole,
+      exceptionPages: stats.pagesWithExceptions,
+      totalExceptions: stats.totalExceptions,
+      failedPages: stats.pagesWithFailedRequests,
+      totalFailedRequests: stats.totalFailedRequests,
+      affectedPages: stats.affectedPages,
+      totalPages: stats.totalPages,
+    }),
+    [scopeInfo.renderMode, stats],
+  );
+
+  const topConsoleDevData = useMemo(
+    () => ({
+      widget: 'javascriptErrors.summary.topConsole',
+      title: vj.topRecurring,
+      rows: topMessages.map((row) => ({
+        text: row.text,
+        count: row.count,
+        sample_urls: row.sample_urls,
+      })),
+    }),
+    [topMessages, vj.topRecurring],
+  );
+
+  const topExceptionsDevData = useMemo(
+    () => ({
+      widget: 'javascriptErrors.summary.topExceptions',
+      title: vj.topRecurringExceptions,
+      rows: topExceptions.map((row) => ({
+        text: row.text,
+        count: row.count,
+        sample_urls: row.sample_urls,
+      })),
+    }),
+    [topExceptions, vj.topRecurringExceptions],
+  );
+
+  const errorsTableDevData = useMemo(
+    () => ({
+      widget: 'javascriptErrors.errors.table',
+      typeFilter,
+      searchQuery: q || null,
+      page: safeErrorsPage,
+      totalPages: errorsTotalPages,
+      from: errorsFrom,
+      to: errorsTo,
+      total: filteredRowsTotal,
+      expandedRow,
+      rows: visibleRows.map((row) => ({
+        id: row.id,
+        type: row.type,
+        url: row.url,
+        message: row.message,
+        source_url: row.source_url ?? null,
+        line: row.line ?? null,
+        stack: row.stack ?? null,
+      })),
+    }),
+    [
+      expandedRow,
+      filteredRowsTotal,
+      errorsFrom,
+      errorsTo,
+      errorsTotalPages,
+      q,
+      safeErrorsPage,
+      typeFilter,
+      visibleRows,
+    ],
+  );
+
   if (!linksReady) {
     return <ViewSectionLoading title={vj.title} />;
   }
@@ -237,7 +316,8 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'summary' && (
         <ViewTabPanel idPrefix="javascript-errors" tabId="summary" className="space-y-6">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+            <DevCopyJsonButton data={summaryStatsDevData} />
             <StatCard
               label={vj.consolePagesCard}
               value={formatPagesAffectedStat(stats.pagesWithConsole, stats.totalPages)}
@@ -266,6 +346,7 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
               rows={topMessages}
               trailingQuery={trailingQuery}
               vj={vj}
+              devData={topConsoleDevData}
             />
           ) : null}
 
@@ -276,6 +357,7 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
               rows={topExceptions}
               trailingQuery={trailingQuery}
               vj={vj}
+              devData={topExceptionsDevData}
             />
           ) : null}
 
@@ -287,7 +369,7 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'errors' && (
         <ViewTabPanel idPrefix="javascript-errors" tabId="errors">
-          <Card>
+          <Card devData={errorsTableDevData}>
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <div>
                 <h2 className="text-sm font-bold text-foreground">{vj.allErrors}</h2>

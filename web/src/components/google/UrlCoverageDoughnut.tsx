@@ -12,9 +12,10 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 
 interface UrlCoverageDoughnutProps {
   urlJoin: UrlJoinData | null | undefined;
+  devData?: unknown;
 }
 
-export default function UrlCoverageDoughnut({ urlJoin }: UrlCoverageDoughnutProps) {
+export default function UrlCoverageDoughnut({ urlJoin, devData }: UrlCoverageDoughnutProps) {
   const sp = strings.views.searchPerformance;
 
   const chart = useMemo(() => {
@@ -52,6 +53,7 @@ export default function UrlCoverageDoughnut({ urlJoin }: UrlCoverageDoughnutProp
         hint={sp.charts.coverageHint}
         ariaLabel={sp.charts.coverageAria}
         heightClass="h-48"
+        devData={devData}
       >
         <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
           {strings.common.notEnoughData}
@@ -66,6 +68,7 @@ export default function UrlCoverageDoughnut({ urlJoin }: UrlCoverageDoughnutProp
       hint={sp.charts.coverageHint}
       ariaLabel={sp.charts.coverageAria}
       heightClass="h-48"
+      devData={devData}
     >
       <Doughnut data={chart.data} options={opts} />
     </GoogleChartCard>

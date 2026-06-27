@@ -7,6 +7,7 @@ import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { format, strings } from '../lib/strings';
 import { PageLayout, PageHeader, Card, StatCard } from '../components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { metricHelpHint } from '@/lib/metricHelp';
 import UrlGapListsPanel from '../components/google/UrlGapListsPanel';
 import type { UrlJoinData, ViewProps } from '@/types';
@@ -48,6 +49,47 @@ export default function Indexation(_props: ViewProps) {
     cov?.lists_total?.crawled_not_in_sitemap ?? counts?.crawled_not_in_sitemap ?? crawledNotInSitemap.length,
   );
 
+  const statsDevData = useMemo(
+    () => ({
+      widget: 'indexation.stats',
+      crawled: counts?.crawled ?? null,
+      sitemap: counts?.sitemap ?? null,
+      gscPages: counts?.gsc_pages ?? null,
+      sitemapOnly: counts?.sitemap_only ?? null,
+      gscNotCrawled: counts?.gsc_not_crawled ?? null,
+      crawledNotInSitemap: counts?.crawled_not_in_sitemap ?? null,
+    }),
+    [counts],
+  );
+
+  const gapsDevData = useMemo(
+    () => ({
+      widget: 'indexation.gaps',
+      hasUrlJoin: urlJoin != null,
+      urlJoin: urlJoin
+        ? {
+            matched: urlJoin.matched ?? null,
+            crawlOnly: urlJoin.crawl_only ?? null,
+            gscOnly: urlJoin.gsc_only ?? null,
+            ga4Only: urlJoin.ga4_only ?? null,
+            lists: urlJoin.lists ?? null,
+            listsTotal: urlJoin.lists_total ?? null,
+          }
+        : null,
+      sitemapOnlyTotal,
+      sitemapOnlyUrls: sitemapOnly.slice(0, sitemapPreviewLimit),
+      crawledNotInSitemapTotal,
+      crawledNotInSitemapUrls: crawledNotInSitemap.slice(0, sitemapPreviewLimit),
+    }),
+    [
+      crawledNotInSitemap,
+      crawledNotInSitemapTotal,
+      sitemapOnly,
+      sitemapOnlyTotal,
+      urlJoin,
+    ],
+  );
+
   if (!indexationReady) {
     return <ViewSectionLoading title={vi.title} />;
   }
@@ -55,7 +97,8 @@ export default function Indexation(_props: ViewProps) {
   return (
     <PageLayout>
       <PageHeader title={vi.title} subtitle={vi.subtitle} icon={<FileSearch className="h-7 w-7 text-link shrink-0" />} />
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+      <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+        <DevCopyJsonButton data={statsDevData} />
         <StatCard label={vi.crawled} value={counts?.crawled ?? '—'} hint={metricHelpHint('views.indexation.crawled')} />
         <StatCard label={vi.sitemap} value={counts?.sitemap ?? '—'} hint={metricHelpHint('views.indexation.sitemap')} />
         <StatCard label={vi.gscPages} value={counts?.gsc_pages ?? '—'} hint={metricHelpHint('views.indexation.gscPages')} />
@@ -63,7 +106,7 @@ export default function Indexation(_props: ViewProps) {
         <StatCard label={vi.gscNotCrawled} value={counts?.gsc_not_crawled ?? '—'} hint={metricHelpHint('views.indexation.gscNotCrawled')} />
         <StatCard label={vi.crawledNotInSitemap} value={counts?.crawled_not_in_sitemap ?? '—'} hint={metricHelpHint('views.indexation.crawledNotInSitemap')} />
       </div>
-      <Card className="mb-6">
+      <Card className="mb-6" devData={gapsDevData}>
         <h3 className="text-sm font-semibold text-foreground mb-2">{vi.gapsTitle}</h3>
         <p className="text-sm text-muted-foreground mb-4">{vi.gapsHint}</p>
         {urlJoin ? (

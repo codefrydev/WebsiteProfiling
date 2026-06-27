@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import ForceGraph3D from '3d-force-graph';
 import { useReport } from '@/context/useReport';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import type { GraphEdge, GraphNode } from '@/types';
 
 const MAX_NODES = 200;
@@ -72,6 +73,21 @@ export default function SiteStructureLinkGraph() {
     };
   }, [data]);
 
+  const graphDevData = useMemo(
+    () =>
+      graphData
+        ? {
+            widget: 'siteStructure.graph',
+            nodeCount: graphData.nodes.length,
+            linkCount: graphData.links.length,
+            totalNodes: graphData.total,
+            nodes: graphData.nodes,
+            links: graphData.links,
+          }
+        : { widget: 'siteStructure.graph', nodes: [], links: [], totalNodes: 0 },
+    [graphData],
+  );
+
   useEffect(() => {
     const prev = graphRef.current;
     if (prev?._destructor) {
@@ -128,7 +144,8 @@ export default function SiteStructureLinkGraph() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="relative group/dev-card space-y-3">
+      <DevCopyJsonButton data={graphDevData} />
       <p className="text-xs text-muted-foreground">
         Showing up to {MAX_NODES} of {graphData.total} nodes. Click a node to open the URL.{' '}
         <Link to="/network" className="text-link hover:underline">

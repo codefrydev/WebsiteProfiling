@@ -10,6 +10,7 @@ import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, Button, ViewTabs, ViewTabPanel } from '../components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import type { ViewTabItem } from '../components';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
@@ -114,6 +115,68 @@ export default function Content({ searchQuery = '' }: ViewProps) {
     },
   ], [vc.tabs, totalIssues, list.length]);
 
+  const duplicatesDevData = useMemo(
+    () => ({
+      widget: 'content.overview.duplicates',
+      totalClusters: data?.content_duplicates?.length ?? 0,
+      clusters: (data?.content_duplicates || []).slice(0, 40).map((g) => ({
+        id: g.id,
+        representative_url: g.representative_url,
+        member_count: g.member_count ?? (g.member_urls || []).length,
+      })),
+    }),
+    [data?.content_duplicates],
+  );
+
+  const issuesChartDevData = useMemo(
+    () => ({
+      widget: 'content.overview.issuesByType',
+      title: vc.issuesByType,
+      hint: vc.issuesByTypeHint,
+      labels: issueBarData.labels,
+      values: issueBarData.values,
+      total: totalIssues,
+    }),
+    [issueBarData.labels, issueBarData.values, totalIssues, vc.issuesByType, vc.issuesByTypeHint],
+  );
+
+  const filterStatsDevData = useMemo(
+    () => ({
+      widget: 'content.overview.filterStats',
+      activeFilter: filter,
+      filters: CONTENT_FILTERS.map((f) => ({
+        key: f.key,
+        label: f.label,
+        count: (contentUrls[f.key] || []).length,
+      })),
+    }),
+    [CONTENT_FILTERS, contentUrls, filter],
+  );
+
+  const issuesTableDevData = useMemo(() => {
+    const rowFromVal = list.length === 0 ? 0 : (page - 1) * perPage + 1;
+    const rowToVal = Math.min(page * perPage, list.length);
+    const active = CONTENT_FILTERS.find((f) => f.key === filter);
+    return {
+      widget: 'content.issues.table',
+      filter,
+      filterLabel: active?.label ?? null,
+      searchQuery: (searchQuery || '').trim() || null,
+      page,
+      totalPages,
+      rowFrom: rowFromVal,
+      rowTo: rowToVal,
+      totalInFilter: list.length,
+      rows: pageSlice.map((item) => ({
+        url: item.url,
+        title: item.title ?? null,
+        meta_desc_len: item.meta_desc_len ?? null,
+        h1_count: item.h1_count ?? null,
+        word_count: item.word_count ?? item.content_length ?? null,
+      })),
+    };
+  }, [CONTENT_FILTERS, filter, list.length, page, pageSlice, perPage, searchQuery, totalPages]);
+
   if (!contentReady) {
     return <ViewSectionLoading title={vc.title} />;
   }
@@ -148,7 +211,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
       {activeTab === 'overview' && (
         <ViewTabPanel idPrefix="content" tabId="overview" className="space-y-6">
           {(data?.content_duplicates?.length ?? 0) > 0 && (
-            <Card shadow>
+            <Card shadow devData={duplicatesDevData}>
               <div className="flex items-center gap-2 mb-3">
                 <Copy className="h-4 w-4 text-violet-700 dark:text-violet-400" />
                 <h2 className="text-sm font-bold text-foreground">{vc.dupClusters}</h2>
@@ -192,7 +255,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
           )}
 
           {totalIssues > 0 && (
-            <Card padding="tight" shadow overflowHidden className="min-w-0">
+            <Card padding="tight" shadow overflowHidden className="min-w-0" devData={issuesChartDevData}>
               <h2 className="text-sm font-bold text-foreground mb-1">{vc.issuesByType}</h2>
               <p className="text-xs text-muted-foreground mb-3">{vc.issuesByTypeHint}</p>
               <div className="relative h-[22rem] min-w-0 w-full overflow-hidden">
@@ -207,7 +270,8 @@ export default function Content({ searchQuery = '' }: ViewProps) {
             </Card>
           )}
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+            <DevCopyJsonButton data={filterStatsDevData} />
             {CONTENT_FILTERS.map(({ key, label }) => {
               const count = getCount(key);
               const hasIssues = count > 0;
@@ -280,7 +344,7 @@ export default function Content({ searchQuery = '' }: ViewProps) {
             </div>
           )}
 
-          <Card overflowHidden shadow padding="none" className="flex flex-col">
+          <Card overflowHidden shadow padding="none" className="flex flex-col" devData={issuesTableDevData}>
         {list.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
             <CheckCircle2 className="h-10 w-10 text-green-600" />

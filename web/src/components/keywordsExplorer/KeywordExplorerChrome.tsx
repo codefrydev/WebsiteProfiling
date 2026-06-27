@@ -18,6 +18,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import { strings, format } from '../../lib/strings';
 import { Card, LabelWithHint } from '../index';
+import DevCopyJsonButton from '../DevCopyJsonButton';
 import type { KeywordTabId } from './keywordTabMeta';
 
 interface KeywordExplorerChromeProps {
@@ -42,6 +43,7 @@ interface KeywordExplorerChromeProps {
     lostClicks: number;
     questions: number;
   };
+  kpiDevData?: unknown;
 }
 
 type KpiKey = 'all' | 'gsc' | 'quickwins' | 'cannib' | 'lostclicks' | 'questions';
@@ -115,6 +117,7 @@ export default function KeywordExplorerChrome({
   activeTab,
   onNavigateTab,
   kpis,
+  kpiDevData,
 }: KeywordExplorerChromeProps) {
   const ke = strings.views.keywordsExplorer;
   const ds = ke.dataStatus;
@@ -283,7 +286,8 @@ export default function KeywordExplorerChrome({
           </div>
         </div>
 
-        <div className="p-3 sm:p-4">
+        <div className="relative group/dev-card p-3 sm:p-4">
+          {kpiDevData != null ? <DevCopyJsonButton data={kpiDevData} /> : null}
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-0.5 mb-3">
             {k.sectionTitle}
           </p>

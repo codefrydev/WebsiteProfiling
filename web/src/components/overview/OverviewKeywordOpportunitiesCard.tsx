@@ -1,5 +1,5 @@
 
-import type { ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle2, ChevronRight, Lightbulb, Settings2, Tag, TrendingUp, Zap } from 'lucide-react';
 import type { KeywordRow } from '@/types/components';
@@ -8,6 +8,7 @@ import { strings, format } from '@/lib/strings';
 import { viewIdToPathSlug } from '@/routes';
 import { dispatchOpenIntegrations } from '@/lib/pipelineJobEvents';
 import { Card } from '@/components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import HelpHint from '@/components/HelpHint';
 import { isJunkSemanticTerm } from '@/lib/semanticTextHygiene';
 import {
@@ -69,6 +70,7 @@ function PreviewColumn({
   iconClassName,
   viewAllHref,
   viewAllLabel,
+  devData,
   children,
 }: {
   title: string;
@@ -76,10 +78,11 @@ function PreviewColumn({
   iconClassName: string;
   viewAllHref: string;
   viewAllLabel: string;
+  devData?: unknown;
   children: ReactNode;
 }) {
   return (
-    <Card padding="tight" className="border border-default/80 bg-brand-900/20">
+    <Card padding="tight" devData={devData} className="border border-default/80 bg-brand-900/20">
       <div className="mb-3 flex items-center justify-between gap-2">
         <h3 className="flex items-center gap-2 text-sm font-bold text-foreground">
           <Icon className={`h-4 w-4 shrink-0 ${iconClassName}`} aria-hidden />
@@ -126,8 +129,6 @@ export function OverviewKeywordOpportunitiesCard({
   const showSiteTerms = !useGscMode && !showCrawlColumns && siteTopTermsAll.length > 0;
   const showCard = useGscMode || showCrawlColumns || showSiteTerms || topicClusters.length > 0;
 
-  if (!showCard) return null;
-
   const quickWinsHref = buildKeywordsTabHref(keywordsHref, 'quickwins');
   const opportunitiesHref = buildKeywordsTabHref(keywordsHref, 'opportunities');
   const topicsHref = buildKeywordsTabHref(keywordsHref, 'topics');
@@ -152,8 +153,109 @@ export function OverviewKeywordOpportunitiesCard({
 
   const showGscUpsell = !hasGscEnrichment && !hasGoogleConnected;
 
+  const devData = useMemo(
+    () => ({
+      widget: 'overview.keywordOpportunities',
+      mode: useGscMode
+        ? 'gsc'
+        : showCrawlColumns
+          ? 'crawl'
+          : showSiteTerms
+            ? 'siteTerms'
+            : 'topicsOnly',
+      kpiLine,
+      counts: {
+        gscQuickWins: gscQuickWinsAll.length,
+        gscOpportunities: gscOpportunitiesAll.length,
+        gscQuickWinEstClicks: sumGscQuickWinClicks(kwRows),
+        crawlQuickWins: crawlQuickWinsAll.length,
+        crawlHighEmphasis: crawlHighValueAll.length,
+        siteTopTerms: siteTopTermsAll.length,
+        topicClusters: topicClusters.length,
+      },
+      previews: {
+        gscQuickWins,
+        gscOpportunities,
+        crawlQuickWins,
+        crawlHighValue,
+        siteTopTerms,
+        topicClusters,
+      },
+      flags: {
+        useGscMode,
+        showCrawlColumns,
+        showSiteTerms,
+        hasGscEnrichment,
+        hasGoogleConnected,
+        showGscUpsell,
+      },
+      links: {
+        keywordsHref,
+        quickWinsHref,
+        opportunitiesHref,
+        topicsHref,
+      },
+      raw: {
+        keywords,
+        keyword_opportunities: keywordOpportunities,
+        content_analytics_top_keywords: contentAnalytics?.top_keywords_site,
+      },
+    }),
+    [
+      contentAnalytics?.top_keywords_site,
+      crawlHighValue,
+      crawlHighValueAll.length,
+      crawlQuickWins,
+      crawlQuickWinsAll.length,
+      gscOpportunities,
+      gscOpportunitiesAll.length,
+      gscQuickWins,
+      gscQuickWinsAll.length,
+      hasGoogleConnected,
+      hasGscEnrichment,
+      keywordOpportunities,
+      keywords,
+      keywordsHref,
+      kpiLine,
+      kwRows,
+      opportunitiesHref,
+      quickWinsHref,
+      showCrawlColumns,
+      showGscUpsell,
+      showSiteTerms,
+      siteTopTerms,
+      siteTopTermsAll.length,
+      topicClusters,
+      topicsHref,
+      useGscMode,
+    ],
+  );
+
+  const topicThemesDevData = useMemo(() => {
+    const themes = topicClusters.flatMap((cl) => {
+      const label = String(cl.top_keyword ?? cl.representative ?? '');
+      if (!label || isJunkSemanticTerm(label)) return [];
+      const termCount = Array.isArray(cl.keywords)
+        ? cl.keywords.filter((kw) => !isJunkSemanticTerm(String(kw))).length
+        : 0;
+      return [{ label, termCount, cluster: cl }];
+    });
+    return {
+      widget: 'overview.keywordOpportunities.topThemes',
+      title: vo.topThemes,
+      previewCount: themes.length,
+      themes,
+      viewAllHref: topicsHref,
+      raw: {
+        token_topic_clusters: keywordOpportunities?.token_topic_clusters,
+      },
+    };
+  }, [keywordOpportunities?.token_topic_clusters, topicClusters, topicsHref, vo.topThemes]);
+
+  if (!showCard) return null;
+
   return (
-    <Card shadow className="mb-8 overflow-hidden border border-default">
+    <Card shadow devData={devData} className="mb-8 overflow-hidden border border-default">
       <div className="border-b border-muted/60 p-4 sm:p-5">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
@@ -214,6 +316,14 @@ export function OverviewKeywordOpportunitiesCard({
                   iconClassName="text-amber-500"
                   viewAllHref={quickWinsHref}
                   viewAllLabel={ke.overview.viewAll}
+                  devData={{
+                    widget: 'overview.keywordOpportunities.gscQuickWins',
+                    title: ke.overview.topQuickWins,
+                    previewCount: gscQuickWins.length,
+                    totalCount: gscQuickWinsAll.length,
+                    rows: gscQuickWins,
+                    viewAllHref: quickWinsHref,
+                  }}
                 >
                   <ul className="space-y-2">
                     {gscQuickWins.map((row) => (
@@ -235,6 +345,14 @@ export function OverviewKeywordOpportunitiesCard({
                   iconClassName="text-violet-400"
                   viewAllHref={opportunitiesHref}
                   viewAllLabel={ke.overview.viewAll}
+                  devData={{
+                    widget: 'overview.keywordOpportunities.gscOpportunities',
+                    title: ke.overview.topOpportunities,
+                    previewCount: gscOpportunities.length,
+                    totalCount: gscOpportunitiesAll.length,
+                    rows: gscOpportunities,
+                    viewAllHref: opportunitiesHref,
+                  }}
                 >
                   <ul className="space-y-2">
                     {gscOpportunities.map((row) => (
@@ -257,6 +375,14 @@ export function OverviewKeywordOpportunitiesCard({
               iconClassName="text-link"
               viewAllHref={keywordsHref}
               viewAllLabel={ke.overview.viewAll}
+              devData={{
+                widget: 'overview.keywordOpportunities.siteTopTerms',
+                title: vo.siteTopTerms,
+                previewCount: siteTopTerms.length,
+                totalCount: siteTopTermsAll.length,
+                rows: siteTopTerms,
+                viewAllHref: keywordsHref,
+              }}
             >
               <ul className="space-y-2">
                 {siteTopTerms.map((term) => (
@@ -278,6 +404,14 @@ export function OverviewKeywordOpportunitiesCard({
                   iconClassName="text-amber-500"
                   viewAllHref={keywordsHref}
                   viewAllLabel={ke.overview.viewAll}
+                  devData={{
+                    widget: 'overview.keywordOpportunities.crawlQuickWins',
+                    title: vo.quickWinsEase,
+                    previewCount: crawlQuickWins.length,
+                    totalCount: crawlQuickWinsAll.length,
+                    rows: crawlQuickWins,
+                    viewAllHref: keywordsHref,
+                  }}
                 >
                   <ul className="space-y-2">
                     {crawlQuickWins.map((k, idx) => (
@@ -298,6 +432,14 @@ export function OverviewKeywordOpportunitiesCard({
                   iconClassName="text-violet-400"
                   viewAllHref={keywordsHref}
                   viewAllLabel={ke.overview.viewAll}
+                  devData={{
+                    widget: 'overview.keywordOpportunities.crawlHighEmphasis',
+                    title: vo.highEmphasis,
+                    previewCount: crawlHighValue.length,
+                    totalCount: crawlHighValueAll.length,
+                    rows: crawlHighValue,
+                    viewAllHref: keywordsHref,
+                  }}
                 >
                   <ul className="space-y-2">
                     {crawlHighValue.map((k, idx) => (
@@ -319,7 +461,8 @@ export function OverviewKeywordOpportunitiesCard({
       )}
 
       {topicClusters.length > 0 ? (
-        <div className="border-t border-muted/60 px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
+        <div className="relative group/dev-card border-t border-muted/60 px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
+          <DevCopyJsonButton data={topicThemesDevData} />
           <div className="mb-3 flex items-center justify-between gap-2">
             <h3 className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
               <Tag className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" aria-hidden />

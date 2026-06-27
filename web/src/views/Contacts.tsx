@@ -41,22 +41,24 @@ function ContactSectionTable({
   title,
   rows,
   emptyLabel,
+  devData,
 }: {
   title: string;
   rows: ContactIntelligenceEntry[];
   emptyLabel: string;
+  devData?: unknown;
 }) {
   const vc = strings.views.contacts;
   if (rows.length === 0) {
     return (
-      <Card className="mb-6">
+      <Card className="mb-6" devData={devData}>
         <h3 className="text-sm font-semibold text-foreground mb-2">{title}</h3>
         <p className="text-sm text-muted-foreground">{emptyLabel}</p>
       </Card>
     );
   }
   return (
-    <Card className="mb-6">
+    <Card className="mb-6" devData={devData}>
       <h3 className="text-sm font-semibold text-foreground mb-4">{title}</h3>
       <div className="overflow-x-auto">
         <Table>
@@ -133,6 +135,62 @@ export default function Contacts({ searchQuery = '' }: ViewProps) {
     (intel?.addresses?.length ?? 0) +
     (intel?.organization_names?.length ?? 0);
 
+  const consistencyNotesDevData = useMemo(
+    () => ({
+      widget: 'contacts.consistencyNotes',
+      notes: intel?.consistency_notes ?? [],
+    }),
+    [intel?.consistency_notes],
+  );
+
+  const primaryPageDevData = useMemo(
+    () => ({
+      widget: 'contacts.primaryPage',
+      url: intel?.primary_contact_page ?? null,
+    }),
+    [intel?.primary_contact_page],
+  );
+
+  const emailsDevData = useMemo(
+    () => ({
+      widget: 'contacts.emails.table',
+      searchQuery: q || null,
+      rowCount: sections.emails.length,
+      rows: sections.emails,
+    }),
+    [q, sections.emails],
+  );
+
+  const phonesDevData = useMemo(
+    () => ({
+      widget: 'contacts.phones.table',
+      searchQuery: q || null,
+      rowCount: sections.phones.length,
+      rows: sections.phones,
+    }),
+    [q, sections.phones],
+  );
+
+  const addressesDevData = useMemo(
+    () => ({
+      widget: 'contacts.addresses.table',
+      searchQuery: q || null,
+      rowCount: sections.addresses.length,
+      rows: sections.addresses,
+    }),
+    [q, sections.addresses],
+  );
+
+  const organizationsDevData = useMemo(
+    () => ({
+      widget: 'contacts.organizations.table',
+      searchQuery: q || null,
+      rowCount: sections.organization_names.length,
+      rows: sections.organization_names,
+    }),
+    [q, sections.organization_names],
+  );
+
   if (!techReady) {
     return <ViewSectionLoading title={vc.title} />;
   }
@@ -158,7 +216,7 @@ export default function Contacts({ searchQuery = '' }: ViewProps) {
     <PageLayout>
       <PageHeader title={vc.title} subtitle={vc.subtitle} icon={<Contact2 className="h-7 w-7 text-link shrink-0" />} />
       {(intel.consistency_notes?.length ?? 0) > 0 ? (
-        <Card className="mb-6 border-amber-500/30 bg-amber-500/5">
+        <Card className="mb-6 border-amber-500/30 bg-amber-500/5" devData={consistencyNotesDevData}>
           <h3 className="text-sm font-semibold text-foreground mb-2">{vc.notesTitle}</h3>
           <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
             {(intel.consistency_notes || []).map((note) => (
@@ -168,7 +226,7 @@ export default function Contacts({ searchQuery = '' }: ViewProps) {
         </Card>
       ) : null}
       {intel.primary_contact_page ? (
-        <Card className="mb-6">
+        <Card className="mb-6" devData={primaryPageDevData}>
           <h3 className="text-sm font-semibold text-foreground mb-2">{vc.primaryPageTitle}</h3>
           <a
             href={intel.primary_contact_page}
@@ -186,13 +244,14 @@ export default function Contacts({ searchQuery = '' }: ViewProps) {
           <p className="text-sm text-muted-foreground">{vc.noSearchResults}</p>
         </Card>
       ) : null}
-      <ContactSectionTable title={vc.emailsTitle} rows={sections.emails} emptyLabel={vc.noEmails} />
-      <ContactSectionTable title={vc.phonesTitle} rows={sections.phones} emptyLabel={vc.noPhones} />
-      <ContactSectionTable title={vc.addressesTitle} rows={sections.addresses} emptyLabel={vc.noAddresses} />
+      <ContactSectionTable title={vc.emailsTitle} rows={sections.emails} emptyLabel={vc.noEmails} devData={emailsDevData} />
+      <ContactSectionTable title={vc.phonesTitle} rows={sections.phones} emptyLabel={vc.noPhones} devData={phonesDevData} />
+      <ContactSectionTable title={vc.addressesTitle} rows={sections.addresses} emptyLabel={vc.noAddresses} devData={addressesDevData} />
       <ContactSectionTable
         title={vc.organizationsTitle}
         rows={sections.organization_names}
         emptyLabel={vc.noOrganizations}
+        devData={organizationsDevData}
       />
       <p className="text-xs text-muted-foreground">{vc.provenanceHint}</p>
     </PageLayout>

@@ -69,12 +69,39 @@ export function LinksExplorerSummaryCharts({ links }: LinksExplorerSummaryCharts
   const statusChart = useMemo(() => statusDistributionFromLinks(links), [links]);
   const wcChart = useMemo(() => wordCountBandsFromLinks(links), [links]);
 
+  const statusChartDevData = useMemo(
+    () =>
+      statusChart
+        ? {
+            widget: 'links.explorer.chartStatus',
+            title: vl.chartStatusTitle,
+            labels: statusChart.labels,
+            values: statusChart.values,
+            aria: statusChart.aria,
+          }
+        : null,
+    [statusChart, vl.chartStatusTitle],
+  );
+
+  const wcChartDevData = useMemo(
+    () =>
+      wcChart
+        ? {
+            widget: 'links.explorer.chartWordCount',
+            title: vl.chartWcTitle,
+            labels: wcChart.labels,
+            values: wcChart.values,
+          }
+        : null,
+    [vl.chartWcTitle, wcChart],
+  );
+
   if (!statusChart && !wcChart) return null;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-w-0">
       {statusChart ? (
-        <Card padding="tight" shadow className="min-w-0 overflow-hidden">
+        <Card padding="tight" shadow devData={statusChartDevData ?? undefined} className="min-w-0 overflow-hidden">
           <ChartTitleWithHint as="h2" title={vl.chartStatusTitle} helpKey="views.links.chartStatus" />
           <ChartPanel heightClass="h-52">
             <div className="h-full w-full" role="img" aria-label={statusChart.aria}>
@@ -97,7 +124,7 @@ export function LinksExplorerSummaryCharts({ links }: LinksExplorerSummaryCharts
         </Card>
       ) : null}
       {wcChart ? (
-        <Card padding="tight" shadow className="min-w-0 overflow-hidden">
+        <Card padding="tight" shadow devData={wcChartDevData ?? undefined} className="min-w-0 overflow-hidden">
           <ChartTitleWithHint as="h2" title={vl.chartWcTitle} helpKey="views.links.chartWc" />
           <ChartPanel heightClass="h-52">
             <Bar

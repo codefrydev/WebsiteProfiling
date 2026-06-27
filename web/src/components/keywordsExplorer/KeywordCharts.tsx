@@ -26,9 +26,10 @@ function intentLabel(intent: KeywordIntent): string {
 
 interface IntentMixChartProps {
   rows: KeywordRow[];
+  devData?: unknown;
 }
 
-export function IntentMixChart({ rows }: IntentMixChartProps) {
+export function IntentMixChart({ rows, devData }: IntentMixChartProps) {
   const ke = strings.views.keywordsExplorer;
   const chart = useMemo(() => {
     const counts = buildIntentCounts(rows);
@@ -48,7 +49,7 @@ export function IntentMixChart({ rows }: IntentMixChartProps) {
 
   if (!chart) {
     return (
-      <GoogleChartCard title={ke.charts.intentTitle} hint={ke.charts.intentHint} ariaLabel={ke.charts.intentAria}>
+      <GoogleChartCard title={ke.charts.intentTitle} hint={ke.charts.intentHint} ariaLabel={ke.charts.intentAria} devData={devData}>
         <div className="flex items-center justify-center h-full text-sm text-muted-foreground min-h-[12rem]">
           {strings.common.notEnoughData}
         </div>
@@ -57,7 +58,7 @@ export function IntentMixChart({ rows }: IntentMixChartProps) {
   }
 
   return (
-    <GoogleChartCard title={ke.charts.intentTitle} hint={ke.charts.intentHint} ariaLabel={chart.aria}>
+    <GoogleChartCard title={ke.charts.intentTitle} hint={ke.charts.intentHint} ariaLabel={chart.aria} devData={devData}>
       <ChartAccessibleFallback summary={chart.aria} rows={chart.rows}>
         <div className="h-full min-h-[12rem] flex items-center justify-center" role="presentation">
           <div className="w-full max-w-[260px] h-52">
@@ -71,9 +72,10 @@ export function IntentMixChart({ rows }: IntentMixChartProps) {
 
 interface SourceMixChartProps {
   rows: KeywordRow[];
+  devData?: unknown;
 }
 
-export function SourceMixChart({ rows }: SourceMixChartProps) {
+export function SourceMixChart({ rows, devData }: SourceMixChartProps) {
   const ke = strings.views.keywordsExplorer;
   const chart = useMemo(() => {
     const counts = buildSourceCounts(rows);
@@ -95,7 +97,7 @@ export function SourceMixChart({ rows }: SourceMixChartProps) {
 
   if (!chart) {
     return (
-      <GoogleChartCard title={ke.charts.sourceTitle} hint={ke.charts.sourceHint} ariaLabel={ke.charts.sourceAria}>
+      <GoogleChartCard title={ke.charts.sourceTitle} hint={ke.charts.sourceHint} ariaLabel={ke.charts.sourceAria} devData={devData}>
         <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
           {strings.common.notEnoughData}
         </div>
@@ -104,7 +106,7 @@ export function SourceMixChart({ rows }: SourceMixChartProps) {
   }
 
   return (
-    <GoogleChartCard title={ke.charts.sourceTitle} hint={ke.charts.sourceHint} ariaLabel={chart.aria}>
+    <GoogleChartCard title={ke.charts.sourceTitle} hint={ke.charts.sourceHint} ariaLabel={chart.aria} devData={devData}>
       <ChartAccessibleFallback summary={chart.aria} rows={chart.rows}>
         <div className="h-full min-h-[12rem] flex items-center justify-center" role="presentation">
           <div className="w-full max-w-[260px] h-52">

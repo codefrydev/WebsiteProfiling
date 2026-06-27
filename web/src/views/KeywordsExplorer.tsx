@@ -18,6 +18,7 @@ import { apiUrl, apiFetch } from '../lib/publicBase';
 import { goToPipeline } from '../lib/pipelineReturn';
 import { strings, format } from '../lib/strings';
 import { PageLayout, PageHeader, Card, Button, ViewTabs } from '../components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import { filterBySearch } from '../components/google/tableUtils';
 import { syncChartJsDefaultsColor } from '../utils/chartJsDefaults';
@@ -25,6 +26,8 @@ import { buildKeywordColumns } from '../components/keywordsExplorer/KeywordTable
 import {
   deriveBrandFromUrl,
   exportKeywordCsv,
+  buildIntentCounts,
+  buildSourceCounts,
 } from '../components/keywordsExplorer/keywordTableUtils';
 import {
   CannibalisationPanel,
@@ -305,6 +308,182 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
     );
   }, [activeTab, tableRows.length, hasActiveFilters, tabBaseCount, ke, clearFilters]);
 
+  const competitorGapRows = useMemo(
+    () => (Array.isArray(data?.competitor_keyword_gap) ? data.competitor_keyword_gap : []),
+    [data?.competitor_keyword_gap],
+  );
+
+  const topicClusters = useMemo(
+    () => (data?.semantic_keyword_clusters as Array<{ topic?: string; keywords?: string[]; size?: number }>) || [],
+    [data?.semantic_keyword_clusters],
+  );
+
+  const topQuickWinsPreview = useMemo(
+    () =>
+      [...rows]
+        .filter((r) => {
+          const pos = parseFloat(String(r.gsc_position ?? 0));
+          return pos >= 4 && pos <= 20 && (r.opportunity_clicks || 0) > 5;
+        })
+        .sort((a, b) => (b.opportunity_clicks || 0) - (a.opportunity_clicks || 0))
+        .slice(0, 5),
+    [rows],
+  );
+
+  const topOpportunitiesPreview = useMemo(
+    () =>
+      [...rows]
+        .filter((r) => !r.gsc_position && (r.sources || []).length > 0)
+        .sort((a, b) => (b.traffic_potential || 0) - (a.traffic_potential || 0))
+        .slice(0, 5),
+    [rows],
+  );
+
+  const kpiDevData = useMemo(
+    () => ({
+      widget: 'keywordsExplorer.kpiSummary',
+      brandName: brandName || null,
+      totalKeywords: kwData?.total_keywords ?? rows.length,
+      sourceCount,
+      gscCount: kwData?.gsc_keyword_count ?? 0,
+      quickWins: quickWinCount,
+      cannib: cannibItems.length,
+      lostClicks: lostClickCount,
+      questions: questionCount,
+    }),
+    [
+      brandName,
+      cannibItems.length,
+      kwData?.gsc_keyword_count,
+      kwData?.total_keywords,
+      lostClickCount,
+      questionCount,
+      quickWinCount,
+      rows.length,
+      sourceCount,
+    ],
+  );
+
+  const exploreDevData = useMemo(
+    () => ({
+      widget: 'keywordsExplorer.overview.explore',
+      counts: {
+        total: rows.length,
+        quickwins: quickWinCount,
+        lostclicks: lostClickCount,
+        questions: questionCount,
+        opportunities: opportunityCount,
+        cannib: cannibItems.length,
+        pages: tabCounts.pages,
+      },
+    }),
+    [
+      cannibItems.length,
+      lostClickCount,
+      opportunityCount,
+      questionCount,
+      quickWinCount,
+      rows.length,
+      tabCounts.pages,
+    ],
+  );
+
+  const intentDevData = useMemo(
+    () => ({
+      widget: 'keywordsExplorer.overview.intentMix',
+      counts: buildIntentCounts(rows),
+    }),
+    [rows],
+  );
+
+  const sourceDevData = useMemo(
+    () => ({
+      widget: 'keywordsExplorer.overview.sourceMix',
+      counts: buildSourceCounts(rows),
+    }),
+    [rows],
+  );
+
+  const topQuickWinsDevData = useMemo(
+    () => ({
+      widget: 'keywordsExplorer.overview.topQuickWins',
+      rows: topQuickWinsPreview,
+    }),
+    [topQuickWinsPreview],
+  );
+
+  const topOpportunitiesDevData = useMemo(
+    () => ({
+      widget: 'keywordsExplorer.overview.topOpportunities',
+      rows: topOpportunitiesPreview,
+    }),
+    [topOpportunitiesPreview],
+  );
+
+  const insightsDevData = useMemo(
+    () => ({
+      widget: 'keywordsExplorer.overview.insights',
+      bullets: insights,
+    }),
+    [insights],
+  );
+
+  const tableTabDevData = useMemo(() => {
+    if (!isTableTab(activeTab)) return undefined;
+    return {
+      widget: `keywordsExplorer.${activeTab}.table`,
+      searchQuery: searchQuery || null,
+      intentFilter: intentFilter || null,
+      brandedFilter: brandedFilter || null,
+      sourceFilter: sourceFilter || null,
+      brandScoped: brandScopedExpansion,
+      rowCount: tableRows.length,
+      rows: tableRows,
+    };
+  }, [
+    activeTab,
+    brandScopedExpansion,
+    brandedFilter,
+    intentFilter,
+    searchQuery,
+    sourceFilter,
+    tableRows,
+  ]);
+
+  const topicsDevData = useMemo(
+    () => ({
+      widget: 'keywordsExplorer.topics.map',
+      clusters: topicClusters.slice(0, 24),
+    }),
+    [topicClusters],
+  );
+
+  const templatesDevData = useMemo(
+    () => ({
+      widget: 'keywordsExplorer.templates.panel',
+      defaultKeyword: rows[0]?.keyword || '',
+      clusterRows: rows.slice(0, 20),
+    }),
+    [rows],
+  );
+
+  const competitorImportDevData = useMemo(
+    () => ({
+      widget: 'keywordsExplorer.competitor.import',
+      propertyId: propertyId || null,
+    }),
+    [propertyId],
+  );
+
+  const competitorGapDevData = useMemo(
+    () => ({
+      widget: 'keywordsExplorer.competitor.gap',
+      rowCount: competitorGapRows.length,
+      rows: competitorGapRows,
+    }),
+    [competitorGapRows],
+  );
+
   if (!keywordsReady) {
     return <ViewSectionLoading title={ke.title} />;
   }
@@ -380,6 +559,7 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
           lostClicks: lostClickCount,
           questions: questionCount,
         }}
+        kpiDevData={kpiDevData}
       />
 
       {showSeedExpander && <BulkSeedPanel brandQuery={brandQuery} />}
@@ -412,12 +592,18 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
             cannib: cannibItems.length,
           }}
           onNavigate={navigateTab}
+          exploreDevData={exploreDevData}
+          intentDevData={intentDevData}
+          sourceDevData={sourceDevData}
+          topQuickWinsDevData={topQuickWinsDevData}
+          topOpportunitiesDevData={topOpportunitiesDevData}
+          insightsDevData={insightsDevData}
         />
       )}
 
       {activeTab !== 'overview' && (
         <div id={`kw-tab-${activeTab}`} role="tabpanel" className="mb-6">
-        <Card padding="none" className="overflow-hidden">
+        <Card padding="none" className="overflow-hidden" devData={tableTabDevData}>
           <KeywordTabBanner tab={activeTab} count={bannerCount} />
 
           {isTableTab(activeTab) && (
@@ -445,23 +631,26 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
             <ByPagePanel rows={rows} ke={ke} brandQuery={brandQuery} />
           ) : activeTab === 'topics' ? (
             <TopicMapPanel
-              clusters={(data?.semantic_keyword_clusters as Array<{ topic?: string; keywords?: string[] }>) || []}
+              clusters={topicClusters}
               emptyLabel="Run a report with LLM keyword clusters enabled to see topic groups."
+              devData={topicsDevData}
             />
           ) : activeTab === 'templates' ? (
             <ContentTemplatesPanel
               defaultKeyword={rows[0]?.keyword || ''}
               clusterRows={rows.slice(0, 20)}
+              devData={templatesDevData}
             />
           ) : activeTab === 'competitor' ? (
             <>
-              <CompetitorKeywordImport
-                propertyId={propertyId}
-                onImported={() => void loadReport()}
-              />
-              <CompetitorKeywordGapPanel
-                rows={Array.isArray(data?.competitor_keyword_gap) ? data.competitor_keyword_gap : []}
-              />
+              <div className="relative group/dev-card">
+                <DevCopyJsonButton data={competitorImportDevData} />
+                <CompetitorKeywordImport
+                  propertyId={propertyId}
+                  onImported={() => void loadReport()}
+                />
+              </div>
+              <CompetitorKeywordGapPanel rows={competitorGapRows} devData={competitorGapDevData} />
             </>
           ) : tableEmptyContent ? (
             tableEmptyContent

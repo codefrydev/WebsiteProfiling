@@ -15,6 +15,7 @@ import ConnectionsTab from './tabs/ConnectionsTab';
 import SearchRetentionTab from './tabs/SearchRetentionTab';
 import PageImprovePanel from './PageImprovePanel';
 import { Sparkles } from 'lucide-react';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 
 const ci = strings.components.inspectorTabs;
 
@@ -132,6 +133,19 @@ export default function InspectorTabs({
     badge: id === 'issues' ? issueCount : null,
   }));
 
+  const activeTabDevData = useMemo(
+    () => ({
+      widget: `links.inspector.${activeTab}`,
+      url: link.url,
+      activeTab,
+      link,
+      lighthouse: effectiveLh,
+      inspectorDetails,
+      issueCount,
+    }),
+    [activeTab, effectiveLh, inspectorDetails, issueCount, link],
+  );
+
   return (
     <div className="flex flex-col h-full min-h-0">
       <div className="shrink-0 px-4 pt-3 pb-2 border-b border-muted bg-brand-800">
@@ -144,7 +158,8 @@ export default function InspectorTabs({
         />
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">
+      <div className="relative group/dev-card flex-1 min-h-0 overflow-y-auto px-4 py-4">
+        <DevCopyJsonButton data={activeTabDevData} />
         {activeTab === 'overview'  && (
           <OverviewTab link={link} lhData={effectiveLh} onOpenTab={isControlled ? handleOpenTab : undefined} />
         )}

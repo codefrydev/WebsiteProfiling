@@ -13,6 +13,7 @@ import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
 import { buildCannibalisationContext, buildMisalignmentContext } from '@/lib/fixSuggestionContext';
 import { strings, format } from '../../lib/strings';
 import { Card } from '../index';
+import DevCopyJsonButton from '../DevCopyJsonButton';
 import CopyBtn from '../links/CopyBtn';
 import SortablePaginatedTable from '../google/SortablePaginatedTable';
 import { buildKeywordColumns } from './KeywordTableColumns';
@@ -56,12 +57,24 @@ export function CannibalisationPanel({ items }: CannibalisationPanelProps) {
     });
   }, [items, search, sort]);
 
+  const devData = useMemo(
+    () => ({
+      widget: 'keywordsExplorer.cannib.panel',
+      searchQuery: search || null,
+      sort,
+      rowCount: filtered.length,
+      items: filtered,
+    }),
+    [filtered, search, sort],
+  );
+
   if (!items?.length) {
     return <KeywordEmptyState icon={Split} title={c.empty} description="" />;
   }
 
   return (
-    <div className="p-4 sm:p-5">
+    <div className="relative group/dev-card p-4 sm:p-5">
+      <DevCopyJsonButton data={devData} />
       <div className="mb-4 p-3 rounded-xl border border-red-500/25 bg-red-500/5">
         <p className="text-sm text-foreground font-medium flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0" aria-hidden />
@@ -158,12 +171,23 @@ export function QueryPageMisalignmentPanel({ items }: QueryPageMisalignmentPanel
     return [...list].sort((x, y) => (y.impressions || 0) - (x.impressions || 0));
   }, [items, search]);
 
+  const devData = useMemo(
+    () => ({
+      widget: 'keywordsExplorer.alignment.panel',
+      searchQuery: search || null,
+      rowCount: filtered.length,
+      items: filtered,
+    }),
+    [filtered, search],
+  );
+
   if (!items?.length) {
     return <KeywordEmptyState icon={Link2} title={a.empty} description="" />;
   }
 
   return (
-    <div className="p-4 sm:p-5">
+    <div className="relative group/dev-card p-4 sm:p-5">
+      <DevCopyJsonButton data={devData} />
       <div className="mb-4 p-3 rounded-xl border border-amber-500/25 bg-amber-500/5">
         <p className="text-sm text-foreground font-medium flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" aria-hidden />
@@ -276,6 +300,20 @@ export function ByPagePanel({ rows, ke, brandQuery = null }: ByPagePanelProps) {
   const inspectHref =
     selectedUrl != null ? buildLinksInspectHref(selectedUrl, searchParams) : null;
 
+  const devData = useMemo(
+    () => ({
+      widget: 'keywordsExplorer.bypage.panel',
+      pageSearch: pageSearch || null,
+      sortKey,
+      pageCount: pages.length,
+      pages: filteredPages,
+      selectedUrl,
+      selectedPageKeywords: pageKws?.keywords ?? [],
+      keywordCount: pageKws?.keyword_count ?? null,
+    }),
+    [filteredPages, pageKws, pageSearch, pages.length, selectedUrl, sortKey],
+  );
+
   if (pages.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
@@ -286,7 +324,8 @@ export function ByPagePanel({ rows, ke, brandQuery = null }: ByPagePanelProps) {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-[480px]">
+    <div className="relative group/dev-card flex flex-col lg:flex-row min-h-[480px]">
+      <DevCopyJsonButton data={devData} />
       <aside className="lg:w-[min(100%,22rem)] xl:w-80 shrink-0 border-b lg:border-b-0 lg:border-r border-default flex flex-col bg-brand-900/40">
         <div className="p-3 border-b border-default space-y-2">
           <div>

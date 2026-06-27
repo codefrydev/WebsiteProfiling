@@ -15,6 +15,7 @@ import { strings, format } from '@/lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import HelpHint from '@/components/HelpHint';
 import { Card, StatCard } from '@/components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { CompactBarChart, CompactDonut } from '@/components/charts/compact';
 import { buildKeywordsTabHref } from './overviewKeywordOpportunities';
 import {
@@ -86,16 +87,23 @@ function ContentQualityColumn({
   viewAllHref,
   viewAllLabel,
   statCard,
+  devData,
   children,
 }: {
   title: string;
   viewAllHref: string;
   viewAllLabel: string;
   statCard: ReactNode;
+  devData?: unknown;
   children: ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-default/80 bg-brand-900/20 p-4">
+    <div
+      className={`flex flex-col gap-4 rounded-xl border border-default/80 bg-brand-900/20 p-4 ${
+        devData != null ? 'relative group/dev-card' : ''
+      }`}
+    >
+      {devData != null ? <DevCopyJsonButton data={devData} /> : null}
       <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-bold text-bright">{title}</h3>
         <Link to={viewAllHref} className="text-xs font-medium text-link hover:underline">
@@ -181,15 +189,132 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
     };
   }, [data, querySuffix, keywordsHref]);
 
-  if (!shouldShowContentQuality(data)) return null;
-
   const showDuplicates = duplicateGroupCount > 0;
   const showLanguages = languagesDetected > 0;
   const languageOnly = showLanguages && !showDuplicates;
 
+  const contentQualityHeaderDevData = useMemo(
+    () => ({
+      widget: 'overview.contentQuality.header',
+      title: vo.contentIntelligence,
+      subtitle: vo.contentQualitySubtitle,
+      kpiParts,
+      concerns,
+      links: {
+        contentOverviewHref,
+        textAnalysisHref,
+      },
+      flags: {
+        showDuplicates,
+        showLanguages,
+        mixedLanguage,
+        showAdvancedInsights,
+      },
+    }),
+    [
+      concerns,
+      contentOverviewHref,
+      kpiParts,
+      mixedLanguage,
+      showAdvancedInsights,
+      showDuplicates,
+      showLanguages,
+      textAnalysisHref,
+      vo.contentIntelligence,
+      vo.contentQualitySubtitle,
+    ],
+  );
+
+  const contentQualityDuplicatesDevData = useMemo(
+    () => ({
+      widget: 'overview.contentQuality.duplicates',
+      title: vo.duplicateGroups,
+      duplicateGroupCount,
+      duplicatePages,
+      duplicateBand,
+      topDuplicates,
+      viewAllHref: contentOverviewHref,
+      raw: {
+        content_duplicates: data.content_duplicates,
+      },
+    }),
+    [
+      contentOverviewHref,
+      data.content_duplicates,
+      duplicateBand,
+      duplicateGroupCount,
+      duplicatePages,
+      topDuplicates,
+      vo.duplicateGroups,
+    ],
+  );
+
+  const contentQualityLanguagesDevData = useMemo(
+    () => ({
+      widget: 'overview.contentQuality.languages',
+      title: vo.languagesSampled,
+      languagesDetected,
+      mixedLanguage,
+      dominantLanguage,
+      languageShareRows,
+      languageCounts,
+      languageOnly,
+      links: {
+        textAnalysisHref,
+        contentAnalyticsHref,
+      },
+      raw: {
+        language_summary: data.language_summary,
+      },
+    }),
+    [
+      contentAnalyticsHref,
+      data.language_summary,
+      dominantLanguage,
+      languageCounts,
+      languageOnly,
+      languageShareRows,
+      languagesDetected,
+      mixedLanguage,
+      textAnalysisHref,
+      vo.languagesSampled,
+    ],
+  );
+
+  const contentQualityAdvancedDevData = useMemo(
+    () => ({
+      widget: 'overview.contentQuality.advancedInsights',
+      semanticTopics,
+      entityTotal,
+      pagesWithNer,
+      hasNer,
+      links: {
+        topicsHref,
+        textAnalysisHref,
+      },
+      raw: {
+        semantic_keyword_clusters: data.semantic_keyword_clusters,
+        ner_site_summary: data.ner_site_summary,
+      },
+    }),
+    [
+      data.ner_site_summary,
+      data.semantic_keyword_clusters,
+      entityTotal,
+      hasNer,
+      pagesWithNer,
+      semanticTopics,
+      textAnalysisHref,
+      topicsHref,
+    ],
+  );
+
+  if (!shouldShowContentQuality(data)) return null;
+
   return (
     <Card shadow overflowHidden className="mb-8">
-      <div className="border-b border-muted/60 p-4 sm:p-5">
+      <div className="relative group/dev-card border-b border-muted/60 p-4 sm:p-5">
+        <DevCopyJsonButton data={contentQualityHeaderDevData} />
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
@@ -254,6 +379,7 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
             title={vo.duplicateGroups}
             viewAllHref={contentOverviewHref}
             viewAllLabel={vo.contentQualityReviewDuplicates}
+            devData={contentQualityDuplicatesDevData}
             statCard={
               <StatCard
                 shadow
@@ -308,7 +434,8 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
 
         {showLanguages ? (
           languageOnly ? (
-            <div className="rounded-xl border border-default/80 bg-brand-900/20 p-4">
+            <div className="relative group/dev-card rounded-xl border border-default/80 bg-brand-900/20 p-4">
+              <DevCopyJsonButton data={contentQualityLanguagesDevData} />
               <div className="flex items-center justify-between gap-2">
                 <h3 className="text-sm font-bold text-bright">{vo.languagesSampled}</h3>
                 <Link to={textAnalysisHref} className="text-xs font-medium text-link hover:underline">
@@ -360,6 +487,7 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
               title={vo.languagesSampled}
               viewAllHref={textAnalysisHref}
               viewAllLabel={vo.contentQualityOpenTextAnalysis}
+              devData={contentQualityLanguagesDevData}
               statCard={
                 <StatCard
                   shadow
@@ -406,7 +534,8 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
       </div>
 
       {showAdvancedInsights ? (
-        <div className="border-t border-muted/60 px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
+        <div className="relative group/dev-card border-t border-muted/60 px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
+          <DevCopyJsonButton data={contentQualityAdvancedDevData} />
           <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
             {vo.contentQualityAdvancedInsights}
           </p>

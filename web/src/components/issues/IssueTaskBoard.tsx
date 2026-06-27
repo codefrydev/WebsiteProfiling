@@ -8,6 +8,7 @@ import UrlInspectorButton from '@/components/UrlInspectorButton';
 import { LabelWithHint } from '@/components';
 import IssueAiFixButton from '@/components/issues/IssueAiFixButton';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 
 type WorkflowStatus = 'open' | 'in_progress' | 'fixed' | 'ignored';
 
@@ -66,6 +67,26 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
     [issues],
   );
 
+  const boardDevData = useMemo(
+    () => ({
+      widget: 'issues.taskBoard',
+      propertyId,
+      reportId,
+      issueCount: sorted.length,
+      issues: sorted.map((item) => ({
+        category: item.category,
+        clicks: item.clicks ?? 0,
+        issue: item.issue,
+        workflow: Object.values(statusByFingerprint).find(
+          (r) =>
+            r.message === String(item.issue.message || '').trim() &&
+            (r.url || '') === (item.issue.url || ''),
+        ),
+      })),
+    }),
+    [propertyId, reportId, sorted, statusByFingerprint],
+  );
+
   const saveIssueRow = useCallback(
     async (
       item: { category: string; issue: ReportIssue },
@@ -111,7 +132,8 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
   }
 
   return (
-    <div className="space-y-3">
+    <div className="relative group/dev-card space-y-3">
+      <DevCopyJsonButton data={boardDevData} />
       <p className="text-xs text-muted-foreground">
         {vi.taskBoardHint || 'Sorted by Search Console clicks to affected URLs when available.'}{' '}
         <LabelWithHint label="Impact score" helpKey="shared.impactScore" />

@@ -43,10 +43,26 @@ export function WidgetFrame({
   const chartRef = useRef<EChartsInstance | null>(null);
   const datasetLabel = getDataset(widget.datasetId)?.label ?? widget.datasetId;
   const title = widget.title || datasetLabel;
+  const effectiveQuery = specOverride ?? widget.query;
+  const devData =
+    import.meta.env.DEV && status === 'loaded'
+      ? {
+          widget: {
+            id: widget.id,
+            title,
+            viz: widget.viz,
+            datasetId: widget.datasetId,
+            query: effectiveQuery,
+          },
+          status,
+          result,
+        }
+      : undefined;
 
   return (
     <Card
       padding="tight"
+      devData={devData}
       className={`h-full flex flex-col min-h-0 overflow-hidden relative group/widget ${
         isEditing ? 'pointer-events-none' : ''
       } ${selected ? 'ring-2 ring-blue-500/70' : ''}`}

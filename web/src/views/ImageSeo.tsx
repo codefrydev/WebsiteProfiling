@@ -7,6 +7,7 @@ import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { useActivePropertyContext } from '@/hooks/useActivePropertyContext';
 import { PageLayout, PageHeader, Card, ViewTabs, ViewTabPanel, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell } from '@/components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import ImageAuditSummaryCards, { type ImageAuditSummaryData } from '@/components/imageSeo/ImageAuditSummaryCards';
 import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import { useUrlTab } from '@/hooks/useUrlTab';
@@ -130,6 +131,55 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
 
   const inventoryGated = activeTab === 'largest' || activeTab === 'unoptimized';
 
+  const overviewDevData = useMemo(
+    () =>
+      summary
+        ? {
+            widget: 'imageSeo.overview.summary',
+            ...summary,
+            issueBreakdown: [
+              { key: 'pagesMissingAlt', count: summary.pagesMissingAlt },
+              { key: 'pagesWithoutLazy', count: summary.pagesWithoutLazy },
+              { key: 'pagesMissingDimensions', count: summary.pagesMissingDimensions },
+              { key: 'lighthouseImageDiagnostics', count: summary.lighthouseImageDiagnostics },
+            ].filter((item) => item.count > 0),
+          }
+        : { widget: 'imageSeo.overview.summary', loading: true },
+    [summary],
+  );
+
+  const listTableDevData = useMemo(
+    () => ({
+      widget: `imageSeo.${activeTab}.table`,
+      tab: activeTab,
+      tool: TAB_TOOLS[activeTab] ?? null,
+      searchQuery: q || null,
+      listTotal,
+      filteredCount: filteredRows.length,
+      page: pagination.page,
+      totalPages: pagination.totalPages,
+      from: pagination.from,
+      to: pagination.to,
+      inventoryGated: inventoryGated && summary != null && !summary.inventoryAvailable,
+      rows: pagination.slice.map((row) => {
+        const url = String(row.url || '');
+        const details = Object.fromEntries(
+          Object.entries(row).filter(([k]) => k !== 'url'),
+        );
+        return { url, ...details };
+      }),
+    }),
+    [
+      activeTab,
+      filteredRows.length,
+      inventoryGated,
+      listTotal,
+      pagination,
+      q,
+      summary,
+    ],
+  );
+
   if (!contentReady) {
     return <ViewSectionLoading title={vi.title} />;
   }
@@ -166,7 +216,10 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
       {activeTab === 'overview' ? (
       <ViewTabPanel idPrefix="image-seo" tabId="overview">
         {summary ? (
-          <ImageAuditSummaryCards data={summary} />
+          <div className="relative group/dev-card">
+            <DevCopyJsonButton data={overviewDevData} />
+            <ImageAuditSummaryCards data={summary} />
+          </div>
         ) : (
           <Card className="p-8 text-center text-sm text-muted-foreground">{strings.app.loading}</Card>
         )}
@@ -187,7 +240,7 @@ export default function ImageSeo({ searchQuery = '' }: ViewProps) {
           ) : filteredRows.length === 0 ? (
             <Card className="p-8 text-center text-sm text-muted-foreground">{vi.emptyList}</Card>
           ) : (
-            <Card className="overflow-hidden">
+            <Card className="overflow-hidden" devData={listTableDevData}>
               <Table>
                 <TableHead>
                   <TableRow>

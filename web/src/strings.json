@@ -4810,6 +4810,9 @@
       "copied": "Copied!",
       "title": "Copy to clipboard"
     },
+    "devCopyJson": {
+      "title": "Copy widget JSON"
+    },
     "linkTabs": {
       "overview": {
         "crawlHeading": "Crawl & index",

@@ -44,6 +44,7 @@ import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, ViewTabs, ViewTabPanel, StatCard, SectionHeader, ChartTitleWithHint } from '../components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { ChartPanel } from '../components/charts/ChartPanel';
 import { StatusDistributionChart, CoverageBar } from '../components/charts';
 import {
@@ -437,6 +438,245 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
   const hreflang = data?.hreflang_summary;
   const outboundDomains = data?.outbound_link_domains ?? [];
 
+  const summaryStatsDevData = {
+    widget: 'contentAnalytics.summary.stats',
+    meanWords: wcStats.mean ?? null,
+    medianWords: wcStats.median ?? null,
+    ogCoveragePct: sc.og_coverage_pct ?? null,
+    twitterCoveragePct: sc.twitter_coverage_pct ?? null,
+    thinPagesCount: thinPages.length,
+  };
+
+  const richResultsDevData = {
+    widget: 'contentAnalytics.summary.richResults',
+    meta: data?.rich_results_meta ?? null,
+    rows: richResultsRows.map((r) => ({
+      url: r.url,
+      status: r.status ?? null,
+      provenance: r.provenance ?? null,
+      message: r.message ?? null,
+    })),
+  };
+
+  const i18nDevData = {
+    widget: 'contentAnalytics.summary.i18n',
+    pages200: hreflang?.pages_200 ?? null,
+    missingHtmlLang: hreflang?.pages_missing_html_lang ?? null,
+    pagesWithHreflang: hreflang?.pages_with_hreflang_links ?? null,
+  };
+
+  const outboundDomainsDevData = {
+    widget: 'contentAnalytics.summary.outboundDomains',
+    domains: outboundDomains.map((row) => ({
+      host: row.host,
+      link_count: row.link_count ?? null,
+      page_count: row.page_count ?? null,
+    })),
+  };
+
+  const languageMixDevData = languageMlChart
+    ? { widget: 'contentAnalytics.summary.languageMix', ...languageMlChart }
+    : null;
+
+  const entityLabelsDevData = nerSiteChart
+    ? { widget: 'contentAnalytics.summary.entityLabels', ...nerSiteChart }
+    : null;
+
+  const tokenTopicsDevData = {
+    widget: 'contentAnalytics.summary.tokenTopics',
+    clusters: tokenClusters.map((cl) => ({
+      top_keyword: cl.top_keyword ?? cl.representative ?? null,
+      cluster_score: cl.cluster_score ?? null,
+      keywords: cl.keywords ?? [],
+    })),
+  };
+
+  const semanticTopicsDevData = {
+    widget: 'contentAnalytics.summary.semanticTopics',
+    clusters: semanticClusters.map((cl) => ({
+      top_keyword: cl.top_keyword ?? cl.representative ?? null,
+      cluster_score: cl.cluster_score ?? null,
+      keywords: cl.keywords ?? [],
+    })),
+  };
+
+  const statusChartDevData = hasStatusChart
+    ? {
+        widget: 'contentAnalytics.analytics.statusDistribution',
+        crawledCount,
+        successRate: summary.success_rate ?? null,
+        distribution: statusDistribution,
+      }
+    : null;
+
+  const responseTimeDevData = hasRtDist
+    ? {
+        widget: 'contentAnalytics.analytics.responseTime',
+        labels: rtLabels,
+        values: rtValues,
+        p50: rtStats.p50 ?? null,
+        p95: rtStats.p95 ?? null,
+      }
+    : null;
+
+  const issuesByTypeDevData = hasIssueBar
+    ? { widget: 'contentAnalytics.analytics.issuesByType', labels: issueBarLabels, values: issueBarValues }
+    : null;
+
+  const seoOptimalDevData = hasSeoOptimalBar
+    ? {
+        widget: 'contentAnalytics.analytics.seoOptimalRanges',
+        titleOkPct,
+        metaOkPct,
+        h1OkPct,
+      }
+    : null;
+
+  const thinSignalsDevData = hasThinCompare
+    ? {
+        widget: 'contentAnalytics.analytics.thinSignals',
+        thinPagesListed,
+        thinSeoFlagged,
+      }
+    : null;
+
+  const thinPagesListDevData = {
+    widget: 'contentAnalytics.analytics.thinPages',
+    searchQuery: q || null,
+    total: thinPages.length,
+    filteredCount: thinPagesFiltered.length,
+    pages: thinPagesFiltered.map((p) => ({
+      url: typeof p === 'string' ? p : (p.url ?? null),
+      word_count: typeof p === 'object' ? (p.word_count ?? null) : null,
+    })),
+  };
+
+  const wordCountDistDevData = {
+    widget: 'contentAnalytics.analytics.wordCountDist',
+    labels: wcLabels,
+    values: wcValues,
+  };
+
+  const readingLevelDevData = {
+    widget: 'contentAnalytics.analytics.readingLevelDist',
+    labels: rlLabels,
+    values: rlValues,
+  };
+
+  const contentRatioDevData = {
+    widget: 'contentAnalytics.analytics.contentHtmlRatio',
+    labels: crLabels,
+    values: crValues,
+  };
+
+  const topKeywordsDevData = {
+    widget: 'contentAnalytics.analytics.topKeywords',
+    keywords: topKw.map((k) => ({ word: k.word, count: k.count })),
+  };
+
+  const wordCountLadderDevData = hasWcPercBar
+    ? {
+        widget: 'contentAnalytics.analytics.wordCountLadder',
+        labels: wcPercLabels,
+        values: wcPercValues,
+      }
+    : null;
+
+  const h1DistDevData = {
+    widget: 'contentAnalytics.analytics.h1Dist',
+    labels: h1Chart.labels,
+    values: h1Chart.values,
+  };
+
+  const titleQualityDevData = {
+    widget: 'contentAnalytics.analytics.titleTagQuality',
+    labels: titleQualLabels,
+    values: titleQualValues,
+  };
+
+  const metaQualityDevData = {
+    widget: 'contentAnalytics.analytics.metaDescQuality',
+    labels: metaQualLabels,
+    values: metaQualValues,
+  };
+
+  const titleVsMetaDevData = hasTitleMetaCompare
+    ? {
+        widget: 'contentAnalytics.analytics.titleVsMetaBuckets',
+        buckets: vca.compareBuckets,
+        titleCounts: titleBucketCounts,
+        metaCounts: metaBucketCounts,
+      }
+    : null;
+
+  const seoGapDevData = hasSeoGapCountCompare
+    ? {
+        widget: 'contentAnalytics.analytics.seoOptimalVsGapCounts',
+        inRange: [seoHealth.title_ok || 0, seoHealth.meta_desc_ok || 0, seoHealth.h1_one || 0],
+        gaps: [titleGapCount, metaGapCount, h1GapCount],
+      }
+    : null;
+
+  const socialCoverageDevData = {
+    widget: 'contentAnalytics.analytics.socialCoverageBars',
+    ogCoveragePct: sc.og_coverage_pct ?? null,
+    twitterCoveragePct: sc.twitter_coverage_pct ?? null,
+    ogImageCoveragePct: sc.og_image_coverage_pct ?? null,
+  };
+
+  const socialOverviewDevData = hasSocialData
+    ? {
+        widget: 'contentAnalytics.analytics.socialOverview',
+        ogPct,
+        twPct,
+        ogImgPct,
+      }
+    : null;
+
+  const missingSocialCompareDevData = hasSocialMissCompare
+    ? {
+        widget: 'contentAnalytics.analytics.missingSocialCompare',
+        ogMissCount,
+        twMissCount,
+      }
+    : null;
+
+  const missingOgDevData = {
+    widget: 'contentAnalytics.analytics.missingOg',
+    searchQuery: q || null,
+    total: (sc.missing_og || []).length,
+    filteredCount: missingOgFiltered.length,
+    urls: missingOgFiltered.slice(0, 50),
+  };
+
+  const missingTwitterDevData = {
+    widget: 'contentAnalytics.analytics.missingTwitter',
+    searchQuery: q || null,
+    total: (sc.missing_twitter || []).length,
+    filteredCount: missingTwitterFiltered.length,
+    urls: missingTwitterFiltered.slice(0, 50),
+  };
+
+  const crawlDepthDevData = hasDepthData
+    ? {
+        widget: 'contentAnalytics.analytics.crawlDepth',
+        labels: depthLabels,
+        values: depthValues,
+        maxDepth: depthDist.max_depth ?? null,
+        avgDepth: depthDist.avg_depth ?? null,
+      }
+    : null;
+
+  const wordCountPercentilesDevData = {
+    widget: 'contentAnalytics.analytics.wordCountPercentiles',
+    min: wcStats.min ?? null,
+    p25: wcStats.p25 ?? null,
+    median: wcStats.median ?? null,
+    mean: wcStats.mean ?? null,
+    p75: wcStats.p75 ?? null,
+    max: wcStats.max ?? null,
+  };
+
   return (
     <PageLayout className="space-y-6">
       <PageHeader title={vca.title} subtitle={vca.subtitle} />
@@ -452,7 +692,8 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
       {activeTab === 'summary' && (
         <ViewTabPanel idPrefix="content-analytics" tabId="summary" className="space-y-6">
       {/* KPI stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="relative group/dev-card grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <DevCopyJsonButton data={summaryStatsDevData} />
         <StatCard
           label={vca.meanWords}
           value={wcStats.mean != null ? Math.round(wcStats.mean).toLocaleString() : sj.emDash}
@@ -499,13 +740,13 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
       </div>
 
       {richResultsRows.length > 0 ? (
-        <RichResultsValidationPanel rows={richResultsRows} meta={data?.rich_results_meta} />
+        <RichResultsValidationPanel rows={richResultsRows} meta={data?.rich_results_meta} devData={richResultsDevData} />
       ) : null}
 
       {((hreflang?.pages_200 ?? 0) > 0 || outboundDomains.length > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {(hreflang?.pages_200 ?? 0) > 0 && (
-            <Card padding="tight" shadow>
+            <Card padding="tight" shadow devData={i18nDevData}>
               <div className="flex items-center gap-2 mb-3">
                 <Globe className="h-4 w-4 text-sky-700 dark:text-sky-400" />
                 <h3 className="text-sm font-bold text-foreground">{vca.i18nTitle}</h3>
@@ -527,7 +768,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             </Card>
           )}
           {outboundDomains.length > 0 && (
-            <Card padding="tight" shadow className={(hreflang?.pages_200 ?? 0) > 0 ? '' : 'lg:col-span-2'}>
+            <Card padding="tight" shadow className={(hreflang?.pages_200 ?? 0) > 0 ? '' : 'lg:col-span-2'} devData={outboundDomainsDevData}>
               <div className="flex items-center gap-2 mb-3">
                 <Link2 className="h-4 w-4 text-orange-700 dark:text-orange-400" />
                 <h3 className="text-sm font-bold text-foreground">{vca.outboundDomains}</h3>
@@ -558,7 +799,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
       )}
 
       {languageMlChart && (
-        <Card padding="tight" shadow>
+        <Card padding="tight" shadow devData={languageMixDevData ?? undefined}>
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="h-4 w-4 text-violet-700 dark:text-violet-400" />
             <h3 className="text-sm font-bold text-foreground">{vca.languageMix}</h3>
@@ -582,7 +823,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
       )}
 
       {nerSiteChart && (
-        <Card padding="tight" shadow>
+        <Card padding="tight" shadow devData={entityLabelsDevData ?? undefined}>
           <div className="flex items-center gap-2 mb-3">
             <Tag className="h-4 w-4 text-cyan-700 dark:text-cyan-400" />
             <h3 className="text-sm font-bold text-foreground">{vca.entityLabels}</h3>
@@ -606,7 +847,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
       )}
 
       {tokenClusters.length > 0 && (
-        <Card padding="tight" shadow>
+        <Card padding="tight" shadow devData={tokenTopicsDevData}>
           <div className="flex items-center gap-2 mb-3">
             <Tag className="h-4 w-4 text-amber-700 dark:text-amber-400" />
             <h3 className="text-sm font-bold text-foreground">{vca.parentTopicsToken}</h3>
@@ -637,7 +878,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
       )}
 
       {semanticClusters.length > 0 && (
-        <Card padding="tight" shadow>
+        <Card padding="tight" shadow devData={semanticTopicsDevData}>
           <div className="flex items-center gap-2 mb-3">
             <Layers className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
             <h3 className="text-sm font-bold text-foreground">{vca.parentTopicsSemantic}</h3>
@@ -677,7 +918,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
           <SectionHeader icon={Activity} title={vca.crawlHealth} hint={metricHelpHint('views.contentAnalytics.crawlHealth')} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {hasStatusChart && (
-              <Card padding="tight">
+              <Card padding="tight" devData={statusChartDevData ?? undefined}>
                 <ChartTitleWithHint title={vca.urlsByStatus} helpKey="views.contentAnalytics.urlsByStatus" className="mb-1" />
                 <p className="text-xs text-muted-foreground mb-3">
                   {vca.totalCrawled}{' '}
@@ -691,7 +932,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
               </Card>
             )}
             {hasRtDist && (
-              <Card padding="tight">
+              <Card padding="tight" devData={responseTimeDevData ?? undefined}>
                 <ChartTitleWithHint title={vca.responseTimeDist} helpKey="views.contentAnalytics.responseTimeDist" className="mb-1" />
                 <p className="text-xs text-muted-foreground mb-3">
                   Pages per latency band
@@ -724,7 +965,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
           <SectionHeader icon={ListChecks} title={vca.onPageQuality} hint={metricHelpHint('views.contentAnalytics.onPageQuality')} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {hasIssueBar && (
-              <Card padding="tight">
+              <Card padding="tight" devData={issuesByTypeDevData ?? undefined}>
                 <ChartTitleWithHint title="URLs flagged by issue type" helpKey="views.contentAnalytics.issuesByType" />
                 <D3HorizontalBarChart
                   data={labelsValuesToBarChartData(issueBarLabels, issueBarValues, palette(issueBarLabels.length))}
@@ -735,7 +976,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
               </Card>
             )}
             {hasSeoOptimalBar && (
-              <Card padding="tight">
+              <Card padding="tight" devData={seoOptimalDevData ?? undefined}>
                 <ChartTitleWithHint title='Pages in “good” ranges' helpKey="views.contentAnalytics.seoOptimalRanges" />
                 <D3StackedHorizontalBarChart
                   labels={['Title length', 'Meta description', 'H1 count']}
@@ -749,7 +990,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
               </Card>
             )}
             {hasThinCompare && (
-              <Card padding="tight" className={hasIssueBar && hasSeoOptimalBar ? 'lg:col-span-2' : ''}>
+              <Card padding="tight" className={hasIssueBar && hasSeoOptimalBar ? 'lg:col-span-2' : ''} devData={thinSignalsDevData ?? undefined}>
                 <ChartTitleWithHint title={vca.thinSignals} helpKey="views.contentAnalytics.thinSignals" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
                   <StatCard
@@ -773,7 +1014,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
 
       {/* Thin pages expandable list */}
       {hasThinPages && (
-        <Card padding="default">
+        <Card padding="default" devData={thinPagesListDevData}>
           <div className="flex items-center gap-2 mb-3">
             <AlertTriangle className="h-4 w-4 text-amber-700 dark:text-amber-400" />
             <span className="text-sm font-semibold text-amber-800 dark:text-amber-300">
@@ -794,7 +1035,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
       <div className="space-y-6">
         <SectionHeader icon={BarChart2} title={vca.contentMetrics} hint={metricHelpHint('views.contentAnalytics.contentMetrics')} />
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card padding="tight">
+          <Card padding="tight" devData={wordCountDistDevData}>
             <ChartTitleWithHint title={vca.wordCountDist} helpKey="views.contentAnalytics.wordCountDist" />
             {wcLabels.length > 0 ? (
               <D3VerticalBarChart
@@ -808,7 +1049,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             )}
           </Card>
 
-          <Card padding="tight">
+          <Card padding="tight" devData={readingLevelDevData}>
             <ChartTitleWithHint title={vca.readingLevelDist} helpKey="views.contentAnalytics.readingLevelDist" />
             {rlLabels.length > 0 ? (
               <D3HorizontalBarChart
@@ -826,7 +1067,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             )}
           </Card>
 
-          <Card padding="tight">
+          <Card padding="tight" devData={contentRatioDevData}>
             <ChartTitleWithHint title={vca.contentHtmlRatio} helpKey="views.contentAnalytics.contentHtmlRatio" />
             {crLabels.length > 0 ? (
               <D3VerticalBarChart
@@ -840,7 +1081,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             )}
           </Card>
 
-          <Card padding="tight">
+          <Card padding="tight" devData={topKeywordsDevData}>
             <ChartTitleWithHint title={vca.topKeywords} helpKey="views.contentAnalytics.topKeywords" />
             {kwLabels.length > 0 ? (
               <D3HorizontalBarChart
@@ -856,7 +1097,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
           </Card>
 
           {hasWcPercBar && (
-            <Card padding="tight" className="lg:col-span-2">
+            <Card padding="tight" className="lg:col-span-2" devData={wordCountLadderDevData ?? undefined}>
               <ChartTitleWithHint title={vca.wordCountLadder} helpKey="views.contentAnalytics.wordCountLadder" />
               <D3VerticalBarChart
                 data={labelsValuesToBarChartData(
@@ -878,7 +1119,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
           <SectionHeader icon={Tag} title={vca.onPageSignals} hint={metricHelpHint('views.contentAnalytics.onPageSignals')} />
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* H1 Distribution Doughnut */}
-            <Card padding="tight">
+            <Card padding="tight" devData={h1DistDevData}>
               <ChartTitleWithHint title={vca.h1Dist} helpKey="views.contentAnalytics.h1Dist" />
               {hasH1Data ? (
                 <D3DonutChart
@@ -893,7 +1134,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             </Card>
 
             {/* Title Length Quality */}
-            <Card padding="tight">
+            <Card padding="tight" devData={titleQualityDevData}>
               <ChartTitleWithHint title={vca.titleTagQuality} helpKey="views.contentAnalytics.titleTagQuality" />
               {hasTitleData ? (
                 <D3VerticalBarChart
@@ -907,7 +1148,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
             </Card>
 
             {/* Meta Description Quality */}
-            <Card padding="tight">
+            <Card padding="tight" devData={metaQualityDevData}>
               <ChartTitleWithHint title={vca.metaDescQuality} helpKey="views.contentAnalytics.metaDescQuality" />
               {hasMetaData ? (
                 <D3VerticalBarChart
@@ -924,7 +1165,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
           {(hasTitleMetaCompare || hasSeoGapCountCompare) && (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0">
               {hasTitleMetaCompare && (
-                <Card padding="tight">
+                <Card padding="tight" devData={titleVsMetaDevData ?? undefined}>
                   <ChartTitleWithHint title={vca.titleVsMetaBuckets} helpKey="views.contentAnalytics.titleVsMetaBuckets" />
                   <D3GroupedBarChart
                     data={groupedBarChartData(vca.compareBuckets, [
@@ -938,7 +1179,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
                 </Card>
               )}
               {hasSeoGapCountCompare && (
-                <Card padding="tight">
+                <Card padding="tight" devData={seoGapDevData ?? undefined}>
                   <ChartTitleWithHint title={vca.seoOptimalVsGapCounts} helpKey="views.contentAnalytics.seoOptimalVsGapCounts" />
                   <D3GroupedBarChart
                     data={groupedBarChartData([vca.seoTitle, vca.seoMeta, vca.seoH1], [
@@ -970,7 +1211,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
 
         {/* Coverage progress bars */}
         {(sc.og_coverage_pct != null || sc.twitter_coverage_pct != null || hasOgImgData) && (
-          <Card shadow>
+          <Card shadow devData={socialCoverageDevData}>
             <div className="space-y-4">
               {sc.og_coverage_pct != null && (
                 <CoverageBar label={vca.ogProgress} pct={sc.og_coverage_pct} color="text-link" />
@@ -987,7 +1228,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
 
         {/* Social meta visual comparison */}
         {hasSocialData && (
-          <Card padding="tight">
+          <Card padding="tight" devData={socialOverviewDevData ?? undefined}>
             <h3 className="text-sm font-bold text-foreground mb-3">{vca.socialOverview}</h3>
             <D3StackedVerticalBarChart
               labels={[vca.openGraph, vca.twitterCard, vca.ogImage]}
@@ -1003,7 +1244,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
         )}
 
         {hasSocialMissCompare && (
-          <Card padding="tight" shadow>
+          <Card padding="tight" shadow devData={missingSocialCompareDevData ?? undefined}>
             <ChartTitleWithHint title={vca.missingSocialUrlCompare} helpKey="views.contentAnalytics.missingSocialCompare" />
             <D3VerticalBarChart
               data={labelsValuesToBarChartData(
@@ -1020,7 +1261,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {(sc.missing_og || []).length > 0 && (
-            <Card overflowHidden padding="none">
+            <Card overflowHidden padding="none" devData={missingOgDevData}>
               <div className="px-4 py-3 border-b border-muted flex items-center gap-2">
                 <Globe className="h-4 w-4 text-link" />
                 <h3 className="text-sm font-bold text-foreground">Missing Open Graph Tags</h3>
@@ -1068,7 +1309,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
           )}
 
           {(sc.missing_twitter || []).length > 0 && (
-            <Card overflowHidden padding="none">
+            <Card overflowHidden padding="none" devData={missingTwitterDevData}>
               <div className="px-4 py-3 border-b border-muted flex items-center gap-2">
                 <Share2 className="h-4 w-4 text-sky-700 dark:text-sky-400" />
                 <h3 className="text-sm font-bold text-foreground">Missing Twitter Card Tags</h3>
@@ -1128,7 +1369,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
         <div className="space-y-6">
           <SectionHeader icon={Layers} title={vca.siteArchitecture} hint={metricHelpHint('views.contentAnalytics.siteArchitecture')} />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card padding="tight">
+            <Card padding="tight" devData={crawlDepthDevData ?? undefined}>
               <ChartTitleWithHint title="Crawl Depth Distribution" helpKey="views.contentAnalytics.crawlDepthDist" />
               {(depthDist.max_depth != null || depthDist.avg_depth != null) && (
                 <p className="text-xs text-muted-foreground mb-3">
@@ -1155,7 +1396,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
 
             {/* Word count percentile summary */}
             {wcStats.median != null && (
-              <Card padding="tight">
+              <Card padding="tight" devData={wordCountPercentilesDevData}>
                 <ChartTitleWithHint title={vca.wordCountPercentiles} helpKey="views.contentAnalytics.wordCountPercentiles" />
                 <div className="space-y-3">
                   {[

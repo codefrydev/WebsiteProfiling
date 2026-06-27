@@ -15,6 +15,7 @@ import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { integrationGuideHref } from '@/lib/docs/integrationGuides';
 import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs } from '../components';
+import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import GoogleTableToolbar from '../components/google/GoogleTableToolbar';
 import { syncChartJsDefaultsColor } from '../utils/chartJsDefaults';
@@ -31,6 +32,7 @@ import {
   filterOpportunities,
   buildQueryExportColumns,
   buildPageExportColumns,
+  buildPositionBuckets,
 } from '../components/searchPerformance/gscTableUtils';
 import UrlGapListsPanel from '../components/google/UrlGapListsPanel';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
@@ -229,6 +231,164 @@ export default function SearchPerformance() {
     </span>
   ) : null;
 
+  const serializeQuery = (row: { query?: string; clicks?: number; impressions?: number; ctr?: number | string | null; position?: number | string | null }) => ({
+    query: row.query ?? '',
+    clicks: row.clicks ?? 0,
+    impressions: row.impressions ?? 0,
+    ctr: row.ctr ?? null,
+    position: row.position ?? null,
+  });
+
+  const serializePage = (row: GscPageRow) => ({
+    page: row.page ?? '',
+    clicks: row.clicks ?? 0,
+    impressions: row.impressions ?? 0,
+    ctr: row.ctr ?? null,
+    position: row.position ?? null,
+  });
+
+  const kpiDevData = useMemo(
+    () => ({
+      widget: 'searchPerformance.kpiSummary',
+      dateRange: dateRange || null,
+      clicks: gsc?.summary?.clicks ?? null,
+      impressions: gsc?.summary?.impressions ?? null,
+      ctr: gsc?.summary?.ctr ?? null,
+      position: gsc?.summary?.position ?? null,
+    }),
+    [dateRange, gsc?.summary],
+  );
+
+  const dailyTrendDevData = useMemo(
+    () => ({
+      widget: 'searchPerformance.overview.dailyTrend',
+      rows: gsc?.daily ?? [],
+    }),
+    [gsc?.daily],
+  );
+
+  const topQueriesOverviewDevData = useMemo(
+    () => ({
+      widget: 'searchPerformance.overview.topQueries',
+      queries: (gsc?.top_queries ?? []).slice(0, 10).map(serializeQuery),
+    }),
+    [gsc?.top_queries],
+  );
+
+  const topQueriesTabDevData = useMemo(
+    () => ({
+      widget: 'searchPerformance.queries.chart',
+      queries: (gsc?.top_queries ?? []).slice(0, 10).map(serializeQuery),
+    }),
+    [gsc?.top_queries],
+  );
+
+  const positionDistDevData = useMemo(
+    () => ({
+      widget: 'searchPerformance.overview.positionDistribution',
+      buckets: buildPositionBuckets(gsc?.top_queries ?? []),
+      bucketLabels: sp.charts.positionBuckets,
+    }),
+    [gsc?.top_queries, sp.charts.positionBuckets],
+  );
+
+  const urlCoverageOverviewDevData = useMemo(
+    () => ({
+      widget: 'searchPerformance.overview.urlCoverage',
+      matched: urlJoin?.matched ?? null,
+      crawlOnly: urlJoin?.crawl_only ?? null,
+      gscOnly: urlJoin?.gsc_only ?? null,
+      ga4Only: urlJoin?.ga4_only ?? null,
+    }),
+    [urlJoin],
+  );
+
+  const insightsDevData = useMemo(
+    () => ({
+      widget: 'searchPerformance.overview.insights',
+      bullets: insights,
+    }),
+    [insights],
+  );
+
+  const queriesTableDevData = useMemo(
+    () => ({
+      widget: 'searchPerformance.queries.table',
+      searchQuery: querySearch || null,
+      rowCount: filteredQueries.length,
+      rows: filteredQueries.map(serializeQuery),
+    }),
+    [filteredQueries, querySearch],
+  );
+
+  const topPagesTabDevData = useMemo(
+    () => ({
+      widget: 'searchPerformance.pages.chart',
+      pages: (gsc?.top_pages ?? []).slice(0, 10).map(serializePage),
+    }),
+    [gsc?.top_pages],
+  );
+
+  const pagesTableDevData = useMemo(
+    () => ({
+      widget: 'searchPerformance.pages.table',
+      searchQuery: pageSearch || null,
+      rowCount: filteredPages.length,
+      rows: filteredPages.map(serializePage),
+    }),
+    [filteredPages, pageSearch],
+  );
+
+  const scatterDevData = useMemo(
+    () => ({
+      widget: 'searchPerformance.opportunities.scatter',
+      points: opportunities.slice(0, 50).map(serializeQuery),
+    }),
+    [opportunities],
+  );
+
+  const opportunitiesTableDevData = useMemo(
+    () => ({
+      widget: 'searchPerformance.opportunities.table',
+      rowCount: opportunities.length,
+      rows: opportunities.map(serializeQuery),
+    }),
+    [opportunities],
+  );
+
+  const coverageDoughnutDevData = useMemo(
+    () => ({
+      widget: 'searchPerformance.coverage.doughnut',
+      matched: urlJoin?.matched ?? null,
+      crawlOnly: urlJoin?.crawl_only ?? null,
+      gscOnly: urlJoin?.gsc_only ?? null,
+      ga4Only: urlJoin?.ga4_only ?? null,
+    }),
+    [urlJoin],
+  );
+
+  const coverageStatsDevData = useMemo(
+    () => ({
+      widget: 'searchPerformance.coverage.stats',
+      matched: urlJoin?.matched ?? null,
+      crawlOnly: urlJoin?.crawl_only ?? null,
+      gscOnly: urlJoin?.gsc_only ?? null,
+      ga4Only: urlJoin?.ga4_only ?? null,
+    }),
+    [urlJoin],
+  );
+
+  const gapListsDevData = useMemo(
+    () => ({
+      widget: 'searchPerformance.coverage.gapLists',
+      gscOnly: urlJoin?.lists?.gsc_only ?? [],
+      crawlOnly: urlJoin?.lists?.crawl_only ?? [],
+      totals: urlJoin?.lists_total ?? null,
+      listLimit: urlJoin?.list_limit ?? null,
+    }),
+    [urlJoin],
+  );
+
   if (!google) {
     if (!trafficReady) {
       return <ViewSectionLoading title={sp.title} />;
@@ -297,7 +457,8 @@ export default function SearchPerformance() {
       )}
 
       {gsc?.summary && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <DevCopyJsonButton data={kpiDevData} />
           <StatCard
             label={sp.kpi.clicks}
             value={gsc.summary.clicks?.toLocaleString()}
@@ -337,16 +498,17 @@ export default function SearchPerformance() {
           {activeTab === 'overview' && (
             <div id="gsc-tab-overview" role="tabpanel" aria-labelledby="gsc-tab-btn-overview" className="space-y-6">
               {(gsc.daily?.length ?? 0) > 0 && (
-                <GscDailyTrendChart daily={gsc.daily ?? []} />
+                <GscDailyTrendChart daily={gsc.daily ?? []} devData={dailyTrendDevData} />
               )}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <TopQueriesBarChart queries={gsc.top_queries ?? []} />
-                <PositionDistributionChart queries={gsc.top_queries ?? []} />
+                <TopQueriesBarChart queries={gsc.top_queries ?? []} devData={topQueriesOverviewDevData} />
+                <PositionDistributionChart queries={gsc.top_queries ?? []} devData={positionDistDevData} />
               </div>
               {urlJoin && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <UrlCoverageDoughnut urlJoin={urlJoin} />
-                  <div className="bg-brand-800 border border-default rounded-xl p-4">
+                  <UrlCoverageDoughnut urlJoin={urlJoin} devData={urlCoverageOverviewDevData} />
+                  <div className="relative group/dev-card bg-brand-800 border border-default rounded-xl p-4">
+                    <DevCopyJsonButton data={insightsDevData} />
                     <h3 className="text-sm font-bold text-foreground mb-3">{sp.coverage.title}</h3>
                     <ul className="space-y-2 text-sm text-muted-foreground">
                       {insights.map((line, i) => (
@@ -363,7 +525,8 @@ export default function SearchPerformance() {
                 </div>
               )}
               {!urlJoin && insights.length > 0 && (
-                <div className="bg-brand-800 border border-default rounded-xl p-4">
+                <div className="relative group/dev-card bg-brand-800 border border-default rounded-xl p-4">
+                  <DevCopyJsonButton data={insightsDevData} />
                   <ul className="space-y-2 text-sm text-muted-foreground">
                     {insights.map((line, i) => (
                       <li key={i}>{line}</li>
@@ -376,8 +539,8 @@ export default function SearchPerformance() {
 
           {activeTab === 'queries' && (
             <div id="gsc-tab-queries" role="tabpanel" aria-labelledby="gsc-tab-btn-queries" className="space-y-4">
-              <TopQueriesBarChart queries={gsc.top_queries ?? []} />
-              <Card padding="none" className="overflow-hidden">
+              <TopQueriesBarChart queries={gsc.top_queries ?? []} devData={topQueriesTabDevData} />
+              <Card padding="none" className="overflow-hidden" devData={queriesTableDevData}>
                 <GoogleTableToolbar
                   searchPlaceholder={sp.queries.searchPlaceholder}
                   search={querySearch}
@@ -403,8 +566,8 @@ export default function SearchPerformance() {
 
           {activeTab === 'pages' && (
             <div id="gsc-tab-pages" role="tabpanel" aria-labelledby="gsc-tab-btn-pages" className="space-y-4">
-              <TopPagesBarChart pages={gsc.top_pages ?? []} />
-              <Card padding="none" className="overflow-hidden">
+              <TopPagesBarChart pages={gsc.top_pages ?? []} devData={topPagesTabDevData} />
+              <Card padding="none" className="overflow-hidden" devData={pagesTableDevData}>
                 <GoogleTableToolbar
                   searchPlaceholder={sp.pages.searchPlaceholder}
                   search={pageSearch}
@@ -436,8 +599,8 @@ export default function SearchPerformance() {
               className="space-y-4"
             >
               <p className="text-xs text-muted-foreground">{sp.opportunities.description}</p>
-              <CtrOpportunityScatter rows={opportunities} />
-              <Card padding="none" className="overflow-hidden">
+              <CtrOpportunityScatter rows={opportunities} devData={scatterDevData} />
+              <Card padding="none" className="overflow-hidden" devData={opportunitiesTableDevData}>
                 <div className="flex justify-end p-4 pb-0">
                   <button
                     type="button"
@@ -470,8 +633,9 @@ export default function SearchPerformance() {
               {urlJoin ? (
                 <>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <UrlCoverageDoughnut urlJoin={urlJoin} />
-                    <div className="grid grid-cols-2 gap-3">
+                    <UrlCoverageDoughnut urlJoin={urlJoin} devData={coverageDoughnutDevData} />
+                    <div className="relative group/dev-card grid grid-cols-2 gap-3">
+                      <DevCopyJsonButton data={coverageStatsDevData} />
                       <StatCard
                         label={sp.urlJoin.matched}
                         value={urlJoin.matched}
@@ -505,6 +669,7 @@ export default function SearchPerformance() {
                       showGsc
                       showCrawl
                       showGa4={false}
+                      devData={gapListsDevData}
                     />
                   ) : (
                     <p className="text-xs text-muted-foreground border border-default/60 rounded-lg px-3 py-2 bg-brand-800/50">

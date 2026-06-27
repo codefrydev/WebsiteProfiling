@@ -55,16 +55,17 @@ function useTopBarChart(
 
 interface TopQueriesBarChartProps {
   queries: GscQueryRow[];
+  devData?: unknown;
 }
 
-export function TopQueriesBarChart({ queries }: TopQueriesBarChartProps) {
+export function TopQueriesBarChart({ queries, devData }: TopQueriesBarChartProps) {
   const sp = strings.views.searchPerformance;
   const chart = useTopBarChart(queries, 'query', 'clicks', sp);
   const opts = useMemo(() => barOptionsHorizontal(sp.charts.axisClicks), [sp]);
 
   if (!chart) {
     return (
-      <ChartCard title={sp.charts.topQueriesTitle} hint={sp.charts.topQueriesHint} ariaLabel={sp.charts.topQueriesAria}>
+      <ChartCard title={sp.charts.topQueriesTitle} hint={sp.charts.topQueriesHint} ariaLabel={sp.charts.topQueriesAria} devData={devData}>
         <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
           {strings.common.notEnoughData}
         </div>
@@ -73,7 +74,7 @@ export function TopQueriesBarChart({ queries }: TopQueriesBarChartProps) {
   }
 
   return (
-    <ChartCard title={sp.charts.topQueriesTitle} hint={sp.charts.topQueriesHint} ariaLabel={sp.charts.topQueriesAria}>
+    <ChartCard title={sp.charts.topQueriesTitle} hint={sp.charts.topQueriesHint} ariaLabel={sp.charts.topQueriesAria} devData={devData}>
       <Bar data={chart.data} options={opts} />
     </ChartCard>
   );
@@ -81,16 +82,17 @@ export function TopQueriesBarChart({ queries }: TopQueriesBarChartProps) {
 
 interface TopPagesBarChartProps {
   pages: GscPageRow[];
+  devData?: unknown;
 }
 
-export function TopPagesBarChart({ pages }: TopPagesBarChartProps) {
+export function TopPagesBarChart({ pages, devData }: TopPagesBarChartProps) {
   const sp = strings.views.searchPerformance;
   const chart = useTopBarChart(pages, 'page', 'clicks', sp);
   const opts = useMemo(() => barOptionsHorizontal(sp.charts.axisClicks), [sp]);
 
   if (!chart) {
     return (
-      <ChartCard title={sp.charts.topPagesTitle} hint={sp.charts.topPagesHint} ariaLabel={sp.charts.topPagesAria}>
+      <ChartCard title={sp.charts.topPagesTitle} hint={sp.charts.topPagesHint} ariaLabel={sp.charts.topPagesAria} devData={devData}>
         <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
           {strings.common.notEnoughData}
         </div>
@@ -99,7 +101,7 @@ export function TopPagesBarChart({ pages }: TopPagesBarChartProps) {
   }
 
   return (
-    <ChartCard title={sp.charts.topPagesTitle} hint={sp.charts.topPagesHint} ariaLabel={sp.charts.topPagesAria}>
+    <ChartCard title={sp.charts.topPagesTitle} hint={sp.charts.topPagesHint} ariaLabel={sp.charts.topPagesAria} devData={devData}>
       <Bar data={chart.data} options={opts} />
     </ChartCard>
   );
@@ -107,9 +109,10 @@ export function TopPagesBarChart({ pages }: TopPagesBarChartProps) {
 
 interface PositionDistributionChartProps {
   queries: GscQueryRow[];
+  devData?: unknown;
 }
 
-export function PositionDistributionChart({ queries }: PositionDistributionChartProps) {
+export function PositionDistributionChart({ queries, devData }: PositionDistributionChartProps) {
   const sp = strings.views.searchPerformance;
   const chart = useMemo(() => {
     const buckets = buildPositionBuckets(queries);
@@ -149,7 +152,7 @@ export function PositionDistributionChart({ queries }: PositionDistributionChart
 
   if (!chart) {
     return (
-      <ChartCard title={sp.charts.positionTitle} hint={sp.charts.positionHint} ariaLabel={sp.charts.positionAria}>
+      <ChartCard title={sp.charts.positionTitle} hint={sp.charts.positionHint} ariaLabel={sp.charts.positionAria} devData={devData}>
         <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
           {strings.common.notEnoughData}
         </div>
@@ -158,7 +161,7 @@ export function PositionDistributionChart({ queries }: PositionDistributionChart
   }
 
   return (
-    <ChartCard title={sp.charts.positionTitle} hint={sp.charts.positionHint} ariaLabel={sp.charts.positionAria}>
+    <ChartCard title={sp.charts.positionTitle} hint={sp.charts.positionHint} ariaLabel={sp.charts.positionAria} devData={devData}>
       <Bar data={chart.data} options={opts} />
     </ChartCard>
   );
@@ -168,9 +171,10 @@ export { default as UrlCoverageDoughnut } from '../google/UrlCoverageDoughnut';
 
 interface GscDailyTrendChartProps {
   daily: GscDailyRow[];
+  devData?: unknown;
 }
 
-export function GscDailyTrendChart({ daily }: GscDailyTrendChartProps) {
+export function GscDailyTrendChart({ daily, devData }: GscDailyTrendChartProps) {
   const sp = strings.views.searchPerformance;
   const series = [
     { key: 'clicks', label: sp.charts.axisClicks },
@@ -183,6 +187,7 @@ export function GscDailyTrendChart({ daily }: GscDailyTrendChartProps) {
       hint={sp.charts.dailyHint}
       ariaLabel={sp.charts.dailyAria}
       heightClass="h-64"
+      devData={devData}
     >
       <GoogleTimeSeriesChart rows={daily} xKey="date" series={series} dualAxis />
     </ChartCard>
@@ -191,9 +196,10 @@ export function GscDailyTrendChart({ daily }: GscDailyTrendChartProps) {
 
 interface CtrOpportunityScatterProps {
   rows: GscQueryRow[];
+  devData?: unknown;
 }
 
-export function CtrOpportunityScatter({ rows }: CtrOpportunityScatterProps) {
+export function CtrOpportunityScatter({ rows, devData }: CtrOpportunityScatterProps) {
   const sp = strings.views.searchPerformance;
   const chart = useMemo(() => {
     const source = (rows || []).slice(0, SCATTER_MAX);
@@ -260,7 +266,7 @@ export function CtrOpportunityScatter({ rows }: CtrOpportunityScatterProps) {
 
   if (!chart) {
     return (
-      <ChartCard title={sp.charts.scatterTitle} hint={sp.charts.scatterHint} ariaLabel={sp.charts.scatterAria} heightClass="h-64">
+      <ChartCard title={sp.charts.scatterTitle} hint={sp.charts.scatterHint} ariaLabel={sp.charts.scatterAria} heightClass="h-64" devData={devData}>
         <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
           {strings.common.notEnoughData}
         </div>
@@ -269,7 +275,7 @@ export function CtrOpportunityScatter({ rows }: CtrOpportunityScatterProps) {
   }
 
   return (
-    <ChartCard title={sp.charts.scatterTitle} hint={sp.charts.scatterHint} ariaLabel={sp.charts.scatterAria} heightClass="h-64">
+    <ChartCard title={sp.charts.scatterTitle} hint={sp.charts.scatterHint} ariaLabel={sp.charts.scatterAria} heightClass="h-64" devData={devData}>
       <Scatter data={chart} options={opts} />
     </ChartCard>
   );
