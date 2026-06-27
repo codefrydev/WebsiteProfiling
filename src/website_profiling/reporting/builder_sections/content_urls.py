@@ -9,10 +9,10 @@ from typing import Any
 
 import pandas as pd
 
+from ..categories._helpers import THIN_CONTENT_CHARS
 from ..seo_summary import (
     META_DESC_LEN_MAX,
     META_DESC_LEN_MIN,
-    THIN_CONTENT_CHARS,
     TITLE_LEN_MAX,
     TITLE_LEN_MIN,
 )

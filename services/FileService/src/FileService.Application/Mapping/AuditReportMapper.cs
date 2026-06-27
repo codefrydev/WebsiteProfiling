@@ -296,19 +296,8 @@ public static class AuditReportMapper
         {
             return (int)Math.Round(overall.GetDouble());
         }
-        if (!payload.TryGetProperty("categories", out var categories) || categories.ValueKind != JsonValueKind.Array)
-        {
-            return null;
-        }
-        var scores = new List<double>();
-        foreach (var cat in categories.EnumerateArray())
-        {
-            if (cat.TryGetProperty("score", out var scoreEl) && scoreEl.ValueKind == JsonValueKind.Number)
-            {
-                scores.Add(scoreEl.GetDouble());
-            }
-        }
-        return scores.Count == 0 ? null : (int)Math.Round(scores.Average());
+
+        return SiteHealthScoreBuilder.ResolveFromPayload(payload);
     }
 
     private static string ScoreBand(int? score) => score switch

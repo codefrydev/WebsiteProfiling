@@ -35,54 +35,6 @@ public static class SecurityCategoryBuilder
             deductions.Add((20, true));
         }
 
-        var success = CategoryHelpers.SuccessRows(rows);
-        if (success.Count > 0)
-        {
-            var missingHsts = success.Count(r => string.IsNullOrWhiteSpace(r.StrictTransportSecurity));
-            if (missingHsts >= success.Count * 0.5)
-            {
-                issues.Add(CategoryHelpers.Issue(
-                    "Strict-Transport-Security header not set.",
-                    "",
-                    "High",
-                    "Add Strict-Transport-Security to enforce HTTPS."));
-                deductions.Add((15, true));
-            }
-
-            var missingXcto = success.Count(r => string.IsNullOrWhiteSpace(r.XContentTypeOptions));
-            if (missingXcto >= success.Count * 0.5)
-            {
-                issues.Add(CategoryHelpers.Issue(
-                    "X-Content-Type-Options header not set.",
-                    "",
-                    "Medium",
-                    "Add X-Content-Type-Options: nosniff."));
-                deductions.Add((5, true));
-            }
-
-            var missingXfo = success.Count(r => string.IsNullOrWhiteSpace(r.XFrameOptions));
-            if (missingXfo >= success.Count * 0.5)
-            {
-                issues.Add(CategoryHelpers.Issue(
-                    "X-Frame-Options header not set.",
-                    "",
-                    "Medium",
-                    "Add X-Frame-Options: DENY or SAMEORIGIN."));
-                deductions.Add((5, true));
-            }
-
-            var mixed = success.Sum(r => r.MixedContentCount ?? 0);
-            if (mixed > 0 && startUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-            {
-                issues.Add(CategoryHelpers.Issue(
-                    $"Mixed content: {mixed} HTTP resource(s) on HTTPS pages.",
-                    "",
-                    "High",
-                    "Load all resources over HTTPS to avoid mixed content."));
-                deductions.Add((15, true));
-            }
-        }
-
         if (securityFindings is not null)
         {
             foreach (var finding in securityFindings)

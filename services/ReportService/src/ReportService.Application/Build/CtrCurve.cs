@@ -21,8 +21,22 @@ public static class CtrCurve
 
     public static double IndustryCtrFraction(double position)
     {
-        var slot = position > 0 ? Math.Max(1, (int)Math.Ceiling(position)) : 1;
-        return Curve.GetValueOrDefault(slot, DefaultFraction);
+        if (position <= 0)
+        {
+            return Curve.GetValueOrDefault(1, DefaultFraction);
+        }
+
+        var lower = Math.Max(1, (int)Math.Floor(position));
+        var upper = Math.Max(1, (int)Math.Ceiling(position));
+        if (lower == upper || Math.Abs(position - lower) < 1e-9)
+        {
+            return Curve.GetValueOrDefault(lower, DefaultFraction);
+        }
+
+        var lowerCtr = Curve.GetValueOrDefault(lower, DefaultFraction);
+        var upperCtr = Curve.GetValueOrDefault(upper, DefaultFraction);
+        var weight = position - lower;
+        return lowerCtr + (upperCtr - lowerCtr) * weight;
     }
 
     public static double IndustryCtrPercent(double position) =>

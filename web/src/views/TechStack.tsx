@@ -43,11 +43,11 @@ const barValueLabelsPlugin = {
 };
 
 const TECH_CATEGORIES: Record<string, string[]> = {
-  CMS: ['WordPress', 'Drupal', 'Joomla', 'Shopify', 'Squarespace', 'Wix'],
+  CMS: ['WordPress', 'Drupal', 'Joomla', 'Hugo', 'Jekyll', 'Shopify', 'Squarespace', 'Wix'],
   'JS Frameworks': ['React', 'Next.js', 'Vue.js', 'Nuxt.js', 'Angular', 'Svelte', 'Gatsby', 'jQuery'],
   'CSS Frameworks': ['Bootstrap', 'Tailwind CSS'],
-  Analytics: ['Google Analytics', 'Google Tag Manager', 'Facebook Pixel', 'Hotjar'],
-  Infrastructure: ['Cloudflare', 'Nginx', 'Apache', 'LiteSpeed', 'Vercel', 'Netlify', 'Amazon CloudFront', 'AWS'],
+  Analytics: ['Google Analytics', 'Google Tag Manager', 'Facebook Pixel', 'Hotjar', 'Microsoft Clarity'],
+  Infrastructure: ['Cloudflare', 'Nginx', 'Apache', 'LiteSpeed', 'Vercel', 'Netlify', 'GitHub Pages', 'Amazon CloudFront', 'AWS'],
   Fonts: ['Google Fonts', 'Font Awesome'],
 };
 
@@ -103,6 +103,12 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
   }
 
   const totalAnalyzed = ts.total_pages_analyzed || 0;
+  const emptyMessage =
+    (ts.technologies || []).length > 0
+      ? vr.noSearchMatch
+      : totalAnalyzed > 0
+        ? vr.noTechnologiesDetected
+        : vr.noData;
   const chartLabels = techs.map((t) => t.name);
   const chartValues = techs.map((t) => t.count);
 
@@ -171,7 +177,7 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
               ) : (ts.technologies || []).length > 0 ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{vr.noSearchMatch}</div>
               ) : (
-                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{vr.noData}</div>
+                <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{emptyMessage}</div>
               )}
             </div>
           </Card>
@@ -211,7 +217,7 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
             </Card>
           ) : (
             <Card className="p-8 text-center text-muted-foreground text-sm">
-              {(ts.technologies || []).length > 0 ? vr.noSearchMatch : vr.noData}
+              {techs.length === 0 ? emptyMessage : vr.noSearchMatch}
             </Card>
           )}
         </ViewTabPanel>

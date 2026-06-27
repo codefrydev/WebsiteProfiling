@@ -160,8 +160,16 @@ def opportunity_clicks(impressions: int, current_pos: float, target_pos: int = 3
 
 
 def industry_ctr(pos: float) -> float:
-    pos_slot = max(1, math.ceil(pos)) if pos > 0 else 1
-    return CTR_CURVE.get(pos_slot, CTR_CURVE_DEFAULT)
+    if pos <= 0:
+        return CTR_CURVE.get(1, CTR_CURVE_DEFAULT)
+    lower = max(1, math.floor(pos))
+    upper = max(1, math.ceil(pos))
+    if lower == upper or abs(pos - lower) < 1e-9:
+        return CTR_CURVE.get(lower, CTR_CURVE_DEFAULT)
+    lower_ctr = CTR_CURVE.get(lower, CTR_CURVE_DEFAULT)
+    upper_ctr = CTR_CURVE.get(upper, CTR_CURVE_DEFAULT)
+    weight = pos - lower
+    return lower_ctr + (upper_ctr - lower_ctr) * weight
 
 
 # ── Cannibalisation ───────────────────────────────────────────────────────────

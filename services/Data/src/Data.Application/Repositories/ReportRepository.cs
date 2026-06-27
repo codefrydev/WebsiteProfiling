@@ -8,6 +8,7 @@ using Data.Application.Report;
 using Data.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using WebsiteProfiling.Contracts.Report;
 
 namespace Data.Application.Repositories;
 
@@ -213,25 +214,15 @@ public sealed class ReportRepository(DataDbContext db, ILogger<ReportRepository>
             CanonicalDomain = row.CanonicalDomain,
             SiteName = row.SiteName,
             GeneratedAt = PyIso.Format(row.GeneratedAt),
-            HealthScore = AvgScore(categories),
+            HealthScore = data.ValueKind == JsonValueKind.Object
+                ? SiteHealthScoreBuilder.ResolveFromPayload(data)
+                : null,
             CategoryScores = categoryScores,
             IssueCounts = issueCounts,
             PerfScore = LhScore(data, "performance_score", "performance"),
             SeoScore = LhScore(data, "seo_score", "seo"),
             TechnicalSeoScore = TechSeoScore(categories),
         };
-    }
-
-    // round(sum/len) with banker's rounding — mirrors Python's builtin round().
-    private static int? AvgScore(JsonElement categories)
-    {
-        if (categories.ValueKind != JsonValueKind.Array) return null;
-        var nums = new List<double>();
-        foreach (var cat in categories.EnumerateArray())
-            if (cat.TryGetProperty("score", out var s) && s.ValueKind == JsonValueKind.Number)
-                nums.Add(s.GetDouble());
-        if (nums.Count == 0) return null;
-        return (int)Math.Round(nums.Sum() / nums.Count, MidpointRounding.ToEven);
     }
 
     // Mirrors _lh_scores: try median_metrics.{mmKey} first (non-zero), then category_scores.{csKey}.

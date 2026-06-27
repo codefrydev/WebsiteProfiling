@@ -39,7 +39,6 @@ import {
   Sparkles,
   Link2,
   LayoutDashboard,
-  BarChart2 as BarChart2Icon,
 } from 'lucide-react';
 import { useReport } from '../context/useReport';
 import { strings, format } from '../lib/strings';
@@ -282,7 +281,7 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
     {
       id: 'analytics',
       label: vca.tabs.analytics,
-      icon: <BarChart2Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />,
+      icon: <BarChart2 className="h-3.5 w-3.5 shrink-0" aria-hidden />,
     },
   ], [vca.tabs]);
 

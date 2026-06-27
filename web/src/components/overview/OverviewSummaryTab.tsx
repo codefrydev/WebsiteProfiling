@@ -62,7 +62,7 @@ export function OverviewSummaryTab({
       .filter((iss) => iss.priority === 'Critical' || iss.priority === 'High')
       .slice(0, 3);
     return { currentHealth: health, topIssues: exec.length > 0 ? exec : fallback };
-  }, [data.categories, data.executive_summary]);
+  }, [data]);
 
   const googleData = data.google;
   const googleSnap = googleSnapshotStatus(googleData);

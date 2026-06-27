@@ -1,7 +1,9 @@
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using AiService.Tools.Context;
 
 using AiService.Tools.Persistence;
+using WebsiteProfiling.Contracts.Report;
 namespace AiService.Tools.Handlers.Report;
 
 /// <summary>
@@ -363,44 +365,8 @@ public static class ReportToolHandlers
 
     private static int? HealthScore(JsonObject payload)
     {
-        if (payload["site_health_score"] is JsonValue topLevel
-            && topLevel.TryGetValue(out int topScore))
-        {
-            return topScore;
-        }
-
-        if (payload["summary"] is JsonObject summary
-            && summary["site_health_score"] is JsonValue summaryScore
-            && summaryScore.TryGetValue(out int fromSummary))
-        {
-            return fromSummary;
-        }
-
-        if (payload["categories"] is not JsonArray categories)
-        {
-            return null;
-        }
-
-        var scores = new List<double>();
-        foreach (var catNode in categories)
-        {
-            if (catNode is not JsonObject cat)
-            {
-                continue;
-            }
-
-            if (cat["score"] is JsonValue scoreValue && scoreValue.TryGetValue(out double score))
-            {
-                scores.Add(score);
-            }
-        }
-
-        if (scores.Count == 0)
-        {
-            return null;
-        }
-
-        return (int)Math.Round(scores.Average(), MidpointRounding.AwayFromZero);
+        var element = JsonSerializer.SerializeToElement(payload);
+        return SiteHealthScoreBuilder.ResolveFromPayload(element);
     }
 
     private static string CategoryDisplayName(string name)

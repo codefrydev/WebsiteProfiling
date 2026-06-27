@@ -91,7 +91,7 @@ public static class HtmlAccessibilityCategoryBuilder
             if (veryThin > 0)
             {
                 issues.Add(CategoryHelpers.Issue(
-                    $"{veryThin} page(s) with very thin content (under 100 words).",
+                    $"{veryThin} page(s) with very thin content (under 100 words; SEO thin flag uses 200 words).",
                     priority: "High",
                     recommendation: "Expand thin pages with meaningful content (aim for 300+ words)."));
                 deductions.Add((Math.Min(15, veryThin * 3), true));
@@ -132,11 +132,6 @@ public static class HtmlAccessibilityCategoryBuilder
         }
 
         var score = CategoryHelpers.ScoreDeductions(100, deductions);
-        if (success.Count > 0 && score == 0)
-        {
-            score = 5;
-        }
-
         score = Math.Min(100, Math.Max(0, score));
         var sorted = CategoryHelpers.SortIssues(issues);
         return new ReportCategory(
@@ -227,7 +222,10 @@ public static class HtmlAccessibilityCategoryBuilder
                         url,
                         "Medium",
                         rec ?? "Fix text/background contrast to meet WCAG AA (axe-core)."));
-                    break;
+                    if (issues.Count(i => i.Message.StartsWith("axe:", StringComparison.Ordinal)) >= CategoryHelpers.MaxIssuesPerCheck)
+                    {
+                        break;
+                    }
                 }
             }
             catch (JsonException)

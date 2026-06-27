@@ -18,7 +18,7 @@ from ..config import get_bool, get_int
 from ..ai_service_client import cluster_keywords_llm, run_llm_enrichment
 from ..llm_config import load_llm_config_from_db, llm_is_enabled
 from ..security_scanner import run_security_scan
-from ..scoring import round_half_up
+from ..scoring import round_half_up, site_health_score_from_payload
 from .categories import build_categories
 from .content_analytics import (
     _build_content_analytics,
@@ -48,10 +48,10 @@ from .report_metadata import (
     _parse_page_analysis_cell,
     _validate_report_url_counts,
 )
+from .categories._helpers import THIN_CONTENT_CHARS
 from .seo_summary import (
     META_DESC_LEN_MAX,
     META_DESC_LEN_MIN,
-    THIN_CONTENT_CHARS,
     TITLE_LEN_MAX,
     TITLE_LEN_MIN,
     _compute_summary_seo_issues,
@@ -712,14 +712,7 @@ def run_simple_report(
             from ..tools.audit_tools.context import AuditToolContext
 
             portfolio = get_portfolio_summary(conn, AuditToolContext(property_id=property_id), {})
-            scores = []
-            for c in report_data.get("categories") or []:
-                try:
-                    if c.get("score") is not None:
-                        scores.append(int(float(c.get("score"))))
-                except (TypeError, ValueError):
-                    continue
-            prop_health = round_half_up(sum(scores) / len(scores)) if scores else None
+            prop_health = site_health_score_from_payload(report_data)
             prop_count = int(portfolio.get("count") or 0)
             median = portfolio.get("median_health_score")
             bench: dict[str, Any] = {

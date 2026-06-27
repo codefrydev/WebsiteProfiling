@@ -58,8 +58,8 @@ public sealed class CategoryBuilderParityTests
         Assert.Equal(94, byId["html_accessibility"].Score);
         // Python: one broken (-2) + one redirect (-1)
         Assert.Equal(97, byId["link_health"].Score);
-        // Python: all success rows missing HSTS/XCTO/XFO when header columns absent (-25)
-        Assert.Equal(75, byId["security"].Score);
+        // Security header deductions come from passive findings only (not inline header checks).
+        Assert.Equal(100, byId["security"].Score);
         Assert.Equal(100, byId["intelligence"].Score);
     }
 

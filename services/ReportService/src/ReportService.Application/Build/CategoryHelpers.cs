@@ -255,7 +255,72 @@ public static partial class CategoryHelpers
             }
         }
 
+        var sitemapUrls = ExtractSitemapUrls(indexation);
+        if (sitemapUrls.Count > 0)
+        {
+            var sitemapNorm = new HashSet<string>(
+                sitemapUrls.Select(UrlNormalizeHelper.NormalizeUrl).Where(u => u.Length > 0),
+                StringComparer.Ordinal);
+            var noindexCount = 0;
+            foreach (var row in SuccessRows(rows))
+            {
+                if (noindexCount >= 15)
+                {
+                    break;
+                }
+
+                if (row.Noindex != true)
+                {
+                    continue;
+                }
+
+                var url = row.Url.Trim();
+                if (string.IsNullOrEmpty(url))
+                {
+                    continue;
+                }
+
+                if (!sitemapNorm.Contains(UrlNormalizeHelper.NormalizeUrl(url)))
+                {
+                    continue;
+                }
+
+                issues.Add(Issue(
+                    "Page has noindex but is listed in XML sitemap.",
+                    url,
+                    "Critical",
+                    "Remove the URL from the sitemap or remove noindex if the page should be indexed."));
+                noindexCount++;
+            }
+        }
+
         return issues;
+    }
+
+    private static List<string> ExtractSitemapUrls(IReadOnlyDictionary<string, object?> indexation)
+    {
+        if (!indexation.TryGetValue("sitemap_urls", out var urlsObj) || urlsObj is null)
+        {
+            return [];
+        }
+
+        if (urlsObj is JsonElement el && el.ValueKind == JsonValueKind.Array)
+        {
+            return el.EnumerateArray()
+                .Select(u => u.GetString()?.Trim() ?? "")
+                .Where(u => u.Length > 0)
+                .ToList();
+        }
+
+        if (urlsObj is IEnumerable<object?> list)
+        {
+            return list
+                .Select(u => u?.ToString()?.Trim() ?? "")
+                .Where(u => u.Length > 0)
+                .ToList();
+        }
+
+        return [];
     }
 
     public static void MergeIssuesIntoCategory(

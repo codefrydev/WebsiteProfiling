@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { DATASETS, datasetById, datasetsByGroup } from '@/lib/dashboard/engine/datasets';
 import { SECTION_KEYS } from '@/lib/reportSections';
 import { measureLabel } from '@/lib/dashboard/engine/runQuery';
-import type { ReportPayload } from '@/types/report';
+import type { ReportCategory, ReportPayload } from '@/types/report';
 
 /** A payload that touches every section a dataset reads from. (Cast: real link
  *  rows carry more fields than the partial ReportLink interface declares.) */
@@ -97,6 +97,25 @@ describe('dataset registry integrity', () => {
     expect(datasetById.get('summary')!.accessor(PAYLOAD)[0].health_score).toBe(72);
     // links accessor derives host/path
     expect(datasetById.get('links')!.accessor(PAYLOAD)[0].host).toBe('x.com');
+  });
+
+  it('summary health_score falls back to weighted categories when payload field missing', () => {
+    const weightedCategories: ReportCategory[] = [
+      { id: 'technical_seo', name: 'Technical SEO', score: 80, issues: [] },
+      { id: 'link_health', name: 'Link Health', score: 60, issues: [] },
+      { id: 'performance', name: 'Performance', score: 70, issues: [] },
+      { id: 'security', name: 'Security', score: 90, issues: [] },
+      { id: 'core_web_vitals', name: 'CWV', score: 50, issues: [] },
+      { id: 'mobile', name: 'Mobile', score: 40, issues: [] },
+      { id: 'html_accessibility', name: 'A11y', score: 100, issues: [] },
+      { id: 'search_performance', name: 'Search', score: 10, issues: [] },
+      { id: 'intelligence', name: 'Intel', score: 0, issues: [] },
+    ];
+    const legacyPayload = {
+      portfolio_benchmark: { property_health_score: 78 },
+      categories: weightedCategories,
+    } as unknown as ReportPayload;
+    expect(datasetById.get('summary')!.accessor(legacyPayload)[0].health_score).toBe(70);
   });
 
   it('measureLabel falls back to agg(field)', () => {

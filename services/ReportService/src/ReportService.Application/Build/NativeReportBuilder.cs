@@ -100,6 +100,12 @@ public sealed class NativeReportBuilder(
         siteLevel = MergeSiteLevelConfig(siteLevel, config);
         var runSecurityScan = ParseBool(config, "run_security_scan", defaultValue: true);
         var securityFindings = SecurityScanBuilder.BuildPassive(rows, startUrl, runSecurityScan);
+        Dictionary<string, object?>? cruxSummary = null;
+        if (ParseBool(config, "enable_crux", defaultValue: false) && !string.IsNullOrWhiteSpace(startUrl))
+        {
+            cruxSummary = await CruxOriginMetricsFetcher.FetchAsync(httpClientFactory, startUrl, cancellationToken);
+        }
+
         var categories = categoryBuilder.BuildCategories(
             rows,
             edges,
@@ -107,7 +113,7 @@ public sealed class NativeReportBuilder(
             siteLevel,
             startUrl,
             lighthouseSummary,
-            cruxSummary: null,
+            cruxSummary: cruxSummary,
             lighthouseByUrl: lhByUrl,
             mlBundle: mlBundle,
             securityFindings: securityFindings);
@@ -233,6 +239,7 @@ public sealed class NativeReportBuilder(
             competitorGap,
             securityFindings,
             lighthouseSummary,
+            CruxSummary: cruxSummary,
             ContactIntelligence: contactIntelligence,
             ImageInventory: imageInventory,
             ImageInventorySummary: imageInventorySummary,
@@ -475,6 +482,7 @@ public sealed record NativeReportSlice(
     Dictionary<string, object?>? CompetitorLinkGap = null,
     List<Dictionary<string, object?>>? SecurityFindings = null,
     Dictionary<string, object?>? LighthouseSummary = null,
+    Dictionary<string, object?>? CruxSummary = null,
     Dictionary<string, object?>? ContactIntelligence = null,
     List<Dictionary<string, object?>>? ImageInventory = null,
     Dictionary<string, object?>? ImageInventorySummary = null,

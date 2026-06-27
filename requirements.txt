@@ -4,6 +4,7 @@ lxml==6.1.1
 pandas==3.0.3
 tqdm==4.67.3
 networkx==3.6.1
+setuptools>=75.0.0
 python-Wappalyzer==0.3.1
 
 # HTML → Markdown extraction (page_markdown package)

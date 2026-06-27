@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 from psycopg import Connection
 
-from ..scoring import round_half_up
+from ..scoring import round_half_up, site_health_score_from_payload
 from ._common import _json_val, _now_iso, _parse_row_json, _row_field
 from .crawl_store import get_crawl_run_info
 
@@ -44,13 +44,8 @@ def _write_audit_health_snapshot(
     report_data: dict[str, Any],
 ) -> None:
     """Persist health score row for portfolio sparklines and alerts."""
+    health_score = site_health_score_from_payload(report_data)
     categories = report_data.get("categories") or []
-    scores = [
-        float(c.get("score"))
-        for c in categories
-        if isinstance(c, dict) and isinstance(c.get("score"), (int, float))
-    ]
-    health_score = round_half_up(sum(scores) / len(scores)) if scores else None
     category_scores: dict[str, float] = {}
     issue_counts = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0}
     for cat in categories:

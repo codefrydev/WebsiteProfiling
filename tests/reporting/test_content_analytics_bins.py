@@ -21,6 +21,6 @@ def test_content_ratio_distribution_has_no_bin_gaps() -> None:
 
     assert sum(dist.values()) == 4
     assert dist["<10%"] == 0
-    assert dist["10-20%"] == 2
-    assert dist["20-40%"] == 1
+    assert dist["10-20%"] == 3
+    assert dist["20-40%"] == 0
     assert dist[">40%"] == 1

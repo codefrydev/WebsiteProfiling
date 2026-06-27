@@ -130,17 +130,21 @@ def contrast_issues_from_sources(
             if not contrast_hits:
                 continue
             seen_urls.add(url.rstrip("/"))
-            first = contrast_hits[0]
-            msg = str(first.get("description") or first.get("help") or "Color contrast violation")
-            issues.append(_issue(
-                f"axe: {msg}",
-                url=url,
-                priority="Medium",
-                recommendation=str(
-                    first.get("help")
-                    or "Fix text/background contrast to meet WCAG AA (axe-core)."
-                ),
-            ))
+            for violation in contrast_hits:
+                msg = str(violation.get("description") or violation.get("help") or "Color contrast violation")
+                issues.append(_issue(
+                    f"axe: {msg}",
+                    url=url,
+                    priority="Medium",
+                    recommendation=str(
+                        violation.get("help")
+                        or "Fix text/background contrast to meet WCAG AA (axe-core)."
+                    ),
+                ))
+                if len(issues) >= 40:
+                    break
+            if len(issues) >= 40:
+                break
 
     issues.extend(
         lighthouse_accessibility_issues_from_sources(
@@ -223,7 +227,7 @@ def category_html_accessibility(
         very_thin = int(((wc > 0) & (wc < 100)).sum())
         if very_thin > 0:
             issues.append(_issue(
-                f"{very_thin} page(s) with very thin content (under 100 words).",
+                f"{very_thin} page(s) with very thin content (under 100 words; SEO thin flag uses 200 words).",
                 priority="High",
                 recommendation="Expand thin pages with meaningful content (aim for 300+ words).",
             ))
@@ -255,8 +259,6 @@ def category_html_accessibility(
         ))
 
     score = _score_deductions(100, deductions)
-    if len(success_df) > 0 and score == 0:
-        score = 5
     score = min(100, max(0, score))
     return {
         "id": "html_accessibility",

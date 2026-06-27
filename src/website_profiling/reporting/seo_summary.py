@@ -3,12 +3,13 @@ from __future__ import annotations
 
 import pandas as pd
 
+from .thin_content_helper import THIN_CONTENT_WORDS, count_thin_rows, is_thin_row, thin_content_message
+
 # SEO thresholds for recommendations
 TITLE_LEN_MIN = 30
 TITLE_LEN_MAX = 60
 META_DESC_LEN_MIN = 70
 META_DESC_LEN_MAX = 160
-THIN_CONTENT_CHARS = 300
 
 
 def _status_text(value: object) -> str:
@@ -40,15 +41,17 @@ def _compute_summary_seo_issues(df: pd.DataFrame) -> dict:
     count_error = int((status_str.isin(["error", "blocked_by_robots"])).sum())
     success_rate = round(100 * count_2xx / total, 1) if total else 0
 
+    success_df = df[status_str.str.match(r"2\d{2}", na=False)] if "status" in df.columns else pd.DataFrame()
+
     outlinks = (
-        pd.to_numeric(df["outlinks"], errors="coerce").fillna(0).astype(int)
-        if "outlinks" in df.columns
-        else pd.Series([0] * len(df))
+        pd.to_numeric(success_df["outlinks"], errors="coerce").fillna(0).astype(int)
+        if "outlinks" in success_df.columns and len(success_df) > 0
+        else pd.Series([0] * len(success_df), dtype=int)
     )
     title_len = (
-        df["title"].fillna("").astype(str).apply(len)
-        if "title" in df.columns
-        else pd.Series([0] * len(df))
+        success_df["title"].fillna("").astype(str).apply(len)
+        if "title" in success_df.columns and len(success_df) > 0
+        else pd.Series([], dtype=int)
     )
     crawl_time_s = float(df["crawl_time_s"].iloc[0]) if "crawl_time_s" in df.columns and len(df) else None
 
@@ -60,33 +63,32 @@ def _compute_summary_seo_issues(df: pd.DataFrame) -> dict:
         "count_5xx": count_5xx,
         "count_error": count_error,
         "success_rate": success_rate,
-        "avg_outlinks": round(float(outlinks.mean()), 1) if total else 0,
-        "avg_title_len": round(float(title_len.mean()), 1) if total else 0,
+        "avg_outlinks": round(float(outlinks.mean()), 1) if len(outlinks) else 0,
+        "avg_title_len": round(float(title_len.mean()), 1) if len(title_len) else 0,
         "crawl_time_s": round(crawl_time_s, 1) if crawl_time_s is not None else None,
     }
 
-    # SEO health (when columns exist)
+    # SEO health counts only on successful (2xx) pages
     seo_health = {}
-    if "title" in df.columns:
-        titles = df["title"].fillna("").astype(str)
+    if "title" in df.columns and len(success_df) > 0:
+        titles = success_df["title"].fillna("").astype(str)
         seo_health["missing_title"] = int((titles.str.len() == 0).sum())
         seo_health["title_short"] = int(((title_len > 0) & (title_len < TITLE_LEN_MIN)).sum())
         seo_health["title_long"] = int((title_len > TITLE_LEN_MAX).sum())
         seo_health["title_ok"] = int(((title_len >= TITLE_LEN_MIN) & (title_len <= TITLE_LEN_MAX)).sum())
-    if "meta_description_len" in df.columns:
-        md_len = pd.to_numeric(df["meta_description_len"], errors="coerce").fillna(0).astype(int)
+    if "meta_description_len" in df.columns and len(success_df) > 0:
+        md_len = pd.to_numeric(success_df["meta_description_len"], errors="coerce").fillna(0).astype(int)
         seo_health["missing_meta_desc"] = int((md_len == 0).sum())
         seo_health["meta_desc_short"] = int(((md_len > 0) & (md_len < META_DESC_LEN_MIN)).sum())
         seo_health["meta_desc_long"] = int((md_len > META_DESC_LEN_MAX).sum())
         seo_health["meta_desc_ok"] = int(((md_len >= META_DESC_LEN_MIN) & (md_len <= META_DESC_LEN_MAX)).sum())
-    if "h1_count" in df.columns:
-        h1c = pd.to_numeric(df["h1_count"], errors="coerce").fillna(-1).astype(int)
+    if "h1_count" in df.columns and len(success_df) > 0:
+        h1c = pd.to_numeric(success_df["h1_count"], errors="coerce").fillna(-1).astype(int)
         seo_health["h1_zero"] = int((h1c == 0).sum())
         seo_health["h1_one"] = int((h1c == 1).sum())
         seo_health["h1_multi"] = int((h1c > 1).sum())
-    if "content_length" in df.columns:
-        cl = pd.to_numeric(df["content_length"], errors="coerce").fillna(0).astype(int)
-        seo_health["thin_content"] = int(((cl > 0) & (cl < THIN_CONTENT_CHARS)).sum())
+    if ("word_count" in df.columns or "content_length" in df.columns) and len(success_df) > 0:
+        seo_health["thin_content"] = count_thin_rows(success_df, success_only=False)
 
     # Issues: broken, redirects, SEO
     issues = {"broken": [], "redirects": [], "seo": []}
@@ -103,7 +105,7 @@ def _compute_summary_seo_issues(df: pd.DataFrame) -> dict:
             issues["redirects"].append({"url": u, "status": st, "final_url": str(final) if pd.notna(final) else ""})
 
     if "title" in df.columns:
-        for _, row in df.iterrows():
+        for _, row in success_df.iterrows():
             u = row.get("url")
             if pd.isna(u):
                 continue
@@ -117,7 +119,7 @@ def _compute_summary_seo_issues(df: pd.DataFrame) -> dict:
             elif tl > TITLE_LEN_MAX:
                 issues["seo"].append({"type": "title_long", "url": u, "message": f"Title too long ({tl} chars)"})
     if "meta_description_len" in df.columns:
-        for _, row in df.iterrows():
+        for _, row in success_df.iterrows():
             md_len = pd.to_numeric(row.get("meta_description_len"), errors="coerce")
             if pd.isna(md_len) or md_len == 0:
                 continue
@@ -131,7 +133,7 @@ def _compute_summary_seo_issues(df: pd.DataFrame) -> dict:
             elif ml > META_DESC_LEN_MAX:
                 issues["seo"].append({"type": "meta_desc_long", "url": u, "message": f"Meta description too long ({ml} chars)"})
     if "h1_count" in df.columns:
-        for _, row in df.iterrows():
+        for _, row in success_df.iterrows():
             h1c = pd.to_numeric(row.get("h1_count"), errors="coerce")
             if pd.isna(h1c) or h1c == 1:
                 continue
@@ -143,16 +145,18 @@ def _compute_summary_seo_issues(df: pd.DataFrame) -> dict:
                 issues["seo"].append({"type": "h1_missing", "url": u, "message": "Missing H1"})
             else:
                 issues["seo"].append({"type": "h1_multi", "url": u, "message": f"Multiple H1s ({int(h1c)})"})
-    if "content_length" in df.columns:
-        for _, row in df.iterrows():
-            cl = pd.to_numeric(row.get("content_length"), errors="coerce")
-            cl = 0 if pd.isna(cl) else int(cl)
-            if cl >= THIN_CONTENT_CHARS or cl == 0:
+    if "word_count" in df.columns or "content_length" in df.columns:
+        for _, row in success_df.iterrows():
+            if not is_thin_row(row):
                 continue
             u = row.get("url")
             if pd.isna(u):
                 continue
-            issues["seo"].append({"type": "thin_content", "url": str(u).strip(), "message": f"Thin content ({int(cl)} chars)"})
+            issues["seo"].append({
+                "type": "thin_content",
+                "url": str(u).strip(),
+                "message": thin_content_message(row),
+            })
 
     # Recommendations (actionable bullets)
     recommendations = []
@@ -175,7 +179,9 @@ def _compute_summary_seo_issues(df: pd.DataFrame) -> dict:
     if seo_health.get("h1_multi", 0) > 0:
         recommendations.append(f"Use a single H1 per page on {seo_health['h1_multi']} page(s).")
     if seo_health.get("thin_content", 0) > 0:
-        recommendations.append(f"Expand thin content on {seo_health['thin_content']} page(s) (under {THIN_CONTENT_CHARS} chars).")
+        recommendations.append(
+            f"Expand thin content on {seo_health['thin_content']} page(s) (under {THIN_CONTENT_WORDS} words)."
+        )
 
     return {
         "summary": summary,

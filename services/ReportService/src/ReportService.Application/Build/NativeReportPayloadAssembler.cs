@@ -129,6 +129,11 @@ public static class NativeReportPayloadAssembler
             payload["lighthouse_human_summary"] = LighthouseJsonHelper.ExtractHumanSummary(slice.LighthouseSummary);
         }
 
+        if (slice.CruxSummary is not null)
+        {
+            payload["crux_summary"] = slice.CruxSummary;
+        }
+
         MergeAnalysisIntoPayload(payload, mlBundle);
 
         if (propertyId is not null)

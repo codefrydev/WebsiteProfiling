@@ -59,11 +59,35 @@ public static class CoreWebVitalsCategoryBuilder
             recommendations.Add("Core Web Vitals measured by Lighthouse; see median_metrics in lighthouse_summary.json.");
         }
 
+        var cruxDeduction = 0;
+        if (cruxSummary is not null
+            && GetBool(cruxSummary, "ok") == true
+            && cruxSummary.TryGetValue("pass", out var passDedObj)
+            && passDedObj is JsonElement passDed
+            && passDed.ValueKind == JsonValueKind.Object)
+        {
+            foreach (var metric in new[] { "lcp", "inp", "cls" })
+            {
+                if (passDed.TryGetProperty(metric, out var m) && m.ValueKind == JsonValueKind.False)
+                {
+                    cruxDeduction += 15;
+                }
+            }
+
+            cruxDeduction = Math.Min(45, cruxDeduction);
+        }
+
+        int? score = perfScore;
+        if (cruxDeduction > 0)
+        {
+            score = Math.Max(0, (perfScore ?? 0) - cruxDeduction);
+        }
+
         var sorted = CategoryHelpers.SortIssues(issues);
         return new ReportCategory(
             "core_web_vitals",
             "Core Web Vitals",
-            perfScore,
+            score,
             sorted,
             recommendations);
     }
