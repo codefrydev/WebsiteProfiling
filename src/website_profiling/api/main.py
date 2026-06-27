@@ -11,7 +11,7 @@ from typing import AsyncIterator
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import health, internal_integrations, report_audit_tool
+from .routers import health, internal_integrations, internal_pipeline, report_audit_tool
 
 
 @asynccontextmanager
@@ -51,4 +51,5 @@ if _origins_raw:
 
 app.include_router(health.router, prefix="/api")
 app.include_router(internal_integrations.router)
+app.include_router(internal_pipeline.router)
 app.include_router(report_audit_tool.router, prefix="/api")

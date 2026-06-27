@@ -123,6 +123,40 @@ public sealed class FastApiPythonBridge(IHttpClientFactory httpClientFactory, IO
         }
     }
 
+    public async Task<SubprocessBridgeResult> ExecuteClaimedSubprocessAsync(
+        string jobId,
+        string? command,
+        long? propertyId,
+        CancellationToken cancellationToken = default)
+    {
+        var client = CreateClient();
+        using var response = await client.PostAsJsonAsync(
+            "/internal/pipeline/execute-subprocess",
+            new SubprocessBridgeRequest(jobId, command, propertyId),
+            JsonOptions,
+            cancellationToken);
+
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            return new SubprocessBridgeResult(false, -1, false, false, body);
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(body);
+            var root = doc.RootElement;
+            var exitCode = root.TryGetProperty("exitCode", out var ec) && ec.TryGetInt32(out var code) ? code : -1;
+            var cancelled = root.TryGetProperty("cancelled", out var c) && c.GetBoolean();
+            var paused = root.TryGetProperty("paused", out var p) && p.GetBoolean();
+            return new SubprocessBridgeResult(true, exitCode, cancelled, paused, null);
+        }
+        catch (JsonException ex)
+        {
+            return new SubprocessBridgeResult(false, -1, false, false, ex.Message);
+        }
+    }
+
     private HttpClient CreateClient()
     {
         var client = httpClientFactory.CreateClient(nameof(FastApiPythonBridge));
@@ -146,3 +180,12 @@ public sealed record ReportBuildBridgeResult(
     string RawBody);
 
 public sealed record RunJobBridgeResult(bool Ok, string? JobId, string RawBody);
+
+public sealed record SubprocessBridgeRequest(string JobId, string? Command, long? PropertyId);
+
+public sealed record SubprocessBridgeResult(
+    bool Ok,
+    int ExitCode,
+    bool Cancelled,
+    bool Paused,
+    string? Error);

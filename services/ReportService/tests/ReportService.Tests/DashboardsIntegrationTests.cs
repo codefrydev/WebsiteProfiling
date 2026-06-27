@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using WebsiteProfiling.Testing;
 
 namespace ReportService.Tests;
 
@@ -13,24 +14,25 @@ public class DashboardsIntegrationTests : IClassFixture<WebApplicationFactory<Pr
     private HttpClient? _client;
     private long? _propertyId;
     private long? _dashboardId;
+    private bool _dbReady;
 
     public DashboardsIntegrationTests(WebApplicationFactory<Program> factory)
     {
         _factory = factory.WithWebHostBuilder(builder => builder.UseEnvironment("Development"));
     }
 
-    private static bool Skip => string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DATABASE_URL"));
+    private static bool Skip => !PostgresIntegration.IsConfigured;
 
     public async Task InitializeAsync()
     {
-        if (Skip)
+        if (Skip || !await PostgresIntegration.CanConnectAsync())
         {
             return;
         }
 
         _client = _factory.CreateClient();
         var domain = $"dash-{Guid.NewGuid():N}"[..18] + ".example";
-        await using var conn = new Npgsql.NpgsqlConnection(Environment.GetEnvironmentVariable("DATABASE_URL"));
+        await using var conn = new Npgsql.NpgsqlConnection(PostgresIntegration.ConnectionString);
         await conn.OpenAsync();
         await using var cmd = new Npgsql.NpgsqlCommand(
             """
@@ -43,6 +45,7 @@ public class DashboardsIntegrationTests : IClassFixture<WebApplicationFactory<Pr
         cmd.Parameters.AddWithValue("domain", domain);
         cmd.Parameters.AddWithValue("url", $"https://{domain}");
         _propertyId = (long)(await cmd.ExecuteScalarAsync() ?? 0L);
+        _dbReady = _propertyId > 0;
     }
 
     public async Task DisposeAsync()
@@ -57,9 +60,9 @@ public class DashboardsIntegrationTests : IClassFixture<WebApplicationFactory<Pr
             await _client.DeleteAsync($"/api/dashboards/{_dashboardId}?propertyId={_propertyId}");
         }
 
-        if (_propertyId is not null)
+        if (_propertyId is not null && _dbReady)
         {
-            await using var conn = new Npgsql.NpgsqlConnection(Environment.GetEnvironmentVariable("DATABASE_URL"));
+            await using var conn = new Npgsql.NpgsqlConnection(PostgresIntegration.ConnectionString);
             await conn.OpenAsync();
             await using var cmd = new Npgsql.NpgsqlCommand(
                 "DELETE FROM properties WHERE id = @id",
@@ -74,7 +77,7 @@ public class DashboardsIntegrationTests : IClassFixture<WebApplicationFactory<Pr
     [Fact]
     public async Task Dashboards_crud_roundtrip()
     {
-        if (Skip || _propertyId is null or <= 0)
+        if (Skip || !_dbReady || _propertyId is null or <= 0)
         {
             return;
         }

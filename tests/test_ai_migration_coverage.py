@@ -375,6 +375,115 @@ def test_pipeline_keyword_enrich_rejects_failed_response(monkeypatch) -> None:
         )
 
 
+def test_report_build_service_and_bridge_helpers(monkeypatch) -> None:
+    from website_profiling.commands import report_build
+
+    conn = MagicMock()
+    with patch(
+        "website_profiling.db.config_store.read_pipeline_config",
+        return_value=({"k": "v"}, []),
+    ):
+        cfg = report_build.load_config_for_property(conn, 5, 9, {"x": "y"})
+    assert cfg["active_property_id"] == "5"
+    assert cfg["_bridge_crawl_run_id"] == "9"
+    assert cfg["x"] == "y"
+
+    monkeypatch.delenv("REPORT_SERVICE_URL", raising=False)
+    with pytest.raises(RuntimeError, match="REPORT_SERVICE_URL is not set"):
+        report_build.call_report_service({}, 1)
+
+    monkeypatch.setenv("REPORT_SERVICE_URL", "http://report:8094")
+
+    class _Resp:
+        def read(self):
+            return json.dumps({"ok": True, "outputPath": "/data/out.json"}).encode()
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+    with patch("urllib.request.urlopen", return_value=_Resp()):
+        out = report_build.call_report_service({"a": "1"}, 3, 7)
+    assert out["ok"] is True
+
+    http_err = urllib.error.HTTPError("http://x", 502, "bad", {}, io.BytesIO(b"detail"))
+    with patch("urllib.request.urlopen", side_effect=http_err):
+        with pytest.raises(RuntimeError, match="502"):
+            report_build.call_report_service({}, 1)
+
+    url_err = urllib.error.URLError("connection refused")
+    with patch("urllib.request.urlopen", side_effect=url_err):
+        with pytest.raises(ConnectionError):
+            report_build.call_report_service({}, 1)
+
+    monkeypatch.setenv("FASTAPI_URL", "http://fastapi:8001")
+    with patch("urllib.request.urlopen", return_value=_Resp()):
+        out2 = report_build.call_fastapi_report_bridge({"a": "1"}, 3)
+    assert out2["ok"] is True
+
+    bridge_err = urllib.error.HTTPError("http://x", 500, "bad", {}, io.BytesIO(b"bridge fail"))
+    with patch("urllib.request.urlopen", side_effect=bridge_err):
+        with pytest.raises(RuntimeError, match="bridge fail"):
+            report_build.call_fastapi_report_bridge({}, 1)
+
+    monkeypatch.setattr(report_build, "execute_report_build", lambda *_a, **_k: "local.json")
+    with patch("urllib.request.urlopen", return_value=_Resp()):
+        assert report_build.build_report_resilient({"a": "1"}, 3) == "/data/out.json"
+
+    fail_resp = _Resp()
+    fail_resp.read = lambda: json.dumps({"ok": False, "log": "build failed"}).encode()
+
+    with patch("urllib.request.urlopen", return_value=fail_resp):
+        with pytest.raises(RuntimeError, match="build failed"):
+            report_build.build_report_resilient({"a": "1"}, 3)
+
+    calls = {"n": 0}
+
+    def urlopen_side_effect(*_a, **_k):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise urllib.error.URLError("report down")
+        raise RuntimeError("bridge boom")
+
+    with patch("urllib.request.urlopen", side_effect=urlopen_side_effect):
+        assert report_build.build_report_resilient({"a": "1"}, 3) == "local.json"
+
+
+def test_pipeline_run_report_via_report_service(monkeypatch) -> None:
+    from website_profiling.commands import pipeline_cmd, report_build
+
+    monkeypatch.setenv("REPORT_SERVICE_URL", "http://report:8094")
+    monkeypatch.setattr(pipeline_cmd, "active_property_id_from_cfg", lambda _c: "1")
+    monkeypatch.setattr(pipeline_cmd, "console_print", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "emit_phase_start", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "emit_phase_done", lambda *_a, **_k: None)
+    monkeypatch.setattr(report_build, "build_report_resilient", lambda *_a, **_k: "/out.json")
+    pipeline_cmd._run_report({"active_property_id": "1"}, True)
+
+
+def test_pipeline_run_report_service_failure_emits_error(monkeypatch) -> None:
+    from website_profiling.commands import pipeline_cmd, report_build
+
+    monkeypatch.setenv("REPORT_SERVICE_URL", "http://report:8094")
+    monkeypatch.setattr(pipeline_cmd, "active_property_id_from_cfg", lambda _c: "1")
+    monkeypatch.setattr(pipeline_cmd, "console_print", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "emit_phase_start", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "emit_phase_done", lambda *_a, **_k: None)
+    progress = []
+    monkeypatch.setattr(pipeline_cmd, "emit_progress", lambda *a, **k: progress.append((a, k)))
+    monkeypatch.setattr(
+        report_build,
+        "build_report_resilient",
+        lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("boom")),
+    )
+
+    with pytest.raises(RuntimeError, match="boom"):
+        pipeline_cmd._run_report({"active_property_id": "1"}, True)
+    assert progress and progress[-1][0][0] == "report"
+
+
 def test_ai_suggest_cache_empty_raw() -> None:
     from website_profiling.content_studio.ai_suggest import _read_cache
 

@@ -1,10 +1,12 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY services/Shared/WebsiteProfiling.Contracts/WebsiteProfiling.Contracts.csproj services/Shared/WebsiteProfiling.Contracts/
+COPY services/Shared/WebsiteProfiling.TypedConfig/WebsiteProfiling.TypedConfig.csproj services/Shared/WebsiteProfiling.TypedConfig/
 COPY services/ConfigService/src/ConfigService.Application/ConfigService.Application.csproj services/ConfigService/src/ConfigService.Application/
 COPY services/ConfigService/src/ConfigService.Api/ConfigService.Api.csproj services/ConfigService/src/ConfigService.Api/
 RUN dotnet restore services/ConfigService/src/ConfigService.Api/ConfigService.Api.csproj
 COPY services/Shared/WebsiteProfiling.Contracts/ services/Shared/WebsiteProfiling.Contracts/
+COPY services/Shared/WebsiteProfiling.TypedConfig/ services/Shared/WebsiteProfiling.TypedConfig/
 COPY config/typed_config_manifest.json config/typed_config_manifest.json
 COPY services/ConfigService/src/ services/ConfigService/src/
 RUN dotnet publish services/ConfigService/src/ConfigService.Api/ConfigService.Api.csproj -c Release -o /app/publish --no-restore

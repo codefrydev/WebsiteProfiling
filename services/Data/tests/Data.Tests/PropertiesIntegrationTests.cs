@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using WebsiteProfiling.Testing;
 
 namespace Data.Tests;
 
@@ -12,23 +13,24 @@ public class PropertiesIntegrationTests : IClassFixture<WebApplicationFactory<Pr
     private readonly WebApplicationFactory<Program> _factory;
     private HttpClient? _client;
     private long? _createdPropertyId;
+    private bool _dbReady;
 
     public PropertiesIntegrationTests(WebApplicationFactory<Program> factory)
     {
         _factory = factory.WithWebHostBuilder(builder => builder.UseEnvironment("Development"));
     }
 
-    private static bool Skip => string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DATABASE_URL"));
+    private static bool Skip => !PostgresIntegration.IsConfigured;
 
-    public Task InitializeAsync()
+    public async Task InitializeAsync()
     {
-        if (Skip)
+        if (Skip || !await PostgresIntegration.CanConnectAsync())
         {
-            return Task.CompletedTask;
+            return;
         }
 
+        _dbReady = true;
         _client = _factory.CreateClient();
-        return Task.CompletedTask;
     }
 
     public async Task DisposeAsync()
@@ -49,7 +51,7 @@ public class PropertiesIntegrationTests : IClassFixture<WebApplicationFactory<Pr
     [Fact]
     public async Task Properties_crud_and_ops_roundtrip()
     {
-        if (Skip)
+        if (Skip || !_dbReady)
         {
             return;
         }
@@ -57,7 +59,7 @@ public class PropertiesIntegrationTests : IClassFixture<WebApplicationFactory<Pr
 
         var create = await _client!.PostAsJsonAsync(
             "/api/properties",
-            new { name = "Props API", canonical_domain = domain, site_url = $"https://{domain}" });
+            new { name = "Props API", canonicalDomain = domain, siteUrl = $"https://{domain}" });
         Assert.Equal(HttpStatusCode.Created, create.StatusCode);
 
         using var createDoc = JsonDocument.Parse(await create.Content.ReadAsStringAsync());
@@ -97,7 +99,7 @@ public class PropertiesIntegrationTests : IClassFixture<WebApplicationFactory<Pr
     [Fact]
     public async Task Properties_resolve_does_not_create_partial_domains()
     {
-        if (Skip)
+        if (Skip || !_dbReady)
         {
             return;
         }
@@ -119,7 +121,7 @@ public class PropertiesIntegrationTests : IClassFixture<WebApplicationFactory<Pr
     [Fact]
     public async Task Properties_ensure_and_resolve()
     {
-        if (Skip)
+        if (Skip || !_dbReady)
         {
             return;
         }

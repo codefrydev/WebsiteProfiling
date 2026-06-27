@@ -1,5 +1,6 @@
 services:
   postgres:
+    container_name: wp-postgres
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: website_profiling
@@ -16,6 +17,7 @@ services:
   # FastAPI backend — now its own service (was bundled into `web`). Network-internal:
   # only the BFF talks to it, so no host port is published.
   fastapi:
+    container_name: wp-fastapi
     build:
       context: .
       dockerfile: Dockerfile
@@ -45,12 +47,10 @@ services:
       retries: 3
       start_period: 20s
 
-  # Pipeline worker runs inside ReportService (C# BackgroundService).
-  # Python is invoked only as a subprocess for crawl/lighthouse CLI steps.
-
   # .NET read microservice — reads Postgres directly, incrementally replacing FastAPI reads.
   # Internal: only the BFF reaches it (no published host port).
   data:
+    container_name: wp-data
     build:
       context: ./services
       dockerfile: Data/Dockerfile
@@ -68,6 +68,7 @@ services:
       start_period: 15s
 
   ai:
+    container_name: wp-ai
     build:
       context: ./services
       dockerfile: AiService/Dockerfile
@@ -89,6 +90,7 @@ services:
       start_period: 20s
 
   integrations:
+    container_name: wp-integrations
     build:
       context: ./services
       dockerfile: IntegrationsService/Dockerfile
@@ -113,9 +115,10 @@ services:
       start_period: 20s
 
   report:
+    container_name: wp-report
     build:
-      context: ./services
-      dockerfile: ReportService/Dockerfile
+      context: .
+      dockerfile: services/ReportService/Dockerfile
     environment:
       DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
       ASPNETCORE_URLS: http://+:8094
@@ -123,9 +126,6 @@ services:
       INTEGRATIONS_SERVICE_URL: http://integrations:8093
       REPORT_SERVICE_USE_PYTHON_BRIDGE: "0"
       USE_FASTAPI_PYTHON_BRIDGE: "1"
-      WEBSITE_PROFILING_ROOT: /app
-      PYTHON: /opt/venv/bin/python
-      DATA_DIR: /data
       REPORT_SERVICE_WORKER_ENABLED: "1"
     depends_on:
       postgres:
@@ -142,6 +142,7 @@ services:
       start_period: 20s
 
   config:
+    container_name: wp-config
     build:
       context: .
       dockerfile: services/ConfigService/Dockerfile
@@ -161,6 +162,7 @@ services:
 
   # .NET BFF — the single browser-facing API surface (owns auth + CORS).
   bff:
+    container_name: wp-bff
     build:
       context: ./services/Bff
     ports:
@@ -198,6 +200,7 @@ services:
 
   # Vite SPA (nginx). The browser calls the BFF (:8090) for all /api/*.
   web:
+    container_name: wp-web
     build:
       context: ./web
       args:
@@ -216,6 +219,7 @@ services:
 
   # File export service (PDF/Excel). Internal: only the BFF reaches it.
   files:
+    container_name: wp-files
     build:
       context: ./services
       dockerfile: FileService/Dockerfile

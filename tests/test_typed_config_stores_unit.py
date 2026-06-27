@@ -343,6 +343,11 @@ def test_client_preferences_store() -> None:
     patch_client_preferences(conn2, {"chat_fab_corner": "top-left", "sidebar_collapsed": "true"})
     assert conn2.executed
 
+    conn2b = FakeConn()
+    _queue_read(conn2b, ClientPreferences)
+    patch_client_preferences(conn2b, {"sidebar_collapsed": True})
+    assert conn2b.executed
+
     conn3 = FakeConn()
     write_client_preferences(conn3, ClientPreferences(network_view_mode="3d"), columns=["network_view_mode"])
     assert conn3.executed

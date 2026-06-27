@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using ReportService.Application.Bridge;
 using ReportService.Application.Build;
 using ReportService.Application.Options;
 using ReportService.Application.Pipeline.Models;
@@ -13,6 +14,7 @@ public sealed class PipelineJobRunner(
     PipelineJobRepository jobs,
     PipelineConfigRepository configRepository,
     ReportBuildService reportBuildService,
+    FastApiPythonBridge fastApiBridge,
     IOptions<WorkerOptions> workerOptions,
     ILogger<PipelineJobRunner> logger)
 {
@@ -81,6 +83,14 @@ public sealed class PipelineJobRunner(
         var options = workerOptions.Value;
         var repoRoot = ResolveRepoRoot(options);
         var pythonExe = ResolvePythonExecutable(options);
+        var hasLocalPython = File.Exists(pythonExe) || IsExecutableOnPath(pythonExe);
+
+        if (!hasLocalPython)
+        {
+            await RunBridgedSubprocessAsync(job, options, cancellationToken);
+            return;
+        }
+
         var args = BuildProcessArgs(pythonExe, job.Command);
         var env = BuildSpawnEnvironment(repoRoot, options, job.PropertyId);
 
@@ -178,6 +188,61 @@ public sealed class PipelineJobRunner(
         {
             PipelineProcessRegistry.Unregister(job.Id);
         }
+    }
+
+    private async Task RunBridgedSubprocessAsync(
+        ClaimedPipelineJob job,
+        WorkerOptions options,
+        CancellationToken cancellationToken)
+    {
+        var result = await fastApiBridge.ExecuteClaimedSubprocessAsync(
+            job.Id,
+            job.Command,
+            job.PropertyId,
+            cancellationToken);
+
+        if (!result.Ok)
+        {
+            await jobs.FinishAsync(
+                job.Id,
+                "error",
+                -1,
+                result.Error ?? "FastAPI subprocess bridge failed",
+                cancellationToken: cancellationToken);
+            return;
+        }
+
+        if (result.Cancelled)
+        {
+            await jobs.FinishAsync(job.Id, "error", -1, "Cancelled by user", cancellationToken: cancellationToken);
+            return;
+        }
+
+        if (result.Paused)
+        {
+            var logTruncated = await jobs.GetLogTruncatedAsync(job.Id, cancellationToken);
+            await jobs.FinishAsync(
+                job.Id,
+                "paused",
+                result.ExitCode,
+                logTruncated: logTruncated,
+                cancellationToken: cancellationToken);
+            return;
+        }
+
+        if (result.ExitCode == 0 && ShouldPostCrawlReport(job, options))
+        {
+            if (await jobs.IsActiveAsync(job.Id, cancellationToken))
+            {
+                await FinishAfterPostCrawlReportAsync(job, cancellationToken);
+            }
+
+            return;
+        }
+
+        var status = result.ExitCode == 0 ? "success" : "error";
+        var error = result.ExitCode == 0 ? null : $"Process exited with code {result.ExitCode}";
+        await jobs.FinishAsync(job.Id, status, result.ExitCode, error, cancellationToken: cancellationToken);
     }
 
     private async Task FinishAfterPostCrawlReportAsync(ClaimedPipelineJob job, CancellationToken cancellationToken)
@@ -347,6 +412,38 @@ public sealed class PipelineJobRunner(
         }
 
         return OperatingSystem.IsWindows() ? "python" : "python3";
+    }
+
+    private static bool IsExecutableOnPath(string executable)
+    {
+        if (executable.Contains('/') || executable.Contains('\\'))
+        {
+            return false;
+        }
+
+        var path = Environment.GetEnvironmentVariable("PATH");
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return false;
+        }
+
+        var extensions = OperatingSystem.IsWindows()
+            ? (Environment.GetEnvironmentVariable("PATHEXT") ?? ".EXE;.CMD;.BAT").Split(';')
+            : [""];
+
+        foreach (var dir in path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries))
+        {
+            foreach (var ext in extensions)
+            {
+                var candidate = Path.Combine(dir.Trim(), executable + ext);
+                if (File.Exists(candidate))
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     private static void TryKillProcess(Process process)

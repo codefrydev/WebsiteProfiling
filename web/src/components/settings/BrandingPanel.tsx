@@ -1,5 +1,5 @@
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { RotateCcw, Upload, X, ImageIcon } from 'lucide-react';
 import { DraftInput } from '@/components/shared/DraftTextInput';
 import { useBranding } from '@/context/useBranding';

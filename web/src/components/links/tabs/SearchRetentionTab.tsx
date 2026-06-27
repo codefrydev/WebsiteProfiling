@@ -209,7 +209,14 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url: pageUrl }),
       });
-      const data = (await res.json()) as Record<string, unknown> & { ok?: boolean; snapshotId?: number; gsc?: PageGscSlice | null; ga4?: PageGa4Slice | null; fetchedAt?: string | null; dateRange?: string | null };
+      const data = (await res.json()) as Record<string, unknown> & {
+        ok?: boolean;
+        snapshotId?: number;
+        gsc?: PageGscSlice | null;
+        ga4?: PageGa4Slice | null;
+        fetchedAt?: string | null;
+        dateRange?: PageDataResponse['dateRange'];
+      };
       if (!res.ok || !data.ok) {
         throw new Error(readApiErrorMessage(data, res, sr.liveFetchFailed));
       }
@@ -217,10 +224,10 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
       setCurrentId(data.snapshotId ?? null);
       setPageData({
         source: 'live',
-        snapshotId: data.snapshotId,
-        gsc: data.gsc,
-        ga4: data.ga4,
-        fetchedAt: data.fetchedAt,
+        snapshotId: data.snapshotId ?? null,
+        gsc: data.gsc ?? null,
+        ga4: data.ga4 ?? null,
+        fetchedAt: data.fetchedAt ?? null,
         dateRange: data.dateRange,
         coverage: pageData?.coverage,
         siteBenchmarks: pageData?.siteBenchmarks,

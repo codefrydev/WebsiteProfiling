@@ -34,6 +34,32 @@ def test_pipeline_run_calls_crawl_with_minimal_config(monkeypatch) -> None:
     assert called["crawl"] == 1
 
 
+def test_pipeline_skips_report_when_orchestrated(monkeypatch) -> None:
+    from website_profiling.commands import pipeline_cmd
+
+    monkeypatch.setenv("PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE", "1")
+    report_calls: list[int] = []
+    monkeypatch.setattr(pipeline_cmd, "_run_report", lambda *_a, **_k: report_calls.append(1))
+    monkeypatch.setattr(pipeline_cmd, "_run_crawl", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "_run_plot", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "emit_phase_start", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "emit_phase_done", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "emit_progress", lambda *_a, **_k: None)
+    monkeypatch.setattr(pipeline_cmd, "console_print", lambda *_a, **_k: None)
+
+    cfg = {
+        "start_url": "https://site.com",
+        "run_crawl": "false",
+        "run_report": "true",
+        "run_plot": "false",
+        "run_lighthouse": "false",
+        "run_lighthouse_on_pages": "false",
+    }
+    args = argparse.Namespace(command=None)
+    pipeline_cmd.run(cfg, args)
+    assert report_calls == []
+
+
 def test_run_crawl_passes_render_mode_to_run_crawler(monkeypatch) -> None:
     from website_profiling.commands import pipeline_cmd
 

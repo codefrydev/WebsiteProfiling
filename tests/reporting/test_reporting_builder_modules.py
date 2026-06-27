@@ -419,6 +419,22 @@ def test_build_edges_from_df_paths(monkeypatch, tmp_path) -> None:
     fetcher.close.assert_called_once()
     assert js_edges
 
+    fetcher_close_fail = MagicMock()
+    fetcher_close_fail.fetch.return_value = SimpleNamespace(status=200, text=html)
+    fetcher_close_fail.close.side_effect = RuntimeError("close failed")
+    monkeypatch.setattr("website_profiling.crawl.fetchers.build_fetcher", lambda **_k: fetcher_close_fail)
+    assert edges_report.build_edges_from_df(
+        pd.DataFrame({"url": ["https://example.com/"]}),
+        "",
+        True,
+        10,
+        1,
+        5,
+        0.0,
+        render_mode="javascript",
+    )
+
+    monkeypatch.setattr("website_profiling.crawl.fetchers.build_fetcher", lambda **_k: fetcher)
     fetcher.fetch.return_value = SimpleNamespace(status=404, text="")
     assert edges_report.build_edges_from_df(
         pd.DataFrame({"url": ["https://example.com/"]}),

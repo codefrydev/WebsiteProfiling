@@ -734,7 +734,13 @@ export default function GoogleIntegrationsPanel({
         setFetchJobStatus('error');
         setToast({ type: 'error', message: errMsg });
       } else {
-        const jobId = data.jobId;
+        const jobId = data.jobId != null ? String(data.jobId) : '';
+        if (!jobId) {
+          setFetchLog('Error: No job id returned');
+          setFetchJobStatus('error');
+          setToast({ type: 'error', message: 'No job id returned' });
+          return;
+        }
         setFetchLog(`Job ${jobId}\nStatus: running\n\nWaiting for output…`);
         setToast({
           type: 'success',

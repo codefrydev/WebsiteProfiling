@@ -99,7 +99,7 @@ export default function ContentBriefButton({ keyword, clusterRows }: ContentBrie
                 </p>
               ) : error ? (
                 <p className="text-red-700 dark:text-red-400 text-xs">{error}</p>
-              ) : formatBriefSummary(brief?.summary) ? (
+              ) : brief && formatBriefSummary(brief.summary) ? (
                 <>
                   <pre className="whitespace-pre-wrap text-xs text-muted-foreground leading-relaxed font-sans">
                     {formatBriefSummary(brief.summary)}

@@ -6,12 +6,20 @@ import subprocess
 import sys
 import threading
 import time
+from dataclasses import dataclass
 from typing import Any
 
 from website_profiling.db.pipeline_jobs import append_job_log, check_flags, finish_job
 from website_profiling.db.pool import db_session
 
 from .signals import cancel_subprocess, pause_subprocess
+
+
+@dataclass(frozen=True)
+class SubprocessRunResult:
+    exit_code: int
+    cancelled: bool = False
+    paused: bool = False
 
 
 def _get_spawn_env(property_id: Any = None) -> dict[str, str]:
@@ -55,12 +63,12 @@ def _pump_output(proc: subprocess.Popen, job_id: str) -> None:  # type: ignore[t
     t_err.join()
 
 
-def run_job(job: dict) -> None:
-    """Execute one pipeline job, handling cancel/pause/resume signals."""
-    job_id: str = job["id"]
-    command: str | None = job.get("command")
-    property_id = job.get("property_id")
-
+def execute_subprocess_for_claimed_job(
+    job_id: str,
+    command: str | None,
+    property_id: Any = None,
+) -> SubprocessRunResult:
+    """Run `python -m src` for a claimed job: stream logs, honor cancel/pause; do not finish the job."""
     repo_root = os.environ.get("WEBSITE_PROFILING_ROOT", "")
     python_exe = os.environ.get("PYTHON", sys.executable)
 
@@ -84,8 +92,8 @@ def run_job(job: dict) -> None:
         )
     except Exception as exc:
         with db_session() as conn:
-            finish_job(conn, job_id, "error", -1, str(exc))
-        return
+            append_job_log(conn, job_id, f"\n{exc}\n")
+        return SubprocessRunResult(-1)
 
     pump_thread = threading.Thread(target=_pump_output, args=(proc, job_id), daemon=True)
     pump_thread.start()
@@ -104,9 +112,7 @@ def run_job(job: dict) -> None:
             cancel_subprocess(proc)
             proc.wait()
             pump_thread.join(timeout=5)
-            with db_session() as conn:
-                finish_job(conn, job_id, "error", -1, "Cancelled by user")
-            return
+            return SubprocessRunResult(-1, cancelled=True)
 
         if pause and not paused:
             pause_subprocess(proc)
@@ -115,28 +121,42 @@ def run_job(job: dict) -> None:
     proc.wait()
     pump_thread.join(timeout=10)
 
-    exit_code = proc.returncode
-
+    exit_code = int(proc.returncode or 0)
     if paused and exit_code == 0:
+        return SubprocessRunResult(exit_code, paused=True)
+    return SubprocessRunResult(exit_code)
+
+
+def run_job(job: dict) -> None:
+    """Execute one pipeline job, handling cancel/pause/resume signals."""
+    job_id: str = job["id"]
+    command: str | None = job.get("command")
+    property_id = job.get("property_id")
+
+    result = execute_subprocess_for_claimed_job(job_id, command, property_id)
+
+    if result.cancelled:
         with db_session() as conn:
-            job_row = conn.execute(
-                "SELECT log_text FROM pipeline_jobs WHERE id = %s::uuid", (job_id,)
-            ).fetchone()
+            finish_job(conn, job_id, "error", -1, "Cancelled by user")
+        return
+
+    if result.paused:
+        with db_session() as conn:
             log_truncated_row = conn.execute(
                 "SELECT log_truncated FROM pipeline_jobs WHERE id = %s::uuid", (job_id,)
             ).fetchone()
             log_truncated = bool((log_truncated_row or {}).get("log_truncated"))
-            finish_job(conn, job_id, "paused", exit_code, log_truncated=log_truncated)
+            finish_job(conn, job_id, "paused", result.exit_code, log_truncated=log_truncated)
         return
 
-    if exit_code == 0 and _should_post_crawl_report(command) and property_id is not None:
+    if result.exit_code == 0 and _should_post_crawl_report(command) and property_id is not None:
         _finish_job_after_post_crawl_report(job_id, property_id)
         return
 
-    status = "success" if exit_code == 0 else "error"
-    error = None if exit_code == 0 else f"Process exited with code {exit_code}"
+    status = "success" if result.exit_code == 0 else "error"
+    error = None if result.exit_code == 0 else f"Process exited with code {result.exit_code}"
     with db_session() as conn:
-        finish_job(conn, job_id, status, exit_code, error)
+        finish_job(conn, job_id, status, result.exit_code, error)
 
 
 def _should_post_crawl_report(command: str | None) -> bool:

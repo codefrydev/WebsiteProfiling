@@ -1,7 +1,8 @@
-# Production-style layout: postgres + fastapi + worker + bff + web + files (+ optional mcp).
+# Production-style layout: postgres + fastapi + bff + web + files (+ optional mcp).
 # The browser talks only to `bff`; FastAPI and FileService are network-internal.
 services:
   postgres:
+    container_name: wp-postgres
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-website_profiling}
@@ -16,6 +17,7 @@ services:
       retries: 5
 
   fastapi:
+    container_name: wp-fastapi
     build:
       context: .
       dockerfile: Dockerfile
@@ -44,9 +46,8 @@ services:
       retries: 3
       start_period: 30s
 
-  # Pipeline worker runs inside ReportService (C# BackgroundService).
-
   data:
+    container_name: wp-data
     build:
       context: ./services
       dockerfile: Data/Dockerfile
@@ -64,6 +65,7 @@ services:
       start_period: 15s
 
   ai:
+    container_name: wp-ai
     build:
       context: ./services
       dockerfile: AiService/Dockerfile
@@ -85,6 +87,7 @@ services:
       start_period: 20s
 
   integrations:
+    container_name: wp-integrations
     build:
       context: ./services
       dockerfile: IntegrationsService/Dockerfile
@@ -110,9 +113,10 @@ services:
       start_period: 20s
 
   report:
+    container_name: wp-report
     build:
-      context: ./services
-      dockerfile: ReportService/Dockerfile
+      context: .
+      dockerfile: services/ReportService/Dockerfile
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
       ASPNETCORE_URLS: http://+:8094
@@ -120,9 +124,6 @@ services:
       INTEGRATIONS_SERVICE_URL: http://integrations:8093
       REPORT_SERVICE_USE_PYTHON_BRIDGE: "0"
       USE_FASTAPI_PYTHON_BRIDGE: "1"
-      WEBSITE_PROFILING_ROOT: /app
-      PYTHON: /opt/venv/bin/python
-      DATA_DIR: /data
       REPORT_SERVICE_WORKER_ENABLED: "1"
     depends_on:
       postgres:
@@ -139,6 +140,7 @@ services:
       start_period: 20s
 
   files:
+    container_name: wp-files
     build:
       context: ./services
       dockerfile: FileService/Dockerfile
@@ -152,6 +154,7 @@ services:
         condition: service_started
 
   bff:
+    container_name: wp-bff
     build:
       context: ./services/Bff
     depends_on:
@@ -189,6 +192,7 @@ services:
       BFF_COOKIE_DOMAIN: ${BFF_COOKIE_DOMAIN:-}
 
   web:
+    container_name: wp-web
     build:
       context: ./web
       args:
@@ -206,6 +210,7 @@ services:
       start_period: 30s
 
   mcp:
+    container_name: wp-mcp
     build:
       context: ./services
       dockerfile: AiService/Dockerfile
