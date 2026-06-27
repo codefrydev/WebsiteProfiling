@@ -8,7 +8,10 @@ namespace ReportService.Application.Build;
 public static partial class CategoryHelpers
 {
     public const int ResponseTimeSlowMs = 2000;
-    public const int RedirectChainLong = 2;
+    public const int RedirectChainLong = 3;
+    public const int MaxIssuesPerCheck = 20;
+    public const int MaxHreflangIssuesPerCheck = 15;
+    public const int ThinContentWords = 200;
 
     private static readonly Dictionary<string, int> PriorityOrder = new(StringComparer.Ordinal)
     {
@@ -134,7 +137,10 @@ public static partial class CategoryHelpers
                     url,
                     "High",
                     "Each hreflang alternate should use a unique language/region code."));
-                break;
+                if (issues.Count(i => i.Message.StartsWith("Duplicate hreflang", StringComparison.Ordinal)) >= MaxHreflangIssuesPerCheck)
+                {
+                    continue;
+                }
             }
 
             if (!string.IsNullOrEmpty(url) && hrefs.Count > 0
@@ -145,7 +151,10 @@ public static partial class CategoryHelpers
                     url,
                     "Medium",
                     "Include a hreflang link pointing to this page URL."));
-                break;
+                if (issues.Count(i => i.Message.StartsWith("Hreflang cluster missing", StringComparison.Ordinal)) >= MaxHreflangIssuesPerCheck)
+                {
+                    continue;
+                }
             }
         }
 

@@ -24,7 +24,7 @@
     "missing_meta_desc": "Add a meta description (70–160 chars).",
     "meta_desc_short": "Aim for 70–160 characters.",
     "meta_desc_long": "Shorten to 70–160 characters.",
-    "thin_content": "Expand content to at least 300 characters."
+    "thin_content": "Expand content to at least 200 words."
   },
   "seoIssueRecommendations": {
     "missing_title": "Add a unique title (30–60 chars).",
@@ -34,6 +34,6 @@
     "meta_desc_long": "Shorten to 70–160 characters.",
     "h1_missing": "Add exactly one H1 per page.",
     "h1_multi": "Use a single H1 per page.",
-    "thin_content": "Expand content to at least 300 characters."
+    "thin_content": "Expand content to at least 200 words."
   }
 }

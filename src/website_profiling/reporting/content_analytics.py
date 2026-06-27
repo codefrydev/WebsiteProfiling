@@ -57,10 +57,13 @@ def _build_content_analytics(df: pd.DataFrame) -> dict:
 
     if "content_html_ratio" in success_df.columns:
         cr = pd.to_numeric(success_df["content_html_ratio"], errors="coerce").fillna(0)
-        cr_bins = [(0, 10), (10.01, 20), (20.01, 40), (40.01, 100)]
+        cr_bins = [(0, 10), (10, 20), (20, 40), (40, 100)]
         cr_labels = ["<10%", "10-20%", "20-40%", ">40%"]
         result["content_ratio_distribution"] = {
-            lbl: int(((cr >= lo) & (cr <= hi)).sum()) for (lo, hi), lbl in zip(cr_bins, cr_labels)
+            lbl: int(
+                ((cr >= lo) & (cr < hi if hi < 100 else cr <= hi)).sum()
+            )
+            for (lo, hi), lbl in zip(cr_bins, cr_labels)
         }
 
     if "top_keywords" in success_df.columns:

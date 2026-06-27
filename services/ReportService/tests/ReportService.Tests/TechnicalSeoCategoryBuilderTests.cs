@@ -65,6 +65,24 @@ public sealed class TechnicalSeoCategoryBuilderTests
     }
 
     [Fact]
+    public void Build_reports_multiple_missing_canonical_urls()
+    {
+        var rows = Enumerable.Range(0, 3)
+            .Select(i => new CrawlRow
+            {
+                Url = $"https://example.com/{i}",
+                Status = "200",
+                CanonicalUrl = "",
+            })
+            .ToList();
+
+        var cat = TechnicalSeoCategoryBuilder.Build(rows, new Dictionary<string, object?>());
+        var missing = cat.Issues.Where(i => i.Message.Contains("Missing canonical", StringComparison.OrdinalIgnoreCase)).ToList();
+
+        Assert.Equal(3, missing.Count);
+    }
+
+    [Fact]
     public void Build_missing_canonical_and_duplicate_title_meta()
     {
         var rows = new List<CrawlRow>

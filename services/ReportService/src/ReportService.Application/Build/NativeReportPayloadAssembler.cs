@@ -170,12 +170,20 @@ public static class NativeReportPayloadAssembler
         siteLevel ??= new Dictionary<string, object?>();
         mlBundle ??= new Dictionary<string, object?>();
 
+        var (categoryScores, siteHealthScore) = SiteHealthScoreBuilder.ComputeWithCategoryScores(slice.Categories);
+        var summary = new Dictionary<string, object?>(slice.Summary)
+        {
+            ["site_health_score"] = siteHealthScore,
+            ["category_scores"] = categoryScores,
+        };
+
         var payload = new Dictionary<string, object?>
         {
             ["site_name"] = siteName ?? "",
             ["report_title"] = reportTitle ?? "",
             ["report_generated_at"] = DateTimeOffset.UtcNow.ToString("O"),
-            ["summary"] = slice.Summary,
+            ["summary"] = summary,
+            ["site_health_score"] = siteHealthScore,
             ["seo_health"] = slice.SeoHealth,
             ["issues"] = slice.Issues,
             ["recommendations"] = slice.Recommendations,

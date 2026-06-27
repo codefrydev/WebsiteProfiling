@@ -363,6 +363,19 @@ public static class ReportToolHandlers
 
     private static int? HealthScore(JsonObject payload)
     {
+        if (payload["site_health_score"] is JsonValue topLevel
+            && topLevel.TryGetValue(out int topScore))
+        {
+            return topScore;
+        }
+
+        if (payload["summary"] is JsonObject summary
+            && summary["site_health_score"] is JsonValue summaryScore
+            && summaryScore.TryGetValue(out int fromSummary))
+        {
+            return fromSummary;
+        }
+
         if (payload["categories"] is not JsonArray categories)
         {
             return null;

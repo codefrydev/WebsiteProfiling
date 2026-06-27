@@ -1,4 +1,5 @@
 using System.Text.Json;
+using ReportService.Application.Build;
 using ReportService.Application.Persistence;
 using ReportService.Domain.Entities;
 
@@ -57,13 +58,17 @@ public sealed class ReportPayloadWriter(ReportDbContext db)
             return;
         }
 
-        var scores = categories
-            .Where(c => c.TryGetValue("score", out var s) && s is int or double or float)
-            .Select(c => Convert.ToDouble(c["score"]))
-            .ToList();
-        int? healthScore = scores.Count > 0 ? (int)Math.Round(scores.Average()) : null;
+        var (categoryScores, healthScore) = reportData.TryGetValue("summary", out var summaryObj)
+            && summaryObj is Dictionary<string, object?> summary
+            && summary.TryGetValue("site_health_score", out var hsObj)
+            && hsObj is int hsFromSummary
+            ? (
+                summary.TryGetValue("category_scores", out var csObj) && csObj is Dictionary<string, double> csDict
+                    ? csDict
+                    : SiteHealthScoreBuilder.ComputeWithCategoryScores(categories).CategoryScores,
+                (int?)hsFromSummary)
+            : SiteHealthScoreBuilder.ComputeWithCategoryScores(categories);
 
-        var categoryScores = new Dictionary<string, double>(StringComparer.Ordinal);
         var issueCounts = new Dictionary<string, int>(StringComparer.Ordinal)
         {
             ["Critical"] = 0, ["High"] = 0, ["Medium"] = 0, ["Low"] = 0,
@@ -71,14 +76,6 @@ public sealed class ReportPayloadWriter(ReportDbContext db)
 
         foreach (var cat in categories)
         {
-            var key = cat.GetValueOrDefault("id")?.ToString()
-                ?? cat.GetValueOrDefault("name")?.ToString()
-                ?? "unknown";
-            if (cat.TryGetValue("score", out var scoreObj) && scoreObj is int or double or float)
-            {
-                categoryScores[key] = Convert.ToDouble(scoreObj);
-            }
-
             if (cat.TryGetValue("issues", out var issuesObj) && issuesObj is IEnumerable<object> issueList)
             {
                 foreach (var issueObj in issueList)

@@ -21,7 +21,8 @@ public static class KeywordOpportunitiesBuilder
 
     public static Dictionary<string, object?> Build(
         IReadOnlyList<CrawlRow> rows,
-        IReadOnlyDictionary<string, string>? config)
+        IReadOnlyDictionary<string, string>? config,
+        IReadOnlyDictionary<string, object?>? googleData = null)
     {
         if (!ParseBool(config, "include_keyword_opportunities", defaultValue: true))
         {
@@ -53,7 +54,8 @@ public static class KeywordOpportunitiesBuilder
         }
 
         var corpusSize = success.Count;
-        var scored = ScoreKeywords(candidates, corpusSize);
+        var gscPositions = BuildGscPositionLookup(googleData);
+        var scored = ScoreKeywords(candidates, corpusSize, gscPositions: gscPositions);
         var clusters = TextHygieneHelper.FilterTopicClusters(ClusterKeywords(scored)).Take(50).ToList();
         var quickWins = scored.Where(s => GetDouble(s, "difficulty") < 60).Take(10).ToList();
         var highValue = scored.Where(s => GetDouble(s, "volume") >= 0.5).Take(10).ToList();
@@ -121,9 +123,11 @@ public static class KeywordOpportunitiesBuilder
     private static List<Dictionary<string, object?>> ScoreKeywords(
         Dictionary<string, CandidateData> candidates,
         int corpusSize,
-        IReadOnlyDictionary<string, double>? weights = null)
+        IReadOnlyDictionary<string, double>? weights = null,
+        IReadOnlyDictionary<string, double>? gscPositions = null)
     {
         weights ??= DefaultWeights;
+        gscPositions ??= new Dictionary<string, double>(StringComparer.Ordinal);
         var relevanceScores = RelevanceTfIdf(candidates, corpusSize);
         var results = new List<Dictionary<string, object?>>();
 
@@ -134,12 +138,16 @@ public static class KeywordOpportunitiesBuilder
                 continue;
             }
 
-            var rawVol = (data.Count / (double)Math.Max(corpusSize, 1)) * 100;
+            var rawVol = data.Count / (double)Math.Max(corpusSize, 1);
             var volume = Math.Min(1.0, rawVol);
-            const double difficulty = 50.0;
+            gscPositions.TryGetValue(kw, out var gscPosition);
+            var hasGscRank = gscPosition > 0;
+            var difficulty = EstimateDifficulty(kw, data.Count, corpusSize, hasGscRank ? gscPosition : null);
             var ease = 1.0 - (difficulty / 100.0);
             var relevance = relevanceScores.GetValueOrDefault(kw, 0.5);
-            const double ctrEst = 0.1;
+            var ctrEst = hasGscRank
+                ? CtrCurve.IndustryCtrFraction(gscPosition)
+                : 0.05;
             var score =
                 weights.GetValueOrDefault("volume", 0.4) * volume
                 + weights.GetValueOrDefault("relevance", 0.3) * relevance
@@ -158,19 +166,99 @@ public static class KeywordOpportunitiesBuilder
                 ["score"] = Math.Round(score, 4),
                 ["volume"] = Math.Round(volume, 4),
                 ["difficulty"] = difficulty,
-                ["difficulty_estimated"] = true,
+                ["difficulty_estimated"] = !hasGscRank,
                 ["relevance"] = Math.Round(relevance, 4),
                 ["ctr_est"] = Math.Round(ctrEst, 4),
-                ["current_rank"] = null,
+                ["current_rank"] = hasGscRank ? gscPosition : null,
                 ["recommended_action"] = action,
                 ["source"] = "site",
-                ["data_source"] = "crawl_heuristic",
+                ["data_source"] = hasGscRank ? "gsc+crawl" : "crawl_heuristic",
                 ["sources_count"] = data.Sources.Count,
             });
         }
 
         return results.OrderByDescending(r => GetDouble(r, "score")).ToList();
     }
+
+    private static double EstimateDifficulty(string keyword, int count, int corpusSize, double? gscPosition)
+    {
+        var baseDifficulty = 50.0;
+        var words = keyword.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length >= 4)
+        {
+            baseDifficulty -= 20;
+        }
+        else if (words.Length == 1)
+        {
+            baseDifficulty += 15;
+        }
+
+        var siteFreq = count / (double)Math.Max(corpusSize, 1);
+        baseDifficulty += 70 * (1.0 - siteFreq);
+
+        if (gscPosition is > 0)
+        {
+            if (gscPosition < 5)
+            {
+                baseDifficulty -= 15;
+            }
+            else if (gscPosition < 20)
+            {
+                baseDifficulty -= 8;
+            }
+        }
+
+        return Math.Clamp(baseDifficulty, 0, 100);
+    }
+
+    private static Dictionary<string, double> BuildGscPositionLookup(IReadOnlyDictionary<string, object?>? googleData)
+    {
+        var lookup = new Dictionary<string, double>(StringComparer.Ordinal);
+        if (googleData is null)
+        {
+            return lookup;
+        }
+
+        if (JsonObjectParser.AsDict(googleData.GetValueOrDefault("gsc")) is not { } gsc)
+        {
+            return lookup;
+        }
+
+        foreach (var row in JsonObjectParser.AsDictRows(gsc.GetValueOrDefault("top_queries")))
+        {
+            var query = row.GetValueOrDefault("query")?.ToString()?.Trim().ToLowerInvariant();
+            if (string.IsNullOrEmpty(query))
+            {
+                continue;
+            }
+
+            var position = ToDouble(row.GetValueOrDefault("position"));
+            if (position <= 0)
+            {
+                continue;
+            }
+
+            if (!lookup.TryGetValue(query, out var existing) || position < existing)
+            {
+                lookup[query] = position;
+            }
+        }
+
+        return lookup;
+    }
+
+    private static double ToDouble(object? value) =>
+        value switch
+        {
+            null => 0,
+            double d => d,
+            float f => f,
+            int i => i,
+            long l => l,
+            decimal m => (double)m,
+            string s when double.TryParse(s, out var parsed) => parsed,
+            _ => 0,
+        };
 
     private static List<Dictionary<string, object?>> ClusterKeywords(
         IReadOnlyList<Dictionary<string, object?>> scored)
@@ -288,7 +376,7 @@ public static class KeywordOpportunitiesBuilder
         foreach (var (kw, data) in candidates)
         {
             var docFreq = Math.Max(data.Sources.Count, 1);
-            var idf = 1.0 + Math.Pow(totalDocs / (double)docFreq, 0.5);
+            var idf = 1.0 + Math.Log(totalDocs / (double)docFreq);
             var tf = Math.Min(1.0, data.Count / (double)Math.Max(totalDocs, 1));
             scores[kw] = Math.Min(1.0, (tf * idf) / 10.0);
         }

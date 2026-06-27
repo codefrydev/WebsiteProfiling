@@ -58,7 +58,7 @@ public static class IssueImpactEnricher
                     continue;
                 }
 
-                if (url.EndsWith(key, StringComparison.Ordinal))
+                if (url == key || url.EndsWith("/" + key, StringComparison.Ordinal))
                 {
                     ga4Sessions = Math.Max(ga4Sessions, ga.GetValueOrDefault("ga4_sessions"));
                 }

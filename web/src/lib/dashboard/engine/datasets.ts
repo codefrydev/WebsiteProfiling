@@ -53,7 +53,11 @@ export const DATASETS: DatasetDef[] = [
         ...flatPrefix('ga4', d.google?.ga4?.summary as Record<string, unknown> | undefined),
         ...flatPrefix('lh', d.lighthouse_summary?.median_metrics as Record<string, unknown> | undefined),
         ...flatPrefix('social', d.social_coverage as Record<string, unknown> | undefined),
-        health_score: d.portfolio_benchmark?.property_health_score ?? null,
+        health_score:
+          d.summary?.site_health_score
+          ?? d.site_health_score
+          ?? d.portfolio_benchmark?.property_health_score
+          ?? null,
       },
     ],
     fields: [

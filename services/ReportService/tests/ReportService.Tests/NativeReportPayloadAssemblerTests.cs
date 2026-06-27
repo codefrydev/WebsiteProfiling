@@ -51,6 +51,8 @@ public sealed class NativeReportPayloadAssemblerTests
 
         Assert.Equal("Example", payload["site_name"]);
         Assert.Equal(5, payload["summary"] is Dictionary<string, object?> s ? s["total_urls"] : null);
+        Assert.Equal(90, (payload["summary"] as Dictionary<string, object?>)!["site_health_score"]);
+        Assert.Equal(90, payload["site_health_score"]);
 
         var cats = Assert.IsType<List<Dictionary<string, object?>>>(payload["categories"]);
         Assert.Equal(2, cats.Count);

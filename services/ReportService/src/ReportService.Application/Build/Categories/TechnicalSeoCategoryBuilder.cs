@@ -43,7 +43,8 @@ public static class TechnicalSeoCategoryBuilder
             deductions.Add((5, true));
         }
 
-        if (GetBool(siteLevel, "ads_txt_present") == false)
+        if (GetBool(siteLevel, "enable_ads_txt_check") == true
+            && GetBool(siteLevel, "ads_txt_present") == false)
         {
             issues.Add(CategoryHelpers.Issue(
                 "ads.txt is missing or unreachable.",
@@ -51,7 +52,8 @@ public static class TechnicalSeoCategoryBuilder
                 recommendation: "Add an ads.txt file at the site root if you run programmatic advertising."));
         }
 
-        if (GetBool(siteLevel, "security_txt_present") == false)
+        if (GetBool(siteLevel, "enable_security_txt_check") == true
+            && GetBool(siteLevel, "security_txt_present") == false)
         {
             issues.Add(CategoryHelpers.Issue(
                 "security.txt is missing or unreachable.",
@@ -73,18 +75,26 @@ public static class TechnicalSeoCategoryBuilder
 
             if (rows.Any(r => r.CanonicalUrl is not null))
             {
+                var missingCanonIssues = 0;
                 foreach (var row in success)
                 {
                     var canonical = row.CanonicalUrl?.Trim();
-                    if (string.IsNullOrEmpty(canonical))
+                    if (!string.IsNullOrEmpty(canonical))
                     {
-                        issues.Add(CategoryHelpers.Issue(
-                            "Missing canonical URL.",
-                            row.Url,
-                            "Medium",
-                            "Add a canonical link tag pointing to the preferred URL."));
+                        continue;
+                    }
+
+                    if (missingCanonIssues >= CategoryHelpers.MaxIssuesPerCheck)
+                    {
                         break;
                     }
+
+                    issues.Add(CategoryHelpers.Issue(
+                        "Missing canonical URL.",
+                        row.Url,
+                        "Medium",
+                        "Add a canonical link tag pointing to the preferred URL."));
+                    missingCanonIssues++;
                 }
 
                 var missingCanon = success.Count(r => string.IsNullOrWhiteSpace(r.CanonicalUrl));
@@ -93,6 +103,8 @@ public static class TechnicalSeoCategoryBuilder
                     deductions.Add((Math.Min(15, missingCanon * 2), true));
                 }
 
+                var crossCanonIssues = 0;
+                var crossCanonCount = 0;
                 foreach (var row in success)
                 {
                     var canonical = row.CanonicalUrl?.Trim();
@@ -103,16 +115,28 @@ public static class TechnicalSeoCategoryBuilder
 
                     var pageUrl = row.Url.Trim().TrimEnd('/');
                     var canon = canonical.TrimEnd('/');
-                    if (!string.Equals(pageUrl, canon, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(pageUrl, canon, StringComparison.OrdinalIgnoreCase))
                     {
-                        issues.Add(CategoryHelpers.Issue(
-                            $"Canonical points to different URL: {canon}",
-                            row.Url,
-                            "High",
-                            "Set canonical to this page URL or the preferred duplicate."));
-                        deductions.Add((10, true));
-                        break;
+                        continue;
                     }
+
+                    crossCanonCount++;
+                    if (crossCanonIssues >= CategoryHelpers.MaxIssuesPerCheck)
+                    {
+                        continue;
+                    }
+
+                    issues.Add(CategoryHelpers.Issue(
+                        $"Canonical points to different URL: {canon}",
+                        row.Url,
+                        "High",
+                        "Set canonical to this page URL or the preferred duplicate."));
+                    crossCanonIssues++;
+                }
+
+                if (crossCanonCount > 0)
+                {
+                    deductions.Add((Math.Min(10, crossCanonCount * 2), true));
                 }
             }
 

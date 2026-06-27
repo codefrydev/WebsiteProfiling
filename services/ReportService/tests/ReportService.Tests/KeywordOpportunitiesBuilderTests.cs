@@ -63,6 +63,62 @@ public sealed class KeywordOpportunitiesBuilderTests
     }
 
     [Fact]
+    public void Build_with_gsc_varies_difficulty_and_ctr()
+    {
+        var rows = Enumerable.Range(0, 100)
+            .Select(i => new CrawlRow
+            {
+                Url = $"https://example.com/page-{i}",
+                Status = "200",
+                Title = "seo guide for beginners",
+                H1 = "seo guide",
+            })
+            .ToList();
+
+        var google = new Dictionary<string, object?>
+        {
+            ["gsc"] = new Dictionary<string, object?>
+            {
+                ["top_queries"] = new List<object?>
+                {
+                    new Dictionary<string, object?> { ["query"] = "seo guide", ["position"] = 8.0 },
+                },
+            },
+        };
+
+        var result = KeywordOpportunitiesBuilder.Build(rows, new Dictionary<string, string>(), google);
+        var quickWins = Assert.IsType<List<Dictionary<string, object?>>>(result["quick_wins"]);
+
+        Assert.NotEmpty(quickWins);
+        var seoGuide = quickWins.FirstOrDefault(k => k["keyword"]?.ToString() == "seo guide");
+        Assert.NotNull(seoGuide);
+        Assert.NotEqual(50.0, Convert.ToDouble(seoGuide["difficulty"]));
+        Assert.NotEqual(0.1, Convert.ToDouble(seoGuide["ctr_est"]));
+        Assert.Equal(8.0, Convert.ToDouble(seoGuide["current_rank"]));
+    }
+
+    [Fact]
+    public void Build_high_value_requires_volume_at_least_half()
+    {
+        var rows = Enumerable.Range(0, 10)
+            .Select(i => new CrawlRow
+            {
+                Url = $"https://example.com/page-{i}",
+                Status = "200",
+                Title = "sharedkeyword page title here for length",
+                H1 = "sharedkeyword",
+            })
+            .ToList();
+
+        var result = KeywordOpportunitiesBuilder.Build(rows, new Dictionary<string, string>());
+        var highValue = Assert.IsType<List<Dictionary<string, object?>>>(result["high_value"]);
+
+        Assert.Contains(highValue, item =>
+            item["keyword"]?.ToString() == "sharedkeyword"
+            && Convert.ToDouble(item["volume"]) >= 0.5);
+    }
+
+    [Fact]
     public void Build_filters_junk_heading_tokens()
     {
         var rows = new List<CrawlRow>

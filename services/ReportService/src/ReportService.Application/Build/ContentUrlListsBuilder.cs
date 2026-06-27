@@ -90,25 +90,22 @@ public static class ContentUrlListsBuilder
             }
         }
 
-        if (rows.Any(r => r.ContentLength.HasValue))
+        if (successRows.Any(r => r.ContentLength.HasValue || r.WordCount.HasValue))
         {
-            foreach (var row in rows)
+            foreach (var row in successRows)
             {
-                if (string.IsNullOrWhiteSpace(row.Url))
+                if (string.IsNullOrWhiteSpace(row.Url) || !ThinContentHelper.IsThin(row))
                 {
                     continue;
                 }
 
-                var c = row.ContentLength ?? 0;
-                if (c is > 0 and < SeoSummaryBuilder.ThinContentChars)
+                result["thin_content"].Add(new Dictionary<string, object?>
                 {
-                    result["thin_content"].Add(new Dictionary<string, object?>
-                    {
-                        ["url"] = row.Url.Trim(),
-                        ["title"] = (row.Title ?? "").Trim(),
-                        ["content_length"] = c,
-                    });
-                }
+                    ["url"] = row.Url.Trim(),
+                    ["title"] = (row.Title ?? "").Trim(),
+                    ["content_length"] = row.ContentLength ?? 0,
+                    ["word_count"] = row.WordCount,
+                });
             }
         }
 

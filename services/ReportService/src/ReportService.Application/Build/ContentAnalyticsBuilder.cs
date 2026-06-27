@@ -74,16 +74,16 @@ public static class ContentAnalyticsBuilder
         if (success.Any(r => r.ContentHtmlRatio.HasValue))
         {
             var ratios = success.Select(r => r.ContentHtmlRatio ?? 0).ToList();
-            var crBins = new (double Lo, double Hi, string Label)[]
+            var crBins = new (double Lo, double Hi, string Label, bool InclusiveHi)[]
             {
-                (0, 10, "<10%"),
-                (10.01, 20, "10-20%"),
-                (20.01, 40, "20-40%"),
-                (40.01, 100, ">40%"),
+                (0, 10, "<10%", false),
+                (10, 20, "10-20%", false),
+                (20, 40, "20-40%", false),
+                (40, 100, ">40%", true),
             };
             result["content_ratio_distribution"] = crBins.ToDictionary(
                 b => b.Label,
-                b => ratios.Count(r => r >= b.Lo && r <= b.Hi));
+                b => ratios.Count(r => r >= b.Lo && (b.InclusiveHi ? r <= b.Hi : r < b.Hi)));
         }
 
         if (success.Any(r => !string.IsNullOrWhiteSpace(r.TopKeywords)))

@@ -97,6 +97,7 @@ public sealed class NativeReportBuilder(
         var outbound = ReportMetadataBuilder.BuildOutboundLinkDomains(rows, startUrl, maxOutbound);
         var summarySeo = BuildSummarySeoPayload(seo.Issues);
         var siteLevel = await siteLevelBuilder.FetchAsync(startUrl, cancellationToken);
+        siteLevel = MergeSiteLevelConfig(siteLevel, config);
         var runSecurityScan = ParseBool(config, "run_security_scan", defaultValue: true);
         var securityFindings = SecurityScanBuilder.BuildPassive(rows, startUrl, runSecurityScan);
         var categories = categoryBuilder.BuildCategories(
@@ -172,7 +173,7 @@ public sealed class NativeReportBuilder(
         var successRows = CategoryHelpers.SuccessRows(rows);
         var contentUrls = ContentUrlListsBuilder.Build(rows, successRows);
         var contentAnalytics = ContentAnalyticsBuilder.BuildContentAnalytics(rows);
-        var keywordOpportunities = KeywordOpportunitiesBuilder.Build(rows, config);
+        var keywordOpportunities = KeywordOpportunitiesBuilder.Build(rows, config, googleData);
         var semanticKeywordClusters = await BuildSemanticKeywordClustersAsync(
             contentAnalytics,
             mlBundle,
@@ -422,6 +423,20 @@ public sealed class NativeReportBuilder(
         return raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(s => s.Length > 0)
             .ToList();
+    }
+
+    private static Dictionary<string, object?> MergeSiteLevelConfig(
+        IReadOnlyDictionary<string, object?>? siteLevel,
+        IReadOnlyDictionary<string, string>? config)
+    {
+        var merged = siteLevel is Dictionary<string, object?> dict
+            ? new Dictionary<string, object?>(dict)
+            : siteLevel?.ToDictionary(kv => kv.Key, kv => kv.Value)
+              ?? new Dictionary<string, object?>();
+
+        merged["enable_ads_txt_check"] = ParseBool(config, "enable_ads_txt_check", defaultValue: false);
+        merged["enable_security_txt_check"] = ParseBool(config, "enable_security_txt_check", defaultValue: false);
+        return merged;
     }
 }
 

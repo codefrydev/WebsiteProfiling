@@ -125,7 +125,9 @@ public sealed class CategoryBuilderGoldenTests
               "sitemap_present": true,
               "sitemap_valid": true,
               "ads_txt_present": false,
-              "security_txt_present": false
+              "security_txt_present": false,
+              "enable_ads_txt_check": true,
+              "enable_security_txt_check": true
             }
             """)!;
 

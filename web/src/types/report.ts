@@ -637,6 +637,7 @@ export interface ReportPayload {
   link_rel_summary?: LinkRelSummary;
   inlink_anchor_matrix?: InlinkAnchorRow[];
   portfolio_benchmark?: PortfolioBenchmark;
+  site_health_score?: number | null;
   rich_results_validation?: RichResultsValidationRow[];
   rich_results_meta?: RichResultsMeta;
   competitor_keyword_gap?: CompetitorKeywordGapRow[];
@@ -722,6 +723,8 @@ export interface ReportSummary {
   success_rate?: number;
   crawl_time_s?: number;
   avg_outlinks?: number;
+  site_health_score?: number | null;
+  category_scores?: Record<string, number>;
 }
 
 export interface ReportCategory {
