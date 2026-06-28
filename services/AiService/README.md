@@ -6,12 +6,12 @@ Python FastAPI retains crawl, pipeline jobs, and integrations OAuth reads. AiSer
 
 ## Run locally
 
-Prerequisites: [.NET SDK 10+](https://dotnet.microsoft.com/download), Postgres, FastAPI on port 8001 (audit-tool bridge for tools not yet native in C#).
+Prerequisites: [.NET SDK 10+](https://dotnet.microsoft.com/download), Postgres, FastAPI on port 8096 (audit-tool bridge for tools not yet native in C#).
 
 ```bash
 cd services/AiService
 export DATABASE_URL=postgres://postgres:dev@127.0.0.1:5432/website_profiling
-export FASTAPI_URL=http://127.0.0.1:8001
+export FASTAPI_URL=http://127.0.0.1:8096
 dotnet run --project src/AiService.Api
 ```
 
@@ -60,7 +60,7 @@ Pipeline domain settings (`crawl_settings`, `report_settings`, …) are written 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `DATABASE_URL` | — | Postgres (`llm_settings`, `llm_cache`, `chat_sessions`, typed pipeline tables, `google_app_settings`, `report_payload`) |
-| `FASTAPI_URL` | `http://127.0.0.1:8001` | Python audit-tool bridge for unported tools |
+| `FASTAPI_URL` | `http://127.0.0.1:8096` | Python audit-tool bridge for unported tools |
 | `AI_SERVICE_URL` | — | Used by Python worker (`ai_service_client.py`) |
 | `ASPNETCORE_URLS` | `http://+:8092` | Bind address |
 | `WP_MCP_HTTP` | — | Set `1` to expose MCP at `/mcp` |

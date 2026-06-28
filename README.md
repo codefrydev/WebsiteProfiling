@@ -149,7 +149,7 @@ flowchart TB
 
     subgraph BffRoutes["BFF upstream routing"]
         direction LR
-        BFF --> FastAPI["fastapi :8001<br/>Crawl · jobs · pipeline settings"]
+        BFF --> FastAPI["fastapi :8096<br/>Crawl · jobs · pipeline settings"]
         BFF --> Report["report :8094<br/>Report build · orchestration"]
         BFF --> Integrations["integrations :8093<br/>Google/Bing · GSC/GA4 · keywords"]
         BFF --> Ai["ai :8092<br/>Chat · LLM · secrets · MCP"]
@@ -208,7 +208,7 @@ flowchart TB
 ```
 WebsiteProfiling/
 ├── src/website_profiling/     # Python audit engine (CLI: python -m src)
-│   ├── api/                   # FastAPI app (uvicorn :8001)
+│   ├── api/                   # FastAPI app (uvicorn :8096)
 │   ├── worker/                # Background pipeline job runner
 │   ├── crawl/                 # Crawler, fetchers, JS rendering
 │   ├── reporting/             # Report builder (Python bridge; native build in ReportService)
@@ -291,7 +291,7 @@ Build and run the full dev stack from source:
 docker compose up --build
 ```
 
-Services: **postgres**, **fastapi** (`:8001`, internal), **worker**, **report** (`:8094`, internal), **integrations** (`:8093`, internal), **ai** (`:8092`, internal), **data** (`:8091`, internal), **bff** (`:8090`), **web** (`:3000`), **files** (`:8080`, internal).
+Services: **postgres**, **fastapi** (`:8096`, internal), **worker**, **report** (`:8094`, internal), **integrations** (`:8093`, internal), **ai** (`:8092`, internal), **data** (`:8091`, internal), **bff** (`:8090`), **web** (`:3000`), **files** (`:8080`, internal).
 
 Open [http://localhost:3000/home](http://localhost:3000/home). The browser talks only to the **BFF** (`:8090`); the BFF proxies to FastAPI (crawl/pipeline), IntegrationsService (Google/Bing), AiService (AI/secrets), Data (report reads), and FileService (PDF/workbook export).
 
@@ -308,7 +308,7 @@ Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTG
 ./local-prod        # Same DB, Vite production build + preview (no hot reload)
 ```
 
-`./local-run` starts (in order): **FileService** `:8080`, **Data** `:8091`, **AiService** `:8092` (MCP HTTP enabled), **ReportService** `:8094`, **IntegrationsService** `:8093`, **ConfigService** `:8095`, **FastAPI** `:8001` (Python bridge), **BFF** `:8090`, and **Vite** `:3000`. Use `localhost` (not `127.0.0.1`) for pipeline APIs so CORS and cookies match the BFF origin.
+`./local-run` starts (in order): **FileService** `:8080`, **Data** `:8091`, **AiService** `:8092` (MCP HTTP enabled), **ReportService** `:8094`, **IntegrationsService** `:8093`, **ConfigService** `:8095`, **FastAPI** `:8096` (Python bridge), **BFF** `:8090`, and **Vite** `:3000`. Use `localhost` (not `127.0.0.1`) for pipeline APIs so CORS and cookies match the BFF origin.
 
 Default local `DATABASE_URL`: `postgres://postgres:dev@127.0.0.1:5432/website_profiling` (Docker Compose dev stack uses `profiling:profiling`).
 
@@ -325,7 +325,7 @@ With `./local-run`, each service runs in **Development** and exposes interactive
 | **ReportService** | 8094 | [http://localhost:8094/docs](http://localhost:8094/docs) | `/swagger/v1/swagger.json` |
 | **ConfigService** | 8095 | [http://localhost:8095/docs](http://localhost:8095/docs) | `/swagger/v1/swagger.json` |
 | **FileService** | 8080 | [http://localhost:8080/docs](http://localhost:8080/docs) | `/swagger/v1/swagger.json` |
-| **Python bridge** (FastAPI) | 8001 | [http://localhost:8001/docs](http://localhost:8001/docs) | `/openapi.json` |
+| **Python bridge** (FastAPI) | 8096 | [http://localhost:8096/docs](http://localhost:8096/docs) | `/openapi.json` |
 
 Swagger UI is disabled when `ASPNETCORE_ENVIRONMENT=Production`. The legacy `web/openapi.json` reflects the old monolithic FastAPI app and is not a complete map of the current C# services.
 

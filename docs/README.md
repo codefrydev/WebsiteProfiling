@@ -29,7 +29,7 @@ All `/api/*` calls from the SPA go to the **BFF** (`:8090`). The BFF forwards su
 
 | Upstream | Examples |
 |----------|----------|
-| **FastAPI** (`:8001`) | `/api/run`, `/api/jobs/*`, `/api/pipeline-config`, `/api/pipeline-settings`, `/api/ui-preferences`, crawl, properties |
+| **FastAPI** (`:8096`) | `/api/run`, `/api/jobs/*`, `/api/pipeline-config`, `/api/pipeline-settings`, `/api/ui-preferences`, crawl, properties |
 | **ReportService** (`:8094`, internal) | Report build and full-audit orchestration (worker; not browser-facing) |
 | **IntegrationsService** (`:8093`) | `/api/integrations/google/*`, `/api/integrations/bing/*`, property Google config |
 | **AiService** (`:8092`) | `/api/chat`, `/api/secrets`, `/api/llm-settings`, MCP-related APIs |
@@ -53,7 +53,7 @@ During local development (`./local-run`, `ASPNETCORE_ENVIRONMENT=Development`), 
 | ReportService | 8094 | [http://localhost:8094/docs](http://localhost:8094/docs) |
 | ConfigService | 8095 | [http://localhost:8095/docs](http://localhost:8095/docs) |
 | FileService | 8080 | [http://localhost:8080/docs](http://localhost:8080/docs) |
-| Python bridge | 8001 | [http://localhost:8001/docs](http://localhost:8001/docs) |
+| Python bridge | 8096 | [http://localhost:8096/docs](http://localhost:8096/docs) |
 
 OpenAPI JSON for .NET services: `/swagger/v1/swagger.json`. See the main [README.md](../README.md#api-documentation-swagger) for details.
 

@@ -76,7 +76,7 @@ migrate() {
 
 start_uvicorn_foreground() {
   exec /opt/venv/bin/uvicorn website_profiling.api.main:app \
-    --host 0.0.0.0 --port 8001 --workers 1
+    --host 0.0.0.0 --port 8096 --workers 1
 }
 
 case "$ROLE" in
@@ -109,7 +109,7 @@ case "$ROLE" in
     WORKER_PID=$!
 
     /opt/venv/bin/uvicorn website_profiling.api.main:app \
-      --host 0.0.0.0 --port 8001 --workers 1 &
+      --host 0.0.0.0 --port 8096 --workers 1 &
     UVICORN_PID=$!
 
     while kill -0 "$UVICORN_PID" 2>/dev/null; do

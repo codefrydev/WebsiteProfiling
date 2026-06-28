@@ -11,7 +11,7 @@ Internal .NET microservice for Google Search Console, GA4, Bing sync, and keywor
 ```bash
 cd services/IntegrationsService
 DATABASE_URL=postgres://profiling:profiling@127.0.0.1:5432/website_profiling \
-  FASTAPI_URL=http://127.0.0.1:8001 \
+  FASTAPI_URL=http://127.0.0.1:8096 \
   USE_FASTAPI_PYTHON_BRIDGE=1 \
   ASPNETCORE_URLS=http://127.0.0.1:8093 \
   dotnet run --project src/IntegrationsService.Api --no-launch-profile

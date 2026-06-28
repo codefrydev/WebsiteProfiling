@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# WebsiteProfiling: FastAPI (port 8001) + Python worker + pipeline.
+# WebsiteProfiling: FastAPI (port 8096) + Python worker + pipeline.
 # Web UI is a separate image: web/Dockerfile (Vite SPA + nginx).
 # Build from repository root: docker build -t website-profiling .
 # BuildKit cache mounts (default in Docker Desktop) reuse pip/npm downloads across rebuilds.
@@ -72,6 +72,6 @@ ENV NODE_ENV=production
 # Persisted data directory (secrets + shadow config)
 RUN mkdir -p /data && chmod +x /app/docker-entrypoint.sh
 
-EXPOSE 8001
+EXPOSE 8096
 
 CMD ["/app/docker-entrypoint.sh"]

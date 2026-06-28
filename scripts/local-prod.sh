@@ -165,7 +165,7 @@ cmd_start() {
     stop_service "Vite preview" "$NPM_PID"
     NPM_PID=""
     stop_host_dotnet_stack stop_service
-    stop_service "FastAPI" "$UVICORN_PID" 8001
+    stop_service "FastAPI" "$UVICORN_PID" 8096
     UVICORN_PID=""
     stop_service "pipeline worker" "$WORKER_PID"
     WORKER_PID=""
@@ -191,14 +191,14 @@ cmd_start() {
   export WEBSITE_PROFILING_ROOT="$ROOT"
 
   log "Pipeline jobs run in ReportService C# worker"
-  log "Starting Python bridge (audit-tool + keyword enrich CLI) on port 8001"
-  export FASTAPI_URL="http://127.0.0.1:8001"
+  log "Starting Python bridge (audit-tool + keyword enrich CLI) on port 8096"
+  export FASTAPI_URL="http://127.0.0.1:8096"
   export FASTAPI_ALLOWED_ORIGINS="http://localhost:8090"
   "$ROOT/.venv/bin/uvicorn" website_profiling.api.main:app \
-    --host 0.0.0.0 --port 8001 --workers 1 &
+    --host 0.0.0.0 --port 8096 --workers 1 &
   UVICORN_PID=$!
   disown_bg "$UVICORN_PID"
-  wait_for_http "http://127.0.0.1:8001/api/health" "FastAPI" 90 || die "FastAPI failed to start"
+  wait_for_http "http://127.0.0.1:8096/api/health" "FastAPI" 90 || die "FastAPI failed to start"
 
   start_host_integrations_bff "$ROOT" Production
   disown_bg "$INTEGRATIONS_PID"

@@ -28,12 +28,12 @@ The same tool catalog powers in-app **AI Chat** at `/chat` (also served by AiSer
 
 ## Prerequisites
 
-[.NET SDK 10+](https://dotnet.microsoft.com/download), Postgres, and `./local-run` (or AiService + FastAPI manually). AiService needs FastAPI on `:8001` for the audit-tool bridge until all tools are native C#.
+[.NET SDK 10+](https://dotnet.microsoft.com/download), Postgres, and `./local-run` (or AiService + FastAPI manually). AiService needs FastAPI on `:8096` for the audit-tool bridge until all tools are native C#.
 
 ```bash
 export DATABASE_URL=postgres://profiling:profiling@localhost:5432/website_profiling  # Docker default
 # ./local-run default: postgres://postgres:dev@127.0.0.1:5432/website_profiling
-export FASTAPI_URL=http://127.0.0.1:8001
+export FASTAPI_URL=http://127.0.0.1:8096
 ```
 
 ### Local stdio (IDE subprocess)
@@ -43,7 +43,7 @@ From the repo root, with Postgres running:
 ```bash
 cd services/AiService
 export DATABASE_URL=postgres://postgres:dev@127.0.0.1:5432/website_profiling
-export FASTAPI_URL=http://127.0.0.1:8001
+export FASTAPI_URL=http://127.0.0.1:8096
 dotnet run --project src/AiService.Api
 ```
 
@@ -85,7 +85,7 @@ Add to `.cursor/mcp.json` or your MCP client settings (stdio — spawn AiService
       "args": ["run", "--project", "services/AiService/src/AiService.Api", "--no-launch-profile"],
       "env": {
         "DATABASE_URL": "postgres://postgres:dev@127.0.0.1:5432/website_profiling",
-        "FASTAPI_URL": "http://127.0.0.1:8001",
+        "FASTAPI_URL": "http://127.0.0.1:8096",
         "WP_MCP_DOMAIN": "core",
         "WP_PROPERTY_ID": "1"
       }
@@ -95,7 +95,7 @@ Add to `.cursor/mcp.json` or your MCP client settings (stdio — spawn AiService
       "args": ["run", "--project", "services/AiService/src/AiService.Api", "--no-launch-profile"],
       "env": {
         "DATABASE_URL": "postgres://postgres:dev@127.0.0.1:5432/website_profiling",
-        "FASTAPI_URL": "http://127.0.0.1:8001",
+        "FASTAPI_URL": "http://127.0.0.1:8096",
         "WP_MCP_DOMAIN": "google",
         "WP_PROPERTY_ID": "1"
       }
@@ -114,7 +114,7 @@ Add to `.cursor/mcp.json` or your MCP client settings (stdio — spawn AiService
       "args": ["run", "--project", "services/AiService/src/AiService.Api", "--no-launch-profile"],
       "env": {
         "DATABASE_URL": "postgres://postgres:dev@127.0.0.1:5432/website_profiling",
-        "FASTAPI_URL": "http://127.0.0.1:8001",
+        "FASTAPI_URL": "http://127.0.0.1:8096",
         "WP_MCP_DOMAIN": "full",
         "WP_PROPERTY_ID": "1"
       }
@@ -135,7 +135,7 @@ Configure access on **MCP settings** (`/mcp`) in the web UI (recommended), or se
 
 ```bash
 export DATABASE_URL=postgres://profiling:profiling@localhost:5432/website_profiling
-export FASTAPI_URL=http://127.0.0.1:8001
+export FASTAPI_URL=http://127.0.0.1:8096
 export ASPNETCORE_URLS=http://0.0.0.0:8092
 export WP_MCP_HTTP=1
 export WP_MCP_DOMAIN=core

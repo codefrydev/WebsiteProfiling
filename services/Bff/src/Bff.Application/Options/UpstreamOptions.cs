@@ -9,7 +9,7 @@ public sealed class UpstreamOptions
     public const string SectionName = "Upstream";
 
     /// <summary>FastAPI base URL (env override: FASTAPI_URL). Default matches the new internal compose service.</summary>
-    public string FastApiBaseUrl { get; set; } = "http://127.0.0.1:8001";
+    public string FastApiBaseUrl { get; set; } = "http://127.0.0.1:8096";
 
     /// <summary>FileService base URL (env override: FILE_SERVICE_URL).</summary>
     public string FileServiceBaseUrl { get; set; } = "http://127.0.0.1:8080";

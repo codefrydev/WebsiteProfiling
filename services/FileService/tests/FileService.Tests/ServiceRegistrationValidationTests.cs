@@ -14,7 +14,7 @@ public sealed class ServiceRegistrationValidationTests
     {
         using var env = ServiceRegistrationTestEnvironment.Push();
         env.SetDefaultsForPostgresServices();
-        env.Set("REPORT_API_URL", "http://127.0.0.1:8001");
+        env.Set("REPORT_API_URL", "http://127.0.0.1:8096");
 
         using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {

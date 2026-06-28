@@ -234,7 +234,7 @@ cmd_start() {
     if command -v dotnet >/dev/null 2>&1; then
       stop_host_dotnet_stack stop_service
     fi
-    stop_service "FastAPI" "$UVICORN_PID" 8001
+    stop_service "FastAPI" "$UVICORN_PID" 8096
     UVICORN_PID=""
     stop_service "pipeline worker" "$WORKER_PID"
     WORKER_PID=""
@@ -268,16 +268,16 @@ cmd_start() {
   export WEBSITE_PROFILING_ROOT="$ROOT"
 
   log "Pipeline jobs run in ReportService C# worker (Python subprocess for crawl/lighthouse only)"
-  log "Starting Python bridge (audit-tool + keyword enrich CLI only) on port 8001"
-  export FASTAPI_URL="http://127.0.0.1:8001"
+  log "Starting Python bridge (audit-tool + keyword enrich CLI only) on port 8096"
+  export FASTAPI_URL="http://127.0.0.1:8096"
   export FASTAPI_ALLOWED_ORIGINS="http://localhost:8090"
   export DEPRECATE_PYTHON_INTEGRATIONS="${DEPRECATE_PYTHON_INTEGRATIONS:-1}"
   export DEPRECATE_PYTHON_REPORT_ROUTES="${DEPRECATE_PYTHON_REPORT_ROUTES:-1}"
   "$VENV/bin/uvicorn" website_profiling.api.main:app \
-    --host 0.0.0.0 --port 8001 --workers 1 &
+    --host 0.0.0.0 --port 8096 --workers 1 &
   UVICORN_PID=$!
   disown_bg "$UVICORN_PID"
-  wait_for_http_logged "http://127.0.0.1:8001/api/health" "FastAPI"
+  wait_for_http_logged "http://127.0.0.1:8096/api/health" "FastAPI"
 
   if command -v dotnet >/dev/null 2>&1; then
     start_host_integrations_bff "$ROOT" Development

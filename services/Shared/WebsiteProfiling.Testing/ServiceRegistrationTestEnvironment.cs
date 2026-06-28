@@ -26,7 +26,7 @@ public sealed class ServiceRegistrationTestEnvironment : IDisposable
     public void SetDefaultsForPostgresServices()
     {
         Set("DATABASE_URL", "Host=127.0.0.1;Port=5432;Database=wp_di_test;Username=test;Password=test");
-        Set("FASTAPI_URL", "http://127.0.0.1:8001");
+        Set("FASTAPI_URL", "http://127.0.0.1:8096");
     }
 
     public void Dispose()

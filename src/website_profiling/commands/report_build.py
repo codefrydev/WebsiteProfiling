@@ -149,7 +149,7 @@ def call_fastapi_report_bridge(cfg: dict, property_id: int, crawl_run_id: int | 
     import urllib.error
     import urllib.request
 
-    base = (os.environ.get("FASTAPI_URL") or "http://127.0.0.1:8001").strip().rstrip("/")
+    base = (os.environ.get("FASTAPI_URL") or "http://127.0.0.1:8096").strip().rstrip("/")
     body = {
         "propertyId": int(property_id),
         "crawlRunId": crawl_run_id,

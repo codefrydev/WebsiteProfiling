@@ -133,7 +133,7 @@ public sealed class FastApiPythonBridge(IHttpClientFactory httpClientFactory)
     private HttpClient CreateClient()
     {
         var client = httpClientFactory.CreateClient(nameof(FastApiPythonBridge));
-        var baseUrl = (Environment.GetEnvironmentVariable("FASTAPI_URL") ?? "http://127.0.0.1:8001").Trim().TrimEnd('/');
+        var baseUrl = (Environment.GetEnvironmentVariable("FASTAPI_URL") ?? "http://127.0.0.1:8096").Trim().TrimEnd('/');
         client.BaseAddress = new Uri(baseUrl + "/");
         client.Timeout = TimeSpan.FromSeconds(120);
         return client;
