@@ -198,11 +198,12 @@
             { id: 'bff', label: 'BFF', sub: ':8090 • Auth • Proxy', x: 550, y: 280, type: 'gateway', desc: 'Backend-for-Frontend serving as the entry point. Handles authentication, CORS, and reverse proxy routing.' },
             
             { id: 'fastapi', label: 'FastAPI', sub: ':8096 • Crawl/Jobs', x: 50, y: 450, type: 'service', desc: 'Core Python service handling crawling, jobs, and pipeline settings. Acts as the strangler proxy target.' },
-            { id: 'report', label: 'Report', sub: ':8094 • Build', x: 250, y: 450, type: 'service', desc: 'Service dedicated to report building and orchestrating complex multi-step processes.' },
-            { id: 'integrations', label: 'Integrations', sub: ':8093 • APIs', x: 450, y: 450, type: 'service', desc: 'Manages third-party connections including Google/Bing APIs, GSC, GA4, and keyword processing.' },
-            { id: 'ai', label: 'AI', sub: ':8092 • Chat/LLM', x: 650, y: 450, type: 'service', desc: 'AI orchestration service managing chat interfaces, LLM connections, secrets, and MCP.' },
-            { id: 'data', label: 'Data', sub: ':8091 • Portfolio', x: 850, y: 450, type: 'service', desc: 'Data access layer for report reads, portfolio management, and system issue tracking.' },
-            { id: 'files', label: 'Files', sub: ':8080 • Exports', x: 1050, y: 450, type: 'service', desc: 'Handles document generation, including PDF and Excel exports.' },
+            { id: 'config', label: 'ConfigService', sub: ':8095 • Typed Config', x: 250, y: 450, type: 'service', desc: 'Typed configuration service exposing pipeline, crawl, Lighthouse, and report settings stored in PostgreSQL typed tables. Serves GET/PUT /api/pipeline-config and /api/pipeline-settings.' },
+            { id: 'report', label: 'Report', sub: ':8094 • Build', x: 450, y: 450, type: 'service', desc: 'Service dedicated to report building and orchestrating complex multi-step processes.' },
+            { id: 'integrations', label: 'Integrations', sub: ':8093 • APIs', x: 650, y: 450, type: 'service', desc: 'Manages third-party connections including Google/Bing APIs, GSC, GA4, and keyword processing.' },
+            { id: 'ai', label: 'AI', sub: ':8092 • Chat/LLM', x: 850, y: 450, type: 'service', desc: 'AI orchestration service managing chat interfaces, LLM connections, secrets, and MCP.' },
+            { id: 'data', label: 'Data', sub: ':8091 • Portfolio', x: 1050, y: 450, type: 'service', desc: 'Data access layer for report reads, portfolio management, and system issue tracking.' },
+            { id: 'files', label: 'Files', sub: ':8080 • Exports', x: 1250, y: 450, type: 'service', desc: 'Handles document generation, including PDF and Excel exports.' },
             
             { id: 'worker', label: 'Worker', sub: 'Crawl + Lighthouse', x: 350, y: 640, type: 'worker', desc: 'Background asynchronous pipeline worker executing heavy crawl and Lighthouse audit jobs.' },
             
@@ -241,7 +242,9 @@
             
             { id: 'e23', source: 'integrations', target: 'google' },
             { id: 'e24', source: 'ai', target: 'llm' },
-            { id: 'e25', source: 'mcp', target: 'ai', label: 'MCP stdio/HTTP', dashed: true }
+            { id: 'e25', source: 'mcp', target: 'ai', label: 'MCP stdio/HTTP', dashed: true },
+            { id: 'e26', source: 'bff', target: 'config' },
+            { id: 'e27', source: 'config', target: 'postgres' }
         ];
 
         let transform = { x: 0, y: 0, scale: 0.8 };
