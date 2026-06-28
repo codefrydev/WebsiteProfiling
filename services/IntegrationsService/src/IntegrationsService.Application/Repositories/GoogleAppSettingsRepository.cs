@@ -33,6 +33,13 @@ public sealed class GoogleAppSettingsRepository(IntegrationsDbContext db)
             && row.ServiceAccountJson != "null";
     }
 
+    public async Task<bool> HasClientCredentialsAsync(CancellationToken cancellationToken = default)
+    {
+        var row = await ReadAsync(cancellationToken);
+        var clientId = (row.ClientId ?? Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID") ?? "").Trim();
+        return !string.IsNullOrWhiteSpace(clientId);
+    }
+
     public async Task<(string ClientId, string ClientSecret)> AppClientCredentialsAsync(
         CancellationToken cancellationToken = default)
     {

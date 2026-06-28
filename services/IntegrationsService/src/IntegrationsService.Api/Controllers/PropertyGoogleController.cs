@@ -31,7 +31,6 @@ public sealed class PropertyGoogleController(
             return NotFound(new { error = "Property not found" });
         }
 
-        var appCfg = await appSettings.ReadAsync(cancellationToken);
         var publicStatus = PropertyGoogleStatusMapper.ToPublicStatus(prop);
         return Ok(new
         {
@@ -42,7 +41,7 @@ public sealed class PropertyGoogleController(
             dateRangeDays = publicStatus.DateRangeDays,
             connectedEmail = publicStatus.ConnectedEmail,
             connectedAt = publicStatus.ConnectedAt,
-            hasClientId = !string.IsNullOrWhiteSpace(appCfg.ClientId),
+            hasClientId = await appSettings.HasClientCredentialsAsync(cancellationToken),
             lastFetchedAt = await googleData.GetLastFetchedAtAsync(propertyId, cancellationToken),
             propertyId,
         });
