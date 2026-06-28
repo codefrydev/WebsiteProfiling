@@ -261,12 +261,12 @@ Do not run the application container in isolation with `docker run` unless you p
 
 ### FileService (PDF and workbook export)
 
-The `files` service (port **8080**) renders audit PDFs and Excel workbooks. It reads report data over HTTP from the `web` service — no Postgres connection.
+The `files` service (port **8097**) renders audit PDFs and Excel workbooks. It reads report data over HTTP from the `web` service — no Postgres connection.
 
 | Variable | Service | Purpose |
 |----------|---------|---------|
-| `FILE_SERVICE_URL` | `web`, MCP | Where clients call FileService (default `http://files:8080` in Compose) |
-| `REPORT_API_URL` | `files` | Report API base URL (Compose: `http://web:8001`) |
+| `FILE_SERVICE_URL` | `web`, MCP | Where clients call FileService (default `http://files:8097` in Compose) |
+| `REPORT_API_URL` | `files` | Report API base URL (Compose: `http://web:8096`) |
 
 PDF or workbook downloads fail if `files` is not running. See [services/FileService/README.md](../services/FileService/README.md).
 

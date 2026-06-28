@@ -256,11 +256,11 @@ function Invoke-Start {
     Invoke-WebDeps
 
     $bffBase = if ($env:VITE_BFF_BASE_URL) { $env:VITE_BFF_BASE_URL } else { "http://localhost:8090" }
-    $fileServiceUrl = if ($env:FILE_SERVICE_URL) { $env:FILE_SERVICE_URL } else { "http://127.0.0.1:8080" }
+    $fileServiceUrl = if ($env:FILE_SERVICE_URL) { $env:FILE_SERVICE_URL } else { "http://127.0.0.1:8097" }
 
     if (Get-Command dotnet -ErrorAction SilentlyContinue) {
-        Write-Log "Starting FileService on port 8080"
-        $env:REPORT_API_URL = "http://127.0.0.1:8001"
+        Write-Log "Starting FileService on port 8097"
+        $env:REPORT_API_URL = "http://127.0.0.1:8096"
         Start-Process -FilePath "dotnet" `
             -ArgumentList @("run", "--project", "src/FileService.Api", "--no-launch-profile") `
             -WorkingDirectory (Join-Path $ROOT "services/FileService") `
@@ -270,18 +270,18 @@ function Invoke-Start {
     }
 
     Write-Log "Pipeline jobs run in ReportService C# worker"
-    Write-Log "Starting Python bridge on port 8001"
-    $env:FASTAPI_URL = "http://127.0.0.1:8001"
+    Write-Log "Starting Python bridge on port 8096"
+    $env:FASTAPI_URL = "http://127.0.0.1:8096"
     $env:FASTAPI_ALLOWED_ORIGINS = "http://localhost:8090"
     Start-Process -FilePath $VENV_PYTHON `
-        -ArgumentList @("-m", "uvicorn", "website_profiling.api.main:app", "--host", "0.0.0.0", "--port", "8001", "--workers", "1") `
+        -ArgumentList @("-m", "uvicorn", "website_profiling.api.main:app", "--host", "0.0.0.0", "--port", "8096", "--workers", "1") `
         -WorkingDirectory $ROOT `
         -WindowStyle Minimized | Out-Null
 
     if (Get-Command dotnet -ErrorAction SilentlyContinue) {
         Write-Log "Starting BFF on port 8090"
         $bffDir = Join-Path $ROOT "services/Bff"
-        $env:FASTAPI_URL = "http://127.0.0.1:8001"
+        $env:FASTAPI_URL = "http://127.0.0.1:8096"
         $env:FILE_SERVICE_URL = $fileServiceUrl
         $env:BFF_ALLOWED_ORIGINS = "http://localhost:3000"
         $env:ASPNETCORE_URLS = "http://127.0.0.1:8090"

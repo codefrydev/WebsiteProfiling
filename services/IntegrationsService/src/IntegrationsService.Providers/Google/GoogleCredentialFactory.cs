@@ -51,7 +51,24 @@ public sealed class GoogleCredentialFactory(
             propertyId.ToString(),
             new TokenResponse { RefreshToken = token });
 
-        if (!await credential.RefreshTokenAsync(cancellationToken))
+        bool refreshed;
+        try
+        {
+            refreshed = await credential.RefreshTokenAsync(cancellationToken);
+        }
+        catch (TokenResponseException ex) when (ex.Error?.Error == "invalid_grant")
+        {
+            await properties.DisconnectGoogleAsync(propertyId, cancellationToken);
+            throw new InvalidOperationException(
+                "Google connection expired — reconnect Google for this site.");
+        }
+        catch (TokenResponseException)
+        {
+            throw new InvalidOperationException(
+                "Google connection expired — reconnect Google for this site.");
+        }
+
+        if (!refreshed)
         {
             throw new InvalidOperationException(
                 "Google connection expired — reconnect Google for this site.");

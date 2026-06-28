@@ -40,7 +40,7 @@ services:
     volumes:
       - profiling-data:/data
     healthcheck:
-      test: ['CMD', 'node', '-e', "require('http').get('http://127.0.0.1:8001/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      test: ['CMD', 'node', '-e', "require('http').get('http://127.0.0.1:8096/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -71,7 +71,7 @@ services:
       dockerfile: AiService/Dockerfile
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
-      FASTAPI_URL: http://fastapi:8001
+      FASTAPI_URL: http://fastapi:8096
       ASPNETCORE_URLS: http://+:8092
       WP_MCP_HTTP: "1"
     depends_on:
@@ -94,7 +94,7 @@ services:
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
       ASPNETCORE_URLS: http://+:8093
-      FASTAPI_URL: http://fastapi:8001
+      FASTAPI_URL: http://fastapi:8096
       USE_FASTAPI_PYTHON_BRIDGE: "1"
       ASPNETCORE_ENVIRONMENT: Production
       AUTH_SECRET: ${AUTH_SECRET:?set AUTH_SECRET}
@@ -120,7 +120,7 @@ services:
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
       ASPNETCORE_URLS: http://+:8094
-      FASTAPI_URL: http://fastapi:8001
+      FASTAPI_URL: http://fastapi:8096
       INTEGRATIONS_SERVICE_URL: http://integrations:8093
       AISERVICE_URL: http://ai:8092
       REPORT_SERVICE_USE_PYTHON_BRIDGE: "0"
@@ -147,7 +147,7 @@ services:
       dockerfile: FileService/Dockerfile
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
-      REPORT_API_URL: http://fastapi:8001
+      REPORT_API_URL: http://fastapi:8096
     depends_on:
       postgres:
         condition: service_healthy
@@ -174,8 +174,8 @@ services:
     ports:
       - '${BFF_PORT:-8090}:8090'
     environment:
-      FASTAPI_URL: http://fastapi:8001
-      FILE_SERVICE_URL: http://files:8080
+      FASTAPI_URL: http://fastapi:8096
+      FILE_SERVICE_URL: http://files:8097
       DATA_SERVICE_URL: http://data:8091
       AI_SERVICE_URL: http://ai:8092
       INTEGRATIONS_SERVICE_URL: http://integrations:8093
@@ -220,7 +220,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
-      FASTAPI_URL: http://fastapi:8001
+      FASTAPI_URL: http://fastapi:8096
       ASPNETCORE_URLS: http://+:8092
       WP_MCP_HTTP: "1"
       WP_MCP_DOMAIN: ${WP_MCP_DOMAIN:-core}

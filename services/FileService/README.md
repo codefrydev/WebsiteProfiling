@@ -6,24 +6,24 @@ Python owns crawl data and CSV/JSON exports. FileService renders PDF and Excel w
 
 ## Run locally
 
-Prerequisites: [.NET SDK 10+](https://dotnet.microsoft.com/download), Site Audit report API on port 8001 (started by `./local-run` or Docker `web` service).
+Prerequisites: [.NET SDK 10+](https://dotnet.microsoft.com/download), Site Audit report API on port 8096 (started by `./local-run` or Docker `web` service).
 
 ```bash
 cd services/FileService
-export REPORT_API_URL=http://127.0.0.1:8001
+export REPORT_API_URL=http://127.0.0.1:8096
 dotnet run --project src/FileService.Api
 ```
 
-Service listens on **http://localhost:8080** (`ASPNETCORE_URLS` / `appsettings.json`).
+Service listens on **http://localhost:8097** (`ASPNETCORE_URLS` / `appsettings.json`).
 
-In **Development**, Swagger UI is at **http://localhost:8080/docs** and the OpenAPI JSON at **http://localhost:8080/swagger/v1/swagger.json**.
+In **Development**, Swagger UI is at **http://localhost:8097/docs** and the OpenAPI JSON at **http://localhost:8097/swagger/v1/swagger.json**.
 
 ## Environment variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `REPORT_API_URL` | `http://127.0.0.1:8001` | Base URL for report payload, meta, and ui-preferences HTTP API |
-| `ASPNETCORE_URLS` | `http://127.0.0.1:8080` | Bind address (Docker sets `http://+:8080`) |
+| `REPORT_API_URL` | `http://127.0.0.1:8096` | Base URL for report payload, meta, and ui-preferences HTTP API |
+| `ASPNETCORE_URLS` | `http://127.0.0.1:8097` | Bind address (Docker sets `http://+:8097`) |
 
 ## Upstream HTTP contract
 

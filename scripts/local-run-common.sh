@@ -32,16 +32,16 @@ start_host_dotnet_base() {
   local root="$1"
   local mode="${2:-Development}"
 
-  export REPORT_API_URL="${REPORT_API_URL:-http://127.0.0.1:8001}"
+  export REPORT_API_URL="${REPORT_API_URL:-http://127.0.0.1:8096}"
   export AI_SERVICE_URL="${AI_SERVICE_URL:-http://127.0.0.1:8092}"
   export INTEGRATIONS_SERVICE_URL="${INTEGRATIONS_SERVICE_URL:-http://127.0.0.1:8093}"
   export REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-http://127.0.0.1:8094}"
-  export FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}"
+  export FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8097}"
 
-  free_port 8080
-  printf '\033[1;36m→\033[0m Starting FileService on port 8080\n'
+  free_port 8097
+  printf '\033[1;36m→\033[0m Starting FileService on port 8097\n'
   (cd "$root/services/FileService" && \
-    ASPNETCORE_URLS="http://127.0.0.1:8080" \
+    ASPNETCORE_URLS="http://127.0.0.1:8097" \
     ASPNETCORE_ENVIRONMENT="$mode" \
     dotnet run --project src/FileService.Api --no-launch-profile) &
   FILE_SERVICE_PID=$!
@@ -69,14 +69,14 @@ start_host_dotnet_base() {
   printf '\033[1;36m→\033[0m Starting AiService on port 8092\n'
   (cd "$root/services/AiService" && \
     DATABASE_URL="$DATABASE_URL" \
-    FASTAPI_URL="http://127.0.0.1:8001" \
+    FASTAPI_URL="http://127.0.0.1:8096" \
     ASPNETCORE_URLS="http://127.0.0.1:8092" \
     ASPNETCORE_ENVIRONMENT="$mode" \
     WP_MCP_HTTP=1 \
     dotnet run --project src/AiService.Api --no-launch-profile) &
   AI_PID=$!
 
-  wait_for_http "http://127.0.0.1:8080/health" "FileService"
+  wait_for_http "http://127.0.0.1:8097/health" "FileService"
   wait_for_http "http://127.0.0.1:8091/health" "Data service"
   wait_for_http "http://127.0.0.1:8095/health" "ConfigService"
   wait_for_http "http://127.0.0.1:8092/health" "AiService"
@@ -90,7 +90,7 @@ start_host_report_service() {
   printf '\033[1;36m→\033[0m Starting ReportService on port 8094\n'
   (cd "$root/services/ReportService" && \
     DATABASE_URL="$DATABASE_URL" \
-    FASTAPI_URL="http://127.0.0.1:8001" \
+    FASTAPI_URL="http://127.0.0.1:8096" \
     INTEGRATIONS_SERVICE_URL="$INTEGRATIONS_SERVICE_URL" \
     AISERVICE_URL="${AISERVICE_URL:-${AI_SERVICE_URL:-http://127.0.0.1:8092}}" \
     WEBSITE_PROFILING_ROOT="$root" \
@@ -114,7 +114,7 @@ start_host_integrations_bff() {
   printf '\033[1;36m→\033[0m Starting IntegrationsService on port 8093\n'
   (cd "$root/services/IntegrationsService" && \
     DATABASE_URL="$DATABASE_URL" \
-    FASTAPI_URL="http://127.0.0.1:8001" \
+    FASTAPI_URL="http://127.0.0.1:8096" \
     USE_FASTAPI_PYTHON_BRIDGE="${USE_FASTAPI_PYTHON_BRIDGE:-1}" \
     ASPNETCORE_URLS="http://127.0.0.1:8093" \
     ASPNETCORE_ENVIRONMENT="$mode" \
@@ -129,7 +129,7 @@ start_host_integrations_bff() {
   free_port 8090
   printf '\033[1;36m→\033[0m Starting BFF on port 8090\n'
   (cd "$root/services/Bff" && \
-    FASTAPI_URL="http://127.0.0.1:8001" \
+    FASTAPI_URL="http://127.0.0.1:8096" \
     FILE_SERVICE_URL="$FILE_SERVICE_URL" \
     DATA_SERVICE_URL="http://127.0.0.1:8091" \
     AI_SERVICE_URL="$AI_SERVICE_URL" \
@@ -175,6 +175,6 @@ stop_host_dotnet_stack() {
   CONFIG_PID=""
   "$stop_service_fn" "Data" "${DATA_PID:-}" 8091
   DATA_PID=""
-  "$stop_service_fn" "FileService" "${FILE_SERVICE_PID:-}" 8080
+  "$stop_service_fn" "FileService" "${FILE_SERVICE_PID:-}" 8097
   FILE_SERVICE_PID=""
 }

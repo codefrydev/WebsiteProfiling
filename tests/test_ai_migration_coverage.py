@@ -418,7 +418,7 @@ def test_report_build_service_and_bridge_helpers(monkeypatch) -> None:
         with pytest.raises(ConnectionError):
             report_build.call_report_service({}, 1)
 
-    monkeypatch.setenv("FASTAPI_URL", "http://fastapi:8001")
+    monkeypatch.setenv("FASTAPI_URL", "http://fastapi:8096")
     with patch("urllib.request.urlopen", return_value=_Resp()):
         out2 = report_build.call_fastapi_report_bridge({"a": "1"}, 3)
     assert out2["ok"] is True

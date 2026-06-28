@@ -40,7 +40,7 @@ describe('mcpClientConfig', () => {
     });
     expect(json).toContain('"command": "dotnet"');
     expect(json).toContain('services/AiService/src/AiService.Api');
-    expect(json).toContain('"FASTAPI_URL": "http://127.0.0.1:8001"');
+    expect(json).toContain('"FASTAPI_URL": "http://127.0.0.1:8096"');
     expect(json).toContain('"WP_PROPERTY_ID": "2"');
   });
 

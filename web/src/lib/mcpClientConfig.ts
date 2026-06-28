@@ -78,7 +78,7 @@ export function buildLocalStdioConfig(input: McpClientConfigInput): string {
         args: ['run', '--project', 'services/AiService/src/AiService.Api', '--no-launch-profile'],
         env: {
           DATABASE_URL: databaseUrl,
-          FASTAPI_URL: 'http://127.0.0.1:8001',
+          FASTAPI_URL: 'http://127.0.0.1:8096',
           WP_MCP_DOMAIN: domain,
           WP_PROPERTY_ID: propertyId,
         },
@@ -96,7 +96,7 @@ export function buildHttpStartCommand(): string {
   return [
     'cd services/AiService',
     'export DATABASE_URL=postgres://USER:PASS@localhost:5432/website_profiling',
-    'export FASTAPI_URL=http://127.0.0.1:8001',
+    'export FASTAPI_URL=http://127.0.0.1:8096',
     'export ASPNETCORE_URLS=http://0.0.0.0:8092',
     'export WP_MCP_HTTP=1',
     'dotnet run --project src/AiService.Api',
