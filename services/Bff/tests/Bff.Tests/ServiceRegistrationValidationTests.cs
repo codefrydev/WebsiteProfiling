@@ -13,7 +13,7 @@ public sealed class ServiceRegistrationValidationTests
     {
         using var env = ServiceRegistrationTestEnvironment.Push();
         env.SetDefaultsForPostgresServices();
-        env.Set("FILE_SERVICE_URL", "http://127.0.0.1:8080");
+        env.Set("FILE_SERVICE_URL", "http://127.0.0.1:8097");
         env.Set("DATA_SERVICE_URL", "http://127.0.0.1:8091");
         env.Set("AI_SERVICE_URL", "http://127.0.0.1:8092");
         env.Set("INTEGRATIONS_SERVICE_URL", "http://127.0.0.1:8093");

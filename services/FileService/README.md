@@ -14,16 +14,16 @@ export REPORT_API_URL=http://127.0.0.1:8096
 dotnet run --project src/FileService.Api
 ```
 
-Service listens on **http://localhost:8080** (`ASPNETCORE_URLS` / `appsettings.json`).
+Service listens on **http://localhost:8097** (`ASPNETCORE_URLS` / `appsettings.json`).
 
-In **Development**, Swagger UI is at **http://localhost:8080/docs** and the OpenAPI JSON at **http://localhost:8080/swagger/v1/swagger.json**.
+In **Development**, Swagger UI is at **http://localhost:8097/docs** and the OpenAPI JSON at **http://localhost:8097/swagger/v1/swagger.json**.
 
 ## Environment variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `REPORT_API_URL` | `http://127.0.0.1:8096` | Base URL for report payload, meta, and ui-preferences HTTP API |
-| `ASPNETCORE_URLS` | `http://127.0.0.1:8080` | Bind address (Docker sets `http://+:8080`) |
+| `ASPNETCORE_URLS` | `http://127.0.0.1:8097` | Bind address (Docker sets `http://+:8097`) |
 
 ## Upstream HTTP contract
 

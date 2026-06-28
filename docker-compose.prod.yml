@@ -175,7 +175,7 @@ services:
       - '${BFF_PORT:-8090}:8090'
     environment:
       FASTAPI_URL: http://fastapi:8096
-      FILE_SERVICE_URL: http://files:8080
+      FILE_SERVICE_URL: http://files:8097
       DATA_SERVICE_URL: http://data:8091
       AI_SERVICE_URL: http://ai:8092
       INTEGRATIONS_SERVICE_URL: http://integrations:8093

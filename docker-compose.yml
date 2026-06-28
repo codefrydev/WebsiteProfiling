@@ -170,7 +170,7 @@ services:
       - "8090:8090"
     environment:
       FASTAPI_URL: http://fastapi:8096
-      FILE_SERVICE_URL: http://files:8080
+      FILE_SERVICE_URL: http://files:8097
       BFF_ALLOWED_ORIGINS: "http://localhost:3000"
       DATA_SERVICE_URL: http://data:8091
       AI_SERVICE_URL: http://ai:8092
@@ -233,7 +233,7 @@ services:
       fastapi:
         condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8097/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

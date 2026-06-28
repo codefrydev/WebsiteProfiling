@@ -34,7 +34,7 @@ All `/api/*` calls from the SPA go to the **BFF** (`:8090`). The BFF forwards su
 | **IntegrationsService** (`:8093`) | `/api/integrations/google/*`, `/api/integrations/bing/*`, property Google config |
 | **AiService** (`:8092`) | `/api/chat`, `/api/secrets`, `/api/llm-settings`, MCP-related APIs |
 | **Data** (`:8091`) | Report payload reads, portfolio, issue status, saved filters |
-| **FileService** (`:8080`) | PDF and Excel export |
+| **FileService** (`:8097`) | PDF and Excel export |
 
 **Internal service-to-service:** ReportService reads Google/keyword snapshots from IntegrationsService (`GET /internal/integrations/report/enrichment`) during native report build — not via the BFF.
 
@@ -52,7 +52,7 @@ During local development (`./local-run`, `ASPNETCORE_ENVIRONMENT=Development`), 
 | IntegrationsService | 8093 | [http://localhost:8093/docs](http://localhost:8093/docs) |
 | ReportService | 8094 | [http://localhost:8094/docs](http://localhost:8094/docs) |
 | ConfigService | 8095 | [http://localhost:8095/docs](http://localhost:8095/docs) |
-| FileService | 8080 | [http://localhost:8080/docs](http://localhost:8080/docs) |
+| FileService | 8097 | [http://localhost:8097/docs](http://localhost:8097/docs) |
 | Python bridge | 8096 | [http://localhost:8096/docs](http://localhost:8096/docs) |
 
 OpenAPI JSON for .NET services: `/swagger/v1/swagger.json`. See the main [README.md](../README.md#api-documentation-swagger) for details.

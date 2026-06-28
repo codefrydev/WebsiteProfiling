@@ -12,7 +12,7 @@ public sealed class UpstreamOptions
     public string FastApiBaseUrl { get; set; } = "http://127.0.0.1:8096";
 
     /// <summary>FileService base URL (env override: FILE_SERVICE_URL).</summary>
-    public string FileServiceBaseUrl { get; set; } = "http://127.0.0.1:8080";
+    public string FileServiceBaseUrl { get; set; } = "http://127.0.0.1:8097";
 
     /// <summary>Timeout for normal (non-streaming) upstream calls. Parity with the TS proxy (120s).</summary>
     public int TimeoutSeconds { get; set; } = 120;

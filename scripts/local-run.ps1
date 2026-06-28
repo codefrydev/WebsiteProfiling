@@ -256,10 +256,10 @@ function Invoke-Start {
     Invoke-WebDeps
 
     $bffBase = if ($env:VITE_BFF_BASE_URL) { $env:VITE_BFF_BASE_URL } else { "http://localhost:8090" }
-    $fileServiceUrl = if ($env:FILE_SERVICE_URL) { $env:FILE_SERVICE_URL } else { "http://127.0.0.1:8080" }
+    $fileServiceUrl = if ($env:FILE_SERVICE_URL) { $env:FILE_SERVICE_URL } else { "http://127.0.0.1:8097" }
 
     if (Get-Command dotnet -ErrorAction SilentlyContinue) {
-        Write-Log "Starting FileService on port 8080"
+        Write-Log "Starting FileService on port 8097"
         $env:REPORT_API_URL = "http://127.0.0.1:8096"
         Start-Process -FilePath "dotnet" `
             -ArgumentList @("run", "--project", "src/FileService.Api", "--no-launch-profile") `

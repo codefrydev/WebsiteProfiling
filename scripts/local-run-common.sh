@@ -36,12 +36,12 @@ start_host_dotnet_base() {
   export AI_SERVICE_URL="${AI_SERVICE_URL:-http://127.0.0.1:8092}"
   export INTEGRATIONS_SERVICE_URL="${INTEGRATIONS_SERVICE_URL:-http://127.0.0.1:8093}"
   export REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-http://127.0.0.1:8094}"
-  export FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8080}"
+  export FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8097}"
 
-  free_port 8080
-  printf '\033[1;36m→\033[0m Starting FileService on port 8080\n'
+  free_port 8097
+  printf '\033[1;36m→\033[0m Starting FileService on port 8097\n'
   (cd "$root/services/FileService" && \
-    ASPNETCORE_URLS="http://127.0.0.1:8080" \
+    ASPNETCORE_URLS="http://127.0.0.1:8097" \
     ASPNETCORE_ENVIRONMENT="$mode" \
     dotnet run --project src/FileService.Api --no-launch-profile) &
   FILE_SERVICE_PID=$!
@@ -76,7 +76,7 @@ start_host_dotnet_base() {
     dotnet run --project src/AiService.Api --no-launch-profile) &
   AI_PID=$!
 
-  wait_for_http "http://127.0.0.1:8080/health" "FileService"
+  wait_for_http "http://127.0.0.1:8097/health" "FileService"
   wait_for_http "http://127.0.0.1:8091/health" "Data service"
   wait_for_http "http://127.0.0.1:8095/health" "ConfigService"
   wait_for_http "http://127.0.0.1:8092/health" "AiService"
@@ -175,6 +175,6 @@ stop_host_dotnet_stack() {
   CONFIG_PID=""
   "$stop_service_fn" "Data" "${DATA_PID:-}" 8091
   DATA_PID=""
-  "$stop_service_fn" "FileService" "${FILE_SERVICE_PID:-}" 8080
+  "$stop_service_fn" "FileService" "${FILE_SERVICE_PID:-}" 8097
   FILE_SERVICE_PID=""
 }

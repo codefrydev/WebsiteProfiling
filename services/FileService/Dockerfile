@@ -12,7 +12,7 @@ RUN dotnet publish FileService/src/FileService.Api/FileService.Api.csproj -c Rel
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
-ENV ASPNETCORE_URLS=http://+:8080
-EXPOSE 8080
+ENV ASPNETCORE_URLS=http://+:8097
+EXPOSE 8097
 COPY --from=build /app/publish .
 ENTRYPOINT ["dotnet", "FileService.Api.dll"]
