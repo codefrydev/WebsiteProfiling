@@ -4,9 +4,9 @@ public sealed class GoogleAppSettingsEntry
 {
     public long Id { get; set; } = 1;
 
-    public string ClientId { get; set; } = "";
+    public string? ClientId { get; set; }
 
-    public string ClientSecret { get; set; } = "";
+    public string? ClientSecret { get; set; }
 
     public string? ServiceAccountJson { get; set; }
 
