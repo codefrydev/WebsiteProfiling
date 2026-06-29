@@ -1,6 +1,5 @@
 using System.Text.Json.Nodes;
 using AiService.Application.Prompts;
-using AiService.Application.Repositories;
 using AiService.Domain.Repositories;
 using AiService.Providers.Chat;
 
