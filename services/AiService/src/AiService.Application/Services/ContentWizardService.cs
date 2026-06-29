@@ -77,10 +77,11 @@ public sealed class ContentWizardService(
         }
 
         var locale = payload["locale"]?.GetValue<string>() ?? "en-US";
-        var user =
-            $"For the search keyword \"{kw}\" (locale {locale}), list up to {MaxOptions} distinct " +
-            "search intents a reader might have. Return JSON: " +
-            "{\"intents\":[{\"label\":\"short intent label\",\"description\":\"one sentence\"}]}";
+        var user = $$"""
+            For the search keyword "{{kw}}" (locale {{locale}}), list up to {{MaxOptions}} distinct
+            search intents a reader might have. Return JSON:
+            {"intents":[{"label":"short intent label","description":"one sentence"}]}
+            """;
 
         var data = await SafeCompleteAsync(user, settings!, cancellationToken);
         var options = NormalizeOptions(data["intents"]) ?? FallbackIntents(kw);
@@ -97,10 +98,11 @@ public sealed class ContentWizardService(
 
         var keyword = Clean(payload["keyword"]?.GetValue<string>());
         var intent = Clean(payload["intent"]?.GetValue<string>());
-        var user =
-            $"A writer is creating content for the keyword \"{keyword}\" with the intent \"{intent}\". " +
-            $"Recommend up to {MaxOptions} content types that best serve this, best first. " +
-            "Return JSON: {\"content_types\":[{\"label\":\"type\",\"description\":\"why it fits\"}]}";
+        var user = $$"""
+            A writer is creating content for the keyword "{{keyword}}" with the intent "{{intent}}".
+            Recommend up to {{MaxOptions}} content types that best serve this, best first.
+            Return JSON: {"content_types":[{"label":"type","description":"why it fits"}]}
+            """;
 
         var data = await SafeCompleteAsync(user, settings!, cancellationToken);
         var options = NormalizeOptions(data["content_types"]) ?? OptionsFromPairs(FallbackContentTypes);
@@ -115,10 +117,11 @@ public sealed class ContentWizardService(
             return err;
         }
 
-        var user =
-            $"For a \"{Clean(payload["contentType"]?.GetValue<string>())}\" about \"{Clean(payload["keyword"]?.GetValue<string>())}\" " +
-            $"(intent: \"{Clean(payload["intent"]?.GetValue<string>())}\"), recommend up to {MaxOptions} writing tones, best first. " +
-            "Return JSON: {\"tones\":[{\"label\":\"tone\",\"description\":\"when to use it\"}]}";
+        var user = $$"""
+            For a "{{Clean(payload["contentType"]?.GetValue<string>())}}" about "{{Clean(payload["keyword"]?.GetValue<string>())}}"
+            (intent: "{{Clean(payload["intent"]?.GetValue<string>())}}"), recommend up to {{MaxOptions}} writing tones, best first.
+            Return JSON: {"tones":[{"label":"tone","description":"when to use it"}]}
+            """;
 
         var data = await SafeCompleteAsync(user, settings!, cancellationToken);
         var options = NormalizeOptions(data["tones"]) ?? OptionsFromPairs(FallbackTones);
@@ -134,13 +137,14 @@ public sealed class ContentWizardService(
         }
 
         var kw = Clean(payload["keyword"]?.GetValue<string>());
-        var user =
-            $"Write up to {MaxTitles} compelling, SEO-friendly article titles for the keyword \"{kw}\". " +
-            $"Content type: \"{Clean(payload["contentType"]?.GetValue<string>())}\". " +
-            $"Intent: \"{Clean(payload["intent"]?.GetValue<string>())}\". " +
-            $"Tone: \"{Clean(payload["tone"]?.GetValue<string>())}\". " +
-            "Keep each under 60 characters where possible and include the keyword naturally. " +
-            "Return JSON: {\"titles\":[\"title one\",\"title two\"]}";
+        var user = $$"""
+            Write up to {{MaxTitles}} compelling, SEO-friendly article titles for the keyword "{{kw}}".
+            Content type: "{{Clean(payload["contentType"]?.GetValue<string>())}}".
+            Intent: "{{Clean(payload["intent"]?.GetValue<string>())}}".
+            Tone: "{{Clean(payload["tone"]?.GetValue<string>())}}".
+            Keep each under 60 characters where possible and include the keyword naturally.
+            Return JSON: {"titles":["title one","title two"]}
+            """;
 
         var data = await SafeCompleteAsync(user, settings!, cancellationToken);
         var titles = NormalizeStringList(data["titles"]) ?? FallbackTitles(kw);
@@ -164,15 +168,16 @@ public sealed class ContentWizardService(
         var title = Clean(payload["title"]?.GetValue<string>());
         var intent = Clean(payload["intent"]?.GetValue<string>());
         var context = !string.IsNullOrEmpty(title) || !string.IsNullOrEmpty(intent)
-            ? $" The article is \"{title}\" (intent \"{intent}\")."
+            ? $""" The article is "{title}" (intent "{intent}")."""
             : "";
 
-        var user =
-            $"For the search keyword \"{kw}\", help an author research the topic.{context} Return JSON with: " +
-            "\"questions\" = up to 8 \"People Also Ask\" style questions real searchers ask; " +
-            "\"sources\" = up to 6 authoritative reference types to cite, each " +
-            "{\"label\":\"source name or type\",\"description\":\"what to cite it for\"}. " +
-            "Return JSON: {\"questions\":[\"...\"],\"sources\":[{\"label\":\"...\",\"description\":\"...\"}]}";
+        var user = $$"""
+            For the search keyword "{{kw}}", help an author research the topic.{{context}} Return JSON with:
+            "questions" = up to 8 "People Also Ask" style questions real searchers ask;
+            "sources" = up to 6 authoritative reference types to cite, each
+            {"label":"source name or type","description":"what to cite it for"}.
+            Return JSON: {"questions":["..."],"sources":[{"label":"...","description":"..."}]}
+            """;
 
         var data = await SafeCompleteAsync(user, settings!, cancellationToken);
         var questions = NormalizeStringList(data["questions"]) ?? FallbackQuestions(kw);
@@ -194,12 +199,13 @@ public sealed class ContentWizardService(
         }
 
         var title = Clean(payload["title"]?.GetValue<string>());
-        var user =
-            $"Create a heading outline for an article titled \"{title}\" " +
-            $"(keyword \"{Clean(payload["keyword"]?.GetValue<string>())}\", {Clean(payload["contentType"]?.GetValue<string>())}, " +
-            $"intent \"{Clean(payload["intent"]?.GetValue<string>())}\", tone \"{Clean(payload["tone"]?.GetValue<string>())}\"). " +
-            "Use h2 for main sections and h3 for sub-points. Do not include the title as a heading. " +
-            "Return JSON: {\"outline\":[{\"level\":\"h2\",\"text\":\"Section heading\"},{\"level\":\"h3\",\"text\":\"Sub-point\"}]}";
+        var user = $$"""
+            Create a heading outline for an article titled "{{title}}"
+            (keyword "{{Clean(payload["keyword"]?.GetValue<string>())}}", {{Clean(payload["contentType"]?.GetValue<string>())}},
+            intent "{{Clean(payload["intent"]?.GetValue<string>())}}", tone "{{Clean(payload["tone"]?.GetValue<string>())}}").
+            Use h2 for main sections and h3 for sub-points. Do not include the title as a heading.
+            Return JSON: {"outline":[{"level":"h2","text":"Section heading"},{"level":"h3","text":"Sub-point"}]}
+            """;
 
         var data = await SafeCompleteAsync(user, settings!, cancellationToken);
         var outline = NormalizeOutline(data["outline"], title);
@@ -218,7 +224,7 @@ public sealed class ContentWizardService(
         var title = Clean(payload["title"]?.GetValue<string>());
         var outlineRaw = payload["outline"] as JsonArray ?? [];
         var normalized = NormalizeOutline(outlineRaw, title);
-        var h1Text = normalized.FirstOrDefault(x => x["level"]?.GetValue<string>() == "h1")?["text"]?.GetValue<string>()
+        var h1Text = normalized.FirstOrDefault(x => x?["level"]?.GetValue<string>() == "h1")?["text"]?.GetValue<string>()
             ?? title
             ?? keyword;
         var headings = normalized
@@ -227,13 +233,16 @@ public sealed class ContentWizardService(
             .ToList();
         var headingsText = string.Join('\n', headings.Select(x => $"{x["level"]}: {x["text"]}"));
 
-        var user =
-            $"Write the body of a \"{Clean(payload["contentType"]?.GetValue<string>())}\" titled \"{h1Text}\" for the keyword " +
-            $"\"{keyword}\" (intent \"{Clean(payload["intent"]?.GetValue<string>())}\", tone \"{Clean(payload["tone"]?.GetValue<string>())}\"). " +
-            $"Write 2-4 sentences of plain-text prose for each heading below, in order:\n{headingsText}\n\n" +
-            "Return JSON: {\"title_tag\":\"SEO title under 60 chars\",\"meta_description\":\"under 160 chars\"," +
-            "\"sections\":[\"prose for heading 1\",\"prose for heading 2\", ...]} " +
-            "with one sections entry per heading, in the same order.";
+        var user = $$"""
+            Write the body of a "{{Clean(payload["contentType"]?.GetValue<string>())}}" titled "{{h1Text}}" for the keyword
+            "{{keyword}}" (intent "{{Clean(payload["intent"]?.GetValue<string>())}}", tone "{{Clean(payload["tone"]?.GetValue<string>())}}").
+            Write 2-4 sentences of plain-text prose for each heading below, in order:
+            {{headingsText}}
+
+            Return JSON: {"title_tag":"SEO title under 60 chars","meta_description":"under 160 chars",
+            "sections":["prose for heading 1","prose for heading 2", ...]}
+            with one sections entry per heading, in the same order.
+            """;
 
         var data = await SafeCompleteAsync(user, settings!, cancellationToken);
         var titleTag = Clean(data["title_tag"]?.GetValue<string>());
