@@ -1,5 +1,5 @@
-using System.Text.Json.Nodes;
 using AiService.Application.Prompts;
+using AiService.Domain.Models;
 using AiService.Domain.Repositories;
 using AiService.Providers.Chat;
 
@@ -14,57 +14,44 @@ public sealed class DashboardAiService(
         "script", "widget", "dashboard",
     };
 
-    public async Task<JsonObject> GenerateAsync(
-        JsonObject payload,
+    public async Task<DashboardAiGenerateResponse> GenerateAsync(
+        DashboardAiGenerateRequest request,
         CancellationToken cancellationToken = default)
     {
         var settings = await configRepository.LoadAsync(cancellationToken);
         if (!LlmConfigHelpers.IsEnabled(settings))
-        {
-            return new JsonObject { ["ok"] = false, ["error"] = "AI insights are disabled.", ["missing"] = true };
-        }
+            return DashboardAiGenerateResponse.Failure("AI insights are disabled.", missing: true);
 
         if (!settings.EnableDashboards)
-        {
-            return new JsonObject { ["ok"] = false, ["error"] = "Dashboard AI is disabled in task settings.", ["missing"] = true };
-        }
+            return DashboardAiGenerateResponse.Failure("Dashboard AI is disabled in task settings.", missing: true);
 
-        var mode = (payload["mode"]?.GetValue<string>() ?? "widget").Trim().ToLowerInvariant();
+        var mode = request.Mode.Trim().ToLowerInvariant();
         if (!ValidModes.Contains(mode))
-        {
-            return new JsonObject { ["ok"] = false, ["error"] = $"Unknown mode: '{mode}'. Must be one of: script, widget, dashboard." };
-        }
+            return DashboardAiGenerateResponse.Failure($"Unknown mode: '{mode}'. Must be one of: script, widget, dashboard.");
 
-        var prompt = (payload["prompt"]?.GetValue<string>() ?? "").Trim();
+        var prompt = request.Prompt.Trim();
         if (string.IsNullOrEmpty(prompt))
-        {
-            return new JsonObject { ["ok"] = false, ["error"] = "prompt is required." };
-        }
+            return DashboardAiGenerateResponse.Failure("prompt is required.");
 
         try
         {
-            var user = payload.ToJsonString()[..Math.Min(payload.ToJsonString().Length, 10_000)];
+            var payload = request.ToJsonObject();
+            var payloadJson = payload.ToJsonString();
+            var user = payloadJson[..Math.Min(payloadJson.Length, 10_000)];
+
             var result = await completionService.CompleteJsonAsync(
                 LlmPrompts.DashboardAiSystem,
                 user,
                 settings,
                 cancellationToken);
 
-            if (result.Count == 0)
-            {
-                return new JsonObject { ["ok"] = false, ["error"] = "AI returned no parseable output." };
-            }
-
-            if (!result.ContainsKey("ok"))
-            {
-                result["ok"] = true;
-            }
-
-            return result;
+            return result.Count == 0 
+                ? DashboardAiGenerateResponse.Failure("AI returned no parseable output.") 
+                : DashboardAiGenerateResponse.Success(result);
         }
         catch (Exception ex)
         {
-            return new JsonObject { ["ok"] = false, ["error"] = ex.Message };
+            return DashboardAiGenerateResponse.Failure(ex.Message);
         }
     }
 }
