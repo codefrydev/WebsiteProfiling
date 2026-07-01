@@ -1,7 +1,7 @@
 namespace FileService.Domain.Models;
 
 /// <summary>
-/// Read-only mapping of the existing <c>report_payload</c> table (owned by Alembic migrations).
+/// Read-only mapping of the existing <c>report_payload</c> table (schema owned by services/Schema).
 /// FileService never writes or migrates this table; it only reads the JSON payload to render
 /// PDF / Excel / CSV / JSON / sitemap exports. Mirrors the Data service's ReportPayload entity.
 /// </summary>

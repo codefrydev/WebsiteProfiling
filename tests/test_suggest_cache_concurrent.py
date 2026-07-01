@@ -13,7 +13,7 @@ from website_profiling.integrations.google.suggest import batch_expand, flush_su
 @pytest.fixture(scope="module")
 def pg_conn():
     if not (os.environ.get("DATABASE_URL") or "").strip():
-        pytest.skip("DATABASE_URL not set — start Postgres and run alembic upgrade head")
+        pytest.skip("DATABASE_URL not set — start Postgres and run the EF Core migrator")
     with db_session() as conn:
         yield conn
 

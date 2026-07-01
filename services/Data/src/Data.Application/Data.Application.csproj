@@ -3,6 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Data.Domain\Data.Domain.csproj" />
     <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Contracts\WebsiteProfiling.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Data\WebsiteProfiling.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>

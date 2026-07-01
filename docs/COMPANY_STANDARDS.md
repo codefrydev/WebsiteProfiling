@@ -94,7 +94,7 @@ Pull requests should pass:
 
 - Python tests (three 100% coverage gates: core, reporting, tools)
 - Web typecheck, lint, and Vitest
-- Alembic migrations on an empty database
+- EF Core migrations on an empty database
 - Docker image build
 
 Configuration: [.github/workflows/ci.yml](../.github/workflows/ci.yml). Branch protection on `master` with required CI checks is recommended.

@@ -236,7 +236,7 @@ The application sets `app.current_property_id` at the start of each `readonly_se
 
 ## Database migrations
 
-Apply schema changes after pulling updates. Current Alembic head: **`015_crawl_page_html`** (per-URL HTML storage). Recent migrations: `013` (link edges, discovery mode), `014` (pipeline job log truncation).
+Apply schema changes after pulling updates. Schema is owned by EF Core migrations in `services/Schema/src/Schema.Model/` (a single squashed `InitialCreate` migration covering all 51 tables).
 
 ```bash
 ./local-run migrate
@@ -245,19 +245,19 @@ Apply schema changes after pulling updates. Current Alembic head: **`015_crawl_p
 If PostgreSQL is already running:
 
 ```bash
-alembic upgrade head
+dotnet run --project services/Schema/src/Schema.Migrator
 ```
 
 ### Docker deployments
 
-Migrations run automatically at container start. Use one of the following so Postgres and the application share a network:
+Migrations run automatically via the one-shot `migrator` service before any dependent service starts. Use one of the following so Postgres and the application share a network:
 
 ```bash
 docker compose up              # build from source
 docker compose -f docker-compose.pull.yml up   # pre-built WEB_IMAGE
 ```
 
-Do not run the application container in isolation with `docker run` unless you provide a reachable `DATABASE_URL`.
+Do not run the application container in isolation with `docker run` unless you provide a reachable `DATABASE_URL` whose schema has already been migrated (e.g. `docker compose run migrator`).
 
 ### FileService (PDF and workbook export)
 
@@ -289,7 +289,7 @@ CI also runs a **Docker** job (image build, browser pytest in container, compose
 
 ```bash
 export DATABASE_URL=postgres://profiling:profiling@localhost:5432/website_profiling
-alembic upgrade head
+dotnet run --project services/Schema/src/Schema.Migrator
 pytest tests/ -m "not browser"
 ```
 

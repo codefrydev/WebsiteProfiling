@@ -1,6 +1,6 @@
 using FileService.Application.Clients;
-using FileService.Application.Persistence;
 using FileService.Application.Options;
+using FileService.Application.Persistence;
 using FileService.Application.Services;
 using FileService.Rendering;
 using FileService.Rendering.Exports;
@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using WebsiteProfiling.Data;
 
 namespace FileService.Application;
 

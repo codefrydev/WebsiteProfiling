@@ -19,7 +19,7 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 - `services/ReportService/` -- .NET report build + pipeline orchestration (port 8094). Worker runs crawl+Lighthouse; report via `REPORT_SERVICE_URL`
 - `services/FileService/` -- .NET PDF + Excel workbook export (HTTP-only; see [README](services/FileService/README.md))
 - `web/src/` -- React SPA (`AppRoutes.tsx`, `views/`, `components/`); pipeline UI: `PipelineRunnerFab`, `PipelineContext`
-- `alembic/` -- schema migrations
+- `services/Schema/` -- EF Core schema migrations (schema owner)
 
 **Local dev:** `./local-run` (Postgres in Docker `wp-pg`, FileService `:8097`, Data `:8091`, AiService `:8092`, ReportService `:8094`, FastAPI `:8096`, BFF `:8090`, Vite `:3000`; default `DATABASE_URL`: `postgres://postgres:dev@127.0.0.1:5432/website_profiling`). See `scripts/local-run.sh`. **Local tests:** `./local-test` runs **three** Python coverage gates (core 100%, reporting 100%, tools 100%) plus web and .NET checks — mirrors CI; Docker CI is separate (see `.github/workflows/ci.yml`). `./local-test browser` for `@pytest.mark.browser` integration tests — see `scripts/local-test.sh`. Mocked browser unit tests: `tests/test_browser_fetcher_unit.py`.
 
@@ -37,7 +37,6 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 - **MCP:** AiService (.NET) — stdio host or HTTP at `/mcp` when `WP_MCP_HTTP=1` on `:8092`. Configure at **`/mcp`** in the web UI. See `docs/MCP.md` and [services/AiService/README.md](services/AiService/README.md).
 - **AI Chat UI:** `/chat` — property-scoped chat with saved sessions (`chat_sessions`, `chat_messages`; migration `012_chat_sessions`).
 - **Job store:** PostgreSQL `pipeline_jobs` (FastAPI); live job status via `/api/jobs/*` through the BFF.
-- **Schema head:** `027_drop_eav_config` (recent: `026_typed_config` typed settings tables, `015` per-URL HTML storage).
 - **Docker:** Root `Dockerfile` (Python backend); `web/Dockerfile` (Vite SPA + nginx); `docker-compose.yml` (postgres + fastapi + worker + report + integrations + ai + data + bff + web + FileService); **`docker-compose.prod.yml`** (production + optional MCP profile mapping host `:8000` → AiService `:8092`); **`docker-compose.pull.yml`** for pre-built images (`BACKEND_IMAGE`, `WEB_IMAGE`); **`LIGHTHOUSE_CHROME_FLAGS`**
 
 **Where to edit**
@@ -48,7 +47,7 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 | Report (native build) | `services/ReportService/src/ReportService.Application/Build/` |
 | Report (Python bridge) | `reporting/builder.py`, `reporting/categories/` |
 | PDF / workbook export | `services/FileService/` (rendering); BFF routes `/api/report/export` and `/api/report/export-workbook` to FileService |
-| DB schema | `alembic/versions/` |
+| DB schema | `services/Schema/src/Schema.Model/` |
 | Local analysis | `analysis/local.py`, `requirements.txt` |
 | AI insights (LLM) | `services/AiService/` (browser-facing + MCP + native audit tools), `ai_service_client.py` (worker), `llm_config.py` (typed loader) |
 | Audit query tools (MCP + chat) | `services/AiService/src/AiService.Tools/`, `services/AiService/src/AiService.Mcp/`, `tools/audit_tools/`, `commands/chat_cmd.py` |
@@ -63,7 +62,7 @@ Developer reference for agents and contributors. User-facing overview: [README.m
 | Chart.js charts (standard bar/line/doughnut) | `web/src/utils/chartJsDefaults.ts`, `react-chartjs-2` in views under `web/src/views/`, `web/src/components/searchPerformance/`, `web/src/components/traffic/` |
 | Dev widget JSON copy (report cards + dashboards) | `web/src/components/Card.tsx` (`devData`), `web/src/components/DevCopyJsonButton.tsx`, `web/src/lib/dashboard/widgets/WidgetFrame.tsx` — see **Dev widget JSON copy** below |
 
-Schema changes: add Alembic migration (`alembic revision`).
+Schema changes: add an EF Core migration (`dotnet ef migrations add <Name>` in `services/Schema/src/Schema.Model/`).
 
 **Charts — Chart.js + D3 (hybrid)**
 

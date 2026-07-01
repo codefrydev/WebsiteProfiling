@@ -2,13 +2,14 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Contracts\WebsiteProfiling.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Data\WebsiteProfiling.Data.csproj" />
     <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.TypedConfig\WebsiteProfiling.TypedConfig.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.9" />
     <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.9" />
-    <PackageReference Include="Npgsql" Version="10.0.1" />
+    <PackageReference Include="Npgsql" Version="10.0.2" />
   </ItemGroup>
 
   <PropertyGroup>

@@ -10,9 +10,10 @@ using ReportService.Application.Dashboard;
 using ReportService.Application.Integrations;
 using ReportService.Application.Orchestration;
 using ReportService.Application.Options;
-using ReportService.Application.Pipeline;
 using ReportService.Application.Persistence;
+using ReportService.Application.Pipeline;
 using ReportService.Application.Repositories;
+using WebsiteProfiling.Data;
 
 namespace ReportService.Application;
 

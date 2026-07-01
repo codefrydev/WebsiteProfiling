@@ -2,7 +2,7 @@ namespace AiService.Application.Options;
 
 /// <summary>
 /// Postgres connection settings. <see cref="ConnectionString"/> is the libpq URI from env
-/// <c>DATABASE_URL</c>; converted by <see cref="Persistence.NpgsqlDsn.ToNpgsql"/>.
+/// <c>DATABASE_URL</c>; converted by <see cref="WebsiteProfiling.Data.NpgsqlDsn.ToNpgsql"/>.
 /// </summary>
 public sealed class DatabaseOptions
 {

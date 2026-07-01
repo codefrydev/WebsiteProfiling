@@ -1,7 +1,8 @@
 """
 PostgreSQL data layer for WebsiteProfiling: crawl, edges, nodes, lighthouse, report payload.
 
-All DB access should go through :func:`db_session`. Schema is managed by Alembic (``alembic upgrade head``).
+All DB access should go through :func:`db_session`. Schema is managed by EF Core migrations
+(``services/Schema`` — ``dotnet run --project services/Schema/src/Schema.Migrator``).
 Requires ``DATABASE_URL`` in the environment.
 
 Implementation is split across ``db.*_store`` modules; this module re-exports the public API.

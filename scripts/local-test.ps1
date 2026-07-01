@@ -32,7 +32,7 @@ $VENV = Join-Path $ROOT ".venv"
 $VENV_PYTHON = Join-Path $VENV "Scripts\python.exe"
 $VENV_PIP = Join-Path $VENV "Scripts\pip.exe"
 $VENV_PYTEST = Join-Path $VENV "Scripts\pytest.exe"
-$VENV_ALEMBIC = Join-Path $VENV "Scripts\alembic.exe"
+$SCHEMA_MIGRATOR = Join-Path $ROOT "services\Schema\src\Schema.Migrator"
 $WEB = Join-Path $ROOT "web"
 
 $env:WEBSITE_PROFILING_ROOT = $ROOT
@@ -189,12 +189,10 @@ function Invoke-Venv {
 
 function Invoke-Migrate {
     Invoke-Db
-    if (-not (Test-Path $VENV_ALEMBIC)) {
-        Invoke-Venv
-    }
-    Write-Log "Applying database migrations (alembic upgrade head)"
-    & $VENV_ALEMBIC upgrade head
-    Assert-LastExitCode "Database migration failed (alembic upgrade head)"
+    Test-Command dotnet
+    Write-Log "Applying database migrations (EF Core: Schema.Migrator)"
+    & dotnet run --project $SCHEMA_MIGRATOR --no-launch-profile
+    Assert-LastExitCode "Database migration failed (Schema.Migrator)"
 }
 
 function Invoke-WebDeps {

@@ -234,7 +234,7 @@ WebsiteProfiling/
 ├── services/AiService/        # .NET AI — chat, secrets, LLM config, MCP, enrichment (port 8092)
 ├── services/Data/             # .NET read service — report/portfolio/issue reads (port 8091)
 ├── services/FileService/      # .NET PDF + Excel workbook export (port 8097)
-├── alembic/versions/          # PostgreSQL schema migrations
+├── services/Schema/           # EF Core schema migrations (PostgreSQL schema owner)
 ├── tests/                     # pytest suite + fixtures
 ├── docs/                      # Glossary, MCP, ops, brand assets
 ├── scripts/                   # local-run.sh, local-test.sh, local-prod.sh
@@ -264,7 +264,7 @@ WebsiteProfiling/
 | `web/src/lib/pipelineConfigSchema.ts` | Audit settings schema (UI ↔ PostgreSQL)                                        |
 | `services/ReportService/`             | .NET report build + full-audit orchestration — see [services/ReportService/README.md](services/ReportService/README.md) |
 | `config/typed_config_manifest.json`   | Typed PostgreSQL settings schema (pipeline, LLM, secrets, UI prefs) |
-| `alembic/versions/`                   | Database migrations — run `./local-run migrate`                                |
+| `services/Schema/`                    | EF Core schema migrations — run `./local-run migrate`                          |
 | `tests/`                              | Backend tests; `./local-test browser` for Playwright crawl integration         |
 | `docs/MCP.md`                         | MCP server setup for IDE and agent integrations                                |
 | `data/`                               | Local artifacts (gitignored); settings live in Postgres typed tables |
@@ -291,11 +291,11 @@ Build and run the full dev stack from source:
 docker compose up --build
 ```
 
-Services: **postgres**, **fastapi** (`:8096`, internal), **worker**, **report** (`:8094`, internal), **integrations** (`:8093`, internal), **ai** (`:8092`, internal), **data** (`:8091`, internal), **bff** (`:8090`), **web** (`:3000`), **files** (`:8097`, internal).
+Services: **postgres**, **migrator** (one-shot EF Core schema migration, exits after applying), **fastapi** (`:8096`, internal), **worker**, **report** (`:8094`, internal), **integrations** (`:8093`, internal), **ai** (`:8092`, internal), **data** (`:8091`, internal), **bff** (`:8090`), **web** (`:3000`), **files** (`:8097`, internal).
 
 Open [http://localhost:3000/home](http://localhost:3000/home). The browser talks only to the **BFF** (`:8090`); the BFF proxies to FastAPI (crawl/pipeline), IntegrationsService (Google/Bing), AiService (AI/secrets), Data (report reads), and FileService (PDF/workbook export).
 
-Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTGRES_PASSWORD`, `AUTH_SECRET`, `BFF_ALLOWED_ORIGINS`, and `BFF_PUBLIC_URL`. Optional remote MCP: `docker compose -f docker-compose.prod.yml --profile mcp up`. Pre-built images: `docker-compose.pull.yml` (`BACKEND_IMAGE`, `WEB_IMAGE`).
+Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTGRES_PASSWORD`, `AUTH_SECRET`, `BFF_ALLOWED_ORIGINS`, and `BFF_PUBLIC_URL`. Optional remote MCP: `docker compose -f docker-compose.prod.yml --profile mcp up`. Pre-built images: `docker-compose.pull.yml` (`BACKEND_IMAGE`, `WEB_IMAGE`). Schema is applied by the one-shot `migrator` service before any dependent service starts; don't run a Postgres-backed service in isolation with `docker run` unless its schema was already migrated (`docker compose run migrator` or `dotnet run --project services/Schema/src/Schema.Migrator`).
 
 ### Local development
 
@@ -303,7 +303,7 @@ Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTG
 ./local-run setup   # First time: Postgres, Python venv, Playwright/Chromium, migrations, npm deps
 ./local-run         # Start full dev stack → http://localhost:3000/home
 ./local-run db      # Postgres only (no app)
-./local-run migrate # Apply Alembic migrations only
+./local-run migrate # Apply EF Core migrations only
 ./local-run stop    # Stop Postgres container
 ./local-prod        # Same DB, Vite production build + preview (no hot reload)
 ```

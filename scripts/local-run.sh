@@ -4,7 +4,7 @@
 #   (default) start   — ensure DB, migrations, vite dev + BFF
 #   setup           — DB + venv + deps + migrations (no web server)
 #   db              — start Postgres container only
-#   migrate         — alembic upgrade head
+#   migrate         — EF Core: dotnet run --project services/Schema/src/Schema.Migrator
 #   test            — run full CI-style test suite (./local-test all)
 #   stop            — stop wp-pg container
 #   help            — show commands
@@ -161,9 +161,9 @@ cmd_venv() {
 
 cmd_migrate() {
   cmd_db
-  [[ -x "$VENV/bin/alembic" ]] || cmd_venv
-  log "Applying database migrations (alembic upgrade head)"
-  "$VENV/bin/alembic" upgrade head
+  need_cmd dotnet
+  log "Applying database migrations (EF Core: Schema.Migrator)"
+  DATABASE_URL="$DATABASE_URL" dotnet run --project "$ROOT/services/Schema/src/Schema.Migrator" --no-launch-profile
 }
 
 cmd_web_deps() {
@@ -203,10 +203,10 @@ cmd_setup() {
 cmd_start() {
   mkdir -p "$DATA_DIR"
   cmd_db
-  [[ -x "$VENV/bin/alembic" ]] || cmd_venv
+  need_cmd dotnet
   cmd_browser_deps
   log "Ensuring migrations are up to date"
-  "$VENV/bin/alembic" upgrade head
+  DATABASE_URL="$DATABASE_URL" dotnet run --project "$ROOT/services/Schema/src/Schema.Migrator" --no-launch-profile
   cmd_web_deps
   cd "$ROOT"
   export DATABASE_URL DATA_DIR PYTHON WEBSITE_PROFILING_ROOT PYTHONPATH
@@ -343,7 +343,7 @@ Local dev runner — Postgres in Docker, app on your machine
   ./local-run start        DB + migrations + npm run dev (Ctrl+C stops all services + Postgres)
   ./local-run setup        One-time setup (no dev server)
   ./local-run db           Start Postgres only
-  ./local-run migrate      Run alembic upgrade head
+  ./local-run migrate      Apply EF Core migrations (Schema.Migrator)
   ./local-run test         Run full CI-style tests (./local-test all)
   ./local-run stop         Stop Postgres container
 

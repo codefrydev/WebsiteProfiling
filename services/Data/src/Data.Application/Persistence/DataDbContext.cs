@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 namespace Data.Application.Persistence;
 
 /// <summary>
-/// Read-only EF Core context over the Alembic-owned schema. It NEVER creates or migrates tables:
+/// Read-only EF Core context over the schema owned by services/Schema. It NEVER creates or migrates tables:
 /// there is no <c>Microsoft.EntityFrameworkCore.Design</c> reference and no <c>Migrations/</c> folder,
 /// and <c>Migrate()</c>/<c>EnsureCreated()</c> are never called. Tracking is disabled globally.
 /// </summary>

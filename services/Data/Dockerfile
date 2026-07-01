@@ -1,11 +1,13 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY Shared/WebsiteProfiling.Contracts/WebsiteProfiling.Contracts.csproj Shared/WebsiteProfiling.Contracts/
+COPY Shared/WebsiteProfiling.Data/WebsiteProfiling.Data.csproj Shared/WebsiteProfiling.Data/
 COPY Data/src/Data.Domain/Data.Domain.csproj Data/src/Data.Domain/
 COPY Data/src/Data.Application/Data.Application.csproj Data/src/Data.Application/
 COPY Data/src/Data.Api/Data.Api.csproj Data/src/Data.Api/
 RUN dotnet restore Data/src/Data.Api/Data.Api.csproj
 COPY Shared/WebsiteProfiling.Contracts/ Shared/WebsiteProfiling.Contracts/
+COPY Shared/WebsiteProfiling.Data/ Shared/WebsiteProfiling.Data/
 COPY Data/src/ Data/src/
 RUN dotnet publish Data/src/Data.Api/Data.Api.csproj -c Release -o /app/publish --no-restore
 

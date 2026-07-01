@@ -14,7 +14,7 @@ from website_profiling.db.storage import create_crawl_run, write_crawl_batch
 @pytest.fixture(scope="module")
 def pg_conn():
     if not (os.environ.get("DATABASE_URL") or "").strip():
-        pytest.skip("DATABASE_URL not set — start Postgres and run alembic upgrade head")
+        pytest.skip("DATABASE_URL not set — start Postgres and run the EF Core migrator")
     with db_session() as conn:
         yield conn
 

@@ -70,10 +70,6 @@ sys.exit(1)
 PY
 }
 
-migrate() {
-  /opt/venv/bin/alembic upgrade head
-}
-
 start_uvicorn_foreground() {
   exec /opt/venv/bin/uvicorn website_profiling.api.main:app \
     --host 0.0.0.0 --port 8096 --workers 1
@@ -83,7 +79,6 @@ case "$ROLE" in
   fastapi)
     require_database_url
     wait_for_db
-    migrate
     start_uvicorn_foreground
     ;;
   worker)
@@ -94,7 +89,6 @@ case "$ROLE" in
   all)
     require_database_url
     wait_for_db
-    migrate
 
     WORKER_PID=""
     UVICORN_PID=""

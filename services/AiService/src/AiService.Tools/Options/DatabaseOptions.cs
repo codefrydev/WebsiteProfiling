@@ -3,7 +3,7 @@ namespace AiService.Tools.Options;
 /// <summary>
 /// Postgres connection settings for audit tool handlers. <see cref="ConnectionString"/> is the libpq URI
 /// from env <c>DATABASE_URL</c> (the same value the Python services use); it is converted to an Npgsql
-/// keyword connection string by <see cref="Persistence.NpgsqlDsn.ToNpgsql"/>.
+/// keyword connection string by <see cref="WebsiteProfiling.Data.NpgsqlDsn.ToNpgsql"/>.
 /// </summary>
 public sealed class DatabaseOptions
 {

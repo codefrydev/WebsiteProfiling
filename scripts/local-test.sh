@@ -165,8 +165,8 @@ ensure_venv() {
 }
 
 run_migrate() {
-  [[ -x "$VENV/bin/alembic" ]] || ensure_venv || return 1
-  "$VENV/bin/alembic" upgrade head
+  need_cmd dotnet || { warn "dotnet not found"; return 1; }
+  dotnet run --project "$ROOT/services/Schema/src/Schema.Migrator" --no-launch-profile
 }
 
 ensure_web_deps() {
@@ -289,7 +289,7 @@ steps_venv() {
 }
 
 steps_migrate() {
-  run_step "Database migrations (alembic upgrade head)" run_migrate
+  run_step "Database migrations (EF Core: Schema.Migrator)" run_migrate
 }
 
 steps_pytest() {

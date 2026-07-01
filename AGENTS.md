@@ -19,7 +19,7 @@ This file is the canonical entry point for agents. For full detail see [AGENT.md
 - `services/AiService/` — .NET AI service (Microsoft.Extensions.AI, chat, enrichment, MCP, **secrets/llm-settings writes**; port 8092). See [services/AiService/README.md](services/AiService/README.md)
 - `services/IntegrationsService/` — .NET Google/Bing integrations (GSC/GA4 fetch, OAuth, page-live, keyword reads; port 8093). See [services/IntegrationsService/README.md](services/IntegrationsService/README.md)
 - `services/FileService/` — .NET PDF + Excel workbook export (port 8097). HTTP-only via `REPORT_API_URL`; no Postgres. Profiles: `executive|standard|full|premium`. Details: [services/FileService/README.md](services/FileService/README.md). Env: `FILE_SERVICE_URL` (MCP), `REPORT_API_URL` (FileService).
-- `alembic/` — DB migrations
+- `services/Schema/` — EF Core DB migrations (schema owner)
 - `services/WebsiteProfiling.slnx` — unified .NET solution (all six services + shared libs)
 - `docs/` — documentation index
 - `tests/` — pytest suite
@@ -46,7 +46,7 @@ python -m src        # Run audit pipeline
 | Report (Python bridge) | `src/website_profiling/reporting/` |
 | Typed settings / config | `config/typed_config_manifest.json`, `src/website_profiling/db/typed_config/` |
 | GEO / AEO / Agent readiness | `src/website_profiling/tools/audit_tools/geo/geo_tools.py`, `geo/agent_readiness.py` |
-| DB schema | `alembic/versions/` |
+| DB schema | `services/Schema/src/Schema.Model/` |
 | UI | `web/src/views/`, `web/src/pages/`, `web/src/AppRoutes.tsx` |
 | Report/card widgets (dev JSON copy) | `Card` `devData` prop — see [AGENT.md](AGENT.md) § Dev widget JSON copy; reference: `web/src/components/overview/OverviewExecutiveSummary.tsx` |
 | Charts | D3: `web/src/components/charts/d3/`, `web/src/lib/viz/` · Chart.js: GSC/GA4/Links etc. — see [AGENT.md](AGENT.md) § Charts |

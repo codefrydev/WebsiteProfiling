@@ -1,7 +1,7 @@
 namespace ReportService.Domain.Entities;
 
 /// <summary>
-/// Read-only mapping of Alembic-owned <c>lighthouse_page_summaries</c>.
+/// Read-only mapping of <c>lighthouse_page_summaries</c> (schema owned by services/Schema).
 /// </summary>
 public sealed class LighthousePageSummary
 {

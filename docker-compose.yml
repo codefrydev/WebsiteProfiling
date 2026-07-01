@@ -14,6 +14,20 @@ services:
       timeout: 3s
       retries: 5
 
+  # One-shot EF Core schema migrator — runs to completion before any service that talks to
+  # Postgres starts. Replaces `alembic upgrade head` as schema owner (see services/Schema).
+  migrator:
+    container_name: wp-migrator
+    build:
+      context: ./services
+      dockerfile: Schema/Dockerfile
+    environment:
+      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   # FastAPI backend — now its own service (was bundled into `web`). Network-internal:
   # only the BFF talks to it, so no host port is published.
   fastapi:
@@ -25,6 +39,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     environment:
       WP_ROLE: fastapi
       WEBSITE_PROFILING_ROOT: /app
@@ -60,6 +76,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8091/health"]
       interval: 30s
@@ -80,6 +98,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
       fastapi:
         condition: service_started
     healthcheck:
@@ -105,6 +125,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
       fastapi:
         condition: service_started
     healthcheck:
@@ -131,6 +153,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
       fastapi:
         condition: service_started
       integrations:
@@ -154,6 +178,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8095/health"]
       interval: 30s
@@ -230,6 +256,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
       fastapi:
         condition: service_started
     healthcheck:

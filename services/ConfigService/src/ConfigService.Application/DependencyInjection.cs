@@ -1,10 +1,10 @@
 using System.Text.Json;
 using ConfigService.Application.Options;
-using ConfigService.Application.Persistence;
 using ConfigService.Application.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Npgsql;
+using WebsiteProfiling.Data;
 
 namespace ConfigService.Application;
 

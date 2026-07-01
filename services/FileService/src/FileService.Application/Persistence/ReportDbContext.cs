@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 namespace FileService.Application.Persistence;
 
 /// <summary>
-/// Read-only EF Core context over the Alembic-owned <c>report_payload</c> table. It NEVER creates or
+/// Read-only EF Core context over the <c>report_payload</c> table (schema owned by services/Schema). It NEVER creates or
 /// migrates tables (no Design reference, no Migrations folder, Migrate()/EnsureCreated() never called)
 /// and tracking is disabled globally. Mirrors the Data service's DataDbContext, scoped to just the
 /// one table FileService needs to render exports.

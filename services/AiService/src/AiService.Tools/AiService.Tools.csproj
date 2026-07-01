@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\AiService.Domain\AiService.Domain.csproj" />
     <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Contracts\WebsiteProfiling.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Data\WebsiteProfiling.Data.csproj" />
   </ItemGroup>
 
   <ItemGroup>

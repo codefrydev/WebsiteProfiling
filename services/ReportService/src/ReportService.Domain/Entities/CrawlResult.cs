@@ -1,7 +1,7 @@
 namespace ReportService.Domain.Entities;
 
 /// <summary>
-/// Read-only mapping of Alembic-owned <c>crawl_results</c>. ReportService never migrates this table.
+/// Read-only mapping of <c>crawl_results</c> (schema owned by services/Schema). ReportService never migrates this table.
 /// </summary>
 public sealed class CrawlResult
 {

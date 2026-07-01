@@ -2,7 +2,7 @@ namespace ConfigService.Application.Options;
 
 /// <summary>
 /// Postgres connection settings for the Config service. <see cref="ConnectionString"/> is the libpq
-/// URI from env <c>DATABASE_URL</c>; converted by <see cref="Persistence.NpgsqlDsn.ToNpgsql"/>.
+/// URI from env <c>DATABASE_URL</c>; converted by <see cref="WebsiteProfiling.Data.NpgsqlDsn.ToNpgsql"/>.
 /// </summary>
 public sealed class DatabaseOptions
 {

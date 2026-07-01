@@ -1,7 +1,7 @@
 namespace Data.Domain.Entities;
 
 /// <summary>
-/// Read-only mapping of the existing <c>report_payload</c> table (owned by Alembic migrations).
+/// Read-only mapping of the existing <c>report_payload</c> table (schema owned by services/Schema).
 /// The Data service never writes or migrates this table.
 /// </summary>
 public sealed class ReportPayload

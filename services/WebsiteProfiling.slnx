@@ -3,6 +3,8 @@
     <Project Path="Shared/WebsiteProfiling.Contracts/WebsiteProfiling.Contracts.csproj" />
     <Project Path="Shared/WebsiteProfiling.TypedConfig/WebsiteProfiling.TypedConfig.csproj" />
     <Project Path="Shared/WebsiteProfiling.Testing/WebsiteProfiling.Testing.csproj" />
+    <Project Path="Shared/WebsiteProfiling.Data/WebsiteProfiling.Data.csproj" />
+    <Project Path="Shared/WebsiteProfiling.Data.Tests/WebsiteProfiling.Data.Tests.csproj" />
   </Folder>
   <Folder Name="/ai-service/">
     <Project Path="AiService/src/AiService.Api/AiService.Api.csproj" />
@@ -49,5 +51,10 @@
     <Project Path="ConfigService/src/ConfigService.Api/ConfigService.Api.csproj" />
     <Project Path="ConfigService/src/ConfigService.Application/ConfigService.Application.csproj" />
     <Project Path="ConfigService/tests/ConfigService.Tests/ConfigService.Tests.csproj" />
+  </Folder>
+  <Folder Name="/schema/">
+    <Project Path="Schema/src/Schema.Model/Schema.Model.csproj" />
+    <Project Path="Schema/src/Schema.Migrator/Schema.Migrator.csproj" />
+    <Project Path="Schema/tests/Schema.Tests/Schema.Tests.csproj" />
   </Folder>
 </Solution>
