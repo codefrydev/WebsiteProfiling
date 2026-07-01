@@ -12,6 +12,10 @@ RUN dotnet publish FileService/src/FileService.Api/FileService.Api.csproj -c Rel
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
+# curl is used by the compose healthcheck; the aspnet image does not ship it.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
 ENV ASPNETCORE_URLS=http://+:8097
 EXPOSE 8097
 COPY --from=build /app/publish .
