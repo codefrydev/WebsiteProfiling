@@ -21,8 +21,8 @@ public sealed class GoogleAppSettingsRepository(AiDbContext db) : IGoogleAppSett
 
         return new GoogleAppSettings
         {
-            ClientId = row.ClientId.Trim(),
-            ClientSecret = row.ClientSecret.Trim(),
+            ClientId = (row.ClientId ?? "").Trim(),
+            ClientSecret = (row.ClientSecret ?? "").Trim(),
             ServiceAccountJson = ParseServiceAccountJson(row.ServiceAccountJson),
             DefaultDateRangeDays = row.DefaultDateRangeDays,
             DeveloperToken = (row.DeveloperToken ?? "").Trim(),
