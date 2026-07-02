@@ -5,6 +5,9 @@
     <Project Path="Shared/WebsiteProfiling.Testing/WebsiteProfiling.Testing.csproj" />
     <Project Path="Shared/WebsiteProfiling.Data/WebsiteProfiling.Data.csproj" />
     <Project Path="Shared/WebsiteProfiling.Data.Tests/WebsiteProfiling.Data.Tests.csproj" />
+    <Project Path="Shared/WebsiteProfiling.Data.EntityFrameworkCore/WebsiteProfiling.Data.EntityFrameworkCore.csproj" />
+    <Project Path="Shared/WebsiteProfiling.Hosting/WebsiteProfiling.Hosting.csproj" />
+    <Project Path="Shared/WebsiteProfiling.Contracts.Tests/WebsiteProfiling.Contracts.Tests.csproj" />
   </Folder>
   <Folder Name="/ai-service/">
     <Project Path="AiService/src/AiService.Api/AiService.Api.csproj" />

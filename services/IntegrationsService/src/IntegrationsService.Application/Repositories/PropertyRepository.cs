@@ -3,6 +3,7 @@ using IntegrationsService.Application.Google;
 using IntegrationsService.Application.Persistence;
 using IntegrationsService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using WebsiteProfiling.Contracts.Properties;
 
 namespace IntegrationsService.Application.Repositories;
 

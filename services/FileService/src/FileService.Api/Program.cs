@@ -3,41 +3,20 @@ using FileService.Api;
 using FileService.Application;
 using FileService.Application.Services;
 using FileService.Domain.Models;
-using Microsoft.OpenApi;
+using WebsiteProfiling.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseDefaultServiceProvider((_, options) =>
-{
-    options.ValidateOnBuild = true;
-    options.ValidateScopes = true;
-});
+builder.AddWebsiteProfilingWebDefaults(
+    "FileService API",
+    "PDF export and file generation for Site Audit reports. "
+    + "Fetches report data from the Site Audit report API over HTTP; no direct database access.");
 
 builder.Services.AddFileServiceApplication();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "FileService API",
-        Version = "v1",
-        Description =
-            "PDF export and file generation for Site Audit reports. "
-            + "Fetches report data from the Site Audit report API over HTTP; no direct database access.",
-    });
-});
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "FileService API v1");
-        options.RoutePrefix = "docs";
-    });
-}
+app.UseWebsiteProfilingSwaggerUi("FileService API");
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }))
     .WithName("HealthCheck")

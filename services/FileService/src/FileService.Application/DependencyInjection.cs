@@ -4,11 +4,9 @@ using FileService.Application.Persistence;
 using FileService.Application.Services;
 using FileService.Rendering;
 using FileService.Rendering.Exports;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using Npgsql;
 using WebsiteProfiling.Data;
+using WebsiteProfiling.Data.EntityFrameworkCore;
 
 namespace FileService.Application;
 
@@ -33,34 +31,13 @@ public static class DependencyInjection
         // report API. Connection string comes from DATABASE_URL (libpq URI), same as the Data service.
         // The data source + context are built lazily, so callers that inject a fake IReportDataClient
         // (e.g. integration tests) never touch the DB.
-        services.AddOptions<DatabaseOptions>()
-            .BindConfiguration(DatabaseOptions.SectionName)
-            .PostConfigure(o =>
-            {
-                var url = Environment.GetEnvironmentVariable("DATABASE_URL");
-                if (!string.IsNullOrWhiteSpace(url))
-                {
-                    o.ConnectionString = url.Trim();
-                }
-            });
-
-        services.AddSingleton<NpgsqlDataSource>(sp =>
+        // Smaller pool than the default 2/20: FileService only reads report payloads.
+        services.AddWebsiteProfilingDatabase(o =>
         {
-            var o = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-            var builder = new NpgsqlDataSourceBuilder(NpgsqlDsn.ToNpgsql(o.ConnectionString));
-            builder.ConnectionStringBuilder.MinPoolSize = o.MinPoolSize;
-            builder.ConnectionStringBuilder.MaxPoolSize = o.MaxPoolSize;
-            return builder.Build();
+            o.MinPoolSize = 1;
+            o.MaxPoolSize = 10;
         });
-
-        services.AddDbContextPool<ReportDbContext>((sp, options) =>
-        {
-            var o = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-            var dataSource = sp.GetRequiredService<NpgsqlDataSource>();
-            options
-                .UseNpgsql(dataSource, npg => npg.CommandTimeout(o.CommandTimeoutSeconds))
-                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-        });
+        services.AddWebsiteProfilingDbContextPool<ReportDbContext>(noTracking: true);
 
         services.AddScoped<IReportDataClient, DbReportDataClient>();
         services.AddHttpClient<IAppSettingsClient, AppSettingsClient>();

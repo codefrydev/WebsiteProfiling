@@ -3,6 +3,8 @@ using FileService.Rendering;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
+using WebsiteProfiling.Data;
 using WebsiteProfiling.Testing;
 
 namespace FileService.Tests;
@@ -25,5 +27,10 @@ public sealed class ServiceRegistrationValidationTests
         using var scope = factory.Services.CreateScope();
         scope.ServiceProvider.GetRequiredService<IPdfReportService>();
         scope.ServiceProvider.GetRequiredService<IReportExportService>();
+
+        // FileService overrides the shared 2/20 pool defaults via AddWebsiteProfilingDatabase.
+        var db = factory.Services.GetRequiredService<IOptions<DatabaseOptions>>().Value;
+        Assert.Equal(1, db.MinPoolSize);
+        Assert.Equal(10, db.MaxPoolSize);
     }
 }

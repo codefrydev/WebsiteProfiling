@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Contracts\WebsiteProfiling.Contracts.csproj" />
     <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Data\WebsiteProfiling.Data.csproj" />
+    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Data.EntityFrameworkCore\WebsiteProfiling.Data.EntityFrameworkCore.csproj" />
     <ProjectReference Include="..\AiService.Domain\AiService.Domain.csproj" />
     <ProjectReference Include="..\AiService.Providers\AiService.Providers.csproj" />
     <ProjectReference Include="..\AiService.Tools\AiService.Tools.csproj" />

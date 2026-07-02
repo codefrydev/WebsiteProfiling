@@ -1,7 +1,13 @@
 using System.Text.RegularExpressions;
 
-namespace IntegrationsService.Application.Google;
+namespace WebsiteProfiling.Contracts.Properties;
 
+/// <summary>
+/// Canonical-domain normalization shared by the Data and Integrations services. A property's
+/// canonical domain is the lowercased hostname (www kept as-is; resolution between www/no-www
+/// variants happens at query time). Keep this the single source of truth — the two services
+/// previously carried drifting copies.
+/// </summary>
 public static partial class PropertyDomainHelper
 {
     private static readonly HashSet<string> Reserved = new(StringComparer.OrdinalIgnoreCase)
@@ -12,24 +18,21 @@ public static partial class PropertyDomainHelper
     [GeneratedRegex(@"^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$", RegexOptions.CultureInvariant)]
     private static partial Regex LabelRegex();
 
-    public static string ExtractHostname(string url)
+    /// <summary>Lowercased host of an absolute URL, or "" when the URL doesn't parse.</summary>
+    public static string ExtractHostname(string? url)
     {
-        try
-        {
-            if (!Uri.TryCreate(url, UriKind.Absolute, out var parsed))
-            {
-                return "";
-            }
-
-            return parsed.Host.ToLowerInvariant();
-        }
-        catch
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var parsed))
         {
             return "";
         }
+
+        return parsed.Host.ToLowerInvariant();
     }
 
-    public static string CanonicalDomainFromStartUrl(string startUrl)
+    /// <summary>
+    /// Lowercased host of a start URL; bare domains (no scheme) are accepted by assuming https.
+    /// </summary>
+    public static string CanonicalDomainFromStartUrl(string? startUrl)
     {
         var raw = (startUrl ?? "").Trim();
         if (string.IsNullOrEmpty(raw))
@@ -45,18 +48,18 @@ public static partial class PropertyDomainHelper
         return ExtractHostname(href);
     }
 
-    public static string DerivePropertyName(string domain, string siteUrl = "")
+    public static string DerivePropertyName(string? domain, string siteUrl = "")
     {
         if (!string.IsNullOrWhiteSpace(domain))
         {
             return domain;
         }
 
-        var host = ExtractHostname(siteUrl);
+        var host = CanonicalDomainFromStartUrl(siteUrl);
         return string.IsNullOrEmpty(host) ? "Site" : host;
     }
 
-    public static bool IsValidCanonicalDomain(string domain)
+    public static bool IsValidCanonicalDomain(string? domain)
     {
         var d = (domain ?? "").Trim().ToLowerInvariant().TrimEnd('.');
         if (d.Length < 4 || !d.Contains('.', StringComparison.Ordinal) || Reserved.Contains(d))

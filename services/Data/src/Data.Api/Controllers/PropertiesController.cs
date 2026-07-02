@@ -57,7 +57,7 @@ public sealed class PropertiesController(IPropertiesCrudRepository properties) :
             return BadRequest(new { detail = "Valid site URL with a domain is required" });
         }
 
-        var domain = Data.Application.Properties.PropertyDomainHelper.CanonicalDomainFromStartUrl(startUrl);
+        var domain = WebsiteProfiling.Contracts.Properties.PropertyDomainHelper.CanonicalDomainFromStartUrl(startUrl);
         var prop = string.IsNullOrEmpty(domain)
             ? null
             : await properties.GetByDomainAsync(domain, cancellationToken);
@@ -82,7 +82,7 @@ public sealed class PropertiesController(IPropertiesCrudRepository properties) :
         }
 
         var propId = await properties.LookupIdFromStartUrlAsync(startUrl, cancellationToken);
-        var domain = Data.Application.Properties.PropertyDomainHelper.CanonicalDomainFromStartUrl(startUrl);
+        var domain = WebsiteProfiling.Contracts.Properties.PropertyDomainHelper.CanonicalDomainFromStartUrl(startUrl);
         var prop = string.IsNullOrEmpty(domain)
             ? null
             : await properties.GetByDomainAsync(domain, cancellationToken);

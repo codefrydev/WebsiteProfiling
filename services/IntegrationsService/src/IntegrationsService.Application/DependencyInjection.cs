@@ -1,13 +1,10 @@
 using IntegrationsService.Application.Google;
-using IntegrationsService.Application.Options;
 using IntegrationsService.Application.Persistence;
 using IntegrationsService.Application.Report;
 using IntegrationsService.Application.Repositories;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using Npgsql;
 using WebsiteProfiling.Data;
+using WebsiteProfiling.Data.EntityFrameworkCore;
 
 namespace IntegrationsService.Application;
 
@@ -15,34 +12,10 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddIntegrationsApplication(this IServiceCollection services)
     {
-        services.AddOptions<DatabaseOptions>()
-            .BindConfiguration(DatabaseOptions.SectionName)
-            .PostConfigure(o =>
-            {
-                var url = Environment.GetEnvironmentVariable("DATABASE_URL");
-                if (!string.IsNullOrWhiteSpace(url))
-                {
-                    o.ConnectionString = url.Trim();
-                }
-            });
-
         services.AddHttpClient();
 
-        services.AddSingleton<NpgsqlDataSource>(sp =>
-        {
-            var o = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-            var builder = new NpgsqlDataSourceBuilder(NpgsqlDsn.ToNpgsql(o.ConnectionString));
-            builder.ConnectionStringBuilder.MinPoolSize = o.MinPoolSize;
-            builder.ConnectionStringBuilder.MaxPoolSize = o.MaxPoolSize;
-            return builder.Build();
-        });
-
-        services.AddDbContextPool<IntegrationsDbContext>((sp, options) =>
-        {
-            var o = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-            var dataSource = sp.GetRequiredService<NpgsqlDataSource>();
-            options.UseNpgsql(dataSource, npg => npg.CommandTimeout(o.CommandTimeoutSeconds));
-        });
+        services.AddWebsiteProfilingDatabase();
+        services.AddWebsiteProfilingDbContextPool<IntegrationsDbContext>();
 
         services.AddScoped<GoogleDataWriteRepository>();
         services.AddScoped<GoogleDataReadRepository>();

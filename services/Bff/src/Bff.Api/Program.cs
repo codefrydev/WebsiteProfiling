@@ -4,17 +4,16 @@ using Bff.Api.Forwarding;
 using Bff.Api.Infrastructure;
 using Bff.Application;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.OpenApi;
+using WebsiteProfiling.Hosting;
 
 const string CorsPolicy = "bff";
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseDefaultServiceProvider((_, options) =>
-{
-    options.ValidateOnBuild = true;
-    options.ValidateScopes = true;
-});
+builder.AddWebsiteProfilingWebDefaults(
+    "Website Profiling BFF",
+    "Backend-for-Frontend gateway: the single browser-facing API surface. Owns auth + CORS "
+    + "and proxies to the internal FastAPI and FileService backends.");
 
 builder.Services.AddBffApplication();
 builder.Services.AddSingleton<IUpstreamForwarder, UpstreamForwarder>();
@@ -34,19 +33,6 @@ builder.Services.AddCors(options => options.AddPolicy(CorsPolicy, policy =>
         .AllowAnyMethod()
         .AllowCredentials()));
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Website Profiling BFF",
-        Version = "v1",
-        Description =
-            "Backend-for-Frontend gateway: the single browser-facing API surface. Owns auth + CORS "
-            + "and proxies to the internal FastAPI and FileService backends.",
-    });
-});
-
 // Large uploads (logs/upload, credentials/upload, page-markdown/extract) — parity with the TS proxy.
 builder.WebHost.ConfigureKestrel(options => options.Limits.MaxRequestBodySize = 256L * 1024 * 1024);
 
@@ -54,15 +40,7 @@ var app = builder.Build();
 
 app.UseExceptionHandler();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Website Profiling BFF v1");
-        options.RoutePrefix = "docs";
-    });
-}
+app.UseWebsiteProfilingSwaggerUi("Website Profiling BFF");
 
 // CORS before auth so denied (401/403) responses still carry CORS headers for the browser.
 app.UseCors(CorsPolicy);
