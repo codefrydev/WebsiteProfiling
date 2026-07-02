@@ -282,7 +282,7 @@ def test_crawl_store_start_url_helpers() -> None:
 
     assert cs._normalize_start_url_key("") == ""
     assert cs._normalize_start_url_key("ex.com").endswith("ex.com")
-    assert cs._normalize_start_url_key("https://Ex.Com/") == "https://ex.com"
+    assert cs._normalize_start_url_key("https://Ex.Com/") == "https://ex.com/"
 
     conn = MagicMock()
     conn.execute.return_value.fetchone.return_value = {"id": 9}
@@ -292,18 +292,18 @@ def test_crawl_store_start_url_helpers() -> None:
         {"id": 3, "start_url": "https://ex.com/"},
         {"id": 2, "start_url": "https://other.com"},
     ]
-    assert cs.get_latest_crawl_run_id_for_start_url(conn, "https://ex.com") == 3
+    assert cs.get_latest_crawl_run_id_for_start_url(conn, "https://ex.com/") == 3
     assert cs.get_latest_crawl_run_id_for_start_url(conn, "") is None
 
     conn.execute.side_effect = None
     conn.execute.return_value.fetchall.return_value = [
         {"id": 2, "start_url": "https://other.com"},
     ]
-    assert cs.get_latest_crawl_run_id_for_start_url(conn, "https://ex.com") is None
+    assert cs.get_latest_crawl_run_id_for_start_url(conn, "https://ex.com/") is None
 
     conn.execute.side_effect = RuntimeError("db")
     assert cs.get_latest_crawl_run_id_for_property(conn, 1) is None
-    assert cs.get_latest_crawl_run_id_for_start_url(conn, "https://ex.com") is None
+    assert cs.get_latest_crawl_run_id_for_start_url(conn, "https://ex.com/") is None
 
 
 def test_property_store_domain_validation_and_google_status() -> None:

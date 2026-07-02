@@ -205,7 +205,7 @@ def test_parse_links_serialized_branches() -> None:
     from website_profiling.common import _is_empty, parse_links_serialized
 
     assert _is_empty(float("nan")) is True
-    assert parse_links_serialized(["https://a.com/", "https://b.com"]) == ["https://a.com", "https://b.com"]
+    assert parse_links_serialized(["https://a.com/", "https://b.com"]) == ["https://a.com/", "https://b.com"]
     assert parse_links_serialized("   ") == []
     assert parse_links_serialized('["a"') == ["[\"a\""]
     assert parse_links_serialized("a.com, b.com") == ["a.com", "b.com"]

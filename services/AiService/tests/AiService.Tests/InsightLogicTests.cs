@@ -8,10 +8,10 @@ namespace AiService.Tests;
 public sealed class InsightLogicTests
 {
     [Theory]
-    [InlineData("https://www.example.com/blog/", "example.com/blog")]
+    [InlineData("https://www.example.com/blog/", "example.com/blog/")]
     [InlineData("https://example.com/", "example.com/")]
     [InlineData("https://www.example.com", "example.com/")]
-    [InlineData("/blog/post/", "/blog/post")]
+    [InlineData("/blog/post/", "/blog/post/")]
     [InlineData("HTTP://Example.com/A", "example.com/A")]
     [InlineData("https://x.com/a?q=1#frag", "x.com/a")]
     public void NormalizeUrl_matches_python(string input, string expected)

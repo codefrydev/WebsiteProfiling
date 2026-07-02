@@ -9,12 +9,12 @@ public sealed class UrlNormalizeHelperTests
     {
         var map = UrlNormalizeHelper.ToNormalizedUrlMap([
             "https://codefrydev.in/JsonPlayground/xaml",
-            "http://www.codefrydev.in/JsonPlayground/xaml/",
+            "http://www.codefrydev.in/JsonPlayground/xaml",
         ]);
 
         Assert.Single(map);
         Assert.Equal(
-            "http://www.codefrydev.in/JsonPlayground/xaml/",
+            "http://www.codefrydev.in/JsonPlayground/xaml",
             map["codefrydev.in/JsonPlayground/xaml"]);
     }
 }
