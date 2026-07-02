@@ -1,6 +1,6 @@
 namespace AiService.Domain.Entities;
 
-/// <summary>Read/write mapping of the Alembic-owned <c>report_payload</c> table.</summary>
+/// <summary>Read/write mapping of the <c>report_payload</c> table (schema owned by services/Schema).</summary>
 public sealed class ReportPayload
 {
     public long Id { get; set; }

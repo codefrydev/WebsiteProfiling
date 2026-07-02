@@ -12,9 +12,6 @@ public static class DependencyInjection
     /// <summary>Named HttpClient for streaming proxying to FastAPI (SSE/exports) — NO retry/buffering.</summary>
     public const string FastApiStreamClient = "fastapi-stream";
 
-    /// <summary>Named HttpClient for the FileService (PDF/Excel exports) — streaming, no retry.</summary>
-    public const string FileServiceClient = "fileservice";
-
     /// <summary>Named HttpClient for the internal Data service (direct-Postgres reads) — idempotent retry.</summary>
     public const string DataClient = "data";
 
@@ -26,9 +23,6 @@ public static class DependencyInjection
 
     /// <summary>Named HttpClient for the internal Report service — idempotent retry.</summary>
     public const string ReportClient = "report";
-
-    /// <summary>Named HttpClient for the internal Config service — idempotent retry.</summary>
-    public const string ConfigClient = "config";
 
     /// <summary>Named HttpClient for Ai service streaming (chat SSE) — no retry/buffering.</summary>
     public const string AiStreamClient = "ai-stream";
@@ -43,11 +37,6 @@ public static class DependencyInjection
                 if (!string.IsNullOrWhiteSpace(fastapi))
                 {
                     o.FastApiBaseUrl = fastapi.Trim();
-                }
-                var files = Environment.GetEnvironmentVariable("FILE_SERVICE_URL");
-                if (!string.IsNullOrWhiteSpace(files))
-                {
-                    o.FileServiceBaseUrl = files.Trim();
                 }
                 var data = Environment.GetEnvironmentVariable("DATA_SERVICE_URL");
                 if (!string.IsNullOrWhiteSpace(data))
@@ -91,17 +80,6 @@ public static class DependencyInjection
                 if (!string.IsNullOrWhiteSpace(reportRoutes))
                 {
                     o.ReportRoutes = reportRoutes
-                        .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                }
-                var config = Environment.GetEnvironmentVariable("CONFIG_SERVICE_URL");
-                if (!string.IsNullOrWhiteSpace(config))
-                {
-                    o.ConfigBaseUrl = config.Trim();
-                }
-                var configRoutes = Environment.GetEnvironmentVariable("CONFIG_ROUTES");
-                if (!string.IsNullOrWhiteSpace(configRoutes))
-                {
-                    o.ConfigRoutes = configRoutes
                         .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 }
             });
@@ -209,15 +187,6 @@ public static class DependencyInjection
             })
             .AddHttpMessageHandler<IdempotentRetryHandler>();
 
-        services.AddHttpClient(ConfigClient)
-            .ConfigureHttpClient((sp, client) =>
-            {
-                var opts = GetUpstream(sp);
-                client.BaseAddress = NormalizeBase(opts.ConfigBaseUrl);
-                client.Timeout = TimeSpan.FromSeconds(Math.Max(5, opts.TimeoutSeconds));
-            })
-            .AddHttpMessageHandler<IdempotentRetryHandler>();
-
         services.AddHttpClient(AiStreamClient)
             .ConfigureHttpClient((sp, client) =>
             {
@@ -230,14 +199,6 @@ public static class DependencyInjection
             {
                 client.BaseAddress = NormalizeBase(GetUpstream(sp).FastApiBaseUrl);
                 client.Timeout = Timeout.InfiniteTimeSpan; // SSE/streaming: do not cut the body
-            });
-
-        services.AddHttpClient(FileServiceClient)
-            .ConfigureHttpClient((sp, client) =>
-            {
-                var opts = GetUpstream(sp);
-                client.BaseAddress = NormalizeBase(opts.FileServiceBaseUrl);
-                client.Timeout = TimeSpan.FromSeconds(Math.Max(5, opts.TimeoutSeconds));
             });
 
         // Typed FastAPI client generated from web/openapi.json (NSwag). The bulk of the gateway

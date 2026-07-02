@@ -236,7 +236,7 @@ The application sets `app.current_property_id` at the start of each `readonly_se
 
 ## Database migrations
 
-Apply schema changes after pulling updates. Current Alembic head: **`015_crawl_page_html`** (per-URL HTML storage). Recent migrations: `013` (link edges, discovery mode), `014` (pipeline job log truncation).
+Apply schema changes after pulling updates. Schema is owned by EF Core migrations in `services/Schema/src/Schema.Model/` (a single squashed `InitialCreate` migration covering all 51 tables).
 
 ```bash
 ./local-run migrate
@@ -245,30 +245,30 @@ Apply schema changes after pulling updates. Current Alembic head: **`015_crawl_p
 If PostgreSQL is already running:
 
 ```bash
-alembic upgrade head
+dotnet run --project services/Schema/src/Schema.Migrator
 ```
 
 ### Docker deployments
 
-Migrations run automatically at container start. Use one of the following so Postgres and the application share a network:
+Migrations run automatically via the one-shot `migrator` service before any dependent service starts. Use one of the following so Postgres and the application share a network:
 
 ```bash
 docker compose up              # build from source
 docker compose -f docker-compose.pull.yml up   # pre-built WEB_IMAGE
 ```
 
-Do not run the application container in isolation with `docker run` unless you provide a reachable `DATABASE_URL`.
+Do not run the application container in isolation with `docker run` unless you provide a reachable `DATABASE_URL` whose schema has already been migrated (e.g. `docker compose run migrator`).
 
-### FileService (PDF and workbook export)
+### Data service (report reads, typed config, PDF/Excel export)
 
-The `files` service (port **8097**) renders audit PDFs and Excel workbooks. It reads report data over HTTP from the `web` service — no Postgres connection.
+The `data` service (port **8091**) reads report payloads, portfolio, issue status, and typed config (pipeline settings, UI/client preferences) directly from Postgres, and renders audit PDFs, Excel workbooks, CSV/JSON, and sitemaps at `/v1/reports/*` (formerly a separate FileService, now `Data.Rendering`/`ReportExportController`).
 
 | Variable | Service | Purpose |
 |----------|---------|---------|
-| `FILE_SERVICE_URL` | `web`, MCP | Where clients call FileService (default `http://files:8097` in Compose) |
-| `REPORT_API_URL` | `files` | Report API base URL (Compose: `http://web:8096`) |
+| `DATA_SERVICE_URL` | `bff`, MCP | Where clients call the Data service (default `http://data:8091` in Compose) |
+| `REPORT_API_URL` | `data` | Branding/logo lookup base URL for PDF exports (Compose: `http://fastapi:8096`) |
 
-PDF or workbook downloads fail if `files` is not running. See [services/FileService/README.md](../services/FileService/README.md).
+PDF or workbook downloads fail if `data` is not running.
 
 ---
 
@@ -289,7 +289,7 @@ CI also runs a **Docker** job (image build, browser pytest in container, compose
 
 ```bash
 export DATABASE_URL=postgres://profiling:profiling@localhost:5432/website_profiling
-alembic upgrade head
+dotnet run --project services/Schema/src/Schema.Migrator
 pytest tests/ -m "not browser"
 ```
 

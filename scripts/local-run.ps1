@@ -3,7 +3,7 @@
 #   (default) start   — ensure DB, migrations, npm run dev
 #   setup           — DB + venv + deps + migrations (no web server)
 #   db              — start Postgres container only
-#   migrate         — alembic upgrade head
+#   migrate         — EF Core: dotnet run --project services\Schema\src\Schema.Migrator
 #   stop            — stop wp-pg container
 #   help            — show commands
 # Requires: PowerShell 5.1+ (PowerShell 7+ recommended for reliable exit codes)
@@ -30,8 +30,8 @@ if (-not $env:DATA_DIR) {
 $VENV = Join-Path $ROOT ".venv"
 $VENV_PYTHON = Join-Path $VENV "Scripts\python.exe"
 $VENV_PIP = Join-Path $VENV "Scripts\pip.exe"
-$VENV_ALEMBIC = Join-Path $VENV "Scripts\alembic.exe"
 $WEB = Join-Path $ROOT "web"
+$SCHEMA_MIGRATOR = Join-Path $ROOT "services\Schema\src\Schema.Migrator"
 
 $env:WEBSITE_PROFILING_ROOT = $ROOT
 if ($env:PYTHONPATH) {
@@ -185,12 +185,10 @@ function Invoke-Venv {
 
 function Invoke-Migrate {
     Invoke-Db
-    if (-not (Test-Path $VENV_ALEMBIC)) {
-        Invoke-Venv
-    }
-    Write-Log "Applying database migrations (alembic upgrade head)"
-    & $VENV_ALEMBIC upgrade head
-    Assert-LastExitCode "Database migration failed (alembic upgrade head)"
+    Test-Command dotnet
+    Write-Log "Applying database migrations (EF Core: Schema.Migrator)"
+    & dotnet run --project $SCHEMA_MIGRATOR --no-launch-profile
+    Assert-LastExitCode "Database migration failed (Schema.Migrator)"
 }
 
 function Invoke-WebDeps {
@@ -246,13 +244,11 @@ function Invoke-Setup {
 function Invoke-Start {
     New-Item -ItemType Directory -Force -Path $env:DATA_DIR | Out-Null
     Invoke-Db
-    if (-not (Test-Path $VENV_ALEMBIC)) {
-        Invoke-Venv
-    }
+    Test-Command dotnet
     Invoke-BrowserDeps
     Write-Log "Ensuring migrations are up to date"
-    & $VENV_ALEMBIC upgrade head
-    Assert-LastExitCode "Database migration failed (alembic upgrade head)"
+    & dotnet run --project $SCHEMA_MIGRATOR --no-launch-profile
+    Assert-LastExitCode "Database migration failed (Schema.Migrator)"
     Invoke-WebDeps
 
     $bffBase = if ($env:VITE_BFF_BASE_URL) { $env:VITE_BFF_BASE_URL } else { "http://localhost:8090" }
@@ -330,7 +326,7 @@ Local dev runner - Postgres in Docker, app on your machine
   .\local-run.ps1 start        DB + migrations + npm run dev
   .\local-run.ps1 setup        One-time setup (no dev server)
   .\local-run.ps1 db           Start Postgres only
-  .\local-run.ps1 migrate      Run alembic upgrade head
+  .\local-run.ps1 migrate      Apply EF Core migrations (Schema.Migrator)
   .\local-run.ps1 stop         Stop Postgres container
 
 Environment overrides (optional):

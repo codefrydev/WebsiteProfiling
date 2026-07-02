@@ -200,7 +200,7 @@ def test_read_lh_runs_by_url_and_page_summaries():
     conn = _Conn(
         {
             "SELECT id, url FROM lighthouse_runs": _Cursor(
-                rows=[{"id": 1, "url": "https://a.com/"}, {"id": 2, "url": "https://a.com"}]
+                rows=[{"id": 1, "url": "https://a.com"}, {"id": 2, "url": "https://a.com"}]
             ),
             "SELECT url, data FROM lighthouse_page_summaries": _Cursor(
                 rows=[{"url": "https://a.com", "data": {"p": 1}}, {"url": "https://b.com", "data": "x"}]

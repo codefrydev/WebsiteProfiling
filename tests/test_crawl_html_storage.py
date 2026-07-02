@@ -59,7 +59,7 @@ def test_should_store_page_html_rejects_oversized() -> None:
     )
 
 
-def test_build_page_html_record_normalizes_url() -> None:
+def test_build_page_html_record_preserves_url() -> None:
     rec = build_page_html_record(
         url="https://example.com/page/",
         html="<html>hi</html>",
@@ -69,7 +69,7 @@ def test_build_page_html_record_normalizes_url() -> None:
         max_bytes=5000,
     )
     assert rec is not None
-    assert rec["url"] == "https://example.com/page"
+    assert rec["url"] == "https://example.com/page/"
     assert rec["fetch_method"] == "rendered"
     assert rec["byte_length"] == len("<html>hi</html>".encode("utf-8"))
 

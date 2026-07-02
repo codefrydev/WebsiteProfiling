@@ -21,7 +21,7 @@ def _database_url_configured() -> bool:
 @pytest.fixture(scope="session")
 def require_database_url() -> None:
     if not _database_url_configured():
-        pytest.skip("DATABASE_URL not set — start Postgres and run alembic upgrade head")
+        pytest.skip("DATABASE_URL not set — start Postgres and run the EF Core migrator")
 
 
 def _override_get_db() -> Iterator[Any]:

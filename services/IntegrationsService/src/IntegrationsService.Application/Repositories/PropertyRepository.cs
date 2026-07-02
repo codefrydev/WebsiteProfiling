@@ -3,6 +3,7 @@ using IntegrationsService.Application.Google;
 using IntegrationsService.Application.Persistence;
 using IntegrationsService.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using WebsiteProfiling.Contracts.Properties;
 
 namespace IntegrationsService.Application.Repositories;
 
@@ -185,7 +186,7 @@ public sealed class PropertyRepository(IntegrationsDbContext db)
             new PropertyGoogleCredentialsPatch
             {
                 RefreshToken = "",
-                AuthMode = null,
+                AuthMode = "",
             },
             cancellationToken);
     }

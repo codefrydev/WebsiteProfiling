@@ -24,6 +24,13 @@
     <ProjectReference Include="..\..\src\Data.Api\Data.Api.csproj" />
     <ProjectReference Include="..\..\src\Data.Application\Data.Application.csproj" />
     <ProjectReference Include="..\..\src\Data.Domain\Data.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Data.Rendering\Data.Rendering.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="fixtures\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

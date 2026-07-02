@@ -82,6 +82,7 @@ export default function ChatPage() {
   const [composerDraft, setComposerDraft] = useState('');
   const [urlSyncEnabled, setUrlSyncEnabled] = useState(false);
   const messagesLoadGen = useRef(0);
+  const sessionsLoadGen = useRef(0);
   const sessionRestoredForProperty = useRef<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -190,11 +191,13 @@ export default function ChatPage() {
   }, []);
 
   const loadSessions = useCallback(async (pid: number) => {
+    const gen = ++sessionsLoadGen.current;
     setLoadingSessions(true);
     try {
       const res = await apiFetch(apiUrl(`/chat/sessions?propertyId=${pid}`));
       if (!res.ok) throw new Error('Failed to load sessions');
       const data = (await res.json()) as { sessions?: ChatSessionRow[] };
+      if (gen !== sessionsLoadGen.current) return;
       setSessions(
         (data.sessions || [])
           .map((row) => normalizeChatSessionRow(row))
@@ -203,7 +206,9 @@ export default function ChatPage() {
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
-      setLoadingSessions(false);
+      if (gen === sessionsLoadGen.current) {
+        setLoadingSessions(false);
+      }
     }
   }, []);
 

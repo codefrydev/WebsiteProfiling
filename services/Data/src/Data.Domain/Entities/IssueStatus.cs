@@ -1,7 +1,7 @@
 namespace Data.Domain.Entities;
 
 /// <summary>
-/// Mapping of the Alembic-owned <c>issue_status</c> table (issue workflow on the task board).
+/// Mapping of the <c>issue_status</c> table (schema owned by services/Schema; issue workflow on the task board).
 /// </summary>
 public sealed class IssueStatus
 {

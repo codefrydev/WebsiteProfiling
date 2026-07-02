@@ -105,7 +105,11 @@ def get_landing_page_full_diagnosis(conn: Connection, ctx: AuditToolContext, arg
     ga4_page = (slice_data.get("ga4") or {}) if isinstance(slice_data.get("ga4"), dict) else None
     benchmarks = slice_data.get("siteBenchmarks") or {}
     flags = page_issue_flags(url, payload)
-    lh = (payload.get("lighthouse_by_url") or {}).get(url) or {}
+    lighthouse_by_url = payload.get("lighthouse_by_url") or {}
+    lh = lighthouse_by_url.get(url)
+    if lh is None:
+        lh = lighthouse_by_url.get(url.rstrip("/")) or lighthouse_by_url.get(f"{url.rstrip('/')}/")
+    lh = lh or {}
     score = composite_page_score(
         gsc_page, ga4_page,
         (benchmarks.get("gsc") or {}) if isinstance(benchmarks.get("gsc"), dict) else {},

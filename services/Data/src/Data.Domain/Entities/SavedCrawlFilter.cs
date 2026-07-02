@@ -1,7 +1,7 @@
 namespace Data.Domain.Entities;
 
 /// <summary>
-/// Mapping of the Alembic-owned <c>saved_crawl_filters</c> table (Links page saved filter presets).
+/// Mapping of the <c>saved_crawl_filters</c> table (schema owned by services/Schema; Links page saved filter presets).
 /// </summary>
 public sealed class SavedCrawlFilter
 {

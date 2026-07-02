@@ -3,6 +3,11 @@
     <Project Path="Shared/WebsiteProfiling.Contracts/WebsiteProfiling.Contracts.csproj" />
     <Project Path="Shared/WebsiteProfiling.TypedConfig/WebsiteProfiling.TypedConfig.csproj" />
     <Project Path="Shared/WebsiteProfiling.Testing/WebsiteProfiling.Testing.csproj" />
+    <Project Path="Shared/WebsiteProfiling.Data/WebsiteProfiling.Data.csproj" />
+    <Project Path="Shared/WebsiteProfiling.Data.Tests/WebsiteProfiling.Data.Tests.csproj" />
+    <Project Path="Shared/WebsiteProfiling.Data.EntityFrameworkCore/WebsiteProfiling.Data.EntityFrameworkCore.csproj" />
+    <Project Path="Shared/WebsiteProfiling.Hosting/WebsiteProfiling.Hosting.csproj" />
+    <Project Path="Shared/WebsiteProfiling.Contracts.Tests/WebsiteProfiling.Contracts.Tests.csproj" />
   </Folder>
   <Folder Name="/ai-service/">
     <Project Path="AiService/src/AiService.Api/AiService.Api.csproj" />
@@ -23,14 +28,8 @@
     <Project Path="Data/src/Data.Api/Data.Api.csproj" />
     <Project Path="Data/src/Data.Application/Data.Application.csproj" />
     <Project Path="Data/src/Data.Domain/Data.Domain.csproj" />
+    <Project Path="Data/src/Data.Rendering/Data.Rendering.csproj" />
     <Project Path="Data/tests/Data.Tests/Data.Tests.csproj" />
-  </Folder>
-  <Folder Name="/file-service/">
-    <Project Path="FileService/src/FileService.Api/FileService.Api.csproj" />
-    <Project Path="FileService/src/FileService.Application/FileService.Application.csproj" />
-    <Project Path="FileService/src/FileService.Domain/FileService.Domain.csproj" />
-    <Project Path="FileService/src/FileService.Rendering/FileService.Rendering.csproj" />
-    <Project Path="FileService/tests/FileService.Tests/FileService.Tests.csproj" />
   </Folder>
   <Folder Name="/integrations-service/">
     <Project Path="IntegrationsService/src/IntegrationsService.Api/IntegrationsService.Api.csproj" />
@@ -45,9 +44,9 @@
     <Project Path="ReportService/src/ReportService.Domain/ReportService.Domain.csproj" />
     <Project Path="ReportService/tests/ReportService.Tests/ReportService.Tests.csproj" />
   </Folder>
-  <Folder Name="/config-service/">
-    <Project Path="ConfigService/src/ConfigService.Api/ConfigService.Api.csproj" />
-    <Project Path="ConfigService/src/ConfigService.Application/ConfigService.Application.csproj" />
-    <Project Path="ConfigService/tests/ConfigService.Tests/ConfigService.Tests.csproj" />
+  <Folder Name="/schema/">
+    <Project Path="Schema/src/Schema.Model/Schema.Model.csproj" />
+    <Project Path="Schema/src/Schema.Migrator/Schema.Migrator.csproj" />
+    <Project Path="Schema/tests/Schema.Tests/Schema.Tests.csproj" />
   </Folder>
 </Solution>

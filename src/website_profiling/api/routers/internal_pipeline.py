@@ -26,7 +26,7 @@ def internal_execute_subprocess(body: dict[str, Any]) -> dict[str, Any]:
     try:
         pid = int(property_id) if property_id is not None else None
     except (TypeError, ValueError):
-        pid = None
+        raise HTTPException(status_code=400, detail="propertyId must be a valid integer")
 
     result = execute_subprocess_for_claimed_job(job_id, command_str, pid)
     return {

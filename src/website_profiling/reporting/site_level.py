@@ -26,6 +26,7 @@ def _fetch_site_level(start_url: str, timeout: int = 8) -> dict:
         "robots_present": False,
         "sitemap_present": False,
         "sitemap_valid": False,
+        "sitemap_url": None,
     }
     try:
         r = session.get(f"{base}/robots.txt", timeout=timeout)
@@ -34,6 +35,7 @@ def _fetch_site_level(start_url: str, timeout: int = 8) -> dict:
             for line in r.text.splitlines():
                 line = line.strip()
                 if line.lower().startswith("sitemap:"):
+                    out["sitemap_url"] = line.split(":", 1)[1].strip()
                     break
     except Exception:
         pass

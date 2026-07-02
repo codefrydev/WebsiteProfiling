@@ -1,7 +1,7 @@
 namespace ReportService.Domain.Entities;
 
 /// <summary>
-/// Mapping of the existing <c>pipeline_jobs</c> table (Alembic-owned schema).
+/// Mapping of the existing <c>pipeline_jobs</c> table (schema owned by services/Schema).
 /// </summary>
 public sealed class PipelineJob
 {

@@ -41,7 +41,7 @@
 
 # Site Audit
 
-**Developer-friendly SEO audit platform** — open-source crawl and technical audit tooling built with **React, Python, PostgreSQL, and .NET**. The stack is split into focused services: **Python FastAPI** (crawl, pipeline jobs), **.NET ReportService** (report build + orchestration), **.NET IntegrationsService** (Google/Bing OAuth, GSC/GA4 fetch, keywords), **.NET AiService** (AI chat, LLM settings, secrets, MCP), **.NET Data** (report reads, portfolio, issue status), **.NET FileService** (PDF/Excel export), and a **.NET BFF** as the single browser-facing API gateway.
+**Developer-friendly SEO audit platform** — open-source crawl and technical audit tooling built with **React, Python, PostgreSQL, and .NET**. The stack is split into focused services: **Python FastAPI** (crawl, pipeline jobs), **.NET ReportService** (report build + orchestration), **.NET IntegrationsService** (Google/Bing OAuth, GSC/GA4 fetch, keywords), **.NET AiService** (AI chat, LLM settings, secrets, MCP), **.NET Data** (report reads, portfolio, issue status, typed config, PDF/Excel/CSV/JSON/sitemap export), and a **.NET BFF** as the single browser-facing API gateway.
 
 ## Overview
 
@@ -149,12 +149,11 @@ flowchart TB
 
     subgraph BffRoutes["BFF upstream routing"]
         direction LR
-        BFF --> FastAPI["fastapi :8096<br/>Crawl · jobs · pipeline settings"]
+        BFF --> FastAPI["fastapi :8096<br/>Crawl · jobs"]
         BFF --> Report["report :8094<br/>Report build · orchestration"]
         BFF --> Integrations["integrations :8093<br/>Google/Bing · GSC/GA4 · keywords"]
         BFF --> Ai["ai :8092<br/>Chat · LLM · secrets · MCP"]
-        BFF --> Data["data :8091<br/>Report reads · portfolio · issues"]
-        BFF --> Files["files :8097<br/>PDF · Excel export"]
+        BFF --> Data["data :8091<br/>Report reads · portfolio · issues · typed config · PDF/Excel export"]
     end
 
     subgraph Pipeline["Background pipeline"]
@@ -190,11 +189,11 @@ flowchart TB
 | From | To | When |
 | ---- | -- | ---- |
 | **Browser** | BFF → FastAPI | Crawl jobs, pipeline config/settings, most `/api/*` |
-| **Browser** | BFF → Data | Report payload/meta, portfolio, issue status, saved filters (`DATA_ROUTES`) |
+| **Browser** | BFF → Data | Report payload/meta, portfolio, issue status, saved filters, pipeline settings, UI/client preferences (`DATA_ROUTES`) |
 | **Browser** | BFF → Integrations | Google/Bing OAuth, GSC/GA4, keywords (`INTEGRATIONS_ROUTES`) |
 | **Browser** | BFF → AiService | Chat (SSE), secrets, LLM settings, content AI, MCP catalog (`AI_ROUTES`) |
 | **Browser** | BFF → ReportService | Compare runs, dashboards (`REPORT_ROUTES`; strangler proxy to FastAPI) |
-| **Browser** | BFF → FileService | Report PDF/Excel export (`/api/report/export`) |
+| **Browser** | BFF → Data | Report PDF/Excel export (`/api/report/export`) |
 | **Worker** | ReportService | Post-crawl report build and full-pipeline orchestration |
 | **Worker** | IntegrationsService | Google fetch, keyword enrichment |
 | **Worker** | AiService | ML enrichment, page coach, structured completions |
@@ -202,7 +201,6 @@ flowchart TB
 | **ReportService** | IntegrationsService | Google/keyword/GSC snapshots for native report build |
 | **IntegrationsService** | FastAPI | Keyword enrich + GSC link import when Python bridge is enabled |
 | **AiService** | FastAPI | Audit tools not yet ported to C# |
-| **FileService** | FastAPI | Report JSON and branding — **no Postgres** |
 | **Data · Ai · Report · Integrations · FastAPI · worker** | Postgres | Direct reads/writes to typed settings and audit tables |
 
 ```
@@ -232,9 +230,8 @@ WebsiteProfiling/
 ├── services/ReportService/    # .NET report build + pipeline orchestration (port 8094)
 ├── services/IntegrationsService/  # .NET Google/Bing integrations — OAuth, GSC/GA4, keywords (port 8093)
 ├── services/AiService/        # .NET AI — chat, secrets, LLM config, MCP, enrichment (port 8092)
-├── services/Data/             # .NET read service — report/portfolio/issue reads (port 8091)
-├── services/FileService/      # .NET PDF + Excel workbook export (port 8097)
-├── alembic/versions/          # PostgreSQL schema migrations
+├── services/Data/             # .NET data service — report/portfolio/issue reads, typed config (port 8091)
+├── services/Schema/           # EF Core schema migrations (PostgreSQL schema owner)
 ├── tests/                     # pytest suite + fixtures
 ├── docs/                      # Glossary, MCP, ops, brand assets
 ├── scripts/                   # local-run.sh, local-test.sh, local-prod.sh
@@ -255,16 +252,15 @@ WebsiteProfiling/
 | ------------------------------------- | ------------------------------------------------------------------------------ |
 | `src/website_profiling/`              | Crawl, analyze, report, Lighthouse — run via `python -m src` |
 | `src/website_profiling/api/`          | FastAPI — pipeline jobs, crawl, pipeline-config / pipeline-settings / ui-preferences |
-| `services/Bff/`                       | Browser API gateway — auth, CORS, routes `/api/*` to FastAPI, ReportService, IntegrationsService, AiService, Data, FileService |
+| `services/Bff/`                       | Browser API gateway — auth, CORS, routes `/api/*` to FastAPI, ReportService, IntegrationsService, AiService, Data |
 | `services/IntegrationsService/`       | Google/Bing OAuth, GSC/GA4 fetch, keywords, page-live — see [services/IntegrationsService/README.md](services/IntegrationsService/README.md) |
 | `services/AiService/`                 | AI chat, secrets, LLM settings, MCP, enrichment — see [services/AiService/README.md](services/AiService/README.md) |
-| `services/Data/`                      | .NET read/mutation service for report payloads, portfolio, issue status, saved filters |
-| `services/FileService/`               | PDF and Excel workbook export — see [services/FileService/README.md](services/FileService/README.md) |
+| `services/Data/`                      | .NET read/mutation service for report payloads, portfolio, issue status, saved filters, typed config (pipeline settings, UI/client preferences), and PDF/Excel/CSV/JSON/sitemap report export |
 | `web/src/lib/publicBase.ts`           | BFF base URL (`VITE_BFF_BASE_URL`) and `apiFetch` / `apiUrl`                   |
 | `web/src/lib/pipelineConfigSchema.ts` | Audit settings schema (UI ↔ PostgreSQL)                                        |
 | `services/ReportService/`             | .NET report build + full-audit orchestration — see [services/ReportService/README.md](services/ReportService/README.md) |
 | `config/typed_config_manifest.json`   | Typed PostgreSQL settings schema (pipeline, LLM, secrets, UI prefs) |
-| `alembic/versions/`                   | Database migrations — run `./local-run migrate`                                |
+| `services/Schema/`                    | EF Core schema migrations — run `./local-run migrate`                          |
 | `tests/`                              | Backend tests; `./local-test browser` for Playwright crawl integration         |
 | `docs/MCP.md`                         | MCP server setup for IDE and agent integrations                                |
 | `data/`                               | Local artifacts (gitignored); settings live in Postgres typed tables |
@@ -281,7 +277,7 @@ For layout details and common development patterns, see [AGENT.md](AGENT.md).
 | **Docker** | Postgres container (local dev) and full-stack compose |
 | **Python 3.12+** | Audit engine, FastAPI, pipeline worker, tests |
 | **Node 20+** | Vite + React SPA |
-| **.NET SDK 10+** | BFF, IntegrationsService, AiService, Data, and FileService (required for `./local-run`; optional if you only use Docker) |
+| **.NET SDK 10+** | BFF, IntegrationsService, AiService, Data, and ReportService (required for `./local-run`; optional if you only use Docker) |
 
 ### Docker
 
@@ -291,11 +287,11 @@ Build and run the full dev stack from source:
 docker compose up --build
 ```
 
-Services: **postgres**, **fastapi** (`:8096`, internal), **worker**, **report** (`:8094`, internal), **integrations** (`:8093`, internal), **ai** (`:8092`, internal), **data** (`:8091`, internal), **bff** (`:8090`), **web** (`:3000`), **files** (`:8097`, internal).
+Services: **postgres**, **migrator** (one-shot EF Core schema migration, exits after applying), **fastapi** (`:8096`, internal), **worker**, **report** (`:8094`, internal), **integrations** (`:8093`, internal), **ai** (`:8092`, internal), **data** (`:8091`, internal), **bff** (`:8090`), **web** (`:3000`).
 
-Open [http://localhost:3000/home](http://localhost:3000/home). The browser talks only to the **BFF** (`:8090`); the BFF proxies to FastAPI (crawl/pipeline), IntegrationsService (Google/Bing), AiService (AI/secrets), Data (report reads), and FileService (PDF/workbook export).
+Open [http://localhost:3000/home](http://localhost:3000/home). The browser talks only to the **BFF** (`:8090`); the BFF proxies to FastAPI (crawl/pipeline), IntegrationsService (Google/Bing), AiService (AI/secrets), and Data (report reads, typed config, PDF/workbook export).
 
-Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTGRES_PASSWORD`, `AUTH_SECRET`, `BFF_ALLOWED_ORIGINS`, and `BFF_PUBLIC_URL`. Optional remote MCP: `docker compose -f docker-compose.prod.yml --profile mcp up`. Pre-built images: `docker-compose.pull.yml` (`BACKEND_IMAGE`, `WEB_IMAGE`).
+Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTGRES_PASSWORD`, `AUTH_SECRET`, `BFF_ALLOWED_ORIGINS`, and `BFF_PUBLIC_URL`. Optional remote MCP: `docker compose -f docker-compose.prod.yml --profile mcp up`. Pre-built images: `docker-compose.pull.yml` (`BACKEND_IMAGE`, `WEB_IMAGE`). Schema is applied by the one-shot `migrator` service before any dependent service starts; don't run a Postgres-backed service in isolation with `docker run` unless its schema was already migrated (`docker compose run migrator` or `dotnet run --project services/Schema/src/Schema.Migrator`).
 
 ### Local development
 
@@ -303,12 +299,12 @@ Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTG
 ./local-run setup   # First time: Postgres, Python venv, Playwright/Chromium, migrations, npm deps
 ./local-run         # Start full dev stack → http://localhost:3000/home
 ./local-run db      # Postgres only (no app)
-./local-run migrate # Apply Alembic migrations only
+./local-run migrate # Apply EF Core migrations only
 ./local-run stop    # Stop Postgres container
 ./local-prod        # Same DB, Vite production build + preview (no hot reload)
 ```
 
-`./local-run` starts (in order): **FileService** `:8097`, **Data** `:8091`, **AiService** `:8092` (MCP HTTP enabled), **ReportService** `:8094`, **IntegrationsService** `:8093`, **ConfigService** `:8095`, **FastAPI** `:8096` (Python bridge), **BFF** `:8090`, and **Vite** `:3000`. Use `localhost` (not `127.0.0.1`) for pipeline APIs so CORS and cookies match the BFF origin.
+`./local-run` starts (in order): **Data** `:8091` (reports, portfolio, issues, typed config, PDF/Excel export), **AiService** `:8092` (MCP HTTP enabled), **ReportService** `:8094`, **IntegrationsService** `:8093`, **FastAPI** `:8096` (Python bridge), **BFF** `:8090`, and **Vite** `:3000`. Use `localhost` (not `127.0.0.1`) for pipeline APIs so CORS and cookies match the BFF origin.
 
 Default local `DATABASE_URL`: `postgres://postgres:dev@127.0.0.1:5432/website_profiling` (Docker Compose dev stack uses `profiling:profiling`).
 
@@ -323,8 +319,6 @@ With `./local-run`, each service runs in **Development** and exposes interactive
 | **AiService** | 8092 | [http://localhost:8092/docs](http://localhost:8092/docs) | `/swagger/v1/swagger.json` |
 | **IntegrationsService** | 8093 | [http://localhost:8093/docs](http://localhost:8093/docs) | `/swagger/v1/swagger.json` |
 | **ReportService** | 8094 | [http://localhost:8094/docs](http://localhost:8094/docs) | `/swagger/v1/swagger.json` |
-| **ConfigService** | 8095 | [http://localhost:8095/docs](http://localhost:8095/docs) | `/swagger/v1/swagger.json` |
-| **FileService** | 8097 | [http://localhost:8097/docs](http://localhost:8097/docs) | `/swagger/v1/swagger.json` |
 | **Python bridge** (FastAPI) | 8096 | [http://localhost:8096/docs](http://localhost:8096/docs) | `/openapi.json` |
 
 Swagger UI is disabled when `ASPNETCORE_ENVIRONMENT=Production`. The legacy `web/openapi.json` reflects the old monolithic FastAPI app and is not a complete map of the current C# services.

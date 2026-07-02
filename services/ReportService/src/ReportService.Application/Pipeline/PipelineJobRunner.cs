@@ -132,57 +132,84 @@ public sealed class PipelineJobRunner(
 
         try
         {
-            using (process)
-            {
-                var stdoutPump = PumpStreamAsync(process.StandardOutput, job.Id, cancellationToken);
-                var stderrPump = PumpStreamAsync(process.StandardError, job.Id, cancellationToken);
-                var paused = false;
+            var stdoutPump = PumpStreamAsync(process.StandardOutput, job.Id, cancellationToken);
+            var stderrPump = PumpStreamAsync(process.StandardError, job.Id, cancellationToken);
 
-                while (!process.HasExited)
+            while (!process.HasExited)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
+                var (cancel, pause) = await jobs.CheckFlagsAsync(job.Id, cancellationToken);
+                if (cancel)
                 {
-                    await Task.Delay(TimeSpan.FromSeconds(1), cancellationToken);
-                    var (cancel, pause) = await jobs.CheckFlagsAsync(job.Id, cancellationToken);
-                    if (cancel)
+                    TryKillProcess(process);
+                    await process.WaitForExitAsync(cancellationToken);
+                    await Task.WhenAll(stdoutPump, stderrPump);
+                    await jobs.FinishAsync(job.Id, "error", -1, "Cancelled by user", cancellationToken: cancellationToken);
+                    return;
+                }
+
+                if (pause)
+                {
+                    // Cooperative pause: signal the crawler (SIGUSR1 / flag file — see
+                    // TryPauseProcess) and give it time to save frontier state and exit on its
+                    // own (exit code 2; see crawl/crawler.py). Nothing ever resumes this OS
+                    // process in place — PipelineRunService.ResumeJobAsync always enqueues a
+                    // brand-new job — so if the signal is lost or the crawler is stuck, fall
+                    // back to a hard kill rather than hang forever.
+                    TryPauseProcess(process);
+
+                    using var pauseTimeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+                    using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, pauseTimeoutCts.Token);
+                    try
+                    {
+                        await process.WaitForExitAsync(linkedCts.Token);
+                    }
+                    catch (OperationCanceledException) when (pauseTimeoutCts.IsCancellationRequested && !cancellationToken.IsCancellationRequested)
                     {
                         TryKillProcess(process);
                         await process.WaitForExitAsync(cancellationToken);
                         await Task.WhenAll(stdoutPump, stderrPump);
-                        await jobs.FinishAsync(job.Id, "error", -1, "Cancelled by user", cancellationToken: cancellationToken);
+                        await jobs.FinishAsync(job.Id, "error", -1, "Pause request timed out waiting for the crawler to exit; process killed", cancellationToken: cancellationToken);
                         return;
                     }
 
-                    if (pause && !paused)
-                    {
-                        TryPauseProcess(process);
-                        paused = true;
-                    }
-                }
-
-                await process.WaitForExitAsync(cancellationToken);
-                await Task.WhenAll(stdoutPump, stderrPump);
-
-                var exitCode = process.ExitCode;
-                if (paused && exitCode == 0)
-                {
+                    await Task.WhenAll(stdoutPump, stderrPump);
+                    var pauseExitCode = process.ExitCode;
                     var logTruncated = await jobs.GetLogTruncatedAsync(job.Id, cancellationToken);
-                    await jobs.FinishAsync(job.Id, "paused", exitCode, logTruncated: logTruncated, cancellationToken: cancellationToken);
-                    return;
-                }
-
-                if (exitCode == 0 && ShouldPostCrawlReport(job, options))
-                {
-                    if (await jobs.IsActiveAsync(job.Id, cancellationToken))
+                    if (pauseExitCode == 2)
                     {
-                        await FinishAfterPostCrawlReportAsync(job, cancellationToken);
+                        await jobs.FinishAsync(job.Id, "paused", pauseExitCode, logTruncated: logTruncated, cancellationToken: cancellationToken);
+                    }
+                    else
+                    {
+                        // Exited on its own for some other reason while the pause signal was
+                        // in flight (e.g. it finished naturally right as pause was requested).
+                        var raceStatus = pauseExitCode == 0 ? "success" : "error";
+                        var raceError = pauseExitCode == 0 ? null : $"Process exited with code {pauseExitCode}";
+                        await jobs.FinishAsync(job.Id, raceStatus, pauseExitCode, raceError, logTruncated, cancellationToken: cancellationToken);
                     }
 
                     return;
                 }
-
-                var status = exitCode == 0 ? "success" : "error";
-                var error = exitCode == 0 ? null : $"Process exited with code {exitCode}";
-                await jobs.FinishAsync(job.Id, status, exitCode, error, cancellationToken: cancellationToken);
             }
+
+            await process.WaitForExitAsync(cancellationToken);
+            await Task.WhenAll(stdoutPump, stderrPump);
+
+            var exitCode = process.ExitCode;
+            if (exitCode == 0 && ShouldPostCrawlReport(job, options))
+            {
+                if (await jobs.IsActiveAsync(job.Id, cancellationToken))
+                {
+                    await FinishAfterPostCrawlReportAsync(job, cancellationToken);
+                }
+
+                return;
+            }
+
+            var status = exitCode == 0 ? "success" : "error";
+            var error = exitCode == 0 ? null : $"Process exited with code {exitCode}";
+            await jobs.FinishAsync(job.Id, status, exitCode, error, cancellationToken: cancellationToken);
         }
         finally
         {
@@ -458,26 +485,29 @@ public sealed class PipelineJobRunner(
         }
     }
 
+    /// <summary>
+    /// Sends a COOPERATIVE pause signal — matching the Python reference implementation
+    /// (src/website_profiling/worker/signals.py::pause_subprocess) exactly, so the crawler (which
+    /// already polls for both of these) can save frontier state before exiting with code 2.
+    /// This is deliberately NOT a hard suspend (SIGSTOP/Suspend-Process): nothing in this codebase
+    /// ever resumes a suspended OS process in place, so a hard suspend would just freeze it forever
+    /// without ever letting it save state or exit.
+    /// </summary>
     private static void TryPauseProcess(Process process)
     {
         try
         {
             if (OperatingSystem.IsWindows())
             {
-                Process.Start(new ProcessStartInfo
-                {
-                    FileName = "powershell",
-                    Arguments = $"-Command \"Suspend-Process -Id {process.Id}\"",
-                    CreateNoWindow = true,
-                    UseShellExecute = false,
-                })?.WaitForExit(5000);
+                var flagPath = Path.Combine(Path.GetTempPath(), $"wp_pause_{process.Id}.flag");
+                File.WriteAllText(flagPath, "pause");
             }
             else
             {
                 Process.Start(new ProcessStartInfo
                 {
                     FileName = "kill",
-                    Arguments = $"-STOP {process.Id}",
+                    Arguments = $"-USR1 {process.Id}",
                     CreateNoWindow = true,
                     UseShellExecute = false,
                 })?.WaitForExit(5000);

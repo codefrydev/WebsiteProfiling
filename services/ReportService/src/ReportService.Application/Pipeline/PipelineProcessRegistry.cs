@@ -20,6 +20,12 @@ internal static class PipelineProcessRegistry
         Processes[jobId] = process;
     }
 
+    /// <summary>
+    /// Sole disposal point. Must be called exactly once by the owning worker loop
+    /// (<see cref="PipelineJobRunner"/>'s finally), after it is completely done reading Process
+    /// state (HasExited/ExitCode/etc). <see cref="TryKill"/> never disposes, so this is safe even
+    /// if TryKill executed concurrently on another thread at any point.
+    /// </summary>
     public static void Unregister(string jobId)
     {
         if (string.IsNullOrWhiteSpace(jobId))
@@ -27,12 +33,27 @@ internal static class PipelineProcessRegistry
             return;
         }
 
-        Processes.TryRemove(jobId, out _);
+        if (Processes.TryRemove(jobId, out var process))
+        {
+            try
+            {
+                process.Dispose();
+            }
+            catch
+            {
+                // best-effort cleanup
+            }
+        }
     }
 
+    /// <summary>
+    /// Best-effort kill only — NEVER disposes and NEVER removes the registry entry (that's
+    /// Unregister's job, owned by the worker loop). Safe to call at any time, concurrently with
+    /// the worker loop still using the same Process instance.
+    /// </summary>
     public static bool TryKill(string jobId)
     {
-        if (!Processes.TryRemove(jobId, out var process))
+        if (!Processes.TryGetValue(jobId, out var process))
         {
             return false;
         }
@@ -53,10 +74,6 @@ internal static class PipelineProcessRegistry
         catch (Exception)
         {
             return false;
-        }
-        finally
-        {
-            process.Dispose();
         }
     }
 }

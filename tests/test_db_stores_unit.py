@@ -27,7 +27,7 @@ def test_write_pipeline_config_patches_typed_tables() -> None:
     assert any("UPDATE" in s for s in sqls)
 
 
-def test_crawl_rows_from_df_skips_missing_url_and_strips_trailing_slash() -> None:
+def test_crawl_rows_from_df_skips_missing_url() -> None:
     from website_profiling.db.crawl_store import _crawl_rows_from_df
 
     df = pd.DataFrame(
@@ -38,7 +38,7 @@ def test_crawl_rows_from_df_skips_missing_url_and_strips_trailing_slash() -> Non
     )
     rows = _crawl_rows_from_df(df, crawl_run_id=7)
     assert rows[0][0] == 7
-    assert rows[0][1] == "https://a.com"
+    assert rows[0][1] == "https://a.com/"
     assert len(rows) == 1
 
 

@@ -26,7 +26,9 @@ router = APIRouter(tags=["pipeline"])
 
 DbDep = Annotated[Connection, Depends(get_db)]
 
-_PAUSE_RUN_ID_RE = re.compile(r"CRAWL_RUN_ID=(\d+)")
+# The crawler logs this lowercase ("[PAUSE] crawl_run_id={id}", see crawl/crawler.py) —
+# match case-insensitively rather than assuming a specific casing.
+_PAUSE_RUN_ID_RE = re.compile(r"crawl_run_id=(\d+)", re.IGNORECASE)
 
 
 def _get_pipeline_jobs_db(conn: Connection):

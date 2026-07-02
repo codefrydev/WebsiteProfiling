@@ -5,6 +5,7 @@ import os
 from typing import Any, Optional
 
 from psycopg import Connection
+from psycopg.errors import UniqueViolation
 
 from .pool import db_session
 
@@ -35,15 +36,22 @@ def enqueue_job(
 ) -> bool:
     """INSERT a pending job. Returns True if inserted, False if a job is already pending/running."""
     reconcile_stale_jobs(conn)
-    cur = conn.execute(
-        """INSERT INTO pipeline_jobs (id, job_type, status, command, property_id, config_hash)
-           SELECT %s::uuid, %s, 'pending', %s, %s, %s
-           WHERE NOT EXISTS (
-               SELECT 1 FROM pipeline_jobs WHERE status IN ('pending', 'running')
-           )
-           RETURNING id""",
-        (job_id, job_type, command, property_id, config_hash),
-    )
+    try:
+        cur = conn.execute(
+            """INSERT INTO pipeline_jobs (id, job_type, status, command, property_id, config_hash)
+               SELECT %s::uuid, %s, 'pending', %s, %s, %s
+               WHERE NOT EXISTS (
+                   SELECT 1 FROM pipeline_jobs WHERE status IN ('pending', 'running')
+               )
+               RETURNING id""",
+            (job_id, job_type, command, property_id, config_hash),
+        )
+    except UniqueViolation:
+        # Lost the race: another INSERT committed between our WHERE NOT EXISTS check and
+        # ours; idx_pipeline_jobs_single_active caught it. Same external signal as the
+        # WHERE NOT EXISTS no-row case — no job was enqueued.
+        conn.rollback()
+        return False
     conn.commit()
     return cur.fetchone() is not None
 

@@ -7,8 +7,9 @@ namespace Bff.Api.Endpoints;
 
 /// <summary>
 /// The reverse-proxy surface: every /api/* request is mirrored to FastAPI, with explicit
-/// handling for streaming (chat SSE) and for exports that translate to the FileService.
-/// All near-identical 1:1 routes collapse into one catch-all instead of ~84 hand-written files.
+/// handling for streaming (chat SSE) and for exports that translate to the Data service's
+/// /v1/reports/* export routes. All near-identical 1:1 routes collapse into one catch-all
+/// instead of ~84 hand-written files.
 /// </summary>
 public static class ProxyEndpoints
 {
@@ -26,9 +27,9 @@ public static class ProxyEndpoints
             return (IResult)new ForwardingResult(client, path, disableResponseBuffering: true);
         });
 
-        // Report export: PDF/CSV/JSON are all rendered by the FileService (which reads Postgres
-        // directly). A missing format defaults to csv (matches the old Python default); any other
-        // format is rejected (the Python export route has been removed). Mirrors proxyToFileService.ts.
+        // Report export: PDF/CSV/JSON are all rendered by the Data service's ReportExportController
+        // (which reads Postgres directly). A missing format defaults to csv (matches the old Python
+        // default); any other format is rejected (the Python export route has been removed).
         app.MapGet("/api/report/export", (HttpContext ctx) =>
         {
             var raw = ctx.Request.Query["format"].ToString();
@@ -39,28 +40,29 @@ public static class ProxyEndpoints
                     new { error = $"Unsupported export format '{format}'. Use pdf, csv, or json." },
                     statusCode: 400);
             }
-            var path = BuildFileServiceReportPath(ctx.Request.Query, format);
+            var path = BuildReportExportPath(ctx.Request.Query, format);
             return path is null
                 ? Results.Json(new { error = "reportId or domain required for export" }, statusCode: 400)
-                : (IResult)new ForwardingResult(DependencyInjection.FileServiceClient, path, disableResponseBuffering: true);
+                : (IResult)new ForwardingResult(DependencyInjection.DataClient, path, disableResponseBuffering: true);
         });
 
-        // Excel workbook export -> FileService. Mirrors proxyToFileService.ts.
+        // Excel workbook export -> Data service's ReportExportController.
         app.MapGet("/api/report/export-workbook", (HttpContext ctx) =>
         {
-            var path = BuildFileServiceWorkbookPath(ctx.Request.Query);
+            var path = BuildWorkbookExportPath(ctx.Request.Query);
             return path is null
                 ? Results.Json(new { error = "reportId or domain required for workbook export" }, statusCode: 400)
-                : (IResult)new ForwardingResult(DependencyInjection.FileServiceClient, path, disableResponseBuffering: true);
+                : (IResult)new ForwardingResult(DependencyInjection.DataClient, path, disableResponseBuffering: true);
         });
 
-        // Sitemap export -> FileService (was Python via the catch-all; now rendered from Postgres).
+        // Sitemap export -> Data service's ReportExportController (was Python via the catch-all;
+        // now rendered from Postgres).
         app.MapGet("/api/report/export-sitemap", (HttpContext ctx) =>
         {
-            var path = BuildFileServiceReportPath(ctx.Request.Query, "sitemap");
+            var path = BuildReportExportPath(ctx.Request.Query, "sitemap");
             return path is null
                 ? Results.Json(new { error = "reportId or domain required for sitemap export" }, statusCode: 400)
-                : (IResult)new ForwardingResult(DependencyInjection.FileServiceClient, path, disableResponseBuffering: true);
+                : (IResult)new ForwardingResult(DependencyInjection.DataClient, path, disableResponseBuffering: true);
         });
 
         // Catch-all: every other /api/* request -> FastAPI (streamed for remaining export routes),
@@ -78,8 +80,6 @@ public static class ProxyEndpoints
                 path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
             var matchesIntegrationsRoute = MatchesIntegrationsRoute(path, upstream.IntegrationsRoutes);
             var matchesReportRoute = upstream.ReportRoutes.Any(prefix =>
-                path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
-            var matchesConfigRoute = upstream.ConfigRoutes.Any(prefix =>
                 path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
             var matchesAiRoute = upstream.AiRoutes.Any(prefix =>
                 path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
@@ -108,21 +108,10 @@ public static class ProxyEndpoints
                     || HttpMethods.IsPost(ctx.Request.Method)
                     || HttpMethods.IsPut(ctx.Request.Method)
                     || HttpMethods.IsDelete(ctx.Request.Method));
-            var toConfig = !streaming
-                && !toData
-                && !toIntegrations
-                && !toReport
-                && matchesConfigRoute
-                && (HttpMethods.IsGet(ctx.Request.Method)
-                    || HttpMethods.IsHead(ctx.Request.Method)
-                    || HttpMethods.IsPost(ctx.Request.Method)
-                    || HttpMethods.IsPut(ctx.Request.Method)
-                    || HttpMethods.IsDelete(ctx.Request.Method));
             var toAi = !streaming
                 && !toData
                 && !toIntegrations
                 && !toReport
-                && !toConfig
                 && matchesAiRoute
                 && (HttpMethods.IsGet(ctx.Request.Method)
                     || HttpMethods.IsHead(ctx.Request.Method)
@@ -136,11 +125,9 @@ public static class ProxyEndpoints
                     ? DependencyInjection.IntegrationsClient
                     : toReport
                         ? DependencyInjection.ReportClient
-                        : toConfig
-                            ? DependencyInjection.ConfigClient
-                            : toAi
-                                ? DependencyInjection.AiClient
-                                : streaming ? DependencyInjection.FastApiStreamClient : DependencyInjection.FastApiClient;
+                        : toAi
+                            ? DependencyInjection.AiClient
+                            : streaming ? DependencyInjection.FastApiStreamClient : DependencyInjection.FastApiClient;
 
             return (IResult)new ForwardingResult(
                 client,
@@ -149,9 +136,9 @@ public static class ProxyEndpoints
         });
     }
 
-    // Builds the FileService path for a report export. pdf carries profile/branding; csv/json/sitemap
-    // only need disposition. Returns null when neither reportId nor domain is supplied.
-    private static string? BuildFileServiceReportPath(IQueryCollection query, string format)
+    // Builds the Data service export path for a report export. pdf carries profile/branding;
+    // csv/json/sitemap only need disposition. Returns null when neither reportId nor domain is supplied.
+    private static string? BuildReportExportPath(IQueryCollection query, string format)
     {
         var reportId = query["reportId"].ToString();
         var domain = query["domain"].ToString();
@@ -180,7 +167,7 @@ public static class ProxyEndpoints
         return null;
     }
 
-    private static string? BuildFileServiceWorkbookPath(IQueryCollection query)
+    private static string? BuildWorkbookExportPath(IQueryCollection query)
     {
         var reportId = query["reportId"].ToString();
         var domain = query["domain"].ToString();

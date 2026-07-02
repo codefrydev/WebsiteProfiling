@@ -227,12 +227,12 @@ Export tools write artifact files with a 24-hour TTL; in-app chat renders downlo
 
 | Deliverable | Generator | Env / notes |
 |-------------|-----------|-------------|
-| PDF | **FileService** (`GET /v1/reports/{id}/pdf`) | `FILE_SERVICE_URL` on MCP/web (default `http://127.0.0.1:8097`); FileService must be running |
-| Excel workbook | **FileService** (`GET /v1/reports/{id}/workbook`) | Same as PDF |
-| CSV / JSON audit export | Python (`export_audit_report`, `GET /api/report/export`) | Reads Postgres via report payload — no FileService required |
+| PDF | **Data service** (`GET /v1/reports/{id}/pdf`) | `DATA_SERVICE_URL` on MCP/web (default `http://127.0.0.1:8091`); Data must be running |
+| Excel workbook | **Data service** (`GET /v1/reports/{id}/workbook`) | Same as PDF |
+| CSV / JSON audit export | Python (`export_audit_report`, `GET /api/report/export`) | Reads Postgres via report payload — no separate export service required |
 | Compare / list CSV | Python | `export_compare_csv`, `export_list_as_csv` |
 
-FileService fetches report JSON over HTTP only (`REPORT_API_URL` → `/api/report/payload`, `/api/report/meta`, `/api/app-settings`). See [services/FileService/README.md](../services/FileService/README.md).
+The Data service reads report payloads directly from Postgres; it only calls out over HTTP for PDF branding (`REPORT_API_URL` → `/api/ui-preferences` for brand name/logo).
 
 ### Image audit
 

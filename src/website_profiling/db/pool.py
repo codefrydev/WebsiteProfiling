@@ -144,4 +144,4 @@ def readonly_session() -> Iterator[Connection]:
 
 
 def init_schema(conn: Connection | None = None) -> None:
-    """No-op at runtime; schema is applied via Alembic migrations."""
+    """No-op at runtime; schema is applied via EF Core migrations (services/Schema)."""

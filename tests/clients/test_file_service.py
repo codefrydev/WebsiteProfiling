@@ -1,4 +1,4 @@
-"""Tests for FileService HTTP client."""
+"""Tests for the Data service export HTTP client (formerly FileService)."""
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -56,7 +56,7 @@ def test_fetch_report_pdf_network_error() -> None:
     import requests
 
     with patch.object(file_service.requests, "get", side_effect=requests.ConnectionError("refused")):
-        with pytest.raises(RuntimeError, match="File service unreachable"):
+        with pytest.raises(RuntimeError, match="Data service unreachable"):
             file_service.fetch_report_pdf(1)
 
 

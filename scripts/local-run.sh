@@ -4,7 +4,7 @@
 #   (default) start   — ensure DB, migrations, vite dev + BFF
 #   setup           — DB + venv + deps + migrations (no web server)
 #   db              — start Postgres container only
-#   migrate         — alembic upgrade head
+#   migrate         — EF Core: dotnet run --project services/Schema/src/Schema.Migrator
 #   test            — run full CI-style test suite (./local-test all)
 #   stop            — stop wp-pg container
 #   help            — show commands
@@ -161,9 +161,9 @@ cmd_venv() {
 
 cmd_migrate() {
   cmd_db
-  [[ -x "$VENV/bin/alembic" ]] || cmd_venv
-  log "Applying database migrations (alembic upgrade head)"
-  "$VENV/bin/alembic" upgrade head
+  need_cmd dotnet
+  log "Applying database migrations (EF Core: Schema.Migrator)"
+  DATABASE_URL="$DATABASE_URL" dotnet run --project "$ROOT/services/Schema/src/Schema.Migrator" --no-launch-profile
 }
 
 cmd_web_deps() {
@@ -203,17 +203,16 @@ cmd_setup() {
 cmd_start() {
   mkdir -p "$DATA_DIR"
   cmd_db
-  [[ -x "$VENV/bin/alembic" ]] || cmd_venv
+  need_cmd dotnet
   cmd_browser_deps
   log "Ensuring migrations are up to date"
-  "$VENV/bin/alembic" upgrade head
+  DATABASE_URL="$DATABASE_URL" dotnet run --project "$ROOT/services/Schema/src/Schema.Migrator" --no-launch-profile
   cmd_web_deps
   cd "$ROOT"
   export DATABASE_URL DATA_DIR PYTHON WEBSITE_PROFILING_ROOT PYTHONPATH
 
   WORKER_PID=""
   UVICORN_PID=""
-  FILE_SERVICE_PID=""
   DATA_PID=""
   AI_PID=""
   BFF_PID=""
@@ -247,13 +246,11 @@ cmd_start() {
   if command -v dotnet >/dev/null 2>&1; then
     start_host_dotnet_base "$ROOT" Development
     start_host_report_service "$ROOT" Development
-    disown_bg "$FILE_SERVICE_PID"
     disown_bg "$DATA_PID"
     disown_bg "$AI_PID"
     disown_bg "$REPORT_PID"
   else
-    warn "dotnet not found — PDF export requires FileService (see services/FileService/README.md)"
-    warn "dotnet not found — Data service unavailable on port 8091"
+    warn "dotnet not found — Data service (PDF export, typed config) unavailable on port 8091"
     warn "dotnet not found — AiService unavailable on port 8092"
     warn "dotnet not found — ReportService unavailable on port 8094"
     warn "dotnet not found — IntegrationsService unavailable on port 8093"
@@ -261,7 +258,6 @@ cmd_start() {
 
   export AI_SERVICE_URL="${AI_SERVICE_URL:-http://127.0.0.1:8092}"
   export INTEGRATIONS_SERVICE_URL="${INTEGRATIONS_SERVICE_URL:-http://127.0.0.1:8093}"
-  export FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8097}"
   export REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-http://127.0.0.1:8094}"
   export PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE="${PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE:-1}"
   export PYTHON="${PYTHON:-$VENV/bin/python}"
@@ -292,10 +288,8 @@ cmd_start() {
   log "DATA_DIR=$DATA_DIR"
   log "PYTHON=$PYTHON"
   log "VITE_BFF_BASE_URL=${VITE_BFF_BASE_URL:-http://localhost:8090}"
-  log "FILE_SERVICE_URL=${FILE_SERVICE_URL:-http://127.0.0.1:8097}"
   log "REPORT_SERVICE_URL=${REPORT_SERVICE_URL:-http://127.0.0.1:8094}"
   log "DATA_ROUTES=${DATA_ROUTES:-/api/report/meta,...}"
-  export FILE_SERVICE_URL="${FILE_SERVICE_URL:-http://127.0.0.1:8097}"
   export VITE_BFF_BASE_URL="${VITE_BFF_BASE_URL:-http://localhost:8090}"
   cd "$WEB"
   set +e
@@ -343,7 +337,7 @@ Local dev runner — Postgres in Docker, app on your machine
   ./local-run start        DB + migrations + npm run dev (Ctrl+C stops all services + Postgres)
   ./local-run setup        One-time setup (no dev server)
   ./local-run db           Start Postgres only
-  ./local-run migrate      Run alembic upgrade head
+  ./local-run migrate      Apply EF Core migrations (Schema.Migrator)
   ./local-run test         Run full CI-style tests (./local-test all)
   ./local-run stop         Stop Postgres container
 

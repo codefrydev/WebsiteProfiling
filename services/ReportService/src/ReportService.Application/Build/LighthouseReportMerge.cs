@@ -71,6 +71,17 @@ public static class LighthouseReportMerge
             return direct;
         }
 
+        var trimmed = normalized.TrimEnd('/');
+        if (byUrl.TryGetValue(trimmed, out var withoutSlash))
+        {
+            return withoutSlash;
+        }
+
+        if (byUrl.TryGetValue($"{trimmed}/", out var withSlash))
+        {
+            return withSlash;
+        }
+
         return null;
     }
 

@@ -46,7 +46,7 @@ public static class AccessPolicy
         }
 
         // Chat is a read-only query but allows client-readonly.
-        if (Matches(path, "/api/chat") || Matches(path, "/api/chat/"))
+        if (path.StartsWithSegments("/api/chat", StringComparison.OrdinalIgnoreCase))
         {
             return AccessRequirement.Chat;
         }

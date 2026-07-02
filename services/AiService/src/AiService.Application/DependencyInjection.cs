@@ -7,10 +7,9 @@ using AiService.Domain.Repositories;
 using AiService.Providers;
 using AiService.Tools;
 using AiService.Tools.Registry;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using Npgsql;
+using WebsiteProfiling.Data;
+using WebsiteProfiling.Data.EntityFrameworkCore;
 
 namespace AiService.Application;
 
@@ -23,16 +22,7 @@ public static class DependencyInjection
 
         services.AddSingleton<ToolRegistry>(ToolRegistryExtensions.CreateToolRegistry);
 
-        services.AddOptions<DatabaseOptions>()
-            .BindConfiguration(DatabaseOptions.SectionName)
-            .PostConfigure(o =>
-            {
-                var url = Environment.GetEnvironmentVariable("DATABASE_URL");
-                if (!string.IsNullOrWhiteSpace(url))
-                {
-                    o.ConnectionString = url.Trim();
-                }
-            });
+        services.AddWebsiteProfilingDatabase();
 
         services.AddOptions<UpstreamOptions>()
             .BindConfiguration(UpstreamOptions.SectionName)
@@ -45,22 +35,7 @@ public static class DependencyInjection
                 }
             });
 
-        services.AddSingleton<NpgsqlDataSource>(sp =>
-        {
-            var o = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-            var builder = new NpgsqlDataSourceBuilder(NpgsqlDsn.ToNpgsql(o.ConnectionString));
-            builder.ConnectionStringBuilder.MinPoolSize = o.MinPoolSize;
-            builder.ConnectionStringBuilder.MaxPoolSize = o.MaxPoolSize;
-            builder.ConnectionStringBuilder.CommandTimeout = o.CommandTimeoutSeconds;
-            return builder.Build();
-        });
-
-        services.AddDbContextPool<AiDbContext>((sp, options) =>
-        {
-            var o = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-            var dataSource = sp.GetRequiredService<NpgsqlDataSource>();
-            options.UseNpgsql(dataSource, npg => npg.CommandTimeout(o.CommandTimeoutSeconds));
-        });
+        services.AddWebsiteProfilingDbContextPool<AiDbContext>();
 
         services.AddHttpClient(OllamaCatalogService.LocalProbeClientName, client =>
         {

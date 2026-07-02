@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Local test runner — mirrors .github/workflows/ci.yml on your machine.
 # Usage: ./local-test [command] [--no-cov]
-#   (default) all     — Postgres + migrations + Python + web + .NET (Data, Bff, FileService)
+#   (default) all     — Postgres + migrations + Python + web + .NET (Data, Bff)
 #   python            — DB + pytest + CLI smoke only
 #   web               — build, typecheck, lint, vitest (no Postgres)
 #   dotnet            — dotnet test services/WebsiteProfiling.slnx + Bff OpenAPI drift gate
@@ -165,8 +165,8 @@ ensure_venv() {
 }
 
 run_migrate() {
-  [[ -x "$VENV/bin/alembic" ]] || ensure_venv || return 1
-  "$VENV/bin/alembic" upgrade head
+  need_cmd dotnet || { warn "dotnet not found"; return 1; }
+  dotnet run --project "$ROOT/services/Schema/src/Schema.Migrator" --no-launch-profile
 }
 
 ensure_web_deps() {
@@ -289,7 +289,7 @@ steps_venv() {
 }
 
 steps_migrate() {
-  run_step "Database migrations (alembic upgrade head)" run_migrate
+  run_step "Database migrations (EF Core: Schema.Migrator)" run_migrate
 }
 
 steps_pytest() {
@@ -395,7 +395,7 @@ cmd_help() {
 Local test runner — mirrors .github/workflows/ci.yml
 
   ./local-test              Same as: all
-  ./local-test all          Postgres + migrations + pytest + web + .NET (Data, Bff, FileService)
+  ./local-test all          Postgres + migrations + pytest + web + .NET (Data, Bff)
   ./local-test python       DB + pytest (core + reporting + tools) + browser pytest + CLI smoke
   ./local-test browser      Browser integration pytest only (skips if no Chromium)
   ./local-test web          build, typecheck, lint, vitest (no Docker)

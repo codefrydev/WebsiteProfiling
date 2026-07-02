@@ -1,5 +1,5 @@
-# Production-style layout: postgres + fastapi + bff + web + files (+ optional mcp).
-# The browser talks only to `bff`; FastAPI and FileService are network-internal.
+# Production-style layout: postgres + fastapi + bff + web (+ optional mcp).
+# The browser talks only to `bff`; FastAPI and Data are network-internal.
 services:
   postgres:
     container_name: wp-postgres
@@ -16,6 +16,20 @@ services:
       timeout: 3s
       retries: 5
 
+  # One-shot EF Core schema migrator — runs to completion before any service that talks to
+  # Postgres starts. Replaces `alembic upgrade head` as schema owner (see services/Schema).
+  migrator:
+    container_name: wp-migrator
+    build:
+      context: ./services
+      dockerfile: Schema/Dockerfile
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   fastapi:
     container_name: wp-fastapi
     build:
@@ -25,6 +39,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     environment:
       WP_ROLE: fastapi
       WEBSITE_PROFILING_ROOT: /app
@@ -49,14 +65,20 @@ services:
   data:
     container_name: wp-data
     build:
-      context: ./services
-      dockerfile: Data/Dockerfile
+      context: .
+      dockerfile: services/Data/Dockerfile
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
       ASPNETCORE_URLS: http://+:8091
+      WEBSITE_PROFILING_ROOT: /app
+      REPORT_API_URL: http://fastapi:8096
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+      fastapi:
+        condition: service_started
     healthcheck:
       test: ['CMD', 'curl', '-fsS', 'http://127.0.0.1:8091/health']
       interval: 30s
@@ -77,6 +99,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
       fastapi:
         condition: service_started
     healthcheck:
@@ -103,6 +127,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
       fastapi:
         condition: service_started
     healthcheck:
@@ -129,6 +155,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
       fastapi:
         condition: service_started
       integrations:
@@ -140,28 +168,13 @@ services:
       retries: 3
       start_period: 20s
 
-  files:
-    container_name: wp-files
-    build:
-      context: ./services
-      dockerfile: FileService/Dockerfile
-    environment:
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-website_profiling}
-      REPORT_API_URL: http://fastapi:8096
-    depends_on:
-      postgres:
-        condition: service_healthy
-      fastapi:
-        condition: service_started
-
   bff:
     container_name: wp-bff
     build:
-      context: ./services/Bff
+      context: .
+      dockerfile: services/Bff/Dockerfile
     depends_on:
       fastapi:
-        condition: service_started
-      files:
         condition: service_started
       data:
         condition: service_healthy
@@ -175,7 +188,6 @@ services:
       - '${BFF_PORT:-8090}:8090'
     environment:
       FASTAPI_URL: http://fastapi:8096
-      FILE_SERVICE_URL: http://files:8097
       DATA_SERVICE_URL: http://data:8091
       AI_SERVICE_URL: http://ai:8092
       INTEGRATIONS_SERVICE_URL: http://integrations:8093

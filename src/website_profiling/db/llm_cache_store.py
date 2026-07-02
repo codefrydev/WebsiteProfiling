@@ -28,6 +28,8 @@ def read_llm_cache(conn: Connection, cache_key: str) -> Optional[str]:
         if not row:
             return None
         val = row["response_json"]
+        if val is None:
+            return None
         return json.dumps(val) if isinstance(val, (dict, list)) else str(val)
     except Exception:
         return None

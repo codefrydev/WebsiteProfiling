@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
-using Npgsql;
 using ReportService.Application.Bridge;
 using ReportService.Application.Build;
 using ReportService.Application.Compare;
@@ -10,9 +8,11 @@ using ReportService.Application.Dashboard;
 using ReportService.Application.Integrations;
 using ReportService.Application.Orchestration;
 using ReportService.Application.Options;
-using ReportService.Application.Pipeline;
 using ReportService.Application.Persistence;
+using ReportService.Application.Pipeline;
 using ReportService.Application.Repositories;
+using WebsiteProfiling.Data;
+using WebsiteProfiling.Data.EntityFrameworkCore;
 
 namespace ReportService.Application;
 
@@ -20,16 +20,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddReportApplication(this IServiceCollection services)
     {
-        services.AddOptions<DatabaseOptions>()
-            .BindConfiguration(DatabaseOptions.SectionName)
-            .PostConfigure(o =>
-            {
-                var url = Environment.GetEnvironmentVariable("DATABASE_URL");
-                if (!string.IsNullOrWhiteSpace(url))
-                {
-                    o.ConnectionString = url.Trim();
-                }
-            });
+        services.AddWebsiteProfilingDatabase();
 
         services.AddOptions<FastApiOptions>()
             .BindConfiguration(FastApiOptions.SectionName)
@@ -111,23 +102,7 @@ public static class DependencyInjection
         services.AddHttpClient(nameof(SiteLevelBuilder));
         services.AddHttpClient(nameof(SubdomainInventoryBuilder));
 
-        services.AddSingleton<NpgsqlDataSource>(sp =>
-        {
-            var o = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-            var builder = new NpgsqlDataSourceBuilder(NpgsqlDsn.ToNpgsql(o.ConnectionString));
-            builder.ConnectionStringBuilder.MinPoolSize = o.MinPoolSize;
-            builder.ConnectionStringBuilder.MaxPoolSize = o.MaxPoolSize;
-            return builder.Build();
-        });
-
-        services.AddPooledDbContextFactory<ReportDbContext>((sp, options) =>
-        {
-            var o = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-            var dataSource = sp.GetRequiredService<NpgsqlDataSource>();
-            options
-                .UseNpgsql(dataSource, npg => npg.CommandTimeout(o.CommandTimeoutSeconds))
-                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-        });
+        services.AddWebsiteProfilingPooledDbContextFactory<ReportDbContext>(noTracking: true);
         services.AddScoped(sp =>
             sp.GetRequiredService<IDbContextFactory<ReportDbContext>>().CreateDbContext());
 

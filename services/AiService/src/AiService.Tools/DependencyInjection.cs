@@ -4,10 +4,10 @@ using AiService.Tools.Persistence;
 using AiService.Tools.Registry;
 using AiService.Tools.Selection;
 using AiService.Tools.Services.Citations;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Npgsql;
+using WebsiteProfiling.Data;
+using WebsiteProfiling.Data.EntityFrameworkCore;
 
 namespace AiService.Tools;
 
@@ -20,16 +20,7 @@ public static class DependencyInjection
     /// </summary>
     public static IServiceCollection AddAiServiceTools(this IServiceCollection services)
     {
-        services.AddOptions<DatabaseOptions>()
-            .BindConfiguration(DatabaseOptions.SectionName)
-            .PostConfigure(o =>
-            {
-                var url = Environment.GetEnvironmentVariable("DATABASE_URL");
-                if (!string.IsNullOrWhiteSpace(url))
-                {
-                    o.ConnectionString = url.Trim();
-                }
-            });
+        services.AddWebsiteProfilingDatabase();
 
         services.AddOptions<FastApiOptions>()
             .BindConfiguration(FastApiOptions.SectionName)
@@ -42,24 +33,7 @@ public static class DependencyInjection
                 }
             });
 
-        services.AddSingleton<NpgsqlDataSource>(sp =>
-        {
-            var o = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-            var builder = new NpgsqlDataSourceBuilder(NpgsqlDsn.ToNpgsql(o.ConnectionString));
-            builder.ConnectionStringBuilder.MinPoolSize = o.MinPoolSize;
-            builder.ConnectionStringBuilder.MaxPoolSize = o.MaxPoolSize;
-            builder.ConnectionStringBuilder.CommandTimeout = o.CommandTimeoutSeconds;
-            return builder.Build();
-        });
-
-        services.AddDbContextFactory<AuditToolsDbContext>((sp, options) =>
-        {
-            var o = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-            var dataSource = sp.GetRequiredService<NpgsqlDataSource>();
-            options
-                .UseNpgsql(dataSource, npg => npg.CommandTimeout(o.CommandTimeoutSeconds))
-                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-        });
+        services.AddWebsiteProfilingDbContextFactory<AuditToolsDbContext>(noTracking: true);
 
         services.AddSingleton<ToolCatalog>();
         services.AddSingleton<ToolDispatcher>();

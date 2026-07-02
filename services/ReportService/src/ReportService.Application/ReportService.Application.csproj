@@ -9,6 +9,8 @@
   <ItemGroup>
     <ProjectReference Include="..\ReportService.Domain\ReportService.Domain.csproj" />
     <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Contracts\WebsiteProfiling.Contracts.csproj" />
+    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Data\WebsiteProfiling.Data.csproj" />
+    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Data.EntityFrameworkCore\WebsiteProfiling.Data.EntityFrameworkCore.csproj" />
     <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.TypedConfig\WebsiteProfiling.TypedConfig.csproj" />
   </ItemGroup>
 

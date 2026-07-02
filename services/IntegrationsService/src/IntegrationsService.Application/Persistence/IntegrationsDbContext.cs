@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 namespace IntegrationsService.Application.Persistence;
 
 /// <summary>
-/// EF Core context over the Alembic-owned schema. Does not run migrations; tables are owned by Python Alembic.
+/// EF Core context over the schema owned by services/Schema (EF Core migrations). Does not run migrations itself.
 /// </summary>
 public sealed class IntegrationsDbContext(DbContextOptions<IntegrationsDbContext> options) : DbContext(options)
 {

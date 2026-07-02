@@ -14,6 +14,20 @@ services:
       timeout: 3s
       retries: 5
 
+  # One-shot EF Core schema migrator — runs to completion before any service that talks to
+  # Postgres starts. Replaces `alembic upgrade head` as schema owner (see services/Schema).
+  migrator:
+    container_name: wp-migrator
+    build:
+      context: ./services
+      dockerfile: Schema/Dockerfile
+    environment:
+      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   # FastAPI backend — now its own service (was bundled into `web`). Network-internal:
   # only the BFF talks to it, so no host port is published.
   fastapi:
@@ -25,6 +39,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     environment:
       WP_ROLE: fastapi
       WEBSITE_PROFILING_ROOT: /app
@@ -52,14 +68,20 @@ services:
   data:
     container_name: wp-data
     build:
-      context: ./services
-      dockerfile: Data/Dockerfile
+      context: .
+      dockerfile: services/Data/Dockerfile
     environment:
       DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
       ASPNETCORE_URLS: http://+:8091
+      WEBSITE_PROFILING_ROOT: /app
+      REPORT_API_URL: http://fastapi:8096
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+      fastapi:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8091/health"]
       interval: 30s
@@ -80,6 +102,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
       fastapi:
         condition: service_started
     healthcheck:
@@ -105,6 +129,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
       fastapi:
         condition: service_started
     healthcheck:
@@ -131,6 +157,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
       fastapi:
         condition: service_started
       integrations:
@@ -142,51 +170,28 @@ services:
       retries: 3
       start_period: 20s
 
-  config:
-    container_name: wp-config
-    build:
-      context: .
-      dockerfile: services/ConfigService/Dockerfile
-    environment:
-      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
-      ASPNETCORE_URLS: http://+:8095
-      WEBSITE_PROFILING_ROOT: /app
-    depends_on:
-      postgres:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8095/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
-
   # .NET BFF — the single browser-facing API surface (owns auth + CORS).
   bff:
     container_name: wp-bff
     build:
-      context: ./services/Bff
+      context: .
+      dockerfile: services/Bff/Dockerfile
     ports:
       - "8090:8090"
     environment:
       FASTAPI_URL: http://fastapi:8096
-      FILE_SERVICE_URL: http://files:8097
       BFF_ALLOWED_ORIGINS: "http://localhost:3000"
       DATA_SERVICE_URL: http://data:8091
       AI_SERVICE_URL: http://ai:8092
       INTEGRATIONS_SERVICE_URL: http://integrations:8093
       REPORT_SERVICE_URL: http://report:8094
       REPORT_ROUTES: "/api/compare,/api/dashboards,/api/run,/api/jobs,/api/schedule,/api/crawl"
-      CONFIG_SERVICE_URL: http://config:8095
-      CONFIG_ROUTES: "/api/pipeline-settings,/api/ui-preferences,/api/client-preferences"
       AUTH_SECRET: ${AUTH_SECRET:-}
-      DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters,/api/properties,/api/content-drafts,/api/content/score,/api/keywords,/api/page-markdown,/api/alerts,/api/logs,/api/backlinks"
+      DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters,/api/properties,/api/content-drafts,/api/content/score,/api/keywords,/api/page-markdown,/api/alerts,/api/logs,/api/backlinks,/api/pipeline-settings,/api/ui-preferences,/api/client-preferences"
       AI_ROUTES: "/api/chat,/api/links/page-coach,/api/issues/fix-suggestion,/api/issues/action-plan,/api/ai/fix-suggestion,/api/dashboards/ai-generate,/api/content/analyze,/api/content/wizard,/api/llm-settings,/api/secrets,/api/ollama/status,/api/report/audit-tool,/api/mcp-tools"
       INTEGRATIONS_ROUTES: "/api/integrations/google,/api/integrations/bing"
     depends_on:
       fastapi:
-        condition: service_started
-      files:
         condition: service_started
       data:
         condition: service_healthy
@@ -195,8 +200,6 @@ services:
       integrations:
         condition: service_healthy
       report:
-        condition: service_healthy
-      config:
         condition: service_healthy
 
   # Vite SPA (nginx). The browser calls the BFF (:8090) for all /api/*.
@@ -219,26 +222,6 @@ services:
       start_period: 15s
 
   # File export service (PDF/Excel). Internal: only the BFF reaches it.
-  files:
-    container_name: wp-files
-    build:
-      context: ./services
-      dockerfile: FileService/Dockerfile
-    environment:
-      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
-      REPORT_API_URL: http://fastapi:8096
-    depends_on:
-      postgres:
-        condition: service_healthy
-      fastapi:
-        condition: service_started
-    healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8097/health || exit 1"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 15s
-
 volumes:
   pg-data:
   profiling-data:

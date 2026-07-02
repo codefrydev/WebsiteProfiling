@@ -67,7 +67,7 @@ def test_write_page_markdown_batch_normalizes_url(monkeypatch):
         [{"url": "https://example.com/a/", "markdown": "Text"}],
         crawl_run_id=1,
     )
-    assert captured[0][1] == "https://example.com/a"
+    assert captured[0][1] == "https://example.com/a/"
 
 
 def test_read_page_markdown_returns_dict():

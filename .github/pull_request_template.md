@@ -20,7 +20,7 @@
 - [ ] `./local-test` or an equivalent subset passes locally
 - [ ] UI copy updates are in `web/src/strings.json` (if applicable)
 - [ ] No secrets or credentials in the diff
-- [ ] Alembic migration included if the schema changed
+- [ ] EF Core migration included if the schema changed
 
 ## Screenshots (UI only)
 

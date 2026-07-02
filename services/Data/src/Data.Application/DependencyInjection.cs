@@ -1,54 +1,34 @@
+using Data.Application.Clients;
 using Data.Application.Options;
 using Data.Application.Persistence;
 using Data.Application.Portfolio;
 using Data.Application.Python;
 using Data.Application.Report;
 using Data.Application.Repositories;
-using Microsoft.EntityFrameworkCore;
+using Data.Application.Services;
+using Data.Rendering;
+using Data.Rendering.Exports;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using Npgsql;
+using WebsiteProfiling.Data;
+using WebsiteProfiling.Data.EntityFrameworkCore;
 
 namespace Data.Application;
 
 public static class DependencyInjection
 {
     /// <summary>
-    /// Registers the read-only data layer: a shared <see cref="NpgsqlDataSource"/> (pooled to mirror
-    /// the Python psycopg pool), a pooled <c>DataDbContext</c> with no-tracking queries, and the
-    /// repositories. The connection string comes from <c>DATABASE_URL</c> (libpq URI form).
+    /// Registers the data layer: a shared <c>NpgsqlDataSource</c> (pooled to mirror the Python
+    /// psycopg pool), a pooled <c>DataDbContext</c> with no-tracking queries, and the repositories.
+    /// Most access is no-tracking reads; a few repositories write via raw SQL (PropertiesCrudRepository,
+    /// ContentDraftRepository) or EF Core SaveChanges/ExecuteDeleteAsync (SavedFilterRepository,
+    /// IssueStatusRepository, PortfolioRepository). The connection string comes from <c>DATABASE_URL</c>
+    /// (libpq URI form).
     /// </summary>
     public static IServiceCollection AddDataApplication(this IServiceCollection services)
     {
         services.AddMemoryCache();
-        services.AddOptions<DatabaseOptions>()
-            .BindConfiguration(DatabaseOptions.SectionName)
-            .PostConfigure(o =>
-            {
-                var url = Environment.GetEnvironmentVariable("DATABASE_URL");
-                if (!string.IsNullOrWhiteSpace(url))
-                {
-                    o.ConnectionString = url.Trim();
-                }
-            });
-
-        services.AddSingleton<NpgsqlDataSource>(sp =>
-        {
-            var o = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-            var builder = new NpgsqlDataSourceBuilder(NpgsqlDsn.ToNpgsql(o.ConnectionString));
-            builder.ConnectionStringBuilder.MinPoolSize = o.MinPoolSize;
-            builder.ConnectionStringBuilder.MaxPoolSize = o.MaxPoolSize;
-            return builder.Build();
-        });
-
-        services.AddDbContextPool<DataDbContext>((sp, options) =>
-        {
-            var o = sp.GetRequiredService<IOptions<DatabaseOptions>>().Value;
-            var dataSource = sp.GetRequiredService<NpgsqlDataSource>();
-            options
-                .UseNpgsql(dataSource, npg => npg.CommandTimeout(o.CommandTimeoutSeconds))
-                .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking);
-        });
+        services.AddWebsiteProfilingDatabase();
+        services.AddWebsiteProfilingDbContextPool<DataDbContext>(noTracking: true);
 
         services.AddScoped<IReportRepository, ReportRepository>();
         services.AddScoped<IGoogleDataRepository, GoogleDataRepository>();
@@ -63,7 +43,34 @@ public static class DependencyInjection
         services.AddScoped<IPageMarkdownRepository, PageMarkdownRepository>();
         services.AddScoped<IPipelineJobEnqueueRepository, PipelineJobEnqueueRepository>();
         services.AddScoped<IBacklinksRepository, BacklinksRepository>();
+        services.AddScoped<IPipelineSettingsRepository, PipelineSettingsRepository>();
+        services.AddScoped<IUiPreferencesRepository, UiPreferencesRepository>();
+        services.AddScoped<IClientPreferencesRepository, ClientPreferencesRepository>();
         services.AddSingleton<DataPythonRunner>();
+
+        // Report export (PDF/Excel/CSV/JSON/sitemap) — absorbed from the former FileService.
+        services.AddOptions<ReportApiOptions>()
+            .BindConfiguration(ReportApiOptions.SectionName)
+            .PostConfigure(o =>
+            {
+                var env = Environment.GetEnvironmentVariable("REPORT_API_URL");
+                if (!string.IsNullOrWhiteSpace(env))
+                {
+                    o.BaseUrl = env.Trim();
+                }
+            });
+
+        services.AddScoped<IReportDataClient, DbReportDataClient>();
+        services.AddHttpClient<IAppSettingsClient, AppSettingsClient>();
+        services.AddHttpClient<ILogoFetcher, LogoFetcher>();
+        services.AddSingleton<AuditPdfGenerator>();
+        services.AddSingleton<AuditWorkbookGenerator>();
+        services.AddSingleton<ReportCsvExporter>();
+        services.AddSingleton<ReportSitemapExporter>();
+        services.AddSingleton<ReportJsonExporter>();
+        services.AddScoped<IPdfReportService, PdfReportService>();
+        services.AddScoped<IWorkbookReportService, WorkbookReportService>();
+        services.AddScoped<IReportExportService, ReportExportService>();
 
         return services;
     }

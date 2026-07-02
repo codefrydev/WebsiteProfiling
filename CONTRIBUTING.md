@@ -37,7 +37,7 @@ CI also runs a **Docker** job (image build, browser pytest in container, compose
 
 When adding tools coverage tests, register new files in `scripts/local-test.sh`, `scripts/local-test.ps1`, and `.github/workflows/ci.yml` (see [AGENT.md](AGENT.md)).
 
-**.NET DI validation:** Every API service (`AiService`, `Bff`, `Data`, `FileService`, `IntegrationsService`, `ReportService`) enables `ValidateOnBuild` / `ValidateScopes` in `Program.cs` and includes `ServiceRegistrationValidationTests` — a `WebApplicationFactory` smoke test that builds the real host graph. Add the same when introducing a new .NET API project.
+**.NET DI validation:** Every API service (`AiService`, `Bff`, `Data`, `IntegrationsService`, `ReportService`) enables `ValidateOnBuild` / `ValidateScopes` in `Program.cs` and includes `ServiceRegistrationValidationTests` — a `WebApplicationFactory` smoke test that builds the real host graph. Add the same when introducing a new .NET API project.
 
 ## How to contribute
 
@@ -53,7 +53,9 @@ When adding tools coverage tests, register new files in `scripts/local-test.sh`,
 - [ ] Tests pass locally (`./local-test` or documented subset)
 - [ ] No secrets committed (`.env`, credentials, API keys)
 - [ ] User-facing text uses industry terms from the glossary (not internal codenames like “pipeline” in the UI)
-- [ ] Database changes include an Alembic migration in `alembic/versions/`
+- [ ] Database changes include an EF Core migration (`dotnet ef migrations add <Name>`) in `services/Schema/src/Schema.Model/`
+
+Authoring a migration needs the `dotnet-ef` CLI tool (design-time only — never a runtime dependency). It's pinned via a local tool manifest at `services/dotnet-tools.json`; run `dotnet tool restore` from `services/` once, then `dotnet tool run dotnet-ef migrations add <Name> --project services/Schema/src/Schema.Model/Schema.Model.csproj` with `DATABASE_URL` set.
 
 ## Link Explorer: Search & retention
 
@@ -68,7 +70,7 @@ Per-URL GSC/GA4 in Link Explorer uses two histories:
 
 **Prerequisites:** Google connected with GSC site URL and GA4 property saved; at least one site-wide fetch for snapshot defaults; two or more live fetches on the same URL to compare live periods. AI page coach requires **Enable AI insights** and **Link Explorer page coach** under Run audit → **Content quality & AI insights**.
 
-Apply migrations before using live fetch: `./local-run migrate` or `alembic upgrade head`.
+Apply migrations before using live fetch: `./local-run migrate` or `dotnet run --project services/Schema/src/Schema.Migrator`.
 
 ### PostgreSQL JSONB rows
 

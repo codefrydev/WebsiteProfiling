@@ -4,8 +4,8 @@ using ReportService.Domain.Entities;
 namespace ReportService.Application.Persistence;
 
 /// <summary>
-/// EF Core context over the Alembic-owned schema. No migrations; tracking disabled globally for reads.
-/// Mirrors Data and FileService DbContext patterns.
+/// EF Core context over the schema owned by services/Schema. No migrations here; tracking disabled globally for reads.
+/// Mirrors the Data service's DbContext pattern.
 /// </summary>
 public sealed class ReportDbContext(DbContextOptions<ReportDbContext> options) : DbContext(options)
 {

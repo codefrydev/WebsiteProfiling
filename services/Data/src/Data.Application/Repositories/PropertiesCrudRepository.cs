@@ -1,6 +1,6 @@
 using Data.Application.Json;
-using Data.Application.Properties;
 using Npgsql;
+using WebsiteProfiling.Contracts.Properties;
 
 namespace Data.Application.Repositories;
 

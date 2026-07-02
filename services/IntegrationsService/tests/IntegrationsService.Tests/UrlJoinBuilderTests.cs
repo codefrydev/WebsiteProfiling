@@ -5,10 +5,10 @@ namespace IntegrationsService.Tests;
 public sealed class UrlJoinBuilderTests
 {
     [Theory]
-    [InlineData("https://WWW.Example.com/page/", "example.com/page")]
+    [InlineData("https://WWW.Example.com/page/", "example.com/page/")]
     [InlineData("https://example.com", "example.com/")]
-    [InlineData("https://example.com/blog/post/", "example.com/blog/post")]
-    public void NormalizeUrl_strips_scheme_www_and_trailing_slash(string input, string expected)
+    [InlineData("https://example.com/blog/post/", "example.com/blog/post/")]
+    public void NormalizeUrl_strips_scheme_and_www(string input, string expected)
     {
         Assert.Equal(expected, UrlJoinBuilder.NormalizeUrl(input));
     }

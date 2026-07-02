@@ -1,7 +1,7 @@
 namespace ReportService.Domain.Entities;
 
 /// <summary>
-/// Mapping of the existing <c>report_payload</c> table (Alembic-owned schema).
+/// Mapping of the existing <c>report_payload</c> table (schema owned by services/Schema).
 /// </summary>
 public sealed class ReportPayload
 {

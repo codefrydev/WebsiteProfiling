@@ -42,8 +42,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 # Python dependencies
 COPY requirements.txt /app/requirements.txt
-COPY alembic.ini /app/alembic.ini
-COPY alembic /app/alembic
 RUN --mount=type=cache,target=/root/.cache/pip \
     python3 -m venv /opt/venv \
   && /opt/venv/bin/pip install --upgrade pip \
@@ -63,8 +61,6 @@ COPY pytest.ini /app/pytest.ini
 COPY config/typed_config_manifest.json /app/config/typed_config_manifest.json
 COPY src /app/src
 COPY tests /app/tests
-COPY alembic /app/alembic
-COPY alembic.ini /app/alembic.ini
 COPY docker-entrypoint.sh /app/docker-entrypoint.sh
 
 ENV NODE_ENV=production

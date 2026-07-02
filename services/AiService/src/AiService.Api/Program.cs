@@ -1,41 +1,19 @@
 using AiService.Api;
 using AiService.Mcp;
-using Microsoft.OpenApi;
+using WebsiteProfiling.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseDefaultServiceProvider((_, options) =>
-{
-    options.ValidateOnBuild = true;
-    options.ValidateScopes = true;
-});
+builder.AddWebsiteProfilingWebDefaults(
+    "Website Profiling AI API",
+    "Internal AI service: chat (SSE), LLM settings, secrets, audit-tool bridge, content AI, "
+    + "and MCP tools. Reached by the BFF via AI_ROUTES.");
 
 builder.Services.AddAiServiceHost(enableMcpHttp: McpServerExtensions.IsMcpHttpEnabled());
 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Website Profiling AI API",
-        Version = "v1",
-        Description =
-            "Internal AI service: chat (SSE), LLM settings, secrets, audit-tool bridge, content AI, "
-            + "and MCP tools. Reached by the BFF via AI_ROUTES.",
-    });
-});
-
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Website Profiling AI API v1");
-        options.RoutePrefix = "docs";
-    });
-}
+app.UseWebsiteProfilingSwaggerUi("Website Profiling AI API");
 
 app.MapControllers();
 
@@ -50,7 +28,10 @@ app.MapGet("/", () => Results.Ok(new
 
 if (McpServerExtensions.IsMcpHttpEnabled())
 {
-    app.MapAiServiceMcp("/mcp");
+    // MapAiServiceMcp is declared to return IEndpointConventionBuilder (no AddEndpointFilter
+    // extension targets that interface directly), but MapMcp's actual implementation returns a
+    // RouteGroupBuilder — cast to reach the concrete AddEndpointFilter overload.
+    ((RouteGroupBuilder)app.MapAiServiceMcp("/mcp")).AddEndpointFilter<McpBearerAuthFilter>();
 }
 
 app.Run();

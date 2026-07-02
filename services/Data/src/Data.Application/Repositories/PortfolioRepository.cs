@@ -266,7 +266,7 @@ public sealed class PortfolioRepository(
             var count = await db.ReportPayloads
                 .Where(r => r.Id == reportId.Value)
                 .ExecuteDeleteAsync(cancellationToken);
-            deleted = count > 0;
+            deleted = deleted || count > 0;
         }
 
         if (crawlRunId is not null)
@@ -274,7 +274,7 @@ public sealed class PortfolioRepository(
             var count = await db.CrawlRuns
                 .Where(c => c.Id == crawlRunId.Value)
                 .ExecuteDeleteAsync(cancellationToken);
-            deleted = count > 0;
+            deleted = deleted || count > 0;
         }
 
         return deleted;

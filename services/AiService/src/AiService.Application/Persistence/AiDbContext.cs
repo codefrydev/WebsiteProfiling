@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 namespace AiService.Application.Persistence;
 
 /// <summary>
-/// EF Core context over the Alembic-owned schema. Never calls <c>Migrate()</c> or <c>EnsureCreated()</c>.
+/// EF Core context over the schema owned by services/Schema. Never calls <c>Migrate()</c> or <c>EnsureCreated()</c>.
 /// </summary>
 public sealed class AiDbContext(DbContextOptions<AiDbContext> options) : DbContext(options)
 {

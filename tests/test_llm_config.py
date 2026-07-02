@@ -13,7 +13,7 @@ from website_profiling.llm_config import llm_is_enabled, load_llm_config_from_db
 @pytest.fixture(scope="module")
 def require_database_url():
     if not (os.environ.get("DATABASE_URL") or "").strip():
-        pytest.skip("DATABASE_URL not set — start Postgres and run alembic upgrade head")
+        pytest.skip("DATABASE_URL not set — start Postgres and run the EF Core migrator")
 
 
 def test_load_llm_config_from_db(require_database_url):

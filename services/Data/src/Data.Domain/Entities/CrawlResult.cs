@@ -1,7 +1,7 @@
 namespace Data.Domain.Entities;
 
 /// <summary>
-/// Read-only mapping of the existing <c>crawl_results</c> table (owned by Alembic migrations).
+/// Read-only mapping of the existing <c>crawl_results</c> table (schema owned by services/Schema).
 /// Columns <c>status</c> and <c>title</c> were added in migration 002; <c>data</c> JSONB holds
 /// all raw page attributes. The Data service never writes or migrates this table.
 /// </summary>
