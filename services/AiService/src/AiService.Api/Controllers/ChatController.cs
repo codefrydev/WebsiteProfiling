@@ -115,7 +115,7 @@ public sealed class ChatController : ControllerBase
                     "assistant",
                     content: "",
                     toolResultJson: toolResultJson,
-                    cancellationToken: cancellationToken);
+                    cancellationToken: CancellationToken.None);
                 if (session.Title is "New chat" or "" or null)
                 {
                     var derived = ChatHelpers.DeriveTitle(body.Message)

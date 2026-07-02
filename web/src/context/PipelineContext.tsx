@@ -626,7 +626,9 @@ export function PipelineProvider({ children }: { children: ReactNode }) {
           setLlmApiKeyConfigured(data.apiKeyConfigured);
         }
         return true;
-      } catch {
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        setSaveMsg(format(s.saveFailed, { message }));
         return false;
       } finally {
         setSaving(false);

@@ -570,6 +570,10 @@ class Crawler:
                         break
         finally:
             self.fetcher.close()
+            if db_writer is not None:
+                db_writer.finish()
+                db_writer.join()
+                db_writer.raise_if_failed()
             progress_tracker.finish(pages_crawled)
             if use_tqdm:
                 pbar.close()
@@ -579,10 +583,6 @@ class Crawler:
             else "unlimited"
         )
         console_print(f"  Crawled {pages_crawled} URLs (limit {limit_label}).", flush=True)
-        if db_writer is not None:
-            db_writer.finish()
-            db_writer.join()
-            db_writer.raise_if_failed()
         self._db_writer = None
         elapsed = time.time() - start_time
         df = pd.DataFrame(self.results)

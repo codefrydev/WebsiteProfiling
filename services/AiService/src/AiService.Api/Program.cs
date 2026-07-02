@@ -50,7 +50,10 @@ app.MapGet("/", () => Results.Ok(new
 
 if (McpServerExtensions.IsMcpHttpEnabled())
 {
-    app.MapAiServiceMcp("/mcp");
+    // MapAiServiceMcp is declared to return IEndpointConventionBuilder (no AddEndpointFilter
+    // extension targets that interface directly), but MapMcp's actual implementation returns a
+    // RouteGroupBuilder — cast to reach the concrete AddEndpointFilter overload.
+    ((RouteGroupBuilder)app.MapAiServiceMcp("/mcp")).AddEndpointFilter<McpBearerAuthFilter>();
 }
 
 app.Run();

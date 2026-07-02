@@ -98,19 +98,14 @@ public sealed class IntegrationsGoogleController(
     {
         var cfg = await appSettings.ReadAsync(cancellationToken);
         using var sa = await appSettings.ReadServiceAccountJsonAsync(cancellationToken);
-        object? serviceAccount = null;
-        if (sa is not null)
-        {
-            serviceAccount = JsonSerializer.Deserialize<object>(sa.RootElement.GetRawText());
-        }
 
         return Ok(new
         {
             clientId = (cfg.ClientId ?? "").Trim(),
-            clientSecret = (cfg.ClientSecret ?? "").Trim(),
-            serviceAccount,
+            hasClientSecret = !string.IsNullOrEmpty(cfg.ClientSecret),
+            hasServiceAccount = sa is not null,
             dateRangeDays = cfg.DefaultDateRangeDays > 0 ? cfg.DefaultDateRangeDays : 28,
-            developerToken = (cfg.DeveloperToken ?? "").Trim(),
+            hasDeveloperToken = !string.IsNullOrEmpty(cfg.DeveloperToken),
             loginCustomerId = (cfg.LoginCustomerId ?? "").Trim(),
         });
     }

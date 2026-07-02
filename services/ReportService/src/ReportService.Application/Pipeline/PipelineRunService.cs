@@ -104,7 +104,10 @@ public sealed class PipelineRunService(
             return PipelineResumeResult.JobConflict("Job is not paused");
         }
 
-        var match = System.Text.RegularExpressions.Regex.Match(job.Log ?? "", @"CRAWL_RUN_ID=(\d+)");
+        // The crawler logs this lowercase ("[PAUSE] crawl_run_id={id}", see crawl/crawler.py) —
+        // match case-insensitively rather than assuming a specific casing.
+        var match = System.Text.RegularExpressions.Regex.Match(
+            job.Log ?? "", @"crawl_run_id=(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         if (!match.Success)
         {
             return PipelineResumeResult.JobConflict("No paused crawl run found for this job");

@@ -377,7 +377,8 @@ def write_crawl(conn: Connection, df: pd.DataFrame, crawl_run_id: Optional[int] 
         if crawl_run_id is not None:
             conn.execute("DELETE FROM crawl_results WHERE crawl_run_id = %s", (crawl_run_id,))
             try:
-                conn.execute("DELETE FROM crawl_page_html WHERE crawl_run_id = %s", (crawl_run_id,))
+                with conn.transaction():
+                    conn.execute("DELETE FROM crawl_page_html WHERE crawl_run_id = %s", (crawl_run_id,))
             except Exception:
                 pass
             target_run_id = crawl_run_id
@@ -410,7 +411,10 @@ def merge_crawl_result_fields_batch(
     *,
     commit: bool = True,
 ) -> int:
-    """Merge per-URL content fields into crawl_results.data JSONB. Returns rows updated."""
+    """Merge per-URL content fields into crawl_results.data JSONB.
+
+    Returns the number of URLs attempted (not necessarily all matched an existing row).
+    """
     if not updates:
         return 0
     params: list[tuple] = []

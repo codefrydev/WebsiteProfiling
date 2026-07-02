@@ -74,6 +74,16 @@ public sealed class McpAuditTools
         }
 
         var args = ParseArguments(arguments);
+        if (args.TryGetPropertyValue("error", out var parseErrorNode) && parseErrorNode is JsonValue parseErrorValue)
+        {
+            var error = new JsonObject
+            {
+                ["error"] = parseErrorValue.GetValue<string>(),
+                ["hint"] = "Arguments must be valid JSON, e.g. {\"key\": \"value\"}.",
+            };
+            return error.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        }
+
         MergeContext(args, propertyId, reportId);
         var ctx = BuildContext(args);
         var result = await _dispatcher.DispatchAsync(name, ctx, args, cancellationToken);

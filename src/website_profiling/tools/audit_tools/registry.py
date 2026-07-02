@@ -861,6 +861,14 @@ def dispatch_tool(
     if handler is None:
         return {"error": f"unknown tool: {name}"}
 
+    if name in ("run_sql_query", "get_sql_schema"):
+        # Imported lazily to avoid a circular import (tool_selector imports from
+        # this module at module load time).
+        from .tool_selector import chat_sql_tool_enabled
+
+        if not chat_sql_tool_enabled():
+            return {"error": f"tool disabled: {name}"}
+
     ctx = context or AuditToolContext()
     payload_args = _normalize_tool_args(args)
     merged_ctx = ctx.with_args(payload_args)

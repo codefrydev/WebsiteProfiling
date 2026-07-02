@@ -64,7 +64,7 @@ class PageRecordBuilder:
     ) -> dict[str, Any]:
         """Extract title, links, and SEO/content fields from HTML."""
         ext = self.empty_ext(url, headers_dict, redirect_chain_length)
-        title, link_edge_rows = parse_link_edges(url, text)
+        title, link_edge_rows = parse_link_edges(final_url or url, text)
         links = {e["to_url"] for e in link_edge_rows}
         meta_description, meta_description_len, h1_text, h1_count, canonical_url = parse_seo(
             url, text

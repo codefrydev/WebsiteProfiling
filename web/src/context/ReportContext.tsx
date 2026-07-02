@@ -216,6 +216,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     // Reset section cache for the new report
     inFlightSectionsRef.current = new Set();
     sectionCacheKeyRef.current = `${reportId ?? 'latest'}:${scoped ?? ''}`;
+    const cacheKeySnapshot = sectionCacheKeyRef.current;
     setSectionStatus({});
     setLoading(true);
     setError(null);
@@ -237,6 +238,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
       const res = await apiFetch(url);
       const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
       if (!res.ok) throw new Error(readApiErrorMessage(body as Record<string, unknown>, res));
+      if (sectionCacheKeyRef.current !== cacheKeySnapshot) return;
       const coreData = sanitizePayloadForDomain(body.payload ?? null, scoped);
       setData((prev) => (prev == null ? coreData : { ...prev, ...(coreData ?? {}) }));
       setSectionStatus((prev) => ({ ...prev, core: 'loaded' }));
@@ -256,6 +258,7 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
           );
           const body = (await res.json().catch(() => ({}))) as PayloadApiResponse;
           if (!res.ok) throw new Error(readApiErrorMessage(body as Record<string, unknown>, res));
+          if (sectionCacheKeyRef.current !== cacheKeySnapshot) return;
           const coreData = sanitizePayloadForDomain(body.payload ?? null, scoped);
           setData((prev) => (prev == null ? coreData : { ...prev, ...(coreData ?? {}) }));
           setSectionStatus((prev) => ({ ...prev, core: 'loaded' }));

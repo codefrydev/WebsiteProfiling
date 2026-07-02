@@ -9,7 +9,7 @@ namespace ReportService.Api.Controllers;
 public sealed class CrawlController(NpgsqlDataSource dataSource) : ControllerBase
 {
     [HttpGet("browser-status")]
-    public IActionResult BrowserStatus()
+    public async Task<IActionResult> BrowserStatus(CancellationToken cancellationToken)
     {
         var python = Environment.GetEnvironmentVariable("PYTHON") ?? "python3";
         var repoRoot = Environment.GetEnvironmentVariable("WEBSITE_PROFILING_ROOT") ?? Directory.GetCurrentDirectory();
@@ -37,8 +37,26 @@ public sealed class CrawlController(NpgsqlDataSource dataSource) : ControllerBas
                 return Ok(new { ok = false, error = "Failed to start Python" });
             }
 
-            var stdout = proc.StandardOutput.ReadToEnd();
-            proc.WaitForExit(15000);
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
+
+            // Drain stdout and stderr concurrently — reading one to completion before even
+            // starting the other risks a deadlock if the child fills the unread stream's
+            // pipe buffer while blocked writing to it.
+            var stdoutTask = proc.StandardOutput.ReadToEndAsync(linkedCts.Token);
+            var stderrTask = proc.StandardError.ReadToEndAsync(linkedCts.Token);
+            string stdout;
+            try
+            {
+                await Task.WhenAll(stdoutTask, stderrTask);
+                await proc.WaitForExitAsync(linkedCts.Token);
+                stdout = stdoutTask.Result;
+            }
+            catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
+            {
+                return Ok(new { ok = false, error = "Timed out waiting for browser-status probe" });
+            }
+
             return Content(stdout, "application/json");
         }
         catch (Exception ex)

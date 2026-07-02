@@ -83,6 +83,23 @@ public partial class SchemaDbContext
             e.Property(x => x.CancelRequested).HasDefaultValue(false);
             e.Property(x => x.LogTruncated).HasDefaultValue(false);
             e.Property(x => x.PauseRequested).HasDefaultValue(false);
+
+            // DB-level single-flight guarantee: "at most one pending/running job at a time".
+            // A Postgres partial unique index needs every covered row to collide on the SAME
+            // indexed value to express "at most one row may match this predicate" — indexing
+            // the real `status` column would only block two rows sharing the *same* status
+            // (e.g. two 'pending' rows), not one 'pending' + one 'running' simultaneously.
+            // SingleActiveSlot is a shadow column that is always the constant 1 — never set by
+            // Python's INSERT or by EF, Postgres fills it from DEFAULT — indexed only among
+            // active rows via HasFilter. Must stay NOT NULL: Postgres never treats two NULLs
+            // as equal for uniqueness, so a nullable column here would silently defeat this.
+            e.Property<int>("SingleActiveSlot")
+                .HasColumnName("single_active_slot")
+                .HasDefaultValue(1);
+
+            e.HasIndex(new[] { "SingleActiveSlot" }, "idx_pipeline_jobs_single_active")
+                .IsUnique()
+                .HasFilter("status IN ('pending', 'running')");
         });
     }
 

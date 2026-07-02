@@ -67,6 +67,26 @@ def test_enqueue_job_already_running(monkeypatch):
     assert result is False
 
 
+def test_enqueue_job_lost_race_raises_unique_violation(monkeypatch):
+    """idx_pipeline_jobs_single_active caught a concurrent INSERT between our
+    WHERE NOT EXISTS check and commit — same external signal as the no-row case."""
+    from psycopg.errors import UniqueViolation
+
+    conn = FakeConn()
+    monkeypatch.setattr(
+        "website_profiling.db.pipeline_jobs.reconcile_stale_jobs", lambda c: 0
+    )
+
+    def _raise(sql, params=None):
+        raise UniqueViolation("duplicate key value violates unique constraint")
+
+    monkeypatch.setattr(conn, "execute", _raise)
+    result = enqueue_job(conn, "abc-123", "crawl", None, None)
+    assert result is False
+    assert conn.rollbacks == 1
+    assert conn.commits == 0
+
+
 # ── try_claim_pending_job ─────────────────────────────────────────────────────
 
 def test_try_claim_pending_job_returns_job():

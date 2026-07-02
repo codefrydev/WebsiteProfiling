@@ -185,7 +185,7 @@ public sealed class PropertyRepository(IntegrationsDbContext db)
             new PropertyGoogleCredentialsPatch
             {
                 RefreshToken = "",
-                AuthMode = null,
+                AuthMode = "",
             },
             cancellationToken);
     }

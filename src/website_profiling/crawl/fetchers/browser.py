@@ -199,74 +199,76 @@ class BrowserFetcher:
 
         self._jobs = asyncio.Queue()
         playwright = await async_playwright().start()
-        chrome_path = (os.environ.get("CHROME_PATH") or "").strip() or None
-        launch_kwargs: dict[str, Any] = {
-            "headless": True,
-            "args": list(_DEFAULT_CHROME_ARGS),
-        }
-        if chrome_path:
-            launch_kwargs["executable_path"] = chrome_path
-
-        browser = await playwright.chromium.launch(**launch_kwargs)
-        context_kwargs: dict[str, Any] = {"user_agent": self.user_agent}
-        if self.extra_http_headers:
-            context_kwargs["extra_http_headers"] = self.extra_http_headers
-        if self.http_credentials:
-            context_kwargs["http_credentials"] = self.http_credentials
-        context = await browser.new_context(**context_kwargs)
-        semaphore = asyncio.Semaphore(self.js_concurrency)
+        browser: Any = None
+        context: Any = None
         pages: list[Any] = []
-        for _ in range(self.js_concurrency):
-            page = await context.new_page()
-            if self.block_resources:
-
-                async def _route_handler(route: Any, request: Any) -> None:
-                    if request.resource_type in _BLOCKED_RESOURCE_TYPES:
-                        await route.abort()
-                    else:
-                        await route.continue_()
-
-                await page.route("**/*", _route_handler)
-            pages.append(page)
-        page_queue: asyncio.Queue[Any] = asyncio.Queue()
-        for page in pages:
-            await page_queue.put(page)
-
-        async def worker() -> None:
-            assert self._jobs is not None
-            while True:
-                job = await self._jobs.get()
-                if job is None:
-                    self._jobs.task_done()
-                    break
-                page = await page_queue.get()
-                try:
-                    async with semaphore:
-                        result = await self._fetch_page(page, job.url)
-                    if not job.future.done():
-                        job.future.set_result(result)
-                except Exception:
-                    if not job.future.done():
-                        job.future.set_result(
-                            FetchResult(
-                                status=None,
-                                content_type=None,
-                                text=None,
-                                response_time_ms=None,
-                                content_length=None,
-                                final_url=job.url,
-                                headers_dict={},
-                                redirect_chain_length=0,
-                                fetch_method="rendered",
-                            )
-                        )
-                finally:
-                    await page_queue.put(page)
-                    self._jobs.task_done()
-
-        workers = [asyncio.create_task(worker()) for _ in range(self.js_concurrency)]
-        self._ready.set()
         try:
+            chrome_path = (os.environ.get("CHROME_PATH") or "").strip() or None
+            launch_kwargs: dict[str, Any] = {
+                "headless": True,
+                "args": list(_DEFAULT_CHROME_ARGS),
+            }
+            if chrome_path:
+                launch_kwargs["executable_path"] = chrome_path
+
+            browser = await playwright.chromium.launch(**launch_kwargs)
+            context_kwargs: dict[str, Any] = {"user_agent": self.user_agent}
+            if self.extra_http_headers:
+                context_kwargs["extra_http_headers"] = self.extra_http_headers
+            if self.http_credentials:
+                context_kwargs["http_credentials"] = self.http_credentials
+            context = await browser.new_context(**context_kwargs)
+            semaphore = asyncio.Semaphore(self.js_concurrency)
+            for _ in range(self.js_concurrency):
+                page = await context.new_page()
+                if self.block_resources:
+
+                    async def _route_handler(route: Any, request: Any) -> None:
+                        if request.resource_type in _BLOCKED_RESOURCE_TYPES:
+                            await route.abort()
+                        else:
+                            await route.continue_()
+
+                    await page.route("**/*", _route_handler)
+                pages.append(page)
+            page_queue: asyncio.Queue[Any] = asyncio.Queue()
+            for page in pages:
+                await page_queue.put(page)
+
+            async def worker() -> None:
+                assert self._jobs is not None
+                while True:
+                    job = await self._jobs.get()
+                    if job is None:
+                        self._jobs.task_done()
+                        break
+                    page = await page_queue.get()
+                    try:
+                        async with semaphore:
+                            result = await self._fetch_page(page, job.url)
+                        if not job.future.done():
+                            job.future.set_result(result)
+                    except Exception:
+                        if not job.future.done():
+                            job.future.set_result(
+                                FetchResult(
+                                    status=None,
+                                    content_type=None,
+                                    text=None,
+                                    response_time_ms=None,
+                                    content_length=None,
+                                    final_url=job.url,
+                                    headers_dict={},
+                                    redirect_chain_length=0,
+                                    fetch_method="rendered",
+                                )
+                            )
+                    finally:
+                        await page_queue.put(page)
+                        self._jobs.task_done()
+
+            workers = [asyncio.create_task(worker()) for _ in range(self.js_concurrency)]
+            self._ready.set()
             await asyncio.gather(*workers)
         finally:
             for page in pages:
@@ -274,14 +276,16 @@ class BrowserFetcher:
                     await page.close()
                 except Exception:
                     pass
-            try:
-                await context.close()
-            except Exception:
-                pass
-            try:
-                await browser.close()
-            except Exception:
-                pass
+            if context is not None:
+                try:
+                    await context.close()
+                except Exception:
+                    pass
+            if browser is not None:
+                try:
+                    await browser.close()
+                except Exception:
+                    pass
             try:
                 await playwright.stop()
             except Exception:

@@ -41,7 +41,7 @@ public sealed class StructuredCompletionService(IChatClientFactory chatClientFac
         Action<string>? onToken,
         CancellationToken cancellationToken = default)
     {
-        var client = chatClientFactory.CreateClient(settings);
+        using var client = chatClientFactory.CreateClient(settings);
         var messages = new List<ChatMessage>
         {
             new(ChatRole.System, system),

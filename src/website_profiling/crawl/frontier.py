@@ -20,7 +20,7 @@ def url_matches_exclude(url: str, exclude_urls: list[str]) -> bool:
         return False
     u = url
     for prefix in exclude_urls:
-        p = prefix.strip()
+        p = prefix.strip().rstrip("/")
         if not p:
             continue
         if u == p or u.startswith(p + "/"):

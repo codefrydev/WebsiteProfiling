@@ -72,24 +72,27 @@ public sealed class ChatAgentService(
             extraNames: extraTools);
 
         ChatAgentLoopResult loopResult;
-        try
+        using (client)
         {
-            loopResult = await agentLoop.RunAsync(
-                client,
-                messages,
-                activeTools,
-                enabledTools,
-                settings,
-                context,
-                progress,
-                maxRounds,
-                cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            var msg = ChatAgentConfig.MapAgentError(ex, settings);
-            progress.EmitError(msg);
-            return new ChatTurnResult(false, null, progress.ToolEvents, msg);
+            try
+            {
+                loopResult = await agentLoop.RunAsync(
+                    client,
+                    messages,
+                    activeTools,
+                    enabledTools,
+                    settings,
+                    context,
+                    progress,
+                    maxRounds,
+                    cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                var msg = ChatAgentConfig.MapAgentError(ex, settings);
+                progress.EmitError(msg);
+                return new ChatTurnResult(false, null, progress.ToolEvents, msg);
+            }
         }
 
         return await FinishWithNarrativeAsync(settings, lastUser, progress, loopResult.PartialNote, cancellationToken);
