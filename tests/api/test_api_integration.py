@@ -1,13 +1,14 @@
 """FastAPI HTTP integration tests — slim Python bridge only.
 
-After the C# migration, browser-facing routes live on Data, ReportService,
-ConfigService, and IntegrationsService. The FastAPI app only exposes health,
+After the C# migration, browser-facing routes live on Data (including the former
+ConfigService's typed config — pipeline settings, UI/client preferences),
+ReportService, and IntegrationsService. The FastAPI app only exposes health,
 audit-tool dispatch, and internal CLI bridges.
 
 PostgreSQL integration coverage for migrated routes:
 - services/Data/tests/Data.Tests/PropertiesIntegrationTests.cs
+- services/Data/tests/Data.Tests/ServiceRegistrationValidationTests.cs (typed config)
 - services/ReportService/tests/ReportService.Tests/DashboardsIntegrationTests.cs
-- services/ConfigService/tests/ConfigService.Tests/PipelineSettingsIntegrationTests.cs
 """
 from __future__ import annotations
 
@@ -26,7 +27,7 @@ _SKIP_REPORT = pytest.mark.skip(
     reason="Route moved to ReportService — see DashboardsIntegrationTests.cs",
 )
 _SKIP_CONFIG = pytest.mark.skip(
-    reason="Route moved to ConfigService — see PipelineSettingsIntegrationTests.cs",
+    reason="Route moved to Data service (typed config) — see ServiceRegistrationValidationTests.cs",
 )
 _SKIP_INTEGRATIONS = pytest.mark.skip(
     reason="Route moved to IntegrationsService — see IntegrationsService.Tests",

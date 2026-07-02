@@ -13,21 +13,20 @@ This file is the canonical entry point for agents. For full detail see [AGENT.md
 - `src/website_profiling/` — Python crawl/Lighthouse engine
   - `crawl/`, `lighthouse/`, `worker/`, `api/` (jobs, crawl, internal bridges), `reporting/` (bridge-only until C# port completes)
 - `web/` — Vite + React SPA (static nginx in prod); browser calls `services/Bff/` for all `/api/*`
-- `services/Bff/` — .NET BFF (auth, CORS, proxy to FastAPI + ReportService + IntegrationsService + Data + AiService + FileService)
-- `services/Data/` — .NET read service (report payloads, portfolio, issue status, filters; port 8091)
+- `services/Bff/` — .NET BFF (auth, CORS, proxy to FastAPI + ReportService + IntegrationsService + Data + AiService)
+- `services/Data/` — .NET data service (report payloads, portfolio, issue status, filters, typed config, PDF/Excel/CSV/JSON/sitemap export; port 8091). Export profiles: `executive|standard|full|premium`. Env: `REPORT_API_URL` (branding lookup).
 - `services/ReportService/` — .NET report build + pipeline orchestration (port 8094). See [services/ReportService/README.md](services/ReportService/README.md)
 - `services/AiService/` — .NET AI service (Microsoft.Extensions.AI, chat, enrichment, MCP, **secrets/llm-settings writes**; port 8092). See [services/AiService/README.md](services/AiService/README.md)
 - `services/IntegrationsService/` — .NET Google/Bing integrations (GSC/GA4 fetch, OAuth, page-live, keyword reads; port 8093). See [services/IntegrationsService/README.md](services/IntegrationsService/README.md)
-- `services/FileService/` — .NET PDF + Excel workbook export (port 8097). HTTP-only via `REPORT_API_URL`; no Postgres. Profiles: `executive|standard|full|premium`. Details: [services/FileService/README.md](services/FileService/README.md). Env: `FILE_SERVICE_URL` (MCP), `REPORT_API_URL` (FileService).
 - `services/Schema/` — EF Core DB migrations (schema owner)
-- `services/WebsiteProfiling.slnx` — unified .NET solution (all six services + shared libs)
+- `services/WebsiteProfiling.slnx` — unified .NET solution (all services + shared libs)
 - `docs/` — documentation index
 - `tests/` — pytest suite
 
 **Run / dev**
 
 ```bash
-./local-run          # Start Postgres + FileService + Data + AiService + ReportService + IntegrationsService + worker + FastAPI + BFF + Vite
+./local-run          # Start Postgres + Data + AiService + ReportService + IntegrationsService + worker + FastAPI + BFF + Vite
 ./local-test         # Python + web + .NET tests (CI parity; dotnet: services/WebsiteProfiling.slnx)
 python -m src        # Run audit pipeline
 # MCP: AiService stdio/HTTP — see services/AiService/README.md and docs/MCP.md

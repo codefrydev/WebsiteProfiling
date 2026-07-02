@@ -15,9 +15,8 @@ Shared contracts live in `services/Shared/WebsiteProfiling.Contracts/`.
 | Service | Mapper location |
 |---------|-----------------|
 | AiService tools | `AiService.Tools/Mapping/` |
-| Data | `Data.Application/Mapping/PayloadSliceMapper.cs` |
+| Data | `Data.Application/Mapping/` (`PayloadSliceMapper`, `AuditReportMapper`, `ChapterMappers` — the latter two absorbed from the former FileService) |
 | IntegrationsService | `IntegrationsService.Application/Google/PageLookupMapper.cs` |
-| FileService | `FileService.Application/Mapping/` (`AuditReportMapper`, `ChapterMappers`) |
 
 ## Coercion
 

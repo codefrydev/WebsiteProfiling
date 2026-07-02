@@ -13,7 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddWebsiteProfilingWebDefaults(
     "Website Profiling BFF",
     "Backend-for-Frontend gateway: the single browser-facing API surface. Owns auth + CORS "
-    + "and proxies to the internal FastAPI and FileService backends.");
+    + "and proxies to the internal FastAPI and Data backends.");
 
 builder.Services.AddBffApplication();
 builder.Services.AddSingleton<IUpstreamForwarder, UpstreamForwarder>();

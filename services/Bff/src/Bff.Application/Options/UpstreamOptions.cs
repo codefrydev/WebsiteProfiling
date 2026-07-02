@@ -11,9 +11,6 @@ public sealed class UpstreamOptions
     /// <summary>FastAPI base URL (env override: FASTAPI_URL). Default matches the new internal compose service.</summary>
     public string FastApiBaseUrl { get; set; } = "http://127.0.0.1:8096";
 
-    /// <summary>FileService base URL (env override: FILE_SERVICE_URL).</summary>
-    public string FileServiceBaseUrl { get; set; } = "http://127.0.0.1:8097";
-
     /// <summary>Timeout for normal (non-streaming) upstream calls. Parity with the TS proxy (120s).</summary>
     public int TimeoutSeconds { get; set; } = 120;
 
@@ -54,13 +51,4 @@ public sealed class UpstreamOptions
     /// (env override: REPORT_ROUTES).
     /// </summary>
     public string[] ReportRoutes { get; set; } = [];
-
-    /// <summary>Config service base URL (env override: CONFIG_SERVICE_URL). Internal typed-config service.</summary>
-    public string ConfigBaseUrl { get; set; } = "http://127.0.0.1:8095";
-
-    /// <summary>
-    /// Comma-separated /api path prefixes routed to the Config service instead of FastAPI
-    /// (env override: CONFIG_ROUTES).
-    /// </summary>
-    public string[] ConfigRoutes { get; set; } = [];
 }

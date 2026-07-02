@@ -290,7 +290,7 @@ def export_list_as_csv(conn: Connection, ctx: AuditToolContext, args: dict[str, 
 def list_export_formats(_conn: Connection, _ctx: AuditToolContext, _args: dict[str, Any]) -> dict[str, Any]:
     return {
         "formats": [
-            {"tool": "export_audit_report", "format": "pdf", "description": "Full audit PDF deliverable (FileService)"},
+            {"tool": "export_audit_report", "format": "pdf", "description": "Full audit PDF deliverable (Data service)"},
             {"tool": "export_audit_report", "format": "csv", "description": "Full audit CSV (URLs + issues)"},
             {"tool": "export_audit_report", "format": "json", "description": "Full audit JSON payload"},
             {"tool": "export_compare_csv", "format": "csv", "description": "Issue added/removed diff between two reports"},
@@ -302,7 +302,7 @@ def list_export_formats(_conn: Connection, _ctx: AuditToolContext, _args: dict[s
             "Compare this report to report 38 as CSV",
         ],
         "notes": [
-            "PDF requires FileService (FILE_SERVICE_URL; see services/FileService/)",
+            "PDF requires the Data service (DATA_SERVICE_URL; see services/Data/)",
             "Artifacts expire after 24 hours",
             "Chat UI shows download buttons after export tools run",
         ],

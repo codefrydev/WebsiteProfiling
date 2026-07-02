@@ -259,16 +259,16 @@ docker compose -f docker-compose.pull.yml up   # pre-built WEB_IMAGE
 
 Do not run the application container in isolation with `docker run` unless you provide a reachable `DATABASE_URL` whose schema has already been migrated (e.g. `docker compose run migrator`).
 
-### FileService (PDF and workbook export)
+### Data service (report reads, typed config, PDF/Excel export)
 
-The `files` service (port **8097**) renders audit PDFs and Excel workbooks. It reads report data over HTTP from the `web` service — no Postgres connection.
+The `data` service (port **8091**) reads report payloads, portfolio, issue status, and typed config (pipeline settings, UI/client preferences) directly from Postgres, and renders audit PDFs, Excel workbooks, CSV/JSON, and sitemaps at `/v1/reports/*` (formerly a separate FileService, now `Data.Rendering`/`ReportExportController`).
 
 | Variable | Service | Purpose |
 |----------|---------|---------|
-| `FILE_SERVICE_URL` | `web`, MCP | Where clients call FileService (default `http://files:8097` in Compose) |
-| `REPORT_API_URL` | `files` | Report API base URL (Compose: `http://web:8096`) |
+| `DATA_SERVICE_URL` | `bff`, MCP | Where clients call the Data service (default `http://data:8091` in Compose) |
+| `REPORT_API_URL` | `data` | Branding/logo lookup base URL for PDF exports (Compose: `http://fastapi:8096`) |
 
-PDF or workbook downloads fail if `files` is not running. See [services/FileService/README.md](../services/FileService/README.md).
+PDF or workbook downloads fail if `data` is not running.
 
 ---
 

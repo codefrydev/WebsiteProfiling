@@ -28,14 +28,8 @@
     <Project Path="Data/src/Data.Api/Data.Api.csproj" />
     <Project Path="Data/src/Data.Application/Data.Application.csproj" />
     <Project Path="Data/src/Data.Domain/Data.Domain.csproj" />
+    <Project Path="Data/src/Data.Rendering/Data.Rendering.csproj" />
     <Project Path="Data/tests/Data.Tests/Data.Tests.csproj" />
-  </Folder>
-  <Folder Name="/file-service/">
-    <Project Path="FileService/src/FileService.Api/FileService.Api.csproj" />
-    <Project Path="FileService/src/FileService.Application/FileService.Application.csproj" />
-    <Project Path="FileService/src/FileService.Domain/FileService.Domain.csproj" />
-    <Project Path="FileService/src/FileService.Rendering/FileService.Rendering.csproj" />
-    <Project Path="FileService/tests/FileService.Tests/FileService.Tests.csproj" />
   </Folder>
   <Folder Name="/integrations-service/">
     <Project Path="IntegrationsService/src/IntegrationsService.Api/IntegrationsService.Api.csproj" />
@@ -49,11 +43,6 @@
     <Project Path="ReportService/src/ReportService.Application/ReportService.Application.csproj" />
     <Project Path="ReportService/src/ReportService.Domain/ReportService.Domain.csproj" />
     <Project Path="ReportService/tests/ReportService.Tests/ReportService.Tests.csproj" />
-  </Folder>
-  <Folder Name="/config-service/">
-    <Project Path="ConfigService/src/ConfigService.Api/ConfigService.Api.csproj" />
-    <Project Path="ConfigService/src/ConfigService.Application/ConfigService.Application.csproj" />
-    <Project Path="ConfigService/tests/ConfigService.Tests/ConfigService.Tests.csproj" />
   </Folder>
   <Folder Name="/schema/">
     <Project Path="Schema/src/Schema.Model/Schema.Model.csproj" />

@@ -70,7 +70,7 @@ All metrics displayed in the UI or exports must align with one of the following 
 |---------|------------|
 | **Property** | A client site grouped by canonical domain, with optional GSC/GA4 binding |
 | **Audit run** | A stored report snapshot comprising crawl, analysis, and optional Lighthouse or Google data |
-| **Export** | PDF or Excel workbook (FileService), CSV or JSON (Python), including a data source legend |
+| **Export** | PDF or Excel workbook (Data service), CSV or JSON (Python), including a data source legend |
 
 Category titles and issue copy in Python use agency vocabulary (`src/website_profiling/reporting/terminology.py`). See [GLOSSARY.md](GLOSSARY.md) for UI term mappings.
 

@@ -5,8 +5,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddWebsiteProfilingWebDefaults(
     "Website Profiling Data API",
-    "Internal read-only data service. Reads Postgres directly and incrementally replaces "
-    + "FastAPI read endpoints. Reached only by the BFF (not browser-facing).");
+    "Internal data service for reports, portfolio, issues, filters, typed config "
+    + "(pipeline settings, UI preferences, client preferences), and PDF/Excel/CSV/JSON/sitemap "
+    + "report export. Reads Postgres directly and incrementally replaces FastAPI endpoints. "
+    + "Reached only by the BFF (not browser-facing).");
 
 builder.Services.AddDataApplication();
 builder.Services.AddControllers();

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Local test runner — mirrors .github/workflows/ci.yml on your machine.
 # Usage: ./local-test [command] [--no-cov]
-#   (default) all     — Postgres + migrations + Python + web + .NET (Data, Bff, FileService)
+#   (default) all     — Postgres + migrations + Python + web + .NET (Data, Bff)
 #   python            — DB + pytest + CLI smoke only
 #   web               — build, typecheck, lint, vitest (no Postgres)
 #   dotnet            — dotnet test services/WebsiteProfiling.slnx + Bff OpenAPI drift gate
@@ -395,7 +395,7 @@ cmd_help() {
 Local test runner — mirrors .github/workflows/ci.yml
 
   ./local-test              Same as: all
-  ./local-test all          Postgres + migrations + pytest + web + .NET (Data, Bff, FileService)
+  ./local-test all          Postgres + migrations + pytest + web + .NET (Data, Bff)
   ./local-test python       DB + pytest (core + reporting + tools) + browser pytest + CLI smoke
   ./local-test browser      Browser integration pytest only (skips if no Chromium)
   ./local-test web          build, typecheck, lint, vitest (no Docker)

@@ -5,7 +5,7 @@ namespace WebsiteProfiling.Data;
 /// the libpq URI from env <c>DATABASE_URL</c> (the same value the Python services use); it is
 /// converted to an Npgsql keyword connection string by <see cref="NpgsqlDsn.ToNpgsql"/>.
 /// Register via <c>AddWebsiteProfilingDatabase</c>, which allows per-service default overrides
-/// (e.g. FileService's smaller pool) while keeping appsettings and env-var precedence.
+/// (e.g. a smaller pool for a read-mostly service) while keeping appsettings and env-var precedence.
 /// </summary>
 public sealed class DatabaseOptions
 {

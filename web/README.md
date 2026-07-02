@@ -1,6 +1,6 @@
 # Site Audit — Web UI
 
-Vite + React SPA for [Site Audit](../README.md). The browser talks to the .NET **BFF** (`services/Bff/`) for all `/api/*` calls; the BFF proxies to FastAPI, AiService, Data, and FileService.
+Vite + React SPA for [Site Audit](../README.md). The browser talks to the .NET **BFF** (`services/Bff/`) for all `/api/*` calls; the BFF proxies to FastAPI, AiService, and Data.
 
 ## Development
 

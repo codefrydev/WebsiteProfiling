@@ -114,18 +114,18 @@ public class GatewayTests
     }
 
     [Fact]
-    public async Task Csv_export_routes_to_file_service()
+    public async Task Csv_export_routes_to_data_service()
     {
         using var factory = new BffFactory();
         var client = factory.CreateClient();
         var response = await client.GetAsync("/api/report/export?format=csv&reportId=1");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        // Body echoes the forwarded path → proves the BFF rewrote to the FileService csv route.
+        // Body echoes the forwarded path → proves the BFF rewrote to the Data service csv route.
         Assert.Contains("/v1/reports/1/csv", await response.Content.ReadAsStringAsync());
     }
 
     [Fact]
-    public async Task Json_export_routes_to_file_service()
+    public async Task Json_export_routes_to_data_service()
     {
         using var factory = new BffFactory();
         var client = factory.CreateClient();
@@ -135,7 +135,7 @@ public class GatewayTests
     }
 
     [Fact]
-    public async Task Sitemap_export_routes_to_file_service()
+    public async Task Sitemap_export_routes_to_data_service()
     {
         using var factory = new BffFactory();
         var client = factory.CreateClient();
@@ -145,7 +145,7 @@ public class GatewayTests
     }
 
     [Fact]
-    public async Task Export_by_domain_routes_to_file_service()
+    public async Task Export_by_domain_routes_to_data_service()
     {
         using var factory = new BffFactory();
         var client = factory.CreateClient();
@@ -410,7 +410,6 @@ internal sealed class BffFactory(string? secret = null, string? dataRoutes = nul
             {
                 DependencyInjection.FastApiClient,
                 DependencyInjection.FastApiStreamClient,
-                DependencyInjection.FileServiceClient,
             })
             {
                 services.AddHttpClient(name)
@@ -422,8 +421,25 @@ internal sealed class BffFactory(string? secret = null, string? dataRoutes = nul
         });
     }
 
-    private static HttpResponseMessage RespondData(HttpRequestMessage request) =>
-        TestHttpHandler.Json($"{{\"path\":\"{request.RequestUri!.AbsolutePath}\",\"upstream\":\"data\"}}");
+    private static HttpResponseMessage RespondData(HttpRequestMessage request)
+    {
+        var path = request.RequestUri!.AbsolutePath;
+        if (path.Contains("/pdf") || path.Contains("/workbook"))
+        {
+            var resp = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent("%PDF-1.4 fake"u8.ToArray()),
+            };
+            resp.Content.Headers.ContentType = new MediaTypeHeaderValue("application/pdf");
+            resp.Content.Headers.ContentDisposition = new ContentDispositionHeaderValue("attachment")
+            {
+                FileName = "audit.pdf",
+            };
+            return resp;
+        }
+
+        return TestHttpHandler.Json($"{{\"path\":\"{path}\",\"upstream\":\"data\"}}");
+    }
 
     private static HttpResponseMessage Respond(HttpRequestMessage request)
     {

@@ -67,16 +67,20 @@ services:
   data:
     container_name: wp-data
     build:
-      context: ./services
-      dockerfile: Data/Dockerfile
+      context: .
+      dockerfile: services/Data/Dockerfile
     environment:
       DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
       ASPNETCORE_URLS: http://+:8091
+      WEBSITE_PROFILING_ROOT: /app
+      REPORT_API_URL: http://fastapi:8096
     depends_on:
       postgres:
         condition: service_healthy
       migrator:
         condition: service_completed_successfully
+      fastapi:
+        condition: service_started
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8091/health"]
       interval: 30s
@@ -163,31 +167,15 @@ services:
       retries: 3
       start_period: 20s
 
-  files:
-    container_name: wp-files
-    build:
-      context: ./services
-      dockerfile: FileService/Dockerfile
-    environment:
-      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
-      REPORT_API_URL: http://fastapi:8096
-    depends_on:
-      postgres:
-        condition: service_healthy
-      migrator:
-        condition: service_completed_successfully
-      fastapi:
-        condition: service_started
-
   bff:
     container_name: wp-bff
     build:
-      context: ./services/Bff
+      context: .
+      dockerfile: services/Bff/Dockerfile
     ports:
       - "8090:8090"
     environment:
       FASTAPI_URL: http://fastapi:8096
-      FILE_SERVICE_URL: http://files:8097
       DATA_SERVICE_URL: http://data:8091
       AI_SERVICE_URL: http://ai:8092
       INTEGRATIONS_SERVICE_URL: http://integrations:8093
@@ -199,8 +187,6 @@ services:
       INTEGRATIONS_ROUTES: "/api/integrations/google,/api/integrations/bing"
     depends_on:
       fastapi:
-        condition: service_started
-      files:
         condition: service_started
       data:
         condition: service_healthy

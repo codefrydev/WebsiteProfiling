@@ -37,7 +37,7 @@ CI also runs a **Docker** job (image build, browser pytest in container, compose
 
 When adding tools coverage tests, register new files in `scripts/local-test.sh`, `scripts/local-test.ps1`, and `.github/workflows/ci.yml` (see [AGENT.md](AGENT.md)).
 
-**.NET DI validation:** Every API service (`AiService`, `Bff`, `Data`, `FileService`, `IntegrationsService`, `ReportService`) enables `ValidateOnBuild` / `ValidateScopes` in `Program.cs` and includes `ServiceRegistrationValidationTests` — a `WebApplicationFactory` smoke test that builds the real host graph. Add the same when introducing a new .NET API project.
+**.NET DI validation:** Every API service (`AiService`, `Bff`, `Data`, `IntegrationsService`, `ReportService`) enables `ValidateOnBuild` / `ValidateScopes` in `Program.cs` and includes `ServiceRegistrationValidationTests` — a `WebApplicationFactory` smoke test that builds the real host graph. Add the same when introducing a new .NET API project.
 
 ## How to contribute
 
