@@ -25,7 +25,7 @@ public sealed class PipelineOrchestratorService(
             }
         }
 
-        state["run_report"] = "false";
+        state[PipelineStateHelper.Flags.RunReport] = "false";
 
         var enqueue = await pipelineRunService.EnqueueRunAsync(
             request.Command,

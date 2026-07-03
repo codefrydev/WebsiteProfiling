@@ -10,6 +10,8 @@ public sealed class AiServiceEnrichmentClient(
     IHttpClientFactory httpClientFactory,
     IOptions<ReportServiceOptions> options)
 {
+    private const string ClusterKeywordsPath = "/internal/enrichment/cluster-keywords";
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -24,9 +26,7 @@ public sealed class AiServiceEnrichmentClient(
             return [];
         }
 
-        var baseUrl = (Environment.GetEnvironmentVariable("AISERVICE_URL")
-            ?? Environment.GetEnvironmentVariable("AI_SERVICE_URL")
-            ?? options.Value.AiServiceUrl).Trim().TrimEnd('/');
+        var baseUrl = options.Value.AiServiceUrl.Trim().TrimEnd('/');
         if (string.IsNullOrEmpty(baseUrl))
         {
             return [];
@@ -38,7 +38,7 @@ public sealed class AiServiceEnrichmentClient(
         try
         {
             using var response = await client.PostAsJsonAsync(
-                $"{baseUrl}/internal/enrichment/cluster-keywords",
+                $"{baseUrl}{ClusterKeywordsPath}",
                 new { keywords = keywords.Take(200).ToList() },
                 cancellationToken);
             if (!response.IsSuccessStatusCode)

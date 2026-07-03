@@ -85,7 +85,7 @@ public static class DependencyInjection
                     o.IntegrationsServiceUrl = integrations.Trim();
                 }
 
-                var aiService = Environment.GetEnvironmentVariable("AISERVICE_URL");
+                var aiService = Environment.GetEnvironmentVariable("AI_SERVICE_URL");
                 if (!string.IsNullOrWhiteSpace(aiService))
                 {
                     o.AiServiceUrl = aiService.Trim();

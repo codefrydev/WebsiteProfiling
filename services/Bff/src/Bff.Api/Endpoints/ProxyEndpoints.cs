@@ -2,6 +2,7 @@ using Bff.Api.Forwarding;
 using Bff.Application;
 using Bff.Application.Options;
 using Microsoft.Extensions.Options;
+using WebsiteProfiling.Contracts.Report;
 
 namespace Bff.Api.Endpoints;
 
@@ -16,12 +17,12 @@ public static class ProxyEndpoints
     public static void MapProxyEndpoints(this IEndpointRouteBuilder app)
     {
         // Chat: Server-Sent Events stream to AiService (or FastAPI when AI_ROUTES is empty).
-        app.MapPost("/api/chat", (HttpContext ctx) =>
+        app.MapPost(BffRoutes.Chat, (HttpContext ctx) =>
         {
             var upstream = ctx.RequestServices.GetRequiredService<IOptions<UpstreamOptions>>().Value;
             var useAi = upstream.AiRoutes.Any(prefix =>
-                "/api/chat".StartsWith(prefix.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)
-                || prefix.Equals("/api/chat", StringComparison.OrdinalIgnoreCase));
+                BffRoutes.Chat.StartsWith(prefix.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)
+                || prefix.Equals(BffRoutes.Chat, StringComparison.OrdinalIgnoreCase));
             var client = useAi ? DependencyInjection.AiStreamClient : DependencyInjection.FastApiStreamClient;
             var path = useAi ? $"/api/chat/{ctx.Request.QueryString}" : $"/api/chat/{ctx.Request.QueryString}";
             return (IResult)new ForwardingResult(client, path, disableResponseBuffering: true);
@@ -30,11 +31,11 @@ public static class ProxyEndpoints
         // Report export: PDF/CSV/JSON are all rendered by the Data service's ReportExportController
         // (which reads Postgres directly). A missing format defaults to csv (matches the old Python
         // default); any other format is rejected (the Python export route has been removed).
-        app.MapGet("/api/report/export", (HttpContext ctx) =>
+        app.MapGet(BffRoutes.ReportExport, (HttpContext ctx) =>
         {
-            var raw = ctx.Request.Query["format"].ToString();
-            var format = string.IsNullOrEmpty(raw) ? "csv" : raw.ToLowerInvariant();
-            if (format is not ("pdf" or "csv" or "json"))
+            var raw = ctx.Request.Query[ReportExportRoutes.FormatParam].ToString();
+            var format = string.IsNullOrEmpty(raw) ? ReportExportFormats.Csv : raw.ToLowerInvariant();
+            if (!ReportExportFormats.ApiFormats.Contains(format))
             {
                 return Results.Json(
                     new { error = $"Unsupported export format '{format}'. Use pdf, csv, or json." },
@@ -47,7 +48,7 @@ public static class ProxyEndpoints
         });
 
         // Excel workbook export -> Data service's ReportExportController.
-        app.MapGet("/api/report/export-workbook", (HttpContext ctx) =>
+        app.MapGet(BffRoutes.ReportExportWorkbook, (HttpContext ctx) =>
         {
             var path = BuildWorkbookExportPath(ctx.Request.Query);
             return path is null
@@ -57,9 +58,9 @@ public static class ProxyEndpoints
 
         // Sitemap export -> Data service's ReportExportController (was Python via the catch-all;
         // now rendered from Postgres).
-        app.MapGet("/api/report/export-sitemap", (HttpContext ctx) =>
+        app.MapGet(BffRoutes.ReportExportSitemap, (HttpContext ctx) =>
         {
-            var path = BuildReportExportPath(ctx.Request.Query, "sitemap");
+            var path = BuildReportExportPath(ctx.Request.Query, ReportExportFormats.Sitemap);
             return path is null
                 ? Results.Json(new { error = "reportId or domain required for sitemap export" }, statusCode: 400)
                 : (IResult)new ForwardingResult(DependencyInjection.DataClient, path, disableResponseBuffering: true);
@@ -140,15 +141,15 @@ public static class ProxyEndpoints
     // csv/json/sitemap only need disposition. Returns null when neither reportId nor domain is supplied.
     private static string? BuildReportExportPath(IQueryCollection query, string format)
     {
-        var reportId = query["reportId"].ToString();
-        var domain = query["domain"].ToString();
-        var disposition = Defaulted(query["disposition"].ToString(), "attachment");
+        var reportId = query[ReportExportRoutes.ReportIdParam].ToString();
+        var domain = query[ReportExportRoutes.DomainParam].ToString();
+        var disposition = Defaulted(query[ReportExportRoutes.DispositionParam].ToString(), ContentDisposition.Attachment);
 
         string qs;
-        if (format == "pdf")
+        if (format == ReportExportFormats.Pdf)
         {
-            var profile = Defaulted(query["profile"].ToString(), "standard");
-            var branding = Defaulted(query["branding"].ToString(), "true");
+            var profile = Defaulted(query[ReportExportRoutes.ProfileParam].ToString(), PdfProfiles.Standard);
+            var branding = Defaulted(query[ReportExportRoutes.BrandingParam].ToString(), "true");
             qs = $"?profile={Uri.EscapeDataString(profile)}&disposition={Uri.EscapeDataString(disposition)}&branding={Uri.EscapeDataString(branding)}";
         }
         else
@@ -158,29 +159,29 @@ public static class ProxyEndpoints
 
         if (!string.IsNullOrEmpty(reportId))
         {
-            return $"/v1/reports/{Uri.EscapeDataString(reportId)}/{format}{qs}";
+            return $"/{ReportExportRoutes.V1ReportsPrefix}/{Uri.EscapeDataString(reportId)}/{format}{qs}";
         }
         if (!string.IsNullOrEmpty(domain))
         {
-            return $"/v1/reports/by-domain/{Uri.EscapeDataString(domain)}/{format}{qs}";
+            return $"/{ReportExportRoutes.V1ReportsPrefix}/by-domain/{Uri.EscapeDataString(domain)}/{format}{qs}";
         }
         return null;
     }
 
     private static string? BuildWorkbookExportPath(IQueryCollection query)
     {
-        var reportId = query["reportId"].ToString();
-        var domain = query["domain"].ToString();
-        var disposition = Defaulted(query["disposition"].ToString(), "attachment");
+        var reportId = query[ReportExportRoutes.ReportIdParam].ToString();
+        var domain = query[ReportExportRoutes.DomainParam].ToString();
+        var disposition = Defaulted(query[ReportExportRoutes.DispositionParam].ToString(), ContentDisposition.Attachment);
         var qs = $"?disposition={Uri.EscapeDataString(disposition)}";
 
         if (!string.IsNullOrEmpty(reportId))
         {
-            return $"/v1/reports/{Uri.EscapeDataString(reportId)}/workbook{qs}";
+            return $"/{ReportExportRoutes.V1ReportsPrefix}/{Uri.EscapeDataString(reportId)}/{ReportExportFormats.Workbook}{qs}";
         }
         if (!string.IsNullOrEmpty(domain))
         {
-            return $"/v1/reports/by-domain/{Uri.EscapeDataString(domain)}/workbook{qs}";
+            return $"/{ReportExportRoutes.V1ReportsPrefix}/by-domain/{Uri.EscapeDataString(domain)}/{ReportExportFormats.Workbook}{qs}";
         }
         return null;
     }

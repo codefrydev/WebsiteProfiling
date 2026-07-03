@@ -150,7 +150,7 @@ services:
       ASPNETCORE_URLS: http://+:8094
       FASTAPI_URL: http://fastapi:8096
       INTEGRATIONS_SERVICE_URL: http://integrations:8093
-      AISERVICE_URL: http://ai:8092
+      AI_SERVICE_URL: http://ai:8092
       REPORT_SERVICE_USE_PYTHON_BRIDGE: "0"
       USE_FASTAPI_PYTHON_BRIDGE: "1"
       REPORT_SERVICE_WORKER_ENABLED: "1"

@@ -1,3 +1,5 @@
+using Bff.Domain;
+
 namespace Bff.Application.Options;
 
 /// <summary>
@@ -14,13 +16,13 @@ public sealed class AuthOptions
     public string Secret { get; set; } = string.Empty;
 
     /// <summary>Basic-auth username for login (TS AUTH_USER, default "admin").</summary>
-    public string BasicUser { get; set; } = "admin";
+    public string BasicUser { get; set; } = Roles.Admin;
 
     /// <summary>Basic-auth password for login (TS AUTH_PASSWORD). Empty = basic login unavailable.</summary>
     public string BasicPassword { get; set; } = string.Empty;
 
     /// <summary>Role granted on successful login (TS AUTH_DEFAULT_ROLE, default "analyst").</summary>
-    public string DefaultRole { get; set; } = "analyst";
+    public string DefaultRole { get; set; } = Roles.Analyst;
 
     /// <summary>Session lifetime in seconds (TS SESSION_MAX_AGE_S = 7 days).</summary>
     public int SessionMaxAgeSeconds { get; set; } = 60 * 60 * 24 * 7;
