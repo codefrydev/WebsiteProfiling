@@ -1,4 +1,5 @@
 using AiService.Application.Chat;
+using AiService.Domain;
 using AiService.Domain.Models;
 using AiService.Domain.Repositories;
 using AiService.Providers.Chat;
@@ -57,7 +58,7 @@ public sealed class ChatAgentService(
         }
 
         var priorUserMessages = history
-            .Where(m => m.Role == "user")
+            .Where(m => m.Role == ChatRoles.User)
             .Select(m => m.Content)
             .ToList();
 
@@ -142,10 +143,10 @@ public sealed class ChatAgentService(
         var messages = new List<ChatMessage> { new(ChatRole.System, systemPrompt) };
         foreach (var msg in history)
         {
-            if (msg.Role is "user" or "assistant")
+            if (msg.Role is ChatRoles.User or ChatRoles.Assistant)
             {
                 var content = ChatTextSanitize.StripSurrogates(msg.Content);
-                messages.Add(new ChatMessage(msg.Role == "user" ? ChatRole.User : ChatRole.Assistant, content));
+                messages.Add(new ChatMessage(msg.Role == ChatRoles.User ? ChatRole.User : ChatRole.Assistant, content));
             }
         }
 
@@ -156,7 +157,7 @@ public sealed class ChatAgentService(
     {
         for (var i = history.Count - 1; i >= 0; i--)
         {
-            if (history[i].Role == "user")
+            if (history[i].Role == ChatRoles.User)
             {
                 return ChatTextSanitize.StripSurrogates(history[i].Content);
             }

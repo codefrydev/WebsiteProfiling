@@ -1,15 +1,17 @@
 namespace AiService.Domain.Models;
 
+using AiService.Domain;
+
 /// <summary>Singleton <c>llm_settings</c> row plus <c>llm_provider_profiles</c>.</summary>
 public sealed class LlmSettings
 {
     public bool Enabled { get; init; }
 
-    public string Provider { get; init; } = "none";
+    public string Provider { get; init; } = LlmProviders.None;
 
     public string ActiveModel { get; init; } = "";
 
-    public string OllamaBaseUrl { get; init; } = "http://127.0.0.1:11434";
+    public string OllamaBaseUrl { get; init; } = OllamaDefaults.BaseUrl;
 
     public bool EnableNer { get; init; } = true;
 

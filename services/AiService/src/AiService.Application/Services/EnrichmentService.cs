@@ -3,6 +3,7 @@ using System.Text.Json.Nodes;
 using AiService.Application.Json;
 using AiService.Application.Prompts;
 using AiService.Application.Repositories;
+using AiService.Domain;
 using AiService.Domain.Models;
 using AiService.Domain.Repositories;
 using AiService.Providers.Chat;
@@ -82,7 +83,7 @@ public sealed class EnrichmentService(
     private static JsonObject SkippedKeywordClusters(LlmSettings settings)
     {
         var provider = settings.Provider.Trim().ToLowerInvariant();
-        var reason = provider == "ollama"
+        var reason = provider == LlmProviders.Ollama
             ? "Ollama is not reachable. Start the daemon or choose a cloud model."
             : "LLM provider is not reachable for keyword clustering.";
 

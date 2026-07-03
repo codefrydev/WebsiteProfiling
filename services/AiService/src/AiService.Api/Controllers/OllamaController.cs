@@ -1,5 +1,6 @@
 using System.Text.Json.Nodes;
 using AiService.Application.Services;
+using AiService.Domain;
 using AiService.Domain.Repositories;
 using Microsoft.AspNetCore.Mvc;
 
@@ -11,8 +12,6 @@ namespace AiService.Api.Controllers;
 [Tags("Ollama")]
 public sealed class OllamaController : ControllerBase
 {
-    private const string DefaultBase = "http://127.0.0.1:11434";
-
     private readonly ILlmSettingsRepository _settings;
     private readonly OllamaCatalogService _catalog;
 
@@ -27,7 +26,7 @@ public sealed class OllamaController : ControllerBase
     public async Task<IActionResult> Status(CancellationToken cancellationToken)
     {
         var settings = await _settings.LoadAsync(cancellationToken);
-        var baseUrl = (settings.OllamaBaseUrl ?? DefaultBase).Trim().TrimEnd('/');
+        var baseUrl = (settings.OllamaBaseUrl ?? OllamaDefaults.BaseUrl).Trim().TrimEnd('/');
         var configuredModel = (settings.ActiveModel ?? "").Trim();
 
         var result = await _catalog.FetchModelsAsync(baseUrl, cancellationToken);

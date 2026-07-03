@@ -1,5 +1,7 @@
 namespace AiService.Domain.Entities;
 
+using AiService.Domain;
+
 public sealed class ChatMessage
 {
     public long Id { get; set; }
@@ -8,7 +10,7 @@ public sealed class ChatMessage
 
     public ChatSession Session { get; set; } = null!;
 
-    public string Role { get; set; } = "user";
+    public string Role { get; set; } = ChatRoles.User;
 
     public string Content { get; set; } = "";
 

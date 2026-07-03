@@ -3,6 +3,7 @@ using System.Threading.Channels;
 using AiService.Application.Chat;
 using AiService.Application.Dto;
 using AiService.Application.Services;
+using AiService.Domain;
 using AiService.Domain.Repositories;
 using AiService.Tools.Context;
 using AiService.Tools.Options;
@@ -59,7 +60,7 @@ public sealed class ChatController : ControllerBase
             return;
         }
 
-        await _sessions.AppendMessageAsync(body.SessionId, "user", body.Message.Trim(), cancellationToken: cancellationToken);
+        await _sessions.AppendMessageAsync(body.SessionId, ChatRoles.User, body.Message.Trim(), cancellationToken: cancellationToken);
 
         var history = await _sessions.GetMessagesAsync(body.SessionId, cancellationToken: cancellationToken);
         var agentMessages = ChatHelpers.MessagesForAgentContext(history);
@@ -112,7 +113,7 @@ public sealed class ChatController : ControllerBase
             {
                 await _sessions.AppendMessageAsync(
                     body.SessionId,
-                    "assistant",
+                    ChatRoles.Assistant,
                     content: "",
                     toolResultJson: toolResultJson,
                     cancellationToken: CancellationToken.None);
