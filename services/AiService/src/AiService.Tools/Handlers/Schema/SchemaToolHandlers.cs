@@ -89,4 +89,65 @@ public static class SchemaToolHandlers
         var limit = PayloadSliceHelpers.ParseLimit(args["limit"], 30, 30);
         return CrawlSliceHelpers.CrawlFilter(rows, schemaType: schemaType, limit: limit, maxCap: 30);
     }
+
+    public static async Task<JsonObject> GetSeoHealthAsync(
+        AuditToolsDbContext db,
+        AuditToolContext ctx,
+        JsonObject args,
+        CancellationToken cancellationToken)
+    {
+        var scoped = ctx.WithArgs(args);
+        var payload = await scoped.LoadPayloadAsync(db, cancellationToken);
+        if (payload.Count == 0)
+        {
+            return new JsonObject { ["error"] = "no report found" };
+        }
+
+        return PayloadSliceHelpers.PayloadDictSlice(payload, "seo_health");
+    }
+
+    public static async Task<JsonObject> ListSchemaErrorsByTypeAsync(
+        AuditToolsDbContext db,
+        AuditToolContext ctx,
+        JsonObject args,
+        CancellationToken cancellationToken)
+    {
+        var schemaType = (JsonCoercion.AsString(args["schema_type"]) ?? JsonCoercion.AsString(args["type"]) ?? "")
+            .Trim()
+            .ToLowerInvariant();
+
+        var result = await PayloadArrayHelpers.CapPayloadArrayAsync(
+            db,
+            ctx,
+            args,
+            "rich_results_validation",
+            "errors",
+            30,
+            50,
+            cancellationToken,
+            filter: node =>
+            {
+                if (node is not JsonObject error)
+                {
+                    return false;
+                }
+
+                var status = (JsonCoercion.AsString(error["status"]) ?? "").ToLowerInvariant();
+                if (status == "pass")
+                {
+                    return false;
+                }
+
+                if (schemaType.Length == 0)
+                {
+                    return true;
+                }
+
+                var typeValue = (JsonCoercion.AsString(error["type"]) ?? JsonCoercion.AsString(error["schema_type"]) ?? "")
+                    .ToLowerInvariant();
+                return typeValue.Contains(schemaType, StringComparison.Ordinal);
+            });
+
+        return result;
+    }
 }

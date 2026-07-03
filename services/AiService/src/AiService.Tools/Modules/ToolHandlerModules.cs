@@ -1,12 +1,16 @@
 using AiService.Tools.Services.Citations;
+using AiService.Tools.Bridge;
 using AiService.Tools.Handlers.Backlinks;
 using AiService.Tools.Handlers.Core;
+using AiService.Tools.Handlers.Export;
 using AiService.Tools.Handlers.Geo;
 using AiService.Tools.Handlers.Google;
 using AiService.Tools.Handlers.Indexation;
 using AiService.Tools.Handlers.Insight;
 using AiService.Tools.Handlers.Integrations;
 using AiService.Tools.Handlers.Issues;
+using AiService.Tools.Handlers.Drift;
+using AiService.Tools.Handlers.Keywords;
 using AiService.Tools.Handlers.Links;
 using AiService.Tools.Handlers.Performance;
 using AiService.Tools.Handlers.Portfolio;
@@ -100,6 +104,85 @@ public static class ToolHandlerModules
         {
             yield return handler;
         }
+
+        foreach (var handler in ExportModule(serviceProvider))
+        {
+            yield return handler;
+        }
+
+        foreach (var handler in KeywordsModule())
+        {
+            yield return handler;
+        }
+
+        foreach (var handler in DriftModule())
+        {
+            yield return handler;
+        }
+    }
+
+    public static IEnumerable<IToolHandler> DriftModule()
+    {
+        yield return new DelegatingToolHandler("compare_issue_deltas", DriftToolHandlers.CompareIssueDeltasAsync);
+        yield return new DelegatingToolHandler("compare_category_deltas", DriftToolHandlers.CompareCategoryDeltasAsync);
+        yield return new DelegatingToolHandler("compare_seo_health_deltas", DriftToolHandlers.CompareSeoHealthDeltasAsync);
+        yield return new DelegatingToolHandler("compare_lighthouse_deltas", DriftToolHandlers.CompareLighthouseDeltasAsync);
+        yield return new DelegatingToolHandler("compare_url_set_diff", DriftToolHandlers.CompareUrlSetDiffAsync);
+        yield return new DelegatingToolHandler("compare_redirect_deltas", DriftToolHandlers.CompareRedirectDeltasAsync);
+        yield return new DelegatingToolHandler("compare_link_metric_deltas", DriftToolHandlers.CompareLinkMetricDeltasAsync);
+        yield return new DelegatingToolHandler("compare_security_deltas", DriftToolHandlers.CompareSecurityDeltasAsync);
+        yield return new DelegatingToolHandler("compare_duplicate_deltas", DriftToolHandlers.CompareDuplicateDeltasAsync);
+        yield return new DelegatingToolHandler("compare_tech_deltas", DriftToolHandlers.CompareTechDeltasAsync);
+        yield return new DelegatingToolHandler("compare_content_metrics", DriftToolHandlers.CompareContentMetricsAsync);
+        yield return new DelegatingToolHandler("compare_google_metrics", DriftToolHandlers.CompareGoogleMetricsAsync);
+        yield return new DelegatingToolHandler("compare_priority_counts", DriftToolHandlers.ComparePriorityCountsAsync);
+        yield return new DelegatingToolHandler("compare_health_score_delta", DriftToolHandlers.CompareHealthScoreDeltaAsync);
+        yield return new DelegatingToolHandler("compare_indexation_deltas", DriftToolHandlers.CompareIndexationDeltasAsync);
+        yield return new DelegatingToolHandler("compare_orphan_deltas", DriftToolHandlers.CompareOrphanDeltasAsync);
+        yield return new DelegatingToolHandler("compare_reports", DriftToolHandlers.CompareReportsAsync);
+        yield return new DelegatingToolHandler("list_compare_new_issues", DriftToolHandlers.ListCompareNewIssuesAsync);
+        yield return new DelegatingToolHandler("list_compare_resolved_issues", DriftToolHandlers.ListCompareResolvedIssuesAsync);
+        yield return new DelegatingToolHandler("list_compare_new_urls", DriftToolHandlers.ListCompareNewUrlsAsync);
+        yield return new DelegatingToolHandler("list_compare_removed_urls", DriftToolHandlers.ListCompareRemovedUrlsAsync);
+        yield return new DelegatingToolHandler("list_compare_lighthouse_regressions", DriftToolHandlers.ListCompareLighthouseRegressionsAsync);
+        yield return new DelegatingToolHandler("list_compare_traffic_losers", DriftToolHandlers.ListCompareTrafficLosersAsync);
+        yield return new DelegatingToolHandler("get_health_history", DriftToolHandlers.GetHealthHistoryAsync);
+    }
+
+    public static IEnumerable<IToolHandler> KeywordsModule()
+    {
+        yield return new DelegatingToolHandler("get_keyword_summary", KeywordsToolHandlers.GetKeywordSummaryAsync);
+        yield return new DelegatingToolHandler("search_keywords", KeywordsToolHandlers.SearchKeywordsAsync);
+        yield return new DelegatingToolHandler("get_striking_distance_keywords", KeywordsToolHandlers.GetStrikingDistanceKeywordsAsync);
+        yield return new DelegatingToolHandler("get_keyword_cannibalisation", KeywordsToolHandlers.GetKeywordCannibalisationAsync);
+        yield return new DelegatingToolHandler("get_query_page_misalignment", KeywordsToolHandlers.GetQueryPageMisalignmentAsync);
+        yield return new DelegatingToolHandler("list_cannibalisation_queries", KeywordsToolHandlers.ListCannibalisationQueriesAsync);
+        yield return new DelegatingToolHandler("list_misaligned_queries", KeywordsToolHandlers.ListMisalignedQueriesAsync);
+        yield return new DelegatingToolHandler("get_keyword_history", KeywordsToolHandlers.GetKeywordHistoryAsync);
+        yield return new DelegatingToolHandler("get_keyword_serp_overlay", KeywordsToolHandlers.GetKeywordSerpOverlayAsync);
+        yield return new DelegatingToolHandler("list_keywords_by_action", KeywordsToolHandlers.ListKeywordsByActionAsync);
+        yield return new DelegatingToolHandler("list_keywords_by_position", KeywordsToolHandlers.ListKeywordsByPositionAsync);
+        yield return new DelegatingToolHandler("list_keywords_by_impressions", KeywordsToolHandlers.ListKeywordsByImpressionsAsync);
+        yield return new DelegatingToolHandler("get_brand_keyword_split", KeywordsToolHandlers.GetBrandKeywordSplitAsync);
+        yield return new DelegatingToolHandler("list_keywords_by_intent", KeywordsToolHandlers.ListKeywordsByIntentAsync);
+        yield return new DelegatingToolHandler("list_keyword_rank_improvements", KeywordsToolHandlers.ListKeywordRankImprovementsAsync);
+        yield return new DelegatingToolHandler("list_keyword_rank_declines", KeywordsToolHandlers.ListKeywordRankDeclinesAsync);
+        yield return new DelegatingToolHandler("list_keywords_new_to_top_10", KeywordsToolHandlers.ListKeywordsNewToTop10Async);
+        yield return new DelegatingToolHandler("list_keywords_fell_out_of_top_10", KeywordsToolHandlers.ListKeywordsFellOutOfTop10Async);
+        yield return new DelegatingToolHandler("list_cannibalisation_urls", KeywordsToolHandlers.ListCannibalisationUrlsAsync);
+        yield return new DelegatingToolHandler("list_keywords_by_recommended_action", KeywordsToolHandlers.ListKeywordsByRecommendedActionAsync);
+        yield return new DelegatingToolHandler("list_keywords_by_serp_feature", KeywordsToolHandlers.ListKeywordsBySerpFeatureAsync);
+        yield return new DelegatingToolHandler("list_semantic_cluster_queries", KeywordsToolHandlers.ListSemanticClusterQueriesAsync);
+        yield return new DelegatingToolHandler("list_semantic_cluster_pages", KeywordsToolHandlers.ListSemanticClusterPagesAsync);
+        yield return new DelegatingToolHandler("get_keyword_opportunity_score", KeywordsToolHandlers.GetKeywordOpportunityScoreAsync);
+        yield return new DelegatingToolHandler("list_keywords_near_page_one", KeywordsToolHandlers.ListKeywordsNearPageOneAsync);
+        yield return new DelegatingToolHandler("list_keywords_high_impression_zero_click", KeywordsToolHandlers.ListKeywordsHighImpressionZeroClickAsync);
+        yield return new DelegatingToolHandler("list_keywords_by_competition_band", KeywordsToolHandlers.ListKeywordsByCompetitionBandAsync);
+        yield return new DelegatingToolHandler("get_keyword_serp_snapshot", KeywordsToolHandlers.GetKeywordSerpSnapshotAsync);
+        yield return new DelegatingToolHandler("list_keywords_with_ai_overview", KeywordsToolHandlers.ListKeywordsWithAiOverviewAsync);
+        yield return new DelegatingToolHandler("list_keywords_local_pack", KeywordsToolHandlers.ListKeywordsLocalPackAsync);
+        yield return new DelegatingToolHandler("list_keywords_question_intent", KeywordsToolHandlers.ListKeywordsQuestionIntentAsync);
+        yield return new DelegatingToolHandler("list_keywords_commercial_intent", KeywordsToolHandlers.ListKeywordsCommercialIntentAsync);
     }
 
     public static IEnumerable<IToolHandler> CoreModule(IServiceProvider serviceProvider)
@@ -213,6 +296,23 @@ public static class ToolHandlerModules
         yield return new DelegatingToolHandler("get_schema_coverage", SchemaToolHandlers.GetSchemaCoverageAsync);
         yield return new DelegatingToolHandler("list_pages_without_schema", SchemaToolHandlers.ListPagesWithoutSchemaAsync);
         yield return new DelegatingToolHandler("search_pages_by_schema_type", SchemaToolHandlers.SearchPagesBySchemaTypeAsync);
+        yield return new DelegatingToolHandler("get_seo_health", SchemaToolHandlers.GetSeoHealthAsync);
+        yield return new DelegatingToolHandler("list_schema_errors_by_type", SchemaToolHandlers.ListSchemaErrorsByTypeAsync);
+    }
+
+    public static IEnumerable<IToolHandler> ExportModule(IServiceProvider serviceProvider)
+    {
+        yield return new DelegatingToolHandler("list_export_formats", ExportToolHandlers.ListExportFormatsAsync);
+        yield return new DelegatingToolHandler("export_sitemap_xml", ExportToolHandlers.ExportSitemapXmlAsync);
+        yield return new DelegatingToolHandler("export_compare_csv", ExportToolHandlers.ExportCompareCsvAsync);
+        yield return new InjectingToolHandler(
+            "export_list_as_csv",
+            (sp, conn, ctx, args, ct) => ExportToolHandlers.ExportListAsCsvAsync(ctx, args, sp.GetRequiredService<ToolDispatcher>(), ct),
+            serviceProvider);
+        yield return new InjectingToolHandler(
+            "export_audit_report",
+            (sp, conn, ctx, args, ct) => ExportToolHandlers.ExportAuditReportAsync(conn, ctx, args, sp.GetRequiredService<DataServiceClient>(), ct),
+            serviceProvider);
     }
 
     public static IEnumerable<IToolHandler> IndexationModule()
@@ -266,6 +366,35 @@ public static class ToolHandlerModules
         yield return new InjectingToolHandler(
             "get_geo_readiness_score",
             (sp, db, ctx, args, ct) => GeoToolHandlers.GetGeoReadinessScoreAsync(CreateHttp(sp), db, ctx, args, ct),
+            serviceProvider);
+        yield return new InjectingToolHandler(
+            "compare_geo_score_deltas",
+            (sp, db, ctx, args, ct) => GeoToolHandlers.CompareGeoScoreDeltasAsync(CreateHttp(sp), db, ctx, args, ct),
+            serviceProvider);
+
+        yield return new DelegatingToolHandler("get_negative_signals", GeoDetectorsToolHandlers.GetNegativeSignalsAsync);
+        yield return new DelegatingToolHandler("detect_prompt_injection", GeoDetectorsToolHandlers.DetectPromptInjectionAsync);
+        yield return new DelegatingToolHandler("get_rag_chunk_readiness", GeoDetectorsToolHandlers.GetRagChunkReadinessAsync);
+        yield return new DelegatingToolHandler("get_content_decay_signals", GeoDetectorsToolHandlers.GetContentDecaySignalsAsync);
+        yield return new DelegatingToolHandler("get_multimodal_readiness", GeoDetectorsToolHandlers.GetMultimodalReadinessAsync);
+        yield return new DelegatingToolHandler("get_topic_authority", GeoDetectorsToolHandlers.GetTopicAuthorityAsync);
+
+        yield return new DelegatingToolHandler("get_citability_score", GeoCitabilityToolHandlers.GetCitabilityScoreAsync);
+        yield return new DelegatingToolHandler("get_citability_for_url", GeoCitabilityToolHandlers.GetCitabilityForUrlAsync);
+
+        yield return new DelegatingToolHandler("list_pages_missing_howto_schema", GeoListToolHandlers.ListPagesMissingHowtoSchemaAsync);
+        yield return new DelegatingToolHandler("list_pages_ai_citation_signals", GeoListToolHandlers.ListPagesAiCitationSignalsAsync);
+        yield return new InjectingToolHandler(
+            "get_robots_ai_access_score",
+            (sp, db, ctx, args, ct) => GeoListToolHandlers.GetRobotsAiAccessScoreAsync(CreateHttp(sp), db, ctx, args, ct),
+            serviceProvider);
+        yield return new InjectingToolHandler(
+            "list_pages_missing_llms_txt_reference",
+            (sp, db, ctx, args, ct) => GeoListToolHandlers.ListPagesMissingLlmsTxtReferenceAsync(CreateHttp(sp), db, ctx, args, ct),
+            serviceProvider);
+        yield return new InjectingToolHandler(
+            "list_robots_blocked_ai_crawlers",
+            (sp, db, ctx, args, ct) => GeoListToolHandlers.ListRobotsBlockedAiCrawlersAsync(CreateHttp(sp), db, ctx, args, ct),
             serviceProvider);
     }
 

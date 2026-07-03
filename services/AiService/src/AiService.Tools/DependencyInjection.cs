@@ -33,6 +33,17 @@ public static class DependencyInjection
                 }
             });
 
+        services.AddOptions<DataServiceOptions>()
+            .BindConfiguration(DataServiceOptions.SectionName)
+            .PostConfigure(o =>
+            {
+                var dataService = Environment.GetEnvironmentVariable("DATA_SERVICE_URL");
+                if (!string.IsNullOrWhiteSpace(dataService))
+                {
+                    o.BaseUrl = dataService.Trim();
+                }
+            });
+
         services.AddWebsiteProfilingDbContextFactory<AuditToolsDbContext>(noTracking: true);
 
         services.AddSingleton<ToolCatalog>();
@@ -57,6 +68,13 @@ public static class DependencyInjection
             var opts = sp.GetRequiredService<IOptions<FastApiOptions>>().Value;
             client.BaseAddress = NormalizeBaseUri(opts.BaseUrl);
             client.Timeout = TimeSpan.FromSeconds(120);
+        });
+
+        services.AddHttpClient<DataServiceClient>((sp, client) =>
+        {
+            var opts = sp.GetRequiredService<IOptions<DataServiceOptions>>().Value;
+            client.BaseAddress = NormalizeBaseUri(opts.BaseUrl);
+            client.Timeout = TimeSpan.FromSeconds(60);
         });
 
         return services;

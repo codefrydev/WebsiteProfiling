@@ -108,6 +108,109 @@ public sealed class AuditToolContext
         return payload["keywords"] as JsonObject;
     }
 
+    /// <summary>Current (capped, via <see cref="LoadKeywordsAsync"/>) + prior (raw, uncapped) keyword_data
+    /// snapshots for rank-delta tools. Mirrors Python <c>keyword_lists._load_keyword_pair</c>.</summary>
+    public async Task<(JsonObject? Current, JsonObject? Prior)> LoadKeywordSnapshotPairAsync(
+        AuditToolsDbContext db,
+        CancellationToken cancellationToken = default)
+    {
+        var current = await LoadKeywordsAsync(db, cancellationToken);
+        var prior = await ReadKeywordSnapshotAsync(db, offset: 1, cancellationToken);
+        current ??= await ReadKeywordSnapshotAsync(db, offset: 0, cancellationToken);
+        return (current, prior);
+    }
+
+    private async Task<JsonObject?> ReadKeywordSnapshotAsync(AuditToolsDbContext db, int offset, CancellationToken cancellationToken)
+    {
+        if (PropertyId is not int pid)
+        {
+            return null;
+        }
+
+        var raw = await db.KeywordData.AsNoTracking()
+            .Where(x => x.PropertyId == pid)
+            .OrderByDescending(x => x.Id)
+            .Skip(Math.Max(0, offset))
+            .Select(x => x.Data)
+            .FirstOrDefaultAsync(cancellationToken);
+        return ParseJsonObjectOrNull(raw);
+    }
+
+    /// <summary>Time-series rows for a single keyword from <c>keyword_history</c>. Mirrors Python
+    /// <c>integrations.google.keyword_store.read_keyword_history</c>.</summary>
+    public async Task<IReadOnlyList<JsonObject>> LoadKeywordHistoryAsync(
+        AuditToolsDbContext db,
+        string keyword,
+        int limit,
+        CancellationToken cancellationToken = default)
+    {
+        if (PropertyId is not int pid)
+        {
+            return [];
+        }
+
+        var rows = await db.KeywordHistory.AsNoTracking()
+            .Where(x => x.PropertyId == pid && x.Keyword == keyword)
+            .OrderByDescending(x => x.Id)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+        rows.Reverse();
+        return rows.Select(r => new JsonObject
+        {
+            ["fetched_at"] = r.FetchedAt.ToString("O"),
+            ["position"] = r.Position,
+            ["clicks"] = r.Clicks,
+            ["impressions"] = r.Impressions,
+            ["ctr"] = r.Ctr,
+        }).ToList();
+    }
+
+    /// <summary>Current + baseline report payloads for compare/drift tools. Mirrors Python
+    /// <c>compare.compare_helpers.load_compare_pair</c>.</summary>
+    public async Task<(JsonObject? Current, JsonObject? Baseline, int? CurrentReportId, int? BaselineReportId, string? Error)> LoadComparePairAsync(
+        AuditToolsDbContext db,
+        JsonObject args,
+        CancellationToken cancellationToken = default)
+    {
+        if (args["baseline_report_id"] is null)
+        {
+            return (null, null, null, null, "baseline_report_id is required");
+        }
+
+        var baselineRaw = WebsiteProfiling.Contracts.Json.JsonCoercion.AsString(args["baseline_report_id"]) ?? args["baseline_report_id"]!.ToString();
+        if (!int.TryParse(baselineRaw, out var baselineReportId))
+        {
+            return (null, null, null, null, "invalid baseline_report_id");
+        }
+
+        var currentReportId = ReportId;
+        if (currentReportId is null)
+        {
+            currentReportId = await db.ReportPayloads.AsNoTracking()
+                .OrderByDescending(x => x.Id)
+                .Select(x => (int?)x.Id)
+                .FirstOrDefaultAsync(cancellationToken);
+            if (currentReportId is null)
+            {
+                return (null, null, null, null, "no current report found");
+            }
+        }
+
+        var current = await new AuditToolContext { ReportId = currentReportId }.LoadPayloadAsync(db, cancellationToken);
+        var baseline = await new AuditToolContext { ReportId = baselineReportId }.LoadPayloadAsync(db, cancellationToken);
+        if (current.Count == 0)
+        {
+            return (null, null, null, null, $"report {currentReportId} not found");
+        }
+
+        if (baseline.Count == 0)
+        {
+            return (null, null, null, null, $"report {baselineReportId} not found");
+        }
+
+        return (current, baseline, currentReportId, baselineReportId, null);
+    }
+
     public async Task<JsonObject?> LoadGscLinksAsync(AuditToolsDbContext db, CancellationToken cancellationToken = default)
     {
         if (PropertyId is int pid)

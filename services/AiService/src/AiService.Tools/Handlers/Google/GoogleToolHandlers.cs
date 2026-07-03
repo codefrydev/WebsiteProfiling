@@ -381,7 +381,7 @@ public static class GoogleToolHandlers
         };
     }
 
-    private static List<JsonObject> GscRows(JsonObject data, string key)
+    public static List<JsonObject> GscRows(JsonObject data, string key)
     {
         var gsc = ResolveGscBlock(data);
         JsonArray? array = null;

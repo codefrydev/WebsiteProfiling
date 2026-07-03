@@ -246,7 +246,6 @@ def build_parser() -> argparse.ArgumentParser:
             "gsc-links-import",
             "page-live",
             "page-coach",
-            "chat",
             "page-markdown",
             "help",
         ],
@@ -362,7 +361,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--stdin-json",
         action="store_true",
         dest="stdin_json",
-        help="For 'chat' and 'help' commands: read JSON payload from stdin and emit NDJSON events.",
+        help="For 'help' command: read JSON payload from stdin and emit NDJSON events.",
     )
     parser.add_argument(
         "--resume-run-id",

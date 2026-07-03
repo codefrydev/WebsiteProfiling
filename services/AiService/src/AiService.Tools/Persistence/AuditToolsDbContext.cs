@@ -25,7 +25,28 @@ public sealed class KeywordDataRow
 
     public long? PropertyId { get; set; }
 
+    public DateTimeOffset FetchedAt { get; set; }
+
     public string Data { get; set; } = "{}";
+}
+
+public sealed class KeywordHistoryRow
+{
+    public long Id { get; set; }
+
+    public long? PropertyId { get; set; }
+
+    public string Keyword { get; set; } = "";
+
+    public DateTimeOffset FetchedAt { get; set; }
+
+    public double? Position { get; set; }
+
+    public int? Clicks { get; set; }
+
+    public int? Impressions { get; set; }
+
+    public double? Ctr { get; set; }
 }
 
 public sealed class GscLinksDataRow
@@ -80,6 +101,8 @@ public sealed class AuditHealthSnapshotRow
 
     public DateTimeOffset GeneratedAt { get; set; }
 
+    public string CategoryScores { get; set; } = "{}";
+
     public string IssueCounts { get; set; } = "{}";
 }
 
@@ -103,6 +126,8 @@ public sealed class AuditToolsDbContext(DbContextOptions<AuditToolsDbContext> op
     public DbSet<GoogleDataRow> GoogleData => Set<GoogleDataRow>();
 
     public DbSet<KeywordDataRow> KeywordData => Set<KeywordDataRow>();
+
+    public DbSet<KeywordHistoryRow> KeywordHistory => Set<KeywordHistoryRow>();
 
     public DbSet<GscLinksDataRow> GscLinksData => Set<GscLinksDataRow>();
 
@@ -141,7 +166,22 @@ public sealed class AuditToolsDbContext(DbContextOptions<AuditToolsDbContext> op
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).HasColumnName("id");
             e.Property(x => x.PropertyId).HasColumnName("property_id");
+            e.Property(x => x.FetchedAt).HasColumnName("fetched_at");
             e.Property(x => x.Data).HasColumnName("data").HasColumnType("jsonb");
+        });
+
+        modelBuilder.Entity<KeywordHistoryRow>(e =>
+        {
+            e.ToTable("keyword_history");
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.PropertyId).HasColumnName("property_id");
+            e.Property(x => x.Keyword).HasColumnName("keyword");
+            e.Property(x => x.FetchedAt).HasColumnName("fetched_at");
+            e.Property(x => x.Position).HasColumnName("position");
+            e.Property(x => x.Clicks).HasColumnName("clicks");
+            e.Property(x => x.Impressions).HasColumnName("impressions");
+            e.Property(x => x.Ctr).HasColumnName("ctr");
         });
 
         modelBuilder.Entity<GscLinksDataRow>(e =>
@@ -191,6 +231,7 @@ public sealed class AuditToolsDbContext(DbContextOptions<AuditToolsDbContext> op
             e.Property(x => x.ReportId).HasColumnName("report_id");
             e.Property(x => x.HealthScore).HasColumnName("health_score");
             e.Property(x => x.GeneratedAt).HasColumnName("generated_at");
+            e.Property(x => x.CategoryScores).HasColumnName("category_scores").HasColumnType("jsonb");
             e.Property(x => x.IssueCounts).HasColumnName("issue_counts").HasColumnType("jsonb");
         });
 

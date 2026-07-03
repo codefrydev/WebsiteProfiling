@@ -688,4 +688,92 @@ public static class GeoToolHandlers
         => Regex.Matches(text, @"[a-z0-9]{3,}", RegexOptions.IgnoreCase)
             .Select(m => m.Value.ToLowerInvariant())
             .ToList();
+
+    /// <summary>GEO readiness score drift: compares current vs baseline report via live HTTP checks
+    /// per call. Ports Python <c>compare/compare_slices.py::compare_geo_score_deltas</c> — classified
+    /// under the <c>geo</c> domain, not <c>drift</c>, despite living alongside the report-compare tools.</summary>
+    public static async Task<JsonObject> CompareGeoScoreDeltasAsync(
+        HttpClient http,
+        AuditToolsDbContext db,
+        AuditToolContext ctx,
+        JsonObject args,
+        CancellationToken cancellationToken)
+    {
+        var (current, baseline, curRid, baseRid, error) = await ctx.WithArgs(args).LoadComparePairAsync(db, args, cancellationToken);
+        if (error is not null)
+        {
+            return new JsonObject { ["error"] = error };
+        }
+
+        var currentDomain = JsonCoercion.AsString(current!["domain"]) ?? JsonCoercion.AsString(current["property_domain"]) ?? "";
+        var baselineDomain = JsonCoercion.AsString(baseline!["domain"]) ?? JsonCoercion.AsString(baseline["property_domain"]) ?? currentDomain;
+
+        async Task<JsonObject> GeoSnapshotAsync(string domain)
+        {
+            var llmsTask = GeoAuditHelpers.FetchLlmsTxtAsync(http, domain, cancellationToken);
+            var robotsTask = GeoAuditHelpers.ScoreRobotsAiAccessAsync(http, domain, cancellationToken);
+            var metaTask = GeoAuditHelpers.ScoreMetaSignalsAsync(http, domain, cancellationToken);
+            var freshnessTask = GeoAuditHelpers.ScoreFreshnessSignalsAsync(http, domain, cancellationToken);
+            var discoveryTask = GeoAuditHelpers.FetchAiDiscoveryAsync(http, domain, cancellationToken);
+            await Task.WhenAll(llmsTask, robotsTask, metaTask, freshnessTask, discoveryTask);
+
+            var llms = llmsTask.Result;
+            var llmsFound = JsonCoercion.IsTruthy(llms["found"]);
+            var llmsScore = llmsFound ? JsonCoercion.AsInt((llms["depth"] as JsonObject)?["depth_score"]) ?? 0 : 0;
+            var robotsScore = JsonCoercion.AsInt(robotsTask.Result["robots_score"]) ?? 0;
+            var metaScore = JsonCoercion.AsInt(metaTask.Result["meta_score"]) ?? 0;
+            var freshScore = JsonCoercion.AsInt(freshnessTask.Result["freshness_score"]) ?? 0;
+            var discScore = JsonCoercion.AsInt(discoveryTask.Result["discovery_score"]) ?? 0;
+            return new JsonObject
+            {
+                ["llms_txt_score"] = llmsScore,
+                ["llms_txt_found"] = llmsFound,
+                ["robots_score"] = robotsScore,
+                ["meta_score"] = metaScore,
+                ["freshness_score"] = freshScore,
+                ["ai_discovery_score"] = discScore,
+                ["total_score"] = llmsScore + robotsScore + metaScore + freshScore + discScore,
+            };
+        }
+
+        var curSnapTask = GeoSnapshotAsync(currentDomain);
+        var baseSnapTask = GeoSnapshotAsync(baselineDomain);
+        await Task.WhenAll(curSnapTask, baseSnapTask);
+        var curSnap = curSnapTask.Result;
+        var baseSnap = baseSnapTask.Result;
+
+        var deltas = new JsonObject();
+        foreach (var (key, curNode) in curSnap)
+        {
+            if (key.EndsWith("_found", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var curVal = JsonCoercion.AsDouble(curNode);
+            var baseVal = JsonCoercion.AsDouble(baseSnap[key]);
+            double? delta = curVal is not null && baseVal is not null ? curVal - baseVal : null;
+            deltas[key] = new JsonObject
+            {
+                ["current"] = curNode?.DeepClone(),
+                ["baseline"] = baseSnap[key]?.DeepClone(),
+                ["delta"] = delta,
+                ["direction"] = delta is > 0 ? "improved" : delta is < 0 ? "regressed" : "unchanged",
+            };
+        }
+
+        var totalDelta = (JsonCoercion.AsInt(curSnap["total_score"]) ?? 0) - (JsonCoercion.AsInt(baseSnap["total_score"]) ?? 0);
+        return new JsonObject
+        {
+            ["current_report_id"] = curRid,
+            ["baseline_report_id"] = baseRid,
+            ["current_generated_at"] = current["report_generated_at"]?.DeepClone(),
+            ["baseline_generated_at"] = baseline["report_generated_at"]?.DeepClone(),
+            ["current_domain"] = currentDomain,
+            ["geo_deltas"] = deltas,
+            ["total_score_delta"] = totalDelta,
+            ["regression_detected"] = totalDelta < -3,
+            ["provenance"] = "Estimated",
+        };
+    }
 }
