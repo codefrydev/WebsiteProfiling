@@ -4675,6 +4675,7 @@
         "askCategoryDrop": "What caused {category} to drop compared to the baseline audit?",
         "showAllIssues": "List all issues with full details",
         "showAll": "Show all",
+        "askGenericShowAll": "Show all results for {title}",
         "statusBreakdown": "HTTP status breakdown",
         "successRate": "Success rate",
         "healthScoreAxis": "Health score",

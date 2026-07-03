@@ -12,6 +12,9 @@ public static class ToolResultCompactor
     public const int DefaultLlmListLimit = 20;
     public const int DefaultUiListLimit = 50;
 
+    /// <summary>Caps the inline artifact <c>content</c> passed to the UI for preview (ArtifactStore inlines up to 512KB).</summary>
+    private const int MaxInlineContentChars = 200_000;
+
     private static readonly HashSet<string> ExportTools = new(StringComparer.Ordinal)
     {
         "export_audit_report",
@@ -52,7 +55,7 @@ public static class ToolResultCompactor
 
         if (ExportTools.Contains(toolName) || full["artifact_id"] is not null)
         {
-            return CompactExport(full);
+            return CompactExport(full, forUi);
         }
 
         if (WorkflowTools.Contains(toolName))
@@ -100,7 +103,7 @@ public static class ToolResultCompactor
         return output;
     }
 
-    private static JsonObject CompactExport(JsonObject full)
+    private static JsonObject CompactExport(JsonObject full, bool forUi)
     {
         var compact = new JsonObject();
         foreach (var key in new[] { "artifact_id", "format", "filename", "mime_type", "ready", "url", "error", "hint", "message" })
@@ -109,6 +112,17 @@ public static class ToolResultCompactor
             {
                 compact[key] = value.DeepClone();
             }
+        }
+
+        // Small text/HTML/JSON artifacts are inlined by ArtifactStore for preview; the LLM
+        // doesn't need the raw bytes in its follow-up context, only the UI does.
+        if (forUi
+            && full.TryGetPropertyValue("content", out var content)
+            && content is JsonValue contentValue
+            && contentValue.TryGetValue<string>(out var text)
+            && text.Length <= MaxInlineContentChars)
+        {
+            compact["content"] = text;
         }
 
         if (compact.Count == 0)

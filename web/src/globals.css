@@ -649,6 +649,16 @@ code {
   overflow: auto;
 }
 
+.chat-mermaid-diagram {
+  max-height: 24rem;
+  overflow: auto;
+}
+
+.chat-mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
 /* Focus visibility for keyboard users */
 .nav-btn:focus-visible,
 button:focus-visible,
