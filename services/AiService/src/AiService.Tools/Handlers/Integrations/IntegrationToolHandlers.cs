@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
+using AiService.Domain;
 using AiService.Tools.Services.Citations;
 using AiService.Tools.Context;
 using AiService.Tools.Slice;
@@ -39,7 +40,7 @@ public static class IntegrationToolHandlers
         var brand = JsonCoercion.AsString(args["brand"])?.Trim() ?? "";
         var query = JsonCoercion.AsString(args["query"])?.Trim() ?? "";
         var domain = await scoped.ResolvePropertyDomainAsync(db, cancellationToken) ?? "";
-        var provider = (JsonCoercion.AsString(args["provider"]) ?? "perplexity").Trim().ToLowerInvariant();
+        var provider = (JsonCoercion.AsString(args["provider"]) ?? LlmProviders.Perplexity).Trim().ToLowerInvariant();
         var apiKey = JsonCoercion.AsString(args["api_key"]) ?? JsonCoercion.AsString(args["apiKey"]);
 
         if (string.IsNullOrEmpty(brand) && string.IsNullOrEmpty(domain))

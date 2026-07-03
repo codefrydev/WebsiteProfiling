@@ -22,6 +22,7 @@ public sealed class McpBearerAuthFilter(
     ILogger<McpBearerAuthFilter> logger) : IEndpointFilter
 {
     private const string CacheKey = "mcp-bearer-token";
+    private const string BearerScheme = "Bearer ";
     private static readonly TimeSpan TokenCacheTtl = TimeSpan.FromSeconds(30);
 
     public async ValueTask<object?> InvokeAsync(
@@ -41,8 +42,8 @@ public sealed class McpBearerAuthFilter(
         }
 
         var header = context.HttpContext.Request.Headers.Authorization.ToString();
-        if (!header.StartsWith("Bearer ", StringComparison.Ordinal)
-            || !FixedTimeStringEquals(header["Bearer ".Length..], token))
+        if (!header.StartsWith(BearerScheme, StringComparison.Ordinal)
+            || !FixedTimeStringEquals(header[BearerScheme.Length..], token))
         {
             return Results.Unauthorized();
         }

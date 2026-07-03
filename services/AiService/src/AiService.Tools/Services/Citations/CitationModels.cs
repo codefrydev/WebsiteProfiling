@@ -1,3 +1,5 @@
+using AiService.Domain;
+
 namespace AiService.Tools.Services.Citations;
 
 public sealed record CitationResult(
@@ -15,5 +17,5 @@ public sealed record CitationCheckRequest(
     string Query,
     string Brand,
     string Domain,
-    string Provider = "perplexity",
+    string Provider = LlmProviders.Perplexity,
     string? ApiKey = null);
