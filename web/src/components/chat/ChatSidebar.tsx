@@ -13,7 +13,6 @@ import {
 import AppLogo from '@/components/AppLogo';
 import ThemeToggle from '@/components/ThemeToggle';
 import type { ChatLayoutState } from '@/components/chat/ChatShell';
-import { formatChatPropertyOption } from '@/lib/chatPropertyLabel';
 import {
   CHAT_SIDEBAR_NAV_IDS,
   isMiniNavLinkActive,
@@ -37,9 +36,6 @@ export interface PropertyOption {
 export interface ChatSidebarProps extends ChatLayoutState {
   sessions: ChatSessionItem[];
   activeSessionId: number | null;
-  properties: PropertyOption[];
-  propertyId: number | null;
-  onPropertyChange: (id: number | null) => void;
   onNewChat: () => void;
   onSelect: (id: number) => void;
   onDelete: (id: number) => void;
@@ -112,9 +108,6 @@ function SettingsMenu({ onClose }: { onClose: () => void }) {
 export default function ChatSidebar({
   sessions,
   activeSessionId,
-  properties,
-  propertyId,
-  onPropertyChange,
   onNewChat,
   onSelect,
   onDelete,
@@ -253,34 +246,6 @@ export default function ChatSidebar({
             <MessageSquarePlus className="h-4 w-4" />
             {c.newChat}
           </button>
-
-          <div>
-            <label
-              htmlFor="chat-property-select"
-              className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
-            >
-              {c.propertyLabel}
-            </label>
-            <select
-              id="chat-property-select"
-              value={propertyId ?? ''}
-              onChange={(e) => onPropertyChange(Number(e.target.value) || null)}
-              className="w-full truncate rounded-lg border border-default bg-[var(--chat-bg)] px-2.5 py-1.5 text-xs text-foreground"
-            >
-              {!properties.length ? (
-                <option value="">{c.noProperties}</option>
-              ) : (
-                <>
-                  <option value="">{c.selectProperty}</option>
-                  {properties.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {formatChatPropertyOption(p)}
-                    </option>
-                  ))}
-                </>
-              )}
-            </select>
-          </div>
         </div>
 
         <nav className="border-b border-muted/30 px-2 py-2">

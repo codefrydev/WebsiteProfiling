@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
+import Button from '@/components/Button';
 import ChatContextBar from '@/components/chat/ChatContextBar';
 import ChatShell from '@/components/chat/ChatShell';
 import ChatSidebar from '@/components/chat/ChatSidebar';
@@ -21,8 +22,10 @@ import ChatApiKeyBanner from '@/components/chat/ChatApiKeyBanner';
 import ChatActivityBar from '@/components/chat/ChatActivityBar';
 import { ChatFollowUpProvider } from '@/components/chat/ChatFollowUpContext';
 import { usePipeline } from '@/context/PipelineContext';
-import { apiUrl, apiFetch } from '@/lib/publicBase';
-import { strings } from '@/lib/strings';
+import { apiUrl, apiFetch, readApiErrorMessage } from '@/lib/publicBase';
+import { hostsMatch } from '@/lib/domainSlug';
+import { extractDomainFromText } from '@/lib/chatDomainDetect';
+import { format, strings } from '@/lib/strings';
 import { statusFromSseEvent } from '@/components/chat/chatStatusLabels';
 import { consumeChatSse, resolveToolActivityIndex } from '@/components/chat/parseChatSse';
 import { toolEventsToActivity } from '@/components/chat/deriveChatBlocks';
@@ -81,6 +84,11 @@ export default function ChatPage() {
   const [elapsedSec, setElapsedSec] = useState(0);
   const [composerDraft, setComposerDraft] = useState('');
   const [urlSyncEnabled, setUrlSyncEnabled] = useState(false);
+  const [pendingDomainConfirm, setPendingDomainConfirm] = useState<{
+    domain: string;
+    message: string;
+  } | null>(null);
+  const [creatingProperty, setCreatingProperty] = useState(false);
   const messagesLoadGen = useRef(0);
   const sessionsLoadGen = useRef(0);
   const sessionRestoredForProperty = useRef<number | null>(null);
@@ -361,31 +369,33 @@ export default function ChatPage() {
   // Abort any in-flight chat stream when the page unmounts.
   useEffect(() => () => abortRef.current?.abort(), []);
 
-  const createSession = async (): Promise<number | null> => {
-    if (!propertyId) return null;
+  const createSession = async (pid: number): Promise<number | null> => {
     const res = await apiFetch(apiUrl('/chat/sessions'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ propertyId }),
+      body: JSON.stringify({ propertyId: pid }),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { id: number };
-    await loadSessions(propertyId);
+    await loadSessions(pid);
     return data.id;
   };
 
-  const handleNewChat = async () => {
-    const id = await createSession();
-    if (id) {
-      setSessionId(id);
-      setMessages([]);
-      setLoadingMessages(false);
-      setError('');
-    }
+  // Deliberately doesn't create a session (or require a property) up front — the
+  // first message the user sends decides both, so typing a different domain here
+  // can still switch context instead of being locked to whatever was last active.
+  const handleNewChat = () => {
+    abortRef.current?.abort();
+    setSessionId(null);
+    setMessages([]);
+    setLoadingMessages(false);
+    setError('');
+    setPendingDomainConfirm(null);
   };
 
-  const handleSend = async (text: string) => {
-    if (!propertyId || !llmEnabled) return;
+  const handleSend = async (text: string, propertyIdOverride?: number) => {
+    const pid = propertyIdOverride ?? propertyId;
+    if (!pid || !llmEnabled) return;
     messagesLoadGen.current += 1;
     setError('');
     setActivityText(c.sending);
@@ -394,7 +404,7 @@ export default function ChatPage() {
 
     let sid = sessionId;
     if (!sid) {
-      sid = await createSession();
+      sid = await createSession(pid);
       if (!sid) {
         setBusy(false);
         setError(c.sessionError);
@@ -419,7 +429,7 @@ export default function ChatPage() {
       const res = await apiFetch(apiUrl('/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: sid, propertyId, message: text }),
+        body: JSON.stringify({ sessionId: sid, propertyId: pid, message: text }),
         signal: controller.signal,
       });
 
@@ -578,8 +588,8 @@ export default function ChatPage() {
           toolActivity: tools,
         });
       }
-      if (sid && propertyId) await loadMessages(sid, propertyId);
-      if (propertyId) await loadSessions(propertyId);
+      if (sid && pid) await loadMessages(sid, pid);
+      if (pid) await loadSessions(pid);
     } catch (e) {
       // Aborted (session switch / delete / unmount): not a user-facing error.
       // The message-load effect re-runs once busy clears and restores the
@@ -619,6 +629,68 @@ export default function ChatPage() {
     }
   };
 
+  // No property picker: a new conversation's first message decides the property.
+  // If it names a domain, resolve (or offer to create) that property; otherwise
+  // fall back to whatever property is already active (if any).
+  const trySendMessage = (text: string) => {
+    const domain = !sessionId ? extractDomainFromText(text) : null;
+
+    if (domain) {
+      const existing = properties.find((p) => hostsMatch(p.canonical_domain, domain));
+      const id = existing ? normalizePropertyId(existing.id) : null;
+      if (id != null) {
+        if (id !== propertyId) setPropertyId(id);
+        void handleSend(text, id);
+        return;
+      }
+      setError('');
+      setPendingDomainConfirm({ domain, message: text });
+      return;
+    }
+
+    if (!propertyId) {
+      setError(c.chatNoDomainHint);
+      return;
+    }
+
+    setPendingDomainConfirm(null);
+    void handleSend(text);
+  };
+
+  const confirmCreateDomain = async () => {
+    if (!pendingDomainConfirm) return;
+    const { domain, message } = pendingDomainConfirm;
+    setCreatingProperty(true);
+    setError('');
+    try {
+      const res = await apiFetch(apiUrl('/properties'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: domain,
+          canonical_domain: domain,
+          site_url: `https://${domain}`,
+        }),
+      });
+      const data = (await res.json().catch(() => ({}))) as { id?: number; error?: string };
+      if (!res.ok) throw new Error(readApiErrorMessage(data, res));
+      const id = normalizePropertyId(data.id);
+      if (id == null) throw new Error('Property creation did not return an id');
+      setProperties((prev) =>
+        prev.some((p) => propertyIdsEqual(p.id, id))
+          ? prev
+          : [...prev, { id, name: domain, canonical_domain: domain }],
+      );
+      setPropertyId(id);
+      setPendingDomainConfirm(null);
+      void handleSend(message, id);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to create property');
+    } finally {
+      setCreatingProperty(false);
+    }
+  };
+
   const modelPicker = llmEnabled ? (
     <>
       <ChatUnlimitedToolsToggle disabled={busy} />
@@ -637,15 +709,44 @@ export default function ChatPage() {
 
   const composer = (
     <ChatComposer
-      disabled={!llmEnabled || !propertyId || needsApiKey}
+      disabled={!llmEnabled || needsApiKey || creatingProperty}
       busy={busy}
-      onSend={(msg) => void handleSend(msg)}
+      onSend={trySendMessage}
       trailing={modelPicker}
       variant={isHero ? 'hero' : 'dock'}
       draftMessage={composerDraft}
       onDraftApplied={() => setComposerDraft('')}
     />
   );
+
+  const domainConfirmStrip = pendingDomainConfirm ? (
+    <div className="mx-auto w-full max-w-3xl px-4 pb-2">
+      <div className="rounded-xl border border-blue-500/30 bg-blue-500/5 p-3 text-sm">
+        <p className="text-foreground">
+          {format(c.domainConfirmPrompt, { domain: pendingDomainConfirm.domain })}
+        </p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <Button
+            variant="primary"
+            onClick={() => void confirmCreateDomain()}
+            disabled={creatingProperty}
+            loading={creatingProperty}
+          >
+            {creatingProperty
+              ? c.domainConfirmCreating
+              : format(c.domainConfirmButton, { domain: pendingDomainConfirm.domain })}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => setPendingDomainConfirm(null)}
+            disabled={creatingProperty}
+          >
+            {c.domainConfirmCancel}
+          </Button>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   const apiKeyStrip = needsApiKey ? (
     <div className="mx-auto w-full max-w-3xl px-4 pb-2">
@@ -671,24 +772,7 @@ export default function ChatPage() {
           {...layout}
           sessions={sessions}
           activeSessionId={sessionId}
-          properties={properties}
-          propertyId={propertyId}
-          onPropertyChange={(id) => {
-            abortRef.current?.abort();
-            sessionRestoredForProperty.current = null;
-            setUrlSyncEnabled(false);
-            setPropertyId(id);
-            setSessionId(null);
-            setMessages([]);
-            setLoadingMessages(false);
-            messagesLoadGen.current += 1;
-            setError('');
-            // Clear the old session from the URL now — otherwise the URL-restore effect
-            // resolves it once the new property's sessions load, sees it belongs to the
-            // previous property, and snaps propertyId back via resolveSessionFromUrl.
-            replaceChatUrl(id, null);
-          }}
-          onNewChat={() => void handleNewChat()}
+          onNewChat={handleNewChat}
           onSelect={(id) => {
             if (id !== sessionId) abortRef.current?.abort();
             setSessionId(id);
@@ -731,11 +815,13 @@ export default function ChatPage() {
                   {c.emptySubline}
                 </p>
                 <div className="mt-10 w-full space-y-3">
+                  {domainConfirmStrip}
+                  {errorStrip}
                   {apiKeyStrip}
                   {composer}
                 </div>
                 <SuggestedPrompts
-                  onSelect={(p) => void handleSend(p)}
+                  onSelect={trySendMessage}
                   disabled={busy || !propertyId || needsApiKey}
                   crawlEnabled={crawlChatEnabled}
                 />
@@ -752,6 +838,7 @@ export default function ChatPage() {
               )}
               <div className="chat-composer-dock">
                 <ChatActivityBar busy={busy} statusText={activityText} elapsedSec={elapsedSec} />
+                {domainConfirmStrip}
                 {apiKeyStrip}
                 {errorStrip}
                 {composer}

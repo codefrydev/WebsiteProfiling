@@ -4,20 +4,23 @@ import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { Link } from 'react-router-dom';
 import {
   AlertOctagon,
+  AlertTriangle,
   ArrowLeftRight,
   ChevronRight,
+  Info,
   Sparkles,
   TrendingDown,
   TrendingUp,
 } from 'lucide-react';
 import type { ReportPayload } from '@/types';
 import { strings, format } from '@/lib/strings';
-import { Card, Badge } from '@/components';
+import { Card, Badge, StatCard } from '@/components';
 import { Skeleton } from '@/components/Skeleton';
 import { CompactAreaSparkline } from '@/components/charts/compact';
 import { useInView } from '@/lib/useInView';
 import { CategoryScoreGauge } from '@/components/charts/CategoryScoreGauge';
 import { countIssuesByPriority } from './overviewAtAGlanceMetrics';
+import { PRIORITY_CONFIG, PRIORITY_ORDER, normalizePriority } from '@/lib/issuePriority';
 
 const vo = strings.views.overview;
 
@@ -45,6 +48,13 @@ function priorityBadgeVariant(priority?: string): string {
   return 'low';
 }
 
+function priorityIconFor(priority?: string) {
+  const p = normalizePriority(priority);
+  if (p === 'Critical') return AlertOctagon;
+  if (p === 'Low') return Info;
+  return AlertTriangle;
+}
+
 function ExecutiveIssueRow({
   issue,
   issuesHref,
@@ -56,12 +66,19 @@ function ExecutiveIssueRow({
   const scopeLabel = issue.url
     ? issue.url.replace(/^https?:\/\//, '').slice(0, 72)
     : vo.issueSitewideScope;
+  const priorityCfg = PRIORITY_CONFIG[normalizePriority(issue.priority)];
+  const PriorityIcon = priorityIconFor(issue.priority);
 
   return (
     <Link
       to={issuesHref}
       className="group flex items-center gap-3 rounded-lg border border-default/60 bg-brand-900/30 px-3 py-2.5 transition-colors hover:border-blue-500/30 hover:bg-brand-900/50"
     >
+      <div
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${priorityCfg.bg} ${priorityCfg.text}`}
+      >
+        <PriorityIcon className="h-4 w-4" aria-hidden />
+      </div>
       <Badge variant={priorityBadgeVariant(issue.priority)} label={issue.priority || vo.issueUnknownPriority} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm text-foreground">{issue.message || vo.issueUntitled}</p>
@@ -190,100 +207,114 @@ export function OverviewExecutiveSummary({
   return (
     <div className="space-y-4">
       {(currentHealth != null || topIssues.length > 0) && (
-        <Card shadow devData={healthHeroDevData} className="border border-default overflow-hidden">
+        <Card shadow padding="none" devData={healthHeroDevData} className="border border-default overflow-hidden">
           {currentHealth != null ? (
-            <div className="flex flex-col gap-5 border-b border-muted/60 p-4 sm:p-5 lg:flex-row lg:items-center" ref={historyRef}>
-              <CategoryScoreGauge name={vo.auditHealth} score={currentHealth} size="lg" />
-
-              <div className="min-w-0 flex-1 space-y-3">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                  <div>
-                    {healthDelta != null ? (
-                      <div
-                        className={`inline-flex items-center gap-1.5 text-sm font-medium ${
-                          healthDelta > 0
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : healthDelta < 0
-                              ? 'text-rose-600 dark:text-rose-400'
-                              : 'text-muted-foreground'
-                        }`}
-                      >
-                        {healthDelta > 0 ? (
-                          <TrendingUp className="h-4 w-4 shrink-0" aria-hidden />
-                        ) : healthDelta < 0 ? (
-                          <TrendingDown className="h-4 w-4 shrink-0" aria-hidden />
-                        ) : null}
-                        {healthDelta === 0
-                          ? vo.healthDeltaFlat
-                          : format(vo.healthDeltaVsPrior, {
-                              delta: `${healthDelta > 0 ? '+' : ''}${healthDelta}`,
-                            })}
-                      </div>
-                    ) : null}
-                    {historyError ? (
-                      <p className="mt-1 text-xs text-muted-foreground">{historyError}</p>
-                    ) : null}
-                    {issueCounts.total > 0 ? (
-                      <p className="mt-2 text-sm text-muted-foreground">
-                        {format(vo.executiveIssueCounts, {
-                          total: issueCounts.total.toLocaleString(),
-                          critical: issueCounts.critical.toLocaleString(),
-                          high: issueCounts.high.toLocaleString(),
-                        })}
-                      </p>
-                    ) : (
-                      <p className="mt-2 text-sm text-muted-foreground">{vo.executiveNoIssues}</p>
-                    )}
-                  </div>
-                  {historyInView && healthTrend.length < 2 && !historyError ? (
-                    <div className="sm:text-right">
-                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        {vo.healthTrendLabel}
-                      </p>
-                      <Skeleton className="h-8 w-[140px] max-w-full" />
+            <>
+              <div
+                className="grid grid-cols-1 gap-4 border-b border-muted/60 p-4 sm:p-5 lg:grid-cols-12"
+                ref={historyRef}
+              >
+                <div className="flex flex-col items-center gap-3 rounded-xl border border-default/60 bg-brand-900/30 p-4 lg:col-span-5">
+                  <CategoryScoreGauge name={vo.auditHealth} score={currentHealth} size="lg" />
+                  {healthDelta != null ? (
+                    <div
+                      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
+                        healthDelta > 0
+                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                          : healthDelta < 0
+                            ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                            : 'bg-brand-700/30 text-muted-foreground'
+                      }`}
+                    >
+                      {healthDelta > 0 ? (
+                        <TrendingUp className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                      ) : healthDelta < 0 ? (
+                        <TrendingDown className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                      ) : null}
+                      {healthDelta === 0
+                        ? vo.healthDeltaFlat
+                        : format(vo.healthDeltaVsPrior, {
+                            delta: `${healthDelta > 0 ? '+' : ''}${healthDelta}`,
+                          })}
                     </div>
                   ) : null}
-                  {healthTrend.length >= 2 ? (
-                    <div className="sm:text-right">
-                      <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                        {vo.healthTrendLabel}
-                      </p>
+                  {historyError ? <p className="text-xs text-muted-foreground">{historyError}</p> : null}
+                </div>
+
+                <div className="flex flex-col rounded-xl border border-default/60 bg-brand-900/30 p-4 lg:col-span-7">
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                    {vo.healthTrendLabel}
+                  </p>
+                  <div className="mt-3 flex flex-1 items-center">
+                    {historyInView && healthTrend.length < 2 && !historyError ? (
+                      <Skeleton className="h-16 w-full" />
+                    ) : null}
+                    {healthTrend.length >= 2 ? (
                       <CompactAreaSparkline
                         points={[...healthTrend].reverse()}
-                        className="max-w-[140px] sm:ml-auto"
+                        className="w-full"
+                        heightClass="h-20"
                         strokeClassName="text-link/80"
                       />
-                    </div>
-                  ) : null}
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <Link
-                    to={issuesHref}
-                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
-                  >
-                    <AlertOctagon className="h-4 w-4" />
-                    {vo.viewAllIssues}
-                  </Link>
-                  {reportCount >= 2 ? (
-                    <Link
-                      to={compareHref}
-                      className="inline-flex items-center gap-2 rounded-lg border border-default px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-brand-700/50"
-                    >
-                      <ArrowLeftRight className="h-4 w-4" />
-                      {strings.views.compare.title}
-                    </Link>
-                  ) : null}
+                    ) : null}
+                  </div>
                 </div>
               </div>
-            </div>
+
+              {issueCounts.total > 0 ? (
+                <div className="grid grid-cols-2 gap-3 border-b border-muted/60 px-4 py-4 sm:grid-cols-4 sm:px-5">
+                  {PRIORITY_ORDER.map((priority) => {
+                    const cfg = PRIORITY_CONFIG[priority];
+                    const Icon = priorityIconFor(priority);
+                    const key = priority.toLowerCase() as 'critical' | 'high' | 'medium' | 'low';
+                    return (
+                      <StatCard
+                        key={priority}
+                        label={priority}
+                        value={issueCounts[key].toLocaleString()}
+                        icon={<Icon className={`h-3.5 w-3.5 ${cfg.text}`} aria-hidden />}
+                        valueClassName={cfg.text}
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="border-b border-muted/60 px-4 py-4 text-sm text-muted-foreground sm:px-5">
+                  {vo.executiveNoIssues}
+                </p>
+              )}
+
+              <div className="flex flex-wrap gap-2 p-4 sm:p-5">
+                <Link
+                  to={issuesHref}
+                  className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
+                >
+                  <AlertOctagon className="h-4 w-4" />
+                  {vo.viewAllIssues}
+                </Link>
+                {reportCount >= 2 ? (
+                  <Link
+                    to={compareHref}
+                    className="inline-flex items-center gap-2 rounded-lg border border-default px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-brand-700/50"
+                  >
+                    <ArrowLeftRight className="h-4 w-4" />
+                    {strings.views.compare.title}
+                  </Link>
+                ) : null}
+              </div>
+            </>
           ) : null}
 
           {topIssues.length > 0 ? (
-            <div className="p-4 sm:p-5">
-              <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                {vo.needsAttention}
-              </h3>
+            <div className={`p-4 sm:p-5 ${currentHealth != null ? 'border-t border-muted/60' : ''}`}>
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                  {vo.needsAttention}
+                </h3>
+                <span className="shrink-0 rounded-full border border-default bg-brand-900/40 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                  {format(vo.needsAttentionTotal, { total: issueCounts.total.toLocaleString() })}
+                </span>
+              </div>
               <div className="space-y-2">
                 {topIssues.slice(0, 5).map((issue, i) => (
                   <ExecutiveIssueRow key={`${issue.message}-${i}`} issue={issue} issuesHref={issuesHref} />
