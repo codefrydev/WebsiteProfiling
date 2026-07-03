@@ -85,6 +85,13 @@ export default function ChatPage() {
   const sessionsLoadGen = useRef(0);
   const sessionRestoredForProperty = useRef<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // Bumped whenever propertyId changes, so an in-flight resolveSessionFromUrl call
+  // started under a stale property can't clobber a switch the user made meanwhile.
+  const propertyGen = useRef(0);
+
+  useEffect(() => {
+    propertyGen.current += 1;
+  }, [propertyId]);
 
   const searchKey = searchParams.toString();
 
@@ -173,12 +180,16 @@ export default function ChatPage() {
   }, [configLoaded, configState.active_property_id, configState.start_url, searchParams]);
 
   const resolveSessionFromUrl = useCallback(async (sid: number, pid: number | null) => {
+    const gen = propertyGen.current;
     try {
       const res = await apiFetch(apiUrl(`/chat/sessions/${sid}`));
       if (!res.ok) return false;
       const data = (await res.json()) as { session?: ChatSessionRow };
       const session = data.session ? normalizeChatSessionRow(data.session) : null;
       if (!session) return false;
+      // The user may have switched properties while this fetch was in flight — a
+      // session resolved for the property we started with must not override that.
+      if (gen !== propertyGen.current) return false;
       if (pid != null && session.propertyId !== pid) {
         setPropertyId(session.propertyId);
       }
@@ -672,6 +683,10 @@ export default function ChatPage() {
             setLoadingMessages(false);
             messagesLoadGen.current += 1;
             setError('');
+            // Clear the old session from the URL now — otherwise the URL-restore effect
+            // resolves it once the new property's sessions load, sees it belongs to the
+            // previous property, and snaps propertyId back via resolveSessionFromUrl.
+            replaceChatUrl(id, null);
           }}
           onNewChat={() => void handleNewChat()}
           onSelect={(id) => {
