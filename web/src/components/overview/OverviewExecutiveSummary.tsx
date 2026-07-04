@@ -14,12 +14,13 @@ import {
 } from 'lucide-react';
 import type { ReportPayload } from '@/types';
 import { strings, format } from '@/lib/strings';
-import { Card, Badge, StatCard } from '@/components';
+import { Card, Badge } from '@/components';
 import { Skeleton } from '@/components/Skeleton';
 import { CompactAreaSparkline } from '@/components/charts/compact';
 import { useInView } from '@/lib/useInView';
 import { CategoryScoreGauge } from '@/components/charts/CategoryScoreGauge';
 import { countIssuesByPriority } from './overviewAtAGlanceMetrics';
+import { OverviewStatChip } from './OverviewStatChip';
 import { PRIORITY_CONFIG, PRIORITY_ORDER, normalizePriority } from '@/lib/issuePriority';
 
 const vo = strings.views.overview;
@@ -214,7 +215,7 @@ export function OverviewExecutiveSummary({
                 className="grid grid-cols-1 gap-4 border-b border-muted/60 p-4 sm:p-5 lg:grid-cols-12"
                 ref={historyRef}
               >
-                <div className="flex flex-col items-center gap-3 rounded-xl border border-default/60 bg-brand-900/30 p-4 lg:col-span-5">
+                <div className="flex flex-col items-center gap-3 rounded-[1.75rem] border border-default/60 bg-brand-900/40 p-5 shadow-sm lg:col-span-5">
                   <CategoryScoreGauge name={vo.auditHealth} score={currentHealth} size="lg" />
                   {healthDelta != null ? (
                     <div
@@ -241,7 +242,7 @@ export function OverviewExecutiveSummary({
                   {historyError ? <p className="text-xs text-muted-foreground">{historyError}</p> : null}
                 </div>
 
-                <div className="flex flex-col rounded-xl border border-default/60 bg-brand-900/30 p-4 lg:col-span-7">
+                <div className="flex flex-col rounded-[1.75rem] border border-default/60 bg-brand-900/40 p-5 shadow-sm lg:col-span-7">
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
                     {vo.healthTrendLabel}
                   </p>
@@ -262,17 +263,19 @@ export function OverviewExecutiveSummary({
               </div>
 
               {issueCounts.total > 0 ? (
-                <div className="grid grid-cols-2 gap-3 border-b border-muted/60 px-4 py-4 sm:grid-cols-4 sm:px-5">
+                <div className="flex flex-wrap gap-3 border-b border-muted/60 p-4 sm:p-5">
                   {PRIORITY_ORDER.map((priority) => {
                     const cfg = PRIORITY_CONFIG[priority];
                     const Icon = priorityIconFor(priority);
                     const key = priority.toLowerCase() as 'critical' | 'high' | 'medium' | 'low';
                     return (
-                      <StatCard
+                      <OverviewStatChip
                         key={priority}
+                        className="min-w-[150px]"
                         label={priority}
                         value={issueCounts[key].toLocaleString()}
-                        icon={<Icon className={`h-3.5 w-3.5 ${cfg.text}`} aria-hidden />}
+                        icon={<Icon className={`h-5 w-5 ${cfg.text}`} aria-hidden />}
+                        iconWrapClassName={cfg.bg}
                         valueClassName={cfg.text}
                       />
                     );
