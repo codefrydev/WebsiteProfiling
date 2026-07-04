@@ -1,23 +1,20 @@
 
 import { useMemo, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  AlertTriangle,
-  ChevronRight,
-  Copy,
-  Globe2,
-  Languages,
-  Sparkles,
-  Tag,
-} from 'lucide-react';
+import { Activity, ChevronRight, Copy, Globe2, Languages, Sparkles, Tag } from 'lucide-react';
 import type { ReportPayload } from '@/types';
 import { strings, format } from '@/lib/strings';
-import { metricHelpHint } from '@/lib/metricHelp';
 import HelpHint from '@/components/HelpHint';
-import { Card, StatCard } from '@/components';
 import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { CompactBarChart, CompactDonut } from '@/components/charts/compact';
 import { buildKeywordsTabHref } from './overviewKeywordOpportunities';
+import {
+  OverviewTerminalPanel,
+  OverviewTerminalActionLink,
+  OverviewTerminalMetricTile,
+  OverviewTerminalLogRow,
+  type OverviewTerminalBand,
+} from './OverviewTerminalPanel';
 import {
   buildLanguageBarChartData,
   buildLanguageMixSegments,
@@ -32,9 +29,10 @@ import {
   stripUrlForDisplay,
   totalDuplicateMemberPages,
 } from './contentQualityMetrics';
-import { bandClassName, metricBandLabel } from './crawlSnapshotMetrics';
 
 const vo = strings.views.overview;
+
+const LOG_ROW_SEVERITY = [90, 65, 40];
 
 export interface OverviewContentQualityProps {
   data: ReportPayload;
@@ -67,7 +65,7 @@ function LanguageMixVisualization({
   if (donutSegments.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-default/50 bg-brand-950/35 p-4 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-3 rounded-lg border border-default/60 bg-brand-950/40 p-4 sm:flex-row sm:items-center">
       <CompactDonut
         segments={donutSegments}
         centerValue={primaryShare ? `${primaryShare.pct}%` : undefined}
@@ -86,32 +84,31 @@ function ContentQualityColumn({
   title,
   viewAllHref,
   viewAllLabel,
-  statCard,
   devData,
   children,
 }: {
   title: string;
   viewAllHref: string;
   viewAllLabel: string;
-  statCard: ReactNode;
   devData?: unknown;
   children: ReactNode;
 }) {
   return (
     <div
-      className={`flex flex-col gap-4 rounded-xl border border-default/80 bg-brand-900/20 p-4 ${
+      className={`overflow-hidden rounded-lg border border-default bg-brand-900/40 ${
         devData != null ? 'relative group/dev-card' : ''
       }`}
     >
       {devData != null ? <DevCopyJsonButton data={devData} /> : null}
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-bold text-bright">{title}</h3>
-        <Link to={viewAllHref} className="text-xs font-medium text-link hover:underline">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-default bg-brand-950/30 px-4 py-2.5">
+        <h3 className="whitespace-nowrap font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          {title}
+        </h3>
+        <Link to={viewAllHref} className="whitespace-nowrap text-xs font-medium text-link hover:underline">
           {viewAllLabel}
         </Link>
       </div>
-      {statCard}
-      {children}
+      <div className="p-4">{children}</div>
     </div>
   );
 }
@@ -311,97 +308,105 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
 
   if (!shouldShowContentQuality(data)) return null;
 
-  return (
-    <Card shadow overflowHidden className="mb-8">
-      <div className="relative group/dev-card border-b border-muted/60 p-4 sm:p-5">
-        <DevCopyJsonButton data={contentQualityHeaderDevData} />
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 shrink-0 text-blue-600 dark:text-blue-400" aria-hidden />
-              <h2 className="text-lg font-bold text-bright">{vo.contentIntelligence}</h2>
-              <HelpHint ariaLabel={vo.contentQualityHelpTitle} side="bottom">
-                {vo.contentQualityHelpBody}
-              </HelpHint>
-            </div>
-            <p className="mt-1 text-sm text-muted-foreground">{vo.contentQualitySubtitle}</p>
-            {kpiParts.length > 0 ? (
-              <p className="mt-2 text-sm font-medium text-foreground">{kpiParts.join(' · ')}</p>
-            ) : null}
-          </div>
-          <div className="flex flex-wrap gap-2 shrink-0">
-            {duplicateGroupCount > 0 ? (
-              <Link
-                to={contentOverviewHref}
-                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-500"
-              >
-                <Copy className="h-4 w-4" />
-                {vo.contentQualityReviewDuplicates}
-              </Link>
-            ) : null}
-            <Link
-              to={textAnalysisHref}
-              className="inline-flex items-center gap-2 rounded-lg border border-default px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-brand-700/50"
-            >
-              <Languages className="h-4 w-4" />
-              {vo.contentQualityOpenTextAnalysis}
-            </Link>
-          </div>
-        </div>
+  const duplicateTileBand: OverviewTerminalBand = duplicateGroupCount > 0 ? duplicateGroupsBand(duplicateGroupCount) : 'good';
+  const languageTileBand: OverviewTerminalBand = mixedLanguage ? 'fair' : 'good';
 
-        {concerns.length > 0 ? (
-          <div className="mt-4">
-            <p className="mb-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-              {vo.contentQualityTopConcerns}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {concerns.map((concern) => (
-                <Link
-                  key={concern.id}
-                  to={concern.href}
-                  className="inline-flex max-w-full items-center gap-1.5 rounded-full border border-amber-500/25 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:border-amber-500/40 hover:bg-amber-500/15"
-                >
-                  <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden />
-                  <span className="truncate">{concern.label}</span>
-                  <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                </Link>
-              ))}
-            </div>
+  return (
+    <OverviewTerminalPanel
+      className="mb-8"
+      icon={<Sparkles className="h-4 w-4" aria-hidden />}
+      title={vo.contentIntelligence}
+      subtitle={vo.contentQualitySubtitle}
+      liveLabel={vo.diagnosticPanelLive}
+      actions={
+        <>
+          <HelpHint ariaLabel={vo.contentQualityHelpTitle} side="bottom">
+            {vo.contentQualityHelpBody}
+          </HelpHint>
+          {duplicateGroupCount > 0 ? (
+            <OverviewTerminalActionLink to={contentOverviewHref} icon={<Copy className="h-3.5 w-3.5" />} primary>
+              {vo.contentQualityReviewDuplicates}
+            </OverviewTerminalActionLink>
+          ) : null}
+          <OverviewTerminalActionLink to={textAnalysisHref} icon={<Languages className="h-3.5 w-3.5" />}>
+            {vo.contentQualityOpenTextAnalysis}
+          </OverviewTerminalActionLink>
+        </>
+      }
+    >
+      <div className="relative group/dev-card">
+        <DevCopyJsonButton data={contentQualityHeaderDevData} />
+
+        {showDuplicates || showLanguages ? (
+          <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {showDuplicates ? (
+              <OverviewTerminalMetricTile
+                href={contentOverviewHref}
+                icon={<Copy className="h-5 w-5" aria-hidden />}
+                label={vo.contentQualityGroupsCount}
+                value={duplicateGroupCount.toLocaleString()}
+                sub={format(vo.contentQualityDuplicatePages, { pages: duplicatePages.toLocaleString() })}
+                band={duplicateTileBand}
+              />
+            ) : null}
+            {showLanguages ? (
+              <OverviewTerminalMetricTile
+                href={textAnalysisHref}
+                icon={<Globe2 className="h-5 w-5" aria-hidden />}
+                label={vo.contentQualityLocaleCount}
+                value={languagesDetected.toLocaleString()}
+                sub={
+                  dominantLanguage
+                    ? format(vo.contentQualityDominantLanguage, {
+                        lang: dominantLanguage.lang,
+                        pct: dominantLanguage.pct,
+                      })
+                    : undefined
+                }
+                band={languageTileBand}
+              />
+            ) : null}
           </div>
         ) : null}
+
+        <div className="mb-5 overflow-hidden rounded-lg border border-default bg-brand-900/40">
+          <div className="border-b border-default bg-brand-950/30 px-4 py-2">
+            <h3 className="flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              <Activity
+                className={`h-3.5 w-3.5 ${concerns.length > 0 ? 'text-rose-500' : 'text-emerald-500'}`}
+                aria-hidden
+              />
+              {vo.diagnosticLog}
+            </h3>
+          </div>
+          <div className="space-y-1 p-2">
+            {concerns.length === 0 ? (
+              <p className="p-4 text-center font-mono text-xs text-muted-foreground">{vo.noActiveAnomalies}</p>
+            ) : (
+              concerns.map((concern, i) => (
+                <OverviewTerminalLogRow
+                  key={concern.id}
+                  href={concern.href}
+                  label={concern.label}
+                  severityLabel={vo.diagnosticPanelSeverity}
+                  severityScore={LOG_ROW_SEVERITY[i] ?? 40}
+                />
+              ))
+            )}
+          </div>
+        </div>
       </div>
 
-      <div
-        className={`grid grid-cols-1 items-start gap-4 p-4 sm:p-5 ${showDuplicates && showLanguages ? 'lg:grid-cols-2' : ''}`}
-      >
+      <div className={`grid grid-cols-1 items-start gap-4 ${showDuplicates && showLanguages ? 'lg:grid-cols-2' : ''}`}>
         {showDuplicates ? (
           <ContentQualityColumn
             title={vo.duplicateGroups}
             viewAllHref={contentOverviewHref}
             viewAllLabel={vo.contentQualityReviewDuplicates}
             devData={contentQualityDuplicatesDevData}
-            statCard={
-              <StatCard
-                shadow
-                href={contentOverviewHref}
-                icon={<Copy className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden />}
-                label={vo.contentQualityGroupsCount}
-                value={duplicateGroupCount.toLocaleString()}
-                sub={format(vo.contentQualityDuplicatePages, { pages: duplicatePages.toLocaleString() })}
-                band={metricBandLabel(duplicateBand, vo)}
-                bandClassName={bandClassName(duplicateBand)}
-                valueClassName={bandClassName(duplicateBand)}
-                className={
-                  duplicateBand === 'critical'
-                    ? 'border-amber-500/25 ring-1 ring-inset ring-amber-500/15'
-                    : 'border-default'
-                }
-                hint={metricHelpHint('views.content.duplicateCluster')}
-              />
-            }
           >
             <div>
-              <h4 className="mb-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+              <h4 className="mb-2 font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                 {vo.contentQualityLargestClusters}
               </h4>
               <ul className="space-y-2">
@@ -412,13 +417,14 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
                     <li key={cluster.id}>
                       <Link
                         to={contentOverviewHref}
-                        className="group flex items-center gap-3 rounded-lg border border-default/60 bg-brand-900/40 px-3 py-2.5 transition-colors hover:border-blue-500/30 hover:bg-brand-900/60"
+                        className="group flex items-center gap-3 rounded-lg border border-default/60 bg-brand-950/40 px-3 py-2.5 transition-colors hover:border-blue-500/30 hover:bg-brand-900/60"
                       >
+                        <span className="pt-0.5 font-mono text-xs text-muted-foreground">{'>_'}</span>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium text-foreground" title={cluster.representative_url}>
                             {label}
                           </p>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
+                          <p className="mt-0.5 font-mono text-xs text-muted-foreground">
                             {format(vo.contentQualityClusterMembers, { count: members.toLocaleString() })}
                           </p>
                         </div>
@@ -433,140 +439,54 @@ export function OverviewContentQuality({ data, querySuffix, keywordsHref }: Over
         ) : null}
 
         {showLanguages ? (
-          languageOnly ? (
-            <div className="relative group/dev-card rounded-xl border border-default/80 bg-brand-900/20 p-4">
-              <DevCopyJsonButton data={contentQualityLanguagesDevData} />
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-bold text-bright">{vo.languagesSampled}</h3>
-                <Link to={textAnalysisHref} className="text-xs font-medium text-link hover:underline">
-                  {vo.contentQualityOpenTextAnalysis}
-                </Link>
-              </div>
-              <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(11rem,14rem)_1fr] sm:items-start">
-                <StatCard
-                  shadow
-                  href={textAnalysisHref}
-                  icon={<Globe2 className="h-4 w-4 shrink-0 text-cyan-600 dark:text-cyan-400" aria-hidden />}
-                  label={vo.contentQualityLocaleCount}
-                  value={languagesDetected.toLocaleString()}
-                  sub={
-                    dominantLanguage
-                      ? format(vo.contentQualityDominantLanguage, {
-                          lang: dominantLanguage.lang,
-                          pct: dominantLanguage.pct,
-                        })
-                      : undefined
-                  }
-                  band={mixedLanguage ? vo.mixedLanguage : vo.metricBandGood}
-                  bandClassName={mixedLanguage ? bandClassName('fair') : bandClassName('good')}
-                  className={
-                    mixedLanguage ? 'border-amber-500/20 ring-1 ring-inset ring-amber-500/10' : 'border-cyan-500/15'
-                  }
-                  hint={metricHelpHint('views.overview.contentQualityLocales')}
-                />
-                <div>
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                      {vo.contentQualityLanguageMix}
-                    </h4>
-                    <Link to={contentAnalyticsHref} className="text-xs font-medium text-link hover:underline">
-                      {vo.contentQualityOpenContentAnalytics}
-                    </Link>
-                  </div>
-                  {mixedLanguage ? (
-                    <p className="mb-3 text-xs text-amber-800 dark:text-amber-200/90">
-                      {vo.contentQualityMixedLanguageHint}
-                    </p>
-                  ) : null}
-                  <LanguageMixVisualization counts={languageCounts} singleLanguage={languagesDetected === 1} />
-                </div>
-              </div>
+          <ContentQualityColumn
+            title={vo.languagesSampled}
+            viewAllHref={contentAnalyticsHref}
+            viewAllLabel={vo.contentQualityOpenContentAnalytics}
+            devData={contentQualityLanguagesDevData}
+          >
+            <div>
+              {mixedLanguage ? (
+                <p className="mb-3 text-xs text-amber-800 dark:text-amber-200/90">
+                  {vo.contentQualityMixedLanguageHint}
+                </p>
+              ) : null}
+              <LanguageMixVisualization counts={languageCounts} singleLanguage={languagesDetected === 1} />
             </div>
-          ) : (
-            <ContentQualityColumn
-              title={vo.languagesSampled}
-              viewAllHref={textAnalysisHref}
-              viewAllLabel={vo.contentQualityOpenTextAnalysis}
-              devData={contentQualityLanguagesDevData}
-              statCard={
-                <StatCard
-                  shadow
-                  href={textAnalysisHref}
-                  icon={<Globe2 className="h-4 w-4 shrink-0 text-cyan-600 dark:text-cyan-400" aria-hidden />}
-                  label={vo.contentQualityLocaleCount}
-                  value={languagesDetected.toLocaleString()}
-                  sub={
-                    dominantLanguage
-                      ? format(vo.contentQualityDominantLanguage, {
-                          lang: dominantLanguage.lang,
-                          pct: dominantLanguage.pct,
-                        })
-                      : undefined
-                  }
-                  band={mixedLanguage ? vo.mixedLanguage : vo.metricBandGood}
-                  bandClassName={mixedLanguage ? bandClassName('fair') : bandClassName('good')}
-                  className={
-                    mixedLanguage ? 'border-amber-500/20 ring-1 ring-inset ring-amber-500/10' : 'border-cyan-500/15'
-                  }
-                  hint={metricHelpHint('views.overview.contentQualityLocales')}
-                />
-              }
-            >
-              <div>
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-                    {vo.contentQualityLanguageMix}
-                  </h4>
-                  <Link to={contentAnalyticsHref} className="text-xs font-medium text-link hover:underline">
-                    {vo.contentQualityOpenContentAnalytics}
-                  </Link>
-                </div>
-                {mixedLanguage ? (
-                  <p className="mb-3 text-xs text-amber-800 dark:text-amber-200/90">
-                    {vo.contentQualityMixedLanguageHint}
-                  </p>
-                ) : null}
-                <LanguageMixVisualization counts={languageCounts} singleLanguage={languagesDetected === 1} />
-              </div>
-            </ContentQualityColumn>
-          )
+          </ContentQualityColumn>
         ) : null}
       </div>
 
       {showAdvancedInsights ? (
-        <div className="relative group/dev-card border-t border-muted/60 px-4 pb-4 pt-3 sm:px-5 sm:pb-5">
+        <div className="relative group/dev-card mt-5 border-t border-default pt-4">
           <DevCopyJsonButton data={contentQualityAdvancedDevData} />
-          <p className="mb-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          <p className="mb-3 font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
             {vo.contentQualityAdvancedInsights}
           </p>
-          <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
             {semanticTopics > 0 ? (
-              <StatCard
-                shadow
+              <OverviewTerminalMetricTile
                 href={topicsHref}
-                icon={<Tag className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />}
+                icon={<Tag className="h-5 w-5" aria-hidden />}
                 label={vo.parentTopics}
                 value={semanticTopics.toLocaleString()}
                 sub={vo.semanticGroups}
+                band="good"
               />
             ) : null}
             {hasNer ? (
-              <StatCard
-                shadow
+              <OverviewTerminalMetricTile
                 href={textAnalysisHref}
-                icon={<Sparkles className="h-4 w-4 shrink-0 text-cyan-600 dark:text-cyan-400" aria-hidden />}
+                icon={<Sparkles className="h-5 w-5" aria-hidden />}
                 label={vo.namedEntities}
                 value={entityTotal.toLocaleString()}
-                sub={
-                  pagesWithNer > 0
-                    ? format(vo.pagesSampled, { n: pagesWithNer })
-                    : vo.entitiesSitewide
-                }
+                sub={pagesWithNer > 0 ? format(vo.pagesSampled, { n: pagesWithNer }) : vo.entitiesSitewide}
+                band="neutral"
               />
             ) : null}
           </div>
         </div>
       ) : null}
-    </Card>
+    </OverviewTerminalPanel>
   );
 }
