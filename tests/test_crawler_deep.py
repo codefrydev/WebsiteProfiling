@@ -714,6 +714,36 @@ def test_capture_page_html_enqueues_to_stream_writer():
     assert writer.records[0]["url"] == "https://site.com"
 
 
+def test_capture_page_pdf_enqueues_to_stream_writer():
+    import website_profiling.crawl.crawler as mod
+
+    class _Writer:
+        def __init__(self):
+            self.records: list[dict] = []
+
+        def enqueue_html(self, record: dict) -> None:
+            self.records.append(record)
+
+    crawler = mod.Crawler(
+        start_url="https://site.com",
+        ignore_robots=True,
+        store_page_html=True,
+        max_pages=1,
+    )
+    writer = _Writer()
+    crawler._db_writer = writer
+    crawler._capture_page_pdf(
+        "https://site.com/report.pdf",
+        "Extracted PDF text.",
+        200,
+        "application/pdf",
+        "static",
+    )
+    assert len(writer.records) == 1
+    assert writer.records[0]["url"] == "https://site.com/report.pdf"
+    assert writer.records[0]["content_type"] == "application/pdf"
+
+
 def test_run_crawler_compare_mobile_desktop_second_pass(monkeypatch):
     """compare_mobile_desktop=True triggers a second crawl and links the run IDs."""
     import website_profiling.crawl.crawler as mod

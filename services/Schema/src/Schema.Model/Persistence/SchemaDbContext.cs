@@ -621,6 +621,15 @@ public partial class SchemaDbContext : DbContext
             entity.Property(e => e.CustomExtractors)
                 .HasDefaultValueSql("''::text")
                 .HasColumnName("custom_extractors");
+            entity.Property(e => e.MainContentSelectors)
+                .HasDefaultValueSql("''::text")
+                .HasColumnName("main_content_selectors");
+            entity.Property(e => e.BoilerplateSelectors)
+                .HasDefaultValueSql("''::text")
+                .HasColumnName("boilerplate_selectors");
+            entity.Property(e => e.PipelineGraphJson)
+                .HasDefaultValueSql("''::text")
+                .HasColumnName("pipeline_graph_json");
             entity.Property(e => e.ExportLogoUrl)
                 .HasDefaultValueSql("''::text")
                 .HasColumnName("export_logo_url");

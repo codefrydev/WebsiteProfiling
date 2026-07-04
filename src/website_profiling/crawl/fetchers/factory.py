@@ -96,6 +96,7 @@ def build_fetcher(
     capture_failed_requests: bool = False,
     console_max_per_page: int = 20,
     run_axe: bool = False,
+    max_pdf_bytes: int = 10_485_760,
 ) -> PageFetcher:
     mode = (render_mode or "static").strip().lower()
     levels = parse_console_levels(js_console_levels)
@@ -123,6 +124,7 @@ def build_fetcher(
         user_agent=user_agent,
         session=session,
         session_factory=session_factory,
+        max_pdf_bytes=max_pdf_bytes,
     )
     if mode == "static":
         return static

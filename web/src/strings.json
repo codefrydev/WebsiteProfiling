@@ -756,6 +756,10 @@
       "label": "Page Markdown",
       "section": "Tools"
     },
+    "content-pipeline": {
+      "label": "Content Pipeline",
+      "section": "Tools"
+    },
     "settings": {
       "label": "Settings",
       "section": "Overview"

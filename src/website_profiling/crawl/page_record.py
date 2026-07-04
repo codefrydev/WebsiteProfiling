@@ -17,7 +17,7 @@ from ..common import (
     parse_social_meta,
     parse_tech_stack,
 )
-from .extraction import run_extractors
+from .extraction import LlmResolver, run_extractors
 from .fetchers.base import FetchResult
 from .fetchers.browser_diagnostics import merge_browser_into_page_analysis
 from .fetchers.hybrid import HybridFetcher
@@ -37,6 +37,8 @@ class PageRecordBuilder:
         defer_content_analysis: bool = False,
         custom_extraction_regex: str = "",
         custom_extractors: Optional[list[dict]] = None,
+        main_content_selectors: str = "",
+        boilerplate_selectors: str = "",
     ) -> None:
         self.use_wappalyzer = use_wappalyzer
         self.store_content_excerpt = store_content_excerpt
@@ -44,6 +46,8 @@ class PageRecordBuilder:
         self.defer_content_analysis = defer_content_analysis
         self.custom_extraction_regex = custom_extraction_regex
         self.custom_extractors = list(custom_extractors or [])
+        self.main_content_selectors = main_content_selectors
+        self.boilerplate_selectors = boilerplate_selectors
         self._wappalyzer_instance = None
 
     def empty_ext(
@@ -92,7 +96,13 @@ class PageRecordBuilder:
         _soup = _BS(text, "lxml")
         excerpt_max = self.content_excerpt_max_chars if self.store_content_excerpt else 0
         if not self.defer_content_analysis:
-            ct_data = parse_content_text(_soup, text, excerpt_max_chars=excerpt_max)
+            ct_data = parse_content_text(
+                _soup,
+                text,
+                excerpt_max_chars=excerpt_max,
+                main_content_selectors=self.main_content_selectors or None,
+                boilerplate_selectors=self.boilerplate_selectors or None,
+            )
             ext["word_count"] = ct_data.get("word_count", 0)
             ext["reading_level"] = ct_data.get("reading_level", 0.0)
             ext["content_html_ratio"] = ct_data.get("content_html_ratio", 0.0)
@@ -127,7 +137,13 @@ class PageRecordBuilder:
             "ext": ext,
         }
 
-    def apply_custom_extractions(self, ext: dict[str, Any], text: Optional[str]) -> None:
+    def apply_custom_extractions(
+        self,
+        ext: dict[str, Any],
+        text: Optional[str],
+        *,
+        llm_resolver: Optional[LlmResolver] = None,
+    ) -> None:
         if self.custom_extraction_regex and text:
             try:
                 match = re.search(self.custom_extraction_regex, text)
@@ -136,7 +152,7 @@ class PageRecordBuilder:
             except re.error:
                 pass
         if self.custom_extractors and text:
-            fields = run_extractors(text, self.custom_extractors)
+            fields = run_extractors(text, self.custom_extractors, llm_resolver=llm_resolver)
             if fields:
                 ext["custom_fields"] = json.dumps(fields)
 

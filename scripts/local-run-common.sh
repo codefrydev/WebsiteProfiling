@@ -115,7 +115,7 @@ start_host_integrations_bff() {
     AI_SERVICE_URL="$AI_SERVICE_URL" \
     INTEGRATIONS_SERVICE_URL="$INTEGRATIONS_SERVICE_URL" \
     REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-http://127.0.0.1:8094}" \
-    REPORT_ROUTES="${REPORT_ROUTES:-/api/compare,/api/dashboards,/api/run,/api/jobs,/api/schedule,/api/crawl}" \
+    REPORT_ROUTES="${REPORT_ROUTES:-/api/compare,/api/dashboards,/api/run,/api/jobs,/api/schedule,/api/crawl,/api/pipeline-preview}" \
     DATA_ROUTES="${DATA_ROUTES:-/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters,/api/properties,/api/content-drafts,/api/content/score,/api/keywords,/api/page-markdown,/api/alerts,/api/logs,/api/backlinks,/api/pipeline-settings,/api/ui-preferences,/api/client-preferences}" \
     AI_ROUTES="${AI_ROUTES:-/api/chat,/api/links/page-coach,/api/issues/fix-suggestion,/api/issues/action-plan,/api/ai/fix-suggestion,/api/dashboards/ai-generate,/api/content/analyze,/api/content/wizard,/api/llm-settings,/api/secrets,/api/ollama/status,/api/report/audit-tool,/api/mcp-tools}" \
     INTEGRATIONS_ROUTES="${INTEGRATIONS_ROUTES:-/api/integrations/google,/api/integrations/bing}" \

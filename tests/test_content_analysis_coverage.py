@@ -38,6 +38,22 @@ def test_find_main_content_falls_back_to_body() -> None:
     assert "Only body copy" in root.get_text()
 
 
+def test_cleanup_dom_does_not_strip_generic_content_classes() -> None:
+    # Deliberately trimmed from CHROME_SELECTORS: bare `.menu`/`.top`/`.widget`
+    # collide with legitimate content-wrapper class names on real sites.
+    html = """
+    <html><body><main>
+      <div class="menu">Today's lunch menu: soup, salad, sandwich.</div>
+      <div class="top">Top story of the day goes here.</div>
+    </main></body></html>
+    """
+    soup = load_soup(html)
+    cleaned = cleanup_dom(soup)
+    text = cleaned.get_text()
+    assert "lunch menu" in text
+    assert "Top story" in text
+
+
 def test_should_store_page_html_rejects_invalid_status() -> None:
     assert not should_store_page_html(
         enabled=True,

@@ -45,6 +45,11 @@ from .fetchers.hybrid import HybridFetcher
 from .frontier import CrawlFrontier, url_matches_exclude
 from .page_record import PageRecordBuilder
 from .schema import crawl_dataframe_columns, empty_crawl_row
+from .html_capture import is_pdf_content_type
+from .llm_selector_cache import make_llm_resolver
+from ..content_analysis.pdf_extract import extract_pdf_text
+from ..content_analysis.plain_text import analyze_plain_text
+from ..llm_config import load_llm_config_from_db
 
 # Re-export for backward compatibility.
 _url_matches_exclude = url_matches_exclude
@@ -125,6 +130,8 @@ class Crawler:
         crawl_cookies: str = "",
         crawl_robots_txt_override: str = "",
         custom_extractors: Optional[list[dict]] = None,
+        main_content_selectors: str = "",
+        boilerplate_selectors: str = "",
         enable_axe: bool = False,
         *,
         config: Optional[CrawlConfig] = None,
@@ -173,6 +180,8 @@ class Crawler:
                 crawl_cookies=crawl_cookies,
                 crawl_robots_txt_override=crawl_robots_txt_override,
                 custom_extractors=custom_extractors,
+                main_content_selectors=main_content_selectors,
+                boilerplate_selectors=boilerplate_selectors,
                 enable_axe=enable_axe,
             )
         config.normalized()
@@ -193,10 +202,15 @@ class Crawler:
         self.crawl_ignore_params = config.crawl_ignore_params
         self.custom_extraction_regex = config.custom_extraction_regex
         self.custom_extractors = config.custom_extractors
+        self.main_content_selectors = config.main_content_selectors
+        self.boilerplate_selectors = config.boilerplate_selectors
         self.store_page_html = config.store_page_html
         self.max_stored_html_bytes = config.max_stored_html_bytes
+        self.max_pdf_bytes = config.max_pdf_bytes
         self._html_buffer: list[dict] = []
         self._db_writer: Optional[CrawlDbWriter] = None
+        self.crawl_run_id: Optional[int] = None
+        self._llm_resolver = None
 
         self.page_builder = PageRecordBuilder(
             use_wappalyzer=config.use_wappalyzer,
@@ -205,6 +219,8 @@ class Crawler:
             defer_content_analysis=config.defer_content_analysis,
             custom_extraction_regex=config.custom_extraction_regex,
             custom_extractors=config.custom_extractors,
+            main_content_selectors=config.main_content_selectors,
+            boilerplate_selectors=config.boilerplate_selectors,
         )
 
         self.frontier = CrawlFrontier(
@@ -247,6 +263,7 @@ class Crawler:
             capture_failed_requests=config.capture_failed_requests,
             console_max_per_page=config.console_max_per_page,
             run_axe=config.enable_axe,
+            max_pdf_bytes=config.max_pdf_bytes,
         )
         self._hybrid_fetcher = (
             self.fetcher if isinstance(self.fetcher, HybridFetcher) else None
@@ -306,6 +323,54 @@ class Crawler:
         else:
             self._html_buffer.append(record)
 
+    def _capture_page_pdf(
+        self,
+        url: str,
+        text: str | None,
+        status: object,
+        content_type: str | None,
+        fetch_method: str,
+    ) -> None:
+        from .html_capture import build_page_pdf_record
+
+        record = build_page_pdf_record(
+            url=url,
+            text=text or "",
+            status=status,
+            content_type=content_type,
+            fetch_method=fetch_method,
+            enabled=self.store_page_html,
+        )
+        if record is None:
+            return
+        if self._db_writer is not None:
+            self._db_writer.enqueue_html(record)
+        else:
+            self._html_buffer.append(record)
+
+    def _build_llm_resolver_if_needed(self):
+        """Build the LLM-bootstrapped selector resolver, but only if at least
+        one 'llm'-type custom extractor is actually configured — avoids an
+        LLM-config DB lookup on every crawl for the common case of not using
+        this feature at all."""
+        llm_specs = [e for e in self.custom_extractors if str(e.get("type") or "").lower() == "llm"]
+        if not llm_specs:
+            return None
+        llm_cfg = load_llm_config_from_db()
+        resolver = make_llm_resolver(
+            domain=self.frontier.start_netloc,
+            crawl_run_id=self.crawl_run_id,
+            llm_cfg=llm_cfg,
+        )
+        if resolver is None:
+            names = ", ".join(str(e.get("name") or "?") for e in llm_specs)
+            console_print(
+                f"[custom_extractors] LLM disabled — skipping {len(llm_specs)} "
+                f"llm-type extractor(s): {names}",
+                flush=True,
+            )
+        return resolver
+
     def worker(self, url: str) -> dict:
         if not self.allowed_by_robots(url):
             return PageRecordBuilder.build_robots_blocked_row(
@@ -322,6 +387,7 @@ class Crawler:
             )
 
         status = result.status
+        fetch_blocked = bool(result.fetch_blocked)
         is_success = isinstance(status, int) and 200 <= status < 300
         is_redirect = isinstance(status, int) and 300 <= status < 400
         ct = result.content_type
@@ -341,9 +407,10 @@ class Crawler:
         h1_text = ""
         h1_count = 0
         canonical_url = ""
+        pdf_text: Optional[str] = None
 
         ext = self.page_builder.empty_ext(url, headers_dict, redirect_chain_length)
-        if text:
+        if text and not fetch_blocked:
             parsed = self.page_builder.parse_page_content(
                 url, text, final_url or url, headers_dict, redirect_chain_length
             )
@@ -399,6 +466,21 @@ class Crawler:
                 # parsed from custom 4xx/5xx error pages should not be followed.
                 if is_success:
                     self.frontier.try_enqueue_link(link, url)
+        elif not fetch_blocked and is_pdf_content_type(ct) and result.raw_bytes:
+            extracted = extract_pdf_text(result.raw_bytes)
+            pdf_text = extracted["text"] or None
+            if pdf_text:
+                title = extracted["title"]
+                excerpt_max = (
+                    self.page_builder.content_excerpt_max_chars
+                    if self.page_builder.store_content_excerpt
+                    else 0
+                )
+                ext.update(analyze_plain_text(pdf_text, excerpt_max_chars=excerpt_max))
+                # content_html_ratio is a markup-bloat metric with no meaning
+                # for a document that has no surrounding HTML — omit it rather
+                # than report a misleading 0.0 (which would read as "no content").
+                ext.pop("content_html_ratio", None)
 
         # A redirect (3xx) has no crawlable body; enqueue its target so the
         # destination is fetched and recorded as its own row (per-hop chain).
@@ -422,7 +504,13 @@ class Crawler:
         ext["content_security_policy"] = headers_dict.get("Content-Security-Policy", "")
         ext["depth"] = self.depths.get(url)
 
-        self.page_builder.apply_custom_extractions(ext, text)
+        # A blocked-but-non-empty challenge-page body must not be handed to
+        # custom extractors either — otherwise a bot-blocked first page could
+        # bootstrap (and permanently cache) a selector against challenge
+        # markup instead of the real site content.
+        self.page_builder.apply_custom_extractions(
+            ext, text if not fetch_blocked else None, llm_resolver=self._llm_resolver
+        )
 
         if self.polite_delay:
             time.sleep(self.polite_delay)
@@ -431,6 +519,8 @@ class Crawler:
 
         if text:
             self._capture_page_html(url, text, status, ct, fetch_method)
+        elif pdf_text:
+            self._capture_page_pdf(url, pdf_text, status, ct, fetch_method)
 
         res = {
             "url": url,
@@ -439,6 +529,7 @@ class Crawler:
             "title": title,
             "outlinks": outlinks_count,
             "fetch_method": fetch_method,
+            "fetch_blocked": fetch_blocked,
             **ext,
         }
         if self.store_outlinks:
@@ -467,6 +558,8 @@ class Crawler:
         pages_crawled = 0
         self._db_writer = None
         self._html_buffer = []
+        self.crawl_run_id = stream_crawl_run_id
+        self._llm_resolver = self._build_llm_resolver_if_needed()
         if stream_crawl_run_id is not None:
             db_writer = _CrawlDbWriter(
                 stream_crawl_run_id,
@@ -638,6 +731,8 @@ def run_crawler(
     crawl_cookies: str = "",
     crawl_robots_txt_override: str = "",
     custom_extractors: Optional[list] = None,
+    main_content_selectors: str = "",
+    boilerplate_selectors: str = "",
     enable_axe: bool = False,
     compare_mobile_desktop: bool = False,
     resume_run_id: Optional[int] = None,
@@ -707,6 +802,8 @@ def run_crawler(
         crawl_cookies=crawl_cookies,
         crawl_robots_txt_override=crawl_robots_txt_override,
         custom_extractors=custom_extractors,
+        main_content_selectors=main_content_selectors,
+        boilerplate_selectors=boilerplate_selectors,
         enable_axe=enable_axe,
         pause_state=_resume_pause_state,
     )
@@ -873,6 +970,8 @@ def run_crawler(
             crawl_cookies=crawl_cookies,
             crawl_robots_txt_override=crawl_robots_txt_override,
             custom_extractors=custom_extractors,
+            main_content_selectors=main_content_selectors,
+            boilerplate_selectors=boilerplate_selectors,
             enable_axe=False,
             compare_mobile_desktop=False,
         )

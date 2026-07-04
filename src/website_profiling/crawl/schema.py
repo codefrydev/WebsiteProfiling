@@ -59,6 +59,7 @@ CRAWL_ROW_COLUMNS: list[str] = [
     "depth",
     "page_analysis",
     "fetch_method",
+    "fetch_blocked",
 ]
 
 
@@ -128,6 +129,7 @@ def empty_crawl_row(
     title: str = "",
     outlinks: int = 0,
     fetch_method: str = "static",
+    fetch_blocked: bool = False,
     headers_dict: Optional[dict] = None,
     redirect_chain_length: int = 0,
     **overrides: Any,
@@ -140,6 +142,7 @@ def empty_crawl_row(
         "title": title,
         "outlinks": outlinks,
         "fetch_method": fetch_method,
+        "fetch_blocked": fetch_blocked,
         **empty_crawl_row_ext(url or "", headers_dict, redirect_chain_length),
     }
     row.update(overrides)

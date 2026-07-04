@@ -28,6 +28,9 @@ class FetchResult:
     redirect_chain_length: int
     fetch_method: Literal["static", "rendered"] = "static"
     browser_diagnostics: Optional[dict[str, Any]] = None
+    fetch_blocked: bool = False
+    retry_after_header: str = ""
+    raw_bytes: Optional[bytes] = None
 
     def as_tuple(self) -> tuple:
         """Legacy tuple shape used by Crawler.worker."""

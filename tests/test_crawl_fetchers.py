@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from website_profiling.crawl.fetchers.base import FetchResult
+from website_profiling.crawl.fetchers.bot_block import is_bot_block_status
 from website_profiling.crawl.fetchers.browser_deps import ensure_browser_deps
 from website_profiling.crawl.fetchers.factory import browser_status, build_fetcher, validate_browser_available
 from website_profiling.crawl.fetchers.spa_heuristics import needs_js_render, needs_js_render_after_parse
@@ -15,9 +16,15 @@ from website_profiling.crawl.sitemap import discover_sitemap_urls, _parse_sitema
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 
-def _static_result(html: str, *, fetch_method: str = "static") -> FetchResult:
+def _static_result(
+    html: str,
+    *,
+    fetch_method: str = "static",
+    status: int = 200,
+    retry_after_header: str = "",
+) -> FetchResult:
     return FetchResult(
-        status=200,
+        status=status,
         content_type="text/html",
         text=html,
         response_time_ms=1,
@@ -26,6 +33,7 @@ def _static_result(html: str, *, fetch_method: str = "static") -> FetchResult:
         headers_dict={},
         redirect_chain_length=0,
         fetch_method=fetch_method,  # type: ignore[arg-type]
+        retry_after_header=retry_after_header,
     )
 
 
@@ -41,13 +49,23 @@ def test_static_fetcher_parses_html():
 
 
 class _FakeResp:
-    def __init__(self, status_code, headers=None, text="", url=""):
+    def __init__(self, status_code, headers=None, text="", url="", body_bytes=None):
         self.status_code = status_code
         self.headers = headers or {}
         self.text = text
-        self.content = text.encode("utf-8")
+        self.content = body_bytes if body_bytes is not None else text.encode("utf-8")
         self.url = url
         self.history = []
+        self._body_bytes = body_bytes if body_bytes is not None else self.content
+        self.closed = False
+
+    def iter_content(self, chunk_size=65536):
+        data = self._body_bytes
+        for i in range(0, len(data), chunk_size):
+            yield data[i : i + chunk_size]
+
+    def close(self):
+        self.closed = True
 
     @property
     def is_redirect(self):
@@ -64,8 +82,8 @@ class _FakeSession:
         self.headers = {}
         self.calls = []
 
-    def get(self, url, timeout=None, allow_redirects=True):
-        self.calls.append({"url": url, "allow_redirects": allow_redirects})
+    def get(self, url, timeout=None, allow_redirects=True, stream=False):
+        self.calls.append({"url": url, "allow_redirects": allow_redirects, "stream": stream})
         return self._resp
 
     def close(self):
@@ -116,6 +134,71 @@ def test_static_fetcher_records_client_error_and_captures_body():
     # Non-200 HTML body is now captured so custom error pages can be analysed.
     assert result.text is not None and "Bad Request" in result.text
     assert result.redirect_chain_length == 0
+
+
+@pytest.mark.parametrize("status,expected", [
+    (401, True), (403, True), (429, True), (503, True),
+    (200, False), (301, False), (404, False), (500, False), (502, False),
+    (None, False), ("error", False),
+])
+def test_is_bot_block_status_matches_expected_codes(status, expected):
+    assert is_bot_block_status(status) is expected
+
+
+def test_static_fetcher_captures_retry_after_header():
+    resp = _FakeResp(
+        429,
+        headers={"Content-Type": "text/html", "Retry-After": "5"},
+        text="<html>slow down</html>",
+        url="https://example.com/limited",
+    )
+    fetcher = StaticFetcher(timeout=5, session=_FakeSession(resp))
+    result = fetcher.fetch("https://example.com/limited")
+    assert result.status == 429
+    assert result.retry_after_header == "5"
+
+
+def test_static_fetcher_reads_pdf_body_within_budget():
+    pdf_bytes = b"%PDF-1.4 fake pdf content"
+    resp = _FakeResp(
+        200,
+        headers={"Content-Type": "application/pdf", "Content-Length": str(len(pdf_bytes))},
+        url="https://example.com/doc.pdf",
+        body_bytes=pdf_bytes,
+    )
+    fetcher = StaticFetcher(timeout=5, session=_FakeSession(resp), max_pdf_bytes=1000)
+    result = fetcher.fetch("https://example.com/doc.pdf")
+    assert result.status == 200
+    assert result.raw_bytes == pdf_bytes
+    assert result.text is None
+    assert result.content_length == len(pdf_bytes)
+
+
+def test_static_fetcher_rejects_pdf_over_content_length_cap():
+    resp = _FakeResp(
+        200,
+        headers={"Content-Type": "application/pdf", "Content-Length": "99999999"},
+        url="https://example.com/huge.pdf",
+        body_bytes=b"never read",
+    )
+    fetcher = StaticFetcher(timeout=5, session=_FakeSession(resp), max_pdf_bytes=1000)
+    result = fetcher.fetch("https://example.com/huge.pdf")
+    assert result.raw_bytes is None
+    assert result.content_length == 99999999
+    assert resp.closed is True
+
+
+def test_static_fetcher_truncates_pdf_when_length_header_missing():
+    big_pdf = b"x" * 5000
+    resp = _FakeResp(
+        200,
+        headers={"Content-Type": "application/pdf"},  # no Content-Length
+        url="https://example.com/big.pdf",
+        body_bytes=big_pdf,
+    )
+    fetcher = StaticFetcher(timeout=5, session=_FakeSession(resp), max_pdf_bytes=1000)
+    result = fetcher.fetch("https://example.com/big.pdf")
+    assert result.raw_bytes is None  # streamed past the cap, bailed out
 
 
 def test_page_diagnostics_collector_builds_summary():
@@ -259,6 +342,261 @@ def test_hybrid_refetch_rendered_uses_browser(monkeypatch):
         out = hybrid.refetch_rendered("https://example.com/")
         assert out.fetch_method == "rendered"
         assert out.text == "<html>rendered</html>"
+    finally:
+        hybrid.close()
+
+
+def test_hybrid_fetch_escalates_static_403_to_browser_success(monkeypatch):
+    from website_profiling.crawl.fetchers.hybrid import HybridFetcher
+
+    class FakeStatic:
+        def fetch(self, _url):
+            return _static_result("<html>blocked</html>", status=403)
+
+        def close(self):
+            pass
+
+    class FakeBrowser:
+        def fetch(self, _url):
+            return _static_result("<html>real content</html>", fetch_method="rendered")
+
+        def close(self):
+            pass
+
+    hybrid = HybridFetcher(FakeStatic(), lambda: FakeBrowser())
+    try:
+        out = hybrid.fetch("https://example.com/")
+        assert out.status == 200
+        assert out.fetch_blocked is False
+        assert out.text == "<html>real content</html>"
+    finally:
+        hybrid.close()
+
+
+def test_hybrid_fetch_both_static_and_browser_blocked_marks_fetch_blocked(monkeypatch):
+    from website_profiling.crawl.fetchers.hybrid import HybridFetcher
+
+    class FakeStatic:
+        def fetch(self, _url):
+            return _static_result("<html>static challenge</html>", status=403)
+
+        def close(self):
+            pass
+
+    class FakeBrowser:
+        def fetch(self, _url):
+            return _static_result(
+                "<html>browser challenge</html>", fetch_method="rendered", status=403
+            )
+
+        def close(self):
+            pass
+
+    hybrid = HybridFetcher(FakeStatic(), lambda: FakeBrowser())
+    try:
+        out = hybrid.fetch("https://example.com/")
+        assert out.status == 403
+        assert out.fetch_blocked is True
+        assert out.text == "<html>browser challenge</html>"
+    finally:
+        hybrid.close()
+
+
+def test_hybrid_fetch_429_retries_static_before_escalating(monkeypatch):
+    from website_profiling.crawl.fetchers import hybrid as hybrid_module
+    from website_profiling.crawl.fetchers.hybrid import HybridFetcher
+
+    monkeypatch.setattr(hybrid_module.time, "sleep", lambda _s: None)
+    calls = {"static": 0, "browser": 0}
+
+    class FakeStatic:
+        def fetch(self, _url):
+            calls["static"] += 1
+            if calls["static"] == 1:
+                return _static_result("<html>rate limited</html>", status=429)
+            return _static_result("<html>recovered</html>", status=200)
+
+        def close(self):
+            pass
+
+    class FakeBrowser:
+        def fetch(self, _url):
+            calls["browser"] += 1
+            return _static_result("<html>should not be used</html>", fetch_method="rendered")
+
+        def close(self):
+            pass
+
+    hybrid = HybridFetcher(FakeStatic(), lambda: FakeBrowser())
+    try:
+        out = hybrid.fetch("https://example.com/")
+        assert calls["static"] == 2
+        assert calls["browser"] == 0
+        assert out.status == 200
+        assert out.text == "<html>recovered</html>"
+        assert out.fetch_blocked is False
+    finally:
+        hybrid.close()
+
+
+def test_hybrid_fetch_429_respects_retry_after_header(monkeypatch):
+    from website_profiling.crawl.fetchers import hybrid as hybrid_module
+    from website_profiling.crawl.fetchers.hybrid import HybridFetcher
+
+    sleep_calls = []
+    monkeypatch.setattr(hybrid_module.time, "sleep", lambda s: sleep_calls.append(s))
+
+    class FakeStatic:
+        def fetch(self, _url):
+            return _static_result("<html>rate limited</html>", status=429, retry_after_header="3")
+
+        def close(self):
+            pass
+
+    class FakeBrowser:
+        def fetch(self, _url):
+            return _static_result("<html>rendered</html>", fetch_method="rendered")
+
+        def close(self):
+            pass
+
+    hybrid = HybridFetcher(FakeStatic(), lambda: FakeBrowser())
+    try:
+        hybrid.fetch("https://example.com/")
+        assert sleep_calls == [3.0]
+    finally:
+        hybrid.close()
+
+
+def test_hybrid_fetch_429_ignores_malformed_retry_after(monkeypatch):
+    from website_profiling.crawl.fetchers import hybrid as hybrid_module
+    from website_profiling.crawl.fetchers.hybrid import HybridFetcher
+
+    sleep_calls = []
+    monkeypatch.setattr(hybrid_module.time, "sleep", lambda s: sleep_calls.append(s))
+
+    class FakeStatic:
+        def fetch(self, _url):
+            return _static_result(
+                "<html>rate limited</html>",
+                status=429,
+                retry_after_header="Wed, 21 Oct 2026 07:28:00 GMT",
+            )
+
+        def close(self):
+            pass
+
+    class FakeBrowser:
+        def fetch(self, _url):
+            return _static_result("<html>rendered</html>", fetch_method="rendered")
+
+        def close(self):
+            pass
+
+    hybrid = HybridFetcher(FakeStatic(), lambda: FakeBrowser())
+    try:
+        hybrid.fetch("https://example.com/")
+        assert sleep_calls == [1.0]  # falls back to the default, doesn't raise
+    finally:
+        hybrid.close()
+
+
+def test_hybrid_fetch_429_retry_after_is_capped(monkeypatch):
+    from website_profiling.crawl.fetchers import hybrid as hybrid_module
+    from website_profiling.crawl.fetchers.hybrid import HybridFetcher
+
+    sleep_calls = []
+    monkeypatch.setattr(hybrid_module.time, "sleep", lambda s: sleep_calls.append(s))
+
+    class FakeStatic:
+        def fetch(self, _url):
+            return _static_result("<html>rate limited</html>", status=429, retry_after_header="9999")
+
+        def close(self):
+            pass
+
+    class FakeBrowser:
+        def fetch(self, _url):
+            return _static_result("<html>rendered</html>", fetch_method="rendered")
+
+        def close(self):
+            pass
+
+    hybrid = HybridFetcher(FakeStatic(), lambda: FakeBrowser())
+    try:
+        hybrid.fetch("https://example.com/")
+        assert sleep_calls == [10.0]
+    finally:
+        hybrid.close()
+
+
+def test_hybrid_fetch_blocked_static_falls_back_when_browser_crashes(monkeypatch):
+    from website_profiling.crawl.fetchers.hybrid import HybridFetcher
+
+    class FakeStatic:
+        def fetch(self, _url):
+            return _static_result("<html>static challenge</html>", status=403)
+
+        def close(self):
+            pass
+
+    class FakeBrowser:
+        def fetch(self, _url):
+            return FetchResult(
+                status=None,
+                content_type=None,
+                text=None,
+                response_time_ms=None,
+                content_length=None,
+                final_url=None,
+                headers_dict={},
+                redirect_chain_length=0,
+                fetch_method="rendered",
+            )
+
+        def close(self):
+            pass
+
+    hybrid = HybridFetcher(FakeStatic(), lambda: FakeBrowser())
+    try:
+        out = hybrid.fetch("https://example.com/")
+        # Browser crashed outright (not "blocked") — fall back to the real
+        # static result rather than a crashed/empty one; not marked as
+        # fetch_blocked since no confirmed browser verdict was reached.
+        assert out.status == 403
+        assert out.fetch_blocked is False
+        assert out.text == "<html>static challenge</html>"
+    finally:
+        hybrid.close()
+
+
+def test_hybrid_fetch_200_case_unaffected(monkeypatch):
+    from website_profiling.crawl.fetchers.hybrid import HybridFetcher
+
+    browser_calls = {"count": 0}
+
+    class FakeStatic:
+        def fetch(self, _url):
+            return _static_result("<html><body><h1>Normal page</h1></body></html>")
+
+        def close(self):
+            pass
+
+    class FakeBrowser:
+        def fetch(self, _url):
+            browser_calls["count"] += 1
+            return _static_result("<html>rendered</html>", fetch_method="rendered")
+
+        def close(self):
+            pass
+
+    hybrid = HybridFetcher(FakeStatic(), lambda: FakeBrowser())
+    try:
+        out = hybrid.fetch("https://example.com/")
+        assert browser_calls["count"] == 0
+        assert out.status == 200
+        assert out.fetch_blocked is False
+        assert out.text == "<html><body><h1>Normal page</h1></body></html>"
     finally:
         hybrid.close()
 

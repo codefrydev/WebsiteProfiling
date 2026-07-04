@@ -29,11 +29,13 @@ def analyze_page_html(
     *,
     excerpt_max_chars: int = 0,
     strategy: ContentStrategy = "main_only",
+    main_content_selectors: str | None = None,
+    boilerplate_selectors: str | None = None,
 ) -> dict:
     """Analyze stored HTML and return crawl row content fields."""
     soup = load_soup(raw_html)
-    cleaned = cleanup_dom(soup)
-    root = find_main_content(cleaned, strategy=strategy)
+    cleaned = cleanup_dom(soup, boilerplate_selectors=boilerplate_selectors)
+    root = find_main_content(cleaned, strategy=strategy, selectors=main_content_selectors)
     body_text = extract_text(root)
     words = tokenize_words(body_text)
     return {

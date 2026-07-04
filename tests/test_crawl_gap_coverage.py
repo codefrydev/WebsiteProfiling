@@ -176,6 +176,129 @@ def test_crawler_auth_headers_and_custom_fields(monkeypatch) -> None:
     assert fields["id"] == "99"
 
 
+def test_worker_with_llm_extractor_end_to_end(monkeypatch) -> None:
+    """Full-stack proof: Crawler wiring (crawl_run_id, resolver construction,
+    apply_custom_extractions) plus the real llm_selector_cache logic underneath
+    it (mocked only at the AI-transport and DB-cache boundaries) resolve and
+    cache a selector across two pages of the same crawl with a single AI call."""
+    from website_profiling.crawl import llm_selector_cache as lsc
+    from website_profiling.crawl.crawler import Crawler
+    from website_profiling.crawl.fetchers.base import FetchResult
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
+        lambda *_a, **_k: [],
+    )
+    monkeypatch.setattr(
+        "website_profiling.crawl.crawler.load_llm_config_from_db",
+        lambda: {"llm_enabled": "true", "llm_provider": "openai"},
+    )
+
+    fake_store: dict[str, str] = {}
+    from contextlib import contextmanager
+
+    @contextmanager
+    def _fake_db_session():
+        yield object()
+
+    monkeypatch.setattr(lsc, "db_session", _fake_db_session)
+    monkeypatch.setattr(lsc, "read_llm_cache", lambda _conn, key: fake_store.get(key))
+
+    def _write(_conn, key, value):
+        fake_store[key] = value
+
+    monkeypatch.setattr(lsc, "write_llm_cache", _write)
+
+    ai_calls = []
+
+    def fake_generate(field_name, description, html_samples, **kwargs):
+        ai_calls.append(field_name)
+        return {"ok": True, "type": "css", "selector": ".price", "attr": "", "confidence": 0.9, "rationale": "r"}
+
+    monkeypatch.setattr(lsc, "generate_extraction_selector", fake_generate)
+
+    def fake_build_fetcher(**kwargs):
+        fetcher = MagicMock()
+        fetcher.fetch = lambda url: FetchResult(
+            status=200,
+            content_type="text/html",
+            text='<html><body><span class="price">$19.99</span></body></html>',
+            response_time_ms=1,
+            content_length=10,
+            final_url=url,
+            headers_dict={},
+            redirect_chain_length=0,
+            fetch_method="static",
+        )
+        fetcher.close = lambda: None
+        return fetcher
+
+    monkeypatch.setattr("website_profiling.crawl.crawler.build_fetcher", fake_build_fetcher)
+
+    c = Crawler(
+        start_url="https://site.com",
+        ignore_robots=True,
+        use_wappalyzer=False,
+        custom_extractors=[{"name": "price", "type": "llm", "description": "the product price"}],
+    )
+    # Simulate what .crawl() does before dispatching worker() calls, without
+    # needing the full thread-pool/queue machinery for this wiring test.
+    c.crawl_run_id = 7
+    c._llm_resolver = c._build_llm_resolver_if_needed()
+    assert c._llm_resolver is not None
+
+    out1 = c.worker("https://site.com/page1")
+    out2 = c.worker("https://site.com/page2")
+
+    assert json.loads(out1["custom_fields"])["price"] == "$19.99"
+    assert json.loads(out2["custom_fields"])["price"] == "$19.99"
+    assert ai_calls == ["price"]  # bootstrapped once, replayed on page 2
+
+
+def test_build_llm_resolver_skips_db_lookup_when_no_llm_extractors(monkeypatch) -> None:
+    from website_profiling.crawl.crawler import Crawler
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
+        lambda *_a, **_k: [],
+    )
+    monkeypatch.setattr(
+        "website_profiling.crawl.crawler.load_llm_config_from_db",
+        lambda: (_ for _ in ()).throw(AssertionError("must not load LLM config with no llm-type extractors")),
+    )
+    c = Crawler(
+        start_url="https://site.com",
+        ignore_robots=True,
+        use_wappalyzer=False,
+        custom_extractors=[{"name": "id", "type": "css", "selector": ".id"}],
+    )
+    assert c._build_llm_resolver_if_needed() is None
+
+
+def test_build_llm_resolver_warns_once_when_llm_disabled(monkeypatch, capsys) -> None:
+    from website_profiling.crawl.crawler import Crawler
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
+        lambda *_a, **_k: [],
+    )
+    monkeypatch.setattr(
+        "website_profiling.crawl.crawler.load_llm_config_from_db",
+        lambda: {"llm_enabled": "false"},
+    )
+    c = Crawler(
+        start_url="https://site.com",
+        ignore_robots=True,
+        use_wappalyzer=False,
+        custom_extractors=[{"name": "price", "type": "llm", "description": "the price"}],
+    )
+    resolver = c._build_llm_resolver_if_needed()
+    assert resolver is None
+    out = capsys.readouterr().out
+    assert "LLM disabled" in out
+    assert "price" in out
+
+
 def test_write_and_read_link_edges(monkeypatch) -> None:
     from website_profiling.db import crawl_store as cs
 

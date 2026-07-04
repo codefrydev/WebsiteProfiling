@@ -116,7 +116,7 @@ def test_static_fetcher_default_factory_sets_user_agent() -> None:
 
 def test_static_fetcher_fetch_success_non_html_and_error() -> None:
     class OkSession:
-        def get(self, url, timeout, allow_redirects):  # noqa: ANN001
+        def get(self, url, timeout, allow_redirects, stream=False):  # noqa: ANN001
             return _FakeResp(200, "text/html", "<html>ok</html>")
 
         def close(self) -> None:
@@ -132,7 +132,7 @@ def test_static_fetcher_fetch_success_non_html_and_error() -> None:
         fetcher.close()
 
     class NonHtmlSession:
-        def get(self, url, timeout, allow_redirects):  # noqa: ANN001
+        def get(self, url, timeout, allow_redirects, stream=False):  # noqa: ANN001
             # 404 + empty body exercises the non-HTML and content-is-None paths.
             return _FakeResp(404, "application/json", None)
 
@@ -149,7 +149,7 @@ def test_static_fetcher_fetch_success_non_html_and_error() -> None:
         non_html.close()
 
     class BoomSession:
-        def get(self, url, timeout, allow_redirects):  # noqa: ANN001
+        def get(self, url, timeout, allow_redirects, stream=False):  # noqa: ANN001
             raise requests.RequestException("boom")
 
         def close(self) -> None:

@@ -162,6 +162,150 @@ def test_worker_fetch_error_returns_error_status(monkeypatch) -> None:
     assert out["status"] == "error"
 
 
+def test_worker_blocked_page_does_not_run_content_analysis(monkeypatch) -> None:
+    from website_profiling.crawl.crawler import Crawler
+    from website_profiling.crawl.fetchers.base import FetchResult
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
+        lambda *_a, **_k: [],
+    )
+    c = Crawler(start_url="https://site.com", ignore_robots=True, use_wappalyzer=False)
+    # Non-empty challenge-page body with plenty of words: would score as real
+    # content if the fetch_blocked gate didn't suppress content analysis.
+    challenge_html = (
+        "<html><body><h1>Access Denied</h1><p>"
+        + "please verify you are human before continuing to browse " * 20
+        + "</p></body></html>"
+    )
+    c.fetch = lambda _url: FetchResult(  # type: ignore[method-assign]
+        status=403,
+        content_type="text/html",
+        text=challenge_html,
+        response_time_ms=5,
+        content_length=len(challenge_html),
+        final_url="https://site.com/a",
+        headers_dict={},
+        redirect_chain_length=0,
+        fetch_method="rendered",
+        fetch_blocked=True,
+    )
+    out = c.worker("https://site.com/a")
+    assert out["fetch_blocked"] is True
+    assert out["status"] == 403
+    assert out["word_count"] == 0
+
+
+def test_worker_fetch_blocked_false_by_default_for_normal_page(monkeypatch) -> None:
+    from website_profiling.crawl.crawler import Crawler
+    from website_profiling.crawl.fetchers.base import FetchResult
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
+        lambda *_a, **_k: [],
+    )
+    c = Crawler(start_url="https://site.com", ignore_robots=True, use_wappalyzer=False)
+    html = "<html><body><h1>Hello</h1><p>Real page content here.</p></body></html>"
+    c.fetch = lambda _url: FetchResult(  # type: ignore[method-assign]
+        status=200,
+        content_type="text/html",
+        text=html,
+        response_time_ms=5,
+        content_length=len(html),
+        final_url="https://site.com/a",
+        headers_dict={},
+        redirect_chain_length=0,
+        fetch_method="static",
+    )
+    out = c.worker("https://site.com/a")
+    assert out["fetch_blocked"] is False
+    assert out["word_count"] > 0
+
+
+def test_worker_blocked_page_does_not_run_custom_extractions(monkeypatch) -> None:
+    from website_profiling.crawl.crawler import Crawler
+    from website_profiling.crawl.fetchers.base import FetchResult
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
+        lambda *_a, **_k: [],
+    )
+    c = Crawler(
+        start_url="https://site.com",
+        ignore_robots=True,
+        use_wappalyzer=False,
+        custom_extractors=[{"name": "title_word", "type": "regex", "pattern": r"(Access)"}],
+    )
+    challenge_html = "<html><body><h1>Access Denied challenge page</h1></body></html>"
+    c.fetch = lambda _url: FetchResult(  # type: ignore[method-assign]
+        status=403,
+        content_type="text/html",
+        text=challenge_html,
+        response_time_ms=5,
+        content_length=len(challenge_html),
+        final_url="https://site.com/a",
+        headers_dict={},
+        redirect_chain_length=0,
+        fetch_method="rendered",
+        fetch_blocked=True,
+    )
+    out = c.worker("https://site.com/a")
+    assert "custom_fields" not in out
+
+
+def test_worker_extracts_pdf_text_and_word_count(monkeypatch) -> None:
+    import io
+
+    from website_profiling.crawl.crawler import Crawler
+    from website_profiling.crawl.fetchers.base import FetchResult
+
+    def _make_pdf_bytes(text: str) -> bytes:
+        from pypdf import PdfWriter
+        from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
+
+        writer = PdfWriter()
+        page = writer.add_blank_page(width=612, height=792)
+        font = DictionaryObject({
+            NameObject("/Type"): NameObject("/Font"),
+            NameObject("/Subtype"): NameObject("/Type1"),
+            NameObject("/BaseFont"): NameObject("/Helvetica"),
+        })
+        font_ref = writer._add_object(font)
+        page[NameObject("/Resources")] = DictionaryObject(
+            {NameObject("/Font"): DictionaryObject({NameObject("/F1"): font_ref})}
+        )
+        content = DecodedStreamObject()
+        content.set_data(f"BT /F1 24 Tf 72 712 Td ({text}) Tj ET".encode())
+        page.replace_contents(content)
+        writer.add_metadata({"/Title": "PDF Report Title"})
+        buf = io.BytesIO()
+        writer.write(buf)
+        return buf.getvalue()
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.sitemap.discover_sitemap_urls",
+        lambda *_a, **_k: [],
+    )
+    c = Crawler(start_url="https://site.com", ignore_robots=True, use_wappalyzer=False)
+    pdf_bytes = _make_pdf_bytes("Annual report content words here for testing.")
+    c.fetch = lambda _url: FetchResult(  # type: ignore[method-assign]
+        status=200,
+        content_type="application/pdf",
+        text=None,
+        response_time_ms=5,
+        content_length=len(pdf_bytes),
+        final_url="https://site.com/report.pdf",
+        headers_dict={},
+        redirect_chain_length=0,
+        fetch_method="static",
+        raw_bytes=pdf_bytes,
+    )
+    out = c.worker("https://site.com/report.pdf")
+    assert out["word_count"] > 0
+    assert out["title"] == "PDF Report Title"
+    assert "content_html_ratio" not in out
+
+
 def test_worker_merges_browser_diagnostics_into_page_analysis(monkeypatch) -> None:
     import json
 

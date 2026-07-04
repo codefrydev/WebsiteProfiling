@@ -12,6 +12,22 @@ import requests
 from .base import HEADER_KEYS, FetchResult
 
 
+def _read_capped_pdf_body(resp: "requests.Response", max_bytes: int) -> tuple[Optional[bytes], int]:
+    """Stream a PDF response body, bailing out to (None, size) if it exceeds
+    max_bytes per Content-Length or during actual download — never buffers an
+    oversized PDF fully in memory just to discard it."""
+    declared = resp.headers.get("Content-Length", "")
+    if declared.isdigit() and int(declared) > max_bytes:
+        resp.close()
+        return None, int(declared)
+    chunks = bytearray()
+    for chunk in resp.iter_content(chunk_size=65536):
+        chunks.extend(chunk)
+        if len(chunks) > max_bytes:
+            return None, len(chunks)
+    return bytes(chunks), len(chunks)
+
+
 class StaticFetcher:
     """Fetch pages over HTTP.
 
@@ -28,8 +44,10 @@ class StaticFetcher:
         user_agent: str = "WebsiteProfilingCrawler/1.0",
         session: Optional[requests.Session] = None,
         session_factory: Optional[Callable[[], requests.Session]] = None,
+        max_pdf_bytes: int = 10_485_760,
     ) -> None:
         self.timeout = timeout
+        self.max_pdf_bytes = max_pdf_bytes
         self._user_agent = user_agent
         self._explicit_session = session
         if session_factory is not None:
@@ -76,7 +94,10 @@ class StaticFetcher:
             # response (e.g. 301/308) rather than collapsing the chain into the
             # final 200. The crawler enqueues the Location target so each hop is
             # crawled and recorded as its own row.
-            resp = session.get(url, timeout=self.timeout, allow_redirects=False)
+            # stream=True is transparent for HTML/other content below (accessing
+            # .text/.content still reads the full body) but lets the PDF branch
+            # bail out before or during download instead of after.
+            resp = session.get(url, timeout=self.timeout, allow_redirects=False, stream=True)
             response_time_ms = int((time.perf_counter() - t0) * 1000)
             ct = resp.headers.get("Content-Type", "")
             location = resp.headers.get("Location") or resp.headers.get("location") or ""
@@ -88,8 +109,14 @@ class StaticFetcher:
             is_html = (not is_redirect) and (
                 "text/html" in ct or "application/xhtml+xml" in ct
             )
-            text = resp.text if is_html else None
-            content_length = len(resp.content) if resp.content is not None else 0
+            is_pdf = (not is_redirect) and "application/pdf" in ct.lower()
+            text: Optional[str] = None
+            raw_bytes: Optional[bytes] = None
+            if is_pdf:
+                raw_bytes, content_length = _read_capped_pdf_body(resp, self.max_pdf_bytes)
+            else:
+                text = resp.text if is_html else None
+                content_length = len(resp.content) if resp.content is not None else 0
             if is_redirect:
                 final_url = urljoin(url, location)
                 redirect_chain_length = 1
@@ -107,6 +134,8 @@ class StaticFetcher:
                 headers_dict=headers_dict,
                 redirect_chain_length=redirect_chain_length,
                 fetch_method="static",
+                retry_after_header=(resp.headers.get("Retry-After") or "").strip(),
+                raw_bytes=raw_bytes,
             )
         except requests.RequestException:
             return FetchResult(

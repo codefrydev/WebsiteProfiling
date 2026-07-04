@@ -154,6 +154,31 @@ def run_page_coach(
         return {"ok": False, "error": str(e)}
 
 
+def generate_extraction_selector(
+    field_name: str,
+    description: str,
+    html_samples: list[str],
+    *,
+    previous_selector: dict[str, Any] | None = None,
+    previous_selector_failed: bool = False,
+) -> dict[str, Any]:
+    """Ask AiService to write a CSS/XPath selector for a described field,
+    grounded against real HTML samples. Caller is responsible for checking
+    llm_is_enabled() first — this is a thin transport wrapper, like call_ai_api."""
+    payload: dict[str, Any] = {
+        "field_name": field_name,
+        "description": description,
+        "html_samples": html_samples,
+    }
+    if previous_selector is not None:
+        payload["previous_selector"] = previous_selector
+        payload["previous_selector_failed"] = previous_selector_failed
+    try:
+        return _post("/internal/extraction/generate-selector", payload)
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
 def complete_json(system: str, user: str, cfg: dict[str, str] | None = None) -> dict[str, Any]:
     _ = cfg
     try:

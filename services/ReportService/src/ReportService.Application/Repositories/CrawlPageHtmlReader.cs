@@ -21,6 +21,7 @@ public sealed class CrawlPageHtmlReader(NpgsqlDataSource dataSource)
             SELECT url, html
             FROM crawl_page_html
             WHERE crawl_run_id = @runId
+              AND content_type ILIKE '%html%'
             ORDER BY url
             LIMIT @limit
             """,
