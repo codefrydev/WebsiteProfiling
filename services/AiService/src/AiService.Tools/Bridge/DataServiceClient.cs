@@ -9,7 +9,7 @@ namespace AiService.Tools.Bridge;
 /// </summary>
 public sealed class DataServiceClient(HttpClient http)
 {
-    public async Task<byte[]?> GetPdfAsync(int reportId, string profile, CancellationToken cancellationToken)
+    public async Task<byte[]?> GetPdfAsync(long reportId, string profile, CancellationToken cancellationToken)
     {
         var url = $"{ReportExportRoutes.V1ReportsPrefix}/{reportId}/pdf" +
             $"?{ReportExportRoutes.ProfileParam}={Uri.EscapeDataString(profile)}" +
@@ -25,10 +25,10 @@ public sealed class DataServiceClient(HttpClient http)
         return await response.Content.ReadAsByteArrayAsync(cancellationToken);
     }
 
-    public Task<string?> GetCsvAsync(int reportId, CancellationToken cancellationToken)
+    public Task<string?> GetCsvAsync(long reportId, CancellationToken cancellationToken)
         => GetTextAsync($"{ReportExportRoutes.V1ReportsPrefix}/{reportId}/csv", cancellationToken);
 
-    public Task<string?> GetJsonAsync(int reportId, CancellationToken cancellationToken)
+    public Task<string?> GetJsonAsync(long reportId, CancellationToken cancellationToken)
         => GetTextAsync($"{ReportExportRoutes.V1ReportsPrefix}/{reportId}/json", cancellationToken);
 
     private async Task<string?> GetTextAsync(string url, CancellationToken cancellationToken)

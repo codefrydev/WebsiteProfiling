@@ -13,8 +13,8 @@ public sealed class PythonToolBridgeClient(HttpClient http, IOptions<FastApiOpti
     public async Task<JsonObject> InvokeAsync(
         string toolName,
         JsonObject args,
-        int propertyId,
-        int? reportId = null,
+        long propertyId,
+        long? reportId = null,
         CancellationToken cancellationToken = default)
     {
         var body = new JsonObject

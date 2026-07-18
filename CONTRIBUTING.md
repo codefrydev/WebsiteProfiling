@@ -13,13 +13,15 @@ Thank you for helping improve this project. All contributions are welcome under 
 ## Development setup
 
 ```bash
-./local-run setup   # once: Postgres, Python venv, migrations, npm deps
-./local-run         # dev server → http://localhost:3000/home
+./local-run         # installs/syncs deps + dev server → http://localhost:3000/home
+./local-run setup   # optional: deps + migrations only (no dev server)
 ```
+
+`./local-run` automatically installs missing project dependencies (Python pip, npm, NuGet, Playwright/Chromium) and, when Homebrew/winget is available, missing system tools (Docker, Python 3.12+, Node 20+, .NET SDK 10+). Skip auto-install with `WP_SKIP_SYSTEM_INSTALL=1` or skip dependency sync with `WP_SKIP_DEPS_SYNC=1`.
 
 Details: [README.md](README.md), [AGENT.md](AGENT.md), [docs/README.md](docs/README.md).
 
-JavaScript/auto crawl needs Playwright (from `requirements.txt`, installed by `./local-run setup`) and Chromium on `PATH` or `CHROME_PATH`. Unit tests mock the browser fetcher; integration tests use `@pytest.mark.browser` and run in the Docker CI job (`tests/test_crawl_fetchers.py`, `tests/test_crawler_browser_e2e.py`). Locally: `./local-test browser` (skips gracefully if Chromium is missing).
+JavaScript/auto crawl needs Playwright (from `requirements.txt`, installed automatically by `./local-run`) and Chromium on `PATH` or `CHROME_PATH`. Unit tests mock the browser fetcher; integration tests use `@pytest.mark.browser` and run in the Docker CI job (`tests/test_crawl_fetchers.py`, `tests/test_crawler_browser_e2e.py`). Locally: `./local-test browser` (skips gracefully if Chromium is missing).
 
 ## Running tests
 

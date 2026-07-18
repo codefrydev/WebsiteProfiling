@@ -149,52 +149,19 @@ cmd_db() {
   log "DATABASE_URL=$DATABASE_URL"
 }
 
-cmd_venv() {
-  need_cmd python3
-  if [[ ! -x "$VENV/bin/python" ]]; then
-    log "Creating Python venv at .venv"
-    python3 -m venv "$VENV"
-  fi
-  log "Installing Python dependencies"
-  "$VENV/bin/pip" install -q -r "$ROOT/requirements.txt"
-}
-
 cmd_migrate() {
+  ensure_system_tools
+  ensure_dotnet_deps
   cmd_db
-  need_cmd dotnet
   log "Applying database migrations (EF Core: Schema.Migrator)"
   DATABASE_URL="$DATABASE_URL" dotnet run --project "$ROOT/services/Schema/src/Schema.Migrator" --no-launch-profile
 }
 
-cmd_web_deps() {
-  need_cmd npm
-  if [[ ! -d "$WEB/node_modules" ]]; then
-    log "Installing web dependencies (npm ci)"
-    (cd "$WEB" && npm ci)
-  fi
-}
-
-cmd_browser_deps() {
-  [[ -x "$VENV/bin/python" ]] || cmd_venv
-  log "Ensuring Playwright + Chromium for JS crawl"
-  if ! "$VENV/bin/python" -c "
-from website_profiling.crawl.fetchers import ensure_browser_deps
-import json, sys
-status = ensure_browser_deps()
-print(json.dumps(status))
-sys.exit(0 if status.get('ok') else 1)
-"; then
-    warn "Browser deps unavailable — JS/auto crawl disabled until Playwright + Chromium install successfully"
-  fi
-}
-
 cmd_setup() {
   mkdir -p "$DATA_DIR"
-  cmd_db
-  cmd_venv
-  cmd_browser_deps
+  ensure_system_tools
+  ensure_all_project_deps
   cmd_migrate
-  cmd_web_deps
   log "Setup complete."
   log "Start the UI: ./local-run start"
   log "Open http://localhost:3000/home (use localhost, not 127.0.0.1 for pipeline APIs)"
@@ -202,12 +169,9 @@ cmd_setup() {
 
 cmd_start() {
   mkdir -p "$DATA_DIR"
-  cmd_db
-  need_cmd dotnet
-  cmd_browser_deps
-  log "Ensuring migrations are up to date"
-  DATABASE_URL="$DATABASE_URL" dotnet run --project "$ROOT/services/Schema/src/Schema.Migrator" --no-launch-profile
-  cmd_web_deps
+  ensure_system_tools
+  ensure_all_project_deps
+  cmd_migrate
   cd "$ROOT"
   export DATABASE_URL DATA_DIR PYTHON WEBSITE_PROFILING_ROOT PYTHONPATH
 
@@ -348,6 +312,8 @@ Environment overrides (optional):
   INTEGRATIONS_ROUTES (default: /api/integrations/google,/api/integrations/bing)
   AUTH_SECRET, GOOGLE_REDIRECT_URI, APP_PUBLIC_URL (Google OAuth)
   DEPRECATE_PYTHON_INTEGRATIONS (default: 1 — Python integration routes return 410)
+  WP_SKIP_SYSTEM_INSTALL (default: 0 — auto-install missing tools via Homebrew/apt when available)
+  WP_SKIP_DEPS_SYNC (default: 0 — skip pip/npm/dotnet restore sync for faster restarts)
   WP_PG_CONTAINER, WP_PG_PORT, WP_PG_PASSWORD, WP_PG_DB
 
 After start, open: http://localhost:3000/home

@@ -710,37 +710,58 @@ public static class GeoToolHandlers
 
         async Task<JsonObject> GeoSnapshotAsync(string domain)
         {
-            var llmsTask = GeoAuditHelpers.FetchLlmsTxtAsync(http, domain, cancellationToken);
-            var robotsTask = GeoAuditHelpers.ScoreRobotsAiAccessAsync(http, domain, cancellationToken);
-            var metaTask = GeoAuditHelpers.ScoreMetaSignalsAsync(http, domain, cancellationToken);
-            var freshnessTask = GeoAuditHelpers.ScoreFreshnessSignalsAsync(http, domain, cancellationToken);
-            var discoveryTask = GeoAuditHelpers.FetchAiDiscoveryAsync(http, domain, cancellationToken);
-            await Task.WhenAll(llmsTask, robotsTask, metaTask, freshnessTask, discoveryTask);
-
-            var llms = llmsTask.Result;
-            var llmsFound = JsonCoercion.IsTruthy(llms["found"]);
-            var llmsScore = llmsFound ? JsonCoercion.AsInt((llms["depth"] as JsonObject)?["depth_score"]) ?? 0 : 0;
-            var robotsScore = JsonCoercion.AsInt(robotsTask.Result["robots_score"]) ?? 0;
-            var metaScore = JsonCoercion.AsInt(metaTask.Result["meta_score"]) ?? 0;
-            var freshScore = JsonCoercion.AsInt(freshnessTask.Result["freshness_score"]) ?? 0;
-            var discScore = JsonCoercion.AsInt(discoveryTask.Result["discovery_score"]) ?? 0;
-            return new JsonObject
+            try
             {
-                ["llms_txt_score"] = llmsScore,
-                ["llms_txt_found"] = llmsFound,
-                ["robots_score"] = robotsScore,
-                ["meta_score"] = metaScore,
-                ["freshness_score"] = freshScore,
-                ["ai_discovery_score"] = discScore,
-                ["total_score"] = llmsScore + robotsScore + metaScore + freshScore + discScore,
-            };
+                var llmsTask = GeoAuditHelpers.FetchLlmsTxtAsync(http, domain, cancellationToken);
+                var robotsTask = GeoAuditHelpers.ScoreRobotsAiAccessAsync(http, domain, cancellationToken);
+                var metaTask = GeoAuditHelpers.ScoreMetaSignalsAsync(http, domain, cancellationToken);
+                var freshnessTask = GeoAuditHelpers.ScoreFreshnessSignalsAsync(http, domain, cancellationToken);
+                var discoveryTask = GeoAuditHelpers.FetchAiDiscoveryAsync(http, domain, cancellationToken);
+                await Task.WhenAll(llmsTask, robotsTask, metaTask, freshnessTask, discoveryTask);
+
+                var llms = await llmsTask;
+                var llmsFound = JsonCoercion.IsTruthy(llms["found"]);
+                var llmsScore = llmsFound ? JsonCoercion.AsInt((llms["depth"] as JsonObject)?["depth_score"]) ?? 0 : 0;
+                var robotsScore = JsonCoercion.AsInt((await robotsTask)["robots_score"]) ?? 0;
+                var metaScore = JsonCoercion.AsInt((await metaTask)["meta_score"]) ?? 0;
+                var freshScore = JsonCoercion.AsInt((await freshnessTask)["freshness_score"]) ?? 0;
+                var discScore = JsonCoercion.AsInt((await discoveryTask)["discovery_score"]) ?? 0;
+                return new JsonObject
+                {
+                    ["llms_txt_score"] = llmsScore,
+                    ["llms_txt_found"] = llmsFound,
+                    ["robots_score"] = robotsScore,
+                    ["meta_score"] = metaScore,
+                    ["freshness_score"] = freshScore,
+                    ["ai_discovery_score"] = discScore,
+                    ["total_score"] = llmsScore + robotsScore + metaScore + freshScore + discScore,
+                };
+            }
+            catch (Exception ex)
+            {
+                return new JsonObject { ["error"] = ex.Message };
+            }
         }
 
-        var curSnapTask = GeoSnapshotAsync(currentDomain);
-        var baseSnapTask = GeoSnapshotAsync(baselineDomain);
-        await Task.WhenAll(curSnapTask, baseSnapTask);
-        var curSnap = curSnapTask.Result;
-        var baseSnap = baseSnapTask.Result;
+        JsonObject curSnap;
+        JsonObject baseSnap;
+        try
+        {
+            curSnap = await GeoSnapshotAsync(currentDomain);
+            baseSnap = await GeoSnapshotAsync(baselineDomain);
+        }
+        catch (Exception ex)
+        {
+            return new JsonObject { ["error"] = ex.Message };
+        }
+
+        if (curSnap["error"] is not null || baseSnap["error"] is not null)
+        {
+            return new JsonObject
+            {
+                ["error"] = curSnap["error"]?.GetValue<string>() ?? baseSnap["error"]?.GetValue<string>() ?? "geo snapshot failed",
+            };
+        }
 
         var deltas = new JsonObject();
         foreach (var (key, curNode) in curSnap)

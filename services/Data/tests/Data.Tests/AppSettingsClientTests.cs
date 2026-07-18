@@ -1,8 +1,7 @@
 using System.Net;
 using Data.Application.Clients;
-using Data.Application.Options;
+using Data.Application.Repositories;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 
 namespace Data.Tests;
 
@@ -12,8 +11,7 @@ public class AppSettingsClientTests
     public async Task GetBrandingAsync_disabled_returns_empty_model()
     {
         var client = new AppSettingsClient(
-            TestHttpHandler.CreateClient(_ => throw new InvalidOperationException("should not call")),
-            Options.Create(new ReportApiOptions { BaseUrl = "http://report-api.test" }),
+            new FakeUiPreferencesRepository(),
             new FakeLogoFetcher(),
             NullLogger<AppSettingsClient>.Instance);
 
@@ -25,20 +23,17 @@ public class AppSettingsClientTests
     [Fact]
     public async Task GetBrandingAsync_loads_brand_keys_and_logo()
     {
-        using var http = TestHttpHandler.CreateClient(req =>
-        {
-            if (req.RequestUri!.AbsolutePath.Contains("ui-preferences", StringComparison.OrdinalIgnoreCase))
-            {
-                return TestHttpHandler.Json(
-                    """{"brandName":"Agency Co","brandSubtitle":"Audits","brandLogoUrl":"https://cdn/logo.png"}""");
-            }
-
-            return new HttpResponseMessage(HttpStatusCode.NotFound);
-        });
         var logoFetcher = new FakeLogoFetcher { Bytes = [1, 2, 3] };
         var client = new AppSettingsClient(
-            http,
-            Options.Create(new ReportApiOptions { BaseUrl = "http://report-api.test" }),
+            new FakeUiPreferencesRepository
+            {
+                Prefs = new UiPreferencesDto
+                {
+                    BrandName = "Agency Co",
+                    BrandSubtitle = "Audits",
+                    BrandLogoUrl = "https://cdn/logo.png",
+                },
+            },
             logoFetcher,
             NullLogger<AppSettingsClient>.Instance);
 
@@ -52,12 +47,10 @@ public class AppSettingsClientTests
     }
 
     [Fact]
-    public async Task GetBrandingAsync_ignores_failed_setting_requests()
+    public async Task GetBrandingAsync_ignores_failed_repository_reads()
     {
-        using var http = TestHttpHandler.CreateClient(_ => new HttpResponseMessage(HttpStatusCode.InternalServerError));
         var client = new AppSettingsClient(
-            http,
-            Options.Create(new ReportApiOptions { BaseUrl = "http://report-api.test" }),
+            new FakeUiPreferencesRepository { ThrowOnGet = true },
             new FakeLogoFetcher(),
             NullLogger<AppSettingsClient>.Instance);
 
@@ -75,6 +68,30 @@ public class AppSettingsClientTests
             NullLogger<LogoFetcher>.Instance);
 
         var bytes = await fetcher.FetchAsync("  ");
+
+        Assert.Null(bytes);
+    }
+
+    [Fact]
+    public async Task LogoFetcher_returns_null_for_localhost_url()
+    {
+        var fetcher = new LogoFetcher(
+            TestHttpHandler.CreateClient(_ => throw new InvalidOperationException("should not fetch")),
+            NullLogger<LogoFetcher>.Instance);
+
+        var bytes = await fetcher.FetchAsync("http://127.0.0.1/logo.png");
+
+        Assert.Null(bytes);
+    }
+
+    [Fact]
+    public async Task LogoFetcher_returns_null_for_file_scheme()
+    {
+        var fetcher = new LogoFetcher(
+            TestHttpHandler.CreateClient(_ => throw new InvalidOperationException("should not fetch")),
+            NullLogger<LogoFetcher>.Instance);
+
+        var bytes = await fetcher.FetchAsync("file:///etc/passwd");
 
         Assert.Null(bytes);
     }
@@ -107,6 +124,25 @@ public class AppSettingsClientTests
         var bytes = await fetcher.FetchAsync("https://cdn/huge.png");
 
         Assert.Null(bytes);
+    }
+
+    private sealed class FakeUiPreferencesRepository : IUiPreferencesRepository
+    {
+        public UiPreferencesDto Prefs { get; init; } = new();
+        public bool ThrowOnGet { get; init; }
+
+        public Task<UiPreferencesDto> GetAsync(CancellationToken cancellationToken = default)
+        {
+            if (ThrowOnGet)
+            {
+                throw new InvalidOperationException("db unavailable");
+            }
+
+            return Task.FromResult(Prefs);
+        }
+
+        public Task PatchAsync(IReadOnlyDictionary<string, string> updates, CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     private sealed class FakeLogoFetcher : ILogoFetcher

@@ -1,5 +1,6 @@
 using System.Security.Cryptography;
 using System.Text;
+using AiService.Application.Mcp;
 using AiService.Domain.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Caching.Memory;
@@ -21,7 +22,6 @@ public sealed class McpBearerAuthFilter(
     IMemoryCache cache,
     ILogger<McpBearerAuthFilter> logger) : IEndpointFilter
 {
-    private const string CacheKey = "mcp-bearer-token";
     private const string BearerScheme = "Bearer ";
     private static readonly TimeSpan TokenCacheTtl = TimeSpan.FromSeconds(30);
 
@@ -33,12 +33,9 @@ public sealed class McpBearerAuthFilter(
 
         if (string.IsNullOrEmpty(token))
         {
-            // Fail-open: matches the endpoint's pre-fix (unauthenticated) behavior so
-            // environments that haven't set mcp_token yet don't get an unplanned outage. The
-            // warning logged in GetCurrentTokenAsync makes the exposure visible in logs; flip
-            // this to Results.Unauthorized() to fail closed once every deployment is known to
-            // have a token configured.
-            return await next(context);
+            logger.LogWarning(
+                "MCP HTTP endpoint (/mcp) rejected request — configure mcp_token in Risk Settings before use.");
+            return Results.Unauthorized();
         }
 
         var header = context.HttpContext.Request.Headers.Authorization.ToString();
@@ -53,7 +50,7 @@ public sealed class McpBearerAuthFilter(
 
     private async Task<string> GetCurrentTokenAsync(CancellationToken cancellationToken)
     {
-        return await cache.GetOrCreateAsync(CacheKey, async entry =>
+        return await cache.GetOrCreateAsync(McpAuthCacheKeys.BearerToken, async entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = TokenCacheTtl;
             using var scope = scopeFactory.CreateScope();
@@ -61,9 +58,7 @@ public sealed class McpBearerAuthFilter(
             var settings = await repo.LoadAsync(cancellationToken);
             if (string.IsNullOrEmpty(settings.BearerToken))
             {
-                logger.LogWarning(
-                    "MCP HTTP endpoint (/mcp) is enabled without a bearer token (mcp_token); " +
-                    "it is reachable without authentication.");
+                logger.LogDebug("MCP bearer token not configured (mcp_token empty).");
             }
 
             return settings.BearerToken;

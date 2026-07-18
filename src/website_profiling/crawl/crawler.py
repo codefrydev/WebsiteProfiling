@@ -543,6 +543,9 @@ class Crawler:
         stream_batch_size: int = 500,
     ) -> pd.DataFrame:
         _PAUSE_EVENT.clear()
+        from ..common import reset_wappalyzer_state
+
+        reset_wappalyzer_state()
         start_time = time.time()
         from ..progress import CrawlProgressTracker, emit_phase_start
 
@@ -611,6 +614,7 @@ class Crawler:
                         and len(self.results) + len(futures) < self.max_pages
                     ):
                         url = self.queue.get()
+                        self.frontier.note_dequeued(url)
                         if self.frontier.should_skip_dequeued(url):
                             continue
                         if not self.frontier.mark_visited(url):
@@ -809,8 +813,15 @@ def run_crawler(
     )
     stream_run_id: Optional[int] = None
     if output_db:
-        use_stream = crawl_stream_to_db or (max_pages is not None and max_pages > 100)
-        if use_stream:
+        # Always stream when writing to DB so pause can persist a crawl_run_id.
+        # On resume, reuse the paused run instead of creating a new one.
+        if resume_run_id is not None and _resume_pause_state is not None:
+            stream_run_id = resume_run_id
+            console_print(
+                f"  Resuming stream into existing crawl run (run_id={stream_run_id})...",
+                flush=True,
+            )
+        else:
             from ..db import backup_db_if_exists, create_crawl_run, db_session, read_historical_data, restore_historical_data
             from ..db.storage import ensure_crawl_tables_cleared
 

@@ -59,4 +59,26 @@ public sealed class GeoToolHandlersCompareTests
         var robotsDelta = result["geo_deltas"]!["robots_score"]!;
         Assert.Equal("unchanged", robotsDelta["direction"]!.GetValue<string>());
     }
+
+    [Fact]
+    public async Task CompareGeoScoreDeltasAsync_returns_error_when_geo_helper_throws()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using (var seedDb = NewDb(dbName))
+        {
+            seedDb.ReportPayloads.Add(new ReportPayloadRow { Id = 1, Data = """{"domain": "example.com"}""" });
+            seedDb.ReportPayloads.Add(new ReportPayloadRow { Id = 2, Data = """{"domain": "example.com"}""" });
+            await seedDb.SaveChangesAsync();
+        }
+
+        await using var db = NewDb(dbName);
+        var ctx = new AuditToolContext { ReportId = 2 };
+        var args = new JsonObject { ["baseline_report_id"] = 1 };
+        var http = FakeClient(_ => throw new InvalidOperationException("upstream unavailable"));
+
+        var result = await GeoToolHandlers.CompareGeoScoreDeltasAsync(http, db, ctx, args, CancellationToken.None);
+
+        Assert.NotNull(result["error"]);
+        Assert.Contains("upstream unavailable", result["error"]!.GetValue<string>(), StringComparison.Ordinal);
+    }
 }

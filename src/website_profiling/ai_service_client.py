@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import Any
 
@@ -9,6 +10,8 @@ import httpx
 import pandas as pd
 
 from .llm_config import llm_is_enabled, load_llm_config_from_db
+
+logger = logging.getLogger(__name__)
 
 
 def _ai_base_url() -> str:
@@ -106,13 +109,14 @@ def enrich_top_issues_with_llm(
         }
         _post("/internal/enrichment/issue-fixes", payload)
     except Exception:
-        pass
+        logger.warning("enrich_top_issues_with_llm failed", exc_info=True)
 
 
 def generate_audit_executive_summary(report_data: dict[str, Any], config: dict[str, str] | None) -> dict[str, Any]:
     try:
         return _post("/internal/enrichment/audit-summary", {"report": report_data, "config": config or {}})
     except Exception:
+        logger.warning("generate_audit_executive_summary failed", exc_info=True)
         return {}
 
 

@@ -7,6 +7,7 @@ using AiService.Domain;
 using AiService.Domain.Models;
 using AiService.Domain.Repositories;
 using AiService.Providers.Chat;
+using Microsoft.Extensions.Logging;
 
 namespace AiService.Application.Services;
 
@@ -17,7 +18,8 @@ public sealed class EnrichmentService(
     ILlmSettingsRepository configRepository,
     LlmCacheRepository cacheRepository,
     StructuredCompletionService completionService,
-    FixSuggestionService fixSuggestionService)
+    FixSuggestionService fixSuggestionService,
+    ILogger<EnrichmentService> logger)
 {
     public async Task<JsonObject> ClusterKeywordsAsync(
         IReadOnlyList<string> keywords,
@@ -67,6 +69,11 @@ public sealed class EnrichmentService(
                 }
 
                 var keywordList = words.Select(w => w?.GetValue<string>() ?? "").Where(w => !string.IsNullOrEmpty(w)).OrderBy(w => w).ToList();
+                if (keywordList.Count == 0)
+                {
+                    continue;
+                }
+
                 clusters.Add(new JsonObject
                 {
                     ["top_keyword"] = c["top_keyword"]?.GetValue<string>() ?? keywordList[0],
@@ -491,8 +498,9 @@ public sealed class EnrichmentService(
             var user = payload.ToJsonString()[..Math.Min(payload.ToJsonString().Length, 10_000)];
             return await completionService.CompleteJsonAsync(LlmPrompts.AuditExecutiveSystem, user, settings, cancellationToken);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            logger.LogWarning(ex, "Audit executive summary LLM completion failed");
             return [];
         }
     }

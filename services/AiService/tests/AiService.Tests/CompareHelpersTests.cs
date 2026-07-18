@@ -266,8 +266,8 @@ public sealed class CompareHelpersTests
 
         var result = CompareHelpers.BuildFullCompare(current, baseline, 1, 2);
 
-        Assert.Equal(1, result["current_report_id"]!.GetValue<int>());
-        Assert.Equal(2, result["baseline_report_id"]!.GetValue<int>());
+        Assert.Equal(1L, result["current_report_id"]!.GetValue<long>());
+        Assert.Equal(2L, result["baseline_report_id"]!.GetValue<long>());
         Assert.Equal(10, result["health_score"]!["delta"]!.GetValue<int>());
         Assert.NotNull(result["category_scores"]);
         Assert.NotNull(result["issue_deltas"]);

@@ -27,9 +27,14 @@ export function usePortfolioCardHistory(
     setStatus('loading');
 
     void apiFetch(apiUrl(`/report/history?domain=${encodeURIComponent(domainParam)}&limit=8`))
-      .then((res) => res.json())
-      .then((body) => {
+      .then(async (res) => {
+        const body = await res.json().catch(() => ({}));
         if (cancelled) return;
+        if (!res.ok) {
+          setAuditHistory([]);
+          setStatus('error');
+          return;
+        }
         setAuditHistory(parsePortfolioAuditHistory(body.history || []));
         setStatus('loaded');
       })

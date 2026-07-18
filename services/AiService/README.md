@@ -63,7 +63,7 @@ Pipeline domain settings (`crawl_settings`, `report_settings`, …) are written 
 | `FASTAPI_URL` | `http://127.0.0.1:8096` | Python audit-tool bridge for unported tools |
 | `AI_SERVICE_URL` | — | Used by Python worker (`ai_service_client.py`) |
 | `ASPNETCORE_URLS` | `http://+:8092` | Bind address |
-| `WP_MCP_HTTP` | — | Set `1` to expose MCP at `/mcp` |
+| `WP_MCP_HTTP` | — | Set `1` to expose MCP at `/mcp` (requires `mcp_token`; unauthenticated requests get 401) |
 | `WP_MCP_DOMAIN` | `core` | MCP tool bundle: core, crawl, google, links, full |
 
 ## Architecture

@@ -8,6 +8,8 @@ public sealed class ReportPayloadRow
     public long Id { get; set; }
 
     public string Data { get; set; } = "{}";
+
+    public string? CanonicalDomain { get; set; }
 }
 
 public sealed class GoogleDataRow
@@ -74,6 +76,8 @@ public sealed class PropertyRow
 public sealed class CrawlRunRow
 {
     public long Id { get; set; }
+
+    public long? PropertyId { get; set; }
 }
 
 public sealed class CrawlResultRow
@@ -149,6 +153,7 @@ public sealed class AuditToolsDbContext(DbContextOptions<AuditToolsDbContext> op
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).HasColumnName("id");
             e.Property(x => x.Data).HasColumnName("data").HasColumnType("jsonb");
+            e.Property(x => x.CanonicalDomain).HasColumnName("canonical_domain");
         });
 
         modelBuilder.Entity<GoogleDataRow>(e =>
@@ -209,6 +214,7 @@ public sealed class AuditToolsDbContext(DbContextOptions<AuditToolsDbContext> op
             e.ToTable("crawl_runs");
             e.HasKey(x => x.Id);
             e.Property(x => x.Id).HasColumnName("id");
+            e.Property(x => x.PropertyId).HasColumnName("property_id");
         });
 
         modelBuilder.Entity<CrawlResultRow>(e =>

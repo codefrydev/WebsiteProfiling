@@ -46,15 +46,29 @@ public sealed class CrawlController(NpgsqlDataSource dataSource) : ControllerBas
             var stdoutTask = proc.StandardOutput.ReadToEndAsync(linkedCts.Token);
             var stderrTask = proc.StandardError.ReadToEndAsync(linkedCts.Token);
             string stdout;
+            string stderr;
             try
             {
                 await Task.WhenAll(stdoutTask, stderrTask);
                 await proc.WaitForExitAsync(linkedCts.Token);
-                stdout = stdoutTask.Result;
+                stdout = await stdoutTask;
+                stderr = await stderrTask;
             }
             catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
             {
+                TryKillProcessTree(proc);
                 return Ok(new { ok = false, error = "Timed out waiting for browser-status probe" });
+            }
+
+            if (proc.ExitCode != 0)
+            {
+                return Ok(ValidateBrowserStatusProbe(proc.ExitCode, stdout, stderr)!);
+            }
+
+            var validationError = ValidateBrowserStatusProbe(proc.ExitCode, stdout, stderr);
+            if (validationError is not null)
+            {
+                return Ok(validationError);
             }
 
             return Content(stdout, "application/json");
@@ -108,5 +122,49 @@ public sealed class CrawlController(NpgsqlDataSource dataSource) : ControllerBas
             ["byte_length"] = reader.IsDBNull(5) ? null : reader.GetInt32(5),
             ["captured_at"] = reader.IsDBNull(6) ? null : reader.GetString(6),
         });
+    }
+
+    internal static object? ValidateBrowserStatusProbe(int exitCode, string stdout, string stderr)
+    {
+        if (exitCode != 0)
+        {
+            return new
+            {
+                ok = false,
+                error = string.IsNullOrWhiteSpace(stderr)
+                    ? $"browser-status probe exited with code {exitCode}"
+                    : stderr.Trim(),
+            };
+        }
+
+        try
+        {
+            using var _ = System.Text.Json.JsonDocument.Parse(stdout);
+            return null;
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            return new
+            {
+                ok = false,
+                error = "browser-status probe returned invalid JSON",
+                stderr = string.IsNullOrWhiteSpace(stderr) ? null : stderr.Trim(),
+            };
+        }
+    }
+
+    private static void TryKillProcessTree(System.Diagnostics.Process proc)
+    {
+        try
+        {
+            if (!proc.HasExited)
+            {
+                proc.Kill(entireProcessTree: true);
+            }
+        }
+        catch
+        {
+            // ignore kill failures on timeout
+        }
     }
 }

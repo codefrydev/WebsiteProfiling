@@ -14,7 +14,7 @@ export const CRAWL_PRESETS: CrawlPresetDefinition[] = [
   {
     id: 'starter',
     label: 'Starter',
-    description: 'Fast static crawl for small sites (up to 500 URLs).',
+    description: 'Fast static crawl for small sites (up to 500 URLs). Tech detection is limited on JavaScript-heavy sites.',
     configPatch: {
       max_pages: '500',
       crawl_render_mode: 'static',

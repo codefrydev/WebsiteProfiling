@@ -970,3 +970,84 @@ def test_worker_does_not_enqueue_links_from_error_page(monkeypatch) -> None:
     # ...but links discovered on an error page are NOT followed.
     assert not c.frontier.queue_contains("https://site.com/error-link")
 
+
+def test_crawl_resets_wappalyzer_state(monkeypatch) -> None:
+    from website_profiling.crawl.crawler import Crawler
+
+    calls: list[str] = []
+
+    def _track_reset() -> None:
+        calls.append("reset")
+
+    monkeypatch.setattr("website_profiling.common.reset_wappalyzer_state", _track_reset)
+    monkeypatch.setattr(
+        "website_profiling.crawl.crawler.build_fetcher",
+        lambda **_kwargs: type("F", (), {"fetch": lambda self, _u: None, "close": lambda self: None})(),
+    )
+
+    c = Crawler(start_url="https://site.com", ignore_robots=True, use_wappalyzer=True, max_pages=0)
+    c.crawl(show_progress=False)
+    assert calls == ["reset"]
+
+
+def test_worker_auto_refetch_updates_tech_stack(monkeypatch) -> None:
+    from website_profiling.crawl.crawler import Crawler
+    from website_profiling.crawl.fetchers.base import FetchResult
+
+    static_html = '<html><head><title>T</title></head><body><div id="root"></div></body></html>'
+    rendered_html = (
+        '<html><head><title>T</title></head><body>'
+        '<script>var __NEXT_DATA__ = {}</script>'
+        '<a href="https://site.com/a">one</a>'
+        '<a href="https://site.com/b">two</a>'
+        "</body></html>"
+    )
+    static_result = FetchResult(
+        status=200,
+        content_type="text/html",
+        text=static_html,
+        response_time_ms=5,
+        content_length=len(static_html),
+        final_url="https://site.com/",
+        headers_dict={},
+        redirect_chain_length=0,
+        fetch_method="static",
+    )
+    rendered_result = FetchResult(
+        status=200,
+        content_type="text/html",
+        text=rendered_html,
+        response_time_ms=8,
+        content_length=len(rendered_html),
+        final_url="https://site.com/",
+        headers_dict={},
+        redirect_chain_length=0,
+        fetch_method="rendered",
+    )
+
+    class DummyFetcher:
+        def fetch(self, _url):
+            return static_result
+
+        def close(self):
+            pass
+
+    class FakeHybrid:
+        def refetch_rendered(self, _url):
+            return rendered_result
+
+    monkeypatch.setattr(
+        "website_profiling.crawl.crawler.build_fetcher",
+        lambda **_kwargs: DummyFetcher(),
+    )
+    c = Crawler(
+        start_url="https://site.com",
+        ignore_robots=True,
+        use_wappalyzer=False,
+        render_mode="auto",
+    )
+    c._hybrid_fetcher = FakeHybrid()
+    out = c.worker("https://site.com/")
+    assert out["fetch_method"] == "rendered"
+    assert "Next.js" in out["tech_stack"]
+

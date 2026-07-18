@@ -136,8 +136,8 @@ public sealed class ExportToolHandlerTests : IDisposable
 
         var result = await ExportToolHandlers.ExportCompareCsvAsync(db, ctx, args, CancellationToken.None);
 
-        Assert.Equal(1, result["current_report_id"]!.GetValue<int>());
-        Assert.Equal(2, result["baseline_report_id"]!.GetValue<int>());
+        Assert.Equal(1, result["current_report_id"]!.GetValue<long>());
+        Assert.Equal(2, result["baseline_report_id"]!.GetValue<long>());
         var stored = ArtifactStore.ReadArtifactBytes(result["artifact_id"]!.GetValue<string>());
         var csv = System.Text.Encoding.UTF8.GetString(stored!.Value.Bytes);
         // Matches Python's export_compare.py naming exactly: only-in-current is "removed",
@@ -199,6 +199,61 @@ public sealed class ExportToolHandlerTests : IDisposable
         Assert.Equal(1, result["total"]!.GetValue<int>());
         var stored = ArtifactStore.ReadArtifactBytes(result["artifact_id"]!.GetValue<string>());
         Assert.Contains("mixed_content", System.Text.Encoding.UTF8.GetString(stored!.Value.Bytes));
+    }
+
+    [Fact]
+    public async Task ExportAuditReportAsync_scopes_report_to_property_not_global_latest()
+    {
+        var dbName = Guid.NewGuid().ToString();
+        await using (var seedDb = NewDb(dbName))
+        {
+            seedDb.Properties.Add(new PropertyRow { Id = 10, CanonicalDomain = "alpha.test" });
+            seedDb.Properties.Add(new PropertyRow { Id = 20, CanonicalDomain = "beta.test" });
+            seedDb.ReportPayloads.Add(new ReportPayloadRow
+            {
+                Id = 100,
+                CanonicalDomain = "beta.test",
+                Data = """{"site": "beta"}""",
+            });
+            seedDb.ReportPayloads.Add(new ReportPayloadRow
+            {
+                Id = 50,
+                CanonicalDomain = "alpha.test",
+                Data = """{"site": "alpha"}""",
+            });
+            await seedDb.SaveChangesAsync();
+        }
+
+        await using var db = NewDb(dbName);
+        var handler = new ReportIdRecordingHandler();
+        var dataService = new DataServiceClient(new HttpClient(handler) { BaseAddress = new Uri("http://data.local/") });
+        var ctx = new AuditToolContext { PropertyId = 10 };
+        var args = new JsonObject { ["format"] = "json" };
+
+        var result = await ExportToolHandlers.ExportAuditReportAsync(db, ctx, args, dataService, CancellationToken.None);
+
+        Assert.Equal(50, result["report_id"]!.GetValue<long>());
+        Assert.Equal(50, handler.LastReportId);
+    }
+
+    private sealed class ReportIdRecordingHandler : HttpMessageHandler
+    {
+        public long LastReportId { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            var path = request.RequestUri?.AbsolutePath ?? "";
+            var segments = path.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            if (segments.Length >= 3 && long.TryParse(segments[^2], out var reportId))
+            {
+                LastReportId = reportId;
+            }
+
+            return Task.FromResult(new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new StringContent("""{"ok":true}""", System.Text.Encoding.UTF8, "application/json"),
+            });
+        }
     }
 
     private static async Task<AuditToolsDbContext> SeedAsync(string json, int reportId = 1)

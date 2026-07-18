@@ -104,6 +104,19 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
     };
   }, [contextReady, propertyId, reportId]);
 
+  // Reset agent-tab cache when property/report context changes so data is refetched.
+  useEffect(() => {
+    setAgentFetched(false);
+    setAgentScore(null);
+    setAgentsMd(null);
+    setSkillMd(null);
+    setAgentPermissions(null);
+    setTokenBudget(null);
+    setOversizedPages([]);
+    setCopyForAi(null);
+    setAgentBundle(null);
+  }, [propertyId, reportId]);
+
   // Lazy-load agent tab data when the tab becomes active
   useEffect(() => {
     if (activeTab !== 'agent' || agentFetched || !contextReady || !propertyId) return;

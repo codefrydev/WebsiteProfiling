@@ -24,7 +24,7 @@ public static class ProxyEndpoints
                 BffRoutes.Chat.StartsWith(prefix.TrimEnd('/'), StringComparison.OrdinalIgnoreCase)
                 || prefix.Equals(BffRoutes.Chat, StringComparison.OrdinalIgnoreCase));
             var client = useAi ? DependencyInjection.AiStreamClient : DependencyInjection.FastApiStreamClient;
-            var path = useAi ? $"/api/chat/{ctx.Request.QueryString}" : $"/api/chat/{ctx.Request.QueryString}";
+            var path = $"/api/chat{ctx.Request.QueryString}";
             return (IResult)new ForwardingResult(client, path, disableResponseBuffering: true);
         });
 

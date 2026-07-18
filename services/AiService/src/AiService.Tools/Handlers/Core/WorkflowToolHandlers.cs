@@ -213,12 +213,12 @@ public static class WorkflowToolHandlers
     private static JsonObject BuildBaseArgs(AuditToolContext scoped)
     {
         var args = new JsonObject();
-        if (scoped.PropertyId is int pid)
+        if (scoped.PropertyId is long pid)
         {
             args["property_id"] = pid;
         }
 
-        if (scoped.ReportId is int rid)
+        if (scoped.ReportId is long rid)
         {
             args["report_id"] = rid;
         }

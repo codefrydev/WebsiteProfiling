@@ -4,6 +4,7 @@ using AiService.Tools.Context;
 using AiService.Tools.Slice;
 using AiService.Tools.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using WebsiteProfiling.Contracts.Json;
 
 namespace AiService.Tools.Handlers.Backlinks;
@@ -18,7 +19,7 @@ public static class BacklinksToolHandlers
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        if (scoped.PropertyId is not int propertyId)
+        if (scoped.PropertyId is not long propertyId)
         {
             return new JsonObject { ["error"] = "property_id is required for GSC links data" };
         }
@@ -56,7 +57,7 @@ public static class BacklinksToolHandlers
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        if (scoped.PropertyId is not int propertyId)
+        if (scoped.PropertyId is not long propertyId)
         {
             return new JsonObject { ["error"] = "property_id is required" };
         }
@@ -126,7 +127,7 @@ public static class BacklinksToolHandlers
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        if (scoped.PropertyId is not int _)
+        if (scoped.PropertyId is not long _)
         {
             return new JsonObject { ["error"] = "property_id is required" };
         }
@@ -164,7 +165,7 @@ public static class BacklinksToolHandlers
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        if (scoped.PropertyId is not int propertyId)
+        if (scoped.PropertyId is not long propertyId)
         {
             return new JsonObject { ["error"] = "property_id is required" };
         }
@@ -184,7 +185,10 @@ public static class BacklinksToolHandlers
             {
                 topDomains = JsonNode.Parse(row.TopDomains);
             }
-            catch (JsonException) { }
+            catch (JsonException ex)
+            {
+                ctx.Logger?.LogDebug(ex, "Malformed JSON in backlinks top_domains row");
+            }
 
             snapshots.Add(new JsonObject
             {
@@ -211,7 +215,7 @@ public static class BacklinksToolHandlers
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        if (scoped.PropertyId is not int _)
+        if (scoped.PropertyId is not long _)
         {
             return new JsonObject { ["error"] = "property_id is required" };
         }

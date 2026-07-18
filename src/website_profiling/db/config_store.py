@@ -1,6 +1,7 @@
 """Pipeline and LLM config tables."""
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from psycopg import Connection
@@ -13,11 +14,14 @@ from .typed_config.worker_config import (
     save_worker_pipeline_config,
 )
 
+logger = logging.getLogger(__name__)
+
 
 def read_pipeline_config(conn: Connection) -> tuple[dict[str, str], list[dict[str, str]]]:
     try:
         return load_worker_pipeline_config(conn), []
     except Exception:
+        logger.warning("read_pipeline_config failed", exc_info=True)
         return {}, []
 
 
@@ -29,6 +33,7 @@ def read_llm_config(conn: Connection) -> dict[str, str]:
     try:
         return load_worker_llm_config(conn)
     except Exception:
+        logger.warning("read_llm_config failed", exc_info=True)
         return {}
 
 
@@ -56,6 +61,7 @@ def read_llm_config_full(conn: Connection) -> list[dict[str, Any]]:
             rows.append({"key": key, "value": val, "is_secret": is_secret})
         return rows
     except Exception:
+        logger.warning("read_llm_config_full failed", exc_info=True)
         return []
 
 
@@ -81,6 +87,7 @@ def read_app_setting(conn: Connection, key: str) -> str | None:
         text = str(val).strip()
         return text or None
     except Exception:
+        logger.warning("read_app_setting failed for key=%s", key, exc_info=True)
         return None
 
 

@@ -215,8 +215,12 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
         ...(brandQuery ? { domain: brandQuery } : {}),
       }),
     })
-      .then((res) => res.json())
-      .then((payload) => {
+      .then(async (res) => {
+        const payload = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          if (!cancelled) setHistoryByKeyword(EMPTY_HISTORY);
+          return;
+        }
         if (!cancelled) setHistoryByKeyword((payload.histories || {}) as KeywordHistoryMap);
       })
       .catch(() => {

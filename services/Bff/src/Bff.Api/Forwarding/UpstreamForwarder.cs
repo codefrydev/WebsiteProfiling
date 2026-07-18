@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Http.Features;
 
+using Microsoft.Extensions.Logging;
+
 namespace Bff.Api.Forwarding;
 
-public sealed class UpstreamForwarder(IHttpClientFactory factory) : IUpstreamForwarder
+public sealed class UpstreamForwarder(IHttpClientFactory factory, ILogger<UpstreamForwarder> logger) : IUpstreamForwarder
 {
     public async Task ForwardAsync(
         HttpContext context,
@@ -12,7 +14,16 @@ public sealed class UpstreamForwarder(IHttpClientFactory factory) : IUpstreamFor
         CancellationToken cancellationToken)
     {
         var client = factory.CreateClient(clientName);
-        var target = new Uri(client.BaseAddress!, pathAndQuery);
+        if (client.BaseAddress is null)
+        {
+            logger.LogWarning("Upstream client {ClientName} has no BaseAddress configured", clientName);
+            context.Response.StatusCode = StatusCodes.Status502BadGateway;
+            await context.Response.WriteAsJsonAsync(
+                new { detail = $"Upstream client '{clientName}' is not configured." },
+                cancellationToken);
+            return;
+        }
+        var target = new Uri(client.BaseAddress, pathAndQuery);
 
         using var request = new HttpRequestMessage(new HttpMethod(context.Request.Method), target);
 

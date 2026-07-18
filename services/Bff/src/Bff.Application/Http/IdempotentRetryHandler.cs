@@ -25,18 +25,31 @@ public sealed class IdempotentRetryHandler : DelegatingHandler
 
         for (var attempt = 0; ; attempt++)
         {
+            var attemptRequest = attempt == 0 ? request : HttpRequestMessageCloner.Clone(request);
             try
             {
-                var response = await base.SendAsync(request, cancellationToken);
+                var response = await base.SendAsync(attemptRequest, cancellationToken);
                 if (attempt >= MaxRetries || !IsTransient(response.StatusCode))
                 {
                     return response;
                 }
+
                 response.Dispose();
             }
             catch (HttpRequestException) when (attempt < MaxRetries)
             {
                 // fall through to retry
+            }
+            catch (TaskCanceledException ex) when (attempt < MaxRetries && !cancellationToken.IsCancellationRequested)
+            {
+                _ = ex;
+            }
+            finally
+            {
+                if (attempt > 0)
+                {
+                    attemptRequest.Dispose();
+                }
             }
 
             await Task.Delay(BaseDelay * (attempt + 1), cancellationToken);

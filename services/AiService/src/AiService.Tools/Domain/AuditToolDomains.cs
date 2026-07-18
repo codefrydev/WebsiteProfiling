@@ -518,7 +518,7 @@ public static class McpToolDomains
         return outMap;
     }
 
-    public static int? DefaultPropertyId()
+    public static long? DefaultPropertyId()
     {
         var raw = Environment.GetEnvironmentVariable("WP_PROPERTY_ID")?.Trim();
         if (string.IsNullOrEmpty(raw))
@@ -526,7 +526,7 @@ public static class McpToolDomains
             return null;
         }
 
-        return int.TryParse(raw, out var pid) && pid > 0 ? pid : null;
+        return long.TryParse(raw, out var pid) && pid > 0 ? pid : null;
     }
 
     public static Dictionary<string, List<string>> GroupToolsByDomain(IEnumerable<string> toolNames)

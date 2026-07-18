@@ -1,6 +1,7 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 using ReportService.Api.Controllers;
 using ReportService.Application.Bridge;
@@ -23,16 +24,14 @@ public sealed class PipelinePreviewControllerTests
         var result = await controller.Preview(body, CancellationToken.None);
 
         var content = Assert.IsType<Microsoft.AspNetCore.Mvc.ContentResult>(result);
+        Assert.Equal(StatusCodes.Status200OK, content.StatusCode);
         Assert.Equal("application/json", content.ContentType);
         Assert.Equal(canned, content.Content);
     }
 
     [Fact]
-    public async Task Preview_relays_bridge_body_even_when_bridge_returns_non_success_status()
+    public async Task Preview_propagates_upstream_non_success_status()
     {
-        // ForwardRequestAsync returns the raw body regardless of upstream status
-        // code (confirmed: it never calls EnsureSuccessStatusCode) -- the
-        // controller relays whatever Python sent, verbatim, as a 200 ContentResult.
         var errorBody = """{"detail":"Either 'url' or 'html' is required"}""";
         var controller = CreateController(new Dictionary<string, HttpResponseMessage>
         {
@@ -43,6 +42,7 @@ public sealed class PipelinePreviewControllerTests
         var result = await controller.Preview(body, CancellationToken.None);
 
         var content = Assert.IsType<Microsoft.AspNetCore.Mvc.ContentResult>(result);
+        Assert.Equal(StatusCodes.Status400BadRequest, content.StatusCode);
         Assert.Equal(errorBody, content.Content);
     }
 

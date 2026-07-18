@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using AiService.Tools.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace AiService.Tools.Context;
 
@@ -11,19 +12,25 @@ namespace AiService.Tools.Context;
 /// </summary>
 public sealed class AuditToolContext
 {
-    public int? PropertyId { get; init; }
+    public long? PropertyId { get; init; }
 
-    public int? ReportId { get; init; }
+    public long? ReportId { get; init; }
+
+    public ILogger? Logger { get; init; }
 
     public async Task<JsonObject> LoadPayloadAsync(AuditToolsDbContext db, CancellationToken cancellationToken = default)
     {
         string? raw;
-        if (ReportId is int reportId)
+        if (ReportId is long reportId)
         {
             raw = await db.ReportPayloads.AsNoTracking()
                 .Where(x => x.Id == reportId)
                 .Select(x => x.Data)
                 .FirstOrDefaultAsync(cancellationToken);
+        }
+        else if (PropertyId is long propertyId)
+        {
+            raw = await AuditReportResolver.ResolveLatestPayloadDataAsync(db, propertyId, cancellationToken);
         }
         else
         {
@@ -77,7 +84,7 @@ public sealed class AuditToolContext
 
     public async Task<JsonObject?> LoadKeywordsAsync(AuditToolsDbContext db, CancellationToken cancellationToken = default)
     {
-        if (PropertyId is int pid)
+        if (PropertyId is long pid)
         {
             var raw = await db.KeywordData.AsNoTracking()
                 .Where(x => x.PropertyId == pid)
@@ -122,7 +129,7 @@ public sealed class AuditToolContext
 
     private async Task<JsonObject?> ReadKeywordSnapshotAsync(AuditToolsDbContext db, int offset, CancellationToken cancellationToken)
     {
-        if (PropertyId is not int pid)
+        if (PropertyId is not long pid)
         {
             return null;
         }
@@ -144,7 +151,7 @@ public sealed class AuditToolContext
         int limit,
         CancellationToken cancellationToken = default)
     {
-        if (PropertyId is not int pid)
+        if (PropertyId is not long pid)
         {
             return [];
         }
@@ -167,7 +174,7 @@ public sealed class AuditToolContext
 
     /// <summary>Current + baseline report payloads for compare/drift tools. Mirrors Python
     /// <c>compare.compare_helpers.load_compare_pair</c>.</summary>
-    public async Task<(JsonObject? Current, JsonObject? Baseline, int? CurrentReportId, int? BaselineReportId, string? Error)> LoadComparePairAsync(
+    public async Task<(JsonObject? Current, JsonObject? Baseline, long? CurrentReportId, long? BaselineReportId, string? Error)> LoadComparePairAsync(
         AuditToolsDbContext db,
         JsonObject args,
         CancellationToken cancellationToken = default)
@@ -178,7 +185,7 @@ public sealed class AuditToolContext
         }
 
         var baselineRaw = WebsiteProfiling.Contracts.Json.JsonCoercion.AsString(args["baseline_report_id"]) ?? args["baseline_report_id"]!.ToString();
-        if (!int.TryParse(baselineRaw, out var baselineReportId))
+        if (!long.TryParse(baselineRaw, out var baselineReportId))
         {
             return (null, null, null, null, "invalid baseline_report_id");
         }
@@ -186,10 +193,7 @@ public sealed class AuditToolContext
         var currentReportId = ReportId;
         if (currentReportId is null)
         {
-            currentReportId = await db.ReportPayloads.AsNoTracking()
-                .OrderByDescending(x => x.Id)
-                .Select(x => (int?)x.Id)
-                .FirstOrDefaultAsync(cancellationToken);
+            currentReportId = await ResolveLatestReportIdAsync(db, cancellationToken);
             if (currentReportId is null)
             {
                 return (null, null, null, null, "no current report found");
@@ -213,7 +217,7 @@ public sealed class AuditToolContext
 
     public async Task<JsonObject?> LoadGscLinksAsync(AuditToolsDbContext db, CancellationToken cancellationToken = default)
     {
-        if (PropertyId is int pid)
+        if (PropertyId is long pid)
         {
             var raw = await db.GscLinksData.AsNoTracking()
                 .Where(x => x.PropertyId == pid)
@@ -233,7 +237,7 @@ public sealed class AuditToolContext
 
     public async Task<JsonObject> LoadReportPayloadByIdAsync(
         AuditToolsDbContext db,
-        int reportId,
+        long reportId,
         CancellationToken cancellationToken = default)
     {
         var raw = await db.ReportPayloads.AsNoTracking()
@@ -245,7 +249,7 @@ public sealed class AuditToolContext
 
     public async Task<string> ResolvePropertyDomainAsync(AuditToolsDbContext db, CancellationToken cancellationToken = default)
     {
-        if (PropertyId is int pid)
+        if (PropertyId is long pid)
         {
             var domain = await db.Properties.AsNoTracking()
                 .Where(x => x.Id == pid)
@@ -296,13 +300,13 @@ public sealed class AuditToolContext
         }
 
         var query = db.CrawlResults.AsNoTracking();
-        if (runId is int rid)
+        if (runId is long rid)
         {
             query = query.Where(x => x.CrawlRunId == rid);
         }
 
         var rows = await query.Select(x => new { x.Url, x.FetchMethod, x.Data }).ToListAsync(cancellationToken);
-        return rows.Select(r => MergeCrawlRow(r.Url, r.FetchMethod, r.Data)).ToList();
+        return rows.Select(r => MergeCrawlRow(r.Url, r.FetchMethod, r.Data, Logger)).ToList();
     }
 
     public AuditToolContext WithArgs(JsonObject args)
@@ -312,11 +316,7 @@ public sealed class AuditToolContext
 
         if (args.TryGetPropertyValue("property_id", out var pidNode) && pidNode is not null)
         {
-            if (pidNode is JsonValue pidValue && pidValue.TryGetValue(out int pidInt))
-            {
-                propertyId = pidInt;
-            }
-            else if (int.TryParse(pidNode.ToString(), out var parsedPid))
+            if (TryParseLong(pidNode, out var parsedPid))
             {
                 propertyId = parsedPid;
             }
@@ -324,11 +324,7 @@ public sealed class AuditToolContext
 
         if (args.TryGetPropertyValue("report_id", out var ridNode) && ridNode is not null)
         {
-            if (ridNode is JsonValue ridValue && ridValue.TryGetValue(out int ridInt))
-            {
-                reportId = ridInt;
-            }
-            else if (int.TryParse(ridNode.ToString(), out var parsedRid))
+            if (TryParseLong(ridNode, out var parsedRid))
             {
                 reportId = parsedRid;
             }
@@ -337,11 +333,55 @@ public sealed class AuditToolContext
         return new AuditToolContext { PropertyId = propertyId, ReportId = reportId };
     }
 
-    private static int? ResolveCrawlRunId(JsonObject payload)
+    private async Task<long?> ResolveLatestReportIdAsync(AuditToolsDbContext db, CancellationToken cancellationToken)
+    {
+        if (PropertyId is long propertyId)
+        {
+            return await AuditReportResolver.ResolveLatestReportIdAsync(db, propertyId, cancellationToken);
+        }
+
+        return await db.ReportPayloads.AsNoTracking()
+            .OrderByDescending(x => x.Id)
+            .Select(x => (long?)x.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    private static bool TryParseLong(JsonNode node, out long value)
+    {
+        if (node is JsonValue jsonValue)
+        {
+            if (jsonValue.TryGetValue(out long l))
+            {
+                value = l;
+                return true;
+            }
+
+            if (jsonValue.TryGetValue(out int i))
+            {
+                value = i;
+                return true;
+            }
+
+            if (jsonValue.TryGetValue(out double d))
+            {
+                value = (long)d;
+                return true;
+            }
+        }
+
+        return long.TryParse(node.ToString(), out value);
+    }
+
+    private static long? ResolveCrawlRunId(JsonObject payload)
     {
         if (payload["crawl_run_id"] is not JsonValue v)
         {
             return null;
+        }
+
+        if (v.TryGetValue<long>(out var l))
+        {
+            return l;
         }
 
         if (v.TryGetValue<int>(out var i))
@@ -351,15 +391,10 @@ public sealed class AuditToolContext
 
         if (v.TryGetValue<double>(out var d))
         {
-            return (int)d;
+            return (long)d;
         }
 
-        if (v.TryGetValue<long>(out var l))
-        {
-            return (int)l;
-        }
-
-        if (v.TryGetValue<string>(out var s) && int.TryParse(s, out var p))
+        if (v.TryGetValue<string>(out var s) && long.TryParse(s, out var p))
         {
             return p;
         }
@@ -367,16 +402,24 @@ public sealed class AuditToolContext
         return null;
     }
 
-    private static async Task<int?> GetLatestCrawlRunIdAsync(AuditToolsDbContext db, CancellationToken ct)
+    private async Task<long?> GetLatestCrawlRunIdAsync(AuditToolsDbContext db, CancellationToken ct)
     {
-        var id = await db.CrawlRuns.AsNoTracking()
+        if (PropertyId is long propertyId)
+        {
+            return await db.CrawlRuns.AsNoTracking()
+                .Where(x => x.PropertyId == propertyId)
+                .OrderByDescending(x => x.Id)
+                .Select(x => (long?)x.Id)
+                .FirstOrDefaultAsync(ct);
+        }
+
+        return await db.CrawlRuns.AsNoTracking()
             .OrderByDescending(x => x.Id)
             .Select(x => (long?)x.Id)
             .FirstOrDefaultAsync(ct);
-        return id is null ? null : (int)id.Value;
     }
 
-    private static JsonObject MergeCrawlRow(string url, string fetchMethod, string dataJson)
+    private static JsonObject MergeCrawlRow(string url, string fetchMethod, string dataJson, ILogger? logger)
     {
         var row = new JsonObject { ["url"] = url ?? "" };
         var fm = (fetchMethod ?? "").Trim();
@@ -394,7 +437,10 @@ public sealed class AuditToolContext
                     }
                 }
             }
-            catch (JsonException) { }
+            catch (JsonException ex)
+            {
+                logger?.LogDebug(ex, "Malformed JSON in report payload merge");
+            }
         }
 
         return row;
@@ -403,7 +449,7 @@ public sealed class AuditToolContext
     private async Task<JsonObject?> ReadLatestGoogleAsync(AuditToolsDbContext db, int offset, CancellationToken cancellationToken)
     {
         var query = db.GoogleData.AsNoTracking();
-        if (PropertyId is int pid)
+        if (PropertyId is long pid)
         {
             query = query.Where(x => x.PropertyId == pid);
         }

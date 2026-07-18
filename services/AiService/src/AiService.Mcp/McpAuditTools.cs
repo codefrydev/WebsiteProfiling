@@ -49,16 +49,16 @@ public sealed class McpAuditTools
     public async Task<string> CallAuditTool(
         [Description("Audit tool name from list_audit_tools.")] string name,
         [Description("Tool arguments as a JSON object string.")] string? arguments = null,
-        [Description("Site property id. Falls back to WP_PROPERTY_ID when omitted.")] int? property_id = null,
-        [Description("Optional report id.")] int? report_id = null,
+        [Description("Site property id. Falls back to WP_PROPERTY_ID when omitted.")] long? property_id = null,
+        [Description("Optional report id.")] long? report_id = null,
         CancellationToken cancellationToken = default)
         => await DispatchNamedToolAsync(name, arguments, property_id, report_id, cancellationToken);
 
     internal async Task<string> DispatchNamedToolAsync(
         string name,
         string? arguments,
-        int? propertyId,
-        int? reportId,
+        long? propertyId,
+        long? reportId,
         CancellationToken cancellationToken)
     {
         var snapshot = await _selection.GetSnapshotAsync(cancellationToken);
@@ -107,18 +107,18 @@ public sealed class McpAuditTools
         }
     }
 
-    private static void MergeContext(JsonObject args, int? propertyId, int? reportId)
+    private static void MergeContext(JsonObject args, long? propertyId, long? reportId)
     {
-        if (propertyId is int pid && !args.ContainsKey("property_id"))
+        if (propertyId is long pid && !args.ContainsKey("property_id"))
         {
             args["property_id"] = pid;
         }
-        else if (propertyId is null && McpToolDomains.DefaultPropertyId() is int defaultPid && !args.ContainsKey("property_id"))
+        else if (propertyId is null && McpToolDomains.DefaultPropertyId() is long defaultPid && !args.ContainsKey("property_id"))
         {
             args["property_id"] = defaultPid;
         }
 
-        if (reportId is int rid && !args.ContainsKey("report_id"))
+        if (reportId is long rid && !args.ContainsKey("report_id"))
         {
             args["report_id"] = rid;
         }

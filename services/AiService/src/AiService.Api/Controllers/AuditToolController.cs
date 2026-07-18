@@ -47,9 +47,9 @@ public sealed class AuditToolController : ControllerBase
     {
         public string ToolName { get; set; } = "";
 
-        public int PropertyId { get; set; }
+        public long PropertyId { get; set; }
 
-        public int? ReportId { get; set; }
+        public long? ReportId { get; set; }
 
         public JsonObject? Args { get; set; }
     }

@@ -66,7 +66,7 @@ public sealed class ChatTurnProgress(Action<ChatStreamEvent>? emit)
         JsonObject result;
         try
         {
-            if (context.PropertyId is not int propertyId)
+            if (context.PropertyId is not long propertyId)
             {
                 result = new JsonObject { ["error"] = "property_id required" };
             }

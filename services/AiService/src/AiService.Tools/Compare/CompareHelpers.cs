@@ -728,7 +728,7 @@ public static class CompareHelpers
         };
     }
 
-    public static JsonObject BuildFullCompare(JsonObject current, JsonObject baseline, int? currentReportId, int? baselineReportId)
+    public static JsonObject BuildFullCompare(JsonObject current, JsonObject baseline, long? currentReportId, long? baselineReportId)
     {
         var curHealth = ScoreFromCategories(current["categories"] as JsonArray);
         var baseHealth = ScoreFromCategories(baseline["categories"] as JsonArray);

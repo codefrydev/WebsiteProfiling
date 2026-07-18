@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Upload } from 'lucide-react';
 import { Button, Card } from '@/components';
-import { apiUrl, apiFetch } from '@/lib/publicBase';
+import { apiUrl, apiFetch, readApiErrorMessage } from '@/lib/publicBase';
 
 interface CompetitorKeywordImportProps {
   propertyId: number;
@@ -25,8 +25,8 @@ export default function CompetitorKeywordImport({ propertyId, onImported }: Comp
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ propertyId, competitor: competitor.trim(), csvText }),
       });
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error || 'Import failed');
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(readApiErrorMessage(body as Record<string, unknown>, res, 'Import failed'));
       setStatus(`Imported ${body.count ?? 0} keywords`);
       onImported?.(body.count ?? 0);
     } catch (e) {

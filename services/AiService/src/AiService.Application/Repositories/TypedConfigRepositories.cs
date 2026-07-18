@@ -1,7 +1,9 @@
+using AiService.Application.Mcp;
 using AiService.Application.Persistence;
 using AiService.Domain.Models;
 using AiService.Domain.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace AiService.Application.Repositories;
 
@@ -50,7 +52,7 @@ public sealed class IntegrationSecretsRepository(AiDbContext db) : IIntegrationS
     }
 }
 
-public sealed class McpSettingsRepository(AiDbContext db) : IMcpSettingsRepository
+public sealed class McpSettingsRepository(AiDbContext db, IMemoryCache cache) : IMcpSettingsRepository
 {
     private const long SingletonId = 1;
 
@@ -98,6 +100,11 @@ public sealed class McpSettingsRepository(AiDbContext db) : IMcpSettingsReposito
 
         row.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(cancellationToken);
+
+        if (patch.BearerToken is not null)
+        {
+            cache.Remove(McpAuthCacheKeys.BearerToken);
+        }
     }
 }
 

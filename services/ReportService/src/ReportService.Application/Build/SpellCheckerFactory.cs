@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 using ReportService.Application.Repositories;
 using WeCantSpell.Hunspell;
 
@@ -11,7 +12,7 @@ internal static class SpellCheckerFactory
     private static WordList? _cached;
     private static string? _skipReason;
 
-    public static (WordList? Checker, string? SkipReason) GetOrCreate()
+    public static (WordList? Checker, string? SkipReason) GetOrCreate(ILogger? logger = null)
     {
         if (_cached is not null)
         {
@@ -45,9 +46,9 @@ internal static class SpellCheckerFactory
                 _cached = WordList.CreateFromFiles(dicPath, affPath);
                 return (_cached, null);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // try next path
+                logger?.LogDebug(ex, "Failed to load Hunspell dictionary from {DicPath}", dicPath);
             }
         }
 

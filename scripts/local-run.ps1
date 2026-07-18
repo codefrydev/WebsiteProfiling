@@ -43,6 +43,8 @@ if (-not $env:PYTHON) {
     $env:PYTHON = $VENV_PYTHON
 }
 
+. (Join-Path $PSScriptRoot "ensure-deps.ps1")
+
 function Write-Log([string]$Message) {
     Write-Host "-> $Message" -ForegroundColor Cyan
 }
@@ -173,69 +175,31 @@ function Invoke-Db {
 }
 
 function Invoke-Venv {
-    $pyLauncher = Get-PythonLauncher
-    if (-not (Test-Path $VENV_PYTHON)) {
-        Write-Log "Creating Python venv at .venv"
-        Invoke-PythonLauncher -Launcher $pyLauncher -PythonArgs @("-m", "venv", $VENV)
-    }
-    Write-Log "Installing Python dependencies"
-    & $VENV_PIP install -q -r (Join-Path $ROOT "requirements.txt")
-    Assert-LastExitCode "Failed to install requirements.txt"
+    Ensure-PythonDeps
 }
 
 function Invoke-Migrate {
+    Ensure-SystemTools
+    Ensure-DotnetDeps
     Invoke-Db
-    Test-Command dotnet
     Write-Log "Applying database migrations (EF Core: Schema.Migrator)"
     & dotnet run --project $SCHEMA_MIGRATOR --no-launch-profile
     Assert-LastExitCode "Database migration failed (Schema.Migrator)"
 }
 
 function Invoke-WebDeps {
-    Test-Command npm
-    $nodeModules = Join-Path $WEB "node_modules"
-    if (-not (Test-Path $nodeModules)) {
-        Write-Log "Installing web dependencies (npm ci)"
-        Push-Location $WEB
-        try {
-            & npm ci
-            Assert-LastExitCode "Failed to install web dependencies (npm ci)"
-        } finally {
-            Pop-Location
-        }
-    }
+    Ensure-WebDeps
 }
 
 function Invoke-BrowserDeps {
-    if (-not (Test-Path $VENV_PYTHON)) {
-        Invoke-Venv
-    }
-    Write-Log "Ensuring Playwright + Chromium for JS crawl"
-    $script = @"
-from website_profiling.crawl.fetchers import ensure_browser_deps
-import json, sys
-status = ensure_browser_deps()
-print(json.dumps(status))
-sys.exit(0 if status.get('ok') else 1)
-"@
-    & $VENV_PYTHON -c $script
-    if ($PSVersionTable.PSVersion.Major -ge 7) {
-        $failed = ($LASTEXITCODE -ne 0)
-    } else {
-        $failed = (-not $?)
-    }
-    if ($failed) {
-        Write-Warn "Browser deps unavailable - JS/auto crawl disabled until Playwright + Chromium install successfully"
-    }
+    Ensure-BrowserDeps
 }
 
 function Invoke-Setup {
     New-Item -ItemType Directory -Force -Path $env:DATA_DIR | Out-Null
-    Invoke-Db
-    Invoke-Venv
-    Invoke-BrowserDeps
+    Ensure-SystemTools
+    Ensure-AllProjectDeps
     Invoke-Migrate
-    Invoke-WebDeps
     Write-Log "Setup complete."
     Write-Log "Start the UI: .\local-run.ps1 start"
     Write-Log "Open http://localhost:3000/home (use localhost, not 127.0.0.1 for pipeline APIs)"
@@ -243,13 +207,9 @@ function Invoke-Setup {
 
 function Invoke-Start {
     New-Item -ItemType Directory -Force -Path $env:DATA_DIR | Out-Null
-    Invoke-Db
-    Test-Command dotnet
-    Invoke-BrowserDeps
-    Write-Log "Ensuring migrations are up to date"
-    & dotnet run --project $SCHEMA_MIGRATOR --no-launch-profile
-    Assert-LastExitCode "Database migration failed (Schema.Migrator)"
-    Invoke-WebDeps
+    Ensure-SystemTools
+    Ensure-AllProjectDeps
+    Invoke-Migrate
 
     $bffBase = if ($env:VITE_BFF_BASE_URL) { $env:VITE_BFF_BASE_URL } else { "http://localhost:8090" }
     $fileServiceUrl = if ($env:FILE_SERVICE_URL) { $env:FILE_SERVICE_URL } else { "http://127.0.0.1:8097" }
@@ -334,6 +294,7 @@ Environment overrides (optional):
   DATA_DIR      (default: <repo>/data)
   PYTHON        (default: <repo>/.venv/Scripts/python.exe)
   WP_PG_CONTAINER, WP_PG_PORT, WP_PG_PASSWORD, WP_PG_DB
+  WP_SKIP_SYSTEM_INSTALL, WP_SKIP_DEPS_SYNC
 
 After start, open: http://localhost:3000/home
 Run audits via sidebar "Run audit" (bottom-right FAB).

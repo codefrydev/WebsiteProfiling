@@ -106,15 +106,12 @@ need_cmd() {
 }
 
 cmd_web_deps() {
-  need_cmd npm
-  if [[ ! -d "$WEB/node_modules" ]]; then
-    log "Installing web dependencies (npm ci)"
-    (cd "$WEB" && npm ci)
-  fi
+  ensure_web_deps
 }
 
 cmd_build() {
-  cmd_web_deps
+  (ensure_system_tools)
+  ensure_web_deps
   log "Building Vite SPA (production, VITE_BFF_BASE_URL=$VITE_BFF_BASE_URL)"
   (cd "$WEB" && VITE_BFF_BASE_URL="$VITE_BFF_BASE_URL" npm run build)
 }
@@ -127,7 +124,8 @@ cmd_start() {
     esac
   done
 
-  need_cmd dotnet
+  ensure_system_tools
+  ensure_all_project_deps
 
   mkdir -p "$DATA_DIR"
   log "Ensuring Postgres and migrations (via ./local-run migrate)"
@@ -135,7 +133,7 @@ cmd_start() {
   if [[ "$skip_build" -eq 0 ]]; then
     cmd_build
   else
-    cmd_web_deps
+    ensure_web_deps
     log "Skipping build (--skip-build)"
   fi
   log "Starting local prod stack (Ctrl+C stops all services including Postgres)"

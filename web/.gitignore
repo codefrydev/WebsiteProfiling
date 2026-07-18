@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+.deps-installed
 /.pnp
 .pnp.*
 .yarn/*

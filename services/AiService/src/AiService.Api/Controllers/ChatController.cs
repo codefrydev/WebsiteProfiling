@@ -59,7 +59,7 @@ public sealed class ChatController : ControllerBase
         var agentMessages = ChatHelpers.MessagesForAgentContext(history);
         var context = new AuditToolContext
         {
-            PropertyId = (int)body.PropertyId,
+            PropertyId = body.PropertyId,
             ReportId = body.ReportId,
         };
 
@@ -69,7 +69,7 @@ public sealed class ChatController : ControllerBase
         var channel = Channel.CreateUnbounded<JsonObject>();
         ChatTurnResult? agentResult = null;
 
-        var agentTask = Task.Run(async () =>
+        async Task RunAgentTurnAsync()
         {
             try
             {
@@ -87,7 +87,9 @@ public sealed class ChatController : ControllerBase
             {
                 channel.Writer.Complete();
             }
-        }, cancellationToken);
+        }
+
+        var agentTask = RunAgentTurnAsync();
 
         await foreach (var item in channel.Reader.ReadAllAsync(cancellationToken))
         {
@@ -99,6 +101,14 @@ public sealed class ChatController : ControllerBase
 
         await agentTask;
 
+        if (!ChatStreamPersistence.ShouldPersistAfterStream(cancellationToken, HttpContext.RequestAborted))
+        {
+            _logger.LogDebug(
+                "Skipping chat persistence for session {SessionId} — client disconnected",
+                body.SessionId);
+            return;
+        }
+
         var toolResultJson = agentResult is null ? null : ChatPersistenceMapper.ToToolResultJson(agentResult);
         if (toolResultJson is not null)
         {
@@ -109,7 +119,7 @@ public sealed class ChatController : ControllerBase
                     ChatRoles.Assistant,
                     content: "",
                     toolResultJson: toolResultJson,
-                    cancellationToken: CancellationToken.None);
+                    cancellationToken: cancellationToken);
                 if (session.Title is "New chat" or "" or null)
                 {
                     var derived = ChatHelpers.DeriveTitle(body.Message)
@@ -119,6 +129,12 @@ public sealed class ChatController : ControllerBase
                         await _sessions.UpdateSessionTitleAsync(body.SessionId, derived, cancellationToken);
                     }
                 }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                _logger.LogDebug(
+                    "Chat persistence cancelled for session {SessionId} after client disconnect",
+                    body.SessionId);
             }
             catch (Exception ex)
             {

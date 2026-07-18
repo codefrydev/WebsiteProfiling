@@ -55,7 +55,7 @@ export default function ChatMermaidDiagram({ code, fallback }: ChatMermaidDiagra
   return (
     <div
       className="chat-mermaid-diagram flex justify-center overflow-x-auto rounded-lg bg-[var(--code-bg)] p-3"
-      // eslint-disable-next-line react/no-danger -- mermaid.render() output; securityLevel 'strict' sanitizes it.
+      // mermaid.render() SVG; securityLevel 'strict' sanitizes untrusted input.
       dangerouslySetInnerHTML={{ __html: svg }}
     />
   );

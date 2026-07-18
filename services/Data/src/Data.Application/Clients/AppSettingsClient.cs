@@ -1,29 +1,15 @@
 using System.Net.Http.Json;
-using Data.Application.Options;
+using Data.Application.Repositories;
 using Data.Domain.Models;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Data.Application.Clients;
 
-public sealed class AppSettingsClient : IAppSettingsClient
+public sealed class AppSettingsClient(
+    IUiPreferencesRepository uiPreferences,
+    ILogoFetcher logoFetcher,
+    ILogger<AppSettingsClient> logger) : IAppSettingsClient
 {
-    private readonly HttpClient _http;
-    private readonly ILogoFetcher _logoFetcher;
-    private readonly ILogger<AppSettingsClient> _logger;
-
-    public AppSettingsClient(
-        HttpClient http,
-        IOptions<ReportApiOptions> options,
-        ILogoFetcher logoFetcher,
-        ILogger<AppSettingsClient> logger)
-    {
-        _http = http;
-        _logoFetcher = logoFetcher;
-        _logger = logger;
-        _http.BaseAddress = new Uri(options.Value.BaseUrl.TrimEnd('/') + "/");
-    }
-
     public async Task<PdfBrandingModel> GetBrandingAsync(bool enabled, CancellationToken cancellationToken = default)
     {
         if (!enabled)
@@ -37,24 +23,20 @@ public sealed class AppSettingsClient : IAppSettingsClient
 
         try
         {
-            using var response = await _http.GetAsync("api/ui-preferences", cancellationToken);
-            if (response.IsSuccessStatusCode)
-            {
-                var data = await response.Content.ReadFromJsonAsync<UiPreferencesResponse>(cancellationToken);
-                name = data?.BrandName?.Trim();
-                subtitle = data?.BrandSubtitle?.Trim();
-                logoUrl = data?.BrandLogoUrl?.Trim();
-            }
+            var prefs = await uiPreferences.GetAsync(cancellationToken);
+            name = prefs.BrandName?.Trim();
+            subtitle = prefs.BrandSubtitle?.Trim();
+            logoUrl = prefs.BrandLogoUrl?.Trim();
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to load ui preferences for PDF branding");
+            logger.LogWarning(ex, "Failed to load ui preferences for PDF branding");
         }
 
         byte[]? logoBytes = null;
         if (!string.IsNullOrWhiteSpace(logoUrl))
         {
-            logoBytes = await _logoFetcher.FetchAsync(logoUrl, cancellationToken);
+            logoBytes = await logoFetcher.FetchAsync(logoUrl, cancellationToken);
         }
 
         return new PdfBrandingModel
@@ -64,52 +46,5 @@ public sealed class AppSettingsClient : IAppSettingsClient
             AgencySubtitle = subtitle ?? "",
             LogoBytes = logoBytes,
         };
-    }
-
-    private sealed class UiPreferencesResponse
-    {
-        public string? BrandName { get; set; }
-
-        public string? BrandSubtitle { get; set; }
-
-        public string? BrandLogoUrl { get; set; }
-    }
-}
-
-public sealed class LogoFetcher : ILogoFetcher
-{
-    private const int MaxBytes = 512 * 1024;
-    private readonly HttpClient _http;
-    private readonly ILogger<LogoFetcher> _logger;
-
-    public LogoFetcher(HttpClient http, ILogger<LogoFetcher> logger)
-    {
-        _http = http;
-        _logger = logger;
-    }
-
-    public async Task<byte[]?> FetchAsync(string? url, CancellationToken cancellationToken = default)
-    {
-        if (string.IsNullOrWhiteSpace(url))
-        {
-            return null;
-        }
-        try
-        {
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(TimeSpan.FromSeconds(8));
-            using var response = await _http.GetAsync(url, cts.Token);
-            if (!response.IsSuccessStatusCode)
-            {
-                return null;
-            }
-            var bytes = await response.Content.ReadAsByteArrayAsync(cts.Token);
-            return bytes.Length > MaxBytes ? null : bytes;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Logo fetch failed for {Url}", url);
-            return null;
-        }
     }
 }

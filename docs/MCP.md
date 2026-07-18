@@ -160,7 +160,7 @@ The MCP endpoint is **`http://<host>:8092/mcp`** locally (`8092` is AiService's 
 | `WP_MCP_DOMAIN` | `core` | Tool bundle (same as stdio) |
 | `WP_PROPERTY_ID` | unset | Default property (same as stdio) |
 
-**Security:** `WP_MCP_TOKEN` is required when AiService is reachable outside localhost. Tools are read-only but expose audit, GSC, and GA4 data — treat the token like a database credential.
+**Security:** `mcp_token` (Risk Settings → Remote MCP, or `WP_MCP_TOKEN`) is **required** for HTTP MCP — requests to `/mcp` without a configured token receive **401 Unauthorized**. When AiService is reachable outside localhost, treat the token like a database credential.
 
 **DNS rebinding protection:** When a token **and** allowed hosts are configured — via the UI **or** environment variables — AiService enforces the bearer token plus the Host/Origin allowlist. Set `WP_MCP_ALLOWED_HOSTS` to the public hostname clients use (e.g. `audit.example.com`).
 

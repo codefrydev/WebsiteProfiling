@@ -16,11 +16,11 @@ public sealed class McpToolsController : ControllerBase
     [HttpGet("")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public IActionResult List()
+    public async Task<IActionResult> List(CancellationToken cancellationToken)
     {
         try
         {
-            return Ok(_catalog.ListTools());
+            return Ok(await _catalog.ListToolsAsync(cancellationToken));
         }
         catch (Exception ex)
         {

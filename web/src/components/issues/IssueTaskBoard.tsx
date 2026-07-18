@@ -42,9 +42,10 @@ export default function IssueTaskBoard({ propertyId, reportId, issues }: IssueTa
     let cancelled = false;
     setLoading(true);
     void apiFetch(apiUrl(`/issues/status?propertyId=${propertyId}`))
-      .then((r) => r.json())
-      .then((data) => {
+      .then(async (r) => {
+        const data = await r.json().catch(() => ({}));
         if (cancelled) return;
+        if (!r.ok) return;
         const map: Record<string, IssueStatusRow> = {};
         for (const row of (data.issues || []) as IssueStatusRow[]) {
           map[row.issueFingerprint] = row;

@@ -92,11 +92,15 @@ public static class ExportToolHandlers
 
         var scoped = ctx.WithArgs(args);
         var reportId = scoped.ReportId;
-        if (reportId is null)
+        if (reportId is null && scoped.PropertyId is long propertyId)
+        {
+            reportId = await AuditReportResolver.ResolveLatestReportIdAsync(db, propertyId, cancellationToken);
+        }
+        else if (reportId is null)
         {
             reportId = await db.ReportPayloads.AsNoTracking()
                 .OrderByDescending(x => x.Id)
-                .Select(x => (int?)x.Id)
+                .Select(x => (long?)x.Id)
                 .FirstOrDefaultAsync(cancellationToken);
         }
 
@@ -167,12 +171,12 @@ public static class ExportToolHandlers
         toolArgs["limit"] = limit;
 
         var scoped = ctx.WithArgs(args);
-        if (scoped.PropertyId is int propertyId && toolArgs["property_id"] is null)
+        if (scoped.PropertyId is long propertyId && toolArgs["property_id"] is null)
         {
             toolArgs["property_id"] = propertyId;
         }
 
-        if (scoped.ReportId is int reportId && toolArgs["report_id"] is null)
+        if (scoped.ReportId is long reportId && toolArgs["report_id"] is null)
         {
             toolArgs["report_id"] = reportId;
         }

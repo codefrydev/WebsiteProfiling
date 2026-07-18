@@ -23,6 +23,8 @@ interface UrlGapListsPanelProps {
   showGa4?: boolean;
   showCrawl?: boolean;
   devData?: unknown;
+  /** Sidebar global search — combined with panel toolbar search. */
+  globalSearch?: string;
 }
 
 /**
@@ -35,6 +37,7 @@ export default function UrlGapListsPanel({
   showGa4 = true,
   showCrawl = true,
   devData,
+  globalSearch = '',
 }: UrlGapListsPanelProps) {
   const sp = strings.views.searchPerformance;
   const cg = strings.components.urlGapLists;
@@ -80,10 +83,12 @@ export default function UrlGapListsPanel({
     [segments, activeSegment],
   );
 
-  const filteredRows = useMemo(
-    () => filterBySearch(current?.rows || [], search, 'url'),
-    [current, search],
-  );
+  const filteredRows = useMemo(() => {
+    const byToolbar = filterBySearch(current?.rows || [], search, 'url');
+    const q = globalSearch.trim().toLowerCase();
+    if (!q) return byToolbar;
+    return byToolbar.filter((row) => String(row.url ?? '').toLowerCase().includes(q));
+  }, [current, search, globalSearch]);
 
   const paginationLabels = sp.table;
 

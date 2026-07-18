@@ -33,12 +33,27 @@ export default function MobileDesktopDelta({ runId }: Props) {
 
   useEffect(() => {
     if (!runId) return;
+    let cancelled = false;
     setLoading(true);
-    apiFetch(apiUrl(`/report/mobile-delta?id=${runId}`))
-      .then((r) => r.json())
-      .then((d) => setRows(d.deltas ?? []))
-      .catch(() => setRows([]))
-      .finally(() => setLoading(false));
+    void apiFetch(apiUrl(`/report/mobile-delta?id=${runId}`))
+      .then(async (r) => {
+        const d = await r.json().catch(() => ({}));
+        if (cancelled) return;
+        if (!r.ok) {
+          setRows([]);
+          return;
+        }
+        setRows(d.deltas ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setRows([]);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [runId]);
 
   const statusDiffs = rows.filter((r) => r.status_differs).length;

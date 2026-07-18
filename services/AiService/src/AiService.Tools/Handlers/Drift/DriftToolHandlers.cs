@@ -28,7 +28,7 @@ public static class DriftToolHandlers
         ["truncated"] = false,
     };
 
-    private static JsonObject CompareMeta(int? currentRid, int? baselineRid, JsonObject current, JsonObject baseline) => new()
+    private static JsonObject CompareMeta(long? currentRid, long? baselineRid, JsonObject current, JsonObject baseline) => new()
     {
         ["current_report_id"] = currentRid,
         ["baseline_report_id"] = baselineRid,
@@ -446,7 +446,7 @@ public static class DriftToolHandlers
     public static async Task<JsonObject> GetHealthHistoryAsync(AuditToolsDbContext db, AuditToolContext ctx, JsonObject args, CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        if (scoped.PropertyId is not int propertyId)
+        if (scoped.PropertyId is not long propertyId)
         {
             return new JsonObject { ["error"] = "property_id is required" };
         }

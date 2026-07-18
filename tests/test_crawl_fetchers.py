@@ -318,6 +318,20 @@ def test_needs_js_render_after_parse_normal_page():
     ) is False
 
 
+def test_needs_js_render_after_parse_spa_with_many_same_domain_links():
+    links = "".join(
+        f'<a href="https://example.com/page-{i}">p{i}</a>' for i in range(12)
+    )
+    html = (
+        f'<html><head></head><body><div id="root"></div>'
+        f'<script src="/app.js"></script>{links}</body></html>'
+    )
+    result = _static_result(html)
+    assert needs_js_render_after_parse(
+        result, link_count=12, same_domain_link_count=12
+    ) is True
+
+
 def test_hybrid_refetch_rendered_uses_browser(monkeypatch):
     from website_profiling.crawl.fetchers.hybrid import HybridFetcher
 

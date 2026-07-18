@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # Shared helpers for local-run.sh and local-prod.sh (source, do not execute directly).
 
+_COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/ensure-deps.sh
+source "$_COMMON_DIR/ensure-deps.sh"
+
 free_port() {
   local port="$1"
   local pids

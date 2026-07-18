@@ -469,7 +469,10 @@ public static class ContentAnalyticsBuilder
         return result;
     }
 
-    public static Dictionary<string, object?> BuildTechStackSummary(IReadOnlyList<CrawlRow> rows)
+    public static Dictionary<string, object?> BuildTechStackSummary(
+        IReadOnlyList<CrawlRow> rows,
+        string? startUrl = null,
+        string? renderMode = null)
     {
         var result = new Dictionary<string, object?>
         {
@@ -512,7 +515,49 @@ public static class ContentAnalyticsBuilder
             })
             .OrderByDescending(t => Convert.ToInt32(t["count"]))
             .ToList();
+
+        var start = (startUrl ?? "").Trim();
+        if (!string.IsNullOrEmpty(start))
+        {
+            var homeKey = NormalizeTechUrlKey(start);
+            var homeRow = htmlRows.FirstOrDefault(r => NormalizeTechUrlKey(r.Url) == homeKey);
+            if (homeRow is not null)
+            {
+                var homepageTechs = ParseTechStack(homeRow.TechStack).Distinct(StringComparer.Ordinal).OrderBy(t => t).ToList();
+                if (homepageTechs.Count > 0)
+                {
+                    var homepageUrl = homeRow.Url.Trim();
+                    result["homepage_url"] = homepageUrl;
+                    result["homepage_technologies"] = homepageTechs
+                        .Select(name => new Dictionary<string, object?>
+                        {
+                            ["name"] = name,
+                            ["count"] = 1,
+                            ["sample_urls"] = new List<string> { homepageUrl },
+                        })
+                        .ToList();
+                }
+            }
+        }
+
+        var mode = (renderMode ?? "static").Trim().ToLowerInvariant();
+        if (mode == "static")
+        {
+            result["detection_notes"] = new List<string> { "static_crawl" };
+        }
+
         return result;
+    }
+
+    private static string NormalizeTechUrlKey(string url)
+    {
+        var trimmed = (url ?? "").Trim().ToLowerInvariant();
+        if (trimmed.EndsWith('/') && trimmed.Length > 1)
+        {
+            return trimmed.TrimEnd('/');
+        }
+
+        return trimmed;
     }
 
     private static IEnumerable<string> ParseTechStack(string? raw)

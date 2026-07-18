@@ -116,17 +116,10 @@ def test_detect_tech_wappalyzer_paths(monkeypatch) -> None:
 
     from website_profiling import common
 
-    common._wappalyzer_instance = None
-    common._wappalyzer_disabled = False
+    common.reset_wappalyzer_state()
 
     html = "<html><body>test</body></html>"
     soup = BeautifulSoup(html, "lxml")
-
-    # Disabled flag falls back immediately
-    common._wappalyzer_disabled = True
-    out = common.detect_tech_wappalyzer("https://a.com", html, {}, soup)
-    assert out.startswith("[")
-    common._wappalyzer_disabled = False
 
     # ImportError path
     import builtins
@@ -141,10 +134,9 @@ def test_detect_tech_wappalyzer_paths(monkeypatch) -> None:
     monkeypatch.setattr(builtins, "__import__", fake_import)
     assert common.detect_tech_wappalyzer("https://a.com", html, {}, soup).startswith("[")
 
-    # Success + regex-warning disable path
+    # Success + regex-warning falls back for page only (Wappalyzer stays enabled)
     monkeypatch.undo()
-    common._wappalyzer_instance = None
-    common._wappalyzer_disabled = False
+    common.reset_wappalyzer_state()
 
     class FakeWebPage:
         def __init__(self, url, html, headers):
@@ -165,12 +157,16 @@ def test_detect_tech_wappalyzer_paths(monkeypatch) -> None:
     monkeypatch.setitem(__import__("sys").modules, "Wappalyzer", wapp_mod)
 
     out2 = common.detect_tech_wappalyzer("https://a.com", html, {}, soup)
-    assert common._wappalyzer_disabled is True
     assert out2.startswith("[")
 
+    class CleanWapp:
+        def analyze(self, _page):
+            return {"React", "jQuery"}
+
+    assert common.detect_tech_wappalyzer("https://b.com", html, {}, soup, wappalyzer=CleanWapp()) == '["React", "jQuery"]'
+
     # Exception during analyze
-    common._wappalyzer_disabled = False
-    common._wappalyzer_instance = None
+    common.reset_wappalyzer_state()
 
     class BoomWapp(FakeWapp):
         def analyze(self, _page):
@@ -180,8 +176,7 @@ def test_detect_tech_wappalyzer_paths(monkeypatch) -> None:
     assert common.detect_tech_wappalyzer("https://a.com", html, {}, soup, wappalyzer=BoomWapp()).startswith("[")
 
     # Cached instance path (no warnings)
-    common._wappalyzer_disabled = False
-    common._wappalyzer_instance = None
+    common.reset_wappalyzer_state()
 
     class CleanWapp:
         def analyze(self, _page):
@@ -189,6 +184,14 @@ def test_detect_tech_wappalyzer_paths(monkeypatch) -> None:
 
     out3 = common.detect_tech_wappalyzer("https://a.com", html, {}, soup, wappalyzer=CleanWapp())
     assert "Vue.js" in out3
+
+
+def test_reset_wappalyzer_state_clears_cache() -> None:
+    from website_profiling import common
+
+    common._wappalyzer_instance = object()
+    common.reset_wappalyzer_state()
+    assert common._wappalyzer_instance is None
 
 
 def test_parse_tech_stack_header_match() -> None:
@@ -199,6 +202,18 @@ def test_parse_tech_stack_header_match() -> None:
     soup = BeautifulSoup("<html></html>", "lxml")
     stack = json.loads(parse_tech_stack(soup, {"X-Custom": "contains cf-ray value"}, "https://a.com"))
     assert "Cloudflare" in stack
+
+
+def test_parse_tech_stack_aspnet_and_express_headers() -> None:
+    from bs4 import BeautifulSoup
+
+    from website_profiling.common import parse_tech_stack
+
+    soup = BeautifulSoup("<html></html>", "lxml")
+    asp = json.loads(parse_tech_stack(soup, {"X-Powered-By": "ASP.NET"}, "https://a.com"))
+    assert "ASP.NET" in asp
+    express = json.loads(parse_tech_stack(soup, {"X-Powered-By": "Express"}, "https://a.com"))
+    assert "Express" in express
 
 
 def test_parse_links_serialized_branches() -> None:

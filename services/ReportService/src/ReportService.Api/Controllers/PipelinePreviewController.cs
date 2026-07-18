@@ -19,7 +19,12 @@ public sealed class PipelinePreviewController(FastApiPythonBridge bridge) : Cont
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> Preview([FromBody] JsonElement body, CancellationToken cancellationToken)
     {
-        var raw = await bridge.ForwardRequestAsync(HttpMethod.Post, PreviewPath, body.GetRawText(), cancellationToken);
-        return Content(raw ?? "{}", "application/json");
+        var result = await bridge.ForwardRequestAsync(HttpMethod.Post, PreviewPath, body.GetRawText(), cancellationToken);
+        return new ContentResult
+        {
+            StatusCode = result.StatusCode,
+            Content = string.IsNullOrEmpty(result.Body) ? "{}" : result.Body,
+            ContentType = "application/json",
+        };
     }
 }

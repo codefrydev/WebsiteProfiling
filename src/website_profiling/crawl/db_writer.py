@@ -22,12 +22,14 @@ class CrawlDbWriter(threading.Thread):
 
     def enqueue(self, record: dict) -> None:
         if self._error is not None:
-            return
+            raise self._error
         self._queue.put(("crawl", record))
 
     def enqueue_html(self, record: dict) -> None:
-        if not self.store_page_html or self._error is not None:
+        if not self.store_page_html:
             return
+        if self._error is not None:
+            raise self._error
         self._queue.put(("html", record))
 
     def finish(self) -> None:

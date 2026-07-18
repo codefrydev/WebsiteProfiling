@@ -443,7 +443,7 @@ def test_run_crawler_writes_link_edges_after_crawl(monkeypatch) -> None:
         show_progress=False,
     )
     assert edge_writes
-    assert edge_writes[0][1] == 9
+    assert edge_writes[0][1] == 7
     assert edge_writes[-1][1] == 7
 
 

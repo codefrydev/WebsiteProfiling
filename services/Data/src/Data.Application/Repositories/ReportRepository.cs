@@ -158,7 +158,7 @@ public sealed class ReportRepository(DataDbContext db, ILogger<ReportRepository>
         };
     }
 
-    private static AuditHistoryItem MapHistoryItem(
+    private AuditHistoryItem MapHistoryItem(
         (long Id, string? CanonicalDomain, string? SiteName, DateTimeOffset GeneratedAt, string Data) row)
     {
         JsonElement data = default;
@@ -167,7 +167,10 @@ public sealed class ReportRepository(DataDbContext db, ILogger<ReportRepository>
             using var doc = JsonDocument.Parse(row.Data);
             data = doc.RootElement.Clone();
         }
-        catch { /* corrupt JSON → proceed with defaults */ }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Corrupt report JSON for history item {ReportId}", row.Id);
+        }
 
         var categories = data.ValueKind == JsonValueKind.Object &&
                          data.TryGetProperty("categories", out var cats) &&
@@ -279,7 +282,10 @@ public sealed class ReportRepository(DataDbContext db, ILogger<ReportRepository>
         if (!string.IsNullOrEmpty(run.StartUrl))
         {
             try { siteHost = new Uri(run.StartUrl).Host; }
-            catch { /* invalid URL → leave empty */ }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Invalid crawl start URL for run {CrawlRunId}", crawlRunId);
+            }
         }
 
         var results = await db.CrawlResults
@@ -304,7 +310,10 @@ public sealed class ReportRepository(DataDbContext db, ILogger<ReportRepository>
                             pageObj[prop.Name] = JsonNode.Parse(prop.Value.GetRawText());
                     }
                 }
-                catch { /* corrupt JSON → keep url-only object */ }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Corrupt crawl result JSON for run {CrawlRunId} url {Url}", crawlRunId, result.Url);
+                }
             }
             pages.Add(pageObj);
         }
@@ -388,7 +397,10 @@ public sealed class ReportRepository(DataDbContext db, ILogger<ReportRepository>
                 using var doc = JsonDocument.Parse(row.Data);
                 data = doc.RootElement.Clone();
             }
-            catch { /* corrupt JSONB → use defaults */ }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Corrupt crawl page JSON for run {RunId} url {Url}", runId, row.Url);
+            }
 
             map[key] = new CrawlPageSnapshot
             {

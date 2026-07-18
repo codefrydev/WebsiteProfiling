@@ -55,8 +55,8 @@ public sealed class DriftToolHandlerTests
 
         var result = await DriftToolHandlers.CompareIssueDeltasAsync(db, ctx, args, CancellationToken.None);
 
-        Assert.Equal(2, result["current_report_id"]!.GetValue<int>());
-        Assert.Equal(1, result["baseline_report_id"]!.GetValue<int>());
+        Assert.Equal(2, result["current_report_id"]!.GetValue<long>());
+        Assert.Equal(1, result["baseline_report_id"]!.GetValue<long>());
         var deltas = result["issue_deltas"]!.AsArray();
         Assert.Single(deltas);
         Assert.Equal("new", deltas[0]!["kind"]!.GetValue<string>());
@@ -103,7 +103,7 @@ public sealed class DriftToolHandlerTests
 
         Assert.NotNull(result["count_deltas"]);
         Assert.NotNull(result["gap_deltas"]);
-        Assert.Equal(2, result["current_report_id"]!.GetValue<int>());
+        Assert.Equal(2, result["current_report_id"]!.GetValue<long>());
     }
 
     [Fact]

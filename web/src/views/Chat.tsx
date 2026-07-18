@@ -234,9 +234,16 @@ export default function ChatPage() {
   const loadMessages = useCallback(async (sid: number, pid: number) => {
     const gen = ++messagesLoadGen.current;
     setLoadingMessages(true);
+    setMessages([]);
+    setError('');
     try {
       const res = await apiFetch(apiUrl(`/chat/sessions/${sid}/messages?propertyId=${pid}`));
-      if (!res.ok) return;
+      if (!res.ok) {
+        if (gen === messagesLoadGen.current) {
+          setError('Failed to load messages');
+        }
+        return;
+      }
       const data = (await res.json()) as {
         messages?: Array<{
           id: number;
@@ -267,7 +274,9 @@ export default function ChatPage() {
           }),
       );
     } catch {
-      /* ignore */
+      if (gen === messagesLoadGen.current) {
+        setError('Failed to load messages');
+      }
     } finally {
       if (gen === messagesLoadGen.current) {
         setLoadingMessages(false);
@@ -384,16 +393,28 @@ export default function ChatPage() {
   // Deliberately doesn't create a session (or require a property) up front — the
   // first message the user sends decides both, so typing a different domain here
   // can still switch context instead of being locked to whatever was last active.
-  const handleNewChat = () => {
+  const beginNewChat = useCallback(() => {
     abortRef.current?.abort();
+    messagesLoadGen.current += 1;
+
+    if (propertyId != null) {
+      sessionRestoredForProperty.current = propertyId;
+      setUrlSyncEnabled(true);
+      replaceChatUrl(propertyId, null);
+    }
+
     setSessionId(null);
     setMessages([]);
     setLoadingMessages(false);
     setError('');
     setPendingDomainConfirm(null);
-  };
+  }, [propertyId, replaceChatUrl]);
 
-  const handleSend = async (text: string, propertyIdOverride?: number) => {
+  const handleSend = async (
+    text: string,
+    propertyIdOverride?: number,
+    options?: { forceNewSession?: boolean },
+  ) => {
     const pid = propertyIdOverride ?? propertyId;
     if (!pid || !llmEnabled) return;
     messagesLoadGen.current += 1;
@@ -402,7 +423,7 @@ export default function ChatPage() {
     setStartedAt(Date.now());
     setBusy(true);
 
-    let sid = sessionId;
+    let sid = options?.forceNewSession ? null : sessionId;
     if (!sid) {
       sid = await createSession(pid);
       if (!sid) {
@@ -629,18 +650,28 @@ export default function ChatPage() {
     }
   };
 
-  // No property picker: a new conversation's first message decides the property.
-  // If it names a domain, resolve (or offer to create) that property; otherwise
-  // fall back to whatever property is already active (if any).
+  // Property follows the domain named in the message (any turn). Switching property
+  // starts a fresh session so tool context matches the site being discussed.
   const trySendMessage = (text: string) => {
-    const domain = !sessionId ? extractDomainFromText(text) : null;
+    const domain = extractDomainFromText(text);
 
     if (domain) {
       const existing = properties.find((p) => hostsMatch(p.canonical_domain, domain));
       const id = existing ? normalizePropertyId(existing.id) : null;
       if (id != null) {
-        if (id !== propertyId) setPropertyId(id);
-        void handleSend(text, id);
+        const switchingProperty = !propertyIdsEqual(id, propertyId);
+        if (switchingProperty) {
+          abortRef.current?.abort();
+          messagesLoadGen.current += 1;
+          sessionRestoredForProperty.current = id;
+          setUrlSyncEnabled(true);
+          replaceChatUrl(id, null);
+          setPropertyId(id);
+          setSessionId(null);
+          setMessages([]);
+          setLoadingMessages(false);
+        }
+        void handleSend(text, id, { forceNewSession: switchingProperty });
         return;
       }
       setError('');
@@ -683,7 +714,17 @@ export default function ChatPage() {
       );
       setPropertyId(id);
       setPendingDomainConfirm(null);
-      void handleSend(message, id);
+      const switchingProperty = !propertyIdsEqual(id, propertyId);
+      if (switchingProperty) {
+        messagesLoadGen.current += 1;
+        sessionRestoredForProperty.current = id;
+        setUrlSyncEnabled(true);
+        replaceChatUrl(id, null);
+        setSessionId(null);
+        setMessages([]);
+        setLoadingMessages(false);
+      }
+      void handleSend(message, id, { forceNewSession: switchingProperty });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to create property');
     } finally {
@@ -772,9 +813,12 @@ export default function ChatPage() {
           {...layout}
           sessions={sessions}
           activeSessionId={sessionId}
-          onNewChat={handleNewChat}
+          onNewChat={beginNewChat}
           onSelect={(id) => {
-            if (id !== sessionId) abortRef.current?.abort();
+            if (!sessionIdsEqual(id, sessionId)) {
+              abortRef.current?.abort();
+              messagesLoadGen.current += 1;
+            }
             setSessionId(id);
             setLoadingMessages(true);
           }}
@@ -788,7 +832,7 @@ export default function ChatPage() {
           <ChatContextBar
             property={activeProperty}
             propertyId={propertyId}
-            sessionTitle={contextSessionTitle}
+            sessionTitle={sessionId ? contextSessionTitle : null}
             loading={loadingProperties}
             crawlActionsEnabled={crawlChatEnabled && llmEnabled}
           />

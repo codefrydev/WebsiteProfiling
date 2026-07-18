@@ -369,9 +369,14 @@ export function ReportProvider({ children, domainSlug = null }: ReportProviderPr
     setCrawlRuns([]);
 
     apiFetch(reportApi('/meta'))
-      .then((res) => res.json())
-      .then((body: MetaApiResponse) => {
+      .then(async (res) => {
+        const body = (await res.json().catch(() => ({}))) as MetaApiResponse;
         if (cancelled) return;
+        if (!res.ok) {
+          setError(body.error ? String(body.error) : `Failed to load report meta (${res.status})`);
+          setLoading(false);
+          return;
+        }
         if (body.error) {
           setError(String(body.error));
           setLoading(false);
