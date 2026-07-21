@@ -45,7 +45,7 @@ public sealed class OptionalAuditsBuilderTests
             },
         };
 
-        var (_, skipReason) = OptionalAuditsBuilder.SpellCheckIssues(rows);
+        var (_, skipReason) = OptionalAuditsBuilder.SpellCheckIssues(rows, dictionaryCandidates: []);
 
         Assert.NotNull(skipReason);
     }

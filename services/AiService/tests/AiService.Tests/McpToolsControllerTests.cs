@@ -5,6 +5,7 @@ using WebsiteProfiling.Testing;
 
 namespace AiService.Tests;
 
+[Collection("WebHostIntegration")]
 public sealed class McpToolsControllerTests
 {
     [Fact]

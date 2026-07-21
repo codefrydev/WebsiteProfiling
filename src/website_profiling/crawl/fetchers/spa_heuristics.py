@@ -94,12 +94,8 @@ def needs_js_render_after_parse(
     if not has_signal:
         return False
 
-    # SPA markers always warrant a browser refetch (hub homepages can have many nav links).
-    if has_spa_markers:
+    # SPA markers warrant a browser refetch unless static parsing already surfaced useful links.
+    if has_spa_markers and same_domain_link_count <= 1:
         return True
-
-    # Thin script-heavy shells with few links — skip when the page already looks like static HTML.
-    if same_domain_link_count > 1 and word_count >= 40:
-        return False
 
     return same_domain_link_count <= 1 or (script_count >= 3 and word_count < 40)

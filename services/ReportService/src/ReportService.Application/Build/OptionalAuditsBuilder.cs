@@ -158,10 +158,11 @@ public static class OptionalAuditsBuilder
 
     internal static (List<CategoryIssue> Issues, string? SkipReason) SpellCheckIssues(
         IReadOnlyList<CrawlRow> rows,
-        int maxPages = 50)
+        int maxPages = 50,
+        string[]? dictionaryCandidates = null)
     {
         var issues = new List<CategoryIssue>();
-        var (checker, skipReason) = SpellCheckerFactory.GetOrCreate();
+        var (checker, skipReason) = SpellCheckerFactory.GetOrCreate(candidatesOverride: dictionaryCandidates);
         if (checker is null)
         {
             return (issues, skipReason);

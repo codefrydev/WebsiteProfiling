@@ -12,6 +12,7 @@ namespace AiService.Tests;
 /// Builds the real ASP.NET host with ValidateOnBuild/ValidateScopes so DI lifetime
 /// mistakes (singleton consuming scoped DbContext) fail in CI, not only at ./local-run.
 /// </summary>
+[Collection("WebHostIntegration")]
 public sealed class ServiceRegistrationValidationTests
 {
     [Theory]
