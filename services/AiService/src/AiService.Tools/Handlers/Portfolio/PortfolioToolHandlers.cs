@@ -5,6 +5,7 @@ using AiService.Tools.Handlers.Report;
 using AiService.Tools.Persistence;
 using AiService.Tools.Slice;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using WebsiteProfiling.Contracts.Json;
 
 namespace AiService.Tools.Handlers.Portfolio;
@@ -18,7 +19,6 @@ public static class PortfolioToolHandlers
         JsonObject args,
         CancellationToken cancellationToken)
     {
-        _ = ctx;
         var limit = PayloadSliceHelpers.ParseLimit(args["limit"], 50, 100);
         var properties = await db.Properties.AsNoTracking()
             .OrderBy(x => x.Id)
@@ -50,7 +50,10 @@ public static class PortfolioToolHandlers
                 {
                     issueCounts = JsonNode.Parse(snap.IssueCounts);
                 }
-                catch (JsonException) { }
+                catch (JsonException ex)
+                {
+                    ctx.Logger?.LogDebug(ex, "Malformed JSON in portfolio issue_counts snapshot");
+                }
             }
 
             enriched.Add(new JsonObject

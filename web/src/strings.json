@@ -432,6 +432,23 @@
         },
         "sitemapOnly": {
           "body": "URLs in the sitemap but not found in the crawl (orphaned sitemap entries)."
+        },
+        "gscNotCrawled": {
+          "body": "URLs with Search Console impressions that were not reached in this crawl."
+        },
+        "crawledNotInSitemap": {
+          "body": "URLs crawled successfully but missing from the discovered XML sitemap."
+        }
+      },
+      "accessibility": {
+        "statPages": {
+          "body": "Crawled pages with at least one axe-core violation when browser rendering and axe are enabled."
+        },
+        "statViolations": {
+          "body": "Total axe violation instances across all pages in this audit (one page can contribute multiple)."
+        },
+        "statRules": {
+          "body": "Distinct axe rule IDs triggered at least once in this crawl."
         }
       },
       "subdomains": {
@@ -754,6 +771,10 @@
     },
     "pages-md": {
       "label": "Page Markdown",
+      "section": "Tools"
+    },
+    "content-pipeline": {
+      "label": "Content Pipeline",
       "section": "Tools"
     },
     "settings": {
@@ -2503,7 +2524,11 @@
         "overview": "Overview",
         "breakdown": "Breakdown"
       },
+      "scopeHomepage": "Homepage",
+      "scopeSitewide": "Site-wide",
       "subtitle": "Technologies detected across {count} analyzed pages.",
+      "subtitleHomepage": "Technologies on the crawl start URL ({url}).",
+      "staticCrawlHint": "This audit used a static crawl (no JavaScript rendering). Client-side frameworks and analytics may be missing — re-run with the SPA / JavaScript preset or set render mode to Auto.",
       "techDetectedSuffix": "technologies detected",
       "cardDetected": "Detected Technologies",
       "cardHint": "Number of pages where each technology was found",
@@ -2890,7 +2915,23 @@
       "colCount": "Violations",
       "nodesLabel": "nodes",
       "pageOf": "Showing",
-      "of": "of"
+      "of": "of",
+      "pipelineSettingsLink": "Run audit settings",
+      "clearRuleFilter": "Clear rule filter",
+      "ruleFilterActive": "Filtered by rule: {rule}",
+      "topRulesChartTitle": "Top rules by occurrence",
+      "topRulesChartHint": "Most frequent axe rule IDs in this crawl — click a bar to filter pages",
+      "topRulesChartAria": "Bar chart: top axe rules by occurrence",
+      "exportCsv": "Export CSV",
+      "searchPlaceholder": "Search pages…",
+      "table": {
+        "showingSlice": "Showing {from}–{to} of {total}",
+        "pageOf": "Page",
+        "of": "of",
+        "previous": "Previous",
+        "next": "Next",
+        "rowsPerPage": "{n} per page"
+      }
     },
     "imageSeo": {
       "title": "Image SEO",
@@ -3061,7 +3102,21 @@
       "gscNotCrawled": "GSC not crawled",
       "crawledNotInSitemap": "Crawled not in sitemap",
       "noSearchGaps": "No Search Console vs crawl gaps in this report.",
-      "listSampleHint": "Showing up to {limit} of {total} URLs."
+      "listSampleHint": "Showing up to {limit} of {total} URLs.",
+      "tabs": {
+        "summary": "Summary",
+        "gscGaps": "GSC gaps",
+        "sitemapGaps": "Sitemap gaps"
+      },
+      "noGscHint": "Search Console URL gaps are not available. Connect Google in Integrations and sync Search Console data, or open Search Performance → Coverage.",
+      "viewSearchPerformance": "Search Performance",
+      "viewSubdomains": "Subdomains",
+      "coverageChartTitle": "URL source overlap",
+      "coverageChartHint": "How crawled URLs align with Search Console pages in this report",
+      "coverageChartAria": "Doughnut chart: crawl vs Search Console URL overlap",
+      "gapBandLabel": "Review gaps",
+      "searchPlaceholder": "Search URLs…",
+      "exportCsv": "Export CSV"
     },
     "subdomains": {
       "title": "Subdomains",
@@ -3262,8 +3317,19 @@
       },
       "overview": {
         "topDomainsTitle": "Top referring domains",
-        "topPagesTitle": "Most linked pages on your site"
+        "topPagesTitle": "Most linked pages on your site",
+        "viewAllDomains": "View all referring domains",
+        "viewAllPages": "View all linked pages"
       },
+      "competitorGapTitle": "Competitor link gap",
+      "competitorGapProvenance": "Based on imported GSC Links sample ({provenance}).",
+      "linksToYou": "links to you",
+      "notInSample": "not in referring domains sample",
+      "velocityTitle": "Referring domain velocity",
+      "velocityDelta": "{latest} domains ({delta} vs prior snapshot)",
+      "disclaimerHint": "Google provides a curated sample of backlinks — not a full index. Data may lag indexing by weeks.",
+      "importsSectionTitle": "Data sources & imports",
+      "searchFilterHint": "Sidebar search filters the active tab.",
       "sampleTabNotImported": "Import the Sample links and/or Latest links CSV exports from Search Console to populate this tab.",
       "bingTitle": "Bing Webmaster inbound links",
       "bingHint": "From Bing Webmaster GetLinkCounts when bing_webmaster_api_key is set in Run audit settings.",
@@ -3983,6 +4049,7 @@
       "executiveNoIssues": "No open issues detected in this audit.",
       "viewAllIssues": "View all issues",
       "needsAttention": "Needs attention",
+      "needsAttentionTotal": "{total} total issues",
       "atAGlanceTitle": "At a glance",
       "atAGlanceHint": "Key crawl, traffic, and performance signals from this audit.",
       "atAGlanceIssuesKpi": "Open issues",
@@ -4017,6 +4084,10 @@
       "crawlSnapshotSubtitle": "Key metrics from this audit crawl — click any tile to investigate.",
       "crawlSnapshotViewCharts": "View charts",
       "crawlTopConcerns": "Top crawl concerns",
+      "diagnosticPanelLive": "Live",
+      "diagnosticPanelSeverity": "Severity",
+      "diagnosticLog": "Diagnostic log",
+      "noActiveAnomalies": "No active anomalies detected.",
       "crawlHealthSection": "Crawl health",
       "crawlHealthSectionHint": "URL volume, HTTP success, and on-page SEO basics.",
       "crawlContentSection": "Content & performance",
@@ -4064,6 +4135,9 @@
       "keywordOpportunitiesKpiGsc": "{quickWins} quick wins · +{clicks} est. clicks · {expansion} expansion terms",
       "keywordOpportunitiesKpiCrawl": "{actions} suggested actions · {emphasis} high-emphasis terms",
       "keywordOpportunitiesKpiSite": "{terms} top terms from on-page copy",
+      "keywordStatQuickWins": "Quick wins",
+      "keywordStatEstClicks": "Est. clicks",
+      "keywordStatExpansionTerms": "Expansion terms",
       "keywordOpportunitiesGscConnected": "Search Console rankings connected",
       "keywordOpportunitiesConnectGsc": "Connect Search Console for real ranking opportunities",
       "keywordOpportunitiesConnectGscDetail": "Unlock quick wins, lost clicks, and traffic-weighted keyword lists from your verified property.",
@@ -4072,6 +4146,7 @@
       "onPagesCount": "on {n} pages",
       "topThemes": "Top themes (from crawl)",
       "topThemesViewAll": "View topic map",
+      "topThemesCount": "{n} clusters",
       "topThemeTermCount": "({n} terms)",
       "siteTopTerms": "Top terms on site (from page copy)",
       "siteTermMentions": "{n} mentions",
@@ -4662,6 +4737,11 @@
       "responseFailed": "Response failed",
       "emptyHeadline": "Ready when you are.",
       "emptySubline": "Ask about issues, crawl data, Core Web Vitals, or Search Console metrics.",
+      "chatNoDomainHint": "Tell me which site you mean — include a domain, like example.com.",
+      "domainConfirmPrompt": "No property found for {domain} yet — start tracking it?",
+      "domainConfirmButton": "Start {domain}",
+      "domainConfirmCreating": "Creating…",
+      "domainConfirmCancel": "Cancel",
       "sidebarCollapse": "Collapse sidebar",
       "sidebarExpand": "Expand sidebar",
       "recentChats": "Recent",
@@ -4675,6 +4755,7 @@
         "askCategoryDrop": "What caused {category} to drop compared to the baseline audit?",
         "showAllIssues": "List all issues with full details",
         "showAll": "Show all",
+        "askGenericShowAll": "Show all results for {title}",
         "statusBreakdown": "HTTP status breakdown",
         "successRate": "Success rate",
         "healthScoreAxis": "Health score",

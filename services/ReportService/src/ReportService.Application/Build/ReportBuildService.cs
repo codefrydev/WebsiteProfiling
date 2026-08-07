@@ -1,5 +1,6 @@
 using System.Net.Http.Json;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ReportService.Application.Bridge;
 using ReportService.Application.Options;
@@ -13,7 +14,8 @@ public sealed class ReportBuildService(
     CrawlRepository crawlRepository,
     CategoryBuilder categoryBuilder,
     IOptions<ReportServiceOptions> options,
-    IHttpClientFactory httpClientFactory)
+    IHttpClientFactory httpClientFactory,
+    ILogger<ReportBuildService> logger)
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -27,7 +29,7 @@ public sealed class ReportBuildService(
         bool runKeywordEnrich,
         CancellationToken cancellationToken = default)
     {
-        var useBridge = options.Value.UsePythonBridge || FastApiPythonBridge.ShouldUseBridge();
+        var useBridge = options.Value.UsePythonBridge;
         var result = useBridge
             ? await bridge.BuildReportAsync(propertyId, crawlRunId, config, cancellationToken)
             : await nativeBuilder.BuildAsync(propertyId, crawlRunId, config, cancellationToken);
@@ -163,11 +165,29 @@ public sealed class ReportBuildService(
                 new { propertyId },
                 JsonOptions,
                 cancellationToken);
-            _ = await response.Content.ReadAsStringAsync(cancellationToken);
+            var body = await response.Content.ReadAsStringAsync(cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                var snippet = body.Length > 200 ? body[..200] + "…" : body;
+                logger.LogWarning(
+                    "Keyword enrich returned {StatusCode} for property {PropertyId}: {Body}",
+                    (int)response.StatusCode,
+                    propertyId,
+                    snippet);
+                return;
+            }
         }
-        catch (HttpRequestException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            // Keyword enrich is optional; report build already succeeded.
+            throw;
+        }
+        catch (OperationCanceledException ex)
+        {
+            logger.LogWarning(ex, "Keyword enrich timed out for property {PropertyId}", propertyId);
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogWarning(ex, "Keyword enrich request failed for property {PropertyId}", propertyId);
         }
     }
 }

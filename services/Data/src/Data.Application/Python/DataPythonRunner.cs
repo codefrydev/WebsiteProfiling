@@ -208,8 +208,41 @@ public sealed class DataPythonRunner
             process.StandardInput.Close();
         }
 
-        await process.WaitForExitAsync(cancellationToken);
+        var timeoutSeconds = ResolveTimeoutSeconds();
+        using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeoutCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
+        try
+        {
+            await process.WaitForExitAsync(timeoutCts.Token);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            TryKillProcessTree(process);
+            return new PythonRunResult(-1, stdout.ToString(), stderr.ToString(), TimedOut: true);
+        }
+
         return new PythonRunResult(process.ExitCode, stdout.ToString(), stderr.ToString());
+    }
+
+    private static int ResolveTimeoutSeconds()
+    {
+        var raw = Environment.GetEnvironmentVariable("DATA_PYTHON_TIMEOUT_SECONDS");
+        return int.TryParse(raw, out var seconds) && seconds > 0 ? seconds : 120;
+    }
+
+    private static void TryKillProcessTree(Process process)
+    {
+        try
+        {
+            if (!process.HasExited)
+            {
+                process.Kill(entireProcessTree: true);
+            }
+        }
+        catch
+        {
+            // ignore kill failures on timeout
+        }
     }
 
     private static string? TryParseErrorMessage(string stdout)
@@ -269,7 +302,7 @@ public sealed class DataPythonRunner
         return Directory.GetCurrentDirectory();
     }
 
-    private sealed record PythonRunResult(int ExitCode, string Stdout, string Stderr);
+    private sealed record PythonRunResult(int ExitCode, string Stdout, string Stderr, bool TimedOut = false);
 }
 
 public sealed record AlertsRunResult(bool Ok, Dictionary<string, object?>? Payload);

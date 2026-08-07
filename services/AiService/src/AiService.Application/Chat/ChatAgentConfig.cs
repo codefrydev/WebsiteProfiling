@@ -1,4 +1,5 @@
 using AiService.Application.Prompts;
+using AiService.Domain;
 using AiService.Domain.Models;
 using AiService.Providers.Chat;
 
@@ -98,7 +99,7 @@ public static class ChatAgentConfig
         }
 
         var provider = settings.Provider.Trim().ToLowerInvariant();
-        if (msg.Contains("Connection error", StringComparison.OrdinalIgnoreCase) && provider == "groq")
+        if (msg.Contains("Connection error", StringComparison.OrdinalIgnoreCase) && provider == LlmProviders.Groq)
         {
             return
                 "Could not reach Groq. Check your Groq API key on the Secrets page and " +

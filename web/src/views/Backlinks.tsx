@@ -13,11 +13,18 @@ import { BACKLINKS_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { useActivePropertyContext } from '@/hooks/useActivePropertyContext';
 import { apiUrl, apiFetch } from '../lib/publicBase';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, ViewTabs, EmptyState } from '../components';
+import { PageLayout, PageHeader, ViewTabs, EmptyState, Card, AlertBanner, HelpHint } from '../components';
 import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import GoogleTableToolbar from '../components/google/GoogleTableToolbar';
 import GscLinksSummaryCards from '../components/backlinks/GscLinksSummaryCards';
+import BacklinksVelocityChart from '../components/backlinks/BacklinksVelocityChart';
+import {
+  filterBacklinkAnchors,
+  filterBacklinkDomains,
+  filterBacklinkPages,
+  filterBacklinkSample,
+} from '../components/backlinks/backlinksSearch';
 import CompetitorGapImport from '../components/backlinks/CompetitorGapImport';
 import ThirdPartyLinksImport from '../components/backlinks/ThirdPartyLinksImport';
 import {
@@ -38,9 +45,10 @@ import type { ViewProps } from '@/types';
 const TABS = ['overview', 'domains', 'pages', 'anchors', 'sample'] as const;
 type BacklinksTabId = (typeof TABS)[number];
 
-export default function Backlinks(_props: ViewProps) {
+export default function Backlinks({ searchQuery = '' }: ViewProps) {
   const vb = strings.views.backlinks;
   const [searchParams] = useSearchParams();
+  const q = (searchQuery || '').trim();
   const { data, loadReport } = useReport();
   useSectionData('gsc-links');
   const gscLinksReady = useSectionsViewReady(['gsc-links']);
@@ -57,8 +65,12 @@ export default function Backlinks(_props: ViewProps) {
     }
     let cancelled = false;
     void apiFetch(apiUrl(`/backlinks/velocity?propertyId=${propertyId}`))
-      .then((r) => r.json())
-      .then((body) => {
+      .then(async (r) => {
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          if (!cancelled) setVelocity([]);
+          return;
+        }
         if (!cancelled) setVelocity(body.snapshots || []);
       })
       .catch(() => {
@@ -85,39 +97,42 @@ export default function Backlinks(_props: ViewProps) {
   const [anchorSearch, setAnchorSearch] = useState('');
   const [sampleSearch, setSampleSearch] = useState('');
 
-  const filteredDomains = useMemo(
-    () => filterBySearch(gscLinks?.top_linking_sites ?? [], domainSearch, 'site'),
-    [gscLinks?.top_linking_sites, domainSearch],
-  );
-  const filteredPages = useMemo(
-    () => filterBySearch(gscLinks?.top_linked_pages ?? [], pageSearch, 'target_page'),
-    [gscLinks?.top_linked_pages, pageSearch],
-  );
-  const filteredAnchors = useMemo(
-    () => filterBySearch(gscLinks?.top_linking_text ?? [], anchorSearch, 'anchor_text'),
-    [gscLinks?.top_linking_text, anchorSearch],
-  );
+  const filteredDomains = useMemo(() => {
+    const local = filterBySearch(gscLinks?.top_linking_sites ?? [], domainSearch, 'site');
+    return filterBacklinkDomains(local, q);
+  }, [gscLinks?.top_linking_sites, domainSearch, q]);
+  const filteredPages = useMemo(() => {
+    const local = filterBySearch(gscLinks?.top_linked_pages ?? [], pageSearch, 'target_page');
+    return filterBacklinkPages(local, q);
+  }, [gscLinks?.top_linked_pages, pageSearch, q]);
+  const filteredAnchors = useMemo(() => {
+    const local = filterBySearch(gscLinks?.top_linking_text ?? [], anchorSearch, 'anchor_text');
+    return filterBacklinkAnchors(local, q);
+  }, [gscLinks?.top_linking_text, anchorSearch, q]);
   const allSample = useMemo(() => combinedSampleLinks(gscLinks), [gscLinks]);
   const hasSampleExport = hasGscLinksExportType(gscLinks, 'sample_links');
   const hasLatestExport = hasGscLinksExportType(gscLinks, 'latest_links');
   const sampleTabHint =
     !hasSampleExport && !hasLatestExport ? vb.sampleTabNotImported : vb.table.noData;
   const filteredSample = useMemo(() => {
-    const q = sampleSearch.trim().toLowerCase();
-    if (!q) return allSample;
-    return allSample.filter((row) => {
-      const hay = [
-        row.source_page,
-        row.target_page,
-        row.anchor_text,
-        row.linking_site,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return hay.includes(q);
-    });
-  }, [allSample, sampleSearch]);
+    const local = (() => {
+      const query = sampleSearch.trim().toLowerCase();
+      if (!query) return allSample;
+      return allSample.filter((row) => {
+        const hay = [
+          row.source_page,
+          row.target_page,
+          row.anchor_text,
+          row.linking_site,
+        ]
+          .filter(Boolean)
+          .join(' ')
+          .toLowerCase();
+        return hay.includes(query);
+      });
+    })();
+    return filterBacklinkSample(local, q);
+  }, [allSample, sampleSearch, q]);
 
   const headerMeta: ReactNode = gscLinks?.imported_at ? (
     <span>
@@ -278,23 +293,6 @@ export default function Backlinks(_props: ViewProps) {
     [bingBacklinks],
   );
 
-  const thirdPartyDevData = useMemo(
-    () => ({
-      widget: 'backlinks.overview.thirdParty',
-      overlays: gscLinks?.third_party_overlays ?? [],
-    }),
-    [gscLinks?.third_party_overlays],
-  );
-
-  const competitorImportDevData = useMemo(
-    () => ({
-      widget: 'backlinks.overview.competitorImport',
-      referringDomainCount: gscLinks?.top_linking_sites?.length ?? 0,
-      referringDomains: (gscLinks?.top_linking_sites ?? []).slice(0, 20).map((row) => row.site),
-    }),
-    [gscLinks?.top_linking_sites],
-  );
-
   const competitorGapDevData = useMemo(
     () => ({
       widget: 'backlinks.overview.competitorGap',
@@ -397,10 +395,19 @@ export default function Backlinks(_props: ViewProps) {
   }
 
   const tabLabels = vb.tabs as Record<BacklinksTabId, string>;
+  const kpiCounts = summaryCounts(gscLinks);
 
   const backlinksTabItems = TABS.map((id) => ({
     id,
     label: tabLabels[id],
+    badge:
+      id === 'domains' && kpiCounts.referringDomains > 0
+        ? kpiCounts.referringDomains
+        : id === 'pages' && kpiCounts.linkedPages > 0
+          ? kpiCounts.linkedPages
+          : id === 'sample' && allSample.length > 0
+            ? allSample.length
+            : null,
   }));
 
   return (
@@ -412,13 +419,15 @@ export default function Backlinks(_props: ViewProps) {
           <>
             {vb.subtitle}
             {headerMeta}
-            <span className="block text-xs text-muted-foreground mt-2 max-w-3xl">{vb.disclaimer}</span>
           </>
         }
       />
 
       <div className="relative group/dev-card">
         <DevCopyJsonButton data={kpiDevData} />
+        <p className="text-xs text-muted-foreground mb-3">
+          <HelpHint title="Data scope">{vb.disclaimerHint}</HelpHint>
+        </p>
         <GscLinksSummaryCards data={gscLinks} labels={vb.kpi} />
       </div>
 
@@ -430,9 +439,12 @@ export default function Backlinks(_props: ViewProps) {
         idPrefix="backlinks"
       />
 
+      {q ? (
+        <p className="text-xs text-muted-foreground -mt-4">{vb.searchFilterHint}</p>
+      ) : null}
+
       {activeTab === 'overview' && bingBacklinks?.ok ? (
-        <div className="relative group/dev-card mb-6 p-4 rounded-xl border border-default bg-brand-800/50">
-          <DevCopyJsonButton data={bingDevData} />
+        <Card className="mb-6" devData={bingDevData}>
           <h3 className="text-sm font-bold text-foreground mb-2">{vb.bingTitle}</h3>
           <p className="text-xs text-muted-foreground mb-3">{vb.bingHint}</p>
           <div className="flex flex-wrap gap-4 text-sm">
@@ -455,76 +467,52 @@ export default function Backlinks(_props: ViewProps) {
               ))}
             </ul>
           ) : null}
-        </div>
+        </Card>
       ) : null}
 
       {activeTab === 'overview' ? (
-        <div className="relative group/dev-card">
-          <DevCopyJsonButton data={thirdPartyDevData} />
-          <ThirdPartyLinksImport gscLinks={gscLinks} onImported={() => void loadReport()} />
-        </div>
-      ) : null}
-
-      {activeTab === 'overview' && gscLinks ? (
-        <div className="relative group/dev-card">
-          <DevCopyJsonButton data={competitorImportDevData} />
-          <CompetitorGapImport gscLinks={gscLinks} />
-        </div>
+        <AlertBanner
+          variant="info"
+          collapsible
+          defaultOpen={false}
+          title={vb.importsSectionTitle}
+          className="mb-6"
+        >
+          <div className="space-y-4">
+            <ThirdPartyLinksImport gscLinks={gscLinks} onImported={() => void loadReport()} />
+            {gscLinks ? <CompetitorGapImport gscLinks={gscLinks} /> : null}
+          </div>
+        </AlertBanner>
       ) : null}
 
       {activeTab === 'overview' && competitorGap?.competitors?.length ? (
-        <div className="relative group/dev-card mb-6 p-4 rounded-xl border border-default bg-brand-800/50">
-          <DevCopyJsonButton data={competitorGapDevData} />
-          <h3 className="text-sm font-bold text-foreground mb-2">Competitor link gap</h3>
+        <Card className="mb-6" devData={competitorGapDevData}>
+          <h3 className="text-sm font-bold text-foreground mb-2">{vb.competitorGapTitle}</h3>
           <p className="text-xs text-muted-foreground mb-3">
-            Based on imported GSC Links sample ({competitorGap.provenance || 'Search Console'}).
+            {format(vb.competitorGapProvenance, {
+              provenance: competitorGap.provenance || 'Search Console',
+            })}
           </p>
           <ul className="text-sm space-y-1">
             {(competitorGap.competitors as Array<{ competitor?: string; links_to_us?: boolean }>).map((row) => (
               <li key={row.competitor} className="flex items-center gap-2">
                 <span className="font-mono text-xs">{row.competitor}</span>
                 <span className={row.links_to_us ? 'text-emerald-600 text-xs' : 'text-amber-600 text-xs'}>
-                  {row.links_to_us ? 'links to you' : 'not in referring domains sample'}
+                  {row.links_to_us ? vb.linksToYou : vb.notInSample}
                 </span>
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
       ) : null}
 
-      {activeTab === 'overview' && velocity.length >= 2 && (
-        <div className="relative group/dev-card mb-6 p-4 rounded-xl border border-default bg-brand-800/50">
-          <DevCopyJsonButton data={velocityDevData} />
-          <h3 className="text-sm font-bold text-foreground mb-2">Referring domain velocity</h3>
-          <p className="text-xs text-muted-foreground mb-3">
-            {format('{latest} domains ({delta} vs prior snapshot)', {
-              latest: velocity[velocity.length - 1].referringDomains.toLocaleString(),
-              delta:
-                velocity[velocity.length - 1].referringDomains -
-                velocity[velocity.length - 2].referringDomains,
-            })}
-          </p>
-          <div className="flex items-end gap-1 h-16">
-            {velocity.map((snap) => {
-              const max = Math.max(...velocity.map((s) => s.referringDomains), 1);
-              const h = Math.max(4, (snap.referringDomains / max) * 100);
-              return (
-                <div
-                  key={snap.capturedAt}
-                  className="flex-1 bg-accent/70 rounded-t"
-                  style={{ height: `${h}%` }}
-                  title={`${snap.capturedAt}: ${snap.referringDomains}`}
-                />
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {activeTab === 'overview' && velocity.length >= 2 ? (
+        <BacklinksVelocityChart snapshots={velocity} devData={velocityDevData} />
+      ) : null}
 
       {activeTab === 'overview' && (
         <div className="grid gap-6 lg:grid-cols-2">
-          <div className="relative group/dev-card">
-            <DevCopyJsonButton data={overviewTopDomainsDevData} />
+          <Card devData={overviewTopDomainsDevData}>
             <h3 className="text-sm font-bold text-foreground mb-3">{vb.overview.topDomainsTitle}</h3>
             <SortablePaginatedTable
               rows={(gscLinks.top_linking_sites ?? []).slice(0, 10) as Record<string, unknown>[]}
@@ -532,9 +520,15 @@ export default function Backlinks(_props: ViewProps) {
               emptyMessage={vb.table.noData}
               paginationLabels={paginationLabels}
             />
-          </div>
-          <div className="relative group/dev-card">
-            <DevCopyJsonButton data={overviewTopPagesDevData} />
+            <button
+              type="button"
+              onClick={() => setActiveTab('domains')}
+              className="mt-3 text-xs text-link hover:underline"
+            >
+              {vb.overview.viewAllDomains}
+            </button>
+          </Card>
+          <Card devData={overviewTopPagesDevData}>
             <h3 className="text-sm font-bold text-foreground mb-3">{vb.overview.topPagesTitle}</h3>
             <SortablePaginatedTable
               rows={(gscLinks.top_linked_pages ?? []).slice(0, 10) as Record<string, unknown>[]}
@@ -542,7 +536,14 @@ export default function Backlinks(_props: ViewProps) {
               emptyMessage={vb.table.noData}
               paginationLabels={paginationLabels}
             />
-          </div>
+            <button
+              type="button"
+              onClick={() => setActiveTab('pages')}
+              className="mt-3 text-xs text-link hover:underline"
+            >
+              {vb.overview.viewAllPages}
+            </button>
+          </Card>
         </div>
       )}
 

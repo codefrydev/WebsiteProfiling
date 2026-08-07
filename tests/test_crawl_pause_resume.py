@@ -213,6 +213,9 @@ def test_crawler_init_restores_pause_state(monkeypatch):
         def seed_initial_urls(self, **kw):
             pass
 
+        def note_dequeued(self, url):
+            pass
+
     pause_state = {"pending": ["https://example.com/p"], "visited": [], "depths": {}}
 
     with (
@@ -262,6 +265,9 @@ def test_pause_event_is_set_by_pause_file(tmp_path, monkeypatch):
             return True
 
         def seed_initial_urls(self, **kw):
+            pass
+
+        def note_dequeued(self, url):
             pass
 
         def serialize_state(self):
@@ -337,6 +343,9 @@ def test_pause_drains_inflight_futures(tmp_path, monkeypatch):
         def seed_initial_urls(self, **kw):
             pass
 
+        def note_dequeued(self, url):
+            pass
+
         def serialize_state(self):
             return {"pending": [], "visited": [], "depths": {}}
 
@@ -401,6 +410,9 @@ def test_pause_loop_os_unlink_error_is_swallowed(tmp_path, monkeypatch):
             return True
 
         def seed_initial_urls(self, **kw):
+            pass
+
+        def note_dequeued(self, url):
             pass
 
         def serialize_state(self):
@@ -604,3 +616,103 @@ def test_run_crawler_resume_with_no_saved_state(monkeypatch):
             output_db=False,
             resume_run_id=99,
         )
+
+
+def test_run_crawler_resume_reuses_run_id_and_skips_create(monkeypatch):
+    """Resume with saved pause state streams into the existing crawl_run_id."""
+    import website_profiling.crawl.crawler as mod
+    import website_profiling.db as db_pkg
+
+    pause_state = {
+        "pending": ["https://example.com/b"],
+        "visited": ["https://example.com/a"],
+        "depths": {"https://example.com/b": 1},
+        "pages_crawled": 1,
+    }
+    stream_ids: list[int | None] = []
+    create_calls: list[int] = []
+
+    class _FakeCrawlerResume:
+        paused = False
+        results = [{"url": "https://example.com/a"}]
+        link_edges_accum = []
+        frontier = MagicMock()
+        _html_buffer = []
+        store_page_html = False
+
+        def __init__(self, *a, **kw):
+            assert kw.get("pause_state") == pause_state
+
+        def crawl(self, **kw):
+            stream_ids.append(kw.get("stream_crawl_run_id"))
+            return pd.DataFrame(self.results)
+
+    mock_conn = MagicMock()
+
+    def _fake_create(*_a, **_k):
+        create_calls.append(1)
+        return 999
+
+    with (
+        patch.object(mod, "Crawler", _FakeCrawlerResume),
+        patch.object(db_pkg, "db_session", _db_session_cm(mock_conn)),
+        patch.object(db_pkg, "create_crawl_run", side_effect=_fake_create),
+        patch.object(db_pkg, "backup_db_if_exists", return_value=None),
+        patch.object(db_pkg, "read_historical_data", return_value={}),
+        patch.object(db_pkg, "restore_historical_data", MagicMock()),
+        patch("website_profiling.db.storage.ensure_crawl_tables_cleared", MagicMock()),
+        patch("website_profiling.db.crawl_store.load_pause_state", return_value=pause_state),
+        patch("website_profiling.db.crawl_store.clear_pause_state", MagicMock()),
+    ):
+        mod.run_crawler(
+            start_url="https://example.com",
+            output_db=True,
+            resume_run_id=42,
+        )
+
+    assert stream_ids == [42]
+    assert create_calls == []
+
+
+def test_run_crawler_output_db_always_streams(monkeypatch):
+    """output_db=True always creates a stream_run_id so pause can persist frontier."""
+    import website_profiling.crawl.crawler as mod
+    import website_profiling.db as db_pkg
+
+    stream_ids: list[int | None] = []
+
+    class _FakeCrawler:
+        paused = False
+        results = [{"url": "https://example.com/"}]
+        link_edges_accum = []
+        frontier = MagicMock()
+        _html_buffer = []
+        store_page_html = False
+
+        def __init__(self, *a, **kw):
+            pass
+
+        def crawl(self, **kw):
+            stream_ids.append(kw.get("stream_crawl_run_id"))
+            return pd.DataFrame(self.results)
+
+    mock_conn = MagicMock()
+
+    with (
+        patch.object(mod, "Crawler", _FakeCrawler),
+        patch.object(db_pkg, "db_session", _db_session_cm(mock_conn)),
+        patch.object(db_pkg, "create_crawl_run", return_value=55),
+        patch.object(db_pkg, "backup_db_if_exists", return_value=None),
+        patch.object(db_pkg, "read_historical_data", return_value={}),
+        patch.object(db_pkg, "restore_historical_data", MagicMock()),
+        patch("website_profiling.db.storage.ensure_crawl_tables_cleared", MagicMock()),
+    ):
+        mod.run_crawler(
+            start_url="https://example.com",
+            output_db=True,
+            crawl_stream_to_db=False,
+            max_pages=5,
+            preserve_crawl_history=True,
+        )
+
+    assert stream_ids == [55]

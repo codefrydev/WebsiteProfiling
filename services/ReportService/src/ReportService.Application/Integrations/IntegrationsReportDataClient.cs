@@ -12,6 +12,8 @@ public sealed class IntegrationsReportDataClient(
     IHttpClientFactory httpClientFactory,
     IOptions<ReportServiceOptions> options)
 {
+    private const string EnrichmentPath = "/internal/integrations/report/enrichment";
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -26,8 +28,7 @@ public sealed class IntegrationsReportDataClient(
             return null;
         }
 
-        var baseUrl = (Environment.GetEnvironmentVariable("INTEGRATIONS_SERVICE_URL")
-            ?? options.Value.IntegrationsServiceUrl).Trim().TrimEnd('/');
+        var baseUrl = options.Value.IntegrationsServiceUrl.Trim().TrimEnd('/');
         if (string.IsNullOrEmpty(baseUrl))
         {
             return null;
@@ -39,7 +40,7 @@ public sealed class IntegrationsReportDataClient(
         try
         {
             using var response = await client.GetAsync(
-                $"{baseUrl}/internal/integrations/report/enrichment?propertyId={propertyId}",
+                $"{baseUrl}{EnrichmentPath}?propertyId={propertyId}",
                 cancellationToken);
             if (!response.IsSuccessStatusCode)
             {

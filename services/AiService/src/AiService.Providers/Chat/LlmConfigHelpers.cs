@@ -1,19 +1,10 @@
+using AiService.Domain;
 using AiService.Domain.Models;
 
 namespace AiService.Providers.Chat;
 
 public static class LlmConfigHelpers
 {
-    private static readonly string[] CloudProviders = ["openai", "gemini", "anthropic", "groq"];
-
-    private static readonly Dictionary<string, string> EnvKeyByProvider = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["openai"] = "OPENAI_API_KEY",
-        ["gemini"] = "GEMINI_API_KEY",
-        ["anthropic"] = "ANTHROPIC_API_KEY",
-        ["groq"] = "GROQ_API_KEY",
-    };
-
     public static bool IsEnabled(LlmSettings settings)
     {
         if (!settings.Enabled)
@@ -22,7 +13,7 @@ public static class LlmConfigHelpers
         }
 
         var provider = settings.Provider.Trim().ToLowerInvariant();
-        return provider is not "" and not "none";
+        return provider is not "" and not LlmProviders.None;
     }
 
     public static bool IsTruthy(string? value)
@@ -32,7 +23,7 @@ public static class LlmConfigHelpers
     {
         provider ??= settings.Provider.Trim().ToLowerInvariant();
 
-        if (CloudProviders.Contains(provider, StringComparer.OrdinalIgnoreCase))
+        if (LlmProviders.CloudProviders.Contains(provider, StringComparer.OrdinalIgnoreCase))
         {
             var profile = settings.Providers.FirstOrDefault(
                 p => string.Equals(p.Provider, provider, StringComparison.OrdinalIgnoreCase));
@@ -43,7 +34,7 @@ public static class LlmConfigHelpers
             }
         }
 
-        if (EnvKeyByProvider.TryGetValue(provider, out var envVar))
+        if (LlmProviders.ApiKeyEnvVarByProvider.TryGetValue(provider, out var envVar))
         {
             return (Environment.GetEnvironmentVariable(envVar) ?? "").Trim();
         }
@@ -54,12 +45,12 @@ public static class LlmConfigHelpers
     public static bool IsApiKeyConfigured(LlmSettings settings)
     {
         var provider = settings.Provider.Trim().ToLowerInvariant();
-        if (provider is "" or "none")
+        if (provider is "" or LlmProviders.None)
         {
             return false;
         }
 
-        if (provider == "ollama")
+        if (provider == LlmProviders.Ollama)
         {
             return true;
         }
@@ -70,7 +61,7 @@ public static class LlmConfigHelpers
     public static bool IsOllamaBaseUrl(string? url)
     {
         var normalized = (url ?? "").Trim().TrimEnd('/').ToLowerInvariant();
-        if (normalized is "http://127.0.0.1:11434" or "http://localhost:11434")
+        if (normalized is OllamaDefaults.BaseUrl or "http://localhost:11434")
         {
             return true;
         }

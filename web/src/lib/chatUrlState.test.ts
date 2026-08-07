@@ -96,6 +96,22 @@ describe('chatUrlState', () => {
       resolvePreferredChatSession(
         3,
         { propertyId: 3, sessionId: null },
+        { propertyId: 3, sessionId: null },
+        [{ id: 10 }],
+      ),
+    ).toBeNull();
+    expect(
+      resolvePreferredChatSession(
+        3,
+        { propertyId: 3, sessionId: 99 },
+        { propertyId: 3, sessionId: null },
+        [{ id: 10 }],
+      ),
+    ).toBe(99);
+    expect(
+      resolvePreferredChatSession(
+        3,
+        { propertyId: 3, sessionId: null },
         { propertyId: 5, sessionId: 40 },
         [{ id: 10 }, { id: 11 }],
       ),
@@ -103,6 +119,14 @@ describe('chatUrlState', () => {
     expect(
       resolvePreferredChatSession(3, { propertyId: 3, sessionId: null }, { propertyId: null, sessionId: null }, []),
     ).toBeNull();
+    expect(
+      resolvePreferredChatSession(
+        3,
+        { propertyId: 3, sessionId: null },
+        { propertyId: null, sessionId: null },
+        [{ id: 10 }],
+      ),
+    ).toBe(10);
   });
 
   it('readSessionPropertyId accepts API camelCase and legacy snake_case', () => {

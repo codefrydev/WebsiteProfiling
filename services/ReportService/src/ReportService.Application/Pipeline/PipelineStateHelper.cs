@@ -4,26 +4,79 @@ namespace ReportService.Application.Pipeline;
 
 public static class PipelineStateHelper
 {
+    /// <summary>Named constants for the pipeline state dictionary keys, so BoolKeys/TristateKeys
+    /// and callers elsewhere (e.g. PipelineOrchestratorService.cs) can't drift from each other via typo.</summary>
+    public static class Flags
+    {
+        public const string RunCrawl = "run_crawl";
+        public const string RunReport = "run_report";
+        public const string RunKeywords = "run_keywords";
+        public const string RunLighthouse = "run_lighthouse";
+        public const string RunPlot = "run_plot";
+        public const string RunSecurity = "run_security";
+        public const string RunEnrich = "run_enrich";
+        public const string RunGoogle = "run_google";
+        public const string RunPageMarkdown = "run_page_markdown";
+        public const string IgnoreRobots = "ignore_robots";
+        public const string AllowExternal = "allow_external";
+        public const string StoreOutlinks = "store_outlinks";
+        public const string StoreContentExcerpt = "store_content_excerpt";
+        public const string StorePageHtml = "store_page_html";
+        public const string RunContentAnalysis = "run_content_analysis";
+        public const string ProbeImageInventory = "probe_image_inventory";
+        public const string CompareMobileDesktop = "compare_mobile_desktop";
+        public const string LighthouseRunMobile = "lighthouse_run_mobile";
+        public const string EnableNer = "enable_ner";
+        public const string EnableRichResultsValidation = "enable_rich_results_validation";
+        public const string NerOnlyTopPages = "ner_only_top_pages";
+        public const string EnableHreflangValidation = "enable_hreflang_validation";
+        public const string EnableCruxSummary = "enable_crux_summary";
+        public const string EnableExecutiveSummary = "enable_executive_summary";
+        public const string EnableGoogleKeywordPlanner = "enable_google_keyword_planner";
+        public const string EnableCompetitorKeywords = "enable_competitor_keywords";
+        public const string ExportCsv = "export_csv";
+        public const string ExportJson = "export_json";
+        public const string ExportHtml = "export_html";
+        public const string ExportPdf = "export_pdf";
+        public const string EnableBingBacklinks = "enable_bing_backlinks";
+        public const string CrawlRenderModeTristate = "crawl_render_mode_tristate";
+    }
+
+    /// <summary>Named constants for the pipeline command dispatch strings in AllowedCommands.</summary>
+    public static class Commands
+    {
+        public const string Crawl = "crawl";
+        public const string Report = "report";
+        public const string Plot = "plot";
+        public const string Lighthouse = "lighthouse";
+        public const string Keywords = "keywords";
+        public const string KeywordsEnrichGoogle = "keywords --enrich-google";
+        public const string Warnings = "warnings";
+        public const string Enrich = "enrich";
+        public const string Google = "google";
+        public const string PageMarkdown = "page-markdown";
+    }
+
     private static readonly HashSet<string> BoolKeys =
     [
-        "run_crawl", "run_report", "run_keywords", "run_lighthouse", "run_plot",
-        "run_security", "run_enrich", "run_google", "run_page_markdown",
-        "ignore_robots", "allow_external", "store_outlinks", "store_content_excerpt",
-        "store_page_html", "run_content_analysis", "probe_image_inventory",
-        "compare_mobile_desktop", "lighthouse_run_mobile", "enable_ner",
-        "enable_rich_results_validation", "ner_only_top_pages",
-        "enable_hreflang_validation", "enable_crux_summary",
-        "enable_executive_summary", "enable_google_keyword_planner",
-        "enable_competitor_keywords", "export_csv", "export_json", "export_html",
-        "export_pdf", "enable_bing_backlinks",
+        Flags.RunCrawl, Flags.RunReport, Flags.RunKeywords, Flags.RunLighthouse, Flags.RunPlot,
+        Flags.RunSecurity, Flags.RunEnrich, Flags.RunGoogle, Flags.RunPageMarkdown,
+        Flags.IgnoreRobots, Flags.AllowExternal, Flags.StoreOutlinks, Flags.StoreContentExcerpt,
+        Flags.StorePageHtml, Flags.RunContentAnalysis, Flags.ProbeImageInventory,
+        Flags.CompareMobileDesktop, Flags.LighthouseRunMobile, Flags.EnableNer,
+        Flags.EnableRichResultsValidation, Flags.NerOnlyTopPages,
+        Flags.EnableHreflangValidation, Flags.EnableCruxSummary,
+        Flags.EnableExecutiveSummary, Flags.EnableGoogleKeywordPlanner,
+        Flags.EnableCompetitorKeywords, Flags.ExportCsv, Flags.ExportJson, Flags.ExportHtml,
+        Flags.ExportPdf, Flags.EnableBingBacklinks,
     ];
 
-    private static readonly HashSet<string> TristateKeys = ["crawl_render_mode_tristate"];
+    private static readonly HashSet<string> TristateKeys = [Flags.CrawlRenderModeTristate];
 
     public static readonly HashSet<string> AllowedCommands =
     [
-        "", "crawl", "report", "plot", "lighthouse", "keywords",
-        "keywords --enrich-google", "warnings", "enrich", "google", "page-markdown",
+        "", Commands.Crawl, Commands.Report, Commands.Plot, Commands.Lighthouse, Commands.Keywords,
+        Commands.KeywordsEnrichGoogle, Commands.Warnings, Commands.Enrich, Commands.Google, Commands.PageMarkdown,
     ];
 
     public static Dictionary<string, string> CoercePipelineState(IReadOnlyDictionary<string, object?> raw)
@@ -76,7 +129,7 @@ public static class PipelineStateHelper
 
     private static bool NeedsStartUrl(string? command, IReadOnlyDictionary<string, string> state)
     {
-        if (command == "crawl" || command == "report" || command == "keywords")
+        if (command == Commands.Crawl || command == Commands.Report || command == Commands.Keywords)
         {
             return true;
         }
@@ -86,8 +139,8 @@ public static class PipelineStateHelper
             return false;
         }
 
-        var runCrawl = ParseBool(state.GetValueOrDefault("run_crawl"), defaultValue: true);
-        var runReport = ParseBool(state.GetValueOrDefault("run_report"), defaultValue: true);
+        var runCrawl = ParseBool(state.GetValueOrDefault(Flags.RunCrawl), defaultValue: true);
+        var runReport = ParseBool(state.GetValueOrDefault(Flags.RunReport), defaultValue: true);
         return runCrawl || runReport;
     }
 

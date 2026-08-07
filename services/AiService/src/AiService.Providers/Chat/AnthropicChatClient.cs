@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using AiService.Domain;
 using Microsoft.Extensions.AI;
 
 namespace AiService.Providers.Chat;
@@ -14,7 +15,7 @@ internal sealed class AnthropicChatClient(string apiKey, string model, TimeSpan 
 
     private readonly HttpClient _http = new() { Timeout = timeout };
 
-    public ChatClientMetadata Metadata { get; } = new("anthropic");
+    public ChatClientMetadata Metadata { get; } = new(LlmProviders.Anthropic);
 
     public void Dispose() => _http.Dispose();
 
@@ -164,7 +165,7 @@ internal sealed class AnthropicChatClient(string apiKey, string model, TimeSpan 
                 var toolResult = message.Contents.OfType<FunctionResultContent>().FirstOrDefault();
                 messages.Add(new JsonObject
                 {
-                    ["role"] = "user",
+                    ["role"] = ChatRoles.User,
                     ["content"] = new JsonArray
                     {
                         new JsonObject
@@ -197,13 +198,13 @@ internal sealed class AnthropicChatClient(string apiKey, string model, TimeSpan 
                     });
                 }
 
-                messages.Add(new JsonObject { ["role"] = "assistant", ["content"] = blocks });
+                messages.Add(new JsonObject { ["role"] = ChatRoles.Assistant, ["content"] = blocks });
                 continue;
             }
 
             messages.Add(new JsonObject
             {
-                ["role"] = "user",
+                ["role"] = ChatRoles.User,
                 ["content"] = message.Text ?? "",
             });
         }

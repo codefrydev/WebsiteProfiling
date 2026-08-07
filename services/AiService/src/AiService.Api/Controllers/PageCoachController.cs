@@ -55,6 +55,6 @@ public sealed class PageCoachController : ControllerBase
 
         public int? BaselineId { get; set; }
 
-        public int? PropertyId { get; set; }
+        public long? PropertyId { get; set; }
     }
 }

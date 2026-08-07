@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 using ReportService.Application.Repositories;
 using WeCantSpell.Hunspell;
 
@@ -11,19 +12,24 @@ internal static class SpellCheckerFactory
     private static WordList? _cached;
     private static string? _skipReason;
 
-    public static (WordList? Checker, string? SkipReason) GetOrCreate()
+    public static (WordList? Checker, string? SkipReason) GetOrCreate(
+        ILogger? logger = null,
+        string[]? candidatesOverride = null)
     {
-        if (_cached is not null)
+        if (candidatesOverride is null)
         {
-            return (_cached, null);
+            if (_cached is not null)
+            {
+                return (_cached, null);
+            }
+
+            if (_skipReason is not null)
+            {
+                return (null, _skipReason);
+            }
         }
 
-        if (_skipReason is not null)
-        {
-            return (null, _skipReason);
-        }
-
-        var candidates = new[]
+        var candidates = candidatesOverride ?? new[]
         {
             Path.Combine(AppContext.BaseDirectory, "Dictionaries", "en_US"),
             "/usr/share/hunspell/en_US",
@@ -42,16 +48,24 @@ internal static class SpellCheckerFactory
 
             try
             {
-                _cached = WordList.CreateFromFiles(dicPath, affPath);
-                return (_cached, null);
+                var wordList = WordList.CreateFromFiles(dicPath, affPath);
+                if (candidatesOverride is null)
+                {
+                    _cached = wordList;
+                }
+                return (wordList, null);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // try next path
+                logger?.LogDebug(ex, "Failed to load Hunspell dictionary from {DicPath}", dicPath);
             }
         }
 
-        _skipReason = "Hunspell dictionary not installed";
-        return (null, _skipReason);
+        const string missing = "Hunspell dictionary not installed";
+        if (candidatesOverride is null)
+        {
+            _skipReason = missing;
+        }
+        return (null, missing);
     }
 }

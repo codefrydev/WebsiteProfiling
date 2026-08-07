@@ -27,6 +27,12 @@ public partial class CrawlSetting
 
     public string CustomExtractors { get; set; } = null!;
 
+    public string MainContentSelectors { get; set; } = null!;
+
+    public string BoilerplateSelectors { get; set; } = null!;
+
+    public string PipelineGraphJson { get; set; } = null!;
+
     public string MaxPages { get; set; } = null!;
 
     public string Concurrency { get; set; } = null!;

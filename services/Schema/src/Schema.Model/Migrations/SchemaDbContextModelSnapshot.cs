@@ -777,6 +777,13 @@ namespace Schema.Model.Migrations
                         .HasColumnName("allow_external")
                         .HasDefaultValueSql("''::text");
 
+                    b.Property<string>("BoilerplateSelectors")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasColumnName("boilerplate_selectors")
+                        .HasDefaultValueSql("''::text");
+
                     b.Property<string>("CompareMobileDesktop")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -994,6 +1001,13 @@ namespace Schema.Model.Migrations
                         .HasColumnName("ignore_robots")
                         .HasDefaultValueSql("''::text");
 
+                    b.Property<string>("MainContentSelectors")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasColumnName("main_content_selectors")
+                        .HasDefaultValueSql("''::text");
+
                     b.Property<string>("MaxDepth")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -1013,6 +1027,13 @@ namespace Schema.Model.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("text")
                         .HasColumnName("max_stored_html_bytes")
+                        .HasDefaultValueSql("''::text");
+
+                    b.Property<string>("PipelineGraphJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("text")
+                        .HasColumnName("pipeline_graph_json")
                         .HasDefaultValueSql("''::text");
 
                     b.Property<string>("PoliteDelay")

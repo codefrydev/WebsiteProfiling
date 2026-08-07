@@ -146,8 +146,12 @@ export default function SearchRetentionTab({ link }: SearchRetentionTabProps) {
   }, [loadSnapshot, loadHistories, currentType, currentId]);
 
   useEffect(() => {
+    setCurrentType('snapshot');
+    setCurrentId(null);
+    setCompareSelect('default');
+    setCompare(null);
     void refreshAll();
-  }, [pageUrl]); // eslint-disable-line react-hooks/exhaustive-deps -- reload on URL change only
+  }, [pageUrl]); // eslint-disable-line react-hooks/exhaustive-deps -- reload on URL change only; reset snapshot selection so prior page IDs do not bleed
 
   const loadCompare = useCallback(async () => {
     if (!pageUrl) return;

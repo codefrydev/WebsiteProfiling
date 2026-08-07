@@ -45,6 +45,55 @@ public sealed class ToolResultCompactorTests
     }
 
     [Fact]
+    public void CompactForUi_preserves_inline_artifact_content()
+    {
+        var full = new JsonObject
+        {
+            ["artifact_id"] = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+            ["format"] = "html",
+            ["filename"] = "report.html",
+            ["mime_type"] = "text/html",
+            ["ready"] = true,
+            ["content"] = "<html><body>Report</body></html>",
+        };
+
+        var compact = ToolResultCompactor.CompactForUi("export_audit_report", full);
+        Assert.Equal("<html><body>Report</body></html>", compact["content"]?.GetValue<string>());
+    }
+
+    [Fact]
+    public void CompactForLlm_drops_inline_artifact_content()
+    {
+        var full = new JsonObject
+        {
+            ["artifact_id"] = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+            ["format"] = "html",
+            ["filename"] = "report.html",
+            ["ready"] = true,
+            ["content"] = "<html><body>Report</body></html>",
+        };
+
+        var compact = ToolResultCompactor.CompactForLlm("export_audit_report", full);
+        Assert.Null(compact["content"]);
+    }
+
+    [Fact]
+    public void CompactForUi_drops_oversized_artifact_content()
+    {
+        var full = new JsonObject
+        {
+            ["artifact_id"] = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+            ["format"] = "csv",
+            ["filename"] = "big.csv",
+            ["ready"] = true,
+            ["content"] = new string('x', 200_001),
+        };
+
+        var compact = ToolResultCompactor.CompactForUi("export_list_as_csv", full);
+        Assert.Null(compact["content"]);
+    }
+
+    [Fact]
     public void CompactForLlm_summarizes_workflow_steps()
     {
         var full = new JsonObject

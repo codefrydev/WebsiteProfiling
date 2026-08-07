@@ -43,6 +43,7 @@ class CrawlConfig:
     content_excerpt_max_chars: int = 4096
     store_page_html: bool = False
     max_stored_html_bytes: int = 2_097_152
+    max_pdf_bytes: int = 10_485_760
     run_content_analysis: bool = False
     content_analysis_strategy: str = "main_only"
     content_analysis_workers: int = 4
@@ -68,6 +69,8 @@ class CrawlConfig:
     crawl_cookies: str = ""
     crawl_robots_txt_override: str = ""
     custom_extractors: Optional[list[dict]] = None
+    main_content_selectors: str = ""
+    boilerplate_selectors: str = ""
     enable_axe: bool = False
     compare_mobile_desktop: bool = False
 
@@ -93,12 +96,15 @@ class CrawlConfig:
         self.content_excerpt_max_chars = max(0, int(self.content_excerpt_max_chars or 0))
         self.store_page_html = bool(self.store_page_html)
         self.max_stored_html_bytes = max(1, int(self.max_stored_html_bytes or 2_097_152))
+        self.max_pdf_bytes = max(1, int(self.max_pdf_bytes or 10_485_760))
         self.run_content_analysis = bool(self.run_content_analysis)
         strat = (self.content_analysis_strategy or "main_only").strip().lower()
         self.content_analysis_strategy = strat if strat in ("main_only", "full_body") else "main_only"
         self.content_analysis_workers = max(1, int(self.content_analysis_workers or 4))
         self.custom_extraction_regex = (self.custom_extraction_regex or "").strip()
         self.custom_extractors = list(self.custom_extractors or [])
+        self.main_content_selectors = (self.main_content_selectors or "").strip()
+        self.boilerplate_selectors = (self.boilerplate_selectors or "").strip()
         self.crawl_ignore_params = list(self.crawl_ignore_params or [])
         self.crawl_url_list = [
             u.strip() for u in (self.crawl_url_list or []) if u and str(u).strip()

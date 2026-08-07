@@ -67,6 +67,4 @@ public sealed class McpToolCatalogService(ToolCatalog catalog, AuditToolSelectio
             ["enabled_tool_count"] = snapshot.EnabledToolNames.Count,
         };
     }
-
-    public JsonObject ListTools() => ListToolsAsync().GetAwaiter().GetResult();
 }

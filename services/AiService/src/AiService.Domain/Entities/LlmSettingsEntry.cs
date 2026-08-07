@@ -1,16 +1,18 @@
 namespace AiService.Domain.Entities;
 
+using AiService.Domain;
+
 public sealed class LlmSettingsEntry
 {
     public long Id { get; set; } = 1;
 
     public bool Enabled { get; set; }
 
-    public string Provider { get; set; } = "none";
+    public string Provider { get; set; } = LlmProviders.None;
 
     public string ActiveModel { get; set; } = "";
 
-    public string OllamaBaseUrl { get; set; } = "http://127.0.0.1:11434";
+    public string OllamaBaseUrl { get; set; } = OllamaDefaults.BaseUrl;
 
     public bool EnableNer { get; set; } = true;
 

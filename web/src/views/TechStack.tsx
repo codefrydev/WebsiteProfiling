@@ -1,5 +1,5 @@
 import type { Chart, TooltipItem } from 'chart.js';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useUrlTab } from '@/hooks/useUrlTab';
 import { Cpu, List } from 'lucide-react';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } from 'chart.js';
@@ -45,14 +45,17 @@ const barValueLabelsPlugin = {
 
 const TECH_CATEGORIES: Record<string, string[]> = {
   CMS: ['WordPress', 'Drupal', 'Joomla', 'Hugo', 'Jekyll', 'Shopify', 'Squarespace', 'Wix'],
-  'JS Frameworks': ['React', 'Next.js', 'Vue.js', 'Nuxt.js', 'Angular', 'Svelte', 'Gatsby', 'jQuery'],
+  'JS Frameworks': ['React', 'Next.js', 'Vue.js', 'Nuxt.js', 'Angular', 'Svelte', 'Gatsby', 'jQuery', 'Blazor', 'Webpack'],
   'CSS Frameworks': ['Bootstrap', 'Tailwind CSS'],
-  Analytics: ['Google Analytics', 'Google Tag Manager', 'Facebook Pixel', 'Hotjar', 'Microsoft Clarity'],
-  Infrastructure: ['Cloudflare', 'Nginx', 'Apache', 'LiteSpeed', 'Vercel', 'Netlify', 'GitHub Pages', 'Amazon CloudFront', 'AWS'],
+  Analytics: ['Google Analytics', 'Google Tag Manager', 'Facebook Pixel', 'Hotjar', 'Microsoft Clarity', 'Plausible', 'Segment'],
+  Infrastructure: ['Cloudflare', 'Nginx', 'Apache', 'LiteSpeed', 'Vercel', 'Netlify', 'GitHub Pages', 'Amazon CloudFront', 'AWS', 'Azure', 'Firebase', 'Render', 'Railway', 'DigitalOcean'],
+  Backend: ['ASP.NET', 'Express'],
   Fonts: ['Google Fonts', 'Font Awesome'],
 };
 
 function categorizeTech(name: string): string {
+  const lower = (name || '').toLowerCase();
+  if (lower.startsWith('google ')) return 'Analytics';
   const other = strings.views.techStack.categoryOther;
   for (const [cat, techs] of Object.entries(TECH_CATEGORIES)) {
     if (techs.includes(name)) return cat;
@@ -64,6 +67,7 @@ const EMPTY_TS: TechStackSummary = {};
 
 const TECH_STACK_TABS = ['overview', 'breakdown'] as const;
 type TechStackTabId = (typeof TECH_STACK_TABS)[number];
+type TechScope = 'homepage' | 'sitewide';
 
 export default function TechStack({ searchQuery = '' }: ViewProps) {
   const vr = strings.views.techStack;
@@ -73,16 +77,36 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
   const [activeTab, setActiveTab] = useUrlTab(TECH_STACK_TABS, 'overview');
   const q = (searchQuery || '').toLowerCase().trim();
   const ts: TechStackSummary = data?.tech_stack_summary ?? EMPTY_TS;
+  const hasHomepageTech = (ts.homepage_technologies || []).length > 0;
+  const [scope, setScope] = useState<TechScope>(hasHomepageTech ? 'homepage' : 'sitewide');
+
+  useEffect(() => {
+    if (hasHomepageTech) {
+      setScope('homepage');
+    }
+  }, [hasHomepageTech, ts.homepage_url]);
+
+  const sourceTechs = useMemo((): TechStackEntry[] => {
+    if (scope === 'homepage' && hasHomepageTech) {
+      return ts.homepage_technologies || [];
+    }
+    return ts.technologies || [];
+  }, [scope, hasHomepageTech, ts.homepage_technologies, ts.technologies]);
+
   const techs = useMemo(() => {
-    const all: TechStackEntry[] = ts.technologies || [];
-    if (!q) return all;
-    return all.filter((t) => {
+    if (!q) return sourceTechs;
+    return sourceTechs.filter((t) => {
       const name = (t.name || '').toLowerCase();
       const cat = categorizeTech(t.name || '').toLowerCase();
       const sampleHit = (t.sample_urls || []).some((u) => String(u).toLowerCase().includes(q));
       return name.includes(q) || cat.includes(q) || sampleHit;
     });
-  }, [ts.technologies, q]);
+  }, [sourceTechs, q]);
+
+  const showStaticHint =
+    (ts.detection_notes || []).includes('static_crawl')
+    && (ts.technologies || []).length <= 3
+    && (ts.total_pages_analyzed || 0) > 0;
 
   const tabItems = useMemo((): ViewTabItem[] => [
     {
@@ -107,30 +131,34 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
     });
     return {
       widget: 'techStack.overview.categoryStats',
+      scope,
       categories: Object.entries(categoryCounts).map(([category, count]) => ({ category, count })),
       displayedCategories: Object.entries(categoryCounts).slice(0, 4).map(([category, count]) => ({ category, count })),
     };
-  }, [techs]);
+  }, [techs, scope]);
 
   const detectedChartDevData = useMemo(
     () => ({
       widget: 'techStack.overview.detectedChart',
+      scope,
       searchQuery: q || null,
       totalPagesAnalyzed: ts.total_pages_analyzed || 0,
+      homepageUrl: ts.homepage_url || null,
       technologies: techs.map((t) => ({
         name: t.name,
         count: t.count ?? 0,
         category: categorizeTech(t.name || ''),
       })),
     }),
-    [q, techs, ts.total_pages_analyzed],
+    [q, techs, ts.total_pages_analyzed, ts.homepage_url, scope],
   );
 
   const breakdownTableDevData = useMemo(
     () => ({
       widget: 'techStack.breakdown.table',
+      scope,
       searchQuery: q || null,
-      totalInReport: (ts.technologies || []).length,
+      totalInReport: sourceTechs.length,
       filteredCount: techs.length,
       rows: techs.map((t) => ({
         name: t.name,
@@ -139,7 +167,7 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
         sample_urls: t.sample_urls ?? [],
       })),
     }),
-    [q, techs, ts.technologies],
+    [q, techs, sourceTechs, scope],
   );
 
   if (!techReady) {
@@ -148,7 +176,7 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
 
   const totalAnalyzed = ts.total_pages_analyzed || 0;
   const emptyMessage =
-    (ts.technologies || []).length > 0
+    sourceTechs.length > 0
       ? vr.noSearchMatch
       : totalAnalyzed > 0
         ? vr.noTechnologiesDetected
@@ -162,12 +190,47 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
     categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
   });
 
+  const subtitle =
+    scope === 'homepage' && ts.homepage_url
+      ? format(vr.subtitleHomepage, { url: ts.homepage_url.replace(/^https?:\/\//, '').slice(0, 80) })
+      : format(vr.subtitle, { count: totalAnalyzed.toLocaleString() });
+
   return (
     <PageLayout className="space-y-6">
-      <PageHeader
-        title={vr.title}
-        subtitle={format(vr.subtitle, { count: totalAnalyzed.toLocaleString() })}
-      />
+      <PageHeader title={vr.title} subtitle={subtitle} />
+
+      {hasHomepageTech && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setScope('homepage')}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              scope === 'homepage'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {vr.scopeHomepage}
+          </button>
+          <button
+            type="button"
+            onClick={() => setScope('sitewide')}
+            className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+              scope === 'sitewide'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {vr.scopeSitewide}
+          </button>
+        </div>
+      )}
+
+      {showStaticHint && (
+        <Card className="border-amber-500/30 bg-amber-500/5 p-4 text-sm text-muted-foreground">
+          {vr.staticCrawlHint}
+        </Card>
+      )}
 
       <ViewTabs
         tabs={tabItems}
@@ -219,7 +282,7 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
                   })}
                   plugins={[barValueLabelsPlugin]}
                 />
-              ) : (ts.technologies || []).length > 0 ? (
+              ) : sourceTechs.length > 0 ? (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{vr.noSearchMatch}</div>
               ) : (
                 <div className="flex items-center justify-center h-full text-muted-foreground text-sm">{emptyMessage}</div>

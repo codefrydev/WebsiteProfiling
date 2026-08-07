@@ -7,6 +7,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { Components } from 'react-markdown';
 import { preprocessChatMarkdown } from '@/components/chat/preprocessChatMarkdown';
+import ChatMermaidDiagram from '@/components/chat/ChatMermaidDiagram';
 
 function flattenText(node: unknown): string {
   if (node == null || typeof node === 'boolean') return '';
@@ -77,6 +78,27 @@ export default function ChatMarkdown({ content, streaming, nested }: ChatMarkdow
       code: ({ className, children }) => {
         const text = String(children).replace(/\n$/, '');
         const lang = /language-(\w+)/.exec(className || '')?.[1];
+        if (lang === 'mermaid') {
+          return (
+            <ChatMermaidDiagram
+              code={text}
+              fallback={
+                <SyntaxHighlighter
+                  language="text"
+                  style={oneDark}
+                  customStyle={{
+                    margin: 0,
+                    borderRadius: '0.5rem',
+                    fontSize: '0.75rem',
+                    background: 'var(--code-bg)',
+                  }}
+                >
+                  {text}
+                </SyntaxHighlighter>
+              }
+            />
+          );
+        }
         if (lang) {
           return (
             <SyntaxHighlighter

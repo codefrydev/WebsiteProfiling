@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import LandingPage from '@/views/Landing';
 import ChatPage from '@/views/Chat';
+import ContentPipeline from '@/views/ContentPipeline';
 import DocsHome from '@/views/DocsHome';
 import McpSettings from '@/views/McpSettings';
 import PagesMarkdown from '@/views/PagesMarkdown';
@@ -52,6 +53,7 @@ export default function AppRoutes() {
       <Route path="/secrets" element={<Secrets />} />
       <Route path="/mcp" element={<McpSettings />} />
       <Route path="/pages-md" element={<PagesMarkdown />} />
+      <Route path="/content-pipeline" element={<ContentPipeline />} />
       <Route path="/risk-settings" element={<RiskSettingsRoute />} />
       <Route path="/docs" element={<DocsRoute />} />
       <Route path="/docs/integrations/:slug" element={<DocsIntegrationRoutePage />} />

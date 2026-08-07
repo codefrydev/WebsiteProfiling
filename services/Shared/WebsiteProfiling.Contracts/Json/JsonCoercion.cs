@@ -15,9 +15,29 @@ public static class JsonCoercion
     public static string? AsString(JsonNode? node)
         => node is JsonValue value && value.TryGetValue<string>(out var s) ? s : null;
 
-    /// <summary>Returns the value as a double when the node is a JSON number; otherwise null.</summary>
+    /// <summary>Returns the value as a double when the node is a JSON number; otherwise null.
+    /// Handles both JSON-text-parsed values (JsonElement-backed, where TryGetValue&lt;double&gt;
+    /// widens freely) and values constructed directly in code as e.g. <c>JsonValue.Create(5)</c>,
+    /// which is strictly int-typed and does NOT satisfy TryGetValue&lt;double&gt;.</summary>
     public static double? AsDouble(JsonNode? node)
-        => node is JsonValue value && value.TryGetValue<double>(out var d) ? d : null;
+    {
+        if (node is not JsonValue value)
+        {
+            return null;
+        }
+
+        if (value.TryGetValue<double>(out var d))
+        {
+            return d;
+        }
+
+        if (value.TryGetValue<long>(out var l))
+        {
+            return l;
+        }
+
+        return value.TryGetValue<int>(out var i) ? i : null;
+    }
 
     /// <summary>Returns the value as an int when the node is a JSON number (rounding floats); otherwise null.</summary>
     public static int? AsInt(JsonNode? node)
@@ -26,17 +46,13 @@ public static class JsonCoercion
     /// <summary>Coerce a JSON scalar to a double, mirroring Python <c>float(val)</c> with a default.</summary>
     public static double Num(JsonNode? node, double @default = 0.0)
     {
-        if (node is not JsonValue value)
-        {
-            return @default;
-        }
-
-        if (value.TryGetValue<double>(out var d))
+        if (AsDouble(node) is { } d)
         {
             return d;
         }
 
-        if (value.TryGetValue<string>(out var s)
+        if (node is JsonValue value
+            && value.TryGetValue<string>(out var s)
             && double.TryParse(s, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsed))
         {
             return parsed;

@@ -72,3 +72,35 @@ export function getAxeScopeInfo(data: ReportPayload | null | undefined): {
   const usesBrowser = renderMode === 'javascript' || renderMode === 'auto' || renderMode === 'js';
   return { renderMode, usesBrowser };
 }
+
+/** Map axe impact labels to severityBg-compatible keys. */
+export function normalizeAxeImpactForBadge(impact: string | null | undefined): string {
+  const sl = String(impact ?? '').toLowerCase();
+  if (sl === 'serious') return 'high';
+  if (sl === 'moderate') return 'medium';
+  if (sl === 'minor') return 'low';
+  return sl;
+}
+
+export function pageHasRule(row: FlatAxePageRow, ruleId: string | null | undefined): boolean {
+  const rule = String(ruleId ?? '').trim().toLowerCase();
+  if (!rule) return true;
+  return row.violations.some((v) => String(v.id ?? '').toLowerCase() === rule);
+}
+
+export function filterAxeRowsByRule(rows: FlatAxePageRow[], ruleId: string | null | undefined): FlatAxePageRow[] {
+  const rule = String(ruleId ?? '').trim().toLowerCase();
+  if (!rule) return rows;
+  return rows.filter((row) => pageHasRule(row, rule));
+}
+
+export function filterAxeRowsBySearch(rows: FlatAxePageRow[], searchQuery: string): FlatAxePageRow[] {
+  const q = searchQuery.trim().toLowerCase();
+  if (!q) return rows;
+  return rows.filter((r) =>
+    [r.url, r.title, ...r.violations.map((v) => v.id || ''), ...r.violations.map((v) => v.description || '')]
+      .join(' ')
+      .toLowerCase()
+      .includes(q),
+  );
+}

@@ -17,14 +17,36 @@ export interface SessionState {
   readonly: boolean;
 }
 
-const defaultState: SessionState = {
+/** Fail-closed defaults: deny access until /auth/session succeeds. */
+export const defaultState: SessionState = {
   loading: true,
   authEnabled: false,
-  authenticated: true,
-  role: 'analyst',
-  canMutate: true,
-  readonly: false,
+  authenticated: false,
+  role: null,
+  canMutate: false,
+  readonly: true,
 };
+
+export const unauthenticatedState: SessionState = {
+  loading: false,
+  authEnabled: false,
+  authenticated: false,
+  role: null,
+  canMutate: false,
+  readonly: true,
+};
+
+/** Map a successful /auth/session JSON body into SessionState. */
+export function sessionStateFromResponse(data: Partial<SessionState>): SessionState {
+  return {
+    loading: false,
+    authEnabled: Boolean(data.authEnabled),
+    authenticated: data.authenticated === true,
+    role: typeof data.role === 'string' ? data.role : null,
+    canMutate: data.canMutate === true,
+    readonly: Boolean(data.readonly),
+  };
+}
 
 const SessionContext = createContext<SessionState>(defaultState);
 
@@ -34,21 +56,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     void apiFetch(apiUrl('/auth/session'))
-      .then((res) => res.json())
-      .then((data: Partial<SessionState>) => {
-        if (cancelled) return;
-        setState({
-          loading: false,
-          authEnabled: Boolean(data.authEnabled),
-          authenticated: data.authenticated !== false,
-          role: typeof data.role === 'string' ? data.role : null,
-          canMutate: data.canMutate !== false,
-          readonly: Boolean(data.readonly),
-        });
+      .then(async (res) => {
+        if (!res.ok) {
+          if (!cancelled) setState(unauthenticatedState);
+          return;
+        }
+        const data = (await res.json()) as Partial<SessionState>;
+        if (!cancelled) setState(sessionStateFromResponse(data));
       })
       .catch(() => {
         if (!cancelled) {
-          setState((prev) => ({ ...prev, loading: false }));
+          setState(unauthenticatedState);
         }
       });
     return () => {

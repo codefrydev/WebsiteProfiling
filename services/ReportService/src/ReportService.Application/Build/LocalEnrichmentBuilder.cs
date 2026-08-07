@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using FuzzySharp;
 using LanguageIdentification;
+using Microsoft.Extensions.Logging;
 using ReportService.Application.Repositories;
 
 namespace ReportService.Application.Build;
@@ -33,7 +34,8 @@ public static class LocalEnrichmentBuilder
 
     public static Dictionary<string, object?> RunLocalEnrichment(
         IReadOnlyList<CrawlRow> rows,
-        IReadOnlyDictionary<string, string>? config)
+        IReadOnlyDictionary<string, string>? config,
+        ILogger? logger = null)
     {
         var bundle = CreateEmptyBundle();
         if (rows.Count == 0)
@@ -55,7 +57,7 @@ public static class LocalEnrichmentBuilder
 
         try
         {
-            var (langMap, langSummary) = ComputeLanguageSignals(rows, config);
+            var (langMap, langSummary) = ComputeLanguageSignals(rows, config, logger);
             bundle["language_by_url"] = langMap;
             bundle["language_summary"] = langSummary;
         }
@@ -321,7 +323,8 @@ public static class LocalEnrichmentBuilder
 
     public static (Dictionary<string, string> ByUrl, Dictionary<string, object?> Summary) ComputeLanguageSignals(
         IReadOnlyList<CrawlRow> rows,
-        IReadOnlyDictionary<string, string>? config)
+        IReadOnlyDictionary<string, string>? config,
+        ILogger? logger = null)
     {
         var emptySummary = new Dictionary<string, object?>
         {
@@ -364,9 +367,9 @@ public static class LocalEnrichmentBuilder
                     byUrl[url] = lang;
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Skip pages the detector cannot classify (parity with LangDetectException).
+                logger?.LogDebug(ex, "Language detection failed for {Url}", url);
             }
         }
 

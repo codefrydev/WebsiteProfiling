@@ -24,6 +24,8 @@ public sealed class GoogleOAuthService(
 
     public static string SignState(long propertyId, string returnPath, DateTimeOffset? now = null)
     {
+        // Property names (p/r/e) are serialized as JSON keys and must match GoogleOAuthConstants
+        // exactly — VerifyState below reads them back by those literal names.
         var payload = new
         {
             p = propertyId,
@@ -58,7 +60,7 @@ public sealed class GoogleOAuthService(
             var json = Encoding.UTF8.GetString(Base64UrlDecode(body));
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement.Clone();
-            if (!root.TryGetProperty("e", out var expiry)
+            if (!root.TryGetProperty(GoogleOAuthConstants.StateExpiry, out var expiry)
                 || expiry.GetInt64() < (long)(now ?? DateTimeOffset.UtcNow).ToUnixTimeSeconds())
             {
                 return null;
@@ -66,9 +68,9 @@ public sealed class GoogleOAuthService(
 
             return new Dictionary<string, JsonElement>
             {
-                ["p"] = root.GetProperty("p"),
-                ["r"] = root.TryGetProperty("r", out var r) ? r : default,
-                ["e"] = expiry,
+                [GoogleOAuthConstants.StatePropertyId] = root.GetProperty(GoogleOAuthConstants.StatePropertyId),
+                [GoogleOAuthConstants.StateReturnPath] = root.TryGetProperty(GoogleOAuthConstants.StateReturnPath, out var r) ? r : default,
+                [GoogleOAuthConstants.StateExpiry] = expiry,
             };
         }
         catch (JsonException)
@@ -83,10 +85,10 @@ public sealed class GoogleOAuthService(
         {
             ["client_id"] = clientId,
             ["redirect_uri"] = RedirectUri(),
-            ["response_type"] = "code",
+            ["response_type"] = GoogleOAuthConstants.ResponseTypeCode,
             ["scope"] = string.Join(' ', GoogleAppSettingsRepository.GoogleScopes),
-            ["access_type"] = "offline",
-            ["prompt"] = "consent",
+            ["access_type"] = GoogleOAuthConstants.AccessTypeOffline,
+            ["prompt"] = GoogleOAuthConstants.PromptConsent,
             ["include_granted_scopes"] = "true",
             ["state"] = state,
         };
@@ -110,7 +112,7 @@ public sealed class GoogleOAuthService(
             ["client_id"] = clientId,
             ["client_secret"] = clientSecret,
             ["redirect_uri"] = RedirectUri(),
-            ["grant_type"] = "authorization_code",
+            ["grant_type"] = GoogleOAuthConstants.GrantTypeAuthorizationCode,
         });
 
         using var response = await client.PostAsync(GoogleTokenEndpoint, content, cancellationToken);
@@ -164,7 +166,7 @@ public sealed class GoogleOAuthService(
     {
         var payload = VerifyState(state);
         var returnPath = SafeReturnPath(
-            payload is not null && payload.TryGetValue("r", out var r) && r.ValueKind == JsonValueKind.String
+            payload is not null && payload.TryGetValue(GoogleOAuthConstants.StateReturnPath, out var r) && r.ValueKind == JsonValueKind.String
                 ? r.GetString()
                 : null);
 
@@ -225,7 +227,7 @@ public sealed class GoogleOAuthService(
             });
         }
 
-        var propertyId = payload["p"].GetInt64();
+        var propertyId = payload[GoogleOAuthConstants.StatePropertyId].GetInt64();
         await properties.ApplyGoogleCredentialsPatchAsync(
             propertyId,
             new PropertyGoogleCredentialsPatch

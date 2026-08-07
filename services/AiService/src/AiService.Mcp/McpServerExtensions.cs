@@ -87,8 +87,8 @@ public static class McpServerExtensions
 
                     var argsDict = request.Params?.Arguments;
                     string? argsJson = null;
-                    int? propertyId = null;
-                    int? reportId = null;
+                    long? propertyId = null;
+                    long? reportId = null;
 
                     if (argsDict is not null && argsDict.Count > 0)
                     {
@@ -101,15 +101,25 @@ public static class McpServerExtensions
                         argsJson = jsonArgs.ToJsonString();
 
                         if (argsDict.TryGetValue("property_id", out var pidProp)
-                            && pidProp.TryGetInt32(out var pid))
+                            && pidProp.TryGetInt64(out var pid))
                         {
                             propertyId = pid;
                         }
+                        else if (argsDict.TryGetValue("property_id", out pidProp)
+                            && pidProp.TryGetInt32(out var pid32))
+                        {
+                            propertyId = pid32;
+                        }
 
                         if (argsDict.TryGetValue("report_id", out var ridProp)
-                            && ridProp.TryGetInt32(out var rid))
+                            && ridProp.TryGetInt64(out var rid))
                         {
                             reportId = rid;
+                        }
+                        else if (argsDict.TryGetValue("report_id", out ridProp)
+                            && ridProp.TryGetInt32(out var rid32))
+                        {
+                            reportId = rid32;
                         }
                     }
 

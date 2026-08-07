@@ -3,11 +3,11 @@ using System.Threading.Channels;
 using AiService.Application.Chat;
 using AiService.Application.Dto;
 using AiService.Application.Services;
+using AiService.Domain;
 using AiService.Domain.Repositories;
+using AiService.Tools.Artifacts;
 using AiService.Tools.Context;
-using AiService.Tools.Options;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace AiService.Api.Controllers;
 
@@ -21,21 +21,15 @@ public sealed class ChatController : ControllerBase
 {
     private readonly IChatSessionRepository _sessions;
     private readonly ChatAgentService _agent;
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IOptions<FastApiOptions> _fastApiOptions;
     private readonly ILogger<ChatController> _logger;
 
     public ChatController(
         IChatSessionRepository sessions,
         ChatAgentService agent,
-        IHttpClientFactory httpClientFactory,
-        IOptions<FastApiOptions> fastApiOptions,
         ILogger<ChatController> logger)
     {
         _sessions = sessions;
         _agent = agent;
-        _httpClientFactory = httpClientFactory;
-        _fastApiOptions = fastApiOptions;
         _logger = logger;
     }
 
@@ -59,13 +53,13 @@ public sealed class ChatController : ControllerBase
             return;
         }
 
-        await _sessions.AppendMessageAsync(body.SessionId, "user", body.Message.Trim(), cancellationToken: cancellationToken);
+        await _sessions.AppendMessageAsync(body.SessionId, ChatRoles.User, body.Message.Trim(), cancellationToken: cancellationToken);
 
         var history = await _sessions.GetMessagesAsync(body.SessionId, cancellationToken: cancellationToken);
         var agentMessages = ChatHelpers.MessagesForAgentContext(history);
         var context = new AuditToolContext
         {
-            PropertyId = (int)body.PropertyId,
+            PropertyId = body.PropertyId,
             ReportId = body.ReportId,
         };
 
@@ -75,7 +69,7 @@ public sealed class ChatController : ControllerBase
         var channel = Channel.CreateUnbounded<JsonObject>();
         ChatTurnResult? agentResult = null;
 
-        var agentTask = Task.Run(async () =>
+        async Task RunAgentTurnAsync()
         {
             try
             {
@@ -93,7 +87,9 @@ public sealed class ChatController : ControllerBase
             {
                 channel.Writer.Complete();
             }
-        }, cancellationToken);
+        }
+
+        var agentTask = RunAgentTurnAsync();
 
         await foreach (var item in channel.Reader.ReadAllAsync(cancellationToken))
         {
@@ -105,6 +101,14 @@ public sealed class ChatController : ControllerBase
 
         await agentTask;
 
+        if (!ChatStreamPersistence.ShouldPersistAfterStream(cancellationToken, HttpContext.RequestAborted))
+        {
+            _logger.LogDebug(
+                "Skipping chat persistence for session {SessionId} — client disconnected",
+                body.SessionId);
+            return;
+        }
+
         var toolResultJson = agentResult is null ? null : ChatPersistenceMapper.ToToolResultJson(agentResult);
         if (toolResultJson is not null)
         {
@@ -112,10 +116,10 @@ public sealed class ChatController : ControllerBase
             {
                 await _sessions.AppendMessageAsync(
                     body.SessionId,
-                    "assistant",
+                    ChatRoles.Assistant,
                     content: "",
                     toolResultJson: toolResultJson,
-                    cancellationToken: CancellationToken.None);
+                    cancellationToken: cancellationToken);
                 if (session.Title is "New chat" or "" or null)
                 {
                     var derived = ChatHelpers.DeriveTitle(body.Message)
@@ -125,6 +129,12 @@ public sealed class ChatController : ControllerBase
                         await _sessions.UpdateSessionTitleAsync(body.SessionId, derived, cancellationToken);
                     }
                 }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                _logger.LogDebug(
+                    "Chat persistence cancelled for session {SessionId} after client disconnect",
+                    body.SessionId);
             }
             catch (Exception ex)
             {
@@ -221,38 +231,17 @@ public sealed class ChatController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetArtifact(string artifactId, CancellationToken cancellationToken)
+    public Task<IActionResult> GetArtifact(string artifactId, CancellationToken cancellationToken)
     {
-        if (!System.Text.RegularExpressions.Regex.IsMatch(artifactId, @"^[a-f0-9\-]{36}$"))
+        var found = ArtifactStore.ReadArtifactBytes(artifactId);
+        if (found is null)
         {
-            return BadRequest(new { detail = "Invalid artifact id" });
+            return Task.FromResult<IActionResult>(NotFound(new { detail = "Artifact not found" }));
         }
 
-        var baseUrl = _fastApiOptions.Value.BaseUrl.Trim().TrimEnd('/');
-        var client = _httpClientFactory.CreateClient();
-        using var response = await client.GetAsync(
-            $"{baseUrl}/api/chat/artifacts/{artifactId}",
-            HttpCompletionOption.ResponseHeadersRead,
-            cancellationToken);
-
-        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-        {
-            return NotFound(new { detail = "Artifact not found" });
-        }
-
-        if (!response.IsSuccessStatusCode)
-        {
-            return StatusCode((int)response.StatusCode, new { detail = "Artifact fetch failed" });
-        }
-
-        var bytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-        var contentType = response.Content.Headers.ContentType?.MediaType ?? "application/octet-stream";
-        var fileResult = File(bytes, contentType);
-        if (response.Content.Headers.ContentDisposition is { } disposition)
-        {
-            fileResult.FileDownloadName = disposition.FileName?.Trim('"');
-        }
-
-        return fileResult;
+        var (meta, bytes) = found.Value;
+        var contentType = meta["mime_type"]?.GetValue<string>() ?? "application/octet-stream";
+        var filename = meta["filename"]?.GetValue<string>();
+        return Task.FromResult<IActionResult>(File(bytes, contentType, filename));
     }
 }

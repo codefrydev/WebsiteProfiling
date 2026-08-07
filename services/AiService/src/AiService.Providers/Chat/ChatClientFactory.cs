@@ -1,4 +1,5 @@
 using System.ClientModel;
+using AiService.Domain;
 using AiService.Domain.Models;
 using AiService.Domain.Repositories;
 using AiService.Providers.Chat;
@@ -21,18 +22,18 @@ public sealed class ChatClientFactory(ILlmSettingsRepository configRepository) :
 
         return provider switch
         {
-            "openai" => CreateOpenAiClient(settings, endpoint: null, defaultModel: "gpt-4o-mini"),
-            "groq" => CreateOpenAiClient(
+            LlmProviders.OpenAi => CreateOpenAiClient(settings, endpoint: null, defaultModel: "gpt-4o-mini"),
+            LlmProviders.Groq => CreateOpenAiClient(
                 settings,
                 endpoint: new Uri(LlmConfigHelpers.OptionalCloudBaseUrl(settings) ?? "https://api.groq.com/openai/v1"),
                 defaultModel: "openai/gpt-oss-120b"),
-            "gemini" => CreateOpenAiClient(
+            LlmProviders.Gemini => CreateOpenAiClient(
                 settings,
                 endpoint: new Uri(LlmConfigHelpers.OptionalCloudBaseUrl(settings)
                     ?? "https://generativelanguage.googleapis.com/v1beta/openai/"),
                 defaultModel: "gemini-2.0-flash"),
-            "anthropic" => CreateAnthropicClient(settings),
-            "ollama" => CreateOllamaClient(settings),
+            LlmProviders.Anthropic => CreateAnthropicClient(settings),
+            LlmProviders.Ollama => CreateOllamaClient(settings),
             _ => throw new InvalidOperationException($"Unknown LLM provider: {provider}"),
         };
     }
@@ -78,7 +79,7 @@ public sealed class ChatClientFactory(ILlmSettingsRepository configRepository) :
         var baseUrl = settings.OllamaBaseUrl.Trim().TrimEnd('/');
         if (string.IsNullOrEmpty(baseUrl))
         {
-            baseUrl = "http://127.0.0.1:11434";
+            baseUrl = OllamaDefaults.BaseUrl;
         }
 
         var model = LlmConfigHelpers.ModelOrDefault(settings, "llama3.2");

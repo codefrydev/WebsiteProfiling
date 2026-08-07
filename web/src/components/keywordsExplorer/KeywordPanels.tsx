@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
-import { apiUrl, apiFetch } from '../../lib/publicBase';
+import { apiUrl, apiFetch, readApiErrorMessage } from '../../lib/publicBase';
 import { buildLinksInspectHref } from '../../lib/reportNav';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
 import AiSuggestionButton from '@/components/ai/AiSuggestionButton';
@@ -276,7 +276,8 @@ export function ByPagePanel({ rows, ke, brandQuery = null }: ByPagePanelProps) {
       const res = await apiFetch(
         apiUrl(`/integrations/google/keywords/by-page?url=${encodeURIComponent(url)}${domainParam}`),
       );
-      const data = (await res.json()) as KeywordByPageResponse;
+      const data = (await res.json().catch(() => ({}))) as KeywordByPageResponse;
+      if (!res.ok) throw new Error(readApiErrorMessage(data as Record<string, unknown>, res, 'Failed to load page keywords'));
       setPageKws(data);
     } catch {
       setPageKws(null);
@@ -531,7 +532,8 @@ export function BulkSeedPanel({ brandQuery = null }: { brandQuery?: string | nul
           ...(brandQuery ? { domain: brandQuery } : {}),
         }),
       });
-      const data = (await res.json()) as { error?: string; results?: KeywordExpandResult };
+      const data = (await res.json().catch(() => ({}))) as { error?: string; results?: KeywordExpandResult };
+      if (!res.ok) throw new Error(readApiErrorMessage(data as Record<string, unknown>, res, data.error || 'Expand failed'));
       if (data.error) throw new Error(data.error);
       setPreview(data.results ?? null);
     } catch (e) {

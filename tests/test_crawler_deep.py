@@ -512,14 +512,18 @@ def test_run_crawler_writes_json(monkeypatch, tmp_path):
     assert out_file.exists()
 
 
-def test_run_crawler_non_streaming_db_write(monkeypatch):
+def test_run_crawler_output_db_always_streams(monkeypatch):
+    """output_db=True always streams (even when crawl_stream_to_db=False)."""
     import website_profiling.crawl.crawler as mod
+
+    stream_ids: list[int | None] = []
 
     class FakeCrawler:
         def __init__(self, **_kwargs):
             self.link_edges_accum = []
 
         def crawl(self, **_kwargs):
+            stream_ids.append(_kwargs.get("stream_crawl_run_id"))
             return pd.DataFrame([{"url": "https://a.com", "status": 200, "title": "ok"}])
 
     class _Ctx:
@@ -529,22 +533,25 @@ def test_run_crawler_non_streaming_db_write(monkeypatch):
         def __exit__(self, _t, _v, _tb):
             return False
 
-    writes: list[tuple] = []
+    created: list[int] = []
+    cleared: list[bool] = []
 
     fake_db = types.SimpleNamespace(
         backup_db_if_exists=lambda: "/tmp/backup.sql",
-        create_crawl_run=lambda *_a, **_k: 7,
+        create_crawl_run=lambda *_a, **_k: created.append(7) or 7,
         db_session=lambda: _Ctx(),
         read_historical_data=lambda: {"report_payload": [{"id": 1}]},
         restore_historical_data=lambda *_a, **_k: None,
-        write_crawl=lambda conn, df, crawl_run_id=None: writes.append((conn, len(df), crawl_run_id)),
+        write_crawl=lambda *_a, **_k: (_ for _ in ()).throw(AssertionError("bulk write_crawl should not run")),
     )
-    fake_storage = types.SimpleNamespace(ensure_crawl_tables_cleared=lambda *_a, **_k: None)
+    fake_storage = types.SimpleNamespace(
+        ensure_crawl_tables_cleared=lambda *_a, **_k: cleared.append(True),
+    )
     monkeypatch.setattr(mod, "Crawler", FakeCrawler)
     monkeypatch.setitem(__import__("sys").modules, "website_profiling.db", fake_db)
     monkeypatch.setitem(__import__("sys").modules, "website_profiling.db.storage", fake_storage)
 
-    df, _ = mod.run_crawler(
+    df, run_id = mod.run_crawler(
         "https://a.com",
         output_db=True,
         crawl_stream_to_db=False,
@@ -553,7 +560,10 @@ def test_run_crawler_non_streaming_db_write(monkeypatch):
         show_progress=False,
     )
     assert not df.empty
-    assert writes and writes[0][2] == 7
+    assert created == [7]
+    assert cleared
+    assert stream_ids == [7]
+    assert run_id == 7
 
 
 def test_run_crawler_streaming_db_with_history_backup(monkeypatch):
@@ -646,7 +656,11 @@ def test_run_crawler_flushes_buffered_html(monkeypatch):
                 {"url": "https://a.com", "html": "<html></html>", "status": "200"},
             ]
 
-        def crawl(self, **_kwargs):
+        def crawl(self, show_progress=False, stream_crawl_run_id=None, **_kwargs):
+            if stream_crawl_run_id and self.store_page_html and self._html_buffer:
+                from website_profiling.db.html_store import write_page_html_batch
+
+                write_page_html_batch(None, self._html_buffer, stream_crawl_run_id, commit=True)
             return pd.DataFrame([{"url": "https://a.com", "status": 200}])
 
     class _Ctx:
@@ -712,6 +726,36 @@ def test_capture_page_html_enqueues_to_stream_writer():
     )
     assert len(writer.records) == 1
     assert writer.records[0]["url"] == "https://site.com"
+
+
+def test_capture_page_pdf_enqueues_to_stream_writer():
+    import website_profiling.crawl.crawler as mod
+
+    class _Writer:
+        def __init__(self):
+            self.records: list[dict] = []
+
+        def enqueue_html(self, record: dict) -> None:
+            self.records.append(record)
+
+    crawler = mod.Crawler(
+        start_url="https://site.com",
+        ignore_robots=True,
+        store_page_html=True,
+        max_pages=1,
+    )
+    writer = _Writer()
+    crawler._db_writer = writer
+    crawler._capture_page_pdf(
+        "https://site.com/report.pdf",
+        "Extracted PDF text.",
+        200,
+        "application/pdf",
+        "static",
+    )
+    assert len(writer.records) == 1
+    assert writer.records[0]["url"] == "https://site.com/report.pdf"
+    assert writer.records[0]["content_type"] == "application/pdf"
 
 
 def test_run_crawler_compare_mobile_desktop_second_pass(monkeypatch):

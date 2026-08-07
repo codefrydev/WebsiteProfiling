@@ -4,6 +4,7 @@ using ReportService.Application.Bridge;
 using ReportService.Application.Build.Categories;
 using ReportService.Application.Integrations;
 using ReportService.Application.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace ReportService.Application.Build;
 
@@ -21,7 +22,8 @@ public sealed class NativeReportBuilder(
     SiteLevelBuilder siteLevelBuilder,
     SubdomainInventoryBuilder subdomainInventoryBuilder,
     CategoryBuilder categoryBuilder,
-    ReportPayloadWriter reportPayloadWriter)
+    ReportPayloadWriter reportPayloadWriter,
+    ILogger<NativeReportBuilder> logger)
 {
     /// <summary>Native build writes a full UI payload without runtime ML enrichment.</summary>
     public bool IsFullBuildComplete => true;
@@ -49,7 +51,7 @@ public sealed class NativeReportBuilder(
 
         crawlRunId = resolvedRunId;
         var rows = await crawlRepository.ReadCrawlAsync(crawlRunId, cancellationToken);
-        mlBundle ??= LocalEnrichmentBuilder.RunLocalEnrichment(rows, config);
+        mlBundle ??= LocalEnrichmentBuilder.RunLocalEnrichment(rows, config, logger);
         var linkEdgeRows = await linkEdgesReader.ReadAsync(crawlRunId, cancellationToken: cancellationToken);
         var crawlGraphEdges = await crawlEdgesReader.ReadAsync(crawlRunId, cancellationToken);
         var edges = ReportEdgeResolver.Resolve(rows, crawlGraphEdges, linkEdgeRows);
@@ -127,7 +129,8 @@ public sealed class NativeReportBuilder(
             crawlRunId,
             crawlPageHtmlReader,
             httpClientFactory,
-            cancellationToken);
+            cancellationToken,
+            logger);
         categoryList = auditedCategories.ToList();
 
         var gapLimit = int.TryParse(config?.GetValueOrDefault("google_url_gap_list_limit"), out var gl) ? gl : 200;
@@ -192,7 +195,10 @@ public sealed class NativeReportBuilder(
         var graph = ReportGraphBuilder.Build(rows, edges, maxNodesPlot);
         var textContentAnalysis = ContentAnalyticsBuilder.BuildTextContentAnalysis(rows);
         var socialCoverage = ContentAnalyticsBuilder.BuildSocialCoverage(rows);
-        var techStackSummary = ContentAnalyticsBuilder.BuildTechStackSummary(rows);
+        var techStackSummary = ContentAnalyticsBuilder.BuildTechStackSummary(
+            rows,
+            startUrl,
+            config?.GetValueOrDefault("crawl_render_mode"));
         var hreflangIssueUrls = HreflangIssueUrlsBuilder.Build(successRows);
         var linkEdges = LinkEdgesReportBuilder.ToPayloadRows(linkEdgeRows);
         var linkRelSummary = linkEdges.Count > 0

@@ -119,11 +119,12 @@ def test_crawl_db_writer_enqueue_short_circuits_after_error(monkeypatch: pytest.
     writer.finish()
     writer.run()  # sets _error
 
-    # Queue should be empty now; further enqueues must be dropped
+    # Queue should be empty now; further enqueues must fail fast
     assert not writer._queue.qsize()
-    writer.enqueue({"url": "https://b.com"})
-    writer.enqueue_html({"url": "https://b.com", "html": "<html></html>"})
-    assert not writer._queue.qsize()
+    with pytest.raises(RuntimeError, match="db down"):
+        writer.enqueue({"url": "https://b.com"})
+    with pytest.raises(RuntimeError, match="db down"):
+        writer.enqueue_html({"url": "https://b.com", "html": "<html></html>"})
 
 
 def test_crawl_db_writer_run_does_not_import_error() -> None:

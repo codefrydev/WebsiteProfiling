@@ -361,8 +361,12 @@ export default function RiskSettingsPage() {
 
   useEffect(() => {
     void apiFetch(apiUrl('/mcp-tools'))
-      .then((res) => res.json())
-      .then((data: McpCatalog) => {
+      .then(async (res) => {
+        const data = (await res.json().catch(() => ({}))) as McpCatalog & { error?: string; detail?: string };
+        if (!res.ok) {
+          setCatalogError(data.error || data.detail || `Failed to load MCP catalog (${res.status})`);
+          return;
+        }
         if (data.error) {
           setCatalogError(data.error);
         } else {

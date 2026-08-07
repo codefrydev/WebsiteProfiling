@@ -44,6 +44,8 @@ if ($env:PYTHONPATH) {
 
 $PytestNoCov = $false
 
+. (Join-Path $PSScriptRoot "ensure-deps.ps1")
+
 function Write-Log([string]$Message) {
     Write-Host "-> $Message" -ForegroundColor Cyan
 }
@@ -175,39 +177,20 @@ function Invoke-Db {
 }
 
 function Invoke-Venv {
-    $pyLauncher = Get-PythonLauncher
-    if (-not (Test-Path $VENV_PYTHON)) {
-        Write-Log "Creating Python venv at .venv"
-        Invoke-PythonLauncher -Launcher $pyLauncher -PythonArgs @("-m", "venv", $VENV)
-    }
-    if (-not (Test-Path $VENV_PYTEST)) {
-        Write-Log "Installing Python dependencies"
-        & $VENV_PIP install -q -r (Join-Path $ROOT "requirements.txt")
-        Assert-LastExitCode "Failed to install requirements.txt"
-    }
+    Ensure-PythonDeps
 }
 
 function Invoke-Migrate {
+    Ensure-SystemTools
+    Ensure-DotnetDeps
     Invoke-Db
-    Test-Command dotnet
     Write-Log "Applying database migrations (EF Core: Schema.Migrator)"
     & dotnet run --project $SCHEMA_MIGRATOR --no-launch-profile
     Assert-LastExitCode "Database migration failed (Schema.Migrator)"
 }
 
 function Invoke-WebDeps {
-    Test-Command npm
-    $nodeModules = Join-Path $WEB "node_modules"
-    if (-not (Test-Path $nodeModules)) {
-        Write-Log "Installing web dependencies (npm ci)"
-        Push-Location $WEB
-        try {
-            & npm ci
-            Assert-LastExitCode "Failed to install web dependencies (npm ci)"
-        } finally {
-            Pop-Location
-        }
-    }
+    Ensure-WebDeps
 }
 
 function Invoke-PytestCore {
@@ -249,8 +232,8 @@ function Invoke-PytestTools {
 }
 
 function Invoke-PythonChecks {
-    Invoke-Db
-    Invoke-Venv
+    Ensure-SystemTools
+    Ensure-AllProjectDeps
     Invoke-Migrate
     Invoke-PytestCore
     Invoke-PytestReporting
@@ -262,7 +245,8 @@ function Invoke-PythonChecks {
 }
 
 function Invoke-WebChecks {
-    Invoke-WebDeps
+    Ensure-SystemTools
+    Ensure-WebDeps
     Write-Log "Web typecheck"
     Push-Location $WEB
     try {
@@ -284,8 +268,8 @@ function Invoke-Quick {
     if (-not $env:DATABASE_URL) {
         Write-Die "DATABASE_URL is not set. Export it or run .\scripts\local-test.ps1 all"
     }
-    Invoke-Venv
-    Invoke-WebDeps
+    Ensure-SystemTools
+    Ensure-AllProjectDeps
     Write-Warn "quick: assuming Postgres is up and migrated (.\local-run.ps1 db; .\local-run.ps1 migrate)"
     $PytestNoCov = $true
     Invoke-PytestCore
@@ -312,8 +296,9 @@ Local test runner — mirrors CI (python + web jobs)
 
 Environment (same as .\local-run.ps1):
   DATABASE_URL, DATA_DIR, WP_PG_CONTAINER, WP_PG_PORT, ...
+  WP_SKIP_SYSTEM_INSTALL, WP_SKIP_DEPS_SYNC
 
-One-time dev setup: .\local-run.ps1 setup
+One-time dev setup: .\local-run.ps1 setup (optional — .\local-run.ps1 syncs deps automatically)
 "@
 }
 

@@ -31,10 +31,27 @@ import {
   responseTimeBand,
   selectCrawlConcerns,
   successRateBand,
+  type MetricBand,
 } from './crawlSnapshotMetrics';
 
 const vo = strings.views.overview;
 const sj = strings.common;
+
+function bandBadgeClassName(band: MetricBand | 'neutral'): string {
+  if (band === 'good') return 'bg-green-500/10';
+  if (band === 'fair') return 'bg-yellow-500/10';
+  if (band === 'critical') return 'bg-red-500/10';
+  return 'bg-link/10';
+}
+
+function metricIcon(Icon: typeof AlertTriangle, band: MetricBand | 'neutral') {
+  const iconColorClass = band === 'neutral' ? 'text-link' : bandClassName(band);
+  return (
+    <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${bandBadgeClassName(band)}`}>
+      <Icon className={`h-4 w-4 ${iconColorClass}`} aria-hidden />
+    </span>
+  );
+}
 
 export interface OverviewCrawlMetricsProps {
   data: ReportPayload;
@@ -287,8 +304,9 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
         >
           <StatCard
             shadow
+            size="lg"
             href={linksHref}
-            icon={<Globe className="h-4 w-4 shrink-0" aria-hidden />}
+            icon={metricIcon(Globe, 'neutral')}
             label={vo.totalUrls}
             value={<CountUp value={crawledCount} />}
             sub={vo.crawlPagesDiscovered}
@@ -297,8 +315,9 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
           />
           <StatCard
             shadow
+            size="lg"
             href={linksHref}
-            icon={<CheckCircle className="h-4 w-4 shrink-0 text-green-500" aria-hidden />}
+            icon={metricIcon(CheckCircle, successRate != null ? successBand : 'neutral')}
             label={vo.successRate}
             value={successRate != null ? `${successRate}%` : '—'}
             band={successRate != null ? metricBandLabel(successBand, vo) : undefined}
@@ -309,8 +328,9 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
           />
           <StatCard
             shadow
+            size="lg"
             href={linksHref}
-            icon={<AlertTriangle className="h-4 w-4 shrink-0 text-red-500" aria-hidden />}
+            icon={metricIcon(AlertTriangle, brokenCount > 0 ? 'critical' : 'good')}
             label={vo.broken}
             value={<CountUp value={brokenCount} />}
             sub={brokenSubline(
@@ -329,8 +349,9 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
           />
           <StatCard
             shadow
+            size="lg"
             href={contentHref}
-            icon={<FileCode className="h-4 w-4 shrink-0 text-yellow-500" aria-hidden />}
+            icon={metricIcon(FileCode, h1Zero > 0 ? 'fair' : 'good')}
             label={vo.missingH1s}
             value={<CountUp value={h1Zero} />}
             sub={
@@ -355,8 +376,9 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
         >
           <StatCard
             shadow
+            size="lg"
             href={contentAnalyticsHref}
-            icon={<BookOpen className="h-4 w-4 shrink-0" aria-hidden />}
+            icon={metricIcon(BookOpen, medianWords != null ? wordsBand : 'neutral')}
             label={vo.medianWordCount}
             value={medianWords != null ? <CountUp value={medianWords} /> : sj.emDash}
             sub={vo.perPage2xx}
@@ -368,8 +390,9 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
           />
           <StatCard
             shadow
+            size="lg"
             href={contentHref}
-            icon={<Share className="h-4 w-4 shrink-0 text-link" aria-hidden />}
+            icon={metricIcon(Share, ogPct != null ? ogBand : 'neutral')}
             label={vo.ogCoverage}
             value={ogPct != null ? `${ogPct}%` : sj.emDash}
             sub={vo.ogPagesWith}
@@ -381,8 +404,9 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
           />
           <StatCard
             shadow
+            size="lg"
             href={techHref}
-            icon={<Cpu className="h-4 w-4 shrink-0 text-purple-700 dark:text-purple-400" aria-hidden />}
+            icon={metricIcon(Cpu, 'neutral')}
             label={vo.technologies}
             value={techCount != null ? <CountUp value={techCount} /> : sj.emDash}
             sub={vo.techDetectedAcross}
@@ -391,8 +415,9 @@ export function OverviewCrawlMetrics({ data, querySuffix }: OverviewCrawlMetrics
           />
           <StatCard
             shadow
+            size="lg"
             href={networkHref}
-            icon={<Timer className="h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden />}
+            icon={metricIcon(Timer, p50 != null ? responseBand : 'neutral')}
             label={vo.responseP50}
             value={p50 != null ? `${Math.round(p50)}ms` : sj.emDash}
             sub={

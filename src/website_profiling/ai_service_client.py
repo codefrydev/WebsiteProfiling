@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import Any
 
@@ -9,6 +10,8 @@ import httpx
 import pandas as pd
 
 from .llm_config import llm_is_enabled, load_llm_config_from_db
+
+logger = logging.getLogger(__name__)
 
 
 def _ai_base_url() -> str:
@@ -106,13 +109,14 @@ def enrich_top_issues_with_llm(
         }
         _post("/internal/enrichment/issue-fixes", payload)
     except Exception:
-        pass
+        logger.warning("enrich_top_issues_with_llm failed", exc_info=True)
 
 
 def generate_audit_executive_summary(report_data: dict[str, Any], config: dict[str, str] | None) -> dict[str, Any]:
     try:
         return _post("/internal/enrichment/audit-summary", {"report": report_data, "config": config or {}})
     except Exception:
+        logger.warning("generate_audit_executive_summary failed", exc_info=True)
         return {}
 
 
@@ -150,6 +154,31 @@ def run_page_coach(
         body["baselineId"] = baseline_id
     try:
         return call_ai_api("/api/links/page-coach", body)
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+def generate_extraction_selector(
+    field_name: str,
+    description: str,
+    html_samples: list[str],
+    *,
+    previous_selector: dict[str, Any] | None = None,
+    previous_selector_failed: bool = False,
+) -> dict[str, Any]:
+    """Ask AiService to write a CSS/XPath selector for a described field,
+    grounded against real HTML samples. Caller is responsible for checking
+    llm_is_enabled() first — this is a thin transport wrapper, like call_ai_api."""
+    payload: dict[str, Any] = {
+        "field_name": field_name,
+        "description": description,
+        "html_samples": html_samples,
+    }
+    if previous_selector is not None:
+        payload["previous_selector"] = previous_selector
+        payload["previous_selector_failed"] = previous_selector_failed
+    try:
+        return _post("/internal/extraction/generate-selector", payload)
     except Exception as e:
         return {"ok": False, "error": str(e)}
 

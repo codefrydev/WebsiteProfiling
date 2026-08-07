@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using AiService.Application.Chat;
+using AiService.Domain;
 using AiService.Domain.Entities;
 
 namespace AiService.Api.Controllers;
@@ -45,7 +46,7 @@ internal static class ChatHelpers
         IReadOnlyList<ChatMessage> rows,
         int maxTurns = 20)
     {
-        var relevant = rows.Where(m => m.Role is "user" or "assistant").ToList();
+        var relevant = rows.Where(m => m.Role is ChatRoles.User or ChatRoles.Assistant).ToList();
         var sliced = relevant.TakeLast(maxTurns * 2);
         return sliced.Select(m => new ChatMessageRecord(m.Role, m.Content ?? "")).ToList();
     }

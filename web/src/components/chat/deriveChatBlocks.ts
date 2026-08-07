@@ -163,6 +163,31 @@ export type ChatBlock =
           site_url: string;
         } | null;
       };
+    }
+  | {
+      type: 'generic_table';
+      toolName: string;
+      title: string;
+      columns: string[];
+      rows: Record<string, unknown>[];
+      total?: number;
+      truncated?: boolean;
+    }
+  | {
+      type: 'generic_chart';
+      toolName: string;
+      title: string;
+      vizType: 'bar' | 'line' | 'pie';
+      items: { label: string; value: number }[];
+    }
+  | {
+      type: 'code_artifact';
+      filename: string;
+      mimeType?: string;
+      content: string;
+      downloadUrl: string;
+      /** text/html or image/svg+xml — safe to render in a sandboxed iframe. */
+      previewable: boolean;
     };
 
 const SUMMARY_TOOLS = new Set(['get_report_summary', 'get_executive_summary']);
@@ -246,6 +271,12 @@ export function blockKey(block: ChatBlock): string {
       return `tool_status:${block.toolName}:${block.variant}`;
     case 'tool_truncated':
       return `tool_truncated:${block.toolName}`;
+    case 'generic_table':
+      return `generic_table:${block.toolName}`;
+    case 'generic_chart':
+      return `generic_chart:${block.toolName}`;
+    case 'code_artifact':
+      return `code_artifact:${block.filename}`;
     default:
       return block.type;
   }
@@ -831,6 +862,14 @@ function blockFromImageAttention(name: string, result: Record<string, unknown>):
   };
 }
 
+function isPreviewableMime(mimeType: string | undefined): boolean {
+  return mimeType === 'text/html' || mimeType === 'image/svg+xml';
+}
+
+function isTextLikeMime(mimeType: string | undefined): boolean {
+  return Boolean(mimeType) && (mimeType!.startsWith('text/') || mimeType === 'application/json');
+}
+
 function blockFromFileDownload(name: string, result: Record<string, unknown>): ChatBlock | null {
   if (!EXPORT_TOOLS.has(name)) return null;
   if (result.error) return null;
@@ -838,6 +877,20 @@ function blockFromFileDownload(name: string, result: Record<string, unknown>): C
   const filename = String(result.filename || 'export.bin');
   if (!artifactId) return null;
   const mimeType = result.mime_type != null ? String(result.mime_type) : undefined;
+  const downloadUrl = `/api/chat/artifacts/${artifactId}`;
+  const content = typeof result.content === 'string' ? result.content : undefined;
+
+  if (content && isTextLikeMime(mimeType)) {
+    return {
+      type: 'code_artifact',
+      filename,
+      mimeType,
+      content,
+      downloadUrl,
+      previewable: isPreviewableMime(mimeType),
+    };
+  }
+
   const fmt = result.format != null ? String(result.format).toUpperCase() : undefined;
   return {
     type: 'file_download',
@@ -845,7 +898,7 @@ function blockFromFileDownload(name: string, result: Record<string, unknown>): C
       {
         filename,
         mime_type: mimeType,
-        url: `/api/chat/artifacts/${artifactId}`,
+        url: downloadUrl,
         label: fmt ? `Download ${fmt}` : undefined,
       },
     ],
@@ -924,6 +977,149 @@ function blockFromAuditRunConfirm(name: string, result: Record<string, unknown>)
   };
 }
 
+const GENERIC_TABLE_KEYS = [
+  'items', 'issues', 'pages', 'queries', 'rows', 'results', 'links', 'urls',
+  'entries', 'records', 'domains', 'keywords', 'paths', 'findings',
+  'technologies', 'clusters', 'deltas', 'broken', 'redirects', 'diagnostics',
+  'opportunities', 'violations_by_rule', 'poor_performance_pages', 'errors',
+  'daily', 'by_device', 'by_channel', 'issue_deltas',
+];
+
+const GENERIC_CHART_SKIP_KEYS = new Set([
+  'total', 'truncated', 'error', 'success', 'ok', 'ready', 'id', 'artifact_id',
+  'page', 'page_size', 'limit', 'offset', 'count',
+]);
+
+const DATE_LABEL_RE = /^\d{4}-\d{2}(-\d{2})?$/;
+
+function humanizeToolName(name: string): string {
+  const words = name.replace(/_/g, ' ').trim();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+function findRowArray(result: Record<string, unknown>): unknown[] | null {
+  for (const key of GENERIC_TABLE_KEYS) {
+    const value = result[key];
+    if (Array.isArray(value) && value.length && value.every((v) => asRecord(v))) {
+      return value;
+    }
+  }
+  for (const value of Object.values(result)) {
+    if (Array.isArray(value) && value.length >= 2 && value.every((v) => asRecord(v))) {
+      return value;
+    }
+  }
+  return null;
+}
+
+function isPlainCellValue(value: unknown): boolean {
+  return (
+    value == null ||
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  );
+}
+
+/** Fallback for tools with no dedicated parser: any array of homogeneous row objects becomes a table. */
+function blockFromGenericTable(name: string, result: Record<string, unknown>): ChatBlock | null {
+  if (result.error) return null;
+  const rowsRaw = findRowArray(result);
+  if (!rowsRaw) return null;
+
+  const columns: string[] = [];
+  for (const raw of rowsRaw.slice(0, 5)) {
+    const row = asRecord(raw);
+    if (!row) continue;
+    for (const [key, value] of Object.entries(row)) {
+      if (columns.includes(key) || !isPlainCellValue(value)) continue;
+      columns.push(key);
+      if (columns.length >= 6) break;
+    }
+    if (columns.length >= 6) break;
+  }
+  if (!columns.length) return null;
+
+  const rows: Record<string, unknown>[] = [];
+  for (const raw of rowsRaw) {
+    const row = asRecord(raw);
+    if (!row) continue;
+    const out: Record<string, unknown> = {};
+    for (const col of columns) out[col] = row[col];
+    rows.push(out);
+  }
+  if (!rows.length) return null;
+
+  return {
+    type: 'generic_table',
+    toolName: name,
+    title: humanizeToolName(name),
+    columns,
+    rows,
+    total: typeof result.total === 'number' ? result.total : rows.length,
+    truncated: Boolean(result.truncated),
+  };
+}
+
+function parseGenericChartRows(raw: unknown): { label: string; value: number }[] {
+  if (!Array.isArray(raw) || raw.length < 2 || raw.length > 20) return [];
+  const items: { label: string; value: number }[] = [];
+  for (const entry of raw) {
+    const row = asRecord(entry);
+    if (!row || Object.keys(row).length !== 2) return [];
+    let label: string | undefined;
+    let value: number | undefined;
+    for (const v of Object.values(row)) {
+      if (typeof v === 'string' && label === undefined) label = v;
+      else if (typeof v === 'number' && Number.isFinite(v) && value === undefined) value = v;
+    }
+    if (label === undefined || value === undefined) return [];
+    items.push({ label, value });
+  }
+  return items;
+}
+
+function parseGenericChartObject(result: Record<string, unknown>): { label: string; value: number }[] {
+  const entries = Object.entries(result).filter(
+    ([key, value]) =>
+      !GENERIC_CHART_SKIP_KEYS.has(key) && typeof value === 'number' && Number.isFinite(value),
+  );
+  if (entries.length < 2 || entries.length > 12) return [];
+  return entries.map(([label, value]) => ({ label: humanizeToolName(label), value: value as number }));
+}
+
+function pickGenericVizType(items: { label: string; value: number }[]): 'bar' | 'line' | 'pie' {
+  if (items.length >= 3 && items.every((i) => DATE_LABEL_RE.test(i.label))) return 'line';
+  if (items.length <= 6) return 'pie';
+  return 'bar';
+}
+
+/** Fallback for tools with no dedicated parser: numeric key-value shapes become a chart. */
+function blockFromGenericChart(name: string, result: Record<string, unknown>): ChatBlock | null {
+  if (result.error) return null;
+
+  let items: { label: string; value: number }[] = [];
+  for (const key of GENERIC_TABLE_KEYS) {
+    const parsed = parseGenericChartRows(result[key]);
+    if (parsed.length) {
+      items = parsed;
+      break;
+    }
+  }
+  if (!items.length) {
+    items = parseGenericChartObject(result);
+  }
+  if (items.length < 2) return null;
+
+  return {
+    type: 'generic_chart',
+    toolName: name,
+    title: humanizeToolName(name),
+    vizType: pickGenericVizType(items),
+    items,
+  };
+}
+
 type BlockParser = (name: string, result: Record<string, unknown>) => ChatBlock | ChatBlock[] | null;
 
 const BLOCK_PARSERS: BlockParser[] = [
@@ -948,16 +1144,19 @@ const BLOCK_PARSERS: BlockParser[] = [
   blockFromGoogle,
 ];
 
+/** Runs only when no BLOCK_PARSERS entry claimed a tool result — covers tools with no dedicated parser. */
+const FALLBACK_PARSERS: BlockParser[] = [blockFromGenericTable, blockFromGenericChart];
+
 export function deriveChatBlocks(toolActivity: ToolActivityItem[]): ChatBlock[] {
   const blocks: ChatBlock[] = [];
   const seen = new Set<string>();
 
-  for (const item of toolActivity) {
-    if (item.status !== 'done' || !item.result) continue;
-    const result = item.result;
-    for (const parser of BLOCK_PARSERS) {
-      const parsed = parser(item.name, result);
+  const collect = (parsers: BlockParser[], name: string, result: Record<string, unknown>): boolean => {
+    let claimed = false;
+    for (const parser of parsers) {
+      const parsed = parser(name, result);
       if (!parsed) continue;
+      claimed = true;
       const candidates = Array.isArray(parsed) ? parsed : [parsed];
       for (const block of candidates) {
         const key = blockKey(block);
@@ -965,6 +1164,15 @@ export function deriveChatBlocks(toolActivity: ToolActivityItem[]): ChatBlock[] 
         seen.add(key);
         blocks.push(block);
       }
+    }
+    return claimed;
+  };
+
+  for (const item of toolActivity) {
+    if (item.status !== 'done' || !item.result) continue;
+    const claimed = collect(BLOCK_PARSERS, item.name, item.result);
+    if (!claimed) {
+      collect(FALLBACK_PARSERS, item.name, item.result);
     }
   }
 

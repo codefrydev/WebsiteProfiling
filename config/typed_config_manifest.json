@@ -115,7 +115,8 @@
     "crawl_settings": [
       "start_url", "crawl_discovery_mode", "crawl_url_list", "crawl_user_agent_preset", "crawl_user_agent_custom",
       "compare_mobile_desktop", "crawl_auth_username", "crawl_extra_headers", "crawl_robots_txt_override",
-      "custom_extractors", "max_pages", "concurrency", "timeout", "max_depth", "polite_delay", "ignore_robots",
+      "custom_extractors", "main_content_selectors", "boilerplate_selectors", "pipeline_graph_json",
+      "max_pages", "concurrency", "timeout", "max_depth", "polite_delay", "ignore_robots",
       "allow_external", "store_outlinks", "store_content_excerpt", "content_excerpt_max_chars", "store_page_html",
       "max_stored_html_bytes", "run_content_analysis", "content_analysis_strategy", "content_analysis_workers",
       "custom_extraction_regex", "crawl_path_segments", "crawl_ignore_params", "competitor_domains", "export_logo_url",

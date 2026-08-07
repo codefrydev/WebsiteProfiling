@@ -155,7 +155,10 @@ export function resolvePreferredChatSession(
   sessions: ReadonlyArray<{ id: number }>,
 ): number | null {
   if (urlCtx.sessionId) return urlCtx.sessionId;
-  if (stored.propertyId === propertyId && stored.sessionId) return stored.sessionId;
+  if (stored.propertyId === propertyId) {
+    if (stored.sessionId) return stored.sessionId;
+    return null;
+  }
   return sessions[0]?.id ?? null;
 }
 

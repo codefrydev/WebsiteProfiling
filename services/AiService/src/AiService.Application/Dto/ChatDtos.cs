@@ -6,7 +6,7 @@ public sealed class ChatRequest
 
     public long PropertyId { get; set; }
 
-    public int? ReportId { get; set; }
+    public long? ReportId { get; set; }
 
     public string Message { get; set; } = "";
 }

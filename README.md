@@ -279,6 +279,8 @@ For layout details and common development patterns, see [AGENT.md](AGENT.md).
 | **Node 20+** | Vite + React SPA |
 | **.NET SDK 10+** | BFF, IntegrationsService, AiService, Data, and ReportService (required for `./local-run`; optional if you only use Docker) |
 
+When using `./local-run`, missing tools above are auto-installed via **Homebrew** (macOS) or **winget** (Windows) when available. On Linux, `apt-get` is used when supported. Set `WP_SKIP_SYSTEM_INSTALL=1` to disable system tool auto-install.
+
 ### Docker
 
 Build and run the full dev stack from source:
@@ -296,13 +298,15 @@ Production deployment: `docker-compose.prod.yml` — set `POSTGRES_USER`, `POSTG
 ### Local development
 
 ```bash
-./local-run setup   # First time: Postgres, Python venv, Playwright/Chromium, migrations, npm deps
-./local-run         # Start full dev stack → http://localhost:3000/home
+./local-run         # Auto-install/sync deps + start full dev stack → http://localhost:3000/home
+./local-run setup   # Optional: deps + migrations only (no dev server)
 ./local-run db      # Postgres only (no app)
 ./local-run migrate # Apply EF Core migrations only
 ./local-run stop    # Stop Postgres container
 ./local-prod        # Same DB, Vite production build + preview (no hot reload)
 ```
+
+Optional env flags: `WP_SKIP_SYSTEM_INSTALL=1` (do not auto-install Docker/Node/Python/.NET), `WP_SKIP_DEPS_SYNC=1` (skip pip/npm/dotnet restore on start).
 
 `./local-run` starts (in order): **Data** `:8091` (reports, portfolio, issues, typed config, PDF/Excel export), **AiService** `:8092` (MCP HTTP enabled), **ReportService** `:8094`, **IntegrationsService** `:8093`, **FastAPI** `:8096` (Python bridge), **BFF** `:8090`, and **Vite** `:3000`. Use `localhost` (not `127.0.0.1`) for pipeline APIs so CORS and cookies match the BFF origin.
 

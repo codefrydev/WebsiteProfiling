@@ -10,9 +10,9 @@ public sealed class DashboardAiGenerateRequest
 
     public string? ToolName { get; init; }
 
-    public int? PropertyId { get; init; }
+    public long? PropertyId { get; init; }
 
-    public int? ReportId { get; init; }
+    public long? ReportId { get; init; }
 
     /// <summary>Current widget binding / options, passed as context for script mode.</summary>
     public JsonObject? Current { get; init; }

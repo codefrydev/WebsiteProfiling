@@ -72,7 +72,7 @@ def needs_js_render_after_parse(
     link_count: int,
     same_domain_link_count: int,
 ) -> bool:
-    """True when parsed static HTML has too few links for a likely SPA shell."""
+    """True when parsed static HTML looks like a client-rendered shell worth re-fetching."""
     if result.fetch_method == "rendered":
         return False
     if result.status != 200 or not result.text:
@@ -81,15 +81,21 @@ def needs_js_render_after_parse(
     html_len = len(html)
     if html_len == 0:
         return False
-    if same_domain_link_count > 1:
-        return False
 
     lower = html.lower()
     script_count = lower.count("<script")
     word_count = _html_word_count(html)
+    has_spa_markers = _has_spa_markers(html)
     has_signal = (
-        _has_spa_markers(html)
+        has_spa_markers
         or (script_count >= 3 and word_count < 40)
         or (html_len > 1500 and link_count == 0)
     )
-    return has_signal and same_domain_link_count <= 1
+    if not has_signal:
+        return False
+
+    # SPA markers warrant a browser refetch unless static parsing already surfaced useful links.
+    if has_spa_markers and same_domain_link_count <= 1:
+        return True
+
+    return same_domain_link_count <= 1 or (script_count >= 3 and word_count < 40)

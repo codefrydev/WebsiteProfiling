@@ -1,6 +1,7 @@
 """Report payload read/write."""
 from __future__ import annotations
 
+import logging
 from typing import Any, Optional
 from urllib.parse import urlparse
 
@@ -9,6 +10,8 @@ from psycopg import Connection
 from ..scoring import round_half_up, site_health_score_from_payload
 from ._common import _json_val, _now_iso, _parse_row_json, _row_field
 from .crawl_store import get_crawl_run_info
+
+logger = logging.getLogger(__name__)
 
 
 def _extract_hostname(url: str) -> str:
@@ -99,7 +102,7 @@ def write_report_payload(conn: Connection, report_data: dict[str, Any]) -> None:
             with conn.transaction():
                 _write_audit_health_snapshot(conn, report_id, canonical_domain, report_data)
         except Exception:
-            pass
+            logger.warning("Failed to write audit health snapshot for report %s", report_id, exc_info=True)
     conn.commit()
 
 
@@ -118,6 +121,7 @@ def read_report_payload(conn: Connection, report_id: Optional[int] = None) -> Op
         data = _parse_row_json(row)
         return data if isinstance(data, dict) else None
     except Exception:
+        logger.warning("read_report_payload failed for report_id=%s", report_id, exc_info=True)
         return None
 
 
@@ -140,6 +144,7 @@ def read_report_payloads(conn: Connection, report_ids: list[int]) -> dict[int, d
                 out[int(rid)] = data
         return out
     except Exception:
+        logger.warning("read_report_payloads failed for %d ids", len(report_ids), exc_info=True)
         return {}
 
 
@@ -189,4 +194,5 @@ def read_report_payloads_portfolio(conn: Connection, report_ids: list[int]) -> d
                 out[int(rid)] = data
         return out
     except Exception:
+        logger.warning("read_report_payloads_portfolio failed for %d ids", len(report_ids), exc_info=True)
         return {}

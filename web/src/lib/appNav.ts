@@ -34,11 +34,12 @@ import {
   Globe2,
   Contact2,
   FileCode,
+  Workflow,
 } from 'lucide-react';
 import { strings } from '@/lib/strings';
 import { viewIdToPathSlug, type ViewId } from '@/routes';
 
-export type NavItemId = ViewId | 'pipeline' | 'secrets' | 'mcp' | 'docs' | 'chat' | 'write' | 'pages-md' | 'settings' | 'risk-settings';
+export type NavItemId = ViewId | 'pipeline' | 'secrets' | 'mcp' | 'docs' | 'chat' | 'write' | 'pages-md' | 'content-pipeline' | 'settings' | 'risk-settings';
 
 export interface AppNavItem {
   id: NavItemId;
@@ -94,6 +95,7 @@ const NAV_DESCRIPTIONS: Partial<Record<NavItemId, string>> = {
   chat: 'Ask questions about this audit',
   write: 'Draft content from audit data',
   'pages-md': 'Extract & preview per-page markdown',
+  'content-pipeline': 'Design & preview the content-extraction pipeline',
 };
 
 const VIEW_NAV: { id: ViewId; icon: LucideIcon }[] = [
@@ -191,6 +193,15 @@ const PAGES_MD_NAV: AppNavItem = {
   description: NAV_DESCRIPTIONS['pages-md'],
 };
 
+const CONTENT_PIPELINE_NAV: AppNavItem = {
+  id: 'content-pipeline',
+  label: 'Content Pipeline',
+  section: 'Tools',
+  icon: Workflow,
+  hrefPath: '/content-pipeline',
+  description: NAV_DESCRIPTIONS['content-pipeline'],
+};
+
 const SETTINGS_NAV: AppNavItem = {
   id: 'settings',
   label: strings.nav.settings.label,
@@ -225,6 +236,7 @@ export const APP_NAV_ITEMS: AppNavItem[] = [
   WRITE_NAV,
   CHAT_NAV,
   PAGES_MD_NAV,
+  CONTENT_PIPELINE_NAV,
   SETTINGS_NAV,
   RISK_SETTINGS_NAV,
 ];
@@ -235,7 +247,7 @@ export const REPORT_VIEW_IDS: ViewId[] = VIEW_NAV.map(({ id }) => id);
 export const APP_NAV_SECTIONS = [...new Set(APP_NAV_ITEMS.map((item) => item.section))];
 
 /** Routes with their own app pages — not resolved by `pathSlugToViewId`. */
-export const STANDALONE_NAV_IDS = ['pipeline', 'secrets', 'mcp', 'docs', 'chat', 'write', 'pages-md', 'settings', 'risk-settings'] as const satisfies readonly NavItemId[];
+export const STANDALONE_NAV_IDS = ['pipeline', 'secrets', 'mcp', 'docs', 'chat', 'write', 'pages-md', 'content-pipeline', 'settings', 'risk-settings'] as const satisfies readonly NavItemId[];
 
 export type StandaloneNavId = (typeof STANDALONE_NAV_IDS)[number];
 
@@ -278,6 +290,7 @@ export const CHAT_SIDEBAR_NAV_IDS = [
   'docs',
   'write',
   'pages-md',
+  'content-pipeline',
   'settings',
   'risk-settings',
 ] as const satisfies readonly NavItemId[];
@@ -293,6 +306,7 @@ export const WRITE_SIDEBAR_NAV_IDS = [
   'chat',
   'write',
   'pages-md',
+  'content-pipeline',
   'settings',
   'risk-settings',
 ] as const satisfies readonly NavItemId[];
@@ -313,6 +327,22 @@ export const PAGES_MD_SIDEBAR_NAV_IDS = [
   'docs',
   'chat',
   'write',
+  'content-pipeline',
+  'settings',
+  'risk-settings',
+] as const satisfies readonly NavItemId[];
+
+export const CONTENT_PIPELINE_SIDEBAR_NAV_IDS = [
+  'home',
+  'search-performance',
+  'links',
+  'pipeline',
+  'secrets',
+  'mcp',
+  'docs',
+  'chat',
+  'write',
+  'pages-md',
   'settings',
   'risk-settings',
 ] as const satisfies readonly NavItemId[];
@@ -328,6 +358,7 @@ export const SETTINGS_SIDEBAR_NAV_IDS = [
   'chat',
   'write',
   'pages-md',
+  'content-pipeline',
   'risk-settings',
 ] as const satisfies readonly NavItemId[];
 
@@ -342,6 +373,7 @@ export const RISK_SETTINGS_SIDEBAR_NAV_IDS = [
   'chat',
   'write',
   'pages-md',
+  'content-pipeline',
   'settings',
 ] as const satisfies readonly NavItemId[];
 
@@ -353,13 +385,14 @@ export function isMiniNavLinkActive(href: string, pathname: string): boolean {
   if (href === '/chat') return pathname.startsWith('/chat');
   if (href === '/pipeline') return pathname.startsWith('/pipeline');
   if (href === '/pages-md') return pathname.startsWith('/pages-md');
+  if (href === '/content-pipeline') return pathname.startsWith('/content-pipeline');
   if (href === '/settings') return pathname.startsWith('/settings');
   if (href === '/risk-settings') return pathname.startsWith('/risk-settings');
   return pathname === href;
 }
 
 export function navHref(item: AppNavItem, trailingQuery: string): string {
-  if (item.id === 'home' || item.id === 'pipeline' || item.id === 'secrets' || item.id === 'mcp' || item.id === 'docs' || item.id === 'chat' || item.id === 'write' || item.id === 'pages-md' || item.id === 'settings' || item.id === 'risk-settings') {
+  if (item.id === 'home' || item.id === 'pipeline' || item.id === 'secrets' || item.id === 'mcp' || item.id === 'docs' || item.id === 'chat' || item.id === 'write' || item.id === 'pages-md' || item.id === 'content-pipeline' || item.id === 'settings' || item.id === 'risk-settings') {
     return item.hrefPath;
   }
   const raw = trailingQuery.startsWith('?') ? trailingQuery.slice(1) : trailingQuery;
@@ -394,6 +427,9 @@ export function isNavItemActive(item: AppNavItem, pathname: string): boolean {
   }
   if (item.id === 'pages-md') {
     return pathname === '/pages-md' || pathname.startsWith('/pages-md/');
+  }
+  if (item.id === 'content-pipeline') {
+    return pathname === '/content-pipeline' || pathname.startsWith('/content-pipeline/');
   }
   if (item.id === 'settings') {
     return pathname === '/settings' || pathname.startsWith('/settings/');

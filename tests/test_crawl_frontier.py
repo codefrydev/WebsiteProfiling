@@ -46,17 +46,25 @@ def test_try_enqueue_link_skips_already_visited() -> None:
     assert frontier.try_enqueue_link("https://example.com/child", "https://example.com") is False
 
 
-def test_queue_contains_returns_false_on_queue_error() -> None:
-    class BadDeque:
-        def __iter__(self):
-            raise RuntimeError("broken")
+def test_try_enqueue_link_dedupes_concurrent_enqueue() -> None:
+    import threading
 
-    class BadQueueWrapper:
-        queue = BadDeque()
+    frontier = CrawlFrontier("https://example.com", follow_links=True)
+    frontier.depths["https://example.com"] = 0
+    link = "https://example.com/child"
+    results: list[bool] = []
 
-    frontier = CrawlFrontier("https://example.com")
-    frontier.queue = BadQueueWrapper()
-    assert frontier.queue_contains("https://example.com/x") is False
+    def _enqueue() -> None:
+        results.append(frontier.try_enqueue_link(link, "https://example.com"))
+
+    threads = [threading.Thread(target=_enqueue) for _ in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    assert sum(results) == 1
+    assert frontier.queue.qsize() == 1
 
 
 def test_crawl_config_javascript_render_properties() -> None:

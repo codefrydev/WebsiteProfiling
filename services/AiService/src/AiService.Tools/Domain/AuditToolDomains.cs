@@ -9,11 +9,41 @@ namespace AiService.Tools.Domain;
 /// </summary>
 public static class McpToolDomains
 {
+    /// <summary>Named constants for the canonical domain strings, so bare-literal comparisons
+    /// elsewhere (e.g. AuditToolSelection.cs, ChatToolSelector.cs) can't drift from this list via typo.</summary>
+    public static class Names
+    {
+        public const string Core = "core";
+        public const string Portfolio = "portfolio";
+        public const string Issues = "issues";
+        public const string Crawl = "crawl";
+        public const string Onpage = "onpage";
+        public const string Schema = "schema";
+        public const string Links = "links";
+        public const string Indexation = "indexation";
+        public const string Content = "content";
+        public const string Keywords = "keywords";
+        public const string Google = "google";
+        public const string Backlinks = "backlinks";
+        public const string Performance = "performance";
+        public const string Drift = "drift";
+        public const string Security = "security";
+        public const string Ops = "ops";
+        public const string Export = "export";
+        public const string Images = "images";
+        public const string Geo = "geo";
+        public const string Accessibility = "accessibility";
+        public const string Assets = "assets";
+        public const string Ctr = "ctr";
+        public const string Integrations = "integrations";
+        public const string Insight = "insight";
+    }
+
     public static readonly IReadOnlyList<string> CanonicalDomains =
     [
-        "core", "portfolio", "issues", "crawl", "onpage", "schema", "links", "indexation",
-        "content", "keywords", "google", "backlinks", "performance", "drift", "security",
-        "ops", "export", "images", "geo", "accessibility", "assets", "ctr", "integrations", "insight",
+        Names.Core, Names.Portfolio, Names.Issues, Names.Crawl, Names.Onpage, Names.Schema, Names.Links, Names.Indexation,
+        Names.Content, Names.Keywords, Names.Google, Names.Backlinks, Names.Performance, Names.Drift, Names.Security,
+        Names.Ops, Names.Export, Names.Images, Names.Geo, Names.Accessibility, Names.Assets, Names.Ctr, Names.Integrations, Names.Insight,
     ];
 
     /// <summary>Chat-only tools excluded from MCP domain bundles.</summary>
@@ -441,7 +471,7 @@ public static class McpToolDomains
 
         if (allowedDomains.Count == 0)
         {
-            allowedDomains.UnionWith(["core", "insight"]);
+            allowedDomains.UnionWith([Names.Core, Names.Insight]);
         }
 
         var allNames = allToolNames.ToHashSet(StringComparer.Ordinal);
@@ -488,7 +518,7 @@ public static class McpToolDomains
         return outMap;
     }
 
-    public static int? DefaultPropertyId()
+    public static long? DefaultPropertyId()
     {
         var raw = Environment.GetEnvironmentVariable("WP_PROPERTY_ID")?.Trim();
         if (string.IsNullOrEmpty(raw))
@@ -496,7 +526,7 @@ public static class McpToolDomains
             return null;
         }
 
-        return int.TryParse(raw, out var pid) && pid > 0 ? pid : null;
+        return long.TryParse(raw, out var pid) && pid > 0 ? pid : null;
     }
 
     public static Dictionary<string, List<string>> GroupToolsByDomain(IEnumerable<string> toolNames)

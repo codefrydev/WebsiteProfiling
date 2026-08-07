@@ -109,7 +109,11 @@ def compute_duplicate_groups(
 
     success = df[df["status"].astype(str).str.match(r"2\d{2}", na=False)] if "status" in df.columns else df
     if "content_type" in success.columns:
-        success = success[success["content_type"].fillna("").str.contains("text/html", case=False, na=False)]
+        success = success[
+            success["content_type"]
+            .fillna("")
+            .str.contains("text/html|application/pdf", case=False, na=False, regex=True)
+        ]
     max_pages = _cfg_int(cfg, "analysis_dup_max_pages", 2000) or 2000
     success = success.head(max_pages)
 

@@ -34,9 +34,13 @@ export function usePropertyForDomain(): { propertyId: number | null; ready: bool
     let cancelled = false;
     setDone(false);
     apiFetch(apiUrl('/properties'))
-      .then((r) => r.json())
-      .then((d: { properties?: PropertyRow[] }) => {
+      .then(async (r) => {
+        const d = (await r.json().catch(() => ({}))) as { properties?: PropertyRow[] };
         if (cancelled) return;
+        if (!r.ok) {
+          setResolved(configPropertyId ?? null);
+          return;
+        }
         const props = d.properties ?? [];
         const want = norm(domainSlug);
         const match = want

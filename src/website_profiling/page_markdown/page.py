@@ -30,13 +30,15 @@ def extract_page_markdown(
     raw_html: str,
     *,
     strategy: ContentStrategy = "main_only",
+    main_content_selectors: str | None = None,
+    boilerplate_selectors: str | None = None,
 ) -> dict[str, Any]:
     """Extract markdown and metadata from raw HTML. Returns dict with markdown, title, word_count, source_byte_length."""
     source_byte_length = len(raw_html.encode("utf-8"))
     soup = load_soup(raw_html)
     title = _extract_title(soup)
-    cleaned = cleanup_dom(soup)
-    root = find_main_content(cleaned, strategy=strategy)
+    cleaned = cleanup_dom(soup, boilerplate_selectors=boilerplate_selectors)
+    root = find_main_content(cleaned, strategy=strategy, selectors=main_content_selectors)
     markdown = html_to_markdown(root)
     body_text = extract_text(root)
     words = tokenize_words(body_text)

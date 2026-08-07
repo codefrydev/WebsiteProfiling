@@ -61,8 +61,12 @@ public static class DependencyInjection
             });
 
         services.AddScoped<IReportDataClient, DbReportDataClient>();
-        services.AddHttpClient<IAppSettingsClient, AppSettingsClient>();
-        services.AddHttpClient<ILogoFetcher, LogoFetcher>();
+        services.AddScoped<IAppSettingsClient, AppSettingsClient>();
+        services.AddHttpClient<ILogoFetcher, LogoFetcher>()
+            .ConfigureHttpClient(client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(10);
+            });
         services.AddSingleton<AuditPdfGenerator>();
         services.AddSingleton<AuditWorkbookGenerator>();
         services.AddSingleton<ReportCsvExporter>();

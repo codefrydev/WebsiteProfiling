@@ -197,8 +197,7 @@ def test_parse_content_text_reading_level_branch() -> None:
 def test_detect_tech_wappalyzer_regex_warning_disables(monkeypatch) -> None:
     from website_profiling import common
 
-    common._wappalyzer_disabled = False
-    common._wappalyzer_instance = None
+    common.reset_wappalyzer_state()
 
     class FakeWappalyzer:
         @staticmethod

@@ -28,6 +28,15 @@ public sealed class ToolDispatcher(
         {
             var sw = Stopwatch.StartNew();
             await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
+            if (ctx.Logger is null)
+            {
+                ctx = new AuditToolContext
+                {
+                    PropertyId = ctx.PropertyId,
+                    ReportId = ctx.ReportId,
+                    Logger = logger,
+                };
+            }
             var result = await handler.HandleAsync(db, ctx, args, cancellationToken);
             sw.Stop();
             logger.LogDebug(
@@ -37,7 +46,7 @@ public sealed class ToolDispatcher(
             return result;
         }
 
-        if (ctx.PropertyId is not int propertyId)
+        if (ctx.PropertyId is not long propertyId)
         {
             return new JsonObject { ["error"] = "property_id required" };
         }
@@ -55,8 +64,8 @@ public sealed class ToolDispatcher(
 
     public async Task<JsonObject> DispatchAsync(
         string toolName,
-        int propertyId,
-        int? reportId,
+        long propertyId,
+        long? reportId,
         JsonObject args,
         CancellationToken cancellationToken = default)
     {

@@ -144,7 +144,7 @@ public static class ChatToolSelector
 
         if (domainScores.Count == 0)
         {
-            foreach (var fallback in new[] { "portfolio", "issues", "insight" })
+            foreach (var fallback in new[] { McpToolDomains.Names.Portfolio, McpToolDomains.Names.Issues, McpToolDomains.Names.Insight })
             {
                 AddDomainTools(selected, toolsByDomain, fallback);
             }

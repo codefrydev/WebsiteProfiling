@@ -209,6 +209,9 @@ export interface TechStackEntry {
 export interface TechStackSummary {
   technologies?: TechStackEntry[];
   total_pages_analyzed?: number;
+  homepage_url?: string;
+  homepage_technologies?: TechStackEntry[];
+  detection_notes?: string[];
 }
 
 export interface HreflangSummary {

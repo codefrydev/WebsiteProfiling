@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using AiService.Application.Json;
+using AiService.Domain;
 using Microsoft.Extensions.Logging;
 
 namespace AiService.Application.Services;
@@ -32,10 +33,10 @@ public sealed class OllamaCatalogService(IHttpClientFactory httpClientFactory, I
 
     public async Task<JsonObject> FetchModelsAsync(string? baseUrl, CancellationToken cancellationToken = default)
     {
-        var normalizedBase = (baseUrl ?? "http://127.0.0.1:11434").Trim().TrimEnd('/');
+        var normalizedBase = (baseUrl ?? OllamaDefaults.BaseUrl).Trim().TrimEnd('/');
         if (string.IsNullOrEmpty(normalizedBase))
         {
-            normalizedBase = "http://127.0.0.1:11434";
+            normalizedBase = OllamaDefaults.BaseUrl;
         }
 
         var localHttp = httpClientFactory.CreateClient(LocalProbeClientName);

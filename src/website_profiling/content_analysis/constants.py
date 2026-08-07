@@ -14,4 +14,28 @@ STOP_WORDS = frozenset({
     "http", "https", "www", "html", "class", "none", "true", "false", "null",
 })
 
-CHROME_TAGS = ("nav", "footer", "header", "aside")
+# CSS selectors for non-content "chrome" (nav/ads/social/cookie-banners/etc.)
+# stripped from the document before content extraction. Deliberately excludes
+# bare single-word classes like `.top`, `.menu`, `.widget`, `.language`, since
+# those collide with legitimate content-wrapper classes on real sites (a
+# metrics/ratio pipeline scoring a whole crawl run is more sensitive to
+# false-positive stripping than a one-off content scraper is). Keep that
+# tradeoff in mind before broadening this list.
+CHROME_SELECTORS = (
+    "nav, footer, header, aside, "
+    ".navbar, #header, #footer, .sidebar, #sidebar, "
+    ".modal, .popup, #modal, .overlay, "
+    ".ad, .ads, .advert, #ad, "
+    ".lang-selector, #language-selector, .mw-portlet-lang, "
+    ".social, .social-media, .social-links, #social, "
+    ".navigation, #nav, "
+    ".breadcrumbs, #breadcrumbs, "
+    ".share, #share, "
+    ".cookie, #cookie"
+)
+
+# Selectors that identify a page's primary content root. Elements matching
+# these are never removed by CHROME_SELECTORS, even if they also match an
+# exclude selector (e.g. `<aside id="content">`) — mirrors the candidate
+# priority list in main_content.find_main_content.
+CONTENT_ROOT_SELECTORS = 'main, article, [role="main"], #content, .content'

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Hosting\WebsiteProfiling.Hosting.csproj" />
+    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Contracts\WebsiteProfiling.Contracts.csproj" />
     <ProjectReference Include="..\Bff.Application\Bff.Application.csproj" />
     <ProjectReference Include="..\Bff.Domain\Bff.Domain.csproj" />
   </ItemGroup>

@@ -28,6 +28,9 @@ VENV="$ROOT/.venv"
 WEB="$ROOT/web"
 PYTEST_NO_COV=0
 
+# shellcheck source=scripts/ensure-deps.sh
+source "$ROOT/scripts/ensure-deps.sh"
+
 STEP_PASS=()
 STEP_FAIL=()   # entries: "name|detail"
 STEP_SKIP=()   # entries: "name|reason"
@@ -152,30 +155,20 @@ start_postgres() {
 }
 
 ensure_venv() {
-  need_cmd python3 || { warn "python3 not found"; return 1; }
-  if [[ ! -x "$VENV/bin/python" ]]; then
-    log "Creating Python venv at .venv"
-    python3 -m venv "$VENV" || return 1
+  if ! (ensure_system_tools); then
+    return 1
   fi
-  if [[ ! -x "$VENV/bin/pytest" ]]; then
-    log "Installing Python dependencies"
-    "$VENV/bin/pip" install -q -r "$ROOT/requirements.txt" || return 1
-  fi
-  return 0
+  ensure_python_deps
 }
 
 run_migrate() {
-  need_cmd dotnet || { warn "dotnet not found"; return 1; }
+  ensure_system_tools
+  ensure_dotnet_deps
   dotnet run --project "$ROOT/services/Schema/src/Schema.Migrator" --no-launch-profile
 }
 
-ensure_web_deps() {
-  need_cmd npm || { warn "npm not found"; return 1; }
-  if [[ ! -d "$WEB/node_modules" ]]; then
-    log "Installing web dependencies (npm ci)"
-    (cd "$WEB" && npm ci) || return 1
-  fi
-  return 0
+ensure_web_deps_step() {
+  ensure_web_deps
 }
 
 run_pytest_core() {
@@ -281,6 +274,10 @@ run_step_or_skip_openapi() {
 }
 
 steps_postgres() {
+  if ! (ensure_system_tools); then
+    skip_step "Postgres ($PG_CONTAINER)" "system tools unavailable"
+    return 0
+  fi
   run_step "Postgres ($PG_CONTAINER)" start_postgres
 }
 
@@ -313,7 +310,11 @@ steps_cli_smoke() {
 }
 
 steps_web_deps() {
-  run_step "Web dependencies (npm ci if needed)" ensure_web_deps
+  if ! (ensure_system_tools); then
+    skip_step "Web dependencies (npm ci if needed)" "system tools unavailable"
+    return 0
+  fi
+  run_step "Web dependencies (npm ci if needed)" ensure_web_deps_step
 }
 
 steps_web() {
@@ -325,10 +326,15 @@ steps_web() {
 }
 
 steps_dotnet() {
-  if ! need_cmd dotnet; then
+  if ! (ensure_system_tools); then
+    skip_step ".NET tests (WebsiteProfiling.slnx)" "system tools unavailable"
+    return 0
+  fi
+  if ! command -v dotnet >/dev/null 2>&1; then
     skip_step ".NET tests (WebsiteProfiling.slnx)" "dotnet not found"
     return 0
   fi
+  ensure_dotnet_deps || true
   run_step "dotnet test (WebsiteProfiling.slnx)" dotnet_test_sln
   run_step_or_skip_openapi
 }
@@ -357,6 +363,9 @@ cmd_browser() {
 
 cmd_web() {
   reset_steps
+  if ! (ensure_system_tools); then
+    die "System tools unavailable (see README.md prerequisites)"
+  fi
   steps_web
   finish
 }
@@ -411,8 +420,9 @@ Also: ./local-run test   (alias for ./local-test all)
 
 Environment (same as ./local-run):
   DATABASE_URL, DATA_DIR, WP_PG_CONTAINER, WP_PG_PORT, ...
+  WP_SKIP_SYSTEM_INSTALL, WP_SKIP_DEPS_SYNC
 
-One-time dev setup: ./local-run setup
+One-time dev setup: ./local-run setup (optional — ./local-run syncs deps automatically)
 EOF
 }
 

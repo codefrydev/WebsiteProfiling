@@ -17,6 +17,8 @@ def run_content_analysis(
     excerpt_max_chars: int = 0,
     strategy: str = "main_only",
     workers: int = 4,
+    main_content_selectors: Optional[str] = None,
+    boilerplate_selectors: Optional[str] = None,
 ) -> dict[str, Any]:
     """Analyze stored HTML for a crawl run and merge metrics into crawl_results."""
     emit_phase_start("content_analysis", message="Analyzing stored page HTML")
@@ -40,6 +42,8 @@ def run_content_analysis(
             excerpt_max_chars=excerpt_max_chars,
             strategy=strat,
             workers=workers,
+            main_content_selectors=main_content_selectors,
+            boilerplate_selectors=boilerplate_selectors,
         )
         if updates:
             merge_crawl_result_fields_batch(conn, int(run_id), updates)

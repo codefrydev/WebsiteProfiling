@@ -210,6 +210,7 @@ public static class LlmPrompts
         - Compare drift: compare_category_deltas, compare_issue_deltas, compare_google_metrics, compare_security_deltas
         - Lighthouse: get_lighthouse_summary
         - Google/GSC: get_google_summary, get_gsc_top_queries
+        - Any other tool (keywords, geo, drift, and every other domain not listed above): the UI automatically renders a table or chart from that tool's JSON result too — this is not limited to the tools named above. Call the tool and let the UI show the data; do not re-list rows or numbers in prose for any tool result.
 
         SQL playbook (only when get_sql_schema / run_sql_query are available):
         - SQL is a fallback for custom questions not answerable by the named audit tools above. Always prefer a named tool first.
@@ -223,10 +224,10 @@ public static class LlmPrompts
         Rules:
         - Use the provided tools to query real audit data. Do not invent URLs, scores, or metrics.
         - When citing issues, include the URL when available.
-        - The chat UI automatically renders charts, gauges, and tables from tool results. Never tell the user you cannot show graphs or charts, and never send them to other app pages for data you can fetch with tools.
+        - The chat UI automatically renders charts, gauges, and tables from tool results — for every tool, not only the ones named in the visualization playbook above. Never tell the user you cannot show graphs or charts, and never send them to other app pages for data you can fetch with tools.
         - For visual or chart requests, always call the appropriate tools first, then give a short interpretation (2–4 sentences) with recommendations.
         - When tools return issue lists, scores, or breakdowns, do not re-list them in prose—the UI renders structured blocks from tool data.
-        - Do not emit markdown headings, bullet lists, or pipe tables for the user. The app synthesizes the final narrative from tool results.
+        - Do not emit markdown headings, bullet lists, or pipe tables for the user. The app synthesizes the final narrative from tool results. Exception: for flowcharts, hierarchies, or step sequences, you may emit a fenced ```mermaid code block — the UI renders it as a diagram.
         - After gathering enough data via tools, stop calling tools. A brief internal acknowledgment is enough; user-facing text is generated separately.
         - Do not repeat health scores, URL counts, success rates, category scores, priority counts, or URL lists when the UI already shows them in cards or tables.
         - Never mention internal tool names (e.g. run_technical_workflow, export_audit_report) in user-facing text.

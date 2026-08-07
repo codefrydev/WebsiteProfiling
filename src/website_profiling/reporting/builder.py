@@ -368,7 +368,11 @@ def run_simple_report(
     url_fingerprints = _build_url_fingerprints(df)
     keyword_opportunities = _build_keyword_opportunities(df, config)
     social_coverage = _build_social_coverage(df)
-    tech_stack_summary = _build_tech_stack_summary(df)
+    tech_stack_summary = _build_tech_stack_summary(
+        df,
+        start_url or "",
+        render_mode=(str((config or {}).get("crawl_render_mode") or "static")).strip().lower(),
+    )
     response_time_stats = _build_response_time_stats(df)
     depth_distribution = _build_depth_distribution(df)
     image_inventory, image_inventory_summary = _build_image_inventory(links, config)
@@ -597,8 +601,8 @@ def run_simple_report(
                 sp = category_search_performance(google_data.get("gsc"))
                 if sp is not None:
                     report_data.setdefault("categories", []).append(sp)
-        except Exception:
-            pass
+        except Exception as e:
+            report_data.setdefault("ml_errors", []).append(f"google: {e}")
         try:
             from ..db.crawl_store import read_link_edges
             from .link_edges_report import build_inlink_anchor_matrix, summarize_link_rel
@@ -633,10 +637,8 @@ def run_simple_report(
             comp_gap = build_competitor_link_gap(gsc_links, comp_raw)
             if comp_gap:
                 report_data["competitor_link_gap"] = comp_gap
-        except Exception:
-            pass
-        try:
-            from .indexation import build_indexation_coverage
+        except Exception as e:
+            report_data.setdefault("ml_errors", []).append(f"keywords: {e}")
 
             gap_limit = get_int(config or {}, "google_url_gap_list_limit", 200) or 200
             indexation_cov = build_indexation_coverage(
@@ -705,10 +707,8 @@ def run_simple_report(
             from ..ai_service_client import generate_audit_executive_summary
 
             report_data["executive_summary"] = generate_audit_executive_summary(report_data, config)
-        except Exception:
-            pass
-        try:
-            from ..tools.audit_tools.integrations.llm_tools import get_portfolio_summary
+        except Exception as e:
+            report_data.setdefault("ml_errors", []).append(f"executive_summary: {e}")
             from ..tools.audit_tools.context import AuditToolContext
 
             portfolio = get_portfolio_summary(conn, AuditToolContext(property_id=property_id), {})

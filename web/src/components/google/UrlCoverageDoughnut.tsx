@@ -13,10 +13,22 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 interface UrlCoverageDoughnutProps {
   urlJoin: UrlJoinData | null | undefined;
   devData?: unknown;
+  title?: string;
+  hint?: string;
+  ariaLabel?: string;
 }
 
-export default function UrlCoverageDoughnut({ urlJoin, devData }: UrlCoverageDoughnutProps) {
+export default function UrlCoverageDoughnut({
+  urlJoin,
+  devData,
+  title,
+  hint,
+  ariaLabel,
+}: UrlCoverageDoughnutProps) {
   const sp = strings.views.searchPerformance;
+  const chartTitle = title ?? sp.charts.coverageTitle;
+  const chartHint = hint ?? sp.charts.coverageHint;
+  const chartAria = ariaLabel ?? sp.charts.coverageAria;
 
   const chart = useMemo(() => {
     if (!urlJoin) return null;
@@ -49,9 +61,9 @@ export default function UrlCoverageDoughnut({ urlJoin, devData }: UrlCoverageDou
   if (!chart) {
     return (
       <GoogleChartCard
-        title={sp.charts.coverageTitle}
-        hint={sp.charts.coverageHint}
-        ariaLabel={sp.charts.coverageAria}
+        title={chartTitle}
+        hint={chartHint}
+        ariaLabel={chartAria}
         heightClass="h-48"
         devData={devData}
       >
@@ -64,9 +76,9 @@ export default function UrlCoverageDoughnut({ urlJoin, devData }: UrlCoverageDou
 
   return (
     <GoogleChartCard
-      title={sp.charts.coverageTitle}
-      hint={sp.charts.coverageHint}
-      ariaLabel={sp.charts.coverageAria}
+      title={chartTitle}
+      hint={chartHint}
+      ariaLabel={chartAria}
       heightClass="h-48"
       devData={devData}
     >

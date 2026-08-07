@@ -96,7 +96,7 @@ public static class CoreToolHandlers
         CancellationToken cancellationToken)
     {
         var scoped = ctx.WithArgs(args);
-        if (scoped.PropertyId is not int propertyId)
+        if (scoped.PropertyId is not long propertyId)
         {
             return new JsonObject { ["error"] = "property_id is required", ["checks"] = new JsonArray() };
         }

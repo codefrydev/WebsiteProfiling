@@ -505,7 +505,7 @@ public static class GeoAuditHelpers
         return access;
     }
 
-    private static async Task<string?> FetchTextAsync(HttpClient http, string url, CancellationToken ct)
+    internal static async Task<string?> FetchTextAsync(HttpClient http, string url, CancellationToken ct)
     {
         try
         {

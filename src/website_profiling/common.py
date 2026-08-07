@@ -15,10 +15,9 @@ from .parsing.links import (
 )
 from .parsing.robots import load_robots
 from .parsing.seo import parse_resources, parse_seo, parse_seo_extended
-from .parsing.tech import parse_tech_stack, _is_wappalyzer_regex_warning
+from .parsing.tech import parse_tech_stack, _is_wappalyzer_regex_warning, reset_wappalyzer_state
 
 _wappalyzer_instance = _tech._wappalyzer_instance
-_wappalyzer_disabled = _tech._wappalyzer_disabled
 
 
 def strip_www_prefix(host: str) -> str:
@@ -34,12 +33,16 @@ def strip_www_prefix(host: str) -> str:
 
 def detect_tech_wappalyzer(url, html, headers, soup, wappalyzer=None):
     """Detect technologies; syncs wappalyzer module state with this facade for tests."""
-    _tech._wappalyzer_disabled = _wappalyzer_disabled
     _tech._wappalyzer_instance = _wappalyzer_instance
     result = _tech.detect_tech_wappalyzer(url, html, headers, soup, wappalyzer)
-    globals()["_wappalyzer_disabled"] = _tech._wappalyzer_disabled
     globals()["_wappalyzer_instance"] = _tech._wappalyzer_instance
     return result
+
+
+def reset_wappalyzer_state():
+    """Reset cached Wappalyzer instance; syncs module state with this facade for tests."""
+    _tech.reset_wappalyzer_state()
+    globals()["_wappalyzer_instance"] = _tech._wappalyzer_instance
 
 
 __all__ = [
@@ -58,12 +61,12 @@ __all__ = [
     "parse_social_meta",
     "detect_tech_wappalyzer",
     "parse_tech_stack",
+    "reset_wappalyzer_state",
     "parse_resources",
     "parse_links_serialized",
     "load_robots",
     "LINK_COLUMN_NAMES",
     "_is_wappalyzer_regex_warning",
     "_is_empty",
-    "_wappalyzer_disabled",
     "_wappalyzer_instance",
 ]

@@ -277,6 +277,8 @@ def _run_crawl(cfg: dict, use_database: bool, resume_run_id: int | None = None) 
     from ..crawl.extraction import parse_extractors_config
 
     custom_extractors = parse_extractors_config(cfg.get("custom_extractors"))
+    main_content_selectors = (cfg.get("main_content_selectors") or "").strip()
+    boilerplate_selectors = (cfg.get("boilerplate_selectors") or "").strip()
     enable_axe = get_bool(cfg, "enable_axe", False)
     console_print("Crawling...")
     _, crawl_run_id = run_crawler(
@@ -325,6 +327,8 @@ def _run_crawl(cfg: dict, use_database: bool, resume_run_id: int | None = None) 
         crawl_cookies=(cfg.get("crawl_cookies") or "").strip(),
         crawl_robots_txt_override=(cfg.get("crawl_robots_txt_override") or "").strip(),
         custom_extractors=custom_extractors or None,
+        main_content_selectors=main_content_selectors,
+        boilerplate_selectors=boilerplate_selectors,
         enable_axe=enable_axe,
         resume_run_id=resume_run_id,
     )
@@ -351,12 +355,16 @@ def _run_content_analysis(cfg: dict, use_database: bool) -> None:
     excerpt_max = _cfg_int(cfg, "content_excerpt_max_chars", 4096)
     strategy = (cfg.get("content_analysis_strategy") or "main_only").strip().lower()
     workers = _cfg_int(cfg, "content_analysis_workers", 4)
+    main_content_selectors = (cfg.get("main_content_selectors") or "").strip()
+    boilerplate_selectors = (cfg.get("boilerplate_selectors") or "").strip()
 
     console_print("[Content analysis] Starting...", flush=True)
     run_content_analysis(
         excerpt_max_chars=excerpt_max if store_content_excerpt else 0,
         strategy=strategy,
         workers=workers,
+        main_content_selectors=main_content_selectors or None,
+        boilerplate_selectors=boilerplate_selectors or None,
     )
     console_print("[Content analysis] Done.", flush=True)
 

@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using AiService.Domain;
 using AiService.Domain.Models;
 using AiService.Domain.Repositories;
 
@@ -14,14 +15,6 @@ public sealed partial class CitationCheckService(
     ILlmSettingsRepository llmSettingsRepository,
     IHttpClientFactory httpClientFactory)
 {
-    private static readonly Dictionary<string, string> EnvKeys = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ["perplexity"] = "PERPLEXITY_API_KEY",
-        ["openai"] = "OPENAI_API_KEY",
-        ["anthropic"] = "ANTHROPIC_API_KEY",
-        ["groq"] = "GROQ_API_KEY",
-    };
-
     public async Task<string?> ResolveApiKeyAsync(
         string provider,
         string? providedKey,
@@ -33,7 +26,7 @@ public sealed partial class CitationCheckService(
         }
 
         var normalized = provider.Trim().ToLowerInvariant();
-        var envName = EnvKeys.GetValueOrDefault(normalized);
+        var envName = LlmProviders.ApiKeyEnvVarByProvider.GetValueOrDefault(normalized);
         if (envName is not null)
         {
             var envVal = Environment.GetEnvironmentVariable(envName)?.Trim();
@@ -71,17 +64,17 @@ public sealed partial class CitationCheckService(
         CitationCheckRequest request,
         CancellationToken cancellationToken = default)
     {
-        var provider = (request.Provider ?? "perplexity").Trim().ToLowerInvariant();
+        var provider = (request.Provider ?? LlmProviders.Perplexity).Trim().ToLowerInvariant();
         var key = await ResolveApiKeyAsync(provider, request.ApiKey, cancellationToken)
             ?? throw new InvalidOperationException(
                 $"No API key for provider '{provider}'. Set {provider.ToUpperInvariant()}_API_KEY or pass api_key.");
 
         return provider switch
         {
-            "perplexity" => await CheckPerplexityAsync(request, key, cancellationToken),
-            "openai" => await CheckOpenAiStyleAsync(request, key, "openai", cancellationToken),
-            "anthropic" => await CheckAnthropicAsync(request, key, cancellationToken),
-            "groq" => await CheckOpenAiStyleAsync(request, key, "groq", cancellationToken),
+            LlmProviders.Perplexity => await CheckPerplexityAsync(request, key, cancellationToken),
+            LlmProviders.OpenAi => await CheckOpenAiStyleAsync(request, key, LlmProviders.OpenAi, cancellationToken),
+            LlmProviders.Anthropic => await CheckAnthropicAsync(request, key, cancellationToken),
+            LlmProviders.Groq => await CheckOpenAiStyleAsync(request, key, LlmProviders.Groq, cancellationToken),
             _ => throw new InvalidOperationException(
                 $"Unknown citation provider: '{provider}'. Supported: perplexity, openai, anthropic, groq."),
         };
@@ -97,7 +90,7 @@ public sealed partial class CitationCheckService(
         httpRequest.Content = JsonContent.Create(new
         {
             model = "sonar",
-            messages = new[] { new { role = "user", content = request.Query } },
+            messages = new[] { new { role = ChatRoles.User, content = request.Query } },
             return_citations = true,
         });
 
@@ -128,7 +121,7 @@ public sealed partial class CitationCheckService(
             }
         }
 
-        return BuildResult(request, "perplexity", answer, sources, parametricDomain: false);
+        return BuildResult(request, LlmProviders.Perplexity, answer, sources, parametricDomain: false);
     }
 
     private async Task<CitationResult> CheckOpenAiStyleAsync(
@@ -137,10 +130,10 @@ public sealed partial class CitationCheckService(
         string provider,
         CancellationToken cancellationToken)
     {
-        var url = provider == "groq"
+        var url = provider == LlmProviders.Groq
             ? "https://api.groq.com/openai/v1/chat/completions"
             : "https://api.openai.com/v1/chat/completions";
-        var model = provider == "groq" ? "llama3-8b-8192" : "gpt-4o-mini";
+        var model = provider == LlmProviders.Groq ? "llama3-8b-8192" : "gpt-4o-mini";
         var prompt = ParametricPrompt(request.Query, request.Brand, request.Domain);
 
         using var httpRequest = new HttpRequestMessage(HttpMethod.Post, url);
@@ -148,7 +141,7 @@ public sealed partial class CitationCheckService(
         httpRequest.Content = JsonContent.Create(new
         {
             model,
-            messages = new[] { new { role = "user", content = prompt } },
+            messages = new[] { new { role = ChatRoles.User, content = prompt } },
         });
 
         var client = httpClientFactory.CreateClient(nameof(CitationCheckService));
@@ -173,7 +166,7 @@ public sealed partial class CitationCheckService(
         {
             model = "claude-3-haiku-20240307",
             max_tokens = 512,
-            messages = new[] { new { role = "user", content = prompt } },
+            messages = new[] { new { role = ChatRoles.User, content = prompt } },
         });
 
         var client = httpClientFactory.CreateClient(nameof(CitationCheckService));
@@ -186,7 +179,7 @@ public sealed partial class CitationCheckService(
             ? string.Join(" ", blocks.OfType<JsonObject>().Select(b => b["text"]?.GetValue<string>() ?? ""))
             : "";
 
-        return BuildResult(request, "anthropic", answer, [], parametricDomain: true);
+        return BuildResult(request, LlmProviders.Anthropic, answer, [], parametricDomain: true);
     }
 
     private static CitationResult BuildResult(

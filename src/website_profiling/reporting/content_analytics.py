@@ -264,11 +264,34 @@ def _build_social_coverage(df: pd.DataFrame) -> dict:
     return result
 
 
-def _build_tech_stack_summary(df: pd.DataFrame) -> dict:
+def _normalize_tech_url_key(url: str) -> str:
+    u = (url or "").strip().lower()
+    if u.endswith("/") and len(u) > 1:
+        u = u.rstrip("/")
+    return u
+
+
+def _parse_tech_stack_list(raw) -> list[str]:
+    if raw is None:
+        return []
+    try:
+        techs = json.loads(str(raw)) if isinstance(raw, str) else raw
+        if not isinstance(techs, list):
+            return []
+        return [str(t) for t in techs if isinstance(t, str) and t.strip()]
+    except (json.JSONDecodeError, TypeError):
+        return []
+
+
+def _build_tech_stack_summary(
+    df: pd.DataFrame,
+    start_url: str = "",
+    render_mode: str = "static",
+) -> dict:
     """Build tech stack summary: detected technologies with counts and sample URLs."""
     from collections import defaultdict
 
-    result = {"technologies": [], "total_pages_analyzed": 0}
+    result: dict = {"technologies": [], "total_pages_analyzed": 0}
     if "tech_stack" not in df.columns or df.empty:
         return result
 
@@ -284,21 +307,35 @@ def _build_tech_stack_summary(df: pd.DataFrame) -> dict:
 
     for _, row in html_df.iterrows():
         u = str(row.get("url", "")).strip()
-        raw = row.get("tech_stack") or "[]"
-        try:
-            techs = json.loads(str(raw)) if isinstance(raw, str) else raw
-            if isinstance(techs, list):
-                for t in techs:
-                    if isinstance(t, str) and t:
-                        tech_urls[t].append(u)
-        except (json.JSONDecodeError, TypeError):
-            pass
+        for t in _parse_tech_stack_list(row.get("tech_stack") or "[]"):
+            tech_urls[t].append(u)
 
     result["technologies"] = sorted(
         [{"name": name, "count": len(urls), "sample_urls": urls[:3]} for name, urls in tech_urls.items()],
         key=lambda x: x["count"],
         reverse=True,
     )
+
+    start = (start_url or "").strip()
+    if start:
+        home_key = _normalize_tech_url_key(start)
+        for _, row in html_df.iterrows():
+            row_url = str(row.get("url", "")).strip()
+            if _normalize_tech_url_key(row_url) != home_key:
+                continue
+            homepage_techs = _parse_tech_stack_list(row.get("tech_stack") or "[]")
+            if homepage_techs:
+                result["homepage_url"] = row_url or start
+                result["homepage_technologies"] = [
+                    {"name": name, "count": 1, "sample_urls": [result["homepage_url"]]}
+                    for name in sorted(set(homepage_techs))
+                ]
+            break
+
+    mode = (render_mode or "static").strip().lower()
+    if mode == "static":
+        result["detection_notes"] = ["static_crawl"]
+
     return result
 
 

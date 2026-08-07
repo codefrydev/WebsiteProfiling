@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Microsoft.Extensions.Logging;
 using ReportService.Application.Repositories;
 
 namespace ReportService.Application.Build;
@@ -20,7 +21,8 @@ public static class OptionalAuditsBuilder
         long? crawlRunId,
         CrawlPageHtmlReader? htmlReader,
         IHttpClientFactory? httpClientFactory,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        ILogger? logger = null)
     {
         var meta = new Dictionary<string, object?>();
         var cfg = config ?? new Dictionary<string, string>();
@@ -74,7 +76,7 @@ public static class OptionalAuditsBuilder
 
         if (ParseBool(cfg, "enable_wayback_lookup", defaultValue: false))
         {
-            var wb = await WaybackIssuesAsync(rows, httpClientFactory, cancellationToken);
+            var wb = await WaybackIssuesAsync(rows, httpClientFactory, cancellationToken, logger: logger);
             if (wb.Count > 0)
             {
                 CategoryHelpers.MergeIssuesIntoCategory(categories, "technical_seo", wb);
@@ -156,10 +158,11 @@ public static class OptionalAuditsBuilder
 
     internal static (List<CategoryIssue> Issues, string? SkipReason) SpellCheckIssues(
         IReadOnlyList<CrawlRow> rows,
-        int maxPages = 50)
+        int maxPages = 50,
+        string[]? dictionaryCandidates = null)
     {
         var issues = new List<CategoryIssue>();
-        var (checker, skipReason) = SpellCheckerFactory.GetOrCreate();
+        var (checker, skipReason) = SpellCheckerFactory.GetOrCreate(candidatesOverride: dictionaryCandidates);
         if (checker is null)
         {
             return (issues, skipReason);
@@ -312,7 +315,8 @@ public static class OptionalAuditsBuilder
         IReadOnlyList<CrawlRow> rows,
         IHttpClientFactory? httpClientFactory,
         CancellationToken cancellationToken,
-        int maxLookups = 15)
+        int maxLookups = 15,
+        ILogger? logger = null)
     {
         var issues = new List<CategoryIssue>();
         if (httpClientFactory is null)
@@ -397,8 +401,9 @@ public static class OptionalAuditsBuilder
                         "Review whether redirect or content restoration is appropriate."));
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                logger?.LogDebug(ex, "Wayback lookup failed for {Url}", url);
                 cache[cacheKey] = false;
             }
         }

@@ -10,14 +10,27 @@ def _count_syllables(word: str) -> int:
     return count_syllables(word)
 
 
-def parse_content_text(soup, raw_html: str, excerpt_max_chars: int = 0) -> dict:
+def parse_content_text(
+    soup,
+    raw_html: str,
+    excerpt_max_chars: int = 0,
+    *,
+    main_content_selectors: str | None = None,
+    boilerplate_selectors: str | None = None,
+) -> dict:
     """Extract content analytics: word count, reading level, content-to-HTML ratio, top keywords.
 
     excerpt_max_chars: when > 0, strip script/style from body and store a whitespace-normalized
     plain-text excerpt (truncated) in ``content_excerpt`` for analysis / AI / UI.
     """
     del soup  # analyze_page_html loads from raw_html for a single code path
-    return analyze_page_html(raw_html, excerpt_max_chars=excerpt_max_chars, strategy="full_body")
+    return analyze_page_html(
+        raw_html,
+        excerpt_max_chars=excerpt_max_chars,
+        strategy="full_body",
+        main_content_selectors=main_content_selectors,
+        boilerplate_selectors=boilerplate_selectors,
+    )
 
 
 def parse_social_meta(soup) -> dict:

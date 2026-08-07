@@ -3,10 +3,21 @@
 from __future__ import annotations
 
 import threading
+import time
+from dataclasses import replace
 from typing import Callable, Optional
 
 from .base import FetchResult, PageFetcher
+from .bot_block import is_bot_block_status
 from .spa_heuristics import needs_js_render
+
+
+def _retry_after_seconds(raw: str, *, default: float = 1.0, cap: float = 10.0) -> float:
+    """Parse a Retry-After header (integer-seconds form only), capped for safety."""
+    value = (raw or "").strip()
+    if value.isdigit():
+        return min(float(value), cap)
+    return default
 
 
 class HybridFetcher:
@@ -35,6 +46,22 @@ class HybridFetcher:
 
     def fetch(self, url: str) -> FetchResult:
         static_result = self._static.fetch(url)
+        if is_bot_block_status(static_result.status):
+            if static_result.status == 429:
+                time.sleep(_retry_after_seconds(static_result.retry_after_header))
+                static_result = self._static.fetch(url)
+            if is_bot_block_status(static_result.status):
+                rendered = self._get_browser().fetch(url)
+                if is_bot_block_status(rendered.status):
+                    # Both fetch strategies were blocked: report the (real, not
+                    # synthesized) browser status but flag it so downstream
+                    # content analysis doesn't score the challenge page as thin
+                    # content, and no proxy rotation/retry loop is attempted.
+                    return replace(rendered, fetch_blocked=True)
+                if rendered.status is None and static_result.status is not None:
+                    return static_result
+                return rendered
+            return static_result
         if not needs_js_render(static_result):
             return static_result
         rendered = self._get_browser().fetch(url)

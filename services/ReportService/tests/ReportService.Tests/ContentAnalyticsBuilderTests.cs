@@ -81,4 +81,38 @@ public sealed class ContentAnalyticsBuilderTests
         var warnings = ReportNativeValidator.ValidateContentAnalyticsThinPages(native, doc.RootElement);
         Assert.Single(warnings);
     }
+
+    [Fact]
+    public void BuildTechStackSummary_includes_homepage_and_static_note()
+    {
+        var rows = new List<CrawlRow>
+        {
+            new()
+            {
+                Url = "https://codefrydev.in/",
+                Status = "200",
+                ContentType = "text/html",
+                TechStack = """["Hugo", "Google Tag Manager"]""",
+            },
+            new()
+            {
+                Url = "https://codefrydev.in/about/",
+                Status = "200",
+                ContentType = "text/html",
+                TechStack = """["React"]""",
+            },
+        };
+
+        var summary = ContentAnalyticsBuilder.BuildTechStackSummary(
+            rows,
+            "https://codefrydev.in",
+            "static");
+
+        Assert.Equal(2, summary["total_pages_analyzed"]);
+        Assert.Equal("https://codefrydev.in/", summary["homepage_url"]);
+        var homepage = Assert.IsType<List<Dictionary<string, object?>>>(summary["homepage_technologies"]);
+        Assert.Equal(2, homepage.Count);
+        var notes = Assert.IsType<List<string>>(summary["detection_notes"]);
+        Assert.Contains("static_crawl", notes);
+    }
 }

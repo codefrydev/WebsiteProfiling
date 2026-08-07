@@ -1,6 +1,7 @@
 """Subprocess runner: spawn the audit CLI and pump output to the DB."""
 from __future__ import annotations
 
+import logging
 import os
 import subprocess
 import sys
@@ -13,6 +14,8 @@ from website_profiling.db.pipeline_jobs import append_job_log, check_flags, fini
 from website_profiling.db.pool import db_session
 
 from .signals import cancel_subprocess, pause_subprocess
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -53,7 +56,7 @@ def _pump_output(proc: subprocess.Popen, job_id: str) -> None:  # type: ignore[t
                 with db_session() as conn:
                     append_job_log(conn, job_id, text)
             except Exception:
-                pass
+                logger.debug("Failed to append job log for job %s", job_id, exc_info=True)
 
     t_out = threading.Thread(target=_pump_stream, args=(proc.stdout,), daemon=True)
     t_err = threading.Thread(target=_pump_stream, args=(proc.stderr,), daemon=True)
@@ -122,7 +125,9 @@ def execute_subprocess_for_claimed_job(
     pump_thread.join(timeout=10)
 
     exit_code = int(proc.returncode or 0)
-    if paused and exit_code == 0:
+    # Crawler exits with code 2 on pause (see crawl/crawler.py); treat any
+    # exit after a pause signal as paused so resume can claim the job.
+    if paused:
         return SubprocessRunResult(exit_code, paused=True)
     return SubprocessRunResult(exit_code)
 

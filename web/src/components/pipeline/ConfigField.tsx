@@ -1,4 +1,22 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { GripVertical, X } from 'lucide-react';
 import { DraftInput, DraftTextarea } from '@/components/shared/DraftTextInput';
 import { formatSecretSavedAt, isSecretMaskedStored } from '@/lib/secretsConfigSchema';
 
@@ -33,6 +51,7 @@ function fieldSpan(f: ConfigFieldDef): 1 | 2 {
     return 2;
   }
   if (f.type === 'singleselect' || f.type === 'multiselect' || f.type === 'select') return 2;
+  if (f.type === 'sortable-list' || f.type === 'chip-list') return 2;
   if ((f.type === 'text' || f.type === 'number' || f.type === 'float') && f.help) return 2;
   return 1;
 }
@@ -43,6 +62,167 @@ function wrapClass(span: 1 | 2) {
 
 const inputClass =
   'w-full rounded-lg border border-default bg-brand-900 px-3 py-2 text-sm text-foreground focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20';
+
+const chipClass =
+  'inline-flex items-center gap-1 rounded-full border border-default bg-brand-900/50 px-2.5 py-1 text-xs text-foreground';
+
+/** One draggable row in a SortableSelectorList. */
+function SortableSelectorRow({
+  id,
+  value,
+  disabled,
+  onRemove,
+}: {
+  id: string;
+  value: string;
+  disabled?: boolean;
+  onRemove: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.5 : 1 };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 rounded-lg border border-default bg-brand-900/50 px-2 py-1.5"
+    >
+      <button
+        type="button"
+        {...attributes}
+        {...listeners}
+        disabled={disabled}
+        className="shrink-0 cursor-grab text-muted-foreground hover:text-foreground disabled:cursor-not-allowed"
+        aria-label="Drag to reorder"
+      >
+        <GripVertical className="h-3.5 w-3.5" />
+      </button>
+      <span className="min-w-0 flex-1 truncate font-mono text-sm text-foreground">{value}</span>
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={disabled}
+        className="shrink-0 text-muted-foreground hover:text-red-500 disabled:cursor-not-allowed"
+        aria-label={`Remove ${value}`}
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+/** Reorderable list of free-text values (e.g. a CSS selector priority list). */
+function SortableSelectorList({
+  items,
+  disabled,
+  onChange,
+}: {
+  items: string[];
+  disabled?: boolean;
+  onChange: (next: string[]) => void;
+}) {
+  const [draft, setDraft] = useState('');
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  // Stable per-row ids: values can repeat-in-spirit across edits, so pair
+  // each value with its list index rather than using the raw string as id.
+  const rows = items.map((value, i) => ({ id: `${i}:${value}`, value }));
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = rows.findIndex((r) => r.id === active.id);
+    const newIndex = rows.findIndex((r) => r.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    onChange(arrayMove(items, oldIndex, newIndex));
+  };
+
+  return (
+    <div className="space-y-2">
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={rows.map((r) => r.id)} strategy={verticalListSortingStrategy}>
+          <div className="space-y-1.5">
+            {rows.map((row, i) => (
+              <SortableSelectorRow
+                key={row.id}
+                id={row.id}
+                value={row.value}
+                disabled={disabled}
+                onRemove={() => onChange(items.filter((_, idx) => idx !== i))}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+      {/* DraftInput commits on blur/Enter with the final typed string -- use
+          that commit itself as the "add to list" trigger (reading `draft`
+          from a separate onKeyDown handler would race a stale closure
+          against DraftInput's own internal state). Resetting `draft` to ''
+          after a successful add re-syncs DraftInput's displayed value via
+          its own value-prop effect. */}
+      <DraftInput
+        value={draft}
+        placeholder="Add a CSS selector, press Enter…"
+        disabled={disabled}
+        onCommit={(next) => {
+          const trimmed = next.trim();
+          if (trimmed) onChange([...items, trimmed]);
+          setDraft('');
+        }}
+        className={`${inputClass} font-mono`}
+      />
+    </div>
+  );
+}
+
+/** Unordered set of free-text tags (e.g. include/exclude selector chips). */
+function ChipListInput({
+  items,
+  disabled,
+  onChange,
+}: {
+  items: string[];
+  disabled?: boolean;
+  onChange: (next: string[]) => void;
+}) {
+  const [draft, setDraft] = useState('');
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((item, i) => (
+          <span key={`${i}:${item}`} className={chipClass}>
+            <span className="font-mono">{item}</span>
+            <button
+              type="button"
+              onClick={() => onChange(items.filter((_, idx) => idx !== i))}
+              disabled={disabled}
+              className="text-muted-foreground hover:text-red-500 disabled:cursor-not-allowed"
+              aria-label={`Remove ${item}`}
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </span>
+        ))}
+      </div>
+      {/* See SortableSelectorList's comment: DraftInput's own onCommit (fires
+          on blur/Enter with the final string) is the add-to-list trigger. */}
+      <DraftInput
+        value={draft}
+        placeholder="Add a selector, press Enter…"
+        disabled={disabled}
+        onCommit={(next) => {
+          const trimmed = next.trim();
+          if (trimmed && !items.includes(trimmed)) onChange([...items, trimmed]);
+          setDraft('');
+        }}
+        className={`${inputClass} font-mono`}
+      />
+    </div>
+  );
+}
 
 /** Single config row for any field type. */
 export default function ConfigField({ field: f, value, disabled, onChange, savedAt }: ConfigFieldProps) {
@@ -187,6 +367,36 @@ export default function ConfigField({ field: f, value, disabled, onChange, saved
           })}
         </div>
         {helpBelow}
+      </div>
+    );
+  }
+
+  if (f.type === 'sortable-list') {
+    const items = (value == null ? String(f.defaultValue ?? '') : String(value))
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return (
+      <div className={outerClass}>
+        {labelBlock}
+        <SortableSelectorList
+          items={items}
+          disabled={disabled}
+          onChange={(next) => onChange(next.join(','))}
+        />
+      </div>
+    );
+  }
+
+  if (f.type === 'chip-list') {
+    const items = (value == null ? String(f.defaultValue ?? '') : String(value))
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    return (
+      <div className={outerClass}>
+        {labelBlock}
+        <ChipListInput items={items} disabled={disabled} onChange={(next) => onChange(next.join(','))} />
       </div>
     );
   }

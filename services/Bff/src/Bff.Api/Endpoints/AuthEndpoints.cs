@@ -15,7 +15,7 @@ public static class AuthEndpoints
 {
     public static void MapAuthEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/api/auth/login", (HttpContext context, IOptions<AuthOptions> authOptions) =>
+        app.MapPost(BffRoutes.AuthLogin, (HttpContext context, IOptions<AuthOptions> authOptions) =>
         {
             var auth = authOptions.Value;
             if (!auth.Enabled)
@@ -33,7 +33,7 @@ public static class AuthEndpoints
             return Results.Json(new { ok = true });
         });
 
-        app.MapPost("/api/auth/logout", (HttpContext context, IOptions<AuthOptions> authOptions) =>
+        app.MapPost(BffRoutes.AuthLogout, (HttpContext context, IOptions<AuthOptions> authOptions) =>
         {
             var auth = authOptions.Value;
             context.Response.Cookies.Append(WpSessionTokens.CookieName, string.Empty, new CookieOptions
@@ -48,7 +48,7 @@ public static class AuthEndpoints
             return Results.Json(new { ok = true });
         });
 
-        app.MapGet("/api/auth/session", (HttpContext context, IOptions<AuthOptions> authOptions) =>
+        app.MapGet(BffRoutes.AuthSession, (HttpContext context, IOptions<AuthOptions> authOptions) =>
         {
             var auth = authOptions.Value;
             var enabled = auth.Enabled;

@@ -53,6 +53,7 @@ class CrawlFrontier:
         self.queue: Queue = Queue()
         self.depths: dict[str, int] = {}
         self.visited: set[str] = set()
+        self._pending: set[str] = set()
         self.lock = threading.Lock()
         self.rp = None
         if not ignore_robots:
@@ -77,10 +78,12 @@ class CrawlFrontier:
             return True
 
     def queue_contains(self, item: str) -> bool:
-        try:
-            return item in list(self.queue.queue)
-        except Exception:
-            return False
+        with self.lock:
+            return item in self._pending
+
+    def note_dequeued(self, url: str) -> None:
+        with self.lock:
+            self._pending.discard(url)
 
     def enqueue_seed(self, url: str, depth: int = 0) -> None:
         u = url
@@ -88,10 +91,12 @@ class CrawlFrontier:
             return
         if not self.allow_external and not self.same_domain(u):
             return
-        if u in self.depths:
-            return
-        self.queue.put(u)
-        self.depths[u] = depth
+        with self.lock:
+            if u in self.depths or u in self._pending or u in self.visited:
+                return
+            self.queue.put(u)
+            self._pending.add(u)
+            self.depths[u] = depth
 
     def seed_initial_urls(
         self,
@@ -137,9 +142,10 @@ class CrawlFrontier:
             if (
                 link not in self.visited
                 and link not in self.depths
-                and not self.queue_contains(link)
+                and link not in self._pending
             ):
                 self.queue.put(link)
+                self._pending.add(link)
                 self.depths[link] = cur_depth + 1
                 return True
         return False
@@ -168,5 +174,6 @@ class CrawlFrontier:
         with self.lock:
             for url in state.get("pending", []):
                 self.queue.put(url)
+                self._pending.add(url)
             self.visited.update(state.get("visited", []))
             self.depths.update(state.get("depths", {}))

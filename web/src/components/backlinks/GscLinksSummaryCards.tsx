@@ -1,4 +1,4 @@
-import SummaryCard from '@/components/google/SummaryCard';
+import StatCard from '@/components/StatCard';
 import { metricHelpHint } from '@/lib/metricHelp';
 import type { GscLinksReportData } from '@/types/report';
 import { summaryCounts } from './backlinksTableUtils';
@@ -19,22 +19,22 @@ export default function GscLinksSummaryCards({ data, labels }: GscLinksSummaryCa
     available ? value.toLocaleString() : '—';
   return (
     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-      <SummaryCard
+      <StatCard
         label={labels.referringDomains}
         value={counts.referringDomains.toLocaleString()}
         hint={metricHelpHint('shared.referringDomains')}
       />
-      <SummaryCard
+      <StatCard
         label={labels.linkedPages}
         value={counts.linkedPages.toLocaleString()}
         hint={metricHelpHint('views.backlinks.linkedPages')}
       />
-      <SummaryCard
+      <StatCard
         label={labels.sampleLinks}
         value={formatCount(counts.sampleLinks, counts.hasSampleExport)}
         hint={metricHelpHint('shared.sampleLinks')}
       />
-      <SummaryCard
+      <StatCard
         label={labels.latestLinks}
         value={formatCount(counts.latestLinks, counts.hasLatestExport)}
         hint={metricHelpHint('views.backlinks.latestLinks')}

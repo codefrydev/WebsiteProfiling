@@ -11,6 +11,11 @@ namespace ReportService.Application.Bridge;
 /// </summary>
 public sealed class FastApiPythonBridge(IHttpClientFactory httpClientFactory, IOptions<FastApiOptions> options)
 {
+    private const string ReportBuildPath = "/internal/report/build";
+    private const string RunPath = "/api/run";
+    private const string JobsPathPrefix = "/api/jobs/";
+    private const string ExecuteSubprocessPath = "/internal/pipeline/execute-subprocess";
+
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -19,12 +24,8 @@ public sealed class FastApiPythonBridge(IHttpClientFactory httpClientFactory, IO
     public static bool ShouldUseBridge()
     {
         var flag = Environment.GetEnvironmentVariable("REPORT_SERVICE_USE_PYTHON_BRIDGE");
-        if (string.Equals(flag, "0", StringComparison.Ordinal) || string.Equals(flag, "false", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
-
-        return true;
+        return string.Equals(flag, "1", StringComparison.Ordinal)
+               || string.Equals(flag, "true", StringComparison.OrdinalIgnoreCase);
     }
 
     public async Task<ReportBuildBridgeResult> BuildReportAsync(
@@ -35,7 +36,7 @@ public sealed class FastApiPythonBridge(IHttpClientFactory httpClientFactory, IO
     {
         var client = CreateClient();
         using var response = await client.PostAsJsonAsync(
-            "/internal/report/build",
+            ReportBuildPath,
             new ReportBuildBridgeRequest(propertyId, crawlRunId, config),
             JsonOptions,
             cancellationToken);
@@ -58,11 +59,11 @@ public sealed class FastApiPythonBridge(IHttpClientFactory httpClientFactory, IO
         }
         catch (JsonException)
         {
-            return new ReportBuildBridgeResult(true, 0, body, null, body);
+            return new ReportBuildBridgeResult(false, -1, body, null, body);
         }
     }
 
-    public async Task<string?> ForwardRequestAsync(
+    public async Task<ForwardRequestResult> ForwardRequestAsync(
         HttpMethod method,
         string pathWithQuery,
         string? jsonBody,
@@ -76,7 +77,8 @@ public sealed class FastApiPythonBridge(IHttpClientFactory httpClientFactory, IO
         }
 
         using var response = await client.SendAsync(request, cancellationToken);
-        return await response.Content.ReadAsStringAsync(cancellationToken);
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        return new ForwardRequestResult((int)response.StatusCode, body);
     }
 
     public async Task<RunJobBridgeResult> EnqueuePipelineRunAsync(
@@ -84,7 +86,7 @@ public sealed class FastApiPythonBridge(IHttpClientFactory httpClientFactory, IO
         CancellationToken cancellationToken = default)
     {
         var client = CreateClient();
-        using var response = await client.PostAsJsonAsync("/api/run", body, JsonOptions, cancellationToken);
+        using var response = await client.PostAsJsonAsync(RunPath, body, JsonOptions, cancellationToken);
         var raw = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
@@ -106,7 +108,7 @@ public sealed class FastApiPythonBridge(IHttpClientFactory httpClientFactory, IO
     public async Task<JsonDocument?> GetJobAsync(string jobId, CancellationToken cancellationToken = default)
     {
         var client = CreateClient();
-        using var response = await client.GetAsync($"/api/jobs/{Uri.EscapeDataString(jobId)}", cancellationToken);
+        using var response = await client.GetAsync($"{JobsPathPrefix}{Uri.EscapeDataString(jobId)}", cancellationToken);
         var raw = await response.Content.ReadAsStringAsync(cancellationToken);
         if (!response.IsSuccessStatusCode)
         {
@@ -131,7 +133,7 @@ public sealed class FastApiPythonBridge(IHttpClientFactory httpClientFactory, IO
     {
         var client = CreateClient();
         using var response = await client.PostAsJsonAsync(
-            "/internal/pipeline/execute-subprocess",
+            ExecuteSubprocessPath,
             new SubprocessBridgeRequest(jobId, command, propertyId),
             JsonOptions,
             cancellationToken);
@@ -189,3 +191,5 @@ public sealed record SubprocessBridgeResult(
     bool Cancelled,
     bool Paused,
     string? Error);
+
+public sealed record ForwardRequestResult(int StatusCode, string Body);

@@ -120,13 +120,13 @@ public sealed class AuditToolSelectionService(
                 return bundleDomains.Order(StringComparer.Ordinal).ToList();
             }
 
-            return ["core", "insight"];
+            return [McpToolDomains.Names.Core, McpToolDomains.Names.Insight];
         }
 
         var parsed = ParseDomainList(mcp.EnabledDomains);
         if (parsed.Count == 0)
         {
-            return ["core", "insight"];
+            return [McpToolDomains.Names.Core, McpToolDomains.Names.Insight];
         }
 
         return parsed;
