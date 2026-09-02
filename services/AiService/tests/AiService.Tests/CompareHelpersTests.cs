@@ -1,5 +1,5 @@
 using System.Text.Json.Nodes;
-using AiService.Tools.Compare;
+using AiService.Api.Tools.Compare;
 
 namespace AiService.Tests;
 

@@ -1,6 +1,6 @@
-using AiService.Application.Services;
-using AiService.Mcp;
-using AiService.Tools.Selection;
+using AiService.Api.Application.Services;
+using AiService.Api.Mcp;
+using AiService.Api.Tools.Selection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,7 +24,7 @@ public sealed class ServiceRegistrationValidationTests
         env.SetDefaultsForPostgresServices();
         env.Set("WP_MCP_HTTP", enableMcpHttp ? "1" : null);
 
-        using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        using var factory = new WebApplicationFactory<Api.Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Development");
         });

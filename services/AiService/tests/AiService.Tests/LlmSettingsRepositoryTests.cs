@@ -1,4 +1,4 @@
-using AiService.Application.Repositories;
+using AiService.Api.Application.Repositories;
 
 namespace AiService.Tests;
 

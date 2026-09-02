@@ -1,5 +1,5 @@
 using System.Text.Json.Nodes;
-using AiService.Application.Json;
+using AiService.Api.Application.Json;
 
 namespace AiService.Tests;
 

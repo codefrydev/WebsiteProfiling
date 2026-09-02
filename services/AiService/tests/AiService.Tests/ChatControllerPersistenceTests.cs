@@ -1,7 +1,7 @@
-using AiService.Application.Chat;
-using AiService.Domain;
-using AiService.Domain.Entities;
-using AiService.Domain.Repositories;
+using AiService.Api.Application.Chat;
+using AiService.Api.Domain;
+using AiService.Api.Domain.Entities;
+using AiService.Api.Domain.Repositories;
 
 namespace AiService.Tests;
 

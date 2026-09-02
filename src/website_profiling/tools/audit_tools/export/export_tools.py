@@ -302,7 +302,7 @@ def list_export_formats(_conn: Connection, _ctx: AuditToolContext, _args: dict[s
             "Compare this report to report 38 as CSV",
         ],
         "notes": [
-            "PDF requires the Data service (DATA_SERVICE_URL; see services/Data/)",
+            "PDF requires CoreService (CORE_SERVICE_URL or DATA_SERVICE_URL; see services/CoreService/)",
             "Artifacts expire after 24 hours",
             "Chat UI shows download buttons after export tools run",
         ],

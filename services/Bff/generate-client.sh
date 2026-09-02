@@ -1,5 +1,5 @@
 #!/bin/sh
-# Regenerate the typed FastAPI client (src/Bff.Application/Generated/FastApiClient.g.cs)
+# Regenerate the typed FastAPI client (src/Bff.Api/Application/Generated/FastApiClient.g.cs)
 # from the committed OpenAPI spec (web/openapi.json).
 #
 # Prerequisite (one-time):  dotnet tool install -g NSwag.ConsoleCore
@@ -7,4 +7,4 @@
 set -e
 cd "$(dirname "$0")"
 nswag run nswag.json
-echo "Generated src/Bff.Application/Generated/FastApiClient.g.cs"
+echo "Generated src/Bff.Api/Application/Generated/FastApiClient.g.cs"

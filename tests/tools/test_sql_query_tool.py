@@ -986,6 +986,15 @@ class TestFeatureFlagGating:
         assert "get_sql_schema" not in selected
         assert "run_sql_query" not in selected
 
+    def test_sql_tools_dispatch_disabled(self) -> None:
+        from website_profiling.tools.audit_tools.registry import dispatch_tool
+
+        with patch.dict(os.environ, {"CHAT_SQL_TOOL_ENABLED": "false"}):
+            res = dispatch_tool("run_sql_query", {"query": "SELECT 1"})
+            assert res == {"error": "tool disabled: run_sql_query"}
+            res2 = dispatch_tool("get_sql_schema", {})
+            assert res2 == {"error": "tool disabled: get_sql_schema"}
+
 
 # ---------------------------------------------------------------------------
 # Remaining branch coverage

@@ -1,15 +1,15 @@
 using System.Text.Json.Nodes;
-using AiService.Tools.Artifacts;
-using AiService.Tools.Bridge;
-using AiService.Tools.Context;
-using AiService.Tools.Handlers.Export;
-using AiService.Tools.Handlers.Security;
-using AiService.Tools.Options;
-using AiService.Tools.Persistence;
-using AiService.Tools.Registry;
+using AiService.Api.Tools.Bridge;
+using AiService.Api.Tools.Context;
+using AiService.Api.Tools.Handlers.Export;
+using AiService.Api.Tools.Handlers.Security;
+using AiService.Api.Tools.Options;
+using AiService.Api.Tools.Persistence;
+using AiService.Api.Tools.Registry;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using ArtifactStore = AiService.Api.Tools.Artifacts.ArtifactStore;
 
 namespace AiService.Tests.Handlers;
 

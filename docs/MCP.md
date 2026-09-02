@@ -227,12 +227,12 @@ Export tools write artifact files with a 24-hour TTL; in-app chat renders downlo
 
 | Deliverable | Generator | Env / notes |
 |-------------|-----------|-------------|
-| PDF | **Data service** (`GET /v1/reports/{id}/pdf`) | `DATA_SERVICE_URL` on MCP/web (default `http://127.0.0.1:8091`); Data must be running |
-| Excel workbook | **Data service** (`GET /v1/reports/{id}/workbook`) | Same as PDF |
+| PDF | **CoreService** (`GET /v1/reports/{id}/pdf`) | `CORE_SERVICE_URL` / `DATA_SERVICE_URL` on MCP/web (default `http://127.0.0.1:8094`); CoreService must be running |
+| Excel workbook | **CoreService** (`GET /v1/reports/{id}/workbook`) | Same as PDF |
 | CSV / JSON audit export | Python (`export_audit_report`, `GET /api/report/export`) | Reads Postgres via report payload — no separate export service required |
 | Compare / list CSV | Python | `export_compare_csv`, `export_list_as_csv` |
 
-The Data service reads report payloads directly from Postgres; it only calls out over HTTP for PDF branding (`REPORT_API_URL` → `/api/ui-preferences` for brand name/logo).
+CoreService reads report payloads directly from Postgres; it only calls out over HTTP for PDF branding (`REPORT_API_URL` → `/api/ui-preferences` for brand name/logo).
 
 ### Image audit
 

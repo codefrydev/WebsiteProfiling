@@ -13,11 +13,9 @@ This file is the canonical entry point for agents. For full detail see [AGENT.md
 - `src/website_profiling/` — Python crawl/Lighthouse engine
   - `crawl/`, `lighthouse/`, `worker/`, `api/` (jobs, crawl, internal bridges), `reporting/` (bridge-only until C# port completes)
 - `web/` — Vite + React SPA (static nginx in prod); browser calls `services/Bff/` for all `/api/*`
-- `services/Bff/` — .NET BFF (auth, CORS, proxy to FastAPI + ReportService + IntegrationsService + Data + AiService)
-- `services/Data/` — .NET data service (report payloads, portfolio, issue status, filters, typed config, PDF/Excel/CSV/JSON/sitemap export; port 8091). Export profiles: `executive|standard|full|premium`. Env: `REPORT_API_URL` (branding lookup).
-- `services/ReportService/` — .NET report build + pipeline orchestration (port 8094). See [services/ReportService/README.md](services/ReportService/README.md)
+- `services/Bff/` — .NET BFF (auth, CORS, proxy to FastAPI + CoreService + AiService; port 8090)
+- `services/CoreService/` — .NET core service (report build & orchestration, data queries & PDF/Excel exports, Google/Bing integrations; port 8094). See [services/CoreService/README.md](services/CoreService/README.md)
 - `services/AiService/` — .NET AI service (Microsoft.Extensions.AI, chat, enrichment, MCP, **secrets/llm-settings writes**; port 8092). See [services/AiService/README.md](services/AiService/README.md)
-- `services/IntegrationsService/` — .NET Google/Bing integrations (GSC/GA4 fetch, OAuth, page-live, keyword reads; port 8093). See [services/IntegrationsService/README.md](services/IntegrationsService/README.md)
 - `services/Schema/` — EF Core DB migrations (schema owner)
 - `services/WebsiteProfiling.slnx` — unified .NET solution (all services + shared libs)
 - `docs/` — documentation index
@@ -26,7 +24,7 @@ This file is the canonical entry point for agents. For full detail see [AGENT.md
 **Run / dev**
 
 ```bash
-./local-run          # Start Postgres + Data + AiService + ReportService + IntegrationsService + worker + FastAPI + BFF + Vite
+./local-run          # Start Postgres + CoreService + AiService + worker + FastAPI + BFF + Vite
 ./local-test         # Python + web + .NET tests (CI parity; dotnet: services/WebsiteProfiling.slnx)
 python -m src        # Run audit pipeline
 # MCP: AiService stdio/HTTP — see services/AiService/README.md and docs/MCP.md
@@ -41,7 +39,9 @@ python -m src        # Run audit pipeline
 | Task | Where |
 |------|-------|
 | Crawl | `src/website_profiling/crawl/` |
-| Report (native C#) | `services/ReportService/src/ReportService.Application/Build/` |
+| Report (native C#) | `services/CoreService/src/CoreService.Api/Application/Build/` |
+| Data reads & exports | `services/CoreService/src/CoreService.Api/Rendering/`, `DataApplication/` |
+| Integrations (Google/Bing) | `services/CoreService/src/CoreService.Api/Providers/Google/`, `IntegrationsApplication/` |
 | Report (Python bridge) | `src/website_profiling/reporting/` |
 | Typed settings / config | `config/typed_config_manifest.json`, `src/website_profiling/db/typed_config/` |
 | GEO / AEO / Agent readiness | `src/website_profiling/tools/audit_tools/geo/geo_tools.py`, `geo/agent_readiness.py` |

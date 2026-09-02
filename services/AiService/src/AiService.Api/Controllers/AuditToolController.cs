@@ -1,5 +1,5 @@
 using System.Text.Json.Nodes;
-using AiService.Tools.Registry;
+using AiService.Api.Tools.Registry;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AiService.Api.Controllers;

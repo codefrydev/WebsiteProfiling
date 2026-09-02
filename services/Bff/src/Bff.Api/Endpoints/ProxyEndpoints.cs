@@ -1,6 +1,7 @@
+using Bff.Api.Application;
+using Bff.Api.Application.Options;
 using Bff.Api.Forwarding;
 using Bff.Application;
-using Bff.Application.Options;
 using Microsoft.Extensions.Options;
 using WebsiteProfiling.Contracts.Report;
 

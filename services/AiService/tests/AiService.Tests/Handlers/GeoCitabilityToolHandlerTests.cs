@@ -1,8 +1,8 @@
 using System.Text.Json.Nodes;
-using AiService.Tools.Context;
-using AiService.Tools.Handlers.Geo;
-using AiService.Tools.Persistence;
+using AiService.Api.Tools.Context;
+using AiService.Api.Tools.Persistence;
 using Microsoft.EntityFrameworkCore;
+using GeoCitabilityToolHandlers = AiService.Api.Tools.Handlers.Geo.GeoCitabilityToolHandlers;
 
 namespace AiService.Tests.Handlers;
 

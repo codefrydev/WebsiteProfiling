@@ -177,10 +177,9 @@ cmd_start() {
 
   WORKER_PID=""
   UVICORN_PID=""
-  DATA_PID=""
+  CORE_PID=""
   AI_PID=""
   BFF_PID=""
-  INTEGRATIONS_PID=""
   _CLEANUP_DONE=0
   set +m
 
@@ -209,25 +208,23 @@ cmd_start() {
 
   if command -v dotnet >/dev/null 2>&1; then
     start_host_dotnet_base "$ROOT" Development
-    start_host_report_service "$ROOT" Development
-    disown_bg "$DATA_PID"
+    disown_bg "$CORE_PID"
     disown_bg "$AI_PID"
-    disown_bg "$REPORT_PID"
   else
-    warn "dotnet not found — Data service (PDF export, typed config) unavailable on port 8091"
+    warn "dotnet not found — CoreService unavailable on port 8094"
     warn "dotnet not found — AiService unavailable on port 8092"
-    warn "dotnet not found — ReportService unavailable on port 8094"
-    warn "dotnet not found — IntegrationsService unavailable on port 8093"
   fi
 
+  export CORE_SERVICE_URL="${CORE_SERVICE_URL:-http://127.0.0.1:8094}"
   export AI_SERVICE_URL="${AI_SERVICE_URL:-http://127.0.0.1:8092}"
-  export INTEGRATIONS_SERVICE_URL="${INTEGRATIONS_SERVICE_URL:-http://127.0.0.1:8093}"
-  export REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-http://127.0.0.1:8094}"
+  export INTEGRATIONS_SERVICE_URL="${INTEGRATIONS_SERVICE_URL:-$CORE_SERVICE_URL}"
+  export REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-$CORE_SERVICE_URL}"
+  export DATA_SERVICE_URL="${DATA_SERVICE_URL:-$CORE_SERVICE_URL}"
   export PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE="${PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE:-1}"
   export PYTHON="${PYTHON:-$VENV/bin/python}"
   export WEBSITE_PROFILING_ROOT="$ROOT"
 
-  log "Pipeline jobs run in ReportService C# worker (Python subprocess for crawl/lighthouse only)"
+  log "Pipeline jobs run in CoreService C# worker (Python subprocess for crawl/lighthouse only)"
   log "Starting Python bridge (audit-tool + keyword enrich CLI only) on port 8096"
   export FASTAPI_URL="http://127.0.0.1:8096"
   export FASTAPI_ALLOWED_ORIGINS="http://localhost:8090"
@@ -241,7 +238,6 @@ cmd_start() {
 
   if command -v dotnet >/dev/null 2>&1; then
     start_host_integrations_bff "$ROOT" Development
-    disown_bg "$INTEGRATIONS_PID"
     disown_bg "$BFF_PID"
   else
     warn "dotnet not found — browser API calls need the BFF (see services/Bff/)"

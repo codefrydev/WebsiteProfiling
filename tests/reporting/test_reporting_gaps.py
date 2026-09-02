@@ -322,3 +322,83 @@ def test_amp_canonical_mismatch_and_axe_static_skip():
         {"enable_axe": "true", "crawl_render_mode": "static"},
     )
     assert meta.get("axe_skipped")
+
+
+def test_reporting_gaps_branch_coverage():
+    from website_profiling.reporting.categories._helpers import _indexation_coverage_issues
+    from website_profiling.reporting.categories.accessibility import contrast_issues_from_sources
+    from website_profiling.reporting.categories.technical_seo import category_technical_seo
+    from website_profiling.reporting.content_analytics import _build_tech_stack_summary, _parse_tech_stack_list
+    from website_profiling.reporting.seo_summary import _compute_summary_seo_issues
+    from website_profiling.reporting.thin_content_helper import count_thin_rows, is_thin_row, thin_content_message
+
+    # 1. _helpers.py: noindex in sitemap >= 15 break
+    sitemap = [f"https://x.com/p{i}" for i in range(20)]
+    df_noindex = pd.DataFrame([
+        {"url": f"https://x.com/p{i}", "status": 200, "noindex": True}
+        for i in range(20)
+    ])
+    indexation = {"sitemap_urls": sitemap}
+    issues = _indexation_coverage_issues(df_noindex, indexation)
+    assert len([i for i in issues if "sitemap" in i.get("message", "").lower()]) == 15
+
+    # 2. accessibility.py: >= 40 axe issues break
+    violations1 = [{"id": "color-contrast", "description": f"desc {i}", "help": "help"} for i in range(25)]
+    violations2 = [{"id": "color-contrast", "description": f"desc2 {i}", "help": "help"} for i in range(25)]
+    df_axe = pd.DataFrame([
+        {"url": "https://x.com/1", "status": 200, "page_analysis": json.dumps({"axe_violations": violations1})},
+        {"url": "https://x.com/2", "status": 200, "page_analysis": json.dumps({"axe_violations": violations2})},
+    ])
+    axe_issues = contrast_issues_from_sources(df_axe, {})
+    assert len(axe_issues) == 40
+
+    # 3. technical_seo.py: missing canon > MAX_ISSUES (30), cross canon == url, cross canon > MAX_ISSUES
+    rows_canon = []
+    # 35 missing canonical
+    for i in range(35):
+        rows_canon.append({"url": f"https://x.com/missing-{i}", "status": 200, "canonical_url": ""})
+    # Same canonical (url == canon)
+    rows_canon.append({"url": "https://x.com/same", "status": 200, "canonical_url": "https://x.com/same"})
+    # 35 cross canonical
+    for i in range(35):
+        rows_canon.append({"url": f"https://x.com/cross-{i}", "status": 200, "canonical_url": "https://x.com/other"})
+    df_canon = pd.DataFrame(rows_canon)
+    tech_res = category_technical_seo(df_canon, {})
+    assert any("canonical points to different" in i["message"].lower() for i in tech_res.get("issues", []))
+
+    # 4. content_analytics.py
+    assert _parse_tech_stack_list(None) == []
+    assert _parse_tech_stack_list({"not": "a list"}) == []
+    df_tech = pd.DataFrame([
+        {"url": "https://x.com/about", "status": 200, "content_type": "text/html", "tech_stack": '["React"]'},
+        {"url": "https://x.com/", "status": 200, "content_type": "text/html", "tech_stack": '["Next.js"]'},
+    ])
+    summary = _build_tech_stack_summary(df_tech, start_url="https://x.com")
+    assert summary.get("homepage_url") == "https://x.com/"
+
+    # 5. seo_summary.py: title_long, meta_desc_long
+    df_seo = pd.DataFrame([{
+        "url": "https://x.com/long",
+        "status": 200,
+        "title": "A" * 80,
+        "meta_description": "B" * 200,
+        "meta_description_len": 200,
+        "h1_count": 1,
+    }])
+    seo_res = _compute_summary_seo_issues(df_seo)
+    assert any(i["type"] == "title_long" for i in seo_res.get("issues", {}).get("seo", []))
+    assert any(i["type"] == "meta_desc_long" for i in seo_res.get("issues", {}).get("seo", []))
+
+    # 6. thin_content_helper.py
+    assert count_thin_rows(pd.DataFrame()) == 0
+    assert count_thin_rows(pd.DataFrame([{"status": 500, "word_count": 10}]), success_only=True) == 0
+    assert count_thin_rows(pd.DataFrame([{"status": 200, "other": "x"}]), success_only=True) == 0
+    assert count_thin_rows(pd.DataFrame([{"status": 200, "word_count": 50}]), success_only=True) == 1
+    assert not is_thin_row(pd.Series({"word_count": 300}))
+    assert not is_thin_row(pd.Series({"content_length": 2000}))
+    assert is_thin_row(pd.Series({"content_length": 100}))
+    assert not is_thin_row(pd.Series({}))
+    msg1 = thin_content_message(pd.Series({"word_count": 50}))
+    assert "50 words" in msg1
+    msg2 = thin_content_message(pd.Series({"content_length": 100}))
+    assert "100 chars" in msg2

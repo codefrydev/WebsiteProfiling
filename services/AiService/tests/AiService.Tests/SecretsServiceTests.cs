@@ -1,7 +1,7 @@
 using System.Text.Json.Nodes;
-using AiService.Application.Services;
-using AiService.Domain.Models;
-using AiService.Domain.Repositories;
+using AiService.Api.Application.Services;
+using AiService.Api.Domain.Models;
+using AiService.Api.Domain.Repositories;
 
 namespace AiService.Tests;
 

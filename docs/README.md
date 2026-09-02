@@ -15,10 +15,8 @@ This directory contains product, integration, and operations documentation for *
 | [COMPANY_STANDARDS.md](COMPANY_STANDARDS.md) | Agencies / operators | Data classification, crawl scope, security policy |
 | [MCP.md](MCP.md) | Integrators | Model Context Protocol server configuration and tool reference |
 | [OPS.md](OPS.md) | Operators | Scheduled audits, alerts, migrations, production notes |
-| [services/ReportService/README.md](../services/ReportService/README.md) | Developers | Report build + pipeline orchestration (port 8094) |
+| [services/CoreService/README.md](../services/CoreService/README.md) | Developers | Reports, data reads & exports, Google/Bing integrations (port 8094) |
 | [services/AiService/README.md](../services/AiService/README.md) | Developers | AI chat, secrets, LLM settings, MCP, enrichment (port 8092) |
-| [services/IntegrationsService/README.md](../services/IntegrationsService/README.md) | Developers | Google/Bing OAuth, GSC/GA4 fetch, keywords (port 8093) |
-| `services/Data/` | Developers | .NET data service — report payloads, portfolio, issue status, saved filters, typed config, PDF/Excel/CSV/JSON/sitemap export (port 8091) |
 
 ---
 
@@ -29,10 +27,8 @@ All `/api/*` calls from the SPA go to the **BFF** (`:8090`). The BFF forwards su
 | Upstream | Examples |
 |----------|----------|
 | **FastAPI** (`:8096`) | `/api/run`, `/api/jobs/*`, `/api/pipeline-config`, crawl, properties |
-| **ReportService** (`:8094`, internal) | Report build and full-audit orchestration (worker; not browser-facing) |
-| **IntegrationsService** (`:8093`) | `/api/integrations/google/*`, `/api/integrations/bing/*`, property Google config |
+| **CoreService** (`:8094`) | Report build & orchestration, data reads (portfolio, payload, issues), PDF/Excel exports, Google/Bing integrations |
 | **AiService** (`:8092`) | `/api/chat`, `/api/secrets`, `/api/llm-settings`, MCP-related APIs |
-| **Data** (`:8091`) | Report payload reads, portfolio, issue status, saved filters, `/api/pipeline-settings`, `/api/ui-preferences`, `/api/client-preferences`, PDF/Excel export |
 
 **Internal service-to-service:** ReportService reads Google/keyword snapshots from IntegrationsService (`GET /internal/integrations/report/enrichment`) during native report build — not via the BFF.
 
@@ -45,10 +41,8 @@ During local development (`./local-run`, `ASPNETCORE_ENVIRONMENT=Development`), 
 | Service | Port | Swagger UI |
 | ------- | ---- | ---------- |
 | BFF | 8090 | [http://localhost:8090/docs](http://localhost:8090/docs) |
-| Data | 8091 | [http://localhost:8091/docs](http://localhost:8091/docs) |
 | AiService | 8092 | [http://localhost:8092/docs](http://localhost:8092/docs) |
-| IntegrationsService | 8093 | [http://localhost:8093/docs](http://localhost:8093/docs) |
-| ReportService | 8094 | [http://localhost:8094/docs](http://localhost:8094/docs) |
+| CoreService | 8094 | [http://localhost:8094/docs](http://localhost:8094/docs) |
 | Python bridge | 8096 | [http://localhost:8096/docs](http://localhost:8096/docs) |
 
 OpenAPI JSON for .NET services: `/swagger/v1/swagger.json`. See the main [README.md](../README.md#api-documentation-swagger) for details.

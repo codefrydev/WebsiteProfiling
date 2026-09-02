@@ -86,12 +86,12 @@ out not to exist in the real tool-metadata taxonomy — those 2 tools are actual
   **Finding**: the Python `/api/chat/artifacts/{id}` FastAPI route this used to proxy to doesn't
   exist anywhere in the current codebase (`read_artifact_bytes` had zero callers) — the old proxy
   was already dead. This port fixes the feature rather than just relocating it.
-- `export_audit_report`'s PDF/CSV/JSON paths call the .NET **Data service**'s existing
-  `v1/reports/{id}/{pdf,csv,json}` endpoints (`services/Data/src/Data.Api/Controllers/ReportExportController.cs`)
-  via a new `DataServiceClient` (`services/AiService/src/AiService.Tools/Bridge/DataServiceClient.cs`,
-  env `DATA_SERVICE_URL`) — reuses the Data service's canonical export implementation rather than
+- `export_audit_report`'s PDF/CSV/JSON paths call .NET **CoreService**'s existing
+  `v1/reports/{id}/{pdf,csv,json}` endpoints (`services/CoreService/src/CoreService.Api/Controllers/ReportExportController.cs`)
+  via a new `DataServiceClient` (`services/AiService/src/AiService.Api/Tools/Bridge/DataServiceClient.cs`,
+  env `CORE_SERVICE_URL` / `DATA_SERVICE_URL`) — reuses CoreService's canonical export implementation rather than
   re-porting Python's bespoke CSV column layout (`export_audit.py`/`export_audit_data.py` were NOT
-  ported; Data service's version is now the one true implementation).
+  ported; CoreService's version is now the one true implementation).
 - `export_list_as_csv` recursively calls back into `ToolDispatcher.DispatchAsync` (its own allowlisted
   target tool may be native or still Python-bridged — dispatch handles both transparently). Verified
   no circular-DI issue: `ToolDispatcher`/`DataServiceClient` are resolved *lazily inside* the

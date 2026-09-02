@@ -1,10 +1,10 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
-COPY Shared/WebsiteProfiling.Data/WebsiteProfiling.Data.csproj Shared/WebsiteProfiling.Data/
+COPY Shared/WebsiteProfiling.Shared/WebsiteProfiling.Shared.csproj Shared/WebsiteProfiling.Shared/
 COPY Schema/src/Schema.Model/Schema.Model.csproj Schema/src/Schema.Model/
 COPY Schema/src/Schema.Migrator/Schema.Migrator.csproj Schema/src/Schema.Migrator/
 RUN dotnet restore Schema/src/Schema.Migrator/Schema.Migrator.csproj
-COPY Shared/WebsiteProfiling.Data/ Shared/WebsiteProfiling.Data/
+COPY Shared/WebsiteProfiling.Shared/ Shared/WebsiteProfiling.Shared/
 COPY Schema/src/ Schema/src/
 RUN dotnet publish Schema/src/Schema.Migrator/Schema.Migrator.csproj -c Release -o /app/publish --no-restore
 

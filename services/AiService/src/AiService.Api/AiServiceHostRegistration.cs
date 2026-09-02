@@ -1,5 +1,5 @@
-using AiService.Application;
-using AiService.Mcp;
+using AiService.Api.Application;
+using AiService.Api.Mcp;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AiService.Api;

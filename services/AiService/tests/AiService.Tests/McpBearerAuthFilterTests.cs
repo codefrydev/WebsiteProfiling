@@ -1,6 +1,6 @@
-using AiService.Domain.Models;
-using AiService.Domain.Repositories;
-using AiService.Mcp;
+using AiService.Api.Domain.Models;
+using AiService.Api.Domain.Repositories;
+using AiService.Api.Mcp;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.Extensions.Caching.Memory;

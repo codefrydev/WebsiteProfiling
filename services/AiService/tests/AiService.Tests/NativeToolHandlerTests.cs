@@ -1,7 +1,5 @@
-using AiService.Application;
-using AiService.Application.Handlers;
-using AiService.Tools;
-using AiService.Tools.Modules;
+using AiService.Api.Application;
+using AiService.Api.Tools;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace AiService.Tests;

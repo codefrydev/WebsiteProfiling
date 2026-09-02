@@ -1,7 +1,7 @@
 using System.Text.Json.Nodes;
-using AiService.Tools.Context;
-using AiService.Tools.Handlers.Drift;
-using AiService.Tools.Persistence;
+using AiService.Api.Tools.Context;
+using AiService.Api.Tools.Handlers.Drift;
+using AiService.Api.Tools.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace AiService.Tests.Handlers;

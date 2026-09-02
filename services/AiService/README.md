@@ -81,12 +81,8 @@ Python worker → POST /internal/enrichment/* and ai_service_client → AiServic
 
 | Project | Role |
 |---------|------|
-| `AiService.Api` | HTTP controllers (paths match former FastAPI routes) |
-| `AiService.Application` | Services, repos, chat agent, enrichment, secrets |
-| `AiService.Providers` | `IChatClientFactory`, structured JSON completions |
-| `AiService.Tools` | Audit tool catalog, dispatch, payload slices |
-| `AiService.Mcp` | Model Context Protocol server |
-| `AiService.Domain` | Entities and repository interfaces |
+| `AiService.Api` | Web host, controllers, services, LLM providers, 369-tool catalog, MCP server |
+| `AiService.Tests` | Comprehensive test suite (chat, providers, secrets, tools) |
 
 ## OpenAPI
 

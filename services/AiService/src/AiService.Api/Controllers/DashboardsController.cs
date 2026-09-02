@@ -1,5 +1,5 @@
-using AiService.Application.Services;
-using AiService.Domain.Models;
+using AiService.Api.Application.Services;
+using AiService.Api.Domain.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AiService.Api.Controllers;

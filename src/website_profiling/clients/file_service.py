@@ -11,12 +11,12 @@ from urllib.parse import urlencode
 
 import requests
 
-_DEFAULT_BASE = "http://127.0.0.1:8091"
+_DEFAULT_BASE = "http://127.0.0.1:8094"
 _TIMEOUT_SECONDS = 120
 
 
 def _base_url() -> str:
-    return (os.environ.get("DATA_SERVICE_URL") or _DEFAULT_BASE).strip().rstrip("/")
+    return (os.environ.get("CORE_SERVICE_URL") or os.environ.get("DATA_SERVICE_URL") or _DEFAULT_BASE).strip().rstrip("/")
 
 
 def _get_bytes(path: str, *, params: Optional[dict[str, str]] = None) -> bytes:

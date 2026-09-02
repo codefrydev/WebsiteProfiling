@@ -1,5 +1,5 @@
 using System.Text.Json.Nodes;
-using AiService.Application.Chat;
+using AiService.Api.Application.Chat;
 
 namespace AiService.Tests;
 

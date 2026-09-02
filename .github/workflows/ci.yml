@@ -115,5 +115,5 @@ jobs:
           dotnet tool install -g NSwag.ConsoleCore
           export PATH="$PATH:$HOME/.dotnet/tools"
           (cd services/Bff && nswag run nswag.json)
-          git diff --exit-code services/Bff/src/Bff.Application/Generated/FastApiClient.g.cs \
+          git diff --exit-code services/Bff/src/Bff.Api/Application/Generated/FastApiClient.g.cs \
             || (echo "::error::FastApiClient.g.cs is stale — run services/Bff/generate-client.sh and commit." && exit 1)

@@ -1,5 +1,5 @@
 using System.Text.Json.Nodes;
-using AiService.Tools.Artifacts;
+using ArtifactStore = AiService.Api.Tools.Artifacts.ArtifactStore;
 
 namespace AiService.Tests.Handlers;
 

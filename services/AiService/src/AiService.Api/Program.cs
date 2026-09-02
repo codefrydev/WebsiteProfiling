@@ -1,5 +1,5 @@
 using AiService.Api;
-using AiService.Mcp;
+using AiService.Api.Mcp;
 using WebsiteProfiling.Hosting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -36,4 +36,7 @@ if (McpServerExtensions.IsMcpHttpEnabled())
 
 app.Run();
 
-public partial class Program;
+namespace AiService.Api
+{
+    public partial class Program;
+}

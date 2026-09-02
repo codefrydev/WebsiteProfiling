@@ -2,8 +2,8 @@ using System.Net.Http;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
-using AiService.Domain.Models;
-using AiService.Providers.Chat;
+using AiService.Api.Domain.Models;
+using AiService.Api.Providers.Chat;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
 

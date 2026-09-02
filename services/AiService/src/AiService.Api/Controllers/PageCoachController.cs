@@ -1,4 +1,4 @@
-using AiService.Application.Services;
+using AiService.Api.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AiService.Api.Controllers;

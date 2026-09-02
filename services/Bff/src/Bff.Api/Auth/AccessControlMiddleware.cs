@@ -1,6 +1,6 @@
 using System.Security.Claims;
-using Bff.Application.Options;
-using Bff.Domain;
+using Bff.Api.Application.Options;
+using Bff.Api.Domain;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 

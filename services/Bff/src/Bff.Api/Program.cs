@@ -1,8 +1,8 @@
+using Bff.Api.Application;
 using Bff.Api.Auth;
 using Bff.Api.Endpoints;
 using Bff.Api.Forwarding;
 using Bff.Api.Infrastructure;
-using Bff.Application;
 using Microsoft.AspNetCore.Authentication;
 using WebsiteProfiling.Hosting;
 
@@ -71,4 +71,7 @@ static string[] ResolveCorsOrigins(IConfiguration config)
     return ["http://localhost:3000"];
 }
 
-public partial class Program;
+namespace Bff.Api
+{
+    public partial class Program;
+}

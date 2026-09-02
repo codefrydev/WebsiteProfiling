@@ -1,8 +1,7 @@
 using System.Security.Claims;
 using System.Text.Encodings.Web;
-using Bff.Application.Auth;
-using Bff.Application.Options;
-using Bff.Domain;
+using Bff.Api.Application.Auth;
+using Bff.Api.Application.Options;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Options;
 

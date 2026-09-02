@@ -1,48 +1,20 @@
 <Solution>
   <Folder Name="/shared/">
-    <Project Path="Shared/WebsiteProfiling.Contracts/WebsiteProfiling.Contracts.csproj" />
-    <Project Path="Shared/WebsiteProfiling.TypedConfig/WebsiteProfiling.TypedConfig.csproj" />
+    <Project Path="Shared/WebsiteProfiling.Shared/WebsiteProfiling.Shared.csproj" />
     <Project Path="Shared/WebsiteProfiling.Testing/WebsiteProfiling.Testing.csproj" />
-    <Project Path="Shared/WebsiteProfiling.Data/WebsiteProfiling.Data.csproj" />
-    <Project Path="Shared/WebsiteProfiling.Data.Tests/WebsiteProfiling.Data.Tests.csproj" />
-    <Project Path="Shared/WebsiteProfiling.Data.EntityFrameworkCore/WebsiteProfiling.Data.EntityFrameworkCore.csproj" />
-    <Project Path="Shared/WebsiteProfiling.Hosting/WebsiteProfiling.Hosting.csproj" />
-    <Project Path="Shared/WebsiteProfiling.Contracts.Tests/WebsiteProfiling.Contracts.Tests.csproj" />
+    <Project Path="Shared/WebsiteProfiling.Shared.Tests/WebsiteProfiling.Shared.Tests.csproj" />
   </Folder>
   <Folder Name="/ai-service/">
     <Project Path="AiService/src/AiService.Api/AiService.Api.csproj" />
-    <Project Path="AiService/src/AiService.Application/AiService.Application.csproj" />
-    <Project Path="AiService/src/AiService.Domain/AiService.Domain.csproj" />
-    <Project Path="AiService/src/AiService.Mcp/AiService.Mcp.csproj" />
-    <Project Path="AiService/src/AiService.Providers/AiService.Providers.csproj" />
-    <Project Path="AiService/src/AiService.Tools/AiService.Tools.csproj" />
     <Project Path="AiService/tests/AiService.Tests/AiService.Tests.csproj" />
   </Folder>
   <Folder Name="/bff/">
     <Project Path="Bff/src/Bff.Api/Bff.Api.csproj" />
-    <Project Path="Bff/src/Bff.Application/Bff.Application.csproj" />
-    <Project Path="Bff/src/Bff.Domain/Bff.Domain.csproj" />
     <Project Path="Bff/tests/Bff.Tests/Bff.Tests.csproj" />
   </Folder>
-  <Folder Name="/data/">
-    <Project Path="Data/src/Data.Api/Data.Api.csproj" />
-    <Project Path="Data/src/Data.Application/Data.Application.csproj" />
-    <Project Path="Data/src/Data.Domain/Data.Domain.csproj" />
-    <Project Path="Data/src/Data.Rendering/Data.Rendering.csproj" />
-    <Project Path="Data/tests/Data.Tests/Data.Tests.csproj" />
-  </Folder>
-  <Folder Name="/integrations-service/">
-    <Project Path="IntegrationsService/src/IntegrationsService.Api/IntegrationsService.Api.csproj" />
-    <Project Path="IntegrationsService/src/IntegrationsService.Application/IntegrationsService.Application.csproj" />
-    <Project Path="IntegrationsService/src/IntegrationsService.Domain/IntegrationsService.Domain.csproj" />
-    <Project Path="IntegrationsService/src/IntegrationsService.Providers/IntegrationsService.Providers.csproj" />
-    <Project Path="IntegrationsService/tests/IntegrationsService.Tests/IntegrationsService.Tests.csproj" />
-  </Folder>
-  <Folder Name="/report-service/">
-    <Project Path="ReportService/src/ReportService.Api/ReportService.Api.csproj" />
-    <Project Path="ReportService/src/ReportService.Application/ReportService.Application.csproj" />
-    <Project Path="ReportService/src/ReportService.Domain/ReportService.Domain.csproj" />
-    <Project Path="ReportService/tests/ReportService.Tests/ReportService.Tests.csproj" />
+  <Folder Name="/core-service/">
+    <Project Path="CoreService/src/CoreService.Api/CoreService.Api.csproj" />
+    <Project Path="CoreService/tests/CoreService.Tests/CoreService.Tests.csproj" />
   </Folder>
   <Folder Name="/schema/">
     <Project Path="Schema/src/Schema.Model/Schema.Model.csproj" />
