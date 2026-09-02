@@ -17,8 +17,4 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.2" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Content Include="..\..\..\config\typed_config_manifest.json" Link="config\typed_config_manifest.json" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
-
 </Project>

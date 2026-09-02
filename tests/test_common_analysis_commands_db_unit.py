@@ -144,7 +144,7 @@ def test_detect_tech_wappalyzer_paths(monkeypatch) -> None:
 
     class FakeWapp:
         @staticmethod
-        def latest():
+        def latest(*args, **kwargs):
             return FakeWapp()
 
         def analyze(self, _page):
@@ -184,6 +184,45 @@ def test_detect_tech_wappalyzer_paths(monkeypatch) -> None:
 
     out3 = common.detect_tech_wappalyzer("https://a.com", html, {}, soup, wappalyzer=CleanWapp())
     assert "Vue.js" in out3
+
+
+def test_tech_parsing_branches(monkeypatch) -> None:
+    from pathlib import Path
+    from website_profiling.parsing import tech
+
+    # 1. WAPPALYZER_TECHNOLOGIES_FILE override
+    monkeypatch.setenv("WAPPALYZER_TECHNOLOGIES_FILE", "/custom/tech.json")
+    assert tech._technologies_file_path() == "/custom/tech.json"
+    monkeypatch.delenv("WAPPALYZER_TECHNOLOGIES_FILE", raising=False)
+
+    # 2. Bundled technologies missing
+    monkeypatch.setattr(tech, "_BUNDLED_TECHNOLOGIES", Path("/non/existent/path/tech.json"))
+    assert tech._technologies_file_path() is None
+
+    # 3. _load_wappalyzer_instance when no tech_file
+    class MockWapp:
+        created = 0
+        @classmethod
+        def latest(cls, *args, **kwargs):
+            cls.created += 1
+            return cls()
+
+    monkeypatch.setitem(__import__("sys").modules, "Wappalyzer", types.SimpleNamespace(Wappalyzer=MockWapp))
+    tech.reset_wappalyzer_state()
+    inst1 = tech._load_wappalyzer_instance()
+    # 4. _load_wappalyzer_instance cached instance (hits line 105)
+    inst2 = tech._load_wappalyzer_instance()
+    assert inst1 is inst2
+    assert MockWapp.created == 1
+    tech.reset_wappalyzer_state()
+
+    # 5. parse_tech_stack patterns
+    from bs4 import BeautifulSoup
+    soup_wp = BeautifulSoup('<html><head><meta name="generator" content="Drupal 9" /></head><body><script src="/wp-content/app.js"></script></body></html>', "lxml")
+    res_wp = tech.parse_tech_stack(soup_wp, {"Server": "Apache/2.4"}, "https://a.com")
+    assert "Drupal" in res_wp
+    assert "WordPress" in res_wp
+    assert "Apache" in res_wp
 
 
 def test_reset_wappalyzer_state_clears_cache() -> None:

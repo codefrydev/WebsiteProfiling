@@ -880,54 +880,13 @@ def run_crawler(
     # it via create_crawl_run. Without this, an empty link_edges_accum on a streamed
     # run leaves run_id unbound at the compare_mobile_desktop check.
     run_id: Optional[int] = stream_run_id
-    if output_db and crawler.link_edges_accum:
+    if output_db and crawler.link_edges_accum and run_id is not None:
         from ..db import db_session
         from ..db.crawl_store import write_link_edges
 
-        run_id = stream_run_id
-        if run_id is None:
-            with db_session() as conn:
-                from ..db.crawl_store import get_latest_crawl_run_id
-
-                run_id = get_latest_crawl_run_id(conn)
-        if run_id is not None:
-            with db_session() as conn:
-                write_link_edges(conn, crawler.link_edges_accum, crawl_run_id=run_id)
-    if output_db and not df.empty and stream_run_id is None:
-        console_print("  Writing crawl results to DB...", flush=True)
-        from ..db import backup_db_if_exists, create_crawl_run, db_session, read_historical_data, restore_historical_data, write_crawl
-        from ..db.storage import ensure_crawl_tables_cleared
-        historical = {}
-        backup_path = None
-        if not preserve_crawl_history:
-            historical = read_historical_data()
-            n_reports = len(historical.get("report_payload", []))
-            if n_reports:
-                console_print(f"  Preserving {n_reports} historical report(s) from existing DB...", flush=True)
-            backup_path = backup_db_if_exists()
-            if backup_path:
-                console_print(f"  Backed up existing DB to {backup_path}", flush=True)
         with db_session() as conn:
-            if not preserve_crawl_history:
-                ensure_crawl_tables_cleared(conn)
-            if historical:
-                restore_historical_data(conn, historical)
-            run_id = create_crawl_run(
-                conn, start_url, property_id=property_id, render_mode=render_mode,
-                discovery_mode=disc_label,
-            )
-            write_crawl(conn, df, crawl_run_id=run_id)
-            html_buffer = getattr(crawler, "_html_buffer", None) or []
-            if getattr(crawler, "store_page_html", False) and html_buffer:
-                from ..db.html_store import write_page_html_batch
-
-                write_page_html_batch(conn, html_buffer, run_id, commit=True)
-            if crawler.link_edges_accum:
-                from ..db.crawl_store import write_link_edges
-
-                write_link_edges(conn, crawler.link_edges_accum, crawl_run_id=run_id)
-        console_print("  Crawl DB write complete.", flush=True)
-    elif output_db and stream_run_id is not None:
+            write_link_edges(conn, crawler.link_edges_accum, crawl_run_id=run_id)
+    if output_db and stream_run_id is not None:
         console_print("  Crawl streamed to DB during fetch.", flush=True)
 
     # Second pass: run mobile crawl and pair the two runs via mobile_run_id FK
