@@ -1,8 +1,8 @@
-using AiService.Application.Mcp;
-using AiService.Application.Persistence;
-using AiService.Application.Repositories;
-using AiService.Domain.Entities;
-using AiService.Domain.Models;
+using AiService.Api.Application.Mcp;
+using AiService.Api.Application.Persistence;
+using AiService.Api.Application.Repositories;
+using AiService.Api.Domain.Entities;
+using AiService.Api.Domain.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 

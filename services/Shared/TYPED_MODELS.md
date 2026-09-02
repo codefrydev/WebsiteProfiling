@@ -1,6 +1,6 @@
 # Typed models conventions (.NET services)
 
-Shared contracts live in `services/Shared/WebsiteProfiling.Contracts/`.
+Shared contracts live in `services/Shared/WebsiteProfiling.Shared/Contracts/`.
 
 ## Rules
 
@@ -14,9 +14,8 @@ Shared contracts live in `services/Shared/WebsiteProfiling.Contracts/`.
 
 | Service | Mapper location |
 |---------|-----------------|
-| AiService tools | `AiService.Tools/Mapping/` |
-| Data | `Data.Application/Mapping/` (`PayloadSliceMapper`, `AuditReportMapper`, `ChapterMappers` — the latter two absorbed from the former FileService) |
-| IntegrationsService | `IntegrationsService.Application/Google/PageLookupMapper.cs` |
+| AiService | `src/AiService.Api/Tools/Mapping/` |
+| CoreService | `src/CoreService.Api/DataApplication/Mapping/` (`PayloadSliceMapper`, `AuditReportMapper`, `ChapterMappers`), `src/CoreService.Api/IntegrationsApplication/Google/PageLookupMapper.cs` |
 
 ## Coercion
 

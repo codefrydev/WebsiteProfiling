@@ -1,6 +1,7 @@
-using AiService.Domain.Models;
-using AiService.Domain.Repositories;
-using AiService.Tools.Services.Citations;
+using AiService.Api.Domain.Models;
+using AiService.Api.Domain.Repositories;
+using AiService.Api.Tools.Services.Citations;
+using CitationCheckService = AiService.Api.Tools.Services.Citations.CitationCheckService;
 
 namespace AiService.Tests;
 

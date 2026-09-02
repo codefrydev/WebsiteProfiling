@@ -1,5 +1,5 @@
 using System.Text.Json.Nodes;
-using AiService.Tools.Slice;
+using AiService.Api.Tools.Slice;
 
 namespace AiService.Tests;
 

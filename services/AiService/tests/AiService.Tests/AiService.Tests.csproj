@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -23,9 +23,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Testing\WebsiteProfiling.Testing.csproj" />
     <ProjectReference Include="..\..\src\AiService.Api\AiService.Api.csproj" />
-    <ProjectReference Include="..\..\src\AiService.Application\AiService.Application.csproj" />
-    <ProjectReference Include="..\..\src\AiService.Tools\AiService.Tools.csproj" />
-    <ProjectReference Include="..\..\src\AiService.Mcp\AiService.Mcp.csproj" />
   </ItemGroup>
 
 </Project>

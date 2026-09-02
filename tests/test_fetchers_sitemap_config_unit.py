@@ -490,3 +490,22 @@ def test_browser_diagnostics_aggregate_empty_df():
 
     assert aggregate_browser_diagnostics_df(None) == {}
     assert aggregate_browser_diagnostics_df(pd.DataFrame()) == {}
+
+
+def test_browser_diagnostics_aggregate_failed_requests_and_page_error_skips():
+    from website_profiling.crawl.fetchers.browser_diagnostics import aggregate_browser_diagnostics_df
+
+    pa = json.dumps(
+        {
+            "browser": {
+                "failed_requests": [{"url": "https://a.com/fail"}],
+                "page_errors": ["not-a-dict", {"message": "  "}, {"message": "real error"}],
+            }
+        }
+    )
+    df = pd.DataFrame([{"url": "https://a.com", "page_analysis": pa}])
+    agg = aggregate_browser_diagnostics_df(df)
+    assert agg["pages_with_failed_requests"] == 1
+    assert agg["total_failed_requests"] == 1
+    assert agg["pages_with_page_errors"] == 1
+    assert agg["top_page_errors"][0]["text"] == "real error"

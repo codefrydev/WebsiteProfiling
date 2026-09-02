@@ -617,7 +617,7 @@ def test_run_crawler_streaming_db_path(monkeypatch):
 
     class FakeCrawler:
         def __init__(self, **_kwargs):
-            self.link_edges_accum = []
+            self.link_edges_accum = [("https://a.com", "https://b.com", "link")]
 
         def crawl(self, **_kwargs):
             return pd.DataFrame([{"url": "https://a.com", "status": 200}])
@@ -638,8 +638,10 @@ def test_run_crawler_streaming_db_path(monkeypatch):
         restore_historical_data=lambda *_a, **_k: None,
     )
     fake_storage = types.SimpleNamespace(ensure_crawl_tables_cleared=lambda *_a, **_k: None)
+    fake_crawl_store = types.SimpleNamespace(write_link_edges=lambda *_a, **_k: None)
     monkeypatch.setitem(__import__("sys").modules, "website_profiling.db", fake_db)
     monkeypatch.setitem(__import__("sys").modules, "website_profiling.db.storage", fake_storage)
+    monkeypatch.setitem(__import__("sys").modules, "website_profiling.db.crawl_store", fake_crawl_store)
 
     df, _ = mod.run_crawler("https://a.com", output_db=True, crawl_stream_to_db=True, show_progress=False)
     assert not df.empty

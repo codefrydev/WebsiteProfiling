@@ -1,4 +1,4 @@
-using AiService.Tools.Registry;
+using AiService.Api.Tools.Registry;
 
 namespace AiService.Tests;
 

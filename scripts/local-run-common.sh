@@ -36,21 +36,29 @@ start_host_dotnet_base() {
   local root="$1"
   local mode="${2:-Development}"
 
-  export REPORT_API_URL="${REPORT_API_URL:-http://127.0.0.1:8096}"
+  export CORE_SERVICE_URL="${CORE_SERVICE_URL:-http://127.0.0.1:8094}"
+  export REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-$CORE_SERVICE_URL}"
+  export DATA_SERVICE_URL="${DATA_SERVICE_URL:-$CORE_SERVICE_URL}"
+  export INTEGRATIONS_SERVICE_URL="${INTEGRATIONS_SERVICE_URL:-$CORE_SERVICE_URL}"
   export AI_SERVICE_URL="${AI_SERVICE_URL:-http://127.0.0.1:8092}"
-  export INTEGRATIONS_SERVICE_URL="${INTEGRATIONS_SERVICE_URL:-http://127.0.0.1:8093}"
-  export REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-http://127.0.0.1:8094}"
 
-  free_port 8091
-  printf '\033[1;36m→\033[0m Starting Data service on port 8091\n'
-  (cd "$root/services/Data" && \
+  free_port 8094
+  printf '\033[1;36m→\033[0m Starting CoreService on port 8094\n'
+  (cd "$root/services/CoreService" && \
     DATABASE_URL="$DATABASE_URL" \
+    FASTAPI_URL="http://127.0.0.1:8096" \
+    AI_SERVICE_URL="$AI_SERVICE_URL" \
     WEBSITE_PROFILING_ROOT="$root" \
-    REPORT_API_URL="$REPORT_API_URL" \
-    ASPNETCORE_URLS="http://127.0.0.1:8091" \
+    DATA_DIR="${DATA_DIR:-$root/data}" \
+    PYTHON="${PYTHON:-$root/.venv/bin/python}" \
+    REPORT_SERVICE_USE_PYTHON_BRIDGE="${REPORT_SERVICE_USE_PYTHON_BRIDGE:-0}" \
+    REPORT_SERVICE_VALIDATE_NATIVE="${REPORT_SERVICE_VALIDATE_NATIVE:-1}" \
+    REPORT_SERVICE_WORKER_ENABLED="${REPORT_SERVICE_WORKER_ENABLED:-1}" \
+    USE_FASTAPI_PYTHON_BRIDGE="${USE_FASTAPI_PYTHON_BRIDGE:-1}" \
+    ASPNETCORE_URLS="http://127.0.0.1:8094" \
     ASPNETCORE_ENVIRONMENT="$mode" \
-    dotnet run --project src/Data.Api --no-launch-profile) &
-  DATA_PID=$!
+    dotnet run --project src/CoreService.Api --no-launch-profile) &
+  CORE_PID=$!
 
   free_port 8092
   printf '\033[1;36m→\033[0m Starting AiService on port 8092\n'
@@ -63,61 +71,26 @@ start_host_dotnet_base() {
     dotnet run --project src/AiService.Api --no-launch-profile) &
   AI_PID=$!
 
-  wait_for_http "http://127.0.0.1:8091/health" "Data service"
+  wait_for_http "http://127.0.0.1:8094/health" "CoreService"
   wait_for_http "http://127.0.0.1:8092/health" "AiService"
 }
 
 start_host_report_service() {
-  local root="$1"
-  local mode="${2:-Development}"
-
-  free_port 8094
-  printf '\033[1;36m→\033[0m Starting ReportService on port 8094\n'
-  (cd "$root/services/ReportService" && \
-    DATABASE_URL="$DATABASE_URL" \
-    FASTAPI_URL="http://127.0.0.1:8096" \
-    INTEGRATIONS_SERVICE_URL="$INTEGRATIONS_SERVICE_URL" \
-    AISERVICE_URL="${AISERVICE_URL:-${AI_SERVICE_URL:-http://127.0.0.1:8092}}" \
-    WEBSITE_PROFILING_ROOT="$root" \
-    DATA_DIR="${DATA_DIR:-$root/data}" \
-    PYTHON="${PYTHON:-$root/.venv/bin/python}" \
-    REPORT_SERVICE_USE_PYTHON_BRIDGE="${REPORT_SERVICE_USE_PYTHON_BRIDGE:-0}" \
-    REPORT_SERVICE_VALIDATE_NATIVE="${REPORT_SERVICE_VALIDATE_NATIVE:-1}" \
-    REPORT_SERVICE_WORKER_ENABLED="${REPORT_SERVICE_WORKER_ENABLED:-1}" \
-    ASPNETCORE_URLS="http://127.0.0.1:8094" \
-    ASPNETCORE_ENVIRONMENT="$mode" \
-    dotnet run --project src/ReportService.Api --no-launch-profile) &
-  REPORT_PID=$!
-  wait_for_http "http://127.0.0.1:8094/health" "ReportService"
+  : # No-op: absorbed into start_host_dotnet_base (CoreService on port 8094)
 }
 
 start_host_integrations_bff() {
   local root="$1"
   local mode="${2:-Development}"
 
-  free_port 8093
-  printf '\033[1;36m→\033[0m Starting IntegrationsService on port 8093\n'
-  (cd "$root/services/IntegrationsService" && \
-    DATABASE_URL="$DATABASE_URL" \
-    FASTAPI_URL="http://127.0.0.1:8096" \
-    USE_FASTAPI_PYTHON_BRIDGE="${USE_FASTAPI_PYTHON_BRIDGE:-1}" \
-    ASPNETCORE_URLS="http://127.0.0.1:8093" \
-    ASPNETCORE_ENVIRONMENT="$mode" \
-    AUTH_SECRET="${AUTH_SECRET:-}" \
-    SESSION_SECRET="${SESSION_SECRET:-}" \
-    GOOGLE_REDIRECT_URI="${GOOGLE_REDIRECT_URI:-http://localhost:8090/api/integrations/google/callback}" \
-    APP_PUBLIC_URL="${APP_PUBLIC_URL:-http://localhost:3000}" \
-    dotnet run --project src/IntegrationsService.Api --no-launch-profile) &
-  INTEGRATIONS_PID=$!
-  wait_for_http "http://127.0.0.1:8093/health" "IntegrationsService"
-
   free_port 8090
   printf '\033[1;36m→\033[0m Starting BFF on port 8090\n'
   (cd "$root/services/Bff" && \
     FASTAPI_URL="http://127.0.0.1:8096" \
-    DATA_SERVICE_URL="http://127.0.0.1:8091" \
+    CORE_SERVICE_URL="${CORE_SERVICE_URL:-http://127.0.0.1:8094}" \
+    DATA_SERVICE_URL="${DATA_SERVICE_URL:-http://127.0.0.1:8094}" \
     AI_SERVICE_URL="$AI_SERVICE_URL" \
-    INTEGRATIONS_SERVICE_URL="$INTEGRATIONS_SERVICE_URL" \
+    INTEGRATIONS_SERVICE_URL="${INTEGRATIONS_SERVICE_URL:-http://127.0.0.1:8094}" \
     REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-http://127.0.0.1:8094}" \
     REPORT_ROUTES="${REPORT_ROUTES:-/api/compare,/api/dashboards,/api/run,/api/jobs,/api/schedule,/api/crawl,/api/pipeline-preview}" \
     DATA_ROUTES="${DATA_ROUTES:-/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters,/api/properties,/api/content-drafts,/api/content/score,/api/keywords,/api/page-markdown,/api/alerts,/api/logs,/api/backlinks,/api/pipeline-settings,/api/ui-preferences,/api/client-preferences}" \
@@ -139,7 +112,6 @@ start_host_dotnet_stack() {
   local root="$1"
   local mode="${2:-Development}"
   start_host_dotnet_base "$root" "$mode"
-  start_host_report_service "$root" "$mode"
   start_host_integrations_bff "$root" "$mode"
 }
 
@@ -147,12 +119,8 @@ stop_host_dotnet_stack() {
   local stop_service_fn="$1"
   "$stop_service_fn" "BFF" "${BFF_PID:-}" 8090
   BFF_PID=""
-  "$stop_service_fn" "IntegrationsService" "${INTEGRATIONS_PID:-}" 8093
-  INTEGRATIONS_PID=""
-  "$stop_service_fn" "ReportService" "${REPORT_PID:-}" 8094
-  REPORT_PID=""
+  "$stop_service_fn" "CoreService" "${CORE_PID:-}" 8094
+  CORE_PID=""
   "$stop_service_fn" "AiService" "${AI_PID:-}" 8092
   AI_PID=""
-  "$stop_service_fn" "Data" "${DATA_PID:-}" 8091
-  DATA_PID=""
 }

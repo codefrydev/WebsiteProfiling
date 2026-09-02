@@ -1,7 +1,6 @@
 using System.Text.Json.Nodes;
-using AiService.Application.Repositories;
-using AiService.Domain.Repositories;
-using AiService.Providers.Chat;
+using AiService.Api.Domain.Repositories;
+using AiService.Api.Providers.Chat;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AiService.Api.Controllers.Internal;

@@ -62,6 +62,10 @@ def test_llm_cache_roundtrip_parsing() -> None:
     assert read_llm_cache(conn, "k") == '{"a": 1}'  # type: ignore[arg-type]
 
     conn = FakeConn()
+    conn.set_next_cursor(FakeCursor(fetchone_value={"response_json": None}))
+    assert read_llm_cache(conn, "k") is None  # type: ignore[arg-type]
+
+    conn = FakeConn()
     conn.set_next_cursor(
         FakeCursor(
             fetchall_value=[

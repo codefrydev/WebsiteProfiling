@@ -1,3 +1,4 @@
+using Bff.Api;
 using Bff.Api.Forwarding;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;

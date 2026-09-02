@@ -14,7 +14,7 @@ public sealed class McpToolsControllerTests
         using var env = ServiceRegistrationTestEnvironment.Push();
         env.SetDefaultsForPostgresServices();
 
-        await using var factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
+        await using var factory = new WebApplicationFactory<Api.Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Development");
         });

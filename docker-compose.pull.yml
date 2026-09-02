@@ -54,7 +54,8 @@ services:
       FASTAPI_ALLOWED_ORIGINS: "http://localhost:8090"
       DEPRECATE_PYTHON_INTEGRATIONS: "1"
       DEPRECATE_PYTHON_REPORT_ROUTES: "1"
-      REPORT_SERVICE_URL: http://report:8094
+      CORE_SERVICE_URL: http://core:8094
+      REPORT_SERVICE_URL: http://core:8094
     volumes:
       - profiling-data:/data
     healthcheck:
@@ -64,16 +65,25 @@ services:
       retries: 3
       start_period: 30s
 
-  data:
-    container_name: wp-data
+  core:
+    container_name: wp-core
     build:
       context: .
-      dockerfile: services/Data/Dockerfile
+      dockerfile: services/CoreService/Dockerfile
+    ports:
+      - "8094:8094"
     environment:
       DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
-      ASPNETCORE_URLS: http://+:8091
+      ASPNETCORE_URLS: http://+:8094
+      FASTAPI_URL: http://fastapi:8096
+      AI_SERVICE_URL: http://ai:8092
       WEBSITE_PROFILING_ROOT: /app
-      REPORT_API_URL: http://fastapi:8096
+      REPORT_SERVICE_USE_PYTHON_BRIDGE: "0"
+      USE_FASTAPI_PYTHON_BRIDGE: "1"
+      REPORT_SERVICE_WORKER_ENABLED: "1"
+      AUTH_SECRET: ${AUTH_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:8090/api/integrations/google/callback}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:3000}
     depends_on:
       postgres:
         condition: service_healthy
@@ -82,11 +92,11 @@ services:
       fastapi:
         condition: service_started
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8091/health"]
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8094/health"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 15s
+      start_period: 20s
 
   ai:
     container_name: wp-ai
@@ -111,62 +121,6 @@ services:
       retries: 3
       start_period: 20s
 
-  integrations:
-    container_name: wp-integrations
-    build:
-      context: ./services
-      dockerfile: IntegrationsService/Dockerfile
-    environment:
-      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
-      ASPNETCORE_URLS: http://+:8093
-      FASTAPI_URL: http://fastapi:8096
-      USE_FASTAPI_PYTHON_BRIDGE: "1"
-      AUTH_SECRET: ${AUTH_SECRET:-}
-      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:8090/api/integrations/google/callback}
-      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:3000}
-    depends_on:
-      postgres:
-        condition: service_healthy
-      migrator:
-        condition: service_completed_successfully
-      fastapi:
-        condition: service_started
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8093/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
-
-  report:
-    container_name: wp-report
-    build:
-      context: .
-      dockerfile: services/ReportService/Dockerfile
-    environment:
-      DATABASE_URL: postgres://profiling:profiling@postgres:5432/website_profiling
-      ASPNETCORE_URLS: http://+:8094
-      FASTAPI_URL: http://fastapi:8096
-      INTEGRATIONS_SERVICE_URL: http://integrations:8093
-      REPORT_SERVICE_USE_PYTHON_BRIDGE: "0"
-      USE_FASTAPI_PYTHON_BRIDGE: "1"
-      REPORT_SERVICE_WORKER_ENABLED: "1"
-    depends_on:
-      postgres:
-        condition: service_healthy
-      migrator:
-        condition: service_completed_successfully
-      fastapi:
-        condition: service_started
-      integrations:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8094/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-      start_period: 20s
-
   bff:
     container_name: wp-bff
     build:
@@ -176,10 +130,11 @@ services:
       - "8090:8090"
     environment:
       FASTAPI_URL: http://fastapi:8096
-      DATA_SERVICE_URL: http://data:8091
+      CORE_SERVICE_URL: http://core:8094
+      DATA_SERVICE_URL: http://core:8094
       AI_SERVICE_URL: http://ai:8092
-      INTEGRATIONS_SERVICE_URL: http://integrations:8093
-      REPORT_SERVICE_URL: http://report:8094
+      INTEGRATIONS_SERVICE_URL: http://core:8094
+      REPORT_SERVICE_URL: http://core:8094
       REPORT_ROUTES: "/api/compare,/api/dashboards,/api/run,/api/jobs,/api/schedule,/api/crawl,/api/pipeline-preview"
       BFF_ALLOWED_ORIGINS: "http://localhost:3000"
       DATA_ROUTES: "/api/report/meta,/api/report/payload,/api/report/history,/api/report/crawl-payload,/api/report/mobile-delta,/api/report/portfolio,/api/portfolio,/api/issues/status,/api/filters,/api/properties,/api/content-drafts,/api/content/score,/api/keywords,/api/page-markdown,/api/alerts,/api/logs,/api/backlinks,/api/pipeline-settings,/api/ui-preferences,/api/client-preferences"
@@ -188,13 +143,9 @@ services:
     depends_on:
       fastapi:
         condition: service_started
-      data:
+      core:
         condition: service_healthy
       ai:
-        condition: service_healthy
-      integrations:
-        condition: service_healthy
-      report:
         condition: service_healthy
 
   web:

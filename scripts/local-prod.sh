@@ -140,7 +140,7 @@ cmd_start() {
   log "DATABASE_URL=$DATABASE_URL"
   log "DATA_DIR=$DATA_DIR"
   log "VITE_BFF_BASE_URL=$VITE_BFF_BASE_URL"
-  log "INTEGRATIONS_SERVICE_URL=${INTEGRATIONS_SERVICE_URL:-http://127.0.0.1:8093}"
+  log "CORE_SERVICE_URL=${CORE_SERVICE_URL:-http://127.0.0.1:8094}"
   cd "$ROOT"
   export DATABASE_URL DATA_DIR PYTHON WEBSITE_PROFILING_ROOT PYTHONPATH NODE_ENV
   export VITE_BFF_BASE_URL DEPRECATE_PYTHON_INTEGRATIONS USE_FASTAPI_PYTHON_BRIDGE
@@ -148,6 +148,9 @@ cmd_start() {
   WORKER_PID=""
   UVICORN_PID=""
   NPM_PID=""
+  CORE_PID=""
+  AI_PID=""
+  BFF_PID=""
   _CLEANUP_DONE=0
   set +m
 
@@ -174,19 +177,19 @@ cmd_start() {
   trap cleanup_prod EXIT INT TERM
 
   start_host_dotnet_base "$ROOT" Production
-  start_host_report_service "$ROOT" Production
-  disown_bg "$DATA_PID"
+  disown_bg "$CORE_PID"
   disown_bg "$AI_PID"
-  disown_bg "$REPORT_PID"
 
+  export CORE_SERVICE_URL="${CORE_SERVICE_URL:-http://127.0.0.1:8094}"
   export AI_SERVICE_URL="${AI_SERVICE_URL:-http://127.0.0.1:8092}"
-  export INTEGRATIONS_SERVICE_URL="${INTEGRATIONS_SERVICE_URL:-http://127.0.0.1:8093}"
-  export REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-http://127.0.0.1:8094}"
+  export INTEGRATIONS_SERVICE_URL="${INTEGRATIONS_SERVICE_URL:-$CORE_SERVICE_URL}"
+  export REPORT_SERVICE_URL="${REPORT_SERVICE_URL:-$CORE_SERVICE_URL}"
+  export DATA_SERVICE_URL="${DATA_SERVICE_URL:-$CORE_SERVICE_URL}"
   export PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE="${PIPELINE_ORCHESTRATE_VIA_REPORT_SERVICE:-1}"
   export PYTHON="${PYTHON:-$ROOT/.venv/bin/python}"
   export WEBSITE_PROFILING_ROOT="$ROOT"
 
-  log "Pipeline jobs run in ReportService C# worker"
+  log "Pipeline jobs run in CoreService C# worker"
   log "Starting Python bridge (audit-tool + keyword enrich CLI) on port 8096"
   export FASTAPI_URL="http://127.0.0.1:8096"
   export FASTAPI_ALLOWED_ORIGINS="http://localhost:8090"
@@ -197,7 +200,6 @@ cmd_start() {
   wait_for_http "http://127.0.0.1:8096/api/health" "FastAPI" 90 || die "FastAPI failed to start"
 
   start_host_integrations_bff "$ROOT" Production
-  disown_bg "$INTEGRATIONS_PID"
   disown_bg "$BFF_PID"
 
   cd "$WEB"

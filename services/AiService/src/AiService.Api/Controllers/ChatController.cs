@@ -1,13 +1,13 @@
 using System.Text.Json.Nodes;
 using System.Threading.Channels;
-using AiService.Application.Chat;
-using AiService.Application.Dto;
-using AiService.Application.Services;
-using AiService.Domain;
-using AiService.Domain.Repositories;
-using AiService.Tools.Artifacts;
-using AiService.Tools.Context;
+using AiService.Api.Application.Chat;
+using AiService.Api.Application.Dto;
+using AiService.Api.Application.Services;
+using AiService.Api.Domain;
+using AiService.Api.Domain.Repositories;
+using AiService.Api.Tools.Context;
 using Microsoft.AspNetCore.Mvc;
+using ArtifactStore = AiService.Api.Tools.Artifacts.ArtifactStore;
 
 namespace AiService.Api.Controllers;
 

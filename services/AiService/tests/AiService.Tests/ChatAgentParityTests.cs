@@ -1,9 +1,9 @@
 using System.Text.Json.Nodes;
-using AiService.Application.Chat;
-using AiService.Application.Prompts;
-using AiService.Domain.Models;
-using AiService.Tools.Domain;
-using AiService.Tools.Selection;
+using AiService.Api.Application.Chat;
+using AiService.Api.Application.Prompts;
+using AiService.Api.Domain.Models;
+using AiService.Api.Tools.Domain;
+using AiService.Api.Tools.Selection;
 
 namespace AiService.Tests;
 

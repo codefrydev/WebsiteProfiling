@@ -26,6 +26,8 @@ def test_site_health_score_from_categories_weighted_fixture() -> None:
         {"id": "intelligence", "score": 0},
     ]
     assert site_health_score_from_categories(categories) == 70
+    assert site_health_score_from_categories(["not-a-dict"]) is None
+    assert site_health_score_from_categories([]) is None
 
 
 def test_site_health_score_from_payload_prefers_summary() -> None:
@@ -35,3 +37,6 @@ def test_site_health_score_from_payload_prefers_summary() -> None:
         "categories": [{"id": "technical_seo", "score": 10}],
     }
     assert site_health_score_from_payload(payload) == 72
+    assert site_health_score_from_payload({"site_health_score": 65}) == 65
+    assert site_health_score_from_payload({"categories": [{"id": "technical_seo", "score": 80}]}) == 80
+    assert site_health_score_from_payload({}) is None

@@ -259,16 +259,18 @@ docker compose -f docker-compose.pull.yml up   # pre-built WEB_IMAGE
 
 Do not run the application container in isolation with `docker run` unless you provide a reachable `DATABASE_URL` whose schema has already been migrated (e.g. `docker compose run migrator`).
 
-### Data service (report reads, typed config, PDF/Excel export)
+### CoreService (reports, data reads, exports, Google/Bing integrations)
 
-The `data` service (port **8091**) reads report payloads, portfolio, issue status, and typed config (pipeline settings, UI/client preferences) directly from Postgres, and renders audit PDFs, Excel workbooks, CSV/JSON, and sitemaps at `/v1/reports/*` (formerly a separate FileService, now `Data.Rendering`/`ReportExportController`).
+The `core` service (port **8094**) unifies report build and orchestration, direct Postgres reads (report payloads, portfolio, issue status, saved filters, typed config), Google/Bing integrations and OAuth, and audit PDF, Excel workbook, CSV/JSON, and sitemap rendering at `/v1/reports/*`.
 
 | Variable | Service | Purpose |
 |----------|---------|---------|
-| `DATA_SERVICE_URL` | `bff`, MCP | Where clients call the Data service (default `http://data:8091` in Compose) |
-| `REPORT_API_URL` | `data` | Branding/logo lookup base URL for PDF exports (Compose: `http://fastapi:8096`) |
+| `CORE_SERVICE_URL` | `bff`, `worker` | Where clients call the Core service (default `http://core:8094` in Compose) |
+| `DATA_SERVICE_URL` | `bff`, MCP | Aliased to `CORE_SERVICE_URL` for backward compatibility |
+| `REPORT_SERVICE_URL` | `bff`, `worker` | Aliased to `CORE_SERVICE_URL` for report build and orchestration |
+| `INTEGRATIONS_SERVICE_URL` | `bff`, `worker` | Aliased to `CORE_SERVICE_URL` for Google/Bing integrations |
 
-PDF or workbook downloads fail if `data` is not running.
+PDF or workbook downloads fail if `core` is not running.
 
 ---
 

@@ -1,6 +1,6 @@
 using System.Net.Http;
 using System.Net.Sockets;
-using AiService.Providers.Chat;
+using AiService.Api.Providers.Chat;
 
 namespace AiService.Tests;
 

@@ -1,8 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
-using Bff.Application.Auth;
-using Bff.Application.Options;
-using Bff.Domain;
+using Bff.Api.Application.Auth;
+using Bff.Api.Application.Options;
+using Bff.Api.Domain;
 using Microsoft.Extensions.Options;
 
 namespace Bff.Api.Endpoints;

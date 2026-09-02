@@ -1,7 +1,7 @@
-using AiService.Domain.Models;
-using AiService.Tools.Domain;
-using AiService.Tools.Registry;
-using AiService.Tools.Selection;
+using AiService.Api.Domain.Models;
+using AiService.Api.Tools.Domain;
+using AiService.Api.Tools.Registry;
+using AiService.Api.Tools.Selection;
 
 namespace AiService.Tests;
 

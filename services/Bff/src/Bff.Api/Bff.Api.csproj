@@ -1,10 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Hosting\WebsiteProfiling.Hosting.csproj" />
-    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Contracts\WebsiteProfiling.Contracts.csproj" />
-    <ProjectReference Include="..\Bff.Application\Bff.Application.csproj" />
-    <ProjectReference Include="..\Bff.Domain\Bff.Domain.csproj" />
+    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Shared\WebsiteProfiling.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

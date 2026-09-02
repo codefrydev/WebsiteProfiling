@@ -193,27 +193,23 @@
         };
 
         const nodesData = [
-            // Top — browser stack, centred on x=650
+            // Top — browser stack, centred on x=560
             { id: 'browser', label: 'Browser', sub: 'Client',             x: 560, y:  40, type: 'client',   desc: 'End-user web browser interacting with the application.' },
             { id: 'web',     label: 'Web',     sub: ':3000 • React SPA',  x: 560, y: 160, type: 'frontend', desc: 'Main frontend single-page application built in React.' },
             { id: 'bff',     label: 'BFF',     sub: ':8090 • Auth • Proxy', x: 560, y: 290, type: 'gateway', desc: 'Backend-for-Frontend serving as the entry point. Handles authentication, CORS, and reverse proxy routing.' },
             // MCP to the right of BFF
-            { id: 'mcp',     label: 'MCP',     sub: 'IDE / Agent',        x: 980, y: 290, type: 'client',   desc: 'Model Context Protocol or Machine Control client interacting with the AI subsystem via stdio or HTTP.' },
+            { id: 'mcp',     label: 'MCP',     sub: 'IDE / Agent',        x: 920, y: 290, type: 'client',   desc: 'Model Context Protocol client interacting with the AI subsystem via stdio or HTTP (369 audit tools).' },
 
-            // Services row — 5 nodes, 200 px apart, centred under BFF
-            // ConfigService and FileService were both merged into Data (typed config +
-            // PDF/Excel/CSV/JSON/sitemap export).
-            // span = 4 × 200 = 800 → start at 650 − 400 = 250... (kept fastapi anchor at 50)
-            { id: 'fastapi',      label: 'FastAPI',      sub: ':8096 • Crawl/Jobs',  x:  50, y: 470, type: 'service', desc: 'Core Python service handling crawling and jobs. Acts as the strangler proxy target.' },
-            { id: 'report',       label: 'Report',       sub: ':8094 • Build',       x: 250, y: 470, type: 'service', desc: 'Service dedicated to report building and orchestrating complex multi-step processes.' },
-            { id: 'integrations', label: 'Integrations', sub: ':8093 • APIs',        x: 450, y: 470, type: 'service', desc: 'Manages third-party connections including Google/Bing APIs, GSC, GA4, and keyword processing.' },
-            { id: 'ai',           label: 'AI',           sub: ':8092 • Chat/LLM',    x: 650, y: 470, type: 'service', desc: 'AI orchestration service managing chat interfaces, LLM connections, secrets, and MCP.' },
-            { id: 'data',         label: 'Data',         sub: ':8091 • Portfolio · Config · Export', x: 850, y: 470, type: 'service', desc: 'Data access layer for report reads, portfolio management, system issue tracking, typed configuration (pipeline settings, UI/client preferences), and PDF/Excel/CSV/JSON/sitemap report export — absorbed the former ConfigService and FileService.' },
+            // Services row — 3 unified services, 360 px apart, centred under BFF
+            // CoreService consolidates Report, Data, and Integrations (reports + pipeline + direct Postgres reads/exports + Google/Bing APIs).
+            { id: 'fastapi', label: 'FastAPI', sub: ':8096 • Crawl/Jobs/Bridge', x: 200, y: 470, type: 'service', desc: 'Core Python service handling crawling, Lighthouse, and pipeline jobs. Acts as the strangler proxy target and CLI bridge.' },
+            { id: 'core',    label: 'Core',    sub: ':8094 • Reports · Data · APIs', x: 560, y: 470, type: 'service', desc: 'Unified .NET backend consolidating report generation & pipeline orchestration, direct Postgres data access & PDF/Excel exports, and Google/Bing integrations.' },
+            { id: 'ai',      label: 'AI',      sub: ':8092 • Chat/LLM/MCP',        x: 920, y: 470, type: 'service', desc: 'AI orchestration service managing chat interfaces, LLM connections, secrets writes, and 369 MCP tools.' },
 
-            // Middle-lower row — Worker under FastAPI/Report, external services under Integrations/AI
-            { id: 'worker', label: 'Worker', sub: 'Crawl + Lighthouse', x: 150, y: 660, type: 'worker',   desc: 'Background asynchronous pipeline worker executing heavy crawl and Lighthouse audit jobs.' },
-            { id: 'google', label: 'Google / Bing APIs', sub: 'External', x: 450, y: 660, type: 'external', desc: 'External search and analytics APIs consumed by the Integrations service.' },
-            { id: 'llm',    label: 'LLM',    sub: 'Ollama',             x: 650, y: 660, type: 'external', desc: 'Large Language Model provider, heavily utilized for text and chat generation.' },
+            // Middle-lower row — Worker under FastAPI, Google under Core, LLM under AI
+            { id: 'worker', label: 'Worker', sub: 'Crawl + Lighthouse', x: 200, y: 660, type: 'worker',   desc: 'Background asynchronous pipeline worker executing heavy crawl and Lighthouse audit jobs.' },
+            { id: 'google', label: 'Google / Bing APIs', sub: 'External', x: 560, y: 660, type: 'external', desc: 'External search and analytics APIs consumed by CoreService.' },
+            { id: 'llm',    label: 'LLM',    sub: 'Ollama',             x: 920, y: 660, type: 'external', desc: 'Large Language Model provider, heavily utilized for text and chat generation.' },
 
             // Bottom — Postgres centred
             { id: 'postgres', label: 'Postgres', sub: 'Audit • Settings', x: 560, y: 860, type: 'database', desc: 'Primary relational data store holding audit data and typed system settings.' },
@@ -223,31 +219,23 @@
             { id: 'e1', source: 'browser', target: 'web' },
             { id: 'e2', source: 'web', target: 'bff', label: '"/api/*"' },
             { id: 'e3', source: 'bff', target: 'fastapi' },
-            { id: 'e4', source: 'bff', target: 'report' },
-            { id: 'e5', source: 'bff', target: 'integrations' },
-            { id: 'e6', source: 'bff', target: 'ai' },
-            { id: 'e7', source: 'bff', target: 'data' },
+            { id: 'e4', source: 'bff', target: 'core' },
+            { id: 'e5', source: 'bff', target: 'ai' },
 
-            { id: 'e9', source: 'worker', target: 'report', label: 'REPORT_SERVICE_URL' },
-            { id: 'e10', source: 'worker', target: 'integrations', label: 'INTEGRATIONS_SERVICE_URL' },
-            { id: 'e11', source: 'worker', target: 'ai', label: 'AI_SERVICE_URL' },
+            { id: 'e6', source: 'worker', target: 'core', label: 'CORE_SERVICE_URL' },
+            { id: 'e7', source: 'worker', target: 'ai', label: 'AI_SERVICE_URL' },
             
-            { id: 'e12', source: 'report', target: 'fastapi', label: 'Python bridge', dashed: true },
-            { id: 'e13', source: 'report', target: 'integrations', label: 'GET enrichment', dashed: true },
-            { id: 'e14', source: 'integrations', target: 'fastapi', label: 'keyword/GSC bridge', dashed: true },
-            { id: 'e15', source: 'ai', target: 'fastapi', label: 'audit-tool bridge', dashed: true },
-            { id: 'e16', source: 'data', target: 'fastapi', label: 'branding lookup', dashed: true },
+            { id: 'e8', source: 'core', target: 'fastapi', label: 'Python bridge', dashed: true },
+            { id: 'e9', source: 'ai', target: 'fastapi', label: 'audit-tool bridge', dashed: true },
             
-            { id: 'e17', source: 'fastapi', target: 'postgres' },
-            { id: 'e18', source: 'worker', target: 'postgres' },
-            { id: 'e19', source: 'report', target: 'postgres' },
-            { id: 'e20', source: 'integrations', target: 'postgres' },
-            { id: 'e21', source: 'ai', target: 'postgres' },
-            { id: 'e22', source: 'data', target: 'postgres' },
+            { id: 'e10', source: 'fastapi', target: 'postgres' },
+            { id: 'e11', source: 'worker', target: 'postgres' },
+            { id: 'e12', source: 'core', target: 'postgres' },
+            { id: 'e13', source: 'ai', target: 'postgres' },
             
-            { id: 'e23', source: 'integrations', target: 'google' },
-            { id: 'e24', source: 'ai', target: 'llm' },
-            { id: 'e25', source: 'mcp', target: 'ai', label: 'MCP stdio/HTTP', dashed: true },
+            { id: 'e14', source: 'core', target: 'google' },
+            { id: 'e15', source: 'ai', target: 'llm' },
+            { id: 'e16', source: 'mcp', target: 'ai', label: 'MCP stdio/HTTP', dashed: true },
         ];
 
         let transform = { x: 0, y: 0, scale: 0.8 };

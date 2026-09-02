@@ -22,8 +22,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Testing\WebsiteProfiling.Testing.csproj" />
     <ProjectReference Include="..\..\src\Bff.Api\Bff.Api.csproj" />
-    <ProjectReference Include="..\..\src\Bff.Application\Bff.Application.csproj" />
-    <ProjectReference Include="..\..\src\Bff.Domain\Bff.Domain.csproj" />
   </ItemGroup>
 
 </Project>

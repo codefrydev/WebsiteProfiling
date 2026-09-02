@@ -1,4 +1,4 @@
-using Bff.Application.Auth;
+using Bff.Api.Application.Auth;
 
 namespace Bff.Tests;
 

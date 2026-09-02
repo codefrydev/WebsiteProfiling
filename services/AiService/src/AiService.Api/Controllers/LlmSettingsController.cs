@@ -1,6 +1,6 @@
-using AiService.Domain.Models;
-using AiService.Domain.Repositories;
-using AiService.Providers.Chat;
+using AiService.Api.Domain.Models;
+using AiService.Api.Domain.Repositories;
+using AiService.Api.Providers.Chat;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AiService.Api.Controllers;

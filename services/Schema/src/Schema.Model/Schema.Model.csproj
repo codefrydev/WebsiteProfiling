@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Data\WebsiteProfiling.Data.csproj" />
+    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Shared\WebsiteProfiling.Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

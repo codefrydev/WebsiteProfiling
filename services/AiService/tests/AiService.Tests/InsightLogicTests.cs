@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
-using AiService.Tools.Handlers.Insight;
-using AiService.Tools.Slice;
+using AiService.Api.Tools.Handlers.Insight;
+using AiService.Api.Tools.Slice;
 
 namespace AiService.Tests;
 

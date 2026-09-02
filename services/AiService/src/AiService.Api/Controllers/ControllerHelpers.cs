@@ -1,9 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using AiService.Application.Chat;
-using AiService.Domain;
-using AiService.Domain.Entities;
+using AiService.Api.Application.Chat;
+using AiService.Api.Domain;
+using AiService.Api.Domain.Entities;
 
 namespace AiService.Api.Controllers;
 

@@ -1,5 +1,5 @@
 using System.Net;
-using Bff.Application.Http;
+using Bff.Api.Application.Http;
 
 namespace Bff.Tests;
 

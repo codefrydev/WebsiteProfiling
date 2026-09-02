@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Local test runner — mirrors .github/workflows/ci.yml on your machine.
 # Usage: ./local-test [command] [--no-cov]
-#   (default) all     — Postgres + migrations + Python + web + .NET (Data, Bff)
+#   (default) all     — Postgres + migrations + Python + web + .NET (CoreService, AiService, Bff)
 #   python            — DB + pytest + CLI smoke only
 #   web               — build, typecheck, lint, vitest (no Postgres)
 #   dotnet            — dotnet test services/WebsiteProfiling.slnx + Bff OpenAPI drift gate
@@ -242,7 +242,7 @@ run_bff_openapi_drift_gate() {
     return 2
   fi
   (cd "$ROOT/services/Bff" && nswag run nswag.json) || return 1
-  git diff --exit-code services/Bff/src/Bff.Application/Generated/FastApiClient.g.cs
+  git diff --exit-code services/Bff/src/Bff.Api/Application/Generated/FastApiClient.g.cs
 }
 
 run_step_or_skip_browser() {

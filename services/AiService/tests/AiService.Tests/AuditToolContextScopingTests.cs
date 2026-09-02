@@ -1,6 +1,6 @@
 using System.Text.Json.Nodes;
-using AiService.Tools.Context;
-using AiService.Tools.Persistence;
+using AiService.Api.Tools.Context;
+using AiService.Api.Tools.Persistence;
 using Microsoft.EntityFrameworkCore;
 
 namespace AiService.Tests;

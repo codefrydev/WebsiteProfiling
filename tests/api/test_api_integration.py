@@ -6,9 +6,9 @@ ReportService, and IntegrationsService. The FastAPI app only exposes health,
 audit-tool dispatch, and internal CLI bridges.
 
 PostgreSQL integration coverage for migrated routes:
-- services/Data/tests/Data.Tests/PropertiesIntegrationTests.cs
-- services/Data/tests/Data.Tests/ServiceRegistrationValidationTests.cs (typed config)
-- services/ReportService/tests/ReportService.Tests/DashboardsIntegrationTests.cs
+- services/CoreService/tests/CoreService.Tests/PropertiesIntegrationTests.cs
+- services/CoreService/tests/CoreService.Tests/DataServiceRegistrationValidationTests.cs (typed config)
+- services/CoreService/tests/CoreService.Tests/DashboardsIntegrationTests.cs
 """
 from __future__ import annotations
 

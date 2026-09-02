@@ -7,10 +7,26 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Shared\WebsiteProfiling.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Anthropic" Version="10.0.1" />
+    <PackageReference Include="Microsoft.Extensions.AI" Version="9.7.1" />
+    <PackageReference Include="Microsoft.Extensions.AI.Ollama" Version="9.7.0-preview.1.25356.2" />
+    <PackageReference Include="Microsoft.Extensions.AI.OpenAI" Version="9.7.1-preview.1.25365.4" />
+    <PackageReference Include="ModelContextProtocol" Version="1.4.0" />
+    <PackageReference Include="ModelContextProtocol.AspNetCore" Version="1.4.0" />
+    <PackageReference Include="OpenAI" Version="2.2.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.2" />
-    <ProjectReference Include="..\..\..\Shared\WebsiteProfiling.Hosting\WebsiteProfiling.Hosting.csproj" />
-    <ProjectReference Include="..\AiService.Application\AiService.Application.csproj" />
-    <ProjectReference Include="..\AiService.Mcp\AiService.Mcp.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Tools/tool_catalog.json" LogicalName="AiService.Tools.tool_catalog.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="AiService.Tests" />
   </ItemGroup>
 
 </Project>
