@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import AppLogo from '@/components/AppLogo';
 import IntegrationsModal from '@/components/IntegrationsModal';
+import ThemeToggle from '@/components/ThemeToggle';
 import { Badge, ReportSelector } from '@/components';
 import { useReport } from '@/context/useReport';
 import { useSession } from '@/context/SessionContext';
@@ -387,14 +388,25 @@ export default function AppShell({
                   value={searchQuery}
                   onChange={(e) => onSearchChange(e.target.value)}
                   placeholder={strings.app.searchPlaceholder}
-                  className="w-full bg-brand-900 border border-default focus:border-[var(--accent)] rounded-lg pl-10 pr-4 py-2 text-sm outline-none text-foreground transition-all"
+                  className="w-full bg-brand-900 border border-default focus:border-[var(--accent)] rounded-lg pl-10 pr-9 py-2 text-sm outline-none text-foreground transition-all"
                 />
+                {searchQuery ? (
+                  <button
+                    type="button"
+                    onClick={() => onSearchChange('')}
+                    aria-label="Clear search"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-brand-700/60 transition-colors"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                ) : null}
               </div>
             ) : (
               <div className="min-w-0 flex-1" />
             )}
             <div className="flex items-center gap-2 sm:gap-4 shrink-0">
               {headerExtra}
+              <ThemeToggle />
               <ReportSelector />
             </div>
           </header>

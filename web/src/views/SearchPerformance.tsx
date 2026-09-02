@@ -14,7 +14,7 @@ import { SEARCH_PERFORMANCE_TAB_SECTIONS } from '@/lib/reportViewSections';
 import { strings, format } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { integrationGuideHref } from '@/lib/docs/integrationGuides';
-import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs } from '../components';
+import { PageLayout, PageHeader, Card, AlertBanner, StatCard, ViewTabs, EmptyState } from '../components';
 import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import GoogleTableToolbar from '../components/google/GoogleTableToolbar';
@@ -395,21 +395,25 @@ export default function SearchPerformance() {
     }
     return (
       <PageLayout className="space-y-6">
-        <div className="max-w-md mx-auto text-center py-16">
-          <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-bright mb-2">{sp.emptyTitle}</h2>
-          <p className="text-muted-foreground text-sm mb-6">{sp.emptyBody}</p>
-          <p className="text-xs text-muted-foreground flex items-center justify-center gap-1 flex-wrap">
-            <Settings2 className="h-3.5 w-3.5 shrink-0" />
-            {sp.emptyIntegrationsHint}{' '}
-            <Link
-              to={integrationGuideHref('google', { from: 'integrations' })}
-              className="text-link hover:underline"
-            >
-              {strings.docs.setupGuideLink}
-            </Link>
-          </p>
-        </div>
+        <EmptyState
+          icon={TrendingUp}
+          title={sp.emptyTitle}
+          description={
+            <>
+              {sp.emptyBody}
+              <span className="mt-3 flex items-center justify-center gap-1 flex-wrap text-xs">
+                <Settings2 className="h-3.5 w-3.5 shrink-0" />
+                {sp.emptyIntegrationsHint}{' '}
+                <Link
+                  to={integrationGuideHref('google', { from: 'integrations' })}
+                  className="text-link hover:underline"
+                >
+                  {strings.docs.setupGuideLink}
+                </Link>
+              </span>
+            </>
+          }
+        />
       </PageLayout>
     );
   }
@@ -457,33 +461,35 @@ export default function SearchPerformance() {
       )}
 
       {gsc?.summary && (
-        <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="relative group/dev-card">
           <DevCopyJsonButton data={kpiDevData} />
-          <StatCard
-            label={sp.kpi.clicks}
-            value={gsc.summary.clicks?.toLocaleString()}
-            hint={metricHelpHint('shared.clicks')}
-          />
-          <StatCard
-            label={sp.kpi.impressions}
-            value={gsc.summary.impressions?.toLocaleString()}
-            hint={metricHelpHint('shared.impressions')}
-          />
-          <StatCard
-            label={sp.kpi.ctr}
-            value={gsc.summary.ctr != null ? `${gsc.summary.ctr}%` : null}
-            hint={metricHelpHint('shared.ctr')}
-          />
-          <StatCard
-            label={sp.kpi.position}
-            value={gsc.summary.position}
-            hint={metricHelpHint('shared.position')}
-          />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <StatCard
+              label={sp.kpi.clicks}
+              value={gsc.summary.clicks?.toLocaleString()}
+              hint={metricHelpHint('shared.clicks')}
+            />
+            <StatCard
+              label={sp.kpi.impressions}
+              value={gsc.summary.impressions?.toLocaleString()}
+              hint={metricHelpHint('shared.impressions')}
+            />
+            <StatCard
+              label={sp.kpi.ctr}
+              value={gsc.summary.ctr != null ? `${gsc.summary.ctr}%` : null}
+              hint={metricHelpHint('shared.ctr')}
+            />
+            <StatCard
+              label={sp.kpi.position}
+              value={gsc.summary.position}
+              hint={metricHelpHint('shared.position')}
+            />
+          </div>
         </div>
       )}
 
       {!gsc ? (
-        <p className="text-sm text-muted-foreground">{sp.emptyBody}</p>
+        <EmptyState icon={TrendingUp} title={sp.title} description={sp.emptyBody} />
       ) : (
         <>
           <ViewTabs
@@ -634,32 +640,34 @@ export default function SearchPerformance() {
                 <>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <UrlCoverageDoughnut urlJoin={urlJoin} devData={coverageDoughnutDevData} />
-                    <div className="relative group/dev-card grid grid-cols-2 gap-3">
+                    <div className="relative group/dev-card">
                       <DevCopyJsonButton data={coverageStatsDevData} />
-                      <StatCard
-                        label={sp.urlJoin.matched}
-                        value={urlJoin.matched}
-                        sub={sp.urlJoin.matchedSub}
-                        hint={metricHelpHint('views.overview.urlJoinMatched')}
-                      />
-                      <StatCard
-                        label={sp.urlJoin.crawlOnly}
-                        value={urlJoin.crawl_only}
-                        sub={sp.urlJoin.crawlOnlySub}
-                        hint={metricHelpHint('views.overview.urlJoinCrawlOnly')}
-                      />
-                      <StatCard
-                        label={sp.urlJoin.gscOnly}
-                        value={urlJoin.gsc_only}
-                        sub={sp.urlJoin.gscOnlySub}
-                        hint={metricHelpHint('views.overview.urlJoinGscOnly')}
-                      />
-                      <StatCard
-                        label={sp.urlJoin.ga4Only}
-                        value={urlJoin.ga4_only}
-                        sub={sp.urlJoin.ga4OnlySub}
-                        hint={metricHelpHint('views.overview.urlJoinGa4Only')}
-                      />
+                      <div className="grid grid-cols-2 gap-3">
+                        <StatCard
+                          label={sp.urlJoin.matched}
+                          value={urlJoin.matched}
+                          sub={sp.urlJoin.matchedSub}
+                          hint={metricHelpHint('views.overview.urlJoinMatched')}
+                        />
+                        <StatCard
+                          label={sp.urlJoin.crawlOnly}
+                          value={urlJoin.crawl_only}
+                          sub={sp.urlJoin.crawlOnlySub}
+                          hint={metricHelpHint('views.overview.urlJoinCrawlOnly')}
+                        />
+                        <StatCard
+                          label={sp.urlJoin.gscOnly}
+                          value={urlJoin.gsc_only}
+                          sub={sp.urlJoin.gscOnlySub}
+                          hint={metricHelpHint('views.overview.urlJoinGscOnly')}
+                        />
+                        <StatCard
+                          label={sp.urlJoin.ga4Only}
+                          value={urlJoin.ga4_only}
+                          sub={sp.urlJoin.ga4OnlySub}
+                          hint={metricHelpHint('views.overview.urlJoinGa4Only')}
+                        />
+                      </div>
                     </div>
                   </div>
                   {(urlJoin.lists?.gsc_only?.length ?? 0) > 0 || (urlJoin.lists?.crawl_only?.length ?? 0) > 0 ? (

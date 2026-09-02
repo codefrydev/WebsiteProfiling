@@ -1,6 +1,4 @@
 import {
-  Cpu,
-  Gauge,
   MessageSquare,
   Plus,
   Search,

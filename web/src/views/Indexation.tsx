@@ -216,29 +216,31 @@ export default function Indexation({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'summary' ? (
         <ViewTabPanel idPrefix="indexation" tabId="summary" className="space-y-6">
-          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="relative group/dev-card">
             <DevCopyJsonButton data={statsDevData} />
-            <StatCard label={vi.crawled} value={counts?.crawled ?? '—'} hint={metricHelpHint('views.indexation.crawled')} />
-            <StatCard label={vi.sitemap} value={counts?.sitemap ?? '—'} hint={metricHelpHint('views.indexation.sitemap')} />
-            <StatCard label={vi.gscPages} value={counts?.gsc_pages ?? '—'} hint={metricHelpHint('views.indexation.gscPages')} />
-            <StatCard
-              label={vi.sitemapOnly}
-              value={counts?.sitemap_only ?? '—'}
-              hint={metricHelpHint('views.indexation.sitemapOnly')}
-              {...gapStatProps(counts?.sitemap_only, 'sitemapGaps', searchParams, vi.gapBandLabel)}
-            />
-            <StatCard
-              label={vi.gscNotCrawled}
-              value={counts?.gsc_not_crawled ?? '—'}
-              hint={metricHelpHint('views.indexation.gscNotCrawled')}
-              {...gapStatProps(counts?.gsc_not_crawled, 'gscGaps', searchParams, vi.gapBandLabel)}
-            />
-            <StatCard
-              label={vi.crawledNotInSitemap}
-              value={counts?.crawled_not_in_sitemap ?? '—'}
-              hint={metricHelpHint('views.indexation.crawledNotInSitemap')}
-              {...gapStatProps(counts?.crawled_not_in_sitemap, 'sitemapGaps', searchParams, vi.gapBandLabel)}
-            />
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <StatCard label={vi.crawled} value={counts?.crawled ?? '—'} hint={metricHelpHint('views.indexation.crawled')} />
+              <StatCard label={vi.sitemap} value={counts?.sitemap ?? '—'} hint={metricHelpHint('views.indexation.sitemap')} />
+              <StatCard label={vi.gscPages} value={counts?.gsc_pages ?? '—'} hint={metricHelpHint('views.indexation.gscPages')} />
+              <StatCard
+                label={vi.sitemapOnly}
+                value={counts?.sitemap_only ?? '—'}
+                hint={metricHelpHint('views.indexation.sitemapOnly')}
+                {...gapStatProps(counts?.sitemap_only, 'sitemapGaps', searchParams, vi.gapBandLabel)}
+              />
+              <StatCard
+                label={vi.gscNotCrawled}
+                value={counts?.gsc_not_crawled ?? '—'}
+                hint={metricHelpHint('views.indexation.gscNotCrawled')}
+                {...gapStatProps(counts?.gsc_not_crawled, 'gscGaps', searchParams, vi.gapBandLabel)}
+              />
+              <StatCard
+                label={vi.crawledNotInSitemap}
+                value={counts?.crawled_not_in_sitemap ?? '—'}
+                hint={metricHelpHint('views.indexation.crawledNotInSitemap')}
+                {...gapStatProps(counts?.crawled_not_in_sitemap, 'sitemapGaps', searchParams, vi.gapBandLabel)}
+              />
+            </div>
           </div>
           {urlJoin ? (
             <UrlCoverageDoughnut

@@ -13,6 +13,7 @@ import { usePipeline } from '@/context/PipelineContext';
 import { isLlmInsightsEnabled } from '@/lib/llmConfigSchema';
 import { resolveChatAssistantName } from '@/lib/chatAssistantBranding';
 import { useChatFabPopup } from '@/hooks/useChatFabPopup';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 const c = strings.components.chat;
 
@@ -41,14 +42,11 @@ export default function ChatFabDrawer({ open, domain, onClose }: ChatFabDrawerPr
     String(llmConfigState.llm_chat_assistant_name || ''),
   );
 
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [open, onClose]);
+  useModalDismiss({
+    onDismiss: onClose,
+    enabled: open,
+    lockScroll: false,
+  });
 
   useEffect(() => {
     if (messages.length > 0) {

@@ -2,6 +2,7 @@
 import { useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useReport } from '@/context/useReport';
+import AlertBanner from '@/components/AlertBanner';
 import { buildAuditExportUrl, type PdfExportProfile } from '@/lib/exportAudit';
 import { strings } from '@/lib/strings';
 
@@ -28,9 +29,11 @@ export default function ExportReport() {
 
   return (
     <div className="flex flex-col min-h-[calc(100dvh-4rem)] print:min-h-0">
-      <div className="flex-1 min-h-0 flex flex-col bg-slate-200/80 dark:bg-zinc-200 p-3 sm:p-4 print:p-0 print:bg-white">
+      <div className="flex-1 min-h-0 flex flex-col bg-slate-200/80 dark:bg-brand-950 p-3 sm:p-4 print:p-0 print:bg-white">
         {previewError ? (
-          <p className="p-6 text-red-700 text-sm bg-white rounded-xl">{previewError}</p>
+          <div className="p-6 max-w-xl mx-auto w-full">
+            <AlertBanner variant="error">{previewError}</AlertBanner>
+          </div>
         ) : (
           <iframe
             key={previewUrl}

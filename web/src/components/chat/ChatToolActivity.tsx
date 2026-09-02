@@ -91,17 +91,17 @@ export default function ChatToolActivity({ items, streaming }: ChatToolActivityP
               <ul className="space-y-1">
                 {groupItems.map((item) => (
                   <li key={item.id} className="font-mono text-muted-foreground">
-                    <span className={isFailed(item) ? 'text-red-300' : 'text-violet-300'}>
+                    <span className={isFailed(item) ? 'text-red-600 dark:text-red-300' : 'text-violet-600 dark:text-violet-300'}>
                       {item.name}
                     </span>
                     {item.status === 'running' ? (
-                      <span className="ml-2 text-amber-400">{c.toolRunning}</span>
+                      <span className="ml-2 text-amber-600 dark:text-amber-400">{c.toolRunning}</span>
                     ) : isFailed(item) ? (
-                      <span className="ml-2 block font-sans text-red-300/90">
+                      <span className="ml-2 block font-sans text-red-600 dark:text-red-300/90">
                         {String(item.result?.error)}
                       </span>
                     ) : (
-                      <span className="ml-2 text-emerald-400">{c.toolDone}</span>
+                      <span className="ml-2 text-emerald-600 dark:text-emerald-400">{c.toolDone}</span>
                     )}
                   </li>
                 ))}

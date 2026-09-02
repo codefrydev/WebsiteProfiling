@@ -8,7 +8,7 @@ import { useSectionData } from '@/hooks/useSectionData';
 import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Badge, ViewTabs, ViewTabPanel, Button, StatCard, ChartTitleWithHint } from '../components';
+import { PageLayout, PageHeader, Card, Badge, ViewTabs, ViewTabPanel, Button, StatCard, ChartTitleWithHint, EmptyState } from '../components';
 import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { metricHelpHint } from '@/lib/metricHelp';
 import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
@@ -364,15 +364,16 @@ export default function Security({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'charts' && allFindings.length === 0 && (
         <ViewTabPanel idPrefix="security" tabId="charts">
-          <Card className="p-8 text-center text-muted-foreground text-sm">{vs.emptyNoScan}</Card>
+          <EmptyState icon={Shield} title={vs.title} description={vs.emptyNoScan} />
         </ViewTabPanel>
       )}
 
       {activeTab === 'findings' && (
         <ViewTabPanel idPrefix="security" tabId="findings" className="space-y-6">
-          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="relative group/dev-card">
             <DevCopyJsonButton data={severityStatsDevData} />
-            {SEVERITY_ORDER.map((sev) => {
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+              {SEVERITY_ORDER.map((sev) => {
               const cfg = SEVERITY_CONFIG[sev];
               const Icon = cfg.icon;
               const count = severityCounts[sev] || 0;
@@ -408,6 +409,7 @@ export default function Security({ searchQuery = '' }: ViewProps) {
                 </div>
               );
             })}
+            </div>
           </div>
 
           {severityFilter !== 'All' && (
@@ -423,15 +425,11 @@ export default function Security({ searchQuery = '' }: ViewProps) {
           )}
 
           {filteredFindings.length === 0 ? (
-            <Card className="flex flex-col items-center justify-center py-20 gap-4">
-              <Shield className="h-14 w-14 text-green-600/60" />
-              <div className="text-center">
-                <p className="text-foreground font-semibold text-base">{vs.emptyTitle}</p>
-                <p className="text-muted-foreground text-sm mt-1">
-                  {allFindings.length > 0 ? vs.emptyFiltered : vs.emptyNoScan}
-                </p>
-              </div>
-            </Card>
+            <EmptyState
+              icon={Shield}
+              title={vs.emptyTitle}
+              description={allFindings.length > 0 ? vs.emptyFiltered : vs.emptyNoScan}
+            />
           ) : (
             <div className="relative group/dev-card space-y-4">
               <DevCopyJsonButton data={findingsListDevData} />

@@ -15,6 +15,7 @@ import {
   ViewTabPanel,
   AlertBanner,
   Button,
+  EmptyState,
 } from '@/components';
 import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { useUrlTab } from '@/hooks/useUrlTab';
@@ -215,9 +216,15 @@ export default function AccessibilityView({ searchQuery = '' }: ViewProps) {
       ) : null}
 
       {emptyBecauseNoAxe ? (
-        <Card className="p-8 text-center">
-          <p className="text-sm text-muted-foreground">{va.noDataHint}</p>
-        </Card>
+        <EmptyState
+          icon={Accessibility}
+          title={va.title}
+          description={va.noDataHint}
+          primaryAction={{
+            label: va.pipelineSettingsLink,
+            href: pipelineHref(searchParams),
+          }}
+        />
       ) : (
         <>
           <ViewTabs
@@ -233,23 +240,25 @@ export default function AccessibilityView({ searchQuery = '' }: ViewProps) {
 
           {activeTab === 'summary' ? (
             <ViewTabPanel idPrefix="accessibility" tabId="summary" className="space-y-6">
-              <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+              <div className="relative group/dev-card mb-6">
                 <DevCopyJsonButton data={summaryStatsDevData} />
-                <StatCard
-                  label={va.statPages}
-                  value={pagesWithViolations}
-                  hint={metricHelpHint('views.accessibility.statPages')}
-                />
-                <StatCard
-                  label={va.statViolations}
-                  value={totalViolations}
-                  hint={metricHelpHint('views.accessibility.statViolations')}
-                />
-                <StatCard
-                  label={va.statRules}
-                  value={topRules.length}
-                  hint={metricHelpHint('views.accessibility.statRules')}
-                />
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <StatCard
+                    label={va.statPages}
+                    value={pagesWithViolations}
+                    hint={metricHelpHint('views.accessibility.statPages')}
+                  />
+                  <StatCard
+                    label={va.statViolations}
+                    value={totalViolations}
+                    hint={metricHelpHint('views.accessibility.statViolations')}
+                  />
+                  <StatCard
+                    label={va.statRules}
+                    value={topRules.length}
+                    hint={metricHelpHint('views.accessibility.statRules')}
+                  />
+                </div>
               </div>
               {summaryError ? (
                 <p className="text-xs text-muted-foreground mb-4">{summaryError}</p>

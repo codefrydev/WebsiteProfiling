@@ -423,15 +423,17 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
       ) : (
         <>
           {/* Top stat row */}
-          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="relative group/dev-card mb-6">
             <DevCopyJsonButton data={citationStatsDevData} />
-            <StatCard label={vg.scoreLabel} value={score} />
-            <StatCard label={vg.bandLabel} value={band} />
-            <StatCard label={vg.citabilityLabel} value={citabilityScore} />
-            <StatCard
-              label={vg.llmsLabel}
-              value={llms?.found ? vg.llmsFound : vg.llmsMissing}
-            />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label={vg.scoreLabel} value={score} />
+              <StatCard label={vg.bandLabel} value={band} />
+              <StatCard label={vg.citabilityLabel} value={citabilityScore} />
+              <StatCard
+                label={vg.llmsLabel}
+                value={llms?.found ? vg.llmsFound : vg.llmsMissing}
+              />
+            </div>
           </div>
 
           {/* 8-category score breakdown */}
@@ -515,11 +517,11 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
               </p>
               <Table>
                 <TableHead>
-                  <TableRow>
+                  <tr>
                     <TableHeadCell>Bot</TableHeadCell>
                     <TableHeadCell>Tier</TableHeadCell>
                     <TableHeadCell>Access</TableHeadCell>
-                  </TableRow>
+                  </tr>
                 </TableHead>
                 <TableBody>
                   {robotsPerBot.slice(0, 12).map((bot) => (
@@ -578,10 +580,10 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
               <h3 className="text-sm font-semibold text-foreground px-4 pt-4 pb-2">{vg.negativeSectionTitle}</h3>
               <Table>
                 <TableHead>
-                  <TableRow>
+                  <tr>
                     <TableHeadCell>URL</TableHeadCell>
                     <TableHeadCell>Signals</TableHeadCell>
-                  </TableRow>
+                  </tr>
                 </TableHead>
                 <TableBody>
                   {negativePages.slice(0, 10).map((row, i) => {
@@ -634,10 +636,12 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
           ) : null}
 
           {/* FAQ coverage stat */}
-          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="relative group/dev-card mb-6">
             <DevCopyJsonButton data={faqStatsDevData} />
-            <StatCard label={vg.faqCoverageLabel} value={`${faq?.coverage_pct ?? '—'}%`} />
-            <StatCard label={vg.faqPagesLabel} value={Number(faq?.pages_with_faq_schema) || 0} />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label={vg.faqCoverageLabel} value={`${faq?.coverage_pct ?? '—'}%`} />
+              <StatCard label={vg.faqPagesLabel} value={Number(faq?.pages_with_faq_schema) || 0} />
+            </div>
           </div>
 
           {/* Missing FAQ schema */}
@@ -649,9 +653,9 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
               <>
                 <Table>
                   <TableHead>
-                    <TableRow>
+                    <tr>
                       <TableHeadCell>{vg.colUrl}</TableHeadCell>
-                    </TableRow>
+                    </tr>
                   </TableHead>
                   <TableBody>
                     {pagination.slice.map((row, i) => {
@@ -689,12 +693,14 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
       ) : (
         <>
           {/* Agent score header */}
-          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="relative group/dev-card mb-6">
             <DevCopyJsonButton data={agentStatsDevData} />
-            <StatCard label={vg.agentScoreLabel} value={agentPct} />
-            <StatCard label={vg.agentGradeLabel} value={<span className={gradeColor(agentGrade)}>{agentGrade}</span>} />
-            <StatCard label={vg.agentAgentsMdLabel} value={agentsMd?.found ? vg.agentAgentsMdFound : vg.agentAgentsMdMissing} />
-            <StatCard label={vg.agentSkillMdLabel} value={skillMd?.found ? vg.agentAgentsMdFound : vg.agentAgentsMdMissing} />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label={vg.agentScoreLabel} value={agentPct} />
+              <StatCard label={vg.agentGradeLabel} value={<span className={gradeColor(agentGrade)}>{agentGrade}</span>} />
+              <StatCard label={vg.agentAgentsMdLabel} value={agentsMd?.found ? vg.agentAgentsMdFound : vg.agentAgentsMdMissing} />
+              <StatCard label={vg.agentSkillMdLabel} value={skillMd?.found ? vg.agentAgentsMdFound : vg.agentAgentsMdMissing} />
+            </div>
           </div>
 
           {/* 5-category score breakdown */}
@@ -772,10 +778,10 @@ export default function GeoReadiness({ searchQuery = '' }: ViewProps) {
               <h3 className="text-sm font-semibold text-foreground px-4 pt-4 pb-2">{vg.agentOversizedTitle}</h3>
               <Table>
                 <TableHead>
-                  <TableRow>
+                  <tr>
                     <TableHeadCell>{vg.colUrl}</TableHeadCell>
                     <TableHeadCell>Tokens</TableHeadCell>
-                  </TableRow>
+                  </tr>
                 </TableHead>
                 <TableBody>
                   {oversizedPages.slice(0, 20).map((row, i) => {

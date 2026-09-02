@@ -58,7 +58,7 @@ function TopSummaryTable({
     <Card devData={devData}>
       <h2 className="text-sm font-bold text-foreground mb-1">{title}</h2>
       <p className="text-xs text-muted-foreground mb-4">{hint}</p>
-      <div className="border border-default rounded-xl overflow-hidden">
+      <div className="overflow-x-auto">
         <Table>
           <TableHead>
             <tr>
@@ -316,27 +316,29 @@ export default function JavaScriptErrors({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'summary' && (
         <ViewTabPanel idPrefix="javascript-errors" tabId="summary" className="space-y-6">
-          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+          <div className="relative group/dev-card">
             <DevCopyJsonButton data={summaryStatsDevData} />
-            <StatCard
-              label={vj.consolePagesCard}
-              value={formatPagesAffectedStat(stats.pagesWithConsole, stats.totalPages)}
-              hint={metricHelpHint('views.jsErrors.consolePages')}
-            />
-            <StatCard label={vj.consoleTotalCard} value={stats.totalConsole.toLocaleString()} hint={metricHelpHint('views.jsErrors.consoleTotal')} />
-            <StatCard
-              label={vj.exceptionPagesCard}
-              value={formatPagesAffectedStat(stats.pagesWithExceptions, stats.totalPages)}
-              hint={metricHelpHint('views.jsErrors.exceptionPages')}
-            />
-            <StatCard label={vj.exceptionTotalCard} value={stats.totalExceptions.toLocaleString()} hint={metricHelpHint('views.jsErrors.exceptionTotal')} />
-            <StatCard
-              label={vj.failedPagesCard}
-              value={formatPagesAffectedStat(stats.pagesWithFailedRequests, stats.totalPages)}
-              hint={metricHelpHint('views.jsErrors.failedPages')}
-            />
-            <StatCard label={vj.failedTotalCard} value={stats.totalFailedRequests.toLocaleString()} hint={metricHelpHint('views.jsErrors.failedTotal')} />
-            <StatCard label={vj.renderMode} value={<span className="capitalize">{scopeInfo.renderMode}</span>} hint={metricHelpHint('views.jsErrors.renderMode')} />
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+              <StatCard
+                label={vj.consolePagesCard}
+                value={formatPagesAffectedStat(stats.pagesWithConsole, stats.totalPages)}
+                hint={metricHelpHint('views.jsErrors.consolePages')}
+              />
+              <StatCard label={vj.consoleTotalCard} value={stats.totalConsole.toLocaleString()} hint={metricHelpHint('views.jsErrors.consoleTotal')} />
+              <StatCard
+                label={vj.exceptionPagesCard}
+                value={formatPagesAffectedStat(stats.pagesWithExceptions, stats.totalPages)}
+                hint={metricHelpHint('views.jsErrors.exceptionPages')}
+              />
+              <StatCard label={vj.exceptionTotalCard} value={stats.totalExceptions.toLocaleString()} hint={metricHelpHint('views.jsErrors.exceptionTotal')} />
+              <StatCard
+                label={vj.failedPagesCard}
+                value={formatPagesAffectedStat(stats.pagesWithFailedRequests, stats.totalPages)}
+                hint={metricHelpHint('views.jsErrors.failedPages')}
+              />
+              <StatCard label={vj.failedTotalCard} value={stats.totalFailedRequests.toLocaleString()} hint={metricHelpHint('views.jsErrors.failedTotal')} />
+              <StatCard label={vj.renderMode} value={<span className="capitalize">{scopeInfo.renderMode}</span>} hint={metricHelpHint('views.jsErrors.renderMode')} />
+            </div>
           </div>
 
           {topMessages.length > 0 ? (

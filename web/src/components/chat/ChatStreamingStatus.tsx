@@ -67,15 +67,15 @@ export default function ChatStreamingStatus({
                     <span className="mt-1.5 inline-block h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400" />
                   )}
                   <span className="min-w-0 flex-1">
-                    <span className="font-mono text-violet-300">{formatToolDisplayName(tool.name)}</span>
+                    <span className="font-mono text-violet-600 dark:text-violet-300">{formatToolDisplayName(tool.name)}</span>
                     {tool.status === 'running' ? (
-                      <span className="ml-2 text-amber-400/90">{c.toolRunning}</span>
+                      <span className="ml-2 text-amber-600 dark:text-amber-400/90">{c.toolRunning}</span>
                     ) : isFailed(tool) ? (
-                      <span className="ml-2 block font-sans text-red-300/90">
+                      <span className="ml-2 block font-sans text-red-600 dark:text-red-300/90">
                         {String(tool.result?.error)}
                       </span>
                     ) : (
-                      <span className="ml-2 text-emerald-400/90">{c.toolDone}</span>
+                      <span className="ml-2 text-emerald-600 dark:text-emerald-400/90">{c.toolDone}</span>
                     )}
                   </span>
                 </li>

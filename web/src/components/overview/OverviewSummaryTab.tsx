@@ -166,36 +166,38 @@ export function OverviewSummaryTab({
               <p className="text-xs text-muted-foreground">{vo.googleConnectSubtitle}</p>
             </AlertBanner>
           ) : (
-            <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="relative group/dev-card">
               {googleTrafficDevData ? <DevCopyJsonButton data={googleTrafficDevData} /> : null}
-              {googleData.gsc ? (
-                <>
-                  <StatCard
-                    label={vo.gscClicksCard}
-                    value={googleData.gsc.summary?.clicks?.toLocaleString()}
-                    hint={metricHelpHint('shared.clicks')}
-                  />
-                  <StatCard
-                    label={vo.gscImpressionsCard}
-                    value={googleData.gsc.summary?.impressions?.toLocaleString()}
-                    hint={metricHelpHint('shared.impressions')}
-                  />
-                </>
-              ) : null}
-              {googleData.ga4 ? (
-                <>
-                  <StatCard
-                    label={vo.ga4SessionsCard}
-                    value={googleData.ga4.summary?.sessions?.toLocaleString()}
-                    hint={metricHelpHint('shared.sessions')}
-                  />
-                  <StatCard
-                    label={vo.ga4UsersCard}
-                    value={googleData.ga4.summary?.activeUsers?.toLocaleString()}
-                    hint={metricHelpHint('shared.activeUsers')}
-                  />
-                </>
-              ) : null}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {googleData.gsc ? (
+                  <>
+                    <StatCard
+                      label={vo.gscClicksCard}
+                      value={googleData.gsc.summary?.clicks?.toLocaleString()}
+                      hint={metricHelpHint('shared.clicks')}
+                    />
+                    <StatCard
+                      label={vo.gscImpressionsCard}
+                      value={googleData.gsc.summary?.impressions?.toLocaleString()}
+                      hint={metricHelpHint('shared.impressions')}
+                    />
+                  </>
+                ) : null}
+                {googleData.ga4 ? (
+                  <>
+                    <StatCard
+                      label={vo.ga4SessionsCard}
+                      value={googleData.ga4.summary?.sessions?.toLocaleString()}
+                      hint={metricHelpHint('shared.sessions')}
+                    />
+                    <StatCard
+                      label={vo.ga4UsersCard}
+                      value={googleData.ga4.summary?.activeUsers?.toLocaleString()}
+                      hint={metricHelpHint('shared.activeUsers')}
+                    />
+                  </>
+                ) : null}
+              </div>
             </div>
           )}
         </SectionLoadingGate>

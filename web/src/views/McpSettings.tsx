@@ -4,6 +4,7 @@ import { Loader2, Plug, RefreshCw, Sparkles } from 'lucide-react';
 import ConfigField from '@/components/pipeline/ConfigField';
 import McpCopyBlock from '@/components/mcp/McpCopyBlock';
 import ChatShell from '@/components/chat/ChatShell';
+import AlertBanner from '@/components/AlertBanner';
 import { SecretsSaveBar } from '@/components/secrets/SecretsSettingsPanel';
 import ToolPageSidebar from '@/components/shared/ToolPageSidebar';
 import { useMcpSettings } from '@/hooks/useMcpSettings';
@@ -97,7 +98,9 @@ export default function McpSettingsPage() {
               {s.loading}
             </div>
           ) : loadError ? (
-            <div className="mx-auto max-w-3xl px-4 py-10 text-sm text-red-700 dark:text-red-400">{loadError}</div>
+            <div className="mx-auto max-w-3xl px-4 py-8">
+              <AlertBanner variant="error">{loadError}</AlertBanner>
+            </div>
           ) : (
             <div className="mx-auto max-w-3xl space-y-8 px-4 py-6 sm:px-6">
               {envHintNames.length ? (

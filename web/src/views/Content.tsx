@@ -270,37 +270,39 @@ export default function Content({ searchQuery = '' }: ViewProps) {
             </Card>
           )}
 
-          <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+          <div className="relative group/dev-card">
             <DevCopyJsonButton data={filterStatsDevData} />
-            {CONTENT_FILTERS.map(({ key, label }) => {
-              const count = getCount(key);
-              const hasIssues = count > 0;
-              const isActive = filter === key;
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => {
-                    setFilter(key);
-                    setActiveTab('issues');
-                  }}
-                  className={`text-left rounded-xl border p-3 transition-all ${
-                    isActive
-                      ? hasIssues
-                        ? 'bg-red-500/10 border-red-500/40 ring-1 ring-red-500/20'
-                        : 'bg-green-500/10 border-green-500/40 ring-1 ring-green-500/20'
-                      : hasIssues
-                        ? 'bg-brand-800 border-amber-700/40 hover:border-amber-600/60'
-                        : 'bg-brand-800 border-default hover:border-brand-700/80 opacity-60'
-                  }`}
-                >
-                  <div className={`text-xl font-bold ${hasIssues ? (isActive ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400') : 'text-green-700 dark:text-green-400'}`}>
-                    {count}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-0.5 leading-tight">{label}</div>
-                </button>
-              );
-            })}
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+              {CONTENT_FILTERS.map(({ key, label }) => {
+                const count = getCount(key);
+                const hasIssues = count > 0;
+                const isActive = filter === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      setFilter(key);
+                      setActiveTab('issues');
+                    }}
+                    className={`text-left rounded-xl border p-3 transition-all ${
+                      isActive
+                        ? hasIssues
+                          ? 'bg-red-500/10 border-red-500/40 ring-1 ring-red-500/20'
+                          : 'bg-green-500/10 border-green-500/40 ring-1 ring-green-500/20'
+                        : hasIssues
+                          ? 'bg-brand-800 border-amber-700/40 hover:border-amber-600/60'
+                          : 'bg-brand-800 border-default hover:border-brand-700/80 opacity-60'
+                    }`}
+                  >
+                    <div className={`text-xl font-bold ${hasIssues ? (isActive ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400') : 'text-green-700 dark:text-green-400'}`}>
+                      {count}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5 leading-tight">{label}</div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </ViewTabPanel>
       )}

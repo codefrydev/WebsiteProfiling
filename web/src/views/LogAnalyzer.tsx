@@ -6,7 +6,7 @@ import { useReport } from '@/context/useReport';
 import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
-import { PageLayout, PageHeader, Card, StatCard } from '@/components';
+import { PageLayout, PageHeader, Card, StatCard, Button, AlertBanner, EmptyState } from '@/components';
 import type { ViewProps } from '@/types';
 
 const vl = strings.views.logAnalyzer;
@@ -87,7 +87,11 @@ export default function LogAnalyzer(_props: ViewProps) {
         icon={<Terminal className="h-7 w-7 text-link shrink-0" />}
       />
       {!propertyId ? (
-        <Card className="text-sm text-muted-foreground">{vl.noProperty}</Card>
+        <EmptyState
+          icon={Terminal}
+          title={vl.title}
+          description={vl.noProperty}
+        />
       ) : (
         <Card className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
@@ -95,19 +99,19 @@ export default function LogAnalyzer(_props: ViewProps) {
               type="file"
               accept=".log,.txt"
               onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="text-sm"
+              className="text-xs text-muted-foreground file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border file:border-default file:text-xs file:font-semibold file:bg-brand-700/80 file:text-foreground hover:file:bg-brand-700 cursor-pointer"
             />
-            <button
-              type="button"
+            <Button
+              variant="primary"
               disabled={!file || busy}
+              loading={busy}
               onClick={() => void handleUpload()}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-accent text-white text-sm disabled:opacity-50"
             >
               <Upload className="h-4 w-4" />
               {busy ? strings.app.loading : vl.upload}
-            </button>
+            </Button>
           </div>
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          {error ? <AlertBanner variant="error">{error}</AlertBanner> : null}
           {analysis ? (
             <div className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">

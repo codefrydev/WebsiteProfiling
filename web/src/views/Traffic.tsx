@@ -415,19 +415,21 @@ export default function Traffic() {
       )}
 
       {ga4?.summary && (
-        <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div className="relative group/dev-card">
           <DevCopyJsonButton data={kpiDevData} />
-          <StatCard
-            label={tf.kpi.sessions}
-            value={ga4.summary.sessions?.toLocaleString()}
-            hint={metricHelpHint('shared.sessions')}
-          />
-          <StatCard
-            label={tf.kpi.users}
-            value={ga4.summary.activeUsers?.toLocaleString()}
-            hint={metricHelpHint('shared.activeUsers')}
-          />
-          <StatCard label={tf.kpi.pageViews} value={ga4.summary.screenPageViews?.toLocaleString()} hint={metricHelpHint('shared.pageViews')} />
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <StatCard
+              label={tf.kpi.sessions}
+              value={ga4.summary.sessions?.toLocaleString()}
+              hint={metricHelpHint('shared.sessions')}
+            />
+            <StatCard
+              label={tf.kpi.users}
+              value={ga4.summary.activeUsers?.toLocaleString()}
+              hint={metricHelpHint('shared.activeUsers')}
+            />
+            <StatCard label={tf.kpi.pageViews} value={ga4.summary.screenPageViews?.toLocaleString()} hint={metricHelpHint('shared.pageViews')} />
+          </div>
         </div>
       )}
 
@@ -583,32 +585,34 @@ export default function Traffic() {
                 <>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <UrlCoverageDoughnut urlJoin={urlJoin} devData={coverageDoughnutDevData} />
-                    <div className="relative group/dev-card grid grid-cols-2 gap-3">
+                    <div className="relative group/dev-card">
                       <DevCopyJsonButton data={coverageStatsDevData} />
-                      <StatCard
-                        label={sp.urlJoin.matched}
-                        value={urlJoin.matched}
-                        sub={sp.urlJoin.matchedSub}
-                        hint={metricHelpHint('views.overview.urlJoinMatched')}
-                      />
-                      <StatCard
-                        label={sp.urlJoin.crawlOnly}
-                        value={urlJoin.crawl_only}
-                        sub={sp.urlJoin.crawlOnlySub}
-                        hint={metricHelpHint('views.overview.urlJoinCrawlOnly')}
-                      />
-                      <StatCard
-                        label={sp.urlJoin.gscOnly}
-                        value={urlJoin.gsc_only}
-                        sub={sp.urlJoin.gscOnlySub}
-                        hint={metricHelpHint('views.overview.urlJoinGscOnly')}
-                      />
-                      <StatCard
-                        label={sp.urlJoin.ga4Only}
-                        value={urlJoin.ga4_only}
-                        sub={sp.urlJoin.ga4OnlySub}
-                        hint={metricHelpHint('views.overview.urlJoinGa4Only')}
-                      />
+                      <div className="grid grid-cols-2 gap-3">
+                        <StatCard
+                          label={sp.urlJoin.matched}
+                          value={urlJoin.matched}
+                          sub={sp.urlJoin.matchedSub}
+                          hint={metricHelpHint('views.overview.urlJoinMatched')}
+                        />
+                        <StatCard
+                          label={sp.urlJoin.crawlOnly}
+                          value={urlJoin.crawl_only}
+                          sub={sp.urlJoin.crawlOnlySub}
+                          hint={metricHelpHint('views.overview.urlJoinCrawlOnly')}
+                        />
+                        <StatCard
+                          label={sp.urlJoin.gscOnly}
+                          value={urlJoin.gsc_only}
+                          sub={sp.urlJoin.gscOnlySub}
+                          hint={metricHelpHint('views.overview.urlJoinGscOnly')}
+                        />
+                        <StatCard
+                          label={sp.urlJoin.ga4Only}
+                          value={urlJoin.ga4_only}
+                          sub={sp.urlJoin.ga4OnlySub}
+                          hint={metricHelpHint('views.overview.urlJoinGa4Only')}
+                        />
+                      </div>
                     </div>
                   </div>
                   {(urlJoin.lists?.ga4_only?.length ?? 0) > 0 || (urlJoin.lists?.crawl_only?.length ?? 0) > 0 ? (

@@ -87,7 +87,7 @@ export function WidgetFrame({
             <button
               onClick={() => downloadCsv(title, result.table)}
               title="Export CSV"
-              className="p-0.5 rounded hover:bg-white/10 text-muted-foreground hover:text-bright transition-colors"
+              className="p-0.5 rounded hover:bg-brand-700/80 text-muted-foreground hover:text-foreground transition-colors"
             >
               <Download className="h-3.5 w-3.5" />
             </button>
@@ -96,7 +96,7 @@ export function WidgetFrame({
             <button
               onClick={() => chartRef.current && chartToPng(chartRef.current, title)}
               title="Export PNG"
-              className="p-0.5 rounded hover:bg-white/10 text-muted-foreground hover:text-bright transition-colors"
+              className="p-0.5 rounded hover:bg-brand-700/80 text-muted-foreground hover:text-foreground transition-colors"
             >
               <ImageIcon className="h-3.5 w-3.5" />
             </button>
@@ -105,7 +105,7 @@ export function WidgetFrame({
             <button
               onClick={() => onEdit(widget.id)}
               title="Configure widget"
-              className="p-0.5 rounded hover:bg-white/10 text-muted-foreground hover:text-bright transition-colors"
+              className="p-0.5 rounded hover:bg-brand-700/80 text-muted-foreground hover:text-foreground transition-colors"
             >
               <Settings className="h-3.5 w-3.5" />
             </button>
@@ -114,7 +114,7 @@ export function WidgetFrame({
             <button
               onClick={() => onDuplicate(widget.id)}
               title="Duplicate widget"
-              className="p-0.5 rounded hover:bg-white/10 text-muted-foreground hover:text-bright transition-colors"
+              className="p-0.5 rounded hover:bg-brand-700/80 text-muted-foreground hover:text-foreground transition-colors"
             >
               <Copy className="h-3.5 w-3.5" />
             </button>

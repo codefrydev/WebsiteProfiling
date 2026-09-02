@@ -18,6 +18,7 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  EmptyState,
 } from '../components';
 import type { ContactIntelligenceEntry, ViewProps } from '@/types';
 
@@ -63,11 +64,11 @@ function ContactSectionTable({
       <div className="overflow-x-auto">
         <Table>
           <TableHead>
-            <TableRow>
+            <tr>
               <TableHeadCell>{vc.colValue}</TableHeadCell>
               <TableHeadCell hint={metricHelpHint('views.contacts.sources')}>{vc.colSources}</TableHeadCell>
               <TableHeadCell>{vc.colPages}</TableHeadCell>
-            </TableRow>
+            </tr>
           </TableHead>
           <TableBody>
             {rows.map((row) => (
@@ -199,9 +200,7 @@ export default function Contacts({ searchQuery = '' }: ViewProps) {
     return (
       <PageLayout>
         <PageHeader title={vc.title} subtitle={vc.subtitle} icon={<Contact2 className="h-7 w-7 text-link shrink-0" />} />
-        <Card>
-          <p className="text-sm text-muted-foreground">{vc.emptyHint}</p>
-        </Card>
+        <EmptyState icon={Contact2} title={vc.title} description={vc.emptyHint} />
       </PageLayout>
     );
   }

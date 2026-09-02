@@ -46,10 +46,10 @@ export default function ViewTabs({
             aria-selected={isActive}
             aria-controls={panelId}
             onClick={() => onChange(tab.id)}
-            className={`press px-3 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
+            className={`press px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 border ${
               isActive
-                ? 'bg-brand-700 text-foreground shadow-[var(--elevation-1)]'
-                : 'text-muted-foreground hover:text-foreground hover:bg-brand-800'
+                ? 'tab-active bg-blue-500/10 border-blue-500/30 text-link font-semibold shadow-xs'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:bg-brand-700/60'
             }`}
           >
             {tab.icon}

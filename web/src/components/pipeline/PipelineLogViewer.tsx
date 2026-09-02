@@ -345,7 +345,7 @@ export default function PipelineLogViewer({
             <button
               type="button"
               onClick={jumpToError}
-              className="inline-flex items-center gap-1 rounded-md border border-red-500/40 bg-red-500/10 px-2 py-1 text-[11px] font-medium text-red-300 hover:bg-red-500/20"
+              className="inline-flex items-center gap-1 rounded-md border border-red-500/40 bg-red-500/10 px-2 py-1 text-[11px] font-medium text-red-700 dark:text-red-300 hover:bg-red-500/20"
             >
               <AlertTriangle className="h-3 w-3" aria-hidden />
               Jump to error

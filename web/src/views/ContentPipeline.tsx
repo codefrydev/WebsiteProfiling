@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 import ChatShell from '@/components/chat/ChatShell';
 import ContentPipelineSidebar from '@/components/pipelineGraph/ContentPipelineSidebar';
 import NodeConfigPanel from '@/components/pipelineGraph/NodeConfigPanel';
@@ -23,7 +24,7 @@ function RightPanel() {
             onClick={() => setTab(id)}
             className={`flex-1 px-3 py-2 text-xs font-medium capitalize transition-colors ${
               tab === id
-                ? 'border-b-2 border-blue-500 text-foreground'
+                ? 'border-b-2 border-link text-link font-semibold'
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -41,7 +42,8 @@ function ContentPipelineBody() {
 
   if (loading) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+      <div className="flex h-full items-center justify-center gap-2 text-sm text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin" aria-hidden />
         Loading pipeline…
       </div>
     );

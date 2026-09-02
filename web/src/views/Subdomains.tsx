@@ -20,6 +20,7 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  EmptyState,
 } from '../components';
 import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { metricHelpHint } from '@/lib/metricHelp';
@@ -107,9 +108,11 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
     return (
       <PageLayout>
         <PageHeader title={vs.title} subtitle={vs.subtitle} icon={<Globe2 className="h-7 w-7 text-link shrink-0" />} />
-        <Card>
-          <p className="text-sm text-muted-foreground">{vs.disabledHint}</p>
-        </Card>
+        <EmptyState
+          icon={Globe2}
+          title={vs.title}
+          description={vs.disabledHint}
+        />
       </PageLayout>
     );
   }
@@ -118,9 +121,11 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
     return (
       <PageLayout>
         <PageHeader title={vs.title} subtitle={vs.subtitle} icon={<Globe2 className="h-7 w-7 text-link shrink-0" />} />
-        <Card>
-          <p className="text-sm text-muted-foreground">{vs.emptyHint}</p>
-        </Card>
+        <EmptyState
+          icon={Globe2}
+          title={vs.title}
+          description={vs.emptyHint}
+        />
       </PageLayout>
     );
   }
@@ -134,12 +139,14 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
           <p className="text-sm text-muted-foreground">{vs.ctWarning}</p>
         </Card>
       ) : null}
-      <div className="relative group/dev-card grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="relative group/dev-card mb-6">
         <DevCopyJsonButton data={statsDevData} />
-        <StatCard label={vs.apex} value={inv.apex || '—'} hint={metricHelpHint('views.subdomains.apex')} />
-        <StatCard label={vs.inScopeHosts} value={inScopeHosts.length} hint={metricHelpHint('views.subdomains.inScopeHosts')} />
-        <StatCard label={vs.gscNotCrawled} value={gscGapHosts.length} hint={metricHelpHint('views.subdomains.gscNotCrawled')} />
-        <StatCard label={vs.outOfScope} value={outOfScope.length} hint={metricHelpHint('views.subdomains.outOfScope')} />
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <StatCard label={vs.apex} value={inv.apex || '—'} hint={metricHelpHint('views.subdomains.apex')} />
+          <StatCard label={vs.inScopeHosts} value={inScopeHosts.length} hint={metricHelpHint('views.subdomains.inScopeHosts')} />
+          <StatCard label={vs.gscNotCrawled} value={gscGapHosts.length} hint={metricHelpHint('views.subdomains.gscNotCrawled')} />
+          <StatCard label={vs.outOfScope} value={outOfScope.length} hint={metricHelpHint('views.subdomains.outOfScope')} />
+        </div>
       </div>
       {gscGapHosts.length > 0 ? (
         <Card className="mb-6 relative group/dev-card" devData={gscGapDevData}>
@@ -167,14 +174,14 @@ export default function Subdomains({ searchQuery = '' }: ViewProps) {
         <div className="overflow-x-auto">
           <Table>
             <TableHead>
-              <TableRow>
+              <tr>
                 <TableHeadCell hint={metricHelpHint('views.subdomains.colHost')}>{vs.colHost}</TableHeadCell>
                 <TableHeadCell hint={metricHelpHint('views.subdomains.colSources')}>{vs.colSources}</TableHeadCell>
                 <TableHeadCell hint={metricHelpHint('views.subdomains.colCrawl')}>{vs.colCrawl}</TableHeadCell>
                 <TableHeadCell hint={metricHelpHint('views.subdomains.colGsc')}>{vs.colGsc}</TableHeadCell>
                 <TableHeadCell hint={metricHelpHint('views.subdomains.colCrawlUrls')}>{vs.colCrawlUrls}</TableHeadCell>
                 <TableHeadCell hint={metricHelpHint('views.subdomains.colGscUrls')}>{vs.colGscUrls}</TableHeadCell>
-              </TableRow>
+              </tr>
             </TableHead>
             <TableBody>
               {inScopeHosts.length === 0 ? (

@@ -7,7 +7,8 @@ import { useSectionsViewReady } from '@/hooks/useSectionsViewReady';
 import { ViewSectionLoading } from '@/components/ViewSectionLoading';
 import { strings } from '../lib/strings';
 import { metricHelpHint } from '@/lib/metricHelp';
-import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, Badge } from '../components';
+import { Repeat } from 'lucide-react';
+import { PageLayout, PageHeader, Card, Table, TableHead, TableHeadCell, TableBody, TableRow, TableCell, Badge, EmptyState } from '../components';
 import { palette } from '../utils/chartPalette';
 import { registerChartJsBase, barOptionsHorizontal } from '../utils/chartJsDefaults';
 import type { ReportRedirect, ViewProps } from '@/types';
@@ -149,9 +150,15 @@ export default function Redirects({ searchQuery = '' }: ViewProps) {
             </TableBody>
           </Table>
         ) : (data?.redirects || []).length > 0 ? (
-          <p className="p-6 text-center text-muted-foreground">{vr.noSearchMatch}</p>
+          <div className="p-8 text-center text-muted-foreground text-sm">
+            <p>{vr.noSearchMatch}</p>
+          </div>
         ) : (
-          <p className="p-6 text-center text-muted-foreground">{vr.noneFound}</p>
+          <EmptyState
+            icon={Repeat}
+            title={vr.title}
+            description={vr.noneFound}
+          />
         )}
       </Card>
     </PageLayout>

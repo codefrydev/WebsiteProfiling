@@ -526,48 +526,52 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'overview' && (
         <ViewTabPanel idPrefix="text-content-analysis" tabId="overview" className="space-y-6">
-          <div className="relative group/dev-card grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="relative group/dev-card">
             <DevCopyJsonButton data={overviewPrimaryStatsDevData} />
-            <Card shadow>
-              <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vtca.uniqueTerms}</div>
-              <div className="text-3xl font-bold text-bright">{vocab.unique_terms ?? sj.emDash}</div>
-            </Card>
-            <Card shadow>
-              <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vtca.pagesWithKeywords}</div>
-              <div className="text-3xl font-bold text-bright">{vocab.pages_with_keywords ?? sj.emDash}</div>
-            </Card>
-            <Card shadow>
-              <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-                <BookOpen className="h-4 w-4" /> {vtca.meanWords}
-              </div>
-              <div className="text-3xl font-bold text-bright">
-                {wcStats.mean != null ? Math.round(wcStats.mean).toLocaleString() : sj.emDash}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">{vtca.perPage}</div>
-            </Card>
-            <Card shadow>
-              <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
-                <FileText className="h-4 w-4" /> {vtca.medianWords}
-              </div>
-              <div className="text-3xl font-bold text-bright">
-                {wcStats.median != null ? Math.round(wcStats.median).toLocaleString() : sj.emDash}
-              </div>
-              <div className="text-xs text-muted-foreground mt-1">{vtca.perPage}</div>
-            </Card>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card shadow>
+                <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vtca.uniqueTerms}</div>
+                <div className="text-3xl font-bold text-bright">{vocab.unique_terms ?? sj.emDash}</div>
+              </Card>
+              <Card shadow>
+                <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vtca.pagesWithKeywords}</div>
+                <div className="text-3xl font-bold text-bright">{vocab.pages_with_keywords ?? sj.emDash}</div>
+              </Card>
+              <Card shadow>
+                <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" /> {vtca.meanWords}
+                </div>
+                <div className="text-3xl font-bold text-bright">
+                  {wcStats.mean != null ? Math.round(wcStats.mean).toLocaleString() : sj.emDash}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">{vtca.perPage}</div>
+              </Card>
+              <Card shadow>
+                <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2">
+                  <FileText className="h-4 w-4" /> {vtca.medianWords}
+                </div>
+                <div className="text-3xl font-bold text-bright">
+                  {wcStats.median != null ? Math.round(wcStats.median).toLocaleString() : sj.emDash}
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">{vtca.perPage}</div>
+              </Card>
+            </div>
           </div>
 
-          <div className="relative group/dev-card grid grid-cols-2 lg:grid-cols-2 gap-4">
+          <div className="relative group/dev-card">
             <DevCopyJsonButton data={overviewSecondaryStatsDevData} />
-            <Card shadow>
-              <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vtca.avgTermsPerPage}</div>
-              <div className="text-2xl font-bold text-bright">{vocab.avg_terms_per_page ?? sj.emDash}</div>
-            </Card>
-            <Card shadow>
-              <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vtca.totalOccurrences}</div>
-              <div className="text-2xl font-bold text-bright">
-                {vocab.total_term_occurrences != null ? vocab.total_term_occurrences.toLocaleString() : sj.emDash}
-              </div>
-            </Card>
+            <div className="grid grid-cols-2 lg:grid-cols-2 gap-4">
+              <Card shadow>
+                <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vtca.avgTermsPerPage}</div>
+                <div className="text-2xl font-bold text-bright">{vocab.avg_terms_per_page ?? sj.emDash}</div>
+              </Card>
+              <Card shadow>
+                <div className="text-muted-foreground text-xs font-bold uppercase tracking-wider mb-2">{vtca.totalOccurrences}</div>
+                <div className="text-2xl font-bold text-bright">
+                  {vocab.total_term_occurrences != null ? vocab.total_term_occurrences.toLocaleString() : sj.emDash}
+                </div>
+              </Card>
+            </div>
           </div>
 
           <div className="relative group/dev-card space-y-4">
@@ -824,11 +828,11 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
               <div className="max-h-80 overflow-y-auto rounded-lg border border-muted">
                 <Table>
                   <TableHead>
-                    <TableRow>
+                    <tr>
                       <TableHeadCell hint={metricHelpHint('views.textContentAnalysis.thCluster')}>{vtca.thRepresentative}</TableHeadCell>
                       <TableHeadCell>{vtca.thClusterScore}</TableHeadCell>
                       <TableHeadCell>{vtca.thKeywords}</TableHeadCell>
-                    </TableRow>
+                    </tr>
                   </TableHead>
                   <TableBody>
                     {tokenClusters.map((cl: TopicCluster, idx: number) => (
@@ -859,11 +863,11 @@ export default function TextContentAnalysis({ searchQuery = '' }: ViewProps) {
               <div className="max-h-80 overflow-y-auto rounded-lg border border-muted">
                 <Table>
                   <TableHead>
-                    <TableRow>
+                    <tr>
                       <TableHeadCell hint={metricHelpHint('views.textContentAnalysis.thCluster')}>{vtca.thRepresentative}</TableHeadCell>
                       <TableHeadCell>{vtca.thClusterScore}</TableHeadCell>
                       <TableHeadCell>{vtca.thKeywords}</TableHeadCell>
-                    </TableRow>
+                    </tr>
                   </TableHead>
                   <TableBody>
                     {semanticClusters.map((cl: TopicCluster, idx: number) => (

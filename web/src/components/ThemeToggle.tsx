@@ -30,10 +30,10 @@ export default function ThemeToggle() {
             title={label()}
             aria-label={label()}
             aria-pressed={active}
-            className={`press p-2 rounded-md transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${
+            className={`press p-1.5 rounded-md transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 ${
               active
-                ? 'bg-brand-700 text-bright shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-brand-800 text-foreground shadow-xs font-semibold'
+                : 'text-muted-foreground hover:text-foreground hover:bg-brand-700/40'
             }`}
           >
             <Icon

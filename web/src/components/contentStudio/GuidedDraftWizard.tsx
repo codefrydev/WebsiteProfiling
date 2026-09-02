@@ -14,6 +14,7 @@ import {
 import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings, format } from '@/lib/strings';
 import { Button } from '@/components';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 import type {
   WizardOption,
   WizardOptionsResult,
@@ -67,6 +68,11 @@ export default function GuidedDraftWizard({
   const [keyword, setKeyword] = useState(initialKeyword);
   const [started, setStarted] = useState(false);
   const [stepIdx, setStepIdx] = useState(0);
+
+  useModalDismiss({
+    onDismiss: onClose,
+    enabled: open,
+  });
 
   const [intentOptions, setIntentOptions] = useState<WizardOption[] | null>(null);
   const [typeOptions, setTypeOptions] = useState<WizardOption[] | null>(null);
@@ -258,13 +264,18 @@ export default function GuidedDraftWizard({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[var(--chat-bg)]">
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-[var(--chat-bg)]"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="guided-wizard-title"
+    >
       {/* Header */}
       <div className="flex shrink-0 items-center justify-between border-b border-default px-4 py-3 sm:px-6">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 shrink-0 text-link" aria-hidden />
-            <h2 className="truncate text-sm font-semibold text-foreground">{w.title}</h2>
+            <h2 id="guided-wizard-title" className="truncate text-sm font-semibold text-foreground">{w.title}</h2>
           </div>
           {keyword.trim() ? (
             <p className="mt-0.5 truncate text-xs text-muted-foreground">

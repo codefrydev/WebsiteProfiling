@@ -51,11 +51,12 @@ export default function AlertBanner({
   children,
   onDismiss,
   className = '',
-  role = 'status',
+  role,
   collapsible = false,
   defaultOpen = false,
 }: AlertBannerProps) {
   const [open, setOpen] = useState(defaultOpen);
+  const resolvedRole = role ?? (variant === 'error' ? 'alert' : 'status');
   const styles = VARIANT_STYLES[variant];
   const DefaultIcon = styles.defaultIcon;
   const iconNode = icon ?? <DefaultIcon className="h-5 w-5 shrink-0 text-current opacity-80" aria-hidden />;
@@ -65,7 +66,7 @@ export default function AlertBanner({
   if (collapsible && title) {
     const Chevron = open ? ChevronDown : ChevronRight;
     return (
-      <div className={`${containerClass} overflow-hidden`} role={role}>
+      <div className={`${containerClass} overflow-hidden`} role={resolvedRole}>
         <div className="flex items-stretch">
           <button
             type="button"
@@ -96,7 +97,7 @@ export default function AlertBanner({
   }
 
   return (
-    <div className={`${containerClass} px-4 py-3`} role={role}>
+    <div className={`${containerClass} px-4 py-3`} role={resolvedRole}>
       <div className="flex gap-2">
         <div className="shrink-0 mt-0.5">{iconNode}</div>
         <div className="flex-1 min-w-0 space-y-1">

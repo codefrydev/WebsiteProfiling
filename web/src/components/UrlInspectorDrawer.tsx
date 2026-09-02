@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useReport } from '@/context/useReport';
 import { useUrlInspector } from '@/context/UrlInspectorContext';
 import { useSectionData } from '@/hooks/useSectionData';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 import InspectorTabs from '@/components/links/InspectorTabs';
 import { shortPath } from '@/lib/linkGraph';
 import { strings } from '@/lib/strings';
@@ -82,11 +83,22 @@ export default function UrlInspectorDrawer({ url, onClose }: UrlInspectorDrawerP
     return buildInspectorDetails(data, url, links);
   }, [url, data, links]);
 
+  useModalDismiss({
+    onDismiss: onClose,
+    enabled: Boolean(url && link),
+    lockScroll: true,
+  });
+
   if (!url || !link) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" role="dialog" aria-modal="true" aria-label={ui.label}>
-      <button type="button" className="flex-1 bg-black/40" onClick={onClose} aria-label={ui.close} />
+      <button
+        type="button"
+        className="flex-1 bg-[color:var(--app-overlay)] backdrop-blur-xs transition-opacity"
+        onClick={onClose}
+        aria-label={ui.close}
+      />
       <div className="w-full max-w-2xl h-full bg-brand-800 border-l border-default shadow-xl flex flex-col fade-in">
         <div className="shrink-0 flex items-center gap-2 px-3 py-2.5 border-b border-default">
           <div className="flex items-center gap-0.5 shrink-0">

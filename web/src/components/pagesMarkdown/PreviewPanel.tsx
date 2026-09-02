@@ -178,8 +178,8 @@ export default function PreviewPanel({ crawlRunId, refreshKey }: PreviewPanelPro
                       onClick={() => selectItem(item.url, idx)}
                       className={`w-full text-left px-3 py-2.5 transition-colors ${
                         isActive
-                          ? 'border-l-2 border-accent-warm bg-accent-warm/10'
-                          : 'hover:bg-brand-800/60'
+                          ? 'border-l-2 border-link bg-blue-500/10 text-link font-medium'
+                          : 'hover:bg-brand-700/60'
                       }`}
                     >
                       <p
@@ -209,7 +209,7 @@ export default function PreviewPanel({ crawlRunId, refreshKey }: PreviewPanelPro
               type="button"
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
-              className="flex items-center gap-0.5 rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+              className="flex items-center gap-0.5 rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-brand-700/60 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
               Prev
@@ -221,7 +221,7 @@ export default function PreviewPanel({ crawlRunId, refreshKey }: PreviewPanelPro
               type="button"
               disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="flex items-center gap-0.5 rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-40"
+              className="flex items-center gap-0.5 rounded px-2 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-brand-700/60 transition-colors disabled:opacity-40 disabled:hover:bg-transparent"
             >
               Next
               <ChevronRight className="h-3.5 w-3.5" />

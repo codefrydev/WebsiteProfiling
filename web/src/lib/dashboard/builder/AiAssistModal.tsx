@@ -8,6 +8,7 @@ import {
   AiGenerateError,
   type AiScriptResult,
 } from '@/lib/dashboard/ai/generate';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 import type { Widget, DashboardDoc, WidgetBinding, WidgetOptions } from '@/lib/dashboard/types';
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -134,18 +135,34 @@ export default function AiAssistModal(props: AiAssistModalProps) {
     }
   };
 
+  useModalDismiss({
+    onDismiss: onClose,
+    lockScroll: true,
+  });
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-brand-900 border border-default rounded-xl shadow-2xl w-full max-w-lg flex flex-col max-h-[85vh]">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+      role="presentation"
+      onClick={onClose}
+    >
+      <div
+        className="bg-brand-800 border border-default rounded-xl shadow-2xl w-full max-w-lg flex flex-col max-h-[85vh]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ai-assist-title"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-default shrink-0">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-blue-400" />
-            <h2 className="font-bold text-bright text-sm">{MODE_LABELS[mode]}</h2>
+            <Sparkles className="h-4 w-4 text-link" />
+            <h2 id="ai-assist-title" className="font-bold text-foreground text-sm">{MODE_LABELS[mode]}</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-white/10 text-muted-foreground hover:text-bright transition-colors"
+            aria-label="Close"
+            className="p-1 rounded hover:bg-brand-700/80 text-muted-foreground hover:text-foreground transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
@@ -229,7 +246,7 @@ export default function AiAssistModal(props: AiAssistModalProps) {
           )}
           <button
             onClick={onClose}
-            className="flex-1 py-2 rounded-lg border border-default hover:bg-white/5 text-sm text-foreground transition-colors"
+            className="flex-1 py-2 rounded-lg border border-default hover:bg-brand-700/80 text-sm text-foreground transition-colors"
           >
             Cancel
           </button>

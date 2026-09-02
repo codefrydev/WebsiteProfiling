@@ -94,9 +94,9 @@ function UrlDiffTable({
       <div className="max-h-[min(480px,55vh)] overflow-y-auto border border-default rounded-lg">
         <Table>
           <TableHead sticky>
-            <TableRow>
+            <tr>
               <TableHeadCell>URL ({urls.length})</TableHeadCell>
-            </TableRow>
+            </tr>
           </TableHead>
           <TableBody striped>
             {urls.map((u) => (
@@ -503,11 +503,11 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                 <div className="max-h-[min(480px,55vh)] overflow-y-auto">
                   <Table>
                     <TableHead sticky>
-                      <TableRow>
+                      <tr>
                         <TableHeadCell>{vc.statusColUrl}</TableHeadCell>
                         <TableHeadCell hint={metricHelpHint('views.compare.baselineValue')}>{vc.statusColBefore}</TableHeadCell>
                         <TableHeadCell hint={metricHelpHint('views.compare.currentValue')}>{vc.statusColAfter}</TableHeadCell>
-                      </TableRow>
+                      </tr>
                     </TableHead>
                     <TableBody striped>
                       {statusFiltered.map((row) => (
@@ -545,12 +545,12 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                   <h3 className="text-sm font-bold text-foreground mb-3">{vc.categoryScores}</h3>
                   <Table>
                     <TableHead>
-                      <TableRow>
+                      <tr>
                         <TableHeadCell>Category</TableHeadCell>
                         <TableHeadCell hint={metricHelpHint('views.compare.currentValue')}>Current</TableHeadCell>
                         <TableHeadCell hint={metricHelpHint('views.compare.baselineValue')}>Baseline</TableHeadCell>
                         <TableHeadCell hint={metricHelpHint('views.compare.metricDelta')}>Δ</TableHeadCell>
-                      </TableRow>
+                      </tr>
                     </TableHead>
                     <TableBody striped>
                       {reportCompare.categoryScores.map((row) => (
@@ -577,12 +577,12 @@ export default function CompareReports({ searchQuery = '' }: ViewProps) {
                   <h3 className="text-sm font-bold text-foreground mb-3">{vc.seoSignals}</h3>
                   <Table>
                     <TableHead>
-                      <TableRow>
+                      <tr>
                         <TableHeadCell>Signal</TableHeadCell>
                         <TableHeadCell hint={metricHelpHint('views.compare.currentValue')}>Current</TableHeadCell>
                         <TableHeadCell hint={metricHelpHint('views.compare.baselineValue')}>Baseline</TableHeadCell>
                         <TableHeadCell hint={metricHelpHint('views.compare.metricDelta')}>Δ</TableHeadCell>
-                      </TableRow>
+                      </tr>
                     </TableHead>
                     <TableBody striped>
                       {reportCompare.seoHealth.map((row) => (

@@ -38,7 +38,7 @@ export function SlicerControl({ slicer, value, editing, onChange, onRemove }: Sl
         <button
           onClick={() => setOpen((o) => !o)}
           className={`flex items-center gap-1 px-2 py-1 rounded-lg border text-xs transition-colors ${
-            selected.length ? 'border-blue-500 bg-blue-500/10 text-blue-300' : 'border-default text-muted-foreground hover:text-bright'
+            selected.length ? 'border-blue-500 bg-blue-500/10 text-link' : 'border-default text-muted-foreground hover:text-foreground hover:bg-brand-700/60'
           }`}
         >
           <span className="font-medium">{slicer.label}</span>
@@ -46,7 +46,7 @@ export function SlicerControl({ slicer, value, editing, onChange, onRemove }: Sl
           <ChevronDown className="h-3 w-3" />
         </button>
         {editing && (
-          <button onClick={onRemove} title="Remove slicer" className="ml-0.5 p-0.5 rounded hover:bg-red-500/20 text-muted-foreground hover:text-red-400">
+          <button onClick={onRemove} title="Remove slicer" className="ml-0.5 p-0.5 rounded hover:bg-red-500/20 text-muted-foreground hover:text-red-500">
             <X className="h-3 w-3" />
           </button>
         )}
@@ -54,14 +54,14 @@ export function SlicerControl({ slicer, value, editing, onChange, onRemove }: Sl
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute z-50 mt-1 w-56 max-h-64 overflow-auto bg-brand-900 border border-default rounded-lg p-1.5 shadow-2xl">
+          <div className="absolute z-50 mt-1 w-56 max-h-64 overflow-auto bg-brand-800 border border-default rounded-lg p-1.5 shadow-2xl">
             <div className="flex items-center justify-between px-1 pb-1 mb-1 border-b border-default">
               <span className="text-[10px] uppercase font-bold text-muted-foreground">{slicer.label}</span>
-              <button onClick={() => onChange([])} className="text-[10px] text-blue-400 hover:text-blue-300">Clear</button>
+              <button onClick={() => onChange([])} className="text-[10px] text-link hover:underline">Clear</button>
             </div>
             {options.length === 0 && <p className="text-xs text-muted-foreground px-1 py-1">No values</p>}
             {options.map((o) => (
-              <label key={o} className="flex items-center gap-2 px-1 py-0.5 text-xs text-foreground hover:bg-white/5 rounded cursor-pointer">
+              <label key={o} className="flex items-center gap-2 px-1 py-0.5 text-xs text-foreground hover:bg-brand-700/60 rounded cursor-pointer">
                 <input type="checkbox" checked={selected.includes(o)} onChange={() => toggle(o)} />
                 <span className="truncate" title={o}>{o}</span>
               </label>

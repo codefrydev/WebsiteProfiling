@@ -242,18 +242,20 @@ export default function TechStack({ searchQuery = '' }: ViewProps) {
 
       {activeTab === 'overview' && (
         <ViewTabPanel idPrefix="tech-stack" tabId="overview" className="space-y-6">
-          <div className="relative group/dev-card grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="relative group/dev-card">
             <DevCopyJsonButton data={overviewCategoryStatsDevData} />
-            {Object.entries(categoryCounts).slice(0, 4).map(([cat, count]) => (
-              <StatCard
-                key={cat}
-                label={cat}
-                value={String(count)}
-                sub={vr.techDetectedSuffix}
-                hint={metricHelpHint('views.techStack.categoryCount')}
-                shadow
-              />
-            ))}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {Object.entries(categoryCounts).slice(0, 4).map(([cat, count]) => (
+                <StatCard
+                  key={cat}
+                  label={cat}
+                  value={String(count)}
+                  sub={vr.techDetectedSuffix}
+                  hint={metricHelpHint('views.techStack.categoryCount')}
+                  shadow
+                />
+              ))}
+            </div>
           </div>
 
           <Card padding="tight" devData={detectedChartDevData}>

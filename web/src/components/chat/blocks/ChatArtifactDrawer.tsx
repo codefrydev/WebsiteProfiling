@@ -5,6 +5,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import type { ChatBlock } from '@/components/chat/deriveChatBlocks';
 import { resolveHref } from './ChatFileDownloadBlock';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 type Block = Extract<ChatBlock, { type: 'code_artifact' }>;
 
@@ -26,6 +27,11 @@ export default function ChatArtifactDrawer({ block, onClose }: { block: Block; o
     setTimeout(() => setCopied(false), 1500);
   };
 
+  useModalDismiss({
+    onDismiss: onClose,
+    lockScroll: true,
+  });
+
   return (
     <div
       className="fixed inset-0 z-50 flex justify-end"
@@ -33,7 +39,12 @@ export default function ChatArtifactDrawer({ block, onClose }: { block: Block; o
       aria-modal="true"
       aria-label={block.filename}
     >
-      <button type="button" className="flex-1 bg-black/40" onClick={onClose} aria-label="Close preview" />
+      <button
+        type="button"
+        className="flex-1 bg-[color:var(--app-overlay)] backdrop-blur-xs transition-opacity"
+        onClick={onClose}
+        aria-label="Close preview"
+      />
       <div className="flex h-full w-full max-w-3xl flex-col border-l border-default bg-brand-800 shadow-xl fade-in">
         <div className="flex shrink-0 items-center gap-2 border-b border-default px-3 py-2.5">
           <span className="min-w-0 flex-1 truncate text-sm font-medium text-bright" title={block.filename}>

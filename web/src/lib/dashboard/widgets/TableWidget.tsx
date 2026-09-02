@@ -31,7 +31,7 @@ export function TableWidget({ result, options }: TableWidgetProps) {
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i} className="hover:bg-white/5">
+            <tr key={i} className="hover:bg-brand-700/60 dark:hover:bg-brand-700/30 transition-colors">
               {cols.map((c) => (
                 <td key={c} className="px-2 py-1 border-b border-default/40 truncate max-w-[260px]" title={cell(r[c])}>
                   {cell(r[c])}

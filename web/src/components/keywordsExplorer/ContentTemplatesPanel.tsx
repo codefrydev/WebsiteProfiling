@@ -5,6 +5,7 @@ import { apiUrl, apiFetch } from '@/lib/publicBase';
 import { strings } from '@/lib/strings';
 import type { KeywordRow } from '@/types/components';
 import { useReadOnlySession } from '@/hooks/useReadOnlySession';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 import { Card, Button } from '@/components';
 import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 
@@ -92,38 +93,50 @@ export default function ContentTemplatesPanel({
     }
   }, [readOnly, activeTemplate, keyword, clusterRows, s.failed]);
 
+  const closeModal = useCallback(() => setActiveTemplate(null), []);
+  useModalDismiss({
+    onDismiss: closeModal,
+    enabled: Boolean(activeTemplate),
+  });
+
   return (
     <>
-      <div className="relative group/dev-card grid gap-4 sm:grid-cols-3">
+      <div className="relative group/dev-card">
         {devData != null ? <DevCopyJsonButton data={devData} /> : null}
-        {TEMPLATES.map((t) => (
-          <Card key={t.id} className="p-4 flex flex-col">
-            <h3 className="text-sm font-semibold">{t.title}</h3>
-            <ul className="mt-2 text-xs text-muted-foreground space-y-1 flex-1 list-disc pl-4">
-              {t.outline.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-            <Button
-              type="button"
-              variant="secondary"
-              className="mt-3 !py-1.5 !text-xs"
-              onClick={() => openTemplate(t)}
-              disabled={readOnly}
-            >
-              Use template
-            </Button>
-          </Card>
-        ))}
+        <div className="grid gap-4 sm:grid-cols-3">
+          {TEMPLATES.map((t) => (
+            <Card key={t.id} className="p-4 flex flex-col">
+              <h3 className="text-sm font-semibold">{t.title}</h3>
+              <ul className="mt-2 text-xs text-muted-foreground space-y-1 flex-1 list-disc pl-4">
+                {t.outline.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+              <Button
+                type="button"
+                variant="secondary"
+                className="mt-3 !py-1.5 !text-xs"
+                onClick={() => openTemplate(t)}
+                disabled={readOnly}
+              >
+                Use template
+              </Button>
+            </Card>
+          ))}
+        </div>
       </div>
       {activeTemplate ? (
         <div
-          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4"
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-[color:var(--app-overlay)] backdrop-blur-xs p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="content-template-title"
+          onClick={closeModal}
         >
-          <div className="w-full max-w-lg rounded-xl border border-default bg-brand-800 shadow-xl">
+          <div
+            className="w-full max-w-lg rounded-xl border border-default bg-brand-800 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between border-b border-default px-4 py-3">
               <h3 id="content-template-title" className="text-sm font-semibold text-bright">
                 {activeTemplate.title}

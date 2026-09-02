@@ -692,51 +692,53 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
       {activeTab === 'summary' && (
         <ViewTabPanel idPrefix="content-analytics" tabId="summary" className="space-y-6">
       {/* KPI stat cards */}
-      <div className="relative group/dev-card grid grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="relative group/dev-card">
         <DevCopyJsonButton data={summaryStatsDevData} />
-        <StatCard
-          label={vca.meanWords}
-          value={wcStats.mean != null ? Math.round(wcStats.mean).toLocaleString() : sj.emDash}
-          sub={vca.perPage}
-          icon={<BookOpen className="h-4 w-4" aria-hidden />}
-          hint={metricHelpHint('shared.avgWords')}
-          shadow
-        />
-        <StatCard
-          label={vca.medianWords}
-          value={wcStats.median != null ? Math.round(wcStats.median).toLocaleString() : sj.emDash}
-          sub={vca.perPage}
-          icon={<FileText className="h-4 w-4" aria-hidden />}
-          hint={metricHelpHint('shared.medianWords')}
-          shadow
-        />
-        <StatCard
-          label={vca.ogCoverage}
-          value={sc.og_coverage_pct != null ? `${sc.og_coverage_pct}%` : sj.emDash}
-          sub={vca.ogTags}
-          icon={<Globe className="h-4 w-4 text-link" aria-hidden />}
-          hint={metricHelpHint('views.overview.ogCoverage')}
-          shadow
-          className="[&_.text-2xl]:text-link"
-        />
-        <StatCard
-          label={vca.twitterCoverage}
-          value={sc.twitter_coverage_pct != null ? `${sc.twitter_coverage_pct}%` : sj.emDash}
-          sub={vca.twitterTags}
-          icon={<Share2 className="h-4 w-4 text-sky-700 dark:text-sky-400" aria-hidden />}
-          hint={metricHelpHint('views.contentAnalytics.twitterCoverage')}
-          shadow
-          className="[&_.text-2xl]:text-sky-700 [&_.text-2xl]:dark:text-sky-400"
-        />
-        <StatCard
-          label={vca.thinPages}
-          value={thinPages.length}
-          sub={vca.under300}
-          icon={<AlertTriangle className={`h-4 w-4 ${hasThinPages ? 'text-amber-700 dark:text-amber-400' : ''}`} aria-hidden />}
-          hint={metricHelpHint('shared.thinPages')}
-          shadow
-          className={hasThinPages ? 'ring-1 ring-amber-500/20 border-amber-900/30 [&_.text-2xl]:text-amber-700 [&_.text-2xl]:dark:text-amber-400' : ''}
-        />
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+          <StatCard
+            label={vca.meanWords}
+            value={wcStats.mean != null ? Math.round(wcStats.mean).toLocaleString() : sj.emDash}
+            sub={vca.perPage}
+            icon={<BookOpen className="h-4 w-4" aria-hidden />}
+            hint={metricHelpHint('shared.avgWords')}
+            shadow
+          />
+          <StatCard
+            label={vca.medianWords}
+            value={wcStats.median != null ? Math.round(wcStats.median).toLocaleString() : sj.emDash}
+            sub={vca.perPage}
+            icon={<FileText className="h-4 w-4" aria-hidden />}
+            hint={metricHelpHint('shared.medianWords')}
+            shadow
+          />
+          <StatCard
+            label={vca.ogCoverage}
+            value={sc.og_coverage_pct != null ? `${sc.og_coverage_pct}%` : sj.emDash}
+            sub={vca.ogTags}
+            icon={<Globe className="h-4 w-4 text-link" aria-hidden />}
+            hint={metricHelpHint('views.overview.ogCoverage')}
+            shadow
+            className="[&_.text-2xl]:text-link"
+          />
+          <StatCard
+            label={vca.twitterCoverage}
+            value={sc.twitter_coverage_pct != null ? `${sc.twitter_coverage_pct}%` : sj.emDash}
+            sub={vca.twitterTags}
+            icon={<Share2 className="h-4 w-4 text-sky-700 dark:text-sky-400" aria-hidden />}
+            hint={metricHelpHint('views.contentAnalytics.twitterCoverage')}
+            shadow
+            className="[&_.text-2xl]:text-sky-700 [&_.text-2xl]:dark:text-sky-400"
+          />
+          <StatCard
+            label={vca.thinPages}
+            value={thinPages.length}
+            sub={vca.under300}
+            icon={<AlertTriangle className={`h-4 w-4 ${hasThinPages ? 'text-amber-700 dark:text-amber-400' : ''}`} aria-hidden />}
+            hint={metricHelpHint('shared.thinPages')}
+            shadow
+            className={hasThinPages ? 'ring-1 ring-amber-500/20 border-amber-900/30 [&_.text-2xl]:text-amber-700 [&_.text-2xl]:dark:text-amber-400' : ''}
+          />
+        </div>
       </div>
 
       {richResultsRows.length > 0 ? (
@@ -776,11 +778,11 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
               <div className="max-h-64 overflow-y-auto rounded-lg border border-muted">
                 <Table>
                   <TableHead>
-                    <TableRow>
+                    <tr>
                       <TableHeadCell>{vca.thHost}</TableHeadCell>
                       <TableHeadCell className="text-right">{vca.thLinks}</TableHeadCell>
                       <TableHeadCell className="text-right">{vca.thPages}</TableHeadCell>
-                    </TableRow>
+                    </tr>
                   </TableHead>
                   <TableBody>
                     {outboundDomains.map((row: OutboundLinkDomain) => (
@@ -855,11 +857,11 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
           <div className="max-h-80 overflow-y-auto rounded-lg border border-muted">
             <Table>
               <TableHead>
-                <TableRow>
+                <tr>
                   <TableHeadCell>{vca.thRepresentative}</TableHeadCell>
                   <TableHeadCell>{vca.thClusterScore}</TableHeadCell>
                   <TableHeadCell>{vca.thKeywords}</TableHeadCell>
-                </TableRow>
+                </tr>
               </TableHead>
               <TableBody>
                 {tokenClusters.map((cl: TopicCluster, idx: number) => (
@@ -886,11 +888,11 @@ export default function ContentAnalytics({ searchQuery = '' }: ViewProps) {
           <div className="max-h-80 overflow-y-auto rounded-lg border border-muted">
             <Table>
               <TableHead>
-                <TableRow>
+                <tr>
                   <TableHeadCell>{vca.thRepresentative}</TableHeadCell>
                   <TableHeadCell>{vca.thClusterScore}</TableHeadCell>
                   <TableHeadCell>{vca.thKeywords}</TableHeadCell>
-                </TableRow>
+                </tr>
               </TableHead>
               <TableBody>
                 {semanticClusters.map((cl: TopicCluster, idx: number) => (

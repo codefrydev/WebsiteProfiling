@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import ChatShell from '@/components/chat/ChatShell';
+import AlertBanner from '@/components/AlertBanner';
 import SecretsContextBar from '@/components/secrets/SecretsContextBar';
 import SecretsSidebar from '@/components/secrets/SecretsSidebar';
 import SecretsSettingsPanel, { SecretsSaveBar } from '@/components/secrets/SecretsSettingsPanel';
@@ -38,8 +39,8 @@ export default function SecretsPage() {
               {s.loading}
             </div>
           ) : loadError ? (
-            <div className="mx-auto max-w-3xl px-4 py-10 text-sm text-red-700 dark:text-red-400">
-              {loadError}
+            <div className="mx-auto max-w-3xl px-4 py-8">
+              <AlertBanner variant="error">{loadError}</AlertBanner>
             </div>
           ) : (
             <>

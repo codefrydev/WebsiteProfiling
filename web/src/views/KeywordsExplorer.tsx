@@ -17,7 +17,7 @@ import { filterKeywordRowsForDomain } from '@/lib/filterKeywordsForDomain';
 import { apiUrl, apiFetch } from '../lib/publicBase';
 import { goToPipeline } from '../lib/pipelineReturn';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Button, ViewTabs } from '../components';
+import { PageLayout, PageHeader, Card, Button, ViewTabs, EmptyState } from '../components';
 import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import SortablePaginatedTable from '../components/google/SortablePaginatedTable';
 import { filterBySearch } from '../components/google/tableUtils';
@@ -500,30 +500,31 @@ export default function KeywordsExplorer({ onOpenIntegrations }: ViewProps) {
           title={ke.title}
           subtitle={ke.subtitle}
         />
-        <div className="max-w-md mx-auto text-center py-12">
-          <Key className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-          <h2 className="text-xl font-bold text-bright mb-2">{ke.emptyTitle}</h2>
-          <p className="text-muted-foreground text-sm mb-4 whitespace-pre-line">{ke.emptyBody}</p>
-          <p className="text-xs text-muted-foreground mb-6">{ke.emptyHint}</p>
-          <Button
-            variant="primary"
-            onClick={() => goToPipeline(navigate, { preset: 'keywords-explorer' })}
-          >
-            <Play className="h-4 w-4" aria-hidden />
-            {ke.runInPipeline}
-          </Button>
-        </div>
+        <EmptyState
+          icon={Key}
+          title={ke.emptyTitle}
+          description={
+            <span className="space-y-2 block">
+              <span className="block whitespace-pre-line">{ke.emptyBody}</span>
+              <span className="block text-xs text-muted-foreground">{ke.emptyHint}</span>
+            </span>
+          }
+          primaryAction={{
+            label: ke.runInPipeline,
+            onClick: () => goToPipeline(navigate, { preset: 'keywords-explorer' }),
+          }}
+          aurora
+        />
         {!hasGscConnected && onOpenIntegrations && (
           <Card className="max-w-lg mx-auto mt-6 text-center border-blue-500/30">
             <p className="text-sm text-muted-foreground mb-3">{ke.connectBanner}</p>
-            <button
-              type="button"
+            <Button
+              variant="primary"
               onClick={onOpenIntegrations}
-              className="px-4 py-2 bg-accent text-white text-sm rounded-lg hover:bg-accent/90 inline-flex items-center gap-2"
             >
               <Settings2 className="w-4 h-4" />
               {ke.connectGoogle}
-            </button>
+            </Button>
           </Card>
         )}
         <div className="mt-8 max-w-3xl mx-auto">

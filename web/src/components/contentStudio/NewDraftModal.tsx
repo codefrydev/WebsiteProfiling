@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react';
 import { X } from 'lucide-react';
 import { strings } from '@/lib/strings';
 import { Button } from '@/components';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 export interface NewDraftModalProps {
   open: boolean;
@@ -28,6 +29,11 @@ export default function NewDraftModal({
   const [keyword, setKeyword] = useState(initialKeyword);
   const [landingUrl, setLandingUrl] = useState('');
 
+  useModalDismiss({
+    onDismiss: onClose,
+    enabled: open,
+  });
+
   if (!open) return null;
 
   const handleSubmit = (e: FormEvent) => {
@@ -43,12 +49,16 @@ export default function NewDraftModal({
 
   return (
     <div
-      className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-[80] flex items-center justify-center bg-[color:var(--app-overlay)] backdrop-blur-xs p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="new-draft-title"
+      onClick={onClose}
     >
-      <div className="w-full max-w-md rounded-xl border border-default bg-brand-800 shadow-xl">
+      <div
+        className="w-full max-w-md rounded-xl border border-default bg-brand-800 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between border-b border-default px-4 py-3">
           <h3 id="new-draft-title" className="text-sm font-semibold text-bright">
             {s.title}

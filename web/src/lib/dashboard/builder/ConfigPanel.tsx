@@ -113,10 +113,14 @@ export function ConfigPanel({ widget, onChange, onClose, onDelete }: ConfigPanel
   const measureLabels = (spec.measures ?? []).map(measureLabel);
 
   return (
-    <div className="w-[340px] shrink-0 border-l border-default bg-brand-900 flex flex-col h-full">
+    <div className="w-[340px] shrink-0 border-l border-default bg-brand-800 flex flex-col h-full">
       <div className="flex items-center justify-between px-3 py-2.5 border-b border-default shrink-0">
-        <h2 className="font-bold text-bright text-sm truncate">{widget.title || def?.label || 'Widget'}</h2>
-        <button onClick={onClose} className="p-1 rounded hover:bg-white/10 text-muted-foreground hover:text-bright">
+        <h2 className="font-bold text-foreground text-sm truncate">{widget.title || def?.label || 'Widget'}</h2>
+        <button
+          onClick={onClose}
+          aria-label="Close configuration"
+          className="p-1 rounded hover:bg-brand-700/80 text-muted-foreground hover:text-foreground transition-colors"
+        >
           <X className="h-4 w-4" />
         </button>
       </div>
@@ -127,7 +131,7 @@ export function ConfigPanel({ widget, onChange, onClose, onDelete }: ConfigPanel
             key={t}
             onClick={() => setTab(t)}
             className={`flex-1 py-2 font-medium capitalize transition-colors ${
-              tab === t ? 'text-blue-400 border-b-2 border-blue-500 -mb-px' : 'text-muted-foreground hover:text-bright'
+              tab === t ? 'text-link border-b-2 border-link -mb-px' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {t === 'viz' ? 'Visual' : t}
@@ -147,7 +151,7 @@ export function ConfigPanel({ widget, onChange, onClose, onDelete }: ConfigPanel
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search fields…"
-                  className="w-full pl-7 pr-2 py-1 text-xs bg-brand-800 border border-default rounded-md text-bright focus:outline-none"
+                  className="w-full pl-7 pr-2 py-1 text-xs bg-brand-900 border border-default focus:border-[var(--accent)] rounded-md text-foreground focus:outline-none transition-colors"
                 />
               </div>
               <div className="max-h-40 overflow-y-auto space-y-1 pr-1">

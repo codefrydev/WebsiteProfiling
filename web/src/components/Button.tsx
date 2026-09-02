@@ -1,7 +1,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-outline';
 
 type ButtonProps = {
   children?: ReactNode;
@@ -12,9 +12,9 @@ type ButtonProps = {
 } & ButtonHTMLAttributes<HTMLButtonElement>;
 
 /**
- * Shared button: primary (Export style), secondary (border), ghost.
+ * Shared button: primary (Export style), secondary (border), ghost, danger, danger-outline.
  * Same size: px-4 py-2 rounded-lg text-sm font-medium/bold for primary.
- * Includes tactile press feedback (.press) and, for primary, hover elevation.
+ * Includes tactile press feedback (.press) and, for primary/danger, hover elevation.
  */
 export default function Button({
   children,
@@ -32,6 +32,8 @@ export default function Button({
     primary: 'bg-blue-600 hover:bg-blue-500 text-white font-bold hover:shadow-[var(--elevation-2)]',
     secondary: 'border border-default text-foreground hover:bg-brand-700/80',
     ghost: 'text-muted-foreground hover:text-foreground hover:bg-brand-800/80',
+    danger: 'bg-red-600 hover:bg-red-500 text-white font-bold hover:shadow-[var(--elevation-2)]',
+    'danger-outline': 'border border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-500/10 font-medium',
   };
   const combined = `${base} ${variants[variant] || variants.primary} ${className}`.trim();
   return (

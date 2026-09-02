@@ -50,14 +50,14 @@ export default function DraftsTable({
     <div className="overflow-x-auto">
       <Table>
         <TableHead>
-          <TableRow>
+          <tr>
             <TableHeadCell>{t.colTitle}</TableHeadCell>
             <TableHeadCell>{t.colKeyword}</TableHeadCell>
             <TableHeadCell>{t.colGrade}</TableHeadCell>
             <TableHeadCell>{t.colStatus}</TableHeadCell>
             <TableHeadCell>{t.colUpdated}</TableHeadCell>
             {!readOnly ? <TableHeadCell>{t.colActions}</TableHeadCell> : null}
-          </TableRow>
+          </tr>
         </TableHead>
         <TableBody>
           {drafts.map((d) => (

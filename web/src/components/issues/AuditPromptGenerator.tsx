@@ -12,6 +12,7 @@ import {
   type BuildIssuesPromptResult,
 } from '@/lib/buildIssuesPrompt';
 import { buildChatFabHref, writeChatComposerDraft } from '@/lib/chatUrlState';
+import { useModalDismiss } from '@/hooks/useModalDismiss';
 
 export interface PromptGeneratorLabels {
   generatePrompt: string;
@@ -108,6 +109,12 @@ export default function AuditPromptGenerator({
     writeChatComposerDraft({ domain, text: fullText });
     navigate(buildChatFabHref(domain));
   }, [domain, fullText, navigate]);
+
+  useModalDismiss({
+    onDismiss: closeModal,
+    enabled: open,
+    lockScroll: true,
+  });
 
   if (built.rawCount === 0) return null;
 

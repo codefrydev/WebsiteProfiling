@@ -71,7 +71,7 @@ export default function LandingPage() {
           description={vl.spotlight2Description}
           bullets={vl.spotlight2Bullets}
           mockVariant="issues"
-          ctaHref="/home"
+          ctaHref="/dashboard"
           ctaLabel={vl.spotlight2Cta}
           reversed
         />

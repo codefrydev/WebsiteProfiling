@@ -515,34 +515,36 @@ export default function Issues({ searchQuery = '' }: ViewProps) {
       )}
 
       {issuesTab === 'audit' && (
-      <div className="relative group/dev-card grid grid-cols-2 lg:grid-cols-4 gap-4 min-w-0">
+      <div className="relative group/dev-card min-w-0">
         <DevCopyJsonButton data={priorityStatsDevData} />
-        {priorityOrder.map((p) => {
-          const cfg = PRIORITY_CONFIG[p];
-          const Icon = PRIORITY_ICONS[p];
-          const count = priorityCounts[p] || 0;
-          return (
-            <Card
-              key={p}
-              shadow
-              devData={{
-                widget: 'issues.priorityStat',
-                priority: p,
-                count,
-                active: priorityFilter === p,
-              }}
-              className={`cursor-pointer transition-all ${
-                priorityFilter === p ? `${cfg.ring || 'ring-1 ring-brand-700/30'} border-brand-700` : 'hover:border-brand-700'
-              }`}
-              onClick={() => setPriorityFilter((prev) => (prev === p ? sj.all : p))}
-            >
-              <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${cfg.text}`}>
-                <Icon className="h-4 w-4" /> {p}
-              </div>
-              <div className={`text-3xl font-bold ${count > 0 ? cfg.text : 'text-muted-foreground'}`}>{count}</div>
-            </Card>
-          );
-        })}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {priorityOrder.map((p) => {
+            const cfg = PRIORITY_CONFIG[p];
+            const Icon = PRIORITY_ICONS[p];
+            const count = priorityCounts[p] || 0;
+            return (
+              <Card
+                key={p}
+                shadow
+                devData={{
+                  widget: 'issues.priorityStat',
+                  priority: p,
+                  count,
+                  active: priorityFilter === p,
+                }}
+                className={`cursor-pointer transition-all ${
+                  priorityFilter === p ? `${cfg.ring || 'ring-1 ring-brand-700/30'} border-brand-700` : 'hover:border-brand-700'
+                }`}
+                onClick={() => setPriorityFilter((prev) => (prev === p ? sj.all : p))}
+              >
+                <div className={`text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-2 ${cfg.text}`}>
+                  <Icon className="h-4 w-4" /> {p}
+                </div>
+                <div className={`text-3xl font-bold ${count > 0 ? cfg.text : 'text-muted-foreground'}`}>{count}</div>
+              </Card>
+            );
+          })}
+        </div>
       </div>
       )}
 

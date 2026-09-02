@@ -21,7 +21,7 @@ import {
 } from '../lib/domainSlug';
 import { goToPipeline } from '../lib/pipelineReturn';
 import { strings, format } from '../lib/strings';
-import { PageLayout, PageHeader, Card, Button, ViewTabs, ViewTabPanel, Select, LabelWithHint } from '../components';
+import { PageLayout, PageHeader, Card, Button, ViewTabs, ViewTabPanel, Select, LabelWithHint, EmptyState } from '../components';
 import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import { paginateSlice, PAGE_SIZE } from '@/components/google/tableUtils';
 import type { ViewTabItem } from '../components';
@@ -486,20 +486,16 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
           title={vlh.emptyTitle}
           subtitle={vlh.emptySubtitle}
         />
-        <Card className="mx-auto max-w-lg p-8 text-center">
-          <span className="mx-auto mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
-            <Gauge className="h-6 w-6" aria-hidden />
-          </span>
-          <p className="text-sm text-muted-foreground">{vlh.emptyBody}</p>
-          <Button
-            variant="primary"
-            className="mt-6"
-            onClick={() => goToPipeline(navigate, { preset: 'lighthouse' })}
-          >
-            <Play className="h-4 w-4" aria-hidden />
-            {vlh.runInPipeline}
-          </Button>
-        </Card>
+        <EmptyState
+          icon={Gauge}
+          title={vlh.emptyTitle}
+          description={vlh.emptyBody}
+          primaryAction={{
+            label: vlh.runInPipeline,
+            onClick: () => goToPipeline(navigate, { preset: 'lighthouse' }),
+          }}
+          aurora
+        />
       </PageLayout>
     );
   }
@@ -663,11 +659,13 @@ export default function Lighthouse({ searchQuery = '' }: ViewProps) {
       {activeTab === 'quick-wins' && (
         <div id="lh-tab-quick-wins" role="tabpanel" aria-labelledby="lh-tab-btn-quick-wins" className="space-y-4">
           <p className="text-muted-foreground text-sm">{vlh.quickWinsHint}</p>
-          <div className="relative group/dev-card grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="relative group/dev-card">
             <DevCopyJsonButton data={quickWinsDevData} />
-            {QUICK_WINS.map((win) => (
-              <QuickWinCard key={win.id} win={win} passed={quickWinStatus[win.id] ?? false} />
-            ))}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {QUICK_WINS.map((win) => (
+                <QuickWinCard key={win.id} win={win} passed={quickWinStatus[win.id] ?? false} />
+              ))}
+            </div>
           </div>
         </div>
       )}

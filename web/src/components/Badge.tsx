@@ -6,12 +6,12 @@ import { getBadgeVariant } from '../lib/badges';
  * Single size: text-xs, py-1, px-2. Normalize display value via optional `label` prop.
  */
 const VARIANT_CLASSES: Record<string, string> = {
-  critical: 'bg-red-500 text-white',
-  high: 'bg-red-500/20 text-red-700 dark:text-red-400 border border-red-500/30',
-  medium: 'bg-yellow-500/20 text-yellow-800 dark:text-yellow-400 border border-yellow-500/30',
-  low: 'bg-brand-700/20 text-muted-foreground border border-brand-700/30',
-  info: 'bg-brand-700/20 text-muted-foreground border border-brand-700/30',
-  success: 'bg-green-500/20 text-green-700 dark:text-green-400 border border-green-500/30',
+  critical: 'bg-red-500 text-white shadow-xs',
+  high: 'bg-red-500/15 text-red-700 dark:text-red-300 border border-red-500/30',
+  medium: 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border border-amber-500/30',
+  low: 'bg-brand-700/50 text-muted-foreground border border-default',
+  info: 'bg-blue-500/15 text-blue-700 dark:text-blue-300 border border-blue-500/30',
+  success: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30',
 };
 
 export default function Badge({

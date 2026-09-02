@@ -13,6 +13,7 @@ import {
   TableBody,
   TableRow,
   TableCell,
+  EmptyState,
 } from '@/components';
 import DevCopyJsonButton from '@/components/DevCopyJsonButton';
 import UrlInspectorButton from '@/components/UrlInspectorButton';
@@ -49,12 +50,12 @@ export function OverviewPagesTab({ topPages, hasTopPages }: OverviewPagesTabProp
         <p className="text-sm text-muted-foreground mb-4 max-w-3xl leading-relaxed">{vo.topPagesHint}</p>
         {hasTopPages ? (
           topPages.length === 0 ? (
-            <p className="text-muted-foreground">{vo.noTopSearch}</p>
+            <EmptyState icon={TrendingUp} title={vo.topPagesTitle} description={vo.noTopSearch} />
           ) : (
             <TopPagesTable pages={topPages} />
           )
         ) : (
-          <p className="text-muted-foreground">{vo.noTopPagesData}</p>
+          <EmptyState icon={TrendingUp} title={vo.topPagesTitle} description={vo.noTopPagesData} />
         )}
       </div>
     </OverviewTabPanel>

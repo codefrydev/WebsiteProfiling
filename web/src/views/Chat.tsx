@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertCircle } from 'lucide-react';
 import Button from '@/components/Button';
+import AlertBanner from '@/components/AlertBanner';
 import ChatContextBar from '@/components/chat/ChatContextBar';
 import ChatShell from '@/components/chat/ChatShell';
 import ChatSidebar from '@/components/chat/ChatSidebar';
@@ -796,12 +797,8 @@ export default function ChatPage() {
   ) : null;
 
   const errorStrip = error ? (
-    <div
-      className="mx-auto flex w-full max-w-3xl items-start gap-2 px-4 pb-2 text-xs text-red-300"
-      role="alert"
-    >
-      <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-      <p>{error}</p>
+    <div className="mx-auto w-full max-w-3xl px-4 pb-2">
+      <AlertBanner variant="error">{error}</AlertBanner>
     </div>
   ) : null;
 

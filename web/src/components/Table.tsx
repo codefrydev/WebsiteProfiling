@@ -27,7 +27,7 @@ interface TableHeadProps {
 }
 
 export const TableHead = ({ children, sticky = false }: TableHeadProps) => (
-  <thead className={`bg-brand-900 text-muted-foreground uppercase text-xs font-semibold ${sticky ? 'sticky top-0 z-10' : ''}`}>
+  <thead className={`bg-brand-900 text-muted-foreground uppercase text-xs font-semibold [&_tr]:hover:bg-transparent ${sticky ? 'sticky top-0 z-10' : ''}`}>
     {children}
   </thead>
 );
@@ -72,7 +72,7 @@ export const TableBody = ({ children, striped = false, className = '' }: TableBo
 );
 
 export const TableRow = ({ children, className = '' }: { children?: ReactNode; className?: string }) => (
-  <tr className={`hover:bg-brand-800/80 transition-colors ${className}`.trim()}>{children}</tr>
+  <tr className={`hover:bg-brand-700/60 dark:hover:bg-brand-700/30 transition-colors ${className}`.trim()}>{children}</tr>
 );
 
 export const TableCell = ({ children, className = '', title }: { children?: ReactNode; className?: string; title?: string }) => (
